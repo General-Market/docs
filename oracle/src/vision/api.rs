@@ -2361,11 +2361,37 @@ async fn round_bitmaps(
         })
         .collect();
 
+    // Fetch market names from the batch's config via data-node
+    let markets: Vec<String> = match sqlx::query_scalar::<_, Option<String>>(
+        "SELECT config_hash FROM vision_batches WHERE id = $1",
+    )
+    .bind(id as i64)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        Ok(Some(Some(hash))) if !hash.is_empty() => {
+            use super::batch_config_orchestrator;
+            match batch_config_orchestrator::fetch_config_by_hash(
+                &state.config.data_node_url,
+                &hash,
+            )
+            .await
+            {
+                Ok(config) => config.markets.into_iter().map(|m| m.asset_id).collect(),
+                Err(e) => {
+                    warn!("round_bitmaps: failed to fetch config for hash {hash}: {e}");
+                    Vec::new()
+                }
+            }
+        }
+        _ => Vec::new(),
+    };
+
     (
         StatusCode::OK,
         Json(serde_json::json!({
             "batchId": id,
-            "markets": Vec::<String>::new(),
+            "markets": markets,
             "players": players,
         })),
     )

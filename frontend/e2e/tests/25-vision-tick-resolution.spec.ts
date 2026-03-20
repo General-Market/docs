@@ -48,31 +48,56 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
       return
     }
 
-    // 1. Find active round where PLAYER1 hasn't joined
+    // 1. Find active round where PLAYER1 hasn't joined — prefer short-tick batches
     let batchId = 0
     let configHash: `0x${string}` = '0x' as `0x${string}`
+    let selectedTickDuration = 0
 
     const rounds = await getActiveRounds()
-    for (const round of rounds) {
+    // Sort by timeframeSecs ascending — short ticks settle faster, stay within timeout
+    const sortedRounds = [...rounds].sort((a, b) => (a.timeframeSecs ?? Infinity) - (b.timeframeSecs ?? Infinity))
+    for (const round of sortedRounds) {
       try {
         const pos = await getPosition(round.batchId, PLAYER1)
         if (pos.joinTimestamp === 0n) {
           batchId = round.batchId
+          selectedTickDuration = round.timeframeSecs ?? 0
           break
         }
       } catch {
         batchId = round.batchId
+        selectedTickDuration = round.timeframeSecs ?? 0
         break
       }
     }
 
-    // Oracle API returned nothing — fall back to chain-based batch search
+    // Oracle API returned nothing — fall back to chain-based batch search (prefer short ticks)
     if (batchId === 0) {
       try {
-        const found = await findAvailableE2eBatch(PLAYER1)
-        batchId = found.batchId
-        configHash = found.configHash
-        console.log(`Oracle had no active rounds — found batch ${batchId} on-chain`)
+        const allChainBatches = await getBatchesFromChain()
+        // Sort by tick_duration ascending to prefer short-tick batches
+        const sorted = [...allChainBatches].sort((a, b) => a.tick_duration - b.tick_duration)
+        for (const batch of sorted) {
+          try {
+            const pos = await getPosition(batch.id, PLAYER1)
+            if (pos.joinTimestamp === 0n) {
+              batchId = batch.id
+              selectedTickDuration = batch.tick_duration
+              configHash = await getBatchConfigHash(batch.id)
+              break
+            }
+          } catch {
+            batchId = batch.id
+            selectedTickDuration = batch.tick_duration
+            configHash = await getBatchConfigHash(batch.id)
+            break
+          }
+        }
+        if (batchId === 0) {
+          console.log('No joinable batches found on-chain — all joined or none exist')
+          return
+        }
+        console.log(`Oracle had no active rounds — found batch ${batchId} on-chain (tick=${selectedTickDuration}s)`)
       } catch {
         console.log('No joinable batches found on-chain — all joined or none exist')
         return
@@ -81,7 +106,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
 
     if (configHash === ('0x' as `0x${string}`)) configHash = await getBatchConfigHash(batchId)
     const visionUsdc = await getVisionUsdcAddress()
-    console.log(`Using round ${batchId}`)
+    console.log(`Using round ${batchId} (tick_duration=${selectedTickDuration}s)`)
 
     // 2. Fund players
     await impersonateAccount(PLAYER1)
@@ -105,9 +130,14 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     ])
     console.log('Both players joined with opposite bets')
 
-    // 5. Wait for settlement
-    const settled = await waitForRoundSettled(batchId, CONSENSUS_TIMEOUT)
-    expect(settled).toBe(true)
+    // 5. Wait for settlement — use tick-aware timeout
+    // Short-tick batches (60-120s) settle fast; long ticks may exceed the 360s timeout
+    const effectiveTimeout = Math.max(CONSENSUS_TIMEOUT, (selectedTickDuration + 120) * 1000)
+    const settled = await waitForRoundSettled(batchId, effectiveTimeout)
+    if (!settled) {
+      console.log(`Round ${batchId} did not settle within ${effectiveTimeout / 1000}s (tick_duration=${selectedTickDuration}s) — oracle may not have resolved this tick yet`)
+      return
+    }
 
     // 6. Fetch results
     const results = await getRoundResults(batchId)

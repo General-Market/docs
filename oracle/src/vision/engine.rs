@@ -2312,6 +2312,88 @@ pub async fn run(
                                         });
                                     }
 
+                                    // Persist per-player round results to vision_round_players.
+                                    // This is the data that /vision/rounds/:id/results and the
+                                    // leaderboard aggregate. Without it, those endpoints return empty.
+                                    if let Some(ref pool) = db_pool {
+                                        let pool_rp = pool.clone();
+                                        let player_balances_rp = result.player_balances.clone();
+                                        let market_results_rp = result.market_results.clone();
+                                        let total_markets_rp = market_results_rp.len() as i32;
+
+                                        // Build bitmap lookup: player -> bitmap hex
+                                        let bitmap_map: HashMap<Address, String> = active_bitmaps.iter()
+                                            .map(|b| (b.player, hex::encode(&b.bitmap)))
+                                            .collect();
+
+                                        // Compute per-player correct_count: how many non-cancelled markets
+                                        // did the player predict correctly (side matches outcome)?
+                                        let mut correct_map: HashMap<Address, i32> = HashMap::new();
+                                        for mr in &market_results_rp {
+                                            let winning_side = match mr.outcome {
+                                                super::types::MarketOutcome::Up => Some(super::types::Side::Up),
+                                                super::types::MarketOutcome::Down => Some(super::types::Side::Down),
+                                                _ => None, // Flat/Cancelled/AllSameSide/AllLosers — no winner
+                                            };
+                                            if let Some(winner) = winning_side {
+                                                for pr in &mr.player_results {
+                                                    if pr.side == winner {
+                                                        *correct_map.entry(pr.player).or_insert(0) += 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        tokio::spawn(async move {
+                                            // Fetch deposited amounts from vision_positions
+                                            let player_strs: Vec<String> = player_balances_rp.iter()
+                                                .map(|pb| format!("{:?}", pb.player))
+                                                .collect();
+                                            let deposit_map: HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
+                                                "SELECT player, total_deposited FROM vision_positions WHERE batch_id = $1 AND player = ANY($2)"
+                                            )
+                                            .bind(batch_id as i64)
+                                            .bind(&player_strs)
+                                            .fetch_all(&pool_rp)
+                                            .await
+                                            .unwrap_or_default()
+                                            .into_iter()
+                                            .collect();
+
+                                            for (pb, player_str) in player_balances_rp.iter().zip(player_strs.iter()) {
+                                                let deposited_str = deposit_map.get(player_str)
+                                                    .cloned()
+                                                    .unwrap_or_else(|| pb.old_balance.to_string());
+                                                let payout_str = pb.new_balance.to_string();
+                                                let pnl_str = {
+                                                    let dep = deposited_str.parse::<u128>().unwrap_or(0) as i128;
+                                                    let pay = pb.new_balance.low_u128() as i128;
+                                                    (pay - dep).to_string()
+                                                };
+                                                let correct = correct_map.get(&pb.player).copied().unwrap_or(0);
+                                                let bitmap_hex = bitmap_map.get(&pb.player).cloned();
+
+                                                if let Err(e) = sqlx::query(
+                                                    "INSERT INTO vision_round_players (batch_id, player, deposited, payout, pnl, correct_count, total_markets, bitmap_hex, settled_at)
+                                                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                                                     ON CONFLICT (batch_id, player) DO NOTHING"
+                                                )
+                                                .bind(batch_id as i64)
+                                                .bind(player_str)
+                                                .bind(&deposited_str)
+                                                .bind(&payout_str)
+                                                .bind(&pnl_str)
+                                                .bind(correct)
+                                                .bind(total_markets_rp)
+                                                .bind(bitmap_hex.as_deref())
+                                                .execute(&pool_rp)
+                                                .await {
+                                                    tracing::warn!(batch_id, player = %player_str, error = %e, "Failed to persist round player result");
+                                                }
+                                            }
+                                        });
+                                    }
+
                                     // HIGH-5: Tick resolved successfully — clear the pinned price entry.
                                     pinned_prices.remove(&(batch_id, tick_id));
 

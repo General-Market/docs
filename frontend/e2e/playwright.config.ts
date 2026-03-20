@@ -5,12 +5,15 @@ import { FRONTEND_URL } from './env';
  * 3-phase test execution with separate wallet keys per chain:
  *
  * Phase 1 — DATA (2 projects):
- *   itp-data (DEPLOYER_KEY):    01 → 02 → 03 → 04 → 05 → 07 → 08 → 10-morpho → 18 → 26
- *   vision-data (VISION_PLAYER_KEY): 10-vision → 12 → 13 → 15 → 25 → 14 → 19 → 20 → 21
+ *   itp-data (DEPLOYER_KEY):    01 → 02 → 03 → 04 → 05 → 07 → 08 → 10-morpho → 18 → 26 → 36
+ *   vision-data (VISION_PLAYER_KEY): 10-vision → 12 → 13 → 15 → 25 → 14 → 19 → 20 → 21 → 41 → 42 → 43 → 44
  *
  * Phase 2 — UI VERIFY (depends on respective Phase 1 project):
  *   ui-verify-itp (depends: itp-data): 00, 06, 16, 17, 22, 23, 24, 27, 28, 32, 34
- *   ui-verify-vision (depends: vision-data): 11, 29, 33, 35
+ *   ui-verify-vision (depends: vision-data): 11, 29, 33
+ *
+ * Standalone:
+ *   production-smoke: 35 (no dependencies — runs immediately)
  *
  * Phase 3 — LATE WRITES (depends on Phase 1 AND Phase 2 — no concurrent DEPLOYER usage):
  *   write-after: 30, 31
@@ -46,11 +49,11 @@ export default defineConfig({
     {
       name: 'itp-data',
       // 0[1-578]: tests 01-05, 07, 08. NOT 06 (moved to ui-verify-itp).
-      testMatch: /(^|\/)0[1-578]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$/,
+      testMatch: /(^|\/)0[1-578]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$|(^|\/)36-.*\.spec\.ts$/,
     },
     {
       name: 'vision-data',
-      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)4[5-9]-.*\.spec\.ts$/,
+      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)4[1-9]-.*\.spec\.ts$/,
     },
     // Phase 2: UI verification (depends on respective Phase 1 only — limited blast radius)
     {
@@ -77,6 +80,11 @@ export default defineConfig({
       use: {
         browserName: 'chromium' as const,
       },
+    },
+    // Standalone: production smoke tests (no dependencies — runs immediately)
+    {
+      name: 'production-smoke',
+      testMatch: /(^|\/)35-.*\.spec\.ts$/,
     },
   ],
   ...(!process.env.E2E_FRONTEND_URL ? {

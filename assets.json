@@ -1,2490 +1,2490 @@
 [
   {
-    "address": "0x3E038602bB4b17d9093DCCD8c4dc4D5f843A5baf",
+    "address": "0xb7Af96C778CBC025d501FA5d28c89D52f660Da56",
     "bitget": "0GUSDT"
   },
   {
-    "address": "0xe1C41D6cB98bfB9c571f85B7477834a4Eb9bed61",
+    "address": "0xDd734Dd89682297EC3d0d084c2c800004dab0497",
     "bitget": "1INCHUSDT"
   },
   {
-    "address": "0x1eB90ba9E7F7547d9eDa8706C8Af079E3F9cd6eA",
+    "address": "0x5A27E8f31dD99b3b4418c3a31B481019c42504e7",
     "bitget": "2ZUSDT"
   },
   {
-    "address": "0x4A9016f7210E8e0370d5cEe26E76AbcEE87155Fe",
+    "address": "0xf0454dB29F25bAa3c2a1ff9c27596145027A4D46",
     "bitget": "A47USDT"
   },
   {
-    "address": "0x979bB9CF97292d70297dC200277210ce07907F23",
+    "address": "0x5B4cC8792430082CfC23ABcE68d7f7131040c146",
     "bitget": "A8USDT"
   },
   {
-    "address": "0x244f37EDda3bc1087DC51633766E4336f85c58C0",
+    "address": "0x2d328e7f9FE36b123Bbf3Cb2A142Df1549916f17",
     "bitget": "AAVEUSDC"
   },
   {
-    "address": "0x91944728fA64641ddb7Dc70578f480e05c9e3200",
+    "address": "0x4ef34147909D97fa8DfF6eDd9E9CE27Fc95b7806",
     "bitget": "ABUSDT"
   },
   {
-    "address": "0x5089359bc870043bf79e558Af543c67724Ef4679",
+    "address": "0xa5D7Fb81818D42045d2Cc1F62bF21e68213BDe79",
     "bitget": "ACEUSDT"
   },
   {
-    "address": "0xDF23ADEf4c856E2024d3d082F322a2eC0Ea79B68",
+    "address": "0x5EdC888238fA09337946081c5febc9EC55696B6F",
     "bitget": "ACHUSDT"
   },
   {
-    "address": "0x0789b334f145F3E3592B526540A69BCb774A1D31",
+    "address": "0xbAf6412B685272A51cCB62d114E439A37038d6cE",
     "bitget": "ACMUSDT"
   },
   {
-    "address": "0xD0937E600F8BfC00ab239FFddA21ee843cBE5ae0",
+    "address": "0xbe433BB42B412439B19E69c5bC39Bf95f6C1f57c",
     "bitget": "ACTUSDT"
   },
   {
-    "address": "0x93996cEb2f7220c4B730fc26fcc1943f3a7a4d9B",
+    "address": "0x91dF6cF19FDd024eF8991656e65f46F0dF0e0E08",
     "bitget": "ACXUSDT"
   },
   {
-    "address": "0xDf27F13027De1771b21db1AC02EBD1CE5301Ff86",
+    "address": "0x98eB9bDd5bfAf9D6d169BA1AA38de0AacF80C2B6",
     "bitget": "ADAUSDC"
   },
   {
-    "address": "0xA3fc2bBAc1E0C5F5AF59Fc0bC524EbC0BDd62150",
+    "address": "0x042F6e62476dC54455600C9a78d34fb391343Ed9",
     "bitget": "AERGOUSDT"
   },
   {
-    "address": "0x330Ea7A6b55A237864d5ED6aA2E5334ce59aE999",
+    "address": "0x0b3B5E231410d0a41e060AA97bdA6f8ee2445917",
     "bitget": "AEROUSDT"
   },
   {
-    "address": "0xdBeC52Bc73Ac1542874f672d1BA915F70F37Ad4f",
+    "address": "0x281bf66638252BDac21369CDc05Dd8aA1E134a3e",
     "bitget": "AEVOUSDT"
   },
   {
-    "address": "0xd44a207623000f4411d9853806055a41acD20551",
+    "address": "0x76aD893f8fDBa52161874cFCB83920cCb5F53427",
     "bitget": "AFCUSDT"
   },
   {
-    "address": "0x99B6a39817763e2bb2852C0755B495cb6606B237",
+    "address": "0x5608e9de4ee62fAEe73BA8314aD7185e8Bc4B56F",
     "bitget": "AGLDUSDT"
   },
   {
-    "address": "0x78Bcb2C3f4695141bc37b99D6839bcCC5123Ac08",
+    "address": "0xfdf5445E482bcfCc544268a947409bE815E3Bfd4",
     "bitget": "AIAUSDT"
   },
   {
-    "address": "0xFfD8B3E3A01386dbd8Cff9D8cD15e94322dbe6d5",
+    "address": "0x2285EADA850b51B08771a8230Ce311e76A61CFCF",
     "bitget": "AIAVUSDT"
   },
   {
-    "address": "0x22536010DBE3170106673eaa19085CE8AD01BD95",
+    "address": "0xE998e8414771DC37e087Ab6B8acff077faf8e09E",
     "bitget": "AINUSDT"
   },
   {
-    "address": "0x56b7e6f0cFd209B20bf2DcA65fafBc080356E325",
+    "address": "0x2c996E39E0b1a9c0fcE214c32EeCB2Ee3443a55f",
     "bitget": "AIOUSDT"
   },
   {
-    "address": "0xfC0F90c47F3E46e94982f1bb77897a184CF1FDa6",
+    "address": "0x2E286b61f8d9eD239892999b38FE5993C746d3f0",
     "bitget": "AITECHUSDT"
   },
   {
-    "address": "0x2c77e7FF71aE73C7D9d20c154544E62cD39D7650",
+    "address": "0x1A4D37c5B9c463EE2408fce902f7206e275B55E6",
     "bitget": "AIUSDT"
   },
   {
-    "address": "0x87B3671616e0a8a360B2a8795de44c5Ea6665DFe",
+    "address": "0x536dC67fbE06262B5B0414aE48A415d8E88e1B72",
     "bitget": "AIXBTUSDT"
   },
   {
-    "address": "0xC0e49327eD85A4f0C2241322ab04889ba0B40D78",
+    "address": "0xBA230a6381BD5fB5bE24EcfcFB17cD443c5c718f",
     "bitget": "ALCHUSDT"
   },
   {
-    "address": "0xdb75751980b14f62d94eEC866E9019eC71226cb7",
+    "address": "0xfca707AB48AD097A0120c4eafD78596A35C42f0c",
     "bitget": "ALGOUSDT"
   },
   {
-    "address": "0x94865Cd3cC14B02BCE9fF82AdE09efD45E358bCd",
+    "address": "0x9abaA8F9Aae5d32005B422Dc2822163385bD4dE2",
     "bitget": "ALICEUSDT"
   },
   {
-    "address": "0x67ba7Fef3e567a4614De7471de63a252deCD61D4",
+    "address": "0xc5EF9CADded57686Dbed29dA59caDD3Eb275Bd8A",
     "bitget": "ALLOUSDT"
   },
   {
-    "address": "0xC0dbFD1Ca34CFc25A2c768a41bbB07DBcaa6aB5B",
+    "address": "0xe34Dd6Eb10f4737BdCA000742A30C536D79831Df",
     "bitget": "ALMANAKUSDT"
   },
   {
-    "address": "0x29995FaA6a740ae5bF0E7370ABFe43e4cCDeCd30",
+    "address": "0x2a5B8f5c2b745c711FaDFae3BF26911B669d318D",
     "bitget": "ALPHUSDT"
   },
   {
-    "address": "0xE647d48601816edb9a8643274DC2442BF3BfB93A",
+    "address": "0x2C4f7e9baCD52C5CeE479A9619cf51b9b904394E",
     "bitget": "ALPINEUSDT"
   },
   {
-    "address": "0x25BB27f5631EE79252B84253dA009F97547BAc94",
+    "address": "0xbCc41A08B45FeaFdFd63E8A286ecB3dBbd1Bf217",
     "bitget": "ALTUSDT"
   },
   {
-    "address": "0x00b48D5Fce8db72E461410A645F1dA4F16DA9dDd",
+    "address": "0x20e51Ea07fF69dD654E70a8d96C4EB13c6cD62bE",
     "bitget": "ALUSDT"
   },
   {
-    "address": "0x70648ac6859Ac766b831A39C5046b11147c52fAf",
+    "address": "0xa2eef391986BC81733367fD0e21FA568d0A3312A",
     "bitget": "AMPUSDT"
   },
   {
-    "address": "0x8e75d4ef45c7902c1145Cbc9D7879fe7d2D5Ed5C",
+    "address": "0x3a1AF429Cc0995a6fc4708Ce0B3072C4Ce8c6181",
     "bitget": "ANIMEUSDT"
   },
   {
-    "address": "0x628Be2CAa10225a1d2f2c15135d168Be6c04c64F",
+    "address": "0x3D22C289C43Dd80e9B04889Ba865b1DC82c5c05C",
     "bitget": "ANKRUSDT"
   },
   {
-    "address": "0x440F718D2d01113C466d75dF6346126ef35737f3",
+    "address": "0x294bbCAab264878050a49a8038fC75ED692857f1",
     "bitget": "APEUSDT"
   },
   {
-    "address": "0x5eC702e36D509b6CbDe0e57BFecA72e395B66E95",
+    "address": "0x082113fbA2bD90280bea446562E943F29c23abE2",
     "bitget": "API3USDT"
   },
   {
-    "address": "0x24b4544cF995b9ab09374001C35552450DA0D241",
+    "address": "0x1dABCC655E9e9AC60004E0eb1E4E36662A5C652a",
     "bitget": "APRUSDT"
   },
   {
-    "address": "0x1410940336283c2846a7a6224a6102B5ee4AEF70",
+    "address": "0xfD9496CcB4470622fcEC7Ee5AC2B2254AD869018",
     "bitget": "APTUSDC"
   },
   {
-    "address": "0x174c925cfAD4C9A76C58d46fEdDeab435C7fcFe6",
+    "address": "0x57D4D01094817C02633b5819240c13a7C4de6Ef9",
     "bitget": "AQTUSDT"
   },
   {
-    "address": "0xdeBBE26ee9a3E5902b367Ac549B5Ff4a29996f0C",
+    "address": "0xC12Db56275f00Ad0BD098E954C69bEf009926af1",
     "bitget": "ARBUSDC"
   },
   {
-    "address": "0xCEB78DAB7f28B46f1096fbbd04819EFb2A370F87",
+    "address": "0x6a48dfd935807b6187E726E5BFFE2b7e5E4B30dF",
     "bitget": "ARGUSDT"
   },
   {
-    "address": "0xE104b8fC48Fa0f8e25973631c262fF2fCb978e00",
+    "address": "0x6f92081f8b879d07963F90E6bEFFbF0fC0E94975",
     "bitget": "ARIAIPUSDT"
   },
   {
-    "address": "0xCE3d5890ca04Fd85CfD2639240Dbc6263fd5ed22",
+    "address": "0xf6c717C411655F090A4f0466832172b70D108895",
     "bitget": "ARIAUSDT"
   },
   {
-    "address": "0x61dB78442054aF92fA5efa109003b8a40968c366",
+    "address": "0x71baE542F9171Bc690cC410d312c31C03b753A3a",
     "bitget": "ARKMUSDT"
   },
   {
-    "address": "0x974B1af8A43CA85AD5B265D492E12870F45f40Ef",
+    "address": "0xCbE6976E074609fA725BA68127E4E16085619617",
     "bitget": "ARKUSDT"
   },
   {
-    "address": "0x42CD11a60bA2F3cB945633540258D5fEDD014da1",
+    "address": "0x7995878510B9471c3278899b8a2e5037CCEeaC5E",
     "bitget": "ARPAUSDT"
   },
   {
-    "address": "0x5422f3760C6fdc26C7b3847B1c062c83B5D5dC01",
+    "address": "0x1a73E37A95A5aBe590797aC6Ed821A06AEf14c12",
     "bitget": "ARTXUSDT"
   },
   {
-    "address": "0x2E6dc5A864469B149275aBc68eBd29A45F5556f6",
+    "address": "0x417eb75c880d7ABe098854962ebe24a1628331A6",
     "bitget": "ARUSDC"
   },
   {
-    "address": "0xfeC20A47d39EF1aBC3C546560507b13da735b174",
+    "address": "0x320E7914Ba8BC607F898e952abB5e3fd578c0416",
     "bitget": "ASRUSDT"
   },
   {
-    "address": "0xBf1039CD982a3c95a58a90b2Cb1A932D4d468308",
+    "address": "0xBe902aD032920a8a924fb14D3b352d82aD73B1F0",
     "bitget": "ASTERUSDT"
   },
   {
-    "address": "0x6C2aF75a1C9CaE335A756D7Ee3bb10D847e59D27",
+    "address": "0x96FdE8f0B7d34ec129592e59fF4CE787c954B5Bc",
     "bitget": "ASTRUSDT"
   },
   {
-    "address": "0x698a9d16Fa474daA22Bd227BD689BC3Eda6d9e4e",
+    "address": "0xa710A788A197A79bA14211399f2edf9871AE2a98",
     "bitget": "ATHUSDT"
   },
   {
-    "address": "0xdF5527056F10b70549A196cD111Ee636Ae26Cc19",
+    "address": "0x74515e4bc0345dDCf5E416ef1e72C1C61aD9bD20",
     "bitget": "ATMUSDT"
   },
   {
-    "address": "0x15359D8a90440498c3dBbDC420Ff063f3b35890A",
+    "address": "0x29264E0084fFb88F5dD04397Bf39f87dB1b5f10D",
     "bitget": "ATOMUSDT"
   },
   {
-    "address": "0x7d632eB7F70AbE4EdFC3a8De0Dcd7cF600a6f691",
+    "address": "0x607d232234aDaD03dF0aA57d0B8f142d6A0c56b2",
     "bitget": "AUCTIONUSDT"
   },
   {
-    "address": "0x87E98aeeCC44077c0c3FF647bBAFE57d7B04F303",
+    "address": "0x890fE689B47C883C83D96d62E4825Df412A0CAaB",
     "bitget": "AUDIOUSDT"
   },
   {
-    "address": "0x0701d60f4BaFf729e7E52C65a53814BA44aD6f70",
+    "address": "0xdAD3F669a0DDC426DF66AdD0a7F4b63F7B7EdF16",
     "bitget": "AUSDT"
   },
   {
-    "address": "0x5C6134a7328FFF5B77461F35709A523f40aeCFb0",
+    "address": "0xb96EC7a9774d3E5F790d5a738c3C2412f6c1C23F",
     "bitget": "AVAUSDT"
   },
   {
-    "address": "0x27B11Cfe3F59765A1526995c3899Ef3f0A8E40F9",
+    "address": "0x0330616aD2ddbf2453E843688791DCd3B21194bD",
     "bitget": "AVAXUSDC"
   },
   {
-    "address": "0x7c9C0b65Ccd082806eB7a1f323A18d76480D4E81",
+    "address": "0x28B6a89E82a02e870C61f7909f554B22E5E2891d",
     "bitget": "AVNTUSDT"
   },
   {
-    "address": "0x957407C507Db5b7b68c658aaD1F17e385c2f7D55",
+    "address": "0xB79301cd8CE5C155c04b7B1ebA66FAaCb970311b",
     "bitget": "AWEUSDT"
   },
   {
-    "address": "0xdF7789eF40085115b2Cd7C36233ace7721228725",
+    "address": "0xe64Ee7C481e938dE3BB6dbB425b8A142C4f8E372",
     "bitget": "AXLUSDT"
   },
   {
-    "address": "0xC63B62a748827B1B47E772c614405452990e4Fc1",
+    "address": "0x53DB0280E6EaD5dA7Dd7A13e30790a192375992d",
     "bitget": "AXSUSDT"
   },
   {
-    "address": "0x6F2eADa4797e201298B92FB38F7A33fb6304B961",
+    "address": "0x83BCD140eC277fA755ec44B9Ad3Bd43151920fcd",
     "bitget": "B2USDT"
   },
   {
-    "address": "0xdF37f5BEd8dFee8f56Fc037fa8E7B7bbFc3A48D6",
+    "address": "0x4fA93f4e2B894928Af359c429B31985686B7FEd1",
     "bitget": "BABYDOGEUSDT"
   },
   {
-    "address": "0x183Fdc41A951f1011D0212FdaF1e708fCc27dC4A",
+    "address": "0x46140F8D292b4d4f9afE4837e6B6e0E45A6318e2",
     "bitget": "BABYUSDT"
   },
   {
-    "address": "0x30b568EE58fa5f2124F02e470986A41327517837",
+    "address": "0x6a9fAcBB704Ab5Ce414242E36d9CFeF7492D12B9",
     "bitget": "BANANAS31USDT"
   },
   {
-    "address": "0x5ec06bbe63635f5496155006DCAd9dAe420E5D92",
+    "address": "0x44e1FD23EEBc5467903452e65bF03eEcF1c33756",
     "bitget": "BANANAUSDT"
   },
   {
-    "address": "0x43fB424C1CA3C7F1311cAa57E355290DE0802300",
+    "address": "0xa742DbD85084D68798f58F32Ed666ccF56AaA9D7",
     "bitget": "BANDUSDT"
   },
   {
-    "address": "0xcF312DbE25Af61668896f9bE58a6Ec1A8424A780",
+    "address": "0xa2d95577eD6b7E6e8058610b5acF40Ff0f1c0261",
     "bitget": "BANKUSDT"
   },
   {
-    "address": "0xDc6277caD338DeE6df22AeF5115D9b2E703a2679",
+    "address": "0x4c2b726256d22c1edc329B219f7662dF4C2F5c58",
     "bitget": "BANUSDT"
   },
   {
-    "address": "0x8b9520fC16c673ED8d59EeB88FFac9E7B8Bd6633",
+    "address": "0xc59d90e4711b2b6dC0bA70ff3b085fa64F613870",
     "bitget": "BARDUSDT"
   },
   {
-    "address": "0xF6579D5787134C7c409e2c76656ca1E376b1Ca2a",
+    "address": "0x4dc6e5d59462b467578C67c1Af3DA5f3335fa40F",
     "bitget": "BARUSDT"
   },
   {
-    "address": "0x61F37f8DF43E4Daa5999244756Ea25c263bBaad4",
+    "address": "0x1e0208554cA9daE10dD077D1AB5eB01446619761",
     "bitget": "BATUSDT"
   },
   {
-    "address": "0x69F60a0a79826701F7eefEE4a4a8F1580AF02e76",
+    "address": "0xb5AD4e7A318fbe262BF88C591c24DF430E41ac12",
     "bitget": "BAYUSDT"
   },
   {
-    "address": "0x18721572f984045b1c7eD4a6C9eD385b546a7838",
+    "address": "0x7FE0cAC8b3ba9c0c113205a87bC009dC612EAFcB",
     "bitget": "BBUSDT"
   },
   {
-    "address": "0xDd73Cb3A0Cccdd1776AC8D1679D09548C1370EC5",
+    "address": "0x05acfBb0914170fa4eEb3F07550686400c2055Fa",
     "bitget": "BCHUSDC"
   },
   {
-    "address": "0x817E802A88e361a18ca179dF98A06B4311038d9D",
+    "address": "0x74fd4e28ea3cAa7512FC6536505fAD5d08B72605",
     "bitget": "BDXNUSDT"
   },
   {
-    "address": "0x77117a4BD6f9613b84A0b23A107F1Da16c73760c",
+    "address": "0x8bC5D77Bb9CD9E4BE2A623447Ab9F0952035022A",
     "bitget": "BEAMUSDT"
   },
   {
-    "address": "0xb97CE7dFc277FF0dFa2b6623510fe8757F4A757D",
+    "address": "0xD9827EE8C7ed938D5b8c01DC04e915620DAF16A1",
     "bitget": "BERAUSDT"
   },
   {
-    "address": "0x55f583722beeaf84B96d0a8706350F881770930D",
+    "address": "0x4432B2EC629FA6fcf812DB9dB8a04D76d1D9cb9E",
     "bitget": "BGBUSDC"
   },
   {
-    "address": "0x187F4e9a44188A1B576e3cEa6d578a850635AeCA",
+    "address": "0xd2Ddac7E96d5c09e65cB6c097912802442340C7D",
     "bitget": "BGSCUSDT"
   },
   {
-    "address": "0xD63F063CCb76212A8Fcb63D22309208181339B55",
+    "address": "0xc6B44498eCfda50c952C0310a30B0c86Bcc15185",
     "bitget": "BGSOLUSDT"
   },
   {
-    "address": "0xf89184818A481F4C7719b0fe3bcF35CD05466bd4",
+    "address": "0x33DE2034c0E31FD64cAeD3B61Ea2c8c6fB052CdC",
     "bitget": "BICOUSDT"
   },
   {
-    "address": "0x5ABd8Ee307D6ab9E4Ab79be97086bd617B7e6BC9",
+    "address": "0x8Cd0D196f900AABb71699cbED1792d5C4626CD49",
     "bitget": "BIGTIMEUSDT"
   },
   {
-    "address": "0x7598A748249471277bc1513274d55b6943D12477",
+    "address": "0xF55AaE7f2159bd5919E8aE748D8FDa8b88F52300",
     "bitget": "BIOUSDT"
   },
   {
-    "address": "0x24146c817E57eda5c7a5d7402a38addd7bb66166",
+    "address": "0xa0D2a5F5BeF7435734399F3889520Da9D989e8f6",
     "bitget": "BIRBUSDT"
   },
   {
-    "address": "0x24789c97c5a8B226244641331bbF28Fd3C973Fff",
+    "address": "0x26eAe09142E77b7925eE0D8d60bE408E7347b228",
     "bitget": "BLASTUSDT"
   },
   {
-    "address": "0x78B8F2DC72BaCF4919b8F2F0AF095bE48CfFf75E",
+    "address": "0x81D881BfDeE3a897702B226076CDA3734EDE2ff0",
     "bitget": "BLESSUSDT"
   },
   {
-    "address": "0xc5AAcE71cCf56235ABb49D790e09A4bBF3C907Ba",
+    "address": "0xE1044102B9eC944f992141Ee30bB7179169cE104",
     "bitget": "BLUEUSDT"
   },
   {
-    "address": "0x74306c63975C0551Ada38313D6dd7E3bc9F044Df",
+    "address": "0x17acf6Ed3680295AfE728897E8DBF1260A615864",
     "bitget": "BLUMUSDT"
   },
   {
-    "address": "0xA559d24EcCB894A1191473Cd0aE3999385826903",
+    "address": "0x4ADc65578e40d23aB70E1238e816d20a0F2fee00",
     "bitget": "BLURUSDT"
   },
   {
-    "address": "0x52BC56309fb6dE63960F4665dc015b7396163CfE",
+    "address": "0x73C3a42aB98f9365ee83B73055880b6a0a257301",
     "bitget": "BMTUSDT"
   },
   {
-    "address": "0x924857A05512e48809df01aa6d10c79A28B6Fe69",
+    "address": "0xf3dee0010D4dC1D8C8CDf9B2fd4b1295BF2A53fA",
     "bitget": "BNBUSDC"
   },
   {
-    "address": "0xCB9A980C50c2fB08Fa910B21eEF5E0C92Ea2CFe8",
+    "address": "0x170e583f2d0A06f50e34788634576629D3Bb4A8c",
     "bitget": "BNTUSDT"
   },
   {
-    "address": "0x6fE509bc2180676d6f65c3765BdbF415Ee753e19",
+    "address": "0xfBB6C4CFC40a09EbcE938C7921446bC108Ddb250",
     "bitget": "BOMEUSDT"
   },
   {
-    "address": "0xDd94e43945300d8844b733FdFC021eb5303535FF",
+    "address": "0x35DBfB2e1cCB419fC6d2876896e7a2aEE7c681bE",
     "bitget": "BONKUSDT"
   },
   {
-    "address": "0x2F8f9e10F868E3c1858D14805cbe1CB84aEc92e7",
+    "address": "0x40977d3C27e16c1266cAEF4ffF2A04bbd203C061",
     "bitget": "BOSUSDT"
   },
   {
-    "address": "0x8B7A6d5dE248E71dE0bbe3944136120ca8204cdc",
+    "address": "0x9dBae8DB44a9af79b38b3acA9832A4bc557FA3c1",
     "bitget": "BRETTUSDT"
   },
   {
-    "address": "0xb53aC6d43bFd2813539D5a400D271F45df8aEC30",
+    "address": "0x89649DdCD9Ae0ABeDaA67f36e3F016caDa6E2398",
     "bitget": "BREVUSDT"
   },
   {
-    "address": "0x2DE9a1Ae2B7F8Ee77310C30401520248CB243903",
+    "address": "0x366c06e5390BDdFe883F3ec5Af6b8E22bb26F66A",
     "bitget": "BROCCOLIUSDT"
   },
   {
-    "address": "0xfbb9464529FB017BF20E840541a3674DaC8016Eb",
+    "address": "0x58367C275618ccEB443Ff5B85e6457eDB3055f41",
     "bitget": "BRUSDT"
   },
   {
-    "address": "0xE6A100B23852D215AeF5A75B26B0FEa6a38e7634",
+    "address": "0x1986E6B794557C4d9e4Ae365491040D8BA07E9E0",
     "bitget": "BSBUSDT"
   },
   {
-    "address": "0xf99FB7cD2EFA7014f00929B7cA781D24881FD63B",
+    "address": "0xCe8042120F2dD2F8B279adA639ae5151aaf6Dc5F",
     "bitget": "BSUUSDT"
   },
   {
-    "address": "0x16715214F0388A11614618a990997f4f4e8cCc76",
+    "address": "0x6dAaCbd978Aeb89f106806b33eDc1326cE58A573",
     "bitget": "BSVUSDT"
   },
   {
-    "address": "0xDCA0fB743398B770B8D362Bf6b52Ca6fEB6f4d42",
+    "address": "0xDD5603a36183951BCa12B0fc71785681830e5F68",
     "bitget": "BTCUSDC"
   },
   {
-    "address": "0xab6F0Eed7c41a728Fb1D2dF72A63a03cCd9BDeE2",
+    "address": "0x7B3B095860003949B5a45533e1540627915C8588",
     "bitget": "BTRUSDT"
   },
   {
-    "address": "0xe80f0dD70e211d35fDa8e858a69ea890e23868AA",
+    "address": "0xCE83B43A239E3b4FF6313b4a5bf86aff2D624801",
     "bitget": "BTTUSDT"
   },
   {
-    "address": "0xeE7c57ae3ac112911fAe3363EF7CdC5e5440B515",
+    "address": "0x958b236cD9fbEE35d9C86b550cBceC97C7c29201",
     "bitget": "BTWUSDT"
   },
   {
-    "address": "0x5F2dB87fe2381Ff767A3949503eDF17A8460b8db",
+    "address": "0xb97f6ADf9f31352F9754B3ef50959Fb9B84Ee744",
     "bitget": "BUSDT"
   },
   {
-    "address": "0x37aA9F0e16E539eC66fD6488c9624b270334a79F",
+    "address": "0x802965087e86c9898f0f47C7F7aAB89d1ab12A11",
     "bitget": "BYTEUSDT"
   },
   {
-    "address": "0x9803244EF442769117eb0fd588B9C40D1552536E",
+    "address": "0x795630C3f9dF537fe85a03C40A1F485b70A1a8DC",
     "bitget": "C98USDT"
   },
   {
-    "address": "0x7E8E24c5d6aD58dF0BeD00e6F72d20aA80C48E6C",
+    "address": "0x4a27F80211FA42662Acc36605D2FC8F4aa395fC0",
     "bitget": "CAKEUSDT"
   },
   {
-    "address": "0x1076b537ebb20474d87403c2623e464b78180B4c",
+    "address": "0x4cF65cf87A8A54A3CF8eBcce7Dd14ca805d2Ff8c",
     "bitget": "CAMPUSDT"
   },
   {
-    "address": "0xF43a5bEEe0711551D115E3f3062678501494AF06",
+    "address": "0xe1C0cEdd1D5baDb3F11f7a6625eAc1972986BC42",
     "bitget": "CARVUSDT"
   },
   {
-    "address": "0x80C14CBd3b5EfC3f620Ce33F940C4E4EB5001E2d",
+    "address": "0x75b9946ba1da3C1BCC9A7326b904340eA3B25e68",
     "bitget": "CATIUSDT"
   },
   {
-    "address": "0x677D1C546cb16e7A27B7B1C18C7e5bacc832F479",
+    "address": "0x2a4bc67930994A9b23Fb7306F35585e3AEb180a3",
     "bitget": "CBKUSDT"
   },
   {
-    "address": "0x03269ab480E42117B64131C553279B08a25cEA84",
+    "address": "0x7935f6f59904971A567E0E0a8E81FDF75d7CB9a1",
     "bitget": "CELOUSDT"
   },
   {
-    "address": "0x43261Af22e5fb1D461373981c9510daD9aD56d1A",
+    "address": "0xbEc1A8AB94FffE5c869B5694b76001D88B1A85f5",
     "bitget": "CELRUSDT"
   },
   {
-    "address": "0x3Fa34ca6156d9f10e08ba6D104E4Add29E6F58C2",
+    "address": "0x7D28a72a7646ec277e7088Fc7C6dE12CEf39Cb8C",
     "bitget": "CESSUSDT"
   },
   {
-    "address": "0x445703e5355dc32c0eC0D60Bcb1FA98C70993610",
+    "address": "0x42937e8688885A74bcb894e40a836dc90f2269F9",
     "bitget": "CETUSUSDT"
   },
   {
-    "address": "0x7dE211C3AcA41202BF91f0cb51233716EF9D0f23",
+    "address": "0xC83Efd4Cc1BC59ADE6834D553B5fB68a7c209B73",
     "bitget": "CFXUSDT"
   },
   {
-    "address": "0xB7e30d2B0F9bED032F43744eB7Db55353E52fD0f",
+    "address": "0x35f207f1DC5CE2AE8657537335B19D4013474E14",
     "bitget": "CGNUSDT"
   },
   {
-    "address": "0xf600bbd7040cFC0fC9eF9bd500C13De5612d11ad",
+    "address": "0x7aF4E68e0b9c7FbF41f934445173d8A7C827eA5F",
     "bitget": "CGPTUSDT"
   },
   {
-    "address": "0x209d6E1Fa4465432203eBBA37D1121B9Fbc036EB",
+    "address": "0x9867230374Ee5C7949426c89b71bb2e592Dfb766",
     "bitget": "CHEEMSUSDT"
   },
   {
-    "address": "0xba6d52cA2b405396D7dcca89722613aBAdB70ac0",
+    "address": "0xBC60b33fa20e57B34dFEec8ae791960AAF1B8119",
     "bitget": "CHILLGUYUSDT"
   },
   {
-    "address": "0xD125b0eb2d2B0B4E69a8b68eF5A3857F6FC8eCFB",
+    "address": "0x45ceE39D54f5CF41dC2abA04028f203C8b353C6F",
     "bitget": "CHRUSDT"
   },
   {
-    "address": "0xccEB7CFf57591Ae182F89AdFb4bE1a9c0A7ac8d4",
+    "address": "0x016CE6cF4b54E0dD24B8BBa98A53bDc0026deb7D",
     "bitget": "CHZUSDT"
   },
   {
-    "address": "0x1C67Be9D62E9D4b0E5184e34318250E0F5354E27",
+    "address": "0x8b3421B9E7e6F9923Cdb85aA3493973E4F6e66bD",
     "bitget": "CKBUSDT"
   },
   {
-    "address": "0xCf02E9b5b87722Bd28D2bA07681a086ab4a360af",
+    "address": "0x7110206B125C5DDEf0D626Ec316aa392f5219B3C",
     "bitget": "CLANKERUSDT"
   },
   {
-    "address": "0x970E96bE1a88328B66D9B905933422A14826bfD4",
+    "address": "0x1DD0F69181d13D46456057F6Ed4c31da3E8AC977",
     "bitget": "COAIUSDT"
   },
   {
-    "address": "0xe2d21fdBf41a44d7714Dc9bEf0db381665d59749",
+    "address": "0x84C6aB41fB7b077e8977d96FBdc6dffBb3cF5cE7",
     "bitget": "COLLECTUSDT"
   },
   {
-    "address": "0x8A8Ad22733393F0A6eF15d59Ec1ed8A450aaBDc8",
+    "address": "0xD55d546dDE5D94324b94B2a56CB1669268D1d687",
     "bitget": "COMMONUSDT"
   },
   {
-    "address": "0x79dD83b709222399E579a0931fE9d3Ca2d4AC558",
+    "address": "0x0e439A0453EeC88C5b04E43253963A1b79AB6F41",
     "bitget": "COMPUSDT"
   },
   {
-    "address": "0x63569CbA9D84130bBa3D466005D771891F4f39CB",
+    "address": "0x0f55AE5083B8Aef8d117cE9916BEe82de062815c",
     "bitget": "COOKIEUSDT"
   },
   {
-    "address": "0x83e05c4092465025619E2BcAaFDDB2291038EdB8",
+    "address": "0xb46bD89A5862983E7A8C53C6EEB80b74e8D13Ba5",
     "bitget": "COREUSDT"
   },
   {
-    "address": "0x5AE8b108E4ad6a769fD8a4D752b61049cEC3bcc3",
+    "address": "0xdf9db6683E30205908DECE00a9E8D7c5eE6FcF2A",
     "bitget": "COTIUSDT"
   },
   {
-    "address": "0xe056d3Aab47Cfbd98dF111cD95BF27573463A9C4",
+    "address": "0x0c5aB819Ce53Fb60F6ab8994ef6832e0349fc54F",
     "bitget": "COWUSDT"
   },
   {
-    "address": "0x71a7948b62F5f389Dc5849Add33eAb8C0131e3A4",
+    "address": "0x4D2DFbF2a14F4588E900Dc4C8Ad20DB644653FC6",
     "bitget": "CPOOLUSDT"
   },
   {
-    "address": "0xeFAB1fc253655Bca5f8e9bcc97657a7DC10823a6",
+    "address": "0xd7439d20776e545db42E967c52032617e84385BD",
     "bitget": "CREOUSDT"
   },
   {
-    "address": "0xB5d92DFf1352feBE4A39E78f4F0AEb58BC3FE89A",
+    "address": "0x78C82500EB18cC3283dC9a21166cf64E185Fd600",
     "bitget": "CROSSUSDT"
   },
   {
-    "address": "0x40d825ca6226815e8935e564E42271E3E97B7a8c",
+    "address": "0xaA36eB02e4272e024EeE8c6F1e7Ac122d459e6F8",
     "bitget": "CROUSDT"
   },
   {
-    "address": "0xcE6440F4c3849580923E8285A9Cd0bf6e2472741",
+    "address": "0x706CDd227b02B93B86Fd741Ab20fAbeAA6AaFd3A",
     "bitget": "CRVUSDT"
   },
   {
-    "address": "0x283c56B42fcd4Ce250aC96366Ca20b41E367dFb9",
+    "address": "0x64D351c5Cd1B0fEc0AD62cE0295B00E147212BA7",
     "bitget": "CSPRUSDT"
   },
   {
-    "address": "0xd8D9Bfb83AbB0E9B43D094934e111479c21243E9",
+    "address": "0x9DB118f1E5d07dBe1E835328EfA86D9Ca7EBC3de",
     "bitget": "CTCUSDT"
   },
   {
-    "address": "0x179c63Bd4273682E9f8b815561BEe5435370BD8e",
+    "address": "0xC27a3b5147A8B26794a5609e4C71C4813D77a1D6",
     "bitget": "CTSIUSDT"
   },
   {
-    "address": "0x578EAdCb4140155B95a27AA21dd388FA493fBbc8",
+    "address": "0xB819FcE58793F8ff1a6cBcDCB65c6BB9E71D2807",
     "bitget": "CUDISUSDT"
   },
   {
-    "address": "0x4dC4D4EDD6bC8870F7BC7Bed938377C0820Fc0CA",
+    "address": "0xc6C28166Db8B837B5e4961Ccce91207B489ebE7b",
     "bitget": "CUSDT"
   },
   {
-    "address": "0x7D4415A7dD86516CDCF8Ed04dECCd480C9D72Fa0",
+    "address": "0xfD0F9737E685f8b15ce66aeA640B8C90d1AcA62F",
     "bitget": "CVCUSDT"
   },
   {
-    "address": "0xd714c1054da0855C5a0815368620f161b09E7637",
+    "address": "0xe6f841fB938E21A49a4a160b3B27dbDAd733ba71",
     "bitget": "CVXUSDT"
   },
   {
-    "address": "0x8Ac7EC5808b01D30d05D8557B9E3E7FD6515c0Dc",
+    "address": "0xa138bb3243ae9f989A81149b5E4F9faA7187a4DE",
     "bitget": "CYBERUSDT"
   },
   {
-    "address": "0x5aECFA65B3e2631a126BeA5f2E27319D84474441",
+    "address": "0x4BdAE654C07Be3a5ba2daD1c91440cAdf5eEb72D",
     "bitget": "CYSUSDT"
   },
   {
-    "address": "0xD10D99A2cbc1ad5870120f7801616B17aD9025cc",
+    "address": "0xAe9c7b1cF42dF2DB94bEC687694bc5Bd4A0279CE",
     "bitget": "DAIUSDC"
   },
   {
-    "address": "0x4B98e539A4d83b401E7D746737Dd732ED33FbB16",
+    "address": "0x3eF0867568b0a951795A948320f1D00d1d44a88c",
     "bitget": "DBRUSDT"
   },
   {
-    "address": "0xe2590637CAf0751E39978C1D737b6DD933278915",
+    "address": "0xcbaAF78e43cE7155DE478aF3b7AB564df5958f62",
     "bitget": "DEEPUSDT"
   },
   {
-    "address": "0x06E5894eef6c14BE03f04A714781f14a5268B126",
+    "address": "0xeebD45bc3160fBac7e2C98B7ffEc486872A34A51",
     "bitget": "DEGENUSDT"
   },
   {
-    "address": "0x3B7C12d829c952baac0154474F3e697f1845472E",
+    "address": "0x60012f776a9C8fAD263e07a37472730f39C49C14",
     "bitget": "DENTUSDT"
   },
   {
-    "address": "0x2900C3999C7bcC036E8cAB377C74082F82137634",
+    "address": "0xF5Dc2F7eF5d29c31462ae92F48879FB666B6A326",
     "bitget": "DMCUSDT"
   },
   {
-    "address": "0xd15F6F98F90149EEcE7df839C9FE76e3050A7Be2",
+    "address": "0xE91DF47527c1Fd731a500Db1BA40b7f49e0ce3eC",
     "bitget": "DNUSDT"
   },
   {
-    "address": "0x08429715eEa84bbc28640E14D8Eb90e9745475C1",
+    "address": "0x551D6F9EB0299488038b93F03a5213eDDCd85452",
     "bitget": "DODOUSDT"
   },
   {
-    "address": "0xe6358c47F782fa715F50B674f80aBf956E0aF086",
+    "address": "0xd00135307892C714B3D887cd6513E946Dac564C6",
     "bitget": "DOGEUSDC"
   },
   {
-    "address": "0x4580a7dF23b905808771ddb95d57801f15FCB908",
+    "address": "0x5FFDF279cFACbF0De9ba037540045780cB26F015",
     "bitget": "DOGSUSDT"
   },
   {
-    "address": "0xC07AeEa9D4840d32D4BE265CF39932CF93D23635",
+    "address": "0xEC810013c86fDf1A5b20C03B44Cbc49FE8cdc769",
     "bitget": "DOGUSDT"
   },
   {
-    "address": "0x5Aa5332eDD46B4e46B6C011481d8410b8B627172",
+    "address": "0xee80Bf1b297298c5d314B96F6AF85fA514aC43f6",
     "bitget": "DOODUSDT"
   },
   {
-    "address": "0xD977528Ebe93B35Bfc1a1F04b3eF781e5D611f48",
+    "address": "0x162C37583d46D308391D94ae0A2d491607F37481",
     "bitget": "DOTUSDT"
   },
   {
-    "address": "0x8B48e2327ab52FeFe90F20B724b67613183534ba",
+    "address": "0xa0f280eF130ED02f1Ca90d2eEFfd09FbF61512c6",
     "bitget": "DRIFTUSDT"
   },
   {
-    "address": "0x0A98322E23d9ed0B25bEaB492CeC2b81af4a949B",
+    "address": "0x0461B99Ea1664e8ACe37961fA9D9FEd0DDEc5239",
     "bitget": "DTECUSDT"
   },
   {
-    "address": "0x05209dA7ae0dF0e8Eb4a6e94A1132eF21150Cdc1",
+    "address": "0x8F15E29D7F96b3e50cBBE1Aa6E6c62e2e54F75f7",
     "bitget": "DUCKUSDT"
   },
   {
-    "address": "0xc690100F3C52Eb2F30ffc8DC6Ee8Cf422464979c",
+    "address": "0x0220ab849642EdEB0a0bE0e589ffEc3b9928C353",
     "bitget": "DUSDT"
   },
   {
-    "address": "0x87dc7c76f70CE3063433334FC6ec13a1B26d0770",
+    "address": "0x10D298dcC3c7C38e5706ea41F538d896326df01E",
     "bitget": "DUSKUSDT"
   },
   {
-    "address": "0xaa28EB1199b05CE55a0053f9404700F4063817DE",
+    "address": "0x281c7E994488724f201c8b5CD63279507C34662d",
     "bitget": "DYDXUSDT"
   },
   {
-    "address": "0xe8c88a88206C97bd9308b52652b85cEd43e43B1B",
+    "address": "0x4832DD3CD01fF58cF7ccf2e16908Fc5dececf0dA",
     "bitget": "DYMUSDT"
   },
   {
-    "address": "0xa17170C5aDCa5733fBd221c0A682a237f8d95281",
+    "address": "0x8D46a3642723065823DCbd6F2cFFE3C9092Aa3aB",
     "bitget": "EDENUSDT"
   },
   {
-    "address": "0x238074eD1Fa9f8281E84DE3Cc66C8Ff4Acc25EeF",
+    "address": "0xa56CBb5006E929DAd6c791415928Ea5283e56d47",
     "bitget": "EGL1USDT"
   },
   {
-    "address": "0xbcB412700A92327BEbdd047B68b19A8BDbE1603E",
+    "address": "0xb30A0552f8104AA88398FCE6BA17dC1abB723CA3",
     "bitget": "EGLDUSDT"
   },
   {
-    "address": "0x69113da1C615744d6E73b313780bb248F3F6fe89",
+    "address": "0x09e5D0543B34E2D5ecEcDD8C48E94DC543AFfCAC",
     "bitget": "EIGENUSDT"
   },
   {
-    "address": "0x347dE1210D34a012877A613183fe9a6951B78ABc",
+    "address": "0x38C99F08CFeA850c962480c99F398ecaD23a4946",
     "bitget": "ELAUSDT"
   },
   {
-    "address": "0x997658131C7E69c3C2701241216E55A974E623b3",
+    "address": "0xbDcd0e5c753af2bEB3753De29836c61e5831F856",
     "bitget": "ELIZAOSUSDT"
   },
   {
-    "address": "0xF5cC1CC91b7bA75f0d6865876123fcFB9ebdC4AC",
+    "address": "0xcC2d62cAe43a76bA5880c8Ef0F9daD4024FC84AB",
     "bitget": "ENAUSDT"
   },
   {
-    "address": "0xBd1365AB4E2aFa85e69C8bb60b4898D554238641",
+    "address": "0x9e86a19D50a94E8755BE318B96C81fFcF84e51D7",
     "bitget": "ENJUSDT"
   },
   {
-    "address": "0xDe2ce26A1BB3CC04597C3F1559C00A936d756961",
+    "address": "0x0de462Dea02da2ABE2bC2083dCA7657Cc4148A92",
     "bitget": "ENSOUSDT"
   },
   {
-    "address": "0xC2817aCCCa503C69F62E72CEd2b90C3b5761DB3A",
+    "address": "0xD1f8CfF4845b1F01E4645f82809413461c39C1b5",
     "bitget": "ENSUSDT"
   },
   {
-    "address": "0xea84abB283a24a6B58F4c8d280b022F6561d8306",
+    "address": "0x8Deef804a69e38dF7e280559BB23a5726eE015b6",
     "bitget": "EPTUSDT"
   },
   {
-    "address": "0x2682b5e653e998980F169DA0F51B48b700532417",
+    "address": "0x64b42eB0a9A4C20110BE74BeFF894a14033058b1",
     "bitget": "ERAUSDT"
   },
   {
-    "address": "0xA258d471a0DE319e6a73Ea469d9b42F3A186D1cf",
+    "address": "0xA7B337096D526baE7e974658f52D386AcF16FF6D",
     "bitget": "ESIMUSDT"
   },
   {
-    "address": "0xC93Fb223b9fA4ad99F1dBc8D2B60EAb4018071F1",
+    "address": "0x8c223d0ED35bb094c3eEe2c47c1E0F90ef48c9d4",
     "bitget": "ESPORTSUSDT"
   },
   {
-    "address": "0x84b0C814CC7ca7AcEE1F04586c11F7EcDBF31dfF",
+    "address": "0x053d45587112130ad6046C7B0d249e5BAC2D9f45",
     "bitget": "ESUSDT"
   },
   {
-    "address": "0xE354cFD366a7876ae50f7C964577b73d4364F703",
+    "address": "0x21Be564d68a3705bd1dC8613B0776eA2799ED63a",
     "bitget": "ETCUSDT"
   },
   {
-    "address": "0xD2734EeB40e125BeE3909308EB0bc83C7f79908E",
+    "address": "0x4d695699178b40f5812AAC07B27c9754AAE3eb4B",
     "bitget": "ETHFIUSDT"
   },
   {
-    "address": "0xd0e0f2d6c3FB4A380B11287F7e0FcD32b63761a4",
+    "address": "0x611cEBC97b0391a1D11E36A2B5CE1DA4bcFd4Df2",
     "bitget": "ETHUSDC"
   },
   {
-    "address": "0xd0e0f2d6c3FB4A380B11287F7e0FcD32b63761a4",
+    "address": "0x611cEBC97b0391a1D11E36A2B5CE1DA4bcFd4Df2",
     "bitget": "ETHUSDC"
   },
   {
-    "address": "0x65f94162F8130eBBb4AD66c9D86902E8f9ff51a2",
+    "address": "0xC47feb82479bf2bB4aC841AA6c61607C79f9E07C",
     "bitget": "ETHWUSDT"
   },
   {
-    "address": "0x3Cb48a447F64d0901E71aAd07BC5492d596bA9f6",
+    "address": "0x7B99afc522D805caa32108aaD5fa2368b5869B86",
     "bitget": "FARTCOINUSDT"
   },
   {
-    "address": "0x4b99a5C3c17b7DBFf59ba68b7115C582d22262B0",
+    "address": "0xC484901Da930b089F7094734cFCd765FeB8D8214",
     "bitget": "FETUSDC"
   },
   {
-    "address": "0xE4751a56572F80C8cA8381AD6ac438903Ec0Da7C",
+    "address": "0x9a10053A4e28510A5FFd00F4126229D54D981D02",
     "bitget": "FFUSDT"
   },
   {
-    "address": "0x70A031254b5AF491bC4EeCE530B2c21F0C23f4F4",
+    "address": "0x74018a297C41fbc3CAADB69E440392822F94FB85",
     "bitget": "FHEUSDT"
   },
   {
-    "address": "0xA53978C3Bc1d19C5aE31dBa43Ad768B68673520F",
+    "address": "0x33637c223303e4905badF1bB995c3ff17A8569cc",
     "bitget": "FIDAUSDT"
   },
   {
-    "address": "0xb2e59A9E6344fED635c08dD9D84676F4F7ED1961",
+    "address": "0x167708b49E5877aD469afe522ec3e16e68222916",
     "bitget": "FILUSDC"
   },
   {
-    "address": "0x581aAb50C9b679ac9b91db93cc8e36204f53FC97",
+    "address": "0xBcA998DF7060061eef786149AA66C123D785EED0",
     "bitget": "FLKUSDT"
   },
   {
-    "address": "0xD015b7eC316b4c4816Fef2661Eff0AFBc6D8E9A1",
+    "address": "0xD1649A4AAb6F2F470f3c12B7D0DEBd3C005F5563",
     "bitget": "FLOCKUSDT"
   },
   {
-    "address": "0xb096D3a17F9cfbFF978532E69DB17fFd46430ee7",
+    "address": "0x79948458BF5e60615fF1490E29fe72940CB538D5",
     "bitget": "FLOKIUSDT"
   },
   {
-    "address": "0x3Ec82313147C9bAd4f823329BF145E5a97B4533F",
+    "address": "0x103d80e0B7021932F1E449F6C11ee7190A057c47",
     "bitget": "FLOWUSDT"
   },
   {
-    "address": "0xF22B4BA95c8bc0d86eD9e24fAD1F36737bC0bDaa",
+    "address": "0xCEDD4DD103692a17B9f4011c002212662aEB01A7",
     "bitget": "FLUXUSDT"
   },
   {
-    "address": "0x4EB0b0451e74AeecB4151b374789d6e794b5B931",
+    "address": "0x385Bf0bc0508eAFB11fAD3057c1C58cCe47d776E",
     "bitget": "FOGOUSDT"
   },
   {
-    "address": "0xe8C339d500c6e3300dE3a6E9B9857147BAf52AC0",
+    "address": "0x412b8aE2d0aDC42Be0DBC03472f0418d3Aae1D4a",
     "bitget": "FORMUSDT"
   },
   {
-    "address": "0xF6B7c20Bab88c93D85565D876A078cC37B92ed51",
+    "address": "0x154e0d2FD7B19dd6B636A7f6f945393eD482829c",
     "bitget": "FRAXUSDT"
   },
   {
-    "address": "0x3Ead4001B7C68881e0eFE8Ef9d511a76BcEBEF1A",
+    "address": "0xCf9A9d31eE45b7199B6888407dfdaf24B5615A85",
     "bitget": "FROGGIEUSDT"
   },
   {
-    "address": "0xF6d156d53cDE728da517F19d4A22250DFbB437B6",
+    "address": "0xa1E4579345312eB8f08fD06cAa26eFB91EdC8530",
     "bitget": "FTTUSDT"
   },
   {
-    "address": "0xB3F412703E890d695138dFC9632f9C624de0caDa",
+    "address": "0x6209B8F86bE49581d33e3279a4f0C0932f3D9158",
     "bitget": "FUELUSDT"
   },
   {
-    "address": "0x36546a18ac1e630625BF62290e17394892d6E725",
+    "address": "0x8EB6639D50162b17a56dBa2697992953240BD623",
     "bitget": "FUNUSDT"
   },
   {
-    "address": "0xA63cC2AFD39ABedDC1fF905498ccb87fE26151C6",
+    "address": "0x0E920a5991834404CCDf9702de578D45b2d6b735",
     "bitget": "FUSDT"
   },
   {
-    "address": "0xA851f6D0373763966c0d0F593a0fe767f119F8fa",
+    "address": "0x49dE8bd04f59B3d375DB6dE896BF6F0E06782cf4",
     "bitget": "GAIAUSDT"
   },
   {
-    "address": "0xBd00C71C19E503Ffd63202e8cA2f92e752CF89bc",
+    "address": "0x9A30349faEAC6242b6A3c079ec648aa5dD176c95",
     "bitget": "GAIBUSDT"
   },
   {
-    "address": "0x8eaca8714EBCf7Bd17622060B0372a24ce564A6e",
+    "address": "0x10240bAD1526E819d75Aa65D9B2eA7736FF51B6D",
     "bitget": "GALAUSDT"
   },
   {
-    "address": "0xE382Ce07648D93f756B95428aF8133A0c81f0097",
+    "address": "0x588c78973c70A905f7826fc98a56437032A9aF04",
     "bitget": "GAME2USDT"
   },
   {
-    "address": "0x4B4991Cc0a81C29681c72C411C625A52BD252f26",
+    "address": "0xAd944FB184CCD398E92c73a40e922C69538ED53a",
     "bitget": "GASUSDT"
   },
   {
-    "address": "0x51f06b47a19Ea86e885F594AD960Ed999DB66f32",
+    "address": "0x96381E4720AEfbD7D8C153F618dc74CE60d469D2",
     "bitget": "GHOUSDT"
   },
   {
-    "address": "0xeD8771d8d3A92FD87C216FE2d45403B999c108A9",
+    "address": "0x142aE01dc8bBC287cdA907946fCb6f5BA5920b83",
     "bitget": "GLMRUSDT"
   },
   {
-    "address": "0xf8413A866D4E96430628FB552A72b7a648788217",
+    "address": "0x1E70e645c36D1b983d55269e49f3652DF1b76540",
     "bitget": "GLMUSDT"
   },
   {
-    "address": "0x2C3B556691C67806158D552148896b4a7531783d",
+    "address": "0xb29a87B641568621CB3ABb2c6A1A97311e4A996e",
     "bitget": "GMTUSDT"
   },
   {
-    "address": "0xd724E4A57Ca8E79F43Cc4C4E334FaB1F6DF32822",
+    "address": "0xF80c2e23D4e25Be35c00f989DEaD80feB4524003",
     "bitget": "GMXUSDT"
   },
   {
-    "address": "0xF5cCf7364dA91Db8d71DE9a59aD42aAab2A08b9D",
+    "address": "0x90B4d06ebF3ddf586c07f38Cc42Fb1c8c4C91188",
     "bitget": "GNOUSDT"
   },
   {
-    "address": "0x2aDAa25Af25028aC5D6043b52658d9B50e834eDd",
+    "address": "0xeB51bF1e55D921D92e53Cd39F8bEfe42F4264330",
     "bitget": "GNSUSDT"
   },
   {
-    "address": "0x9Ba078B33906FfCe366906CDd2c6D08Ef03CD0d4",
+    "address": "0xa89785794D22397044b0fB4d5AdBAfC6D742ca6b",
     "bitget": "GOATUSDT"
   },
   {
-    "address": "0x33bCCd1d9E5A5Be9C5C4857bc30384D738C1464f",
+    "address": "0x3d10723869A4844ED11C547b69606763a5838B83",
     "bitget": "GODSUSDT"
   },
   {
-    "address": "0xB473f833978B2685028d85f1921FF7cdD9747639",
+    "address": "0x9d765216f5719C80E33BB8b04D9e45A7a3Bdd55c",
     "bitget": "GOMININGUSDT"
   },
   {
-    "address": "0x5aABB5d3ffe23AA0B5853F7612F40D725BC3414d",
+    "address": "0x7911179dB4C9F6150Dd6c34357Cd7Aa365173a0e",
     "bitget": "GPSUSDT"
   },
   {
-    "address": "0xe4c98aFeda101F0bF3E09c8170e9EBC156f0373b",
+    "address": "0xb1C8c5cA12d16Cc70Eb787C14246ed68db7Ff6da",
     "bitget": "GRASSUSDT"
   },
   {
-    "address": "0x49EcA0D965bf8ad0b96b0B6003D270883d167f97",
+    "address": "0xC9E0061615b76fc2674c49135D9872d8673Ceb33",
     "bitget": "GRTUSDT"
   },
   {
-    "address": "0x0099bD675Cd6CAa60cdd11CAcB8f5bd9B2f7Fab7",
+    "address": "0x06869f2B26bd173873f77aE25DC86dF08D015571",
     "bitget": "GUNUSDT"
   },
   {
-    "address": "0xd6C2FF61c4F3029847Bc54Ad1706cafeCF724C24",
+    "address": "0xEe159A0f99bd3d46c06Bc11746d34F57c7dCb411",
     "bitget": "GUSDT"
   },
   {
-    "address": "0x544A7fcF61F8e1bdb16FB8C3ECb044E4E441948a",
+    "address": "0x33c2b08aCF196d7D0a2F50541F26547002d11EfA",
     "bitget": "GWEIUSDT"
   },
   {
-    "address": "0x380800DCA19F4226ebBD5F683B4CaE850D3e2daB",
+    "address": "0x936A40770fbE2Fad1d0FAf68fA527e94A7df1130",
     "bitget": "HAEDALUSDT"
   },
   {
-    "address": "0x38911f6f302B02B20d98D50929743c2b70C28eF0",
+    "address": "0x689E1eA5FFC3d7227702808066dd773f244e799E",
     "bitget": "HBARUSDT"
   },
   {
-    "address": "0x15DbD1858904bE0Ec3431369E77f34a89705130f",
+    "address": "0x55Bb09a97819839C7e3a9A003CCB18CB1Aa23FD9",
     "bitget": "HEIUSDT"
   },
   {
-    "address": "0xC07aBBC319C57A1152f9c2FF932F18a7a1A24F14",
+    "address": "0x820870F99b96B81AC5848CF9d03d89309B1Df792",
     "bitget": "HFTUSDT"
   },
   {
-    "address": "0xd1923D78Cd5B07d9415b45B8A0a2f4a1aa11733e",
+    "address": "0x66797aEfd99054CEB4e35D56674B6CCb46C60D68",
     "bitget": "HIGHUSDT"
   },
   {
-    "address": "0x01B1Fd554635Ae3B82C688137b1F8ED2fA2a94D9",
+    "address": "0x83a07921430DBd85e6dBe6c3e0d8BE5950BCcb4B",
     "bitget": "HIPPOUSDT"
   },
   {
-    "address": "0xE548a80f3E7962F23cDd5Aefcd10FE4666abEC57",
+    "address": "0xA20DD6Ff9acbD17455A2f453608a1f878BdBF104",
     "bitget": "HIVEUSDT"
   },
   {
-    "address": "0xF7D70ADd92A21c087F8678aFEF4CE96d194D07d4",
+    "address": "0xC055D93AE6bc7C52020eB223B14Cffc6F96184b4",
     "bitget": "HMSTRUSDT"
   },
   {
-    "address": "0x6b05914299E8E03Ff45FA0e8BaDEfe26E89Fec56",
+    "address": "0x32596A09F24E407c1D855Ab88176705A43aa5227",
     "bitget": "HNTUSDT"
   },
   {
-    "address": "0x0BE55C74736cca24Abed89EB1389e3b6edcCB6EE",
+    "address": "0x73415FA313c49f70222FAb9b6912b44B651Cf474",
     "bitget": "HOLDUSDT"
   },
   {
-    "address": "0xedc7787f831AAFa993AF5a73fdfb38a1ee0e5d70",
+    "address": "0x1c20bE23886D02Bf687D98104ab0EC1622f62729",
     "bitget": "HOLOUSDT"
   },
   {
-    "address": "0x2148d3948eb2b3666013F5ea0145c5F7BBEe1F1d",
+    "address": "0xFa499d9166e2D1F93053B1beFd28566b661e7840",
     "bitget": "HOMEUSDT"
   },
   {
-    "address": "0xCa7ecb90bB82D2B45832BE5B75BBD90b1cbF59B9",
+    "address": "0x64570E1c04f66eEC3ABA987b5B0381eEd0F6c675",
     "bitget": "HOOKUSDT"
   },
   {
-    "address": "0xb3E1feddF7A7E889787d63d7DBB815D94351f9a7",
+    "address": "0x3487229FA6cb41f3ffAB0913468Bf72426e4295E",
     "bitget": "HOTUSDT"
   },
   {
-    "address": "0xcf3d2C801F51Fd107A047e727229A014DebE0062",
+    "address": "0xcE27CA4393E2a8F46185Cae71c45201848278651",
     "bitget": "HTXUSDT"
   },
   {
-    "address": "0xbB523f9cb5c02523cB9aa51fcE56911C946f0c42",
+    "address": "0x5B1e7a1A0476d5190Eec291013a66d4ecdA1C01A",
     "bitget": "HUMAUSDT"
   },
   {
-    "address": "0x7d3a0aC614579Bf6cAE9cE80dc6A0917C86f57E7",
+    "address": "0x6BF8e6821a7EbAC77c261DcE654a44e87a9D5a89",
     "bitget": "HUSDT"
   },
   {
-    "address": "0xE7Fb05C913ee402cc6FA9Ab0B3Dc86A9974077A7",
+    "address": "0x7FAaF0cF9494219Cd49b51528c4d0Af5b36249A6",
     "bitget": "HYPERUSDT"
   },
   {
-    "address": "0xC0845a9915Cc99e58BE9A02B9F9c4998C905A338",
+    "address": "0xcCE7C4D46e0f7D969c1Fd7b590769Db480ac5175",
     "bitget": "HYPEUSDT"
   },
   {
-    "address": "0x0Aee579f2BaCf81D323bE637cd1CBC91B95db9d6",
+    "address": "0xB36B80D0e3518F8E328E0E0415999761952d9A4f",
     "bitget": "IAGUSDT"
   },
   {
-    "address": "0xB189a82eeb61Bb656B73E6E6aA931a9F5132e23f",
+    "address": "0x0a9F75d60F45bE9270fBB21BE8e707D691CB4b76",
     "bitget": "ICNTUSDT"
   },
   {
-    "address": "0x4b1C06DaA398E3048f54fa3D3cbD360f741467d7",
+    "address": "0x7B724c6a9c87E4105828E91975ECf4A6b55B5d9F",
     "bitget": "ICPUSDC"
   },
   {
-    "address": "0x722299e3511359A542C3d49C6b9C25b42E655EEA",
+    "address": "0xf560f7AE4C730fe8422E1788E15Dcb5F020EE0ba",
     "bitget": "ICXUSDT"
   },
   {
-    "address": "0x0D12000465a2AdAc131451A4d7d35Cfe08916013",
+    "address": "0xCf5f4Eb4EA126302Ebf007D3A003B04c671cf7D9",
     "bitget": "IDOLUSDT"
   },
   {
-    "address": "0x839459eB16Fe7923a2696F776a9Dd10D42af6A64",
+    "address": "0xc3A34407a6e118413922af1424bb509AB25D3D01",
     "bitget": "IDUSDT"
   },
   {
-    "address": "0x19F48b6876F8E8599c936f2E879732aDa16C0a7c",
+    "address": "0xf514D72bE9bf83Bc4C256a19AB3522850cD0759A",
     "bitget": "IKAUSDT"
   },
   {
-    "address": "0xf8a77ce3DDe8a9f598c20b8b3A30A982f0E0A58A",
+    "address": "0xcE2c491fA34b3C7Cdd8e502a265E1eeF5a9bc5f8",
     "bitget": "ILVUSDT"
   },
   {
-    "address": "0x894eCb1702bf76e0dA9326e284043028989aA800",
+    "address": "0x39aD91181cBF1c10Ff68dc0590364B42f493AFEC",
     "bitget": "IMUUSDT"
   },
   {
-    "address": "0x29e70dC4351e9dae2AF60913C6CB5124fA815287",
+    "address": "0x8bd68a8391468dd034F4762E568a091586b630fC",
     "bitget": "IMXUSDT"
   },
   {
-    "address": "0x86316C6635F5f6b4F55e884EFF6611b1a97B3Ab9",
+    "address": "0x821ba36f0d95c12D42bb5cE81fc5b0430eb4391A",
     "bitget": "INITUSDT"
   },
   {
-    "address": "0xC8E4601323c0771A54ed731645b9b9D3A0dCE83F",
+    "address": "0xAe9C5cf91C8bC39db47A1dcE7D9acB729BBCcC37",
     "bitget": "INJUSDC"
   },
   {
-    "address": "0x14C5FacA4f0D281EA1009d054EDaB544C5ba72B2",
+    "address": "0x0a7655AB3623Bed94D2aF25f6bEcE7976624cFfc",
     "bitget": "INTERUSDT"
   },
   {
-    "address": "0x0B62E38F1048926E23EB229cf07930D158aEBE05",
+    "address": "0xf1d493f579833f328fcE95481CE47949dF250271",
     "bitget": "INUSDT"
   },
   {
-    "address": "0xdaD6bF2500Ae903544ac1E115BdDfc7BfB9e2Bc2",
+    "address": "0x9066d082AFe3B42d606D18936F430E4b67f03612",
     "bitget": "IOSTUSDT"
   },
   {
-    "address": "0xc77c57b91E2d9eF5eeF08df3eE2e09747f88613e",
+    "address": "0x758650070acf35e21F995f8E02E4363edB1766ae",
     "bitget": "IOTXUSDT"
   },
   {
-    "address": "0xe49E7AAf05343A0A15Cf5801fE5215cB1F498Cf2",
+    "address": "0x22E0657E93A16d60F04c35097d19463A56ddDA46",
     "bitget": "IOUSDT"
   },
   {
-    "address": "0xFcA02b60D8A642d6045346b20EE02dFB04ad542C",
+    "address": "0xe52C3B1667cFa7E6A33D9189079D2BC1047a78A2",
     "bitget": "IPUSDT"
   },
   {
-    "address": "0x53E52eD49F6ad37789328Fed5b0B0315d5cDd578",
+    "address": "0x3896b1e73b311024E85e02b6Dc10E0eb4f1e66b6",
     "bitget": "IQUSDT"
   },
   {
-    "address": "0x137F6098bf02fa596c3a169C71E98f7D9C148eB8",
+    "address": "0xd86846A3adf1bd072F58098715EFdAc532f4AEc8",
     "bitget": "IRUSDT"
   },
   {
-    "address": "0x7f73330276F8bdC2ACd8a4311d78966ad1CD3C77",
+    "address": "0x1F805Cd01536476b52878adb11dF488a62eAdAbb",
     "bitget": "IRYSUSDT"
   },
   {
-    "address": "0xC5bF0503356fa8d4996EEEF23DeD4039a6AAF49c",
+    "address": "0x5B7ef3b8fD604b1246fD5CccF873c973f9B53186",
     "bitget": "JASMYUSDT"
   },
   {
-    "address": "0x9B9D214a3dA2bA07100EA1742b91Ae9C9A60A69A",
+    "address": "0x4dff652295161657EF29dAbEEa2251d072C5a24b",
     "bitget": "JCTUSDT"
   },
   {
-    "address": "0x25a21f415D7e756408c713A21A1Fdf446040A2C5",
+    "address": "0x46e6909152D5E899Fa35337695B05c67260C7baf",
     "bitget": "JELLYJELLYUSDT"
   },
   {
-    "address": "0x2cCe0307C24eba47cC90078C5488224249f48FeA",
+    "address": "0x2cb387Fe24D57d4eb2D5A600C50418fd8d8BED2F",
     "bitget": "JOEUSDT"
   },
   {
-    "address": "0xE1E4f0127f2be7344fA829ec755Fb26553FA99f5",
+    "address": "0x285D04c5adee19c9dD0302ee60aD8Af750F37F29",
     "bitget": "JSTUSDT"
   },
   {
-    "address": "0xa2eDc858A420ed90F5535f612e1b980BA0F51278",
+    "address": "0xd411e69aad00B79C62A3034639f01ACF80E93619",
     "bitget": "JTOUSDT"
   },
   {
-    "address": "0x12bb07c130f57e4A293551fc9c50Aa6f7b746414",
+    "address": "0xefBEa0dEE941D40f063701dC618Fb13eebE18D03",
     "bitget": "JUPUSDT"
   },
   {
-    "address": "0x24D40685C8CB90F12e0Ad4EF80E4F9F0ee9CE7C5",
+    "address": "0x03eE9aE9f219a6c95c3a993C8eE0fdEAEb71cffc",
     "bitget": "JUSDT"
   },
   {
-    "address": "0x87C187FaB36910Cf6CB3C06eA94EEb6c0C81FF41",
+    "address": "0xcd6fA8943D020272af09f3E2799cCBb4c8Fa4AEe",
     "bitget": "JUVUSDT"
   },
   {
-    "address": "0x27C8653d04C37e48A74e11Eb6009d614c9885c84",
+    "address": "0xFfA7bD7CEB62C9514c4082686EeF0b5b4190589B",
     "bitget": "KAIAUSDT"
   },
   {
-    "address": "0x5C954cc04Cc46d4F4e91A0D7f94C9A5f21CBA402",
+    "address": "0xf6de2Cd2D7Dc9E2D19747fEE2f803Cc6803ABC53",
     "bitget": "KAITOUSDT"
   },
   {
-    "address": "0x272506d9930057d236CF36BCA78adF6eF91F81D8",
+    "address": "0x09d5Ee598D7a981EcFa8a0DBe064622CC54E14a3",
     "bitget": "KASUSDT"
   },
   {
-    "address": "0x0C05ee0795A8B2F31BEf2Af0714432Bc01143044",
+    "address": "0x0515Cbd1aB3236ffEf8f57BAC0bffB04938Be132",
     "bitget": "KAVAUSDT"
   },
   {
-    "address": "0xd1eddB188B6eDF6Cd4D76a3ABf66d75B3d1d51A9",
+    "address": "0x7F0d1761d2ab813a00fB4b74594682fD06808741",
     "bitget": "KERNELUSDT"
   },
   {
-    "address": "0x2a5e9c27C7F3A7855641886a1e281670697Bb437",
+    "address": "0x3f02Ec7B5b4f03669a163601565C352218d9A521",
     "bitget": "KGENUSDT"
   },
   {
-    "address": "0xdDb704A75C5eeEd1aFb2CcEebDf31D51fCD6C3f2",
+    "address": "0x8713F617D3462088F2C9b5859EA96203fe9B3299",
     "bitget": "KITEUSDT"
   },
   {
-    "address": "0x5eC0D5512279EB6F9E0c7B3e68458b774b827EfD",
+    "address": "0x87E90e6fA8B8434f059fc9CD77F95C1A4301BCDC",
     "bitget": "KLVUSDT"
   },
   {
-    "address": "0x2CA16FC48270fC518355c2cc0B044Ed9119bece6",
+    "address": "0x983c770368dFe34F065345d83F10a32BfE875ff6",
     "bitget": "KMNOUSDT"
   },
   {
-    "address": "0x4F72646F2f13De4A1332F369EDDE9144Db7117E3",
+    "address": "0x3624dD3E9b4E543Ea3AF2eF811218c4EB72F0B2C",
     "bitget": "KNCUSDT"
   },
   {
-    "address": "0xcBF979B86E7b4F861e341a859b4F50595c0667B2",
+    "address": "0x16D2Df51Bf3F9eba4469CD65d59F258E53d4A4Da",
     "bitget": "KOMAUSDT"
   },
   {
-    "address": "0x840CdA817d47bd98F48e5FB9C9F687C83C1817cD",
+    "address": "0x50ef97c5c2De900538874efD787D6495B0B52d72",
     "bitget": "KSMUSDT"
   },
   {
-    "address": "0x988FfF106F40E16B8c149d1511b157E46E7C4DAF",
+    "address": "0xB185F4c57529E08F14Bd7B4f4CCF99f3Dbbb8c3C",
     "bitget": "KUBUSDT"
   },
   {
-    "address": "0x02dC44eDE129E242Dd07Ae981Cf1bE7e92BA0892",
+    "address": "0xa47B7e1DF3385e5CdbFc87241b3c4c57Cd4ba2aF",
     "bitget": "KUSDT"
   },
   {
-    "address": "0xc743e7976513b51A137010240D4Bdd5AbEb324Ed",
+    "address": "0x6eA47A5266869A05746128ad47c150032Ef959DA",
     "bitget": "LABUSDT"
   },
   {
-    "address": "0x4bDc866354064Be151030cAa9A77F9b97239BE6d",
+    "address": "0x9d8988b80020E15a176B62dCe490b94ba44e1bfd",
     "bitget": "LATUSDT"
   },
   {
-    "address": "0xca462C1DD1786FFf4E5878ab044e76aaE64986Fb",
+    "address": "0x520efe2806873B6Ea362cadC8634Ff81Cb496735",
     "bitget": "LAUSDT"
   },
   {
-    "address": "0xefbA538Fd9B0d6814d2Ae5eCa5606aA5c6AcB000",
+    "address": "0x602293C97B6cf1a19f50d88C18BfddC93fe12A05",
     "bitget": "LAYERUSDT"
   },
   {
-    "address": "0xBca6A08Bfc007D2F4e16be77Aadf5E498DC57Cc1",
+    "address": "0x72592422EF4DF3Cac46246E83d01BFc173d44e25",
     "bitget": "LDOUSDT"
   },
   {
-    "address": "0xAE5D8F4A784cC73AA70C092E78b00EF2AA2aD498",
+    "address": "0xbcB2d7C3cE8ee0432cCc8aF60365a5761BA7AE41",
     "bitget": "LIGHTUSDT"
   },
   {
-    "address": "0x3B1F0C549b9e1F8059a3861b666b7a52075771BB",
+    "address": "0x727629F6539491438e6af54a0B70181c1E735CEE",
     "bitget": "LINEAUSDT"
   },
   {
-    "address": "0x74c189d83586e050F7A2531Cc57BA35Ff38b4339",
+    "address": "0x4857C708C0D4Af841D77534a63cdA030939D0483",
     "bitget": "LINKUSDC"
   },
   {
-    "address": "0xD7aD6A05080ca4D13E7a721f0C61Eb16c51BFECD",
+    "address": "0x65d0C10781552BEb93Da1BbdB689E5B2cD0913A4",
     "bitget": "LISTAUSDT"
   },
   {
-    "address": "0xeAc01709Cbab23Ede20Ca32a456Bc5a36e6e08d6",
+    "address": "0x6412067c9F893D9Db720a4E2477A0f2B02660937",
     "bitget": "LITUSDT"
   },
   {
-    "address": "0xCDa8AC1FA9498F43311214EE156fADC2CcDd32C8",
+    "address": "0x9C593618Bd5ECEf8EB50c6B77E6d639Bc164F1a7",
     "bitget": "LMWRUSDT"
   },
   {
-    "address": "0x2aeb2d3cAfA58E126C0a2Bc2d31FCB48D24bb27b",
+    "address": "0xebF9AEA5D8d0559b9E7Cb2810Bba68aA7939212f",
     "bitget": "LNQUSDT"
   },
   {
-    "address": "0x688A104d7598FE5edBF34Ba33D8c6F1e9D38B5Ff",
+    "address": "0xE61bA31cA91fBa9B0727f0F36057921e6E34d3F4",
     "bitget": "LPTUSDT"
   },
   {
-    "address": "0xC13447c7C6A53F700e3Fc7e29941c03B8734b871",
+    "address": "0xf82881A2CD027f9fAc14C71375060dbc885120f4",
     "bitget": "LQTYUSDT"
   },
   {
-    "address": "0xE49c2fA5e4B1F802C975a6671f601199fbEA5aC6",
+    "address": "0x5B90F47c4815d40100a8C36aC0f6E6Fe7C31AaD1",
     "bitget": "LRCUSDT"
   },
   {
-    "address": "0x2982Bf700387fd249219D0D6a35d3810270f5eaa",
+    "address": "0x0387ef2324F8dDb74674dee1DA4280f22cfE3519",
     "bitget": "LSKUSDT"
   },
   {
-    "address": "0xA3a7ca87d1E1f676aF9C1B2222Faa4B91f9EC253",
+    "address": "0xE7543C91801fa3ADB4A6314A3B8a6FF73228bbca",
     "bitget": "LTCUSDC"
   },
   {
-    "address": "0x8976dc5eA6bD1e7ec0b1FfAFA8205CA1ba090e04",
+    "address": "0xE10409607F0B51811777EC5536237c6f9db38196",
     "bitget": "LUMIAUSDT"
   },
   {
-    "address": "0x73a831314346730EabE7A935b74B16B1458e2aC2",
+    "address": "0x2bB17483B7446F6637108546Da7c39c3f23B3C72",
     "bitget": "LUNAUSDT"
   },
   {
-    "address": "0x3A3fB64557b45e5620B27A1C39DAa5943B8A3D96",
+    "address": "0xBCC5812BbC9A7Cbae1E4A68D7Fc596c91EACe97a",
     "bitget": "LUNCUSDT"
   },
   {
-    "address": "0xe65C75B88232e7F4EF84c9E48F13B109Cf54b515",
+    "address": "0x53aD62A09735f1bda37E6D4cE2fB48a7AFC66d3B",
     "bitget": "MAGMAUSDT"
   },
   {
-    "address": "0x3b132dB0a5196723c2b1eDc328c84172395ce2dD",
+    "address": "0x800364fbC6639e7A85A96Add2972a2E8e678F2BD",
     "bitget": "MAKUSDT"
   },
   {
-    "address": "0x04ECaF7589f986Dc635D23617735c1dafC8f194C",
+    "address": "0xae3Ce167827E5d9e20dc64e81eBC62164e2276f1",
     "bitget": "MANAUSDT"
   },
   {
-    "address": "0xcdEdCe919835d5607af5B9ee3938eaa05ce2e0e2",
+    "address": "0x9327b6CF62aDb8c99cd9F86c07914a47c470AdeB",
     "bitget": "MANTAUSDT"
   },
   {
-    "address": "0x4CFc24E455F291b8A9a75b18C883cDeff285fDaf",
+    "address": "0xfDfD812d900334268EABcd440fDa6d6A8d1c7F57",
     "bitget": "MANTRAUSDT"
   },
   {
-    "address": "0x167e705E0eA9b4Ceba4E605c2B913e43009f734F",
+    "address": "0xc5596642117aAa58d7050B532dFd049Da71917D1",
     "bitget": "MAPOUSDT"
   },
   {
-    "address": "0x8232d457B24B401ff9e739ae4f5B3094A84fe9C1",
+    "address": "0xE46E4CE5c333efe225Ec57cCc6aBD7583E9C8D7d",
     "bitget": "MASKUSDT"
   },
   {
-    "address": "0xE3245e362F61040b48BCE8fb530C3147a262e00f",
+    "address": "0x89d32b0EF2eDb76c28953247854C648b5764b48a",
     "bitget": "MASUSDT"
   },
   {
-    "address": "0x7634cda62e44AE95C0E4E669a8297e68ecD2eE39",
+    "address": "0xB969f7D241d30dB6b139F4FF596FB08DE2e80790",
     "bitget": "MAVUSDT"
   },
   {
-    "address": "0x04E47c15e4cA1e313d12CD248Cf6e33EEFb7e3C5",
+    "address": "0x63bA354652bBef44C598eE15f7b3a080A303d012",
     "bitget": "MAXEXCHANGEUSDT"
   },
   {
-    "address": "0x737B20dA64730fD54B23153aAF59D3d8C5182E56",
+    "address": "0x1729D14071007ad2a999fca2f8dA92744BfD0e9F",
     "bitget": "MBLUSDT"
   },
   {
-    "address": "0x930B6fbD53248DD5A93615E4fb2882cE3838cb03",
+    "address": "0x473a139783dd48F1597D3aC2471E47fb4EcB0363",
     "bitget": "MBOXUSDT"
   },
   {
-    "address": "0xa87E208D557D3432D2eCd2CB8774B13133133D06",
+    "address": "0xA58C163fE92536612769DCacE8340784307ABD14",
     "bitget": "MEMEUSDT"
   },
   {
-    "address": "0x3B17DBA2ab17D303a0806394dCa185D21F370136",
+    "address": "0x3f36bbf03113Ef3Ce1C94c3ea059b48BB6a66aDb",
     "bitget": "MERLUSDT"
   },
   {
-    "address": "0xd3321E58bCEb92D45287c3A72efB9913ED6E8C89",
+    "address": "0x78be3eEDaCfD3C3595A5B62350142fC79A234863",
     "bitget": "METISUSDT"
   },
   {
-    "address": "0x156cC3661315B102D59b594d071da5BA97b3ec85",
+    "address": "0xfB7aD034A96A4aA94afB7615448C73771420594F",
     "bitget": "METUSDT"
   },
   {
-    "address": "0xeFF3568Ea66762c5bEC957546681aaDD9c2B35ae",
+    "address": "0x5BFa87081536c3E89D1E67A73593801E813B683f",
     "bitget": "MEUSDT"
   },
   {
-    "address": "0xBdEC3D096B5f70Fe52bFf2d3187aa8089A425a8f",
+    "address": "0xC153cfec1786f6F18625537a7cA8247eC1b64C68",
     "bitget": "MEWUSDT"
   },
   {
-    "address": "0xCe6a6dd97651b8C2e2465C65a6283Ff3d94d4719",
+    "address": "0x64b2Dc62038D2dFaBaFaf903F8c65bb3b1DE7Ec3",
     "bitget": "MGOUSDT"
   },
   {
-    "address": "0xca55777592e2800aF173E64bd9f519Ea7E56Ad7F",
+    "address": "0x13C719Ac1c5a59EbC9937f79Ea53C66270d49F44",
     "bitget": "MINAUSDT"
   },
   {
-    "address": "0x0b46efD2F957CCb620D838d67e1B694f51034Af5",
+    "address": "0xe0102f851c119b5fD21C5bbf360e4B74EE073158",
     "bitget": "MIRAUSDT"
   },
   {
-    "address": "0x35aD9f3F2306907A3F20a99Ee0B0d8d606153490",
+    "address": "0x1583a6DA9dBec1f696E082A610BfCB1425B74e13",
     "bitget": "MLUSDT"
   },
   {
-    "address": "0xC6e7B252Dc3A07bdfD3CA3fa2Ee1d3D9d3182C7C",
+    "address": "0x37B6d3A8b883c4B6aBf752EA779dFc5a45e53170",
     "bitget": "MMTUSDT"
   },
   {
-    "address": "0x87929b2942Fd2CC917974932E9E50a316aDd8F13",
+    "address": "0x5733A562a5D821AcCdA84a64CAbf4b41Be39dea1",
     "bitget": "MOCAUSDT"
   },
   {
-    "address": "0xDDa05A72Fab42B1D20B13240cA815C2D2c249120",
+    "address": "0x150503995C5B329aeBdb9Be5DD206C36a8A50215",
     "bitget": "MOEWUSDT"
   },
   {
-    "address": "0x97B133572c102561b7929A88EAD59dF8fddD9D4d",
+    "address": "0xA4526A17f21c2C2C19A4dDD8D92d3f9CF8Df9e5C",
     "bitget": "MOGUSDT"
   },
   {
-    "address": "0x43E84f28aaD6A184511cB18204aB1D3F94e62a58",
+    "address": "0xd4977B0E0b47DecE73b3786AC958b2030FDF81C1",
     "bitget": "MONUSDT"
   },
   {
-    "address": "0x5bF0476E57b9aa71278f62cb74608458a0046143",
+    "address": "0xD951A1F6D9BA3400738af811F11C5e56054c9d04",
     "bitget": "MOODENGUSDT"
   },
   {
-    "address": "0x7d45c82d0c85DBb99Fc7531657CA54A562Aa946d",
+    "address": "0xF9f09744EfC3229f1F82c3c67a985fe99A3c7Cf1",
     "bitget": "MORPHOUSDT"
   },
   {
-    "address": "0xb23B494193f87a58ee8e3Ca81DFd501eadE48F5f",
+    "address": "0x69592eE56A102cAb3f5c0D8c883C14Fd1BAa48ea",
     "bitget": "MOVEUSDT"
   },
   {
-    "address": "0x6a2e2A78Bd823786B69307baAE966D3C4F306619",
+    "address": "0x6Ed26C697c2d12Abe9dE00c7bf1D5362492D1114",
     "bitget": "MOVRUSDT"
   },
   {
-    "address": "0x71922C6bCD7bf6A39EF1DDB896EA362c90a5aF4a",
+    "address": "0x528876C736fD965Bf418Ee108412f4c8C064aFC7",
     "bitget": "MTLUSDT"
   },
   {
-    "address": "0xf7466afa6baC6fa7d56da54f8f050B73d004AaaC",
+    "address": "0xd57dB5B99E2c2172ee22B06832c0Fb41FbFD5F6f",
     "bitget": "MUBARAKUSDT"
   },
   {
-    "address": "0xe4A0E00DEc5bE554cE69Ab1D76282285E986Ff2D",
+    "address": "0xF3E7d2529bDE0ada81328DB95381E63b8A78a63C",
     "bitget": "MUSDT"
   },
   {
-    "address": "0x5532A02BBd94dc71c5d500785495f40555437fBd",
+    "address": "0xb27460ecD2d50D48786F599C9cF6AD6A4D449094",
     "bitget": "MXUSDT"
   },
   {
-    "address": "0x9cBdA56882ed7f4d45735D45fD21a06FA59c8e32",
+    "address": "0x2a28Bf35B876d16b306F4ba03072a3221d78881D",
     "bitget": "MYXUSDT"
   },
   {
-    "address": "0x665941D0F4184614E512fBd8Ef82Bd2F10418bf8",
+    "address": "0xfe81502c4bF268d49844cb89Eb9cd0093c4483A3",
     "bitget": "NAORISUSDT"
   },
   {
-    "address": "0xBcD5762a3262B101bfB1b347d6e034e5704Fb95c",
+    "address": "0x8925177785939C29Eba49B3411DaF9dfEDeB01a5",
     "bitget": "NEARUSDC"
   },
   {
-    "address": "0x5196b026E3091aA039De60C9bA43A47bf104eE6C",
+    "address": "0x9a541Beeb64bb744e5FB7dB8Fd2F1901004246E1",
     "bitget": "NEIROCTOUSDT"
   },
   {
-    "address": "0x33698E10a6be7EFB4aE6574a61850F09961cb91e",
+    "address": "0x491f886f89C9D412D325DdbCD50C6D7b0Dcf0fDb",
     "bitget": "NEOUSDT"
   },
   {
-    "address": "0x7ad39A9E8A891af733AcB4E345E6013Bd25fbD30",
+    "address": "0x5875950ABa87579ff94B4f3391e8A4AaaA1D7549",
     "bitget": "NEROUSDT"
   },
   {
-    "address": "0xBF12114660C5cCbDaF4e95E27f29A7c8f6B113F2",
+    "address": "0xA37EFb9623cB87516A0394B93704259CA39CE538",
     "bitget": "NESSUSDT"
   },
   {
-    "address": "0xa254ceB6584023737969F3Eedfe7444360F9b9CD",
+    "address": "0x28e56C0cd813a45fe645fCA7306EfA071E1844Ea",
     "bitget": "NEWTUSDT"
   },
   {
-    "address": "0x984438ECeD6ad7Fa80B24265A84DcfE7E9213079",
+    "address": "0x57B821ae780939D2323e85019CeFdB28D0248Cc9",
     "bitget": "NEXOUSDT"
   },
   {
-    "address": "0xeeaAE5Ca034dAfc0bE328A7706FCE8eF97CADcc4",
+    "address": "0x1B4D7Ed30B99c5E214A6DB7f356779F8E90BfC8d",
     "bitget": "NFPUSDT"
   },
   {
-    "address": "0x43b915507804fc5a1dAAD58Ede38A36B8533A8e4",
+    "address": "0x8A5e1D6a3e6ca1FBfa4609eF193b0F17fBfE1C27",
     "bitget": "NFTUSDT"
   },
   {
-    "address": "0x108E9CB6e1B28a338911C450b668e2E78749FB93",
+    "address": "0xaCD912f829F3dceC9F743BEB29402aBB7840BF98",
     "bitget": "NILUSDT"
   },
   {
-    "address": "0x08E17A53e9d7e4Da9aa17C7239830d253BB58924",
+    "address": "0xEFdcF45CCba46871943B32a870e5Bf3F82641578",
     "bitget": "NMRUSDT"
   },
   {
-    "address": "0x54538ed5Fd650d598605eD9478AAEA64AD0d4A6C",
+    "address": "0x67ca45E41a328Ec6E76f6fB0169bEFFa2Ec6Bf2d",
     "bitget": "NODEUSDT"
   },
   {
-    "address": "0x47Aa7BFFAf015FA7f3a062121206CBCD50889740",
+    "address": "0x6a3ae36ccCa6d66A9BCcDC45FCb9254aA94b9325",
     "bitget": "NOMUSDT"
   },
   {
-    "address": "0x5B5fB3cDe4D1fd568186ada1229fBd41701A93C4",
+    "address": "0x24b55303E1fb086D5c89bc31ed5cc7Ed82C46861",
     "bitget": "NOTUSDT"
   },
   {
-    "address": "0x3d1b5C4dE9C5F41Ccf054dc95e826799a4A784fa",
+    "address": "0x4388dcd0245578B6C4351CA3404e54528d4e57Be",
     "bitget": "NPCUSDT"
   },
   {
-    "address": "0x66410ed6Bb152f069a5Ac2a429f6aE97dd5AcDe7",
+    "address": "0xA3266940fC8c23be38fe2Da689277DFec1768c8E",
     "bitget": "NSUSDT"
   },
   {
-    "address": "0xCAfAF61E507e64AB32fe6b28c91013C989dBA98f",
+    "address": "0x4EdA0782030e94675F85cfAE25fAC7eF5582ad14",
     "bitget": "NTRNUSDT"
   },
   {
-    "address": "0x22b98d54fb0227BF6a837237DA2ADB9b7a343Dab",
+    "address": "0xd4DD5464Cf69CaABD75C700C87F5E3C0844afC28",
     "bitget": "NXPCUSDT"
   },
   {
-    "address": "0x31DaB3BD130574E7A3A4Bf15cFD413AFE76997f4",
+    "address": "0xa771E6B0B984F228277926739103a915A19FBe9f",
     "bitget": "NYMUSDT"
   },
   {
-    "address": "0x86B1D0635C1DCA10424b40a357FBFB0bA261AA6b",
+    "address": "0xBA534C8646E1cdc5D3fF226381D13778828176eC",
     "bitget": "OGNUSDT"
   },
   {
-    "address": "0xcF2a0C83A35EB9e9239126797BF3837c937FC22E",
+    "address": "0x4c3DAc93e9Dd197e42BE0e73917D19DC5BDB4580",
     "bitget": "OGUSDT"
   },
   {
-    "address": "0xac34478a45Cf36f167457BD1AE0f961D81f1BfD6",
+    "address": "0xACD72B41480F4a3F0e0c635839Af51FDab913Ad0",
     "bitget": "ONDOUSDC"
   },
   {
-    "address": "0xAFA7cb8FB936Fb11c6C2e5D95122C23b0191A583",
+    "address": "0xEC2D221A0AA06411Dff3cdbF96A66571449944Fd",
     "bitget": "ONEUSDT"
   },
   {
-    "address": "0xc6B40aF18300b60f315797299dbD911D85eB065a",
+    "address": "0x6A6461c6A16aE2375Df115E17197C856266f5240",
     "bitget": "ONTUSDT"
   },
   {
-    "address": "0xbFb6b4b19D42B821D02280dEA2Db26b557D45892",
+    "address": "0x81f87708b4AE7845C287f3cbf60d82e15afedE51",
     "bitget": "OPENUSDT"
   },
   {
-    "address": "0x107a1967Ea83d693163eEa555e5C09224E7b0394",
+    "address": "0x721109f8f8A0996725C00D2D0D2B4D1c57De4927",
     "bitget": "OPNUSDT"
   },
   {
-    "address": "0xDEBafD328B5473843a41AAb087f344DdF4719d2B",
+    "address": "0xf6341F3bD5aBd597a284dcfd3fC08A69FE47ae48",
     "bitget": "OPUSDC"
   },
   {
-    "address": "0x3A99AF0a044cDBe55105F835f10E19F6f93F03e2",
+    "address": "0x23145eEfE5928Ea720dAd7048F8a063b295A3813",
     "bitget": "ORBSUSDT"
   },
   {
-    "address": "0xC9d3b0B646a17E350C74e8F9F04a2eC5ba54e836",
+    "address": "0x9469B67D4cD2bf3E06741209530f82462eA70CBa",
     "bitget": "ORCAUSDT"
   },
   {
-    "address": "0xA9ACe7bed6d0CC123B135c1349255d9D6edf342d",
+    "address": "0xE8beB30ACcAa052c7EC5F131F0B6a825C6a96335",
     "bitget": "ORDERUSDT"
   },
   {
-    "address": "0x10DA3a00e283c37f80A0cf32720746809152C8DA",
+    "address": "0xD794bd91ae5F1631B6A7bB5968eC197c7Bf35465",
     "bitget": "ORDIUSDT"
   },
   {
-    "address": "0x57069A66BA236B34a82254512bB42e3D043ec4a9",
+    "address": "0x4F73112bf4c4e5BCa1aED3eaAbF6D84FF60003f9",
     "bitget": "OSMOUSDT"
   },
   {
-    "address": "0x8bF88f9E49d6fFeA85126c08C3F9529a50e4fc71",
+    "address": "0x1d815975d88966F4a33BE5abfEeBa7F1338850CD",
     "bitget": "OXTUSDT"
   },
   {
-    "address": "0xA487E16Df9b81b841b0411c6EFA47A5Be5DE0cfa",
+    "address": "0xC5823b031FA105BFB1Ab96d211aB8F01984Ca7d2",
     "bitget": "PARTIUSDT"
   },
   {
-    "address": "0xEFDA9227803dcF36A986E5FC40a12a3dF2D49209",
+    "address": "0x1FBc7bEe4aa3517e8aDF37D4d15059360bAC35ed",
     "bitget": "PAXGUSDT"
   },
   {
-    "address": "0xfdf41b49C5c2d3E64D433227F5717aC3305afA08",
+    "address": "0xB25A65411cfcA1678ae572602a49E4846847dDbA",
     "bitget": "PCIUSDT"
   },
   {
-    "address": "0x2915178b4ec9926a9458bED4729cC5960e298AB4",
+    "address": "0x8EA7051003286293d5f71c8180DE6ca90d862ceE",
     "bitget": "PEAQUSDT"
   },
   {
-    "address": "0x493486E85D9Bc9cdB95BcCcE02cA7C9905969fC5",
+    "address": "0x191b0656Ee20641FdF0FFe3fdf8065421309A159",
     "bitget": "PENDLEUSDT"
   },
   {
-    "address": "0x837398A6BCAdF04aA7d9f364Dc216382D97c6879",
+    "address": "0x99eca0897bD6Ed02d6870385b35A851f8334E07C",
     "bitget": "PENGUINUSDT"
   },
   {
-    "address": "0x81A967d7ad0BfF0aa38f13F7345Ca6Ed4FedD3b1",
+    "address": "0x92a1a584814413E000A6696bF0979BA7E7966725",
     "bitget": "PENGUUSDT"
   },
   {
-    "address": "0x306050F03E07b8A0b96dF82505fFC6A3b13Eb6cC",
+    "address": "0x478B39ed25a18E5104ad0C31Da7D7dE8af9E3659",
     "bitget": "PEOPLEUSDT"
   },
   {
-    "address": "0x99e142586212Bd89E054a697343d3834F0c28B81",
+    "address": "0x0C6fF7F57024591C55ab9aDD4387934aAF37E861",
     "bitget": "PEPEUSDC"
   },
   {
-    "address": "0x8a71ED1E71f01510D2929B953534Ab1Cce69D75f",
+    "address": "0x0b1f8D5824b28540D08be4458871a5cE634B0506",
     "bitget": "PHAUSDT"
   },
   {
-    "address": "0x592AbA27e48f4b70e2027760dE95D8874dd10C0a",
+    "address": "0x0D96C272c0cDE0AD73f095F2E745Cf7EFf7D5E06",
     "bitget": "PHBUSDT"
   },
   {
-    "address": "0x6a9bF878cc5d5a8407e165E5e3FBBa6D69b0f0a7",
+    "address": "0xE70c569fd8aDF684aA361C6DCf289C8ECfBAE167",
     "bitget": "PIUSDT"
   },
   {
-    "address": "0x3341860D695E5F0c7B35673B09bCa3B0e667BF75",
+    "address": "0xd6C34a8a5221cbcaedA0bf7dFfAfcCaa4F572D0A",
     "bitget": "PIXELUSDT"
   },
   {
-    "address": "0xd90b58e1E82ddDEdc083E5C06886fC9094A0203B",
+    "address": "0x47169d8D3e164fBde312c8556da0aBBF4c1d59Eb",
     "bitget": "PLAIUSDT"
   },
   {
-    "address": "0xaE65fdeB93E2541ABe8F9Ea972A2941d5F6cd7C7",
+    "address": "0x99A0b42B4f22baf8d31b25e449ad006c36061e91",
     "bitget": "PLANCKUSDT"
   },
   {
-    "address": "0x397830F3947272F3C1A629eeE34cEC9F76e392C4",
+    "address": "0x6681F4771f2b5536eBeA8fDC83e96D0F7c00AB2D",
     "bitget": "PLUMEUSDT"
   },
   {
-    "address": "0x8F95063bAA3A793bd163D353dd17E9BfC66FdFA5",
+    "address": "0x8742E16A467CD605316a86F59E83e1610b461331",
     "bitget": "PNUTUSDT"
   },
   {
-    "address": "0xd898cD571021C2787D7b0F600D305dA749935766",
+    "address": "0x3515cdE32F389f282d5c81674e4ddbDCCC106c0d",
     "bitget": "POLUSDC"
   },
   {
-    "address": "0x1d89f37b7c4611C3683d19985A4aa101a927f9FA",
+    "address": "0x8aAa1be271eBF5D1778D4798BFd91E7790E18032",
     "bitget": "POLYXUSDT"
   },
   {
-    "address": "0x44dda15329D09105211C63eD7782079f1ee045F5",
+    "address": "0x35e9133CB2476121195e422Ad46251AF34ff6EB8",
     "bitget": "PORTALUSDT"
   },
   {
-    "address": "0x62664012D247c2B316978d29cB65D5E274F1A2d4",
+    "address": "0x370b7d10eF327b068E0e1646286fF9Fd6CFFcb0d",
     "bitget": "PORTOUSDT"
   },
   {
-    "address": "0x5cBB40c48a5B64E77cf8509119DAC6152dbEe2aa",
+    "address": "0xFFBaa62EC564C72141eb268aeb2Cb10Efb24ad58",
     "bitget": "POWERUSDT"
   },
   {
-    "address": "0xFe74c365e0f5a1e70358fcf43658201273dD1325",
+    "address": "0x07D03c708fF07bC93f8cF61633E3631f42104795",
     "bitget": "POWRUSDT"
   },
   {
-    "address": "0x23daFB23c3A6C97c3d953659BC259488d2C527e5",
+    "address": "0xAED4Cc8eAbb4188Cc54c9A034EBC5aFfe50DcA51",
     "bitget": "PRAIUSDT"
   },
   {
-    "address": "0x230E3e7Df6241f1fE131B25c9C69c5f32bAC4364",
+    "address": "0x4d9764e9E1f1918b93D30589A54D2D67ee1252E2",
     "bitget": "PRCLUSDT"
   },
   {
-    "address": "0xb4691636AD8c4bF0Ed020D0B38d9691ef60409C2",
+    "address": "0xc3dF767981Fc58E8848b0b1EF5EEB782C0624310",
     "bitget": "PRIMEUSDT"
   },
   {
-    "address": "0xBAf6322472Baa1071f096a4d4E561ce3609bD2B6",
+    "address": "0x084b50969BBD14Ca6cB7305177DE4Abfa3FCFEa2",
     "bitget": "PROMPTUSDT"
   },
   {
-    "address": "0x28a143D8b538D5C643Ff64Bfc8553687AB5F2a96",
+    "address": "0xA88a38B493e11Ad111b99db040B569E9D60d702c",
     "bitget": "PROMUSDT"
   },
   {
-    "address": "0xa874B44227dE2aDC814703c87cEDDaE80945b6Fb",
+    "address": "0x75B6516d7A8AFed8e623664B7A07CD88de79B62E",
     "bitget": "PROPSUSDT"
   },
   {
-    "address": "0x1E062f7471d6A1EB970a289b378D3F44f1a473AF",
+    "address": "0x0FE0a4F6ca5d416975eb2d095f859AE0c59F4b3a",
     "bitget": "PROVEUSDT"
   },
   {
-    "address": "0x6A360967dA3d5FE6276b67B9B507f7c828b71172",
+    "address": "0x2830D34E3867793C0709451fd473D284771D1E98",
     "bitget": "PSGUSDT"
   },
   {
-    "address": "0xC56e000deF170de08eF853572340e40E02888257",
+    "address": "0xcb410E84a42Af911Ea975AaC5BEDBE48B7B4b94C",
     "bitget": "PUBLICUSDT"
   },
   {
-    "address": "0x659aF861416E7184E240BB428Bc655Ec631C33ec",
+    "address": "0x0d6E1783Cb23Db19a35201173BD24F957f1C34ab",
     "bitget": "PUFFERUSDT"
   },
   {
-    "address": "0xe697878502Fb5C57C0562313B4E2BAF5162230F5",
+    "address": "0x70A1f87f12ab4b517cC31510Ec81817FF6f0236E",
     "bitget": "PUMPBTCUSDT"
   },
   {
-    "address": "0x1D2c9C37d03AAC526fF5C2354551AAa1b3CAD53b",
+    "address": "0x4C1805Cd3cB0B5e9503648DdF5dB9D91b2454881",
     "bitget": "PUMPUSDT"
   },
   {
-    "address": "0x1090602ad6E270BB9864Bd19b7A6ac47DeB2BAC8",
+    "address": "0xaE9b67e8d57ECc0f41e997D3Be46971132dbFF8D",
     "bitget": "PUNDIXUSDT"
   },
   {
-    "address": "0xD1D9532baf530E842192e86283E1420ffa23cb31",
+    "address": "0x18f647026844c3F638F6866142De0f2d0e84E1E8",
     "bitget": "PUSDT"
   },
   {
-    "address": "0x7813F65b864B8fA83227913b2D23F287D8c3f9AF",
+    "address": "0x006386e65a23199C5Bb82b4d58463e7316f08905",
     "bitget": "PYRUSDT"
   },
   {
-    "address": "0xcc6De6CCA54dbE52149c6f71915314da26beD618",
+    "address": "0x3f10A6eaDc2BE7Fe04d4E096bD36736c2244196C",
     "bitget": "PYTHUSDT"
   },
   {
-    "address": "0x62e341C1a2B2921C407e06B4FcF615a2Fe631152",
+    "address": "0x159c887531AaCbFf7620033DA058f07cC0b2be7D",
     "bitget": "PYUSDUSDT"
   },
   {
-    "address": "0x5bf8c4287036d461094d5F43cf16392bd2563E83",
+    "address": "0x786B1Ef33b32389b6079D4f9587Fb259Dc7E5846",
     "bitget": "QKCUSDT"
   },
   {
-    "address": "0xC9C41508639dBe2B78fdBfc49b68bA0aa62B3C26",
+    "address": "0x6924C3305Ac4b61D0327d8A1b59CCf0c0D7A4242",
     "bitget": "QNTUSDT"
   },
   {
-    "address": "0x18f26c19FBD936b9b27B5a2B41f2d895e1A15c18",
+    "address": "0x2e16926B94C2B109a16b190D2cE7d8051718eD84",
     "bitget": "QTUMUSDT"
   },
   {
-    "address": "0x61f369939CF74cbe4dCD4e631b7B64d7DcB539D2",
+    "address": "0x98859Ac96Baf1F57A7B22F8FEE0477560b169E15",
     "bitget": "QUBICUSDT"
   },
   {
-    "address": "0x16064af9F368C167eb2007Dd0A0232ef8e4f7965",
+    "address": "0xb532c2e675cB51c51E5b55681F4236e0345bc0c4",
     "bitget": "QUSDT"
   },
   {
-    "address": "0x1e43F0B625CCaCd25B50b60B7cb5d4Ec5ccDBB71",
+    "address": "0x55bA5Ec0b4f4886626Dc2534569b473f42360320",
     "bitget": "RAREUSDT"
   },
   {
-    "address": "0x565C06873d349aa3AA8C61b94771530A25A35848",
+    "address": "0xaC7275ED3E4FAda023bb1E966Ea93d2a43705e4b",
     "bitget": "RATSUSDT"
   },
   {
-    "address": "0x5e0e26003c4610F2D1D120573E503955bEe628Cb",
+    "address": "0xaF36486fE3E7A8563Bb4050f1b9e7dAA463D9f9C",
     "bitget": "RAVEUSDT"
   },
   {
-    "address": "0x941952bc7994484D0d87Fb5500fa6625da362053",
+    "address": "0xFF5B6fb84FC6c253ae9D16E5bF04dFd9aE26130B",
     "bitget": "RAYUSDT"
   },
   {
-    "address": "0x0C1b2CA5A8F5a726610A80D6B85c2020106f8439",
+    "address": "0xE72C3f0d61AB83E31DeE579A2A88c354920966be",
     "bitget": "RDACUSDT"
   },
   {
-    "address": "0xca992A976B4E3Adb34D7C40B00EDaE39188e3e29",
+    "address": "0x3eD7A6E22275eFdfcDa7393764dDd17Ab93071E5",
     "bitget": "RDNTUSDT"
   },
   {
-    "address": "0xF2648b030C5e6b58D15dAC0d0Ec238F33860e416",
+    "address": "0x2a20Fee6528B275c5630f72372af722950b64103",
     "bitget": "RECALLUSDT"
   },
   {
-    "address": "0xe2670F72b0Fc922661F277c215C0Ec96FAc077Ab",
+    "address": "0xcE77274EA5b4D4A59E973448A8D3310205dc6241",
     "bitget": "REDUSDT"
   },
   {
-    "address": "0xf68Bf98048C7d2910faEfFA66ad72D7b65723F22",
+    "address": "0x493Eaf6191Ad1D4cefCf0ce7657EdaFcd268E343",
     "bitget": "RENDERUSDC"
   },
   {
-    "address": "0x7Cb907Ef3070F292B6ef34a9C723Ee2170d345A1",
+    "address": "0xb260B5C3F1b372f63f202CBeb4532aDf16cd384F",
     "bitget": "RESOLVUSDT"
   },
   {
-    "address": "0x8dA4b7986Fb555e527c178b06600544618E8A756",
+    "address": "0xc436C7bF02De5AE9b2133e92f91CdE535293aa32",
     "bitget": "REZUSDT"
   },
   {
-    "address": "0x6B059c0c108DDfaD1b5AC85e966B8dC34DF0BaC3",
+    "address": "0xD5d6253d5E0366cb5CC87D87cD9a6f96DEE8638C",
     "bitget": "RHEAUSDT"
   },
   {
-    "address": "0x526a5D5c91fA894788392829d9B0c722243e797B",
+    "address": "0x0CD40C0369D5142809dFdad6B2cAee6a72Ce122e",
     "bitget": "RIFUSDT"
   },
   {
-    "address": "0x219bCfEe017f6BbB03D7Efd0a8fA266f671CbA22",
+    "address": "0xB7cf51f04790009eb7dC75776Fc3C019c300FFdf",
     "bitget": "RIVERUSDT"
   },
   {
-    "address": "0x5B9F7bEcB9d8973Ec72Aac4BC7dbD6D6216A2b35",
+    "address": "0xfafe0c10c6e3f7DA7B73083f8f15eb1137B49314",
     "bitget": "RLCUSDT"
   },
   {
-    "address": "0xcA724c0cf5e89Dd2AD8078842bf3f183D103Bf0F",
+    "address": "0xC201E35de9173e780e047aA083410cA026d4e1EF",
     "bitget": "RLSUSDT"
   },
   {
-    "address": "0x10160d92f3035389D6a681BE3337A33229246D30",
+    "address": "0x0EBb8c71a4Ea28553D9c68e75539Be528727Bf86",
     "bitget": "RLUSDUSDC"
   },
   {
-    "address": "0x4b1E9c0d7aAb1cbF5B21E6029845AD88Dc8f9bA5",
+    "address": "0x911aaF9B85Dc80c37534ef56b4D0b8c87268C3Fc",
     "bitget": "ROAMUSDT"
   },
   {
-    "address": "0xF074FA9E879B991Baa9FFC686e939e0242C98168",
+    "address": "0x5b1453571Aa2038Ed4B2B248dad0839271ce49E4",
     "bitget": "ROBOUSDT"
   },
   {
-    "address": "0x982df04d6B7Bd4b6e4D0713726F8bF8FFf23FE47",
+    "address": "0x744e3aF2aa90d7A1bae801feA7BBAdf1a4c5c36B",
     "bitget": "ROLLUSDT"
   },
   {
-    "address": "0x5fcBf84d4C6eD7151093c2c7c5aD0d0369B399E0",
+    "address": "0x647182D40fcbec0D1D45F914a4959B388C4e7a18",
     "bitget": "RONUSDT"
   },
   {
-    "address": "0x6dcD0310Fd4635B37E75d6e77d749339FFeB5717",
+    "address": "0x5e625128804af362645CCDcfE1a2b5dC71E959F5",
     "bitget": "ROSEUSDT"
   },
   {
-    "address": "0x570b6491009571d2AC1620c40e1752D9A5Df462f",
+    "address": "0xf5528bC49f65F285650d5bc187FA6820B4C4c950",
     "bitget": "RPLUSDT"
   },
   {
-    "address": "0x3aBf47D730759E3b44C4bAc38e3825c7eF2ab959",
+    "address": "0x6C015bCEc53b478772366fAC7E6b7219A10DE159",
     "bitget": "RSRUSDT"
   },
   {
-    "address": "0xcC8F84acea57c4Af3D9400b35C3f1984518D26b2",
+    "address": "0x1175c3562E474fB3e7a8f03fafa1eE3E63476f81",
     "bitget": "RTXUSDT"
   },
   {
-    "address": "0x12225CBeDF57AFd361A20Cac358Fa8325e093086",
+    "address": "0x6b01781D90c0B80Bdbe0f39cb11eD76FF988CBad",
     "bitget": "RUNEUSDT"
   },
   {
-    "address": "0x519cA6B19C15f4A102427b75a8A8bE2641ACB936",
+    "address": "0xB75B721F6a0c584Ff79a0EbB153a4d7A7eFE69B3",
     "bitget": "RVNUSDT"
   },
   {
-    "address": "0xB7a8695c29F49Cdde64cF7DB5187dE43cAF3aC73",
+    "address": "0xcb490D3670884D7D9281674B2dAaD54FBF38A48e",
     "bitget": "RVVUSDT"
   },
   {
-    "address": "0xfBDAF88fe02f65177eDD937B07058A56ee66bd30",
+    "address": "0xc8F495ac937CA4391FD040F33c3bc2D6A049dBA3",
     "bitget": "RWAUSDT"
   },
   {
-    "address": "0x36EE2a76eD80F9e9FC42a6844B62fdD5bE00BB5e",
+    "address": "0xD4Aad2A6c7Eed112af6faa344b45936A613fE0aa",
     "bitget": "SAFEUSDT"
   },
   {
-    "address": "0xA838622f3FaC7991A2872eb777705B24AfDc5364",
+    "address": "0x589fb5A62b3202135610bd39e94F635651BB43d8",
     "bitget": "SAGAUSDT"
   },
   {
-    "address": "0xE64172fd94C069732f36B6cE1046d6b8F4d57A30",
+    "address": "0x4454c4F7665D202daC1F030e930975bE36437ED5",
     "bitget": "SAHARAUSDT"
   },
   {
-    "address": "0xD00949104ddBA451e0236D28F8CDAf5bF3BE8d80",
+    "address": "0x0a26966f2A59D0308cB65Bfb15098A2891A8ED97",
     "bitget": "SANDUSDT"
   },
   {
-    "address": "0xaFeF4a506097c44ce745FAD860697E012EF9c368",
+    "address": "0x9099c08Da433cEB408a1D029a3B88272C37A193a",
     "bitget": "SANTOSUSDT"
   },
   {
-    "address": "0xA0d875D1a7fAea2de442C616fB0B70b6B80cDa35",
+    "address": "0x70e449609A3cD75750c95811aaB986ae3A83C209",
     "bitget": "SAPIENUSDT"
   },
   {
-    "address": "0x7573F2900a7b1E846b17B833B4371841A0470918",
+    "address": "0x466d53c224FC12D7A5485992Eb7aa2eBA0A4179F",
     "bitget": "SATSUSDT"
   },
   {
-    "address": "0xEa5a3457003dd7f54D7A94F2a40D8a08b02Ff1c6",
+    "address": "0xD7B0908d3F51A5cEB97ffae250C8AA766FFCcbCE",
     "bitget": "SCAUSDT"
   },
   {
-    "address": "0xd7b2C1B07180a83D21453F5F6Fd9e301b202B1Ac",
+    "address": "0x8Cd4DDB50c34B4a1a197691a283f6f6Ab9E102C6",
     "bitget": "SDEXUSDT"
   },
   {
-    "address": "0x1B3c8A8917ff2fA97c55fe57AaC08c44Fb09A380",
+    "address": "0x4F472023D2FbE1Ee0EC5CFC2e3c95a29383162Dd",
     "bitget": "SDUSDT"
   },
   {
-    "address": "0x9a607e9e28499E4BB0513CDDf07901a0025B8d65",
+    "address": "0x3C6A096578Ff1b6B479C5b9C4E77e36749E83676",
     "bitget": "SEIUSDT"
   },
   {
-    "address": "0x0c78F13ae2866F60D84925AC6882af9741f406D5",
+    "address": "0x7CEe9aeB2be08f74D9cb557B0D266db288Cadd70",
     "bitget": "SENTUSDT"
   },
   {
-    "address": "0xbAE62087c7cf536EE49D4dC0354d5cF3dda42567",
+    "address": "0x7A14DB3dbBF2e75f8C789C5E0A0c8fb4983819e4",
     "bitget": "SFPUSDT"
   },
   {
-    "address": "0x9BeAd3eAA28fe95d52e152003F15cB9961c209B6",
+    "address": "0x70b3928641496Bfd3CDf2990Fc18E8FF8E175BC6",
     "bitget": "SHELLUSDT"
   },
   {
-    "address": "0x5A9055576f40560AFF5d551F49dFc48CA2192BA4",
+    "address": "0x370f0594c931F6cc738371808c60CE0986B9968f",
     "bitget": "SHIBUSDT"
   },
   {
-    "address": "0x341Da04afCf50338c7F136Df400654046fc3285b",
+    "address": "0xc6c2a1CCB5EbE4DfFdE78C1300fafe92B8c3f586",
     "bitget": "SIGNUSDT"
   },
   {
-    "address": "0x5C43F88C72D54BFF561F5EFdEd5A2C7aeC332051",
+    "address": "0xb269614ECA489d3F758719E1D9B4ffF83F9709b1",
     "bitget": "SKLUSDT"
   },
   {
-    "address": "0x52A086a765cD5d88ef2d95E996b6eBcF5AB89812",
+    "address": "0xF0C47306Ed509aB51d2Ee75d09084392182072fe",
     "bitget": "SKRUSDT"
   },
   {
-    "address": "0x3985E1c5563F5e68cb5aAaba4d26ca18b2f4d599",
+    "address": "0xDE5f6d67f46684B696539d503423B29306850C6F",
     "bitget": "SKYUSDT"
   },
   {
-    "address": "0x3d8264e59f1d4fdd2d80F827f5A5245B69CCAB83",
+    "address": "0x1bEc6EBAed5B816FEf13D168d70CDd96B655F6f6",
     "bitget": "SLPUSDT"
   },
   {
-    "address": "0x52ddc9BE8721e14eC9ffe09E5A902d190b753203",
+    "address": "0x43C7Dc2b91E83Db6b6De881ca13e1f0aED8E10A6",
     "bitget": "SNEKUSDT"
   },
   {
-    "address": "0xcc3b7C4b867d129cee3aE831894F7D1C4e0Ab897",
+    "address": "0x7168ACeB4BA2C603018cd981c237237CFb28eaCD",
     "bitget": "SNTUSDT"
   },
   {
-    "address": "0x80bECee176107ADe5f45a8DA11b4d20a673CD44e",
+    "address": "0x3540caC6539bAf00D001cFBcFAFb330eE2AdA6Ef",
     "bitget": "SNXUSDT"
   },
   {
-    "address": "0x6AE56093bA509c312F7e72878C6086Cc7d3451DB",
+    "address": "0xBbf873D432C9AbEA2345e95e32bBED6382347CeC",
     "bitget": "SOLOUSDT"
   },
   {
-    "address": "0x95972aA390edBC547Ad19F7A8c86e181100faAD8",
+    "address": "0xdf8f115EB5301C3424e6F4189823F4c61A5B790d",
     "bitget": "SOLUSDC"
   },
   {
-    "address": "0x74758E022301D4689F64404c2586a31e2e4707Cb",
+    "address": "0x8cc482b2748dFFDE4b48b9FF44805129F28d73DE",
     "bitget": "SOLVUSDT"
   },
   {
-    "address": "0xFfa41f5129c2AAe8ca9302854861568E500114a5",
+    "address": "0xB522e4AAa7e81779c35f9B072502C5c03fF03362",
     "bitget": "SOMIUSDT"
   },
   {
-    "address": "0xe9e0dC28B06D6069Ff771eA9AbA2aB3202f25847",
+    "address": "0xF52C4C1F1F9c4666E943D8C817c128cc8DDb227A",
     "bitget": "SONICUSDT"
   },
   {
-    "address": "0x828C45aefb61315604d37C98C2b6225447ad3a15",
+    "address": "0xCF5580c4cd0b616Fd17A6B22bDE1D3a4EcC97003",
     "bitget": "SOONUSDT"
   },
   {
-    "address": "0xe64807587E8ea13a5Af1417984607453b15D2215",
+    "address": "0xA97a6f4cc1B8B0c8f407c877F9f0D1CFB8e4c85e",
     "bitget": "SOPHUSDT"
   },
   {
-    "address": "0xA985f0a6F8828b6863cca1db540a3987a2439Ca6",
+    "address": "0xa825a65b52F6b55A7e56270ecd5A5CBb8BbA3165",
     "bitget": "SPACEUSDT"
   },
   {
-    "address": "0xfDe4284594526C22541B974eCd7F284119b4AbFB",
+    "address": "0x9eFD3af6F091A4F93BFba354D4aB0b426E96C470",
     "bitget": "SPELLUSDT"
   },
   {
-    "address": "0x81842db3bF0b9a9d77359C26c59c48Ac3863Bf97",
+    "address": "0x214b1E9178866bdfAbBa18214CdC6F38BF743CF3",
     "bitget": "SPKUSDT"
   },
   {
-    "address": "0x4faA75c801E41286529F0ebeE877FB1B93C49B2D",
+    "address": "0x0fC43D032a03A9da2B708703393175e6Fe134CB7",
     "bitget": "SSVUSDT"
   },
   {
-    "address": "0xd1D82c9f720bC190eF13dC641726C7816AeB0742",
+    "address": "0xb994F5360EE5185225C54B2d258e9CB73A85521f",
     "bitget": "STABLEUSDT"
   },
   {
-    "address": "0x539D717d5F7EAd3D814F0f7B8364Db43A0dDBC2f",
+    "address": "0x5edd2E7DC0d3365691b45241c58Ea5E1872e5453",
     "bitget": "STETHUSDT"
   },
   {
-    "address": "0x7d25e1e5197da5c8dae934E95F616B31d496d725",
+    "address": "0x3460f267Bc804EfF5230EFC5A3c45D466075B5fB",
     "bitget": "STGUSDT"
   },
   {
-    "address": "0xE70b712862EBf900A878d5e92Bd63664D7FaB081",
+    "address": "0x619e1CBF7C2997b23ca6b266AC9588d4E68Fda9d",
     "bitget": "STORJUSDT"
   },
   {
-    "address": "0xfD27598AD4dFF739cfF498F804c07B31240b27f6",
+    "address": "0xed1B2BD8309821600aAd421D88f21Af9Af75A735",
     "bitget": "STOUSDT"
   },
   {
-    "address": "0x5132D37bfD2b7fd63664d73EAf3f276Fb7d18716",
+    "address": "0x5497A7Eeb4F9afA9255AB0FAbE01EE29cA084FAC",
     "bitget": "STRAXUSDT"
   },
   {
-    "address": "0x42962A4f35D363928FBb2a0d74afd6665c1fd304",
+    "address": "0x5F4590BE9D88d897197E0D2De5D6f98ac87596D4",
     "bitget": "STRKUSDT"
   },
   {
-    "address": "0x936aaD2287E29971bD6b6dC391971CAaEE1faB77",
+    "address": "0x4deA78AD84cB9E9a65895BF29F01AB857d8133c5",
     "bitget": "STXUSDC"
   },
   {
-    "address": "0x79c4823c6d4f1fA059a099854E2FBbF9C71380Ef",
+    "address": "0x8B74E742dc7bE44303d15624c1Fe3af44918F923",
     "bitget": "SUIUSDC"
   },
   {
-    "address": "0x00Ee3672922FBF6899B14fD21b0F62c70a4963E1",
+    "address": "0x3C26d63502Eb2A88c6d90d994c9B9E70c139222c",
     "bitget": "SUNUSDT"
   },
   {
-    "address": "0xdE63Dfac967430909b2FD86FB0D3a1538a93B122",
+    "address": "0x0e925c97bE0765769660F737215797d8c80ba04d",
     "bitget": "SUPERUSDT"
   },
   {
-    "address": "0x4460C3064D5d6a55E0ec8F121756Ba55BF7D2AdC",
+    "address": "0x94c38fA067Ce7861730b606C6809FBf98b265001",
     "bitget": "SUSDT"
   },
   {
-    "address": "0x0d577C7B66C226e7E9d91e1cc6DEa9BBE23C5D00",
+    "address": "0x12B7e73998aAd3C338A59449BB9c7E4Bf748B6a7",
     "bitget": "SUSHIUSDT"
   },
   {
-    "address": "0xd2BC5Bb89CCbdd90F478CaBa3326f55F0f0a5239",
+    "address": "0x3A3a3b602173DB81f3836e65417aA6e127EfDbA5",
     "bitget": "SWARMSUSDT"
   },
   {
-    "address": "0x335f14958552568eC3C84c9b2ee1c60F6d62c475",
+    "address": "0x95b28E9443425C957Bd45DD096396A73B2f42481",
     "bitget": "SWCHUSDT"
   },
   {
-    "address": "0xC9e6Faa2F5c6b85e29d240A568bCEEDb24f7D02b",
+    "address": "0x6774775C6e3A336Fc967a3fa58CDdba84fFc2dE0",
     "bitget": "SWEATUSDT"
   },
   {
-    "address": "0x586bea81Fe05d0f681f5859150bA1638171C7b3d",
+    "address": "0x250D88F923d9AA89640d899845DF9E5948B9A67E",
     "bitget": "SWELLUSDT"
   },
   {
-    "address": "0x63c351f5E836a0E0E905016885e9324d65D5d42f",
+    "address": "0xA4707e374615a36b5c75655ce1f8c1BB12AD1512",
     "bitget": "SXPUSDT"
   },
   {
-    "address": "0xd2aD9AE0C0a62d2aBaD7122033365D49dafE4179",
+    "address": "0x5d5df682Ab58CF6c49B765522E087273ee1C40EF",
     "bitget": "SXTUSDT"
   },
   {
-    "address": "0x06D8eE5f70a3394FaB2D76D76589d01B7f2F98f3",
+    "address": "0x9147D1F8466056CEc43b86aa262C7267E176678e",
     "bitget": "SYNUSDT"
   },
   {
-    "address": "0x7315407592864f2dbdCE68177ee7bb3f82bd1753",
+    "address": "0x93918856e352C289A27Cc822582084CF503638Ac",
     "bitget": "SYRUPUSDT"
   },
   {
-    "address": "0xdf972978d73bDF777E24a88341722014aB44787B",
+    "address": "0xF2BCa52d5C5DD5F8E2599DbEE3b7aF87511ce83a",
     "bitget": "SYSUSDT"
   },
   {
-    "address": "0x2551a4415Dc49E0eb88078915564E0636d6e90cD",
+    "address": "0x99AE92dBF2d86bFfAbCD7a6fded457707Aa6a076",
     "bitget": "TACUSDT"
   },
   {
-    "address": "0xe0cE2afbE1eD92831c6bF9D3FCb584ef3387dd89",
+    "address": "0x415405727CAD233Fef56AfFDe749aE51934Cd1F4",
     "bitget": "TAGUSDT"
   },
   {
-    "address": "0xe351aC590c3542627756566146f000E3Ce4c2Bb7",
+    "address": "0x26C532cc263c1e6f77472C6B96838e6485dff8fe",
     "bitget": "TAIKOUSDT"
   },
   {
-    "address": "0xc08a198b40d5F7dbfC6eE505490510a94D92b1c6",
+    "address": "0x1fa9895c90B803805588c448Da7d5Fa6513B93C1",
     "bitget": "TAOUSDC"
   },
   {
-    "address": "0x3E8a0dfC3C0B08665bbc94f3C8F2C0051052FDA9",
+    "address": "0x1B6545Babe9C42eE333149e0C6cFA46b1E6BCb39",
     "bitget": "TCOMUSDT"
   },
   {
-    "address": "0x067765c99F4341BD2AB334b87Fde4aB816c0FcAe",
+    "address": "0x621a187CC89ed2cAE75c83D55B01b7fb0C55BfB2",
     "bitget": "THEUSDT"
   },
   {
-    "address": "0xB20686d50F1cd85cB4DC8BFC806919879eFFE50f",
+    "address": "0x162a4B8B7910e424D5E4E10e0f93a00d72fab6E1",
     "bitget": "THQUSDT"
   },
   {
-    "address": "0x2a28dB70068cA3B98942Ed4fa20508873e9D788D",
+    "address": "0xCc76C10A08b1b3EB1b2e2E96639E28DB5bF54fD4",
     "bitget": "TIAUSDT"
   },
   {
-    "address": "0x0a6845BB27c2a9f0bf6FA4a8354359f65dC829C4",
+    "address": "0x8FD8E45565125c859Ba1D8c3b0D713aa271E0Ee3",
     "bitget": "TLMUSDT"
   },
   {
-    "address": "0xd4E5b53Ca2810376478963e3deA706bCEfc758ac",
+    "address": "0x4500157871D9475872B58A68d25F549bE2519374",
     "bitget": "TLOSUSDT"
   },
   {
-    "address": "0xb4a324ea8CE0691F24CFFDAF654A6eb7279Eaa22",
+    "address": "0xbE4600F65E48223CDbfF60149A485bd57E51c79E",
     "bitget": "TNSRUSDT"
   },
   {
-    "address": "0x05763E87EA1F8361aa9E3aB25D459c0fb82C5669",
+    "address": "0x4b8024dbA0A9B5bC2B6487b789FB2889896452bc",
     "bitget": "TONUSDC"
   },
   {
-    "address": "0x6779679918EF618E5E12418766342f1D45cD5301",
+    "address": "0xCd2c48f7c020D4d6299f77694588194d45e300a8",
     "bitget": "TOSHIUSDT"
   },
   {
-    "address": "0x309bb9BA3d08974FD00bDe4d1BC2724969825613",
+    "address": "0xCCfA16b190944dD48d673c48c4efe3CB9f00807d",
     "bitget": "TOWNSUSDT"
   },
   {
-    "address": "0x4D1850E9d32B6c0446388B27e97274E01C12FAef",
+    "address": "0xFE5b8cDd2444a8D9A1701278CacD1Cdee9303f13",
     "bitget": "TOWNUSDT"
   },
   {
-    "address": "0xF25635F91D14F59f8b95cCD081Aa427DD87e7B0e",
+    "address": "0xfa749f7dD0cbFeD05fD4ec7C33b3978953d90055",
     "bitget": "TRADOORUSDT"
   },
   {
-    "address": "0x5Ae263780Fd398beA1E17f828079dE1Be680eA35",
+    "address": "0xAfD1e927A6234B5D40921c88DA825Edd3A75e014",
     "bitget": "TRBUSDT"
   },
   {
-    "address": "0x6FA2b267f8ab949c8Ce381AE02131E4806A27188",
+    "address": "0xEF462A9A238651B9f9C58092F45Fa3bbFe0d2EC2",
     "bitget": "TREEUSDT"
   },
   {
-    "address": "0xa66B69Dd75FB7E1a06D660eAA964d091296296fC",
+    "address": "0xed11998840a4761839894f25f73e166591b2ce51",
     "bitget": "TRIAUSDT"
   },
   {
-    "address": "0xA8c3626cc52FcFC7e25BD7c94fAaF090A449F6D5",
+    "address": "0xb53fb211CA7DFc6AFC7e1dC8f3ED1CED662e20A4",
     "bitget": "TRUMPUSDC"
   },
   {
-    "address": "0x01b24D80fA5B54e5DAaa52149C035fe7C39b25Ac",
+    "address": "0xb5cC81384058a1Ee0dB75bA308ae444528F81698",
     "bitget": "TRUSTUSDT"
   },
   {
-    "address": "0x3683ab1295dCfE82CB7a0767356deb4701271c98",
+    "address": "0x5321F640449F8Ed57C7c8c3f3260E51eA088eCd7",
     "bitget": "TRUUSDT"
   },
   {
-    "address": "0x324b082f628FEC8Dd31d057c0484547012C9300b",
+    "address": "0xc7CF444f13e06d9081581227013444216b86c7a3",
     "bitget": "TRXUSDC"
   },
   {
-    "address": "0x4201807a76E978f28DfED539a739a6A01EBE2246",
+    "address": "0x4437fb2EA9f1BC81CDB5418872758e0e27CBB2B6",
     "bitget": "TURBOUSDT"
   },
   {
-    "address": "0x891F141c3906BB7489F59097c8191aca968B3966",
+    "address": "0x2A68A707Bc4b916d276673Cf6c8C23E86BcC1F19",
     "bitget": "TUSDT"
   },
   {
-    "address": "0xD1DFf35DEcCFaa2D35645521D8Aeb2d0DffDe637",
+    "address": "0xf8cCdf0F3a34E41f75E596EEde63F38a6d609956",
     "bitget": "TUSDUSDT"
   },
   {
-    "address": "0xC8f91642d35d65b2Ee1dc1249DD49A03F92AbeAe",
+    "address": "0x9DA530468B69C629cEBDb982B539066b073618b0",
     "bitget": "TUTUSDT"
   },
   {
-    "address": "0x17e4bb622C0FFFef94CE7c55dB74Deb3C14af44F",
+    "address": "0xC772c488392f5A3681B60DBDBFF75CeA00F50179",
     "bitget": "TWTUSDT"
   },
   {
-    "address": "0x7F25033AFa6dB0770f197509D15dc225115DF563",
+    "address": "0xc84b930512c028b79A0e55576883fFC23D19F97f",
     "bitget": "U2UUSDT"
   },
   {
-    "address": "0x52D8E2C5Eb992063Fc8FD19A10417a98e033fC55",
+    "address": "0x2071cd0B616D91268d3859B206F3a71149f4bA93",
     "bitget": "UAIUSDT"
   },
   {
-    "address": "0x5956Ae0A5a64E6636759B7745409e9544afBdAb4",
+    "address": "0x5F7372636b77060df4Ea66C2810695c2eed11CdF",
     "bitget": "UMAUSDT"
   },
   {
-    "address": "0x61c746835262Ac598e27652A24c81b85d5629D62",
+    "address": "0x95c9faCC257141Fc888f8e2EF71391257d1F5A99",
     "bitget": "UNIUSDC"
   },
   {
-    "address": "0x662eAc5e1E0CA21F2Ce510FBcaFE167109F2285f",
+    "address": "0xa35C11FCE021F56f104AE0b33B2e327b8cB0aC5B",
     "bitget": "UPCUSDT"
   },
   {
-    "address": "0xEA3B18431e14D26F0B5F30545765f336aa2Fc3Dc",
+    "address": "0xFa4aabc064D79915970275e83C8dBe02Cf39e23f",
     "bitget": "USATUSDT"
   },
   {
-    "address": "0xe56A7Af358A0b5dA23Ef9c9581D9095ca2DdFf20",
+    "address": "0xE59Ad3D04Ca7C4F2552622F498a79093206991Ea",
     "bitget": "USD1USDC"
   },
   {
-    "address": "0x51eB007aE6A89bB8c80008582bAE4f9267583497",
+    "address": "0x134871aEb6DE533814e2c46d7Fa8f4B7bd128C09",
     "bitget": "USDCUSDT"
   },
   {
-    "address": "0xff43400ac3A6780443d58069e746aB7480531538",
+    "address": "0xb61AE0BD4CDaE3b4774f8Cda4ad58bD7ddc64c92",
     "bitget": "USDEUSDC"
   },
   {
-    "address": "0x129C373932fEE3388ba594DDa4c99cE742037d3e",
+    "address": "0x9429095Ae2244bd7c19550A6f50Cbb19E5801e0B",
     "bitget": "USDGOUSDC"
   },
   {
-    "address": "0xf397BFD38d3cEBc1FbeB4C517226b613436f3431",
+    "address": "0xb9412E83aE84621AaF0F85d1DADB2e7aF45b05e0",
     "bitget": "USDSUSDT"
   },
   {
-    "address": "0xF85c651b7950477f90957DF6c6870811878d9d36",
+    "address": "0x33885310192Ea984476991b18688eaFC4C35781f",
     "bitget": "USTCUSDT"
   },
   {
-    "address": "0xCa06c63e327Ac6c3BF650e29D1d25Dd0CAEe1F27",
+    "address": "0x73bbcB7Ecf841ab0C6928dE145E56f264aDd491E",
     "bitget": "USUALUSDT"
   },
   {
-    "address": "0xCc22258dF3e43FFdd53A2FE8A1DcDd707179c580",
+    "address": "0xf1ADe92C0dE482eCBf1927fC4C7A390f4f8143D3",
     "bitget": "USUSDT"
   },
   {
-    "address": "0xa0d9022d23646D377eBaE4b3D513CaBf4811aab6",
+    "address": "0x01e5F18e2F3d4E41830df4bbA4b1CEA87acbEFcB",
     "bitget": "UXLINKUSDT"
   },
   {
-    "address": "0x7EFc280A722d3e75D13019D58F101765E8bd8Ea8",
+    "address": "0x51e5A7a4203b0D9D77AF56A612c7E1A81A462e89",
     "bitget": "VANAUSDT"
   },
   {
-    "address": "0x6723fffEa36fFAD5D2CFF6dCC95f8a3A79EB748d",
+    "address": "0xA5B95163A3692d7838949C4be63AC5bf341Daf85",
     "bitget": "VANRYUSDT"
   },
   {
-    "address": "0x4D4C7B686f42BB0C6419E96dE375094Af3446508",
+    "address": "0xA22a5ba63E2923e2c3565b356eBC7421181cBf65",
     "bitget": "VELODROMEUSDT"
   },
   {
-    "address": "0xB617EA6ca41A6Bd7747B8a0E7E06dAF831f93DcC",
+    "address": "0x839C7f517e8fbff44029fAF5b29F61Ab630c5d73",
     "bitget": "VELOUSDT"
   },
   {
-    "address": "0x30E3b3DB9E1b343da93d554A67DeD0F94929028a",
+    "address": "0x58868E205322D59Ea81d77e81C7b88959223E3d9",
     "bitget": "VELVETUSDT"
   },
   {
-    "address": "0xe7f30A127657b7e4082d4550e2e90c4711FFE562",
+    "address": "0x872c9B074Ca09391C40F4E1421482FF8bcfc68eF",
     "bitget": "VERTUSDT"
   },
   {
-    "address": "0x2f55a2cA909CA4f3907F4d0bb43f19FaB9e86C4C",
+    "address": "0x580598218442cB6936f1603777BD1cAF5416Df0E",
     "bitget": "VETUSDT"
   },
   {
-    "address": "0x417B64F6624cc82dd095a2D6999A4FA874AB6371",
+    "address": "0xAd15e797758c6b71F9A0ad8a72dAF837B9f830e5",
     "bitget": "VFYUSDT"
   },
   {
-    "address": "0xf83F8e9e9E207729605b67dcc1809B85Aad32DFf",
+    "address": "0x25F05D5dA3B608078b39E8CaC8Cb0E92d081751C",
     "bitget": "VICUSDT"
   },
   {
-    "address": "0xdeeb7e2E7cE825F0fd3B2306e51B40663874A4c9",
+    "address": "0xFF05Df7105Fda1023b031e3B408232AcAe1EF88E",
     "bitget": "VINEUSDT"
   },
   {
-    "address": "0x3eB5dd0f5f3DB9648CdEE9E3ce053C3b37493568",
+    "address": "0xf1edf259241fda5470dCd648639F6a969965F064",
     "bitget": "VIRTUALUSDT"
   },
   {
-    "address": "0x276a063FdD2512768daB45d1007b372f400a2Cc2",
+    "address": "0x25b4dEC30b83D408DaCdd17a8B70e8e171EA20Ea",
     "bitget": "VOOIUSDT"
   },
   {
-    "address": "0x33855ccAA5159B22E5a5Ba48b875c2ADB4497225",
+    "address": "0x2DbaA5A0704E7791Dc6446D0B48048Ff452E3d0c",
     "bitget": "VSNUSDT"
   },
   {
-    "address": "0x2BE09B2Bb662Ebb3b62DFffD757C09cEa2A13714",
+    "address": "0xf9855352490BD5067a4c2648271Ad033b9B921D6",
     "bitget": "VTHOUSDT"
   },
   {
-    "address": "0x0a1fc25c3f8c1EE9EA3729bb0CB4C0Eb2e649c30",
+    "address": "0xcbd147a00636052991E1e58d65022268F1f124Fe",
     "bitget": "WAIUSDT"
   },
   {
-    "address": "0xE55004b3C1236FfADD776224dCFe2EafBd9E4A21",
+    "address": "0x08f6c7Ed41AEb36fdf395E2654166953380145f9",
     "bitget": "WALUSDT"
   },
   {
-    "address": "0x24BF7Dc20f291D180C9115749Aa73f38eE3C8d67",
+    "address": "0x10DFC8AFBac1c5F742D0eF32781eb132724Cc4E8",
     "bitget": "WARDUSDT"
   },
   {
-    "address": "0xB8eec2152CF2FAF65CBB4EADC8FbB7ff12219a6b",
+    "address": "0xE176344595910B515a8E8DA63D4Dbec5C4B9161f",
     "bitget": "WAVESUSDT"
   },
   {
-    "address": "0xFB4d1Ef2F8540C30305615d63E37d253381929ac",
+    "address": "0xA6446AD4Bb9Bd98600CC24A97c80295329094665",
     "bitget": "WAXPUSDT"
   },
   {
-    "address": "0x8c40A6E25694aCc137645d6799A22Eb595561aE2",
+    "address": "0x7c36e93c42C3bEc5b038CC2CE49Ec63Fe9fA57cc",
     "bitget": "WBTCUSDT"
   },
   {
-    "address": "0x6F25fe784061f3BBF0BA74f00e6701A8D1F7e904",
+    "address": "0x5D802593C4fCB0c06B071753f15bEeB52CA4cfBC",
     "bitget": "WCTUSDT"
   },
   {
-    "address": "0x686126eEa421243415A26C319e7023071701378F",
+    "address": "0x79e45DdcA8004b5A702629B6F6B730bA9ee9a36b",
     "bitget": "WEETHUSDT"
   },
   {
-    "address": "0x46d2e2Ae1E3553E6B57059b231065e69b9912257",
+    "address": "0x82F28A9869e826C4d68ccB8440e3b232b035B713",
     "bitget": "WEMIXUSDT"
   },
   {
-    "address": "0x1DEE6894E093573AbFf1A7bFE88caBfb0CbBFFba",
+    "address": "0x3E55A859E71Ac34a5ec1D091EF2734C45226fa4e",
     "bitget": "WIFUSDT"
   },
   {
-    "address": "0x9Fbf10d145E0D17Cd1A8203B62b1972EE6841bBd",
+    "address": "0x77A6204aA5D394434417a756a73A44a6533Fa44D",
     "bitget": "WINUSDT"
   },
   {
-    "address": "0x388b7134A5881b401AFC40FCec920F64b288ce1F",
+    "address": "0xff1F87f7710Daf3EAE391023181943a7Eb1EAd90",
     "bitget": "WLDUSDC"
   },
   {
-    "address": "0x82b6250D2dd79F3F0781d82D0766e29Dcb59834A",
+    "address": "0xb4B57f9B86a58E376c396320C885CD5385b65F53",
     "bitget": "WLFIUSDT"
   },
   {
-    "address": "0x7445865B0A2E760477DaC6B9D91c556084057CaA",
+    "address": "0x56cf5404CF2971189dE7Db3a1c8337DBA0E9d8Bd",
     "bitget": "WOOUSDT"
   },
   {
-    "address": "0xF4310d8f427e84E3Cf2b217697bcb2d9573Bf484",
+    "address": "0x9414CA50f3cb3D2942fe6f4aFd6e34F4fF3d5a62",
     "bitget": "WUSDT"
   },
   {
-    "address": "0xf1F3B1fa5234eB88733cab00113F635346f71B8a",
+    "address": "0x9170A838514b93372A0f85e6913EF9756b649F58",
     "bitget": "WUSDUSDT"
   },
   {
-    "address": "0x6B21DB323d30aa51FC907B3ad3E2631Ca1d2addE",
+    "address": "0x6A35aBd6B7CaA0A22f2874746644A079fa353a1e",
     "bitget": "XAIUSDT"
   },
   {
-    "address": "0xAFc6F8C5978A43A2c9BdB4bdeeeabe258afebBe1",
+    "address": "0x23b24dd40057670BA0649A4F5fd8cA01D5B8fEB4",
     "bitget": "XAUTUSDT"
   },
   {
-    "address": "0xE111F8CaB41Cd9dD1a8Cd868EEa88eB941BC6925",
+    "address": "0xDD0b6EB2107e6B33aF19824C05A44B84aaA433a0",
     "bitget": "XCXUSDT"
   },
   {
-    "address": "0xc52708178f0fc1AFFDCa3A90dAc71a850a743C52",
+    "address": "0x77846872d67c375cF615f67E6C9bA895A7d95c7b",
     "bitget": "XDCUSDT"
   },
   {
-    "address": "0x1d2AF476ddCb12001983B27697acCaF05796673C",
+    "address": "0xa76CE67Cac77E6580c3A95b743c24Acf8cf015AE",
     "bitget": "XIONUSDT"
   },
   {
-    "address": "0xCE2b2520Cd8F35262a97b1a1C4A303d4071EafF6",
+    "address": "0xB33ADcC8ca258D5ed9E19D1Ff6089139dBABe6BB",
     "bitget": "XLMUSDC"
   },
   {
-    "address": "0x94b99eb1e8b20777036078fe5b6b77B3453C8601",
+    "address": "0xF14702c8067277b03c5893aa54bE2f274785a6FB",
     "bitget": "XPLUSDT"
   },
   {
-    "address": "0xe58FC261140437956369477cd8f1BC2E65B5Dc6e",
+    "address": "0xE48D29268D477C4066405Aebb305A8365a9F6885",
     "bitget": "XRPUSDC"
   },
   {
-    "address": "0x4626B391B7a04890064A3d790B027f93f85bDCDA",
+    "address": "0x87C11fd7D615265Fa71Fd26ebe5a5319BF70dc89",
     "bitget": "XTERUSDT"
   },
   {
-    "address": "0x812A38Aaf800e4e637De190160285Db40c4b5933",
+    "address": "0xd5e7faD740539aE29c3F6BD2cea91837Aa20a4a7",
     "bitget": "XTZUSDT"
   },
   {
-    "address": "0x64FB04856A5915C01560AE448A876A03a3229453",
+    "address": "0x4183c55e3fCb760F316F70d793493f400F7D95dC",
     "bitget": "YBUSDT"
   },
   {
-    "address": "0x9508b78Be0997A3b20e31F4AA29A61B1F7ac1DAe",
+    "address": "0xDf45A82906ee3835e003935fA46cABAdDD399264",
     "bitget": "YFIUSDT"
   },
   {
-    "address": "0x26B27318755289Eed2e2E08ccEFCb42182053347",
+    "address": "0x6DDA91166D11c261a432736b9aEa213691D3AE77",
     "bitget": "YGGUSDT"
   },
   {
-    "address": "0xF17E308A79977D46540e29F77fBfE522a31c2151",
+    "address": "0x85637957C4173780d39b85BD09F9E136742e1a34",
     "bitget": "ZAMAUSDT"
   },
   {
-    "address": "0xbb84F9A7CCeB227Fd2A20eFcF40cAa1D9B021A0c",
+    "address": "0x7655739c9530f0D26BBae84adD2D0e52FF3A21Af",
     "bitget": "ZBCNUSDT"
   },
   {
-    "address": "0x3B8f9C406E171b682318FC02333D068999189DCc",
+    "address": "0x1EE167A3BDB30a473b688776563Dea0D3123FD10",
     "bitget": "ZBTUSDT"
   },
   {
-    "address": "0x680D90272CfCeF17A56D5b007135C64C1581A819",
+    "address": "0xa2a8E0a8E2C3b85684657Cf914059475AB6Ba330",
     "bitget": "ZECUSDT"
   },
   {
-    "address": "0xD0a2eE4ACC6AD84d48C54482D5d1552502A402be",
+    "address": "0x1F01beef2Cc6A38673F72612B7A21c13E4A26E19",
     "bitget": "ZENTUSDT"
   },
   {
-    "address": "0x917E8aD9D5a5DBaf77E4A5334518Ff1EF86E38C5",
+    "address": "0x258641BE8702260c93618Cb7578d5499AA205c5e",
     "bitget": "ZENUSDT"
   },
   {
-    "address": "0xAf7B8a5a52424D2DBF4c29fD36A16C6738BBA4fF",
+    "address": "0x38450EBf8bcB9D621Cd31A62C2D65bf3654F9F98",
     "bitget": "ZEREBROUSDT"
   },
   {
-    "address": "0x44B6A9C7bB4660b1B9d9D8563b09682c4d08527F",
+    "address": "0xe375d70cA442D402E961ea48bA7e79b936141C70",
     "bitget": "ZETAUSDT"
   },
   {
-    "address": "0xDa5904C104C5eC2EFd6B5001f7703BE5f3C40C66",
+    "address": "0x8b7E2311255D6f6C46729303EEfcc5461Fe24Cf1",
     "bitget": "ZIGUSDT"
   },
   {
-    "address": "0x1246611288B83433e44aFB6f2B2Fc2149535F068",
+    "address": "0x363434f15d33E80c9F3B7962986cFAa973083c31",
     "bitget": "ZILUSDT"
   },
   {
-    "address": "0x4FD8775688370c7ec32fbcADf7b6ed697147Df48",
+    "address": "0x46f7ebF5F7D045AD037fEE7274785678eb971662",
     "bitget": "ZKCUSDT"
   },
   {
-    "address": "0xB685eBF17042A719E4AaaF540345E567E2Dc703e",
+    "address": "0x18b39b0218a078DdC16Bc376d1608d9423Fd0F02",
     "bitget": "ZKJUSDT"
   },
   {
-    "address": "0x29Edf343c19AAAB88A85ABe7e707dbFCB9dCe794",
+    "address": "0xC2575C5A83b1b74C2A5F91fabc221099aD610968",
     "bitget": "ZKLUSDT"
   },
   {
-    "address": "0x3887412E39791feCE1B093443A641fA3Dbe07322",
+    "address": "0xF51373857d645FD5Ed6643f7D688b35846A938D7",
     "bitget": "ZKUSDT"
   },
   {
-    "address": "0x3Dc2916dB96A47021111efa702197A26067382D2",
+    "address": "0xddA9d5A5BA5eb4b3A0816b66EF6977302D50F192",
     "bitget": "ZORAUSDT"
   },
   {
-    "address": "0x5C2F08B19c3D1584a8F92175AAC14C1c45683705",
+    "address": "0x34417935439686a8870484c99C520e572f2C143d",
     "bitget": "ZROUSDT"
   },
   {
-    "address": "0x62F4364c501310D980419aA1BeC9F7eC44E015d1",
+    "address": "0x81098fE03F05C9C0C9b207f62D17a8605dCD0684",
     "bitget": "ZRXUSDT"
   },
   {
-    "address": "0x530902ad2fF7b52cff98366A5D71b1b026A6caDa",
+    "address": "0xaf818dE1d0FE1Ff65E365e14423B733AA3C12bAD",
     "bitget": "ZTCUSDT"
   }
 ]

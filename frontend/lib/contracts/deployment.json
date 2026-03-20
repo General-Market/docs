@@ -19,7 +19,7 @@
     "SETTLEMENT_USDC_DECIMALS": "6",
     "MOCK_USDT": "0x0FaCACE5332D8674342C8D452E07E9B4740953A9",
     "USDC": "0x4c782452e7fA2AE5f11d498a0B43a44B5d97906B",
-    "Vision": "0xd5ec37ffa8c40b5dbaf7ffe9d9878c3a387ad47a",
+    "Vision": "0xadc1f5bddcc30f8eba131cb58d75375b5cbfc96a",
     "L3BridgeProxy": "0x60067e4d70463153baD90866c53f8aD577Db1653"
   },
   "accounts": {

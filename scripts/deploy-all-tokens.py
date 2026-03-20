@@ -3,7 +3,7 @@
 Generate DeployAllTokens.s.sol from assets.json.
 
 Reads all Bitget-listed tokens, generates a Forge script that:
-  - Deploys 621 MockERC20 tokens (one per unique symbol)
+  - Deploys 621 MockERC20 tokens via CREATE2 (deterministic addresses, immune to nonce drift)
   - Funds MockBitgetVault with 1M of each
   - Exports data/all-token-addresses.csv (index,address)
 
@@ -52,15 +52,26 @@ def generate_sol(symbols):
     a('import "../src/mocks/MockERC20.sol";')
     a("")
     a(f"/// @title DeployAllTokens - Deploy {N} Bitget tokens + fund vault")
+    a("/// @dev Uses CREATE2 with deterministic salts to prevent Orbit L3 nonce drift.")
+    a("///      Simulation and broadcast produce identical addresses regardless of nonce state.")
     a("contract DeployAllTokens is Script {")
     a(f"    uint256 constant N = {N};")
     a("    uint256 constant FUND = 1_000_000 * 1e18;")
+    a("")
+    a("    // CREATE2 salt counter — uses chain ID + deployer nonce for cross-deploy uniqueness")
+    a("    uint256 private _saltCounter;")
+    a("    uint256 private _deployerStartNonce;")
+    a("")
+    a("    function _nextSalt() internal returns (bytes32) {")
+    a('        return keccak256(abi.encode("INDEX_TOKENS", block.chainid, _deployerStartNonce, ++_saltCounter));')
+    a("    }")
     a("")
 
     # run()
     a("    function run() external {")
     a('        uint256 pk = vm.envOr("PRIVATE_KEY", uint256(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d));')
     a('        address bv = vm.envAddress("MOCK_BITGET_VAULT");')
+    a("        _deployerStartNonce = vm.getNonce(vm.addr(pk));")
     a("")
     a("        address[] memory t = new address[](N);")
     a("")
@@ -76,7 +87,7 @@ def generate_sol(symbols):
     a("    }")
     a("")
 
-    # Batch functions
+    # Batch functions — each token uses CREATE2 with deterministic salt
     for bi in range(num_batches):
         start = bi * BATCH_SIZE
         end = min(start + BATCH_SIZE, N)
@@ -84,7 +95,7 @@ def generate_sol(symbols):
         a(f"    function _deployBatch{bi}(address[] memory t) internal {{")
         for j, sym in enumerate(batch):
             idx = start + j
-            a(f'        t[{idx}] = address(new MockERC20("Mock {sym}", "{sym}", 18));')
+            a(f'        t[{idx}] = address(new MockERC20{{salt: _nextSalt()}}("Mock {sym}", "{sym}", 18));')
         a("    }")
         a("")
 

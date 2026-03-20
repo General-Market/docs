@@ -220,8 +220,8 @@ import os
 smap = json.load(open(SMAP_PATH)) if os.path.exists(SMAP_PATH) else {}
 existing = len(smap)
 
-# getItpCount() -> uint256  selector: 0x6ce4074a
-itp_count_raw = call(INDEX, '0x6ce4074a')
+# getItpCount() -> uint256  selector: 0x2fa9f978
+itp_count_raw = call(INDEX, '0x2fa9f978')
 itp_count = decode_uint(itp_count_raw)
 if itp_count == 0:
     print('No ITPs on-chain — symbol-map unchanged')
@@ -412,14 +412,19 @@ cmd_deploy() {
         command -v $cmd &>/dev/null || { echo -e "${RED}$cmd not found${NC}"; exit 1; }
     done
 
-    # Clean secondary broadcast dirs (tokens, ITPs, Morpho, Vision) — NOT core deployment.
-    # Core deployment broadcast is preserved if valid (step 3 checks receipts before re-deploying).
+    # Ensure logs dir exists
+    mkdir -p logs
+
+    # Clean secondary broadcast dirs. Token + core broadcasts are preserved for resume
+    # UNLESS the core deploy is invalid (step 3 will detect and redeploy).
     echo -e "${BLUE}[0/14] Cleaning stale broadcast data...${NC}"
-    rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/
     rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
     rm -rf contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/
     rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/
-    echo -e "  ${GREEN}Secondary broadcast dirs cleaned (core preserved)${NC}"
+    rm -rf contracts/broadcast/DeployVision.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/DeployAllVisionBatches.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/DeployMorphoE2E.s.sol/$CHAIN_ID/
+    echo -e "  ${GREEN}Secondary broadcast dirs cleaned (core + tokens preserved for resume)${NC}"
 
     # Check L3 is reachable
     echo -e "${BLUE}[1/14] Checking L3 RPC...${NC}"
@@ -453,15 +458,42 @@ cmd_deploy() {
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
     # Deploy core system (must run from contracts/ for foundry.toml remappings)
-    # Only clean broadcast if deployment JSON doesn't exist or has no receipts
+    # Validate existing deploy by checking key contracts have code ON-CHAIN (not just receipt count,
+    # which passes on stale broadcasts where simulation nonces diverged from broadcast nonces).
     echo -e "${BLUE}[3/14] Deploying core contracts (Index, OracleRegistry, USDC, BridgeProxy)...${NC}"
+    local CORE_DEPLOY_VALID=false
     local EXISTING_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
     if [ "$EXISTING_RECEIPTS" != "0" ] && [ -f "deployments/e2e-full-system.json" ]; then
-        echo -e "  ${GREEN}Valid deployment exists ($EXISTING_RECEIPTS receipts) — skipping forge deploy${NC}"
+        # Receipts exist — but do the contracts actually have code? Orbit L3 nonce drift means
+        # simulation addresses diverge from broadcast addresses. The only truth is on-chain.
+        local CHECK_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+        local CHECK_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
+        if [ -n "$CHECK_INDEX" ] && [ -n "$CHECK_REGISTRY" ]; then
+            local INDEX_CODE_LEN=$(cast code --rpc-url "$RPC_URL" "$CHECK_INDEX" 2>/dev/null | wc -c | tr -d ' ')
+            local REG_CODE_LEN=$(cast code --rpc-url "$RPC_URL" "$CHECK_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$INDEX_CODE_LEN" -gt 10 ] && [ "$REG_CODE_LEN" -gt 10 ]; then
+                CORE_DEPLOY_VALID=true
+                echo -e "  ${GREEN}Valid deployment verified on-chain ($EXISTING_RECEIPTS receipts, Index + OracleRegistry have code)${NC}"
+            else
+                echo -e "  ${YELLOW}Stale deployment detected ($EXISTING_RECEIPTS receipts but Index=$INDEX_CODE_LEN bytes, Registry=$REG_CODE_LEN bytes) — redeploying${NC}"
+            fi
+        fi
+    fi
+    if [ "$CORE_DEPLOY_VALID" = true ]; then
+        : # skip forge deploy
     else
+        # Log deployer nonce before deploy — helps diagnose nonce drift
+        local DEPLOYER_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
+        echo -e "  Deployer nonce before core deploy: $DEPLOYER_NONCE_BEFORE"
+        # Fresh core deploy — also nuke token broadcast since MockBitgetVault address will change
         rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+        rm -rf contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+        rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/
+        echo -e "  ${YELLOW}Core + token broadcasts cleaned (fresh deploy)${NC}"
     # Forge may exit non-zero even on partial success (nonce races on redeployment).
     # We verify success via deployment JSON + receipt count below, not forge exit code.
+    # --slow: wait for each TX confirmation before sending next — prevents nonce batching
+    # drift on Orbit L3 where rapid-fire TXs get reordered.
         (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$RPC_URL" \
@@ -474,16 +506,106 @@ cmd_deploy() {
         # Verify deployment succeeded: check both JSON file exists AND has receipts
         if [ ! -f "deployments/e2e-full-system.json" ]; then
             echo -e "  ${RED}Core deployment failed — no deployment JSON${NC}"
-            echo -e "  ${YELLOW}Check: logs/deploy-core.log${NC}"
+            echo -e "  ${YELLOW}Last 20 lines of logs/deploy-core.log:${NC}"
+            tail -20 logs/deploy-core.log 2>/dev/null || true
             exit 1
         fi
         local RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
         if [ "$RECEIPT_COUNT" = "0" ]; then
             echo -e "  ${RED}Core deployment broadcast failed — 0 receipts (transactions not submitted)${NC}"
-            echo -e "  ${YELLOW}Stop all oracle/curator containers first, then try again.${NC}"
+            echo -e "  ${YELLOW}Last 20 lines of logs/deploy-core.log:${NC}"
+            tail -20 logs/deploy-core.log 2>/dev/null || true
             exit 1
         fi
         echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
+
+        # Post-deploy on-chain verification: the e2e-full-system.json contains SIMULATION addresses
+        # which can diverge from BROADCAST addresses on Orbit L3 (nonce drift). Verify Index + OracleRegistry
+        # have code at their JSON-listed addresses. If not, attempt to rebuild JSON from broadcast receipts.
+        local POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+        local POST_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
+        if [ -n "$POST_INDEX" ] && [ -n "$POST_REGISTRY" ]; then
+            local POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
+            local POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$POST_INDEX_CODE" -lt 10 ] || [ "$POST_REG_CODE" -lt 10 ]; then
+                echo -e "  ${YELLOW}Simulation/broadcast address divergence detected — attempting auto-fix from broadcast receipts...${NC}"
+                # Rebuild deployment JSON from broadcast receipts (actual on-chain addresses).
+                # The broadcast JSON has contractName + contractAddress for each CREATE/CREATE2 TX.
+                python3 -c "
+import json, subprocess, sys
+
+bd_path = 'contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json'
+deploy_path = 'deployments/e2e-full-system.json'
+bd = json.load(open(bd_path))
+deploy = json.load(open(deploy_path))
+
+# Extract real addresses from broadcast receipts
+creates = {}
+for tx in bd.get('transactions', []):
+    if tx.get('transactionType') in ('CREATE', 'CREATE2'):
+        name = tx.get('contractName', '')
+        addr = tx.get('contractAddress', '')
+        if name and addr:
+            if name not in creates: creates[name] = []
+            creates[name].append({'address': addr, 'args': tx.get('arguments', [])})
+
+# Map deployment JSON keys to broadcast contract names using known patterns
+patches = {}
+# Unique contracts (1:1 mapping)
+for key, bcast_name in [
+    ('CollateralRegistry', 'CollateralRegistry'),
+    ('MockBitgetVault', 'MockBitgetVault'),
+    ('BridgedItpFactory', 'BridgedItpFactory'),
+]:
+    if bcast_name in creates and len(creates[bcast_name]) == 1:
+        patches[key] = creates[bcast_name][0]['address']
+
+# MockERC20: disambiguate by constructor args (name contains the key)
+for entry in creates.get('MockERC20', []):
+    args = entry.get('args', [])
+    if len(args) >= 2:
+        symbol = args[1]  # Second arg is symbol
+        if 'L3_WUSDC' in symbol or 'WUSDC' in symbol: patches['L3_WUSDC'] = entry['address']
+        elif 'SETTLEMENT_USDC' in symbol: patches['SETTLEMENT_USDC'] = entry['address']
+        elif 'MOCK_USDT' in symbol or 'USDT' in symbol: patches['MOCK_USDT'] = entry['address']
+
+# ERC1967Proxy: map by deployment order (matches Solidity script order)
+# Order: Governance, Index, OracleRegistry, L3BridgeCustody, SettlementBridgeCustody, BLSCustody, BridgeProxy
+proxy_keys = ['Governance', 'Index', 'OracleRegistry', 'L3BridgeCustody',
+              'SettlementBridgeCustody', 'BLSCustody', 'BridgeProxy']
+proxies = creates.get('ERC1967Proxy', [])
+for i, key in enumerate(proxy_keys):
+    if i < len(proxies):
+        patches[key] = proxies[i]['address']
+
+# Apply patches
+patched = 0
+for key, addr in patches.items():
+    if key in deploy['contracts'] and deploy['contracts'][key] != addr:
+        deploy['contracts'][key] = addr
+        patched += 1
+
+json.dump(deploy, open(deploy_path, 'w'), indent=2)
+print(f'Patched {patched} addresses from broadcast receipts')
+" 2>/dev/null && echo -e "  ${GREEN}Deployment JSON rebuilt from broadcast receipts${NC}" || {
+                    echo -e "  ${RED}Auto-fix failed. Cleaning artifacts — re-run deploy.${NC}"
+                    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
+                    exit 1
+                }
+
+                # Re-verify after patch
+                POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+                POST_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
+                POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
+                POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
+                if [ "$POST_INDEX_CODE" -lt 10 ] || [ "$POST_REG_CODE" -lt 10 ]; then
+                    echo -e "  ${RED}CRITICAL: Addresses still invalid after receipt rebuild. Cleaning and aborting.${NC}"
+                    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
+                    exit 1
+                fi
+            fi
+            echo -e "  ${GREEN}On-chain verification passed (Index + OracleRegistry have code)${NC}"
+        fi
     fi
 
     # Copy fresh deployment to active so subsequent steps read correct addresses
@@ -504,74 +626,87 @@ cmd_deploy() {
     fi
     echo -e "  OracleRegistry: $ORACLE_REGISTRY_ADDR"
 
-    # Oracle addresses (Anvil accounts 1-3)
-    ORACLE_1_ADDR_BLS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-    ORACLE_2_ADDR_BLS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
-    ORACLE_3_ADDR_BLS="0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+    # Check if oracles are ALREADY registered on-chain (skip registration on re-runs)
+    EXISTING_ORACLE_COUNT=$(cast call "$ORACLE_REGISTRY_ADDR" "activeOracleCount()(uint256)" \
+        --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]' || echo "0")
+    # cast may return hex (0x3) or decimal (3) — normalize
+    EXISTING_ORACLE_COUNT=$(python3 -c "v='$EXISTING_ORACLE_COUNT'; print(int(v, 16) if v.startswith('0x') else int(v) if v.isdigit() else 0)" 2>/dev/null || echo "0")
 
-    # Generate BLS pubkeys via bls-tool
-    BLS_PUBKEY_0=$(target/release/bls-tool pubkey --seed-index 0 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 0 failed${NC}"; exit 1; }
-    BLS_PUBKEY_1=$(target/release/bls-tool pubkey --seed-index 1 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 1 failed${NC}"; exit 1; }
-    BLS_PUBKEY_2=$(target/release/bls-tool pubkey --seed-index 2 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 2 failed${NC}"; exit 1; }
+    if [ "$EXISTING_ORACLE_COUNT" = "3" ]; then
+        echo -e "  ${GREEN}Oracles already registered on-chain ($EXISTING_ORACLE_COUNT active) — skipping registration${NC}"
+    else
+        echo -e "  Current oracle count: $EXISTING_ORACLE_COUNT — registering..."
 
-    # addOracle requires: (address oracle, bytes32 ipPort, bytes pubkey, bytes popSig)
-    # POP = BLS sign of keccak256(abi.encode("INDEX_BLS_POP", chainId, registryAddr, oracleAddr, pubkey))
-    _register_one_oracle() {
-        local IDX=$1 ORACLE_ADDR=$2 IP_PORT=$3 PUBKEY=$4
-        # Convert IP string to bytes32 (right-padded)
-        local IP_BYTES32=$(cast --format-bytes32 "$IP_PORT" 2>/dev/null || printf "0x%-64s" "$(echo -n "$IP_PORT" | xxd -p)" | tr ' ' '0')
-        # Compute POP message hash
-        local POP_MSG=$(cast keccak "$(cast abi-encode 'f(string,uint256,address,address,bytes)' 'INDEX_BLS_POP' $CHAIN_ID $ORACLE_REGISTRY_ADDR $ORACLE_ADDR $PUBKEY)" 2>/dev/null)
-        # Sign POP with BLS key
-        local POP_SIG=$(target/release/bls-tool sign --seed-indices "$IDX" --message-hash "$POP_MSG" 2>/dev/null)
-        if [ -z "$POP_SIG" ]; then echo -e "  ${RED}BLS POP sign failed for oracle $((IDX+1))${NC}"; exit 1; fi
-        # Call addOracle with correct 4-param signature
-        cast send "$ORACLE_REGISTRY_ADDR" \
-            "addOracle(address,bytes32,bytes,bytes)" \
-            "$ORACLE_ADDR" "$IP_BYTES32" "$PUBKEY" "$POP_SIG" \
+        # Oracle addresses (Anvil accounts 1-3)
+        ORACLE_1_ADDR_BLS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        ORACLE_2_ADDR_BLS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+        ORACLE_3_ADDR_BLS="0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+
+        # Generate BLS pubkeys via bls-tool
+        BLS_PUBKEY_0=$(target/release/bls-tool pubkey --seed-index 0 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 0 failed${NC}"; exit 1; }
+        BLS_PUBKEY_1=$(target/release/bls-tool pubkey --seed-index 1 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 1 failed${NC}"; exit 1; }
+        BLS_PUBKEY_2=$(target/release/bls-tool pubkey --seed-index 2 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 2 failed${NC}"; exit 1; }
+
+        # addOracle requires: (address oracle, bytes32 ipPort, bytes pubkey, bytes popSig)
+        # POP = BLS sign of keccak256(abi.encode("INDEX_BLS_POP", chainId, registryAddr, oracleAddr, pubkey))
+        _register_one_oracle() {
+            local IDX=$1 ORACLE_ADDR=$2 IP_PORT=$3 PUBKEY=$4
+            # Convert IP string to bytes32 (right-padded)
+            local IP_BYTES32=$(cast --format-bytes32 "$IP_PORT" 2>/dev/null || printf "0x%-64s" "$(echo -n "$IP_PORT" | xxd -p)" | tr ' ' '0')
+            # Compute POP message hash
+            local POP_MSG=$(cast keccak "$(cast abi-encode 'f(string,uint256,address,address,bytes)' 'INDEX_BLS_POP' $CHAIN_ID $ORACLE_REGISTRY_ADDR $ORACLE_ADDR $PUBKEY)" 2>/dev/null)
+            # Sign POP with BLS key
+            local POP_SIG=$(target/release/bls-tool sign --seed-indices "$IDX" --message-hash "$POP_MSG" 2>/dev/null)
+            if [ -z "$POP_SIG" ]; then echo -e "  ${RED}BLS POP sign failed for oracle $((IDX+1))${NC}"; exit 1; fi
+            # Call addOracle with correct 4-param signature
+            cast send "$ORACLE_REGISTRY_ADDR" \
+                "addOracle(address,bytes32,bytes,bytes)" \
+                "$ORACLE_ADDR" "$IP_BYTES32" "$PUBKEY" "$POP_SIG" \
+                --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                --legacy --gas-price 200000000 --gas-limit 500000 \
+                > /dev/null 2>&1 || { echo -e "  ${RED}addOracle $((IDX+1)) failed${NC}"; exit 1; }
+        }
+
+        echo -e "  Adding oracle 1 ($ORACLE_1_ADDR_BLS)..."
+        _register_one_oracle 0 "$ORACLE_1_ADDR_BLS" "127.0.0.1:9001" "$BLS_PUBKEY_0"
+        AGG_PUBKEY_1=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0 failed${NC}"; exit 1; }
+        cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+            "$AGG_PUBKEY_1" 1 \
             --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
             --legacy --gas-price 200000000 --gas-limit 500000 \
-            > /dev/null 2>&1 || { echo -e "  ${RED}addOracle $((IDX+1)) failed${NC}"; exit 1; }
-    }
+            > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 1 failed${NC}"; exit 1; }
+        echo -e "  ${GREEN}Oracle 1 registered${NC}"
 
-    echo -e "  Adding oracle 1 ($ORACLE_1_ADDR_BLS)..."
-    _register_one_oracle 0 "$ORACLE_1_ADDR_BLS" "127.0.0.1:9001" "$BLS_PUBKEY_0"
-    AGG_PUBKEY_1=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0 failed${NC}"; exit 1; }
-    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
-        "$AGG_PUBKEY_1" 1 \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 1 failed${NC}"; exit 1; }
-    echo -e "  ${GREEN}Oracle 1 registered${NC}"
+        echo -e "  Adding oracle 2 ($ORACLE_2_ADDR_BLS)..."
+        _register_one_oracle 1 "$ORACLE_2_ADDR_BLS" "127.0.0.1:9002" "$BLS_PUBKEY_1"
+        AGG_PUBKEY_2=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1 failed${NC}"; exit 1; }
+        cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+            "$AGG_PUBKEY_2" 2 \
+            --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price 200000000 --gas-limit 500000 \
+            > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 2 failed${NC}"; exit 1; }
+        echo -e "  ${GREEN}Oracle 2 registered${NC}"
 
-    echo -e "  Adding oracle 2 ($ORACLE_2_ADDR_BLS)..."
-    _register_one_oracle 1 "$ORACLE_2_ADDR_BLS" "127.0.0.1:9002" "$BLS_PUBKEY_1"
-    AGG_PUBKEY_2=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1 failed${NC}"; exit 1; }
-    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
-        "$AGG_PUBKEY_2" 2 \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 2 failed${NC}"; exit 1; }
-    echo -e "  ${GREEN}Oracle 2 registered${NC}"
+        echo -e "  Adding oracle 3 ($ORACLE_3_ADDR_BLS)..."
+        _register_one_oracle 2 "$ORACLE_3_ADDR_BLS" "127.0.0.1:9003" "$BLS_PUBKEY_2"
+        AGG_PUBKEY_3=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1,2 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1,2 failed${NC}"; exit 1; }
+        cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+            "$AGG_PUBKEY_3" 3 \
+            --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price 200000000 --gas-limit 500000 \
+            > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 3 failed${NC}"; exit 1; }
+        echo -e "  ${GREEN}Oracle 3 registered${NC}"
 
-    echo -e "  Adding oracle 3 ($ORACLE_3_ADDR_BLS)..."
-    _register_one_oracle 2 "$ORACLE_3_ADDR_BLS" "127.0.0.1:9003" "$BLS_PUBKEY_2"
-    AGG_PUBKEY_3=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1,2 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1,2 failed${NC}"; exit 1; }
-    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
-        "$AGG_PUBKEY_3" 3 \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 3 failed${NC}"; exit 1; }
-    echo -e "  ${GREEN}Oracle 3 registered${NC}"
-
-    # Verify all 3 oracles registered
-    ACTIVE_ORACLE_COUNT=$(cast call "$ORACLE_REGISTRY_ADDR" "activeOracleCount()(uint256)" \
-        --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]' || echo "0")
-    if [ "$ACTIVE_ORACLE_COUNT" != "3" ]; then
-        echo -e "  ${RED}Oracle registration verification failed — expected 3, got $ACTIVE_ORACLE_COUNT${NC}"
-        exit 1
+        # Verify all 3 oracles registered
+        ACTIVE_ORACLE_COUNT=$(cast call "$ORACLE_REGISTRY_ADDR" "activeOracleCount()(uint256)" \
+            --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]' || echo "0")
+        ACTIVE_ORACLE_COUNT=$(python3 -c "v='$ACTIVE_ORACLE_COUNT'; print(int(v, 16) if v.startswith('0x') else int(v) if v.isdigit() else 0)" 2>/dev/null || echo "0")
+        if [ "$ACTIVE_ORACLE_COUNT" != "3" ]; then
+            echo -e "  ${RED}Oracle registration verification failed — expected 3, got $ACTIVE_ORACLE_COUNT${NC}"
+            exit 1
+        fi
+        echo -e "  ${GREEN}BLS oracle registration complete — $ACTIVE_ORACLE_COUNT active oracles${NC}"
     fi
-    echo -e "  ${GREEN}BLS oracle registration complete — $ACTIVE_ORACLE_COUNT active oracles${NC}"
 
     # Patch deployment JSON with the verified OracleRegistry address (chain-sourced, not broadcast-derived)
     python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['OracleRegistry']='$ORACLE_REGISTRY_ADDR'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
@@ -640,9 +775,11 @@ cmd_deploy() {
     # 3c: Deploy settlement contracts to Sonic
     echo -e "${BLUE}[3c/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
 
-    # Save L3 deployment before Sonic overwrites it
-    # The forge script writes to e2e-full-system.json (not active-deployment.json)
-    cp deployments/e2e-full-system.json deployments/e2e-full-system-l3.json 2>/dev/null || true
+    # Save L3 deployment before Sonic overwrites e2e-full-system.json.
+    # Use active-deployment.json (patched by steps 3b/3b2 with on-chain verified
+    # OracleRegistry + Governance addresses), NOT e2e-full-system.json (raw forge output
+    # with possibly stale simulation addresses).
+    cp "$DEPLOYMENT_FILE" deployments/e2e-full-system-l3.json 2>/dev/null || true
 
     SONIC_CHAIN_ID=$(cast chain-id --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "0")
     if [ "$SONIC_CHAIN_ID" != "$SETTLEMENT_CHAIN_ID" ]; then
@@ -653,7 +790,7 @@ cmd_deploy() {
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$SETTLEMENT_RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
-            --broadcast \
+            --broadcast --slow \
             --chain-id $SETTLEMENT_CHAIN_ID \
             --legacy --with-gas-price 200000000) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
@@ -671,6 +808,49 @@ cmd_deploy() {
             deployments/e2e-full-system-sonic.json \
             "$DEPLOYMENT_FILE"
         echo -e "  ${GREEN}Merged L3 + Sonic deployment${NC}"
+
+        # Post-merge verification: settlement addresses must come from Sonic, not L3.
+        # If the merge used a stale L3 backup, BridgeProxy etc. will point to the wrong chain
+        # and every bridge/settlement call silently targets the void.
+        echo -e "  Verifying settlement addresses in merged deployment..."
+        SONIC_BP=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-sonic.json'))['contracts'].get('BridgeProxy',''))" 2>/dev/null || echo "")
+        MERGED_BP=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('BridgeProxy',''))" 2>/dev/null || echo "")
+        MERGED_SBC=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null || echo "")
+        MERGED_SUSDC=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SETTLEMENT_USDC',''))" 2>/dev/null || echo "")
+        MERGED_SBP=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeProxy',''))" 2>/dev/null || echo "")
+
+        echo -e "  BridgeProxy (merged):            $MERGED_BP"
+        echo -e "  BridgeProxy (Sonic source):       $SONIC_BP"
+        echo -e "  SettlementBridgeCustody:          $MERGED_SBC"
+        echo -e "  SettlementBridgeProxy:            $MERGED_SBP"
+        echo -e "  SETTLEMENT_USDC:                  $MERGED_SUSDC"
+
+        if [ -n "$SONIC_BP" ] && [ "$MERGED_BP" != "$SONIC_BP" ]; then
+            echo -e "  ${RED}CRITICAL: BridgeProxy in merged deployment ($MERGED_BP) does not match Sonic deploy ($SONIC_BP)${NC}"
+            echo -e "  ${RED}The merge used stale L3 addresses. Frontend would call the wrong BridgeProxy.${NC}"
+            echo -e "  ${YELLOW}Attempting repair — forcing Sonic BridgeProxy into merged deployment...${NC}"
+            python3 -c "
+import json
+d = json.load(open('$DEPLOYMENT_FILE'))
+sonic = json.load(open('deployments/e2e-full-system-sonic.json'))
+sc = sonic['contracts']
+for key in ['BridgeProxy', 'SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SettlementBridgeProxy']:
+    if key in sc:
+        d['contracts'][key] = sc[key]
+    elif key == 'SettlementBridgeProxy' and 'BridgeProxy' in sc:
+        d['contracts'][key] = sc['BridgeProxy']
+if 'BridgeProxy' in sc:
+    d['contracts']['L3BridgeProxy'] = d['contracts'].get('L3BridgeProxy', '')
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+print('Repaired settlement addresses from Sonic deployment')
+"
+            echo -e "  ${GREEN}Settlement addresses repaired${NC}"
+        else
+            echo -e "  ${GREEN}Settlement addresses verified — BridgeProxy points to Sonic${NC}"
+        fi
+
+        # Sync merged deployment to frontend immediately (other deploy steps may read it)
+        cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
     fi
 
     # Bump deployment nonce — services auto-detect and flush stale DB state
@@ -776,7 +956,7 @@ cmd_deploy() {
     forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --broadcast \
+        --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price 200000000) \
         >> logs/deploy-morpho.log 2>&1 || echo -e "  ${YELLOW}Morpho deploy had warnings — check logs/deploy-morpho.log${NC}"
@@ -790,28 +970,13 @@ cmd_deploy() {
     forge script script/DeployVision.s.sol:DeployVision \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --broadcast \
+        --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price 200000000) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
-    # Vision batches: do NOT use --slow (causes nonce races on L3 Orbit)
-    rm -rf contracts/broadcast/DeployAllVisionBatches.s.sol/$CHAIN_ID/ contracts/cache/DeployAllVisionBatches.s.sol/$CHAIN_ID/
-    # Read Vision address: try active-deployment first (most reliable), then vision-deployment.json fallback
-    VISION_ADDR_DEPLOY=$(read_deployment_addr "Vision" 2>/dev/null || python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['vision'])" 2>/dev/null || echo "")
-    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-    VISION_ADDRESS="$VISION_ADDR_DEPLOY" \
-    forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
-        --rpc-url "$RPC_URL" \
-        --private-key "$DEPLOYER_KEY" \
-        --broadcast \
-        --chain-id $CHAIN_ID \
-        --legacy --with-gas-price 200000000) \
-        >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
-    echo -e "  ${GREEN}Vision deployed${NC}"
-
-    # Add Vision address to active-deployment.json (Vision is deployed separately)
-    # Read from vision-deployment.json (always written by DeployVision), NOT vision-batches.json (may fail)
+    # Add Vision address to active-deployment.json BEFORE batch deploy
+    # (DeployAllVisionBatches reads Vision address from this file)
     VISION_ADDR_MERGE=$(python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['contracts']['Vision'])" 2>/dev/null || echo "")
     if [ -n "$VISION_ADDR_MERGE" ]; then
         python3 -c "
@@ -820,8 +985,23 @@ d = json.load(open('$DEPLOYMENT_FILE'))
 d['contracts']['Vision'] = '$VISION_ADDR_MERGE'
 json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
 "
-        echo -e "  ${GREEN}Added Vision to active-deployment.json${NC}"
+        echo -e "  ${GREEN}Added Vision ($VISION_ADDR_MERGE) to active-deployment.json${NC}"
     fi
+
+    # Vision batches: --slow prevents nonce batching drift on L3 Orbit
+    rm -rf contracts/broadcast/DeployAllVisionBatches.s.sol/$CHAIN_ID/ contracts/cache/DeployAllVisionBatches.s.sol/$CHAIN_ID/
+    VISION_ADDR_DEPLOY=$(read_deployment_addr "Vision")
+    echo -e "  Vision address for batches: $VISION_ADDR_DEPLOY"
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+    VISION_ADDRESS="$VISION_ADDR_DEPLOY" \
+    forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
+        --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --broadcast --slow \
+        --chain-id $CHAIN_ID \
+        --legacy --with-gas-price 200000000) \
+        >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
+    echo -e "  ${GREEN}Vision deployed${NC}"
 
     # Ensure vision-batches.json matches active-deployment.json (active-deployment is source of truth)
     ACTIVE_VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
@@ -864,23 +1044,79 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     echo -e "  ${GREEN}Generated DeployAllTokens.s.sol (621 tokens)${NC}"
 
     echo -e "${BLUE}[9/14] Deploying all 621 tokens + funding vault...${NC}"
+    local TOKEN_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
+    echo -e "  Deployer nonce before token deploy: $TOKEN_NONCE_BEFORE"
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
-    rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/ contracts/cache/DeployAllTokens.s.sol/$CHAIN_ID/
-    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-        MOCK_BITGET_VAULT="$MOCK_VAULT" \
-        forge script script/DeployAllTokens.s.sol:DeployAllTokens \
-        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
-        --private-key "$DEPLOYER_KEY" \
-        --chain-id $CHAIN_ID) \
-        > logs/deploy-tokens.log 2>&1
 
-    # Forge may report nonce errors on Orbit L3 even when all txs succeed
-    # Check actual deployment before aborting
+    # Resume partial token deploys: check how many receipts exist from previous runs.
+    # Orbit L3 nonce issues cause forge to die after ~200 TXs. Re-running resumes from
+    # where it left off because forge skips TXs that already have receipts.
+    local TOKEN_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+    local TOKEN_TXS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('transactions',[])))" 2>/dev/null || echo "0")
+
+    if [ "$TOKEN_RECEIPTS" != "0" ] && [ "$TOKEN_RECEIPTS" = "$TOKEN_TXS" ]; then
+        echo -e "  ${GREEN}All token TXs already have receipts ($TOKEN_RECEIPTS/$TOKEN_TXS) — skipping forge${NC}"
+    else
+        if [ "$TOKEN_RECEIPTS" != "0" ]; then
+            echo -e "  ${YELLOW}Resuming partial token deploy ($TOKEN_RECEIPTS/$TOKEN_TXS receipts)...${NC}"
+        fi
+        # Do NOT rm -rf the token broadcast dir — preserve partial progress for resume.
+        # First attempt uses --broadcast (creates broadcast dir). Retries use --resume
+        # which re-submits only TXs that lack receipts.
+        local TOKEN_DEPLOY_ATTEMPTS=0
+        local TOKEN_DEPLOY_MAX=8
+        while [ "$TOKEN_DEPLOY_ATTEMPTS" -lt "$TOKEN_DEPLOY_MAX" ]; do
+            TOKEN_DEPLOY_ATTEMPTS=$((TOKEN_DEPLOY_ATTEMPTS + 1))
+            # Use --resume if broadcast dir exists (partial deploy), --broadcast otherwise (first run)
+            local FORGE_BROADCAST_FLAG="--broadcast"
+            if [ -f "contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json" ]; then
+                FORGE_BROADCAST_FLAG="--resume"
+            fi
+            # --slow: wait for each TX confirmation before next — Orbit L3's rapid-fire
+            # nonce batching kills token deploys after ~200 TXs without this.
+            (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+                MOCK_BITGET_VAULT="$MOCK_VAULT" \
+                forge script script/DeployAllTokens.s.sol:DeployAllTokens \
+                $FORGE_BROADCAST_FLAG --slow --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
+                --private-key "$DEPLOYER_KEY" \
+                --chain-id $CHAIN_ID) \
+                >> logs/deploy-tokens.log 2>&1 || true
+
+            TOKEN_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+            TOKEN_TXS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('transactions',[])))" 2>/dev/null || echo "0")
+            echo -e "  Attempt $TOKEN_DEPLOY_ATTEMPTS: $TOKEN_RECEIPTS/$TOKEN_TXS receipts"
+
+            if [ "$TOKEN_RECEIPTS" = "$TOKEN_TXS" ] && [ "$TOKEN_RECEIPTS" != "0" ]; then
+                echo -e "  ${GREEN}All token TXs confirmed${NC}"
+                break
+            fi
+
+            if [ "$TOKEN_DEPLOY_ATTEMPTS" -ge "$TOKEN_DEPLOY_MAX" ]; then
+                echo -e "  ${YELLOW}Token deploy incomplete after $TOKEN_DEPLOY_MAX attempts ($TOKEN_RECEIPTS/$TOKEN_TXS) — continuing anyway${NC}"
+            fi
+        done
+    fi
+
+    # Rebuild CSV from broadcast receipts (vm.writeFile uses simulation addresses which can diverge)
+    python3 -c "
+import json
+bd = json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json'))
+creates = []
+for tx in bd.get('transactions', []):
+    if tx.get('transactionType') in ('CREATE', 'CREATE2') and tx.get('contractName') == 'MockERC20':
+        creates.append(tx['contractAddress'])
+with open('data/all-token-addresses.csv', 'w') as f:
+    for i, addr in enumerate(creates):
+        f.write(f'{i},{addr}\n')
+print(f'Rebuilt CSV from {len(creates)} broadcast receipts')
+" 2>/dev/null && echo -e "  ${GREEN}Token CSV rebuilt from broadcast receipts${NC}" || echo -e "  ${YELLOW}CSV rebuild failed — using vm.writeFile output${NC}"
+
+    # Verify at least the first token has code on-chain
     FIRST_TOKEN=$(head -2 data/all-token-addresses.csv | tail -1 | cut -d, -f2)
     if [ -n "$FIRST_TOKEN" ]; then
         TOKEN_CODE=$(cast code --rpc-url "$RPC_URL" "$FIRST_TOKEN" 2>/dev/null | wc -c)
         if [ "$TOKEN_CODE" -gt 10 ]; then
-            echo -e "  ${GREEN}Tokens deployed (verified first token has code)${NC}"
+            echo -e "  ${GREEN}Tokens verified (first token has code on-chain)${NC}"
         else
             echo -e "  ${RED}Token deploy FAILED — first token has no code${NC}"; exit 1
         fi
@@ -954,9 +1190,10 @@ json.dump(result, sys.stdout)
     INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$INDEX_CHECK" 2>/dev/null | wc -c)
     [ "$INDEX_CODE" -lt 10 ] && { echo -e "  ${RED}Index has no code${NC}"; exit 1; }
 
-    # Check oracles
+    # Check oracles (normalize hex/decimal — cast may return either on Orbit L3)
     ORACLE_REG_CHECK=$(cast call --rpc-url "$RPC_URL" "$INDEX_CHECK" "oracleRegistry()(address)" 2>/dev/null | tr -d '[:space:]')
-    ORACLE_COUNT=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REG_CHECK" "activeOracleCount()(uint256)" 2>/dev/null | tr -d '[:space:]')
+    ORACLE_COUNT_RAW=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REG_CHECK" "activeOracleCount()(uint256)" 2>/dev/null | tr -d '[:space:]')
+    ORACLE_COUNT=$(python3 -c "v='$ORACLE_COUNT_RAW'; print(int(v, 16) if v.startswith('0x') else int(v) if v.isdigit() else 0)" 2>/dev/null || echo "0")
     [ "$ORACLE_COUNT" != "3" ] && { echo -e "  ${RED}OracleRegistry has $ORACLE_COUNT oracles (need 3)${NC}"; exit 1; }
 
     # Check first 3 tokens have code
@@ -972,10 +1209,10 @@ json.dump(result, sys.stdout)
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
-        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
+        --broadcast --slow --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; exit 1; }
+        > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; tail -10 logs/deploy-itp-create.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITPs created${NC}"
 
     # Verify ITP #1 assets are priced (prevents rebalance stall)
@@ -1013,10 +1250,10 @@ print(f'All {count} ITP #1 assets in symbol-map')
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         L3_WUSDC="$L3_USDC" \
         forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
-        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
+        --broadcast --slow --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; exit 1; }
+        > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; tail -10 logs/deploy-itp-vaults.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITP vaults deployed${NC}"
 
     # Deploy Morpho lending markets for ALL ITPs
@@ -1062,7 +1299,7 @@ print(f'All {count} ITP #1 assets in symbol-map')
             rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/ contracts/cache/DeployBatchMarkets.s.sol/$CHAIN_ID/
             (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
                 forge script script/DeployBatchMarkets.s.sol \
-                --rpc-url "$RPC_URL" --broadcast --legacy --with-gas-price 200000000 \
+                --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 200000000 \
                 --private-key "$DEPLOYER_KEY" \
                 --chain-id $CHAIN_ID) \
                 > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
@@ -1261,6 +1498,21 @@ cmd_start() {
         python3 -c "import json; d=json.load(open('deployments/vision-batches.json')); d['vision']='$ACTIVE_VISION'; json.dump(d,open('deployments/vision-batches.json','w'),indent=2)"
         cp deployments/vision-batches.json frontend/lib/contracts/vision-batches.json 2>/dev/null || true
     fi
+    # Verify settlement addresses exist (BridgeProxy, SettlementBridgeCustody, SETTLEMENT_USDC).
+    # If these are missing or point to L3, every bridge/settlement call fails silently.
+    ACTIVE_BP=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('BridgeProxy',''))" 2>/dev/null || echo "")
+    ACTIVE_SBP=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeProxy',''))" 2>/dev/null || echo "")
+    ACTIVE_SBC=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null || echo "")
+    if [ -z "$ACTIVE_BP" ] || [ -z "$ACTIVE_SBC" ]; then
+        echo -e "  ${RED}WARNING: Settlement addresses missing from active-deployment.json${NC}"
+        echo -e "  ${RED}  BridgeProxy=$ACTIVE_BP  SettlementBridgeCustody=$ACTIVE_SBC${NC}"
+        echo -e "  ${RED}  Bridge/settlement operations will fail. Re-run: ./testnet.sh deploy${NC}"
+    elif [ -n "$ACTIVE_SBP" ] && [ "$ACTIVE_BP" != "$ACTIVE_SBP" ]; then
+        echo -e "  ${YELLOW}WARNING: BridgeProxy ($ACTIVE_BP) != SettlementBridgeProxy ($ACTIVE_SBP)${NC}"
+        echo -e "  ${YELLOW}  These should be identical (both point to Sonic). Possible stale merge.${NC}"
+    else
+        echo -e "  Settlement addresses: BridgeProxy=$ACTIVE_BP SettlementBridgeCustody=$ACTIVE_SBC"
+    fi
     echo -e "  ${GREEN}Deployment consistent${NC}"
 
     # Refresh BLS registry snapshot to prevent SnapshotTooOld (86400 block expiry).
@@ -1399,6 +1651,10 @@ cmd_start() {
     else
         echo -e "  ${YELLOW}Swarm skipped — docker/testnet/vision-swarm/swarm.env not found${NC}"
     fi
+
+    # Rebuild symbol-map from on-chain ITP assets (catches address drift between deploys)
+    _rebuild_symbol_map_from_chain
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
 
     echo ""
     echo -e "${GREEN}All services started. Check status: ./testnet.sh status${NC}"
@@ -2058,13 +2314,14 @@ print(len(configs))
     forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --broadcast \
+        --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price 200000000) \
         > logs/deploy-vision-batches.log 2>&1
 
     if [ $? -ne 0 ]; then
-        echo -e "  ${RED}Batch deployment failed — check logs/deploy-vision-batches.log${NC}"
+        echo -e "  ${RED}Batch deployment failed:${NC}"
+        tail -10 logs/deploy-vision-batches.log 2>/dev/null || true
         # Rollback version
         echo "$CURRENT_VERSION" > "$VERSION_FILE"
         exit 1

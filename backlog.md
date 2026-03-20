@@ -4813,3 +4813,13 @@ Root cause: likely the orchestrator checks `signed_batch_configs` DB (empty afte
 [BUG] Stale orders persist in oracle after CREATE2 redeploy - 20260316-1200-p9k2
 After redeploying with CREATE2 (unique proxy addresses), the oracle's get_pending_orders() still returns 24 orders from the previous deployment. The chain reader's id.is_zero() filter doesn't trigger despite getOrder() returning zeros for non-existent orders via cast. Likely an RPC caching issue on the L3 Orbit node, or the ethers-rs contract call returns differently than raw eth_call.
 Workaround needed: either reset the L3 chain entirely, or add a "max order age" check in get_pending_orders().
+
+## Session: 20260320-n8k3 (testnet.sh nonce drift fixes)
+
+- [DECISION] Step 3 now verifies core contracts have CODE on-chain (not just receipt count). Receipt count passes on stale broadcasts where simulation nonces diverged from broadcast nonces on Orbit L3.
+- [DECISION] Step 3 post-deploy verification: after fresh forge deploy, immediately checks e2e-full-system.json addresses have code on-chain. If divergence detected, cleans artifacts and exits with clear error.
+- [DECISION] Fresh core deploy now also nukes token broadcast dir — since MockBitgetVault address changes, old token broadcasts reference stale vault addresses.
+- [DECISION] Step 3b skips oracle registration if 3 oracles already registered on-chain — prevents re-registration failures on re-runs.
+- [DECISION] Step 9 token deploy uses --resume flag with retry loop (up to 5 attempts) — Orbit L3 drops forge after ~200 TXs. Instead of rm -rf and restarting, --resume re-submits only TXs lacking receipts.
+- [DECISION] All activeOracleCount() comparisons normalize hex/decimal — cast returns hex on Orbit L3 ("0x3") but the script compared against decimal "3".
+- [DECISION] Step 0 no longer deletes Vision/Morpho broadcast dirs (moved to explicit rm in their respective steps). Token + core broadcasts preserved for resume.

@@ -16,7 +16,7 @@
     },
     {
       "name": "Vision",
-      "address": "0xd5ec37ffa8c40b5dbaf7ffe9d9878c3a387ad47a",
+      "address": "0xadc1f5bddcc30f8eba131cb58d75375b5cbfc96a",
       "hasCode": true,
       "chain": "l3"
     },
@@ -67,13 +67,15 @@
   ],
   "morpho": {
     "deployed": true,
-    "collateralTokenAlive": true,
+    "collateralTokenAlive": false,
     "oracleAlive": true,
-    "stale": false
+    "stale": true
   },
   "visionBatches": {
     "count": 47,
     "firstBatchExists": false
   },
-  "staleAddresses": []
+  "staleAddresses": [
+    "Morpho collateralToken (0x8e7E09517c58b4A3e17d66f5DeCd160Aa9DD7e29) has NO CODE — needs redeployment"
+  ]
 }

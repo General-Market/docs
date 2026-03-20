@@ -1,630 +1,630 @@
 {
   "chainId": 111222333,
   "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
-  "timestamp": 1773900000,
+  "timestamp": 1774042001,
   "infrastructure": {
-    "MORPHO": "0xecf30fA79bb8aB854932E3De0a7D75Cf19cFd867",
-    "CURATOR_RATE_IRM": "0x9AFC81B6182F63dc10FECC42256248eE84593B27",
-    "METAMORPHO_VAULT": "0xEd0B49a94104D65B8280B0B505402523A2fDBB6d",
-    "SETTLEMENT_USDC": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-    "MIRROR_REGISTRY": "0x4B0aac291f93081E6338d32dE15a5c4BEEEF1de1"
+    "MORPHO": "0x668a7c99Db8425CE74F5826622652958c6946E74",
+    "CURATOR_RATE_IRM": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94",
+    "METAMORPHO_VAULT": "0xd8A9e892c69113e2576C3c066922c46a9121DA6F",
+    "SETTLEMENT_USDC": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+    "MIRROR_REGISTRY": "0x54A56d8D3f3d21F2CE21Dc626A81d62eD35e921f"
   },
   "markets": [
     {
-      "collateralToken": "0x10294668a12c8CDA6e3E2F5d9c4908C4F0BdAe54",
-      "oracle": "0xcaacab58e24f54f0c69255a4f667dca6e999cb98",
-      "marketId": "0x06b299d4e5a55d2bbd30a78cadd9c9874538d537ed439f15c634484011c54b29",
+      "collateralToken": "0x87f4A31Cb91473F70452c9C42b6b6381DE7Eae2e",
+      "oracle": "0x03dE00540F0c8d959b13C0693D3F7d1b8b8346b5",
+      "marketId": "0x79f5e3c8df05fb6b420f5fb18c4cf327c47a2c674e878c63d6a690a17f77e3c6",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x042FC66219D1D66651D1Ae5392B8E79A2d79aDE6",
-      "oracle": "0x56135362ab2168457ec42bfbe72e8205cc450c6a",
-      "marketId": "0x4c8776db60c8d84ac7ecedde0ae2b53d6cee10590028d6f2405d084875897dde",
+      "collateralToken": "0xbE0d69821A5B384B99f6ccA3d2e6a16FaEF299e6",
+      "oracle": "0x5CBEFBA743aa836711E374BafEac869876F92B96",
+      "marketId": "0x8526151c50df2c094d1e9b96b7c08be065490e911994974d59f9572841ae6f15",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x404DBa36a879523CAf0815E6B5e6Ed1E5F836Ddc",
-      "oracle": "0x93e02883fdf0f7d1558048365786e0b0421fe12c",
-      "marketId": "0x38557e3cb5362142ebf50308a651bc6c67a96eda4c7caa608722b86774700c89",
+      "collateralToken": "0x3A4948871141Bbaf13DadAfd0CAf94eD7C8eA7Aa",
+      "oracle": "0xed084B2Aa460c781f559d08D56B18775C01AefF9",
+      "marketId": "0x4e3e6fd3e858c571b562bb438f74cb575e3ee8bb9ce114e326bebe250a9917bc",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xbaDA5FeD44b59976d141195d0e601794E3B844C9",
-      "oracle": "0x8f26241d5da6b2d04f6a463f564311571b7786ac",
-      "marketId": "0xa8a4c154039bbdfb65bd007ebf7fdfb676b434ae9e2b88ad45d4917df9a3ddd1",
+      "collateralToken": "0xFc4eEFf325502a757AeEdb9CD9A3BA21Ab345594",
+      "oracle": "0x604A8Efa74B87cd339DEE3AC3a79b2ece1bf1D12",
+      "marketId": "0x5376354795c12c47d26a263f75102976802c85276c9d839c1005e43fd00dc294",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x330940e1F6bDfe966fF0cB3e6945038647437b3E",
-      "oracle": "0xe0f5478b07f1cd57dcbb4e1f65b94efa739886d2",
-      "marketId": "0x14d9a02d2b3a79b50838b3f64864b53b73eb29c7c1c618e7f4b2ed90a60da596",
+      "collateralToken": "0x6e8473e22155Dc1CC143b283EB2b519a3728B995",
+      "oracle": "0xabE3C21bF190453847f029e2604125086f7ccA64",
+      "marketId": "0x854bb461d5a72f637e2625d05de369f48b1c81026d2cb7a46319faefc1f03546",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x3e89cF9635fFDF0ff3653C99d296ce390107f2da",
-      "oracle": "0xeeb26a309c73bcf00f7cc6ea53c55efce2a85c75",
-      "marketId": "0x4ed8974e65c2cd5bcff4852e253c9f47dd9e54829d004db2390fc2b9ee3d0c60",
+      "collateralToken": "0x2A0C59b480Fe6755347BcCFd0D0E530565d484Ca",
+      "oracle": "0x48BcdFf7C74B2Fd83cE2a00D8117D1a1eB2f5182",
+      "marketId": "0x87fb224497f24619c78b3be1c2c16890899bfc4c8836891ab01e4084b6de083d",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x41b7fcA110124B70f6340EeF53a26223ab93185F",
-      "oracle": "0xa4e19f4357d6c521b43f9fccbcf60976e74ac1f9",
-      "marketId": "0xdd7a0df85cbf944353a5592d0b6813c9ab1d1d0e8b6d4b22901e4ab29f2dd7cb",
+      "collateralToken": "0x826FF561fE2CCaB4884bBB2b963073a1E8FAbE91",
+      "oracle": "0x6C21b91D92a768B184c60796661a3913AD8c9487",
+      "marketId": "0xbf01cedb0de411ebcf6c2d27c2f4176f131e516a1f78e85ec674cfbde29e03b5",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x8595D100b104898041E844fC2E85140c49C3284e",
-      "oracle": "0x5efc783b2f5643b97bda6625d2430b445689eb50",
-      "marketId": "0x480d5b25c141c6145dae15187c448a3b8580215be2fdf4f6185298e8dcc67894",
+      "collateralToken": "0x841eb221c5EDD953Cd094315AEFa34582D22e2bE",
+      "oracle": "0xe39Ac4B314eD24fEe7fB88cE36F48A303E58cC54",
+      "marketId": "0x8720fd6f56c8e998e0ec9e7340df88c3c9f9d2248797f0d36ba7c6f58e7f6e9f",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xeD0A984FaB21C6D45fac5ed81E8a026C788E0211",
-      "oracle": "0xb583b2d14694b5ec6c2714a49344b3ff8282bd10",
-      "marketId": "0xcd904b8c221fb6de6f4be7afdee03e2be621ad0bde167eb624a5f00411eafb00",
+      "collateralToken": "0xFe7127a67673949107B761C3E52B3E6c91b1E4A4",
+      "oracle": "0xAad05911d107B805fd111e1A7cCA065e10625C6C",
+      "marketId": "0x7963b4af4599722afc73babb74fbddde8a14b80d9081c77558b5ee27bd4d84bf",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xfd28F906AdE6c443CbF3e562A1d4D6561d817f10",
-      "oracle": "0xea3df2b82291bea240ff7ea365d1bb186a3e2eb8",
-      "marketId": "0xc3bc400e5eadc9b8a7e3ae9d6f504e59e892bb116149e7d152664c0cfb553d83",
+      "collateralToken": "0xFd12E4509c3F1Ce95Fb443357e83948b71b4E3Ea",
+      "oracle": "0x855E354ac2794533Ff72230a55F3C0F6511b47bD",
+      "marketId": "0xb7826e1dda50f5dd6c1174efe83838cef2ef3846dcdf11f72a89163ca433f53c",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x375278734E2e18153b3a451d68239BEb92f46FB0",
-      "oracle": "0x795aa18aa369099150f69f40289141d20f19c852",
-      "marketId": "0x2e358145481b1fbb369ce1fe31811fe0886199dabbe529b159ecf7eb8d667192",
+      "collateralToken": "0x95A697dc8F5D375AB167e87005e63b196058C189",
+      "oracle": "0x9a82a214aFf873617FEf837E3de4D0c943E9D211",
+      "marketId": "0xfdf6b80765f5ecd6c95bf59fe0e0107ef40d37105702a1324b6ad884d2897b51",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xB9C26F617f4b65DBdE616F31E55A5403be100762",
-      "oracle": "0x5ddc9e8f876ec718d27b8e103d3fcfad726dd301",
-      "marketId": "0xe140f204db2671ff8f2549b2047ccd3f736a56e6787afb424c39f5b76c45473d",
+      "collateralToken": "0x7911d47173eFc0bD65D170C33FF2F44830e7E020",
+      "oracle": "0x17c87B8cFADbC198dC4A81e0fCFca4Aa74A23554",
+      "marketId": "0x9747d462272b743504ff95804fa03ecb1b129507e502889ba48e6d37e20c0f77",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xDC6AD835103dafe8b38F43137A9d720764b8B4a3",
-      "oracle": "0x44cf79870bb3b3cf32e6f4248e6d111900fdea0f",
-      "marketId": "0x3b79dbf9e1bb848d309fdc995a168d40b879963e2cc870ce32f819aa862b24c7",
+      "collateralToken": "0x989BeaE063eF93c02F6aCACfbDdAc275f21b4f32",
+      "oracle": "0xB83F7EAa040d093434Af057be3652Be6BD4C3fB5",
+      "marketId": "0x152329067ed6c560624716eaffa3a9a16ec9186928f19a05002202617b8e4267",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x6B9B7456B22CB6B34852b17a4ab106bCaE58c818",
-      "oracle": "0xabbd87856dc3919c695fa0cc2368d1ff5bd6ee4e",
-      "marketId": "0xdc333dbe53239641041304201101adde12fdcd9745e09ae7de4c257052f8b3f8",
+      "collateralToken": "0xC808CD9bc3efa17F18C68d0666322766355c7068",
+      "oracle": "0x2CA64f765FC574C5E3a42C546bF204ec583bF5c6",
+      "marketId": "0xc08a7b64accb3e5c8f78905cbdc2d3d5747685deb6495fa6eb4ea5675c7294bc",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xD9D5deDB83949b6091b95e29432821AFCaEf6a66",
-      "oracle": "0x21b22cd2e62e6cfc3b3a249be16523f7b2f815db",
-      "marketId": "0x3b603d745774f89137e69595e62537d8dd4045614b7c365adea67e24f510cf37",
+      "collateralToken": "0x5d9F4C8C78c827fdf472F5B9b542eab89D4aE5d9",
+      "oracle": "0x28b0428f3E3Ed32e9FF41d08bdd58f651ce99fF8",
+      "marketId": "0x585f65c8a741d6b307e5550444354893e74aa6d94254dd88c0031e49776745a1",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xEeaf2E1C4f225FbC46b7544114696075e4E289fB",
-      "oracle": "0x76f6f6f2fa3365514bb9d544c5dde264c6aaedeb",
-      "marketId": "0x2df0db8c997e703df7bce6b93e47ca6798a1684071fb2a6f2674aad21e346fa6",
+      "collateralToken": "0x3690017729195c6aC781260E6EE62b4ec24BBA2e",
+      "oracle": "0xE50c8fEA2A64E8c654e1e0d051Cf3cd83a710c0a",
+      "marketId": "0xce414a2ee969b3a374062b134338c21c361ded48ebd4361317f3d50cb46ed16d",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x1A2d97c023368C3C97Fee1B66D6C4890ad3bB000",
-      "oracle": "0xe32579a22b5d107ee3d9d0adaefee9c148af7879",
-      "marketId": "0x30418333e3054d3561c96df390fcafbb9558210947af337442363519aa6c1b8e",
+      "collateralToken": "0xDD7B481a52b9aF1c23D99b998e9f6a81750F9835",
+      "oracle": "0xeC70195E75649AB1A035C481989D6aC38b87109F",
+      "marketId": "0xd5a1728dd3222f3c6cad4bfb64e030f2df9027763b71ca2aaa5bf3c3333a0caf",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xb2c42dE71c44A81dDb7f4A633fBB080eB6B88687",
-      "oracle": "0x668dc845e9b69a66a9c394e8cd54fdb952abb7bc",
-      "marketId": "0x88d48262a9ec6dd0681d0002e2639538a890082e0ea8d108d030ed0506f882e6",
+      "collateralToken": "0xe7BC4434B233F17E4ab3d93B89Ecb673AA459408",
+      "oracle": "0xD76d2a91DC1F1c58b675A1BB06A4C7D6efA71AB0",
+      "marketId": "0x0b244d668de0c174e1318652527903307cda1befebdd77c71c894dc7f984f983",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x03959A1C675CB1dAd9F00C406b263bce5544368C",
-      "oracle": "0x56bb7eda7652e88b89533e6ace13c37204eec4c4",
-      "marketId": "0xa9a1406bc6570266155905be077ff6748d6443ec3ded1d1aee3b211f245bbb5d",
+      "collateralToken": "0xeb5158F3B1332A1D0DcCf4CfF1eC5C906aFa5F1b",
+      "oracle": "0x801f7eFe68De24B9ce570BD1F180418Ff991BBB7",
+      "marketId": "0x44b6db7a6dd80ba7a58a29acca335800a0ac1d8a3ac801e8396b98c2986052c5",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xfA52cB861BEF0E9Fe44a153535281133B8324E1b",
-      "oracle": "0x0360531c35b842bc15d70991eeb768cf8c6489e8",
-      "marketId": "0x9903d66d20ccaaeab5179be59ba610d04905f08a878012bda285374994a15fd7",
+      "collateralToken": "0xE3814911913915ffAE44eD0210F1b926D97C5B5a",
+      "oracle": "0xF0238F7633f1228898171CaF17c289684820D064",
+      "marketId": "0x9ce0616c9a77cf4e635c4eddeb550c46ad186b81d775997676f476e23c7becd9",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x7066eE9D9CF6E70D9d3a3A4de6978440dadf21aD",
-      "oracle": "0x634d9a2cfe6a82d869dfa5685e9af976b5f19e55",
-      "marketId": "0x53833ce5d3194b2aae871032d0e67f64a92b9738a33713acd8da7f552ee73e06",
+      "collateralToken": "0x346761Ee2F4C4eceEc86ECfE4F610b1BA771ABdD",
+      "oracle": "0xa000ae316FE462f8b8B4634251F7920fa51004C1",
+      "marketId": "0x7818604e3c8f50feb8257196ca3de7bde0f867e56a83a57c6c7ff5b65a7c0647",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xBD75BbE3bcEa7d12724b7C53A8Bb8262e2DCe900",
-      "oracle": "0xbd594389c2d33965d2f2344c83d218831e685255",
-      "marketId": "0x9115556224eec79fafa38b048fe694169b9be713dfb89afede3ea848bfe00360",
+      "collateralToken": "0xE86A04aC3C2C61a7267a1A22a1706268A8Ca7d56",
+      "oracle": "0x5D1FE2E8633C1a9f5e9876a317b3d40E16a1Faa6",
+      "marketId": "0x560c36b490d9be9d17d8070d6be3f6b3a7ef58650017fb6223e6e5c9e1deb80f",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x60122932Ca456F5240760d71248b243E8A0b46e5",
-      "oracle": "0xd001e937dce8fd5332df9133ad5b0c70e4239bba",
-      "marketId": "0x40e3939c0c959a50abe368ae1079f606873564edf8f5e9bbece4197e5cc11b31",
+      "collateralToken": "0x4aBcFc6027d13c95B90483C568Bc9544F8C14D99",
+      "oracle": "0x977Ee1266d22fa24FbBE8C2aAefc8da0063d657b",
+      "marketId": "0x70a04e4d162fd22984a27c191088a162ddd40f22271598750dcc3508d00ed175",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x5BcFfe2b583b488B479c95486799a53AD9FB1123",
-      "oracle": "0xa3ed2a84738ff08b1342fe3e3c1c2dd175a0bf7c",
-      "marketId": "0xa9799d382e113bc6b52f3711e5a001fc399e9008bd8cef4f237c4513598137c3",
+      "collateralToken": "0x8baA38C6E7698e5351E8A097AD4c71686F2F7b94",
+      "oracle": "0x4c55A63D20b061c3Afb15d47A9D25e5fdec18302",
+      "marketId": "0x98a25d154356bb4b3b4574ef17ccd9e849240ededb3598b1220ebe925e0cd11a",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x25b86398A0662b4FbE291Bf0763a76177C38B97c",
-      "oracle": "0x5f1108415ebabf4acb4be1fec90fc59e2ca23a0b",
-      "marketId": "0x46b802c1bc67b547895e760868eae05ef4b22a88b482e00c0d178256725722de",
+      "collateralToken": "0x3Ae6b700b3e0eCbE946AC12487D35E9696887fA8",
+      "oracle": "0x626cf2709eB48Bca3fE5a5847faea62ea12CF022",
+      "marketId": "0xaa6e074cf24447c7d2f47b877863026d4cc4847aab7a3a8916134ad1368b46e1",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xF2a8e988e8E09080CADE5eBF93f91471f659131F",
-      "oracle": "0xe7825b7fed37bc724585bdfbc3dcb9db7d62026e",
-      "marketId": "0x551bf8fee7e67d0e699043a9a526b1ba7105310181ae653570ab3b78c6aaf809",
+      "collateralToken": "0x43D6f4f5B299aA27aa440f2658ef4Af412e0f67A",
+      "oracle": "0xaa20308aF4fc42c517E60AeB2149cd4E234159C6",
+      "marketId": "0xf27048568df307cf27495aed02996c95b5d4c1a090315dfb21410feccc5c7247",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xEF3aa9f30b1dBa52837E71c9B5FFb800a34a4Eaa",
-      "oracle": "0xdee3b3ec6a32169d43548c5d6fa23893b5d704ae",
-      "marketId": "0x0033527aa396a66bffc02fede18c71dc3169bd56781748f48b53b32e1c84ae0b",
+      "collateralToken": "0xC77f7F05F5A131dB5d7eF2c761470dEe804BD2D0",
+      "oracle": "0xA9645A0185993847b36fA0CAE5b9e637961a99ba",
+      "marketId": "0xa6222c0b163aed60e7539dd9c05c65fe53082fb06075338fb5ca2017f651044c",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x1fA25277f4EFCcC93DD1f1a278a9847Cab7289F8",
-      "oracle": "0x6b752910544a3be9a504271fdba218f7092c0f53",
-      "marketId": "0x5c83ec2339e23c124130d1261ab7ba21f7a07e32b7f1111db19452bf01030cb6",
+      "collateralToken": "0x5E5BAAd3F604B12dADedbE11AF74967a63A8F8E3",
+      "oracle": "0xb97e4b6b54481769f3A360D390DdF99DeDb5B391",
+      "marketId": "0xb8d94f384ec413c8f51f87b8b24717c99555782e24d07e2f24a4617f20a13f41",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x41754d66098265C3A32E7Db527DD456f6B4b9227",
-      "oracle": "0x4681191560804be07d913353e79ff1b00649d6ac",
-      "marketId": "0x140a9edc429b2eb761760948b11a3160e439a82671dd26b6ba512a330cd8847a",
+      "collateralToken": "0xa0833e431049e1E9BAB703a9c5eD205210978E90",
+      "oracle": "0xDAed1ceB94D03f0A07d4c9360a7Ea8bC06048607",
+      "marketId": "0x3aa0c0eeae8cbbb86d5ea58e84ca9199d89117d7a195a87fe40fb2226a52b492",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x980D96ff182d4196b1F898Bd3CCcF5039805946b",
-      "oracle": "0x6137ef664826eda2e6d570348959487b25c65e11",
-      "marketId": "0x883b65d8d9f82e1d217fd48158b8c82975d1a9d05f304249d259bb5265c82d98",
+      "collateralToken": "0xa855feb1ec2d843A039ac5BEB6337cCb5523017c",
+      "oracle": "0x7ca3476D8Df563b4AD36c877877714eDB6Fe0f40",
+      "marketId": "0x0113fba2c9dee9d0af93a23aaafc31d4c207819d6202af91a99574b8af55d7e8",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x792523c24B44779f52b5A71ff8A3AE090c3C7EA4",
-      "oracle": "0x651ea8bc7117b01b2636912723206932663785b9",
-      "marketId": "0x7295d8535ca7bd19adeefc3f6f4b60eab46085ecbd2e408126adfe5ebe5a84f9",
+      "collateralToken": "0xaf1dd00E3912d98814c1ECc9e09e8b15Ff0956e6",
+      "oracle": "0x19B95EEE96Fa604D5FDb097e38Fd39f7ab5F318E",
+      "marketId": "0x9b9797a780de804809894a7cca1dcd2dacbde16cb106636036a50e79625dfab6",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x48E37101079E7e4616FA74701ADb2357cEc0B54b",
-      "oracle": "0xc81034df1d0d7363de990b8c77a4e8e5c824f418",
-      "marketId": "0x6725639c5216b61d503e18a6df63a3b12dbbbe9860f6de685b574c38b6efadbf",
+      "collateralToken": "0xa306d1412A10805e35BAd7059923388f9B71592b",
+      "oracle": "0x3EC0915fe47a2E149EE1727c976b55926c01b553",
+      "marketId": "0xcc92b8a1b3d1af52a5ea723db032ab6014679e6f5a219b2c0a268827cb9a6952",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xcf06B2122d18ffE23F3Fa7C76452F0fb67D8f6Ef",
-      "oracle": "0x4cabcdeb639f2e58ba954e2009f038821fba9454",
-      "marketId": "0x8f6c9841ce476012c40f790bce6b908c40e20c32deca0d5405b56a09c11f47b5",
+      "collateralToken": "0x3a3d939ac002c08a7841b114E2592896F5472018",
+      "oracle": "0xFF977Fa0D4df90AeaF1e681D90540bdC491411a7",
+      "marketId": "0x2d4d94258aff609e92bbdee59b9983a497dcae369fab4f66d55181c9c769b5e1",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x66E2bDEAF3DF06bE32De30FEB096a3B0Fd759fB5",
-      "oracle": "0x744978578b62c66947d903509b3ab85c99de527b",
-      "marketId": "0x09f00e60582e8e12c205bca1f2dad762b1cc8ae5166affd8c153fd9181280380",
+      "collateralToken": "0x11460F445243A947a1ab6e2dB8585c0510d960C9",
+      "oracle": "0x5E0E3b8e00F23A648aB574683fe3E8D127AEa9A7",
+      "marketId": "0x36a2e887c3e6c5b6127a4a6eeb9821fac6adaabfe534bee398edc70b0b8e2eba",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x63737E9cDe776DCDD23B302CBf3633E5D6db4772",
-      "oracle": "0x2a141335bb9b58f1e4df21a2b903d37f955c2196",
-      "marketId": "0x4a109b130d33866907984443fe55779871e96e7ba1aa9a9708a4dc9f9e797cac",
+      "collateralToken": "0x7CbeCA4c6e2DE1754D4971E59E23Fd7c4a6986cd",
+      "oracle": "0xcd5523D24ca04CD88Ac5E1b270815A667De4dC4c",
+      "marketId": "0x3da6c166e3f866ace6ee6419a72a3377d4e544f6f4a6524c6da260205029cd91",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x42D31a1d6b3dB74d04501aF57cE932E775053233",
-      "oracle": "0x0df3e8648558d8cf77042f9e275924d761ca4373",
-      "marketId": "0xe4f4b84cc810d241bcc64bb15b8d1dfd53b27667ee16040e84828eccc597a9e8",
+      "collateralToken": "0x257d2Be02AF570C80A21EB388BFE9C1cc91c443f",
+      "oracle": "0xF627cbD204fB181481ce0fB488587000c15D0025",
+      "marketId": "0xb0379581dacb64c979ecbf43f5ff63cbf1eda202d2ef44818905b31ebf934b0d",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xcF3c92fd742017c3E027d93b04Dd9622fbaA83CE",
-      "oracle": "0xf37989b1e76b0d911a23ad56f6e1c7aeb30afb37",
-      "marketId": "0x69620e83e9e21fb43312e792790c9800a5f912eb3b8d1b2272cbb5b339a438f1",
+      "collateralToken": "0xd8FAF7f7550D6724CabBF55cC6f9096f621EaE5e",
+      "oracle": "0x88734C626ee360E42eB922a946f38918b3B29ff1",
+      "marketId": "0x194cffc4004895c3994851dd31d4e8d2708e47e12b16c66bc23dfd668b7a1492",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xf83350716Fb0dDb844ac65974269E4Fc8D4668B8",
-      "oracle": "0x94a6e1a99e8906e6c46854bbace250ccec91ab5d",
-      "marketId": "0xdc763b08f41c2ac2a2799b2b86e4fb7b0689ed051e4223baaa4611e8956a2fc6",
+      "collateralToken": "0x1dE202A81d5B1709aeE26945Bd65BB13dEe8c178",
+      "oracle": "0x456d2952743BfcE9262Ce7D8e119c5b213D80691",
+      "marketId": "0x55ca14af118bb6f7d7ee5c1041d1fefdc8c5972913d6d1c26e4fa21ac20b86fd",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x28C21015c6f3e26601711254ADA3B6FfB3348589",
-      "oracle": "0xee84ee1a04846b29ec9dc4bee323c1a679b57593",
-      "marketId": "0xf5660d176ce258b808a7affe2ad644093567509bc161a38934517f26d603b8f9",
+      "collateralToken": "0x3563ee0375Bc56De1B4eB72880d322daAEc50D85",
+      "oracle": "0x1275AebDD0DA41F63524296B6191B5E004C0C2f9",
+      "marketId": "0xc3c6890c9b56229a5c0d27b9d8ba5a8b840b585400d11bb0c01ba189f4787601",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x38e807001e0c553d394BaB3ad06B8Dcd076225DB",
-      "oracle": "0x1970b2e1dc4c3eb349ae3ed89dbf1dee6fcc2aa8",
-      "marketId": "0x8bcff6ca9d5c0de1d2ec91d844c23edc9b2ce68a5c18a15f04b286d19cd14f4e",
+      "collateralToken": "0x7E81Cfa8b662F873B2A91158F8762eF376486bFd",
+      "oracle": "0x0dD4c134d444C8f60fB8d46B85FFe1bE7B5f00a7",
+      "marketId": "0xb6298ab06c55d114986bb8bf51df0b5ddc77aa6f621480c133d50a9b94fb9067",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x367f39dB287F7ACDfF184Fbc0EC36f362f8fe61d",
-      "oracle": "0x3ac955a3c314268f37c68f78ec6d9945455a66c8",
-      "marketId": "0x25f794f1840693c7297121ffb50aed3e87aced7b5ba095d719b4e50eb1f80387",
+      "collateralToken": "0xdAcfD74706f9a450B520B145Df692BDd6E4002B0",
+      "oracle": "0x24fABD221308aa247e8dd74a97A5BaF7B86Fde94",
+      "marketId": "0x49b9c834172f780f4349c6b049eecacfefeb2d5ce6f6e9fb2da5bed42b1fc7df",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xa2248ea1A586bf182f6AcEBf1d4729CDacA6a349",
-      "oracle": "0x800ba20d194f3e0e0382b93138b106e64cbcf5a1",
-      "marketId": "0x3631f2295e0be56405ddf9a458415885eef43681f9db5c89b6db04e99ca145ef",
+      "collateralToken": "0x352bC1d1cDE26ea255e8E16336e4837Ea3727EfC",
+      "oracle": "0xDEe6843b0A7978f22Fbf05d60FF8bff8D9B9E865",
+      "marketId": "0x75a00234d7279590f200895e6d8388ca6f7a7c54ee0cb2ff176a93339ba0e7bc",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x846B239A4Ecc44C0C1d48EC09c31Cd0E641DA3aD",
-      "oracle": "0x6911975fc5e8cfb4721c3e33d9ba5630c6971863",
-      "marketId": "0xd00f069b8bca88dcda15ae6053b4e64a63aa04420efe7aab92ad6d8a671f6efd",
+      "collateralToken": "0x167f021693A2D7917bA5e96818601b2d6fa56294",
+      "oracle": "0x304227157D5632b960bc6aBc545a0cBE113C2dfc",
+      "marketId": "0x4bd691dc49e0918e769875c1a8ff9efc9548c33bb835013109710105bee3104c",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x325Cc8917522B7b94995501efA6cCf9736FEEc9E",
-      "oracle": "0xadac3954fb89852450f20947c769bf10de203ccb",
-      "marketId": "0x47d4719dfb4e6375211d8fde120d878ebaf1192d2bb7ef82ebfd11de4a483a72",
+      "collateralToken": "0xfEB7bb5Efd716537b824a8c1cd8EebB341a32cdc",
+      "oracle": "0xd8eE40a6Fc7dCD857e07Bc5DFDD7FdaB0E480b9a",
+      "marketId": "0x9f90a27cf2586e28290ff290dc57ee9a97bf428e1209961e0c94bd7b20a39173",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x953d7DdeEE6780C3E5A96160248cdd5b0672018d",
-      "oracle": "0x5e17fe8c60c364868465e20c4e630c5720ce9c83",
-      "marketId": "0xf7a5b82835b6a281d6ea44e3cf77b40c0e914e61b99b774c0f726e181bb26297",
+      "collateralToken": "0x2369fDee92e334580b987B1B5F61c46E87207D6B",
+      "oracle": "0x71C979afB01558130320aeBada6fFa9026C5534D",
+      "marketId": "0x9f1829c3e288d42b3d1953cdfa09e978e3913be5853efaa5ce69d1869b871871",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x15172341283b415A3878eB862FfEeb2521Ec2B06",
-      "oracle": "0x5e1f479bafa1af92422a630d2e8b83c04494335e",
-      "marketId": "0xd8123d6682c1443d158b503ef48d83bca43ab22aa3fecaf859e5d62cde14381e",
+      "collateralToken": "0x12287149143409Cae39fdcF7dd766d744f44B56F",
+      "oracle": "0xf2903F10136b5B611177122937Dea3105F20dA8c",
+      "marketId": "0xfd4ba056bd9af500a4d701f6d1866e92dfa861882a5af35b6dcc2b0e8eade95a",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x1A3fC54e20e26948E1b13596AB2314eCd59BBd80",
-      "oracle": "0x013992e1beb24bcdbdd013ab5dc1e1445f542492",
-      "marketId": "0x5100ee528d10df3528e11125e807e326c99e2ccb2cbb37796d85f0ace90c0e19",
+      "collateralToken": "0x0E377c2B59C8D4FAF3714bEd2c673D587aE930D0",
+      "oracle": "0xF7e92Ec09be9fC8BC918bc96ef7717a59716E18E",
+      "marketId": "0xdf645fe25cbcdf39c3c96643536f8be02e7c5e6bc33ed5dbe983679cdcd943fe",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x3Ff6BA9CAe411A73C99393d8773c8b300D9c045e",
-      "oracle": "0x61bc9d9ae195515296ecf0ff87a898ad12173d23",
-      "marketId": "0x11928c5feab8c0c5ec12a0d5eff8ab398aba19022de8c2cc0ab496ca0fd6e233",
+      "collateralToken": "0x7e95Ad8724f387514d8A7E06CEB0C40bbddfD1C9",
+      "oracle": "0x74d168dFADb4EC36B0b31C684F82B86DcCFD8510",
+      "marketId": "0xd63b588aa6f75bb778f518af2746c0c0980f235a75fc9fd70b55b68dd76bd756",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x29FEd9E17C292e56c3f22B2139718A30Bcb85515",
-      "oracle": "0x8d31407ed9ee2ab37b31868249dc79a1fcf814d3",
-      "marketId": "0xa5a5b0e13c1ccc14575f276d8c60cf67cc13219847264aac5bc8f2c853b2d007",
+      "collateralToken": "0xFaFEa8e95a3E49a5d37b0675f10Ff91d35c57138",
+      "oracle": "0x0bCdD645D900Db886588327114C3099dBCd9655f",
+      "marketId": "0xa3d74d5c67cb28c87e54c92be0d2bc1104c634e7c098edcc4e8ebff45d2ca154",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xEC9cA4ECfAC4317B36fCEf03c072648dc43bB93f",
-      "oracle": "0x58fde43e939a434d67dd578645707574009f4cb4",
-      "marketId": "0xb88625ddbbbeeb1e430e16a71689ba71967949ad6aea50a188cdac0edf313954",
+      "collateralToken": "0xba07B96eFa613A25330cb04ca69E4d70004D6522",
+      "oracle": "0x133bcBBD58CfB9acC2b5bed848a52d1b12762916",
+      "marketId": "0xa9e13adf7dbf59ccf62c7f35d3daeedc6fba4255dadf7a7ff6a633b42210bf72",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x2b06c41792Aa5685867f9829B0229F733Cb7B6FB",
-      "oracle": "0x1341d76aeaa2a2520f36e762bbafa8d2dd45a685",
-      "marketId": "0xe3378b0b251c0ecad271a7753c1fd8cc4cf9a037eff241a3be24415e75dc6781",
+      "collateralToken": "0xF3E037943C156c64672782d002239675D1357990",
+      "oracle": "0xB30403913C8601AE75A8cE88763bCE78aAb40543",
+      "marketId": "0xc22812ef38033d95b2e380cb38cfbbc724529252f23514c0ec5b8e28d467d8f3",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x5901ad7724ED4088e5a3246D4415Cb1741367cd3",
-      "oracle": "0x6f56d8d943bd9f0ee80dc6a3d4ffe57fbb86747e",
-      "marketId": "0x2b08356f74ae33eb5fba68678d954a27d35725c26c5a1d351c00207667ffed33",
+      "collateralToken": "0x517632e993a51b04C5d758E6d9624371A42f1b1c",
+      "oracle": "0x97C3FFb1ABaD7786C24CfB35Ccf48F9d770e9377",
+      "marketId": "0xd26fb8d9c2e1be1edb61c82c439df396440543fbf59a79b3e91d4487890bd0cd",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x4940075e14E3d54a2836ca8F4C934372eEdE1998",
-      "oracle": "0xe29baaa8b05558d70a75711c5e90f97be0ab39e6",
-      "marketId": "0xc5846a95502ca37a1132ca4ea057887852d70b9d63691ff9bcc1b147aa8f82a2",
+      "collateralToken": "0x543AF77cE48f3D83bD35AA275f88b4bc7b013B7d",
+      "oracle": "0xc8e6Ea7CA3751B0921cE2D6B4698baAF4AE8fC54",
+      "marketId": "0xebfef56699c102bbef8663cc9c49d5313ba70cd0ec5e0c07fccb2652b1538394",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x96809d89FaD8cBD7A46E69c17b44156E2F4Cfa70",
-      "oracle": "0x3bf009bb5531413629667a04ee6251bb7780d3bf",
-      "marketId": "0xb529e0a2b02d4d460ddaa53ffcdd195ca66f39974e41c436e2cbefa6d32da9cd",
+      "collateralToken": "0x18C9aacE78f115c398CbaDE272864b8A27aEB2b4",
+      "oracle": "0x8a20c72624406c7598d3EF89A9de57d8854B0830",
+      "marketId": "0x587a64e66f31e5eef5082c839d1276ed1d29409d540541299b2a981e39d4be2d",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xfdE170bA4c664A1E824E520D0fAc3F7CD6620277",
-      "oracle": "0x047329ef4dea77d2f2952ff48febba421312d565",
-      "marketId": "0xaf19a5bbe22dc2c6c0191184fbc4d36cc47465efef8b42848ecb3d5b327f8b72",
+      "collateralToken": "0x92C1D3Fe886dd4b00e9bAA64050bb0072cdB0df2",
+      "oracle": "0x4Ef67280DC6FCD986bB4f1FBd0a6ac980C931F74",
+      "marketId": "0x1680f667e02aebaea9152ab901994953faa0aa23154bf3e2023aec9cc8f619bc",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x2ADb6BF482b93D453EB05742dd294fa9883fdA92",
-      "oracle": "0xf22ebae26cf0e8997c41edb133270bc048c56ade",
-      "marketId": "0xd9a723513d63c1b6efd54d44cbce962445ba4ce3ebe0ec8f814039a4609f3964",
+      "collateralToken": "0x65fd5975b1cB0720A267bd9716D804Ef3d7e16DE",
+      "oracle": "0xFf9c06011fa2d51713B49e9ac8756d2bFaacBEe7",
+      "marketId": "0xc5014d894561c8f7ccee56ea5daa90129a5b34fd1f74ea3c23b6a4bbfc19d2a7",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x6B8361e269651FF698a9E35bD2b5cD111F5704b6",
-      "oracle": "0xac918c47d3ce8907374ed485d24338b21c053edf",
-      "marketId": "0x81402a05170130d6b833db4779c9a637521691d31e1368f293d95ef43307d09c",
+      "collateralToken": "0xd9dce1938BB6eDc6f645A84fdafb1C7fEF39D5Bf",
+      "oracle": "0xB8D4bb7F4b2b85BB4124832636f00375e548FCEd",
+      "marketId": "0x48f87249eee1cc08fd7793457c2a04c5507a5646e5c0bbf6998f99cc8b39d629",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x79f2e003851FCA80109AF8A44BC738DFFE84bb50",
-      "oracle": "0xe56609466a8bdd366fd1464457158960ba65a9e1",
-      "marketId": "0x30cd2602b906673e0ec87059a69fe66a3c4cde17593584cbdcf43d99999a20fb",
+      "collateralToken": "0xF720b7ab8cE9FaAd5fcDA189A1cf212EdF163e1A",
+      "oracle": "0xdd53A0fd482cCeaeA930a0ea83560F75516B3deE",
+      "marketId": "0x0df25ce5a3e3856faac2eadb85364f8a0d55cb9018f161e04cc8f1aa2552ca71",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xD688CDEED2659F9167ED608913D9234e0ef01bF7",
-      "oracle": "0x166538fef5b441ed5e57c0e267cf3d33c33cd57c",
-      "marketId": "0x0dc0dbcf509eb4284ba85a2c91425a95e9d6a5d644854c9fcfbe0afdf688b35b",
+      "collateralToken": "0xd4aB5946EDf0508D9fB2ad7Fbc430b6fD34f1de0",
+      "oracle": "0x3955d76DA1B4D11Ad87C652849E5961a00267E43",
+      "marketId": "0x1556a03949891408d298f9a08c7af73bf37288af2e0794410588fc1547922cee",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x60D03C4Df7D9B60F9836F2dcE8d0A77b6DE9661c",
-      "oracle": "0xe1eb86655b0cbf31b6e7b3387a2b684d5dc75c2c",
-      "marketId": "0x5b79e93d98166c79bedc10ded81dab1bc198158bcbf95c6755c64be203f03d8b",
+      "collateralToken": "0xfD471f2d4255036ccBf4d81C0FB840e991EAB891",
+      "oracle": "0xc5A7E1F6Cf2723b1bbcbc1145cbff1c24145ECf2",
+      "marketId": "0x7faf8bf12b9930801eeda35ba90c3a02588b6204fe88f0779fde0f79fc1bc0de",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x8Ee881226c3fc59933b9682601B221b287137336",
-      "oracle": "0x712727ac23db0d8a1e539f33afb50e49c651eaba",
-      "marketId": "0x07029ca53de252ca0075b075831c288367ec6688e217728142546fc7e0d98b58",
+      "collateralToken": "0xD8A6C4fFF6A08017B3a6294b6b6B4f8054269b9B",
+      "oracle": "0xa6278c62d05446409e9E78eB24E0ed19fdA249F2",
+      "marketId": "0x480e1ef25ff78e474f85996368674c2ff7e0f89ce6d252a7dd0f2b3230089e17",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x7c357545423a9901d69Ff844c904Df0C913ddD2f",
-      "oracle": "0x218c5a71c0a00893d31f7cd15112788b5ed262ab",
-      "marketId": "0x9252d2b9ee217c8018bd9232761db80be87ea382366801feb0e637902e09196a",
+      "collateralToken": "0x577Dc696d503746EFbb4984088b20638513416c2",
+      "oracle": "0xcB3a77788a41Efd2a74D65e249E89C0e8fD71468",
+      "marketId": "0xf357be55a1983878affe61cc9fc36e3721dff006dd858f3c1a0a8d67f8ec6038",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xCc7D74B4ABC7745dec6652847f631699E227893F",
-      "oracle": "0x9822130eb49b1a60a4ada003ac9f62e27c4d551c",
-      "marketId": "0x92a21653e8c976376b4902ed42c613e4a3efd68567fdae9e1ea2cb831504b5fd",
+      "collateralToken": "0x78a0828c6c9a9950eD75e7A92D683844e89166C0",
+      "oracle": "0xdF09aeD11810dC024e4133c87f6dcaAfdBaebcf6",
+      "marketId": "0x56e861eca03a7cf6e94d77a3356609277e25f2c6f9db256f4ef4e594b98f9232",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xA0f2402FA5A2114fc8E50997a0431a507C7D7158",
-      "oracle": "0x113b341190cb8efd88d30370e933b3cc28fb8572",
-      "marketId": "0x5b3d999ca529f1f7714806149fe389813ccd2ab42b32f724b719ed791443b31d",
+      "collateralToken": "0x332c56dE2f0063643ac3Abe3cb971f835806f4aF",
+      "oracle": "0xA585D0a8C5d5F2f05f5f391A8EA16C778cCE844b",
+      "marketId": "0xfb46b869c429249450dbd12d303413ee96a97c734df08a1dafbc144501d9f62b",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x5D4c141da720A446f84Cd916182375938A08fC45",
-      "oracle": "0x5de34ce6480f786047255eabef3fba556d94ac4e",
-      "marketId": "0x2dd141d78943887618d26d5486c7b9be3e4bb827501b92d8281c3e72d8c4c4e4",
+      "collateralToken": "0x3fcD19f4e42C65A62A361Ac58E818090a3A597A3",
+      "oracle": "0x022EcaE41286d5485a22B37520472FB661bfE72C",
+      "marketId": "0xea86df70c0629a4157334d97d0181b4a5fc81fe9244dcf699c67deb79a728eba",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x3c153111BA30d31b9367b7b9e8D6aB39Cc176A2d",
-      "oracle": "0x1a76003ae427620ca3536fce8716a28e923d8049",
-      "marketId": "0xf9dff309198aa7e56f390f5d0aa5201f9c805a6266408127a7455158d486a320",
+      "collateralToken": "0x44ee9815F068aDc6dB06e69F6C325665FA7E36F2",
+      "oracle": "0xC4C856F8324a6194530a6ffEb081beb10338c872",
+      "marketId": "0x15f1af2f41f9a40ec64245b2447321464779538b097ab8f1c5c9c6097c971faa",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x3a0332B8271CF3898d5BaEaD3a75272D38620bAA",
-      "oracle": "0x195e2749dc41a02f3610398a997633b458502394",
-      "marketId": "0x9dd696abae922dfdf506bde7d3d37406deba5b025511a9efd9da8b9d7b1ebf24",
+      "collateralToken": "0x8D0183d8B8d9b306a188D0a0E12D6F9eC7310041",
+      "oracle": "0x02B95EC72EA177102E767830904c18ce92FD4bd5",
+      "marketId": "0xe837d0992fa53d587daee4c5ea8810866f0736deb53c7927d5a8f688298a559f",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x8e27E037A1E2D673D8Ab1b2Dc3f05A616efBFf18",
-      "oracle": "0x29f2c074ee49f182c954ca6bf658297df35ac6fd",
-      "marketId": "0x3525549cb6813f6c80ac3d96c2db952c8c3e314dd0262c2565403edcf520e370",
+      "collateralToken": "0xa011a40B615e91634B8B6eDe0088bB2D3F62edCd",
+      "oracle": "0x29CA6EC5B8e8ce47582Ba392704BA9F410ce9FA9",
+      "marketId": "0x8e9bd00e37f74a574c498f47fa5dadb499a67523333a3c885e5aecf89c6151de",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x76760d3e1d57044a53f8B08A48b59127EEc55252",
-      "oracle": "0xe90af030807b4ac12084779c3b66fed611d5b1b0",
-      "marketId": "0x2b81f8c22b247e1300ea8fbd8831f4ad0f2d5bf4645468f059056e7b1d285d1f",
+      "collateralToken": "0x4aB1610D86a441B9214B3b09096eE24D5E73C70b",
+      "oracle": "0x4EB1d760B2663F1d1BB6eecfe83AB99a1AacD78C",
+      "marketId": "0x82b4e134d7872c9b3b59e5ba7fa53a112e6e698af64bb2d766be68475c83ddfe",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x323B975588fbCC83f84d1e7c917fc628236cE8Ef",
-      "oracle": "0x649c0335196f59fd4197e22cc6999c601b50dbcf",
-      "marketId": "0x942a2b1cc29ebd7eb4f677dd8d44b1207bde14f7b8d2cd5fcc2ecabc161531fd",
+      "collateralToken": "0x5B0CfdcBBDa37275500bbDCAfe20a7A750E91Dd7",
+      "oracle": "0x784377AEE6D1e1B13C35bF08570788187A22Db6a",
+      "marketId": "0xa15c6298098c433c752ad541dcbad68424965331e55fe853f6a6831b31a39b2f",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x04f33d40aeE5e325A8242CF63DC6f3c724f33c2e",
-      "oracle": "0x9d7a5c36bb9aaab119e2e281be3fbe7808032c94",
-      "marketId": "0x559bc0c6b8d74940e1352e9a8dc42563f94720612fad901b678125bf6003e593",
+      "collateralToken": "0x94B72657519aB93a0A8409e7C61965365a14Cf8D",
+      "oracle": "0x96884599E0E002E8644116A55b60697B0594bE67",
+      "marketId": "0xe6d419edbae0407e941ce031fbfab66ab468d46e7942f7e6e51f009caf2187ea",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x8D1509f74EC8f674DAdC9D50e0BCc28bD4d152a2",
-      "oracle": "0xe2562569c84beb4c5ef33737c7adbe26bb90c56a",
-      "marketId": "0xbc005afbc929a6b99d9e934e51e33b41b83b90aed3ef9cb528cc7961505f0bb5",
+      "collateralToken": "0x9dCFf455e4CC43020123Ff9d40FAb0DB18C3BFD7",
+      "oracle": "0x4154E9cDFB69d00c844193204BE3837095d96a9A",
+      "marketId": "0x0e8def2ec2727fdfa0be3d513ee167232d0231f51896a2bd9aedd01be823d63a",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x26de854eC987A6c90a4d37257Fa182d854aB8292",
-      "oracle": "0x85cc02433192f83e3f7832f1a059a7df51b72a65",
-      "marketId": "0x2ad54fabfba53b1b7e9a2a2c0b0d717a2fc7c033308f74c826d56ba20669b474",
+      "collateralToken": "0x36615430Aa50113466a7c77F9cEbfeA5A6DdAa05",
+      "oracle": "0xdE8CBf85e83321d173DCBd95E67A9E20B92c5Cf8",
+      "marketId": "0xf88209aaa6271ee6711cf353ff1d94f0484d9b01fd267b0e7968904eebd433fa",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xD21398e9367E33e6690fEf63E80eCB9a233b1dF9",
-      "oracle": "0x75ef3ee4b6c6735787b4a420aad5978bb3065284",
-      "marketId": "0x6b6c66a97d9b52f3c6a749058708a1703382398d66c5a819d8da45480f053625",
+      "collateralToken": "0xe652ed22edAb9b53151eE1EF1FF45fEF4FC609d5",
+      "oracle": "0xc6c5305A59c4C63f1cfEE20f15b8ceD3f5F1Ac34",
+      "marketId": "0x48daaa31f136ff308592a226b23df52156e1f518c56a99db1b98a880e5ee7d7b",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0x491f15ACaDBBB515229161f5D7BcdF43444c3506",
-      "oracle": "0xe2ac3daad5496b40dd74ce8fc3deb3b39bca89b2",
-      "marketId": "0x5e36379f0af8f8f51e9d6cc223564bb56ddca6e5265029f19ebc7ead6bfdab2f",
+      "collateralToken": "0xbc271CD5Ec54B9Cf66c11d5dAa2918147D913f07",
+      "oracle": "0x15857c4020274Eaecc996f191E0E6EE1798D76b8",
+      "marketId": "0xec1fd6c68f252e625b715081ff12e4966ee7c4cdcc759e888185a7ef3ed806b3",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xb56Cc6bfb8F5Ee1905d3479aA0D4BCCEe4C1Fdf9",
-      "oracle": "0xc576bed8b8400bbb09ca3a72c0b43af97b7bdd8a",
-      "marketId": "0xf21a606565d2bfa7b47e01678f0befe6128a15219283c089767c9bae5cc7da21",
+      "collateralToken": "0xdf6743E86B076700ab612665A2EB6d77Aaab6230",
+      "oracle": "0xd4AE589ddbB5A1F1936F7B0141dE2f1050C87c0c",
+      "marketId": "0x53ba52216ea24d30be061943bf4dffab1da4834a41f21744ab16f1e1fcefadaf",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     },
     {
-      "collateralToken": "0xB1d29a73E1fA89b1Fa67542E5198172f7f200918",
-      "oracle": "0x41c7101359753c61d758f6dd7b0eff8640746b0e",
-      "marketId": "0x222327457c1c14eca5af05626c56f8e96f412d5b1913937fcf774523813a771b",
+      "collateralToken": "0x1A444f3E977E12dd1693D66b1ef4A7012cE5e3B1",
+      "oracle": "0xc71dE9435a239cbF7CCF6b2226f0308feA7F1530",
+      "marketId": "0x98bcba153d7d05610c458a42555648317e457209a79da38cf8e53c94f18e9d91",
       "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
+      "loanToken": "0x95Aac5eE73cab260feBce01dAF1158048d7FaBA1",
+      "irm": "0xEc7D70159d0A33E9a17295Dda3A51E84db6bEd94"
     }
   ]
 }
