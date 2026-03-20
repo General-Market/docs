@@ -111,6 +111,19 @@ export interface MorphoPositionSnapshot {
   collateral: string
 }
 
+export interface MorphoMarketSSE {
+  market_id: string
+  collateral_token: string
+  total_supply_assets: string
+  total_borrow_assets: string
+  total_supply_shares: string
+  total_borrow_shares: string
+  borrow_rate_per_second: string
+  lltv: string
+  oracle: string
+  last_update: number
+}
+
 export interface FillRecord {
   order_id: number
   side: number
@@ -137,6 +150,7 @@ export interface SSEData {
   itpNav: NavSnapshot[]
   oraclePrices: OracleSnapshot | null
   systemStatus: SystemSnapshot | null
+  morphoMarkets: MorphoMarketSSE[]
   userBalances: UserBalances | null
   userAllowances: UserAllowances | null
   userOrders: UserOrder[]
@@ -153,6 +167,7 @@ const INITIAL_DATA: SSEData = {
   itpNav: [],
   oraclePrices: null,
   systemStatus: null,
+  morphoMarkets: [],
   userBalances: null,
   userAllowances: null,
   userOrders: [],
@@ -278,6 +293,16 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
           try {
             const parsed: SystemSnapshot = JSON.parse(event.data)
             setData(prev => ({ ...prev, systemStatus: parsed }))
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
+        })
+
+        es.addEventListener('morpho-markets', (event: MessageEvent) => {
+          try {
+            const parsed: MorphoMarketSSE[] = JSON.parse(event.data)
+            setData(prev => ({ ...prev, morphoMarkets: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -425,6 +450,11 @@ export function useSSESystem(): SystemSnapshot | null {
 export function useSSEOracle(): OracleSnapshot | null {
   const { data } = useContext(SSEContext)
   return data.oraclePrices
+}
+
+export function useSSEMorphoMarkets(): MorphoMarketSSE[] {
+  const { data } = useContext(SSEContext)
+  return data.morphoMarkets
 }
 
 export function useSSEConnectionState(): SSEConnectionState {

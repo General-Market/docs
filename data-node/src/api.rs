@@ -6193,6 +6193,7 @@ async fn sse_stream(
         let mut last_pos_gen: u64 = 0;
         let mut last_cb_gen: u64 = 0;
         let mut last_system_gen: u64 = 0;
+        let mut last_morpho_markets_gen: u64 = 0;
 
         // Delta tracking: what NAV each client last received per ITP
         let mut last_sent_nav: HashMap<String, f64> = HashMap::new();
@@ -6285,6 +6286,16 @@ async fn sse_stream(
                         if tx.send(Ok(Event::default().event("system-status").data(json))).await.is_err() { break; }
                     }
                     last_system_gen = gen;
+                }
+            }
+
+            if topics.contains(&"morpho-markets".to_string()) {
+                let gen = cache.morpho_markets_gen.get();
+                if gen != last_morpho_markets_gen {
+                    let data = cache.morpho_markets.read().await;
+                    let json = serde_json::to_string(&*data).unwrap_or_default();
+                    if tx.send(Ok(Event::default().event("morpho-markets").data(json))).await.is_err() { break; }
+                    last_morpho_markets_gen = gen;
                 }
             }
 
