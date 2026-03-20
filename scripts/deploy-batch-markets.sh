@@ -20,7 +20,7 @@ INDEX_ADDR=$(jq -r '.contracts.Index' "$DEPLOYMENT")
 L3_RPC=$(jq -r '.contracts.L3_WUSDC // empty' "$DEPLOYMENT" | head -c 0; echo "http://142.132.164.24")
 
 MORPHO=$(jq -r '.contracts.MORPHO' "$MORPHO_DEPLOYMENT")
-CURATOR_IRM=$(jq -r '.contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
+CURATOR_IRM=$(jq -r '.contracts.CURATOR_RATE_IRM // .contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
 VAULT=$(jq -r '.contracts.METAMORPHO_VAULT' "$MORPHO_DEPLOYMENT")
 LOAN_TOKEN=$(jq -r '.marketParams.loanToken' "$MORPHO_DEPLOYMENT")
 MIRROR_REGISTRY=$(jq -r '.contracts.MIRROR_REGISTRY' "$MORPHO_DEPLOYMENT")

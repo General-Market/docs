@@ -1023,7 +1023,7 @@ print(f'All {count} ITP #1 assets in symbol-map')
     echo -e "${BLUE}[12b/14] Deploying batch lending markets for all ITPs...${NC}"
     MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
     VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
-    CURATOR_IRM=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ADAPTIVE_IRM'])" 2>/dev/null || echo "")
+    CURATOR_IRM=$(python3 -c "import json; c=json.load(open('deployments/morpho-e2e.json'))['contracts']; print(c.get('CURATOR_RATE_IRM', c.get('ADAPTIVE_IRM', '')))" 2>/dev/null || echo "")
     MIRROR_REG=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
     LOAN_TOKEN=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['loanToken'])" 2>/dev/null || echo "")
     EXISTING_MKT_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
@@ -1044,13 +1044,7 @@ print(f'All {count} ITP #1 assets in symbol-map')
             BATCH_VAULTS+=("$V")
         done
 
-        MAX_BATCH=29  # MetaMorpho withdraw queue limit = 30 (including existing singleton)
         NEW_COUNT=${#BATCH_VAULTS[@]}
-        if [ "$NEW_COUNT" -gt "$MAX_BATCH" ]; then
-            echo -e "  ${YELLOW}Capping batch to $MAX_BATCH (MetaMorpho queue limit 30)${NC}"
-            BATCH_VAULTS=("${BATCH_VAULTS[@]:0:$MAX_BATCH}")
-            NEW_COUNT=$MAX_BATCH
-        fi
         if [ "$NEW_COUNT" -gt 0 ]; then
             echo -e "  Deploying $NEW_COUNT batch markets..."
             DEFAULT_LLTV="770000000000000000"
@@ -1682,7 +1676,7 @@ _start_curator_docker() {
     VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
     MARKET_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
     ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
-    CURATOR_IRM_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ADAPTIVE_IRM'])" 2>/dev/null || echo "")
+    CURATOR_IRM_ADDR=$(python3 -c "import json; c=json.load(open('deployments/morpho-e2e.json'))['contracts']; print(c.get('CURATOR_RATE_IRM', c.get('ADAPTIVE_IRM', '')))" 2>/dev/null || echo "")
     MIRROR_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
     LOAN_TOKEN_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['loanToken'])" 2>/dev/null || echo "")
     ITP_ADDR=$(read_deployment_addr "BridgedITP")
@@ -1726,11 +1720,7 @@ services:
       - "--vault-address"
       - "$VAULT_ADDR"
       - "--market-ids"
-      - "$MARKET_ID"
-      - "--oracle-address"
-      - "$ORACLE_ADDR"
-      - "--itp-address"
-      - "$ITP_ADDR"
+      - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['marketId'] for m in d['markets']]))" 2>/dev/null || echo "$MARKET_ID")"
       - "--oracle-urls"
       - "$ORACLE_URLS"
       - "--l3-rpc-url"
@@ -1740,9 +1730,9 @@ services:
       - "--l3-registry-address"
       - "$REGISTRY_ADDR"
       - "--oracle-addresses"
-      - "$ORACLE_ADDR"
+      - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['oracle'] for m in d['markets']]))" 2>/dev/null || echo "$ORACLE_ADDR")"
       - "--itp-addresses"
-      - "$ITP_ADDR"
+      - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['collateralToken'] for m in d['markets']]))" 2>/dev/null || echo "$ITP_ADDR")"
       - "--allocation-interval-secs"
       - "60"
       - "--update-interval-secs"
