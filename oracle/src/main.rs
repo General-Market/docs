@@ -4544,6 +4544,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             vision_cfg.num_oracles = args.num_oracles as usize;
             // node_id is 1-indexed (u32), node_index is 0-indexed (u8)
             vision_cfg.node_index = args.node_id.map(|id| (id.saturating_sub(1)) as u8).unwrap_or(0);
+            // Round-based sources: read from env var (no CLI arg — config-only)
+            if vision_cfg.round_based_sources.is_empty() {
+                if let Ok(sources) = std::env::var("ORACLE_VISION_ROUND_BASED_SOURCES") {
+                    vision_cfg.round_based_sources = sources
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                }
+            }
             Some(vision_cfg)
         } else {
             None
