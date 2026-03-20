@@ -876,9 +876,15 @@ impl OracleConfig {
             None => Address::zero(),
         };
 
+        let vision = match self.vision.as_ref().map(|v| v.vision_address.as_str()) {
+            Some(addr) if !addr.is_empty() => Self::parse_address("vision", addr)?,
+            _ => Address::zero(),
+        };
+
         Ok(crate::WriterContractAddresses {
             index,
             l3_bridge_custody,
+            vision,
         })
     }
 

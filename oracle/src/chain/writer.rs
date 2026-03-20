@@ -27,6 +27,8 @@ pub struct WriterContractAddresses {
     pub index: Address,
     /// L3BridgeCustody.sol contract address for bridge operations
     pub l3_bridge_custody: Address,
+    /// Vision.sol contract address for Vision prediction market operations
+    pub vision: Address,
 }
 
 impl Default for WriterContractAddresses {
@@ -34,6 +36,7 @@ impl Default for WriterContractAddresses {
         Self {
             index: Address::zero(),
             l3_bridge_custody: Address::zero(),
+            vision: Address::zero(),
         }
     }
 }
@@ -420,6 +423,110 @@ impl EthersChainWriter {
             .to(self.config.contracts.l3_bridge_custody)
             .data(calldata)
             .into()
+    }
+
+    /// Build a settleBatch transaction
+    ///
+    /// Encodes: Vision.settleBatch(batchId, players, payouts, blsSignature, referenceNonce, signersBitmask)
+    fn build_settle_batch_tx(
+        &self,
+        batch_id: u64,
+        players: &[Address],
+        payouts: &[U256],
+        bls_sig: &[u8],
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> TypedTransaction {
+        // Function signature: settleBatch(uint256,address[],uint256[],bytes,uint256,uint256)
+        let function = ethers::abi::Function {
+            name: "settleBatch".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "batchId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "players".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Address)),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "payouts".to_string(),
+                    kind: ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Uint(256))),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::Uint(U256::from(batch_id)),
+            ethers::abi::Token::Array(
+                players
+                    .iter()
+                    .map(|&a| ethers::abi::Token::Address(a))
+                    .collect(),
+            ),
+            ethers::abi::Token::Array(
+                payouts
+                    .iter()
+                    .map(|&p| ethers::abi::Token::Uint(p))
+                    .collect(),
+            ),
+            ethers::abi::Token::Bytes(bls_sig.to_vec()),
+            ethers::abi::Token::Uint(U256::from(ref_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
+        ];
+
+        // SAFETY: ABI encoding is deterministic for valid tokens; failure indicates a code bug.
+        let calldata = function.encode_input(&tokens).expect("ABI encoding should not fail");
+
+        Eip1559TransactionRequest::new()
+            .to(self.config.contracts.vision)
+            .data(calldata)
+            .into()
+    }
+
+    /// Submit a settleBatch transaction to Vision.sol on L3.
+    pub async fn settle_batch(
+        &self,
+        batch_id: u64,
+        players: Vec<Address>,
+        payouts: Vec<U256>,
+        bls_sig: Vec<u8>,
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> Result<TxHash, Error> {
+        debug!(
+            batch_id = batch_id,
+            player_count = players.len(),
+            signature_len = bls_sig.len(),
+            ref_nonce = ref_nonce,
+            signers_bitmask = %signers_bitmask,
+            "Building settleBatch transaction"
+        );
+
+        let tx = self.build_settle_batch_tx(batch_id, &players, &payouts, &bls_sig, ref_nonce, signers_bitmask);
+        self.submit_tx(tx, "settle_batch").await
     }
 
     /// Submit a transaction with nonce management, gas estimation, and retry logic.
@@ -1244,6 +1351,38 @@ mod tests {
 
         // Calldata should contain encoded parameters
         // 4 (selector) + offsets + data
+        assert!(calldata.len() > 4 + 32 * 6, "Calldata should contain encoded parameters");
+    }
+
+    #[test]
+    fn test_build_settle_batch_tx() {
+        let private_key = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+        let mut config = ChainWriterConfig::default();
+        config.contracts.vision = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+            .parse()
+            .unwrap();
+
+        let writer = EthersChainWriter::new(config, private_key).unwrap();
+
+        let players = vec![Address::from([0x11u8; 20]), Address::from([0x22u8; 20])];
+        let payouts = vec![U256::from(1_000_000u64), U256::from(2_000_000u64)];
+        let tx = writer.build_settle_batch_tx(7, &players, &payouts, &[0u8; 96], 3, U256::from(3));
+
+        assert!(tx.to().is_some());
+        assert!(tx.data().is_some());
+
+        // Verify function selector: settleBatch(uint256,address[],uint256[],bytes,uint256,uint256)
+        let calldata = tx.data().unwrap();
+        let expected_selector = ethers::utils::keccak256(
+            "settleBatch(uint256,address[],uint256[],bytes,uint256,uint256)"
+        );
+        assert_eq!(
+            &calldata[0..4],
+            &expected_selector[0..4],
+            "Function selector should match keccak256 of settleBatch signature"
+        );
+
+        // Selector + 6 params (each offset or value = 32 bytes) at minimum
         assert!(calldata.len() > 4 + 32 * 6, "Calldata should contain encoded parameters");
     }
 }
