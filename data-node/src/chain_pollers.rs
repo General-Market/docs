@@ -7,6 +7,7 @@ use crate::api::AppState;
 use crate::chain_cache::{
     NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
     UserCostBasis, FillRecord, CachedLimitOrder, CachedOracle, CachedMorphoMarket,
+    MorphoVaultState,
 };
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
@@ -122,6 +123,44 @@ abigen!(
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
     ]"#
 );
+
+abigen!(
+    MetaMorphoVaultReader,
+    r#"[
+        function totalAssets() external view returns (uint256)
+        function totalSupply() external view returns (uint256)
+        function name() external view returns (string)
+        function symbol() external view returns (string)
+        function decimals() external view returns (uint8)
+    ]"#
+);
+
+pub async fn poll_morpho_vault_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let vault_addr = match crate::api::deployment_addr(&state.morpho_deployment, "METAMORPHO_VAULT") {
+        Ok(a) => a,
+        Err(_) => return Ok(()), // vault not deployed, skip silently
+    };
+    if vault_addr == Address::zero() { return Ok(()); }
+
+    let vault = MetaMorphoVaultReader::new(vault_addr, Arc::clone(&state.l3_provider));
+
+    let total_assets = vault.total_assets().call().await.unwrap_or_default();
+    let total_supply = vault.total_supply().call().await.unwrap_or_default();
+    let name = vault.name().call().await.unwrap_or_default();
+    let symbol = vault.symbol().call().await.unwrap_or_default();
+    let decimals = vault.decimals().call().await.unwrap_or_default();
+
+    let mut cache = state.chain_cache.morpho_vault.write().await;
+    *cache = MorphoVaultState {
+        total_assets: total_assets.to_string(),
+        total_supply: total_supply.to_string(),
+        name,
+        symbol,
+        decimals,
+    };
+    state.chain_cache.morpho_vault_gen.bump();
+    Ok(())
+}
 
 pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if state.batch_markets.is_empty() { return Ok(()); }
@@ -288,6 +327,14 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
     let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
     let has_vault = vault_addr != Address::zero();
 
+    // Vision contract on L3
+    let vision_addr = crate::api::deployment_addr(&state.deployment, "Vision").unwrap_or_default();
+    let has_vision = vision_addr != Address::zero();
+
+    // MetaMorpho vault on L3 (from morpho-deployment.json)
+    let metamorpho_vault_addr = crate::api::deployment_addr(&state.morpho_deployment, "METAMORPHO_VAULT").unwrap_or_default();
+    let has_metamorpho = metamorpho_vault_addr != Address::zero();
+
     for (user, user_cache) in &user_list {
         // Settlement USDC balance
         let usdc = BalanceReader::new(settlement_usdc_addr, Arc::clone(&state.settlement_provider));
@@ -305,6 +352,25 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
             U256::zero()
         };
 
+        // Vision token balance on L3
+        let vision_bal = if has_vision {
+            let vision = BalanceReader::new(vision_addr, Arc::clone(&state.l3_provider));
+            vision.balance_of(*user).call().await.unwrap_or_default()
+        } else {
+            U256::zero()
+        };
+
+        // Native gas balance on L3
+        let native_bal = state.l3_provider.get_balance(*user, None).await.unwrap_or_default();
+
+        // MetaMorpho vault shares on L3
+        let vault_shares = if has_metamorpho {
+            let mm = BalanceReader::new(metamorpho_vault_addr, Arc::clone(&state.l3_provider));
+            mm.balance_of(*user).call().await.unwrap_or_default()
+        } else {
+            U256::zero()
+        };
+
         let mut uc = user_cache.write().await;
         // Preserve itp_shares — maintained by SharesUpdated events, not by this poller
         let existing_shares = uc.balances.itp_shares.clone();
@@ -314,6 +380,9 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
             itp_shares: existing_shares,
             bridged_itp: bridged_bal.to_string(),
             itp_nonce: 0,
+            vision_balance: vision_bal.to_string(),
+            native_gas_balance: native_bal.to_string(),
+            vault_shares: vault_shares.to_string(),
         };
         uc.balances_gen.bump();
     }
@@ -342,6 +411,14 @@ pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn s
     let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
     let has_vault = vault_addr != Address::zero();
 
+    // MetaMorpho vault address (for USDC → vault deposit approval)
+    let metamorpho_vault_addr = crate::api::deployment_addr(&state.morpho_deployment, "METAMORPHO_VAULT").unwrap_or_default();
+    let has_metamorpho = metamorpho_vault_addr != Address::zero();
+
+    // Vision contract address (for USDC → Vision deposit approval)
+    let vision_addr = crate::api::deployment_addr(&state.deployment, "Vision").unwrap_or_default();
+    let has_vision = vision_addr != Address::zero();
+
     for (user, user_cache) in &user_list {
         // L3_WUSDC allowance to Morpho (on L3)
         let l3_usdc = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
@@ -360,11 +437,29 @@ pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn s
             U256::zero()
         };
 
+        // L3 USDC allowance to MetaMorpho vault (for vault deposits)
+        let usdc_to_vault = if has_metamorpho {
+            let l3_usdc_v = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
+            l3_usdc_v.allowance(*user, metamorpho_vault_addr).call().await.unwrap_or_default()
+        } else {
+            U256::zero()
+        };
+
+        // L3 USDC allowance to Vision (for Vision deposits)
+        let usdc_to_vision = if has_vision {
+            let l3_usdc_vis = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
+            l3_usdc_vis.allowance(*user, vision_addr).call().await.unwrap_or_default()
+        } else {
+            U256::zero()
+        };
+
         let mut uc = user_cache.write().await;
         uc.allowances = UserAllowances {
             usdc_l3_to_index: usdc_to_morpho.to_string(),
             usdc_settlement_to_custody: usdc_to_custody.to_string(),
             itp_to_morpho: itp_to_morpho.to_string(),
+            usdc_l3_to_vault: usdc_to_vault.to_string(),
+            usdc_l3_to_vision: usdc_to_vision.to_string(),
         };
         uc.allowances_gen.bump();
     }

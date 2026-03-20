@@ -85,6 +85,16 @@ pub struct CachedItpState {
     pub settlement_address: Option<String>,
 }
 
+/// Cached MetaMorpho vault state (totalAssets, totalSupply, name, symbol, decimals)
+#[derive(Clone, Serialize, Default)]
+pub struct MorphoVaultState {
+    pub total_assets: String,
+    pub total_supply: String,
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+}
+
 /// Cached Morpho market state (polled every 30s)
 #[derive(Clone, Serialize, Default)]
 pub struct CachedMorphoMarket {
@@ -121,6 +131,9 @@ pub struct UserBalances {
     pub itp_shares: HashMap<String, String>,
     pub bridged_itp: String,
     pub itp_nonce: u64,
+    pub vision_balance: String,
+    pub native_gas_balance: String,
+    pub vault_shares: String,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -128,6 +141,8 @@ pub struct UserAllowances {
     pub usdc_l3_to_index: String,
     pub usdc_settlement_to_custody: String,
     pub itp_to_morpho: String,
+    pub usdc_l3_to_vault: String,    // L3 USDC → MetaMorpho vault
+    pub usdc_l3_to_vision: String,   // L3 USDC → Vision contract
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -179,7 +194,8 @@ pub struct UserCache {
     pub allowances_gen: Generation,
     pub orders: Vec<UserOrder>,
     pub orders_gen: Generation,
-    pub positions: MorphoPositionSnapshot,
+    /// market_id (hex string) → position snapshot; only markets with non-zero positions are stored
+    pub positions: HashMap<String, MorphoPositionSnapshot>,
     pub positions_gen: Generation,
     pub cost_basis: UserCostBasis,
     pub cost_basis_gen: Generation,
@@ -196,7 +212,7 @@ impl Default for UserCache {
             allowances_gen: Generation::default(),
             orders: Vec::new(),
             orders_gen: Generation::default(),
-            positions: MorphoPositionSnapshot::default(),
+            positions: HashMap::new(),
             positions_gen: Generation::default(),
             cost_basis: UserCostBasis::default(),
             cost_basis_gen: Generation::default(),
@@ -255,6 +271,10 @@ pub struct ChainCache {
     // Morpho market state (polled every 30s)
     pub morpho_markets: RwLock<Vec<CachedMorphoMarket>>,
     pub morpho_markets_gen: Generation,
+
+    // MetaMorpho vault state (polled every 30s)
+    pub morpho_vault: RwLock<MorphoVaultState>,
+    pub morpho_vault_gen: Generation,
 }
 
 impl ChainCache {
@@ -303,6 +323,9 @@ impl ChainCache {
 
             morpho_markets: RwLock::new(Vec::new()),
             morpho_markets_gen: Generation::default(),
+
+            morpho_vault: RwLock::new(MorphoVaultState::default()),
+            morpho_vault_gen: Generation::default(),
         }
     }
 

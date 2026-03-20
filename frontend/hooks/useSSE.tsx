@@ -83,12 +83,17 @@ export interface UserBalances {
   itp_shares: Record<string, string>
   bridged_itp: string
   itp_nonce: number
+  vision_balance: string
+  native_gas_balance: string
+  vault_shares: string
 }
 
 export interface UserAllowances {
   usdc_l3_to_index: string
   usdc_settlement_to_custody: string
   itp_to_morpho: string
+  usdc_l3_to_vault: string
+  usdc_l3_to_vision: string
 }
 
 export interface UserOrder {
