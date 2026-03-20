@@ -5206,6 +5206,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Spawn BatchLifecycleManager for round-based sources
                     if !vision_cfg.round_based_sources.is_empty() {
                         let lm_chain_writer = components.chain.writer.clone();
+                        let lm_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
                         let lm = oracle::vision::lifecycle::BatchLifecycleManager::new(
                             vision_cfg.clone(),
                             scheduler.clone(),
@@ -5214,6 +5215,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             pool.clone(),
                             components.shutdown.clone(),
                             lm_chain_writer,
+                            lm_bls_keypair,
                         );
                         tokio::spawn(async move { lm.run().await });
                         info!(

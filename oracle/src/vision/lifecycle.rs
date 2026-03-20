@@ -9,15 +9,17 @@
 //!   3. Record lifecycle in Postgres
 //!   4. Rotate: previous = current, current = new
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use common::bls::{BLSKeyPair, Bn254BLSSigner};
+use common::traits::BLSSigner;
+use common::BLSSignature;
 use ethers::abi::{encode, Token};
-use ethers::types::{H256, U256};
+use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
 use sqlx::PgPool;
-use tracing::{info, warn, error};
+use tracing::{info, warn, error, debug};
 
 use crate::chain::EthersChainWriter;
 use super::batch_config_orchestrator;
@@ -61,9 +63,11 @@ pub struct BatchLifecycleManager {
     bitmap_store: Arc<BitmapStore>,
     pool: PgPool,
     shutdown: Arc<AtomicBool>,
-    /// L3 chain writer for submitting createBatch transactions.
+    /// L3 chain writer for submitting createBatch / settleBatch transactions.
     /// None in mock/read-only mode (follower oracles still detect batches via chain events).
     chain_writer: Option<Arc<EthersChainWriter>>,
+    /// BLS keypair for signing settlement proofs. None if BLS is not configured.
+    bls_keypair: Option<Arc<BLSKeyPair>>,
 }
 
 impl BatchLifecycleManager {
@@ -75,6 +79,7 @@ impl BatchLifecycleManager {
         pool: PgPool,
         shutdown: Arc<AtomicBool>,
         chain_writer: Option<Arc<EthersChainWriter>>,
+        bls_keypair: Option<Arc<BLSKeyPair>>,
     ) -> Self {
         Self {
             config,
@@ -84,6 +89,7 @@ impl BatchLifecycleManager {
             pool,
             shutdown,
             chain_writer,
+            bls_keypair,
         }
     }
 
@@ -185,12 +191,14 @@ impl BatchLifecycleManager {
                                 );
                             }
 
-                            // TODO: BLS consensus for on-chain settleBatch() call.
-                            // The settlement result (players, payouts) needs to be:
-                            //   1. Proposed to peer oracles via P2P
-                            //   2. BLS co-signed by quorum
-                            //   3. Submitted on-chain via ChainWriter::settle_batch()
-                            // For now, settlement is computed and recorded off-chain only.
+                            // BLS sign + aggregate in shared DB, submit on-chain at quorum
+                            if let Err(e) = self.sign_and_aggregate_settlement(&settlement).await {
+                                error!(
+                                    batch_id = prev_id,
+                                    error = %e,
+                                    "Settlement BLS signing/aggregation failed"
+                                );
+                            }
 
                             // Cleanup: mark settled in scheduler, purge bitmaps
                             if let Err(e) = self.scheduler.mark_settled(&self.pool, prev_id).await {
@@ -540,6 +548,186 @@ impl BatchLifecycleManager {
         }
 
         Ok(lifecycle_id)
+    }
+
+    /// Sign the settlement, aggregate with other oracles via shared DB, submit at quorum.
+    ///
+    /// Each oracle computes the same deterministic hash from (players, payouts),
+    /// signs it with its own BLS key, then UPSERTs into `vision_settlement_proofs`.
+    /// The UPSERT uses `SELECT FOR UPDATE` to serialise concurrent writers —
+    /// the last oracle to arrive aggregates all signatures and submits on-chain.
+    async fn sign_and_aggregate_settlement(
+        &self,
+        settlement: &RoundSettlement,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let bls_keypair = match &self.bls_keypair {
+            Some(kp) => kp.clone(),
+            None => {
+                debug!(batch_id = settlement.batch_id, "No BLS keypair — skipping settlement signing");
+                return Ok(());
+            }
+        };
+
+        if settlement.players.is_empty() {
+            debug!(batch_id = settlement.batch_id, "No players — nothing to settle on-chain");
+            return Ok(());
+        }
+
+        let batch_id = settlement.batch_id;
+        let vision_address: Address = self.config.vision_address.parse().unwrap_or_default();
+        let chain_id = self.config.chain_id;
+        let node_index = self.config.node_index;
+        let num_oracles = self.config.num_oracles;
+        let threshold = (num_oracles / 2) + 1; // 2-of-3, 3-of-5, etc.
+
+        // 1. Compute deterministic payouts hash
+        let payouts_hash = keccak256(&encode(&[
+            Token::Array(settlement.players.iter().map(|a| Token::Address(*a)).collect()),
+            Token::Array(settlement.payouts.iter().map(|p| Token::Uint(*p)).collect()),
+        ]));
+
+        // 2. Compute SETTLE_BATCH BLS message hash (must match Vision.sol domain)
+        let message_hash: [u8; 32] = keccak256(&encode(&[
+            Token::Uint(U256::from(chain_id)),
+            Token::Address(vision_address),
+            Token::String("SETTLE_BATCH".to_string()),
+            Token::Uint(U256::from(batch_id)),
+            Token::FixedBytes(payouts_hash.to_vec()),
+        ]));
+
+        // 3. Sign with local BLS key
+        let signer = Bn254BLSSigner::new();
+        let signature = signer.sign_message_hash(&bls_keypair, &message_hash)
+            .map_err(|e| format!("BLS signing failed for batch {}: {}", batch_id, e))?;
+        let sig_bytes = signature.0;
+        let node_bitmap: i64 = 1i64 << node_index;
+
+        // 4. Shared-DB aggregation with SELECT FOR UPDATE
+        let mut tx = self.pool.begin().await?;
+
+        let existing: Option<(Vec<u8>, i64, bool)> = sqlx::query_as(
+            "SELECT bls_sig, signer_bitmap, submitted FROM vision_settlement_proofs WHERE batch_id = $1 FOR UPDATE"
+        )
+        .bind(batch_id as i64)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let (final_sig, final_bitmap, already_submitted) = if let Some((existing_sig, existing_bitmap, submitted)) = existing {
+            if submitted {
+                // Already submitted on-chain by another oracle — nothing to do.
+                tx.commit().await?;
+                debug!(batch_id, "Settlement already submitted on-chain — skipping");
+                return Ok(());
+            }
+
+            if existing_bitmap & node_bitmap != 0 {
+                // This oracle already signed — idempotent.
+                tx.commit().await?;
+                debug!(batch_id, node_index, "Already signed this settlement — skipping");
+                return Ok(());
+            }
+
+            // Aggregate BLS signatures (point addition)
+            let merged_bitmap = existing_bitmap | node_bitmap;
+            let merged_sig = if existing_sig.is_empty() {
+                sig_bytes.clone()
+            } else {
+                match signer.aggregate_signatures(vec![
+                    BLSSignature(existing_sig),
+                    BLSSignature(sig_bytes.clone()),
+                ]) {
+                    Ok(agg) => agg.0,
+                    Err(e) => {
+                        warn!(
+                            batch_id, error = %e,
+                            "BLS aggregation failed — overwriting with own signature"
+                        );
+                        // Fall back to own signature only
+                        tx.commit().await?;
+                        return Err(format!("BLS aggregation failed: {}", e).into());
+                    }
+                }
+            };
+
+            // Update existing row
+            sqlx::query(
+                "UPDATE vision_settlement_proofs SET bls_sig = $1, signer_bitmap = $2 WHERE batch_id = $3"
+            )
+            .bind(&merged_sig[..])
+            .bind(merged_bitmap)
+            .bind(batch_id as i64)
+            .execute(&mut *tx)
+            .await?;
+
+            (merged_sig, merged_bitmap, false)
+        } else {
+            // First signer — insert new row
+            let players_hash_hex = format!("0x{}", hex::encode(payouts_hash));
+            sqlx::query(
+                "INSERT INTO vision_settlement_proofs (batch_id, players_hash, bls_sig, signer_bitmap)
+                 VALUES ($1, $2, $3, $4)"
+            )
+            .bind(batch_id as i64)
+            .bind(&players_hash_hex)
+            .bind(&sig_bytes[..])
+            .bind(node_bitmap)
+            .execute(&mut *tx)
+            .await?;
+
+            (sig_bytes, node_bitmap, false)
+        };
+
+        tx.commit().await?;
+
+        let popcount = final_bitmap.count_ones();
+        info!(
+            batch_id,
+            node_index,
+            signers = popcount,
+            threshold,
+            bitmap = final_bitmap,
+            "Settlement proof stored"
+        );
+
+        // 5. Check quorum — submit on-chain if enough signers
+        if popcount as usize >= threshold && !already_submitted {
+            if let Some(ref writer) = self.chain_writer {
+                let ref_nonce = 0u64; // TODO: read lastSnapshotNonce from OracleRegistry
+                match writer.settle_batch(
+                    batch_id,
+                    settlement.players.clone(),
+                    settlement.payouts.clone(),
+                    final_sig,
+                    ref_nonce,
+                    U256::from(final_bitmap as u64),
+                ).await {
+                    Ok(tx_hash) => {
+                        info!(
+                            batch_id,
+                            tx = %tx_hash,
+                            signers = popcount,
+                            "settleBatch submitted on-chain"
+                        );
+                        // Mark as submitted
+                        sqlx::query("UPDATE vision_settlement_proofs SET submitted = true WHERE batch_id = $1")
+                            .bind(batch_id as i64)
+                            .execute(&self.pool)
+                            .await?;
+                    }
+                    Err(e) => {
+                        error!(
+                            batch_id,
+                            error = %e,
+                            "settleBatch on-chain call failed — will retry next cycle"
+                        );
+                    }
+                }
+            } else {
+                warn!(batch_id, "Quorum reached but no chain_writer — cannot submit settleBatch");
+            }
+        }
+
+        Ok(())
     }
 
     /// Record a new round in `vision_batch_lifecycle` and return its ID.
