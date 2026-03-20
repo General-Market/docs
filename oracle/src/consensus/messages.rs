@@ -1173,6 +1173,60 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            P2PMessage::VisionCreateBatchProposal {
+                leader_id,
+                source_name,
+                source_id,
+                config_hash,
+                tick_duration,
+                lock_offset,
+                message_hash,
+                leader_signature,
+                reference_nonce,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    %source_name,
+                    ?source_id,
+                    "Received VisionCreateBatchProposal"
+                );
+                MessageHandleResult::ProcessVisionCreateBatchProposal {
+                    from,
+                    leader_id,
+                    source_name,
+                    source_id,
+                    config_hash,
+                    tick_duration,
+                    lock_offset,
+                    message_hash,
+                    leader_signature,
+                    reference_nonce,
+                }
+            }
+            P2PMessage::VisionCreateBatchSign {
+                signer_id,
+                signer_index,
+                source_id,
+                message_hash,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    ?source_id,
+                    "Received VisionCreateBatchSign"
+                );
+                MessageHandleResult::ProcessVisionCreateBatchSign {
+                    from: signer_id,
+                    signer_id,
+                    signer_index,
+                    source_id,
+                    message_hash,
+                    signature,
+                }
+            }
             P2PMessage::VisionBalanceProofsBatch {
                 batch_id,
                 tick_id,
@@ -1971,6 +2025,26 @@ pub enum MessageHandleResult {
         tick_id: u64,
         proofs: Vec<(Address, U256, P2PBLSSignature)>,
         signer_index: u8,
+    },
+    ProcessVisionCreateBatchProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        source_name: String,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        message_hash: H256,
+        leader_signature: P2PBLSSignature,
+        reference_nonce: u64,
+    },
+    ProcessVisionCreateBatchSign {
+        from: PeerId,
+        signer_id: PeerId,
+        signer_index: u8,
+        source_id: H256,
+        message_hash: H256,
+        signature: P2PBLSSignature,
     },
     /// Forward arbitration message to arbitration subsystem
     ForwardToArbitration(P2PMessage),

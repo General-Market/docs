@@ -896,6 +896,38 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
+    // Vision consensus: createBatch on L3
+    // Leader proposes a new round batch; followers co-sign so the on-chain call
+    // meets the 2-of-3 BLS threshold required by BLSVerifier.
+    VisionCreateBatchProposal {
+        leader_id: PeerId,
+        /// Human-readable source name (e.g. "crypto"), for log correlation.
+        source_name: String,
+        /// keccak256(source_name) — the on-chain sourceId.
+        source_id: H256,
+        /// keccak256 of the batch configuration JSON.
+        config_hash: H256,
+        /// Tick duration in seconds.
+        tick_duration: u64,
+        /// Lock offset in seconds.
+        lock_offset: u64,
+        /// Pre-computed BLS message hash (followers verify by recomputing).
+        message_hash: H256,
+        /// Leader's BLS signature over message_hash.
+        leader_signature: BLSSignature,
+        /// OracleRegistry lastSnapshotNonce used for the BLS call.
+        reference_nonce: u64,
+    },
+    VisionCreateBatchSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        /// Identifies which proposal this co-sign belongs to.
+        source_id: H256,
+        /// Followers MUST verify message_hash before signing.
+        message_hash: H256,
+        signature: BLSSignature,
+    },
+
     // Vision balance proof aggregation (fire-and-forget broadcast)
     VisionBalanceProofsBatch {
         batch_id: u64,

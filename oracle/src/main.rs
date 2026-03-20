@@ -4841,7 +4841,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arb_config = ArbitrationConfig::from_oracle_config(&config);
 
     // Save Vision config before config is consumed
-    let vision_config = config.vision.clone();
+    let mut vision_config = config.vision.clone();
+    // Propagate oracle_registry_address into VisionConfig for createBatch nonce reads.
+    // The VisionConfig is built inside with_vision() where `config` is not in scope, so we patch here.
+    if let Some(ref mut vc) = vision_config {
+        if vc.oracle_registry_address.is_empty() {
+            if let Some(ref addr) = config.oracle_registry_address {
+                vc.oracle_registry_address = addr.clone();
+            }
+        }
+    }
 
     // Shared PendingOpsQueue: deposit watcher (in main) enqueues ops,
     // vision ops consensus task (in run_main_loop) drains and submits them.
@@ -5199,6 +5208,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 *guard = Some(vision_gossip_tx);
                                 info!(node_id, "vision_bitmap_gossip_tx installed on consensus protocol");
                             }
+
+                            // Wire createBatch co-sign channel into protocol (if lifecycle manager will use it)
+                            if !vision_cfg.round_based_sources.is_empty() {
+                                let (lm_sign_tx, lm_sign_rx) =
+                                    tokio::sync::mpsc::channel::<oracle::vision::lifecycle::IncomingCreateBatchSign>(64);
+                                if let Ok(mut guard) = protocol.vision_create_batch_sign_tx.lock() {
+                                    *guard = Some(lm_sign_tx);
+                                    info!(node_id, "vision_create_batch_sign_tx installed on consensus protocol");
+                                }
+
+                                // Stash rx for BatchLifecycleManager spawn below
+                                let lm_sign_rx = Arc::new(tokio::sync::Mutex::new(lm_sign_rx));
+
+                                // Spawn BatchLifecycleManager for round-based sources
+                                let lm_chain_writer = components.chain.writer.clone();
+                                let lm_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
+                                let lm_broadcast_tx = if components.p2p.transport.is_some() {
+                                    Some(vision_broadcast_tx.clone())
+                                } else {
+                                    None
+                                };
+                                let lm_peer_id: [u8; 32] = components.consensus.keys.peer_id;
+                                let lm = oracle::vision::lifecycle::BatchLifecycleManager::new(
+                                    vision_cfg.clone(),
+                                    scheduler.clone(),
+                                    resolver.clone(),
+                                    bitmap_store.clone(),
+                                    pool.clone(),
+                                    components.shutdown.clone(),
+                                    lm_chain_writer,
+                                    lm_bls_keypair,
+                                    lm_broadcast_tx,
+                                    Some(lm_sign_rx),
+                                    lm_peer_id,
+                                );
+                                tokio::spawn(async move { lm.run().await });
+                                info!(
+                                    sources = ?vision_cfg.round_based_sources,
+                                    "BatchLifecycleManager spawned (with P2P co-sign)"
+                                );
+                            }
                         }
                     }
 
@@ -5213,10 +5263,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         orchestrator.run().await;
                     });
 
-                    // Spawn BatchLifecycleManager for round-based sources
-                    if !vision_cfg.round_based_sources.is_empty() {
+                    // Spawn BatchLifecycleManager for round-based sources (no-P2P fallback).
+                    // The P2P path above spawns it inside `if let Some(ref protocol)`.
+                    // This path handles single-oracle dev mode where protocol is None.
+                    if !vision_cfg.round_based_sources.is_empty() && components.consensus.protocol.is_none() {
                         let lm_chain_writer = components.chain.writer.clone();
                         let lm_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
+                        let lm_peer_id: [u8; 32] = components.consensus.keys.peer_id;
                         let lm = oracle::vision::lifecycle::BatchLifecycleManager::new(
                             vision_cfg.clone(),
                             scheduler.clone(),
@@ -5226,11 +5279,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             components.shutdown.clone(),
                             lm_chain_writer,
                             lm_bls_keypair,
+                            None, // no broadcast_tx
+                            None, // no co-sign rx
+                            lm_peer_id,
                         );
                         tokio::spawn(async move { lm.run().await });
                         info!(
                             sources = ?vision_cfg.round_based_sources,
-                            "BatchLifecycleManager spawned"
+                            "BatchLifecycleManager spawned (no-P2P mode)"
                         );
                     }
 

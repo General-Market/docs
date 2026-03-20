@@ -539,6 +539,8 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::VisionRefundDepositSign { signer_id, .. } => Some(*signer_id),
         P2PMessage::VisionCompleteWithdrawProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::VisionCompleteWithdrawSign { signer_id, .. } => Some(*signer_id),
+        P2PMessage::VisionCreateBatchProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionCreateBatchSign { signer_id, .. } => Some(*signer_id),
         // VisionBalanceProofsBatch has no explicit sender field
         P2PMessage::VisionBalanceProofsBatch { .. } => None,
         // Bitmap gossip messages have no explicit sender field (sender is inferred from connection)

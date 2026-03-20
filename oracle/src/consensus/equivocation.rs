@@ -1112,6 +1112,38 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update([*signer_index]);
             h.update(withdraw_id.to_le_bytes());
         }
+        P2PMessage::VisionCreateBatchProposal {
+            leader_id,
+            source_id,
+            config_hash,
+            tick_duration,
+            lock_offset,
+            message_hash,
+            source_name: _,
+            leader_signature: _,
+            reference_nonce: _,
+        } => {
+            h.update(b"VisionCreateBatchProposal");
+            h.update(leader_id);
+            h.update(source_id.as_bytes());
+            h.update(config_hash.as_bytes());
+            h.update(tick_duration.to_le_bytes());
+            h.update(lock_offset.to_le_bytes());
+            h.update(message_hash.as_bytes());
+        }
+        P2PMessage::VisionCreateBatchSign {
+            signer_id,
+            signer_index,
+            source_id,
+            message_hash,
+            signature: _,
+        } => {
+            h.update(b"VisionCreateBatchSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(source_id.as_bytes());
+            h.update(message_hash.as_bytes());
+        }
         P2PMessage::VisionBalanceProofsBatch {
             batch_id,
             tick_id,
@@ -1245,6 +1277,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
         P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
         P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
+        P2PMessage::VisionCreateBatchProposal { .. } => "VisionCreateBatchProposal",
+        P2PMessage::VisionCreateBatchSign { .. } => "VisionCreateBatchSign",
         P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
         // Bitmap gossip messages — not consensus-relevant for equivocation detection
         P2PMessage::BitmapGossip { .. } => "BitmapGossip",
@@ -1289,6 +1323,7 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::VisionCompleteDepositSign { .. }
             | P2PMessage::VisionRefundDepositSign { .. }
             | P2PMessage::VisionCompleteWithdrawSign { .. }
+            | P2PMessage::VisionCreateBatchSign { .. }
     )
 }
 

@@ -426,6 +426,8 @@ impl OracleConfig {
                             .ok()
                             .map(|s| s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect())
                             .unwrap_or_default(),
+                        oracle_registry_address: std::env::var("ORACLE_ORACLE_REGISTRY_ADDRESS")
+                            .unwrap_or_default(),
                     })
                 } else {
                     None

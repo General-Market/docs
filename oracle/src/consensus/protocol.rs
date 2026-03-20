@@ -428,6 +428,9 @@ where
     /// Forwarding channel for incoming bitmap gossip messages (Gossip/Request/Response).
     /// Set by the engine bootstrap; the bitmap gossip task reads from the other end.
     pub vision_bitmap_gossip_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBitmapGossip>>>>,
+    /// Forwarding channel for incoming VisionCreateBatchSign messages.
+    /// Set in main.rs; the BatchLifecycleManager reads from the other end.
+    pub vision_create_batch_sign_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::lifecycle::IncomingCreateBatchSign>>>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -521,6 +524,7 @@ where
             vision_consensus_config: RwLock::new(None),
             vision_balance_proofs_tx: Arc::new(std::sync::Mutex::new(None)),
             vision_bitmap_gossip_tx: Arc::new(std::sync::Mutex::new(None)),
+            vision_create_batch_sign_tx: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -3143,6 +3147,33 @@ where
                         }
                     } else {
                         debug!(batch_id, tick_id, "VisionBalanceProofsBatch received but aggregator channel not set");
+                    }
+                }
+            }
+            // Vision createBatch co-signing
+            MessageHandleResult::ProcessVisionCreateBatchProposal {
+                from: _, leader_id: _, source_name, source_id,
+                config_hash, tick_duration, lock_offset,
+                message_hash, leader_signature: _, reference_nonce: _,
+            } => {
+                if let Err(e) = self.handle_vision_create_batch_proposal(
+                    source_name, source_id, config_hash, tick_duration, lock_offset, message_hash,
+                ).await {
+                    warn!(error = %e, "Failed to handle VisionCreateBatchProposal");
+                }
+            }
+            MessageHandleResult::ProcessVisionCreateBatchSign {
+                from: _, signer_id: _, signer_index, source_id, message_hash, signature,
+            } => {
+                if let Ok(guard) = self.vision_create_batch_sign_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let incoming = crate::vision::lifecycle::IncomingCreateBatchSign {
+                            signer_index,
+                            source_id,
+                            message_hash,
+                            signature: common::types::BLSSignature(signature.0),
+                        };
+                        let _ = tx.try_send(incoming);
                     }
                 }
             }
@@ -8633,6 +8664,80 @@ where
                 None // Fail-closed: caller must NOT sign
             }
         }
+    }
+
+    /// Follower: handle a VisionCreateBatchProposal from the leader.
+    ///
+    /// Verifies the BLS message hash by recomputing it from proposal params,
+    /// signs the hash with our own BLS key, and broadcasts `VisionCreateBatchSign` back.
+    async fn handle_vision_create_batch_proposal(
+        &self,
+        source_name: String,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        proposed_message_hash: H256,
+    ) -> Result<(), Error> {
+        // Get vision_address and chain_id from the VisionConsensusConfig
+        let (vision_address, l3_chain_id) = {
+            let guard = self.vision_consensus_config.read().await;
+            match guard.as_ref() {
+                Some(cfg) => (cfg.vision_address, cfg.l3_chain_id),
+                None => {
+                    warn!(%source_name, "VisionConsensusConfig not set — cannot co-sign createBatch");
+                    return Ok(());
+                }
+            }
+        };
+
+        // Recompute the BLS message hash from proposal params and verify
+        let expected = ethers::utils::keccak256(ethers::abi::encode(&[
+            ethers::abi::Token::Uint(U256::from(l3_chain_id)),
+            ethers::abi::Token::Address(vision_address),
+            ethers::abi::Token::String("CREATE_BATCH".to_string()),
+            ethers::abi::Token::FixedBytes(source_id.as_bytes().to_vec()),
+            ethers::abi::Token::FixedBytes(config_hash.as_bytes().to_vec()),
+            ethers::abi::Token::Uint(U256::from(tick_duration)),
+            ethers::abi::Token::Uint(U256::from(lock_offset)),
+        ]));
+        let expected_hash = H256::from(expected);
+
+        if expected_hash != proposed_message_hash {
+            warn!(
+                %source_name,
+                ?proposed_message_hash,
+                ?expected_hash,
+                "VisionCreateBatchProposal message hash mismatch — rejecting"
+            );
+            return Ok(());
+        }
+
+        // Sign the verified hash
+        let hash_bytes: [u8; 32] = proposed_message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsSigning(format!("createBatch co-sign failed: {}", e)))?;
+
+        let sign_msg = P2PMessage::VisionCreateBatchSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.oracle_registry_index(),
+            source_id,
+            message_hash: proposed_message_hash,
+            signature: common::types::BLSSignature(signature.0),
+        };
+
+        // Broadcast to all peers (leader will pick up the co-sign from the channel)
+        if let Err(e) = self.p2p.broadcast(sign_msg).await {
+            warn!(%source_name, error = %e, "Failed to broadcast VisionCreateBatchSign");
+        } else {
+            info!(
+                %source_name,
+                signer_index = self.runtime_config.oracle_registry_index(),
+                "Signed and broadcast VisionCreateBatchSign"
+            );
+        }
+
+        Ok(())
     }
 }
 

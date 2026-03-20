@@ -89,6 +89,8 @@ fn msg_variant_name(msg: &P2PMessage) -> &'static str {
         P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
         P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
         P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
+        P2PMessage::VisionCreateBatchProposal { .. } => "VisionCreateBatchProposal",
+        P2PMessage::VisionCreateBatchSign { .. } => "VisionCreateBatchSign",
         P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
         P2PMessage::BitmapGossip { .. } => "BitmapGossip",
         P2PMessage::BitmapRequest { .. } => "BitmapRequest",

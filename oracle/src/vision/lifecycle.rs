@@ -14,14 +14,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::traits::BLSSigner;
+use common::types::P2PMessage;
 use common::BLSSignature;
 use ethers::abi::{encode, Token};
 use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
 use sqlx::PgPool;
+use tokio::sync::mpsc;
 use tracing::{info, warn, error, debug};
 
 use crate::chain::EthersChainWriter;
+use crate::consensus::aggregator::compute_threshold;
 use super::batch_config_orchestrator;
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
@@ -29,6 +32,20 @@ use super::resolver::{MarketPrices, TickResolver};
 use super::settlement::compute_settlement;
 use super::tick_scheduler::TickScheduler;
 use super::types::{MarketConfig, RoundSettlement};
+
+/// Incoming co-sign message from a follower oracle for a pending createBatch proposal.
+///
+/// Protocol.rs forwards `VisionCreateBatchSign` messages here via the channel
+/// wired in main.rs.
+pub struct IncomingCreateBatchSign {
+    pub signer_index: u8,
+    pub source_id: H256,
+    pub message_hash: H256,
+    pub signature: BLSSignature,
+}
+
+/// How long the leader waits for follower co-signs before giving up (seconds).
+const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 10;
 
 /// Stagger interval between sources to avoid thundering herd.
 const SOURCE_STAGGER_SECS: u64 = 7;
@@ -68,6 +85,12 @@ pub struct BatchLifecycleManager {
     chain_writer: Option<Arc<EthersChainWriter>>,
     /// BLS keypair for signing settlement proofs. None if BLS is not configured.
     bls_keypair: Option<Arc<BLSKeyPair>>,
+    /// P2P broadcast channel — used by the leader to broadcast VisionCreateBatchProposal.
+    broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
+    /// Incoming co-sign channel — protocol.rs forwards VisionCreateBatchSign messages here.
+    create_batch_sign_rx: Option<Arc<tokio::sync::Mutex<mpsc::Receiver<IncomingCreateBatchSign>>>>,
+    /// This oracle's P2P peer id (32-byte public key hash). Used as leader_id in proposals.
+    peer_id: [u8; 32],
 }
 
 impl BatchLifecycleManager {
@@ -80,6 +103,9 @@ impl BatchLifecycleManager {
         shutdown: Arc<AtomicBool>,
         chain_writer: Option<Arc<EthersChainWriter>>,
         bls_keypair: Option<Arc<BLSKeyPair>>,
+        broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
+        create_batch_sign_rx: Option<Arc<tokio::sync::Mutex<mpsc::Receiver<IncomingCreateBatchSign>>>>,
+        peer_id: [u8; 32],
     ) -> Self {
         Self {
             config,
@@ -90,6 +116,9 @@ impl BatchLifecycleManager {
             shutdown,
             chain_writer,
             bls_keypair,
+            broadcast_tx,
+            create_batch_sign_rx,
+            peer_id,
         }
     }
 
@@ -430,9 +459,13 @@ impl BatchLifecycleManager {
 
     /// Create a new round batch for a source.
     ///
-    /// Leader oracle (node_index == 0) submits `createBatch` on-chain.
-    /// Follower oracles detect the new batch via `BatchCreated` chain events
-    /// and register it in their scheduler automatically.
+    /// Leader oracle (node_index == 0) broadcasts a `VisionCreateBatchProposal` to all peers,
+    /// collects co-signs until BLS threshold is met (ceil(2n/3)), aggregates the signatures,
+    /// then submits `createBatch` on-chain.
+    ///
+    /// Follower oracles receive the proposal, verify the BLS message hash by recomputing it,
+    /// sign, and reply with `VisionCreateBatchSign`. They detect the resulting on-chain
+    /// `BatchCreated` event and register the batch in their scheduler automatically.
     ///
     /// Returns the lifecycle DB id on success. The on-chain batch_id arrives
     /// asynchronously through the chain listener.
@@ -481,7 +514,7 @@ impl BatchLifecycleManager {
                     .unwrap_or_else(|_| H256::from(keccak256(config_hash_str.as_bytes())));
 
                 // Compute BLS message: keccak256(abi.encode(chainid, vision_address, "CREATE_BATCH", sourceId, configHash, tickDuration, lockOffset))
-                let vision_address: ethers::types::Address = self.config.vision_address
+                let vision_address: Address = self.config.vision_address
                     .parse()
                     .unwrap_or_default();
 
@@ -494,12 +527,13 @@ impl BatchLifecycleManager {
                     Token::Uint(U256::from(tick_duration)),
                     Token::Uint(U256::from(lock_offset)),
                 ]));
+                let message_hash = H256::from(bls_message);
 
-                // BLS sign the createBatch message
-                let bls_sig = if let Some(ref kp) = self.bls_keypair {
+                // BLS sign the createBatch message with our own key
+                let leader_sig = if let Some(ref kp) = self.bls_keypair {
                     let signer = Bn254BLSSigner::new();
                     match signer.sign_message_hash(kp, &bls_message) {
-                        Ok(sig) => sig.0,
+                        Ok(sig) => BLSSignature(sig.0),
                         Err(e) => {
                             warn!(source = %source_name, error = %e, "BLS signing failed for createBatch");
                             return Err(e.into());
@@ -509,47 +543,132 @@ impl BatchLifecycleManager {
                     warn!(source = %source_name, "No BLS keypair — cannot sign createBatch");
                     return Err("No BLS keypair".into());
                 };
-                // Read lastSnapshotNonce from OracleRegistry (same as balance proof flow)
+
+                // Read lastSnapshotNonce from OracleRegistry
                 let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
                 info!(source = %source_name, ref_nonce, "Read snapshot nonce for createBatch");
+
                 let node_index = self.config.node_index;
-                let signers_bitmask = U256::from(1u64 << node_index);
+                let num_oracles = self.config.num_oracles;
+                let threshold = compute_threshold(num_oracles);
 
                 info!(
                     source = %source_name,
-                    source_id = ?source_id,
-                    config_hash = ?config_hash,
+                    ?source_id,
+                    ?config_hash,
                     tick_duration,
                     lock_offset,
-                    bls_message = ?H256::from(bls_message),
-                    "Leader submitting createBatch on-chain"
+                    ?message_hash,
+                    node_index,
+                    num_oracles,
+                    threshold,
+                    "Leader proposing createBatch — broadcasting for co-signs"
                 );
 
-                match writer.create_batch(
-                    source_id,
-                    config_hash,
-                    tick_duration,
-                    lock_offset,
-                    bls_sig,
-                    ref_nonce,
-                    signers_bitmask,
-                ).await {
-                    Ok(tx_hash) => {
-                        info!(
-                            source = %source_name,
-                            tx_hash = ?tx_hash,
-                            lifecycle_id,
-                            "createBatch submitted on-chain"
-                        );
-                    }
-                    Err(e) => {
-                        error!(
-                            source = %source_name,
-                            error = %e,
-                            "createBatch on-chain submission failed — batch exists in DB only"
-                        );
+                // Collect all signatures: leader starts, followers co-sign via P2P.
+                // Each entry: (signer_index, BLSSignature)
+                let mut collected_sigs: Vec<(u8, BLSSignature)> = vec![(node_index, BLSSignature(leader_sig.0.clone()))];
+                let mut signer_bits = 1u64 << node_index;
+
+                if num_oracles > 1 {
+                    if let Some(ref broadcast_tx) = self.broadcast_tx {
+                        let proposal = P2PMessage::VisionCreateBatchProposal {
+                            leader_id: self.peer_id,
+                            source_name: source_name.to_string(),
+                            source_id,
+                            config_hash,
+                            tick_duration,
+                            lock_offset,
+                            message_hash,
+                            leader_signature: common::types::BLSSignature(leader_sig.0.clone()),
+                            reference_nonce: ref_nonce,
+                        };
+
+                        if let Err(e) = broadcast_tx.send(proposal).await {
+                            warn!(source = %source_name, error = %e, "Failed to broadcast VisionCreateBatchProposal");
+                        }
+
+                        // Collect co-signs until threshold or timeout
+                        if let Some(ref sign_rx_mutex) = self.create_batch_sign_rx {
+                            let deadline = tokio::time::Instant::now()
+                                + std::time::Duration::from_secs(CREATE_BATCH_COSIGN_TIMEOUT_SECS);
+
+                            loop {
+                                if collected_sigs.len() >= threshold {
+                                    info!(source = %source_name, sigs = collected_sigs.len(), threshold, "BLS threshold met");
+                                    break;
+                                }
+
+                                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                                if remaining.is_zero() {
+                                    warn!(
+                                        source = %source_name,
+                                        sigs = collected_sigs.len(),
+                                        threshold,
+                                        "createBatch co-sign timeout"
+                                    );
+                                    break;
+                                }
+
+                                let mut rx = sign_rx_mutex.lock().await;
+                                match tokio::time::timeout(remaining, rx.recv()).await {
+                                    Ok(Some(cosign)) => {
+                                        if cosign.source_id != source_id || cosign.message_hash != message_hash {
+                                            debug!(source = %source_name, "Ignoring co-sign for different source/hash");
+                                            continue;
+                                        }
+                                        // Deduplicate by signer_index
+                                        if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
+                                            debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
+                                            continue;
+                                        }
+                                        debug!(source = %source_name, signer_index = cosign.signer_index, "Co-sign received");
+                                        signer_bits |= 1u64 << cosign.signer_index;
+                                        collected_sigs.push((cosign.signer_index, cosign.signature));
+                                    }
+                                    Ok(None) => {
+                                        warn!(source = %source_name, "createBatch sign channel closed");
+                                        break;
+                                    }
+                                    Err(_) => {
+                                        // timeout
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        warn!(source = %source_name, "No P2P broadcast channel — submitting with single-oracle sig (will fail 2-of-3 threshold)");
                     }
                 }
+
+                if collected_sigs.len() < threshold {
+                    error!(
+                        source = %source_name,
+                        collected = collected_sigs.len(),
+                        threshold,
+                        "Insufficient co-signs for createBatch — aborting on-chain submission"
+                    );
+                    return Ok(lifecycle_id);
+                }
+
+                // Aggregate all collected BLS signatures
+                let bls_signer = Bn254BLSSigner::new();
+                let sigs_only: Vec<BLSSignature> = collected_sigs.iter().map(|(_, s)| s.clone()).collect();
+                let aggregated = match bls_signer.aggregate_signatures(sigs_only) {
+                    Ok(agg) => agg,
+                    Err(e) => {
+                        error!(source = %source_name, error = %e, "BLS aggregation failed for createBatch");
+                        return Ok(lifecycle_id);
+                    }
+                };
+
+                let signers_bitmask = U256::from(signer_bits);
+                self.submit_create_batch(
+                    source_name, writer, source_id, config_hash,
+                    tick_duration, lock_offset, aggregated.0,
+                    ref_nonce, signers_bitmask, lifecycle_id,
+                ).await;
             } else {
                 warn!(
                     source = %source_name,
@@ -557,14 +676,69 @@ impl BatchLifecycleManager {
                 );
             }
         } else {
+            // Follower: sign the proposal received via P2P and send back the signature.
+            // The leader will aggregate and submit on-chain.
+            // (Chain event listener registers the batch when BatchCreated fires.)
             info!(
                 source = %source_name,
                 node_index = self.config.node_index,
-                "Follower — skipping on-chain createBatch (will detect via chain events)"
+                "Follower — waiting for VisionCreateBatchProposal to co-sign"
             );
         }
 
         Ok(lifecycle_id)
+    }
+
+    /// Submit createBatch on-chain (extracted for reuse from two code paths above).
+    async fn submit_create_batch(
+        &self,
+        source_name: &str,
+        writer: &Arc<EthersChainWriter>,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        bls_sig: Vec<u8>,
+        ref_nonce: u64,
+        signers_bitmask: U256,
+        lifecycle_id: u64,
+    ) {
+        info!(
+            source = %source_name,
+            ?source_id,
+            ?config_hash,
+            tick_duration,
+            lock_offset,
+            signers_bitmask = %signers_bitmask,
+            ref_nonce,
+            lifecycle_id,
+            "Submitting createBatch on-chain"
+        );
+        match writer.create_batch(
+            source_id,
+            config_hash,
+            tick_duration,
+            lock_offset,
+            bls_sig,
+            ref_nonce,
+            signers_bitmask,
+        ).await {
+            Ok(tx_hash) => {
+                info!(
+                    source = %source_name,
+                    tx_hash = ?tx_hash,
+                    lifecycle_id,
+                    "createBatch submitted on-chain"
+                );
+            }
+            Err(e) => {
+                error!(
+                    source = %source_name,
+                    error = %e,
+                    "createBatch on-chain submission failed"
+                );
+            }
+        }
     }
 
     /// Sign the settlement, aggregate with other oracles via shared DB, submit at quorum.
@@ -820,20 +994,60 @@ impl BatchLifecycleManager {
 
     /// Read lastSnapshotNonce from the OracleRegistry contract via eth_call.
     async fn read_last_snapshot_nonce(&self) -> Option<u64> {
-        // Call OracleRegistry.lastSnapshotNonce() via HTTP RPC
         let client = reqwest::Client::new();
-        let oracle_registry = self.config.vision_address
-            .replace("Vision", "OracleRegistry"); // won't work — need the actual address
 
-        // Read from the data-node's chain cache or directly from RPC
-        // Use L3 HTTP RPC (not ws://) for eth_call
+        // Use L3 HTTP RPC. Prefer ORACLE_RPC_URL env var, fall back to config ws url (strip ws://).
         let rpc_url = std::env::var("ORACLE_RPC_URL")
-            .unwrap_or_else(|_| "http://142.132.164.24/".to_string());
-        // OracleRegistry address from deployment
-        let oracle_registry_addr = "0x8b3abffde5e0882ceac0e05df13f28b3219172ce";
+            .unwrap_or_else(|_| {
+                // ws:// → http://
+                self.config.rpc_ws_url
+                    .replace("wss://", "https://")
+                    .replace("ws://", "http://")
+            });
 
-        // lastSnapshotNonce() selector = 0xbc8522b3
-        let selector = "0xbc8522b3";
+        // Always read the OracleRegistry address from the Vision contract itself.
+        // The deployment file may reference a different proxy than Vision actually uses.
+        // Selector for `oracleRegistry()`: keccak256("oracleRegistry()")[..4] = 0x0ad5d672
+        let oracle_registry_addr = if !self.config.oracle_registry_address.is_empty() {
+            self.config.oracle_registry_address.clone()
+        } else if !self.config.vision_address.is_empty() {
+            // Read oracleRegistry() from the Vision contract directly.
+            // Selector: keccak256("oracleRegistry()") = 0x0ad5d672
+            let vision_addr = self.config.vision_address.clone();
+            let body = serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "eth_call",
+                "params": [{"to": vision_addr, "data": "0x0ad5d672"}, "latest"],
+                "id": 1
+            });
+            let registry_addr = match client.post(&rpc_url).json(&body).send().await {
+                Ok(resp) => {
+                    if let Ok(json) = resp.json::<serde_json::Value>().await {
+                        if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
+                            // ABI-encoded address: 0x000...{20 bytes}
+                            let hex = result.trim_start_matches("0x");
+                            if hex.len() >= 40 {
+                                format!("0x{}", &hex[hex.len()-40..])
+                            } else {
+                                String::new()
+                            }
+                        } else { String::new() }
+                    } else { String::new() }
+                }
+                Err(_) => String::new(),
+            };
+            if registry_addr.is_empty() {
+                warn!("Failed to read oracleRegistry() from Vision — snapshot nonce defaulting to 0");
+                return Some(0);
+            }
+            registry_addr
+        } else {
+            warn!("Neither oracle_registry_address nor vision_address configured — snapshot nonce defaulting to 0");
+            return Some(0);
+        };
+
+        // lastSnapshotNonce() selector = keccak256("lastSnapshotNonce()")[..4] = 0xa776590c
+        let selector = "0xa776590c";
         let body = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "eth_call",
@@ -844,7 +1058,7 @@ impl BatchLifecycleManager {
             "id": 1
         });
 
-        match client.post(rpc_url).json(&body).send().await {
+        match client.post(&rpc_url).json(&body).send().await {
             Ok(resp) => {
                 if let Ok(json) = resp.json::<serde_json::Value>().await {
                     if let Some(result) = json.get("result").and_then(|v| v.as_str()) {

@@ -73,6 +73,12 @@ pub struct VisionConfig {
     /// Sources listed here are excluded from the tick engine's resolution loop.
     #[serde(default)]
     pub round_based_sources: Vec<String>,
+
+    /// OracleRegistry contract address on L3.
+    /// Used by BatchLifecycleManager to read lastSnapshotNonce for BLS createBatch calls.
+    /// Populated from the main oracle config; falls back to the hardcoded deployment address.
+    #[serde(default)]
+    pub oracle_registry_address: String,
 }
 
 impl Default for VisionConfig {
@@ -105,6 +111,7 @@ impl Default for VisionConfig {
             deposit_auto_refund_timeout_secs: 7200, // 2 hours
             // Round-based lifecycle
             round_based_sources: Vec::new(),
+            oracle_registry_address: String::new(),
         }
     }
 }
