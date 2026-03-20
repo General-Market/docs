@@ -50,6 +50,25 @@ struct LastCycleResponse {
     cycle: u64,
 }
 
+#[derive(Deserialize, Clone)]
+pub struct MorphoMarketData {
+    pub market_id: String,
+    pub collateral_token: String,
+    pub total_supply_assets: String,
+    pub total_supply_shares: String,
+    pub total_borrow_assets: String,
+    pub total_borrow_shares: String,
+    pub borrow_rate_per_second: String,
+    pub lltv: String,
+    pub oracle: String,
+    pub last_update: u64,
+}
+
+#[derive(Deserialize)]
+struct MorphoMarketsResponse {
+    markets: Vec<MorphoMarketData>,
+}
+
 impl DataNodeClient {
     /// Create a new DataNodeClient pointed at the given data-node base URL
     pub fn new(base_url: &str) -> Self {
@@ -139,6 +158,17 @@ impl DataNodeClient {
 
         Ok(resp.cycle)
     }
+
+    /// GET /morpho-markets
+    pub async fn get_all_markets(&self) -> Result<Vec<MorphoMarketData>, DataNodeError> {
+        let url = format!("{}/morpho-markets", self.base_url);
+        debug!(url = %url, "Fetching Morpho markets from data-node");
+        let resp: MorphoMarketsResponse = self.client.get(&url).send().await
+            .map_err(|e| DataNodeError::Http(format!("{}: {}", url, e)))?
+            .json().await
+            .map_err(|e| DataNodeError::Parse(format!("{}: {}", url, e)))?;
+        Ok(resp.markets)
+    }
 }
 
 #[cfg(test)]
@@ -171,6 +201,28 @@ mod tests {
         let json = r#"{"cycle": 42}"#;
         let resp: LastCycleResponse = serde_json::from_str(json).unwrap();
         assert_eq!(resp.cycle, 42);
+    }
+
+    #[test]
+    fn test_parse_morpho_markets_response() {
+        let json = r#"{
+            "markets": [{
+                "market_id": "0xabc",
+                "collateral_token": "0xdef",
+                "total_supply_assets": "1000000",
+                "total_supply_shares": "1000000",
+                "total_borrow_assets": "500000",
+                "total_borrow_shares": "500000",
+                "borrow_rate_per_second": "158548960",
+                "lltv": "860000000000000000",
+                "oracle": "0x123",
+                "last_update": 1711000000
+            }]
+        }"#;
+        let resp: MorphoMarketsResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.markets.len(), 1);
+        assert_eq!(resp.markets[0].market_id, "0xabc");
+        assert_eq!(resp.markets[0].last_update, 1711000000);
     }
 
     #[test]
