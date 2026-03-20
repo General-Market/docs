@@ -81,8 +81,9 @@ export function useInventoryRanking(topN: number = DEFAULT_TOP_N, pollMs: number
       setAllAssets(symbolMap)
       setMaxRank(maxR)
       setError(null)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch ranking data')
+    } catch (e) {
+      console.error('[useInventoryRanking] fetch failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch ranking data')
     } finally {
       setIsLoading(false)
     }

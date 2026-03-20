@@ -63,9 +63,10 @@ export function useItpNav(itpId: string | undefined): ItpNavResult {
       } else if (!hasReceivedNav.current) {
         // No data yet — keep loading state
       }
-    } catch (e: any) {
+    } catch (e) {
+      console.error('[useItpNav] NAV fetch failed:', e)
       if (!hasReceivedNav.current) {
-        setError(e.message || 'Failed to fetch NAV')
+        setError(e instanceof Error ? e.message : 'Failed to fetch NAV')
       }
     } finally {
       setIsLoading(false)

@@ -64,8 +64,9 @@ export function useExplorerHealth(): UseExplorerHealthReturn {
       setSnapshots(histData.snapshots || [])
       setLatest(latestData.network || null)
       setError(null)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch explorer data')
+    } catch (e) {
+      console.error('[useExplorerHealth] fetch failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch explorer data')
     } finally {
       setLoading(false)
     }

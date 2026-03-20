@@ -161,8 +161,8 @@ export function useBilateralBetsSSE(): UseBilateralBetsSSEReturn {
             const data: BetCommittedEvent = JSON.parse(event.data)
             invalidateBilateralBetsQueries(data.betId)
             emitBilateralBetEvent('committed', data)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBilateralBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -172,8 +172,8 @@ export function useBilateralBetsSSE(): UseBilateralBetsSSEReturn {
             const data: BetSettledEvent = JSON.parse(event.data)
             invalidateBilateralBetsQueries(data.betId)
             emitBilateralBetEvent('settled', data)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBilateralBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -183,8 +183,8 @@ export function useBilateralBetsSSE(): UseBilateralBetsSSEReturn {
             const data: ArbitrationRequestedEvent = JSON.parse(event.data)
             invalidateBilateralBetsQueries(data.betId)
             emitBilateralBetEvent('arbitration-requested', data)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBilateralBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -194,8 +194,8 @@ export function useBilateralBetsSSE(): UseBilateralBetsSSEReturn {
             const data: CustomPayoutEvent = JSON.parse(event.data)
             invalidateBilateralBetsQueries(data.betId)
             emitBilateralBetEvent('custom-payout', data)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBilateralBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -225,7 +225,8 @@ export function useBilateralBetsSSE(): UseBilateralBetsSSEReturn {
             return newAttempt
           })
         }
-      } catch {
+      } catch (e) {
+        console.error('[useBilateralBetsSSE] EventSource connection failed:', e)
         setState('error')
 
         // Schedule reconnection

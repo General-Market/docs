@@ -471,4 +471,18 @@ library EventsLib {
     /// @param previousBridge The previous bridge address
     /// @param newBridge The new bridge address
     event AuthorizedBridgeUpdated(address indexed previousBridge, address indexed newBridge);
+
+    // ============ PERMISSIONLESS EXPIRY CLAIM (Finding F6) ============
+
+    /// @notice Emitted when anyone claims an expired order after the grace period
+    /// @param orderId The order that was claimed
+    /// @param user The user who received the refund
+    /// @param claimer The address that triggered the claim
+    /// @param amount The refunded amount
+    event ExpiredOrderClaimed(
+        uint256 indexed orderId,
+        address indexed user,
+        address indexed claimer,
+        uint256 amount
+    );
 }

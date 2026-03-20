@@ -65,8 +65,9 @@ export function useUserState(itpId: string | undefined): UseUserStateReturn {
         setData(result)
         setError(null)
       }
-    } catch (e: any) {
-      if (!data) setError(e.message || 'Failed to fetch user state')
+    } catch (e) {
+      console.error('[useUserState] fetch failed:', e)
+      if (!data) setError(e instanceof Error ? e.message : 'Failed to fetch user state')
     } finally {
       setIsLoading(false)
     }

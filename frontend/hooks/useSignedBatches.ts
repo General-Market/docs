@@ -59,8 +59,9 @@ export function useSignedBatches() {
       }
       setBatches(map)
       setError(null)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch signed batches')
+    } catch (e) {
+      console.error('[useSignedBatches] fetch failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch signed batches')
     } finally {
       setLoading(false)
     }

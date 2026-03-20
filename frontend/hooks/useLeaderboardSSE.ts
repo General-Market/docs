@@ -129,8 +129,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
         const data = transformLeaderboardData(rawData)
         queryClient.setQueryData(['leaderboard'], data)
       }
-    } catch {
-      // Silently ignore fetch errors during polling
+    } catch (e) {
+      console.error('[useLeaderboardSSE] polling fetch failed:', e)
     }
   }, [queryClient])
 
@@ -221,8 +221,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
 
             // Update TanStack Query cache without triggering refetch
             queryClient.setQueryData(['leaderboard'], data)
-          } catch {
-            // Failed to parse SSE message - silently ignore malformed data
+          } catch (e) {
+            console.error('[useLeaderboardSSE] failed to parse SSE message:', e)
           }
         }
 
@@ -234,8 +234,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
 
             // Update TanStack Query cache
             queryClient.setQueryData(['leaderboard'], data)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useLeaderboardSSE] malformed SSE event:', e)
           }
         })
 
@@ -248,8 +248,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
             window.dispatchEvent(
               new CustomEvent('leaderboard-rank-change', { detail: data })
             )
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useLeaderboardSSE] malformed SSE event:', e)
           }
         })
 
@@ -280,7 +280,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
             return newAttempt
           })
         }
-      } catch {
+      } catch (e) {
+        console.error('[useLeaderboardSSE] EventSource connection failed:', e)
         setState('error')
 
         // Schedule reconnection

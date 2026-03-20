@@ -64,7 +64,7 @@ export function prefetchOrderbook(itpId: string, levels: number = 15) {
         cache.set(cacheKey, { data: result, timestamp: Date.now() })
       }
     })
-    .catch(() => {})
+    .catch((e) => { console.error('[useItpOrderbook] prefetch failed:', e) })
 }
 
 export function useItpOrderbook(

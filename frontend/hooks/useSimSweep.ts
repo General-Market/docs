@@ -149,8 +149,8 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
           setStatus('error')
           cleanup()
         }
-      } catch {
-        // ignore parse errors
+      } catch (e) {
+        console.error('[useSimSweep] failed to parse SSE message:', e)
       }
     }
 

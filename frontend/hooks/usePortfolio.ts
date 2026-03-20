@@ -87,10 +87,8 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
         const data = await tradesRes.json()
         setTrades(data.trades || [])
       }
-    } catch {
-      // Silently fail — keep whatever data we had from last successful fetch.
-      // The component shows the empty/skeleton state on initial load;
-      // on subsequent refreshes the stale data stays visible.
+    } catch (e) {
+      console.error('[usePortfolio] fetch failed:', e)
     } finally {
       setIsLoading(false)
     }

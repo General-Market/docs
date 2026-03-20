@@ -122,8 +122,9 @@ export function usePriceHistory(
 
       const result = await response.json()
       setData(result)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch price history')
+    } catch (e) {
+      console.error('[usePriceHistory] fetch failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch price history')
     } finally {
       setIsLoading(false)
     }

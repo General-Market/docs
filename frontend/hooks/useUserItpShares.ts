@@ -28,12 +28,12 @@ export function useUserItpShares(
       ? balances.itp_shares[key]
       : undefined
     if (val) {
-      try { shares = BigInt(val) } catch { /* ignore */ }
+      try { shares = BigInt(val) } catch (e) { console.error('[useUserItpShares] invalid BigInt value:', val, e) }
     }
     // Backward compat: if itp_shares is still a plain string (old data-node),
     // treat it as the balance for any ITP
     if (shares === 0n && typeof balances.itp_shares === 'string') {
-      try { shares = BigInt(balances.itp_shares as unknown as string) } catch { /* ignore */ }
+      try { shares = BigInt(balances.itp_shares as unknown as string) } catch (e) { console.error('[useUserItpShares] invalid BigInt itp_shares:', balances.itp_shares, e) }
     }
   }
 

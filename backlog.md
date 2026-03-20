@@ -1,5 +1,9 @@
 # Design Decision Backlog
 
+## Session: 20260320-f6x1 (Finding F6 — permissionless expiry claim)
+
+- [DECISION] Added `claimExpiredOrder(uint256 orderId)` to Investment.sol — permissionless, no BLS required. Anyone can trigger refund after `deadline + 24h`. This is the last-resort safety net when AP crashes and oracles are unavailable. Existing BLS-gated refund paths remain the primary mechanism; this only activates after 24 hours of complete system failure.
+
 ## Session: 20260319-k8m1 (Batch threshold calibration + display fix)
 
 - [DECISION] Replaced fixed volatility bands (0.3%/3%/30%) with median-based per-asset threshold calibration. The median of recent signed changes is the 50th percentile by definition — ~50% of future ticks will exceed it. This gives 50/50 outcomes without manual tuning.

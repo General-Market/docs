@@ -83,8 +83,9 @@ export function useItpFees(itpId: string | null): UseItpFeesReturn {
         gasFees: result[3],
         totalFees: result[0] + result[1] + result[2] + result[3],
       })
-    } catch (e: any) {
+    } catch (e) {
       // FeeRegistry may not be deployed — not an error in E2E mode
+      console.error('[useItpFees] FeeRegistry read failed (may not be deployed):', e)
       setFees(null)
       setError(null)
     } finally {

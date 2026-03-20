@@ -152,8 +152,8 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
           setStatus('error')
           cleanup()
         }
-      } catch {
-        // ignore parse errors
+      } catch (e) {
+        console.error('[useSimulation] failed to parse SSE message:', e)
       }
     }
 

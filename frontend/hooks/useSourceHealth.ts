@@ -88,8 +88,9 @@ export function useSourceHealth(): UseSourceHealthReturn {
       setSources(data.sources.map(transformSource))
       setLastUpdated(new Date())
       setError(null)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch source health')
+    } catch (e) {
+      console.error('[useSourceHealth] fetch failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch source health')
     } finally {
       setLoading(false)
     }

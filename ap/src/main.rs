@@ -9,7 +9,7 @@ use ap::external::bitget::{BitgetClient, BitgetConfig, RateLimitedBitgetClient};
 use ap::external::bitget_vault::BitgetVaultClient;
 use ap::sse_client::SseChainEventClient;
 use ethers::types::Address as EthAddress;
-use ap::limit_enforcer::{LimitOrderEnforcer, ValidationResult};
+use ap::limit_enforcer::{LimitOrderEnforcer, ValidationResult, LIMIT_TOLERANCE_BPS, BPS_DENOMINATOR};
 use ap::metrics::{APMetrics, PrometheusFormatter};
 use ap::timeout::{TimeoutConfig, TimeoutHandler};
 use clap::Parser;
@@ -988,11 +988,29 @@ async fn process_events(
                                                         );
                                                     }
                                                     ValidationResult::Fail { reason } => {
+                                                        // Compute deviation for structured logging
+                                                        let tolerance_pct = LIMIT_TOLERANCE_BPS as f64 / (BPS_DENOMINATOR as f64 / 100.0);
+                                                        let deviation_pct = if price.is_zero() {
+                                                            0.0
+                                                        } else {
+                                                            let scale = U256::from(10_000u64);
+                                                            if fill.fill_price >= price {
+                                                                let diff = (fill.fill_price - price).saturating_mul(scale);
+                                                                (diff / price).as_u128() as f64 / 100.0
+                                                            } else {
+                                                                let diff = (price - fill.fill_price).saturating_mul(scale);
+                                                                -((diff / price).as_u128() as f64 / 100.0)
+                                                            }
+                                                        };
                                                         warn!(
-                                                            code = "E008",
+                                                            code = "E005",
                                                             order_id = %order_id,
-                                                            reason = %reason,
-                                                            "Fill price violated limit"
+                                                            fill_price = %fill.fill_price,
+                                                            oracle_price = %price,
+                                                            tolerance_pct = tolerance_pct,
+                                                            actual_deviation_pct = deviation_pct,
+                                                            reason = "fill price outside tolerance",
+                                                            "Fill price violated limit — {reason}"
                                                         );
                                                         metrics.increment_violations().await;
                                                     }

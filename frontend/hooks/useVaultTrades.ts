@@ -212,9 +212,10 @@ export function useVaultTrades(): UseVaultTradesReturn {
 
       setRawTrades(trades)
       setError(null)
-    } catch (e: any) {
+    } catch (e) {
+      console.error('[useVaultTrades] fetch failed:', e)
       if (mountedRef.current) {
-        setError(e.shortMessage || e.message || 'Failed to fetch vault trades')
+        setError(e instanceof Error ? (e as any).shortMessage || e.message : 'Failed to fetch vault trades')
       }
     } finally {
       if (mountedRef.current) {

@@ -198,8 +198,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
         const data: RecentBetsResponse = await response.json()
         queryClient.setQueryData(['recent-bets', 20], data)
       }
-    } catch {
-      // Silently ignore fetch errors during polling
+    } catch (e) {
+      console.error('[useBetsSSE] polling fetch failed:', e)
     }
   }, [queryClient])
 
@@ -288,8 +288,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
 
             // Emit event for animation system
             emitNewBetEvent(data.betId, data.portfolioSize)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -304,8 +304,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
 
             // Emit event for animation system
             emitNewBetEvent(data.betId, 0)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -320,8 +320,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
 
             // Emit event for animation system
             emitNewBetEvent(data.betId, data.portfolioSize)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -336,8 +336,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
 
             // Emit event for animation system
             emitNewBetEvent(data.betId, 0)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -354,8 +354,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
                 detail: data
               })
             )
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -372,8 +372,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
                 detail: data
               })
             )
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useBetsSSE] malformed SSE event:', e)
           }
         })
 
@@ -404,7 +404,8 @@ export function useBetsSSE(): UseBetsSSEReturn {
             return newAttempt
           })
         }
-      } catch {
+      } catch (e) {
+        console.error('[useBetsSSE] EventSource connection failed:', e)
         setState('error')
 
         // Schedule reconnection

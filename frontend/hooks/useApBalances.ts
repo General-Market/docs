@@ -34,7 +34,7 @@ async function fetchPricesByAddress(addresses?: string[]): Promise<Record<string
     for (const [addr, entry] of Object.entries(data.prices || {}))
       result[addr.toLowerCase()] = BigInt((entry as any).price)
     return result
-  } catch { return {} }
+  } catch (e) { console.error('[useApBalances] fetchPricesByAddress failed:', e); return {} }
 }
 
 /**
@@ -82,8 +82,9 @@ export function useApBalances(): UseApBalancesReturn {
       setTotalTokenCount(result.token_count)
       discoveredAddrs.current = mapped.map(a => a.address)
       setError(null)
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch vault balances')
+    } catch (e) {
+      console.error('[useApBalances] refresh failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to fetch vault balances')
     } finally {
       setIsLoading(false)
     }

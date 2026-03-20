@@ -158,8 +158,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
         const data: RecentBetsResponse = await response.json()
         queryClient.setQueryData(['agent-bets', walletAddress, limit], data)
       }
-    } catch {
-      // Silently ignore fetch errors during polling
+    } catch (e) {
+      console.error('[useAgentSSE] polling fetch failed:', e)
     }
   }, [queryClient, walletAddress, limit])
 
@@ -251,8 +251,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
             const transformedEvent = transformBetPlacedEvent(data)
             updateQueryCache(transformedEvent)
             emitNewBetEvent(data.betId, data.portfolioSize)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useAgentSSE] malformed SSE event:', e)
           }
         })
 
@@ -263,8 +263,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
             const transformedEvent = transformBetMatchedEvent(data)
             updateQueryCache(transformedEvent)
             emitNewBetEvent(data.betId, 0)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useAgentSSE] malformed SSE event:', e)
           }
         })
 
@@ -275,8 +275,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
             const transformedEvent = transformBetSettledEvent(data)
             updateQueryCache(transformedEvent)
             emitNewBetEvent(data.betId, data.portfolioSize)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useAgentSSE] malformed SSE event:', e)
           }
         })
 
@@ -287,8 +287,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
             const transformedEvent = transformBetEarlyExitEvent(data)
             updateQueryCache(transformedEvent)
             emitNewBetEvent(data.betId, 0)
-          } catch {
-            // Silently ignore malformed events
+          } catch (e) {
+            console.error('[useAgentSSE] malformed SSE event:', e)
           }
         })
 
@@ -319,7 +319,8 @@ export function useAgentSSE(walletAddress: string, limit: number = 10): UseAgent
             return newAttempt
           })
         }
-      } catch {
+      } catch (e) {
+        console.error('[useAgentSSE] EventSource connection failed:', e)
         setState('error')
 
         // Schedule reconnection

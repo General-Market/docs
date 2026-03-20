@@ -78,9 +78,9 @@ export function useNonceCheck(): NonceStatus {
       setOnChainNonce(confirmedNonce)
       setPendingCount(pendingNonce - confirmedNonce)
       setHasNonceGap(pendingNonce > confirmedNonce)
-    } catch (e: any) {
-      console.error('Error checking nonce:', e)
-      setError(e.message || 'Failed to check transaction status')
+    } catch (e) {
+      console.error('[useNonceCheck] nonce check failed:', e)
+      setError(e instanceof Error ? e.message : 'Failed to check transaction status')
     } finally {
       setIsLoading(false)
     }

@@ -248,7 +248,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
               sseFirstEvent = false
               posthog.capture('sse_connected', { topic: topicsKey })
             }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('itp-nav-delta', (event: MessageEvent) => {
@@ -261,7 +261,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             })
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('oracle-prices', (event: MessageEvent) => {
@@ -271,7 +271,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('system-status', (event: MessageEvent) => {
@@ -281,7 +281,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('user-balances', (event: MessageEvent) => {
@@ -291,7 +291,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('user-allowances', (event: MessageEvent) => {
@@ -301,7 +301,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('user-orders', (event: MessageEvent) => {
@@ -311,7 +311,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('user-positions', (event: MessageEvent) => {
@@ -321,7 +321,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.addEventListener('user-cost-basis', (event: MessageEvent) => {
@@ -331,7 +331,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
-          } catch { /* ignore malformed */ }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
         es.onerror = () => {
@@ -343,7 +343,8 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
           const attempt = ++reconnectAttemptRef.current
           reconnectTimeoutRef.current = setTimeout(connect, backoffDelay(attempt))
         }
-      } catch {
+      } catch (e) {
+        console.error('[SSEProvider] EventSource connection failed:', e)
         setConnectionState('error')
         const attempt = ++reconnectAttemptRef.current
         reconnectTimeoutRef.current = setTimeout(connect, backoffDelay(attempt))

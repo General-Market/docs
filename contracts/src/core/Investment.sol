@@ -49,6 +49,11 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @notice Maximum assets per ITP (prevents gas griefing via O(n²) duplicate check)
     uint256 public constant MAX_ASSETS = 1000;
 
+    /// @notice Grace period after order deadline before permissionless claim is allowed
+    /// @dev 24 hours gives AP and oracles ample time to process normally.
+    ///      After deadline + EXPIRY_GRACE_PERIOD, anyone can trigger the refund.
+    uint256 public constant EXPIRY_GRACE_PERIOD = 24 hours;
+
     // Storage is inherited from InvestmentStorage.sol
 
     // ============ INITIALIZER ============
@@ -1180,6 +1185,64 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         }
 
         emit EventsLib.OrderRefunded(orderId, order.user, order.amount);
+    }
+
+    // ============ PERMISSIONLESS EXPIRY CLAIM (Finding F6) ============
+
+    /// @notice Claim refund for an expired order after the grace period — no BLS required
+    /// @dev Safety net for when both AP and oracles are unavailable. Anyone can call.
+    ///      Only processes orders whose deadline + EXPIRY_GRACE_PERIOD has elapsed.
+    ///      BUY orders: refunds escrowed USDC to the order's user.
+    ///      SELL orders: restores escrowed ITP shares to the order's user.
+    /// @param orderId The order to claim
+    function claimExpiredOrder(uint256 orderId) external nonReentrant {
+        TypesLib.LimitOrder storage order = orders[orderId];
+
+        // Check order exists
+        if (order.user == address(0)) {
+            revert ErrorsLib.E022_OrderNotFound(orderId);
+        }
+
+        // Must be PENDING or BATCHED (not already filled, cancelled, or expired)
+        if (order.status != TypesLib.OrderStatus.PENDING && order.status != TypesLib.OrderStatus.BATCHED) {
+            revert ErrorsLib.E024_InvalidOrderStatus(
+                orderId,
+                uint256(order.status),
+                uint256(TypesLib.OrderStatus.PENDING)
+            );
+        }
+
+        // Deadline must have passed
+        if (block.timestamp <= order.deadline) {
+            revert ErrorsLib.E034_OrderNotYetExpired(orderId, order.deadline, block.timestamp);
+        }
+
+        // Grace period must have elapsed
+        uint256 claimableAt = order.deadline + EXPIRY_GRACE_PERIOD;
+        if (block.timestamp <= claimableAt) {
+            revert ErrorsLib.E154_GracePeriodNotElapsed(orderId, claimableAt, block.timestamp);
+        }
+
+        // CEI: update state before external calls
+        order.status = TypesLib.OrderStatus.EXPIRED;
+
+        if (pendingOrderCount > 0) {
+            unchecked {
+                --pendingOrderCount;
+            }
+        }
+
+        // Refund based on order side
+        if (order.side == TypesLib.Side.BUY) {
+            // BUY: return escrowed USDC to user
+            usdc.safeTransfer(order.user, order.amount);
+        } else {
+            // SELL: restore escrowed ITP shares
+            _userShares[order.itpId][order.user] += order.amount;
+            _itps[order.itpId].totalSupply += order.amount;
+        }
+
+        emit EventsLib.ExpiredOrderClaimed(orderId, order.user, msg.sender, order.amount);
     }
 
     // ============ INTERNAL FUNCTIONS ============

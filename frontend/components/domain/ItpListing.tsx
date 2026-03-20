@@ -58,7 +58,7 @@ function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
         symbol: override?.ticker || nav.symbol || `ITP${num}`,
         navPerShare: nav.nav_per_share,
         aum: nav.aum_usd,
-        totalSupply: BigInt(nav.total_supply),
+        totalSupply: (() => { try { return BigInt(nav.total_supply ?? '0') } catch { return 0n } })(),
       }
     })
 }
@@ -147,7 +147,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
             settlement_address: d.settlement_address || null,
           })))
         }
-      } catch {}
+      } catch (e) { console.error('[ItpListing] REST nav fetch failed:', e) }
     })()
     return () => { cancelled = true }
   }, []) // Run once on mount

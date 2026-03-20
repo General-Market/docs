@@ -73,8 +73,9 @@ export function useMorphoPosition(market?: MorphoMarketEntry): UseMorphoPosition
         setRestData(result)
         setError(null)
       }
-    } catch (e: any) {
-      if (!restData) setError(new Error(e.message || 'Failed to fetch position'))
+    } catch (e) {
+      console.error('[useMorphoPosition] fetch failed:', e)
+      if (!restData) setError(e instanceof Error ? e : new Error('Failed to fetch position'))
     } finally {
       setIsLoading(false)
     }

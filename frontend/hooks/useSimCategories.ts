@@ -41,7 +41,7 @@ function fetchCategories(): Promise<SimCategory[]> {
 }
 
 // Preload immediately on module import — categories are ready before any component mounts
-fetchCategories().catch(() => {})
+fetchCategories().catch((e) => { console.error('[useSimCategories] preload failed:', e) })
 
 export function useSimCategories(): UseSimCategoriesResult {
   const [categories, setCategories] = useState<SimCategory[]>(_cachedCategories || [])

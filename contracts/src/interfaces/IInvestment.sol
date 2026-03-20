@@ -91,6 +91,12 @@ interface IInvestment {
     /// @param orderId The order to cancel
     function cancelOrder(uint256 orderId) external;
 
+    /// @notice Permissionless claim for expired orders after grace period (no BLS required)
+    /// @dev Safety net when both AP and oracles are unavailable. Anyone can call.
+    ///      Only works after deadline + EXPIRY_GRACE_PERIOD (24h) has elapsed.
+    /// @param orderId The expired order to claim
+    function claimExpiredOrder(uint256 orderId) external;
+
     // ============ ITP FUNCTIONS ============
 
     /// @notice Create a new Index Token Product

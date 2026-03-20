@@ -5,13 +5,17 @@
 //!
 //! This enables full E2E testing with real token transfers while still using
 //! the mock order matching logic.
+//!
+//! All settlement RPC operations retry on connection errors with exponential
+//! backoff (1s, 2s, 4s) up to 3 attempts before returning the error.
 
 use ethers::prelude::*;
 use ethers::types::U256;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 use thiserror::Error;
-use tracing::{debug, info};
+use tracing::{debug, info, warn, error};
 
 use common::adapters::abi::{ERC20Contract, MockBitgetVaultContract};
 use common::adapters::BitgetVaultFill;
@@ -21,6 +25,11 @@ const GAS_LIMIT_TRADE: u64 = 500_000;
 const GAS_LIMIT_SET_PRICE: u64 = 100_000;
 const GAS_LIMIT_SWAP: u64 = 300_000;
 const GAS_LIMIT_WITHDRAW: u64 = 200_000;
+
+/// Maximum retries for settlement RPC connection errors
+const SETTLEMENT_RPC_MAX_RETRIES: u32 = 3;
+/// Base delay for exponential backoff (1s, 2s, 4s)
+const SETTLEMENT_RPC_BASE_DELAY_MS: u64 = 1000;
 
 /// Signer type alias
 type SignerProvider = SignerMiddleware<Provider<Http>, LocalWallet>;
@@ -41,9 +50,58 @@ pub enum BitgetVaultError {
     ApprovalFailed(String),
 }
 
+impl BitgetVaultError {
+    /// Returns true if this error likely stems from a dead or unreachable RPC connection.
+    /// Transport-level failures, timeouts, and DNS errors are retriable.
+    /// Contract reverts and wallet parse errors are not.
+    pub fn is_connection_error(&self) -> bool {
+        let msg = self.to_string().to_lowercase();
+        msg.contains("connection refused")
+            || msg.contains("connection reset")
+            || msg.contains("broken pipe")
+            || msg.contains("timed out")
+            || msg.contains("timeout")
+            || msg.contains("dns error")
+            || msg.contains("eof")
+            || msg.contains("hyper")
+            || msg.contains("transport")
+            || msg.contains("connection closed")
+            || msg.contains("unreachable")
+            // Provider-level errors generally indicate RPC is down
+            || matches!(self, BitgetVaultError::ProviderError(_))
+    }
+}
+
+/// Log a retry attempt and sleep for exponential backoff.
+/// Returns the delay used (for testing/observability).
+async fn backoff_delay(op: &str, attempt: u32, err: &BitgetVaultError) -> u64 {
+    let delay_ms = SETTLEMENT_RPC_BASE_DELAY_MS * (1u64 << attempt);
+    warn!(
+        op,
+        attempt = attempt + 1,
+        max_retries = SETTLEMENT_RPC_MAX_RETRIES,
+        delay_ms,
+        error = %err,
+        "Settlement RPC connection error, retrying"
+    );
+    tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+    delay_ms
+}
+
+/// Log a final failure after all retries exhausted.
+fn log_retry_exhausted(op: &str, attempts: u32, err: &BitgetVaultError) {
+    error!(
+        op,
+        attempts,
+        error = %err,
+        "Settlement RPC operation failed after all retries"
+    );
+}
+
 /// On-chain MockBitgetVault client
 ///
 /// Executes real ERC20 token swaps on the MockBitgetVault contract.
+/// All RPC operations retry on connection errors with exponential backoff.
 pub struct BitgetVaultClient {
     vault_contract: MockBitgetVaultContract<SignerProvider>,
     client: Arc<SignerProvider>,
@@ -98,13 +156,56 @@ impl BitgetVaultClient {
         Ok(())
     }
 
+    /// Test settlement RPC connectivity by fetching the current block number.
+    /// Returns the block number on success, or a ProviderError if the RPC is unreachable.
+    pub async fn health_check(&self) -> Result<u64, BitgetVaultError> {
+        let block = self.client.get_block_number()
+            .await
+            .map_err(|e| BitgetVaultError::ProviderError(format!("health check failed: {}", e)))?;
+        debug!(block = block.as_u64(), "Settlement RPC health check passed");
+        Ok(block.as_u64())
+    }
+
     /// Get and increment the next nonce atomically
     fn next_nonce(&self) -> U256 {
         U256::from(self.nonce.fetch_add(1, Ordering::SeqCst))
     }
 
-    /// Approve sellToken for the vault to spend
+    /// Decrement the nonce counter (undo a next_nonce that was never sent on-chain)
+    fn rollback_nonce(&self) {
+        self.nonce.fetch_sub(1, Ordering::SeqCst);
+    }
+
+    /// Approve sellToken for the vault to spend.
+    /// Retries on settlement RPC connection errors with exponential backoff.
     pub async fn approve_token(
+        &self,
+        token_address: Address,
+        amount: U256,
+    ) -> Result<TxHash, BitgetVaultError> {
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.approve_token_once(token_address, amount).await;
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "approve_token", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("approve_token", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("approve_token", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
+    }
+
+    /// Single attempt at approve_token (no retry).
+    async fn approve_token_once(
         &self,
         token_address: Address,
         amount: U256,
@@ -130,13 +231,20 @@ impl BitgetVaultClient {
         }
 
         // Approve max uint256 for convenience
+        let nonce = self.next_nonce();
         let call = erc20.approve(self.vault_address, U256::MAX)
-            .nonce(self.next_nonce())
+            .nonce(nonce)
             .gas(GAS_LIMIT_APPROVE);
-        let pending = call
-            .send()
-            .await
-            .map_err(|e| BitgetVaultError::ApprovalFailed(format!("approve send failed: {}", e)))?;
+        let pending = match call.send().await {
+            Ok(p) => p,
+            Err(e) => {
+                let err = BitgetVaultError::ApprovalFailed(format!("approve send failed: {}", e));
+                if err.is_connection_error() {
+                    self.rollback_nonce();
+                }
+                return Err(err);
+            }
+        };
 
         let receipt = pending
             .await
@@ -156,7 +264,8 @@ impl BitgetVaultClient {
         Ok(receipt.transaction_hash)
     }
 
-    /// Execute a trade on MockBitgetVault
+    /// Execute a trade on MockBitgetVault.
+    /// Retries on settlement RPC connection errors with exponential backoff.
     ///
     /// Vault uses its own balance of sellToken (deposited via custody release).
     /// Bought tokens stay in the vault (simulating CEX internal balance).
@@ -168,19 +277,57 @@ impl BitgetVaultClient {
         sell_amount: U256,
         buy_amount: U256,
     ) -> Result<TxHash, BitgetVaultError> {
-        // Execute the trade (vault uses its own balance, no approval needed)
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.execute_trade_once(
+                trade_id, sell_token, buy_token, sell_amount, buy_amount,
+            ).await;
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "execute_trade", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("execute_trade", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("execute_trade", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
+    }
+
+    /// Single attempt at execute_trade (no retry).
+    async fn execute_trade_once(
+        &self,
+        trade_id: u64,
+        sell_token: Address,
+        buy_token: Address,
+        sell_amount: U256,
+        buy_amount: U256,
+    ) -> Result<TxHash, BitgetVaultError> {
+        let nonce = self.next_nonce();
         let call = self.vault_contract.execute_trade(
             U256::from(trade_id),
             sell_token,
             buy_token,
             sell_amount,
             buy_amount,
-        ).nonce(self.next_nonce()).gas(GAS_LIMIT_TRADE);
+        ).nonce(nonce).gas(GAS_LIMIT_TRADE);
 
-        let pending = call
-            .send()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("executeTrade send failed: {}", e)))?;
+        let pending = match call.send().await {
+            Ok(p) => p,
+            Err(e) => {
+                let err = BitgetVaultError::TransactionFailed(format!("executeTrade send failed: {}", e));
+                if err.is_connection_error() {
+                    self.rollback_nonce();
+                }
+                return Err(err);
+            }
+        };
 
         let receipt = pending
             .await
@@ -204,7 +351,8 @@ impl BitgetVaultClient {
         Ok(receipt.transaction_hash)
     }
 
-    /// Set the price for an asset on MockBitgetVault (Story 7.11)
+    /// Set the price for an asset on MockBitgetVault (Story 7.11).
+    /// Retries on settlement RPC connection errors with exponential backoff.
     ///
     /// Called before trade execution to set real Bitget prices.
     /// Requires the AP to be set as priceSetter on the vault.
@@ -213,14 +361,48 @@ impl BitgetVaultClient {
         asset: Address,
         price: U256,
     ) -> Result<TxHash, BitgetVaultError> {
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.set_price_once(asset, price).await;
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "set_price", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("set_price", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("set_price", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
+    }
+
+    /// Single attempt at set_price (no retry).
+    async fn set_price_once(
+        &self,
+        asset: Address,
+        price: U256,
+    ) -> Result<TxHash, BitgetVaultError> {
+        let nonce = self.next_nonce();
         let call = self.vault_contract.set_price(asset, price)
-            .nonce(self.next_nonce())
+            .nonce(nonce)
             .gas(GAS_LIMIT_SET_PRICE);
 
-        let pending = call
-            .send()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("setPrice send failed: {}", e)))?;
+        let pending = match call.send().await {
+            Ok(p) => p,
+            Err(e) => {
+                let err = BitgetVaultError::TransactionFailed(format!("setPrice send failed: {}", e));
+                if err.is_connection_error() {
+                    self.rollback_nonce();
+                }
+                return Err(err);
+            }
+        };
 
         let receipt = pending
             .await
@@ -241,19 +423,36 @@ impl BitgetVaultClient {
         Ok(receipt.transaction_hash)
     }
 
-    /// Get the price for an asset from MockBitgetVault
+    /// Get the price for an asset from MockBitgetVault.
+    /// Retries on settlement RPC connection errors with exponential backoff.
     pub async fn get_price(&self, asset: Address) -> Result<U256, BitgetVaultError> {
-        let price = self
-            .vault_contract
-            .get_price(asset)
-            .call()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("getPrice failed: {}", e)))?;
-
-        Ok(price)
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.vault_contract
+                .get_price(asset)
+                .call()
+                .await
+                .map_err(|e| BitgetVaultError::TransactionFailed(format!("getPrice failed: {}", e)));
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "get_price", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("get_price", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("get_price", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
     }
 
-    /// Swap stablecoins at 1:1 rate on MockBitgetVault (Story 7.18)
+    /// Swap stablecoins at 1:1 rate on MockBitgetVault (Story 7.18).
+    /// Retries on settlement RPC connection errors with exponential backoff.
     ///
     /// Used when custody release deposits USDC but the trade needs USDT.
     /// Vault swaps internally using its own balance (no approval needed).
@@ -263,14 +462,49 @@ impl BitgetVaultClient {
         to_token: Address,
         amount: U256,
     ) -> Result<TxHash, BitgetVaultError> {
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.swap_stable_once(from_token, to_token, amount).await;
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "swap_stable", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("swap_stable", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("swap_stable", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
+    }
+
+    /// Single attempt at swap_stable (no retry).
+    async fn swap_stable_once(
+        &self,
+        from_token: Address,
+        to_token: Address,
+        amount: U256,
+    ) -> Result<TxHash, BitgetVaultError> {
+        let nonce = self.next_nonce();
         let call = self.vault_contract.swap_stable(from_token, to_token, amount)
-            .nonce(self.next_nonce())
+            .nonce(nonce)
             .gas(GAS_LIMIT_SWAP);
 
-        let pending = call
-            .send()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("swapStable send failed: {}", e)))?;
+        let pending = match call.send().await {
+            Ok(p) => p,
+            Err(e) => {
+                let err = BitgetVaultError::TransactionFailed(format!("swapStable send failed: {}", e));
+                if err.is_connection_error() {
+                    self.rollback_nonce();
+                }
+                return Err(err);
+            }
+        };
 
         let receipt = pending
             .await
@@ -292,7 +526,8 @@ impl BitgetVaultClient {
         Ok(receipt.transaction_hash)
     }
 
-    /// Withdraw deposited tokens from the vault to the AP
+    /// Withdraw deposited tokens from the vault to the AP.
+    /// Retries on settlement RPC connection errors with exponential backoff.
     ///
     /// Called after custody release deposits USDC into the vault.
     /// AP withdraws to hold the tokens before swapStable/executeTrade.
@@ -301,14 +536,48 @@ impl BitgetVaultClient {
         token: Address,
         amount: U256,
     ) -> Result<TxHash, BitgetVaultError> {
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.withdraw_once(token, amount).await;
+            match result {
+                Ok(val) => {
+                    if attempt > 0 {
+                        info!(op = "withdraw", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(val);
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("withdraw", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("withdraw", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
+    }
+
+    /// Single attempt at withdraw (no retry).
+    async fn withdraw_once(
+        &self,
+        token: Address,
+        amount: U256,
+    ) -> Result<TxHash, BitgetVaultError> {
+        let nonce = self.next_nonce();
         let call = self.vault_contract.withdraw(token, amount)
-            .nonce(self.next_nonce())
+            .nonce(nonce)
             .gas(GAS_LIMIT_WITHDRAW);
 
-        let pending = call
-            .send()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("withdraw send failed: {}", e)))?;
+        let pending = match call.send().await {
+            Ok(p) => p,
+            Err(e) => {
+                let err = BitgetVaultError::TransactionFailed(format!("withdraw send failed: {}", e));
+                if err.is_connection_error() {
+                    self.rollback_nonce();
+                }
+                return Err(err);
+            }
+        };
 
         let receipt = pending
             .await
@@ -340,24 +609,40 @@ impl BitgetVaultClient {
         Ok(())
     }
 
-    /// Get fill data for a trade (FR13: read-only verification)
+    /// Get fill data for a trade (FR13: read-only verification).
+    /// Retries on settlement RPC connection errors with exponential backoff.
     pub async fn get_fill(&self, trade_id: u64) -> Result<BitgetVaultFill, BitgetVaultError> {
-        let fill = self
-            .vault_contract
-            .get_fill(U256::from(trade_id))
-            .call()
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("getFill failed: {}", e)))?;
-
-        Ok(BitgetVaultFill {
-            trade_id: fill.0.as_u64(),
-            sell_token: fill.1,
-            buy_token: fill.2,
-            sell_amount: fill.3,
-            buy_amount: fill.4,
-            trader: fill.5,
-            timestamp: fill.6.as_u64(),
-        })
+        for attempt in 0..=SETTLEMENT_RPC_MAX_RETRIES {
+            let result = self.vault_contract
+                .get_fill(U256::from(trade_id))
+                .call()
+                .await
+                .map_err(|e| BitgetVaultError::TransactionFailed(format!("getFill failed: {}", e)));
+            match result {
+                Ok(fill) => {
+                    if attempt > 0 {
+                        info!(op = "get_fill", attempt, "Settlement RPC reconnected after retry");
+                    }
+                    return Ok(BitgetVaultFill {
+                        trade_id: fill.0.as_u64(),
+                        sell_token: fill.1,
+                        buy_token: fill.2,
+                        sell_amount: fill.3,
+                        buy_amount: fill.4,
+                        trader: fill.5,
+                        timestamp: fill.6.as_u64(),
+                    });
+                }
+                Err(e) => {
+                    if !e.is_connection_error() || attempt == SETTLEMENT_RPC_MAX_RETRIES {
+                        if attempt > 0 { log_retry_exhausted("get_fill", attempt + 1, &e); }
+                        return Err(e);
+                    }
+                    backoff_delay("get_fill", attempt, &e).await;
+                }
+            }
+        }
+        unreachable!()
     }
 }
 
@@ -453,5 +738,22 @@ mod tests {
         // Unknown suffix defaults to USDT
         assert_eq!(quote_currency_for_symbol("BTCEUR"), QuoteCurrency::USDT);
         assert_eq!(quote_currency_for_symbol("UNKNOWN"), QuoteCurrency::USDT);
+    }
+
+    #[test]
+    fn test_connection_error_classification() {
+        // Connection-level errors should be classified as retriable
+        assert!(BitgetVaultError::ProviderError("anything".into()).is_connection_error());
+        assert!(BitgetVaultError::TransactionFailed("connection refused".into()).is_connection_error());
+        assert!(BitgetVaultError::TransactionFailed("timed out".into()).is_connection_error());
+        assert!(BitgetVaultError::TransactionFailed("dns error".into()).is_connection_error());
+        assert!(BitgetVaultError::ApprovalFailed("connection reset".into()).is_connection_error());
+        assert!(BitgetVaultError::TransactionFailed("hyper error".into()).is_connection_error());
+
+        // Contract-level errors should NOT be retriable
+        assert!(!BitgetVaultError::TransactionFailed("tx reverted: 0x1234".into()).is_connection_error());
+        assert!(!BitgetVaultError::WalletError("invalid key".into()).is_connection_error());
+        assert!(!BitgetVaultError::TransactionFailed("execution reverted".into()).is_connection_error());
+        assert!(!BitgetVaultError::ApprovalFailed("no receipt".into()).is_connection_error());
     }
 }

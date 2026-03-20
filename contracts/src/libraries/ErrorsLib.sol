@@ -854,4 +854,10 @@ library ErrorsLib {
     /// @notice E153: Vision deposit refund attempted before timeout
     /// @param orderId The deposit order ID
     error E153_RefundTooEarly(uint256 orderId);
+
+    /// @notice E154: Order expiry grace period has not elapsed yet
+    /// @param orderId The order ID
+    /// @param claimableAt Earliest timestamp when permissionless claim is allowed
+    /// @param currentTime Current block timestamp
+    error E154_GracePeriodNotElapsed(uint256 orderId, uint256 claimableAt, uint256 currentTime);
 }

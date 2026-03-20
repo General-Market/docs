@@ -66,8 +66,8 @@ export function useMorphoHistory(_market: MorphoMarketEntry | undefined) {
         timestamp: e.timestamp ?? 0,
       }))
       setTxs(mapped)
-    } catch {
-      // Network error — keep previous txs if any
+    } catch (e) {
+      console.error('[useMorphoHistory] fetch failed:', e)
     } finally {
       setIsLoading(false)
     }
