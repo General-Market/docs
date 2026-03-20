@@ -425,6 +425,121 @@ impl EthersChainWriter {
             .into()
     }
 
+    /// Build a createBatch transaction
+    ///
+    /// Encodes: Vision.createBatch(sourceId, configHash, tickDuration, lockOffset, blsSignature, referenceNonce, signersBitmask)
+    fn build_create_batch_tx(
+        &self,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        bls_sig: &[u8],
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> TypedTransaction {
+        // Function signature: createBatch(bytes32,bytes32,uint256,uint256,bytes,uint256,uint256)
+        let function = ethers::abi::Function {
+            name: "createBatch".to_string(),
+            inputs: vec![
+                ethers::abi::Param {
+                    name: "sourceId".to_string(),
+                    kind: ethers::abi::ParamType::FixedBytes(32),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "configHash".to_string(),
+                    kind: ethers::abi::ParamType::FixedBytes(32),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "tickDuration".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "lockOffset".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "blsSignature".to_string(),
+                    kind: ethers::abi::ParamType::Bytes,
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "referenceNonce".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+                ethers::abi::Param {
+                    name: "signersBitmask".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            outputs: vec![
+                ethers::abi::Param {
+                    name: "batchId".to_string(),
+                    kind: ethers::abi::ParamType::Uint(256),
+                    internal_type: None,
+                },
+            ],
+            #[allow(deprecated)]
+            constant: None,
+            state_mutability: ethers::abi::StateMutability::NonPayable,
+        };
+
+        let tokens = vec![
+            ethers::abi::Token::FixedBytes(source_id.as_bytes().to_vec()),
+            ethers::abi::Token::FixedBytes(config_hash.as_bytes().to_vec()),
+            ethers::abi::Token::Uint(U256::from(tick_duration)),
+            ethers::abi::Token::Uint(U256::from(lock_offset)),
+            ethers::abi::Token::Bytes(bls_sig.to_vec()),
+            ethers::abi::Token::Uint(U256::from(ref_nonce)),
+            ethers::abi::Token::Uint(signers_bitmask),
+        ];
+
+        let calldata = function.encode_input(&tokens).expect("ABI encoding should not fail");
+
+        Eip1559TransactionRequest::new()
+            .to(self.config.contracts.vision)
+            .data(calldata)
+            .into()
+    }
+
+    /// Submit a createBatch transaction to Vision.sol on L3.
+    ///
+    /// Returns the transaction hash. The on-chain batchId is emitted via
+    /// the BatchCreated event and picked up by the chain listener.
+    pub async fn create_batch(
+        &self,
+        source_id: H256,
+        config_hash: H256,
+        tick_duration: u64,
+        lock_offset: u64,
+        bls_sig: Vec<u8>,
+        ref_nonce: u64,
+        signers_bitmask: U256,
+    ) -> Result<TxHash, Error> {
+        info!(
+            source_id = ?source_id,
+            config_hash = ?config_hash,
+            tick_duration,
+            lock_offset,
+            signature_len = bls_sig.len(),
+            ref_nonce,
+            signers_bitmask = %signers_bitmask,
+            "Building createBatch transaction"
+        );
+
+        let tx = self.build_create_batch_tx(
+            source_id, config_hash, tick_duration, lock_offset,
+            &bls_sig, ref_nonce, signers_bitmask,
+        );
+        self.submit_tx(tx, "create_batch").await
+    }
+
     /// Build a settleBatch transaction
     ///
     /// Encodes: Vision.settleBatch(batchId, players, payouts, blsSignature, referenceNonce, signersBitmask)

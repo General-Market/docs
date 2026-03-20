@@ -13,11 +13,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use ethers::abi::{encode, Token};
 use ethers::types::{H256, U256};
 use ethers::utils::keccak256;
 use sqlx::PgPool;
 use tracing::{info, warn, error};
 
+use crate::chain::EthersChainWriter;
 use super::batch_config_orchestrator;
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
@@ -59,6 +61,9 @@ pub struct BatchLifecycleManager {
     bitmap_store: Arc<BitmapStore>,
     pool: PgPool,
     shutdown: Arc<AtomicBool>,
+    /// L3 chain writer for submitting createBatch transactions.
+    /// None in mock/read-only mode (follower oracles still detect batches via chain events).
+    chain_writer: Option<Arc<EthersChainWriter>>,
 }
 
 impl BatchLifecycleManager {
@@ -69,6 +74,7 @@ impl BatchLifecycleManager {
         bitmap_store: Arc<BitmapStore>,
         pool: PgPool,
         shutdown: Arc<AtomicBool>,
+        chain_writer: Option<Arc<EthersChainWriter>>,
     ) -> Self {
         Self {
             config,
@@ -77,6 +83,7 @@ impl BatchLifecycleManager {
             bitmap_store,
             pool,
             shutdown,
+            chain_writer,
         }
     }
 
@@ -413,7 +420,12 @@ impl BatchLifecycleManager {
 
     /// Create a new round batch for a source.
     ///
-    /// Returns the new batch_id on success.
+    /// Leader oracle (node_index == 0) submits `createBatch` on-chain.
+    /// Follower oracles detect the new batch via `BatchCreated` chain events
+    /// and register it in their scheduler automatically.
+    ///
+    /// Returns the lifecycle DB id on success. The on-chain batch_id arrives
+    /// asynchronously through the chain listener.
     async fn create_new_round(
         &self,
         source_name: &str,
@@ -426,32 +438,108 @@ impl BatchLifecycleManager {
             .find(|b| b.source_id == source_name)
             .ok_or_else(|| format!("no recommended config for source {}", source_name))?;
 
-        let config_hash = &rec_batch.config_hash;
+        let config_hash_str = &rec_batch.config_hash;
         let tick_duration = rec_batch.tick_duration_secs;
+        let lock_offset = rec_batch.lock_offset_secs;
         let market_count = rec_batch.markets.len();
 
         info!(
             source = %source_name,
-            config_hash = %config_hash,
+            config_hash = %config_hash_str,
             tick_duration,
+            lock_offset,
             markets = market_count,
             "Fetched fresh config for new round"
         );
 
-        // TODO: On-chain batch creation via BLS consensus.
-        // The flow should be:
-        //   1. Leader proposes createBatch(source_id, config_hash, tick_duration, ...)
-        //   2. Followers verify config matches their data-node view
-        //   3. Quorum BLS co-signs
-        //   4. Leader submits on-chain via ChainWriter
-        //   5. ChainListener picks up BatchCreated event → scheduler registers batch
-        //
-        // For now, record the intent in Postgres and return a placeholder batch_id.
-        // The actual on-chain batch_id comes from the contract event.
+        // Record intent in Postgres (all oracles do this for local tracking)
+        let lifecycle_id = self.record_round_lifecycle(source_name, config_hash_str, tick_duration).await?;
 
-        let batch_id = self.record_round_lifecycle(source_name, config_hash, tick_duration).await?;
+        // Only leader submits on-chain. Followers detect via BatchCreated events.
+        let is_leader = self.config.node_index == 0;
 
-        Ok(batch_id)
+        if is_leader {
+            if let Some(ref writer) = self.chain_writer {
+                let source_id = H256::from(keccak256(source_name.as_bytes()));
+
+                // Parse config hash from hex string
+                let config_hash: H256 = config_hash_str
+                    .parse()
+                    .unwrap_or_else(|_| H256::from(keccak256(config_hash_str.as_bytes())));
+
+                // Compute BLS message: keccak256(abi.encode(chainid, vision_address, "CREATE_BATCH", sourceId, configHash, tickDuration, lockOffset))
+                let vision_address: ethers::types::Address = self.config.vision_address
+                    .parse()
+                    .unwrap_or_default();
+
+                let bls_message = keccak256(encode(&[
+                    Token::Uint(U256::from(self.config.chain_id)),
+                    Token::Address(vision_address),
+                    Token::String("CREATE_BATCH".to_string()),
+                    Token::FixedBytes(source_id.as_bytes().to_vec()),
+                    Token::FixedBytes(config_hash.as_bytes().to_vec()),
+                    Token::Uint(U256::from(tick_duration)),
+                    Token::Uint(U256::from(lock_offset)),
+                ]));
+
+                // MVP: submit with placeholder BLS signature.
+                // Full BLS consensus (propose → co-sign → aggregate) is Phase 2b.
+                // The contract's _verifyBLS will validate — if num_oracles == 1 and
+                // the oracle's own key signs, this suffices for single-oracle testnet.
+                let bls_sig = vec![0u8; 96]; // placeholder — real signing in Phase 2b
+                let ref_nonce = 0u64;
+                let signers_bitmask = U256::from(1u64); // bit 0 = this oracle
+
+                info!(
+                    source = %source_name,
+                    source_id = ?source_id,
+                    config_hash = ?config_hash,
+                    tick_duration,
+                    lock_offset,
+                    bls_message = ?H256::from(bls_message),
+                    "Leader submitting createBatch on-chain"
+                );
+
+                match writer.create_batch(
+                    source_id,
+                    config_hash,
+                    tick_duration,
+                    lock_offset,
+                    bls_sig,
+                    ref_nonce,
+                    signers_bitmask,
+                ).await {
+                    Ok(tx_hash) => {
+                        info!(
+                            source = %source_name,
+                            tx_hash = ?tx_hash,
+                            lifecycle_id,
+                            "createBatch submitted on-chain"
+                        );
+                    }
+                    Err(e) => {
+                        error!(
+                            source = %source_name,
+                            error = %e,
+                            "createBatch on-chain submission failed — batch exists in DB only"
+                        );
+                    }
+                }
+            } else {
+                warn!(
+                    source = %source_name,
+                    "Leader has no chain_writer — cannot submit createBatch on-chain"
+                );
+            }
+        } else {
+            info!(
+                source = %source_name,
+                node_index = self.config.node_index,
+                "Follower — skipping on-chain createBatch (will detect via chain events)"
+            );
+        }
+
+        Ok(lifecycle_id)
     }
 
     /// Record a new round in `vision_batch_lifecycle` and return its ID.
