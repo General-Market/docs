@@ -737,18 +737,33 @@ impl BatchLifecycleManager {
         config_hash: &str,
         tick_duration: u64,
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
-        let row = sqlx::query_scalar::<_, i64>(
-            "INSERT INTO vision_batch_lifecycle (source_id, config_hash, tick_duration_secs, state, created_at)
-             VALUES ($1, $2, $3, 'betting', NOW())
-             RETURNING id",
+        let now = chrono::Utc::now();
+        let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
+        let settlement_deadline = betting_end + chrono::Duration::seconds(tick_duration as i64 * 2);
+
+        // Use nextBatchId from vision_batches as a proxy for the batch_id
+        // (the real batch_id comes from the on-chain createBatch call)
+        let next_id: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(batch_id), 0) + 1 FROM vision_batch_lifecycle")
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(1000);
+
+        sqlx::query(
+            "INSERT INTO vision_batch_lifecycle (batch_id, source_id, config_hash, timeframe_secs, betting_start, betting_end, settlement_deadline, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+             ON CONFLICT (batch_id) DO NOTHING",
         )
+        .bind(next_id)
         .bind(source_name)
         .bind(config_hash)
         .bind(tick_duration as i64)
-        .fetch_one(&self.pool)
+        .bind(now)
+        .bind(betting_end)
+        .bind(settlement_deadline)
+        .execute(&self.pool)
         .await?;
 
-        Ok(row as u64)
+        Ok(next_id as u64)
     }
 
     /// Record settlement results for a round.
