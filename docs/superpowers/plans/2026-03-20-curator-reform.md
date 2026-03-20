@@ -117,10 +117,18 @@ Replace the single market ID:
       - "--market-ids"
       - "$MARKET_ID"
 ```
-With all market IDs from batch-markets.json:
+With all market IDs, oracle addresses, and ITP addresses from batch-markets.json:
 ```yaml
       - "--market-ids"
       - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['marketId'] for m in d['markets']]))" 2>/dev/null || echo "$MARKET_ID")"
+```
+
+Also update `--oracle-addresses` (line 1742) and `--itp-addresses` (line 1744) to pass all:
+```yaml
+      - "--oracle-addresses"
+      - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['oracle'] for m in d['markets']]))" 2>/dev/null || echo "$ORACLE_ADDR")"
+      - "--itp-addresses"
+      - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['collateralToken'] for m in d['markets']]))" 2>/dev/null || echo "$ITP_ADDR")"
 ```
 
 - [ ] **Step 5: Commit**
@@ -138,6 +146,15 @@ git commit -m "fix: testnet.sh reads CURATOR_RATE_IRM key, no queue caps, all ma
 - Delete: `frontend/hooks/useMorphoMarkets.ts`
 - Delete: `frontend/components/lending/MarketsTable.tsx`
 - Modify: `frontend/lib/contracts/morpho-addresses.ts`
+
+- [ ] **Step 0: Fix deploy-batch-markets.sh IRM key read (line 23)**
+
+```bash
+# Change:
+CURATOR_IRM=$(jq -r '.contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
+# To:
+CURATOR_IRM=$(jq -r '.contracts.CURATOR_RATE_IRM // .contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
+```
 
 - [ ] **Step 1: Fix `getDefaultMarketParams` IRM field**
 
