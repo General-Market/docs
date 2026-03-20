@@ -120,22 +120,19 @@ contract DeployBatchMarkets is Script {
             });
         }
 
-        // Set supply queue: existing market (if any) + batch markets, capped at 30 (MetaMorpho limit)
+        // Set supply queue: existing market (if any) + all batch markets
         bytes32 existingId = vm.envOr("EXISTING_MARKET_ID", bytes32(0));
         uint256 offset = existingId != bytes32(0) ? 1 : 0;
-        uint256 maxQueue = 20;
-        uint256 batchSlots = maxQueue > offset ? maxQueue - offset : 0;
-        uint256 queueBatch = marketCount < batchSlots ? marketCount : batchSlots;
-        Id[] memory supplyQueue = new Id[](queueBatch + offset);
+        Id[] memory supplyQueue = new Id[](marketCount + offset);
         if (offset > 0) {
             supplyQueue[0] = Id.wrap(existingId);
             console.log("Prepending existing market to supply queue");
         }
-        for (uint256 i = 0; i < queueBatch; i++) {
+        for (uint256 i = 0; i < marketCount; i++) {
             supplyQueue[offset + i] = deployments[i].marketId;
         }
         vault.setSupplyQueue(supplyQueue);
-        console.log("Supply queue set with", queueBatch + offset, "markets (max 30)");
+        console.log("Supply queue set with", marketCount + offset, "markets");
 
         vm.stopBroadcast();
 

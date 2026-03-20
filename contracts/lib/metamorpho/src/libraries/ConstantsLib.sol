@@ -13,7 +13,8 @@ library ConstantsLib {
     uint256 internal constant MIN_TIMELOCK = 0;
 
     /// @dev The maximum number of markets in the supply/withdraw queue.
-    uint256 internal constant MAX_QUEUE_LENGTH = 30;
+    /// Raised from 30 — no practical limit on Orbit L3 with cheap gas.
+    uint256 internal constant MAX_QUEUE_LENGTH = 100000;
 
     /// @dev The maximum fee the vault can have (50%).
     uint256 internal constant MAX_FEE = 0.5e18;

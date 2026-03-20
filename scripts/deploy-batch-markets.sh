@@ -78,20 +78,8 @@ for i in $(seq 1 "$ITP_COUNT"); do
   echo "  ITP #$i: $VAULT_ADDR"
 done
 
-# MetaMorpho MAX_QUEUE_LENGTH is 30, existing market takes 1 slot
-# MetaMorpho withdraw queue limit = 30. Query current length to compute available slots.
-CURRENT_WQ=$(cast call "$VAULT" "withdrawQueueLength()(uint256)" --rpc-url "$L3_RPC" 2>/dev/null || echo "1")
-MAX_BATCH=$((30 - CURRENT_WQ))
-echo "Withdraw queue: $CURRENT_WQ, available slots: $MAX_BATCH"
+# No queue cap — MetaMorpho MAX_QUEUE_LENGTH raised to 100k
 NEW_COUNT=${#VAULTS[@]}
-if [ "$NEW_COUNT" -gt "$MAX_BATCH" ]; then
-  echo ""
-  echo "Found $NEW_COUNT ITPs without markets. MetaMorpho queue limit = 30, capping at $MAX_BATCH."
-  VAULTS=("${VAULTS[@]:0:$MAX_BATCH}")
-  ITP_IDS=("${ITP_IDS[@]:0:$MAX_BATCH}")
-  NEW_COUNT=$MAX_BATCH
-fi
-echo ""
 echo "New markets to deploy: $NEW_COUNT"
 
 if [[ "$NEW_COUNT" -eq 0 ]]; then
