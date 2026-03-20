@@ -511,6 +511,7 @@ impl BatchLifecycleManager {
                 };
                 // Read lastSnapshotNonce from OracleRegistry (same as balance proof flow)
                 let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
+                info!(source = %source_name, ref_nonce, "Read snapshot nonce for createBatch");
                 let node_index = self.config.node_index;
                 let signers_bitmask = U256::from(1u64 << node_index);
 
@@ -708,7 +709,7 @@ impl BatchLifecycleManager {
         // 5. Check quorum — submit on-chain if enough signers
         if popcount as usize >= threshold && !already_submitted {
             if let Some(ref writer) = self.chain_writer {
-                let ref_nonce = 0u64; // TODO: read lastSnapshotNonce from OracleRegistry
+                let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
                 match writer.settle_batch(
                     batch_id,
                     settlement.players.clone(),
