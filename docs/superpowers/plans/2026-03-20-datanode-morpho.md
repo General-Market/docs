@@ -121,18 +121,12 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
     let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
     let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
 
-    // IRM address with fallback
-    let irm_addr_str = state.morpho_deployment["contracts"].get("CURATOR_RATE_IRM")
-        .or_else(|| state.morpho_deployment["contracts"].get("ADAPTIVE_IRM"))
-        .and_then(|v| v.as_str())
-        .unwrap_or("0x0000000000000000000000000000000000000000");
-    let irm_addr: Address = irm_addr_str.parse().unwrap_or_default();
-    let irm = IrmReader::new(irm_addr, Arc::clone(&state.l3_provider));
+    let provider = Arc::clone(&state.l3_provider);
 
-    // Parallel: fetch all markets concurrently
-    let futures: Vec<_> = state.batch_markets.iter().map(|bm| {
+    // Parallel: fetch all markets concurrently, per-market IRM
+    let futs: Vec<_> = state.batch_markets.iter().map(|bm| {
         let morpho = morpho.clone();
-        let irm = irm.clone();
+        let provider = Arc::clone(&provider);
         let bm = bm.clone();
         async move {
             let mut market_id_bytes = [0u8; 32];
@@ -141,6 +135,9 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
                 market_id_bytes[..len].copy_from_slice(&bytes[..len]);
             }
             let (tsa, tss, tba, tbs, lu, _fee) = morpho.market(market_id_bytes).call().await.unwrap_or_default();
+            // Per-market IRM (each market can have a different IRM contract)
+            let irm_addr: Address = bm.irm.parse().unwrap_or_default();
+            let irm = IrmReader::new(irm_addr, provider);
             let rate = irm.rates(market_id_bytes).call().await.unwrap_or_default();
             CachedMorphoMarket {
                 market_id: bm.market_id,
@@ -157,7 +154,7 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
         }
     }).collect();
 
-    let results = futures::future::join_all(futures).await;
+    let results = futures::future::join_all(futs).await;
 
     let mut cache = state.chain_cache.morpho_markets.write().await;
     *cache = results;
@@ -166,14 +163,13 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
 }
 ```
 
-- [ ] **Step 6: Wire poller in main.rs**
+- [ ] **Step 6: Wire poller in main.rs using `spawn_poller!` macro**
 
-Find the poll loop (search for `poll_morpho_position_once`). Add alongside it:
+Find existing `spawn_poller!` calls (search for `spawn_poller!` in main.rs, around line 2610-2627). Add after them:
 ```rust
-if let Err(e) = crate::chain_pollers::poll_morpho_markets_once(&state).await {
-    warn!("Morpho markets poll failed: {}", e);
-}
+spawn_poller!("morpho_markets", 30, chain_pollers::poll_morpho_markets_once);
 ```
+Do NOT use inline code — `spawn_poller!` creates a recurring loop via `run_collector_loop`.
 
 - [ ] **Step 7: Add `GET /morpho-markets` endpoint**
 
