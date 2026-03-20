@@ -107,7 +107,9 @@ impl BatchLifecycleManager {
             .iter()
             .enumerate()
             .map(|(i, name)| {
-                let source_id = H256::from(keccak256(name.as_bytes()));
+                let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
+                let versioned = format!("{}_{}", name, batch_version);
+                let source_id = H256::from(keccak256(versioned.as_bytes()));
                 SourceState {
                     source_name: name.clone(),
                     source_id,
@@ -468,7 +470,10 @@ impl BatchLifecycleManager {
 
         if is_leader {
             if let Some(ref writer) = self.chain_writer {
-                let source_id = H256::from(keccak256(source_name.as_bytes()));
+                // sourceId on-chain is keccak256(name + "_" + version), e.g. keccak256("defi_v2")
+                let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
+                let versioned_name = format!("{}_{}", source_name, batch_version);
+                let source_id = H256::from(keccak256(versioned_name.as_bytes()));
 
                 // Parse config hash from hex string
                 let config_hash: H256 = config_hash_str
