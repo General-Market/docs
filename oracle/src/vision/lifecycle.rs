@@ -820,7 +820,9 @@ impl BatchLifecycleManager {
             .replace("Vision", "OracleRegistry"); // won't work — need the actual address
 
         // Read from the data-node's chain cache or directly from RPC
-        let rpc_url = &self.config.rpc_ws_url;
+        // Use L3 HTTP RPC (not ws://) for eth_call
+        let rpc_url = std::env::var("ORACLE_RPC_URL")
+            .unwrap_or_else(|_| "http://142.132.164.24/".to_string());
         // OracleRegistry address from deployment
         let oracle_registry_addr = "0x8b3abffde5e0882ceac0e05df13f28b3219172ce";
 
