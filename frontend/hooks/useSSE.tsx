@@ -159,7 +159,7 @@ export interface SSEData {
   userBalances: UserBalances | null
   userAllowances: UserAllowances | null
   userOrders: UserOrder[]
-  userPositions: MorphoPositionSnapshot | null
+  userPositions: Record<string, MorphoPositionSnapshot> | null
   userCostBasis: UserCostBasis | null
 }
 
@@ -346,7 +346,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
 
         es.addEventListener('user-positions', (event: MessageEvent) => {
           try {
-            const parsed: MorphoPositionSnapshot = JSON.parse(event.data)
+            const parsed: Record<string, MorphoPositionSnapshot> = JSON.parse(event.data)
             setData(prev => ({ ...prev, userPositions: parsed }))
             setConnectionState('connected')
             reconnectAttemptRef.current = 0

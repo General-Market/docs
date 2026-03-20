@@ -520,6 +520,10 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
 // ── Morpho position poller ──
 
 pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    if state.batch_markets.is_empty() {
+        return Ok(());
+    }
+
     let users = state.chain_cache.users.read().await;
     if users.is_empty() {
         return Ok(());
@@ -533,34 +537,59 @@ pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn st
     drop(users);
 
     let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
+    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
 
-    let market_id_str = state.morpho_deployment["contracts"]["MARKET_ID"]
-        .as_str()
-        .ok_or("Missing MARKET_ID in morpho deployment")?;
-    let market_id_bytes: [u8; 32] = {
-        let hex_str = market_id_str.strip_prefix("0x").unwrap_or(market_id_str);
-        let bytes = hex::decode(hex_str).map_err(|e| format!("Invalid market_id: {}", e))?;
+    // Pre-parse all market IDs once
+    let market_ids: Vec<(String, [u8; 32])> = state.batch_markets.iter().filter_map(|bm| {
+        let hex_str = bm.market_id.strip_prefix("0x").unwrap_or(&bm.market_id);
+        let bytes = hex::decode(hex_str).ok()?;
         let mut arr = [0u8; 32];
         let len = bytes.len().min(32);
         arr[..len].copy_from_slice(&bytes[..len]);
-        arr
-    };
+        Some((bm.market_id.clone(), arr))
+    }).collect();
 
-    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
+    // Build all (user × market) futures and run them in parallel
+    let futs: Vec<_> = user_list.iter().flat_map(|(user_addr, _cache)| {
+        let morpho = morpho.clone();
+        let user = *user_addr;
+        market_ids.iter().map(move |(market_id_str, market_id_bytes)| {
+            let morpho = morpho.clone();
+            let market_id_str = market_id_str.clone();
+            let market_id_bytes = *market_id_bytes;
+            async move {
+                let (supply_shares, borrow_shares, collateral) = morpho
+                    .position(market_id_bytes, user)
+                    .call()
+                    .await
+                    .unwrap_or_default();
+                (user, market_id_str, supply_shares, borrow_shares, collateral)
+            }
+        }).collect::<Vec<_>>()
+    }).collect();
 
-    for (user, user_cache) in &user_list {
-        let (supply_shares, borrow_shares, collateral) = morpho
-            .position(market_id_bytes, *user)
-            .call()
-            .await
-            .unwrap_or_default();
+    let results = futures::future::join_all(futs).await;
 
+    // Group results by user address — only keep non-zero positions
+    let mut by_user: std::collections::HashMap<Address, std::collections::HashMap<String, MorphoPositionSnapshot>> =
+        std::collections::HashMap::new();
+    for (user, market_id_str, supply_shares, borrow_shares, collateral) in results {
+        let collateral_u256 = U256::from(collateral);
+        let borrow_u256 = U256::from(borrow_shares);
+        if collateral_u256 > U256::zero() || borrow_u256 > U256::zero() {
+            by_user.entry(user).or_default().insert(market_id_str, MorphoPositionSnapshot {
+                supply_shares: supply_shares.to_string(),
+                borrow_shares: borrow_u256.to_string(),
+                collateral: collateral_u256.to_string(),
+            });
+        }
+    }
+
+    // Write back to each user's cache
+    for (user_addr, user_cache) in &user_list {
+        let positions = by_user.remove(user_addr).unwrap_or_default();
         let mut uc = user_cache.write().await;
-        uc.positions = MorphoPositionSnapshot {
-            supply_shares: supply_shares.to_string(),
-            borrow_shares: U256::from(borrow_shares).to_string(),
-            collateral: U256::from(collateral).to_string(),
-        };
+        uc.positions = positions;
         uc.positions_gen.bump();
     }
 
