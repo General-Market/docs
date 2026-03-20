@@ -826,8 +826,8 @@ impl BatchLifecycleManager {
         // OracleRegistry address from deployment
         let oracle_registry_addr = "0x8b3abffde5e0882ceac0e05df13f28b3219172ce";
 
-        // lastSnapshotNonce() selector = 0x6c3cfee2
-        let selector = "0x6c3cfee2";
+        // lastSnapshotNonce() selector = 0xbc8522b3
+        let selector = "0xbc8522b3";
         let body = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "eth_call",
