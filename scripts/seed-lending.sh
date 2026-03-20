@@ -187,10 +187,19 @@ for idx, m in valid_markets:
     if borrow_wei < 10**16:
         borrow_wei = 10**16  # minimum 0.01
 
+    # Size supply based on actual borrow (after collateral cap)
+    headroom = random.uniform(1.5, 5.0)  # 20-67% utilization
+    supply_usdc = str(int(borrow_wei * headroom))
+
     borrow_usd = borrow_wei / 10**18
 
     # Approve collateral
     cast_send(coll, "approve(address,uint256)", MORPHO, MAX_UINT, gas=100000)
+
+    # Supply USDC to market (provides liquidity for borrowing)
+    cast_send(MORPHO,
+        "supply((address,address,address,address,uint256),uint256,uint256,address,bytes)",
+        mp, supply_usdc, "0", DEPLOYER, "0x")
 
     # Supply collateral
     ok = cast_send(MORPHO,
