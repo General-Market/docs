@@ -1,12 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useReadContracts } from 'wagmi'
-import { getAllMorphoMarkets } from '@/lib/contracts/morpho-markets-registry'
-import { MORPHO_ABI } from '@/lib/contracts/morpho-abi'
-import { CURATOR_RATE_IRM_ABI } from '@/lib/contracts/curator-rate-irm-abi'
-import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
-import { indexL3 } from '@/lib/wagmi'
+import { useQuery } from '@tanstack/react-query'
 
 const SECONDS_PER_YEAR = 365.25 * 86400
 
@@ -20,97 +15,54 @@ export interface AllMarketData {
   marketId: string
 }
 
-const allMarkets = getAllMorphoMarkets()
+interface MarketResponse {
+  market_id: string
+  collateral_token: string
+  total_supply_assets: string
+  total_borrow_assets: string
+  borrow_rate_per_second: string
+  lltv: string
+  last_update: number
+}
 
 export function useAllMorphoMarkets() {
-  const contracts = useMemo(() => {
-    const calls: {
-      address: `0x${string}`
-      abi: typeof MORPHO_ABI | typeof CURATOR_RATE_IRM_ABI
-      functionName: string
-      args: readonly [`0x${string}`]
-      chainId: number
-    }[] = []
-
-    for (const m of allMarkets) {
-      // Morpho.market(marketId)
-      calls.push({
-        address: MORPHO_ADDRESSES.morpho,
-        abi: MORPHO_ABI,
-        functionName: 'market',
-        args: [m.marketId],
-        chainId: indexL3.id,
-      })
-      // CuratorRateIRM.rates(marketId)
-      calls.push({
-        address: MORPHO_ADDRESSES.curatorRateIrm,
-        abi: CURATOR_RATE_IRM_ABI,
-        functionName: 'rates',
-        args: [m.marketId],
-        chainId: indexL3.id,
-      })
-    }
-
-    return calls
-  }, [])
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawData, isLoading } = useReadContracts({
-    contracts: contracts as any,
-    query: {
-      enabled: allMarkets.length > 0,
-      refetchInterval: 30_000,
+  const { data: rawMarkets, isLoading } = useQuery<MarketResponse[]>({
+    queryKey: ['morpho-markets'],
+    queryFn: async () => {
+      const res = await fetch('/api/dn/morpho-markets')
+      if (!res.ok) return []
+      const data = await res.json()
+      return data.markets ?? []
     },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   })
 
   const marketsMap = useMemo(() => {
     const map = new Map<string, AllMarketData>()
-    const data = rawData as { status: string; result?: unknown }[] | undefined
-    if (!data) return map
+    if (!rawMarkets) return map
 
-    for (let i = 0; i < allMarkets.length; i++) {
-      const marketRes = data[i * 2]
-      const rateRes = data[i * 2 + 1]
-      const entry = allMarkets[i]
-
-      if (!marketRes || marketRes.status !== 'success' || !marketRes.result) continue
-
-      const marketResult = marketRes.result as [bigint, bigint, bigint, bigint, bigint, bigint]
-      const totalSupplyAssets = marketResult[0]
-      const totalBorrowAssets = marketResult[2]
-
+    for (const m of rawMarkets) {
+      const totalSupplyAssets = BigInt(m.total_supply_assets || '0')
+      const totalBorrowAssets = BigInt(m.total_borrow_assets || '0')
       const utilization = totalSupplyAssets > 0n
-        ? Number((totalBorrowAssets * 10000n) / totalSupplyAssets) / 100
-        : 0
+        ? Number((totalBorrowAssets * 10000n) / totalSupplyAssets) / 100 : 0
 
-      // Try IRM stored rate first, fall back to utilization-based model
       let borrowApy = 0
-      if (rateRes && rateRes.status === 'success' && rateRes.result) {
-        const ratePerSec = Number(rateRes.result as bigint) / 1e18
-        if (ratePerSec > 0) {
-          borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
-        }
-      }
-      // Fallback: utilization-based rate curve (base 2% + utilization * 15%)
-      if (borrowApy === 0 && utilization > 0) {
-        borrowApy = 2 + utilization * 0.15
-      }
+      const ratePerSec = Number(BigInt(m.borrow_rate_per_second || '0')) / 1e18
+      if (ratePerSec > 0) borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
+      if (borrowApy === 0 && utilization > 0) borrowApy = 2 + utilization * 0.15
 
       const supplyApy = utilization > 0 ? (borrowApy * utilization) / 100 : 0
+      const lltv = BigInt(m.lltv || '770000000000000000')
 
-      map.set(entry.collateralToken.toLowerCase(), {
-        totalSupplyAssets,
-        totalBorrowAssets,
-        utilization,
-        borrowApy,
-        supplyApy,
-        lltv: entry.lltv,
-        marketId: entry.marketId,
+      map.set(m.collateral_token.toLowerCase(), {
+        totalSupplyAssets, totalBorrowAssets, utilization,
+        borrowApy, supplyApy, lltv, marketId: m.market_id,
       })
     }
-
     return map
-  }, [rawData])
+  }, [rawMarkets])
 
   return { data: marketsMap, isLoading }
 }
