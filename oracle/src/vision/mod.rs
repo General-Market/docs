@@ -12,6 +12,7 @@ pub mod config;
 pub mod config_cache;
 pub mod deposit_watcher;
 pub mod engine;
+pub mod lifecycle;
 pub mod pending_ops;
 pub mod resolver;
 pub mod settle_signer;

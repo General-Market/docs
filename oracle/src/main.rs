@@ -135,6 +135,11 @@ struct Args {
     #[arg(long)]
     consensus_timeout_ms: Option<u64>,
 
+    /// Hard timeout for an entire consensus round in seconds (default: 120).
+    /// If a round exceeds this, it is abandoned and the next cycle proceeds.
+    #[arg(long, default_value = "120")]
+    consensus_round_timeout_secs: u64,
+
     /// Path to checkpoint file for faster restart
     #[arg(long, default_value = "./checkpoint.json")]
     checkpoint_path: String,
@@ -4798,6 +4803,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         wal_sync_mode: args.wal_sync_mode.clone(),
         skip_wal_replay: args.skip_wal_replay,
         sign_timeout_ms: args.sign_timeout_ms,
+        consensus_round_timeout_secs: args.consensus_round_timeout_secs,
     };
 
     // Deprecation warning for --signature-threshold
@@ -5196,6 +5202,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                         orchestrator.run().await;
                     });
+
+                    // Spawn BatchLifecycleManager for round-based sources
+                    if !vision_cfg.round_based_sources.is_empty() {
+                        let lm = oracle::vision::lifecycle::BatchLifecycleManager::new(
+                            vision_cfg.clone(),
+                            scheduler.clone(),
+                            resolver.clone(),
+                            bitmap_store.clone(),
+                            pool.clone(),
+                            components.shutdown.clone(),
+                        );
+                        tokio::spawn(async move { lm.run().await });
+                        info!(
+                            sources = ?vision_cfg.round_based_sources,
+                            "BatchLifecycleManager spawned"
+                        );
+                    }
 
                     let vision_state = Arc::new(oracle::vision::api::VisionState {
                         pool,

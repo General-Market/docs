@@ -421,6 +421,11 @@ impl OracleConfig {
                         gas_drip_threshold_wei: std::env::var("ORACLE_VISION_GAS_DRIP_THRESHOLD_WEI")
                             .unwrap_or_else(|_| "5000000000000000".into()),
                         deposit_auto_refund_timeout_secs: parse_env_var("ORACLE_VISION_DEPOSIT_AUTO_REFUND_TIMEOUT_SECS").unwrap_or(7200),
+                        // Round-based lifecycle
+                        round_based_sources: std::env::var("ORACLE_VISION_ROUND_BASED_SOURCES")
+                            .ok()
+                            .map(|s| s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect())
+                            .unwrap_or_default(),
                     })
                 } else {
                     None

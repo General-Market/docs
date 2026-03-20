@@ -1862,7 +1862,28 @@ pub async fn run(
                 let mut work_items: Vec<BatchWork> = Vec::new();
                 let mut sources_needed: std::collections::HashSet<String> = std::collections::HashSet::new();
 
+                // Compute round-based source IDs once — these batches are handled
+                // by the BatchLifecycleManager, not the tick engine.
+                let round_source_ids: Vec<H256> = config.round_based_sources.iter()
+                    .flat_map(|s| {
+                        let mut c = vec![H256::from(keccak256(s.as_bytes()))];
+                        for v in 1..=5u8 {
+                            c.push(H256::from(keccak256(format!("{}_v{}", s, v).as_bytes())));
+                        }
+                        c
+                    })
+                    .collect();
+
                 for &batch_id in &due_batches {
+                    // Skip batches owned by the lifecycle manager
+                    if !round_source_ids.is_empty() {
+                        if let Some((batch, _)) = scheduler.get_batch_state(batch_id).await {
+                            if round_source_ids.contains(&batch.source_id) {
+                                continue;
+                            }
+                        }
+                    }
+
                     let mut tick_id = scheduler.next_tick_for_batch(batch_id).await;
 
                     match scheduler.get_batch_state(batch_id).await {

@@ -64,6 +64,15 @@ pub struct VisionConfig {
     pub gas_drip_threshold_wei: String,
     /// Auto-refund timeout for stuck `pending` deposits (seconds). Default: 7200 (2h).
     pub deposit_auto_refund_timeout_secs: u64,
+
+    // =========================================================================
+    // Round-based batch lifecycle fields
+    // =========================================================================
+
+    /// Source IDs managed by the BatchLifecycleManager (round-based batches).
+    /// Sources listed here are excluded from the tick engine's resolution loop.
+    #[serde(default)]
+    pub round_based_sources: Vec<String>,
 }
 
 impl Default for VisionConfig {
@@ -94,6 +103,8 @@ impl Default for VisionConfig {
             gas_drip_amount_wei: "10000000000000000".into(), // 0.01 GM
             gas_drip_threshold_wei: "5000000000000000".into(), // 0.005 GM
             deposit_auto_refund_timeout_secs: 7200, // 2 hours
+            // Round-based lifecycle
+            round_based_sources: Vec::new(),
         }
     }
 }
