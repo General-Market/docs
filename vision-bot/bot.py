@@ -155,7 +155,7 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
 
     # Round-based mode: poll oracle for active rounds, join new ones
     if cfg.get("round_based", False):
-        tracker.check_rounds()
+        tracker.check_rounds(strategy=strategy)
 
     # Lifecycle: check balances, auto-claim, auto-withdraw
     exited = tracker.check_all()

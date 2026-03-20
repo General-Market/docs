@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import time
 from typing import Dict, List, Optional, Set
 
@@ -88,7 +89,7 @@ class Tracker:
 
         return to_remove
 
-    def check_rounds(self):
+    def check_rounds(self, strategy=None):
         """Round-based mode: join current betting batch for each subscription."""
         urls = self._oracle_urls_fn()
         if not urls:
@@ -107,11 +108,11 @@ class Tracker:
                     bid = batch["batchId"]
                     if bid in self.active_ids:
                         continue
-                    self._join_round(batch)
+                    self._join_round(batch, strategy=strategy)
             except Exception as e:
                 log.warning("Round check failed for %s/%d: %s", source, timeframe, e)
 
-    def _join_round(self, batch: dict):
+    def _join_round(self, batch: dict, strategy=None):
         """Join a round-based batch: approve USDC, call joinBatchDirect, submit bitmap."""
         batch_id = batch["batchId"]
         config_hash = batch.get("configHash", b"\x00" * 32)
@@ -121,8 +122,8 @@ class Tracker:
         # Generate predictions
         from framework.core import encode_bitmap, hash_bitmap
         market_count = batch.get("marketCount", 10)
-        # Use the strategy to predict (or random fallback)
-        bets = ["UP"] * market_count  # placeholder — real impl calls strategy.predict()
+        markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+        bets = strategy.predict(markets) if strategy else [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
         bitmap = encode_bitmap(bets, market_count)
         bitmap_hash = hash_bitmap(bitmap)
 
