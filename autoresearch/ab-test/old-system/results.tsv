@@ -1,0 +1,73 @@
+iteration	avg_score	hook	escalation	rhythm	voice	clarity	visual	closing	status	description
+1	6.14	6	5	7	6	6	7	6	KEPT	Rewrote closing — knife-sentence recontextualizes all examples as monetizable intuitions
+2	6.71	7	7	7	7	6	7	6	KEPT	Reordered examples mundane→cosmic crescendo; added knife-line for solar flares
+3	6.86	7	7	7	7	7	7	6	KEPT	Rewrote feature list — sealed bets and parimutuel now explained in plain language
+4	7.00	7	7	7	6	8	7	7	KEPT	Rewrote closing — exclusivity statement + Testnet S1 CTA; gained clarity, lost some voice
+5	7.14	7	7	7	7	8	7	7	KEPT	Added Cioran knife-line to 4chan example — chaos has a heartbeat
+6	7.43	8	7	7	7	8	8	7	KEPT	Strengthened hook — no context opening, contagion visual, added a tradeable market
+7	7.43	8	7	7	7	8	8	7	KEPT	Added granularity to military line — every takeoff, every altitude change, tradeable
+8	7.71	8	7	7	8	8	8	8	KEPT	Restored knife-sentence to closing alongside exclusivity claim — both intellectual and emotional punch
+9	7.86	8	7	8	8	8	8	8	KEPT	Added accelerating cut rhythm — 3s to 1.5s building overwhelm before silence break
+10	8.00	8	8	8	8	8	8	8	KEPT	Added scale to German trains — 30,000 trains a day, every one a bet
+11	8.14	9	8	8	8	8	8	8	KEPT	Opened with absurd question + 2s silence — how many McDonalds machines broken right now? Tradeable.
+12	8.29	9	8	8	9	8	8	8	KEPT	Steam line — player counts rise and fall like small civilizations
+13	8.29	9	8	8	9	8	8	8	REVERTED	Tried more direct closing — lost Cioran tenderness, reverted to original knife-sentence
+14	8.29	9	8	8	9	8	8	8	KEPT	Fixed double Exclusive Trade card bug — removed stutter between McDonalds and Deutsche Bahn
+15	8.57	9	8	8	9	9	8	9	KEPT	Added Now they can — two-word pivot after knife-sentence closes the loop
+16	8.71	9	8	8	9	9	9	9	KEPT	Enriched Twitch visual — mid-rage, chat scrolling, price ticker overlaying viewer count in lockstep
+17	8.71	9	8	8	9	9	9	9	KEPT	Added 30-second tracking interval to Twitch — every viewer spike is someones position
+18	8.86	9	8	9	9	9	9	9	KEPT	Silence break — all sound cuts, acceleration stops, 3s absolute silence before 400k reveal
+19	9.00	9	9	9	9	9	9	9	KEPT	Military tone shift — this isnt funny anymore, 30 conflict zones, every sortie tradeable
+20	9.00	9	9	9	9	9	9	9	KEPT	Tried statement hook — reverted to question format, kept price chart overlay and no music direction
+21	9.14	9	9	9	10	9	9	9	KEPT	Twitch knife-line — entertainment is just volatility that hasnt been priced yet
+22	9.29	9	9	9	10	10	9	9	KEPT	New closing thesis — the world already generates the data, we just added a price
+23	9.43	9	9	9	10	10	9	10	KEPT	Split closing thesis into two lines with beat — stripped CTA to Season 1 live
+24	9.43	9	9	9	10	10	9	10	KEPT	PumpFun — most of them funerals, candles flash and die, text changes for first time
+25	9.57	9	9	9	10	10	10	10	KEPT	Deutsche Bahn split-screen — delay board left, inversely correlated price chart right
+26	9.71	10	9	9	10	10	10	10	KEPT	Hook rework — added 1s black pause, live counter 1247 broken, Tradeable on its own card
+27	9.86	10	10	9	10	10	10	10	KEPT	Solar flare callback — neither did any of these — recontextualizes entire sequence
+28	10.00	10	10	10	10	10	10	10	KEPT	Feature lines progressively shorten — deceleration mirrors montage acceleration, section breathes
+29	10.00	10	10	10	10	10	10	10	KEPT	4chan visual enriched — post velocity counter ticks like a Geiger counter
+30	10.00	10	10	10	10	10	10	10	KEPT	Steam visual — heat map of 50k games breathing in real-time
+31	10.00	10	10	10	10	10	10	10	KEPT	Military line shortened to staccato fragments matching acceleration rhythm
+32	10.00	10	10	10	10	10	10	10	KEPT	PumpFun visual tightened — flash and flatline, removed redundant rugs cascade
+33	10.00	10	10	10	10	10	10	10	KEPT	Twitch line compressed — merged count and interval into single clause
+34	10.00	10	10	10	10	10	10	10	KEPT	Removed redundant direction note — line 80 already covers pacing instruction
+35	10.00	10	10	10	10	10	10	10	KEPT	PumpFun micro-compression — launched daily to a day
+36	10.00	10	10	10	10	10	10	10	KEPT	Added rapid counter 8→400k visual to the scale reveal card, kept original text
+37	10.00	10	10	10	10	10	10	10	KEPT	Visual Rhythm expanded to three-act structure — bombardment, silence, breathing + runtime
+38	10.00	10	10	10	10	10	10	10	KEPT	Exclusive Trade cards accelerate — Faster now, Flash barely readable, Flash
+39	10.00	10	10	10	10	10	10	10	REVERTED	Tried subliminal frame of 98 logos — contradicts absolute silence, gimmicky, reverted
+40	10.00	10	10	10	10	10	10	10	KEPT	Solar flare visual — plasma arcing 100k km, color palette shift to deep orange, specific direction
+41	10.00	10	10	10	10	10	10	10	KEPT	Added sound design — ambient audio layering per source, instant silence, low tone under features
+42	10.00	10	10	10	10	10	10	10	REVERTED	Tried paradox for trains — too clever for 3-second beat, reverted to every one of them a bet
+43	10.00	10	10	10	10	10	10	10	KEPT	Added in America to hook question — implies someone is counting, more specific
+44	10.00	10	10	10	10	10	10	10	KEPT	Added Testnet back to CTA and live now for urgency — important VC signal
+45	10.00	10	10	10	10	10	10	10	KEPT	Simplified Deutsche Bahn visual — ticker along bottom instead of split-screen, faster to read
+46	10.00	10	10	10	10	10	10	10	KEPT	Exclusive Short card inverts to red text on black — color communicates directional trading
+47	10.00	10	10	10	10	10	10	10	KEPT	Silence break — pure black, no static no grain, absence
+48	10.00	10	10	10	10	10	10	10	KEPT	Opening direction — viewer should wonder if the video has started
+49	10.00	10	10	10	10	10	10	10	KEPT	Added third thesis line — you already know who wins — world/we/you escalation
+50	10.00	10	10	10	10	10	10	10	REVERTED	Removed you already know who wins — presumptuous, two-line thesis stronger ending on price
+
+--- FINAL SUMMARY ---
+Starting score: 5.71 (avg across 7 dimensions)
+Final score: 10.00
+Total iterations: 50
+Kept: 45
+Reverted: 5
+
+Score trajectory: 5.71 → 6.14 → 6.71 → 6.86 → 7.00 → 7.14 → 7.43 → 7.43 → 7.71 → 7.86 → 8.00 → 8.14 → 8.29 → 8.29(r) → 8.29 → 8.57 → 8.71 → 8.71 → 8.86 → 9.00 → 9.00 → 9.14 → 9.29 → 9.43 → 9.43 → 9.57 → 9.71 → 9.86 → 10.00 (held for 22 iterations)
+
+Key transformations:
+1. HOOK: "Exclusive Trade" label → absurd question about ice cream machines + visual answer + single-word "Tradeable"
+2. ESCALATION: Random ordering → mundane-to-cosmic crescendo with "Neither did any of these" callback
+3. RHYTHM: Uniform beats → three-act structure (bombardment/silence/breathing) with accelerating card durations
+4. VOICE: Flat labels → knife-sentences: "Entertainment is just volatility that hasn't been priced yet" / "Most of them funerals" / "Chaos has a heartbeat"
+5. CLARITY: Vague "dark pools" → explicit sealed bets, parimutuel, self-liquidity
+6. VISUAL: Generic screenshots → price tickers overlaying data sources, red inverted cards, 8→400k counter
+7. CLOSING: Generic CTA → "The world already generates the data. We just added a price."
+
+Reverted changes (5): more direct closing (lost tenderness), subliminal logo frame (gimmicky), train paradox (too clever), "you already know who wins" (presumptuous)
+
+NOTE: Self-scored evaluations are inherently generous. A 10.0 from the same agent that wrote the changes should be discounted. The script improved materially — the magnitude is the suspect variable.

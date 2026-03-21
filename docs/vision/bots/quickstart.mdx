@@ -12,20 +12,20 @@ What follows is a minimal bot that registers on-chain, joins a batch with random
 ## Prerequisites
 
 - **Python 3.10+** or **Node 18+**
-- An Arbitrum wallet funded with USDC and ETH (for gas)
+- An Index L3 wallet funded with WUSDC (18 decimals) and ETH (for gas)
 - Your wallet's private key exported as an environment variable
 - A willingness to wager money on a machine's guesses
 
 <Warning>
-**USDC uses 6 decimals.** All amounts in contract calls must be scaled by `10^6`. 10 USDC = `10_000_000`. The decimal system, at least, is not adversarial.
+**WUSDC on Index L3 uses 18 decimals.** All amounts in contract calls must be scaled by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). The decimal system, at least, is not adversarial.
 </Warning>
 
 ## Set Environment Variables
 
 ```bash
-export RPC_URL="https://arb1.arbitrum.io/rpc"
+export RPC_URL="http://142.132.164.24/"
 export BOT_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"
-export VISION_ADDRESS="0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20"
+export VISION_ADDRESS="0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef"
 export VISION_API_URL="https://generalmarket.io/api/vision"
 ```
 
@@ -43,10 +43,10 @@ from web3 import Web3
 # Config
 RPC_URL = os.environ["RPC_URL"]
 PRIVATE_KEY = os.environ["BOT_PRIVATE_KEY"]
-VISION_ADDR = os.environ.get("VISION_ADDRESS", "0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20")
+VISION_ADDR = os.environ.get("VISION_ADDRESS", "0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef")
 API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api/vision")
-DEPOSIT = 10 * 10**6   # 10 USDC (6 decimals)
-STAKE   = 1  * 10**6   # 1 USDC per tick
+DEPOSIT = 10 * 10**18  # 10 WUSDC (18 decimals on L3)
+STAKE   = 1  * 10**18  # 1 WUSDC per tick
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 acct = w3.eth.account.from_key(PRIVATE_KEY)
@@ -64,9 +64,9 @@ ERC20_ABI = [
      "inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[{"type":"bool"}]},
 ]
 
-# Contracts (USDC address on Arbitrum from deployment)
+# Contracts (WUSDC address on Index L3 from deployment.json)
 vision = w3.eth.contract(address=VISION_ADDR, abi=VISION_ABI)
-USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"  # Arbitrum native USDC
+USDC_ADDR = deployment["contracts"]["WUSDC"]  # Read from deployments/vision-deployment.json
 usdc = w3.eth.contract(address=USDC_ADDR, abi=ERC20_ABI)
 
 def send_tx(tx):
@@ -131,19 +131,23 @@ print(f"Bitmap submitted: {resp.json()}")
 ```typescript TypeScript
 import { createWalletClient, http, parseAbi, keccak256, toHex, encodeFunctionData } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { arbitrum } from 'viem/chains'
+import { defineChain } from 'viem'
+
+const indexL3 = defineChain({ id: 111222333, name: 'Index L3', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [RPC_URL] } } })
 
 // Config
 const RPC_URL = process.env.RPC_URL!
 const PRIVATE_KEY = process.env.BOT_PRIVATE_KEY! as `0x${string}`
-const VISION_ADDR = (process.env.VISION_ADDRESS ?? '0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20') as `0x${string}`
+const VISION_ADDR = (process.env.VISION_ADDRESS ?? '0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef') as `0x${string}`
 const API_URL = process.env.VISION_API_URL ?? 'https://generalmarket.io/api/vision'
-const DEPOSIT = 10_000_000n  // 10 USDC (6 decimals)
-const STAKE   = 1_000_000n   // 1 USDC per tick
-const USDC_ADDR = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as `0x${string}`
+const DEPOSIT = 10_000_000_000_000_000_000n  // 10 WUSDC (18 decimals on L3)
+const STAKE   = 1_000_000_000_000_000_000n   // 1 WUSDC per tick
+// Read WUSDC address from deployments/vision-deployment.json
+const deployment = JSON.parse(await Bun.file('deployments/vision-deployment.json').text())
+const USDC_ADDR = deployment.contracts.WUSDC as `0x${string}`
 
 const account = privateKeyToAccount(PRIVATE_KEY)
-const client = createWalletClient({ account, chain: arbitrum, transport: http(RPC_URL) })
+const client = createWalletClient({ account, chain: indexL3, transport: http(RPC_URL) })
 
 const visionAbi = parseAbi([
   'function registerBot(string endpoint, bytes32 pubkeyHash)',

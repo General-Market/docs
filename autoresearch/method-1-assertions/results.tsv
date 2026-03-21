@@ -1,0 +1,85 @@
+iteration	pass_rate	assertions_passed	status	description
+0	73%	11/15	baseline	initial evaluation — failing: #2 (pattern interrupt before halfway), #3 (concrete over abstract), #12 (no feature list), #13 (VC-legible)
+1	80%	12/15	keep	added "Every one a sealed prediction market" line after 400k card — fixes #13 VC-legible
+2	80%	12/15	keep	replaced "4chan activities" with "4chan /biz/ post velocity. 14,000 posts a day. Each thread a market." — toward fixing #3
+3	80%	12/15	keep	replaced "Space weather" with "NOAA Kp index. Solar storms. Will the aurora hit Berlin tonight." — toward fixing #3
+4	80%	12/15	keep	replaced "Steam game successes" with "Counter-Strike 2 concurrent players. 1.8 million and climbing." — toward fixing #3
+5	87%	13/15	keep	replaced "US aircraft positions" with "ADS-B flight tracks. 7,400 military aircraft over CONUS right now." — fixes #3 concrete over abstract
+6	93%	14/15	keep	added silence + "These are all real." after PumpFun section — fixes #2 pattern interrupt before halfway
+7	100%	15/15	keep	replaced 5-line "No X" feature list with two prose sentences — fixes #12 no feature list
+8	100%	15/15	keep	replaced "DB Late Trains" with "Deutsche Bahn delays. 47 trains late in Frankfurt alone." — more specific hook
+9	93%	14/15	discard	added second CTA "Follow us @GeneralMarketIO" — correctly broke #10 single CTA. reverted.
+10	93%	14/15	discard	added "innovative" to test #4 corporate language filter — correctly caught. reverted.
+11	93%	14/15	discard	removed "These are all real." pattern interrupt — correctly broke #2. reverted.
+12	93%	14/15	discard	replaced 4chan specific line with vague "Popular forum discussions" — correctly broke #3. reverted.
+13	100%	15/15	discard	replaced "Yes, really." with "34% of units offline nationally" — maintained score but degraded Cioran character. reverted for quality.
+14	100%	15/15	keep	changed final card to "Season 1 is live. The rest is your problem." — stronger knife
+15	100%	15/15	keep	changed DB line to "47 trains late in Frankfurt. Right now." — added urgency
+16	100%	15/15	keep	changed XQC line to "Every viewer count a tradeable position." — punchier, helps VC legibility
+17	93%	14/15	discard	removed "[BEAT] And 400,000 more" pivot section — correctly broke #9. reverted.
+18	93%	14/15	discard	added 4 more market examples (npm, earthquakes, github, flights) — pushed past 90s, broke #7. reverted.
+19	100%	15/15	keep	removed redundant "Sealed bets." from dark pool line — avoids repetition with earlier "sealed prediction market"
+20	100%	15/15	keep	changed "Will the aurora hit Berlin tonight" to "The aurora might hit Berlin tonight" — declarative Cioran form
+21	100%	15/15	discard	changed "Exclusive Short" to "Exclusive Trade" — lost clever double meaning for PumpFun rugs. reverted for quality.
+22	100%	15/15	keep	changed "Each thread a market" to "All tradeable" — eliminated echo of PumpFun's "Each one a market"
+23	100%	15/15	keep	tightened CS2 line to "That number moves. So does the market." — stronger Cioran rhythm
+24	100%	15/15	keep	tightened DB line to "Deutsche Bahn. 47 trains late in Frankfurt right now." — one sentence
+25	100%	15/15	discard	added "Not even us." — redundant with dark pool line. reverted.
+26	100%	15/15	keep	changed "Every one" to "All of them" — flows better after "And 400,000 more."
+27	100%	15/15	keep	removed "Exclusive Trade" card before McDonald's — hard cut slams harder
+28	100%	15/15	keep	replaced "ADS-B" and "CONUS" jargon with "Military flight paths" and "the US" — more accessible
+29	100%	15/15	keep	removed "liquidity" from "Dark pool liquidity" — less jargon
+30	100%	15/15	discard	added "Generated every hour" to 400k line — diluted the punch of brevity. reverted.
+31	93%	14/15	discard	swapped McDonald's to opening position — correctly broke #5 escalation. reverted.
+32	100%	15/15	keep	removed "NOAA Kp index." jargon from solar storms line — more accessible
+33	100%	15/15	discard	added "right now" to CS2 line — created duplicate phrasing with DB line. reverted.
+34	100%	15/15	keep	changed last market card to "Exclusive Long" for CS2 — pairs with "Exclusive Short" for PumpFun
+35	100%	15/15	keep	changed military line to "as you watch this" — fourth-wall break adds urgency
+36	87%	13/15	discard	replaced knife line with corporate prose — correctly broke #11 Cioran and #12 no feature list. reverted.
+37	100%	15/15	discard	changed final knife to "none of our business" — less punchy than "your problem." reverted for quality.
+38	100%	15/15	discard	changed final knife to "Do something about it" — generic CTA, lost dark humor. reverted for quality.
+39	100%	15/15	keep	updated military visual direction to "Flight radar screen" — aligns with spoken "flight paths"
+40	100%	15/15	discard	tried "The sentiment moves. You trade it." for 4chan — echoed CS2 pattern. reverted for repetition.
+41	100%	15/15	discard	replaced "And 400,000 more" with "98 data sources. 400,000 markets." — less dramatic. reverted.
+42	100%	15/15	keep	added "11% of them, at any given moment" to McDonald's line — more specific data point
+43	100%	15/15	discard	replaced McDonald's humor with dry stats — flattened emotional arc. reverted for quality.
+44	93%	14/15	discard	removed 4chan visual direction — correctly broke #8 visual specificity. reverted.
+45	100%	15/15	keep	shortened XQC line to "Every viewer count a market" — cleaner, less jargon
+46	100%	15/15	keep	changed solar storms line to "Whether the aurora hits Berlin tonight — that's a market too" — no hedging, declarative
+47	100%	15/15	keep	updated Visual Rhythm header to reflect Short/Long/Hard Cut variations — production clarity
+48	100%	15/15	discard	changed "trade the outcome" to "bet on what happens next" — "trade" is stronger for VC context. reverted.
+49	100%	15/15	discard	removed "Each one a market before the rug" — maintained score but lost best dark humor line. reverted.
+50	100%	15/15	keep	final full evaluation — all 15 assertions pass
+
+## Final Summary
+
+Iterations: 50
+Starting pass rate: 73% (11/15)
+Final pass rate: 100% (15/15)
+100% reached at: iteration 7
+
+Kept changes: 23
+Discarded changes: 20 (7 adversarial that correctly caught assertion violations, 13 quality regressions despite maintaining score)
+
+Key fixes that moved the needle:
+- Iteration 1: Added "sealed prediction market" explanation line — fixed #13 (VC-legible), 73%→80%
+- Iterations 2-5: Made all market claims concrete with specific names/numbers — fixed #3, 80%→87%
+- Iteration 6: Added "These are all real." pattern interrupt before halfway — fixed #2, 87%→93%
+- Iteration 7: Replaced 5-line "No X" feature list with two prose sentences — fixed #12, 93%→100%
+
+Notable quality improvements at 100%:
+- "Exclusive Short"/"Exclusive Long" card variations for PumpFun/CS2 (double meanings)
+- "The rest is your problem." final knife
+- Fourth-wall break "as you watch this" on military line
+- Hard cut (no card) before McDonald's for impact
+- Removed jargon (ADS-B, CONUS, Kp index, liquidity)
+
+Adversarial tests confirmed assertion robustness:
+- #2 correctly failed when pattern interrupt removed (iter 11)
+- #3 correctly failed when specific names replaced with vague categories (iter 12)
+- #4 correctly failed when "innovative" added (iter 10)
+- #5 correctly failed when escalation order reversed (iter 31)
+- #8 correctly failed when visual direction removed (iter 44)
+- #9 correctly failed when pivot section removed (iter 17)
+- #10 correctly failed when second CTA added (iter 9)
+- #11 and #12 correctly failed when corporate prose replaced Cioran voice (iter 36)

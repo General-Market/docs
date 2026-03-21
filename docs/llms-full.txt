@@ -261,7 +261,7 @@ Response:
 
 ---
 
-## Smart Contract: Vision (0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20)
+## Smart Contract: Vision (0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef)
 
 Chain ID: 421611337
 Collateral: USDC (6 decimals)

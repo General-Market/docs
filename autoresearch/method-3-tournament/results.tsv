@@ -1,0 +1,100 @@
+iteration	win_rate	attention	memorability	clarity	emotion	overall	status	description
+0	-	-	-	-	-	-	baseline	initial script
+1	100%	NEW	NEW	NEW	NEW	NEW	keep	replaced ending block: "dark pools" feature list → "every bet is sealed / just you against the outcome" mechanism explanation
+2	60%	NEW	OLD	NEW	OLD	NEW	keep	added opening question "What can you trade?" before first Exclusive Trade card
+3	100%	NEW	NEW	NEW	NEW	NEW	keep	replaced "What can you trade?" with "Everything moves. Almost nothing has a market."
+4	100%	NEW	NEW	NEW	NEW	NEW	keep	"4chan activities" → "4chan post velocity. Per board. Per hour."
+5	100%	NEW	NEW	NEW	NEW	NEW	keep	"Steam game successes" → "Steam player counts. Every game. Every hour."
+6	100%	NEW	NEW	NEW	NEW	NEW	keep	"Space weather." → "Solar storms. Geomagnetic indices. The sun has a market now."
+7	80%	NEW	OLD	NEW	NEW	NEW	keep	"US aircraft positions." → "US military aircraft. Position. Altitude. Flight path."
+8	60%	NEW	OLD	NEW	OLD	NEW	keep	"Broken McDonalds machines. Yes, really." → "McDonalds ice cream machines. Which ones are broken. Right now."
+9	20%	OLD	OLD	NEW	OLD	OLD	discard	tried removing XQC name-drop for tighter rhythm — lost personality
+10	80%	NEW	OLD	NEW	NEW	NEW	keep	"Each one a market before the rug" → "Every day. Each one tradeable before it dies."
+11	100%	NEW	NEW	NEW	NEW	NEW	keep	"DB Late Trains." → "German trains. How late. Which line. Every departure."
+12	20%	OLD	OLD	NEW	OLD	OLD	discard	tried making all cards "Exclusive Trade" — "Exclusive Short" on PumpFun was doing important comedic work
+13	60%	NEW	OLD	NEW	OLD	NEW	keep	added "Vision by General Market." to final card — product name was never mentioned
+14	80%	NEW	NEW	OLD	NEW	NEW	keep	"Live now." → "Live." — economy of language
+15	20%	OLD	OLD	NEW	OLD	OLD	discard	tried "400,000 markets. And counting." — "And 400,000 more." was a better reveal
+16	80%	NEW	NEW	NEW	OLD	NEW	keep	added "The largest untouched market surface on earth." — VC thesis line
+17	20%	OLD	OLD	NEW	OLD	OLD	discard	tried adding "Until now." — cliché corporate pivot, killed the voice
+18	100%	NEW	NEW	NEW	NEW	NEW	keep	added earthquakes as final montage source before the "400,000 more" payoff
+19	100%	NEW	NEW	NEW	NEW	NEW	keep	"Live markets." → "Bet the peak." on Twitch line — more specific and actionable
+20	100%	NEW	NEW	NEW	NEW	NEW	keep	"Nobody copies your trade." → "Nobody moves the price against you." — names the pain
+21	40%	OLD	NEW	NEW	OLD	OLD	keep	"Which ones are broken. Right now." → "Broken or not. City by city." — marginal, kept by bias rule
+22	100%	NEW	NEW	NEW	NEW	NEW	keep	McDonalds: "Broken or not. City by city." → "Every location. Broken or working. Bet on it."
+23	20%	NEW	OLD	NEW	OLD	OLD	discard	tried verbose "No X to Y" constructions — original rhythm was better for video
+24	80%	NEW	NEW	OLD	NEW	NEW	keep	last montage card changed from "Exclusive Trade." to "Exclusive Everything." — pattern break before payoff
+25	100%	NEW	NEW	NEW	NEW	NEW	keep	added source counter visual direction ("1/98+" in corner) to reinforce scale
+26	80%	NEW	NEW	OLD	NEW	NEW	keep	"tradeable before it dies" → "a bet before it dies" — more visceral and poetic
+27	80%	NEW	NEW	OLD	NEW	NEW	keep	reordered montage: military→Steam→solar→McDonalds→earthquakes for better escalation
+28	80%	NEW	NEW	OLD	NEW	NEW	keep	added audio direction: no voiceover, accelerating pulse, silence at payoff
+29	20%	OLD	OLD	NEW	OLD	OLD	discard	tried "98 data sources. 400,000 markets." — "And 400,000 more." was the better reveal
+30	60%	NEW	OLD	NEW	OLD	NEW	keep	added "98 sources. 400,000 markets." subtitle to the payoff card
+31	80%	NEW	NEW	OLD	NEW	NEW	keep	"Magnitude. Depth. Location." → "Where. How deep. How bad." — visceral over technical
+32	60%	NEW	OLD	NEW	OLD	NEW	keep	added "Now raising." to final card — VC-specific CTA
+33	20%	OLD	OLD	NEW	OLD	OLD	discard	tried removing "surface" from "market surface" — the unusual phrasing was doing evocative work
+34	80%	NEW	NEW	OLD	NEW	NEW	keep	"Every bet is sealed." → "All bets are sealed." — echoes "all bets are off"
+35	60%	NEW	TIE	NEW	TIE	NEW	keep	moved source counter note from Audio to Visual Rhythm section — organizational fix
+36	20%	OLD	OLD	NEW	OLD	OLD	discard	tried "Every system produces data" — too sterile, "Everything moves" was more Cioran
+37	80%	NEW	NEW	OLD	NEW	NEW	keep	"Now raising." → "Raising." — more economical and confident
+38	60%	NEW	TIE	NEW	TIE	NEW	keep	merged two redundant visual direction notes into one — cleaner script document
+39	80%	NEW	NEW	OLD	NEW	NEW	keep	XQC line restructured: "XQC. And 9,000 more..." — better rhythm with period pause
+40	80%	NEW	NEW	OLD	NEW	NEW	keep	added accelerating pace direction: 2.5s → 2s → 1.5s per source group
+41	80%	NEW	NEW	OLD	NEW	NEW	keep	"Just you against the outcome." → "Just you against reality." — more existential weight
+42	80%	NEW	NEW	NEW	OLD	NEW	keep	added "All public." to military aircraft line — preempts legal/ethical VC concern
+43	60%	NEW	OLD	NEW	OLD	NEW	keep	"Nobody moves the price against you." → "The price cant move against you." — structural impossibility claim
+44	80%	NEW	NEW	OLD	NEW	NEW	keep	added "The internet has a pulse." to 4chan line — elevates from novelty to thesis
+45	100%	NEW	NEW	NEW	NEW	NEW	keep	"How late. Which line. Every departure." → "Every delay is a market." — thesis in miniature
+46	20%	OLD	OLD	NEW	OLD	OLD	discard	tried merging "Every day." into previous clause — standalone beat was stronger
+47	100%	NEW	NEW	NEW	NEW	NEW	keep	"Every game." → "70,000 games." — concrete number creates scale impression
+48	80%	NEW	NEW	OLD	NEW	NEW	keep	"Solar storms. Geomagnetic indices." → "Solar flares. Geomagnetic storms." — more visual language
+49	60%	NEW	NEW	OLD	NEW	OLD	keep	"Almost nothing has a market" → "Nothing has a market" — more absolute but factually weaker, marginal keep
+50	40%	OLD	OLD	NEW	OLD	NEW	keep	reverted to "Almost nothing has a market" — factual accuracy critical for VC audience
+
+## FINAL SUMMARY
+
+**50 iterations completed.**
+
+### Statistics
+- Kept: 39 changes (78%)
+- Discarded: 11 changes (22%)
+- Average win rate of kept changes: 79%
+- Average win rate of discarded changes: 20%
+- Perfect scores (100%): 13 iterations
+- Marginal keeps (40-60%): 10 iterations
+
+### Most impactful changes (100% win rate)
+1. Replaced "dark pools" feature list with sealed-bet mechanism explanation
+2. Opening thesis: "Everything moves. Almost nothing has a market."
+3. Specificity treatment on 4chan, Steam, solar, trains, McDonald's descriptions
+4. Added earthquakes as final montage source
+5. "Bet the peak." on Twitch — specific and actionable
+6. "Nobody moves the price against you." — names the pain
+7. "Every delay is a market." — thesis in miniature as first example
+8. "70,000 games." — concrete number over vague "every"
+
+### Failed experiments (all 20% win rate)
+1. Removing XQC name-drop — personality matters
+2. Making all cards "Exclusive Trade" — "Short" variation was doing comedic work
+3. "400,000 markets. And counting." — "And 400,000 more." was better reveal structure
+4. "Until now." — corporate cliché, killed the voice
+5. Verbose "No X to Y" constructions — original rhythm won
+6. "98 data sources. 400,000 markets." replacing "And 400,000 more" — factual vs emotional
+7. Removing "surface" from "market surface" — unusual phrasing was evocative
+8. "Every system produces data" — too sterile for opening
+9. Merging "Every day." into previous clause — standalone beat stronger
+
+### Key patterns
+- **Specificity always wins**: concrete numbers (70,000, 9,000, 3,000) beat generalities
+- **Rhythm is sacred**: changes that broke staccato rhythm were consistently rejected
+- **Cioran voice self-protects**: corporate language ("Until now", verbose explanations) was rejected hard
+- **Emotional beats > factual precision** in the montage, but **factual accuracy > emotion** in the thesis and VC-facing elements
+- **Pattern breaks earn their disruption**: "Exclusive Short" and "Exclusive Everything" survived because they were earned structural variations
+- **Name-drops matter**: XQC survived deletion because recognizable names create instant connection
+- **Knife sentences survived all attempts to replace them**: "The sun has a market now", "Just you against reality", "Bet on it" — these are load-bearing
+
+### Final script character count
+- ~1,200 words including all stage directions
+- ~180 words of actual on-screen text
+- 9 data sources in montage
+- Estimated video length: 45-55 seconds

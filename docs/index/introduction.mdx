@@ -1,6 +1,6 @@
 ---
 title: "Introduction"
-description: "General Market — on-chain ETFs, prediction markets across 98+ data sources, and DeFi lending"
+description: "General Market — on-chain ETFs, prediction markets across 90+ data sources, and DeFi lending"
 ---
 
 ```text
@@ -12,14 +12,14 @@ description: "General Market — on-chain ETFs, prediction markets across 98+ da
 
   On-chain ETFs  ·  Prediction Markets  ·  DeFi Lending
   ────────────────────────────────────────────────────────
-  98+ data sources  ·  BLS consensus  ·  Real execution
+  90+ data sources  ·  BLS consensus  ·  Real execution
 ```
 
 # General Market
 
 You will lose money here. Everyone does, everywhere. The difference is that here, the math is visible.
 
-General Market is a protocol for **index products**, **prediction markets**, and **DeFi lending** — running on a custom Arbitrum Orbit L3 with sub-second finality and near-zero gas. It is 8 services, 29 smart contracts, 2 EVM chains, 98+ real-world data sources, and a bot framework. One does not build all this because it is wise. One builds it because the alternative — trusting someone else's spreadsheet — is worse.
+General Market is a protocol for **index products**, **prediction markets**, and **DeFi lending** — running on a custom Arbitrum Orbit L3 with sub-second finality and near-zero gas. It is 8 services, 29 smart contracts, 2 EVM chains, 90+ real-world data sources, and a bot framework. One does not build all this because it is wise. One builds it because the alternative — trusting someone else's spreadsheet — is worse.
 
 ```text
  ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -32,7 +32,7 @@ General Market is a protocol for **index products**, **prediction markets**, and
  │    │                   │  │                   │  │                   │     │
  │    │  On-chain ETFs    │  │  Prediction       │  │  Morpho-powered  │     │
  │    │  (ITPs)           │  │  markets across   │  │  lending         │     │
- │    │                   │  │  98+ real-world   │  │                   │     │
+ │    │                   │  │  90+ real-world   │  │                   │     │
  │    │  ┌─────────────┐  │  │  data sources     │  │  ┌─────────────┐ │     │
  │    │  │ BTC   12.5% │  │  │                   │  │  │ Supply USDC │ │     │
  │    │  │ ETH   10.0% │  │  │  ┌─────────────┐  │  │  │ to earn     │ │     │
@@ -63,7 +63,7 @@ General Market is a protocol for **index products**, **prediction markets**, and
     Baskets of up to 100 crypto assets. Each ITP is an ERC-4626 vault priced by a NAV formula that hides nothing. Orders pass through BLS consensus and execute on real exchanges. No AMM. No slippage. No illusions about liquidity.
   </Card>
   <Card title="Vision" icon="eye" href="/vision/introduction">
-    Prediction markets on 98+ real-world data sources. Transport delays, power outages, weather, GitHub commits, energy prices. You bet on whether the Paris Metro will be late. It usually is. Sealed bets, parimutuel payouts, BLS-verified resolution.
+    Prediction markets on 90+ real-world data sources. Transport delays, power outages, weather, GitHub commits, energy prices. You bet on whether the Paris Metro will be late. It usually is. Sealed bets, parimutuel payouts, BLS-verified resolution.
   </Card>
   <Card title="Lending" icon="building-columns" href="/index/concepts/lending">
     Morpho-powered lending on Arbitrum. Deposit USDC to earn yield from borrowers who believe their collateral will hold. Use ITP shares to borrow USDC against positions you cannot bring yourself to sell.
@@ -116,7 +116,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
 
 <CardGroup cols={2}>
   <Card title="Data Node" icon="database">
-    A Rust service that aggregates 98+ data sources into one API. Crypto prices, transport delays, energy grids, weather stations, GitHub activity. It feeds NAV computation, market resolution, backtesting, and anomaly detection. The nervous system of the protocol. It never sleeps, because the world does not.
+    A Rust service that aggregates 90+ data sources into one API. Crypto prices, transport delays, energy grids, weather stations, GitHub activity. It feeds NAV computation, market resolution, backtesting, and anomaly detection. The nervous system of the protocol. It never sleeps, because the world does not.
   </Card>
   <Card title="Bridge" icon="bridge">
     Moves assets between the Index L3 and Arbitrum. ITP shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
@@ -131,7 +131,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
     Season 1 rewards. Earn points for trading ITPs, placing bets, supplying liquidity. Points track engagement. Whether engagement deserves tracking is a question the protocol does not ask.
   </Card>
   <Card title="Social Bot" icon="bullhorn">
-    Anomaly detection across 98+ sources. When something unusual happens — a transit collapse, a grid failure, a weather event — it posts to Twitter/X. Attention follows catastrophe. Markets follow attention.
+    Anomaly detection across 90+ sources. When something unusual happens — a transit collapse, a grid failure, a weather event — it posts to Twitter/X. Attention follows catastrophe. Markets follow attention.
   </Card>
 </CardGroup>
 
@@ -157,7 +157,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
  │   │     DATA NODE        │    │              INDEX L3 (Orbit)             │   │
  │   │      (Rust)          │    │          Chain ID: 111222333              │   │
  │   │                      │    │                                           │   │
- │   │  98+ sources         │    │  Index.sol ── ITP trading                │   │
+ │   │  90+ sources         │    │  Index.sol ── ITP trading                │   │
  │   │  PostgreSQL          │    │  Vision.sol ─ Prediction markets         │   │
  │   │  NAV engine          │    │  BotRegistry ─ Automated trading         │   │
  │   │  Backtesting         │    │  29 contracts total                      │   │
@@ -200,7 +200,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
 | **Traders** | Buy diversified crypto exposure through ITPs with a single transaction. Bet on real-world outcomes in Vision markets. |
 | **Bot developers** | Build Python strategies for automated Vision market trading. Register bots on-chain through the BotRegistry. |
 | **Fund managers** | Create custom indexes with configurable weights and up to 100 assets. Earn deployer fees on every trade. |
-| **Data scientists** | Backtest ITP compositions against historical data. Analyze 98+ data sources for prediction market edges. |
+| **Data scientists** | Backtest ITP compositions against historical data. Analyze 90+ data sources for prediction market edges. |
 | **Quant researchers** | Exploit inefficiencies in sealed parimutuel markets. Build signal pipelines from transport, energy, and weather data. |
 | **DeFi power users** | Use ITP shares as collateral in Morpho lending markets. Supply USDC to earn yield. Compose across Arbitrum DeFi. |
 
@@ -233,7 +233,7 @@ Every protocol is a set of opinions disguised as infrastructure. These are ours.
  │  resolution. Parimutuel payouts: no house edge, winners          │
  │  split the pool proportionally.                                  │
  │                                                                  │
- │  98+ REAL-WORLD DATA SOURCES                                    │
+ │  90+ REAL-WORLD DATA SOURCES                                    │
  │  ════════════════════════════                                   │
  │                                                                  │
  │  Not just crypto. Transport delays across 4 countries,           │

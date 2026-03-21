@@ -19,7 +19,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBatchMarkets`.
 
-**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `421611337`).
+**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `111222333`).
 
 ---
 

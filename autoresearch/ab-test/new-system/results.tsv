@@ -1,0 +1,52 @@
+iteration	avg_score	hook	arc	rhythm	voice	clarity	visual	closing	production	status	description
+0	5.50	6	5	6	5	6	7	4	5	baseline	Initial script evaluation
+1	5.75	6	5	6	5	6	7	6	5	keep	Rewrote closing card: 'Everything measurable is tradeable. Nobody else built the pipes.' — reframes montage as infrastructure proof
+2	6.13	6	6	6	6	7	7	6	5	keep	Rewrote feature list as mechanism reveal: sealed bets, no counterparty, pool settles on data. Bridges montage to thesis.
+3	6.38	6	6	6	6	7	7	6	7	keep	Added production specs: format (16:9/45s), sound design (thuds + drone), typography (Inter Bold + sizes), color philosophy (monochrome cards vs vivid footage)
+4	6.50	7	6	6	6	7	7	6	7	keep	Restructured opening: footage first (train delays, no context, 3s), then 'That was a market.' Creates disorientation + question.
+5	6.63	7	7	6	6	7	7	6	7	keep	Reordered montage for escalating absurdity: Twitch→Steam→PumpFun→4chan→McDonalds→Military→Solar. Added 'The sun itself.'
+6	6.75	7	7	6	6	7	7	7	7	keep	Rewrote closing: 'Everything measurable was always tradeable. Nobody built the pipes. Until now.' Tense shift reframes montage as latent reality.
+7	6.88	7	7	7	6	7	7	7	7	keep	Specified montage acceleration: 2.5s→2s→1.5s per cut, then 3s silence on '400,000 more'. Deceleration as argument.
+8	6.88	7	7	7	6	7	7	7	7	keep	Rewrote 4chan descriptor: 'The market that never sleeps because it never wanted to.' Voice improvement within band.
+9	6.88	7	7	7	6	7	7	7	7	keep	Rewrote Steam descriptor: '60 million concurrent players. Every spike is a position.' Voice building within band.
+10	7.00	7	7	7	7	7	7	7	7	keep	Rewrote mechanism section with menace: 'until it's too late', 'No minimum to gatekeep', 'The data is the judge'. Voice crosses to 7.
+11	7.00	7	7	7	7	7	7	7	7	discard	Tried 'You could have traded that.' — more conventional, less deadpan. Voice erosion. Reverted to 'That was a market.'
+12	7.00	7	7	7	7	7	7	7	7	discard	Tried 'stubborn enough to build the pipes' — self-congratulatory tone, voice erosion. Reverted.
+13	7.00	7	7	7	7	7	7	7	7	discard	Tried replacing '400,000 more' with competitive claim — lost the gut-punch of pure scale. Reverted.
+14	7.13	7	7	7	7	7	8	7	7	keep	Added running market counter overlay on footage shots — cumulative count climbs to 400k, visual argument for scale independent of text.
+15	7.25	8	7	7	7	7	8	7	7	keep	Added diegetic station sound in opening (German announcements, split-flap clatter) with hard cut to silence. Sensory disruption.
+16	7.25	8	7	7	7	7	8	7	7	discard	Tried removing 'Exclusive Trade' cards from final trio — lost key voice moments ('Yes, really', 'The sun itself'). Trade-off: arc+1, voice-1+. Reverted.
+17	7.38	8	8	7	7	7	8	7	7	keep	Added bridge question: 'How do you trade what no exchange will list?' Bridges montage absurdity to mechanism answer. Arc hinge point.
+18	7.38	8	8	7	7	7	8	7	7	discard	Tried 'We just built the pipes nobody thought were possible' — corporate, self-congratulatory. Voice kill. Reverted.
+19	7.38	8	8	7	7	7	8	7	7	keep	Removed 'Until now.' — cliche deletion. Close is now 'Nobody built the pipes.' under Vision logo. Paradox via juxtaposition.
+20	7.50	8	8	8	7	7	8	7	7	keep	Specified mechanism line timing: 2.5s→2s→3.5s (deceleration). 'Inverse of montage acceleration' — rhythm argues structure.
+21	7.50	8	8	8	7	7	8	7	7	discard	Tried 'Now someone did.' after 'Nobody built the pipes.' — just 'Until now' reskinned. No real improvement. 3 discards on Closing.
+22	7.50	8	8	8	7	7	8	7	7	keep	Rewrote military line: 'Military aircraft. Positions over sovereign airspace.' Adds weight without breaking timing.
+23	7.63	8	8	8	8	7	8	7	7	keep	Replaced bridge question with paradox: 'Every one of these markets exists. None of them have a counterparty.' Stop-reading contradiction.
+24	7.75	8	8	8	8	7	8	8	7	keep	Rewrote closing with opening callback: 'That was a market. So was everything else.' + 'Nobody else's does.' Circular frame narrative.
+25	7.88	8	8	8	8	8	8	8	7	keep	Sharpened mechanism section: 'Sealed parimutuel' (named), 'No liquidity problem at any scale', 'The data is the only oracle' (double meaning).
+26	8.00	8	8	8	8	8	8	8	8	keep	Added intentionality to typography: 'The monotony is deliberate', 'institutional, not playful', 'the delay forces the viewer to process the image first'.
+27	8.00	8	8	8	8	8	8	8	8	keep	Specified opening footage: single line flipping from pünktlich to Verspätet +47. Viewer watches data change in real time.
+28	8.00	8	8	8	8	8	8	8	8	discard	Tried 'It isn't missing anymore' — flat, lost the competitive edge of 'Nobody else's does.' Reverted.
+29	8.13	8	8	8	9	8	8	8	8	keep	Rewrote Twitch: 'Their viewer counts are markets. Nobody told them.' Dark indifference — stop-reading moment #2. Voice to 9.
+30	8.13	8	8	8	9	8	8	8	8	keep	Removed redundant 'No counterparty' from mechanism (already stated in bridge paradox). Tighter. Rule of three.
+31	8.25	8	8	8	9	8	8	8	9	keep	Added format intentionality: 'feel like a terminal not TikTok', 'must work in Gmail with no sound', '46 seconds means a line was wasted'. Production to 9.
+32	8.38	9	8	8	9	8	8	8	9	keep	Added split-flap click bleeding into silence on first card — 'like a verdict.' Sound bridge makes hook multisensory. Hook to 9.
+33	8.38	9	8	8	9	8	8	8	9	keep	Added 2s silence beat between mechanism and thesis. Drone fades. 'The viewer sits with what they learned.' Structural breathing room.
+34	8.38	9	8	8	9	8	8	8	9	discard	Tried 3-line closing without competitive claim — lost 'Nobody else's does.' VC needs moat. Reverted.
+35	8.38	9	8	8	9	8	8	8	9	discard	Tried adding dollar range to mechanism — over-explains in 45s. Reverted.
+36	8.50	9	8	8	9	8	9	8	9	keep	Added 'Visual Argument' — all footage must show data in motion. Visual track now argues independently: 'the world generates data constantly.' Visual to 9.
+37	8.75	9	9	9	9	8	9	8	9	keep	Specified accelerating card durations (1.5s→1s→0.7s) — both tracks compress. Arc re-scored to 9 (every element load-bearing). Rhythm to 9.
+38	9.00	9	9	9	9	9	9	9	9	keep	Rewrote closing: 'Liquidity was never the problem. Imagination was.' Insight that reframes prediction markets. Closing to 9. ALL dimensions at 9.
+39	9.00	9	9	9	9	9	9	9	9	discard	STRESS TEST: NYSE floor instead of train board — killed disorientation (Hook 9→5). Confirmed: hook power = cognitive dissonance.
+40	9.00	9	9	9	9	9	9	9	9	discard	STRESS TEST: generic CTA instead of insight — Closing 9→4, Voice 9→6. Confirmed: insight is the close's engine.
+41	9.00	9	9	9	9	9	9	9	9	discard	STRESS TEST: removed bridge paradox — Arc 9→7, Voice 9→8. Confirmed: paradox is the narrative hinge.
+42	9.00	9	9	9	9	9	9	9	9	discard	STRESS TEST: added voiceover — Production 9→6, Rhythm 9→7, Voice 9→7. Confirmed: no-VO is load-bearing. Silence enables everything.
+43	9.00	9	9	9	9	9	9	9	9	discard	STRESS TEST: removed running counter — Visual 9→7. Confirmed: counter carries the visual track's independent scale argument.
+44	9.00	9	9	9	9	9	9	9	9	keep	PRODUCTION POLISH: specified final card sound (absolute silence). 'The absence of sound is the loudest moment.'
+45	9.00	9	9	9	9	9	9	9	9	keep	PRODUCTION POLISH: counter typography — Inter Regular 14pt 60% opacity. 'Ambient, not declarative.'
+46	9.00	9	9	9	9	9	9	9	9	discard	COMPRESSION: tried removing beat direction before '400k' — needed for script body standalone readability. Reverted.
+47	9.00	9	9	9	9	9	9	9	9	discard	COMPRESSION: scanned all descriptor lines for dead weight. Every word earns its place. No change made.
+48	9.00	9	9	9	9	9	9	9	9	discard	ADVERSARIAL: tried 'No oracle needed' — factually wrong (Vision uses BLS oracle consensus). Reverted. 'The data is the only oracle' is accurate.
+49	9.00	9	9	9	9	9	9	9	9	keep	ADVERSARIAL: added production note defending German text — 'The foreignness IS the disorientation.' Preempts non-German speaker objection.
+50	9.00	9	9	9	9	9	9	9	9	keep	DOCUMENTATION: appended production handoff — audience brief, quotable lines, known weakness (parimutuel jargon), unmeasured dimension (urgency).

@@ -19,7 +19,7 @@ flowchart TD
         C --> D[keccak256 Hash]
     end
 
-    subgraph OnChain["On-Chain (Arbitrum)"]
+    subgraph OnChain["On-Chain (Index L3)"]
         E[Vision Contract]
     end
 
@@ -55,27 +55,27 @@ Registration is **free**. Calling `registerBot()` costs only gas. No staking, no
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `RPC_URL` | Yes | -- | Arbitrum RPC endpoint |
+| `RPC_URL` | Yes | -- | Index L3 RPC endpoint (`http://142.132.164.24/`) |
 | `VISION_API_URL` | No | `https://generalmarket.io/api/vision` | Oracle Vision API base URL |
 | `BOT_PRIVATE_KEY` | Yes | -- | Wallet private key (controls USDC deposits) |
-| `VISION_ADDRESS` | No | `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` | Vision contract address |
+| `VISION_ADDRESS` | No | `0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef` | Vision contract address |
 | `DEPOSIT_AMOUNT` | No | `10` | USDC to deposit per batch (whole tokens) |
 | `STAKE_PER_TICK` | No | `1` | USDC to stake per tick (whole tokens) |
 | `POLL_INTERVAL` | No | `30` | Seconds between batch polling cycles |
 
 <Warning>
-**USDC uses 6 decimals, not 18.** Multiply token amounts by `10^6`. 10 USDC = `10_000_000` (not `10_000_000_000_000_000_000`). Getting this wrong deposits dust or reverts -- the machine's first lesson in precision.
+**WUSDC on Index L3 uses 18 decimals.** Multiply token amounts by `10^18`. 10 USDC = `10_000_000_000_000_000_000` (1e19). Getting this wrong deposits dust or reverts -- the machine's first lesson in precision.
 </Warning>
 
 ## Contract Details
 
 | Property | Value |
 |----------|-------|
-| **Contract** | `Vision.sol` at `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` |
-| **Network** | Arbitrum |
-| **Collateral** | USDC (6 decimals) |
+| **Contract** | `Vision.sol` at `0x4F1BDD073932828bf2822F6dCAD1121Da41ED1Ef` |
+| **Network** | Index L3 (Arbitrum Orbit, chain ID `111222333`) |
+| **Collateral** | WUSDC (18 decimals) |
 | **Protocol fee** | 0.3% on profits only |
-| **Min stake per tick** | 0.1 USDC (`100_000` raw) |
+| **Min stake per tick** | 0.1 USDC (`100_000_000_000_000_000` raw, 1e17) |
 
 ## Bot Registration
 

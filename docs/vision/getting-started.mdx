@@ -12,11 +12,11 @@ By the end of this page, you will have joined a batch, placed UP/DOWN bets on re
 ## Prerequisites
 
 Before you can wager against the future, you need two things:
-- An **Arbitrum wallet** (MetaMask, Rabby, or any EVM-compatible wallet)
-- **USDC on Arbitrum** (6 decimals -- this is standard Arbitrum USDC)
+- An **EVM-compatible wallet** (MetaMask, Rabby, or similar) connected to **Index L3**
+- **WUSDC on Index L3** (18 decimals -- this is bridged USDC on the L3 Orbit chain)
 
 <Warning>
-Vision runs on **Arbitrum** (chain ID 421611337), not the Index L3 chain. Make sure your wallet is connected to Arbitrum and you have USDC there. The wrong chain is the one mistake the protocol will not let you make.
+Vision runs on **Index L3** (chain ID `111222333`), an Arbitrum Orbit chain. Add it to your wallet: RPC `http://142.132.164.24/`, chain ID `111222333`, symbol ETH. WUSDC on L3 uses **18 decimals**, not 6.
 </Warning>
 
 ## Step 1: Browse Active Batches
@@ -149,7 +149,7 @@ For those who prefer their despair automated, Vision has a full REST API. Here a
         f"https://generalmarket.io/api/vision/balance/{batch_id}/{player}"
     )
     balance = resp.json()
-    print(f"Balance: {balance['balance']} (USDC raw, 6 decimals)")
+    print(f"Balance: {balance['balance']} (WUSDC raw, 18 decimals)")
     ```
   </Tab>
   <Tab title="TypeScript">
@@ -160,7 +160,7 @@ For those who prefer their despair automated, Vision has a full REST API. Here a
       `https://generalmarket.io/api/vision/balance/${batchId}/${player}`
     );
     const balance = await res.json();
-    console.log(`Balance: ${balance.balance} (USDC raw, 6 decimals)`);
+    console.log(`Balance: ${balance.balance} (WUSDC raw, 18 decimals)`);
     ```
   </Tab>
 </Tabs>

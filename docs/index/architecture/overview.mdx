@@ -29,7 +29,7 @@ General Market is what happens when you refuse to depend on anyone else's infras
 │    │     DATA NODE       │   │   │   │              INDEX L3 (Orbit)                │    │
 │    │      (Rust)         │◄──┘   └──►│         Chain ID: 111222333                  │    │
 │    │                     │           │            USDC: 18 dec                      │    │
-│    │  98+ data sources   │           │                                              │    │
+│    │  90+ data sources   │           │                                              │    │
 │    │  PostgreSQL         │           │  ┌──────────┐ ┌────────┐ ┌──────────────┐    │    │
 │    │  Backtesting        │     ┌────►│  │Index.sol │ │Vision  │ │BotRegistry   │    │    │
 │    │  REST + SSE API     │     │     │  │(ITP core)│ │.sol    │ │.sol          │    │    │
@@ -98,7 +98,7 @@ General Market is what happens when you refuse to depend on anyone else's infras
     Watches on-chain `TradeRequest` events, executes the corresponding trades on Bitget, confirms fills with BLS signatures. Also relays bridge operations. It knows nothing about the oracles -- by design.
   </Card>
   <Card title="Data Node" icon="database">
-    98+ sources reduced to rows in PostgreSQL. CoinGecko, Binance, earthquake feeds, train delays. REST + SSE on port 8200. Powers NAV computation, backtesting, and every price the protocol touches.
+    90+ sources reduced to rows in PostgreSQL. CoinGecko, Binance, earthquake feeds, train delays. REST + SSE on port 8200. Powers NAV computation, backtesting, and every price the protocol touches.
   </Card>
   <Card title="Curator" icon="eye">
     Collects NAV from oracles, pushes it to the on-chain oracle, rebalances Morpho lending allocations, monitors health factors. The best curators are the ones you forget exist.
@@ -208,7 +208,7 @@ The world generates data. The protocol consumes it. What remains is a price.
    │ (WebSocket)│  │         │                                             │
    └────────────┘  │    ┌────┤  ┌───────────┐    ┌──────────┐             │
    ┌────────────┐  ├───►│    │  │ Ingestion │───►│Validation│             │
-   │ Exchange   │──┤    │ 98+│  │  Layer    │    │  Layer   │             │
+   │ Exchange   │──┤    │ 90+│  │  Layer    │    │  Layer   │             │
    │   APIs     │  │    │src │  │           │    │          │             │
    └────────────┘  │    │    │  │ Scheduled │    │ Outlier  │             │
    ┌────────────┐  │    │    │  │ fetchers  │    │ detect,  │             │

@@ -11,4 +11,4 @@
 ## Products
 
 **Index**: On-chain ETFs (ITPs) on Arbitrum Orbit L3. Chain ID 111222333.
-**Vision**: Sealed parimutuel prediction market on Arbitrum. Chain ID 421611337.
+**Vision**: Sealed parimutuel prediction market on Index L3 (Arbitrum Orbit). Chain ID 111222333.

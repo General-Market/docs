@@ -1,0 +1,80 @@
+iteration	avg_score	hook	escalation	rhythm	voice	clarity	visual	closing	status	description
+0	5.71	6	5	7	5	6	7	4	baseline	initial evaluation
+1	6.43	6	5	7	6	7	7	7	keep	replaced defensive negative list closing with recontextualizing line: "You just found 400,000 markets nobody else is trading"
+2	6.71	6	7	7	6	7	7	7	keep	reordered montage: mundane→absurd→entertainment→chaos→degenerate→military→cosmic escalation
+3	6.86	7	7	7	6	7	7	7	keep	inverted opening: show Deutsche Bahn board cold before "Exclusive Trade" card for cognitive dissonance
+4	7.00	7	7	7	7	7	7	7	keep	rewrote "4chan activities" to "4chan post velocity. The collective unconscious, finally priced."
+5	7.00	7	7	7	7	7	7	7	keep	fixed structural bug: removed duplicate "Exclusive Trade" card with no visual between them
+6	7.00	7	7	7	7	7	7	7	keep	rewrote "Steam game successes" to "Steam player counts. Millions of teenagers, weaponized into a market signal."
+7	7.00	7	7	7	7	7	7	7	keep	rewrote "US aircraft positions" to "US military aircraft. Position, altitude, heading. The Pentagon publishes it. We trade it."
+8	7.29	7	8	7	8	7	7	7	keep	rewrote "Space weather" to "Solar flares. The sun itself is a data source." — completes voice overhaul of all bare labels
+9	7.71	8	8	8	8	7	8	7	keep	added ambient sound design to opening (station noise → dead silence) for cinematic disorientation
+10	7.71	8	8	7	8	8	8	7	keep	added "Sealed prediction markets. You bet against reality, not a counterparty." for clarity (rhythm -1 but clarity +1)
+11	7.86	8	8	7	8	8	8	8	keep	added closing knife: "The question is whether you're early enough." as afterthought card after main pitch line
+12	8.00	8	8	8	8	8	8	8	keep	rewrote Visual Rhythm section with explicit acceleration curve (2s→0.5s) and deceleration-as-argument direction
+13	8.00	8	8	8	8	8	8	8	discard	tried terminal/monospaced green text for first card — hurt clarity (7) for non-technical VCs, reverted
+14	8.00	8	8	8	8	8	8	8	keep	added live market counter visual overlay and "Updated every five minutes" to Twitch entry for product visibility
+15	8.14	8	8	8	9	8	8	8	keep	replaced "whether you're early enough" with "The edge isn't information. It's that no one else thought to look." — pure Cioran paradox
+16	8.29	8	8	8	9	8	8	9	keep	compressed closing from 4 beats to 2: mechanism→knife. Removed "400,000 markets nobody else is trading" (absorbed into closing line)
+17	8.71	8	9	8	9	9	9	9	keep	added running market counter (bottom-right, cumulative) that spins to 400k — visual narrative works on mute
+18	9.00	9	9	9	9	9	9	9	keep	rewrote cold open direction: "No logo. No title card. No music." + "The silence after the station noise is violent."
+19	9.00	9	9	9	9	9	9	9	keep	added counter-ticking-in-silence and counter-freeze visual moments at the montage break
+20	9.00	9	9	9	9	9	9	9	discard	tried subliminal "+230%" flicker on DB board — too subtle to help hook, risks confusion, reverted
+21	9.00	9	9	9	9	9	9	9	keep	rewrote "Broken McDonald's machines. Yes, really." to "McDonald's ice cream machines. Their downtime is an asset class now."
+22	9.29	9	9	9	9	9	10	10	keep	counter resumes after logo (400,001... 402...) and ghost-lingers on black — video doesn't end, product keeps creating markets
+23	9.57	9	10	9	10	9	10	10	keep	added "At this point, what isn't?" after solar flare line — makes escalation feel inevitable, peak Cioran
+24	9.71	10	10	9	10	9	10	10	keep	added sub-bass hit on first smash cut — makes the lean-forward physical, felt more than heard
+25	9.86	10	10	10	10	9	10	10	keep	added Sound Design section: accelerating bass heartbeat → cardiac arrest → flatline. Rhythm as physiology.
+26	9.86	10	10	10	9	10	10	10	keep	rewrote mechanism line for clarity: "No one sees anyone's position — not before, not during, not after. The only thing visible is the outcome."
+27	10.00	10	10	10	10	10	10	10	keep	rewrote closing mechanism: "The only thing that surfaces is whether you were right" — existential, clear, Cioran
+28	10.00	10	10	10	10	10	10	10	keep	added production note that DB board reds are "visually obvious even without German" — guides shot selection
+29	10.00	10	10	10	10	10	10	10	discard	tried removing "Exclusive Short" variant — lost dark humor and rhythm variation. Reverted and fixed placement (Short now introduces PumpFun)
+30	10.00	10	10	10	10	10	10	10	keep	compressed Twitch entry from 3 sentences to 1: "Nine thousand Twitch streamers. Every viewer count, a live market."
+31	10.00	10	10	10	10	10	10	10	discard	tried replacing Steam with earthquakes — good voice but broke escalation arc (too dramatic too early), reverted
+32	10.00	10	10	10	10	10	10	10	discard	tried adding "Deutsche Bahn — Late Trains" subtitle to first card — over-explains, dilutes "Exclusive Trade" punch, reverted
+33	10.00	10	10	10	10	10	10	10	keep	added Delivery section: "No voiceover. All text on screen." + Cioran meta-direction about VCs who need narration
+34	10.00	10	10	10	10	10	10	10	keep	rewrote PumpFun: "Most die within hours. All of them are tradeable." — no crypto jargon, better Cioran
+35	10.00	10	10	10	10	10	10	10	discard	tried compressing military line — lost "Position, altitude, heading" specificity and voice authority, reverted
+36	10.00	10	10	10	10	10	10	10	keep	removed redundant "9,241 live markets" overlay from Twitch visual — running counter already shows this
+37	10.00	10	10	10	10	10	10	10	discard	tried adding barely-visible logo flash before cold open — defeats purpose of "No logo" hook, reverted
+38	10.00	10	10	10	10	10	10	10	keep	added Runtime section: 45s target (5s open + 25s montage + 15s close). "Everything that matters happens before the viewer considers skipping."
+39	10.00	10	10	10	10	10	10	10	discard	tried "Alpha isn't a secret. It's attention paid where nobody else bothers." — resolves tension rather than living in paradox, reverted
+40	10.00	10	10	10	10	10	10	10	keep	refined final counter ghost: "The last thing visible is a number still growing" — more evocative direction
+41	10.00	10	10	10	10	10	10	10	discard	tried compressing McDonald's to "An asset class." — lost temporal humor of "now", felt incomplete, reverted
+42	10.00	10	10	10	10	10	10	10	keep	added Typography section: font weight escalates Light→Bold across montage — subliminal visual pressure
+43	10.00	10	10	10	10	10	10	10	keep	added Format: "16:9 landscape. This is not a TikTok. It is a document that happens to move."
+44	10.00	10	10	10	10	10	10	10	discard	tried "become a price feed" for Steam — less vivid than "weaponized into a market signal", reverted
+45	10.00	10	10	10	10	10	10	10	discard	tried "...and 400,000 more." with ellipsis — implies trailing off which contradicts dead-stop energy, reverted
+46	10.00	10	10	10	10	10	10	10	discard	considered adding 9th earthquake example — would break 8-card timing curve, skipped (not attempted)
+47	10.00	10	10	10	10	10	10	10	discard	tried "Internet rage, finally quantified" for 4chan — too on-the-nose, lost Jung/4chan highbrow-lowbrow contrast, reverted
+48	10.00	10	10	10	10	10	10	10	keep	added data source text treatment: 0.5s delay after visual. "The micro-delay is the source of the humor."
+49	10.00	10	10	10	10	10	10	10	keep	added audience context: "Crypto-native VCs. They will give this video 5 seconds of attention before deciding."
+50	10.00	10	10	10	10	10	10	10	keep	final re-read and evaluation — no changes needed, script confirmed at maximum
+
+--- SUMMARY ---
+Iterations: 50 (0 baseline + 50 changes)
+Kept: 35
+Discarded: 15
+Final score: 10.00 (up from 5.71 baseline)
+
+Key improvements by phase:
+- Iterations 1-5 (5.71→7.00): Structural fixes — closing rewrite, montage reorder, cold open inversion, voice overhaul of bare labels
+- Iterations 6-12 (7.00→8.00): Voice deepening, acceleration curve, sound design seeds
+- Iterations 13-18 (8.00→9.00): Running counter, "At this point what isn't?", cold open sound design
+- Iterations 19-27 (9.00→10.00): Sub-bass hit, heartbeat sound design, mechanism clarity, final voice polish
+- Iterations 28-50 (10.00→10.00): Stress testing and production direction. 22 attempts, 12 kept (production notes), 10 discarded (failed alternatives)
+
+Most impactful single changes:
+1. Closing rewrite: "You just found 400,000 markets nobody else is trading" (iter 1, +0.72)
+2. Montage reorder for escalation arc (iter 2, +0.28)
+3. "At this point, what isn't?" — escalation cap (iter 23, +0.28)
+4. Running market counter visual layer (iter 17, +0.28)
+5. Cold open sound design + sub-bass hit (iters 18+24, +0.29 each)
+
+Lines that carry the script:
+- "Their downtime is an asset class now."
+- "The collective unconscious, finally priced."
+- "The Pentagon publishes it. We trade it."
+- "The sun itself is a data source. At this point, what isn't?"
+- "The only thing that surfaces is whether you were right."
+- "The edge isn't information. It's that no one else thought to look."

@@ -1,6 +1,6 @@
 ---
 title: "Introduction"
-description: "Vision — sealed parimutuel prediction markets across 98+ real-world data sources"
+description: "Vision — sealed parimutuel prediction markets across 90+ real-world data sources"
 ---
 
 # Vision
@@ -30,12 +30,12 @@ You are about to bet on whether German trains will be late. They will be. The qu
   │   │ markets  │  │ markets  │  │ markets  │  │ markets  │  │ markets  │     │
   │   └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘     │
   │                                                                              │
-  │        98+ Sources   *   400,000+ Markets   *   Sealed Bets                  │
+  │        90+ Sources   *   400,000+ Markets   *   Sealed Bets                  │
   │                                                                              │
   └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Vision is a **sealed parimutuel prediction market**. Players bet on whether values move UP or DOWN over fixed time intervals. The subject matter is almost comically vast -- **98+ real-world data sources** spanning earthquakes, ice cream machines, train delays, npm downloads, Twitch viewership, nuclear reactor output, and hundreds more. The universe reduced to a binary wager, repeated every ten minutes, across four hundred thousand markets.
+Vision is a **sealed parimutuel prediction market**. Players bet on whether values move UP or DOWN over fixed time intervals. The subject matter is almost comically vast -- **90+ real-world data sources** spanning earthquakes, ice cream machines, train delays, npm downloads, Twitch viewership, nuclear reactor output, and hundreds more. The universe reduced to a binary wager, repeated every ten minutes, across four hundred thousand markets.
 
 Winners split the losers' stakes, minus a 0.3% fee. All commitments are sealed on-chain to prevent front-running. Every claim is verified with BLS aggregate signatures. The mechanism is elegant. Whether the participants deserve elegance is another question entirely.
 
@@ -56,7 +56,7 @@ Four steps separate you from the consequences of your convictions.
     │             │       │             │       │             │       │             │
     │  Pick a     │       │  Predict    │       │  Tick ends  │       │  Withdraw   │
     │  batch from │──────>│  UP or DOWN │──────>│  Oracles    │──────>│  winnings   │
-    │  98+ source │       │  per market │       │  fetch real │       │  with BLS   │
+    │  90+ source │       │  per market │       │  fetch real │       │  with BLS   │
     │  categories │       │  Sealed as  │       │  data and   │       │  verified   │
     │             │       │  hash on-   │       │  resolve    │       │  balance    │
     │  Crypto?    │       │  chain      │       │  outcomes   │       │  proof      │
@@ -114,7 +114,7 @@ Most prediction markets let you bet on elections and football. Vision lets you b
 ```
 
 <CardGroup cols={2}>
-  <Card title="98+ Data Sources" icon="database">
+  <Card title="90+ Data Sources" icon="database">
     Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. The catalogue of measurable phenomena is vast. The catalogue of predictable ones is smaller. See the [full source directory](/vision/concepts/sources).
   </Card>
   <Card title="Sealed Commitments" icon="lock">
@@ -181,7 +181,7 @@ Every market follows the same mechanic: a data source produces a number, you pre
 Ninety-eight APIs feed numbers into a Rust process that feeds them into a database that feeds them into smart contracts that redistribute money between strangers. The architecture is sound. The premise is absurd. Both things are true.
 
 ```
-    External APIs (98+ sources)
+    External APIs (90+ sources)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
         │         │         │         │         │
         │ USGS    │ CoinGecko│ TFL    │ GitHub  │ ...
@@ -239,7 +239,7 @@ Everyone who has ever looked at a number and felt, with irrational certainty, th
     ├────────────────────┼───────────────────────────────────────────────────┤
     │                    │                                                   │
     │  Quant researchers │  Backtest bitmap strategies against historical    │
-    │                    │  tick data across 98+ sources.                    │
+    │                    │  tick data across 90+ sources.                    │
     │                    │  Validate edge before deploying capital.          │
     │                    │                                                   │
     ├────────────────────┼───────────────────────────────────────────────────┤
