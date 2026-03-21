@@ -222,6 +222,12 @@ export async function getVisionContractUsdc(): Promise<bigint> {
 const VPS_IP = "142.132.164.24";
 
 export async function checkDataNodeHealth(): Promise<boolean> {
+  // Try nginx proxy first (raw port 8200 is firewalled)
+  try {
+    const res = await fetch(`http://${VPS_IP}/data-node/health`, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) return true;
+  } catch { /* nginx proxy path not configured */ }
+  // Fallback to raw port
   try {
     const res = await fetch(`http://${VPS_IP}:8200/health`, { signal: AbortSignal.timeout(5000) });
     return res.ok;
@@ -246,9 +252,9 @@ export async function checkOracleHealthViaHTTP(port: number): Promise<boolean> {
     if (res.ok) return true;
   } catch { /* nginx proxy not configured — try next */ }
 
-  // Try data-node /admin/health which reports oracle status
+  // Try data-node /admin/health which reports oracle status (via nginx proxy)
   try {
-    const res = await fetch(`http://${VPS_IP}:8200/admin/health`, {
+    const res = await fetch(`http://${VPS_IP}/data-node/admin/health`, {
       signal: AbortSignal.timeout(5_000),
     });
     if (res.ok) {
