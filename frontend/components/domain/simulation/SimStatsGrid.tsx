@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { SimStats } from '@/hooks/useSimulation'
 
 interface SimStatsGridProps {
@@ -7,52 +8,54 @@ interface SimStatsGridProps {
 }
 
 export function SimStatsGrid({ stats }: SimStatsGridProps) {
+  const t = useTranslations('backtest')
+
   const items = [
     {
-      label: 'Total Return',
+      label: t('stats.total_return'),
       value: `${stats.total_return_pct >= 0 ? '+' : ''}${stats.total_return_pct.toFixed(2)}%`,
       color: stats.total_return_pct >= 0 ? 'text-color-up' : 'text-color-down',
     },
     {
-      label: 'Annualized',
+      label: t('stats.annualized'),
       value: `${stats.annualized_return >= 0 ? '+' : ''}${stats.annualized_return.toFixed(2)}%`,
       color: stats.annualized_return >= 0 ? 'text-color-up' : 'text-color-down',
     },
     {
-      label: 'Max Drawdown',
+      label: t('stats.max_drawdown'),
       value: `${stats.max_drawdown_pct.toFixed(2)}%`,
       color: 'text-color-down',
     },
     {
-      label: 'Sharpe Ratio',
+      label: t('stats.sharpe_ratio'),
       value: stats.sharpe_ratio.toFixed(3),
       color: stats.sharpe_ratio >= 1 ? 'text-color-up' : stats.sharpe_ratio >= 0 ? 'text-text-primary' : 'text-color-down',
     },
     {
-      label: 'Total Fees',
+      label: t('stats.total_fees'),
       value: `${stats.total_fees_pct.toFixed(2)}%`,
       color: 'text-text-secondary',
     },
     {
-      label: 'Trades',
+      label: t('stats.trades'),
       value: String(stats.total_trades),
       color: 'text-text-secondary',
     },
     {
-      label: 'Rebalances',
+      label: t('stats.rebalances'),
       value: String(stats.total_rebalances),
       color: 'text-text-secondary',
     },
     {
-      label: 'Delistings',
+      label: t('stats.delistings'),
       value: String(stats.total_delistings),
       color: stats.total_delistings > 0 ? 'text-color-warning' : 'text-text-secondary',
     },
     {
-      label: 'Period',
+      label: t('stats.period'),
       value: stats.start_date && stats.end_date
-        ? `${stats.start_date} to ${stats.end_date}`
-        : 'N/A',
+        ? t('stats.period_range', { start: stats.start_date, end: stats.end_date })
+        : t('stats.na'),
       color: 'text-text-muted',
     },
   ]

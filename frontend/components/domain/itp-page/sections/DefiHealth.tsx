@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 function formatTvl(v: number): string {
@@ -14,23 +17,24 @@ function PctChange({ value }: { value?: number }) {
 }
 
 export function DefiHealth({ enrichment }: SectionProps) {
+  const t = useTranslations('markets.itp_page.defi')
   const defi = enrichment?.defi
   if (!defi) return null
 
   const cards = [
-    { label: 'AGGREGATE TVL', value: formatTvl(defi.total_tvl) },
+    { label: t('aggregate_tvl'), value: formatTvl(defi.total_tvl) },
     {
-      label: 'AVG TVL CHANGE 7D',
+      label: t('avg_tvl_change_7d'),
       value: `${defi.avg_tvl_change_7d >= 0 ? '+' : ''}${defi.avg_tvl_change_7d.toFixed(2)}%`,
       color: defi.avg_tvl_change_7d >= 0 ? 'text-color-up' : 'text-color-down',
     },
-    { label: 'COVERAGE', value: `${defi.protocols_with_data} of ${defi.total_holdings}` },
+    { label: t('coverage'), value: t('coverage_value', { with_data: defi.protocols_with_data, total: defi.total_holdings }) },
   ]
 
   return (
     <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">
-        DeFi Protocol Health
+        {t('title')}
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
@@ -51,10 +55,10 @@ export function DefiHealth({ enrichment }: SectionProps) {
           <table className="w-full text-sm">
             <thead className="bg-surface border-b border-border-light">
               <tr>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Protocol</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">TVL</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">1D</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">7D</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('protocol')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('tvl')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('change_1d')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('change_7d')}</th>
               </tr>
             </thead>
             <tbody>

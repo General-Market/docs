@@ -3,6 +3,7 @@
 import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
@@ -105,26 +106,27 @@ function ColumnBase({ position, color, width = 3.2, depth = 6 }: {
   )
 }
 
-// BEFORE side: complex fragmented architecture
-const BEFORE = [
-  { pos: [-1.8, 0.08, 2.2] as [number, number, number], label: 'Smart Wallet', sub: 'ERC-4337', color: '#fee2e2', accent: '#ef4444' },
-  { pos: [-1.8, 0.08, 1.2] as [number, number, number], label: 'Bundler', sub: 'off-chain relay', color: '#fee2e2', accent: '#ef4444' },
-  { pos: [-1.8, 0.08, 0.2] as [number, number, number], label: 'Paymaster Relay', sub: 'intermediary', color: '#fee2e2', accent: '#ef4444' },
-  { pos: [-1.8, 0.08, -0.8] as [number, number, number], label: 'Multicall Hack', sub: 'batch workaround', color: '#fef3c7', accent: '#f59e0b' },
-  { pos: [-1.8, 0.08, -1.8] as [number, number, number], label: 'Broadcaster', sub: 'centralized relayer', color: '#fee2e2', accent: '#ef4444' },
-  { pos: [-1.8, 0.08, -2.8] as [number, number, number], label: 'Chain', sub: 'limited EOA', color: '#f3f4f6', accent: '#9ca3af' },
-]
-
-// AFTER side: clean unified architecture
-const AFTER = [
-  { pos: [1.8, 0.08, 2.2] as [number, number, number], label: 'Any Account', sub: 'EOA or smart', color: '#dcfce7', accent: '#22c55e' },
-  { pos: [1.8, 0.08, 1.0] as [number, number, number], label: 'Frame TX', sub: 'N frames, 1 primitive', color: '#dbeafe', accent: '#3b82f6' },
-  { pos: [1.8, 0.08, -0.2] as [number, number, number], label: 'On-Chain Paymaster', sub: 'DEX, no relay', color: '#fef9c3', accent: '#eab308' },
-  { pos: [1.8, 0.08, -1.4] as [number, number, number], label: 'Public Mempool', sub: 'direct submit', color: '#dcfce7', accent: '#22c55e' },
-  { pos: [1.8, 0.08, -2.8] as [number, number, number], label: 'Chain', sub: 'full framework', color: '#dcfce7', accent: '#22c55e' },
-]
-
 export function BeforeAfterScene() {
+  const t = useTranslations('pages')
+
+  // BEFORE side: complex fragmented architecture
+  const BEFORE = [
+    { pos: [-1.8, 0.08, 2.2] as [number, number, number], label: t('learn.before_after.smart_wallet'), sub: t('learn.before_after.erc4337'), color: '#fee2e2', accent: '#ef4444' },
+    { pos: [-1.8, 0.08, 1.2] as [number, number, number], label: t('learn.before_after.bundler'), sub: t('learn.before_after.off_chain_relay'), color: '#fee2e2', accent: '#ef4444' },
+    { pos: [-1.8, 0.08, 0.2] as [number, number, number], label: t('learn.before_after.paymaster_relay'), sub: t('learn.before_after.intermediary'), color: '#fee2e2', accent: '#ef4444' },
+    { pos: [-1.8, 0.08, -0.8] as [number, number, number], label: t('learn.before_after.multicall_hack'), sub: t('learn.before_after.batch_workaround'), color: '#fef3c7', accent: '#f59e0b' },
+    { pos: [-1.8, 0.08, -1.8] as [number, number, number], label: t('learn.before_after.broadcaster'), sub: t('learn.before_after.centralized_relayer'), color: '#fee2e2', accent: '#ef4444' },
+    { pos: [-1.8, 0.08, -2.8] as [number, number, number], label: t('learn.before_after.chain'), sub: t('learn.before_after.limited_eoa'), color: '#f3f4f6', accent: '#9ca3af' },
+  ]
+
+  // AFTER side: clean unified architecture
+  const AFTER = [
+    { pos: [1.8, 0.08, 2.2] as [number, number, number], label: t('learn.before_after.any_account'), sub: t('learn.before_after.eoa_or_smart'), color: '#dcfce7', accent: '#22c55e' },
+    { pos: [1.8, 0.08, 1.0] as [number, number, number], label: t('learn.before_after.frame_tx'), sub: t('learn.before_after.n_frames_1_primitive'), color: '#dbeafe', accent: '#3b82f6' },
+    { pos: [1.8, 0.08, -0.2] as [number, number, number], label: t('learn.before_after.on_chain_paymaster'), sub: t('learn.before_after.dex_no_relay'), color: '#fef9c3', accent: '#eab308' },
+    { pos: [1.8, 0.08, -1.4] as [number, number, number], label: t('learn.before_after.public_mempool'), sub: t('learn.before_after.direct_submit'), color: '#dcfce7', accent: '#22c55e' },
+    { pos: [1.8, 0.08, -2.8] as [number, number, number], label: t('learn.before_after.chain'), sub: t('learn.before_after.full_framework'), color: '#dcfce7', accent: '#22c55e' },
+  ]
   const beforeConns = useMemo(() => BEFORE.slice(0, -1).map((b, i) => ({
     start: new THREE.Vector3(...b.pos),
     end: new THREE.Vector3(...BEFORE[i + 1].pos),
@@ -164,14 +166,14 @@ export function BeforeAfterScene() {
               {/* Column labels */}
               <Html center position={[-1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-label text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before 8141</p>
-                  <p className="text-[8px] text-red-300 whitespace-nowrap mt-0.5">6 intermediaries</p>
+                  <p className="text-label text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">{t('learn.before_after.before_8141')}</p>
+                  <p className="text-[8px] text-red-300 whitespace-nowrap mt-0.5">{t('learn.before_after.six_intermediaries')}</p>
                 </div>
               </Html>
               <Html center position={[1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-label text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After 8141</p>
-                  <p className="text-[8px] text-emerald-400 whitespace-nowrap mt-0.5">1 primitive</p>
+                  <p className="text-label text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">{t('learn.before_after.after_8141')}</p>
+                  <p className="text-[8px] text-emerald-400 whitespace-nowrap mt-0.5">{t('learn.before_after.one_primitive')}</p>
                 </div>
               </Html>
 
@@ -211,14 +213,14 @@ export function BeforeAfterScene() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-micro text-text-muted tracking-wide">Before (fragmented)</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.before_after.legend_before')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">After (unified)</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.before_after.legend_after')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

@@ -59,9 +59,9 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
 
   const stepLabel = (() => {
     switch (step) {
-      case 'depositing': return isPending ? 'Confirm deposit in wallet...' : 'Depositing from Vision balance...'
-      case 'done': return 'Deposit successful!'
-      case 'error': return 'Transaction failed'
+      case 'depositing': return isPending ? t('deposit_modal_steps.confirm_deposit') : t('deposit_modal_steps.depositing_from_balance')
+      case 'done': return t('deposit_modal_steps.deposit_successful')
+      case 'error': return t('deposit_modal_steps.transaction_failed')
       default: return ''
     }
   })()

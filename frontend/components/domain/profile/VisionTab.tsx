@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { PlayerProfile } from '@/hooks/usePlayerProfile'
 import { PnlChart } from './PnlChart'
 import { BatchTickHistory } from './BatchTickHistory'
@@ -9,10 +10,12 @@ interface VisionTabProps {
 }
 
 export function VisionTab({ profile }: VisionTabProps) {
+  const t = useTranslations('common')
+
   if (profile.batches.length === 0 && profile.pnlHistory.length === 0) {
     return (
       <div className="py-16 text-center">
-        <div className="text-caption text-text-muted">This address has no Vision history yet.</div>
+        <div className="text-caption text-text-muted">{t('profile.no_vision_history')}</div>
       </div>
     )
   }

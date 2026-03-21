@@ -28,6 +28,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   ])
   const tArticle = await getTranslations({ locale, namespace: 'seo.sr_only.itp_article' })
   const tBreadcrumbs = await getTranslations({ locale, namespace: 'seo.breadcrumbs' })
+  const tJsonLd = await getTranslations({ locale, namespace: 'seo.json_ld' })
 
   return (
     <main className="min-h-screen bg-page flex flex-col">
@@ -69,7 +70,11 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       </div>
 
       {/* JSON-LD structured data */}
-      <FinancialProductJsonLd itps={itps} />
+      <FinancialProductJsonLd
+        itps={itps}
+        categoryLabel={tJsonLd('category_index_fund')}
+        descriptionTemplate={(itp) => tJsonLd('itp_description', { name: itp.name, count: itp.assetCount, nav: itp.nav.toFixed(4) })}
+      />
       <BreadcrumbJsonLd items={[
         { name: tBreadcrumbs('home'), url: 'https://www.generalmarket.io' },
         { name: tBreadcrumbs('markets'), url: 'https://www.generalmarket.io/index' },

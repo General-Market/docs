@@ -25,7 +25,8 @@
       "bls_pubkey": "BLS 공개키",
       "registered": "등록일",
       "status": "상태",
-      "ap_vault": "AP 볼트"
+      "ap_vault": "AP 볼트",
+      "uptime": "가동 시간"
     },
     "status_active": "활성",
     "no_nodes": "등록된 발행자 노드가 없습니다."
@@ -40,7 +41,9 @@
     "section_title": "재고",
     "section_subtitle": "USD 기준 상위 보유 자산",
     "tooltip_label": "가치",
-    "no_data": "재고 데이터가 아직 없습니다."
+    "no_data": "재고 데이터가 아직 없습니다.",
+    "tokens_page": "{count}개 토큰 — {current}/{total} 페이지",
+    "aum_label": "AUM {value}"
   },
   "recent_activity": {
     "section_title": "최근 활동",
@@ -72,68 +75,114 @@
     "offline": "오프라인"
   },
   "ap_section": {
-    "title": "AP (Keeper) Status",
-    "description": "View AP balances, vault holdings, and health status",
-    "address_label": "Address:",
-    "native_gas": "Native (Gas)",
-    "vault_holdings": "MockBitgetVault Holdings",
-    "tokens_count": "({count} tokens)",
-    "vault_label": "Vault:",
-    "loading_vault": "Loading vault balances...",
-    "no_assets": "No assets in vault",
-    "asset": "Asset",
-    "balance": "Balance",
-    "price": "Price",
-    "usd_value": "USD Value",
-    "page_of": "Page {current} of {total} ({count} assets)"
+    "title": "AP (키퍼) 상태",
+    "description": "AP 잔액, 볼트 보유 자산 및 상태 확인",
+    "address_label": "주소:",
+    "native_gas": "네이티브 (가스)",
+    "vault_holdings": "MockBitgetVault 보유 자산",
+    "tokens_count": "({count}개 토큰)",
+    "vault_label": "볼트:",
+    "loading_vault": "볼트 잔액 로딩 중...",
+    "no_assets": "볼트에 자산이 없습니다",
+    "asset": "자산",
+    "balance": "잔액",
+    "price": "가격",
+    "usd_value": "USD 가치",
+    "page_of": "{current} / {total} 페이지 ({count}개 자산)",
+    "health_checking": "확인 중...",
+    "refresh_balances": "잔액 새로고침"
   },
   "performance": {
-    "title": "Performance Dashboard",
-    "description": "Order fill speed and system metrics",
-    "label": "Performance",
-    "consensus_threshold": "Consensus Threshold",
-    "bls_required": "BLS signatures required",
-    "active_oracles": "Active Oracles",
-    "processing_orders": "Processing orders",
-    "network": "Network",
-    "orbit_chain": "Orbit chain"
+    "title": "성능 대시보드",
+    "description": "주문 체결 속도 및 시스템 지표",
+    "label": "성능",
+    "consensus_threshold": "합의 임계값",
+    "bls_required": "필요 BLS 서명",
+    "active_oracles": "활성 발행자",
+    "processing_orders": "주문 처리 중",
+    "network": "네트워크",
+    "orbit_chain": "Orbit 체인"
   },
   "order_flow": {
-    "title": "Order Flow",
-    "description": "Outstanding buy/sell amounts over time",
-    "avg_fill_time": "avg fill time",
-    "total_orders": "Total Orders",
-    "active_buys": "Active Buys",
-    "active_sells": "Active Sells",
-    "filled": "Filled",
-    "loading": "Loading order data...",
-    "no_data": "No order data yet.",
-    "legend_buy": "BUY",
-    "legend_sell": "SELL",
-    "legend_filled": "Filled (0)",
-    "orders_count": "{count} orders"
+    "title": "주문 흐름",
+    "description": "시간별 미체결 매수/매도 금액",
+    "avg_fill_time": "평균 체결 시간",
+    "total_orders": "총 주문",
+    "active_buys": "활성 매수",
+    "active_sells": "활성 매도",
+    "filled": "체결됨",
+    "loading": "주문 데이터 로딩 중...",
+    "no_data": "주문 데이터가 아직 없습니다.",
+    "legend_buy": "매수",
+    "legend_sell": "매도",
+    "legend_filled": "체결됨 (0)",
+    "orders_count": "{count}건 주문"
   },
   "aum_ranking": {
-    "title": "AUM Ranking",
-    "description": "Asset rankings by AUM across all ITPs",
-    "total_aum": "total AUM",
-    "loading": "Loading ranking data...",
-    "need_events": "Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.",
-    "showing_event": "Currently showing 1 event.",
-    "snapshots_count": "{count} snapshots"
+    "title": "AUM 순위",
+    "description": "전체 ITP의 AUM 기준 자산 순위",
+    "total_aum": "총 AUM",
+    "loading": "순위 데이터 로딩 중...",
+    "need_events": "순위 차트 표시를 위해 2개 이상의 이벤트(ITP 생성, 리밸런싱, 체결)가 필요합니다.",
+    "showing_event": "현재 1개 이벤트 표시 중.",
+    "snapshots_count": "{count}개 스냅샷"
   },
   "keeper_signatures": {
-    "no_keepers": "No keepers registered",
-    "header": "Resolution Signatures ({signed}/{total})",
-    "signed": "{count} signed",
-    "pending_count": "{count} pending",
-    "failed": "{count} failed"
+    "no_keepers": "등록된 키퍼 없음",
+    "header": "결의 서명 ({signed}/{total})",
+    "signed": "{count}건 서명됨",
+    "pending_count": "{count}건 대기 중",
+    "failed": "{count}건 실패",
+    "status_signed": "서명됨",
+    "status_signed_ago": "{time} 전 서명됨",
+    "status_pending": "대기 중...",
+    "status_failed": "실패",
+    "status_timeout": "시간 초과",
+    "status_unknown": "알 수 없음"
   },
   "signature_progress": {
-    "loading": "Loading signatures...",
-    "awaiting": "Awaiting resolution...",
-    "label": "Resolution Signatures",
-    "keepers_signed": "{signed}/{total} keepers signed",
-    "need_count": "Need {count} (51%)"
+    "loading": "서명 로딩 중...",
+    "awaiting": "결의 대기 중...",
+    "label": "결의 서명",
+    "keepers_signed": "{signed}/{total} 키퍼 서명 완료",
+    "need_count": "{count}개 필요 (51%)",
+    "status_collecting": "수집 중",
+    "status_ready": "준비됨",
+    "status_submitted": "제출됨",
+    "status_expired": "만료됨",
+    "status_unknown": "알 수 없음",
+    "tx_label": "Tx: {hash}"
+  },
+  "order_flow_chart": {
+    "amount_label": "금액",
+    "tooltip_buy": "매수",
+    "tooltip_sell": "매도",
+    "tooltip_filled": "체결됨 (0)",
+    "tooltip_order": "주문 #{id} | {time}",
+    "tooltip_filled_in": "주문 #{id} | {time} | {seconds}초에 체결"
+  },
+  "aum_ranking_chart": {
+    "total_aum_label": "총 AUM: {value}"
+  },
+  "vault_trades": {
+    "section_title": "AP 주문 피드",
+    "section_subtitle_active": "{count}건 거래 체결 \u00b7 수수료: {fee}",
+    "section_subtitle_empty": "MockBitgetVault 거래 내역",
+    "no_trades": "아직 거래가 기록되지 않았습니다",
+    "table": {
+      "time": "시간",
+      "token": "토큰",
+      "side": "방향",
+      "amount": "금액",
+      "price": "가격",
+      "fee": "수수료",
+      "itps": "ITP",
+      "trade_id": "거래 ID"
+    },
+    "side_buy": "매수",
+    "side_sell": "매도",
+    "prev": "이전",
+    "next": "다음",
+    "page_of": "{current} / {total}"
   }
 }

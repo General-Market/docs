@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { motion, LayoutGroup } from 'framer-motion'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -12,6 +12,7 @@ import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 import { RebalanceModal } from '@/components/domain/RebalanceModal'
 import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
 import { VaultTradesFeed } from '@/components/domain/VaultTradesFeed'
+import { useTranslations } from 'next-intl'
 import { useSectionTimeTracker } from '@/hooks/useSectionTimeTracker'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
@@ -74,31 +75,7 @@ type NavGroup = {
   items: { id: string; label: string }[]
 }
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: 'Core',
-    items: [
-      { id: 'markets', label: 'Markets' },
-      { id: 'portfolio', label: 'Portfolio' },
-      { id: 'create', label: 'Create Index' },
-    ],
-  },
-  {
-    label: 'Tools',
-    items: [
-      { id: 'lend', label: 'Lending' },
-      { id: 'backtest', label: 'Backtesting' },
-    ],
-  },
-  {
-    label: 'Monitoring',
-    items: [
-      { id: 'system', label: 'System' },
-    ],
-  },
-]
-
-const ALL_SECTION_IDS = NAV_GROUPS.flatMap(g => g.items.map(i => i.id))
+const NAV_SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system']
 
 /* ── Motion springs — theatrical ── */
 const SPRING_BLOB = { type: 'spring' as const, stiffness: 170, damping: 22, mass: 0.8 }
@@ -106,8 +83,33 @@ const SPRING_ACCENT = { type: 'spring' as const, stiffness: 250, damping: 25 }
 const INSTANT = { duration: 0 }
 
 export function HomeClient() {
+  const t = useTranslations('pages')
   const { capture } = usePostHogTracker()
   const reduced = usePrefersReducedMotion()
+
+  const NAV_GROUPS: NavGroup[] = useMemo(() => [
+    {
+      label: t('home.nav_group_core'),
+      items: [
+        { id: 'markets', label: t('home.nav_markets') },
+        { id: 'portfolio', label: t('home.nav_portfolio') },
+        { id: 'create', label: t('home.nav_create_index') },
+      ],
+    },
+    {
+      label: t('home.nav_group_tools'),
+      items: [
+        { id: 'lend', label: t('home.nav_lending') },
+        { id: 'backtest', label: t('home.nav_backtesting') },
+      ],
+    },
+    {
+      label: t('home.nav_group_monitoring'),
+      items: [
+        { id: 'system', label: t('home.nav_system') },
+      ],
+    },
+  ], [t])
   const [activeSection, setActiveSection] = useState('markets')
   const [exitingSection, setExitingSection] = useState<string | null>(null)
   const [direction, setDirection] = useState(1)
@@ -135,7 +137,7 @@ export function HomeClient() {
     sidebarLightRef.current.style.opacity = '0'
   }, [])
 
-  useSectionTimeTracker(ALL_SECTION_IDS)
+  useSectionTimeTracker(NAV_SECTION_IDS)
 
   useEffect(() => {
     return () => clearTimeout(exitTimer.current)
@@ -143,15 +145,15 @@ export function HomeClient() {
 
   useEffect(() => {
     const hash = window.location.hash.slice(1)
-    if (hash && ALL_SECTION_IDS.includes(hash)) {
+    if (hash && NAV_SECTION_IDS.includes(hash)) {
       setActiveSection(hash)
     }
   }, [])
 
   const switchTo = useCallback((id: string) => {
     if (id === activeSection) return
-    const prevIdx = ALL_SECTION_IDS.indexOf(activeSection)
-    const nextIdx = ALL_SECTION_IDS.indexOf(id)
+    const prevIdx = NAV_SECTION_IDS.indexOf(activeSection)
+    const nextIdx = NAV_SECTION_IDS.indexOf(id)
     setDirection(nextIdx > prevIdx ? 1 : -1)
     setExitingSection(activeSection)
     setActiveSection(id)
@@ -318,7 +320,7 @@ export function HomeClient() {
 
         {/* ── Main — theatrical section transitions ── */}
         <main className="flex-1 min-w-0 pb-16 lg:pb-0 relative overflow-x-hidden">
-          {ALL_SECTION_IDS.map((id) => {
+          {NAV_SECTION_IDS.map((id) => {
             const state = sectionState(id)
             const isActive = state === 'active'
             const isExiting = state === 'exiting'

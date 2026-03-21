@@ -75,7 +75,7 @@ export function VisionPage() {
                 </div>
                 <SpringExpand isOpen={expandedBatchId !== null && !!batches.find(b => b.id === expandedBatchId)}>
                   <div className="mt-4 p-4 bg-surface border border-border-medium rounded-card">
-                    <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">Batch details unavailable.</div>}>
+                    <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">{t('vision_page.batch_unavailable')}</div>}>
                       {expandedBatchId !== null && batches.find(b => b.id === expandedBatchId) && (
                         <ExpandedBatch
                           batchId={expandedBatchId}
@@ -112,7 +112,7 @@ export function VisionPage() {
           <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('leaderboard.label')}</p>
           <h3 className="text-title font-bold tracking-tight text-black leading-[1.1]">{t('leaderboard.title')}</h3>
           <p className="text-body text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
-          <ErrorBoundary fallback={<div className="py-8 text-center text-text-muted font-mono text-sm">Leaderboard unavailable.</div>}>
+          <ErrorBoundary fallback={<div className="py-8 text-center text-text-muted font-mono text-sm">{t('vision_page.leaderboard_unavailable')}</div>}>
             <VisionLeaderboard />
           </ErrorBoundary>
         </div>

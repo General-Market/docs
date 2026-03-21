@@ -2,6 +2,7 @@
 
 import { use, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ProfileHeader } from '@/components/domain/profile/ProfileHeader'
@@ -14,6 +15,7 @@ import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
 function ProfileContent({ address }: { address: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const t = useTranslations('pages.profile')
   const tab = (searchParams.get('tab') === 'index' ? 'index' : 'vision') as 'vision' | 'index'
   const { profile, isLoading } = usePlayerProfile(address)
 
@@ -25,16 +27,16 @@ function ProfileContent({ address }: { address: string }) {
   const pnlColor = pnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   const visionStats = [
-    { label: 'P&L', value: formatPnL(profile?.stats.pnl ?? 0), color: pnlColor },
-    { label: 'ROI', value: formatROI(profile?.stats.roi ?? 0) },
-    { label: 'Win Rate', value: `${(profile?.stats.winRate ?? 0).toFixed(1)}%` },
-    { label: 'Volume', value: formatVolume(profile?.stats.totalDeposited ?? 0) },
-    { label: 'Batches', value: String(profile?.stats.totalBatches ?? 0) },
+    { label: t('pnl'), value: formatPnL(profile?.stats.pnl ?? 0), color: pnlColor },
+    { label: t('roi'), value: formatROI(profile?.stats.roi ?? 0) },
+    { label: t('win_rate'), value: `${(profile?.stats.winRate ?? 0).toFixed(1)}%` },
+    { label: t('volume'), value: formatVolume(profile?.stats.totalDeposited ?? 0) },
+    { label: t('batches'), value: String(profile?.stats.totalBatches ?? 0) },
   ]
 
   const indexStats = [
-    { label: 'Portfolio Value', value: '\u2014' },
-    { label: 'Holdings', value: '\u2014' },
+    { label: t('portfolio_value'), value: '\u2014' },
+    { label: t('holdings'), value: '\u2014' },
   ]
 
   const stats = tab === 'vision' ? visionStats : indexStats
@@ -78,7 +80,7 @@ function ProfileContent({ address }: { address: string }) {
             <VisionTab profile={profile} />
           ) : tab === 'vision' ? (
             <div className="py-16 text-center text-caption text-text-muted">
-              No profile data found for this address.
+              {t('no_profile')}
             </div>
           ) : (
             <IndexTab address={address} />

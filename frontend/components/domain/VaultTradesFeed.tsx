@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { useVaultTrades, type VaultTrade } from '@/hooks/useVaultTrades'
 import { useSystemStatus, type RecentOrder } from '@/hooks/useSystemStatus'
@@ -156,6 +157,7 @@ interface VaultTradesFeedProps {
 }
 
 export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
+  const t = useTranslations('system')
   const { trades, totalCount, feeBps, isLoading, error } = useVaultTrades()
   const sys = useSystemStatus()
   const [page, setPage] = useState(0)
@@ -211,11 +213,11 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
       {/* Section header */}
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">AP Order Feed</div>
+          <div className="section-bar-title">{t('vault_trades.section_title')}</div>
           <div className="section-bar-value">
             {totalCount > 0
-              ? `${totalCount.toLocaleString()} trades executed \u00b7 fee: ${feeLabel}`
-              : 'MockBitgetVault trade history'}
+              ? t('vault_trades.section_subtitle_active', { count: totalCount.toLocaleString(), fee: feeLabel })
+              : t('vault_trades.section_subtitle_empty')}
           </div>
         </div>
       </div>
@@ -232,7 +234,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
         <table className="w-full border-collapse text-caption min-w-[780px]">
           <thead>
             <tr>
-              {['Time', 'Token', 'Side', 'Amount', 'Price', 'Fee', 'ITP(s)', 'Trade ID'].map((h, i) => (
+              {[t('vault_trades.table.time'), t('vault_trades.table.token'), t('vault_trades.table.side'), t('vault_trades.table.amount'), t('vault_trades.table.price'), t('vault_trades.table.fee'), t('vault_trades.table.itps'), t('vault_trades.table.trade_id')].map((h, i) => (
                 <th
                   key={h}
                   className={`text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
@@ -249,7 +251,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
               isLoading ? <TableRowsSkeleton /> : (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-caption text-text-muted">
-                    No trades recorded yet
+                    {t('vault_trades.no_trades')}
                   </td>
                 </tr>
               )
@@ -279,7 +281,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
                   <td className={`px-4 py-3 border-b border-border-light font-bold ${
                     trade.side === 'buy' ? 'text-color-up' : 'text-color-down'
                   }`}>
-                    {trade.side === 'buy' ? 'Buy' : 'Sell'}
+                    {trade.side === 'buy' ? t('vault_trades.side_buy') : t('vault_trades.side_sell')}
                   </td>
 
                   {/* Amount */}
@@ -335,17 +337,17 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
             disabled={page === 0}
             className={`font-semibold px-2 py-1 ${page === 0 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
           >
-            Prev
+            {t('vault_trades.prev')}
           </button>
           <span className="text-text-secondary font-mono tabular-nums">
-            {page + 1} / {totalPages}
+            {t('vault_trades.page_of', { current: page + 1, total: totalPages })}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
             className={`font-semibold px-2 py-1 ${page >= totalPages - 1 ? 'text-text-muted cursor-default' : 'text-black hover:text-text-secondary'}`}
           >
-            Next
+            {t('vault_trades.next')}
           </button>
         </div>
       )}

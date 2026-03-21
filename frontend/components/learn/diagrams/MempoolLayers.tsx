@@ -3,6 +3,7 @@
 import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
@@ -431,6 +432,7 @@ function VFlow({ from, to, count = 10, color = '#888' }: {
 }
 
 export function MempoolLayers() {
+  const t = useTranslations('pages')
   return (
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
@@ -454,18 +456,18 @@ export function MempoolLayers() {
               <StepPlatform position={[0, -0.02, -2.0]} width={5} depth={1.4} />
 
               {/* USERS terrace (top) — blue */}
-              <Platform position={[0, 0.65, 1.0]} width={5} depth={1.8} label="USERS" color="#dbeafe" accentColor="#3b82f6" />
+              <Platform position={[0, 0.65, 1.0]} width={5} depth={1.8} label={t('learn.mempool_layers.users')} color="#dbeafe" accentColor="#3b82f6" />
               <WalletModel position={[-1.5, 0.68, 1.0]} color="#3b82f6" />
               <Html center position={[-1.5, 1.18, 1.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[9px] font-bold text-blue-600 whitespace-nowrap">Smart Wallet</p>
+                <p className="text-[9px] font-bold text-blue-600 whitespace-nowrap">{t('learn.mempool_layers.smart_wallet')}</p>
               </Html>
               <ScreenModel position={[0, 0.68, 1.0]} color="#6366f1" />
               <Html center position={[0, 1.22, 1.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[9px] font-bold text-indigo-600 whitespace-nowrap">dApp</p>
+                <p className="text-[9px] font-bold text-indigo-600 whitespace-nowrap">{t('learn.mempool_layers.dapp')}</p>
               </Html>
               <LockModel position={[1.5, 0.68, 1.0]} color="#8b5cf6" />
               <Html center position={[1.5, 1.12, 1.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[9px] font-bold text-violet-600 whitespace-nowrap">Privacy TX</p>
+                <p className="text-[9px] font-bold text-violet-600 whitespace-nowrap">{t('learn.mempool_layers.privacy_tx')}</p>
               </Html>
 
               {/* Crowd of users in background */}
@@ -476,15 +478,15 @@ export function MempoolLayers() {
               <VFlow from={[0.6, 0.6, 0.5]} to={[0.6, 0.38, -0.3]} count={8} color="#f59e0b" />
 
               {/* MEMPOOL terrace (middle) — amber */}
-              <Platform position={[0, 0.3, -0.5]} width={5} depth={1.6} label="MEMPOOL" color="#fef3c7" accentColor="#f59e0b" />
-              <PoolModel position={[-1, 0.33, -0.5]} color="#f59e0b" label="Conservative" sub="strict rules" />
-              <PoolModel position={[1, 0.33, -0.5]} color="#ef4444" label="Aggressive" sub="staking" />
+              <Platform position={[0, 0.3, -0.5]} width={5} depth={1.6} label={t('learn.mempool_layers.mempool')} color="#fef3c7" accentColor="#f59e0b" />
+              <PoolModel position={[-1, 0.33, -0.5]} color="#f59e0b" label={t('learn.mempool_layers.conservative')} sub={t('learn.mempool_layers.strict_rules')} />
+              <PoolModel position={[1, 0.33, -0.5]} color="#ef4444" label={t('learn.mempool_layers.aggressive')} sub={t('learn.mempool_layers.staking')} />
 
               {/* Flow: Mempool → Chain */}
               <VFlow from={[0, 0.25, -0.9]} to={[0, 0.05, -1.8]} count={10} color="#22c55e" />
 
               {/* CHAIN terrace (bottom) — green */}
-              <Platform position={[0, 0, -2.0]} width={5} depth={1.4} label="CHAIN" color="#dcfce7" accentColor="#22c55e" />
+              <Platform position={[0, 0, -2.0]} width={5} depth={1.4} label={t('learn.mempool_layers.chain_label')} color="#dcfce7" accentColor="#22c55e" />
               <ChainModel position={[0, 0.03, -2.0]} color="#22c55e" />
 
               <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 8} maxPolarAngle={Math.PI / 2.3} autoRotate autoRotateSpeed={0.3} dampingFactor={0.05} target={[0, 0.2, -0.3]} />
@@ -495,18 +497,18 @@ export function MempoolLayers() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-micro text-text-muted tracking-wide">Users</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.mempool_layers.legend_users')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-amber-100 border border-amber-300" />
-              <span className="text-micro text-text-muted tracking-wide">Mempool</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.mempool_layers.legend_mempool')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">Chain</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.mempool_layers.legend_chain')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

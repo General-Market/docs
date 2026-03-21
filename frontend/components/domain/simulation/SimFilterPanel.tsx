@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslations } from 'next-intl'
 import { useSimCategories } from '@/hooks/useSimCategories'
 
 /** Tiny "?" circle that shows a tooltip on hover */
@@ -66,10 +67,6 @@ const THRESHOLD_OPTIONS = [
 ]
 const SWEEP_OPTIONS = ['none', 'top_n', 'weighting', 'rebalance', 'category', 'defi_weight', 'fng_regime', 'dom_regime'] as const
 
-const SWEEP_LABELS: Record<string, string> = {
-  none: 'None', top_n: 'Top N', weighting: 'Weight', rebalance: 'Rebalance',
-  category: 'Category', defi_weight: 'DeFi Wt', fng_regime: 'FNG', dom_regime: 'DOM',
-}
 
 const FNG_MODES = [
   { value: '', label: 'Off', title: 'No Fear & Greed overlay — use your base strategy as-is.' },
@@ -283,6 +280,7 @@ interface SimFilterPanelProps {
 }
 
 export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilterPanelProps) {
+  const t = useTranslations('backtest')
   const { categories, isLoading: catsLoading } = useSimCategories()
   const [catSearchOpen, setCatSearchOpen] = useState(false)
   const [catSearch, setCatSearch] = useState('')
@@ -331,8 +329,8 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[200px]">
           <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">
-            {isCategorySweep ? 'Categories (select 2+)' : 'Category'}
-            <HelpTip text="The asset universe to pick from. Each category groups coins by theme (e.g. DeFi, Layer 1, Memes)." />
+            {isCategorySweep ? t('filter.category_sweep') : t('filter.category')}
+            <HelpTip text={t('filter.category_help')} />
           </label>
 
           {isCategorySweep ? (
@@ -342,8 +340,8 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 onClick={() => setCatSearchOpen(!catSearchOpen)}
               >
                 {filters.sweep_categories.length === 0
-                  ? 'Select categories to compare...'
-                  : `${filters.sweep_categories.length} categories selected`
+                  ? t('filter.category_sweep_placeholder')
+                  : t('filter.category_sweep_selected', { count: filters.sweep_categories.length })
                 }
               </button>
               {catSearchOpen && (
@@ -351,7 +349,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <input
                     type="text"
                     className="w-full border-b border-border-light px-3 py-2 text-sm text-text-primary outline-none placeholder:text-text-muted"
-                    placeholder="Search categories..."
+                    placeholder={t('filter.category_search')}
                     value={catSearch}
                     onChange={e => setCatSearch(e.target.value)}
                     autoFocus
@@ -407,17 +405,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               disabled={catsLoading || undefined}
               suppressHydrationWarning
             >
-              <option value="" suppressHydrationWarning>{catsLoading ? 'Loading categories...' : 'Select category...'}</option>
+              <option value="" suppressHydrationWarning>{catsLoading ? t('filter.category_loading') : t('filter.category_select')}</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.coin_count} coins)
+                  {c.name} ({t('filter.coins_count', { count: c.coin_count })})
                 </option>
               ))}
             </select>
           )}
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Top N<HelpTip text="How many coins to hold. 'Top 10' means the 10 largest by market cap from your chosen category." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.top_n')}<HelpTip text={t('filter.top_n_help')} /></label>
           <div className="flex">
             {TOP_N_OPTIONS.map(n => (
               <button
@@ -441,12 +439,12 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 2: Strategy family buttons */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Weighting Strategy<HelpTip text="How to distribute money across your holdings. 'Equal' = same amount in each coin. 'MCap' = more money in bigger coins. Others use momentum, volatility, or DeFi metrics." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.weighting_strategy')}<HelpTip text={t('filter.weighting_help')} /></label>
         <div className="flex flex-wrap gap-1 items-center">
           {STRATEGY_FAMILIES.filter(f => f.group === 'price').map(fam => (
             <button
               key={fam.id}
-              title={fam.title}
+              title={t(`strategy.${fam.id}_title` as any)}
               className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
                 sweepDim === 'weighting' || sweepDim === 'defi_weight'
                   ? 'bg-muted text-text-muted border-border-light'
@@ -457,15 +455,15 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               onClick={() => selectFamily(fam)}
               disabled={sweepDim === 'weighting' || sweepDim === 'defi_weight'}
             >
-              {fam.label}
+              {t(`strategy.${fam.id}_label` as any)}
             </button>
           ))}
           <span className="text-xs text-text-muted px-1">|</span>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">DeFi</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.defi_label')}</span>
           {STRATEGY_FAMILIES.filter(f => f.group === 'defi').map(fam => (
             <button
               key={fam.id}
-              title={fam.title}
+              title={t(`strategy.${fam.id}_title` as any)}
               className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
                 sweepDim === 'weighting' || sweepDim === 'defi_weight'
                   ? 'bg-muted text-text-muted border-border-light'
@@ -476,7 +474,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               onClick={() => selectFamily(fam)}
               disabled={sweepDim === 'weighting' || sweepDim === 'defi_weight'}
             >
-              {fam.label}
+              {t(`strategy.${fam.id}_label` as any)}
             </button>
           ))}
         </div>
@@ -486,7 +484,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {activeFamilyDef?.params && sweepDim !== 'weighting' && (
         <div className="flex items-center gap-2 pl-3 border-l-2 border-border-light">
           <span className="text-xs text-text-muted">
-            {activeFamily === 'mcap_cap' ? 'Max cap' : 'Lookback'}
+            {activeFamily === 'mcap_cap' ? t('filter.max_cap') : t('filter.lookback')}
           </span>
           <div className="flex">
             {activeFamilyDef.params.map((p, i) => (
@@ -512,10 +510,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 3: Rebalance family */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Rebalance<HelpTip text="How often to re-adjust your portfolio back to target weights. 'Periodic' = fixed schedule. 'Drift Band' = only when a holding drifts too far from its target." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.rebalance')}<HelpTip text={t('filter.rebalance_help')} /></label>
         <div className="flex gap-1">
           <button
-            title="Rebalance at fixed time intervals"
+            title={t('filter.periodic_title')}
             className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
               sweepDim === 'rebalance'
                 ? 'bg-muted text-text-muted border-border-light'
@@ -526,10 +524,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: null, rebalance_days: filters.rebalance_days }) }}
             disabled={sweepDim === 'rebalance'}
           >
-            Periodic
+            {t('filter.periodic')}
           </button>
           <button
-            title="Rebalance when any holding drifts past a threshold"
+            title={t('filter.drift_band_title')}
             className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
               sweepDim === 'rebalance'
                 ? 'bg-muted text-text-muted border-border-light'
@@ -540,7 +538,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: filters.threshold_pct ?? 5 }) }}
             disabled={sweepDim === 'rebalance'}
           >
-            Drift Band
+            {t('filter.drift_band')}
           </button>
         </div>
       </div>
@@ -549,14 +547,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {sweepDim !== 'rebalance' && (
         <div className="flex items-center gap-2 pl-3 border-l-2 border-border-light">
           <span className="text-xs text-text-muted">
-            {filters.threshold_pct == null ? 'Interval' : 'Threshold'}
+            {filters.threshold_pct == null ? t('filter.interval') : t('filter.threshold')}
           </span>
           <div className="flex">
             {filters.threshold_pct == null ? (
               REBALANCE_OPTIONS.map((r, i) => (
                 <button
                   key={r.value}
-                  title={`Rebalance every ${r.label}`}
+                  title={t('filter.rebalance_every', { period: r.label })}
                   className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
                     i === 0 ? 'rounded-l-lg ml-0' : ''
                   } ${
@@ -572,22 +570,22 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 </button>
               ))
             ) : (
-              THRESHOLD_OPTIONS.filter(t => t.value != null).map((t, i, arr) => (
+              THRESHOLD_OPTIONS.filter(th => th.value != null).map((th, i, arr) => (
                 <button
-                  key={t.label}
-                  title={`Rebalance when any holding drifts ${t.label} from target`}
+                  key={th.label}
+                  title={t('filter.rebalance_drift', { pct: th.label })}
                   className={`px-2.5 py-1 text-xs border border-border-light -ml-px transition-colors ${
                     i === 0 ? 'rounded-l-lg ml-0' : ''
                   } ${
                     i === arr.length - 1 ? 'rounded-r-lg' : ''
                   } ${
-                    filters.threshold_pct === t.value
+                    filters.threshold_pct === th.value
                       ? 'bg-zinc-900 text-white border-zinc-900'
                       : 'bg-white text-text-muted hover:bg-muted'
                   }`}
-                  onClick={() => update({ threshold_pct: t.value })}
+                  onClick={() => update({ threshold_pct: th.value })}
                 >
-                  {t.label}
+                  {th.label}
                 </button>
               ))
             )}
@@ -598,7 +596,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 4: Fees + Start Date */}
       <div className="flex flex-wrap gap-4 items-center">
         <div>
-          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Base Fee %<HelpTip text="Annual management fee charged on the index (like an ETF expense ratio). 0.1% is typical for crypto index products." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.base_fee')}<HelpTip text={t('filter.base_fee_help')} /></label>
           <input
             type="number"
             step="0.01"
@@ -610,7 +608,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           />
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Spread Mult.<HelpTip text="Simulates trading slippage. 1x = realistic spread costs. Higher values model worse execution (e.g. illiquid markets)." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.spread_mult')}<HelpTip text={t('filter.spread_mult_help')} /></label>
           <input
             type="number"
             step="0.1"
@@ -620,16 +618,16 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             value={filters.spread_multiplier}
             onChange={e => update({ spread_multiplier: parseFloat(e.target.value) || 0 })}
           />
-          <span className="text-xs text-text-muted ml-1">x</span>
+          <span className="text-xs text-text-muted ml-1">{t('filter.spread_mult_suffix')}</span>
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Start From<HelpTip text="When to start the backtest. 'All' uses the maximum available history. Shorter periods show more recent performance." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.start_from')}<HelpTip text={t('filter.start_from_help')} /></label>
           <div className="flex items-center gap-1">
             {[
-              { label: 'All', value: '2020-01-01' },
-              { label: '5y', value: fiveYearsAgo() },
-              { label: '3y', value: threeYearsAgo() },
-              { label: '1y', value: oneYearAgo() },
+              { label: t('filter.start_all'), value: '2020-01-01' },
+              { label: t('filter.start_5y'), value: fiveYearsAgo() },
+              { label: t('filter.start_3y'), value: threeYearsAgo() },
+              { label: t('filter.start_1y'), value: oneYearAgo() },
             ].map(opt => (
               <button
                 key={opt.label}
@@ -665,36 +663,39 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           onClick={() => update({} as Partial<SimFilterState>)} // no-op, toggle via local state
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Regime Overlays<HelpTip text="Optional rules that adjust your strategy based on market sentiment (Fear & Greed Index) or Bitcoin dominance trends." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('filter.regime_overlays')}<HelpTip text={t('filter.regime_overlays_help')} /></span>
           <span className="text-xs text-text-muted">
-            {filters.fng_mode || filters.dom_mode ? 'Active' : 'Off'}
+            {filters.fng_mode || filters.dom_mode ? t('filter.regime_active') : t('filter.regime_off')}
           </span>
         </button>
         <div className="p-4 space-y-4">
           {/* FNG Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Fear & Greed<HelpTip text="Adjusts your strategy based on the Crypto Fear & Greed Index (0-100). Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.fear_greed')}<HelpTip text={t('filter.fear_greed_help')} /></label>
             <div className="flex flex-wrap gap-1">
-              {FNG_MODES.map(m => (
-                <Tip key={m.value} text={m.title}>
-                  <button
-                    className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
-                      filters.fng_mode === m.value
-                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
-                        : 'bg-white text-text-secondary border-border-light hover:bg-muted'
-                    }`}
-                    onClick={() => update({ fng_mode: m.value })}
-                  >
-                    {m.label}
-                  </button>
-                </Tip>
-              ))}
+              {FNG_MODES.map(m => {
+                const fngKey = m.value || 'off'
+                return (
+                  <Tip key={m.value} text={t(`fng_mode.${fngKey}_title` as any)}>
+                    <button
+                      className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                        filters.fng_mode === m.value
+                          ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                          : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                      }`}
+                      onClick={() => update({ fng_mode: m.value })}
+                    >
+                      {t(`fng_mode.${fngKey}_label` as any)}
+                    </button>
+                  </Tip>
+                )
+              })}
             </div>
             {filters.fng_mode && (
               <div className="mt-2 pl-3 border-l-2 border-border-light space-y-2">
                 {(FNG_PRESETS[filters.fng_mode]?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {FNG_PRESETS[filters.fng_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
@@ -713,7 +714,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 )}
                 <div className="flex flex-wrap gap-4">
                 <div>
-                  <span className="text-xs text-text-muted block mb-1">Fear &le; {filters.fng_fear}</span>
+                  <span className="text-xs text-text-muted block mb-1">{t('filter.fear_lte', { value: filters.fng_fear })}</span>
                   <input
                     type="range" min={5} max={90} step={1}
                     className="w-28 accent-zinc-900"
@@ -722,7 +723,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   />
                 </div>
                 <div>
-                  <span className="text-xs text-text-muted block mb-1">Greed &ge; {filters.fng_greed}</span>
+                  <span className="text-xs text-text-muted block mb-1">{t('filter.greed_gte', { value: filters.fng_greed })}</span>
                   <input
                     type="range" min={50} max={95} step={1}
                     className="w-28 accent-zinc-900"
@@ -731,7 +732,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   />
                 </div>
                 <div>
-                  <span className="text-xs text-text-muted block mb-1">Cash %</span>
+                  <span className="text-xs text-text-muted block mb-1">{t('filter.cash_pct')}</span>
                   <input
                     type="number" step="0.05" min="0" max="1"
                     className="w-16 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
@@ -746,28 +747,31 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
           {/* BTC Dominance Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">BTC Dominance<HelpTip text="Adjusts allocation based on Bitcoin's share of the total crypto market. Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.btc_dominance')}<HelpTip text={t('filter.btc_dominance_help')} /></label>
             <div className="flex flex-wrap gap-1">
-              {DOM_MODES.map(m => (
-                <Tip key={m.value} text={m.title}>
-                  <button
-                    className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
-                      filters.dom_mode === m.value
-                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
-                        : 'bg-white text-text-secondary border-border-light hover:bg-muted'
-                    }`}
-                    onClick={() => update({ dom_mode: m.value })}
-                  >
-                    {m.label}
-                  </button>
-                </Tip>
-              ))}
+              {DOM_MODES.map(m => {
+                const domKey = m.value || 'off'
+                return (
+                  <Tip key={m.value} text={t(`dom_mode.${domKey}_title` as any)}>
+                    <button
+                      className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                        filters.dom_mode === m.value
+                          ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                          : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                      }`}
+                      onClick={() => update({ dom_mode: m.value })}
+                    >
+                      {t(`dom_mode.${domKey}_label` as any)}
+                    </button>
+                  </Tip>
+                )
+              })}
             </div>
             {filters.dom_mode && (
               <div className="flex flex-wrap items-center gap-2 mt-2 pl-3 border-l-2 border-border-light">
                 {(DOM_PRESETS[filters.dom_mode]?.length ?? 0) > 0 && (
                   <>
-                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {DOM_PRESETS[filters.dom_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
@@ -785,7 +789,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     <span className="text-xs text-text-muted/50">|</span>
                   </>
                 )}
-                <span className="text-xs text-text-muted">Lookback</span>
+                <span className="text-xs text-text-muted">{t('filter.lookback')}</span>
                 <div className="flex">
                   {DOM_LOOKBACK_OPTIONS.map((opt, i) => (
                     <button
@@ -817,32 +821,35 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">VC Overlay<HelpTip text="Boost or filter coins based on venture capital funding data. Coins backed by top VCs with large recent rounds get higher weight." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('filter.vc_overlay')}<HelpTip text={t('filter.vc_overlay_help')} /></span>
           <span className="text-xs text-text-muted">
-            {filters.vc_mode ? 'Active' : 'Off'}
+            {filters.vc_mode ? t('filter.regime_active') : t('filter.regime_off')}
           </span>
         </button>
         <div className="p-4 space-y-3">
           <div className="flex flex-wrap gap-1">
-            {VC_MODES.map(m => (
-              <button
-                key={m.value}
-                title={m.title}
-                className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
-                  filters.vc_mode === m.value
-                    ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
-                    : 'bg-white text-text-secondary border-border-light hover:bg-muted'
-                }`}
-                onClick={() => update({ vc_mode: m.value })}
-              >
-                {m.label}
-              </button>
-            ))}
+            {VC_MODES.map(m => {
+              const vcKey = m.value || 'off'
+              return (
+                <button
+                  key={m.value}
+                  title={t(`vc_mode.${vcKey}_title` as any)}
+                  className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                    filters.vc_mode === m.value
+                      ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                      : 'bg-white text-text-secondary border-border-light hover:bg-muted'
+                  }`}
+                  onClick={() => update({ vc_mode: m.value })}
+                >
+                  {t(`vc_mode.${vcKey}_label` as any)}
+                </button>
+              )
+            })}
           </div>
           {filters.vc_mode && (
             <div className="flex flex-wrap gap-4 pl-3 border-l-2 border-border-light">
               <div>
-                <span className="text-xs text-text-muted block mb-1">Min Funding ($M)</span>
+                <span className="text-xs text-text-muted block mb-1">{t('filter.min_funding')}</span>
                 <input
                   type="number" step="1" min="0"
                   className="w-20 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
@@ -851,7 +858,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 />
               </div>
               <div className="flex-1 min-w-[200px]">
-                <span className="text-xs text-text-muted block mb-1.5">Investors</span>
+                <span className="text-xs text-text-muted block mb-1.5">{t('filter.investors')}</span>
                 <div className="flex flex-wrap gap-1">
                   {VC_INVESTOR_PRESETS.map(inv => {
                     const selected = filters.vc_investors.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
@@ -878,7 +885,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 </div>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <span className="text-xs text-text-muted block mb-1.5">Round Types</span>
+                <span className="text-xs text-text-muted block mb-1.5">{t('filter.round_types')}</span>
                 <div className="flex flex-wrap gap-1">
                   {VC_ROUND_PRESETS.map(rt => {
                     const selected = filters.vc_round_types.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
@@ -912,7 +919,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 7: Sweep + Run */}
       <div className="flex flex-wrap gap-4 items-center justify-between pt-2 border-t border-border-light">
         <div>
-          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.sweep')}<HelpTip text={t('filter.sweep_help')} /></label>
           <div className="flex flex-wrap gap-y-1 fluid-btn-group">
             {SWEEP_OPTIONS.map(s => (
               <button
@@ -924,7 +931,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 }`}
                 onClick={() => update({ sweep: s })}
               >
-                {SWEEP_LABELS[s] || s}
+                {t(`filter.sweep_${s}` as any)}
               </button>
             ))}
           </div>
@@ -938,7 +945,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           onClick={onRun}
           disabled={!isLoading && !canRun}
         >
-          {isLoading ? 'Cancel' : isSweeping ? 'Run Sweep' : 'Run Simulation'}
+          {isLoading ? t('filter.run_cancel') : isSweeping ? t('filter.run_sweep') : t('filter.run_simulation')}
         </button>
       </div>
     </div>

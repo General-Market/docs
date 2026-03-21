@@ -67,7 +67,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, 'Pending']}
+                formatter={(v: number) => [v, t('explorer.orders_tooltip.pending')]}
               />
               <Area
                 type="monotone"
@@ -93,7 +93,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, 'Processed']}
+                formatter={(v: number) => [v, t('explorer.orders_tooltip.processed')]}
               />
               <Line
                 type="monotone"
@@ -128,7 +128,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
               />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [`${v.toFixed(0)}ms`, 'Duration']}
+                formatter={(v: number) => [`${v.toFixed(0)}ms`, t('explorer.orders_tooltip.duration')]}
               />
               <Line
                 type="monotone"

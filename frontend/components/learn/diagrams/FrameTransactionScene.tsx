@@ -3,6 +3,7 @@
 import { useRef, useMemo, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
@@ -102,7 +103,7 @@ function StepRiser({ position, width = 1.5, depth = 1.1 }: {
   )
 }
 
-function CalldataRibbon() {
+function CalldataRibbon({ label }: { label: string }) {
   const count = 20
   const ref = useRef<THREE.InstancedMesh>(null!)
   const dummy = useMemo(() => new THREE.Object3D(), [])
@@ -133,20 +134,21 @@ function CalldataRibbon() {
         <meshBasicMaterial color="#8b5cf6" transparent opacity={0.5} />
       </instancedMesh>
       <Html center position={[0, 0.95, -0.5]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[8px] text-violet-400 tracking-[0.08em] uppercase whitespace-nowrap font-bold">shared calldata</p>
+        <p className="text-[8px] text-violet-400 tracking-[0.08em] uppercase whitespace-nowrap font-bold">{label}</p>
       </Html>
     </group>
   )
 }
 
-const FRAMES = [
-  { pos: [-2.1, 0.12, 0] as [number, number, number], label: 'Frame 1', sub: 'Validation', color: '#dcfce7', accent: '#22c55e', delay: 0 },
-  { pos: [-0.7, 0.12, 0] as [number, number, number], label: 'Frame 2', sub: 'Execution', color: '#dbeafe', accent: '#3b82f6', delay: 1 },
-  { pos: [0.7, 0.12, 0] as [number, number, number], label: 'Frame 3', sub: 'Execution', color: '#dbeafe', accent: '#3b82f6', delay: 2 },
-  { pos: [2.1, 0.12, 0] as [number, number, number], label: 'Frame N', sub: '...', color: '#f3f4f6', accent: '#9ca3af', delay: 3 },
-]
-
 export function FrameTransactionScene() {
+  const t = useTranslations('pages')
+
+  const FRAMES = [
+    { pos: [-2.1, 0.12, 0] as [number, number, number], label: t('learn.frame_tx_scene.frame_1'), sub: t('learn.frame_tx_scene.validation'), color: '#dcfce7', accent: '#22c55e', delay: 0 },
+    { pos: [-0.7, 0.12, 0] as [number, number, number], label: t('learn.frame_tx_scene.frame_2'), sub: t('learn.frame_tx_scene.execution'), color: '#dbeafe', accent: '#3b82f6', delay: 1 },
+    { pos: [0.7, 0.12, 0] as [number, number, number], label: t('learn.frame_tx_scene.frame_3'), sub: t('learn.frame_tx_scene.execution'), color: '#dbeafe', accent: '#3b82f6', delay: 2 },
+    { pos: [2.1, 0.12, 0] as [number, number, number], label: t('learn.frame_tx_scene.frame_n'), sub: '...', color: '#f3f4f6', accent: '#9ca3af', delay: 3 },
+  ]
   const connections = useMemo(() => FRAMES.slice(0, -1).map((f, i) => ({
     start: new THREE.Vector3(...f.pos),
     end: new THREE.Vector3(...FRAMES[i + 1].pos),
@@ -184,7 +186,7 @@ export function FrameTransactionScene() {
                   <FlowParticles start={c.start} end={c.end} count={6} color={FRAMES[i + 1].accent} />
                 </group>
               ))}
-              <CalldataRibbon />
+              <CalldataRibbon label={t('learn.frame_tx_scene.shared_calldata')} />
               <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 8} maxPolarAngle={Math.PI / 2.3} autoRotate autoRotateSpeed={0.4} dampingFactor={0.05} />
             </Canvas>
           </ClientOnly>
@@ -193,18 +195,18 @@ export function FrameTransactionScene() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">Validation</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.frame_tx_scene.legend_validation')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-micro text-text-muted tracking-wide">Execution</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.frame_tx_scene.legend_execution')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <svg className="w-4 h-2" viewBox="0 0 16 8"><path d="M1 7 Q8 1 15 7" stroke="#8b5cf6" fill="none" strokeWidth="1.5" /></svg>
-              <span className="text-micro text-text-muted tracking-wide">Shared Calldata</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.frame_tx_scene.legend_shared_calldata')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

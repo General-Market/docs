@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import SourcesPageClient from './SourcesPageClient'
 
-export const metadata: Metadata = {
-  title: 'Source Monitoring',
-  description: 'Live health status of all data sources feeding market prices on General Market.',
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'seo.pages.sources_monitoring' })
+  return {
+    title: t('title'),
+    description: t('description'),
+  }
 }
 
 export default function SourcesPage() {

@@ -3,6 +3,7 @@
 import { useRef, useMemo, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
@@ -101,16 +102,17 @@ function StepRiser({ position, width = 1.4, depth = 1.0 }: {
   )
 }
 
-// U-shape layout: validation left → paymaster center → execute right → refund loops back
-const STEPS = [
-  { pos: [-1.8, 0.12, 1.0] as [number, number, number], label: 'Validate', sub: 'ACCEPT sender', color: '#dcfce7', accent: '#22c55e' },
-  { pos: [0, 0.12, 1.0] as [number, number, number], label: 'Paymaster', sub: 'ACCEPT gas', color: '#fef9c3', accent: '#eab308' },
-  { pos: [1.8, 0.12, 1.0] as [number, number, number], label: 'Pay Token', sub: 'RAI → paymaster', color: '#ffedd5', accent: '#f59e0b' },
-  { pos: [1.8, 0.12, -0.8] as [number, number, number], label: 'Execute', sub: 'swap, stake, mint', color: '#dbeafe', accent: '#3b82f6' },
-  { pos: [-1.8, 0.12, -0.8] as [number, number, number], label: 'Refund', sub: 'unused gas → user', color: '#f3f4f6', accent: '#9ca3af' },
-]
-
 export function PaymasterFlow() {
+  const t = useTranslations('pages')
+
+  // U-shape layout: validation left → paymaster center → execute right → refund loops back
+  const STEPS = [
+    { pos: [-1.8, 0.12, 1.0] as [number, number, number], label: t('learn.paymaster_flow.validate'), sub: t('learn.paymaster_flow.accept_sender'), color: '#dcfce7', accent: '#22c55e' },
+    { pos: [0, 0.12, 1.0] as [number, number, number], label: t('learn.paymaster_flow.paymaster'), sub: t('learn.paymaster_flow.accept_gas'), color: '#fef9c3', accent: '#eab308' },
+    { pos: [1.8, 0.12, 1.0] as [number, number, number], label: t('learn.paymaster_flow.pay_token'), sub: t('learn.paymaster_flow.rai_to_paymaster'), color: '#ffedd5', accent: '#f59e0b' },
+    { pos: [1.8, 0.12, -0.8] as [number, number, number], label: t('learn.paymaster_flow.execute'), sub: t('learn.paymaster_flow.swap_stake_mint'), color: '#dbeafe', accent: '#3b82f6' },
+    { pos: [-1.8, 0.12, -0.8] as [number, number, number], label: t('learn.paymaster_flow.refund'), sub: t('learn.paymaster_flow.unused_gas_user'), color: '#f3f4f6', accent: '#9ca3af' },
+  ]
   const connections = useMemo(() => STEPS.slice(0, -1).map((s, i) => ({
     start: new THREE.Vector3(...s.pos),
     end: new THREE.Vector3(...STEPS[i + 1].pos),
@@ -156,18 +158,18 @@ export function PaymasterFlow() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">Validate</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.paymaster_flow.legend_validate')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-yellow-100 border border-yellow-300" />
-              <span className="text-micro text-text-muted tracking-wide">Paymaster</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.paymaster_flow.legend_paymaster')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-micro text-text-muted tracking-wide">Execute</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.paymaster_flow.legend_execute')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

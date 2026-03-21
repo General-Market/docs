@@ -52,6 +52,7 @@
     "section_subtitle": "您的金库存款",
     "vault_shares": "金库份额",
     "current_value": "当前价值",
+    "shares_fallback": "shares",
     "button": {
       "confirm_wallet": "请在钱包中确认...",
       "withdrawing": "提款中...",
@@ -79,7 +80,9 @@
       "health_factor": "健康因子",
       "liquidation_price": "清算价格",
       "max_borrow": "最大可借",
+      "max_borrow_value": "{amount} USDC",
       "bundle_label": "Bundle:",
+      "bundle_steps": "Bundle: {steps}",
       "expired": "报价已过期 --",
       "refresh": "刷新",
       "execute_bundle": "执行 Bundle",
@@ -161,7 +164,8 @@
     "tx_stuck_title": "交易可能卡住",
     "tx_stuck_description": "超过30秒未确认。您可以取消后重试。",
     "market_frozen": "紧急情况下市场已冻结",
-    "rate_limited": "请求频率受限，请在 {seconds} 秒后重试"
+    "rate_limited": "请求频率受限，请在 {seconds} 秒后重试",
+    "view_on_explorer": "View on explorer"
   },
   "lend_modal": {
     "title": "以 {name} 抵押借款",
@@ -191,7 +195,10 @@
     "available_to_borrow": "Available to Borrow",
     "available_to_withdraw": "Available to Withdraw",
     "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
-    "health_danger": "Your position is eligible for liquidation! Repay debt immediately."
+    "health_danger": "Your position is eligible for liquidation! Repay debt immediately.",
+    "crisis_emergency": "Emergency",
+    "crisis_stress": "Stress",
+    "crisis_warning": "Warning"
   },
   "vault_stats": {
     "supply_apy": "Supply APY",
@@ -205,7 +212,11 @@
     "type_deposit": "Deposit",
     "type_withdraw": "Withdraw",
     "type_borrow": "Borrow",
-    "type_repay": "Repay"
+    "type_repay": "Repay",
+    "seconds_ago": "{seconds}s ago",
+    "minutes_ago": "{minutes}m ago",
+    "hours_ago": "{hours}h ago",
+    "days_ago": "{days}d ago"
   },
   "markets_detail": {
     "itp_markets": "ITP Markets",

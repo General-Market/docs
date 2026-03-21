@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { SpringTabs, SpringTab } from '@/components/ui/spring'
 import type { SectionId, ItpPageConfig } from '@/lib/itp-page-config'
 import type { SectionProps } from './SectionRenderer'
@@ -30,12 +31,12 @@ const REGISTRY: Record<SectionId, React.ComponentType<SectionProps>> = {
   'investment-objective': InvestmentObjective,
 }
 
-// Anchor nav labels
+// Anchor nav label keys (resolved via i18n)
 const NAV_ITEMS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'performance', label: 'Performance' },
-  { id: 'holdings', label: 'Holdings' },
-  { id: 'key-facts', label: 'Key Facts' },
+  { id: 'overview', key: 'tabs.overview' },
+  { id: 'performance', key: 'tabs.performance' },
+  { id: 'holdings', key: 'tabs.holdings' },
+  { id: 'key-facts', key: 'tabs.key_facts' },
 ] as const
 
 // All sections in scroll order for each ITP type
@@ -58,6 +59,7 @@ interface Props {
 }
 
 export function TabNavigation({ config, sectionProps }: Props) {
+  const t = useTranslations('markets.itp_page')
   const [activeAnchor, setActiveAnchor] = useState('overview')
   const navRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -154,7 +156,7 @@ export function TabNavigation({ config, sectionProps }: Props) {
               className="px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary"
               layoutId="itp-tab-indicator"
             >
-              {item.label}
+              {t(item.key)}
             </SpringTab>
           ))}
         </SpringTabs>

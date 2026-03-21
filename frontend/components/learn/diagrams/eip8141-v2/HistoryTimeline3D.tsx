@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -518,6 +519,7 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function HistoryTimeline3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[280px] md:h-[340px]"

@@ -6,6 +6,7 @@ import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
+import { useTranslations } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -747,23 +748,24 @@ function VerdictLabels({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 function Legend() {
+  const t = useTranslations('pages')
   return (
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-micro text-text-muted tracking-wide">Vulnerability gap</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.atomic_batch.legend_vulnerability')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-micro text-text-muted tracking-wide">Transaction / Frame</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.atomic_batch.legend_tx_frame')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">Atomic (safe)</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.atomic_batch.legend_atomic_safe')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-micro text-text-muted tracking-wide">Validation frame</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.atomic_batch.legend_validation_frame')}</span>
       </div>
     </div>
   )
@@ -774,6 +776,7 @@ function Legend() {
 /* ------------------------------------------------------------------ */
 
 export function AtomicBatch3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"

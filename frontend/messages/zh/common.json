@@ -22,7 +22,8 @@
     "markets_data": "市场",
     "explorer": "浏览器",
     "points": "积分",
-    "about": "关于"
+    "about": "关于",
+    "sections": "Sections"
   },
   "footer": {
     "product": "产品",
@@ -46,7 +47,11 @@
     "discord": "Discord",
     "twitter": "X (Twitter)",
     "collapse": "收起",
-    "close_modal": "关闭弹窗"
+    "close_modal": "关闭弹窗",
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "language": "Language",
+    "play_video": "Play {title}"
   },
   "language": {
     "label": "语言",
@@ -77,7 +82,9 @@
     "hide_details": "隐藏详情",
     "show_all": "显示全部 {count} 个基金",
     "fullscreen": "全屏",
-    "esc": "ESC"
+    "esc": "ESC",
+    "try_again": "Try Again",
+    "how_it_works": "How It Works"
   },
   "wallet": {
     "login": "在 Base 上登录",
@@ -113,7 +120,9 @@
     "transaction_rejected": "交易被拒绝",
     "confirmation_failed": "确认失败",
     "insufficient_balance": "余额不足",
-    "failed_to_fetch": "数据获取失败"
+    "failed_to_fetch": "数据获取失败",
+    "something_went_wrong": "Something went wrong",
+    "unexpected_error": "An unexpected error occurred. Please try again."
   },
   "warnings": {
     "tx_stuck_title": "交易可能卡住",
@@ -297,6 +306,9 @@
   "showing_of": "显示 {shown} / {total}",
   "connect_wallet_to_view": "连接钱包以查看余额",
   "failed_to_load_balance": "加载余额失败，正在重试...",
+  "callout_note": "Note",
+  "callout_warning": "Warning",
+  "callout_tip": "Tip",
   "about": {
     "eyebrow": "General Market",
     "title": "关于",
@@ -326,5 +338,30 @@
     "view_docs": "查看文档",
     "view_contract": "查看合约",
     "contact": "联系"
+  },
+  "chain_guard": {
+    "wrong_network": "Wrong Network",
+    "wallet_on_chain": "Your wallet is connected to chain {chainId}.",
+    "please_switch": "Please switch to {chainName} (chain {targetChainId}).",
+    "switching": "Switching...",
+    "switch_network": "Switch Network"
+  },
+  "profile": {
+    "tick_history": "Tick History",
+    "batch": "Batch",
+    "roi": "ROI",
+    "active": "Active",
+    "exited": "Exited",
+    "itp_coming_soon": "ITP portfolio tracking coming soon",
+    "no_pnl_data": "No P&L data available yet",
+    "pnl_label": "P&L",
+    "tab_index": "Index",
+    "tab_vision": "Vision",
+    "loss": "Loss",
+    "win": "Win",
+    "no_vision_history": "No Vision betting history yet",
+    "ticks": "{count} ticks",
+    "deposited": "deposited",
+    "last_active": "Last active {time}"
   }
 }

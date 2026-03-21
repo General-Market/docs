@@ -3,6 +3,7 @@
 import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
@@ -417,6 +418,7 @@ function StepRiser({ position, width = 1.2, depth = 0.8 }: {
 }
 
 export function PrivacyDiagram() {
+  const t = useTranslations('pages')
   // Before path (left) — red
   const bUser = new THREE.Vector3(-1.5, 0, 1.8)
   const bBroadcaster = new THREE.Vector3(-1.5, 0, 0.2)
@@ -462,30 +464,30 @@ export function PrivacyDiagram() {
 
               {/* Column labels */}
               <Html center position={[-1.5, 1.0, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-label text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before</p>
+                <p className="text-label text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">{t('learn.privacy_diagram.before')}</p>
               </Html>
               <Html center position={[1.5, 1.0, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-label text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After</p>
+                <p className="text-label text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">{t('learn.privacy_diagram.after')}</p>
               </Html>
 
               {/* ── BEFORE path (red) ── */}
               <PersonModel position={[-1.5, 0, 1.8]} color="#ef4444" />
               <Html center position={[-1.5, 0.55, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-micro font-bold text-red-600 whitespace-nowrap">User</p>
+                <p className="text-micro font-bold text-red-600 whitespace-nowrap">{t('learn.privacy_diagram.user')}</p>
               </Html>
               <FlowConnection start={bUser} end={bBroadcaster} color="#ef4444" />
 
               <BroadcasterModel position={[-1.5, 0, 0.2]} color="#ef4444" />
               <Html center position={[-1.5, 0.6, 0.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-micro font-bold text-red-600 whitespace-nowrap">Broadcaster</p>
-                  <p className="text-[7px] text-red-400 whitespace-nowrap">centralized relayer</p>
+                  <p className="text-micro font-bold text-red-600 whitespace-nowrap">{t('learn.privacy_diagram.broadcaster')}</p>
+                  <p className="text-[7px] text-red-400 whitespace-nowrap">{t('learn.privacy_diagram.centralized_relayer')}</p>
                 </div>
               </Html>
               <XMark position={[-0.4, 0.25, 0.2]} />
               <FlowConnection start={bBroadcaster} end={bMempool} color="#ef4444" />
 
-              <MempoolModel position={[-1.5, 0, -1.2]} color="#f87171" sub="standard" />
+              <MempoolModel position={[-1.5, 0, -1.2]} color="#f87171" sub={t('learn.privacy_diagram.standard')} />
               <FlowConnection start={bMempool} end={bChain} color="#ef4444" />
 
               <ChainModel position={[-1.5, 0, -2.5]} color="#f87171" label="Chain" />
@@ -493,16 +495,16 @@ export function PrivacyDiagram() {
               {/* ── AFTER path (green) ── */}
               <PersonModel position={[1.5, 0, 1.8]} color="#22c55e" />
               <Html center position={[1.5, 0.55, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-micro font-bold text-emerald-600 whitespace-nowrap">User</p>
+                <p className="text-micro font-bold text-emerald-600 whitespace-nowrap">{t('learn.privacy_diagram.user')}</p>
               </Html>
 
               {/* Direct — skips broadcaster */}
               <FlowConnection start={aUser} end={aMempool} color="#22c55e" particleCount={14} />
               <Html center position={[2.6, 0.2, 0.3]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[9px] text-emerald-500 tracking-[0.08em] uppercase whitespace-nowrap font-bold">Direct!</p>
+                <p className="text-[9px] text-emerald-500 tracking-[0.08em] uppercase whitespace-nowrap font-bold">{t('learn.privacy_diagram.direct')}</p>
               </Html>
 
-              <MempoolModel position={[1.5, 0, -1.2]} color="#22c55e" sub="frame tx" />
+              <MempoolModel position={[1.5, 0, -1.2]} color="#22c55e" sub={t('learn.privacy_diagram.frame_tx')} />
               <FlowConnection start={aMempool} end={aChain} color="#22c55e" />
 
               <ChainModel position={[1.5, 0, -2.5]} color="#22c55e" label="Chain" />
@@ -518,18 +520,18 @@ export function PrivacyDiagram() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-micro text-text-muted tracking-wide">Before (relayer)</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.privacy_diagram.legend_before')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">After (direct)</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.privacy_diagram.legend_after')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <svg className="w-3 h-3 text-red-400" viewBox="0 0 12 12"><path d="M2 2 L10 10 M10 2 L2 10" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
-              <span className="text-micro text-text-muted tracking-wide">Eliminated</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.privacy_diagram.legend_eliminated')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

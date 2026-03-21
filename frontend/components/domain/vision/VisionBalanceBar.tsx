@@ -9,6 +9,7 @@ import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { Link } from '@/i18n/routing'
 import { BalanceDepositModal } from './BalanceDepositModal'
 import { BalanceWithdrawModal } from './BalanceWithdrawModal'
+import { useTranslations } from 'next-intl'
 
 function formatPts(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -18,6 +19,7 @@ function formatPts(n: number): string {
 }
 
 export function VisionBalanceBar() {
+  const t = useTranslations('vision')
   const { isConnected } = useAccount()
   const { realBalance, virtualBalance, total, isLoading } = useVisionBalance()
   const { totalPointsPerHour, estimatedTotalPoints, activeBatches, isLoading: ptsLoading } = useVisionPoints()
@@ -42,7 +44,7 @@ export function VisionBalanceBar() {
     <>
       <div className="flex items-center gap-1.5 sm:gap-2">
         <span className="text-caption sm:text-caption font-bold font-mono tabular-nums text-black">
-          <span className="hidden sm:inline text-text-muted font-medium mr-1">Balance:</span>
+          <span className="hidden sm:inline text-text-muted font-medium mr-1">{t('vision_balance_bar.balance_label')}</span>
           {fmtBal(total)}
           <span className="hidden sm:inline text-text-muted font-medium ml-1">USDC</span>
         </span>

@@ -33,12 +33,7 @@ async function fetchAboutStats() {
   const playerCount = leaderboardData?.leaderboard?.length ?? 195
   const marketCount = snapshotMeta?.total_assets ?? 25000
 
-  return [
-    { label: 'ITPs', value: String(itpCount) },
-    { label: 'AUM', value: totalAum > 0 ? `$${(totalAum / 1e6).toFixed(1)}M` : '$—' },
-    { label: 'Batches', value: String(batchCount) },
-    { label: 'Markets', value: marketCount >= 1000 ? `${Math.round(marketCount / 1000)}K+` : String(marketCount) },
-  ]
+  return { itpCount, totalAum, batchCount, marketCount }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -59,8 +54,17 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'common.about' })
-  const STATS = await fetchAboutStats()
+  const [t, tPage] = await Promise.all([
+    getTranslations({ locale, namespace: 'common.about' }),
+    getTranslations({ locale, namespace: 'pages.about' }),
+  ])
+  const { itpCount, totalAum, batchCount, marketCount } = await fetchAboutStats()
+  const STATS = [
+    { label: tPage('stat_itps'), value: String(itpCount) },
+    { label: tPage('stat_aum'), value: totalAum > 0 ? `$${(totalAum / 1e6).toFixed(1)}M` : '$\u2014' },
+    { label: tPage('stat_batches'), value: String(batchCount) },
+    { label: tPage('stat_markets'), value: marketCount >= 1000 ? `${Math.round(marketCount / 1000)}K+` : String(marketCount) },
+  ]
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
@@ -270,7 +274,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               rel="noopener noreferrer"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
-              Discord
+              {tPage('discord')}
             </a>
             <a
               href="https://x.com/otc_max"
@@ -278,7 +282,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               rel="noopener noreferrer"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
-              Twitter
+              {tPage('twitter')}
             </a>
             <a
               href="https://docs.generalmarket.io"
@@ -286,7 +290,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               rel="noopener noreferrer"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
-              Docs
+              {tPage('docs')}
             </a>
           </div>
         </div>

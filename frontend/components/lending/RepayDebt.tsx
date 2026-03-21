@@ -122,7 +122,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
 
   useEffect(() => {
     if (actionError || approvalError) {
-      const errMsg = (actionError || approvalError)?.message || 'Transaction failed'
+      const errMsg = (actionError || approvalError)?.message || t('common.transaction_failed')
       setTxError(errMsg)
       capture('lend_failed', { itp_id: itpId, action: 'repay', error_message: errMsg })
       setStep('input')
@@ -251,7 +251,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
               disabled={isProcessing || currentDebt === 0n}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >
-              MAX
+              {t('actions.max')}
             </button>
           </div>
           {amount && parsedAmount > usdcBalance && (

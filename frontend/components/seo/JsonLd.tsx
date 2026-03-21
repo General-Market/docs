@@ -2,13 +2,13 @@
  * JSON-LD Structured Data for SEO
  * Helps search engines understand the website content
  *
- * All user-facing strings are passed as props from server components
- * that have access to getTranslations().
+ * All user-facing strings MUST be passed as props from server components
+ * that have access to getTranslations(). No hardcoded English fallbacks.
  */
 
 import type { ItpSummary } from '@/lib/api/server-data'
 
-export function OrganizationJsonLd({ description }: { description?: string }) {
+export function OrganizationJsonLd({ description }: { description: string }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -21,8 +21,7 @@ export function OrganizationJsonLd({ description }: { description?: string }) {
     sameAs: [
       "https://x.com/otc_max",
     ],
-    description:
-      description ?? "The institutional-grade protocol for on-chain index products.",
+    description,
   }
 
   return (
@@ -33,14 +32,13 @@ export function OrganizationJsonLd({ description }: { description?: string }) {
   )
 }
 
-export function WebsiteJsonLd({ description }: { description?: string }) {
+export function WebsiteJsonLd({ description }: { description: string }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "General Market",
     url: "https://www.generalmarket.io",
-    description:
-      description ?? "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
+    description,
   }
 
   return (
@@ -51,15 +49,14 @@ export function WebsiteJsonLd({ description }: { description?: string }) {
   )
 }
 
-export function SoftwareApplicationJsonLd({ description }: { description?: string }) {
+export function SoftwareApplicationJsonLd({ description }: { description: string }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "General Market",
     operatingSystem: "Web",
     applicationCategory: "FinanceApplication",
-    description:
-      description ?? "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
+    description,
     offers: {
       "@type": "Offer",
       price: "0",
@@ -80,21 +77,16 @@ export function SoftwareApplicationJsonLd({ description }: { description?: strin
   )
 }
 
-export function FinancialProductJsonLd({ itps, descriptionTemplate }: { itps: ItpSummary[]; descriptionTemplate?: (itp: ItpSummary) => string }) {
+export function FinancialProductJsonLd({ itps, descriptionTemplate, categoryLabel }: { itps: ItpSummary[]; descriptionTemplate: (itp: ItpSummary) => string; categoryLabel: string }) {
   if (itps.length === 0) return null
-
-  const defaultTemplate = (itp: ItpSummary) =>
-    `${itp.name} \u2014 on-chain index tracking product with ${itp.assetCount} crypto assets. NAV: $${itp.nav.toFixed(4)}.`
-
-  const getDescription = descriptionTemplate ?? defaultTemplate
 
   const data = itps.map((itp) => ({
     "@context": "https://schema.org",
     "@type": "FinancialProduct",
-    "category": "Index Fund",
+    "category": categoryLabel,
     name: itp.name,
     tickerSymbol: itp.symbol,
-    description: getDescription(itp),
+    description: descriptionTemplate(itp),
     url: `https://www.generalmarket.io/itp/${itp.itpId}`,
     provider: {
       "@type": "Organization",

@@ -133,9 +133,9 @@ export default async function LegalIndexPage({ params }: { params: Promise<{ loc
         {/* Links */}
         <section className="pt-8 mt-12 border-t border-border-dark">
           <div className="flex items-center gap-6 text-sm">
-            <Link href="/legal-vision" className="text-text-inverse-muted hover:text-text-inverse">Vision Legal</Link>
-            <Link href="/terms" className="text-text-inverse-muted hover:text-text-inverse">Terms</Link>
-            <Link href="/privacy" className="text-text-inverse-muted hover:text-text-inverse">Privacy</Link>
+            <Link href="/legal-vision" className="text-text-inverse-muted hover:text-text-inverse">{t('link_vision_legal')}</Link>
+            <Link href="/terms" className="text-text-inverse-muted hover:text-text-inverse">{t('link_terms')}</Link>
+            <Link href="/privacy" className="text-text-inverse-muted hover:text-text-inverse">{t('link_privacy')}</Link>
           </div>
         </section>
       </div>

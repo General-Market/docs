@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { ProfileBatch } from '@/hooks/usePlayerProfile'
 import { BatchTickRow } from './BatchTickRow'
 import { TickSquaresLegend } from './TickSquares'
@@ -9,13 +10,15 @@ interface BatchTickHistoryProps {
 }
 
 export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
+  const t = useTranslations('common')
+
   return (
     <div>
       {/* Column headers */}
       <div className="flex items-center gap-3 px-3 py-2 text-micro font-semibold uppercase tracking-[0.08em] text-text-muted border-b border-border-light">
-        <div className="w-[140px] shrink-0">Batch</div>
-        <div className="flex-1">Tick History</div>
-        <div className="w-[72px] shrink-0 text-right">ROI</div>
+        <div className="w-[140px] shrink-0">{t('profile.batch')}</div>
+        <div className="flex-1">{t('profile.tick_history')}</div>
+        <div className="w-[72px] shrink-0 text-right">{t('profile.roi')}</div>
       </div>
 
       {/* Rows */}

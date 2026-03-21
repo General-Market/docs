@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,16 +30,18 @@ const xAxisProps = {
 }
 
 export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
+
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">Price Feeds</h2>
+      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.price_feed_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Consensus Duration Trend — proxy for price consensus overhead */}
         <ExplorerChartCard
-          title="Consensus Duration Trend"
+          title={t('explorer.price_feed_section.consensus_duration_trend')}
           subtitle={
             latest
-              ? `Current: ${(latest.avg_consensus_time_ms ?? 0).toFixed(0)}ms`
+              ? t('explorer.price_feed_section.current', { time: (latest.avg_consensus_time_ms ?? 0).toFixed(0) })
               : undefined
           }
           loading={loading}
@@ -55,7 +58,7 @@ export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
               />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [`${v.toFixed(0)}ms`, 'Duration']}
+                formatter={(v: number) => [`${v.toFixed(0)}ms`, t('explorer.price_feed_section.duration')]}
               />
               <Line
                 type="monotone"

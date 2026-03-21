@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -502,12 +503,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function PromiseScene3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[280px] md:h-[320px]"
       ariaLabel="Before EIP-8141: chaotic Ethereum transactions"
       srDescription="A 3D scene showing the chaotic state of Ethereum UX before EIP-8141. Three separate transaction envelopes (approve, swap, deploy) each have their own purple padlock sitting on top, meaning authentication is outside the transaction. A pulsing red zone between TX 1 and TX 2 represents the attack surface where front-running can occur. An amber ETH diamond shows that only ETH can pay for gas. An indigo relayer hexagon floats above, representing the middleman needed for privacy. A single purple key sphere shows that one key can only make one call."
-      legend={<SceneLegend items={[{ color: RED, label: 'Attack surface' }, { color: BLUE, label: 'Separate TXs' }, { color: PURPLE, label: 'Auth (outside)' }, { color: AMBER, label: 'ETH gas' }]} />}
+      legend={<SceneLegend items={[{ color: RED, label: t('learn.promise_v2.legend_attack_surface') }, { color: BLUE, label: t('learn.promise_v2.legend_separate_txs') }, { color: PURPLE, label: t('learn.promise_v2.legend_auth_outside') }, { color: AMBER, label: t('learn.promise_v2.legend_eth_gas') }]} />}
       fallbackText="Before EIP-8141: three separate transactions (approve, swap, deploy) each with their own padlock on top, a red attack gap between them, ETH-only gas, a relayer middleman, and a single key limited to one call."
     >
       {({ reducedMotion }) => (

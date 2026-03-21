@@ -52,6 +52,7 @@
     "section_subtitle": "내 볼트 예치 현황",
     "vault_shares": "볼트 지분",
     "current_value": "현재 가치",
+    "shares_fallback": "shares",
     "button": {
       "confirm_wallet": "지갑에서 확인하세요...",
       "withdrawing": "출금 중...",
@@ -79,7 +80,9 @@
       "health_factor": "건전성 지수",
       "liquidation_price": "청산 가격",
       "max_borrow": "최대 대출",
+      "max_borrow_value": "{amount} USDC",
       "bundle_label": "번들:",
+      "bundle_steps": "Bundle: {steps}",
       "expired": "견적 만료 --",
       "refresh": "새로고침",
       "execute_bundle": "번들 실행",
@@ -161,7 +164,8 @@
     "tx_stuck_title": "트랜잭션이 지연되고 있을 수 있습니다",
     "tx_stuck_description": "30초 후에도 확인되지 않았습니다. 취소 후 다시 시도할 수 있습니다.",
     "market_frozen": "긴급 상황으로 마켓이 동결되었습니다",
-    "rate_limited": "요청 제한, {seconds}초 후 재시도"
+    "rate_limited": "요청 제한, {seconds}초 후 재시도",
+    "view_on_explorer": "View on explorer"
   },
   "lend_modal": {
     "title": "{name} 담보 대출",
@@ -191,7 +195,10 @@
     "available_to_borrow": "Available to Borrow",
     "available_to_withdraw": "Available to Withdraw",
     "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
-    "health_danger": "Your position is eligible for liquidation! Repay debt immediately."
+    "health_danger": "Your position is eligible for liquidation! Repay debt immediately.",
+    "crisis_emergency": "Emergency",
+    "crisis_stress": "Stress",
+    "crisis_warning": "Warning"
   },
   "vault_stats": {
     "supply_apy": "Supply APY",
@@ -205,7 +212,11 @@
     "type_deposit": "Deposit",
     "type_withdraw": "Withdraw",
     "type_borrow": "Borrow",
-    "type_repay": "Repay"
+    "type_repay": "Repay",
+    "seconds_ago": "{seconds}s ago",
+    "minutes_ago": "{minutes}m ago",
+    "hours_ago": "{hours}h ago",
+    "days_ago": "{days}d ago"
   },
   "markets_detail": {
     "itp_markets": "ITP Markets",

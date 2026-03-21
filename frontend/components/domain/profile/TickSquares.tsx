@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import type { ProfileTick } from '@/hooks/usePlayerProfile'
 
 const WIN_COLORS = ['#dcfce7', '#86efac', '#22c55e', '#15803d']
@@ -27,6 +28,7 @@ interface TickSquaresProps {
 }
 
 export function TickSquares({ ticks }: TickSquaresProps) {
+  const t = useTranslations('common')
   const recent = ticks.slice(-60)
 
   const quartiles = useMemo(() => {
@@ -50,7 +52,7 @@ export function TickSquares({ ticks }: TickSquaresProps) {
               borderRadius: 2,
               backgroundColor: color,
             }}
-            title={`Tick ${tick.tickId}: ${sign}$${tick.pnl.toFixed(2)}`}
+            title={t('profile.tick_title', { tickId: tick.tickId, sign, pnl: tick.pnl.toFixed(2) })}
           />
         )
       })}
@@ -59,12 +61,11 @@ export function TickSquares({ ticks }: TickSquaresProps) {
 }
 
 export function TickSquaresLegend() {
-  const allColors = [...WIN_COLORS, ...LOSS_COLORS.slice().reverse()]
-  const labels = ['Loss', '', '', '', '', '', '', 'Win']
+  const t = useTranslations('common')
 
   return (
     <div className="flex items-center gap-1 text-micro text-text-muted">
-      <span>Loss</span>
+      <span>{t('profile.loss')}</span>
       {[...LOSS_COLORS].reverse().map((c, i) => (
         <div
           key={`loss-${i}`}
@@ -78,7 +79,7 @@ export function TickSquaresLegend() {
           style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: c }}
         />
       ))}
-      <span>Win</span>
+      <span>{t('profile.win')}</span>
     </div>
   )
 }

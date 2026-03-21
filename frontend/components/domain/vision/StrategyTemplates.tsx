@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 export interface StrategyTemplate {
   name: string
   description: string
@@ -80,10 +82,11 @@ interface TemplatePickerProps {
  * Horizontal button row to pick a strategy template.
  */
 export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
+  const t = useTranslations('vision')
   return (
     <div>
       <label className="text-xs font-mono text-text-muted block mb-2">
-        Strategy Template
+        {t('strategy_templates.template_label')}
       </label>
       <div className="flex flex-wrap gap-2">
         {STRATEGY_TEMPLATES.map(template => (

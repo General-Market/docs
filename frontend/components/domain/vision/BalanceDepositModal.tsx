@@ -11,6 +11,7 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { indexL3, settlementChain } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { useTranslations } from 'next-intl'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { getTxUrl } from '@/lib/utils/explorer'
 
@@ -34,6 +35,7 @@ interface BalanceDepositModalProps {
  * - "From Settlement": uses useDepositToVision (approve Settlement USDC -> SettlementBridgeCustody.depositToVision)
  */
 export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
+  const t = useTranslations('vision')
   const { isConnected, address } = useAccount()
   const chainId = useChainId()
   const { capture } = usePostHogTracker()
@@ -137,18 +139,18 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   const stepLabel = (() => {
     if (mode === 'l3') {
       switch (l3Step) {
-        case 'approving': return 'Approving USDC on L3...'
-        case 'depositing': return 'Depositing to Vision balance...'
-        case 'done': return 'Deposit successful!'
+        case 'approving': return t('balance_deposit_modal.step_approving_l3')
+        case 'depositing': return t('balance_deposit_modal.step_depositing_balance')
+        case 'done': return t('balance_deposit_modal.step_deposit_successful')
         default: return ''
       }
     }
     if (mode === 'settlement') {
       switch (settlementStep) {
-        case 'approving': return 'Approving USDC on Settlement...'
-        case 'depositing': return 'Locking USDC in SettlementBridgeCustody...'
-        case 'polling': return 'Waiting for oracles to credit your balance...'
-        case 'done': return 'Deposit credited!'
+        case 'approving': return t('balance_deposit_modal.step_approving_settlement')
+        case 'depositing': return t('balance_deposit_modal.step_locking')
+        case 'polling': return t('balance_deposit_modal.step_polling')
+        case 'done': return t('balance_deposit_modal.step_deposit_credited')
         default: return ''
       }
     }
@@ -161,25 +163,25 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Deposit to Vision</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('balance_deposit_modal.title')}</h2>
             <ModalClose onClick={onClose} />
           </div>
 
           {!isConnected ? (
             <div className={`${glass.section} p-8 text-center`}>
-              <p className="text-text-secondary">Connect your wallet to deposit</p>
+              <p className="text-text-secondary">{t('balance_deposit_modal.connect_wallet')}</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
               <div className={`${glass.success} p-6 text-center`}>
-                <p className="text-color-up font-semibold text-lg mb-1">Deposit Successful</p>
+                <p className="text-color-up font-semibold text-lg mb-1">{t('balance_deposit_modal.deposit_successful')}</p>
                 <p className="text-text-secondary text-sm">
-                  {amount} USDC deposited to your Vision balance
-                  {mode === 'settlement' ? ' (via Settlement)' : ' (from L3)'}
+                  {t('balance_deposit_modal.deposited_description', { amount })}
+                  {mode === 'settlement' ? t('balance_deposit_modal.deposited_via_settlement') : t('balance_deposit_modal.deposited_from_l3')}
                 </p>
                 {orderId && (
                   <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                    Order: {orderId}
+                    {t('balance_deposit_modal.order_label', { orderId })}
                   </p>
                 )}
               </div>
@@ -187,13 +189,13 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 onClick={handleDone}
                 className={glass.ctaUp}
               >
-                Done
+                {t('balance_deposit_modal.done')}
               </button>
             </div>
           ) : mode === 'choose' ? (
             <div className="space-y-3">
               <p className="text-sm text-text-secondary mb-4">
-                Choose where to deposit USDC from:
+                {t('balance_deposit_modal.choose_source')}
               </p>
 
               {/* Faucet: mint test USDC */}
@@ -227,12 +229,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               >
                 <div className="flex justify-between items-center">
                   <p className="text-sm font-bold text-amber-700">
-                    {minting ? 'Minting...' : 'Mint Test USDC'}
+                    {minting ? t('balance_deposit_modal.minting') : t('balance_deposit_modal.mint_test_usdc')}
                   </p>
-                  <span className="text-xs font-mono text-amber-600">Testnet faucet</span>
+                  <span className="text-xs font-mono text-amber-600">{t('balance_deposit_modal.testnet_faucet')}</span>
                 </div>
                 <p className="text-xs text-amber-600/80 mt-1">
-                  Get 1,000 USDC on L3 for testing (free)
+                  {t('balance_deposit_modal.mint_description')}
                 </p>
                 {mintResult && (
                   <p className={`text-xs mt-2 font-medium ${mintResult.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
@@ -251,16 +253,16 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-bold text-text-primary">From L3 Wallet</p>
+                  <p className="text-sm font-bold text-text-primary">{t('balance_deposit_modal.from_l3_wallet')}</p>
                   {l3WalletBalance !== null && (
                     <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{l3WalletBalance} USDC</span>
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
-                  Deposit L3 USDC directly into your Vision balance
+                  {t('balance_deposit_modal.from_l3_description')}
                 </p>
                 {isOnL3 && (
-                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-micro font-mono text-color-up">{t('balance_deposit_modal.currently_connected')}</span>
                 )}
               </button>
 
@@ -274,16 +276,16 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-bold text-text-primary">From Settlement</p>
+                  <p className="text-sm font-bold text-text-primary">{t('balance_deposit_modal.from_settlement')}</p>
                   {settlementWalletBalance !== null && (
                     <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{settlementWalletBalance} USDC</span>
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
-                  Lock USDC on Settlement. Oracles credit your virtual balance on L3.
+                  {t('balance_deposit_modal.from_settlement_description')}
                 </p>
                 {isOnSettlement && (
-                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-micro font-mono text-color-up">{t('balance_deposit_modal.currently_connected')}</span>
                 )}
               </button>
             </div>
@@ -295,7 +297,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   onClick={handleReset}
                   className="text-xs text-text-muted hover:text-text-primary transition-colors"
                 >
-                  &larr; Back
+                  &larr; {t('balance_deposit_modal.back')}
                 </button>
               )}
 
@@ -303,7 +305,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               <div className={`${glass.section} p-3`}>
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
-                    {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Settlement'}
+                    {mode === 'l3' ? t('balance_deposit_modal.deposit_from_l3_label') : t('balance_deposit_modal.deposit_from_settlement_label')}
                   </p>
                   {mode === 'l3' && l3WalletBalance !== null && (
                     <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{l3WalletBalance} USDC</span>
@@ -314,12 +316,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 </div>
                 {mode === 'settlement' && !isOnSettlement && (
                   <p className="text-xs text-color-warning mt-1">
-                    Switch your wallet to Settlement to proceed
+                    {t('balance_deposit_modal.switch_to_settlement')}
                   </p>
                 )}
                 {mode === 'l3' && !isOnL3 && (
                   <p className="text-xs text-color-warning mt-1">
-                    Switch your wallet to L3 to proceed
+                    {t('balance_deposit_modal.switch_to_l3')}
                   </p>
                 )}
               </div>
@@ -335,7 +337,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                       onClick={() => setAmount(l3WalletBalance)}
                       className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      MAX
+                      {t('balance_deposit_modal.max')}
                     </button>
                   )}
                   {mode === 'settlement' && settlementWalletBalance !== null && (
@@ -343,7 +345,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                       onClick={() => setAmount(settlementWalletBalance)}
                       className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      MAX
+                      {t('balance_deposit_modal.max')}
                     </button>
                   )}
                 </div>
@@ -351,7 +353,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="e.g., 100"
+                  placeholder={t('balance_deposit_modal.placeholder')}
                   min="0"
                   step="1"
                   disabled={isProcessing}
@@ -373,7 +375,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                       rel="noopener noreferrer"
                       className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors block"
                     >
-                      Approve tx: {l3ApproveHash.slice(0, 10)}...{l3ApproveHash.slice(-8)} ↗
+                      {t('balance_deposit_modal.approve_tx', { hash: `${l3ApproveHash.slice(0, 10)}...${l3ApproveHash.slice(-8)}` })} ↗
                     </a>
                   )}
                   {l3DepositHash && (
@@ -383,7 +385,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                       rel="noopener noreferrer"
                       className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors block"
                     >
-                      Deposit tx: {l3DepositHash.slice(0, 10)}...{l3DepositHash.slice(-8)} ↗
+                      {t('balance_deposit_modal.deposit_tx', { hash: `${l3DepositHash.slice(0, 10)}...${l3DepositHash.slice(-8)}` })} ↗
                     </a>
                   )}
                 </div>
@@ -392,7 +394,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               {/* Error */}
               {activeError && (
                 <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('balance_deposit_modal.error')}</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
                     onClick={handleReset}
@@ -410,7 +412,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   disabled={!amount || parsedAmount === 0n}
                   className={glass.ctaUp}
                 >
-                  {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Settlement'}
+                  {mode === 'l3' ? t('balance_deposit_modal.deposit_from_l3_button') : t('balance_deposit_modal.deposit_from_settlement_button')}
                 </WalletActionButton>
               )}
 

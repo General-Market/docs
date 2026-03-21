@@ -109,10 +109,10 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
             </div>
             <div className="text-right">
               <p className="text-micro text-text-muted font-mono">
-                L3: ${fmtUsdc(realBalance)}
+                {t('my_positions_detail.l3_balance', { amount: fmtUsdc(realBalance) })}
               </p>
               <p className="text-micro text-text-muted font-mono">
-                Settlement-backed: ${fmtUsdc(virtualBalance)}
+                {t('my_positions_detail.settlement_backed', { amount: fmtUsdc(virtualBalance) })}
               </p>
             </div>
           </div>
@@ -134,8 +134,8 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
             </p>
             {!isLoading && positions.length > 0 && (
               <p className="text-xs text-text-secondary font-mono">
-                {stats.activeBatches} batch{stats.activeBatches !== 1 ? 'es' : ''}
-                {' \u00B7 '}${fmtUsdc(stats.totalBalance)} balance
+                {t('my_positions_detail.batches_count', { count: stats.activeBatches })}
+                {' \u00B7 '}${fmtUsdc(stats.totalBalance)} {t('my_positions_detail.balance_label')}
               </p>
             )}
           </div>

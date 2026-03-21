@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export function HowItWorksButton() {
+  const t = useTranslations('common')
   const [open, setOpen] = useState(false)
 
   return (
@@ -13,7 +15,7 @@ export function HowItWorksButton() {
         className="fixed right-0 top-1/2 -translate-y-1/2 z-40 lg:hidden bg-black text-white text-label font-bold tracking-[0.08em] uppercase py-3 px-1.5 rounded-l-lg shadow-lg"
         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
       >
-        How It Works
+        {t('actions.how_it_works')}
       </button>
 
       {/* Desktop: bottom-right corner button */}
@@ -21,7 +23,7 @@ export function HowItWorksButton() {
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-40 hidden lg:flex items-center gap-2 bg-black text-white text-caption font-bold uppercase tracking-[0.08em] px-4 py-2.5 rounded-lg shadow-lg hover:bg-zinc-800 transition-colors"
       >
-        ▶ How It Works
+        {`\u25b6 ${t('actions.how_it_works')}`}
       </button>
 
       {/* Video modal */}
@@ -38,7 +40,7 @@ export function HowItWorksButton() {
               onClick={() => setOpen(false)}
               className="absolute -top-10 right-0 text-white text-sm font-bold hover:opacity-80"
             >
-              ✕ Close
+              {`\u2715 ${t('actions.close')}`}
             </button>
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
               <iframe

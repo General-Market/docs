@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface DataPoint { time: number; close: number }
 
@@ -41,6 +42,7 @@ function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min
 function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3) }
 
 export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Props) {
+  const t = useTranslations('markets.itp_page.performance')
   const boxRef = useRef<HTMLDivElement>(null)
   const cvRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
@@ -355,7 +357,7 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
   if (data.length === 0) {
     return (
       <div className="w-full flex items-center justify-center bg-surface rounded" style={{ height }}>
-        <p className="text-sm text-text-muted">Performance data not yet available</p>
+        <p className="text-sm text-text-muted">{t('no_data')}</p>
       </div>
     )
   }

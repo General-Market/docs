@@ -144,5 +144,131 @@
     "loading": "NAVデータを読み込み中...",
     "error": "チャートデータの読み込みに失敗しました",
     "no_data": "この期間のNAVデータはありません"
+  },
+  "itp_page": {
+    "buy_this_index": "このインデックスを購入",
+    "tabs": {
+      "overview": "概要",
+      "performance": "パフォーマンス",
+      "holdings": "保有銘柄",
+      "key_facts": "主要情報"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / シェア",
+      "one_day_nav_change": "1日NAV変動",
+      "total_value_locked": "総預入額",
+      "holdings": "保有銘柄",
+      "as_of": "{date}時点"
+    },
+    "performance": {
+      "title": "パフォーマンス",
+      "as_of": "{date}時点",
+      "since_inception_return": "設定来リターン: ",
+      "from_date": "({date}から)",
+      "no_data": "パフォーマンスデータはまだありません"
+    },
+    "holdings_table": {
+      "title": "保有銘柄",
+      "loading": "保有銘柄データを読み込み中...",
+      "filter_placeholder": "名前またはティッカーでフィルター...",
+      "rank": "#",
+      "name": "名前",
+      "sector": "セクター",
+      "weight": "ウェイト",
+      "price": "価格",
+      "change_24h": "24時間",
+      "market_value": "時価",
+      "notional_value": "想定元本",
+      "shares": "シェア",
+      "market_cap": "時価総額",
+      "cryptocurrency": "暗号通貨",
+      "range": "{total}件中{start}〜{end}",
+      "previous": "前へ",
+      "next": "次へ",
+      "as_of": "{date}時点"
+    },
+    "portfolio": {
+      "title": "ポートフォリオ構成",
+      "other": "その他"
+    },
+    "concentration": {
+      "title": "集中度指標",
+      "top_5_weight": "上位5ウェイト",
+      "top_10_weight": "上位10ウェイト",
+      "hhi_concentration": "HHI集中度",
+      "low": "低い",
+      "moderate": "中程度",
+      "high": "高い"
+    },
+    "founders": {
+      "title": "ファウンダーインテリジェンス",
+      "subtitle": "{companies}社のポートフォリオ企業の{founders}名の創業者に基づく",
+      "age_distribution": "年齢分布",
+      "gender_split": "性別比率",
+      "top_nationalities": "上位国籍",
+      "top_universities": "上位大学",
+      "count": "件数"
+    },
+    "defi": {
+      "title": "DeFiプロトコル健全性",
+      "aggregate_tvl": "合計TVL",
+      "avg_tvl_change_7d": "平均TVL変動7日",
+      "coverage": "カバレッジ",
+      "coverage_value": "{total}件中{with_data}件",
+      "protocol": "プロトコル",
+      "tvl": "TVL",
+      "change_1d": "1日",
+      "change_7d": "7日"
+    },
+    "funding": {
+      "title": "ファンディングインテリジェンス",
+      "total_raised": "総調達額",
+      "avg_valuation": "平均バリュエーション",
+      "funding_rounds": "ファンディングラウンド",
+      "top_investors": "投資頻度別上位投資家",
+      "investments": "投資",
+      "project": "プロジェクト",
+      "round": "ラウンド",
+      "amount": "金額",
+      "lead": "リード",
+      "date": "日付"
+    },
+    "fund_facts": {
+      "title": "ファンド詳細",
+      "nav_per_share": "NAV / シェア",
+      "chain": "チェーン",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlementアドレス",
+      "rebalance_method": "リバランス方法",
+      "rebalance_value": "均等ウェイト",
+      "fund_inception": "ファンド設定日",
+      "asset_class": "資産クラス",
+      "asset_class_value": "暗号通貨インデックス",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "保有銘柄数",
+      "as_of": "{date}時点",
+      "copy": "コピー",
+      "copied": "コピーしました！",
+      "portfolio_characteristics": "ポートフォリオ特性",
+      "top_5_concentration": "上位5集中度",
+      "top_10_concentration": "上位10集中度",
+      "hhi_index": "HHIインデックス",
+      "average_market_cap": "平均時価総額",
+      "fees": "手数料",
+      "fees_as_of": "現在の目論見書に基づく",
+      "management_fee": "運用手数料",
+      "acquired_fund_fees": "+取得ファンド手数料および費用",
+      "other_expenses": "+その他費用",
+      "expense_ratio": "=経費率",
+      "fee_disclaimer": "上記の手数料は現在の目論見書に基づくものです。ネットワークガスコストはすべてのオンチェーン取引に適用され、経費率には含まれません。"
+    },
+    "trade_cta": {
+      "buy": "このインデックスを購入",
+      "sell": "売却"
+    },
+    "investment_objective": {
+      "why_title": "なぜこのインデックス？",
+      "objective_title": "投資目的"
+    }
   }
 }

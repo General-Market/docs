@@ -43,7 +43,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-        <h2 className="text-lg font-bold text-text-primary mb-4">Your Position</h2>
+        <h2 className="text-lg font-bold text-text-primary mb-4">{t('position_card.title')}</h2>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-muted rounded w-1/2" />
           <div className="h-4 bg-muted rounded w-3/4" />
@@ -87,7 +87,9 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
               crisisLevel === 'Stress' ? 'bg-orange-50 text-orange-700 border border-orange-300' :
               'bg-surface-warning text-color-warning border border-yellow-300'
             }`}>
-              {crisisLevel}
+              {crisisLevel === 'Emergency' ? t('position_card.crisis_emergency') :
+               crisisLevel === 'Stress' ? t('position_card.crisis_stress') :
+               t('position_card.crisis_warning')}
             </span>
           )}
         </div>

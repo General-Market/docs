@@ -1,11 +1,7 @@
 'use client'
+import { useTranslations } from 'next-intl'
 
-const SORT_OPTIONS = [
-  { key: 'trending', label: 'Trending' },
-  { key: 'new', label: 'New' },
-  { key: 'most-assets', label: 'Most Assets' },
-  { key: 'volume', label: 'Volume' },
-] as const
+const SORT_KEYS = ['trending', 'new', 'most-assets', 'volume'] as const
 
 interface SortBarProps {
   activeSort: string
@@ -13,15 +9,22 @@ interface SortBarProps {
 }
 
 export function SortBar({ activeSort, onSortChange }: SortBarProps) {
+  const t = useTranslations('vision')
+  const SORT_LABELS: Record<string, string> = {
+    'trending': t('sort_bar.trending'),
+    'new': t('sort_bar.new'),
+    'most-assets': t('sort_bar.most_assets'),
+    'volume': t('sort_bar.volume'),
+  }
   return (
     <div className="sort-row fluid-btn-group">
-      {SORT_OPTIONS.map(opt => (
+      {SORT_KEYS.map(key => (
         <button
-          key={opt.key}
-          onClick={() => onSortChange(opt.key)}
-          className={`sort-btn fluid-press ${activeSort === opt.key ? 'active' : ''}`}
+          key={key}
+          onClick={() => onSortChange(key)}
+          className={`sort-btn fluid-press ${activeSort === key ? 'active' : ''}`}
         >
-          {opt.label}
+          {SORT_LABELS[key]}
         </button>
       ))}
     </div>

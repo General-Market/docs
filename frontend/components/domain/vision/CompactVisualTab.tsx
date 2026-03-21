@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
 import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+import { useTranslations } from 'next-intl'
 
 interface CompactVisualTabProps {
   batch: BatchInfo
@@ -16,6 +17,7 @@ interface CompactVisualTabProps {
  * Dense table rows: toggle + name + price + change% + mini sparkline + history dots.
  */
 export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactVisualTabProps) {
+  const t = useTranslations('vision')
   const marketIds = batch.marketIds
 
   // Latest prices from most recent tick
@@ -55,12 +57,12 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
       <table className="w-full text-xs font-mono">
         <thead>
           <tr className="border-b border-border-light text-text-muted text-left">
-            <th className="py-1.5 px-2 w-10">Bet</th>
-            <th className="py-1.5 px-2">Market</th>
-            <th className="py-1.5 px-2 text-right">Price</th>
-            <th className="py-1.5 px-2 text-right w-16">Change</th>
-            <th className="py-1.5 px-2 w-20 text-center">Chart</th>
-            <th className="py-1.5 px-2 w-24 text-center">History</th>
+            <th className="py-1.5 px-2 w-10">{t('compact_visual_tab.bet')}</th>
+            <th className="py-1.5 px-2">{t('compact_visual_tab.market')}</th>
+            <th className="py-1.5 px-2 text-right">{t('compact_visual_tab.price')}</th>
+            <th className="py-1.5 px-2 text-right w-16">{t('compact_visual_tab.change')}</th>
+            <th className="py-1.5 px-2 w-20 text-center">{t('compact_visual_tab.chart')}</th>
+            <th className="py-1.5 px-2 w-24 text-center">{t('compact_visual_tab.history')}</th>
           </tr>
         </thead>
         <tbody>
@@ -134,7 +136,7 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
                       />
                     ))}
                     {mktHistory.length === 0 && (
-                      <span className="text-text-muted text-[8px]">no data</span>
+                      <span className="text-text-muted text-[8px]">{t('compact_visual_tab.no_data')}</span>
                     )}
                   </div>
                 </td>

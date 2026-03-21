@@ -1,9 +1,11 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 export function ConcentrationMetrics({ enrichment }: SectionProps) {
+  const t = useTranslations('markets.itp_page.concentration')
   const holdings = enrichment?.holdings ?? []
 
   const metrics = useMemo(() => {
@@ -12,22 +14,22 @@ export function ConcentrationMetrics({ enrichment }: SectionProps) {
     const top5 = sorted.slice(0, 5).reduce((s, h) => s + h.weight, 0) * 100
     const top10 = sorted.slice(0, 10).reduce((s, h) => s + h.weight, 0) * 100
     const hhi = sorted.reduce((s, h) => s + Math.pow(h.weight * 100, 2), 0)
-    const hhiLabel = hhi < 1500 ? 'Low' : hhi < 2500 ? 'Moderate' : 'High'
+    const hhiLabel = hhi < 1500 ? t('low') : hhi < 2500 ? t('moderate') : t('high')
     return { top5, top10, hhi, hhiLabel }
-  }, [holdings])
+  }, [holdings, t])
 
   if (!metrics) return null
 
   const cards = [
-    { label: 'TOP 5 WEIGHT', value: `${metrics.top5.toFixed(1)}%` },
-    { label: 'TOP 10 WEIGHT', value: `${metrics.top10.toFixed(1)}%` },
-    { label: 'HHI CONCENTRATION', value: `${Math.round(metrics.hhi)}`, sub: metrics.hhiLabel },
+    { label: t('top_5_weight'), value: `${metrics.top5.toFixed(1)}%` },
+    { label: t('top_10_weight'), value: `${metrics.top10.toFixed(1)}%` },
+    { label: t('hhi_concentration'), value: `${Math.round(metrics.hhi)}`, sub: metrics.hhiLabel },
   ]
 
   return (
     <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">
-        Concentration Metrics
+        {t('title')}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
         {cards.map(c => (

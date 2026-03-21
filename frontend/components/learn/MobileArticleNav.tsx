@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslations } from 'next-intl';
 import type { ArticleHeading } from "@/lib/learn/articles";
 
 interface MobileArticleNavProps {
@@ -8,6 +9,7 @@ interface MobileArticleNavProps {
 }
 
 export function MobileArticleNav({ headings }: MobileArticleNavProps) {
+  const t = useTranslations('pages');
   const [open, setOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -41,13 +43,13 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
       {/* TOC toggle */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-light">
         <span className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted">
-          Contents
+          {t('learn.mobile_nav.contents')}
         </span>
         <button
           onClick={() => setOpen(!open)}
           className="text-caption font-semibold text-black"
         >
-          {open ? "Close" : "Menu"}
+          {open ? t('learn.mobile_nav.close') : t('learn.mobile_nav.menu')}
         </button>
       </div>
 

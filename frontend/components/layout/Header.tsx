@@ -353,7 +353,7 @@ export function Header() {
                         {sectionNav && (
                           <div className={`px-2 py-1.5 mb-1 border-b ${isDark ? 'border-white/10' : 'border-border-light'}`}>
                             <div className={`px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] ${isDark ? 'text-zinc-500' : 'text-text-muted'}`}>
-                              Sections
+                              {t('nav.sections')}
                             </div>
                             {sectionNav.map((link) => (
                               <button

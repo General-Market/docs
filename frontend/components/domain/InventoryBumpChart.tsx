@@ -443,7 +443,7 @@ export function InventoryBumpChart() {
                 {tooltip.snapshot.label} — {eventLabel(tooltip.snapshot.eventType)}
               </div>
               <div className="text-zinc-900 font-semibold mb-2">
-                Total AUM: {formatAum(tooltip.snapshot.totalAum)}
+                {t('aum_ranking_chart.total_aum_label', { value: formatAum(tooltip.snapshot.totalAum) })}
               </div>
               {tooltip.snapshot.ranked.map((asset) => (
                 <div key={asset.address} className="flex items-center gap-2 py-0.5">

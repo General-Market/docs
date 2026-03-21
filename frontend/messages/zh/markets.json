@@ -144,5 +144,131 @@
     "loading": "加载 NAV 数据中...",
     "error": "加载图表数据失败",
     "no_data": "此时间段暂无 NAV 数据"
+  },
+  "itp_page": {
+    "buy_this_index": "买入此指数",
+    "tabs": {
+      "overview": "概览",
+      "performance": "业绩",
+      "holdings": "持仓",
+      "key_facts": "关键信息"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / 份额",
+      "one_day_nav_change": "1日NAV变动",
+      "total_value_locked": "总锁仓量",
+      "holdings": "持仓",
+      "as_of": "截至 {date}"
+    },
+    "performance": {
+      "title": "业绩",
+      "as_of": "截至 {date}",
+      "since_inception_return": "成立以来收益率: ",
+      "from_date": "(自 {date})",
+      "no_data": "暂无业绩数据"
+    },
+    "holdings_table": {
+      "title": "持仓",
+      "loading": "持仓数据加载中...",
+      "filter_placeholder": "按名称或代码筛选...",
+      "rank": "#",
+      "name": "名称",
+      "sector": "板块",
+      "weight": "权重",
+      "price": "价格",
+      "change_24h": "24小时",
+      "market_value": "市值",
+      "notional_value": "名义价值",
+      "shares": "份额",
+      "market_cap": "总市值",
+      "cryptocurrency": "加密货币",
+      "range": "{total}个中第{start}~{end}个",
+      "previous": "上一页",
+      "next": "下一页",
+      "as_of": "截至 {date}"
+    },
+    "portfolio": {
+      "title": "投资组合构成",
+      "other": "其他"
+    },
+    "concentration": {
+      "title": "集中度指标",
+      "top_5_weight": "前5权重",
+      "top_10_weight": "前10权重",
+      "hhi_concentration": "HHI集中度",
+      "low": "低",
+      "moderate": "中等",
+      "high": "高"
+    },
+    "founders": {
+      "title": "创始人情报",
+      "subtitle": "基于{companies}家组合公司的{founders}位创始人",
+      "age_distribution": "年龄分布",
+      "gender_split": "性别比例",
+      "top_nationalities": "主要国籍",
+      "top_universities": "顶尖大学",
+      "count": "数量"
+    },
+    "defi": {
+      "title": "DeFi协议健康度",
+      "aggregate_tvl": "总TVL",
+      "avg_tvl_change_7d": "平均TVL变动7天",
+      "coverage": "覆盖率",
+      "coverage_value": "{total}个中{with_data}个",
+      "protocol": "协议",
+      "tvl": "TVL",
+      "change_1d": "1天",
+      "change_7d": "7天"
+    },
+    "funding": {
+      "title": "融资情报",
+      "total_raised": "总融资额",
+      "avg_valuation": "平均估值",
+      "funding_rounds": "融资轮次",
+      "top_investors": "按投资频率排名的投资者",
+      "investments": "投资",
+      "project": "项目",
+      "round": "轮次",
+      "amount": "金额",
+      "lead": "领投方",
+      "date": "日期"
+    },
+    "fund_facts": {
+      "title": "基金详情",
+      "nav_per_share": "NAV / 份额",
+      "chain": "链",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlement 地址",
+      "rebalance_method": "再平衡方法",
+      "rebalance_value": "等权重",
+      "fund_inception": "基金成立日",
+      "asset_class": "资产类别",
+      "asset_class_value": "加密货币指数",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "持仓数量",
+      "as_of": "截至 {date}",
+      "copy": "复制",
+      "copied": "已复制!",
+      "portfolio_characteristics": "投资组合特征",
+      "top_5_concentration": "前5集中度",
+      "top_10_concentration": "前10集中度",
+      "hhi_index": "HHI指数",
+      "average_market_cap": "平均市值",
+      "fees": "费用",
+      "fees_as_of": "基于当前招募说明书",
+      "management_fee": "管理费",
+      "acquired_fund_fees": "+收购基金费用及开支",
+      "other_expenses": "+其他费用",
+      "expense_ratio": "=费用比率",
+      "fee_disclaimer": "上述费用基于当前招募说明书。网络Gas费用适用于所有链上交易，不包含在费用比率中。"
+    },
+    "trade_cta": {
+      "buy": "买入此指数",
+      "sell": "卖出"
+    },
+    "investment_objective": {
+      "why_title": "为什么选择这个指数？",
+      "objective_title": "投资目标"
+    }
   }
 }

@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -673,12 +674,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function PayoffScene3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[280px] md:h-[320px]"
       ariaLabel="After EIP-8141: unified Frame Transaction"
       srDescription="A 3D scene showing the unified state of Ethereum UX after EIP-8141. One large Frame TX container holds three contiguous compartments: F0 (purple, for authentication), F1 (blue, execution), and F2 (blue, execution). The purple padlock appears inside F0 rather than on top. An ACCEPT gate with green pillars and an arch sits between F0 and F1, flashing green to signal validation passed. Three colored token spheres (amber, indigo, blue) orbit gently near the container, showing any token can pay for gas. A faded ghost outline replaces the relayer, showing it is no longer needed. Three purple key spheres converge toward F0, representing N programmable signers. A green execution glow washes over the entire container."
-      legend={<SceneLegend items={[{ color: GREEN, label: 'ACCEPT / Execution' }, { color: BLUE, label: 'Frame TX' }, { color: PURPLE, label: 'Auth (inside)' }, { color: AMBER, label: 'Any token gas' }]} />}
+      legend={<SceneLegend items={[{ color: GREEN, label: t('learn.payoff_v2.legend_accept_execution') }, { color: BLUE, label: t('learn.payoff_v2.legend_frame_tx') }, { color: PURPLE, label: t('learn.payoff_v2.legend_auth_inside') }, { color: AMBER, label: t('learn.payoff_v2.legend_any_token_gas') }]} />}
       fallbackText="After EIP-8141: one unified Frame TX with three compartments (F0=auth inside, F1, F2). ACCEPT gate between F0 and F1. Any token for gas. No relayer needed. N programmable signers."
     >
       {({ reducedMotion }) => (

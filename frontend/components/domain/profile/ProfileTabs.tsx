@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { SpringTabs, SpringTab } from '@/components/ui/spring'
 
 interface ProfileTabsProps {
@@ -8,9 +9,11 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+  const t = useTranslations('common')
+
   const tabs = [
-    { id: 'vision' as const, label: 'Vision' },
-    { id: 'index' as const, label: 'Index' },
+    { id: 'vision' as const, label: t('profile.tab_vision') },
+    { id: 'index' as const, label: t('profile.tab_index') },
   ]
 
   return (

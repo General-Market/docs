@@ -42,20 +42,20 @@ function getStatusIcon(status: KeeperSignatureStatus): {
 }
 
 /**
- * Get status text for keeper
+ * Get status text for keeper (translated)
  */
-function getStatusText(keeper: KeeperSignature): string {
+function getStatusText(keeper: KeeperSignature, t: (key: string, values?: Record<string, string>) => string): string {
   switch (keeper.status) {
     case 'signed':
-      return keeper.signedAt ? `Signed ${formatSignedTimeAgo(keeper.signedAt)}` : 'Signed'
+      return keeper.signedAt ? t('keeper_signatures.status_signed_ago', { time: formatSignedTimeAgo(keeper.signedAt) }) : t('keeper_signatures.status_signed')
     case 'pending':
-      return 'Pending...'
+      return t('keeper_signatures.status_pending')
     case 'failed':
-      return keeper.error || 'Failed'
+      return keeper.error || t('keeper_signatures.status_failed')
     case 'timeout':
-      return 'Timeout'
+      return t('keeper_signatures.status_timeout')
     default:
-      return 'Unknown'
+      return t('keeper_signatures.status_unknown')
   }
 }
 
@@ -145,7 +145,7 @@ export function KeeperSignatureList({
       <div className="space-y-2">
         {sortedKeepers.map((keeper) => {
           const { icon, color } = getStatusIcon(keeper.status)
-          const statusText = getStatusText(keeper)
+          const statusText = getStatusText(keeper, t)
 
           return (
             <div

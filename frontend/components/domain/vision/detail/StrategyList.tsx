@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import DeployAgentModal from './DeployAgentModal'
+import { useTranslations } from 'next-intl'
 
 interface Strategy {
   id: string
@@ -12,12 +13,14 @@ interface Strategy {
   apply: (marketIds: string[]) => Record<string, 'up' | 'down'>
 }
 
-const STRATEGIES: Strategy[] = [
+function useStrategies(): Strategy[] {
+  const t = useTranslations('vision')
+  return [
   {
     id: 'momentum',
-    name: 'Momentum Follower',
-    description: 'Follow recent price trends',
-    badge: 'Premade',
+    name: t('strategy_list_items.momentum_name'),
+    description: t('strategy_list_items.momentum_description'),
+    badge: t('strategy_list_items.momentum_badge'),
     apply: (marketIds) => {
       const result: Record<string, 'up' | 'down'> = {}
       for (const id of marketIds) {
@@ -32,9 +35,9 @@ const STRATEGIES: Strategy[] = [
   },
   {
     id: 'contrarian',
-    name: 'Contrarian',
-    description: 'Bet against the crowd',
-    badge: 'Premade',
+    name: t('strategy_list_items.contrarian_name'),
+    description: t('strategy_list_items.contrarian_description'),
+    badge: t('strategy_list_items.contrarian_badge'),
     apply: (marketIds) => {
       const result: Record<string, 'up' | 'down'> = {}
       for (const id of marketIds) {
@@ -48,6 +51,7 @@ const STRATEGIES: Strategy[] = [
     },
   },
 ]
+}
 
 interface StrategyListProps {
   bitmapEditor: BitmapEditor
@@ -56,6 +60,8 @@ interface StrategyListProps {
 }
 
 export default function StrategyList({ bitmapEditor, sourceId, marketIds }: StrategyListProps) {
+  const t = useTranslations('vision')
+  const STRATEGIES = useStrategies()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 
   const handleApply = useCallback(

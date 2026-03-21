@@ -100,7 +100,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Transaction failed')
+      setTxError(actionError.message || t('common.transaction_failed'))
       capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       resetAction()
@@ -197,7 +197,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
               disabled={isProcessing || collateralAmount === 0n}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >
-              MAX
+              {t('actions.max')}
             </button>
           </div>
         </div>
@@ -251,7 +251,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
             rel="noopener noreferrer"
             className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
           >
-            View on explorer ↗
+            {t('common.view_on_explorer')} ↗
           </a>
         )}
 

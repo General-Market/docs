@@ -2,6 +2,7 @@
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SpringRow } from '@/components/ui/spring'
+import { useTranslations } from 'next-intl'
 
 function truncateAddress(address: string): string {
   if (!address || address.length < 12) return address || '--'
@@ -22,6 +23,7 @@ function formatVolume(vol: number): string {
 }
 
 export function TopPlayers({ sourceId }: { sourceId?: string }) {
+  const t = useTranslations('vision')
   const { leaderboard, isLoading } = useVisionLeaderboard(undefined, sourceId)
   const top5 = leaderboard.slice(0, 5)
 
@@ -30,8 +32,8 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
       {/* Section bar */}
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">Top Players</div>
-          <div className="section-bar-value">Leaderboard</div>
+          <div className="section-bar-title">{t('top_players.title')}</div>
+          <div className="section-bar-value">{t('top_players.subtitle')}</div>
         </div>
       </div>
 
@@ -39,12 +41,12 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
       <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
         <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-          <div>#</div>
-          <div>Player</div>
-          <div className="text-right">Batches</div>
-          <div className="text-right">Volume</div>
-          <div className="text-right">Profitable</div>
-          <div className="text-right">P&L</div>
+          <div>{t('top_players.rank')}</div>
+          <div>{t('top_players.player')}</div>
+          <div className="text-right">{t('top_players.batches')}</div>
+          <div className="text-right">{t('top_players.volume')}</div>
+          <div className="text-right">{t('top_players.profitable')}</div>
+          <div className="text-right">{t('top_players.pnl')}</div>
         </div>
 
         {isLoading && (

@@ -1,10 +1,14 @@
+'use client';
+
 import type { ArticleFrontmatter } from "@/lib/learn/articles";
+import { useTranslations } from 'next-intl';
 
 interface ArticleHeaderProps {
   frontmatter: ArticleFrontmatter;
 }
 
 export function ArticleHeader({ frontmatter }: ArticleHeaderProps) {
+  const t = useTranslations('pages');
   return (
     <div className="hero-band">
       <div className="hero-band-inner">
@@ -27,7 +31,7 @@ export function ArticleHeader({ frontmatter }: ArticleHeaderProps) {
         {frontmatter.tldr && frontmatter.tldr.length > 0 && (
           <div className="section-divider mt-8 pt-6">
             <div className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-4">
-              Key Takeaways
+              {t('learn.article_header.key_takeaways')}
             </div>
             <ol className="space-y-3">
               {frontmatter.tldr.map((item, i) => (

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -58,6 +59,7 @@ interface LeaderboardEntry {
 }
 
 export function VisionSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
   const [batches, setBatches] = useState<BatchData[]>([])
   const [batchLoading, setBatchLoading] = useState(true)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -142,36 +144,36 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Card 1: Batch Volume — live stat card */}
-      <ExplorerChartCard title="Batch Volume" subtitle="Active batches and total players" loading={batchLoading}>
+      <ExplorerChartCard title={t('explorer.vision_section.batch_volume')} subtitle={t('explorer.vision_section.batch_volume_desc')} loading={batchLoading}>
         <div className="h-full flex flex-col justify-center gap-5 px-2">
           <div className="grid grid-cols-3 gap-3">
-            <StatBlock label="Active Batches" value={batchStats.active} />
-            <StatBlock label="Paused" value={batchStats.paused} />
-            <StatBlock label="Total Players" value={batchStats.totalPlayers} />
+            <StatBlock label={t('explorer.vision_section.active_batches')} value={batchStats.active} />
+            <StatBlock label={t('explorer.vision_section.paused')} value={batchStats.paused} />
+            <StatBlock label={t('explorer.vision_section.total_players')} value={batchStats.totalPlayers} />
           </div>
           <div className="border-t border-border-light pt-3">
             <div className="flex items-baseline gap-2">
               <span className="text-title font-black text-black tracking-tight">{batchStats.total}</span>
-              <span className="text-caption text-text-muted">total batches</span>
+              <span className="text-caption text-text-muted">{t('explorer.vision_section.total_batches')}</span>
             </div>
             <div className="mt-1.5 flex gap-4">
-              <MiniBar label="Active" value={batchStats.active} total={batchStats.total} color="#000" />
-              <MiniBar label="Paused" value={batchStats.paused} total={batchStats.total} color="#d1d5db" />
+              <MiniBar label={t('explorer.vision_section.active')} value={batchStats.active} total={batchStats.total} color="#000" />
+              <MiniBar label={t('explorer.vision_section.paused')} value={batchStats.paused} total={batchStats.total} color="#d1d5db" />
             </div>
           </div>
         </div>
       </ExplorerChartCard>
 
       {/* Card 2: Pool Stats — TVL, avg players, top 5 sources */}
-      <ExplorerChartCard title="Batch Pool Stats" subtitle="TVL and top sources" loading={batchLoading}>
+      <ExplorerChartCard title={t('explorer.vision_section.batch_pool_stats')} subtitle={t('explorer.vision_section.batch_pool_stats_desc')} loading={batchLoading}>
         <div className="h-full flex flex-col">
           <div className="flex items-baseline gap-3 mb-3">
             <div>
-              <span className="text-label text-text-muted block">Total TVL</span>
+              <span className="text-label text-text-muted block">{t('explorer.vision_section.total_tvl')}</span>
               <span className="text-heading font-black text-black tracking-tight">{formatTvl(poolStats.totalTvl)}</span>
             </div>
             <div className="ml-auto text-right">
-              <span className="text-label text-text-muted block">Avg Players / Batch</span>
+              <span className="text-label text-text-muted block">{t('explorer.vision_section.avg_players_batch')}</span>
               <span className="text-subhead font-bold text-black">{poolStats.avgPlayers.toFixed(1)}</span>
             </div>
           </div>
@@ -212,7 +214,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-caption text-text-muted">No batch data available</p>
+                <p className="text-caption text-text-muted">{t('explorer.vision_section.no_batch_data')}</p>
               </div>
             )}
           </div>
@@ -220,7 +222,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
       </ExplorerChartCard>
 
       {/* Card 3: Batches by Source — horizontal bar chart */}
-      <ExplorerChartCard title="Batches by Source" subtitle="Number of batches per data source" loading={batchLoading}>
+      <ExplorerChartCard title={t('explorer.vision_section.batches_by_source')} subtitle={t('explorer.vision_section.batches_by_source_desc')} loading={batchLoading}>
         <div className="h-full">
           {sourceBreakdown.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -246,7 +248,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e5e5' }}
-                  formatter={(v: number, _: string, entry: any) => [`${v} batch${v !== 1 ? 'es' : ''}`, entry.payload.fullName]}
+                  formatter={(v: number, _: string, entry: any) => [t('explorer.vision_section.batch_count', { count: v }), entry.payload.fullName]}
                   labelFormatter={() => ''}
                 />
                 <Bar dataKey="count" radius={[0, 3, 3, 0]} maxBarSize={14}>
@@ -258,7 +260,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">No batch data available</p>
+              <p className="text-caption text-text-muted">{t('explorer.vision_section.no_batch_data')}</p>
             </div>
           )}
         </div>
@@ -266,8 +268,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
 
       {/* Derived chart: Network Activity */}
       <ExplorerChartCard
-        title="Network Activity"
-        subtitle="Orders processed per 60s — proxy for Vision order flow"
+        title={t('explorer.vision_section.network_activity')}
+        subtitle={t('explorer.vision_section.network_activity_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -289,7 +291,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             <Area
               type="monotone"
               dataKey="orders_processed"
-              name="Orders / 60s"
+              name={t('explorer.vision_section.orders_60s')}
               stroke="#000"
               fill="#000"
               fillOpacity={0.08}
@@ -301,8 +303,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
 
       {/* Top Players — from data-node leaderboard */}
       <ExplorerChartCard
-        title="Top Players"
-        subtitle={`${leaderboard.length} ranked players`}
+        title={t('explorer.vision_section.top_players')}
+        subtitle={t('explorer.vision_section.ranked_players', { count: leaderboard.length })}
         loading={batchLoading}
       >
         <div className="h-full overflow-y-auto">
@@ -310,11 +312,11 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border-light">
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">#</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">Player</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">Volume</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">Win%</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">P&L</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player_rank')}</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player')}</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.volume')}</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.win_pct')}</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">{t('explorer.vision_section.pnl')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -339,7 +341,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             </table>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">No player data</p>
+              <p className="text-caption text-text-muted">{t('explorer.vision_section.no_player_data')}</p>
             </div>
           )}
         </div>

@@ -239,7 +239,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                 {oracleBalance !== null ? (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Oracle Balance</span>
+                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.oracle_balance')}</span>
                       <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                         {parseFloat(formatUnits(oracleBalance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                       </span>

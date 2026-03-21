@@ -293,7 +293,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
             <button
               onClick={() => setIsFullscreen(false)}
               className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors fluid-press"
-              title="Exit fullscreen"
+              title={t('fullscreen.exit_title')}
             >
               {t('fullscreen.exit')}
             </button>
@@ -321,7 +321,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         </div>
         {!quota.canRun && (
           <p className="text-xs text-text-muted mt-2 text-right">
-            Wait {Math.ceil(quota.cooldownRemaining / 1000)}s before next simulation
+            {t('quota.cooldown', { seconds: Math.ceil(quota.cooldownRemaining / 1000) })}
           </p>
         )}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
@@ -25,6 +26,7 @@ interface ToastProps {
  * Institutional style: white card with colored left accent bar
  */
 export function Toast({ toast, onDismiss }: ToastProps) {
+  const t = useTranslations('common')
   const [isExiting, setIsExiting] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -89,7 +91,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         <button
           onClick={handleDismiss}
           className="text-text-muted hover:text-text-primary transition-colors"
-          aria-label="Dismiss"
+          aria-label={t('aria.dismiss')}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

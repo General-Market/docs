@@ -31,7 +31,7 @@ export function PerformanceSection({ expanded, onToggle }: PerformanceSectionPro
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('performance.label')}</p>
-              <h2 className="text-lg font-semibold text-text-primary">Performance Dashboard</h2>
+              <h2 className="text-lg font-semibold text-text-primary">{t('performance.title')}</h2>
             </div>
             <button onClick={onToggle} className="text-text-muted text-2xl hover:text-text-primary">−</button>
           </div>
@@ -52,7 +52,7 @@ export function PerformanceSection({ expanded, onToggle }: PerformanceSectionPro
             </div>
             <div className="bg-card rounded-xl shadow-card border border-border-light p-6 text-center">
               <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2">{t('performance.network')}</p>
-              <p className="text-3xl font-bold text-text-primary">Index L3</p>
+              <p className="text-3xl font-bold text-text-primary font-mono">Index L3</p>
               <p className="text-xs text-text-muted mt-1">{t('performance.orbit_chain')}</p>
             </div>
           </div>

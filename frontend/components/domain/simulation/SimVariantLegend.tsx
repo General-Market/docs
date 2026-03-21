@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import type { SimStats } from '@/hooks/useSimulation'
 
 const SWEEP_COLORS = [
@@ -20,13 +21,14 @@ interface SimVariantLegendProps {
 }
 
 export function SimVariantLegend({ variants, onDeployIndex }: SimVariantLegendProps) {
+  const t = useTranslations('backtest')
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
 
   if (!variants.length) return null
 
   return (
     <div className="border border-border-light rounded-xl bg-card p-3 space-y-0.5">
-      <div className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">Variants</div>
+      <div className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('legend.variants')}</div>
       {variants.map((v, i) => {
         const color = SWEEP_COLORS[i % SWEEP_COLORS.length]
         const ret = v.stats.total_return_pct
@@ -58,7 +60,7 @@ export function SimVariantLegend({ variants, onDeployIndex }: SimVariantLegendPr
                   onDeployIndex(v.runId, v.label)
                 }}
               >
-                Deploy Index
+                {t('chart.deploy_index')}
               </button>
             )}
           </div>

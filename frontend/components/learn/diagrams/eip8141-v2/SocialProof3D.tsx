@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -548,12 +549,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function SocialProof3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[280px] md:h-[340px]"
       ariaLabel="Social proof for EIP-8141: authority, adoption, and ecosystem scale"
       srDescription="A 3D scene showing social proof for EIP-8141. A central blue Ethereum octahedron is orbited by three purple authority spheres (Vitalik, EF Core, 10 years of development) and five green adoption spheres (Safe, ZeroDev, Biconomy, Ambire, L2s). Scale bars on the right grow to show 500M+ wallets affected, ~$200B TVL, and every dApp. Connection lines converge on the center, visualizing how authority, adoption, and scale all point to EIP-8141."
-      legend={<SceneLegend items={[{ color: PURPLE, label: 'Authority' }, { color: GREEN, label: 'Adoption' }, { color: BLUE, label: 'Ethereum' }, { color: AMBER, label: 'Scale' }]} />}
+      legend={<SceneLegend items={[{ color: PURPLE, label: t('learn.social_proof_v2.legend_authority') }, { color: GREEN, label: t('learn.social_proof_v2.legend_adoption') }, { color: BLUE, label: t('learn.social_proof_v2.legend_ethereum') }, { color: AMBER, label: t('learn.social_proof_v2.legend_scale') }]} />}
       fallbackText="EIP-8141 authored by Vitalik Buterin, backed by EF Core, adopted by Safe, ZeroDev, Biconomy, Ambire. Affects 500M+ wallets, ~$200B TVL, every dApp."
     >
       {({ reducedMotion }) => (

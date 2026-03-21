@@ -2,15 +2,17 @@
 
 import Image from 'next/image'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useTranslations } from 'next-intl'
 import { getUniversityLogo } from '@/lib/university-logos'
 import type { SectionProps } from '../SectionRenderer'
 
 const BRAND_COLOR = '#111827'
 
-function HorizontalBarChart({ data, dataKey, label }: {
+function HorizontalBarChart({ data, dataKey, label, tooltipLabel }: {
   data: { label?: string; bucket?: string; count: number }[]
   dataKey: string
   label: string
+  tooltipLabel: string
 }) {
   if (data.length === 0) return null
   return (
@@ -30,7 +32,7 @@ function HorizontalBarChart({ data, dataKey, label }: {
             tickLine={false}
           />
           <Tooltip
-            formatter={(value: number) => [value, 'Count']}
+            formatter={(value: number) => [value, tooltipLabel]}
             contentStyle={{
               fontSize: 12,
               border: '1px solid #e5e5e5',
@@ -77,14 +79,14 @@ function getNationalityCode(nationality: string): string | null {
   return null
 }
 
-function NationalityChart({ data }: { data: { label: string; count: number }[] }) {
+function NationalityChart({ data, title }: { data: { label: string; count: number }[]; title: string }) {
   if (data.length === 0) return null
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
     <div className="py-4">
       <h3 className="text-sm font-semibold text-text-secondary mb-3">
-        Top Nationalities
+        {title}
       </h3>
       <div className="flex flex-col gap-1.5">
         {data.map(({ label, count }) => {
@@ -128,14 +130,14 @@ function NationalityChart({ data }: { data: { label: string; count: number }[] }
   )
 }
 
-function UniversityChart({ data }: { data: { label: string; count: number }[] }) {
+function UniversityChart({ data, title }: { data: { label: string; count: number }[]; title: string }) {
   if (data.length === 0) return null
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
     <div className="py-4">
       <h3 className="text-sm font-semibold text-text-secondary mb-3">
-        Top Universities
+        {title}
       </h3>
       <div className="flex flex-col gap-1.5">
         {data.map(({ label, count }) => {
@@ -180,6 +182,7 @@ function UniversityChart({ data }: { data: { label: string; count: number }[] })
 }
 
 export function FounderDemographics({ enrichment }: SectionProps) {
+  const t = useTranslations('markets.itp_page.founders')
   const founders = enrichment?.founders
   if (!founders || founders.total_founders === 0) return null
 
@@ -187,17 +190,17 @@ export function FounderDemographics({ enrichment }: SectionProps) {
     <section>
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-text-primary">
-          Founder Intelligence
+          {t('title')}
         </h2>
         <p className="text-xs text-text-secondary mt-1">
-          Based on {founders.total_founders} founders across {founders.total_companies_matched} portfolio companies
+          {t('subtitle', { founders: founders.total_founders, companies: founders.total_companies_matched })}
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <HorizontalBarChart data={founders.age_distribution} dataKey="bucket" label="Age Distribution" />
-        <HorizontalBarChart data={founders.gender_split} dataKey="label" label="Gender Split" />
-        <NationalityChart data={founders.top_nationalities} />
-        <UniversityChart data={founders.top_universities} />
+        <HorizontalBarChart data={founders.age_distribution} dataKey="bucket" label={t('age_distribution')} tooltipLabel={t('count')} />
+        <HorizontalBarChart data={founders.gender_split} dataKey="label" label={t('gender_split')} tooltipLabel={t('count')} />
+        <NationalityChart data={founders.top_nationalities} title={t('top_nationalities')} />
+        <UniversityChart data={founders.top_universities} title={t('top_universities')} />
       </div>
     </section>
   )

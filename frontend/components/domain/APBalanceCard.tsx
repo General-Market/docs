@@ -101,12 +101,12 @@ export function APBalanceCard() {
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
           <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${healthColor} ${healthBg}`}>
-            {apHealth || 'checking...'}
+            {apHealth || t('ap_section.health_checking')}
           </span>
           <button
             onClick={refreshVault}
             className="text-xs text-text-muted hover:text-text-secondary transition-colors"
-            title="Refresh balances"
+            title={t('ap_section.refresh_balances')}
           >
             {tc('refresh')}
           </button>

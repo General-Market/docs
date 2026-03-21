@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { SimProgress } from '@/hooks/useSimulation'
 import type { SweepProgress } from '@/hooks/useSimSweep'
 
@@ -18,6 +19,8 @@ interface SweepProgressProps {
 type SimProgressBarProps = SingleProgressProps | SweepProgressProps
 
 export function SimProgressBar(props: SimProgressBarProps) {
+  const t = useTranslations('backtest')
+
   if (props.mode === 'single') {
     const { progress } = props
     if (!progress) return null
@@ -25,7 +28,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
     return (
       <div className="mb-4">
         <div className="flex justify-between text-xs text-text-muted font-mono mb-1">
-          <span>Simulating... {progress.current_date}</span>
+          <span>{t('progress.simulating', { date: progress.current_date })}</span>
           <span>{progress.pct.toFixed(1)}%</span>
         </div>
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
@@ -47,10 +50,10 @@ export function SimProgressBar(props: SimProgressBarProps) {
       <div className="flex justify-between text-xs text-text-muted font-mono mb-1">
         <span>
           {progress
-            ? `Running ${progress.variant} (${progress.variant_index + 1}/${totalVariants}) — ${progress.current_date}`
+            ? t('progress.running_variant', { variant: progress.variant, current: progress.variant_index + 1, total: totalVariants, date: progress.current_date })
             : totalVariants === 0
-              ? 'Starting sweep...'
-              : `Completed ${completedCount}/${totalVariants}`
+              ? t('progress.starting_sweep')
+              : t('progress.completed', { current: completedCount, total: totalVariants })
           }
         </span>
         <span>

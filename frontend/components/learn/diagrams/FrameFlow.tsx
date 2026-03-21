@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 
 interface Step {
   label: string
@@ -44,19 +45,23 @@ function FlowDiagram({ steps, caption }: { steps: Step[]; caption?: string }) {
 
 // Pre-built flow variants for MDX (no complex props needed)
 export function FlowNormalTx() {
-  return <FlowDiagram steps={[{ label: 'Validate', sub: 'Check sig, ACCEPT sender + gas' }, { label: 'Execute', sub: 'Transfer, swap, stake' }]} caption="Standard smart account transaction — any signature scheme works" />
+  const t = useTranslations('pages')
+  return <FlowDiagram steps={[{ label: t('learn.frame_flow.validate'), sub: t('learn.frame_flow.check_sig_accept') }, { label: t('learn.frame_flow.execute'), sub: t('learn.frame_flow.transfer_swap_stake') }]} caption={t('learn.frame_flow.caption_normal_tx')} />
 }
 
 export function FlowAtomicOps() {
-  return <FlowDiagram steps={[{ label: 'Validate', sub: 'Check signature' }, { label: 'Approve', sub: 'ERC-20 approval' }, { label: 'Spend', sub: 'Swap on DEX' }]} caption="Atomic batch — no more 'approve then pray the swap goes through'" />
+  const t = useTranslations('pages')
+  return <FlowDiagram steps={[{ label: t('learn.frame_flow.validate'), sub: t('learn.frame_flow.check_signature') }, { label: t('learn.frame_flow.approve'), sub: t('learn.frame_flow.erc20_approval') }, { label: t('learn.frame_flow.spend'), sub: t('learn.frame_flow.swap_on_dex') }]} caption={t('learn.frame_flow.caption_atomic')} />
 }
 
 export function FlowNewAccount() {
-  return <FlowDiagram steps={[{ label: 'Deploy', sub: 'EIP-7997 factory' }, { label: 'Validate', sub: 'ACCEPT sender + gas' }, { label: 'Execute', sub: 'First operation' }]} caption="Same address on every chain — deploy once, use everywhere" />
+  const t = useTranslations('pages')
+  return <FlowDiagram steps={[{ label: t('learn.frame_flow.deploy'), sub: t('learn.frame_flow.eip7997_factory') }, { label: t('learn.frame_flow.validate'), sub: t('learn.frame_flow.accept_sender_gas') }, { label: t('learn.frame_flow.execute'), sub: t('learn.frame_flow.first_operation') }]} caption={t('learn.frame_flow.caption_new_account')} />
 }
 
 export function FlowPrivacyZK() {
-  return <FlowDiagram steps={[{ label: 'ZK Verify', sub: 'Proof is valid' }, { label: 'Paymaster', sub: 'ACCEPT → gas' }, { label: 'Execute', sub: 'Private operation' }]} caption="Paymaster doesn't know WHO you are — only that the proof checks out" />
+  const t = useTranslations('pages')
+  return <FlowDiagram steps={[{ label: t('learn.frame_flow.zk_verify'), sub: t('learn.frame_flow.proof_is_valid') }, { label: t('learn.frame_flow.paymaster'), sub: t('learn.frame_flow.accept_gas') }, { label: t('learn.frame_flow.execute'), sub: t('learn.frame_flow.private_operation') }]} caption={t('learn.frame_flow.caption_privacy')} />
 }
 
 // Keep generic version for programmatic use (not from MDX)

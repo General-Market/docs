@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { truncateAddress } from '@/lib/utils/address'
 import { formatRelativeTime } from '@/lib/utils/time'
 
@@ -30,6 +31,8 @@ function GradientAvatar({ address }: { address: string }) {
 }
 
 export function ProfileHeader({ address, lastActiveAt, stats }: ProfileHeaderProps) {
+  const t = useTranslations('common')
+
   return (
     <div className="border-b border-border-light">
       <div className="px-6 lg:px-12">
@@ -43,7 +46,7 @@ export function ProfileHeader({ address, lastActiveAt, stats }: ProfileHeaderPro
               </div>
               {lastActiveAt && (
                 <div className="text-caption text-text-muted mt-0.5">
-                  Last active {formatRelativeTime(lastActiveAt)}
+                  {t('profile.last_active', { time: formatRelativeTime(lastActiveAt) })}
                 </div>
               )}
             </div>

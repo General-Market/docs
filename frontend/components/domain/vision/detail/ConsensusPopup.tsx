@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from 'react'
 import { SpringModal } from '@/components/ui/spring'
+import { useTranslations } from 'next-intl'
 
 interface ConsensusPopupProps {
   marketId: string
@@ -24,6 +25,7 @@ const MOCK_ENTRIES: ConsensusEntry[] = [
 ]
 
 export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
+  const t = useTranslations('vision')
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

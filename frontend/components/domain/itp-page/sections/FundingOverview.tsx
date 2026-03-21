@@ -1,22 +1,24 @@
 'use client'
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 export function FundingOverview({ enrichment }: SectionProps) {
+  const t = useTranslations('markets.itp_page.funding')
   const funding = enrichment?.funding
   if (!funding) return null
 
   const cards = [
-    { label: 'TOTAL RAISED', value: `$${funding.total_raised_m.toFixed(0)}M` },
-    { label: 'AVG VALUATION', value: funding.avg_valuation_m > 0 ? `$${funding.avg_valuation_m.toFixed(0)}M` : '—' },
-    { label: 'FUNDING ROUNDS', value: `${funding.total_rounds}` },
+    { label: t('total_raised'), value: `$${funding.total_raised_m.toFixed(0)}M` },
+    { label: t('avg_valuation'), value: funding.avg_valuation_m > 0 ? `$${funding.avg_valuation_m.toFixed(0)}M` : '—' },
+    { label: t('funding_rounds'), value: `${funding.total_rounds}` },
   ]
 
   return (
     <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">
-        Funding Intelligence
+        {t('title')}
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
@@ -35,7 +37,7 @@ export function FundingOverview({ enrichment }: SectionProps) {
       {funding.top_investors.length > 0 && (
         <div className="py-4 mb-4">
           <h3 className="text-sm font-semibold text-text-secondary mb-3">
-            Top Investors by Frequency
+            {t('top_investors')}
           </h3>
           <ResponsiveContainer width="100%" height={funding.top_investors.length * 32 + 16}>
             <BarChart data={funding.top_investors} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
@@ -49,7 +51,7 @@ export function FundingOverview({ enrichment }: SectionProps) {
                 tickLine={false}
               />
               <Tooltip
-                formatter={(value: number) => [value, 'Investments']}
+                formatter={(value: number) => [value, t('investments')]}
                 contentStyle={{
                   fontSize: 12,
                   border: '1px solid #e5e5e5',
@@ -68,11 +70,11 @@ export function FundingOverview({ enrichment }: SectionProps) {
           <table className="w-full text-sm">
             <thead className="bg-surface border-b border-border-light">
               <tr>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Project</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Round</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">Amount</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Lead</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">Date</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('project')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('round')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('amount')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">{t('lead')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">{t('date')}</th>
               </tr>
             </thead>
             <tbody>

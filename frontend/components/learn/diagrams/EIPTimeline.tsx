@@ -1,23 +1,25 @@
 'use client'
 
 import { motion } from 'framer-motion'
-
-const MILESTONES = [
-  { year: '2016', eip: 'EIP-86', note: 'Let contracts pay gas', status: 'too radical' },
-  { year: '2020', eip: 'EIP-2938', note: 'AA at protocol layer', status: 'never shipped' },
-  { year: '2021', eip: 'ERC-4337', note: 'Off-chain bundler', status: 'works but complex' },
-  { year: '2023', eip: 'EIP-3074', note: 'AUTH + AUTHCALL', status: 'superseded' },
-  { year: '2024', eip: 'EIP-7702', note: 'Set EOA code', status: 'stepping stone' },
-  { year: '2026', eip: 'EIP-8141', note: 'Frame Transactions', status: 'THE OMNIBUS', final: true },
-]
+import { useTranslations } from 'next-intl'
 
 export function EIPTimeline() {
+  const t = useTranslations('pages')
+
+  const MILESTONES = [
+    { year: '2016', eip: 'EIP-86', note: t('learn.eip_timeline.eip86_note'), status: t('learn.eip_timeline.eip86_status') },
+    { year: '2020', eip: 'EIP-2938', note: t('learn.eip_timeline.eip2938_note'), status: t('learn.eip_timeline.eip2938_status') },
+    { year: '2021', eip: 'ERC-4337', note: t('learn.eip_timeline.erc4337_note'), status: t('learn.eip_timeline.erc4337_status') },
+    { year: '2023', eip: 'EIP-3074', note: t('learn.eip_timeline.eip3074_note'), status: t('learn.eip_timeline.eip3074_status') },
+    { year: '2024', eip: 'EIP-7702', note: t('learn.eip_timeline.eip7702_note'), status: t('learn.eip_timeline.eip7702_status') },
+    { year: '2026', eip: 'EIP-8141', note: t('learn.eip_timeline.eip8141_note'), status: t('learn.eip_timeline.eip8141_status'), final: true },
+  ]
   return (
     <div className="my-16 -mx-4 md:-mx-8">
       <div className="bg-[#f5f5f5] border-t-[3px] border-b border-black border-b-border-light px-6 md:px-10 py-10">
         {/* Header */}
         <p className="text-micro text-text-muted tracking-[0.2em] uppercase mb-8">
-          A Decade of Account Abstraction
+          {t('learn.eip_timeline.header')}
         </p>
 
         {/* Timeline */}

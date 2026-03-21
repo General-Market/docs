@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer, LineChart, Line, AreaChart, Area,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -18,6 +19,8 @@ const tickFormatter = (v: string) =>
   new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
 export function P2PSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
+
   const peersData = useMemo(
     () => snapshots.map((s) => ({ time: s.poll_batch_ts, total_peers: s.total_peers })),
     [snapshots]
@@ -54,10 +57,10 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">P2P Network</h2>
+      <h2 className="text-subhead font-black tracking-tight text-black mb-4">{t('explorer.p2p_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Connected Peers */}
-        <ExplorerChartCard title="Connected Peers" subtitle="Total peers over time" loading={loading}>
+        <ExplorerChartCard title={t('explorer.p2p_section.connected_peers')} subtitle={t('explorer.p2p_section.connected_peers_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={peersData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -73,7 +76,7 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
         </ExplorerChartCard>
 
         {/* Messages Sent / Received */}
-        <ExplorerChartCard title="Messages Sent / Received" subtitle="Delta per snapshot interval" loading={loading}>
+        <ExplorerChartCard title={t('explorer.p2p_section.messages_sent_received')} subtitle={t('explorer.p2p_section.messages_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={messagesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -83,14 +86,14 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Line type="monotone" dataKey="sent" stroke="#000" strokeWidth={1.5} dot={false} name="Sent" />
-              <Line type="monotone" dataKey="received" stroke="#6b7280" strokeWidth={1.5} dot={false} name="Received" />
+              <Line type="monotone" dataKey="sent" stroke="#000" strokeWidth={1.5} dot={false} name={t('explorer.p2p_section.sent')} />
+              <Line type="monotone" dataKey="received" stroke="#6b7280" strokeWidth={1.5} dot={false} name={t('explorer.p2p_section.received')} />
             </LineChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
 
         {/* Peer Health */}
-        <ExplorerChartCard title="Peer Health" subtitle="Healthy vs unhealthy peers" loading={loading}>
+        <ExplorerChartCard title={t('explorer.p2p_section.peer_health')} subtitle={t('explorer.p2p_section.peer_health_desc')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={peerHealthData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -107,7 +110,7 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
                 stroke="#10b981"
                 fill="#10b981"
                 fillOpacity={0.3}
-                name="Healthy"
+                name={t('explorer.p2p_section.healthy')}
               />
               <Area
                 type="monotone"
@@ -116,7 +119,7 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
                 stroke="#ef4444"
                 fill="#ef4444"
                 fillOpacity={0.3}
-                name="Unhealthy"
+                name={t('explorer.p2p_section.unhealthy')}
               />
             </AreaChart>
           </ResponsiveContainer>

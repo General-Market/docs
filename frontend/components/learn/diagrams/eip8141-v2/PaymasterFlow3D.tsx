@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -783,12 +784,13 @@ function AmbientParticles({ count = 6, reducedMotion }: { count?: number; reduce
 /* ------------------------------------------------------------------ */
 
 export function PaymasterFlow3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="Paymaster bidirectional token exchange: a user pays RAI to a paymaster that covers gas in ETH, with the two flows crossing mid-screen"
       srDescription="A 3D scene with three entities. On the left, a purple sphere represents the user holding amber RAI token discs. At top-center, an indigo hexagonal prism represents the paymaster holding green ETH spheres. On the right, a blue rounded box is the recipient. The paymaster sends an amber CALLDATAREAD arc to inspect the user's intent, with sparks flowing from user toward paymaster. A green ACCEPT ring fires at the paymaster. Then two crossing flows appear: green ETH spheres flow downward from paymaster (gas payment) while amber RAI discs flow upward from user to paymaster (fee). Finally a green execution beam extends from user to recipient."
-      legend={<SceneLegend items={[{ color: AMBER, label: 'RAI / fees' }, { color: GREEN, label: 'ETH / gas' }, { color: INDIGO, label: 'Paymaster' }]} />}
+      legend={<SceneLegend items={[{ color: AMBER, label: t('learn.paymaster_flow_v2.legend_rai_fees') }, { color: GREEN, label: t('learn.paymaster_flow_v2.legend_eth_gas') }, { color: INDIGO, label: t('learn.paymaster_flow_v2.legend_paymaster') }]} />}
       fallbackText="Paymaster Flow: User has RAI, paymaster has ETH. Paymaster reads intent via CALLDATAREAD, accepts, then RAI fee and ETH gas cross mid-screen in opposite directions. User executes to recipient."
     >
       {({ reducedMotion }) => (

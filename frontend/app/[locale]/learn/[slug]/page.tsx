@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -20,11 +21,12 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const article = getArticle(slug);
 
   if (!article) {
-    return { title: "Article Not Found" };
+    const t = await getTranslations({ locale, namespace: "seo.pages.learn_article" });
+    return { title: t("not_found") };
   }
 
   const { frontmatter } = article;
@@ -55,7 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function LearnArticlePage({ params }: Props) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const article = getArticle(slug);
 
   if (!article) {
@@ -63,6 +65,7 @@ export default async function LearnArticlePage({ params }: Props) {
   }
 
   const { frontmatter, content, headings } = article;
+  const t = await getTranslations({ locale, namespace: "pages.learn" });
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -98,13 +101,13 @@ export default async function LearnArticlePage({ params }: Props) {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Home",
+        name: t("breadcrumb_home"),
         item: "https://www.generalmarket.io",
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Learn",
+        name: t("breadcrumb_learn"),
         item: "https://www.generalmarket.io/learn",
       },
       {

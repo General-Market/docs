@@ -173,7 +173,7 @@ export function FillSpeedChart() {
               <YAxis
                 stroke="#D4D4D8"
                 tick={{ fill: '#A1A1AA', fontSize: 11 }}
-                label={{ value: 'Amount', angle: -90, position: 'insideLeft', fill: '#A1A1AA' }}
+                label={{ value: t('order_flow_chart.amount_label'), angle: -90, position: 'insideLeft', fill: '#A1A1AA' }}
                 domain={[0, 'auto']}
               />
               <Tooltip
@@ -188,17 +188,16 @@ export function FillSpeedChart() {
                 labelStyle={{ color: '#18181B' }}
                 formatter={(value: number, name: string) => {
                   if (value === null) return [null, null]
-                  const label = name === 'buyAmount' ? 'Buy' : 'Sell'
-                  return [value === 0 ? 'Filled (0)' : value.toFixed(4), label]
+                  const label = name === 'buyAmount' ? t('order_flow_chart.tooltip_buy') : t('order_flow_chart.tooltip_sell')
+                  return [value === 0 ? t('order_flow_chart.tooltip_filled') : value.toFixed(4), label]
                 }}
                 labelFormatter={(label: string, items: any[]) => {
                   const point = items?.[0]?.payload as OrderDataPoint | undefined
                   if (!point) return label
-                  let str = `Order #${point.orderId} | ${label}`
                   if (point.filled && point.fillTime !== undefined) {
-                    str += ` | Filled in ${point.fillTime}s`
+                    return t('order_flow_chart.tooltip_filled_in', { id: String(point.orderId), time: label, seconds: String(point.fillTime) })
                   }
-                  return str
+                  return t('order_flow_chart.tooltip_order', { id: String(point.orderId), time: label })
                 }}
               />
               <ReferenceLine y={0} stroke="#E4E4E7" />

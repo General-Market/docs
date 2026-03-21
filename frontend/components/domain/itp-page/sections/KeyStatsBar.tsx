@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useItpNavSeries } from '@/hooks/useItpNavSeries'
 import type { SectionProps } from '../SectionRenderer'
 
@@ -12,6 +13,7 @@ function Skeleton() {
 }
 
 export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: SectionProps) {
+  const t = useTranslations('markets.itp_page.key_stats')
   const { data: dayData } = useItpNavSeries(itpId, '5m')
 
   let change1d: number | null = null
@@ -32,8 +34,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
       <div className="hidden md:flex items-start divide-x divide-border-light">
         {/* NAV / Share */}
         <div className="pr-6">
-          <div className="text-xs text-text-secondary mb-0.5">NAV / Share</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('nav_per_share')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           {nav > 0 ? (
             <div className="text-3xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
           ) : (
@@ -43,8 +45,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
 
         {/* 1 Day NAV Change */}
         <div className="px-6">
-          <div className="text-xs text-text-secondary mb-0.5">1 Day NAV Change</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('one_day_nav_change')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           {change1d != null && change1dAbs != null ? (
             <div className={`text-xl font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {change1d >= 0 ? '▲' : '▼'} {change1dAbs >= 0 ? '+' : ''}{change1dAbs.toFixed(4)} ({change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%)
@@ -56,8 +58,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
 
         {/* Total Value Locked */}
         <div className="px-6">
-          <div className="text-xs text-text-secondary mb-0.5">Total Value Locked</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('total_value_locked')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           <div className="text-xl font-bold tabular-nums mt-1">
             {aum > 0 ? formatUsd(aum) : '—'}
           </div>
@@ -65,8 +67,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
 
         {/* Holdings */}
         <div className="pl-6">
-          <div className="text-xs text-text-secondary mb-0.5">Holdings</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('holdings')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           <div className="text-xl font-bold tabular-nums mt-1">
             {assetCount > 0 ? assetCount : '—'}
           </div>
@@ -76,8 +78,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
       {/* Mobile: 2-col grid */}
       <div className="grid grid-cols-2 gap-4 md:hidden">
         <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">NAV / Share</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('nav_per_share')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           {nav > 0 ? (
             <div className="text-2xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
           ) : (
@@ -85,8 +87,8 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
           )}
         </div>
         <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">1 Day NAV Change</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('one_day_nav_change')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           {change1d != null ? (
             <div className={`text-lg font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%
@@ -96,13 +98,13 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
           )}
         </div>
         <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">Total Value Locked</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('total_value_locked')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           <div className="text-lg font-bold tabular-nums mt-1">{aum > 0 ? formatUsd(aum) : '—'}</div>
         </div>
         <div className="border-b border-border-light pb-4">
-          <div className="text-xs text-text-secondary mb-0.5">Holdings</div>
-          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xs text-text-secondary mb-0.5">{t('holdings')}</div>
+          <div className="text-micro text-text-muted">{t('as_of', { date: asOf })}</div>
           <div className="text-lg font-bold tabular-nums mt-1">{assetCount > 0 ? assetCount : '—'}</div>
         </div>
       </div>

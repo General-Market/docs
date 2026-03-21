@@ -37,7 +37,7 @@ export function VaultPosition() {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Withdrawal failed')
+      setTxError(actionError.message || t('common.withdrawal_failed'))
       reset()
     }
   }, [actionError, reset])
@@ -75,7 +75,7 @@ export function VaultPosition() {
             <p className="text-heading font-extrabold font-mono tabular-nums text-black">
               {parseFloat(sharesFormatted).toFixed(4)}
             </p>
-            <p className="text-label text-text-muted">{vaultInfo?.symbol ?? 'shares'}</p>
+            <p className="text-label text-text-muted">{vaultInfo?.symbol ?? t('vault_position.shares_fallback')}</p>
           </div>
           <div className="px-5 py-4 border-l border-border-light">
             <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vault_position.current_value')}</p>

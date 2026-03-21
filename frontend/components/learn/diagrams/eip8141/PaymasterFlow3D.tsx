@@ -6,6 +6,7 @@ import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
+import { useTranslations } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -849,6 +850,7 @@ function Legend() {
 /* ------------------------------------------------------------------ */
 
 export function PaymasterFlow3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"

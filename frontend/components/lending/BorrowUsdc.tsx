@@ -100,7 +100,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Transaction failed')
+      setTxError(actionError.message || t('common.transaction_failed'))
       capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       resetAction()
@@ -159,7 +159,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               disabled={isProcessing || maxBorrow === 0n}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >
-              MAX
+              {t('actions.max')}
             </button>
           </div>
         </div>
@@ -212,10 +212,10 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">{t('borrow_usdc.quote.max_borrow')}</span>
-              <span className="text-text-primary font-mono tabular-nums">{quote.terms.maxBorrow} USDC</span>
+              <span className="text-text-primary font-mono tabular-nums">{t('borrow_usdc.quote.max_borrow_value', { amount: quote.terms.maxBorrow })}</span>
             </div>
             <div className="text-xs text-text-muted">
-              Bundle: {quote.bundler.steps.join(' → ')}
+              {t('borrow_usdc.quote.bundle_steps', { steps: quote.bundler.steps.join(' \u2192 ') })}
             </div>
           </div>
         )}

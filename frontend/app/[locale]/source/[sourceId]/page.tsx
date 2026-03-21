@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
@@ -12,29 +13,35 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { sourceId } = await params
-  const source = await getSourceDisplayServer(sourceId)
+  const { locale, sourceId } = await params
+  const [source, t] = await Promise.all([
+    getSourceDisplayServer(sourceId),
+    getTranslations({ locale, namespace: 'seo.pages.source_detail' }),
+  ])
 
   if (!source) {
-    return { title: 'Source Not Found' }
+    return { title: t('title_not_found') }
   }
 
   const category = getCategoryLabel(source.category)
-  const description = `${source.name} — live market data feed with ${source.prefixes.length} market series. Category: ${category}. Trade predictions on Vision.`
+  const description = t('description', { name: source.name, count: source.prefixes.length, category })
 
   return {
-    title: `${source.name} | Vision`,
+    title: t('title', { name: source.name }),
     description,
     openGraph: {
-      title: `${source.name} — Vision Data Source`,
+      title: t('og_title', { name: source.name }),
       description,
     },
   }
 }
 
 export default async function SourcePage({ params }: Props) {
-  const { sourceId } = await params
-  const source = await getSourceDisplayServer(sourceId)
+  const { locale, sourceId } = await params
+  const [source, tBreadcrumbs] = await Promise.all([
+    getSourceDisplayServer(sourceId),
+    getTranslations({ locale, namespace: 'seo.breadcrumbs' }),
+  ])
 
   const category = source ? getCategoryLabel(source.category) : undefined
 
@@ -57,8 +64,8 @@ export default async function SourcePage({ params }: Props) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.generalmarket.io' },
-        { '@type': 'ListItem', position: 2, name: 'Data Sources', item: 'https://www.generalmarket.io/sources' },
+        { '@type': 'ListItem', position: 1, name: tBreadcrumbs('home'), item: 'https://www.generalmarket.io' },
+        { '@type': 'ListItem', position: 2, name: tBreadcrumbs('data_sources'), item: 'https://www.generalmarket.io/sources' },
         { '@type': 'ListItem', position: 3, name: source.name },
       ],
     },

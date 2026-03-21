@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   LineChart,
@@ -32,6 +33,8 @@ const deltaXAxisProps = {
 }
 
 export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
+
   const cycleData = useMemo(
     () =>
       snapshots.map((s) => ({
@@ -71,8 +74,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Consensus Throughput */}
       <ExplorerChartCard
-        title="Consensus Throughput"
-        subtitle="Consensus rounds per interval (delta)"
+        title={t('explorer.chain_gas_section.consensus_throughput')}
+        subtitle={t('explorer.chain_gas_section.consensus_throughput_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -82,13 +85,13 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [value, 'Rounds']}
+              formatter={(value: number) => [value, t('explorer.chain_gas_section.rounds')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <Area
               type="monotone"
               dataKey="delta"
-              name="Rounds"
+              name={t('explorer.chain_gas_section.rounds')}
               stroke="#000"
               fill="#000"
               fillOpacity={0.06}
@@ -100,8 +103,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
 
       {/* Message Volume */}
       <ExplorerChartCard
-        title="Message Volume"
-        subtitle="P2P messages sent & received (delta per interval)"
+        title={t('explorer.chain_gas_section.message_volume')}
+        subtitle={t('explorer.chain_gas_section.message_volume_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +119,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             <Line
               type="monotone"
               dataKey="sent"
-              name="Sent"
+              name={t('explorer.chain_gas_section.sent')}
               stroke="#000"
               strokeWidth={1.5}
               dot={false}
@@ -124,7 +127,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             <Line
               type="monotone"
               dataKey="received"
-              name="Received"
+              name={t('explorer.chain_gas_section.received')}
               stroke="#000"
               strokeWidth={1.5}
               strokeDasharray="4 3"
@@ -136,8 +139,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
 
       {/* Order Pipeline */}
       <ExplorerChartCard
-        title="Order Pipeline"
-        subtitle="Orders processed (last 60s) vs pending queue depth"
+        title={t('explorer.chain_gas_section.order_pipeline')}
+        subtitle={t('explorer.chain_gas_section.order_pipeline_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -157,7 +160,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             <Area
               type="monotone"
               dataKey="processed"
-              name="Processed / 60s"
+              name={t('explorer.chain_gas_section.processed_60s')}
               stroke="#000"
               fill="#000"
               fillOpacity={0.08}
@@ -166,7 +169,7 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             <Area
               type="monotone"
               dataKey="pending"
-              name="Pending"
+              name={t('explorer.chain_gas_section.pending')}
               stroke="#666"
               fill="#666"
               fillOpacity={0.05}
@@ -179,8 +182,8 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
 
       {/* Derived chart: Cycle Performance */}
       <ExplorerChartCard
-        title="Cycle Performance"
-        subtitle="Average cycle duration (ms) — indicator of chain latency"
+        title={t('explorer.chain_gas_section.cycle_performance')}
+        subtitle={t('explorer.chain_gas_section.cycle_performance_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -201,13 +204,13 @@ export function ChainGasSection({ snapshots, latest, loading }: SectionProps) {
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [`${value}ms`, 'Cycle Duration']}
+              formatter={(value: number) => [`${value}ms`, t('explorer.chain_gas_section.cycle_duration')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <Line
               type="monotone"
               dataKey="cycle_ms"
-              name="Cycle Duration"
+              name={t('explorer.chain_gas_section.cycle_duration')}
               stroke="#000"
               strokeWidth={1.5}
               dot={false}

@@ -116,7 +116,7 @@ export default async function ItpPage({ params }: Props) {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FinancialProduct",
-            "category": "Index Fund",
+            "category": t('json_ld_category'),
             name: data.name,
             tickerSymbol: data.symbol,
             description: t('description', {
@@ -156,7 +156,7 @@ export default async function ItpPage({ params }: Props) {
           />
 
           <p className="mt-12 text-label text-text-muted leading-relaxed">
-            NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.
+            {t('disclaimer')}
           </p>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
+import { useTranslations } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -629,19 +630,20 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 function Legend() {
+  const t = useTranslations('pages')
   return (
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-        <span className="text-micro text-text-muted tracking-wide">Factory / Deploy</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.account_deploy.legend_factory_deploy')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">Wallet (committed)</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.account_deploy.legend_wallet_committed')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-micro text-text-muted tracking-wide">Pre-funded balance</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.account_deploy.legend_prefunded')}</span>
       </div>
     </div>
   )
@@ -652,6 +654,7 @@ function Legend() {
 /* ------------------------------------------------------------------ */
 
 export function AccountDeploy3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"

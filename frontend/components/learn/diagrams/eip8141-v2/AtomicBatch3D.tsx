@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -569,12 +570,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function AtomicBatch3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="Comparison of separate transactions with a vulnerability gap versus an atomic Frame TX that eliminates the gap"
       srDescription="A 3D scene with two sections. Upper: two blue boxes labeled TX 1 Approve and TX 2 Swap with a red pulsing gap between them labeled VULNERABILITY WINDOW. A red arrow drops into the gap representing an attacker exploiting the window between transactions. Lower: a single green Frame TX box with three compartments (F0 Validate, F1 Approve, F2 Swap) representing the atomic batch. The key insight: separate transactions create exploitable gaps, while a Frame TX eliminates them by bundling operations atomically."
-      legend={<SceneLegend items={[{ color: BLUE, label: 'Separate TX' }, { color: RED, label: 'Attack / vulnerability' }, { color: GREEN, label: 'Atomic Frame TX' }]} />}
+      legend={<SceneLegend items={[{ color: BLUE, label: t('learn.atomic_batch_v2.legend_separate_tx') }, { color: RED, label: t('learn.atomic_batch_v2.legend_attack') }, { color: GREEN, label: t('learn.atomic_batch_v2.legend_atomic_frame') }]} />}
       fallbackText="Separate TXs have a gap between Approve and Swap that attackers can exploit. A Frame TX bundles F0 Validate, F1 Approve, and F2 Swap atomically with no gap and no front-running opportunity."
     >
       {({ reducedMotion }) => (

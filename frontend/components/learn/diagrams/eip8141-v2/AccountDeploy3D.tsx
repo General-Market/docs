@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -786,12 +787,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function AccountDeploy3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="3D animation showing account deployment: the wallet address exists before the code does. Funds arrive at the empty address, then the wallet deploys, validates, and executes its first transaction."
       srDescription="A 3D scene showing a building lot metaphor for account deployment. An empty gray plot with a blue address sign has amber coins sitting on it (funds arrive before the wallet exists). An indigo factory node hovers above. A blue deploy beam shoots down, construction particles spiral, and a purple house materializes on the plot. A purple lock appears on the house face and rotates (validation). An ACCEPT ring flashes green. The house transitions to green, the door opens and a green execute beam exits rightward. Coins reappear inside the house. The key insight: the address is deterministic -- funds can be sent before the wallet contract is deployed."
-      legend={<SceneLegend items={[{ color: BLUE, label: 'Deploy' }, { color: PURPLE, label: 'Validation' }, { color: GREEN, label: 'Execution' }, { color: AMBER, label: 'Pre-funded assets' }]} />}
+      legend={<SceneLegend items={[{ color: BLUE, label: t('learn.account_deploy_v2.legend_deploy') }, { color: PURPLE, label: t('learn.account_deploy_v2.legend_validation') }, { color: GREEN, label: t('learn.account_deploy_v2.legend_execution') }, { color: AMBER, label: t('learn.account_deploy_v2.legend_prefunded') }]} />}
       fallbackText="Account deployment in 3 frames: address exists before wallet code. Funds arrive first (amber coins on empty lot), then Deploy (house materializes purple), Validate (lock rotates on house face, ACCEPT fires green), Execute (house turns green, door opens, beam exits rightward)."
     >
       {({ reducedMotion }) => (

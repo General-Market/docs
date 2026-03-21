@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { ProfileBatch } from '@/hooks/usePlayerProfile'
 import { TickSquares } from './TickSquares'
 import { formatROI } from '@/lib/utils/formatters'
@@ -9,6 +10,7 @@ interface BatchTickRowProps {
 }
 
 export function BatchTickRow({ batch }: BatchTickRowProps) {
+  const t = useTranslations('common')
   const roiColor = batch.roi >= 0 ? 'text-color-up' : 'text-color-down'
   const statusColor =
     batch.status === 'active'
@@ -24,11 +26,11 @@ export function BatchTickRow({ batch }: BatchTickRowProps) {
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${statusColor}`}>
-            {batch.status === 'active' ? 'Active' : 'Exited'}
+            {batch.status === 'active' ? t('profile.active') : t('profile.exited')}
           </span>
         </div>
         <div className="text-micro text-text-muted mt-0.5">
-          {batch.tickCount} ticks &middot; ${batch.deposited.toFixed(0)} in
+          {t('profile.ticks_count', { tickCount: batch.tickCount })} &middot; {t('profile.deposited_in', { deposited: batch.deposited.toFixed(0) })}
         </div>
       </div>
 

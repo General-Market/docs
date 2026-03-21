@@ -128,9 +128,9 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
         {/* Links */}
         <section className="pt-8 mt-12 border-t border-border-light">
           <div className="flex items-center gap-6 text-sm">
-            <Link href="/privacy" className="text-text-muted hover:text-text-primary">Privacy</Link>
-            <Link href="/legal-vision" className="text-text-muted hover:text-text-primary">Vision Legal</Link>
-            <Link href="/legal-index" className="text-text-muted hover:text-text-primary">Index Legal</Link>
+            <Link href="/privacy" className="text-text-muted hover:text-text-primary">{t('link_privacy')}</Link>
+            <Link href="/legal-vision" className="text-text-muted hover:text-text-primary">{t('link_vision_legal')}</Link>
+            <Link href="/legal-index" className="text-text-muted hover:text-text-primary">{t('link_index_legal')}</Link>
             <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-text-primary">@otc_max</a>
           </div>
         </section>

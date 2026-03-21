@@ -1,6 +1,7 @@
 'use client'
 
 import { use } from 'react'
+import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { HeroBand } from '@/components/ui/HeroBand'
@@ -23,6 +24,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 
 export default function AgentPage({ params }: { params: Promise<{ address: string }> }) {
   const { address } = use(params)
+  const t = useTranslations('pages.agent')
   const { agent, isLoading, isError } = useAgentDetail(address)
   const { bets, isLoading: betsLoading } = useAgentBets(address, 20)
 
@@ -35,7 +37,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
       <Header />
 
       <HeroBand
-        eyebrow={`Rank #${agent?.rank ?? '—'}`}
+        eyebrow={t('rank', { rank: String(agent?.rank ?? '\u2014') })}
         title={displayName}
         subtitle={address}
       />
@@ -44,32 +46,32 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
       <div className="max-w-site mx-auto w-full pb-16">
         {isLoading ? (
           <div className="py-12 text-center">
-            <div className="text-sm text-text-muted animate-pulse">Loading agent data...</div>
+            <div className="text-sm text-text-muted animate-pulse">{t('loading')}</div>
           </div>
         ) : isError || !agent ? (
           <div className="py-12 text-center">
-            <div className="text-sm text-text-muted">No data found for this agent. They may not have placed any bets yet.</div>
+            <div className="text-sm text-text-muted">{t('no_data')}</div>
           </div>
         ) : (
           <>
             {/* Performance Overview */}
-            <SectionBar title="Performance" />
+            <SectionBar title={t('performance')} />
             <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
-              <StatCard label="ROI" value={formatROI(agent.roi)} color={roiColor} />
+              <StatCard label={t('roi')} value={formatROI(agent.roi)} color={roiColor} />
               <div className="border-l border-border-light">
-                <StatCard label="P&L" value={`${agent.pnl >= 0 ? '+' : ''}$${Math.abs(agent.pnl).toFixed(2)}`} color={pnlColor} />
+                <StatCard label={t('pnl')} value={`${agent.pnl >= 0 ? '+' : ''}$${Math.abs(agent.pnl).toFixed(2)}`} color={pnlColor} />
               </div>
               <div className="border-l border-border-light">
-                <StatCard label="Volume" value={formatVolume(agent.volume)} />
+                <StatCard label={t('volume')} value={formatVolume(agent.volume)} />
               </div>
               <div className="border-l border-border-light">
-                <StatCard label="Win Rate" value={`${agent.winRate.toFixed(1)}%`} />
+                <StatCard label={t('win_rate')} value={`${agent.winRate.toFixed(1)}%`} />
               </div>
             </div>
 
             {/* Trend Chart */}
             <div className="mt-6 border border-border-light p-6">
-              <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">Performance Trend</div>
+              <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">{t('performance_trend')}</div>
               <div className="h-32">
                 <PerformanceGraphMini walletAddress={address} height={128} />
               </div>
@@ -77,47 +79,47 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
 
             {/* Stats Grid */}
             <div className="mt-8">
-              <SectionBar title="Stats" />
+              <SectionBar title={t('stats')} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
-              <StatCard label="Total Bets" value={agent.totalBets.toLocaleString()} />
+              <StatCard label={t('total_bets')} value={agent.totalBets.toLocaleString()} />
               <div className="border-l border-border-light">
-                <StatCard label="Avg Portfolio" value={`${agent.avgPortfolioSize.toLocaleString()} mkts`} />
+                <StatCard label={t('avg_portfolio')} value={`${agent.avgPortfolioSize.toLocaleString()} ${t('mkts')}`} />
               </div>
               <div className="border-l border-border-light">
-                <StatCard label="Max Portfolio" value={`${agent.maxPortfolioSize.toLocaleString()} mkts`} />
+                <StatCard label={t('max_portfolio')} value={`${agent.maxPortfolioSize.toLocaleString()} ${t('mkts')}`} />
               </div>
               <div className="border-l border-border-light">
-                <StatCard label="Avg Bet Size" value={`$${agent.avgBetSize.toFixed(2)}`} />
+                <StatCard label={t('avg_bet_size')} value={`$${agent.avgBetSize.toFixed(2)}`} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 border border-t-0 border-border-light">
-              <StatCard label="Best Bet" value={`+$${agent.bestBet.result.toFixed(2)}`} color="text-color-up" />
+              <StatCard label={t('best_bet')} value={`+$${agent.bestBet.result.toFixed(2)}`} color="text-color-up" />
               <div className="border-l border-border-light">
-                <StatCard label="Worst Bet" value={`$${agent.worstBet.result.toFixed(2)}`} color="text-color-down" />
+                <StatCard label={t('worst_bet')} value={`$${agent.worstBet.result.toFixed(2)}`} color="text-color-down" />
               </div>
             </div>
 
             {/* Recent Bets */}
             <div className="mt-8">
-              <SectionBar title="Recent Bets" value={`${bets.length}`} />
+              <SectionBar title={t('recent_bets')} value={`${bets.length}`} />
             </div>
             <div className="border border-border-light overflow-x-auto">
               {betsLoading ? (
-                <div className="py-8 text-center text-sm text-text-muted animate-pulse">Loading bets...</div>
+                <div className="py-8 text-center text-sm text-text-muted animate-pulse">{t('loading_bets')}</div>
               ) : bets.length === 0 ? (
-                <div className="py-8 text-center text-sm text-text-muted">No bets found</div>
+                <div className="py-8 text-center text-sm text-text-muted">{t('no_bets')}</div>
               ) : (
                 <table className="w-full text-sm min-w-[600px]">
                   <thead className="bg-surface border-b border-border-light">
                     <tr>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Bet</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Markets</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Amount</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Result</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Status</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Date</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">{t('col_bet')}</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">{t('col_markets')}</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">{t('col_amount')}</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">{t('col_result')}</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">{t('col_status')}</th>
+                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">{t('col_date')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -151,7 +153,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
             {/* Last Active */}
             {agent.lastActiveAt && (
               <div className="mt-4 text-xs text-text-muted">
-                Last active {formatRelativeTime(agent.lastActiveAt)}
+                {t('last_active', { time: formatRelativeTime(agent.lastActiveAt) })}
               </div>
             )}
           </>

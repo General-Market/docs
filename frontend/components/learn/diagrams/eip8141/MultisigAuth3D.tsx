@@ -6,6 +6,7 @@ import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
+import { useTranslations } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -720,11 +721,12 @@ function TokenStream({ count = 20, reducedMotion }: { count?: number; reducedMot
 /* ------------------------------------------------------------------ */
 
 function Legend() {
+  const t = useTranslations('pages')
   return (
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-micro text-text-muted tracking-wide">Signatures</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.multisig_auth.legend_signatures')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
@@ -732,7 +734,7 @@ function Legend() {
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">ACCEPT + Execution</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.multisig_auth.legend_accept_execution')}</span>
       </div>
     </div>
   )
@@ -743,6 +745,7 @@ function Legend() {
 /* ------------------------------------------------------------------ */
 
 export function MultisigAuth3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"

@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -535,12 +536,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function FOCILGuard3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="Side-by-side comparison showing how FOCIL prevents builder censorship of Frame transactions"
       srDescription="A 3D scene with two halves separated by a divider. Left (Without FOCIL): blue Frame TX cubes and gray EOA TX cubes approach a gate. The gray cubes pass through but the blue cubes hit a red X and bounce back, showing censorship. Right (With FOCIL): all cubes pass through the gate, protected by a green semi-transparent shield representing the FOCIL inclusion committee."
-      legend={<SceneLegend items={[{ color: BLUE, label: 'Frame TX' }, { color: GRAY, label: 'EOA TX' }, { color: GREEN, label: 'FOCIL shield' }, { color: RED, label: 'Censorship' }]} />}
+      legend={<SceneLegend items={[{ color: BLUE, label: t('learn.focil_guard_v2.legend_frame_tx') }, { color: GRAY, label: t('learn.focil_guard_v2.legend_eoa_tx') }, { color: GREEN, label: t('learn.focil_guard_v2.legend_focil_shield') }, { color: RED, label: t('learn.focil_guard_v2.legend_censorship') }]} />}
       fallbackText="Without FOCIL: a builder can censor Frame TXs while allowing EOA TXs through. With FOCIL: a committee forces inclusion of all transactions, preventing censorship."
     >
       {({ reducedMotion }) => (

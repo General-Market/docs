@@ -23,7 +23,7 @@ const TYPE_COLORS: Record<MorphoTx['type'], string> = {
   repay: 'text-purple-600',
 }
 
-function formatTime(timestamp: number): string {
+function formatTime(timestamp: number, t: (key: string, values?: Record<string, string | number | Date>) => string): string {
   if (!timestamp) return ''
   const date = new Date(timestamp * 1000)
   const now = new Date()
@@ -33,13 +33,13 @@ function formatTime(timestamp: number): string {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
   const seconds = Math.floor(diffMs / 1000)
-  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 60) return t('lending_history.seconds_ago', { seconds })
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 60) return t('lending_history.minutes_ago', { minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) return t('lending_history.hours_ago', { hours })
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
+  if (days < 30) return t('lending_history.days_ago', { days })
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
@@ -78,7 +78,7 @@ export function LendingHistory({ market }: LendingHistoryProps) {
               rel="noopener noreferrer"
               className="text-text-muted hover:text-text-primary transition-colors"
             >
-              {formatTime(tx.timestamp)} ↗
+              {formatTime(tx.timestamp, t)} ↗
             </a>
           </div>
         ))}

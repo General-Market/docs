@@ -14,6 +14,7 @@ import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
 import BatchEntryPanel from './BatchEntryPanel'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
+import { useTranslations } from 'next-intl'
 
 interface SourceDetailProps {
   sourceId: string
@@ -38,6 +39,7 @@ function formatTvl(tvl: string): string {
 }
 
 export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
+  const t = useTranslations('vision')
   const router = useRouter()
 
   // Source registry — all metadata comes from data-node API
@@ -135,7 +137,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return (
       <div className="px-6 lg:px-12 py-12">
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-text-muted">Loading source...</p>
+          <p className="text-text-muted">{t('source_detail.loading_source')}</p>
         </div>
       </div>
     )
@@ -145,9 +147,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return (
       <div className="px-6 lg:px-12 py-12">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-2xl font-black text-black mb-2">Source not found</h1>
+          <h1 className="text-2xl font-black text-black mb-2">{t('source_detail.source_not_found')}</h1>
           <p className="text-text-secondary mb-4">
-            No source with ID &quot;{sourceId}&quot; exists.
+            {t('source_detail.source_not_found_description', { sourceId })}
           </p>
           <button
             onClick={() => router.push('/')}
@@ -193,7 +195,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         <div className={`mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6 transition-shadow duration-700 ${urgencyBarCls} ${justResolved ? 'tick-resolved' : ''}`}>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Tick
+              {t('source_detail.tick')}
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
               {activeBatch ? `#${activeBatch.currentTick}` : '#0'}
@@ -201,7 +203,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Players
+              {t('source_detail.players')}
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
               {activeBatch?.playerCount ?? 0}
@@ -209,7 +211,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Pool
+              {t('source_detail.pool')}
             </div>
             <div className="text-[16px] font-bold font-mono text-color-up">
               {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
@@ -227,7 +229,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           {/* Set status */}
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Set
+              {t('source_detail.set')}
             </div>
             <div className="text-[16px] font-bold font-mono text-color-up">
               {totalSet}/{totalMarkets}
@@ -236,7 +238,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           {/* Timer — pulses on critical */}
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Timer
+              {t('source_detail.timer')}
             </div>
             <div className={`text-[16px] font-bold font-mono tabular-nums ${urgencyTimerCls}`}>
               {formatTime(tickState.remaining)}
@@ -246,13 +248,13 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           {activeRound && (
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                Round
+                {t('source_detail.round')}
               </div>
               <div className="text-[16px] font-bold font-mono text-black">
-                {activeRound.status === 'betting' ? 'Betting Open' :
-                 activeRound.status === 'settling' ? 'Settling...' :
-                 activeRound.status === 'settled' ? 'Settled' :
-                 activeRound.status === 'locked' ? 'Locked' :
+                {activeRound.status === 'betting' ? t('source_detail.betting_open') :
+                 activeRound.status === 'settling' ? t('source_detail.settling') :
+                 activeRound.status === 'settled' ? t('source_detail.settled') :
+                 activeRound.status === 'locked' ? t('source_detail.locked') :
                  activeRound.status}
               </div>
             </div>
@@ -281,10 +283,10 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
 
         {/* Related links */}
         <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
-          <Link href="/" className="hover:text-black transition-colors">All Sources</Link>
-          <Link href="/sources" className="hover:text-black transition-colors">Source Health</Link>
-          <Link href="/points" className="hover:text-black transition-colors">Earn Points</Link>
-          <Link href="/about" className="hover:text-black transition-colors">About</Link>
+          <Link href="/" className="hover:text-black transition-colors">{t('source_detail.all_sources')}</Link>
+          <Link href="/sources" className="hover:text-black transition-colors">{t('source_detail.source_health')}</Link>
+          <Link href="/points" className="hover:text-black transition-colors">{t('source_detail.earn_points')}</Link>
+          <Link href="/about" className="hover:text-black transition-colors">{t('source_detail.about')}</Link>
         </div>
       </div>
     </div>

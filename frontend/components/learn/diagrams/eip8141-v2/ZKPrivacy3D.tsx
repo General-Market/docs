@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -771,6 +772,7 @@ function PhaseLabel({ phase }: { phase: Phase }) {
 /* ------------------------------------------------------------------ */
 
 export function ZKPrivacy3D() {
+  const t = useTranslations('pages')
   const [phase, setPhase] = useState<Phase>(1)
 
   return (
@@ -780,7 +782,7 @@ export function ZKPrivacy3D() {
       srDescription="A 3D scene showing two addresses: 0xDeposit on the far left (blue sphere) and 0xFresh on the far right (green sphere). A permanent broken red dashed line with an X mark between them is always visible, labeled NO LINK. In the center, a Frame Transaction envelope contains two boxes: Frame 0 (purple, ZK Paymaster) and Frame 1 (green, Withdrawal). A purple ZK proof cube descends into Frame 0 and is absorbed. An amber CALLDATAREAD arc with sparks flows from Frame 1 toward Frame 0. A green ACCEPT torus ring fires around Frame 0. A green withdrawal beam extends from Frame 1 to the 0xFresh address. Phase labels below the scene cycle through: No link between deposit and withdrawal, ZK proof verified ACCEPT paymaster pays gas, No relayer needed."
       legend={
         <div className="flex items-center gap-5 flex-wrap">
-          <SceneLegend items={[{ color: RED, label: 'No link (privacy)' }, { color: PURPLE, label: 'ZK Paymaster' }, { color: GREEN, label: 'Withdrawal' }, { color: AMBER, label: 'CALLDATAREAD' }]} />
+          <SceneLegend items={[{ color: RED, label: t('learn.zk_privacy_v2.legend_no_link') }, { color: PURPLE, label: t('learn.zk_privacy_v2.legend_zk_paymaster') }, { color: GREEN, label: t('learn.zk_privacy_v2.legend_withdrawal') }, { color: AMBER, label: t('learn.zk_privacy_v2.legend_calldataread') }]} />
           <div className="ml-auto">
             <PhaseLabel phase={phase} />
           </div>

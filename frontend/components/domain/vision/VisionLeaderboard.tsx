@@ -1,12 +1,14 @@
 'use client'
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { useTranslations } from 'next-intl'
 
 /**
  * Vision leaderboard showing player rankings by PnL.
  * Uses the /vision/leaderboard endpoint from the issuer API.
  */
 export function VisionLeaderboard() {
+  const t = useTranslations('vision')
   const { leaderboard, isLoading, isError } = useVisionLeaderboard()
 
   if (isLoading) {
@@ -25,7 +27,7 @@ export function VisionLeaderboard() {
     return (
       <div className="py-8 text-center">
         <p className="text-text-muted font-mono text-sm">
-          {isError ? 'Failed to load leaderboard' : 'No players yet — join a batch to compete'}
+          {isError ? t('vision_leaderboard.failed_to_load') : t('vision_leaderboard.no_players')}
         </p>
       </div>
     )
@@ -38,14 +40,14 @@ export function VisionLeaderboard() {
           <thead>
             <tr className="border-b border-border-medium text-[10px] font-mono text-text-muted uppercase tracking-wider">
               <th className="pb-3 pr-4">#</th>
-              <th className="pb-3 pr-4">Player</th>
-              <th className="pb-3 pr-4 text-right">PnL (USDC)</th>
-              <th className="pb-3 pr-4 text-right">ROI</th>
-              <th className="pb-3 pr-4 text-right">Rounds</th>
-              <th className="pb-3 pr-4 text-right">Win%</th>
-              <th className="pb-3 pr-4 text-right">Correct%</th>
-              <th className="pb-3 pr-4 text-right">Volume</th>
-              <th className="pb-3 text-right">Batches</th>
+              <th className="pb-3 pr-4">{t('vision_leaderboard.player')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.pnl_usdc')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.roi')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.rounds')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.win_pct')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.correct_pct')}</th>
+              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.volume')}</th>
+              <th className="pb-3 text-right">{t('vision_leaderboard.batches')}</th>
             </tr>
           </thead>
           <tbody>

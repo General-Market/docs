@@ -25,8 +25,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-export default async function LearnPage() {
-  const articles = getAllArticles()
+export default async function LearnPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const [articles, t] = await Promise.all([
+    Promise.resolve(getAllArticles()),
+    getTranslations({ locale, namespace: 'pages.learn' }),
+  ])
 
   const collectionJsonLd = {
     '@context': 'https://schema.org',
@@ -50,8 +54,8 @@ export default async function LearnPage() {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.generalmarket.io' },
-      { '@type': 'ListItem', position: 2, name: 'Learn' },
+      { '@type': 'ListItem', position: 1, name: t('breadcrumb_home'), item: 'https://www.generalmarket.io' },
+      { '@type': 'ListItem', position: 2, name: t('breadcrumb_learn') },
     ],
   }
 
@@ -69,17 +73,17 @@ export default async function LearnPage() {
       />
 
       <HeroBand
-        eyebrow="General Market"
-        title="Learn"
-        subtitle="Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
 
       <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
-        <SectionBar title="Articles" value={String(articles.length)} />
+        <SectionBar title={t('articles')} value={String(articles.length)} />
 
         {articles.length === 0 ? (
           <p className="text-body text-text-secondary mt-8">
-            No articles yet. Check back soon.
+            {t('no_articles')}
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light mt-6">
@@ -103,7 +107,7 @@ export default async function LearnPage() {
                     {article.frontmatter.readingTime}
                   </div>
                   <div className="text-caption font-bold uppercase tracking-[0.04em] text-black group-hover:underline">
-                    Read
+                    {t('read')}
                   </div>
                 </div>
               </Link>

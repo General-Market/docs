@@ -21,6 +21,7 @@ import { SpringPress } from '@/components/ui/spring'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
 import StrategyList from './StrategyList'
+import { useTranslations } from 'next-intl'
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -50,6 +51,7 @@ export default function BatchEntryPanel({
   sourceId,
   marketIds = [],
 }: BatchEntryPanelProps) {
+  const t = useTranslations('vision')
   // -- Batch data --
   // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
   const { data: batches } = useBatches()
@@ -255,19 +257,19 @@ export default function BatchEntryPanel({
 
   // -- Button label --
   const buttonLabel = useMemo(() => {
-    if (!isConnected) return 'Connect Wallet'
-    if (isSubmitting) return 'Submitting...'
-    if (isJoinConfirming || isDepositConfirming) return 'Confirming...'
-    if (isJoinPending || isDepositPending) return 'Waiting for wallet...'
-    if (joinStep === 'checking-balance') return 'Checking balance...'
-    if (joinStep === 'joining') return 'Joining batch...'
-    if (depositStep === 'depositing') return 'Depositing...'
+    if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
+    if (isSubmitting) return t('batch_entry_panel.submitting')
+    if (isJoinConfirming || isDepositConfirming) return t('batch_entry_panel.confirming')
+    if (isJoinPending || isDepositPending) return t('batch_entry_panel.waiting_for_wallet')
+    if (joinStep === 'checking-balance') return t('batch_entry_panel.checking_balance')
+    if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
+    if (depositStep === 'depositing') return t('batch_entry_panel.depositing')
     if (isJoined) {
-      if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
-      return 'Deposit More'
+      if (stakeValue > 0) return t('batch_entry_panel.deposit_amount', { amount: stakeValue.toString() })
+      return t('batch_entry_panel.deposit_more')
     }
-    if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
-    return 'Enter Batch'
+    if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
+    return t('batch_entry_panel.enter_batch')
   }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
 
   const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
@@ -318,14 +320,14 @@ export default function BatchEntryPanel({
             {/* Balance + PnL — large, at a glance */}
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Balance</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">{t('batch_entry_panel.balance')}</div>
                 <div className="text-[22px] font-black font-mono text-neutral-900 tabular-nums leading-tight">
                   {balanceNum.toFixed(2)}
                   <span className="text-[11px] font-medium text-neutral-400 ml-1">USDC</span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">PnL</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">{t('batch_entry_panel.pnl')}</div>
                 <div className={`text-[18px] font-black font-mono tabular-nums leading-tight ${isUp ? 'text-color-up' : isDown ? 'text-color-down' : 'text-neutral-500'}`}>
                   {isUp ? '+' : ''}{pnlNum.toFixed(2)}
                   <span className="text-[10px] ml-0.5">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
@@ -336,10 +338,10 @@ export default function BatchEntryPanel({
             {tickSummary && (
               <div className="mt-2 pt-2 border-t border-emerald-200">
                 <div className="flex items-center justify-between text-[10px] font-mono tabular-nums">
-                  <span className="text-color-up font-bold">{tickSummary.wins}W</span>
-                  <span className="text-color-down font-bold">{tickSummary.losses}L</span>
-                  {tickSummary.flats > 0 && <span className="text-neutral-400 font-bold">{tickSummary.flats}F</span>}
-                  <span className="text-neutral-400">{tickSummary.total} ticks</span>
+                  <span className="text-color-up font-bold">{tickSummary.wins}{t('batch_entry_panel.won').charAt(0)}</span>
+                  <span className="text-color-down font-bold">{tickSummary.losses}{t('batch_entry_panel.lost').charAt(0)}</span>
+                  {tickSummary.flats > 0 && <span className="text-neutral-400 font-bold">{tickSummary.flats}{t('batch_entry_panel.flat').charAt(0)}</span>}
+                  <span className="text-neutral-400">{t('batch_entry_panel.show_all_ticks', { count: tickSummary.total })}</span>
                   <span className={`font-bold ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                     {tickSummary.totalPnl >= 0 ? '+' : ''}{tickSummary.totalPnl.toFixed(2)}
                   </span>
@@ -359,7 +361,7 @@ export default function BatchEntryPanel({
               Not in batch #{activeBatch.id}
             </span>
           </div>
-          <p className="text-[10px] text-neutral-400 mt-1">Set predictions and enter below to play.</p>
+          <p className="text-[10px] text-neutral-400 mt-1">{t('batch_entry_panel.set_predictions_prompt')}</p>
         </div>
       )}
 
@@ -369,11 +371,11 @@ export default function BatchEntryPanel({
           <div>
             <div className="flex items-baseline gap-2">
               <h2 className="text-sm font-semibold text-neutral-900">
-                {isJoined ? 'Update predictions' : 'Set predictions for next tick'}
+                {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
               </h2>
             </div>
             <p className="text-[10px] text-text-muted">
-              {activeBatch ? `Tick ${activeBatch.currentTick}` : 'Waiting for batch...'}
+              {activeBatch ? t('batch_entry_panel.tick_label', { tick: activeBatch.currentTick.toString() }) : t('batch_entry_panel.waiting_for_batch')}
             </p>
           </div>
           <p className="text-[24px] font-mono font-black tracking-tight leading-none text-black">
@@ -384,9 +386,9 @@ export default function BatchEntryPanel({
         {/* Bitmap summary — visual bar + labels */}
         <div className="mb-3">
           <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
-            <span className="text-color-up">{counts.up} UP</span>
-            <span className="text-color-down">{counts.down} DN</span>
-            <span className="text-text-muted">{counts.empty} unset</span>
+            <span className="text-color-up">{t('batch_entry_panel.up_count', { count: counts.up })}</span>
+            <span className="text-color-down">{t('batch_entry_panel.down_count', { count: counts.down })}</span>
+            <span className="text-text-muted">{t('batch_entry_panel.unset_count', { count: counts.empty })}</span>
           </div>
           <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
             {counts.up > 0 && (
@@ -407,18 +409,18 @@ export default function BatchEntryPanel({
         {/* Tick status messages */}
         {isJoined && betsSubmittedTick !== null && (
           <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-emerald-700">Your bets are set for the next tick</p>
+            <p className="text-[11px] font-semibold text-emerald-700">{t('batch_entry_panel.bets_set_for_tick')}</p>
           </div>
         )}
         {isJoined && betsSubmittedTick === null && hasPredictions && (
           <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-sky-700">Bets carry forward from previous tick</p>
-            <p className="text-[10px] text-sky-600 mt-0.5">Change predictions below, or deposit more to continue with current bets.</p>
+            <p className="text-[11px] font-semibold text-sky-700">{t('batch_entry_panel.bets_carry_forward')}</p>
+            <p className="text-[10px] text-sky-600 mt-0.5">{t('batch_entry_panel.bets_carry_forward_detail')}</p>
           </div>
         )}
         {isJoined && betsSubmittedTick === null && !hasPredictions && (
           <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-amber-700">Sitting out this tick — no bets set</p>
+            <p className="text-[11px] font-semibold text-amber-700">{t('batch_entry_panel.sitting_out')}</p>
           </div>
         )}
 
@@ -429,8 +431,8 @@ export default function BatchEntryPanel({
             onClick={handleConnectWallet}
             className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
           >
-            <p className="text-[11px] font-bold text-neutral-700">Connect Wallet</p>
-            <p className="text-[10px] text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
+            <p className="text-[11px] font-bold text-neutral-700">{t('batch_entry_panel.connect_wallet')}</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">{t('batch_entry_panel.connect_wallet_prompt')}</p>
           </button>
         )}
         {/* Deposit prompt when connected but balance is 0 */}
@@ -440,8 +442,8 @@ export default function BatchEntryPanel({
             onClick={() => setShowDepositModal(true)}
             className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2 text-left hover:bg-yellow-100 transition-colors"
           >
-            <p className="text-[11px] font-bold text-yellow-700">No Vision balance</p>
-            <p className="text-[10px] text-yellow-600 mt-0.5">Deposit USDC to start playing</p>
+            <p className="text-[11px] font-bold text-yellow-700">{t('batch_entry_panel.no_vision_balance')}</p>
+            <p className="text-[10px] text-yellow-600 mt-0.5">{t('batch_entry_panel.deposit_to_play')}</p>
           </button>
         )}
 
@@ -494,7 +496,7 @@ export default function BatchEntryPanel({
               type="button"
               onClick={() => { resetJoin(); resetDeposit() }}
               className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
-              title="Dismiss"
+              title={t('batch_entry_panel.dismiss')}
             >
               &times;
             </button>
@@ -515,8 +517,8 @@ export default function BatchEntryPanel({
         {/* Batch info footer */}
         {activeBatch && (
           <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
-            <span>{activeBatch.playerCount} players</span>
-            <span>{activeBatch.marketCount || marketIds.length} markets</span>
+            <span>{t('batch_entry_panel.players', { count: activeBatch.playerCount })}</span>
+            <span>{t('batch_entry_panel.markets', { count: activeBatch.marketCount || marketIds.length })}</span>
           </div>
         )}
 
@@ -547,10 +549,10 @@ export default function BatchEntryPanel({
             </div>
             {/* Column header */}
             <div className="flex items-center text-[9px] font-semibold uppercase tracking-[0.06em] text-neutral-300 mb-0.5 px-1">
-              <span className="w-[40px]">Tick</span>
-              <span className="w-[50px] text-right">Staked</span>
-              <span className="flex-1 text-right">PnL</span>
-              <span className="w-[48px] text-right">Result</span>
+              <span className="w-[40px]">{t('batch_entry_panel.tick_header')}</span>
+              <span className="w-[50px] text-right">{t('batch_entry_panel.staked_header')}</span>
+              <span className="flex-1 text-right">{t('batch_entry_panel.pnl')}</span>
+              <span className="w-[48px] text-right">{t('batch_entry_panel.result_header')}</span>
             </div>
             <div className={showTickHistory ? 'max-h-[300px] overflow-y-auto' : ''}>
               {visibleTicks.map((tick) => {
@@ -568,7 +570,7 @@ export default function BatchEntryPanel({
                     <span className={`w-[48px] text-right text-[9px] font-bold ${
                       tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'
                     }`}>
-                      {tick.pnl > 0 ? 'Won' : tick.pnl < 0 ? 'Lost' : 'Flat'}
+                      {tick.pnl > 0 ? t('batch_entry_panel.won') : tick.pnl < 0 ? t('batch_entry_panel.lost') : t('batch_entry_panel.flat')}
                     </span>
                   </div>
                 )
@@ -580,7 +582,7 @@ export default function BatchEntryPanel({
                 onClick={() => setShowTickHistory(!showTickHistory)}
                 className="mt-1.5 w-full text-center text-[10px] font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
               >
-                {showTickHistory ? 'Show less' : `Show all ${sorted.length} ticks`}
+                {showTickHistory ? t('batch_entry_panel.show_less') : t('batch_entry_panel.show_all_ticks', { count: sorted.length })}
               </button>
             )}
             <p className="mt-2 text-[10px] text-neutral-400 text-center">

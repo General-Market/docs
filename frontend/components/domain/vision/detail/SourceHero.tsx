@@ -4,6 +4,7 @@ import type { VisionSource } from '@/lib/vision/sources'
 import type { SourceSchedule } from '@/hooks/vision/useMarketSnapshot'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { GeometricPulse } from './GeometricPulse'
+import { useTranslations } from 'next-intl'
 
 interface SourceHeroProps {
   source: VisionSource
@@ -27,6 +28,7 @@ function formatLastSync(lastSync: string | null): string {
 }
 
 export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration, sourceId, urgency }: SourceHeroProps) {
+  const t = useTranslations('vision')
   const isLive = sourceSchedule?.status === 'healthy'
   const categoryLabel = getCategoryLabel(source.category)
 
@@ -51,7 +53,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
                   isLive ? 'bg-green-500' : 'bg-red-500'
                 }`}
               />
-              {isLive ? 'LIVE' : 'OFFLINE'}
+              {isLive ? t('source_hero.live') : t('source_hero.offline')}
             </span>
           )}
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback, ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
@@ -33,13 +34,13 @@ function detectWebGL(): boolean {
 
 /* -- No-WebGL fallback -- */
 
-function NoWebGLFallback({ text }: { text: string }) {
+function NoWebGLFallback({ text, webglMsg }: { text: string; webglMsg: string }) {
   return (
     <div className="h-full flex items-center justify-center bg-zinc-50">
       <div className="text-center px-6">
         <p className="text-sm text-text-secondary font-medium">{text}</p>
         <p className="text-xs text-text-muted mt-1">
-          WebGL is not available in your browser.
+          {webglMsg}
         </p>
       </div>
     </div>
@@ -48,18 +49,18 @@ function NoWebGLFallback({ text }: { text: string }) {
 
 /* -- Context-loss recovery UI -- */
 
-function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
+function ContextLostOverlay({ onRetry, contextLostMsg, reloadMsg }: { onRetry: () => void; contextLostMsg: string; reloadMsg: string }) {
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90">
       <div className="text-center px-6">
         <p className="text-sm text-text-secondary font-medium">
-          3D context was lost
+          {contextLostMsg}
         </p>
         <button
           onClick={onRetry}
           className="mt-3 px-4 py-1.5 text-xs font-medium border border-border-medium rounded-md hover:bg-zinc-50 transition-colors"
         >
-          Reload scene
+          {reloadMsg}
         </button>
       </div>
     </div>
@@ -68,13 +69,13 @@ function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
 
 /* -- Error fallback for ErrorBoundary -- */
 
-function SceneErrorFallback({ text }: { text: string }) {
+function SceneErrorFallback({ text, errorMsg }: { text: string; errorMsg: string }) {
   return (
     <div className="h-full flex items-center justify-center bg-zinc-50">
       <div className="text-center px-6">
         <p className="text-sm text-text-secondary font-medium">{text}</p>
         <p className="text-xs text-text-muted mt-1">
-          An error occurred rendering this diagram.
+          {errorMsg}
         </p>
       </div>
     </div>
@@ -91,6 +92,7 @@ export function SceneContainer({
   legend,
   fallbackText,
 }: SceneContainerProps) {
+  const t = useTranslations('pages')
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasWrapRef = useRef<HTMLDivElement>(null)
   const reducedMotion = usePrefersReducedMotion()
@@ -178,12 +180,12 @@ export function SceneContainer({
           style={{ touchAction: 'pan-y' }}
         >
           {!hasWebGL ? (
-            <NoWebGLFallback text={fallbackText} />
+            <NoWebGLFallback text={fallbackText} webglMsg={t('learn.scene.webgl_unavailable')} />
           ) : !mounted ? (
             <div className="h-full animate-pulse bg-zinc-50" />
           ) : (
             <ErrorBoundary
-              fallback={<SceneErrorFallback text={fallbackText} />}
+              fallback={<SceneErrorFallback text={fallbackText} errorMsg={t('learn.scene.render_error')} />}
             >
               <div
                 ref={canvasWrapRef}
@@ -191,7 +193,7 @@ export function SceneContainer({
                 key={retryKey}
               >
                 {contextLost && (
-                  <ContextLostOverlay onRetry={handleRetry} />
+                  <ContextLostOverlay onRetry={handleRetry} contextLostMsg={t('learn.scene.context_lost')} reloadMsg={t('learn.scene.reload_scene')} />
                 )}
                 {children({ reducedMotion })}
               </div>
@@ -201,7 +203,7 @@ export function SceneContainer({
         <div className="px-6 pb-4 pt-3 flex items-center justify-between border-t border-zinc-200">
           {legend}
           <span className="text-caption text-text-muted font-mono shrink-0 ml-4">
-            drag to orbit · scroll to zoom
+            {t('learn.scene.drag_orbit_scroll_zoom')}
           </span>
         </div>
       </div>

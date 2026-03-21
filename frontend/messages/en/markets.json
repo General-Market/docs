@@ -144,5 +144,131 @@
     "loading": "Loading NAV data...",
     "error": "Failed to load chart data",
     "no_data": "No NAV data available for this timeframe"
+  },
+  "itp_page": {
+    "buy_this_index": "Buy This Index",
+    "tabs": {
+      "overview": "Overview",
+      "performance": "Performance",
+      "holdings": "Holdings",
+      "key_facts": "Key Facts"
+    },
+    "key_stats": {
+      "nav_per_share": "NAV / Share",
+      "one_day_nav_change": "1 Day NAV Change",
+      "total_value_locked": "Total Value Locked",
+      "holdings": "Holdings",
+      "as_of": "as of {date}"
+    },
+    "performance": {
+      "title": "Performance",
+      "as_of": "as of {date}",
+      "since_inception_return": "Since Inception Return: ",
+      "from_date": "(from {date})",
+      "no_data": "Performance data not yet available"
+    },
+    "holdings_table": {
+      "title": "Holdings",
+      "loading": "Holdings data loading...",
+      "filter_placeholder": "Filter by name or ticker...",
+      "rank": "#",
+      "name": "Name",
+      "sector": "Sector",
+      "weight": "Weight",
+      "price": "Price",
+      "change_24h": "24h",
+      "market_value": "Market Value",
+      "notional_value": "Notional Value",
+      "shares": "Shares",
+      "market_cap": "Market Cap",
+      "cryptocurrency": "Cryptocurrency",
+      "range": "{start} to {end} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "as_of": "as of {date}"
+    },
+    "portfolio": {
+      "title": "Portfolio Composition",
+      "other": "Other"
+    },
+    "concentration": {
+      "title": "Concentration Metrics",
+      "top_5_weight": "TOP 5 WEIGHT",
+      "top_10_weight": "TOP 10 WEIGHT",
+      "hhi_concentration": "HHI CONCENTRATION",
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High"
+    },
+    "founders": {
+      "title": "Founder Intelligence",
+      "subtitle": "Based on {founders} founders across {companies} portfolio companies",
+      "age_distribution": "Age Distribution",
+      "gender_split": "Gender Split",
+      "top_nationalities": "Top Nationalities",
+      "top_universities": "Top Universities",
+      "count": "Count"
+    },
+    "defi": {
+      "title": "DeFi Protocol Health",
+      "aggregate_tvl": "AGGREGATE TVL",
+      "avg_tvl_change_7d": "AVG TVL CHANGE 7D",
+      "coverage": "COVERAGE",
+      "coverage_value": "{with_data} of {total}",
+      "protocol": "Protocol",
+      "tvl": "TVL",
+      "change_1d": "1D",
+      "change_7d": "7D"
+    },
+    "funding": {
+      "title": "Funding Intelligence",
+      "total_raised": "TOTAL RAISED",
+      "avg_valuation": "AVG VALUATION",
+      "funding_rounds": "FUNDING ROUNDS",
+      "top_investors": "Top Investors by Frequency",
+      "investments": "Investments",
+      "project": "Project",
+      "round": "Round",
+      "amount": "Amount",
+      "lead": "Lead",
+      "date": "Date"
+    },
+    "fund_facts": {
+      "title": "Fund Details",
+      "nav_per_share": "NAV / Share",
+      "chain": "Chain",
+      "chain_value": "Index L3 (Orbit)",
+      "settlement_address": "Settlement Address",
+      "rebalance_method": "Rebalance Method",
+      "rebalance_value": "Equal Weight",
+      "fund_inception": "Fund Inception",
+      "asset_class": "Asset Class",
+      "asset_class_value": "Crypto Index",
+      "itp_id": "ITP ID",
+      "number_of_holdings": "Number of Holdings",
+      "as_of": "as of {date}",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "portfolio_characteristics": "Portfolio Characteristics",
+      "top_5_concentration": "Top 5 Concentration",
+      "top_10_concentration": "Top 10 Concentration",
+      "hhi_index": "HHI Index",
+      "average_market_cap": "Average Market Cap",
+      "fees": "Fees",
+      "fees_as_of": "as of current prospectus",
+      "management_fee": "Management Fee",
+      "acquired_fund_fees": "+Acquired Fund Fees and Expenses",
+      "other_expenses": "+Other Expenses",
+      "expense_ratio": "=Expense Ratio",
+      "fee_disclaimer": "The fee amounts shown above are as of the current prospectus. Network gas costs apply to all on-chain transactions and are not included in the expense ratio."
+    },
+    "trade_cta": {
+      "buy": "Buy this Index",
+      "sell": "Sell"
+    },
+    "investment_objective": {
+      "why_title": "Why This Index?",
+      "objective_title": "Investment Objective"
+    }
   }
 }

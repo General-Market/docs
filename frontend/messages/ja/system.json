@@ -25,7 +25,8 @@
       "bls_pubkey": "BLS公開鍵",
       "registered": "登録済み",
       "status": "ステータス",
-      "ap_vault": "AP Vault"
+      "ap_vault": "AP Vault",
+      "uptime": "稼働時間"
     },
     "status_active": "アクティブ",
     "no_nodes": "発行者ノードがまだ登録されていません。"
@@ -40,7 +41,9 @@
     "section_title": "インベントリ",
     "section_subtitle": "USD評価額上位の保有銘柄",
     "tooltip_label": "価値",
-    "no_data": "インベントリデータがまだありません。"
+    "no_data": "インベントリデータがまだありません。",
+    "tokens_page": "{count}トークン — {current}/{total}ページ",
+    "aum_label": "AUM {value}"
   },
   "recent_activity": {
     "section_title": "最近のアクティビティ",
@@ -72,68 +75,114 @@
     "offline": "オフライン"
   },
   "ap_section": {
-    "title": "AP (Keeper) Status",
-    "description": "View AP balances, vault holdings, and health status",
-    "address_label": "Address:",
-    "native_gas": "Native (Gas)",
-    "vault_holdings": "MockBitgetVault Holdings",
-    "tokens_count": "({count} tokens)",
-    "vault_label": "Vault:",
-    "loading_vault": "Loading vault balances...",
-    "no_assets": "No assets in vault",
-    "asset": "Asset",
-    "balance": "Balance",
-    "price": "Price",
-    "usd_value": "USD Value",
-    "page_of": "Page {current} of {total} ({count} assets)"
+    "title": "AP（キーパー）ステータス",
+    "description": "AP残高、Vault保有資産、ヘルスステータスの確認",
+    "address_label": "アドレス：",
+    "native_gas": "ネイティブ（ガス）",
+    "vault_holdings": "MockBitgetVault 保有資産",
+    "tokens_count": "（{count}トークン）",
+    "vault_label": "Vault：",
+    "loading_vault": "Vault残高を読み込み中...",
+    "no_assets": "Vaultに資産がありません",
+    "asset": "資産",
+    "balance": "残高",
+    "price": "価格",
+    "usd_value": "USD価値",
+    "page_of": "{current} / {total} ページ（{count}資産）",
+    "health_checking": "確認中...",
+    "refresh_balances": "残高を更新"
   },
   "performance": {
-    "title": "Performance Dashboard",
-    "description": "Order fill speed and system metrics",
-    "label": "Performance",
-    "consensus_threshold": "Consensus Threshold",
-    "bls_required": "BLS signatures required",
-    "active_oracles": "Active Oracles",
-    "processing_orders": "Processing orders",
-    "network": "Network",
-    "orbit_chain": "Orbit chain"
+    "title": "パフォーマンスダッシュボード",
+    "description": "注文約定速度とシステム指標",
+    "label": "パフォーマンス",
+    "consensus_threshold": "コンセンサス閾値",
+    "bls_required": "必要BLS署名数",
+    "active_oracles": "アクティブ発行者",
+    "processing_orders": "注文処理中",
+    "network": "ネットワーク",
+    "orbit_chain": "Orbitチェーン"
   },
   "order_flow": {
-    "title": "Order Flow",
-    "description": "Outstanding buy/sell amounts over time",
-    "avg_fill_time": "avg fill time",
-    "total_orders": "Total Orders",
-    "active_buys": "Active Buys",
-    "active_sells": "Active Sells",
-    "filled": "Filled",
-    "loading": "Loading order data...",
-    "no_data": "No order data yet.",
-    "legend_buy": "BUY",
-    "legend_sell": "SELL",
-    "legend_filled": "Filled (0)",
-    "orders_count": "{count} orders"
+    "title": "注文フロー",
+    "description": "時間経過に伴う未約定売買金額",
+    "avg_fill_time": "平均約定時間",
+    "total_orders": "総注文数",
+    "active_buys": "アクティブ購入",
+    "active_sells": "アクティブ売却",
+    "filled": "約定済み",
+    "loading": "注文データを読み込み中...",
+    "no_data": "注文データがまだありません。",
+    "legend_buy": "購入",
+    "legend_sell": "売却",
+    "legend_filled": "約定済み (0)",
+    "orders_count": "{count}件の注文"
   },
   "aum_ranking": {
-    "title": "AUM Ranking",
-    "description": "Asset rankings by AUM across all ITPs",
-    "total_aum": "total AUM",
-    "loading": "Loading ranking data...",
-    "need_events": "Need 2+ events (ITP creations, rebalances, or fills) to display ranking chart.",
-    "showing_event": "Currently showing 1 event.",
-    "snapshots_count": "{count} snapshots"
+    "title": "AUMランキング",
+    "description": "全ITPのAUM基準資産ランキング",
+    "total_aum": "総AUM",
+    "loading": "ランキングデータを読み込み中...",
+    "need_events": "ランキングチャートの表示には2件以上のイベント（ITP作成、リバランス、約定）が必要です。",
+    "showing_event": "現在1件のイベントを表示中。",
+    "snapshots_count": "{count}件のスナップショット"
   },
   "keeper_signatures": {
-    "no_keepers": "No keepers registered",
-    "header": "Resolution Signatures ({signed}/{total})",
-    "signed": "{count} signed",
-    "pending_count": "{count} pending",
-    "failed": "{count} failed"
+    "no_keepers": "キーパー未登録",
+    "header": "決議署名 ({signed}/{total})",
+    "signed": "{count}件署名済み",
+    "pending_count": "{count}件保留中",
+    "failed": "{count}件失敗",
+    "status_signed": "署名済み",
+    "status_signed_ago": "{time}前に署名",
+    "status_pending": "保留中...",
+    "status_failed": "失敗",
+    "status_timeout": "タイムアウト",
+    "status_unknown": "不明"
   },
   "signature_progress": {
-    "loading": "Loading signatures...",
-    "awaiting": "Awaiting resolution...",
-    "label": "Resolution Signatures",
-    "keepers_signed": "{signed}/{total} keepers signed",
-    "need_count": "Need {count} (51%)"
+    "loading": "署名を読み込み中...",
+    "awaiting": "決議待ち...",
+    "label": "決議署名",
+    "keepers_signed": "{signed}/{total} キーパー署名完了",
+    "need_count": "{count}件必要 (51%)",
+    "status_collecting": "収集中",
+    "status_ready": "準備完了",
+    "status_submitted": "提出済み",
+    "status_expired": "期限切れ",
+    "status_unknown": "不明",
+    "tx_label": "Tx: {hash}"
+  },
+  "order_flow_chart": {
+    "amount_label": "金額",
+    "tooltip_buy": "購入",
+    "tooltip_sell": "売却",
+    "tooltip_filled": "約定済み (0)",
+    "tooltip_order": "注文 #{id} | {time}",
+    "tooltip_filled_in": "注文 #{id} | {time} | {seconds}秒で約定"
+  },
+  "aum_ranking_chart": {
+    "total_aum_label": "総AUM: {value}"
+  },
+  "vault_trades": {
+    "section_title": "AP注文フィード",
+    "section_subtitle_active": "{count}件の取引実行済 \u00b7 手数料: {fee}",
+    "section_subtitle_empty": "MockBitgetVault取引履歴",
+    "no_trades": "まだ取引は記録されていません",
+    "table": {
+      "time": "時間",
+      "token": "トークン",
+      "side": "方向",
+      "amount": "金額",
+      "price": "価格",
+      "fee": "手数料",
+      "itps": "ITP",
+      "trade_id": "取引ID"
+    },
+    "side_buy": "購入",
+    "side_sell": "売却",
+    "prev": "前へ",
+    "next": "次へ",
+    "page_of": "{current} / {total}"
   }
 }

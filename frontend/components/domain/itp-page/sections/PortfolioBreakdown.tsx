@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useRef, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 const COLORS = [
@@ -10,6 +11,7 @@ const COLORS = [
 ]
 
 export function PortfolioBreakdown({ enrichment }: SectionProps) {
+  const t = useTranslations('markets.itp_page.portfolio')
   const holdings = enrichment?.holdings ?? []
 
   const data = useMemo(() => {
@@ -21,17 +23,17 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
     }))
     const otherWeight = sorted.slice(10).reduce((s, h) => s + h.weight, 0)
     if (otherWeight > 0) {
-      top10.push({ name: 'Other', value: Math.round(otherWeight * 10000) / 100 })
+      top10.push({ name: t('other'), value: Math.round(otherWeight * 10000) / 100 })
     }
     return top10
-  }, [holdings])
+  }, [holdings, t])
 
   if (data.length === 0) return null
 
   return (
     <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">
-        Portfolio Composition
+        {t('title')}
       </h2>
       <div className="py-4">
         <div className="flex flex-col md:flex-row items-center gap-8">

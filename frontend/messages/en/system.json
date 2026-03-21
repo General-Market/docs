@@ -25,7 +25,8 @@
       "bls_pubkey": "BLS Pubkey",
       "registered": "Registered",
       "status": "Status",
-      "ap_vault": "AP Vault"
+      "ap_vault": "AP Vault",
+      "uptime": "Uptime"
     },
     "status_active": "Active",
     "no_nodes": "No oracle nodes registered yet."
@@ -40,7 +41,9 @@
     "section_title": "Inventory",
     "section_subtitle": "Top holdings by USD",
     "tooltip_label": "Value",
-    "no_data": "No inventory data yet."
+    "no_data": "No inventory data yet.",
+    "tokens_page": "{count} tokens — page {current}/{total}",
+    "aum_label": "AUM {value}"
   },
   "recent_activity": {
     "section_title": "Recent Activity",
@@ -85,7 +88,9 @@
     "balance": "Balance",
     "price": "Price",
     "usd_value": "USD Value",
-    "page_of": "Page {current} of {total} ({count} assets)"
+    "page_of": "Page {current} of {total} ({count} assets)",
+    "health_checking": "checking...",
+    "refresh_balances": "Refresh balances"
   },
   "performance": {
     "title": "Performance Dashboard",
@@ -127,13 +132,57 @@
     "header": "Resolution Signatures ({signed}/{total})",
     "signed": "{count} signed",
     "pending_count": "{count} pending",
-    "failed": "{count} failed"
+    "failed": "{count} failed",
+    "status_signed": "Signed",
+    "status_signed_ago": "Signed {time}",
+    "status_pending": "Pending...",
+    "status_failed": "Failed",
+    "status_timeout": "Timeout",
+    "status_unknown": "Unknown"
   },
   "signature_progress": {
     "loading": "Loading signatures...",
     "awaiting": "Awaiting resolution...",
     "label": "Resolution Signatures",
     "keepers_signed": "{signed}/{total} keepers signed",
-    "need_count": "Need {count} (51%)"
+    "need_count": "Need {count} (51%)",
+    "status_collecting": "Collecting",
+    "status_ready": "Ready",
+    "status_submitted": "Submitted",
+    "status_expired": "Expired",
+    "status_unknown": "Unknown",
+    "tx_label": "Tx: {hash}"
+  },
+  "order_flow_chart": {
+    "amount_label": "Amount",
+    "tooltip_buy": "Buy",
+    "tooltip_sell": "Sell",
+    "tooltip_filled": "Filled (0)",
+    "tooltip_order": "Order #{id} | {time}",
+    "tooltip_filled_in": "Order #{id} | {time} | Filled in {seconds}s"
+  },
+  "aum_ranking_chart": {
+    "total_aum_label": "Total AUM: {value}"
+  },
+  "vault_trades": {
+    "section_title": "AP Order Feed",
+    "section_subtitle_active": "{count} trades executed \u00b7 fee: {fee}",
+    "section_subtitle_empty": "MockBitgetVault trade history",
+    "no_trades": "No trades recorded yet",
+    "table": {
+      "time": "Time",
+      "token": "Token",
+      "side": "Side",
+      "amount": "Amount",
+      "price": "Price",
+      "fee": "Fee",
+      "itps": "ITP(s)",
+      "trade_id": "Trade ID"
+    },
+    "side_buy": "Buy",
+    "side_sell": "Sell",
+    "prev": "Prev",
+    "next": "Next",
+    "page_of": "{current} / {total}"
   }
 }

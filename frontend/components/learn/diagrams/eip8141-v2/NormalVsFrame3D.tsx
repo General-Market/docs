@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -644,12 +645,13 @@ function SceneContent({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function NormalVsFrame3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="Side-by-side comparison of Normal TX versus Frame TX, showing how EIP-8141 moves authentication from outside the envelope to inside a frame compartment"
       srDescription="A 3D scene with two platforms. Left: a Normal TX shown as a sealed letter with a purple ECDSA padlock sitting on top (outside the envelope). Right: a Frame TX shown as a shipping box with three compartments (F0, F1, F2). The purple padlock appears inside F0 (the auth compartment). An ACCEPT gate between F0 and F1 flashes green. The key insight: the padlock position changes from outside (Normal TX) to inside (Frame TX)."
-      legend={<SceneLegend items={[{ color: BLUE, label: 'Transaction data' }, { color: PURPLE, label: 'Validation (auth)' }, { color: GREEN, label: 'ACCEPT / Execution' }]} />}
+      legend={<SceneLegend items={[{ color: BLUE, label: t('learn.normal_vs_frame_v2.legend_tx_data') }, { color: PURPLE, label: t('learn.normal_vs_frame_v2.legend_validation') }, { color: GREEN, label: t('learn.normal_vs_frame_v2.legend_accept_execution') }]} />}
       fallbackText="Normal TX: padlock sits OUTSIDE the envelope. Frame TX: padlock sits INSIDE compartment F0, with an ACCEPT gate before execution frames F1 and F2."
     >
       {({ reducedMotion }) => (

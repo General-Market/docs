@@ -299,7 +299,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   { label: t('oracle_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
                   { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
                   { label: t('oracle_network.node_details.status'), value: t('oracle_network.status_active'), color: 'text-color-up' },
-                  { label: 'Uptime', value: formatUptime(node.registeredAt), color: 'text-color-up' },
+                  { label: t('oracle_network.node_details.uptime'), value: formatUptime(node.registeredAt), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
                     <span className="text-label text-text-muted font-medium">{row.label}</span>
@@ -372,7 +372,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                 <div className="section-bar-title">{t('inventory.section_title')}</div>
                 <div className="section-bar-value flex items-center gap-2">
                   {inventoryAssets.length > 0
-                    ? <><span>{inventoryAssets.length} tokens — page {vaultPage + 1}/{vaultTotalPages}</span><LiveValue value={inventoryTotalAum} format={(v) => `AUM ${formatUsdCompact(v)}`} className="text-micro font-mono text-color-up" /></>
+                    ? <><span>{t('inventory.tokens_page', { count: inventoryAssets.length, current: vaultPage + 1, total: vaultTotalPages })}</span><LiveValue value={inventoryTotalAum} format={(v) => t('inventory.aum_label', { value: formatUsdCompact(v) })} className="text-micro font-mono text-color-up" /></>
                     : t('inventory.section_subtitle')}
                 </div>
               </div>
@@ -559,6 +559,13 @@ function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
 }
 
 function NodeGridSkeleton() {
+  const skeletonRows = [
+    { w: 'w-24' },
+    { w: 'w-28' },
+    { w: 'w-16' },
+    { w: 'w-16' },
+    { w: 'w-16' },
+  ]
   return (
     <>
       {[0, 1, 2].map(idx => (
@@ -568,10 +575,10 @@ function NodeGridSkeleton() {
             <Bone w="w-20" h="h-4" />
           </div>
           <div className="space-y-[6px]">
-            {['Address', 'BLS Pubkey', 'Registered', 'Status', 'AP Vault'].map(label => (
-              <div key={label} className="flex justify-between items-center py-[3px]">
-                <span className="text-label text-text-muted font-medium">{label}</span>
-                <Bone w={label === 'Address' ? 'w-24' : label === 'BLS Pubkey' ? 'w-28' : 'w-16'} h="h-3" />
+            {skeletonRows.map((row, i) => (
+              <div key={i} className="flex justify-between items-center py-[3px]">
+                <Bone w="w-16" h="h-3" />
+                <Bone w={row.w} h="h-3" />
               </div>
             ))}
           </div>

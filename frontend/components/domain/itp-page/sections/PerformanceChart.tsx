@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { useItpNavSeries, type NavTimeframe } from '@/hooks/useItpNavSeries'
 import { NavCanvas, type ChartHoverInfo } from './NavCanvas'
 import type { SectionProps } from '../SectionRenderer'
@@ -16,6 +17,7 @@ const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
 ]
 
 export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
+  const t = useTranslations('markets.itp_page.performance')
   const [tf, setTf] = useState<NavTimeframe>('1h')
   const { data, isLoading } = useItpNavSeries(itpId, tf)
   const [hover, setHover] = useState<ChartHoverInfo | null>(null)
@@ -58,8 +60,8 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-text-primary">Performance</h2>
-              <p className="text-xs text-text-muted mt-1">as of {asOfToday()}</p>
+              <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('as_of', { date: asOfToday() })}</p>
             </>
           )}
         </div>
@@ -91,11 +93,11 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
 
       {sinceInception != null && inceptionDate && (
         <div className="mt-4 pt-4 border-t border-border-light">
-          <span className="text-xs text-text-secondary">Since Inception Return: </span>
+          <span className="text-xs text-text-secondary">{t('since_inception_return')}</span>
           <span className={`text-lg font-bold ${sinceInception >= 0 ? 'text-color-up' : 'text-color-down'}`}>
             <CountUp value={sinceInception} />
           </span>
-          <span className="text-xs text-text-muted ml-2">(from {inceptionDate})</span>
+          <span className="text-xs text-text-muted ml-2">{t('from_date', { date: inceptionDate })}</span>
         </div>
       )}
     </section>

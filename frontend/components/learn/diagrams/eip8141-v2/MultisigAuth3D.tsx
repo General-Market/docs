@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -760,12 +761,13 @@ function VerifiedLabel() {
 /* ------------------------------------------------------------------ */
 
 export function MultisigAuth3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="Multisig authentication: two signers converge on a validator vault, which inspects calldata via CALLDATAREAD before authorizing execution with ACCEPT"
       srDescription="A 3D scene showing multisig authentication with EIP-8141 Frame TXs. Alice and Bob (purple spheres on the left) each emit purple signature beams that converge on a central hexagonal vault (Frame 0 / Validate). An amber arc reaches from the vault toward a blue box (Frame 1 / Execute) representing CALLDATAREAD inspection, with amber sparks flowing back from Frame 1 to the vault. The vault lock rotates 180 degrees and turns green as ACCEPT fires. A green execution beam and token particles then stream from the vault to Frame 1."
-      legend={<SceneLegend items={[{ color: PURPLE, label: 'Signatures' }, { color: AMBER, label: 'CALLDATAREAD' }, { color: GREEN, label: 'ACCEPT / Execution' }]} />}
+      legend={<SceneLegend items={[{ color: PURPLE, label: t('learn.multisig_auth_v2.legend_signatures') }, { color: AMBER, label: t('learn.multisig_auth_v2.legend_calldataread') }, { color: GREEN, label: t('learn.multisig_auth_v2.legend_accept_execution') }]} />}
       fallbackText="Multisig authentication: two signers verify independently, vault inspects calldata, ACCEPT fires, execution proceeds"
     >
       {({ reducedMotion }) => (

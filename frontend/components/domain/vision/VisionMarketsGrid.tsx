@@ -10,6 +10,7 @@ import {
 } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { SOURCE_DISPLAY_OVERRIDES } from '@/lib/vision/source-categories'
+import { useTranslations } from 'next-intl'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -24,26 +25,12 @@ const SUBHEADER_HEIGHT = 36
 const MIN_TILE_WIDTH = 120 // px — minimum width per tile to stay readable
 
 // Subcategory display names (keyed by derived feed type)
-const FEED_TYPE_DISPLAY_NAMES: Record<string, string> = {
-  // Weather metrics
-  temperature_2m: 'Temperature',
-  rain: 'Rainfall',
-  wind_speed_10m: 'Wind Speed',
-  pm2_5: 'PM2.5 Air Quality',
-  ozone: 'Ozone',
-  // DeFi feed types
-  chain_tvl: 'Chain TVL',
-  protocol_tvl: 'Protocol TVL',
-  dex_volume: 'DEX Volume',
-  // Polymarket derived subcategories
-  poly_sports: 'Sports',
-  poly_politics: 'Politics & Elections',
-  poly_crypto: 'Crypto & Finance',
-  poly_entertainment: 'Entertainment & Awards',
-  poly_esports: 'Esports & Gaming',
-  poly_science: 'Science & Tech',
-  poly_other: 'Other',
-}
+const FEED_TYPE_KEYS = new Set([
+  'temperature_2m', 'rain', 'wind_speed_10m', 'pm2_5', 'ozone',
+  'chain_tvl', 'protocol_tvl', 'dex_volume',
+  'poly_sports', 'poly_politics', 'poly_crypto', 'poly_entertainment',
+  'poly_esports', 'poly_science', 'poly_other',
+])
 
 // Derive the data feed type from a price entry's asset ID / source
 function deriveFeedType(p: SnapshotPrice): string | null {
@@ -238,6 +225,7 @@ function CryptoLogo({ assetId, symbol, size = 16 }: { assetId: string; symbol: s
 }
 
 function SourceCard({ source, assetCount }: { source: SourceSchedule; assetCount: number }) {
+  const t = useTranslations('vision')
   const displayName = source.displayName
   return (
     <div className="border border-border-light bg-white p-3 min-w-[160px] flex-shrink-0 card-interactive">
@@ -247,20 +235,20 @@ function SourceCard({ source, assetCount }: { source: SourceSchedule; assetCount
       </div>
       <div className="space-y-0.5 font-mono text-micro text-text-muted">
         <div className="flex justify-between">
-          <span>Assets</span>
+          <span>{t('vision_markets_grid.assets_label')}</span>
           <span className="text-text-secondary font-semibold">{assetCount.toLocaleString()}</span>
         </div>
         <div className="flex justify-between">
-          <span>Last sync</span>
+          <span>{t('vision_markets_grid.last_sync_card')}</span>
           <span className="text-text-secondary">{relativeTime(source.lastSync)}</span>
         </div>
         <div className="flex justify-between">
-          <span>Next</span>
+          <span>{t('vision_markets_grid.next_card')}</span>
           <span className="text-text-secondary">{relativeTime(source.estimatedNextUpdate)}</span>
         </div>
         <div className="flex justify-between">
-          <span>Interval</span>
-          <span className="text-text-secondary">every {humanInterval(source.syncIntervalSecs)}</span>
+          <span>{t('vision_markets_grid.interval_card')}</span>
+          <span className="text-text-secondary">{t('vision_markets_grid.every', { interval: humanInterval(source.syncIntervalSecs) })}</span>
         </div>
       </div>
     </div>
@@ -324,12 +312,13 @@ function PriceTileInline({ price, isPrice }: { price: SnapshotPrice; isPrice?: b
 }
 
 function SectionHeader({ source, count }: { source: SourceSchedule; count: number }) {
+  const t = useTranslations('vision')
   const displayName = source.displayName
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-black text-white sticky top-0 z-10">
       <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-text-muted'}`} />
       <span className="font-mono text-caption font-bold uppercase tracking-[0.08em]">{displayName}</span>
-      <span className="font-mono text-label text-white/60">{count.toLocaleString()} assets</span>
+      <span className="font-mono text-label text-white/60">{count.toLocaleString()} {t('vision_markets_grid.assets_suffix')}</span>
       <span className="font-mono text-label text-white/40">
         synced {relativeTime(source.lastSync)} &middot; every {humanInterval(source.syncIntervalSecs)}
       </span>
@@ -351,6 +340,7 @@ function SubSectionHeader({ label, count }: { label: string; count: number }) {
 // ---------------------------------------------------------------------------
 
 export function VisionMarketsGrid() {
+  const t = useTranslations('vision')
   // Progressive loading: meta loads instantly (~1KB), full snapshot loads in background (~3MB)
   const { data: meta, isLoading: metaLoading } = useMarketSnapshotMeta()
   const { data, isLoading: snapshotLoading, isError, error } = useMarketSnapshot()
@@ -498,15 +488,15 @@ export function VisionMarketsGrid() {
 
         // Sort categories: known feed types first (by count desc), then unknowns
         const catEntries = Array.from(catGrouped.entries()).sort(([a, aList], [b, bList]) => {
-          const aKnown = a in FEED_TYPE_DISPLAY_NAMES
-          const bKnown = b in FEED_TYPE_DISPLAY_NAMES
+          const aKnown = FEED_TYPE_KEYS.has(a)
+          const bKnown = FEED_TYPE_KEYS.has(b)
           if (aKnown && !bKnown) return -1
           if (!aKnown && bKnown) return 1
           return bList.length - aList.length
         })
 
         for (const [cat, catPrices] of catEntries) {
-          const label = FEED_TYPE_DISPLAY_NAMES[cat] || cat
+          const label = FEED_TYPE_KEYS.has(cat) ? t(`feed_type_display.${cat}`) : cat
           rows.push({ type: 'subheader', label, count: catPrices.length })
           for (let i = 0; i < catPrices.length; i += cols) {
             rows.push({ type: 'tiles', prices: catPrices.slice(i, i + cols) })
@@ -548,19 +538,19 @@ export function VisionMarketsGrid() {
       {/* Compact stats row */}
       <div className="flex items-center gap-3 sm:gap-6 mb-4 flex-shrink-0 text-xs font-mono text-text-muted flex-wrap animate-fade-up">
         <div>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Total Assets</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vision_markets_grid.total_assets')}</span>
           <span className="ml-2 text-text-primary font-bold">{totalAssets.toLocaleString()}</span>
         </div>
         <div>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Sources</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vision_markets_grid.sources_label')}</span>
           <span className="ml-2 text-text-primary font-bold">{enabledSources.length}</span>
         </div>
         <div>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Last Sync</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vision_markets_grid.last_sync')}</span>
           <span className="ml-2 text-text-secondary">{generatedAt}</span>
         </div>
         {metaLoading && (
-          <span className="text-text-muted animate-pulse">Connecting...</span>
+          <span className="text-text-muted animate-pulse">{t('vision_markets_grid.connecting')}</span>
         )}
       </div>
 
@@ -581,7 +571,7 @@ export function VisionMarketsGrid() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 flex-shrink-0 animate-fade-up">
         <input
           type="text"
-          placeholder="Search symbol or name..."
+          placeholder={t('vision_markets_grid.search_placeholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-white border-2 border-brand text-text-primary font-mono text-sm px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-brand/10 w-full sm:w-64 input-animate"
@@ -592,7 +582,7 @@ export function VisionMarketsGrid() {
             onClick={() => setSelectedCategory(null)}
             className={`filter-pill ${selectedCategory === null ? 'active' : ''}`}
           >
-            All ({totalAssets.toLocaleString()})
+            {t('vision_markets_grid.all_label')} ({totalAssets.toLocaleString()})
           </button>
           {enabledCategories.map((cat) => (
             <button
@@ -612,9 +602,9 @@ export function VisionMarketsGrid() {
         {isError ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 py-20">
             <div className="text-center font-mono">
-              <p className="text-xl text-color-down/80 mb-2">Data Node Unavailable</p>
+              <p className="text-xl text-color-down/80 mb-2">{t('vision_markets_grid.data_node_unavailable')}</p>
               <p className="text-sm text-text-secondary mb-4 max-w-md">
-                The market data node is not responding. This usually means the snapshot service needs a restart.
+                {t('vision_markets_grid.data_node_description')}
               </p>
               <p className="text-xs text-text-muted mb-6">{error?.message}</p>
               <button
@@ -629,7 +619,7 @@ export function VisionMarketsGrid() {
             {enabledSources.length > 0 && (
               <div className="mt-4 text-center">
                 <p className="text-xs text-text-muted font-mono mb-3">
-                  Last known: {totalAssets.toLocaleString()} assets across {enabledSources.length} sources
+                  {t('vision_markets_grid.last_known', { assets: totalAssets.toLocaleString(), sources: enabledSources.length.toString() })}
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-lg">
                   {enabledSources.map((s) => {
@@ -653,12 +643,12 @@ export function VisionMarketsGrid() {
             </div>
             <div className="text-center font-mono">
               <p className="text-lg text-text-secondary mb-1">
-                Loading {totalAssets > 0 ? totalAssets.toLocaleString() : '50,000+'} markets
+                {t('vision_markets_grid.loading_markets', { count: totalAssets > 0 ? totalAssets.toLocaleString() : '50,000+' })}
               </p>
               <p className="text-sm text-text-muted">
                 {enabledSources.length > 0
-                  ? `${enabledSources.length} sources across stocks, crypto, DeFi, weather, and more`
-                  : 'Fetching market data from data node...'}
+                  ? t('vision_markets_grid.loading_sources_description', { count: enabledSources.length.toString() })
+                  : t('vision_markets_grid.fetching_data')}
               </p>
             </div>
             {/* Mini source breakdown while loading */}
@@ -751,10 +741,10 @@ export function VisionMarketsGrid() {
           <div className="py-20 text-center font-mono">
             <div className="text-text-muted text-lg whitespace-pre mb-4" aria-hidden="true">{'○ ○ ○'}</div>
             <p className="text-text-secondary text-sm mb-1">
-              {search ? 'Nothing matches.' : 'The data has not arrived.'}
+              {search ? t('vision_markets_grid.nothing_matches') : t('vision_markets_grid.data_not_arrived')}
             </p>
             <p className="text-text-muted text-xs">
-              {search ? 'Adjust the search, or wait for the world to produce what you seek.' : 'Sync in progress. Patience is the only strategy.'}
+              {search ? t('vision_markets_grid.adjust_search') : t('vision_markets_grid.sync_in_progress')}
             </p>
           </div>
         )}
@@ -770,12 +760,12 @@ export function VisionMarketsGrid() {
               </>
             : <>{totalAssets.toLocaleString()} assets</>
           }
-          {' '}&middot; Auto-refreshes every 30s
+          {' '}&middot; {t('vision_markets_grid.auto_refresh')}
         </span>
         <span>
           {pricesLoaded
-            ? `Virtual scroll \u00B7 ${virtualRows.length.toLocaleString()} rows`
-            : snapshotLoading ? 'Loading prices...' : ''
+            ? t('vision_markets_grid.virtual_scroll', { count: virtualRows.length.toLocaleString() })
+            : snapshotLoading ? t('vision_markets_grid.loading_prices') : ''
           }
         </span>
       </div>

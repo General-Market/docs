@@ -6,6 +6,7 @@ import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 import type { ResolvedMarket } from '@/hooks/vision/useResolvedMarkets'
 import { categorizeMarkets, formatMarketName, type MarketCategory } from '@/lib/vision/market-categories'
 import { SpringExpand } from '@/components/ui/spring'
+import { useTranslations } from 'next-intl'
 
 interface MarketAccordionProps {
   batch: BatchInfo
@@ -217,16 +218,17 @@ function CategoryContent({
   resolvedMarkets?: Map<string, ResolvedMarket>
   onToggleBet: (marketId: string) => void
 }) {
+  const t = useTranslations('vision')
   return (
     <div className="mt-0.5 mb-1.5 border border-border-light rounded-lg overflow-hidden">
       <table className="w-full text-xs font-mono">
         <thead>
           <tr className="bg-muted text-text-muted text-left">
-            <th className="py-1.5 px-2 w-9">Bet</th>
-            <th className="py-1.5 px-2">Market</th>
-            <th className="py-1.5 px-2 text-right">Price</th>
-            <th className="py-1.5 px-2 text-right w-16">Chg%</th>
-            <th className="py-1.5 px-2 w-24 text-center">History</th>
+            <th className="py-1.5 px-2 w-9">{t('market_accordion.bet')}</th>
+            <th className="py-1.5 px-2">{t('market_accordion.market')}</th>
+            <th className="py-1.5 px-2 text-right">{t('market_accordion.price')}</th>
+            <th className="py-1.5 px-2 text-right w-16">{t('market_accordion.change_pct')}</th>
+            <th className="py-1.5 px-2 w-24 text-center">{t('market_accordion.history')}</th>
           </tr>
         </thead>
         <tbody>

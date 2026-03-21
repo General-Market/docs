@@ -3,19 +3,11 @@
 import { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
+import { useTranslations } from 'next-intl'
 import * as THREE from 'three'
 import { ClientOnly } from './ClientOnly'
 
-const EIPS = [
-  { year: '2016', name: 'EIP-86', sub: 'Let contracts pay gas', status: 'too radical', height: 0.35, color: '#d4d4d8' },
-  { year: '2020', name: 'EIP-2938', sub: 'AA at protocol layer', status: 'never shipped', height: 0.45, color: '#d4d4d8' },
-  { year: '2021', name: 'ERC-4337', sub: 'Off-chain bundler', status: 'works but complex', height: 0.6, color: '#a1a1aa' },
-  { year: '2023', name: 'EIP-3074', sub: 'AUTH + AUTHCALL', status: 'superseded', height: 0.5, color: '#a1a1aa' },
-  { year: '2024', name: 'EIP-7702', sub: 'Set EOA code', status: 'stepping stone', height: 0.7, color: '#71717a' },
-  { year: '2026', name: 'EIP-8141', sub: 'Frame Transactions', status: 'THE OMNIBUS', height: 1.2, color: '#22c55e' },
-]
-
-const PILLAR_COUNT = EIPS.length
+const PILLAR_COUNT = 6
 const X_MIN = -2.5
 const X_MAX = 2.5
 
@@ -23,7 +15,11 @@ function pillarX(i: number) {
   return X_MIN + (i / (PILLAR_COUNT - 1)) * (X_MAX - X_MIN)
 }
 
-function Pillar({ eip, index }: { eip: typeof EIPS[number]; index: number }) {
+interface EipData {
+  year: string; name: string; sub: string; status: string; height: number; color: string
+}
+
+function Pillar({ eip, index }: { eip: EipData; index: number }) {
   const ref = useRef<THREE.Group>(null!)
   const x = pillarX(index)
   const isLast = index === PILLAR_COUNT - 1
@@ -69,7 +65,7 @@ function Pillar({ eip, index }: { eip: typeof EIPS[number]; index: number }) {
 
 function GroundCurve() {
   const points = useMemo(() =>
-    EIPS.map((_, i) => new THREE.Vector3(pillarX(i), 0.01, 0)),
+    Array.from({ length: PILLAR_COUNT }, (_, i) => new THREE.Vector3(pillarX(i), 0.01, 0)),
   [])
 
   const curve = useMemo(() =>
@@ -92,7 +88,7 @@ function CurveParticles({ count = 16 }: { count?: number }) {
   const dummy = useMemo(() => new THREE.Object3D(), [])
 
   const points = useMemo(() =>
-    EIPS.map((_, i) => new THREE.Vector3(pillarX(i), 0.01, 0)),
+    Array.from({ length: PILLAR_COUNT }, (_, i) => new THREE.Vector3(pillarX(i), 0.01, 0)),
   [])
 
   const curve = useMemo(() =>
@@ -121,6 +117,17 @@ function CurveParticles({ count = 16 }: { count?: number }) {
 }
 
 export function EIPTimeline3D() {
+  const t = useTranslations('pages')
+
+  const EIPS = [
+    { year: '2016', name: 'EIP-86', sub: t('learn.eip_timeline.eip86_note'), status: t('learn.eip_timeline.eip86_status'), height: 0.35, color: '#d4d4d8' },
+    { year: '2020', name: 'EIP-2938', sub: t('learn.eip_timeline.eip2938_note'), status: t('learn.eip_timeline.eip2938_status'), height: 0.45, color: '#d4d4d8' },
+    { year: '2021', name: 'ERC-4337', sub: t('learn.eip_timeline.erc4337_note'), status: t('learn.eip_timeline.erc4337_status'), height: 0.6, color: '#a1a1aa' },
+    { year: '2023', name: 'EIP-3074', sub: t('learn.eip_timeline.eip3074_note'), status: t('learn.eip_timeline.eip3074_status'), height: 0.5, color: '#a1a1aa' },
+    { year: '2024', name: 'EIP-7702', sub: t('learn.eip_timeline.eip7702_note'), status: t('learn.eip_timeline.eip7702_status'), height: 0.7, color: '#71717a' },
+    { year: '2026', name: 'EIP-8141', sub: t('learn.eip_timeline.eip8141_note'), status: t('learn.eip_timeline.eip8141_status'), height: 1.2, color: '#22c55e' },
+  ]
+
   return (
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
@@ -163,14 +170,14 @@ export function EIPTimeline3D() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-zinc-300 border border-zinc-400" />
-              <span className="text-micro text-text-muted tracking-wide">Attempted</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.eip_timeline_3d.legend_attempted')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-              <span className="text-micro text-text-muted tracking-wide">THE OMNIBUS</span>
+              <span className="text-micro text-text-muted tracking-wide">{t('learn.eip_timeline_3d.legend_omnibus')}</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">{t('learn.scene.drag_to_orbit')}</span>
         </div>
       </div>
     </div>

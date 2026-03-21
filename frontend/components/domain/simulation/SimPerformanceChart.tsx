@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   LineChart,
   Line,
@@ -78,6 +79,7 @@ function formatDate(dateStr: string) {
 }
 
 function RebalanceItpPicker({ itps, onSelect }: { itps: DeployedItpRef[]; onSelect: (itpId: string) => void }) {
+  const t = useTranslations('backtest')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -99,12 +101,12 @@ function RebalanceItpPicker({ itps, onSelect }: { itps: DeployedItpRef[]; onSele
         className="text-xs px-4 py-1.5 border border-border-medium text-text-secondary rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors font-medium"
         onClick={() => setOpen(!open)}
       >
-        Rebalance
+        {t('chart.rebalance')}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border-medium rounded-lg shadow-card-hover min-w-[200px] max-h-60 overflow-y-auto">
           <div className="px-3 py-2 border-b border-border-light">
-            <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Select ITP to rebalance</span>
+            <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('chart.rebalance_select')}</span>
           </div>
           {itps.map(itp => (
             <button
@@ -126,6 +128,7 @@ function RebalanceItpPicker({ itps, onSelect }: { itps: DeployedItpRef[]; onSele
 }
 
 export function SimPerformanceChart(props: SimPerformanceChartProps) {
+  const t = useTranslations('backtest')
   // Get first date from nav data to fetch benchmarks
   const startDate = props.mode === 'single'
     ? props.navSeries[0]?.nav_date
@@ -165,7 +168,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
       <div className="mb-6" ref={chartContainerRef}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Performance</h3>
+            <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('chart.performance')}</h3>
             {(hasBtc || hasEth) && (
               <div className="flex items-center gap-1">
                 {hasBtc && (
@@ -205,7 +208,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 className="text-xs px-4 py-1.5 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors font-medium"
                 onClick={() => onDeployIndex(runId, 'simulation')}
               >
-                Deploy Index
+                {t('chart.deploy_index')}
               </button>
             )}
             {deployedItps && deployedItps.length > 0 && onRebalanceItp && runId && (
@@ -384,6 +387,7 @@ function BenchmarkTooltipRows({ data }: { data: any }) {
 }
 
 function SingleTooltip({ active, payload, hasBenchmarks }: any) {
+  const t = useTranslations('backtest')
   if (!active || !payload?.length) return null
   const data = payload[0].payload
   const nav = data.nav ?? 0
@@ -393,13 +397,13 @@ function SingleTooltip({ active, payload, hasBenchmarks }: any) {
     <div className="bg-white border border-border-medium rounded-lg shadow-card p-3 text-xs">
       <div className="text-text-muted">{data.nav_date}</div>
       <div className={nav >= 1 ? 'text-color-up' : 'text-color-down'}>
-        NAV: ${nav.toFixed(4)}
+        {t('chart.nav_label', { value: nav.toFixed(4) })}
       </div>
       <div className={ret >= 0 ? 'text-color-up' : 'text-color-down'}>
-        Return: {ret >= 0 ? '+' : ''}{ret.toFixed(2)}%
+        {t('chart.return_label', { value: `${ret >= 0 ? '+' : ''}${ret.toFixed(2)}` })}
       </div>
       {data.drawdown_pct !== undefined && data.drawdown_pct < 0 && (
-        <div className="text-color-down">DD: {data.drawdown_pct.toFixed(2)}%</div>
+        <div className="text-color-down">{t('chart.dd_label', { value: data.drawdown_pct.toFixed(2) })}</div>
       )}
       {hasBenchmarks && <BenchmarkTooltipRows data={data} />}
     </div>

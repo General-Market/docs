@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   LineChart,
@@ -28,13 +29,15 @@ const STATUS_MAP: Record<string, number> = {
   unhealthy: 3,
 }
 
-const STATUS_LABELS: Record<number, string> = {
-  1: 'Healthy',
-  2: 'Degraded',
-  3: 'Unhealthy',
-}
-
 export function SystemHealthSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
+
+  const STATUS_LABELS: Record<number, string> = {
+    1: t('explorer.system_health_section.healthy'),
+    2: t('explorer.system_health_section.degraded'),
+    3: t('explorer.system_health_section.unhealthy'),
+  }
+
   const statusData = useMemo(
     () =>
       snapshots.map((s) => ({
@@ -82,8 +85,8 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* #82: Network Status */}
       <ExplorerChartCard
-        title="Network Status"
-        subtitle="Aggregate worst status (1=healthy, 2=degraded, 3=unhealthy)"
+        title={t('explorer.system_health_section.network_status')}
+        subtitle={t('explorer.system_health_section.network_status_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -106,7 +109,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [STATUS_LABELS[value] ?? value, 'Status']}
+              formatter={(value: number) => [STATUS_LABELS[value] ?? value, t('explorer.system_health_section.status')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <defs>
@@ -119,7 +122,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             <Area
               type="stepAfter"
               dataKey="status"
-              name="Status"
+              name={t('explorer.system_health_section.status')}
               stroke="#6b7280"
               fill="url(#statusGrad)"
               strokeWidth={1.5}
@@ -130,8 +133,8 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
 
       {/* #83: Quorum History */}
       <ExplorerChartCard
-        title="Quorum History"
-        subtitle="Whether quorum was met at each poll"
+        title={t('explorer.system_health_section.quorum_history')}
+        subtitle={t('explorer.system_health_section.quorum_history_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -148,13 +151,13 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             <YAxis
               domain={[-0.1, 1.1]}
               ticks={[0, 1]}
-              tickFormatter={(v) => (v === 1 ? 'Met' : 'Lost')}
+              tickFormatter={(v) => (v === 1 ? t('explorer.system_health_section.met') : t('explorer.system_health_section.lost'))}
               tick={{ fontSize: 10 }}
               stroke="#ccc"
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [value === 1 ? 'Quorum Met' : 'Quorum Lost', 'Quorum']}
+              formatter={(value: number) => [value === 1 ? t('explorer.system_health_section.quorum_met') : t('explorer.system_health_section.quorum_lost'), t('explorer.system_health_section.quorum')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <defs>
@@ -166,7 +169,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             <Area
               type="stepAfter"
               dataKey="quorum"
-              name="Quorum"
+              name={t('explorer.system_health_section.quorum')}
               stroke="#10b981"
               fill="url(#quorumGrad)"
               strokeWidth={1.5}
@@ -177,8 +180,8 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
 
       {/* #84: Consensus Success Rate */}
       <ExplorerChartCard
-        title="Consensus Success Rate"
-        subtitle="Per-interval success rate (%)"
+        title={t('explorer.system_health_section.consensus_success_rate')}
+        subtitle={t('explorer.system_health_section.consensus_success_rate_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -200,13 +203,13 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [`${value}%`, 'Success Rate']}
+              formatter={(value: number) => [`${value}%`, t('explorer.system_health_section.success_rate')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <Line
               type="monotone"
               dataKey="rate"
-              name="Success Rate"
+              name={t('explorer.system_health_section.success_rate')}
               stroke="#10b981"
               strokeWidth={1.5}
               dot={false}
@@ -217,8 +220,8 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
 
       {/* #85: Error Rate */}
       <ExplorerChartCard
-        title="Error Rate"
-        subtitle="New consensus failures between polls"
+        title={t('explorer.system_health_section.error_rate')}
+        subtitle={t('explorer.system_health_section.error_rate_desc')}
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -235,13 +238,13 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
             <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
             <Tooltip
               labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              formatter={(value: number) => [value, 'Failures']}
+              formatter={(value: number) => [value, t('explorer.system_health_section.failures')]}
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
             />
             <Line
               type="monotone"
               dataKey="delta"
-              name="Failures"
+              name={t('explorer.system_health_section.failures')}
               stroke="#ef4444"
               strokeWidth={1.5}
               dot={false}

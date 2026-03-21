@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { useTranslations } from 'next-intl'
 
 interface AgentConfig {
   id: string
@@ -96,6 +97,7 @@ interface DeployAgentModalProps {
 }
 
 function CopyButton({ text }: { text: string }) {
+  const t = useTranslations('vision')
   const [copied, setCopied] = useState(false)
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text)
@@ -109,24 +111,25 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-micro font-mono text-neutral-400 hover:text-white hover:bg-neutral-600 transition-colors"
     >
-      {copied ? 'Copied!' : 'Copy'}
+      {copied ? t('deploy_agent_modal.copied') : t('deploy_agent_modal.copy')}
     </button>
   )
 }
 
 export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalProps) {
+  const t = useTranslations('vision')
   const agent = AGENTS.find(a => a.id === agentId)
   if (!agent) return null
 
   const steps = [
     {
       number: 1,
-      title: 'Clone',
+      title: t('deploy_steps.clone'),
       code: 'git clone https://github.com/General-Market/vision-bot\ncd vision-bot',
     },
     {
       number: 2,
-      title: 'Configure',
+      title: t('deploy_steps.configure'),
       code: 'cp .env.example .env\n# Add BOT_PRIVATE_KEY and set DEPOSIT_AMOUNT\npip install -r requirements.txt',
     },
     {
@@ -144,7 +147,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
           <div className="flex items-center gap-2">
             {agent.icon}
-            <h2 className="text-sm font-bold text-neutral-900">Deploy with {agent.name}</h2>
+            <h2 className="text-sm font-bold text-neutral-900">{t('deploy_agent_modal.deploy_with', { name: agent.name })}</h2>
           </div>
           <ModalClose onClick={onClose} />
         </div>
@@ -168,7 +171,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-black/[0.06] flex items-center justify-between text-label text-neutral-400">
-          <span>Python 3.10+ &middot; funded wallet</span>
+          <span>{t('deploy_agent_modal.requirements')}</span>
           <a
             href="https://docs.generalmarket.io/guides/vision-bots"
             target="_blank"

@@ -6,6 +6,7 @@ import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
+import { useTranslations } from 'next-intl'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -918,27 +919,28 @@ function AmbientParticles({
 /* ------------------------------------------------------------------ */
 
 function Legend() {
+  const t = useTranslations('pages')
   return (
     <div className="flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-micro text-text-muted tracking-wide">Simple TX</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.focil_guard.legend_simple_tx')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-micro text-text-muted tracking-wide">Multisig</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.focil_guard.legend_multisig')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-        <span className="text-micro text-text-muted tracking-wide">Paymaster</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.focil_guard.legend_paymaster')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PINK }} />
-        <span className="text-micro text-text-muted tracking-wide">Privacy</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.focil_guard.legend_privacy')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">FOCIL shield</span>
+        <span className="text-micro text-text-muted tracking-wide">{t('learn.focil_guard.legend_focil_shield')}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm relative" style={{ backgroundColor: RED }}>
@@ -955,6 +957,7 @@ function Legend() {
 /* ------------------------------------------------------------------ */
 
 export function FOCILGuard3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"

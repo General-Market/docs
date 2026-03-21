@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { SimStats } from '@/hooks/useSimulation'
 
 interface SweepVariant {
@@ -12,6 +13,8 @@ interface SimSweepStatsTableProps {
 }
 
 export function SimSweepStatsTable({ variants }: SimSweepStatsTableProps) {
+  const t = useTranslations('backtest')
+
   if (!variants.length) return null
 
   // Sort by total return descending
@@ -27,13 +30,13 @@ export function SimSweepStatsTable({ variants }: SimSweepStatsTableProps) {
       <table className="w-full">
         <thead>
           <tr className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted border-b border-border-light bg-muted">
-            <th className="text-left pb-2 pt-2 pr-3 px-3">Variant</th>
-            <th className="text-right pb-2 pt-2 pr-3 px-3">Return</th>
-            <th className="text-right pb-2 pt-2 pr-3 px-3">Annual.</th>
-            <th className="text-right pb-2 pt-2 pr-3 px-3">Max DD</th>
-            <th className="text-right pb-2 pt-2 pr-3 px-3">Sharpe</th>
-            <th className="text-right pb-2 pt-2 pr-3 px-3">Fees</th>
-            <th className="text-right pb-2 pt-2 px-3">Trades</th>
+            <th className="text-left pb-2 pt-2 pr-3 px-3">{t('sweep_table.variant')}</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">{t('sweep_table.return')}</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">{t('sweep_table.annual')}</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">{t('sweep_table.max_dd')}</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">{t('sweep_table.sharpe')}</th>
+            <th className="text-right pb-2 pt-2 pr-3 px-3">{t('sweep_table.fees')}</th>
+            <th className="text-right pb-2 pt-2 px-3">{t('sweep_table.trades')}</th>
           </tr>
         </thead>
         <tbody>

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from 'react'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
+import { useTranslations } from 'next-intl'
 
 interface BitmapOverlayProps {
   sourceId: string
@@ -11,6 +12,7 @@ interface BitmapOverlayProps {
 }
 
 export function BitmapOverlay({ sourceId, sourceName, markets, bitmapEditor }: BitmapOverlayProps) {
+  const t = useTranslations('vision')
   const marketIds = useMemo(() => markets.map(m => m.id), [markets])
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
 
@@ -52,9 +54,9 @@ export function BitmapOverlay({ sourceId, sourceName, markets, bitmapEditor }: B
 
       {/* Footer */}
       <div className="back-footer">
-        <span className="bf-up">{counts.up} UP</span>
-        <span className="bf-dn">{counts.down} DN</span>
-        <span className="bf-empty">{markets.length - counts.up - counts.down} unset</span>
+        <span className="bf-up">{counts.up} {t('bitmap_overlay.up')}</span>
+        <span className="bf-dn">{counts.down} {t('bitmap_overlay.down')}</span>
+        <span className="bf-empty">{markets.length - counts.up - counts.down} {t('bitmap_overlay.unset')}</span>
       </div>
     </>
   )

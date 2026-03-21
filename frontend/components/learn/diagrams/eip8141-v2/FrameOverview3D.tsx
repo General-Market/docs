@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneContainer } from '../scaling/SceneContainer'
+import { useTranslations } from 'next-intl'
 import { SceneLegend } from '../scaling/shared/SceneLegend'
 import { AutoFitCamera } from '../scaling/shared/AutoFitCamera'
 import { ContextDisposer } from '../scaling/shared/ContextDisposer'
@@ -634,12 +635,13 @@ function Labels({ reducedMotion }: { reducedMotion: boolean }) {
 /* ------------------------------------------------------------------ */
 
 export function FrameOverview3D() {
+  const t = useTranslations('pages')
   return (
     <SceneContainer
       height="h-[340px] md:h-[400px]"
       ariaLabel="ACCEPT is the trust boundary. A data cube in Frame 0 reads Frame 1's calldata via an amber arc, then passes through the ACCEPT gate. Corridor walls shift from purple (untrusted) to green (committed)."
       srDescription="A 3D scene showing three frames arranged left to right: Frame 0, Frame 1, and Frame 2, connected by a corridor with walls. A purple data cube starts in Frame 0. An amber arc appears from Frame 1 to Frame 0, representing CALLDATAREAD -- Frame 0 reading Frame 1's calldata before deciding. Sparks travel along the arc from Frame 1 toward Frame 0. The CALLDATAREAD fades, then the cube approaches the ACCEPT gate at the center. When ACCEPT fires, a green torus ring expands, the gate flashes, and the corridor walls shift from purple to green. The cube turns green and slides through Frame 1 and Frame 2."
-      legend={<SceneLegend items={[{ color: PURPLE, label: 'Untrusted / validation' }, { color: GREEN, label: 'Committed / execution' }, { color: AMBER, label: 'CALLDATAREAD' }]} />}
+      legend={<SceneLegend items={[{ color: PURPLE, label: t('learn.frame_overview_v2.legend_untrusted') }, { color: GREEN, label: t('learn.frame_overview_v2.legend_committed') }, { color: AMBER, label: t('learn.frame_overview_v2.legend_calldataread') }]} />}
       fallbackText="Frame overview — ACCEPT gate is the trust boundary. Purple corridor turns green after ACCEPT fires. Amber CALLDATAREAD arc reads Frame 1 before ACCEPT."
     >
       {({ reducedMotion }) => (

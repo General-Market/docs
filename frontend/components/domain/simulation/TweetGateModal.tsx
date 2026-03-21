@@ -179,10 +179,10 @@ export default function TweetGateModal({
                   className="w-full px-4 py-2.5 text-sm font-semibold rounded-xl bg-black/80 text-white hover:bg-black/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {unlocking
-                    ? 'Sign with wallet...'
+                    ? t('gate.sign_wallet')
                     : countdown > 0
-                      ? `Okay we trust you. Probably. (${countdown}s)`
-                      : 'I posted'}
+                      ? t('gate.countdown', { countdown })
+                      : t('gate.i_posted')}
                 </button>
               )}
             </>

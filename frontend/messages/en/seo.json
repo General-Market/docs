@@ -47,7 +47,8 @@
     "org_description": "The institutional-grade protocol for on-chain index products.",
     "website_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products on-chain.",
     "app_description": "The institutional-grade protocol for on-chain index products. Create, trade, and manage tokenized index products.",
-    "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}."
+    "itp_description": "{name} \u2014 on-chain index tracking product with {count} crypto assets. NAV: ${nav}.",
+    "category_index_fund": "Index Fund"
   },
   "pages": {
     "privacy": {
@@ -78,6 +79,27 @@
       "title": "Learn — AI Prediction Markets, Bots & Trading Guides",
       "description": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
     },
+    "explorer": {
+      "title": "Explorer — Oracle Network",
+      "description": "Real-time monitoring of the oracle consensus network."
+    },
+    "points": {
+      "title": "Points — Season 1",
+      "description": "Earn points by providing liquidity across Vision prediction batches. Points convert to tokens at end of season."
+    },
+    "sources_monitoring": {
+      "title": "Source Monitoring",
+      "description": "Live health status of all data sources feeding market prices on General Market."
+    },
+    "source_detail": {
+      "title": "{name} | Vision",
+      "title_not_found": "Source Not Found",
+      "description": "{name} — live market data feed with {count} market series. Category: {category}. Trade predictions on Vision.",
+      "og_title": "{name} — Vision Data Source"
+    },
+    "learn_article": {
+      "not_found": "Article Not Found"
+    },
     "learn_itps": {
       "title": "What Are Index Tracking Products (ITPs)? — General Market",
       "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
@@ -96,12 +118,15 @@
       "weight_col": "Weight",
       "price_col": "Price",
       "trade_this": "Trade This ITP",
-      "learn_about": "Learn About ITPs"
+      "learn_about": "Learn About ITPs",
+      "disclaimer": "NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.",
+      "json_ld_category": "Index Fund"
     }
   },
   "breadcrumbs": {
     "home": "Home",
     "markets": "Markets",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "data_sources": "Data Sources"
   }
 }

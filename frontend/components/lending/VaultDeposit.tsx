@@ -82,7 +82,7 @@ export function VaultDeposit() {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Transaction failed')
+      setTxError(actionError.message || t('common.transaction_failed'))
       setStep('input')
       setPendingDepositAmount(0n)
       approvalHandled.current = false
@@ -183,7 +183,7 @@ export function VaultDeposit() {
               disabled={isProcessing}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-bold text-zinc-900 hover:text-zinc-700 disabled:opacity-50 uppercase tracking-[0.08em]"
             >
-              Max
+              {t('actions.max')}
             </button>
           </div>
           {amount && parsedAmount > (usdcBalance as bigint ?? 0n) && (
@@ -210,7 +210,7 @@ export function VaultDeposit() {
             rel="noopener noreferrer"
             className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
           >
-            View on explorer ↗
+            {t('common.view_on_explorer')} ↗
           </a>
         )}
 

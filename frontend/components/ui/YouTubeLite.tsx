@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 /** Extract YouTube video ID from various URL formats */
 export function extractYouTubeId(url: string): string | null {
@@ -10,6 +11,7 @@ export function extractYouTubeId(url: string): string | null {
 
 /** YouTube thumbnail with click-to-play — avoids black screen embed issues */
 export function YouTubeLite({ videoId, title }: { videoId: string; title: string }) {
+  const t = useTranslations('common')
   const [playing, setPlaying] = useState(false)
   if (playing) {
     return (
@@ -28,7 +30,7 @@ export function YouTubeLite({ videoId, title }: { videoId: string; title: string
     <button
       onClick={() => setPlaying(true)}
       className="relative aspect-video w-full bg-zinc-950 group cursor-pointer overflow-hidden"
-      aria-label={`Play ${title}`}
+      aria-label={t('aria.play_video', { title })}
     >
       <img
         src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}

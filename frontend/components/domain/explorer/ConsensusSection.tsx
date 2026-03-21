@@ -123,14 +123,14 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis
                 domain={[0, 1]}
                 ticks={[0, 1]}
-                tickFormatter={(v) => (v === 1 ? 'Yes' : 'No')}
+                tickFormatter={(v) => (v === 1 ? t('explorer.consensus_tooltip.yes') : t('explorer.consensus_tooltip.no'))}
                 tick={{ fontSize: 10 }}
                 stroke="#ccc"
                 width={32}
               />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v === 1 ? 'Met' : 'Not met', 'Quorum']}
+                formatter={(v: number) => [v === 1 ? t('explorer.consensus_section.met') : t('explorer.consensus_section.not_met'), t('explorer.consensus_tooltip.quorum')]}
               />
               <Area
                 type="stepAfter"
@@ -175,7 +175,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
                       : v === 2
                         ? t('explorer.consensus_section.degraded')
                         : t('explorer.consensus_section.unhealthy')
-                  return [label, 'Status']
+                  return [label, t('explorer.consensus_tooltip.status')]
                 }}
               />
               <Area
@@ -202,7 +202,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, 'Rounds']}
+                formatter={(v: number) => [v, t('explorer.consensus_tooltip.rounds')]}
               />
               <Line
                 type="monotone"
@@ -234,7 +234,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [`${v}%`, 'Success']}
+                formatter={(v: number) => [`${v}%`, t('explorer.consensus_tooltip.success')]}
               />
               <Area
                 type="monotone"
@@ -269,7 +269,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [`${v.toFixed(0)}ms`, 'Duration']}
+                formatter={(v: number) => [`${v.toFixed(0)}ms`, t('explorer.consensus_tooltip.duration')]}
               />
               <Line
                 type="monotone"
@@ -295,7 +295,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, 'Signatures']}
+                formatter={(v: number) => [v, t('explorer.consensus_tooltip.signatures')]}
               />
               <Area
                 type="monotone"
@@ -321,7 +321,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, 'Failures']}
+                formatter={(v: number) => [v, t('explorer.consensus_tooltip.failures')]}
               />
               <Line
                 type="monotone"

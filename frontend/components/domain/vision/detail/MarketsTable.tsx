@@ -19,6 +19,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+import { useTranslations } from 'next-intl'
 
 interface MarketsTableProps {
   sourceId: string
@@ -127,6 +128,7 @@ function formatVolume(vol: string | null): string {
 // ── Asset Price History Chart ──
 
 function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSourceId: string; assetId: string; tickHistory?: BatchHistoryEntry[] }) {
+  const t = useTranslations('vision')
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -179,7 +181,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
   if (loading) {
     return (
       <div className="h-[120px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">Loading history...</div>
+        <div className="text-label text-text-muted">{t('markets_table.loading_history')}</div>
       </div>
     )
   }
@@ -187,7 +189,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
   if (error) {
     return (
       <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">No history available</div>
+        <div className="text-label text-text-muted">{t('markets_table.no_history')}</div>
       </div>
     )
   }
@@ -195,7 +197,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
   if (points.length < 2) {
     return (
       <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-label text-text-muted">Not enough data ({points.length} point{points.length !== 1 ? 's' : ''})</div>
+        <div className="text-label text-text-muted">{t('markets_table.not_enough_data', { count: points.length, plural: points.length !== 1 ? 's' : '' })}</div>
       </div>
     )
   }
@@ -209,7 +211,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
     <div className="bg-surface/50 px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
-          7-day history ({points.length.toLocaleString()} points)
+          {t('markets_table.history_label', { count: points.length.toLocaleString() })}
         </span>
         <div className="flex items-center gap-3">
           <span className="text-label font-mono text-text-muted">
@@ -251,7 +253,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
               const d = new Date(label)
               return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
             }}
-            formatter={(val: number) => [formatValue(val), 'Value']}
+            formatter={(val: number) => [formatValue(val), t('markets_table.value_tooltip')]}
           />
           {/* Resolution time markers */}
           {(tickHistory ?? []).map((tick) => {
@@ -286,6 +288,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
 // ── Markets Table ──
 
 export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTableProps) {
+  const t = useTranslations('vision')
   // Source metadata from registry
   const { sources } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
@@ -389,7 +392,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
       {/* Markets bar */}
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">Markets</div>
+          <div className="section-bar-title">{t('markets_table.markets_title')}</div>
           <div className="section-bar-value">
             {isLoading ? '...' : (meta?.assetCounts?.[sourceId] ?? sourceMarkets.length)}
           </div>
@@ -397,7 +400,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
         <div className="flex items-center gap-3">
           <input
             type="text"
-            placeholder="Search markets..."
+            placeholder={t('markets_table.search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[180px]"
@@ -409,11 +412,11 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
         <div className="grid grid-cols-[1fr_80px_100px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
-          <div>Name</div>
-          <div className="text-center">Type</div>
+          <div>{t('markets_table.name')}</div>
+          <div className="text-center">{t('markets_table.type')}</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
-          <div className="text-right">1d</div>
-          <div className="text-center">Bet</div>
+          <div className="text-right">{t('markets_table.one_day')}</div>
+          <div className="text-center">{t('markets_table.bet')}</div>
         </div>
 
         {/* Loading state */}
@@ -426,7 +429,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
         {/* Empty state */}
         {!isLoading && filteredMarkets.length === 0 && (
           <div className="px-4 py-8 text-center text-caption text-text-muted">
-            {search ? 'No markets match your search' : 'No markets available'}
+            {search ? t('markets_table.no_match') : t('markets_table.no_markets')}
           </div>
         )}
 

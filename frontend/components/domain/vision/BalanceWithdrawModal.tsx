@@ -9,6 +9,7 @@ import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { useTranslations } from 'next-intl'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { getTxUrl } from '@/lib/utils/explorer'
 
@@ -26,6 +27,7 @@ interface BalanceWithdrawModalProps {
  * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, oracles release on Settlement)
  */
 export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
+  const t = useTranslations('vision')
   const { isConnected } = useAccount()
   const { capture } = usePostHogTracker()
   const { realBalance, virtualBalance, refetch: refetchBalance } = useVisionBalance()
@@ -96,16 +98,16 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   const stepLabel = (() => {
     if (mode === 'l3') {
       switch (l3Step) {
-        case 'withdrawing': return 'Withdrawing to L3 wallet...'
-        case 'done': return 'Withdrawal successful!'
+        case 'withdrawing': return t('balance_withdraw_modal.step_withdrawing_l3')
+        case 'done': return t('balance_withdraw_modal.step_withdrawal_successful')
         default: return ''
       }
     }
     if (mode === 'settlement') {
       switch (settlementStep) {
-        case 'withdrawing': return 'Submitting withdrawal request...'
-        case 'polling': return 'Waiting for oracles to release on Settlement...'
-        case 'done': return 'Withdrawal initiated! USDC will arrive on Settlement shortly.'
+        case 'withdrawing': return t('balance_withdraw_modal.step_submitting')
+        case 'polling': return t('balance_withdraw_modal.step_polling')
+        case 'done': return t('balance_withdraw_modal.step_withdrawal_initiated')
         default: return ''
       }
     }
@@ -118,21 +120,21 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Withdraw from Vision</h2>
+            <h2 className="text-lg font-semibold text-text-primary">{t('balance_withdraw_modal.title')}</h2>
             <ModalClose onClick={onClose} />
           </div>
 
           {!isConnected ? (
             <div className={`${glass.section} p-8 text-center`}>
-              <p className="text-text-secondary">Connect your wallet to withdraw</p>
+              <p className="text-text-secondary">{t('balance_withdraw_modal.connect_wallet')}</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
               <div className={`${glass.success} p-6 text-center`}>
-                <p className="text-color-up font-semibold text-lg mb-1">Withdrawal Successful</p>
+                <p className="text-color-up font-semibold text-lg mb-1">{t('balance_withdraw_modal.withdrawal_successful')}</p>
                 <p className="text-text-secondary text-sm">
-                  {amount} USDC withdrawn
-                  {mode === 'settlement' ? ' to Settlement' : ' to L3 wallet'}
+                  {t('balance_withdraw_modal.withdrawn_description', { amount })}
+                  {mode === 'settlement' ? t('balance_withdraw_modal.withdrawn_to_settlement') : t('balance_withdraw_modal.withdrawn_to_l3')}
                 </p>
                 {(l3TxHash || settlementTxHash) && (
                   <a
@@ -146,7 +148,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 )}
                 {mode === 'settlement' && (
                   <p className="text-xs text-text-muted mt-2">
-                    USDC will arrive on Settlement once oracles process the release.
+                    {t('balance_withdraw_modal.settlement_note')}
                   </p>
                 )}
               </div>
@@ -154,13 +156,13 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 onClick={handleDone}
                 className={glass.ctaSecondary}
               >
-                Done
+                {t('balance_withdraw_modal.done')}
               </button>
             </div>
           ) : mode === 'choose' ? (
             <div className="space-y-3">
               <p className="text-sm text-text-secondary mb-4">
-                Choose where to withdraw USDC to:
+                {t('balance_withdraw_modal.choose_destination')}
               </p>
 
               {/* To L3 wallet */}
@@ -175,9 +177,9 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm font-bold text-text-primary">To L3 Wallet</p>
+                    <p className="text-sm font-bold text-text-primary">{t('balance_withdraw_modal.to_l3_wallet')}</p>
                     <p className="text-xs text-text-muted mt-1">
-                      Withdraw real balance as L3 USDC to your wallet
+                      {t('balance_withdraw_modal.to_l3_description')}
                     </p>
                   </div>
                   <span className="text-xs font-mono text-text-secondary">
@@ -185,7 +187,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {realBalance === 0n && (
-                  <span className="inline-block mt-2 text-micro text-text-muted">No real balance</span>
+                  <span className="inline-block mt-2 text-micro text-text-muted">{t('balance_withdraw_modal.no_real_balance')}</span>
                 )}
               </button>
 
@@ -201,9 +203,9 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm font-bold text-text-primary">To Settlement</p>
+                    <p className="text-sm font-bold text-text-primary">{t('balance_withdraw_modal.to_settlement')}</p>
                     <p className="text-xs text-text-muted mt-1">
-                      Release virtual balance USDC on Settlement via oracles
+                      {t('balance_withdraw_modal.to_settlement_description')}
                     </p>
                   </div>
                   <span className="text-xs font-mono text-text-secondary">
@@ -211,7 +213,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {virtualBalance === 0n && (
-                  <span className="inline-block mt-2 text-micro text-text-muted">No virtual balance</span>
+                  <span className="inline-block mt-2 text-micro text-text-muted">{t('balance_withdraw_modal.no_virtual_balance')}</span>
                 )}
               </button>
             </div>
@@ -223,7 +225,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   onClick={handleReset}
                   className="text-xs text-text-muted hover:text-text-primary transition-colors"
                 >
-                  &larr; Back
+                  &larr; {t('balance_withdraw_modal.back')}
                 </button>
               )}
 
@@ -231,10 +233,10 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               <div className={`${glass.section} p-3`}>
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
-                    {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
+                    {mode === 'l3' ? t('balance_withdraw_modal.withdraw_to_l3_label') : t('balance_withdraw_modal.withdraw_to_settlement_label')}
                   </p>
                   <span className="text-xs font-mono text-text-secondary">
-                    Max: {fmtBal(maxBalance)} USDC
+                    {t('balance_withdraw_modal.max_label', { amount: fmtBal(maxBalance) })}
                   </span>
                 </div>
               </div>
@@ -249,14 +251,14 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                     onClick={handleMax}
                     className="text-xs text-terminal hover:underline font-mono"
                   >
-                    MAX
+                    {t('balance_withdraw_modal.max')}
                   </button>
                 </div>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="e.g., 100"
+                  placeholder={t('balance_withdraw_modal.placeholder')}
                   min="0"
                   step="1"
                   disabled={isProcessing}
@@ -264,7 +266,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 />
                 {insufficientBalance && (
                   <p className="text-color-down text-xs mt-1">
-                    Exceeds available {mode === 'l3' ? 'real' : 'virtual'} balance
+                    {mode === 'l3' ? t('balance_withdraw_modal.exceeds_real_balance') : t('balance_withdraw_modal.exceeds_virtual_balance')}
                   </p>
                 )}
               </div>
@@ -282,13 +284,13 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {/* Error */}
               {activeError && (
                 <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">Error</p>
+                  <p className="font-medium">{t('balance_withdraw_modal.error')}</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
                     onClick={handleReset}
                     className="text-xs text-color-down underline mt-2"
                   >
-                    Try again
+                    {t('balance_withdraw_modal.try_again')}
                   </button>
                 </div>
               )}
@@ -300,7 +302,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   disabled={!amount || parsedAmount === 0n || insufficientBalance}
                   className={glass.ctaDown}
                 >
-                  {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
+                  {mode === 'l3' ? t('balance_withdraw_modal.withdraw_to_l3_label') : t('balance_withdraw_modal.withdraw_to_settlement_label')}
                 </WalletActionButton>
               )}
 
@@ -310,7 +312,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   onClick={handleReset}
                   className={glass.cancel}
                 >
-                  Cancel
+                  {t('balance_withdraw_modal.cancel')}
                 </button>
               )}
             </div>

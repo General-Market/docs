@@ -41,12 +41,7 @@ const TICK_DURATIONS = [
 
 type Step = 'markets' | 'configure' | 'preview' | 'confirm'
 const STEPS: Step[] = ['markets', 'configure', 'preview', 'confirm']
-const STEP_LABELS: Record<Step, string> = {
-  markets: 'Pick Markets',
-  configure: 'Configure',
-  preview: 'Preview',
-  confirm: 'Confirm',
-}
+// Step labels are rendered using t() below
 
 function isCustomThresholdType(resType: number): boolean {
   return resType === 2 || resType === 5 || resType === 7 // UP_X, DOWN_X, FLAT_X
@@ -90,6 +85,7 @@ function MetadataForm({
   namePending, nameConfirming, nameSuccess, nameError,
   onClose, handleReset,
 }: MetadataFormProps) {
+  const t = useTranslations('vision')
   const hasAnyMeta = metaName || metaDescription || metaWebsite || metaVideo || metaImage
 
   // Progress through the two-tx flow
@@ -126,7 +122,7 @@ function MetadataForm({
     return (
       <div className="space-y-4">
         <div className={`${glass.success} p-4 text-color-up text-center`}>
-          <p className="font-medium">Details Saved!</p>
+          <p className="font-medium">{t('create_modal_meta.details_saved')}</p>
         </div>
         <div className="flex gap-3">
           <button onClick={handleReset} className={`flex-1 ${glass.ctaUp}`}>
@@ -145,32 +141,32 @@ function MetadataForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Add Batch Details (optional)</p>
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('create_modal_meta.add_details')}</p>
 
       <div className="space-y-3">
         <div>
-          <label className="text-xs text-text-muted block mb-1">Name (max 64 chars)</label>
-          <input value={metaName} onChange={e => setMetaName(e.target.value)} maxLength={64} placeholder="My Trading Strategy" className={inputClass} />
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.name_label')}</label>
+          <input value={metaName} onChange={e => setMetaName(e.target.value)} maxLength={64} placeholder={t('create_modal_meta.name_placeholder')} className={inputClass} />
         </div>
         <div>
-          <label className="text-xs text-text-muted block mb-1">Description (max 280 chars)</label>
-          <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} maxLength={280} placeholder="A brief description..." rows={2} className={inputClass + ' resize-none'} />
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.description_label')}</label>
+          <textarea value={metaDescription} onChange={e => setMetaDescription(e.target.value)} maxLength={280} placeholder={t('create_modal_meta.description_placeholder')} rows={2} className={inputClass + ' resize-none'} />
         </div>
         <div>
-          <label className="text-xs text-text-muted block mb-1">Website URL</label>
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.website_label')}</label>
           <input value={metaWebsite} onChange={e => setMetaWebsite(e.target.value)} maxLength={128} placeholder="https://..." className={inputClass} />
         </div>
         <div>
-          <label className="text-xs text-text-muted block mb-1">Video URL (YouTube)</label>
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.video_label')}</label>
           <input value={metaVideo} onChange={e => setMetaVideo(e.target.value)} maxLength={256} placeholder="https://youtube.com/watch?v=..." className={inputClass} />
         </div>
         <div>
-          <label className="text-xs text-text-muted block mb-1">Image URL</label>
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.image_label')}</label>
           <input value={metaImage} onChange={e => setMetaImage(e.target.value)} maxLength={256} placeholder="https://..." className={inputClass} />
         </div>
         <div className="border-t border-black/[0.06] pt-3">
-          <label className="text-xs text-text-muted block mb-1">Your Display Name (max 64 chars)</label>
-          <input value={metaDeployerName} onChange={e => setMetaDeployerName(e.target.value)} maxLength={64} placeholder="Your name or alias" className={inputClass} />
+          <label className="text-xs text-text-muted block mb-1">{t('create_modal_meta.display_name_label')}</label>
+          <input value={metaDeployerName} onChange={e => setMetaDeployerName(e.target.value)} maxLength={64} placeholder={t('create_modal_meta.display_name_placeholder')} className={inputClass} />
         </div>
       </div>
 
@@ -182,7 +178,7 @@ function MetadataForm({
 
       {isSaving && (
         <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-          {metaPending || namePending ? 'Confirm in your wallet...' : 'Waiting for confirmation...'}
+          {metaPending || namePending ? t('create_modal_meta.confirm_wallet') : t('create_modal_meta.waiting_confirmation')}
         </div>
       )}
 
@@ -192,7 +188,7 @@ function MetadataForm({
           disabled={isSaving || (!hasAnyMeta && !metaDeployerName)}
           className={`flex-1 ${glass.ctaUp}`}
         >
-          {isSaving ? 'Saving...' : 'Save Details'}
+          {isSaving ? t('create_modal_meta.saving') : t('create_modal_meta.save_details')}
         </button>
         <button
           onClick={onClose}
@@ -430,7 +426,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   }`}
                 >
                   <span className="tabular-nums">{i + 1}</span>
-                  <span className="hidden sm:inline">{STEP_LABELS[s]}</span>
+                  <span className="hidden sm:inline">{t(`create_modal.steps.${s}`)}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className={`w-6 h-px ${i < stepIndex ? 'bg-color-up' : 'bg-black/[0.06]'}`} />
@@ -459,7 +455,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         onChange={(e) => setSelectedSource(e.target.value)}
                         className={`${glass.inputSm} appearance-none`}
                       >
-                        <option value="">All Sources</option>
+                        <option value="">{t('create_modal.step_markets.all_sources')}</option>
                         {sources.map((s) => (
                           <option key={s} value={s}>{s}</option>
                         ))}
@@ -473,7 +469,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by name or ID..."
+                        placeholder={t('create_modal.step_markets.search_placeholder')}
                         className={glass.inputSm}
                       />
                     </div>
@@ -494,15 +490,15 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       Unselect All
                     </button>
                     <span className="text-xs text-text-muted ml-auto">
-                      {selectedMarketIds.size} selected{filteredMarkets.length !== markets.length ? ` / ${filteredMarkets.length} shown` : ''}
+                      {filteredMarkets.length !== markets.length ? t('create_modal.step_markets.selected_shown', { selected: selectedMarketIds.size.toString(), shown: filteredMarkets.length.toString() }) : t('create_modal.step_markets.selected_count', { selected: selectedMarketIds.size.toString() })}
                     </span>
                   </div>
 
                   {marketsLoading ? (
-                    <div className="py-8 text-center text-text-muted text-sm">Loading markets...</div>
+                    <div className="py-8 text-center text-text-muted text-sm">{t('create_modal.step_markets.loading_markets')}</div>
                   ) : filteredMarkets.length === 0 ? (
                     <div className="py-8 text-center text-text-muted text-sm">
-                      {markets.length === 0 ? 'No active markets available' : 'No markets match your filter'}
+                      {markets.length === 0 ? t('create_modal.step_markets.no_active_markets') : t('create_modal.step_markets.no_markets_match')}
                     </div>
                   ) : (
                     <div className="max-h-[360px] overflow-y-auto border border-black/[0.06] rounded-xl">
@@ -630,14 +626,14 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
               {step === 'preview' && (
                 <div className="space-y-4">
                   <div className={`${glass.section} p-4`}>
-                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">Batch Summary</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('create_modal.step_preview.batch_summary')}</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-muted">Markets</span>
+                        <span className="text-text-muted">{t('create_modal.step_preview.markets_label')}</span>
                         <span className="text-text-primary font-mono tabular-nums">{selectedConfigs.length}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-muted">Tick Duration</span>
+                        <span className="text-text-muted">{t('create_modal.step_configure.tick_duration_label')}</span>
                         <span className="text-text-primary font-mono tabular-nums">
                           {TICK_DURATIONS.find((t) => t.value === tickDuration)?.label ?? `${tickDuration}s`}
                         </span>
@@ -649,10 +645,10 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     <table className="w-full text-sm">
                       <thead className="bg-black/[0.03]">
                         <tr className="text-text-muted text-xs">
-                          <th className="text-left p-3">Market</th>
-                          <th className="text-left p-3">Resolution</th>
-                          <th className="text-right p-3">Threshold</th>
-                          <th className="text-right p-3">Price</th>
+                          <th className="text-left p-3">{t('create_modal.step_preview.table.market')}</th>
+                          <th className="text-left p-3">{t('create_modal.step_preview.table.resolution')}</th>
+                          <th className="text-right p-3">{t('create_modal.step_preview.table.threshold')}</th>
+                          <th className="text-right p-3">{t('create_modal.step_preview.table.price')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -705,7 +701,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
 
                       {isConfirming && (
                         <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
-                          <p>Transaction submitted, waiting for confirmation...</p>
+                          <p>{t('create_modal_meta.tx_submitted')}</p>
                           {txHash && (
                             <a
                               href={getTxUrl(txHash, 'l3')}

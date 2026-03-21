@@ -23,41 +23,41 @@ export interface SignatureProgressProps {
 }
 
 /**
- * Get status badge configuration
+ * Get status badge configuration (colors only — labels are translated at render)
  */
-function getStatusBadge(status: SignatureStatus['status']): {
-  label: string
+function getStatusBadgeStyle(status: SignatureStatus['status']): {
+  key: string
   bgColor: string
   textColor: string
 } {
   switch (status) {
     case 'collecting':
       return {
-        label: 'Collecting',
+        key: 'status_collecting',
         bgColor: 'bg-yellow-100',
         textColor: 'text-yellow-700',
       }
     case 'ready':
       return {
-        label: 'Ready',
+        key: 'status_ready',
         bgColor: 'bg-green-100',
         textColor: 'text-green-700',
       }
     case 'submitted':
       return {
-        label: 'Submitted',
+        key: 'status_submitted',
         bgColor: 'bg-cyan-100',
         textColor: 'text-cyan-700',
       }
     case 'expired':
       return {
-        label: 'Expired',
+        key: 'status_expired',
         bgColor: 'bg-red-100',
         textColor: 'text-red-700',
       }
     default:
       return {
-        label: 'Unknown',
+        key: 'status_unknown',
         bgColor: 'bg-gray-100',
         textColor: 'text-gray-600',
       }
@@ -154,7 +154,8 @@ export function SignatureProgress({
     )
   }
 
-  const statusBadge = getStatusBadge(data.status)
+  const statusBadge = getStatusBadgeStyle(data.status)
+  const statusLabel = t(`signature_progress.${statusBadge.key}`)
   const progressColor = getProgressColor(progress.percentage, progress.thresholdMet)
 
   // Compact mode - single line
@@ -162,7 +163,7 @@ export function SignatureProgress({
     return (
       <div className="flex items-center gap-2 font-mono text-xs">
         <span className={`px-1.5 py-0.5 rounded ${statusBadge.bgColor} ${statusBadge.textColor}`}>
-          {statusBadge.label}
+          {statusLabel}
         </span>
         <span className="text-text-muted">
           {progress.signedCount}/{progress.requiredCount}
@@ -186,7 +187,7 @@ export function SignatureProgress({
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-text-muted uppercase">{t('signature_progress.label')}</span>
         <span className={`px-2 py-1 rounded text-xs ${statusBadge.bgColor} ${statusBadge.textColor}`}>
-          {statusBadge.label}
+          {statusLabel}
         </span>
       </div>
 
@@ -219,7 +220,7 @@ export function SignatureProgress({
             rel="noopener noreferrer"
             className="text-xs text-color-info hover:text-text-primary transition-colors font-mono"
           >
-            Tx: {data.txHash.slice(0, 10)}...{data.txHash.slice(-8)} ↗
+            {t('signature_progress.tx_label', { hash: `${data.txHash.slice(0, 10)}...${data.txHash.slice(-8)}` })} ↗
           </a>
         </div>
       )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { PnlPoint } from '@/hooks/usePlayerProfile'
 
@@ -18,6 +19,7 @@ interface PnlChartProps {
 }
 
 export function PnlChart({ history }: PnlChartProps) {
+  const t = useTranslations('common')
   const [range, setRange] = useState<TimeRange>('ALL')
 
   const filtered = useMemo(() => {
@@ -30,7 +32,7 @@ export function PnlChart({ history }: PnlChartProps) {
   if (history.length === 0) {
     return (
       <div className="border border-border-light rounded p-6 h-[140px] flex items-center justify-center">
-        <span className="text-caption text-text-muted">No P&L data yet</span>
+        <span className="text-caption text-text-muted">{t('profile.no_pnl_data')}</span>
       </div>
     )
   }
@@ -87,7 +89,7 @@ export function PnlChart({ history }: PnlChartProps) {
                 fontSize: 11,
                 padding: '4px 8px',
               }}
-              formatter={(value: number) => [`$${value.toFixed(2)}`, 'P&L']}
+              formatter={(value: number) => [`$${value.toFixed(2)}`, t('profile.pnl_label')]}
               labelFormatter={(label: string) => {
                 const d = new Date(label)
                 return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

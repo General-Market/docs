@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 const PAGE_SIZE = 20
@@ -31,6 +32,7 @@ type SortKey = 'rank' | 'name' | 'weight' | 'price' | 'change_24h' | 'market_cap
 type SortDir = 'asc' | 'desc'
 
 export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps) {
+  const t = useTranslations('markets.itp_page.holdings_table')
   const holdings = enrichment?.holdings ?? []
   const [sortKey, setSortKey] = useState<SortKey>('weight')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -90,8 +92,8 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
   if (holdings.length === 0) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold text-text-primary mb-2">Holdings</h2>
-        <p className="text-sm text-text-muted">Holdings data loading...</p>
+        <h2 className="text-2xl font-bold text-text-primary mb-2">{t('title')}</h2>
+        <p className="text-sm text-text-muted">{t('loading')}</p>
       </section>
     )
   }
@@ -127,12 +129,12 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
     <section className="py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-text-primary">Holdings</h2>
-          <p className="text-xs text-text-muted mt-0.5">as of {asOfToday()}</p>
+          <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
+          <p className="text-xs text-text-muted mt-0.5">{t('as_of', { date: asOfToday() })}</p>
         </div>
         <input
           type="text"
-          placeholder="Filter by name or ticker..."
+          placeholder={t('filter_placeholder')}
           value={search}
           onChange={e => handleSearch(e.target.value)}
           className="border border-border-light rounded px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-text-muted"
@@ -143,16 +145,16 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
         <table className="w-full text-sm">
           <thead className="bg-surface border-b border-border-light">
             <tr>
-              <SortHeader k="rank">#</SortHeader>
-              <SortHeader k="name">Name</SortHeader>
-              <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left hidden sm:table-cell">Sector</th>
-              <SortHeader k="weight" align="text-right">Weight</SortHeader>
-              <SortHeader k="price" align="text-right">Price</SortHeader>
-              <SortHeader k="change_24h" align="text-right">24h</SortHeader>
-              <SortHeader k="market_value" align="text-right" className="hidden lg:table-cell">Market Value</SortHeader>
-              <SortHeader k="notional" align="text-right" className="hidden lg:table-cell">Notional Value</SortHeader>
-              <SortHeader k="quantity" align="text-right" className="hidden xl:table-cell">Shares</SortHeader>
-              <SortHeader k="market_cap" align="text-right" className="hidden lg:table-cell">Market Cap</SortHeader>
+              <SortHeader k="rank">{t('rank')}</SortHeader>
+              <SortHeader k="name">{t('name')}</SortHeader>
+              <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left hidden sm:table-cell">{t('sector')}</th>
+              <SortHeader k="weight" align="text-right">{t('weight')}</SortHeader>
+              <SortHeader k="price" align="text-right">{t('price')}</SortHeader>
+              <SortHeader k="change_24h" align="text-right">{t('change_24h')}</SortHeader>
+              <SortHeader k="market_value" align="text-right" className="hidden lg:table-cell">{t('market_value')}</SortHeader>
+              <SortHeader k="notional" align="text-right" className="hidden lg:table-cell">{t('notional_value')}</SortHeader>
+              <SortHeader k="quantity" align="text-right" className="hidden xl:table-cell">{t('shares')}</SortHeader>
+              <SortHeader k="market_cap" align="text-right" className="hidden lg:table-cell">{t('market_cap')}</SortHeader>
             </tr>
           </thead>
           <tbody>
@@ -190,7 +192,7 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-text-secondary text-xs hidden sm:table-cell">Cryptocurrency</td>
+                <td className="px-3 py-2.5 text-text-secondary text-xs hidden sm:table-cell">{t('cryptocurrency')}</td>
                 <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   {(h.weight * 100).toFixed(2)}%
                 </td>
@@ -225,7 +227,7 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-3 py-3 border-t border-border-light">
           <span className="text-xs text-text-secondary">
-            {startIdx} to {endIdx} of {sorted.length}
+            {t('range', { start: startIdx, end: endIdx, total: sorted.length })}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -233,7 +235,7 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
               disabled={clampedPage === 1}
               className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
             >
-              Previous
+              {t('previous')}
             </button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               const pageNum = clampedPage <= 3 ? i + 1
@@ -259,7 +261,7 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
               disabled={clampedPage === totalPages}
               className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
             >
-              Next
+              {t('next')}
             </button>
           </div>
         </div>

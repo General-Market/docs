@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 
 /* ═══════════════════════════════════════════
    StatCards — Big numbers in a row
@@ -36,20 +37,22 @@ function StatCardsBase({ stats, accentColor = 'black' }: {
 
 // Pre-built: article opening stats
 export function StatsOverview() {
+  const t = useTranslations('pages')
   return <StatCardsBase stats={[
-    { value: '10', label: 'Years of Research', sub: 'EIP-86 (2016) → EIP-8141 (2026)' },
-    { value: '1', label: 'Primitive', sub: 'Frame Transactions' },
-    { value: 'N', label: 'Frames per TX', sub: 'Validate, execute, pay, deploy...' },
-    { value: '0', label: 'Intermediaries', sub: 'No bundler, no relayer' },
+    { value: '10', label: t('learn.visual_cards.years_of_research'), sub: t('learn.visual_cards.years_of_research_sub') },
+    { value: '1', label: t('learn.visual_cards.primitive'), sub: t('learn.visual_cards.frame_transactions') },
+    { value: 'N', label: t('learn.visual_cards.frames_per_tx'), sub: t('learn.visual_cards.frames_per_tx_sub') },
+    { value: '0', label: t('learn.visual_cards.intermediaries'), sub: t('learn.visual_cards.intermediaries_sub') },
   ]} />
 }
 
 // Pre-built: what this unlocks
 export function StatsUnlocked() {
+  const t = useTranslations('pages')
   return <StatCardsBase stats={[
-    { value: '8', label: 'Capabilities', sub: 'Smart wallets to quantum resistance' },
-    { value: '100%', label: 'EOA Compatible', sub: 'No migration needed' },
-    { value: '<1yr', label: 'To Hegota Fork', sub: 'Targeting 2027' },
+    { value: '8', label: t('learn.visual_cards.capabilities'), sub: t('learn.visual_cards.capabilities_sub') },
+    { value: '100%', label: t('learn.visual_cards.eoa_compatible'), sub: t('learn.visual_cards.eoa_compatible_sub') },
+    { value: '<1yr', label: t('learn.visual_cards.to_hegota_fork'), sub: t('learn.visual_cards.to_hegota_fork_sub') },
   ]} accentColor="#22c55e" />
 }
 
@@ -88,22 +91,24 @@ function BenefitGridBase({ benefits, columns = 3 }: {
 
 // Pre-built: EOA benefits
 export function EOABenefits() {
+  const t = useTranslations('pages')
   return <BenefitGridBase benefits={[
-    { icon: '⚡', title: 'Batch Operations', description: 'Multiple calls in one transaction. Approve + swap atomic. No more two-step flows.', accent: '#3b82f6' },
-    { icon: '🎁', title: 'Transaction Sponsorship', description: 'Someone else pays your gas. Onboard users with zero ETH. Gasless UX.', accent: '#22c55e' },
-    { icon: '🛡️', title: 'FOCIL Guarantees', description: 'First-class frame transactions. Rapid inclusion. Censorship-resistant by protocol.', accent: '#8b5cf6' },
+    { icon: '⚡', title: t('learn.visual_cards.batch_operations'), description: t('learn.visual_cards.batch_operations_desc'), accent: '#3b82f6' },
+    { icon: '🎁', title: t('learn.visual_cards.tx_sponsorship'), description: t('learn.visual_cards.tx_sponsorship_desc'), accent: '#22c55e' },
+    { icon: '🛡️', title: t('learn.visual_cards.focil_guarantees'), description: t('learn.visual_cards.focil_guarantees_desc'), accent: '#8b5cf6' },
   ]} />
 }
 
 // Pre-built: What 8141 solves
 export function CapabilityCards() {
+  const t = useTranslations('pages')
   return <BenefitGridBase benefits={[
-    { icon: '👛', title: 'Smart Wallets', description: 'Native frame transactions replace off-chain bundlers. Any signature scheme.', accent: '#3b82f6' },
-    { icon: '💱', title: 'Gas in Any Token', description: 'On-chain DEX paymaster. Pay in USDC, RAI, DAI. No relay needed.', accent: '#22c55e' },
-    { icon: '🔗', title: 'Atomic Batch Ops', description: 'N execution frames. Approve + spend in one tx. No multicall hacks.', accent: '#f59e0b' },
-    { icon: '🔒', title: 'Privacy Protocols', description: 'Public mempool replaces centralized broadcasters. ZK-SNARK paymasters.', accent: '#8b5cf6' },
-    { icon: '🔐', title: 'Quantum Resistance', description: 'Plug any signature scheme into the validation frame. Post-quantum ready.', accent: '#ef4444' },
-    { icon: '🌐', title: 'Cross-Chain Address', description: 'EIP-7997 deterministic factory. Same address on every chain.', accent: '#06b6d4' },
+    { icon: '👛', title: t('learn.visual_cards.smart_wallets'), description: t('learn.visual_cards.smart_wallets_desc'), accent: '#3b82f6' },
+    { icon: '💱', title: t('learn.visual_cards.gas_any_token'), description: t('learn.visual_cards.gas_any_token_desc'), accent: '#22c55e' },
+    { icon: '🔗', title: t('learn.visual_cards.atomic_batch'), description: t('learn.visual_cards.atomic_batch_desc'), accent: '#f59e0b' },
+    { icon: '🔒', title: t('learn.visual_cards.privacy_protocols'), description: t('learn.visual_cards.privacy_protocols_desc'), accent: '#8b5cf6' },
+    { icon: '🔐', title: t('learn.visual_cards.quantum_resistance'), description: t('learn.visual_cards.quantum_resistance_desc'), accent: '#ef4444' },
+    { icon: '🌐', title: t('learn.visual_cards.cross_chain_address'), description: t('learn.visual_cards.cross_chain_address_desc'), accent: '#06b6d4' },
   ]} columns={3} />
 }
 
@@ -170,40 +175,42 @@ function ComparisonBase({ before, after, beforeLabel = 'Before', afterLabel = 'A
 
 // Pre-built: FOCIL comparison
 export function FOCILComparison() {
+  const t = useTranslations('pages')
   return <ComparisonBase
-    beforeLabel="Without FOCIL + AA"
-    afterLabel="With FOCIL + AA"
+    beforeLabel={t('learn.visual_cards.without_focil_aa')}
+    afterLabel={t('learn.visual_cards.with_focil_aa')}
     before={{ items: [
-      'Smart wallet txs can be delayed or censored',
-      'Privacy txs depend on centralized relayers',
-      'Sponsored gas requires bundler infrastructure',
-      'Complex ops are second-class citizens',
+      t('learn.visual_cards.focil_before_1'),
+      t('learn.visual_cards.focil_before_2'),
+      t('learn.visual_cards.focil_before_3'),
+      t('learn.visual_cards.focil_before_4'),
     ] }}
     after={{ items: [
-      'Smart wallet txs get rapid, guaranteed inclusion',
-      'Privacy txs submit directly to public mempool',
-      'On-chain paymaster, no external infrastructure',
-      'Complex ops are first-class frame transactions',
+      t('learn.visual_cards.focil_after_1'),
+      t('learn.visual_cards.focil_after_2'),
+      t('learn.visual_cards.focil_after_3'),
+      t('learn.visual_cards.focil_after_4'),
     ] }}
   />
 }
 
 // Pre-built: Quantum before/after
 export function QuantumComparison() {
+  const t = useTranslations('pages')
   return <ComparisonBase
-    beforeLabel="Current Ethereum"
-    afterLabel="With EIP-8141"
+    beforeLabel={t('learn.visual_cards.current_ethereum')}
+    afterLabel={t('learn.visual_cards.with_eip8141')}
     before={{ items: [
-      'Locked to ECDSA signature scheme',
-      'Quantum computers could break all accounts',
-      'Changing sig scheme requires new account',
-      'No path to post-quantum security',
+      t('learn.visual_cards.quantum_before_1'),
+      t('learn.visual_cards.quantum_before_2'),
+      t('learn.visual_cards.quantum_before_3'),
+      t('learn.visual_cards.quantum_before_4'),
     ] }}
     after={{ items: [
-      'Any signature scheme in validation frame',
-      'Hash-based, lattice-based schemes work out of box',
-      'Swap validation frame — same address, new crypto',
-      'Active work on aggregation for efficiency',
+      t('learn.visual_cards.quantum_after_1'),
+      t('learn.visual_cards.quantum_after_2'),
+      t('learn.visual_cards.quantum_after_3'),
+      t('learn.visual_cards.quantum_after_4'),
     ] }}
   />
 }
@@ -212,6 +219,7 @@ export function QuantumComparison() {
    SummaryBanner — Big closing CTA / summary
    ═══════════════════════════════════════════ */
 export function HegotaSummary() {
+  const t = useTranslations('pages')
   return (
     <div className="my-10 -mx-4 md:-mx-8">
       <motion.div
@@ -222,22 +230,22 @@ export function HegotaSummary() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-micro font-bold tracking-[0.2em] uppercase text-zinc-500 mb-4">The Hegota Fork</p>
+          <p className="text-micro font-bold tracking-[0.2em] uppercase text-zinc-500 mb-4">{t('learn.visual_cards.hegota_fork')}</p>
           <p className="text-xl md:text-2xl font-black tracking-tight leading-tight">
-            One mechanism. Every use case. No intermediaries.
+            {t('learn.visual_cards.hegota_tagline')}
           </p>
           <div className="grid grid-cols-3 gap-6 mt-8 pt-6 border-t border-zinc-800">
             <div>
               <p className="text-2xl md:text-3xl font-black text-white">10</p>
-              <p className="text-micro text-zinc-500 mt-1">years of research</p>
+              <p className="text-micro text-zinc-500 mt-1">{t('learn.visual_cards.years_research')}</p>
             </div>
             <div>
               <p className="text-2xl md:text-3xl font-black text-white">1</p>
-              <p className="text-micro text-zinc-500 mt-1">EIP to rule them all</p>
+              <p className="text-micro text-zinc-500 mt-1">{t('learn.visual_cards.eip_to_rule')}</p>
             </div>
             <div>
               <p className="text-2xl md:text-3xl font-black text-emerald-400">&lt;1yr</p>
-              <p className="text-micro text-zinc-500 mt-1">to ship</p>
+              <p className="text-micro text-zinc-500 mt-1">{t('learn.visual_cards.to_ship')}</p>
             </div>
           </div>
         </div>

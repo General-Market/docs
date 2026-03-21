@@ -52,6 +52,7 @@
     "section_subtitle": "Your Vault Deposits",
     "vault_shares": "Vault Shares",
     "current_value": "Current Value",
+    "shares_fallback": "shares",
     "button": {
       "confirm_wallet": "Confirm in wallet...",
       "withdrawing": "Withdrawing...",
@@ -79,7 +80,9 @@
       "health_factor": "Health Factor",
       "liquidation_price": "Liquidation Price",
       "max_borrow": "Max Borrow",
+      "max_borrow_value": "{amount} USDC",
       "bundle_label": "Bundle:",
+      "bundle_steps": "Bundle: {steps}",
       "expired": "Quote expired --",
       "refresh": "refresh",
       "execute_bundle": "Execute Bundle",
@@ -161,7 +164,8 @@
     "tx_stuck_title": "Transaction may be stuck",
     "tx_stuck_description": "Not confirmed after 30s. You can cancel and try again.",
     "market_frozen": "Market is frozen during emergency",
-    "rate_limited": "Rate limited, retry in {seconds}s"
+    "rate_limited": "Rate limited, retry in {seconds}s",
+    "view_on_explorer": "View on explorer"
   },
   "lend_modal": {
     "title": "Borrow against {name}",
@@ -191,7 +195,10 @@
     "available_to_borrow": "Available to Borrow",
     "available_to_withdraw": "Available to Withdraw",
     "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
-    "health_danger": "Your position is eligible for liquidation! Repay debt immediately."
+    "health_danger": "Your position is eligible for liquidation! Repay debt immediately.",
+    "crisis_emergency": "Emergency",
+    "crisis_stress": "Stress",
+    "crisis_warning": "Warning"
   },
   "vault_stats": {
     "supply_apy": "Supply APY",
@@ -205,7 +212,11 @@
     "type_deposit": "Deposit",
     "type_withdraw": "Withdraw",
     "type_borrow": "Borrow",
-    "type_repay": "Repay"
+    "type_repay": "Repay",
+    "seconds_ago": "{seconds}s ago",
+    "minutes_ago": "{minutes}m ago",
+    "hours_ago": "{hours}h ago",
+    "days_ago": "{days}d ago"
   },
   "markets_detail": {
     "itp_markets": "ITP Markets",

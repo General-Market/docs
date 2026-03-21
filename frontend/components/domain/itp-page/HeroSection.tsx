@@ -1,3 +1,7 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
+
 interface HeroSectionProps {
   label?: string
   symbol: string
@@ -6,6 +10,8 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ label, symbol, name, onBuy }: HeroSectionProps) {
+  const t = useTranslations('markets.itp_page')
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6">
       <div>
@@ -27,7 +33,7 @@ export function HeroSection({ label, symbol, name, onBuy }: HeroSectionProps) {
         onClick={onBuy}
         className="bg-text-primary text-text-inverse px-8 py-3 text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-text-primary focus:ring-offset-2 fluid-press"
       >
-        Buy This Index
+        {t('buy_this_index')}
       </button>
     </div>
   )

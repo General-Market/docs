@@ -318,13 +318,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by fund name or ticker..."
+                placeholder={t('filters.search_placeholder')}
                 className="w-full max-w-[300px] border border-[#ccc] rounded px-3 py-[7px] text-caption text-text-primary placeholder-[#aaa] focus:outline-none focus:border-[#666] transition-colors"
               />
             </div>
           </div>
           <div className="text-caption text-text-secondary mt-2">
-            Showing <strong className="text-text-primary">{sorted.length}</strong> of {rows.length} funds
+            {t('section_bar.showing_partial', { shown: sorted.length, total: rows.length })}
           </div>
         </div>
       </div>
@@ -410,7 +410,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                         <button
                           onClick={(e) => { e.stopPropagation(); setChartModal({ itpId: row.itpId, name: row.name }) }}
                           className="text-[#999] hover:text-black transition-colors"
-                          title="NAV chart"
+                          title={t('chart.nav_ohlc')}
                         >
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="1 12 4 7 8 9 11 4 15 6" />
