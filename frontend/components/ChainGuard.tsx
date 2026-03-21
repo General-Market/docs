@@ -2,7 +2,6 @@
 
 import { useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
-import { useTranslations } from 'next-intl'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
 import { indexL3, settlementChain } from '@/lib/wagmi'
@@ -15,7 +14,6 @@ import { indexL3, settlementChain } from '@/lib/wagmi'
  * deposits (useDepositToVision) require the wallet to be on Settlement.
  */
 export function ChainGuard({ children }: { children: React.ReactNode }) {
-  const t = useTranslations('common')
   const { isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
@@ -107,19 +105,19 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
       {children}
       <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-overlay">
         <div className="border border-border-light bg-card rounded-xl shadow-modal p-8 max-w-md text-center">
-          <div className="text-color-warning text-xl font-semibold mb-4">{t('chain_guard.wrong_network')}</div>
+          <div className="text-color-warning text-xl font-semibold mb-4">Wrong Network</div>
           <p className="text-text-secondary text-sm mb-2">
-            {t('chain_guard.wallet_on_chain', { chainId })}
+            Your wallet is connected to chain {chainId}.
           </p>
           <p className="text-text-secondary text-sm mb-6">
-            {t('chain_guard.please_switch', { chainName: 'Index L3', targetChainId: indexL3.id })}
+            Please switch to Index L3 (chain {indexL3.id}).
           </p>
           <button
             onClick={forceSwitch}
             disabled={isSwitching}
             className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
           >
-            {isSwitching ? t('chain_guard.switching') : t('chain_guard.switch_network')}
+            {isSwitching ? 'Switching...' : 'Switch Network'}
           </button>
         </div>
       </div>
