@@ -130,7 +130,13 @@
     "matcher": "Matcher",
     "view_settlement_tx": "View Settlement Transaction \u2197",
     "trade_outcomes": "Trade Outcomes",
-    "loading_trades": "Loading trades..."
+    "loading_trades": "Loading trades...",
+    "outcome_tie": "Tie - Both Refunded",
+    "outcome_cancelled": "Cancelled - {reason}",
+    "outcome_unknown_reason": "Unknown reason",
+    "outcome_creator_wins": "Creator Wins",
+    "outcome_matcher_wins": "Matcher Wins",
+    "outcome_pending": "Pending"
   },
   "bet_history": {
     "title": "Bet History",

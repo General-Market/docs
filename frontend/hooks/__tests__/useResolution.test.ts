@@ -3,8 +3,28 @@ import {
   formatWinRate,
   getWinRateColorClass,
   formatResolutionOutcome,
-  type Resolution
+  type Resolution,
+  type TranslatorFn
 } from '../useResolution'
+
+/** Mock translator that mirrors en/portfolio.json resolution keys */
+const mockT: TranslatorFn = (key: string, values?: Record<string, string | number>) => {
+  const messages: Record<string, string> = {
+    'resolution.outcome_tie': 'Tie - Both Refunded',
+    'resolution.outcome_cancelled': 'Cancelled - {reason}',
+    'resolution.outcome_unknown_reason': 'Unknown reason',
+    'resolution.outcome_creator_wins': 'Creator Wins',
+    'resolution.outcome_matcher_wins': 'Matcher Wins',
+    'resolution.outcome_pending': 'Pending'
+  }
+  let result = messages[key] ?? key
+  if (values) {
+    for (const [k, v] of Object.entries(values)) {
+      result = result.replace(`{${k}}`, String(v))
+    }
+  }
+  return result
+}
 
 describe('formatWinRate', () => {
   test('formats win/total with percentage', () => {
@@ -67,7 +87,7 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: null,
       status: 'tie'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Tie - Both Refunded')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Tie - Both Refunded')
   })
 
   test('formats cancelled state with reason', () => {
@@ -88,7 +108,7 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: null,
       status: 'cancelled'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Cancelled - Insufficient valid trades')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Cancelled - Insufficient valid trades')
   })
 
   test('formats cancelled state without reason', () => {
@@ -108,7 +128,7 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: null,
       status: 'cancelled'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Cancelled - Unknown reason')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Cancelled - Unknown reason')
   })
 
   test('formats creator wins', () => {
@@ -128,7 +148,7 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: '0xabc',
       status: 'resolved'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Creator Wins')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Creator Wins')
   })
 
   test('formats matcher wins', () => {
@@ -148,7 +168,7 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: '0xabc',
       status: 'resolved'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Matcher Wins')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Matcher Wins')
   })
 
   test('formats pending state', () => {
@@ -168,6 +188,6 @@ describe('formatResolutionOutcome', () => {
       settlementTxHash: null,
       status: 'pending'
     }
-    expect(formatResolutionOutcome(resolution)).toBe('Pending')
+    expect(formatResolutionOutcome(resolution, mockT)).toBe('Pending')
   })
 })

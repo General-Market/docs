@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useMorphoHistory, type MorphoTx } from '@/hooks/useMorphoHistory'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 import { getTxUrl } from '@/lib/utils/explorer'
@@ -23,14 +23,14 @@ const TYPE_COLORS: Record<MorphoTx['type'], string> = {
   repay: 'text-purple-600',
 }
 
-function formatTime(timestamp: number, t: (key: string, values?: Record<string, string | number | Date>) => string): string {
+function formatTime(timestamp: number, t: (key: string, values?: Record<string, string | number | Date>) => string, locale?: string): string {
   if (!timestamp) return ''
   const date = new Date(timestamp * 1000)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   // For dev chains with future block timestamps, or anything within ±2 min, show absolute time
   if (diffMs < 0 || Math.abs(diffMs) < 120_000) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   }
   const seconds = Math.floor(diffMs / 1000)
   if (seconds < 60) return t('lending_history.seconds_ago', { seconds })
@@ -40,11 +40,12 @@ function formatTime(timestamp: number, t: (key: string, values?: Record<string, 
   if (hours < 24) return t('lending_history.hours_ago', { hours })
   const days = Math.floor(hours / 24)
   if (days < 30) return t('lending_history.days_ago', { days })
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 export function LendingHistory({ market }: LendingHistoryProps) {
   const t = useTranslations('lending')
+  const locale = useLocale()
   const { txs, isLoading } = useMorphoHistory(market)
 
   if (isLoading && txs.length === 0) {
@@ -78,7 +79,7 @@ export function LendingHistory({ market }: LendingHistoryProps) {
               rel="noopener noreferrer"
               className="text-text-muted hover:text-text-primary transition-colors"
             >
-              {formatTime(tx.timestamp, t)} ↗
+              {formatTime(tx.timestamp, t, locale)} ↗
             </a>
           </div>
         ))}

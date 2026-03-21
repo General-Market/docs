@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import type { SectionProps } from '../SectionRenderer'
 
-function asOfToday() {
-  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+function asOfToday(locale?: string) {
+  return new Date().toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichment }: SectionProps) {
   const t = useTranslations('markets.itp_page')
+  const locale = useLocale()
   const [copied, setCopied] = useState<string | null>(null)
 
   const copyToClipboard = (text: string, key: string) => {
@@ -22,7 +23,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
   const truncate = (s: string) => s.length > 16 ? `${s.slice(0, 8)}...${s.slice(-6)}` : s
 
   const inceptionDate = createdAt
-    ? new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
     : '—'
 
   // Portfolio characteristics from enrichment
@@ -68,7 +69,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
     <div className="flex justify-between py-3 border-b border-border-light">
       <div>
         <span className="text-sm text-text-secondary">{f.label}</span>
-        {f.asOf && <div className="text-micro text-text-muted">{t('fund_facts.as_of', { date: asOfToday() })}</div>}
+        {f.asOf && <div className="text-micro text-text-muted">{t('fund_facts.as_of', { date: asOfToday(locale) })}</div>}
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-text-primary text-right">{f.value}</span>

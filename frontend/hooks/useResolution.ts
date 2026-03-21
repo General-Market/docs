@@ -140,15 +140,19 @@ export function getWinRateColorClass(wins: number, total: number): string {
   return 'text-red-500'
 }
 
+/** Translator function type for formatResolutionOutcome */
+export type TranslatorFn = (key: string, values?: Record<string, string | number>) => string
+
 /**
  * Format resolution outcome for display
  * @param resolution - Resolution data
+ * @param t - Translator function (e.g. from useTranslations('portfolio'))
  * @returns User-friendly outcome string
  */
-export function formatResolutionOutcome(resolution: Resolution): string {
-  if (resolution.isTie) return 'Tie - Both Refunded'
-  if (resolution.isCancelled) return `Cancelled - ${resolution.cancelReason || 'Unknown reason'}`
-  if (resolution.creatorWins === true) return 'Creator Wins'
-  if (resolution.creatorWins === false) return 'Matcher Wins'
-  return 'Pending'
+export function formatResolutionOutcome(resolution: Resolution, t: TranslatorFn): string {
+  if (resolution.isTie) return t('resolution.outcome_tie')
+  if (resolution.isCancelled) return t('resolution.outcome_cancelled', { reason: resolution.cancelReason || t('resolution.outcome_unknown_reason') })
+  if (resolution.creatorWins === true) return t('resolution.outcome_creator_wins')
+  if (resolution.creatorWins === false) return t('resolution.outcome_matcher_wins')
+  return t('resolution.outcome_pending')
 }

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useItpNavSeries, type NavTimeframe } from '@/hooks/useItpNavSeries'
 import { NavCanvas, type ChartHoverInfo } from './NavCanvas'
 import type { SectionProps } from '../SectionRenderer'
 
-function asOfToday() {
-  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+function asOfToday(locale?: string) {
+  return new Date().toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
@@ -18,6 +18,7 @@ const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
 
 export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const t = useTranslations('markets.itp_page.performance')
+  const locale = useLocale()
   const [tf, setTf] = useState<NavTimeframe>('1h')
   const { data, isLoading } = useItpNavSeries(itpId, tf)
   const [hover, setHover] = useState<ChartHoverInfo | null>(null)
@@ -37,7 +38,7 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   }, [data, nav])
   const sinceInception = nav > 0 ? (nav - 1) * 100 : null
   const inceptionDate = createdAt
-    ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? new Date(createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
     : null
 
   return (
@@ -55,13 +56,13 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
                 </span>
               </div>
               <p className="text-xs text-text-muted">
-                {new Date(hover.time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {new Date(hover.time * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             </>
           ) : (
             <>
               <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('as_of', { date: asOfToday() })}</p>
+              <p className="text-xs text-text-muted mt-1">{t('as_of', { date: asOfToday(locale) })}</p>
             </>
           )}
         </div>

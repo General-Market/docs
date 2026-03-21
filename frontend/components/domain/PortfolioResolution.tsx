@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useAccount } from 'wagmi'
 import type { BetRecord } from '@/hooks/useBetHistory'
 import { useResolution, formatWinRate, getWinRateColorClass, formatResolutionOutcome } from '@/hooks/useResolution'
@@ -203,6 +203,7 @@ function LoadingSkeleton() {
  */
 export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
   const t = useTranslations('portfolio')
+  const locale = useLocale()
   const { address } = useAccount()
   const { resolution, isLoading } = useResolution({ betId })
   const category = useCategoryById(bet.categoryId)
@@ -247,7 +248,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
             resolution.creatorWins ? 'bg-surface-up text-color-up' :
             'bg-surface-down text-color-down'
           }`}>
-            {formatResolutionOutcome(resolution)}
+            {formatResolutionOutcome(resolution, t)}
           </span>
         </div>
       </div>
@@ -299,7 +300,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
         <StatusBadge status={resolution.status} />
         {resolution.resolvedAt && (
           <span className="text-xs text-text-muted font-mono">
-            {t('resolution.resolved_date', { date: new Date(resolution.resolvedAt).toLocaleDateString() })}
+            {t('resolution.resolved_date', { date: new Date(resolution.resolvedAt).toLocaleDateString(locale) })}
           </span>
         )}
       </div>

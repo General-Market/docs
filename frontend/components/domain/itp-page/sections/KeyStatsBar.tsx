@@ -1,11 +1,11 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useItpNavSeries } from '@/hooks/useItpNavSeries'
 import type { SectionProps } from '../SectionRenderer'
 
-function asOfToday() {
-  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+function asOfToday(locale?: string) {
+  return new Date().toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function Skeleton() {
@@ -14,6 +14,7 @@ function Skeleton() {
 
 export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: SectionProps) {
   const t = useTranslations('markets.itp_page.key_stats')
+  const locale = useLocale()
   const { data: dayData } = useItpNavSeries(itpId, '5m')
 
   let change1d: number | null = null
@@ -26,7 +27,7 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
     }
   }
 
-  const asOf = asOfToday()
+  const asOf = asOfToday(locale)
 
   return (
     <div className="py-6">

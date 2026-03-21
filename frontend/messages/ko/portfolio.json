@@ -130,7 +130,13 @@
     "matcher": "Matcher",
     "view_settlement_tx": "View Settlement Transaction ↗",
     "trade_outcomes": "Trade Outcomes",
-    "loading_trades": "Loading trades..."
+    "loading_trades": "Loading trades...",
+    "outcome_tie": "무승부 - 양측 환불",
+    "outcome_cancelled": "취소됨 - {reason}",
+    "outcome_unknown_reason": "사유 불명",
+    "outcome_creator_wins": "생성자 승리",
+    "outcome_matcher_wins": "매칭자 승리",
+    "outcome_pending": "대기 중"
   },
   "bet_history": {
     "title": "Bet History",

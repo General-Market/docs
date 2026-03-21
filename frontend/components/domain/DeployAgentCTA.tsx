@@ -40,14 +40,14 @@ export function DeployAgentCTA() {
         {/* The Vision */}
         <div className="mb-6 text-center">
           <p className="text-lg text-text-secondary mb-2">
-            We want to know which AGI can <span className="text-text-primary font-bold">govern the world</span>.
+            {t.rich('deploy_agent.vision_text', { bold: (chunks) => <span className="text-text-primary font-bold">{chunks}</span> })}
           </p>
           <p className="text-text-muted">
-            That AGI should be the best at predicting everything at once—and making money doing it.
+            {t('deploy_agent.vision_subtext')}
           </p>
           <p className="text-text-muted text-sm mt-4">
-            In 5 years, there won't be individual markets—only AGI Markets.<br/>
-            This is the first. Open to AGI builders and traders.
+            {t('deploy_agent.vision_future_1')}<br/>
+            {t('deploy_agent.vision_future_2')}
           </p>
         </div>
 
@@ -57,19 +57,19 @@ export function DeployAgentCTA() {
           <div className="space-y-2 text-sm">
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">1.</span>
-              <p className="text-text-secondary">Your AI analyzes <span className="text-text-primary">25,000+ prediction markets</span> simultaneously</p>
+              <p className="text-text-secondary">{t.rich('deploy_agent.step1', { bold: (chunks) => <span className="text-text-primary">{chunks}</span> })}</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">2.</span>
-              <p className="text-text-secondary">It predicts YES or NO on thousands of events—<span className="text-text-primary">5 min, 1 hour, 24 hours</span> ahead</p>
+              <p className="text-text-secondary">{t.rich('deploy_agent.step2', { bold: (chunks) => <span className="text-text-primary">{chunks}</span> })}</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">3.</span>
-              <p className="text-text-secondary">Each trade is a <span className="text-text-primary">portfolio of predictions</span>—a complete worldview</p>
+              <p className="text-text-secondary">{t.rich('deploy_agent.step3', { bold: (chunks) => <span className="text-text-primary">{chunks}</span> })}</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">4.</span>
-              <p className="text-text-secondary">Your AI vs their AI. <span className="text-color-up">Better world model wins the money.</span></p>
+              <p className="text-text-secondary">{t.rich('deploy_agent.step4', { highlight: (chunks) => <span className="text-color-up">{chunks}</span> })}</p>
             </div>
           </div>
         </div>
@@ -78,14 +78,14 @@ export function DeployAgentCTA() {
         <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
           <p className="text-text-muted text-xs uppercase tracking-[0.08em] mb-3">{t('deploy_agent.example_label')}</p>
           <div className="font-mono text-xs space-y-1">
-            <p className="text-text-muted">Your AI predicts 2,847 markets at 2:1 odds:</p>
-            <p className="text-text-muted mt-2">→ BTC above $95k in 24h? <span className="text-color-up">YES</span></p>
-            <p className="text-text-muted">→ Lakers win tonight? <span className="text-color-down">NO</span></p>
-            <p className="text-text-muted">→ Rain in NYC tomorrow? <span className="text-color-up">YES</span></p>
-            <p className="text-text-muted">→ Fed cuts rates this month? <span className="text-color-down">NO</span></p>
-            <p className="text-text-muted">→ ... 2,843 more predictions</p>
-            <p className="text-text-muted mt-3">Another AI takes the opposite worldview.</p>
-            <p className="text-color-up font-bold">The better predictor wins the stake.</p>
+            <p className="text-text-muted">{t('deploy_agent.example_intro')}</p>
+            <p className="text-text-muted mt-2">{t.rich('deploy_agent.example_btc', { up: (chunks) => <span className="text-color-up">{chunks}</span> })}</p>
+            <p className="text-text-muted">{t.rich('deploy_agent.example_lakers', { down: (chunks) => <span className="text-color-down">{chunks}</span> })}</p>
+            <p className="text-text-muted">{t.rich('deploy_agent.example_rain', { up: (chunks) => <span className="text-color-up">{chunks}</span> })}</p>
+            <p className="text-text-muted">{t.rich('deploy_agent.example_fed', { down: (chunks) => <span className="text-color-down">{chunks}</span> })}</p>
+            <p className="text-text-muted">{t('deploy_agent.example_more')}</p>
+            <p className="text-text-muted mt-3">{t('deploy_agent.example_opposite')}</p>
+            <p className="text-color-up font-bold">{t('deploy_agent.example_winner')}</p>
           </div>
         </div>
 

@@ -130,7 +130,13 @@
     "matcher": "Matcher",
     "view_settlement_tx": "View Settlement Transaction ↗",
     "trade_outcomes": "Trade Outcomes",
-    "loading_trades": "Loading trades..."
+    "loading_trades": "Loading trades...",
+    "outcome_tie": "引き分け - 双方に返金",
+    "outcome_cancelled": "キャンセル - {reason}",
+    "outcome_unknown_reason": "理由不明",
+    "outcome_creator_wins": "クリエイター勝利",
+    "outcome_matcher_wins": "マッチャー勝利",
+    "outcome_pending": "保留中"
   },
   "bet_history": {
     "title": "Bet History",

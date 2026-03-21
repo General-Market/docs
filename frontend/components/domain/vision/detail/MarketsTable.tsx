@@ -19,7 +19,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 interface MarketsTableProps {
   sourceId: string
@@ -129,6 +129,7 @@ function formatVolume(vol: string | null): string {
 
 function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSourceId: string; assetId: string; tickHistory?: BatchHistoryEntry[] }) {
   const t = useTranslations('vision')
+  const locale = useLocale()
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -251,7 +252,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
             }}
             labelFormatter={(label: string) => {
               const d = new Date(label)
-              return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+              return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
             }}
             formatter={(val: number) => [formatValue(val), t('markets_table.value_tooltip')]}
           />

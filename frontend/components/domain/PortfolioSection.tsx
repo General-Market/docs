@@ -21,7 +21,7 @@ import {
 import { formatUnits, parseUnits } from 'viem'
 import { usePortfolio, PortfolioHistoryPoint, PortfolioSummary, Position } from '@/hooks/usePortfolio'
 import { DeployedItpRef } from '@/components/domain/ItpListing'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
@@ -87,6 +87,7 @@ function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
 export function PortfolioSection({ expanded, onToggle, deployedItps }: PortfolioSectionProps) {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const { address } = useAccount()
   const { summary, history, trades, isLoading, refetch } = usePortfolio(address?.toLowerCase())
   const chainId = typeof window !== 'undefined' ? indexL3.id : undefined
@@ -506,6 +507,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 // --- Value Tab ---
 function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
   const t = useTranslations('portfolio')
+  const locale = useLocale()
   if (history.length === 0) {
     return null // Hide chart area entirely when no history — positions tab shows the CTA
   }
@@ -546,7 +548,7 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
             tick={{ fill: '#71717a', fontSize: 11 }}
             tickFormatter={(v: string) => {
               const d = new Date(v)
-              return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
             }}
             stroke="rgba(0,0,0,0.1)"
           />

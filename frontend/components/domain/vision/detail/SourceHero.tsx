@@ -4,7 +4,7 @@ import type { VisionSource } from '@/lib/vision/sources'
 import type { SourceSchedule } from '@/hooks/vision/useMarketSnapshot'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { GeometricPulse } from './GeometricPulse'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 interface SourceHeroProps {
   source: VisionSource
@@ -16,7 +16,7 @@ interface SourceHeroProps {
   urgency?: 'normal' | 'urgent' | 'critical'
 }
 
-function formatLastSync(lastSync: string | null): string {
+function formatLastSync(lastSync: string | null, locale?: string): string {
   if (!lastSync) return '--'
   const date = new Date(lastSync)
   const now = Date.now()
@@ -24,7 +24,7 @@ function formatLastSync(lastSync: string | null): string {
   if (diffMs < 60_000) return 'just now'
   if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`
   if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`
-  return date.toLocaleDateString()
+  return date.toLocaleDateString(locale)
 }
 
 export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration, sourceId, urgency }: SourceHeroProps) {

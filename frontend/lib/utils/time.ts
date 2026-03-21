@@ -7,7 +7,7 @@
  * @param dateString - ISO date string
  * @returns Formatted relative time string, or fallback for invalid dates
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string, locale?: string): string {
   if (!dateString) return '-'
 
   const date = new Date(dateString)
@@ -25,5 +25,5 @@ export function formatRelativeTime(dateString: string): string {
   if (diffMins < 60) return `${diffMins}m ago`
   if (diffHours < 24) return `${diffHours}h ago`
   if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString()
+  return date.toLocaleDateString(locale)
 }

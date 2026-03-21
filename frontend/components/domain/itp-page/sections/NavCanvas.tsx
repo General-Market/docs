@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 
 interface DataPoint { time: number; close: number }
 
@@ -43,6 +43,7 @@ function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3) }
 
 export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Props) {
   const t = useTranslations('markets.itp_page.performance')
+  const locale = useLocale()
   const boxRef = useRef<HTMLDivElement>(null)
   const cvRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef(0)
@@ -51,6 +52,8 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
   const reducedRef = useRef(false)
   const hoverCbRef = useRef(onHoverChange)
   hoverCbRef.current = onHoverChange
+  const localeRef = useRef(locale)
+  localeRef.current = locale
 
   // Mutable render state — never triggers React re-renders
   const m = useRef({
@@ -139,7 +142,7 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
       const idx = Math.round((i / (nX - 1)) * (m.pts.length - 1))
       const p = m.pts[idx]
       const d = new Date(p.t * 1000)
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const label = d.toLocaleDateString(localeRef.current, { month: 'short', day: 'numeric' })
       ctx.fillText(label, p.px, m.pT + m.pH + 12)
     }
 
@@ -251,7 +254,7 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
 
         // ── Date pill (bottom edge) ──
         const d = new Date(p.t * 1000)
-        const dateText = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        const dateText = d.toLocaleDateString(localeRef.current, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         ctx.font = '10px ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace'
         const datePillW = ctx.measureText(dateText).width + 12
         const datePillH = 18

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
@@ -488,6 +488,7 @@ function getRowBg(asset: SourceAsset): string {
 
 function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: string }) {
   const t = useTranslations('markets')
+  const locale = useLocale()
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -593,7 +594,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
             }}
             labelFormatter={(label: string) => {
               const d = new Date(label)
-              return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+              return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
             }}
             formatter={(val: number) => [formatValue(val), 'Value']}
           />

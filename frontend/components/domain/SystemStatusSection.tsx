@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { formatUnits } from 'viem'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { useSystemStatus } from '@/hooks/useSystemStatus'
 import { useApBalances } from '@/hooks/useApBalances'
@@ -62,14 +62,14 @@ function truncateItpId(itpId: string): string {
   return itpId.slice(0, 6) + '…' + itpId.slice(-4)
 }
 
-function formatTimestamp(unix: number): string {
+function formatTimestamp(unix: number, locale?: string): string {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function formatTime(unix: number): string {
+function formatTime(unix: number, locale?: string): string {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  return new Date(unix * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
 function formatFillTime(seconds: number): string {
@@ -97,6 +97,7 @@ interface SystemStatusSectionProps {
 
 export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) {
   const t = useTranslations('system')
+  const locale = useLocale()
   const sys = useSystemStatus()
   const vault = useApBalances()
   const ranking = useInventoryRanking(650, 0) // fetch once — ratios are frozen, useApBalances handles live prices
@@ -297,7 +298,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   // Show address only if it's a real hex address, otherwise show node ID
                   { label: t('oracle_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
                   { label: t('oracle_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
-                  { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
+                  { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt, locale) },
                   { label: t('oracle_network.node_details.status'), value: t('oracle_network.status_active'), color: 'text-color-up' },
                   { label: t('oracle_network.node_details.uptime'), value: formatUptime(node.registeredAt), color: 'text-color-up' },
                 ].map(row => (
@@ -471,7 +472,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
               return (
                 <tr key={order.orderId.toString()} className="hover:bg-surface">
                   <td className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums">
-                    {formatTime(order.blockTimestamp)}
+                    {formatTime(order.blockTimestamp, locale)}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light font-mono text-label text-text-secondary">
                     #{order.orderId.toString()}

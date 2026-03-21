@@ -197,11 +197,11 @@ export function formatUsdcString(amount: string | null): string {
  * @param isoString - ISO date string (e.g., "2026-01-20T12:30:00Z")
  * @returns Formatted date like "Jan 20, 2026"
  */
-export function formatDate(isoString: string): string {
+export function formatDate(isoString: string, locale?: string): string {
   if (!isoString) return '-'
   const date = new Date(isoString)
   if (isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'

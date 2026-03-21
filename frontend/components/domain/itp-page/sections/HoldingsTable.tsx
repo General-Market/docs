@@ -2,13 +2,13 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import type { SectionProps } from '../SectionRenderer'
 
 const PAGE_SIZE = 20
 
-function asOfToday() {
-  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+function asOfToday(locale?: string) {
+  return new Date().toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function formatMcap(v?: number): string {
@@ -33,6 +33,7 @@ type SortDir = 'asc' | 'desc'
 
 export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps) {
   const t = useTranslations('markets.itp_page.holdings_table')
+  const locale = useLocale()
   const holdings = enrichment?.holdings ?? []
   const [sortKey, setSortKey] = useState<SortKey>('weight')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -130,7 +131,7 @@ export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
           <h2 className="text-2xl font-bold text-text-primary">{t('title')}</h2>
-          <p className="text-xs text-text-muted mt-0.5">{t('as_of', { date: asOfToday() })}</p>
+          <p className="text-xs text-text-muted mt-0.5">{t('as_of', { date: asOfToday(locale) })}</p>
         </div>
         <input
           type="text"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   LineChart,
   Line,
@@ -30,9 +30,9 @@ export interface PerformanceGraphProps {
 /**
  * Formats a date for X-axis display (short format: "Jan 20")
  */
-function formatShortDate(isoString: string): string {
+function formatShortDate(isoString: string, locale?: string): string {
   const date = new Date(isoString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 /**
@@ -44,6 +44,7 @@ function PerformanceTooltip({
   active,
   payload
 }: TooltipProps<number, string>) {
+  const locale = useLocale()
   if (!active || !payload || payload.length === 0) return null
 
   const data = payload[0].payload as PerformanceDataPoint
@@ -52,9 +53,9 @@ function PerformanceTooltip({
     <div className="bg-card border border-border-medium rounded-xl p-3 font-mono text-sm shadow-card">
       <p className="text-text-primary font-bold mb-2">Portfolio Bet #{data.betNumber}</p>
       <div className="space-y-1 text-text-secondary">
-        <p>Date: {formatDate(data.timestamp)}</p>
+        <p>Date: {formatDate(data.timestamp, locale)}</p>
         <p>Markets: {(data.portfolioSize ?? 0).toLocaleString()}</p>
-        <p>Amount: ${(data.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+        <p>Amount: ${(data.amount ?? 0).toLocaleString(locale, { minimumFractionDigits: 2 })}</p>
         <p className={data.result >= 0 ? 'text-color-up' : 'text-text-muted'}>
           Result: {formatResultWithPercent(data.result, data.resultPercent)}
         </p>
@@ -123,6 +124,7 @@ export function PerformanceGraph({
   range = '30d'
 }: PerformanceGraphProps) {
   const t = useTranslations('common')
+  const locale = useLocale()
   const { data, isLoading, isError, error } = useAgentPerformance(walletAddress, range)
 
   // Determine line color based on ending P&L (green if positive, red if negative)
@@ -181,7 +183,7 @@ export function PerformanceGraph({
           <XAxis
             dataKey="timestamp"
             tick={showAxisLabels ? { fill: '#71717A', fontSize: 12 } : false}
-            tickFormatter={formatShortDate}
+            tickFormatter={(v: string) => formatShortDate(v, locale)}
             stroke="rgba(0,0,0,0.15)"
             axisLine={{ stroke: 'rgba(0,0,0,0.15)' }}
             tickLine={{ stroke: 'rgba(0,0,0,0.15)' }}
