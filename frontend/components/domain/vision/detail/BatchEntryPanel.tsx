@@ -310,11 +310,11 @@ export default function BatchEntryPanel({
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-[0.06em]">
-                  In Batch #{activeBatch?.id}
+                  {t('batch_entry_panel_extra.in_batch_status', { id: activeBatch?.id ?? '' })}
                 </span>
               </div>
               <span className="text-[10px] font-mono text-emerald-600">
-                {stakeNum.toFixed(2)} USDC/tick
+                {t('batch_entry_panel_extra.usdc_per_tick_short', { amount: stakeNum.toFixed(2) })}
               </span>
             </div>
             {/* Balance + PnL — large, at a glance */}
@@ -358,7 +358,7 @@ export default function BatchEntryPanel({
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-neutral-300" />
             <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.06em]">
-              Not in batch #{activeBatch.id}
+              {t('batch_entry_panel_extra.not_in_batch_status', { id: activeBatch.id })}
             </span>
           </div>
           <p className="text-[10px] text-neutral-400 mt-1">{t('batch_entry_panel.set_predictions_prompt')}</p>
@@ -488,7 +488,7 @@ export default function BatchEntryPanel({
                   onClick={() => setShowDepositModal(true)}
                   className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
                 >
-                  Deposit USDC
+                  {t('common_labels.deposit_usdc')}
                 </button>
               )}
             </div>
@@ -539,7 +539,7 @@ export default function BatchEntryPanel({
           <div className="mt-1 border border-neutral-200 bg-white px-4 py-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-[11px] font-bold text-neutral-700 uppercase tracking-[0.06em]">
-                Tick History
+                {t('common_labels.tick_history')}
               </h3>
               {tickSummary && (
                 <span className={`text-[11px] font-bold font-mono tabular-nums ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
@@ -586,7 +586,7 @@ export default function BatchEntryPanel({
               </button>
             )}
             <p className="mt-2 text-[10px] text-neutral-400 text-center">
-              Settlement is automatic. Payout credited to your Vision balance.
+              {t('batch_entry_panel_extra.settlement_auto')}
             </p>
           </div>
         )

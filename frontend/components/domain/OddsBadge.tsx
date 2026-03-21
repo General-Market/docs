@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Tooltip } from '@/components/ui/Tooltip'
 
 export type OddsFavorability = 'favorable' | 'even' | 'unfavorable'
@@ -25,12 +26,6 @@ const favorabilityColors: Record<OddsFavorability, string> = {
   unfavorable: 'bg-red-900/80 text-red-300 border-red-700'
 }
 
-const favorabilityTooltips: Record<OddsFavorability, string> = {
-  favorable: 'Favorable odds for matchers - higher potential return',
-  even: 'Even odds - balanced risk/reward',
-  unfavorable: 'Unfavorable odds for matchers - lower potential return'
-}
-
 /**
  * OddsBadge component
  * Displays odds with color coding based on favorability
@@ -39,17 +34,18 @@ const favorabilityTooltips: Record<OddsFavorability, string> = {
  * AC1: Use color coding: green for favorable to matcher, yellow for even, red for unfavorable
  */
 export function OddsBadge({ display, favorability, className = '' }: OddsBadgeProps) {
+  const t = useTranslations('common')
   const colorClass = favorabilityColors[favorability]
-  const tooltip = favorabilityTooltips[favorability]
+  const tooltip = t(`odds.tooltip_${favorability}`)
 
   return (
     <Tooltip content={tooltip}>
       <span
         className={`inline-flex items-center px-3 py-1 rounded text-sm font-bold font-mono border cursor-help ${colorClass} ${className}`}
         role="status"
-        aria-label={`Odds: ${display}, ${favorability} for matchers`}
+        aria-label={t('odds.aria_label', { display, favorability })}
       >
-        {display} Odds
+        {display} {t('odds.label')}
       </span>
     </Tooltip>
   )

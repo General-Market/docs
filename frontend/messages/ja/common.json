@@ -1,4 +1,11 @@
 {
+  "odds": {
+    "label": "オッズ",
+    "tooltip_favorable": "マッチャーに有利なオッズ - 高い潜在リターン",
+    "tooltip_even": "均等オッズ - バランスの取れたリスク/リワード",
+    "tooltip_unfavorable": "マッチャーに不利なオッズ - 低い潜在リターン",
+    "aria_label": "オッズ: {display}、マッチャーにとって{favorability}"
+  },
   "brand": {
     "name": "General Market",
     "logo_text": "General Market",
@@ -362,6 +369,8 @@
     "no_vision_history": "No Vision betting history yet",
     "ticks": "{count} ticks",
     "deposited": "deposited",
+    "deposited_amount": "{amount} deposited",
+    "tick_title": "Tick #{tickId}: {sign}${pnl}",
     "last_active": "Last active {time}"
   }
 }

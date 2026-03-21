@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 // ── Types ──
 
@@ -25,6 +26,7 @@ function formatHourLabel(iso: string): string {
 // ── Component ──
 
 export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
+  const t = useTranslations('markets')
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const maxCount = useMemo(
@@ -35,7 +37,7 @@ export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
   if (buckets.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 text-text-muted text-sm">
-        No history data available
+        {t('source_history.no_data')}
       </div>
     )
   }
@@ -64,10 +66,10 @@ export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
                   <div className="bg-surface-dark text-white text-micro font-mono rounded px-2 py-1.5 whitespace-nowrap shadow-md">
                     <div className="font-bold">{formatHourLabel(bucket.hour)}</div>
-                    <div>Records: {bucket.recordCount.toLocaleString()}</div>
-                    <div>Assets: {bucket.uniqueAssets}</div>
+                    <div>{t('source_history.tooltip_records', { count: bucket.recordCount.toLocaleString() })}</div>
+                    <div>{t('source_history.tooltip_assets', { count: bucket.uniqueAssets })}</div>
                     {bucket.zeroCount > 0 && (
-                      <div className="text-color-down">Zeros: {bucket.zeroCount}</div>
+                      <div className="text-color-down">{t('source_history.tooltip_zeros', { count: bucket.zeroCount })}</div>
                     )}
                   </div>
                 </div>
@@ -108,11 +110,11 @@ export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
       <div className="flex items-center gap-4 mt-2 text-micro text-text-muted">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-sm bg-color-up/60 inline-block" />
-          Records
+          {t('source_history.legend_records')}
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-sm bg-color-down/70 inline-block" />
-          Zero-value
+          {t('source_history.legend_zero')}
         </span>
       </div>
     </div>

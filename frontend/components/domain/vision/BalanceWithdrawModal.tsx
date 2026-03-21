@@ -245,7 +245,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               <div className={`${glass.section} p-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
-                    Amount (USDC)
+                    {t('common_labels.amount_usdc')}
                   </label>
                   <button
                     onClick={handleMax}

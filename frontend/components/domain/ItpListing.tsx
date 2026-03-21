@@ -74,13 +74,7 @@ function formatNetAssets(usd: number): string {
 /* ── Category taxonomy — iShares-style asset class grouping, with overlap ── */
 type CategoryId = 'broad-market' | 'factor' | 'income' | 'sector' | 'thematic'
 
-const FUND_CATEGORIES: { id: CategoryId; name: string; description: string }[] = [
-  { id: 'broad-market', name: 'Broad Market', description: 'Diversified exposure across crypto markets' },
-  { id: 'factor', name: 'Factor', description: 'Momentum, volatility & multi-factor strategies' },
-  { id: 'income', name: 'Income', description: 'Yield, lending & revenue-weighted protocols' },
-  { id: 'sector', name: 'Sector', description: 'DeFi, gaming, infrastructure & real-world assets' },
-  { id: 'thematic', name: 'Thematic', description: 'Founder demographics, education & background' },
-]
+const FUND_CATEGORY_IDS: CategoryId[] = ['broad-market', 'factor', 'income', 'sector', 'thematic']
 
 const LABEL_TO_PRIMARY: Record<string, CategoryId> = {
   'Macro Index': 'broad-market',
@@ -175,7 +169,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   }, [rows])
 
   const categoryCounts = useMemo(() => {
-    const counts = Object.fromEntries(FUND_CATEGORIES.map(c => [c.id, 0])) as Record<CategoryId, number>
+    const counts = Object.fromEntries(FUND_CATEGORY_IDS.map(c => [c, 0])) as Record<CategoryId, number>
     for (const cats of categoryMap.values()) {
       for (const cat of cats) counts[cat]++
     }
@@ -262,7 +256,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
           {rows.length > 0 && (
             <div className="flex gap-10 mt-5 pt-5 border-t border-border-light">
               <div>
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Total Net Assets</div>
+                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('listing.total_net_assets')}</div>
                 <SpringNumber
                   value={totalAum}
                   format={formatNetAssets}
@@ -270,7 +264,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                 />
               </div>
               <div>
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Funds</div>
+                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('listing.funds_label')}</div>
                 <div className="text-heading font-black font-mono tabular-nums text-black">{rows.length}</div>
               </div>
             </div>
@@ -291,23 +285,24 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                     : 'border-transparent text-text-secondary hover:text-text-primary hover:border-[#ccc]'
                 }`}
               >
-                All
+                {t('listing.category_all')}
                 <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{rows.length}</span>
               </button>
-              {FUND_CATEGORIES.map(cat => {
-                const count = categoryCounts[cat.id]
-                const isActive = activeCategory === cat.id
+              {FUND_CATEGORY_IDS.map(catId => {
+                const count = categoryCounts[catId]
+                const isActive = activeCategory === catId
+                const catKey = catId.replace('-', '_')
                 return (
                   <button
-                    key={cat.id}
-                    onClick={() => setActiveCategory(isActive ? null : cat.id)}
+                    key={catId}
+                    onClick={() => setActiveCategory(isActive ? null : catId)}
                     className={`px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors whitespace-nowrap ${
                       isActive
                         ? 'border-black text-black'
                         : 'border-transparent text-text-secondary hover:text-text-primary hover:border-[#ccc]'
                     }`}
                   >
-                    {cat.name}
+                    {t(`listing.category_${catKey}`)}
                     <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{count}</span>
                   </button>
                 )
@@ -333,10 +328,10 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="px-6 lg:px-12 pb-8">
         <div className="max-w-site mx-auto">
           {loading ? (
-            <div className="text-center py-20 text-text-muted text-body">Loading funds...</div>
+            <div className="text-center py-20 text-text-muted text-body">{t('listing.loading_funds')}</div>
           ) : sorted.length === 0 ? (
             <div className="text-center py-20 text-text-muted text-body">
-              {searchQuery || activeCategory ? 'No funds match your filters.' : 'No funds available.'}
+              {searchQuery || activeCategory ? t('listing.no_funds_filtered') : t('listing.no_funds')}
             </div>
           ) : (
             <>
@@ -348,35 +343,35 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       onClick={() => handleSort('ticker')}
                       className="py-3 px-4 text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
-                      Ticker<SortArrow col="ticker" />
+                      {t('listing.table.ticker')}<SortArrow col="ticker" />
                     </th>
                     <th
                       onClick={() => handleSort('name')}
                       className="py-3 px-4 text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
-                      Name<SortArrow col="name" />
+                      {t('listing.table.name')}<SortArrow col="name" />
                     </th>
                     <th className="py-3 px-2 w-8"></th>
                     <th
                       onClick={() => handleSort('nav')}
                       className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
-                      NAV<SortArrow col="nav" />
+                      {t('listing.table.nav')}<SortArrow col="nav" />
                     </th>
                     <th
                       onClick={() => handleSort('aum')}
                       className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
-                      Net Assets<SortArrow col="aum" />
+                      {t('listing.table.net_assets')}<SortArrow col="aum" />
                     </th>
                     <th
                       onClick={() => handleSort('shares')}
                       className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
-                      Shares Outstanding<SortArrow col="shares" />
+                      {t('listing.table.shares_outstanding')}<SortArrow col="shares" />
                     </th>
                     <th className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary whitespace-nowrap">
-                      Trade
+                      {t('listing.table.trade')}
                     </th>
                   </tr>
                 </thead>
@@ -445,14 +440,14 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                           onClick={() => setBuyModal(row.itpId)}
                           className="text-label font-semibold text-brand-dark hover:text-brand transition-colors"
                         >
-                          Buy
+                          {t('listing.table.buy')}
                         </WalletActionButton>
                         <span className="mx-1.5 text-[#ddd]">|</span>
                         <WalletActionButton
                           onClick={() => setSellModal(row.itpId)}
                           className="text-label font-semibold text-[#666] hover:text-brand transition-colors"
                         >
-                          Sell
+                          {t('listing.table.sell')}
                         </WalletActionButton>
                       </td>
                     </motion.tr>
@@ -464,7 +459,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4 px-1">
                 <span className="text-caption text-text-muted">
-                  {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+                  {t('listing.pagination.range', { start: page * PAGE_SIZE + 1, end: Math.min((page + 1) * PAGE_SIZE, sorted.length), total: sorted.length })}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
@@ -472,14 +467,14 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                     disabled={page === 0}
                     className="px-2 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
                   >
-                    First
+                    {t('listing.pagination.first')}
                   </button>
                   <button
                     onClick={() => setPage(p => p - 1)}
                     disabled={page === 0}
                     className="px-2.5 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
                   >
-                    Prev
+                    {t('listing.pagination.prev')}
                   </button>
                   <span className="px-3 text-caption text-text-primary font-medium">
                     {page + 1} / {totalPages}
@@ -489,14 +484,14 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                     disabled={page >= totalPages - 1}
                     className="px-2.5 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
                   >
-                    Next
+                    {t('listing.pagination.next')}
                   </button>
                   <button
                     onClick={() => setPage(totalPages - 1)}
                     disabled={page >= totalPages - 1}
                     className="px-2 py-1 text-label border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
                   >
-                    Last
+                    {t('listing.pagination.last')}
                   </button>
                 </div>
               </div>

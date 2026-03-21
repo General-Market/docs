@@ -1,4 +1,11 @@
 {
+  "odds": {
+    "label": "赔率",
+    "tooltip_favorable": "对匹配者有利的赔率 - 更高的潜在回报",
+    "tooltip_even": "均等赔率 - 平衡的风险/回报",
+    "tooltip_unfavorable": "对匹配者不利的赔率 - 较低的潜在回报",
+    "aria_label": "赔率: {display}，对匹配者{favorability}"
+  },
   "brand": {
     "name": "General Market",
     "logo_text": "General Market",
@@ -362,6 +369,8 @@
     "no_vision_history": "No Vision betting history yet",
     "ticks": "{count} ticks",
     "deposited": "deposited",
+    "deposited_amount": "{amount} deposited",
+    "tick_title": "Tick #{tickId}: {sign}${pnl}",
     "last_active": "Last active {time}"
   }
 }

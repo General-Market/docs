@@ -229,6 +229,27 @@
     "momentum_label": "Momentum",
     "momentum_title": "If BTC dominance is dropping fast → switch to momentum (ride the altcoin wave). If BTC dominance is rising → switch to MCap weighting (follow the big coins).\n\nWhy: Simple trend-following on the BTC/alt rotation. When money flows into alts, chase the winners.\n\nBacktest: best at 30d → +184%, 0.63 Sharpe. Solid middle ground — not the best, not the worst."
   },
+  "fng_preset": {
+    "risk_toggle_0": "Aggressive — switches more often at wider band.\nALL/200/equal/30d: +220%, 0.66 Sharpe",
+    "risk_toggle_1": "Balanced — only activates at deep fear, fewer trades.\nALL/200/equal/30d: +186%, 0.63 Sharpe",
+    "cash_shift_0": "Conservative greed trigger — only parks cash at extreme euphoria. Fear threshold is ignored by this mode.\nALL/200/equal/30d: +124%, 0.58 Sharpe",
+    "cash_shift_1": "Earlier cash move — starts parking cash sooner.\nALL/200/equal/30d: +109%, 0.56 Sharpe",
+    "graduated_cash_0": "Widest range — minimal cash drag, ramps slowly.\nALL/200/equal/30d: +76%, 0.48 Sharpe",
+    "graduated_cash_1": "Best drawdown protection — starts cashing out earlier.\nALL/200/equal/30d: +70%, 0.46 Sharpe, -82% DD",
+    "quality_rotation_0": "Max return — narrow neutral band, almost always in fear or greed mode. High turnover.\nALL/200/equal/30d: +1140%, 0.92 Sharpe, 175% fees",
+    "quality_rotation_1": "Capital efficient — only acts at extreme readings, very few switches. Same drawdown, fraction of the fees.\nALL/200/equal/30d: +689%, 0.88 Sharpe, 62% fees"
+  },
+  "dom_preset": {
+    "alts_when_low_0": "Lookback has no effect on this mode — it uses absolute dominance levels, not trend.\nALL/200/equal/30d: +388%, 0.73 Sharpe",
+    "alts_when_falling_0": "Best return — medium-term trend catches bigger moves.\nALL/200/equal/30d: +140%, 0.57 Sharpe, 94% fees",
+    "alts_when_falling_1": "Lower fees — slower signal, less churn.\nALL/200/equal/30d: +74%, 0.49 Sharpe, 53% fees",
+    "btc_when_high_0": "Best overall — slow trend filter avoids noise.\nALL/200/equal/30d: +395%, 0.73 Sharpe",
+    "btc_when_high_1": "Faster reaction — catches short-term dominance spikes.\nALL/200/equal/30d: +226%, 0.64 Sharpe",
+    "combo_0": "Smoothest signal — less whipsaw from the 4-quadrant matrix.\nALL/200/equal/30d: +96%, 0.55 Sharpe",
+    "combo_1": "Fastest reaction — more switching between quadrants.\nALL/200/equal/30d: +87%, 0.55 Sharpe",
+    "momentum_0": "Best overall — 30d trend hits the sweet spot.\nALL/200/equal/30d: +184%, 0.63 Sharpe",
+    "momentum_1": "Faster signal — reacts quicker to dominance shifts.\nALL/200/equal/30d: +111%, 0.57 Sharpe"
+  },
   "vc_mode": {
     "off_label": "Off",
     "off_title": "No VC overlay",

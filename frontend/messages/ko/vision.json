@@ -631,5 +631,76 @@
     "all_down_description": "Bet DOWN on every market -- simple bear strategy",
     "random_name": "Random",
     "random_description": "Random bets -- baseline for comparison"
+  },
+  "common_labels": {
+    "amount": "금액",
+    "amount_usdc": "금액 (USDC)",
+    "try_again": "다시 시도",
+    "cancel": "취소",
+    "source": "소스",
+    "search": "검색",
+    "select_all": "전체 선택",
+    "unselect_all": "전체 해제",
+    "tick_duration": "틱 기간",
+    "resolution_type_per_market": "시장별 해결 유형",
+    "back": "뒤로",
+    "skip": "건너뛰기",
+    "create_another": "새로 생성",
+    "close": "닫기",
+    "add_details": "세부 정보 추가",
+    "retry": "재시도",
+    "loading_markets": "시장 로딩 중...",
+    "loading_leaderboard": "리더보드 로딩 중...",
+    "no_players_yet": "아직 플레이어가 없습니다",
+    "all": "전체",
+    "strategies": "전략",
+    "deploy_with_ai_agent": "AI 에이전트로 배포",
+    "tick_history": "틱 기록",
+    "vision_balance": "Vision 잔액",
+    "deposit_usdc": "USDC 입금",
+    "back_to_sources": "소스로 돌아가기",
+    "up": "UP",
+    "down": "DOWN",
+    "dn": "DN",
+    "assets": "자산",
+    "full_docs_link": "전체 문서"
+  },
+  "withdraw_modal_steps": {
+    "fetching_proof": "오라클에서 BLS 잔액 증명을 가져오는 중...",
+    "confirm_withdrawal": "지갑에서 출금을 확인하세요...",
+    "submitting_withdrawal": "출금 제출 중...",
+    "confirm_claim": "지갑에서 청구를 확인하세요...",
+    "submitting_claim": "청구 제출 중...",
+    "withdrawal_done": "출금 완료!",
+    "claim_done": "청구 완료!"
+  },
+  "create_modal_confirm": {
+    "creating_batch_text": "{count}개 시장으로 배치를 생성합니다",
+    "tick_duration_text": "틱 기간: {duration}",
+    "batch_id_text": "배치 ID: #{id}"
+  },
+  "batch_entry_panel_extra": {
+    "in_batch_status": "배치 #{id} 참여 중",
+    "not_in_batch_status": "배치 #{id} 미참여",
+    "settlement_auto": "정산은 자동입니다. 보상은 Vision 잔액에 적립됩니다.",
+    "usdc_per_tick_short": "{amount} USDC/틱"
+  },
+  "section_header": {
+    "synced_info": "동기화 {time} · 매 {interval}"
+  },
+  "consensus_popup_labels": {
+    "title": "합의 기록",
+    "last_batches": "최근 5개 배치"
+  },
+  "category_nav": {
+    "all": "전체"
+  },
+  "compact_visual_tab_titles": {
+    "up": "UP",
+    "down": "DOWN"
+  },
+  "market_accordion_actions": {
+    "all_up_title": "전체 {category} UP",
+    "all_down_title": "전체 {category} DOWN"
   }
 }

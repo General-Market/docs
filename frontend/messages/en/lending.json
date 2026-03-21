@@ -14,7 +14,11 @@
     "title": "Supply \u2014 USDC Vault",
     "your_deposits": "Your Deposits",
     "accrued_interest": "Accrued Interest",
-    "current_apy": "Current APY"
+    "current_apy": "Current APY",
+    "est_annual_yield": "Est. Annual Yield",
+    "yield_status": "Yield Status",
+    "no_borrows_yet": "No borrows yet",
+    "no_borrows_notice": "Vault earns yield when users borrow USDC against ITP collateral. No active borrows at the moment."
   },
   "borrow_panel": {
     "title": "Borrow \u2014 Against ITP",

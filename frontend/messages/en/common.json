@@ -1,4 +1,11 @@
 {
+  "odds": {
+    "label": "Odds",
+    "tooltip_favorable": "Favorable odds for matchers - higher potential return",
+    "tooltip_even": "Even odds - balanced risk/reward",
+    "tooltip_unfavorable": "Unfavorable odds for matchers - lower potential return",
+    "aria_label": "Odds: {display}, {favorability} for matchers"
+  },
   "brand": {
     "name": "General Market",
     "logo_text": "General Market",
@@ -362,6 +369,8 @@
     "no_vision_history": "No Vision betting history yet",
     "ticks": "{count} ticks",
     "deposited": "deposited",
+    "deposited_amount": "{amount} deposited",
+    "tick_title": "Tick #{tickId}: {sign}${pnl}",
     "last_active": "Last active {time}"
   }
 }

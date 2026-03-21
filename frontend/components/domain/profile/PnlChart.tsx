@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { PnlPoint } from '@/hooks/usePlayerProfile'
 
@@ -20,6 +20,7 @@ interface PnlChartProps {
 
 export function PnlChart({ history }: PnlChartProps) {
   const t = useTranslations('common')
+  const locale = useLocale()
   const [range, setRange] = useState<TimeRange>('ALL')
 
   const filtered = useMemo(() => {
@@ -92,7 +93,7 @@ export function PnlChart({ history }: PnlChartProps) {
               formatter={(value: number) => [`$${value.toFixed(2)}`, t('profile.pnl_label')]}
               labelFormatter={(label: string) => {
                 const d = new Date(label)
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
               }}
             />
             <Area

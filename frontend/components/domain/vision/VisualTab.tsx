@@ -136,7 +136,7 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
                     : 'bg-surface-up text-color-up hover:bg-color-up/20'
                 }`}
               >
-                {'\u25B2'} UP
+                {'\u25B2'} {t('visual_tab.up')}
               </button>
               <button
                 onClick={() => onToggleBet(marketId)}
@@ -146,7 +146,7 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
                     : 'bg-surface-down text-color-down hover:bg-color-down/20'
                 }`}
               >
-                {'\u25BC'} DOWN
+                {'\u25BC'} {t('visual_tab.down')}
               </button>
             </div>
           </div>

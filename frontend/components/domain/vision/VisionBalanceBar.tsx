@@ -55,14 +55,14 @@ export function VisionBalanceBar() {
           onClick={() => setShowDepositModal(true)}
           className="px-2 sm:px-2.5 py-1 bg-color-up text-white text-micro sm:text-label font-bold rounded hover:opacity-90 transition-opacity fluid-press"
         >
-          DEPOSIT
+          {t('vision_balance_bar.deposit')}
         </button>
         {hasBalance && (
           <button
             onClick={() => setShowWithdrawModal(true)}
             className="inline-flex px-2.5 py-1 bg-muted text-text-secondary text-label font-bold rounded border border-border-light hover:bg-surface transition-colors fluid-press"
           >
-            WITHDRAW
+            {t('vision_balance_bar.withdraw')}
           </button>
         )}
       </div>

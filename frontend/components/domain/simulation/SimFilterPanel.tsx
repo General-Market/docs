@@ -697,7 +697,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <div className="flex items-center gap-1">
                     <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {FNG_PRESETS[filters.fng_mode]?.map((p, i) => (
-                      <Tip key={i} text={p.title}>
+                      <Tip key={i} text={t(`fng_preset.${filters.fng_mode}_${i}` as any)}>
                         <button
                           className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.fng_fear === p.fear && filters.fng_greed === p.greed
@@ -773,7 +773,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <>
                     <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('filter.optimized')}</span>
                     {DOM_PRESETS[filters.dom_mode]?.map((p, i) => (
-                      <Tip key={i} text={p.title}>
+                      <Tip key={i} text={t(`dom_preset.${filters.dom_mode}_${i}` as any)}>
                         <button
                           className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.dom_lookback === p.lookback

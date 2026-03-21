@@ -490,7 +490,7 @@ export function PrivacyDiagram() {
               <MempoolModel position={[-1.5, 0, -1.2]} color="#f87171" sub={t('learn.privacy_diagram.standard')} />
               <FlowConnection start={bMempool} end={bChain} color="#ef4444" />
 
-              <ChainModel position={[-1.5, 0, -2.5]} color="#f87171" label="Chain" />
+              <ChainModel position={[-1.5, 0, -2.5]} color="#f87171" label={t('learn.privacy_diagram.chain')} />
 
               {/* ── AFTER path (green) ── */}
               <PersonModel position={[1.5, 0, 1.8]} color="#22c55e" />
@@ -507,7 +507,7 @@ export function PrivacyDiagram() {
               <MempoolModel position={[1.5, 0, -1.2]} color="#22c55e" sub={t('learn.privacy_diagram.frame_tx')} />
               <FlowConnection start={aMempool} end={aChain} color="#22c55e" />
 
-              <ChainModel position={[1.5, 0, -2.5]} color="#22c55e" label="Chain" />
+              <ChainModel position={[1.5, 0, -2.5]} color="#22c55e" label={t('learn.privacy_diagram.chain')} />
 
               {/* Crowd users on After side — firing tx particles toward mempool */}
               <CrowdUsers targetPosition={[1.5, 0, -1.2]} />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { SOURCE_CATEGORIES } from '@/lib/vision/source-categories'
 
@@ -10,6 +11,7 @@ interface CategoryNavProps {
 }
 
 export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavProps) {
+  const t = useTranslations('vision')
   const { sources, categories: apiCategories } = useSourceRegistry()
 
   // Build category counts from registry sources
@@ -27,9 +29,9 @@ export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavPro
     : SOURCE_CATEGORIES.map(c => ({ key: c.key, label: c.label, order: 0 }))
 
   const pills = useMemo(() => [
-    { key: 'all', label: 'All', count: counts.all ?? 0 },
+    { key: 'all', label: t('category_nav.all'), count: counts.all ?? 0 },
     ...categoryList.map(c => ({ key: c.key, label: c.label, count: counts[c.key] ?? 0 })),
-  ], [categoryList, counts])
+  ], [categoryList, counts, t])
 
   return (
     <div className="border-b border-border-light bg-white">

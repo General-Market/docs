@@ -1,4 +1,11 @@
 {
+  "odds": {
+    "label": "배당률",
+    "tooltip_favorable": "매처에게 유리한 배당률 - 높은 잠재 수익",
+    "tooltip_even": "동일 배당률 - 균형 잡힌 위험/보상",
+    "tooltip_unfavorable": "매처에게 불리한 배당률 - 낮은 잠재 수익",
+    "aria_label": "배당률: {display}, 매처에게 {favorability}"
+  },
   "brand": {
     "name": "General Market",
     "logo_text": "General Market",
@@ -362,6 +369,8 @@
     "no_vision_history": "No Vision betting history yet",
     "ticks": "{count} ticks",
     "deposited": "deposited",
+    "deposited_amount": "{amount} deposited",
+    "tick_title": "Tick #{tickId}: {sign}${pnl}",
     "last_active": "Last active {time}"
   }
 }

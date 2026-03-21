@@ -320,7 +320,7 @@ function SectionHeader({ source, count }: { source: SourceSchedule; count: numbe
       <span className="font-mono text-caption font-bold uppercase tracking-[0.08em]">{displayName}</span>
       <span className="font-mono text-label text-white/60">{count.toLocaleString()} {t('vision_markets_grid.assets_suffix')}</span>
       <span className="font-mono text-label text-white/40">
-        synced {relativeTime(source.lastSync)} &middot; every {humanInterval(source.syncIntervalSecs)}
+        {t('section_header.synced_info', { time: relativeTime(source.lastSync), interval: humanInterval(source.syncIntervalSecs) })}
       </span>
     </div>
   )
@@ -612,7 +612,7 @@ export function VisionMarketsGrid() {
                 onClick={() => window.location.reload()}
                 className="px-6 py-2 bg-brand/10 border border-brand/30 text-brand font-mono text-sm hover:bg-brand/20 transition-colors rounded-md"
               >
-                Retry
+                {t('common_labels.retry')}
               </button>
             </div>
             {/* Still show meta info if available */}
@@ -755,10 +755,11 @@ export function VisionMarketsGrid() {
         <span>
           {pricesLoaded
             ? <>
-                {totalFiltered.toLocaleString()} assets
-                {totalFiltered < totalAssets && ` of ${totalAssets.toLocaleString()}`}
+                {totalFiltered < totalAssets
+                  ? t('vision_markets_grid.assets_of_total', { filtered: totalFiltered.toLocaleString(), total: totalAssets.toLocaleString() })
+                  : t('vision_markets_grid.assets_count', { count: totalFiltered.toLocaleString() })}
               </>
-            : <>{totalAssets.toLocaleString()} assets</>
+            : <>{t('vision_markets_grid.assets_count', { count: totalAssets.toLocaleString() })}</>
           }
           {' '}&middot; {t('vision_markets_grid.auto_refresh')}
         </span>

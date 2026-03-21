@@ -631,5 +631,76 @@
     "all_down_description": "Bet DOWN on every market -- simple bear strategy",
     "random_name": "Random",
     "random_description": "Random bets -- baseline for comparison"
+  },
+  "common_labels": {
+    "amount": "金额",
+    "amount_usdc": "金额 (USDC)",
+    "try_again": "重试",
+    "cancel": "取消",
+    "source": "数据源",
+    "search": "搜索",
+    "select_all": "全选",
+    "unselect_all": "取消全选",
+    "tick_duration": "周期时长",
+    "resolution_type_per_market": "每个市场的解析类型",
+    "back": "返回",
+    "skip": "跳过",
+    "create_another": "再次创建",
+    "close": "关闭",
+    "add_details": "添加详情",
+    "retry": "重试",
+    "loading_markets": "正在加载市场...",
+    "loading_leaderboard": "正在加载排行榜...",
+    "no_players_yet": "暂无玩家",
+    "all": "全部",
+    "strategies": "策略",
+    "deploy_with_ai_agent": "通过AI代理部署",
+    "tick_history": "周期记录",
+    "vision_balance": "Vision 余额",
+    "deposit_usdc": "存入 USDC",
+    "back_to_sources": "返回数据源",
+    "up": "UP",
+    "down": "DOWN",
+    "dn": "DN",
+    "assets": "资产",
+    "full_docs_link": "完整文档"
+  },
+  "withdraw_modal_steps": {
+    "fetching_proof": "正在从预言机获取BLS余额证明...",
+    "confirm_withdrawal": "请在钱包中确认提款...",
+    "submitting_withdrawal": "正在提交提款...",
+    "confirm_claim": "请在钱包中确认领取...",
+    "submitting_claim": "正在提交领取...",
+    "withdrawal_done": "提款成功！",
+    "claim_done": "领取成功！"
+  },
+  "create_modal_confirm": {
+    "creating_batch_text": "您正在创建包含 {count} 个市场的批次",
+    "tick_duration_text": "周期时长：{duration}",
+    "batch_id_text": "批次 ID：#{id}"
+  },
+  "batch_entry_panel_extra": {
+    "in_batch_status": "在批次 #{id} 中",
+    "not_in_batch_status": "未加入批次 #{id}",
+    "settlement_auto": "结算是自动的。奖金将记入您的 Vision 余额。",
+    "usdc_per_tick_short": "{amount} USDC/周期"
+  },
+  "section_header": {
+    "synced_info": "已同步 {time} · 每 {interval}"
+  },
+  "consensus_popup_labels": {
+    "title": "共识历史",
+    "last_batches": "最近5个批次"
+  },
+  "category_nav": {
+    "all": "全部"
+  },
+  "compact_visual_tab_titles": {
+    "up": "UP",
+    "down": "DOWN"
+  },
+  "market_accordion_actions": {
+    "all_up_title": "全部 {category} UP",
+    "all_down_title": "全部 {category} DOWN"
   }
 }

@@ -168,10 +168,10 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const isProcessing = activePending || activeConfirming || activeStep === 'fetching-proof'
 
   const stepLabel = (() => {
-    if (activeStep === 'fetching-proof') return 'Fetching BLS balance proof from oracle...'
-    if (activeStep === 'withdrawing') return activePending ? 'Confirm withdrawal in wallet...' : 'Submitting withdrawal...'
-    if (activeStep === 'claiming') return activePending ? 'Confirm claim in wallet...' : 'Submitting claim...'
-    if (activeStep === 'done') return mode === 'withdraw' ? 'Withdrawal successful!' : 'Claim successful!'
+    if (activeStep === 'fetching-proof') return t('withdraw_modal_steps.fetching_proof')
+    if (activeStep === 'withdrawing') return activePending ? t('withdraw_modal_steps.confirm_withdrawal') : t('withdraw_modal_steps.submitting_withdrawal')
+    if (activeStep === 'claiming') return activePending ? t('withdraw_modal_steps.confirm_claim') : t('withdraw_modal_steps.submitting_claim')
+    if (activeStep === 'done') return mode === 'withdraw' ? t('withdraw_modal_steps.withdrawal_done') : t('withdraw_modal_steps.claim_done')
     return ''
   })()
 

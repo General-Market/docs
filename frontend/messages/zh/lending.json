@@ -14,7 +14,11 @@
     "title": "存款 -- USDC 金库",
     "your_deposits": "您的存款",
     "accrued_interest": "累计利息",
-    "current_apy": "当前 APY (年化收益率)"
+    "current_apy": "当前 APY (年化收益率)",
+    "est_annual_yield": "预估年收益",
+    "yield_status": "收益状态",
+    "no_borrows_yet": "暂无借款",
+    "no_borrows_notice": "当用户以ITP抵押借入USDC时，金库产生收益。目前没有活跃借款。"
   },
   "borrow_panel": {
     "title": "借款 -- 以 ITP 抵押",
@@ -165,7 +169,7 @@
     "tx_stuck_description": "超过30秒未确认。您可以取消后重试。",
     "market_frozen": "紧急情况下市场已冻结",
     "rate_limited": "请求频率受限，请在 {seconds} 秒后重试",
-    "view_on_explorer": "View on explorer"
+    "view_on_explorer": "在浏览器中查看"
   },
   "lend_modal": {
     "title": "以 {name} 抵押借款",
@@ -182,54 +186,54 @@
     "title": "错误"
   },
   "position_card": {
-    "title": "Your Position",
-    "collateral": "Collateral",
-    "debt": "Debt",
-    "health_label": "Health: {value}",
-    "liquidation_price": "Liquidation Price",
-    "current_nav": "Current NAV",
-    "stale": "(stale)",
-    "price_updated": "Price Updated",
-    "just_now": "Just now",
-    "min_ago": "{minutes} min ago",
-    "available_to_borrow": "Available to Borrow",
-    "available_to_withdraw": "Available to Withdraw",
-    "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
-    "health_danger": "Your position is eligible for liquidation! Repay debt immediately.",
-    "crisis_emergency": "Emergency",
-    "crisis_stress": "Stress",
-    "crisis_warning": "Warning"
+    "title": "我的仓位",
+    "collateral": "抵押品",
+    "debt": "债务",
+    "health_label": "健康度: {value}",
+    "liquidation_price": "清算价格",
+    "current_nav": "当前 NAV",
+    "stale": "(过期)",
+    "price_updated": "价格更新",
+    "just_now": "刚刚",
+    "min_ago": "{minutes}分钟前",
+    "available_to_borrow": "可借金额",
+    "available_to_withdraw": "可提金额",
+    "health_warning": "仓位面临清算风险。请考虑偿还债务或追加抵押品。",
+    "health_danger": "仓位已符合清算条件！请立即偿还债务。",
+    "crisis_emergency": "紧急",
+    "crisis_stress": "压力",
+    "crisis_warning": "警告"
   },
   "vault_stats": {
-    "supply_apy": "Supply APY",
-    "total_deposits": "Total Deposits",
-    "utilization": "Utilization",
-    "vault": "Vault"
+    "supply_apy": "存款 APY (年化收益率)",
+    "total_deposits": "总存款",
+    "utilization": "利用率",
+    "vault": "金库"
   },
   "lending_history": {
-    "title": "Transaction History",
-    "loading": "Loading...",
-    "type_deposit": "Deposit",
-    "type_withdraw": "Withdraw",
-    "type_borrow": "Borrow",
-    "type_repay": "Repay",
-    "seconds_ago": "{seconds}s ago",
-    "minutes_ago": "{minutes}m ago",
-    "hours_ago": "{hours}h ago",
-    "days_ago": "{days}d ago"
+    "title": "交易记录",
+    "loading": "加载中...",
+    "type_deposit": "存入",
+    "type_withdraw": "提取",
+    "type_borrow": "借入",
+    "type_repay": "偿还",
+    "seconds_ago": "{seconds}秒前",
+    "minutes_ago": "{minutes}分钟前",
+    "hours_ago": "{hours}小时前",
+    "days_ago": "{days}天前"
   },
   "markets_detail": {
-    "itp_markets": "ITP Markets",
-    "collateral": "Collateral",
-    "nav_price": "NAV Price",
+    "itp_markets": "ITP 市场",
+    "collateral": "抵押品",
+    "nav_price": "NAV 价格",
     "ltv": "LTV",
-    "utilization": "Utilization",
-    "borrow_apy": "Borrow APY",
-    "unavailable": "Unavailable",
-    "loan_asset": "Loan Asset",
-    "max_ltv": "Max LTV",
-    "borrow_rate_serm": "Borrow Rate (SERM)",
-    "protocol": "Protocol",
-    "live_data_unavailable": "Live market data unavailable -- showing config parameters"
+    "utilization": "利用率",
+    "borrow_apy": "借款 APY (年化收益率)",
+    "unavailable": "不可用",
+    "loan_asset": "贷款资产",
+    "max_ltv": "最大 LTV",
+    "borrow_rate_serm": "借款利率 (SERM)",
+    "protocol": "协议",
+    "live_data_unavailable": "实时市场数据不可用 -- 显示配置参数"
   }
 }

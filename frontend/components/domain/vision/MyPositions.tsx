@@ -101,7 +101,7 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted">
-                Vision Balance
+                {t('common_labels.vision_balance')}
               </p>
               <p className="text-sm font-bold text-text-primary tabular-nums font-mono">
                 ${fmtUsdc(globalBalance)} USDC

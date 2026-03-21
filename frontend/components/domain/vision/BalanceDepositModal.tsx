@@ -330,7 +330,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               <div className={`${glass.section} p-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
-                    Amount
+                    {t('common_labels.amount')}
                   </label>
                   {mode === 'l3' && l3WalletBalance !== null && (
                     <button
@@ -400,7 +400,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     onClick={handleReset}
                     className="text-xs text-color-down underline mt-2"
                   >
-                    Try again
+                    {t('common_labels.try_again')}
                   </button>
                 </div>
               )}
@@ -422,7 +422,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   onClick={handleReset}
                   className={glass.cancel}
                 >
-                  Cancel
+                  {t('common_labels.cancel')}
                 </button>
               )}
             </div>

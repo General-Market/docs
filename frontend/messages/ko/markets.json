@@ -270,5 +270,100 @@
       "why_title": "왜 이 인덱스인가?",
       "objective_title": "투자 목표"
     }
+  },
+  "listing": {
+    "total_net_assets": "총 순자산",
+    "funds_label": "펀드",
+    "category_all": "전체",
+    "category_broad_market": "광범위 시장",
+    "category_factor": "팩터",
+    "category_income": "수익",
+    "category_sector": "섹터",
+    "category_thematic": "테마",
+    "table": {
+      "ticker": "티커",
+      "name": "이름",
+      "nav": "NAV",
+      "net_assets": "순자산",
+      "shares_outstanding": "발행 주식수",
+      "trade": "거래",
+      "buy": "매수",
+      "sell": "매도"
+    },
+    "loading_funds": "펀드 로딩 중...",
+    "no_funds_filtered": "필터와 일치하는 펀드가 없습니다.",
+    "no_funds": "이용 가능한 펀드가 없습니다.",
+    "pagination": {
+      "first": "처음",
+      "prev": "이전",
+      "next": "다음",
+      "last": "마지막",
+      "range": "{start}\u2013{end} / {total}"
+    }
+  },
+  "source_detail": {
+    "title": "소스 상세",
+    "loading": "소스 데이터 로딩 중...",
+    "failed_to_load": "로드 실패",
+    "retry": "재시도",
+    "total_assets": "총 자산",
+    "active": "활성",
+    "zero_values": "0값",
+    "stale": "오래됨",
+    "data_regularity": "데이터 정규성 (최근 24시간)",
+    "markets_title": "마켓 ({count})",
+    "markets_click_hint": "\u2014 행을 클릭하여 차트 보기",
+    "table": {
+      "market": "마켓",
+      "unit": "단위",
+      "age": "경과",
+      "change": "변동",
+      "records": "레코드",
+      "status": "상태"
+    },
+    "no_assets": "이 소스에 대한 자산이 없습니다",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "0값",
+    "tooltip_stale": "오래된 데이터",
+    "tooltip_active": "최신 데이터 활성",
+    "tooltip_inactive": "비활성",
+    "tooltip_click_show": "클릭하여 차트 보기",
+    "tooltip_click_hide": "클릭하여 차트 숨기기",
+    "sparkline_loading": "기록 로딩 중...",
+    "sparkline_error": "로드 실패: {error}",
+    "sparkline_insufficient": "데이터 포인트 부족 ({count})",
+    "sparkline_label": "7일 기록 ({count}개 포인트)"
+  },
+  "source_health": {
+    "search_placeholder": "소스 검색...",
+    "no_sources_search": "검색과 일치하는 소스가 없습니다",
+    "no_sources": "소스를 찾을 수 없습니다",
+    "no_sources_search_hint": "다른 검색어를 시도하거나 검색을 지우세요.",
+    "no_sources_hint": "data-node가 실행 중이고 데이터를 수집했는지 확인하세요.",
+    "get_key": "키 받기: {label} \u2192",
+    "dormant_count": "{count}개 휴면"
+  },
+  "source_history": {
+    "no_data": "기록 데이터가 없습니다",
+    "tooltip_records": "레코드: {count}",
+    "tooltip_assets": "자산: {count}",
+    "tooltip_zeros": "0값: {count}",
+    "legend_records": "레코드",
+    "legend_zero": "0값"
+  },
+  "orderbook": {
+    "depth": "호가 깊이",
+    "loading_depth": "호가 로딩 중...",
+    "no_orders": "주문 없음",
+    "assets_priced": "{count}개 자산 가격 책정",
+    "price": "가격",
+    "size": "수량",
+    "total": "총액",
+    "bid_total": "매수 {value}",
+    "ask_total": "매도 {value}",
+    "assets_count": "{included}/{total} 자산",
+    "per_asset_breakdown": "자산별 분석"
   }
 }

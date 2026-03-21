@@ -155,7 +155,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             onClick={() => router.push('/')}
             className="text-[13px] font-bold text-black underline hover:no-underline"
           >
-            Back to Sources
+            {t('common_labels.back_to_sources')}
           </button>
         </div>
       </div>

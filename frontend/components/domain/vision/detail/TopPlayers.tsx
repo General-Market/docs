@@ -51,13 +51,13 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
 
         {isLoading && (
           <div className="px-4 py-6 text-center text-[13px] text-text-muted">
-            Loading leaderboard...
+            {t('common_labels.loading_leaderboard')}
           </div>
         )}
 
         {!isLoading && top5.length === 0 && (
           <div className="px-4 py-6 text-center text-[13px] text-text-muted">
-            No players yet
+            {t('common_labels.no_players_yet')}
           </div>
         )}
 

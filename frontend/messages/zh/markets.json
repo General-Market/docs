@@ -270,5 +270,100 @@
       "why_title": "为什么选择这个指数？",
       "objective_title": "投资目标"
     }
+  },
+  "listing": {
+    "total_net_assets": "净资产总额",
+    "funds_label": "基金",
+    "category_all": "全部",
+    "category_broad_market": "广基市场",
+    "category_factor": "因子",
+    "category_income": "收益",
+    "category_sector": "行业",
+    "category_thematic": "主题",
+    "table": {
+      "ticker": "代码",
+      "name": "名称",
+      "nav": "NAV",
+      "net_assets": "净资产",
+      "shares_outstanding": "流通份额",
+      "trade": "交易",
+      "buy": "买入",
+      "sell": "卖出"
+    },
+    "loading_funds": "正在加载基金...",
+    "no_funds_filtered": "没有符合筛选条件的基金。",
+    "no_funds": "暂无可用基金。",
+    "pagination": {
+      "first": "首页",
+      "prev": "上一页",
+      "next": "下一页",
+      "last": "末页",
+      "range": "{start}\u2013{end} / {total}"
+    }
+  },
+  "source_detail": {
+    "title": "数据源详情",
+    "loading": "正在加载数据源...",
+    "failed_to_load": "加载失败",
+    "retry": "重试",
+    "total_assets": "总资产",
+    "active": "活跃",
+    "zero_values": "零值",
+    "stale": "过期",
+    "data_regularity": "数据规律性（过去24小时）",
+    "markets_title": "市场（{count}）",
+    "markets_click_hint": "— 点击行查看图表",
+    "table": {
+      "market": "市场",
+      "unit": "单位",
+      "age": "时效",
+      "change": "变动",
+      "records": "记录",
+      "status": "状态"
+    },
+    "no_assets": "该数据源没有资产",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "零值",
+    "tooltip_stale": "过期数据",
+    "tooltip_active": "活跃且数据最新",
+    "tooltip_inactive": "未激活",
+    "tooltip_click_show": "点击显示图表",
+    "tooltip_click_hide": "点击隐藏图表",
+    "sparkline_loading": "正在加载历史...",
+    "sparkline_error": "加载失败：{error}",
+    "sparkline_insufficient": "数据点不足（{count}）",
+    "sparkline_label": "7天历史（{count}个数据点）"
+  },
+  "source_health": {
+    "search_placeholder": "搜索数据源...",
+    "no_sources_search": "没有匹配搜索的数据源",
+    "no_sources": "未找到数据源",
+    "no_sources_search_hint": "尝试不同的查询或清除搜索。",
+    "no_sources_hint": "请检查data-node是否正在运行并已采集数据。",
+    "get_key": "获取密钥：{label} \u2192",
+    "dormant_count": "{count}个休眠"
+  },
+  "source_history": {
+    "no_data": "无历史数据",
+    "tooltip_records": "记录：{count}",
+    "tooltip_assets": "资产：{count}",
+    "tooltip_zeros": "零值：{count}",
+    "legend_records": "记录",
+    "legend_zero": "零值"
+  },
+  "orderbook": {
+    "depth": "深度",
+    "loading_depth": "正在加载深度...",
+    "no_orders": "无订单",
+    "assets_priced": "{count}个资产已定价",
+    "price": "价格",
+    "size": "数量",
+    "total": "总计",
+    "bid_total": "买 {value}",
+    "ask_total": "卖 {value}",
+    "assets_count": "{included}/{total} 资产",
+    "per_asset_breakdown": "按资产细分"
   }
 }

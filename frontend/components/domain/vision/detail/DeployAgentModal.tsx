@@ -178,7 +178,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
             rel="noopener noreferrer"
             className="text-neutral-900 hover:text-neutral-600 transition-colors font-medium"
           >
-            Full docs &rarr;
+            {t('common_labels.full_docs_link')} &rarr;
           </a>
         </div>
       </SpringModal>

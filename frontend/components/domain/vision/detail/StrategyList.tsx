@@ -78,7 +78,7 @@ export default function StrategyList({ bitmapEditor, sourceId, marketIds }: Stra
       {/* Strategies — compact row */}
       <div>
         <h3 className="text-[9px] font-bold tracking-[0.08em] text-[#999] uppercase mb-1.5">
-          Strategies
+          {t('common_labels.strategies')}
         </h3>
         <div className="flex gap-1.5">
           {STRATEGIES.map((strategy) => (
@@ -99,7 +99,7 @@ export default function StrategyList({ bitmapEditor, sourceId, marketIds }: Stra
       {/* AI agent deploy buttons — compact grid */}
       <div>
         <h3 className="text-[9px] font-bold tracking-[0.08em] text-[#999] uppercase mb-1.5">
-          Deploy with AI Agent
+          {t('common_labels.deploy_with_ai_agent')}
         </h3>
         <div className="grid grid-cols-2 gap-1.5">
           {/* Claude Code */}

@@ -270,5 +270,100 @@
       "why_title": "なぜこのインデックス？",
       "objective_title": "投資目的"
     }
+  },
+  "listing": {
+    "total_net_assets": "純資産総額",
+    "funds_label": "ファンド",
+    "category_all": "すべて",
+    "category_broad_market": "ブロードマーケット",
+    "category_factor": "ファクター",
+    "category_income": "インカム",
+    "category_sector": "セクター",
+    "category_thematic": "テーマ",
+    "table": {
+      "ticker": "ティッカー",
+      "name": "名称",
+      "nav": "NAV",
+      "net_assets": "純資産",
+      "shares_outstanding": "発行済口数",
+      "trade": "取引",
+      "buy": "購入",
+      "sell": "売却"
+    },
+    "loading_funds": "ファンドを読込中...",
+    "no_funds_filtered": "フィルターに一致するファンドがありません。",
+    "no_funds": "利用可能なファンドがありません。",
+    "pagination": {
+      "first": "最初",
+      "prev": "前へ",
+      "next": "次へ",
+      "last": "最後",
+      "range": "{start}\u2013{end} / {total}"
+    }
+  },
+  "source_detail": {
+    "title": "ソース詳細",
+    "loading": "ソースデータを読込中...",
+    "failed_to_load": "読込失敗",
+    "retry": "再試行",
+    "total_assets": "総アセット",
+    "active": "アクティブ",
+    "zero_values": "ゼロ値",
+    "stale": "古いデータ",
+    "data_regularity": "データ規則性（過去24時間）",
+    "markets_title": "マーケット（{count}）",
+    "markets_click_hint": "— 行をクリックしてチャートを表示",
+    "table": {
+      "market": "マーケット",
+      "unit": "単位",
+      "age": "経過",
+      "change": "変動",
+      "records": "レコード",
+      "status": "ステータス"
+    },
+    "no_assets": "このソースのアセットが見つかりません",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "ゼロ値",
+    "tooltip_stale": "古いデータ",
+    "tooltip_active": "最新データあり",
+    "tooltip_inactive": "非アクティブ",
+    "tooltip_click_show": "クリックしてチャートを表示",
+    "tooltip_click_hide": "クリックしてチャートを非表示",
+    "sparkline_loading": "履歴を読込中...",
+    "sparkline_error": "読込失敗: {error}",
+    "sparkline_insufficient": "データポイント不足（{count}）",
+    "sparkline_label": "7日間の履歴（{count}ポイント）"
+  },
+  "source_health": {
+    "search_placeholder": "ソースを検索...",
+    "no_sources_search": "検索に一致するソースがありません",
+    "no_sources": "ソースが見つかりません",
+    "no_sources_search_hint": "別のクエリを試すか検索をクリアしてください。",
+    "no_sources_hint": "data-nodeが実行中でデータを取得済みか確認してください。",
+    "get_key": "キーを取得: {label} \u2192",
+    "dormant_count": "{count}件休止中"
+  },
+  "source_history": {
+    "no_data": "履歴データがありません",
+    "tooltip_records": "レコード: {count}",
+    "tooltip_assets": "アセット: {count}",
+    "tooltip_zeros": "ゼロ値: {count}",
+    "legend_records": "レコード",
+    "legend_zero": "ゼロ値"
+  },
+  "orderbook": {
+    "depth": "板情報",
+    "loading_depth": "板情報を読込中...",
+    "no_orders": "注文なし",
+    "assets_priced": "{count}アセット価格設定済",
+    "price": "価格",
+    "size": "数量",
+    "total": "合計",
+    "bid_total": "買 {value}",
+    "ask_total": "売 {value}",
+    "assets_count": "{included}/{total} アセット",
+    "per_asset_breakdown": "アセット別内訳"
   }
 }

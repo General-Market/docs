@@ -126,10 +126,10 @@ function MetadataForm({
         </div>
         <div className="flex gap-3">
           <button onClick={handleReset} className={`flex-1 ${glass.ctaUp}`}>
-            Create Another
+            {t('common_labels.create_another')}
           </button>
           <button onClick={onClose} className={`flex-1 ${glass.ctaSecondary}`}>
-            Close
+            {t('common_labels.close')}
           </button>
         </div>
       </div>
@@ -195,7 +195,7 @@ function MetadataForm({
           disabled={isSaving}
           className={`flex-1 ${glass.ctaSecondary} disabled:opacity-40`}
         >
-          Skip
+          {t('common_labels.skip')}
         </button>
       </div>
     </div>
@@ -448,7 +448,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   <div className={`${glass.section} p-4 space-y-3`}>
                     <div>
                       <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
-                        Source
+                        {t('common_labels.source')}
                       </label>
                       <select
                         value={selectedSource}
@@ -463,7 +463,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     </div>
                     <div>
                       <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
-                        Search
+                        {t('common_labels.search')}
                       </label>
                       <input
                         type="text"
@@ -481,13 +481,13 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       onClick={selectAllVisible}
                       className="px-3 py-1.5 border border-black/10 text-text-secondary text-xs font-medium rounded-lg hover:border-black/20 hover:text-text-primary transition-colors"
                     >
-                      Select All
+                      {t('common_labels.select_all')}
                     </button>
                     <button
                       onClick={unselectAllVisible}
                       className="px-3 py-1.5 border border-black/10 text-text-secondary text-xs font-medium rounded-lg hover:border-black/20 hover:text-text-primary transition-colors"
                     >
-                      Unselect All
+                      {t('common_labels.unselect_all')}
                     </button>
                     <span className="text-xs text-text-muted ml-auto">
                       {filteredMarkets.length !== markets.length ? t('create_modal.step_markets.selected_shown', { selected: selectedMarketIds.size.toString(), shown: filteredMarkets.length.toString() }) : t('create_modal.step_markets.selected_count', { selected: selectedMarketIds.size.toString() })}
@@ -555,7 +555,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   {/* Tick Duration */}
                   <div className={`${glass.section} p-4`}>
                     <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
-                      Tick Duration
+                      {t('common_labels.tick_duration')}
                     </label>
                     <div className="flex flex-wrap gap-2 fluid-btn-group">
                       {TICK_DURATIONS.map((td) => (
@@ -577,7 +577,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   {/* Per-market resolution type */}
                   <div className={`${glass.section} p-4`}>
                     <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
-                      Resolution Type per Market
+                      {t('common_labels.resolution_type_per_market')}
                     </label>
                     <div className="max-h-[320px] overflow-y-auto space-y-3">
                       {selectedConfigs.map((config) => {
@@ -686,10 +686,10 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     <>
                       <div className={`${glass.section} p-4 text-center`}>
                         <p className="text-sm text-text-secondary mb-1">
-                          You are creating a batch with <span className="font-bold text-text-primary">{selectedConfigs.length}</span> market{selectedConfigs.length !== 1 ? 's' : ''}
+                          {t('create_modal_confirm.creating_batch_text', { count: selectedConfigs.length, plural: selectedConfigs.length !== 1 ? 's' : '' })}
                         </p>
                         <p className="text-xs text-text-muted">
-                          Tick duration: {TICK_DURATIONS.find((t) => t.value === tickDuration)?.label ?? `${tickDuration}s`}
+                          {t('create_modal_confirm.tick_duration_text', { duration: TICK_DURATIONS.find((t) => t.value === tickDuration)?.label ?? `${tickDuration}s` })}
                         </p>
                       </div>
 
@@ -738,7 +738,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       <div className={`${glass.success} p-4 text-color-up text-center`}>
                         <p className="font-medium text-lg mb-1">{t('create_modal.step_confirm.success.title')}</p>
                         {batchId !== null && (
-                          <p className="text-sm font-mono">Batch ID: #{batchId.toString()}</p>
+                          <p className="text-sm font-mono">{t('create_modal_confirm.batch_id_text', { id: batchId.toString() })}</p>
                         )}
                         {txHash && (
                           <a
@@ -757,13 +757,13 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                           onClick={() => setShowMetaForm(true)}
                           className={`flex-1 ${glass.ctaUp}`}
                         >
-                          Add Details
+                          {t('common_labels.add_details')}
                         </button>
                         <button
                           onClick={onClose}
                           className={`flex-1 ${glass.ctaSecondary}`}
                         >
-                          Skip
+                          {t('common_labels.skip')}
                         </button>
                       </div>
                     </>
@@ -796,7 +796,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       onClick={goBack}
                       className="px-4 py-2.5 border border-black/10 text-text-secondary font-medium rounded-xl text-sm hover:border-black/20 hover:text-text-primary transition-colors"
                     >
-                      Back
+                      {t('common_labels.back')}
                     </button>
                   )}
                   <button

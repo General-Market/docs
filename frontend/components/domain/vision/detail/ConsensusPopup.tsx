@@ -44,13 +44,13 @@ export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
       className="absolute z-50 top-full left-0 mt-1 glass-panel rounded-xl shadow-2xl p-3 w-[220px]"
     >
       <div className="text-micro font-bold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-        Consensus History
+        {t('consensus_popup_labels.title')}
       </div>
       <div className="text-label font-mono text-text-secondary truncate mb-2">
         {marketId}
       </div>
       <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1.5">
-        Last 5 batches
+        {t('consensus_popup_labels.last_batches')}
       </div>
       <div className="space-y-1">
         {MOCK_ENTRIES.map((entry) => (

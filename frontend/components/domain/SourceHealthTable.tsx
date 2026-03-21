@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Table,
   TableHeader,
@@ -219,6 +220,7 @@ export function SourceHealthTable({
   selectedSourceId,
   onSelectSource,
 }: SourceHealthTableProps) {
+  const t = useTranslations('markets')
   const [sortField, setSortField] = useState<SortField>('status')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [search, setSearch] = useState('')
@@ -306,7 +308,7 @@ export function SourceHealthTable({
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search sources..."
+            placeholder={t('source_health.search_placeholder')}
             className="w-full max-w-xs bg-card border border-border-light rounded px-3 py-1.5 text-caption text-black placeholder:text-text-muted focus:outline-none focus:border-color-info transition-colors"
           />
           {search && (
@@ -340,12 +342,12 @@ export function SourceHealthTable({
               <TableRow>
                 <TableCell colSpan={11} className="py-12 text-center">
                   <p className="text-text-muted">
-                    {search ? 'No sources match your search' : 'No sources found'}
+                    {search ? t('source_health.no_sources_search') : t('source_health.no_sources')}
                   </p>
                   <p className="text-text-muted text-sm mt-1">
                     {search
-                      ? 'Try a different query or clear the search.'
-                      : 'Check that the data-node is running and has ingested data.'}
+                      ? t('source_health.no_sources_search_hint')
+                      : t('source_health.no_sources_hint')}
                   </p>
                 </TableCell>
               </TableRow>
@@ -482,7 +484,7 @@ export function SourceHealthTable({
                           </span>
                           <span className="text-micro text-muted-foreground max-w-[140px] truncate">
                             {source.staleDormant > 0
-                              ? `${source.staleDormant} dormant`
+                              ? t('source_health.dormant_count', { count: source.staleDormant })
                               : source.staleReason}
                           </span>
                         </div>

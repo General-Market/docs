@@ -422,7 +422,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
         {/* Loading state */}
         {isLoading && (
           <div className="px-4 py-8 text-center text-caption text-text-muted">
-            Loading markets...
+            {t('common_labels.loading_markets')}
           </div>
         )}
 
@@ -513,7 +513,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                           : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
                       }`}
                     >
-                      UP
+                      {t('common_labels.up')}
                     </button></SpringPress>
                     <SpringPress><button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'down') }}
@@ -523,7 +523,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                           : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                       }`}
                     >
-                      DN
+                      {t('common_labels.dn')}
                     </button></SpringPress>
                   </div>
                 </SpringRow>

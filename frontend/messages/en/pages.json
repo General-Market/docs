@@ -586,7 +586,8 @@
       "direct": "Direct!",
       "legend_before": "Before (relayer)",
       "legend_after": "After (direct)",
-      "legend_eliminated": "Eliminated"
+      "legend_eliminated": "Eliminated",
+      "chain": "Chain"
     },
     "visual_cards": {
       "years_of_research": "Years of Research",
@@ -821,64 +822,6 @@
       "no_relayer": "No relayer needed",
       "fallback": "ZK privacy — paymaster pays gas via CALLDATAREAD without knowing who you are. No link between deposit and withdrawal addresses."
     },
-    "about": {
-      "stat_itps": "ITPs",
-      "stat_aum": "AUM",
-      "stat_batches": "Batches",
-      "stat_markets": "Markets",
-      "discord": "Discord",
-      "twitter": "Twitter",
-      "docs": "Docs"
-    },
-    "learn": {
-      "eyebrow": "General Market",
-      "title": "Learn",
-      "subtitle": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets.",
-      "articles": "Articles",
-      "no_articles": "No articles yet. Check back soon.",
-      "read": "Read",
-      "breadcrumb_home": "Home",
-      "breadcrumb_learn": "Learn"
-    },
-    "agent": {
-      "rank": "Rank #{rank}",
-      "loading": "Loading agent data...",
-      "no_data": "No data found for this agent. They may not have placed any bets yet.",
-      "performance": "Performance",
-      "roi": "ROI",
-      "pnl": "P&L",
-      "volume": "Volume",
-      "win_rate": "Win Rate",
-      "performance_trend": "Performance Trend",
-      "stats": "Stats",
-      "total_bets": "Total Bets",
-      "avg_portfolio": "Avg Portfolio",
-      "max_portfolio": "Max Portfolio",
-      "avg_bet_size": "Avg Bet Size",
-      "best_bet": "Best Bet",
-      "worst_bet": "Worst Bet",
-      "recent_bets": "Recent Bets",
-      "loading_bets": "Loading bets...",
-      "no_bets": "No bets found",
-      "col_bet": "Bet",
-      "col_markets": "Markets",
-      "col_amount": "Amount",
-      "col_result": "Result",
-      "col_status": "Status",
-      "col_date": "Date",
-      "last_active": "Last active {time}",
-      "mkts": "mkts"
-    },
-    "profile": {
-      "pnl": "P&L",
-      "roi": "ROI",
-      "win_rate": "Win Rate",
-      "volume": "Volume",
-      "batches": "Batches",
-      "portfolio_value": "Portfolio Value",
-      "holdings": "Holdings",
-      "no_profile": "No profile data found for this address."
-    },
     "legal_links": {
       "vision_legal": "Vision Legal",
       "index_legal": "Index Legal",
@@ -900,6 +843,62 @@
       "roadmap_fallback": "Ethereum scaling roadmap — three ascending platforms for execution, data, and proofs",
       "slot_budget_fallback": "Slot budget comparison — today 300ms verify vs ePBS 4,000ms verify (13x)",
       "zkevm_fallback": "ZK-EVM — re-execution verification vs proof verification comparison"
-    }
+    },
+    "eyebrow": "General Market",
+    "title": "Learn",
+    "subtitle": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets.",
+    "articles": "Articles",
+    "no_articles": "No articles yet. Check back soon.",
+    "read": "Read",
+    "breadcrumb_home": "Home",
+    "breadcrumb_learn": "Learn"
+  },
+  "about": {
+    "stat_itps": "ITPs",
+    "stat_aum": "AUM",
+    "stat_batches": "Batches",
+    "stat_markets": "Markets",
+    "discord": "Discord",
+    "twitter": "Twitter",
+    "docs": "Docs"
+  },
+  "agent": {
+    "rank": "Rank #{rank}",
+    "loading": "Loading agent data...",
+    "no_data": "No data found for this agent. They may not have placed any bets yet.",
+    "performance": "Performance",
+    "roi": "ROI",
+    "pnl": "P&L",
+    "volume": "Volume",
+    "win_rate": "Win Rate",
+    "performance_trend": "Performance Trend",
+    "stats": "Stats",
+    "total_bets": "Total Bets",
+    "avg_portfolio": "Avg Portfolio",
+    "max_portfolio": "Max Portfolio",
+    "avg_bet_size": "Avg Bet Size",
+    "best_bet": "Best Bet",
+    "worst_bet": "Worst Bet",
+    "recent_bets": "Recent Bets",
+    "loading_bets": "Loading bets...",
+    "no_bets": "No bets found",
+    "col_bet": "Bet",
+    "col_markets": "Markets",
+    "col_amount": "Amount",
+    "col_result": "Result",
+    "col_status": "Status",
+    "col_date": "Date",
+    "last_active": "Last active {time}",
+    "mkts": "mkts"
+  },
+  "profile": {
+    "pnl": "P&L",
+    "roi": "ROI",
+    "win_rate": "Win Rate",
+    "volume": "Volume",
+    "batches": "Batches",
+    "portfolio_value": "Portfolio Value",
+    "holdings": "Holdings",
+    "no_profile": "No profile data found for this address."
   }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
@@ -486,6 +487,7 @@ function getRowBg(asset: SourceAsset): string {
 // ── Asset Sparkline ──
 
 function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: string }) {
+  const t = useTranslations('markets')
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -530,7 +532,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (loading) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">Loading history...</div>
+        <div className="text-label text-text-muted">{t('source_detail.sparkline_loading')}</div>
       </div>
     )
   }
@@ -538,7 +540,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (error) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-color-down">Failed to load: {error}</div>
+        <div className="text-label text-color-down">{t('source_detail.sparkline_error', { error })}</div>
       </div>
     )
   }
@@ -546,7 +548,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (points.length < 2) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">Not enough data points ({points.length})</div>
+        <div className="text-label text-text-muted">{t('source_detail.sparkline_insufficient', { count: points.length })}</div>
       </div>
     )
   }
@@ -559,7 +561,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   return (
     <div className="px-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">7-day history ({points.length} points)</span>
+        <span className="text-micro text-text-muted">{t('source_detail.sparkline_label', { count: points.length })}</span>
         <span className="text-micro font-mono text-text-muted">
           {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
         </span>
@@ -612,6 +614,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
 // ── Component ──
 
 export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps) {
+  const t = useTranslations('markets')
   const [assets, setAssets] = useState<SourceAsset[]>([])
   const [buckets, setBuckets] = useState<HistoryBucket[]>([])
   const [loading, setLoading] = useState(true)
@@ -713,7 +716,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div>
-              <h2 className="text-lg font-bold text-black">Source Detail</h2>
+              <h2 className="text-lg font-bold text-black">{t('source_detail.title')}</h2>
               <p className="text-caption font-mono text-text-muted mt-0.5">{sourceId}</p>
             </div>
             <ModalClose onClick={onClose} />
@@ -722,20 +725,20 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
           {/* Loading state */}
           {loading && (
             <div className="flex items-center justify-center py-16">
-              <div className="text-text-muted text-sm">Loading source data...</div>
+              <div className="text-text-muted text-sm">{t('source_detail.loading')}</div>
             </div>
           )}
 
           {/* Error state */}
           {error && !loading && (
             <div className={`${glass.error} px-4 py-3 mb-4`}>
-              <p className="text-color-down text-caption font-semibold">Failed to load</p>
+              <p className="text-color-down text-caption font-semibold">{t('source_detail.failed_to_load')}</p>
               <p className="text-text-secondary text-caption mt-0.5">{error}</p>
               <button
                 onClick={() => fetchData(sourceId)}
                 className="mt-2 text-caption font-bold text-color-info underline hover:no-underline"
               >
-                Retry
+                {t('source_detail.retry')}
               </button>
             </div>
           )}
@@ -746,7 +749,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-                    Total Assets
+                    {t('source_detail.total_assets')}
                   </p>
                   <p className="text-heading font-extrabold font-mono tabular-nums text-black">
                     {totalAssets}
@@ -754,7 +757,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                 </div>
                 <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-                    Active
+                    {t('source_detail.active')}
                   </p>
                   <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
                     {activeAssets}
@@ -762,7 +765,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                 </div>
                 <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-                    Zero Values
+                    {t('source_detail.zero_values')}
                   </p>
                   <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : 'text-black'}`}>
                     {zeroCount}
@@ -770,7 +773,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                 </div>
                 <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
-                    Stale
+                    {t('source_detail.stale')}
                   </p>
                   <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : 'text-black'}`}>
                     {staleCount}
@@ -781,7 +784,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
               {/* Regularity chart */}
               <div>
                 <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
-                  Data Regularity (Last 24h)
+                  {t('source_detail.data_regularity')}
                 </h3>
                 <div className={`${glass.section} p-4`}>
                   <SourceHistoryChart buckets={buckets} />
@@ -791,27 +794,27 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
               {/* Asset table */}
               <div>
                 <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
-                  Markets ({totalAssets}) <span className="font-normal text-text-muted">— click a row to see history</span>
+                  {t('source_detail.markets_title', { count: totalAssets })} <span className="font-normal text-text-muted">{t('source_detail.markets_click_hint')}</span>
                 </h3>
                 <div className="border border-border-light overflow-hidden rounded-lg">
                   <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <Table aria-label="Source Assets">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Market</TableHead>
+                          <TableHead>{t('source_detail.table.market')}</TableHead>
                           <TableHead className="text-right">{valueLabel}</TableHead>
-                          <TableHead className="text-right">Unit</TableHead>
-                          <TableHead className="text-right">Age</TableHead>
-                          <TableHead className="text-right">Change</TableHead>
-                          <TableHead className="text-right">Records</TableHead>
-                          <TableHead className="text-center">Status</TableHead>
+                          <TableHead className="text-right">{t('source_detail.table.unit')}</TableHead>
+                          <TableHead className="text-right">{t('source_detail.table.age')}</TableHead>
+                          <TableHead className="text-right">{t('source_detail.table.change')}</TableHead>
+                          <TableHead className="text-right">{t('source_detail.table.records')}</TableHead>
+                          <TableHead className="text-center">{t('source_detail.table.status')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {assets.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="py-8 text-center">
-                              <p className="text-text-muted">No assets found for this source</p>
+                              <p className="text-text-muted">{t('source_detail.no_assets')}</p>
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -873,31 +876,31 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                       {asset.isZero && (
                                         <span
                                           className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-color-down/20 text-color-down"
-                                          title="Zero value"
+                                          title={t('source_detail.tooltip_zero')}
                                         >
-                                          Zero
+                                          {t('source_detail.status_zero')}
                                         </span>
                                       )}
                                       {asset.isStale && (
                                         <span
                                           className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-color-warning/20 text-color-warning"
-                                          title="Stale data"
+                                          title={t('source_detail.tooltip_stale')}
                                         >
-                                          Stale
+                                          {t('source_detail.status_stale')}
                                         </span>
                                       )}
                                       {!asset.isZero && !asset.isStale && asset.isActive && (
                                         <span
                                           className="w-2 h-2 rounded-full bg-color-up inline-block"
-                                          title="Active with recent data"
+                                          title={t('source_detail.tooltip_active')}
                                         />
                                       )}
                                       {!asset.isActive && (
                                         <span
                                           className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-border-light text-text-muted"
-                                          title="Inactive"
+                                          title={t('source_detail.tooltip_inactive')}
                                         >
-                                          Off
+                                          {t('source_detail.status_off')}
                                         </span>
                                       )}
                                     </div>

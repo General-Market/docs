@@ -137,7 +137,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
   // Projected annual yield (not actual accrued — vault doesn't track original deposit)
   const annualYield = userPosition?.value && userPosition.value > 0n && supplyApy > 0
     ? `+$${(parseFloat(formatUnits(userPosition.value, 18)) * (supplyApy / 100)).toFixed(2)}/yr`
-    : utilization === 0 ? 'No borrows yet' : '$0.00'
+    : utilization === 0 ? t('supply_panel.no_borrows_yet') : '$0.00'
 
   // User borrow data
   const oraclePriceNum = oraclePrice ? parseFloat(formatUnits(oraclePrice, 36)) : 1
@@ -174,14 +174,14 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
           <div className="p-5 space-y-4">
             <InfoRow label={t('supply_panel.your_deposits')} value={userDeposits} />
             <InfoRow
-              label={supplyApy > 0 ? 'Est. Annual Yield' : 'Yield Status'}
+              label={supplyApy > 0 ? t('supply_panel.est_annual_yield') : t('supply_panel.yield_status')}
               value={annualYield}
               valueColor={supplyApy > 0 ? 'text-color-up' : 'text-text-muted'}
             />
             <InfoRow label={t('supply_panel.current_apy')} value={`${supplyApy.toFixed(2)}%`} mono />
             {utilization === 0 && userPosition?.value && userPosition.value > 0n && (
               <p className="text-[11px] text-text-muted leading-snug">
-                Vault earns yield when users borrow USDC against ITP collateral. No active borrows at the moment.
+                {t('supply_panel.no_borrows_notice')}
               </p>
             )}
 
@@ -496,11 +496,12 @@ function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
 }
 
 function LendSkeleton() {
+  const t = useTranslations('lending')
   return (
     <div className="space-y-6">
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-black/[0.06] rounded-xl overflow-hidden">
-        {['Vault TVL', 'Supply APY', 'Borrow APY', 'Utilization'].map((label, idx) => (
+        {[t('stats.vault_tvl'), t('stats.supply_apy'), t('stats.borrow_apy'), t('stats.utilization')].map((label, idx) => (
           <div key={label} className="px-5 py-4 border-b lg:border-b-0 border-r border-border-light last:border-r-0">
             <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{label}</p>
             <Bone w={idx === 0 ? 'w-20' : 'w-16'} h="h-7" />
@@ -513,7 +514,7 @@ function LendSkeleton() {
         {/* Supply */}
         <div className="border border-black/[0.06] rounded-xl overflow-hidden">
           <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
-            Supply — USDC Vault
+            {t('supply_panel.title')}
           </div>
           <div className="p-5 space-y-4">
             {[0, 1, 2].map(i => (
@@ -531,7 +532,7 @@ function LendSkeleton() {
         {/* Borrow */}
         <div className="border border-black/[0.06] rounded-xl overflow-hidden">
           <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
-            Borrow — Against ITP
+            {t('borrow_panel.title')}
           </div>
           <div className="p-5 space-y-4">
             {[0, 1, 2].map(i => (

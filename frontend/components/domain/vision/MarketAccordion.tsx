@@ -149,6 +149,7 @@ function CategoryBar({
   onAllUp: () => void
   onAllDown: () => void
 }) {
+  const t = useTranslations('vision')
   return (
     <div className={`flex items-center rounded-lg transition-colors ${
       isExpanded ? 'bg-terminal' : 'bg-muted hover:bg-surface'
@@ -184,14 +185,14 @@ function CategoryBar({
           <button
             onClick={(e) => { e.stopPropagation(); onAllUp() }}
             className="px-2 py-1 rounded text-micro font-bold bg-color-up/20 text-white hover:bg-color-up/40 transition-colors fluid-press"
-            title={`All ${category.label} UP`}
+            title={t('market_accordion_actions.all_up_title', { category: category.label })}
           >
             {'\u25B2'}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onAllDown() }}
             className="px-2 py-1 rounded text-micro font-bold bg-color-down/20 text-white hover:bg-color-down/40 transition-colors fluid-press"
-            title={`All ${category.label} DOWN`}
+            title={t('market_accordion_actions.all_down_title', { category: category.label })}
           >
             {'\u25BC'}
           </button>

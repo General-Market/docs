@@ -270,5 +270,100 @@
       "why_title": "Why This Index?",
       "objective_title": "Investment Objective"
     }
+  },
+  "listing": {
+    "total_net_assets": "Total Net Assets",
+    "funds_label": "Funds",
+    "category_all": "All",
+    "category_broad_market": "Broad Market",
+    "category_factor": "Factor",
+    "category_income": "Income",
+    "category_sector": "Sector",
+    "category_thematic": "Thematic",
+    "table": {
+      "ticker": "Ticker",
+      "name": "Name",
+      "nav": "NAV",
+      "net_assets": "Net Assets",
+      "shares_outstanding": "Shares Outstanding",
+      "trade": "Trade",
+      "buy": "Buy",
+      "sell": "Sell"
+    },
+    "loading_funds": "Loading funds...",
+    "no_funds_filtered": "No funds match your filters.",
+    "no_funds": "No funds available.",
+    "pagination": {
+      "first": "First",
+      "prev": "Prev",
+      "next": "Next",
+      "last": "Last",
+      "range": "{start}\u2013{end} of {total}"
+    }
+  },
+  "source_detail": {
+    "title": "Source Detail",
+    "loading": "Loading source data...",
+    "failed_to_load": "Failed to load",
+    "retry": "Retry",
+    "total_assets": "Total Assets",
+    "active": "Active",
+    "zero_values": "Zero Values",
+    "stale": "Stale",
+    "data_regularity": "Data Regularity (Last 24h)",
+    "markets_title": "Markets ({count})",
+    "markets_click_hint": "\u2014 click a row to see history",
+    "table": {
+      "market": "Market",
+      "unit": "Unit",
+      "age": "Age",
+      "change": "Change",
+      "records": "Records",
+      "status": "Status"
+    },
+    "no_assets": "No assets found for this source",
+    "status_zero": "Zero",
+    "status_stale": "Stale",
+    "status_off": "Off",
+    "tooltip_zero": "Zero value",
+    "tooltip_stale": "Stale data",
+    "tooltip_active": "Active with recent data",
+    "tooltip_inactive": "Inactive",
+    "tooltip_click_show": "Click to show chart",
+    "tooltip_click_hide": "Click to hide chart",
+    "sparkline_loading": "Loading history...",
+    "sparkline_error": "Failed to load: {error}",
+    "sparkline_insufficient": "Not enough data points ({count})",
+    "sparkline_label": "7-day history ({count} points)"
+  },
+  "source_health": {
+    "search_placeholder": "Search sources...",
+    "no_sources_search": "No sources match your search",
+    "no_sources": "No sources found",
+    "no_sources_search_hint": "Try a different query or clear the search.",
+    "no_sources_hint": "Check that the data-node is running and has ingested data.",
+    "get_key": "Get key: {label} \u2192",
+    "dormant_count": "{count} dormant"
+  },
+  "source_history": {
+    "no_data": "No history data available",
+    "tooltip_records": "Records: {count}",
+    "tooltip_assets": "Assets: {count}",
+    "tooltip_zeros": "Zeros: {count}",
+    "legend_records": "Records",
+    "legend_zero": "Zero-value"
+  },
+  "orderbook": {
+    "depth": "Depth",
+    "loading_depth": "Loading depth...",
+    "no_orders": "No orders",
+    "assets_priced": "{count} assets priced",
+    "price": "Price",
+    "size": "Size",
+    "total": "Total",
+    "bid_total": "Bid {value}",
+    "ask_total": "Ask {value}",
+    "assets_count": "{included}/{total} assets",
+    "per_asset_breakdown": "Per-asset breakdown"
   }
 }

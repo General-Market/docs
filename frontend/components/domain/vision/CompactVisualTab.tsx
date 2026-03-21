@@ -132,7 +132,7 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
                         className={`w-3 h-3 rounded-full ${
                           wentUp ? 'bg-color-up' : 'bg-color-down'
                         }`}
-                        title={wentUp ? 'UP' : 'DOWN'}
+                        title={wentUp ? t('compact_visual_tab_titles.up') : t('compact_visual_tab_titles.down')}
                       />
                     ))}
                     {mktHistory.length === 0 && (

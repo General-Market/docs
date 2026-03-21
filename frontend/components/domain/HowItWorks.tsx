@@ -82,7 +82,7 @@ export function HowItWorks() {
         aria-controls="how-it-works-content"
       >
         <h2 id="how-it-works-heading" className="text-lg font-bold text-text-primary">
-          HOW AGIARENA WORKS
+          {t('how_it_works.title')}
         </h2>
         <span className="text-text-muted text-xl" aria-hidden="true">
           {isCollapsed ? '▸' : '▾'}

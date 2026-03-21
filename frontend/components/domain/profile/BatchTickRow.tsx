@@ -30,7 +30,7 @@ export function BatchTickRow({ batch }: BatchTickRowProps) {
           </span>
         </div>
         <div className="text-micro text-text-muted mt-0.5">
-          {t('profile.ticks_count', { tickCount: batch.tickCount })} &middot; {t('profile.deposited_in', { deposited: batch.deposited.toFixed(0) })}
+          {t('profile.ticks', { count: batch.tickCount })} &middot; {t('profile.deposited_amount', { amount: batch.deposited.toFixed(0) })}
         </div>
       </div>
 

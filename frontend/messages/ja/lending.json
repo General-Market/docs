@@ -14,7 +14,11 @@
     "title": "供給 — USDC Vault",
     "your_deposits": "あなたの預入額",
     "accrued_interest": "発生済み利息",
-    "current_apy": "現在のAPY (年利回り)"
+    "current_apy": "現在のAPY (年利回り)",
+    "est_annual_yield": "推定年間収益",
+    "yield_status": "収益ステータス",
+    "no_borrows_yet": "借入なし",
+    "no_borrows_notice": "ユーザーがITP担保でUSDCを借りるとVault収益が発生します。現在アクティブな借入はありません。"
   },
   "borrow_panel": {
     "title": "借入 — ITP担保",
@@ -165,7 +169,7 @@
     "tx_stuck_description": "30秒経過しても確認されていません。キャンセルして再度お試しいただけます。",
     "market_frozen": "緊急時のためマーケットは凍結されています",
     "rate_limited": "レート制限中です。{seconds}秒後に再試行してください",
-    "view_on_explorer": "View on explorer"
+    "view_on_explorer": "エクスプローラーで表示"
   },
   "lend_modal": {
     "title": "{name}を担保に借入",
@@ -182,54 +186,54 @@
     "title": "エラー"
   },
   "position_card": {
-    "title": "Your Position",
-    "collateral": "Collateral",
-    "debt": "Debt",
-    "health_label": "Health: {value}",
-    "liquidation_price": "Liquidation Price",
-    "current_nav": "Current NAV",
-    "stale": "(stale)",
-    "price_updated": "Price Updated",
-    "just_now": "Just now",
-    "min_ago": "{minutes} min ago",
-    "available_to_borrow": "Available to Borrow",
-    "available_to_withdraw": "Available to Withdraw",
-    "health_warning": "Your position is at risk of liquidation. Consider repaying debt or adding collateral.",
-    "health_danger": "Your position is eligible for liquidation! Repay debt immediately.",
-    "crisis_emergency": "Emergency",
-    "crisis_stress": "Stress",
-    "crisis_warning": "Warning"
+    "title": "あなたのポジション",
+    "collateral": "担保",
+    "debt": "債務",
+    "health_label": "ヘルス: {value}",
+    "liquidation_price": "清算価格",
+    "current_nav": "現在のNAV",
+    "stale": "(古い)",
+    "price_updated": "価格更新",
+    "just_now": "たった今",
+    "min_ago": "{minutes}分前",
+    "available_to_borrow": "借入可能額",
+    "available_to_withdraw": "引出可能額",
+    "health_warning": "ポジションが清算リスクにあります。債務の返済または担保の追加を検討してください。",
+    "health_danger": "ポジションが清算対象です！直ちに債務を返済してください。",
+    "crisis_emergency": "緊急",
+    "crisis_stress": "ストレス",
+    "crisis_warning": "警告"
   },
   "vault_stats": {
-    "supply_apy": "Supply APY",
-    "total_deposits": "Total Deposits",
-    "utilization": "Utilization",
+    "supply_apy": "供給APY (年利回り)",
+    "total_deposits": "預入総額",
+    "utilization": "稼働率",
     "vault": "Vault"
   },
   "lending_history": {
-    "title": "Transaction History",
-    "loading": "Loading...",
-    "type_deposit": "Deposit",
-    "type_withdraw": "Withdraw",
-    "type_borrow": "Borrow",
-    "type_repay": "Repay",
-    "seconds_ago": "{seconds}s ago",
-    "minutes_ago": "{minutes}m ago",
-    "hours_ago": "{hours}h ago",
-    "days_ago": "{days}d ago"
+    "title": "取引履歴",
+    "loading": "読み込み中...",
+    "type_deposit": "預入",
+    "type_withdraw": "引出",
+    "type_borrow": "借入",
+    "type_repay": "返済",
+    "seconds_ago": "{seconds}秒前",
+    "minutes_ago": "{minutes}分前",
+    "hours_ago": "{hours}時間前",
+    "days_ago": "{days}日前"
   },
   "markets_detail": {
-    "itp_markets": "ITP Markets",
-    "collateral": "Collateral",
-    "nav_price": "NAV Price",
+    "itp_markets": "ITPマーケット",
+    "collateral": "担保",
+    "nav_price": "NAV価格",
     "ltv": "LTV",
-    "utilization": "Utilization",
-    "borrow_apy": "Borrow APY",
-    "unavailable": "Unavailable",
-    "loan_asset": "Loan Asset",
-    "max_ltv": "Max LTV",
-    "borrow_rate_serm": "Borrow Rate (SERM)",
-    "protocol": "Protocol",
-    "live_data_unavailable": "Live market data unavailable -- showing config parameters"
+    "utilization": "稼働率",
+    "borrow_apy": "借入APY (年利回り)",
+    "unavailable": "利用不可",
+    "loan_asset": "ローン資産",
+    "max_ltv": "最大LTV",
+    "borrow_rate_serm": "借入金利 (SERM)",
+    "protocol": "プロトコル",
+    "live_data_unavailable": "リアルタイムマーケットデータを利用できません -- 設定パラメータを表示しています"
   }
 }

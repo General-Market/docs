@@ -631,5 +631,76 @@
     "all_down_description": "Bet DOWN on every market -- simple bear strategy",
     "random_name": "Random",
     "random_description": "Random bets -- baseline for comparison"
+  },
+  "common_labels": {
+    "amount": "Amount",
+    "amount_usdc": "Amount (USDC)",
+    "try_again": "Try again",
+    "cancel": "Cancel",
+    "source": "Source",
+    "search": "Search",
+    "select_all": "Select All",
+    "unselect_all": "Unselect All",
+    "tick_duration": "Tick Duration",
+    "resolution_type_per_market": "Resolution Type per Market",
+    "back": "Back",
+    "skip": "Skip",
+    "create_another": "Create Another",
+    "close": "Close",
+    "add_details": "Add Details",
+    "retry": "Retry",
+    "loading_markets": "Loading markets...",
+    "loading_leaderboard": "Loading leaderboard...",
+    "no_players_yet": "No players yet",
+    "all": "All",
+    "strategies": "Strategies",
+    "deploy_with_ai_agent": "Deploy with AI Agent",
+    "tick_history": "Tick History",
+    "vision_balance": "Vision Balance",
+    "deposit_usdc": "Deposit USDC",
+    "back_to_sources": "Back to Sources",
+    "up": "UP",
+    "down": "DOWN",
+    "dn": "DN",
+    "assets": "assets",
+    "full_docs_link": "Full docs"
+  },
+  "withdraw_modal_steps": {
+    "fetching_proof": "Fetching BLS balance proof from oracle...",
+    "confirm_withdrawal": "Confirm withdrawal in wallet...",
+    "submitting_withdrawal": "Submitting withdrawal...",
+    "confirm_claim": "Confirm claim in wallet...",
+    "submitting_claim": "Submitting claim...",
+    "withdrawal_done": "Withdrawal successful!",
+    "claim_done": "Claim successful!"
+  },
+  "create_modal_confirm": {
+    "creating_batch_text": "You are creating a batch with {count} market{plural}",
+    "tick_duration_text": "Tick duration: {duration}",
+    "batch_id_text": "Batch ID: #{id}"
+  },
+  "batch_entry_panel_extra": {
+    "in_batch_status": "In Batch #{id}",
+    "not_in_batch_status": "Not in batch #{id}",
+    "settlement_auto": "Settlement is automatic. Payout credited to your Vision balance.",
+    "usdc_per_tick_short": "{amount} USDC/tick"
+  },
+  "section_header": {
+    "synced_info": "synced {time} · every {interval}"
+  },
+  "consensus_popup_labels": {
+    "title": "Consensus History",
+    "last_batches": "Last 5 batches"
+  },
+  "category_nav": {
+    "all": "All"
+  },
+  "compact_visual_tab_titles": {
+    "up": "UP",
+    "down": "DOWN"
+  },
+  "market_accordion_actions": {
+    "all_up_title": "All {category} UP",
+    "all_down_title": "All {category} DOWN"
   }
 }

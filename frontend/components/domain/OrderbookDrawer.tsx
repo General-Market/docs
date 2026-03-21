@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { SpringDrawer, glass } from '@/components/ui/spring'
 import type { OrderbookData, OrderbookLevel, AssetOrderbookSummary } from '@/hooks/useItpOrderbook'
 
@@ -68,6 +69,7 @@ export function OrderbookDrawer({
   aggregationBps,
   onAggregationChange,
 }: OrderbookDrawerProps) {
+  const t = useTranslations('markets')
   const [showAssets, setShowAssets] = useState(false)
 
   // Compute max depth for bar widths
@@ -94,7 +96,7 @@ export function OrderbookDrawer({
     <SpringDrawer from="right" className="w-[280px] h-full glass-panel border-l flex flex-col text-micro font-mono select-none">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border-light">
-        <span className="text-label font-bold text-black tracking-[0.08em] uppercase">Depth</span>
+        <span className="text-label font-bold text-black tracking-[0.08em] uppercase">{t('orderbook.depth')}</span>
         {data && (
           <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${spreadColor(data.spread_bps)}`}>
             {data.spread_bps.toFixed(1)} bps
@@ -121,7 +123,7 @@ export function OrderbookDrawer({
         <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-label gap-3">
           <div className="flex items-center gap-2">
             <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
-            Loading depth...
+            {t('orderbook.loading_depth')}
           </div>
         </div>
       )}
@@ -130,10 +132,10 @@ export function OrderbookDrawer({
           {data.mid_price > 0 && (
             <div className="text-center">
               <div className="text-body font-bold text-black">{formatPrice(data.mid_price)}</div>
-              <div className="text-[9px] text-text-muted mt-0.5">{data.assets_included} assets priced</div>
+              <div className="text-[9px] text-text-muted mt-0.5">{t('orderbook.assets_priced', { count: data.assets_included })}</div>
             </div>
           )}
-          <div className="text-micro text-text-muted">No orders</div>
+          <div className="text-micro text-text-muted">{t('orderbook.no_orders')}</div>
         </div>
       )}
 
@@ -142,9 +144,9 @@ export function OrderbookDrawer({
         <div className="flex-1 flex flex-col min-h-0">
           {/* Column headers */}
           <div className="flex items-center px-2.5 py-1 text-[9px] text-text-muted uppercase tracking-[0.08em] border-b border-border-light">
-            <span className="w-[45%]">Price</span>
-            <span className="w-[25%] text-right">Size</span>
-            <span className="w-[30%] text-right">Total</span>
+            <span className="w-[45%]">{t('orderbook.price')}</span>
+            <span className="w-[25%] text-right">{t('orderbook.size')}</span>
+            <span className="w-[30%] text-right">{t('orderbook.total')}</span>
           </div>
 
           {/* Asks (reversed) */}
@@ -179,11 +181,11 @@ export function OrderbookDrawer({
 
           {/* ── Depth summary footer ── */}
           <div className="flex items-center justify-between px-2.5 py-1.5 border-t border-border-light bg-gray-50 text-[9px]">
-            <span className="text-green-600 font-semibold">Bid {formatUsd(data.total_bid_depth_usd)}</span>
+            <span className="text-green-600 font-semibold">{t('orderbook.bid_total', { value: formatUsd(data.total_bid_depth_usd) })}</span>
             <span className="text-text-muted">
-              {data.assets_included}/{data.assets_included + data.assets_failed.length} assets
+              {t('orderbook.assets_count', { included: data.assets_included, total: data.assets_included + data.assets_failed.length })}
             </span>
-            <span className="text-red-600 font-semibold">Ask {formatUsd(data.total_ask_depth_usd)}</span>
+            <span className="text-red-600 font-semibold">{t('orderbook.ask_total', { value: formatUsd(data.total_ask_depth_usd) })}</span>
           </div>
 
           {/* ── Per-asset breakdown (collapsible) ── */}
@@ -192,7 +194,7 @@ export function OrderbookDrawer({
               onClick={() => setShowAssets(!showAssets)}
               className="w-full flex items-center justify-between px-2.5 py-1.5 text-[9px] text-text-muted hover:text-text-primary transition-colors"
             >
-              <span>Per-asset breakdown</span>
+              <span>{t('orderbook.per_asset_breakdown')}</span>
               <span>{showAssets ? '\u25B2' : '\u25BC'}</span>
             </button>
             {showAssets && (

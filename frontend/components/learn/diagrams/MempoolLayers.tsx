@@ -154,8 +154,8 @@ function PoolModel({ position, color = '#f59e0b', label, sub }: {
 }
 
 /* ── Looping blockchain model (8 blocks, conveyor) ── */
-function ChainModel({ position, color = '#22c55e' }: {
-  position: [number, number, number]; color?: string
+function ChainModel({ position, color = '#22c55e', acceptLabel = 'ACCEPT', gasFlagLabel = 'gas flag' }: {
+  position: [number, number, number]; color?: string; acceptLabel?: string; gasFlagLabel?: string
 }) {
   const blocksRef = useRef<THREE.InstancedMesh>(null!)
   const linksRef = useRef<THREE.InstancedMesh>(null!)
@@ -222,8 +222,8 @@ function ChainModel({ position, color = '#22c55e' }: {
         <meshStandardMaterial color={color} roughness={0.4} />
       </instancedMesh>
       <Html center position={[position[0], position[1] + 0.28, position[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">ACCEPT</p>
-        <p className="text-[7px] text-zinc-500 whitespace-nowrap text-center">gas flag</p>
+        <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">{acceptLabel}</p>
+        <p className="text-[7px] text-zinc-500 whitespace-nowrap text-center">{gasFlagLabel}</p>
       </Html>
     </group>
   )
@@ -487,7 +487,7 @@ export function MempoolLayers() {
 
               {/* CHAIN terrace (bottom) — green */}
               <Platform position={[0, 0, -2.0]} width={5} depth={1.4} label={t('learn.mempool_layers.chain_label')} color="#dcfce7" accentColor="#22c55e" />
-              <ChainModel position={[0, 0.03, -2.0]} color="#22c55e" />
+              <ChainModel position={[0, 0.03, -2.0]} color="#22c55e" acceptLabel={t('learn.mempool_layers.accept')} gasFlagLabel={t('learn.mempool_layers.gas_flag')} />
 
               <OrbitControls enableZoom={false} enablePan={false} minPolarAngle={Math.PI / 8} maxPolarAngle={Math.PI / 2.3} autoRotate autoRotateSpeed={0.3} dampingFactor={0.05} target={[0, 0.2, -0.3]} />
             </Canvas>
