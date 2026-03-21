@@ -472,14 +472,21 @@ test.describe('ITP Detail (/itp/[itpId])', () => {
     // Wait for network idle to avoid framer-motion re-renders unmounting the row mid-click
     await page.waitForLoadState('networkidle').catch(() => {})
 
-    // Click the Name column (td:nth-child(2)) — the Trade column has stopPropagation
-    const nameCell = page.locator('tbody tr td:nth-child(2)').first()
-    const hasRow = await nameCell.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasRow) {
-      console.warn('No ITP rows found — data-node may be unreachable')
-      return
+    // ITP listing renders as cards (article) with "View X details" links, or as table rows
+    const detailLink = page.locator('a[href*="/itp/"]').first()
+    const hasLink = await detailLink.isVisible({ timeout: 15_000 }).catch(() => false)
+    if (!hasLink) {
+      // Fallback: try table row click
+      const nameCell = page.locator('tbody tr td:nth-child(2)').first()
+      const hasRow = await nameCell.isVisible({ timeout: 5_000 }).catch(() => false)
+      if (!hasRow) {
+        console.warn('No ITP cards or rows found — data-node may be unreachable')
+        return
+      }
+      await nameCell.click({ force: true })
+    } else {
+      await detailLink.click()
     }
-    await nameCell.click({ force: true })
     await page.waitForURL(/\/itp\//, { timeout: 30_000 })
 
     // ITP detail SSR depends on data-node availability — may intermittently 404
@@ -985,11 +992,11 @@ test.describe('Navigation & Layout', () => {
     // Wait for network idle to avoid framer-motion re-renders unmounting the row mid-click
     await page.waitForLoadState('networkidle').catch(() => {})
 
-    // Click the Name column (td:nth-child(2)) — the Trade column has stopPropagation
-    const nameCell = page.locator('tbody tr td:nth-child(2)').first()
-    const hasRow = await nameCell.isVisible({ timeout: 10_000 }).catch(() => false)
-    if (hasRow) {
-      await nameCell.click({ force: true })
+    // ITP listing renders as cards with detail links, or as table rows
+    const detailLink = page.locator('a[href*="/itp/"]').first()
+    const hasLink = await detailLink.isVisible({ timeout: 10_000 }).catch(() => false)
+    if (hasLink) {
+      await detailLink.click()
       await page.waitForURL(/\/itp\//, { timeout: 30_000 })
       await assertNoError(page)
     } else {
