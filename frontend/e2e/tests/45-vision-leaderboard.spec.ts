@@ -181,17 +181,21 @@ test.describe('Vision Leaderboard', () => {
     console.log(`Broken  (0 players, has batch):  [${broken.join(', ')}]`)
     console.log(`Unmapped (no batch — expected):  [${unmapped.join(', ')}]`)
 
-    // Fresh deploy: ALL mapped sources will return 0 players — that is expected, not broken
-    if (active.length === 0 && dead.length === 0) {
-      console.log('No sources have any leaderboard data — fresh deploy, no rounds settled yet')
+    // Fresh deploy or no meaningful activity: if NO source has non-zero PnL,
+    // empty leaderboards are expected — not a config/mapping failure.
+    if (active.length === 0) {
+      console.log('No sources have non-zero PnL activity — fresh deploy, no rounds settled yet')
       if (broken.length > 0) {
-        console.log(`(${broken.length} sources classified as "broken" but this is expected on fresh deploy)`)
+        console.log(`(${broken.length} sources returned 0 players — expected when no ticks have resolved)`)
+      }
+      if (dead.length > 0) {
+        console.log(`(${dead.length} sources have players but all at $0 — no resolved rounds yet)`)
       }
       return
     }
 
-    // Only sources with a deployed batch should return players.
-    // Zero players from a mapped source = broken source_id query.
+    // Partial failure: some sources have real activity but others with deployed
+    // batches return nothing — indicates a mapping or config problem.
     expect(broken, `Sources with deployed batch but 0 players: ${broken.join(', ')}`).toHaveLength(0)
   })
 

@@ -30,7 +30,7 @@ function formatUsd(v: number): string {
 type SortKey = 'rank' | 'name' | 'weight' | 'price' | 'change_24h' | 'market_cap' | 'market_value' | 'notional' | 'quantity'
 type SortDir = 'asc' | 'desc'
 
-export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
+export function HoldingsTable({ enrichment, nav, aum, assetCount }: SectionProps) {
   const holdings = enrichment?.holdings ?? []
   const [sortKey, setSortKey] = useState<SortKey>('weight')
   const [sortDir, setSortDir] = useState<SortDir>('desc')

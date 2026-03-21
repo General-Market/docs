@@ -20,7 +20,19 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const { data, isLoading } = useItpNavSeries(itpId, tf)
   const [hover, setHover] = useState<ChartHoverInfo | null>(null)
 
-  const chartData = useMemo(() => data.map(d => ({ time: d.time, close: d.close })), [data])
+  const chartData = useMemo(() => {
+    const points = data.map(d => ({ time: d.time, close: d.close }))
+    // Append current live NAV so chart tip matches the displayed price
+    if (nav > 0 && points.length > 0) {
+      const nowSec = Math.floor(Date.now() / 1000)
+      const last = points[points.length - 1]
+      // Only append if live price is newer than the last candle
+      if (nowSec > last.time) {
+        points.push({ time: nowSec, close: nav })
+      }
+    }
+    return points
+  }, [data, nav])
   const sinceInception = nav > 0 ? (nav - 1) * 100 : null
   const inceptionDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

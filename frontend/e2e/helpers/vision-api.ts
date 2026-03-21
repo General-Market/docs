@@ -413,6 +413,27 @@ async function waitForUnlock(batchId: number): Promise<void> {
   }
 }
 
+/**
+ * Read tickDuration and lockOffset for a batch directly from the Vision contract.
+ * Returns { tickDuration, lockOffset } in seconds.
+ */
+export async function getBatchTimingFromChain(batchId: number): Promise<{ tickDuration: number; lockOffset: number }> {
+  const data = encodeFunctionData({
+    abi: VISION_GET_BATCH_ABI,
+    functionName: 'getBatch',
+    args: [BigInt(batchId)],
+  })
+  const result = await l3EthCall(getVisionAddress(), data)
+  const hex = result.replace('0x', '')
+  const words: string[] = []
+  for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
+
+  return {
+    tickDuration: Number(BigInt('0x' + words[4])),
+    lockOffset: Number(BigInt('0x' + words[5])),
+  }
+}
+
 /** Mint L3_WUSDC to an address via deployer. Ensures player has enough for deposits.
  *  @param usdcOverride  Use a specific USDC address (e.g. Vision's USDC) instead of deployment default */
 export async function ensureUsdcBalance(address: string, minAmount: bigint, usdcOverride?: string): Promise<void> {

@@ -25,12 +25,16 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
 
   const nav = navPerShare > 0 ? navPerShare : serverNav
   const sinceInception = nav > 0 ? (nav - 1) * 100 : 0
+  // Enrichment resolves all on-chain assets; data-node assets_total only counts priced ones
+  const resolvedAssetCount = enrichment && enrichment.holdings.length > assetCount
+    ? enrichment.holdings.length
+    : assetCount
 
   const config = getItpPageConfig(itpId)
 
   const sectionProps = useMemo(() => ({
-    itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment, createdAt: config.createdAt,
-  }), [itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment, config.createdAt])
+    itpId, name, symbol, nav, aum, assetCount: resolvedAssetCount, sinceInception, enrichment, createdAt: config.createdAt,
+  }), [itpId, name, symbol, nav, aum, resolvedAssetCount, sinceInception, enrichment, config.createdAt])
 
   return (
     <>
@@ -47,7 +51,7 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
         symbol={symbol}
         nav={nav}
         aum={aum}
-        assetCount={assetCount}
+        assetCount={resolvedAssetCount}
         sinceInception={sinceInception}
         enrichment={enrichment}
         createdAt={config.createdAt}
