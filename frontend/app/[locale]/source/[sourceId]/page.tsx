@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { SourceDetailCategoryNav } from '@/components/domain/vision/detail/SourceDetailCategoryNav'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -71,7 +70,6 @@ export default async function SourcePage({ params }: Props) {
       {jsonLd.map((ld, i) => (
         <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       ))}
-      {source && <SourceDetailCategoryNav sourceCategory={source.category} />}
       <div className="flex-1 overflow-x-clip">
         <SourceDetail sourceId={sourceId} initialSource={source} />
       </div>

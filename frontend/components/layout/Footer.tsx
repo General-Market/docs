@@ -17,7 +17,13 @@ export function Footer() {
             <p className="mt-2 text-white/40 leading-relaxed text-label">
               {t('brand.description')}
             </p>
-            <div className="flex gap-3 mt-4">
+            <a
+              href="mailto:contact@indexmaker.global"
+              className="block mt-3 text-white/40 hover:text-white transition-colors text-label"
+            >
+              contact@indexmaker.global
+            </a>
+            <div className="flex gap-3 mt-3">
               <a
                 href="https://discord.gg/xsfgzwR6"
                 target="_blank"

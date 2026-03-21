@@ -49,18 +49,16 @@ export interface BitmapEditor {
 }
 
 const STORAGE_KEY = 'gm-vision-bitmap-draft'
-const STORAGE_MAX_AGE_MS = 30 * 60 * 1000 // 30 minutes
 
 function loadDraft(): Record<string, CellState> {
   if (typeof window === 'undefined') return {}
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return {}
-    const { data, ts } = JSON.parse(raw)
-    if (Date.now() - ts > STORAGE_MAX_AGE_MS) {
-      localStorage.removeItem(STORAGE_KEY)
-      return {}
-    }
+    const parsed = JSON.parse(raw)
+    // Support both old { data, ts } shape and new { data } shape
+    const data = parsed.data ?? parsed
+    if (typeof data !== 'object' || data === null) return {}
     return data as Record<string, CellState>
   } catch {
     return {}
@@ -78,7 +76,7 @@ function saveDraft(state: Record<string, CellState>) {
     if (Object.keys(filtered).length === 0) {
       localStorage.removeItem(STORAGE_KEY)
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: filtered, ts: Date.now() }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: filtered }))
     }
   } catch { /* quota exceeded */ }
 }

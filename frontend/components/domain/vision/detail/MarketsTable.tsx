@@ -8,8 +8,6 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
-import { DATA_NODE_URL } from '@/lib/config'
-import { ConsensusPopup } from './ConsensusPopup'
 import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
 import {
   LineChart,
@@ -352,24 +350,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
   // Fetch tick history for consensus arrows
   const { data: tickHistory } = useBatchHistory(activeBatch?.id ?? null)
 
-  // Per-market consensus: last N tick outcomes (up/down per market)
-  const consensusMap = useMemo(() => {
-    const map = new Map<string, ('UP' | 'DN')[]>()
-    if (!tickHistory || tickHistory.length === 0) return map
-    // tickHistory is sorted DESC (newest first), take last 5
-    const recentTicks = tickHistory.slice(0, 5)
-    for (const tick of recentTicks) {
-      for (const mo of tick.marketOutcomes ?? []) {
-        const arr = map.get(mo.marketId) ?? []
-        arr.push(mo.wentUp ? 'UP' : 'DN')
-        map.set(mo.marketId, arr)
-      }
-    }
-    return map
-  }, [tickHistory])
-
   const [search, setSearch] = useState('')
-  const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
 
   // Apply search filter
@@ -427,12 +408,11 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
-        <div className="grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+        <div className="grid grid-cols-[1fr_80px_100px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>Name</div>
           <div className="text-center">Type</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
           <div className="text-right">1d</div>
-          <div className="text-center">Consensus</div>
           <div className="text-center">Bet</div>
         </div>
 
@@ -458,7 +438,6 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
             const betState = getBetState(market.assetId)
             const isExpanded = expandedAssetId === market.assetId
             const resInfo = resolutionMap.get(market.assetId)
-            const consensus = consensusMap.get(market.assetId) ?? []
 
             // Momentum bar — 24h change as subtle colored background behind price
             const changePctNum = parseFloat(market.changePct ?? '0')
@@ -472,7 +451,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
             return (
               <div key={market.assetId} data-row className={isExpanded ? '' : 'cv-row'} style={{ '--row-i': idx } as React.CSSProperties}>
                 <SpringRow
-                  className={`grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
+                  className={`grid grid-cols-[1fr_80px_100px_80px_100px] items-center px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -519,43 +498,6 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                   {/* 1d change */}
                   <div className={`text-right font-mono tabular-nums font-semibold ${change1d.color}`}>
                     {change1d.text}
-                  </div>
-
-
-                  {/* Consensus — last N tick outcomes as colored arrow squares */}
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setConsensusOpen(
-                          consensusOpen === market.assetId ? null : market.assetId
-                        )
-                      }}
-                      className="flex items-center justify-center gap-0.5 w-full cursor-pointer rounded py-0.5 hover:bg-surface/50 transition-colors"
-                    >
-                      {consensus.length === 0 ? (
-                        <span className="text-[9px] text-text-muted">&mdash;</span>
-                      ) : (
-                        consensus.map((dir, idx) => (
-                          <span
-                            key={idx}
-                            className={`inline-flex items-center justify-center w-4 h-4 rounded-sm text-[8px] font-bold ${
-                              dir === 'UP'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}
-                          >
-                            {dir === 'UP' ? '↑' : '↓'}
-                          </span>
-                        ))
-                      )}
-                    </button>
-                    {consensusOpen === market.assetId && (
-                      <ConsensusPopup
-                        marketId={market.assetId}
-                        onClose={() => setConsensusOpen(null)}
-                      />
-                    )}
                   </div>
 
                   {/* Bet UP/DN */}

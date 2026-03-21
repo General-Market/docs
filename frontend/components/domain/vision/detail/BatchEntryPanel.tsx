@@ -184,7 +184,10 @@ export default function BatchEntryPanel({
     resetDeposit()
   }, [depositStep, refetchPosition, resetDeposit])
 
-  // -- Clear "bets submitted" message when tick advances --
+  // -- When tick advances, clear the "just submitted" flag --
+  // The oracle persists bitmaps across ticks (flip() keeps active entries),
+  // so the player's predictions remain active even without re-submitting.
+  // The UI uses hasPredictions (from bitmapEditor state) to show "carry forward".
   useEffect(() => {
     if (betsSubmittedTick !== null && activeBatch && activeBatch.currentTick > betsSubmittedTick) {
       setBetsSubmittedTick(null)
@@ -272,17 +275,102 @@ export default function BatchEntryPanel({
 
   const displayError = joinError || depositError || submitError
 
+  // -- Tick history summary --
+  const tickSummary = useMemo(() => {
+    if (batchTicks.length === 0) return null
+    const wins = batchTicks.filter(t => t.pnl > 0).length
+    const losses = batchTicks.filter(t => t.pnl < 0).length
+    const flats = batchTicks.filter(t => t.pnl === 0).length
+    const totalPnl = batchTicks.reduce((sum, t) => sum + t.pnl, 0)
+    return { wins, losses, flats, total: batchTicks.length, totalPnl }
+  }, [batchTicks])
+
   return (
     <div>
+      {/* ── Active Position Banner (top of panel, unmistakable) ── */}
+      {isJoined && position && (() => {
+        const balance = position.balance
+        const deposited = position.totalDeposited
+        const claimed = position.totalClaimed
+        const pnl = balance - deposited + claimed
+        const pnlPercent = deposited > 0n
+          ? Number((pnl * 10000n) / deposited) / 100
+          : 0
+        const balanceNum = parseFloat(formatUnits(balance, VISION_USDC_DECIMALS))
+        const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
+        const stakeNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
+        const isUp = pnl > 0n
+        const isDown = pnl < 0n
+        return (
+          <div className="border-2 border-emerald-400 bg-emerald-50 px-4 py-3 mb-1">
+            {/* Status badge */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-[0.06em]">
+                  In Batch #{activeBatch?.id}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-600">
+                {stakeNum.toFixed(2)} USDC/tick
+              </span>
+            </div>
+            {/* Balance + PnL — large, at a glance */}
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Balance</div>
+                <div className="text-[22px] font-black font-mono text-neutral-900 tabular-nums leading-tight">
+                  {balanceNum.toFixed(2)}
+                  <span className="text-[11px] font-medium text-neutral-400 ml-1">USDC</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">PnL</div>
+                <div className={`text-[18px] font-black font-mono tabular-nums leading-tight ${isUp ? 'text-color-up' : isDown ? 'text-color-down' : 'text-neutral-500'}`}>
+                  {isUp ? '+' : ''}{pnlNum.toFixed(2)}
+                  <span className="text-[10px] ml-0.5">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
+                </div>
+              </div>
+            </div>
+            {/* Win/Loss summary bar */}
+            {tickSummary && (
+              <div className="mt-2 pt-2 border-t border-emerald-200">
+                <div className="flex items-center justify-between text-[10px] font-mono tabular-nums">
+                  <span className="text-color-up font-bold">{tickSummary.wins}W</span>
+                  <span className="text-color-down font-bold">{tickSummary.losses}L</span>
+                  {tickSummary.flats > 0 && <span className="text-neutral-400 font-bold">{tickSummary.flats}F</span>}
+                  <span className="text-neutral-400">{tickSummary.total} ticks</span>
+                  <span className={`font-bold ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                    {tickSummary.totalPnl >= 0 ? '+' : ''}{tickSummary.totalPnl.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
+      {/* ── Not Joined Banner ── */}
+      {isConnected && !isJoined && activeBatch && (
+        <div className="border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-neutral-300" />
+            <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-[0.06em]">
+              Not in batch #{activeBatch.id}
+            </span>
+          </div>
+          <p className="text-[10px] text-neutral-400 mt-1">Set predictions and enter below to play.</p>
+        </div>
+      )}
+
       <div className="border border-neutral-200 bg-white px-4 py-3">
         {/* Header + Timer — single compact row */}
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold text-neutral-900">Set predictions for next tick</h2>
-              {activeBatch && (
-                <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
-              )}
+              <h2 className="text-sm font-semibold text-neutral-900">
+                {isJoined ? 'Update predictions' : 'Set predictions for next tick'}
+              </h2>
             </div>
             <p className="text-[10px] text-text-muted">
               {activeBatch ? `Tick ${activeBatch.currentTick}` : 'Waiting for batch...'}
@@ -322,9 +410,15 @@ export default function BatchEntryPanel({
             <p className="text-[11px] font-semibold text-emerald-700">Your bets are set for the next tick</p>
           </div>
         )}
+        {isJoined && betsSubmittedTick === null && hasPredictions && (
+          <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2">
+            <p className="text-[11px] font-semibold text-sky-700">Bets carry forward from previous tick</p>
+            <p className="text-[10px] text-sky-600 mt-0.5">Change predictions below, or deposit more to continue with current bets.</p>
+          </div>
+        )}
         {isJoined && betsSubmittedTick === null && !hasPredictions && (
-          <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
-            <p className="text-[11px] text-neutral-500">No bets set — sitting out this tick</p>
+          <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="text-[11px] font-semibold text-amber-700">Sitting out this tick — no bets set</p>
           </div>
         )}
 
@@ -381,94 +475,6 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Active position — balance, PnL, withdraw */}
-        {isJoined && position && (() => {
-          const balance = position.balance
-          const deposited = position.totalDeposited
-          const claimed = position.totalClaimed
-          const pnl = balance - deposited + claimed
-          const pnlPercent = deposited > 0n
-            ? Number((pnl * 10000n) / deposited) / 100
-            : 0
-          const balanceNum = parseFloat(formatUnits(balance, VISION_USDC_DECIMALS))
-          const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
-          const isUp = pnl > 0n
-          const isDown = pnl < 0n
-          return (
-            <div className="mb-3 border border-neutral-200 bg-neutral-50 px-3 py-2.5">
-              {/* Balance row */}
-              <div className="flex items-baseline justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Position</span>
-                <span className="text-[15px] font-bold font-mono text-neutral-900 tabular-nums">
-                  {balanceNum.toFixed(2)} <span className="text-[10px] font-medium text-neutral-400">USDC</span>
-                </span>
-              </div>
-              {/* PnL row */}
-              <div className="flex items-baseline justify-between mt-1">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">PnL</span>
-                <span className={`text-[13px] font-bold font-mono tabular-nums ${isUp ? 'text-color-up' : isDown ? 'text-color-down' : 'text-neutral-500'}`}>
-                  {isUp ? '+' : ''}{pnlNum.toFixed(2)} <span className="text-[10px]">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
-                </span>
-              </div>
-              {/* Tick history */}
-              {batchTicks.length > 0 && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowTickHistory(!showTickHistory)}
-                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400 hover:text-neutral-600 transition-colors"
-                  >
-                    <span className={`inline-block transition-transform ${showTickHistory ? 'rotate-90' : ''}`}>&#9654;</span>
-                    {batchTicks.length} ticks
-                  </button>
-                  {showTickHistory && (() => {
-                    const stakePerTickNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
-                    const lastClaimed = Number(position.lastClaimedTick)
-                    // Show most recent first
-                    const sorted = [...batchTicks].sort((a, b) => b.tickId - a.tickId)
-                    return (
-                      <div className="mt-1.5 max-h-[200px] overflow-y-auto">
-                        {/* Header */}
-                        <div className="flex items-center text-[9px] font-semibold uppercase tracking-[0.06em] text-neutral-300 mb-0.5 px-1">
-                          <span className="w-[40px]">Tick</span>
-                          <span className="w-[60px] text-right">Staked</span>
-                          <span className="flex-1 text-right">PnL</span>
-                          <span className="w-[52px] text-right">Status</span>
-                        </div>
-                        {sorted.map((tick) => {
-                          const isClaimed = tick.tickId <= lastClaimed
-                          const pnlSign = tick.pnl >= 0 ? '+' : ''
-                          return (
-                            <div
-                              key={tick.tickId}
-                              className="flex items-center text-[10px] font-mono tabular-nums px-1 py-[2px] border-b border-neutral-100 last:border-b-0"
-                            >
-                              <span className="w-[40px] text-neutral-500">#{tick.tickId}</span>
-                              <span className="w-[60px] text-right text-neutral-500">{stakePerTickNum.toFixed(2)}</span>
-                              <span className={`flex-1 text-right font-semibold ${tick.won ? 'text-color-up' : 'text-color-down'}`}>
-                                {pnlSign}{tick.pnl.toFixed(2)}
-                              </span>
-                              <span className={`w-[52px] text-right text-[9px] font-semibold ${
-                                tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'
-                              }`}>
-                                {tick.pnl > 0 ? 'Won' : tick.pnl < 0 ? 'Lost' : 'Flat'}
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-              {/* Settlement is automatic — no withdraw needed */}
-              <p className="mt-2 text-[10px] text-neutral-400 text-center">
-                Settlement is automatic. Payout credited to your Vision balance.
-              </p>
-            </div>
-          )
-        })()}
-
         {/* Error display — with dismiss to reset state for retry */}
         {displayError && (
           <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
@@ -521,6 +527,69 @@ export default function BatchEntryPanel({
           marketIds={marketIds}
         />
       </div>
+
+      {/* ── Tick History (separate section, always visible when joined) ── */}
+      {isJoined && position && batchTicks.length > 0 && (() => {
+        const stakePerTickNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
+        const sorted = [...batchTicks].sort((a, b) => b.tickId - a.tickId)
+        const visibleTicks = showTickHistory ? sorted : sorted.slice(0, 5)
+        return (
+          <div className="mt-1 border border-neutral-200 bg-white px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-bold text-neutral-700 uppercase tracking-[0.06em]">
+                Tick History
+              </h3>
+              {tickSummary && (
+                <span className={`text-[11px] font-bold font-mono tabular-nums ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                  {tickSummary.totalPnl >= 0 ? '+' : ''}{tickSummary.totalPnl.toFixed(2)} USDC
+                </span>
+              )}
+            </div>
+            {/* Column header */}
+            <div className="flex items-center text-[9px] font-semibold uppercase tracking-[0.06em] text-neutral-300 mb-0.5 px-1">
+              <span className="w-[40px]">Tick</span>
+              <span className="w-[50px] text-right">Staked</span>
+              <span className="flex-1 text-right">PnL</span>
+              <span className="w-[48px] text-right">Result</span>
+            </div>
+            <div className={showTickHistory ? 'max-h-[300px] overflow-y-auto' : ''}>
+              {visibleTicks.map((tick) => {
+                const pnlSign = tick.pnl >= 0 ? '+' : ''
+                return (
+                  <div
+                    key={tick.tickId}
+                    className="flex items-center text-[10px] font-mono tabular-nums px-1 py-[3px] border-b border-neutral-100 last:border-b-0"
+                  >
+                    <span className="w-[40px] text-neutral-500">#{tick.tickId}</span>
+                    <span className="w-[50px] text-right text-neutral-400">{stakePerTickNum.toFixed(2)}</span>
+                    <span className={`flex-1 text-right font-semibold ${tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'}`}>
+                      {pnlSign}{tick.pnl.toFixed(2)}
+                    </span>
+                    <span className={`w-[48px] text-right text-[9px] font-bold ${
+                      tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'
+                    }`}>
+                      {tick.pnl > 0 ? 'Won' : tick.pnl < 0 ? 'Lost' : 'Flat'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            {sorted.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowTickHistory(!showTickHistory)}
+                className="mt-1.5 w-full text-center text-[10px] font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
+              >
+                {showTickHistory ? 'Show less' : `Show all ${sorted.length} ticks`}
+              </button>
+            )}
+            <p className="mt-2 text-[10px] text-neutral-400 text-center">
+              Settlement is automatic. Payout credited to your Vision balance.
+            </p>
+          </div>
+        )
+      })()}
+
       {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
     </div>
   )
