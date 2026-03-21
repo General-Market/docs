@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { JetBrains_Mono } from "next/font/google";
-import { getLocale } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { ClientProviders } from "./client-providers";
 import "./globals.css";
 
@@ -47,15 +48,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
+  const messages = await getMessages();
   return (
     <html lang={locale} className={`${GeistSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://us.i.posthog.com" />
       </head>
       <body className="bg-page text-text-primary font-sans antialiased">
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <ClientProviders>
+            {children}
+          </ClientProviders>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
