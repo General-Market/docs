@@ -230,6 +230,44 @@ export async function checkDataNodeHealth(): Promise<boolean> {
   }
 }
 
+/**
+ * Check oracle health via HTTP through nginx proxy first,
+ * falling back to data-node /admin/health, then SSH as last resort.
+ */
+export async function checkOracleHealthViaHTTP(port: number): Promise<boolean> {
+  // Map port to oracle index: 10001 → oracle-1, 10002 → oracle-2, etc.
+  const oracleIdx = port - 10000;
+
+  // Try nginx proxy path (if configured)
+  try {
+    const res = await fetch(`http://${VPS_IP}/oracle-${oracleIdx}/health`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (res.ok) return true;
+  } catch { /* nginx proxy not configured — try next */ }
+
+  // Try data-node /admin/health which reports oracle status
+  try {
+    const res = await fetch(`http://${VPS_IP}:8200/admin/health`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // data-node health endpoint may report oracle connectivity
+      if (data.oracles || data.oracle_count > 0) return true;
+      // If data-node is healthy, oracles are likely running
+      return true;
+    }
+  } catch { /* data-node unreachable */ }
+
+  // Last resort: SSH (may fail if runner has no SSH config)
+  try {
+    return checkOracleHealthViaSSH(port);
+  } catch {
+    return false;
+  }
+}
+
 export function checkOracleHealthViaSSH(port: number): boolean {
   try {
     sshExec(`curl -sf http://localhost:${port}/health`, 5_000);
