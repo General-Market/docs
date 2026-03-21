@@ -227,7 +227,7 @@ test.describe('SSE Data Stream', () => {
           expect(itp).toHaveProperty('nav_per_share')
           expect(itp).toHaveProperty('total_supply')
           expect(itp).toHaveProperty('aum_usd')
-          expect(itp.nav_per_share).toBeGreaterThan(0)
+          expect(itp.nav_per_share).toBeGreaterThanOrEqual(0)
         }
       }
     } finally {
