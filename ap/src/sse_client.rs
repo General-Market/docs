@@ -213,16 +213,16 @@ impl SseChainEventClient {
 
     /// Parse an "order-submitted" event from the log data.
     ///
-    /// Event: OrderSubmitted(uint256 orderId, address user, bytes32 itpId, bytes32 pairId,
-    ///         uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
+    /// Event: OrderSubmitted(uint256 indexed orderId, address indexed user, bytes32 indexed itpId,
+    ///         bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
     ///
-    /// The data-node log format includes topics and data hex strings.
+    /// 3 indexed fields → topics[1..3], 6 non-indexed fields → 192 bytes data.
     fn parse_order_submitted(&self, envelope: &ChainEventEnvelope) -> Option<ChainEvent> {
         let log_data = &envelope.data;
 
         let topics = log_data.get("topics")?.as_array()?;
-        if topics.len() < 3 {
-            warn!("order-submitted: expected >= 3 topics, got {}", topics.len());
+        if topics.len() < 4 {
+            warn!("order-submitted: expected >= 4 topics, got {}", topics.len());
             return None;
         }
 
@@ -230,21 +230,25 @@ impl SseChainEventClient {
         let order_id = parse_topic_u64(topics.get(1)?)?;
         // topic[2] = user (indexed, address in 32-byte topic)
         let user = parse_topic_address(topics.get(2)?)?;
+        // topic[3] = itpId (indexed, bytes32)
+        let itp_topic = topics.get(3)?.as_str()?;
+        let itp_hex = itp_topic.strip_prefix("0x").unwrap_or(itp_topic);
+        let itp_bytes = hex::decode(itp_hex).ok()?;
+        let mut itp_id = [0u8; 32];
+        if itp_bytes.len() >= 32 {
+            itp_id.copy_from_slice(&itp_bytes[..32]);
+        }
 
-        // data: itpId(32) + pairId(32) + side(32) + amount(32) + limitPrice(32) + slippageTier(32) + deadline(32)
+        // data: pairId(32) + side(32) + amount(32) + limitPrice(32) + slippageTier(32) + deadline(32) = 192 bytes
         let data_hex = log_data.get("data")?.as_str()?;
         let data_bytes = hex::decode(data_hex.strip_prefix("0x").unwrap_or(data_hex)).ok()?;
-        if data_bytes.len() < 224 {
-            // 7 * 32
+        if data_bytes.len() < 192 {
             warn!(
-                "order-submitted: data too short ({}), expected >= 224",
+                "order-submitted: data too short ({}), expected >= 192",
                 data_bytes.len()
             );
             return None;
         }
-
-        let mut itp_id = [0u8; 32];
-        itp_id.copy_from_slice(&data_bytes[0..32]);
 
         Some(ChainEvent::OrderSubmitted {
             order_id,
