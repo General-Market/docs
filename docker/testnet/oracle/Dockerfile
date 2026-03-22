@@ -6,6 +6,9 @@ COPY Cargo.toml Cargo.lock ./
 COPY oracle/ oracle/
 COPY common/ common/
 COPY ap/ ap/
+COPY curator/ curator/
+COPY data-node/ data-node/
+COPY itp-bot/ itp-bot/
 RUN cargo build --release -p oracle
 
 # Stage 2: Runtime
