@@ -1,15 +1,11 @@
 # Vision Swarm Bot — shared config (keys via BOT_PRIVATE_KEY env)
 strategy = "random"
-deposit = 100
-stake = 0.1
+deposit = 1
+stake = 1
 max_batches = 50
 max_exposure = 5000
 poll_interval = 30
-
-auto_claim = true
-auto_withdraw = false
-claim_above = 5
-withdraw_below = 0
+round_based = true
 
 rpc_url = "http://142.132.164.24/"
 vision_api = "http://localhost:10001"
