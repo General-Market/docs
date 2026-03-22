@@ -30,6 +30,7 @@ tower-http = { version = "0.5", features = ["cors"] }
 
 # Bitget API client dependencies (Story 5.1)
 reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
+reqwest-eventsource = "0.6"
 hmac = "0.12"
 sha2 = "0.10"
 base64 = "0.21"
