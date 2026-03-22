@@ -5,19 +5,15 @@ import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { BatchCard } from './BatchCard'
-import { ExpandedBatch } from './ExpandedBatch'
 import { CreateBatchModal } from './CreateBatchModal'
-import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { SpringExpand } from '@/components/ui/spring'
 
 export function VisionPage() {
   const t = useTranslations('vision')
   const { capture } = usePostHogTracker()
   const { data: batches, isLoading } = useBatches()
-  const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
@@ -47,11 +43,6 @@ export function VisionPage() {
               </button>
             </div>
 
-            {/* My Positions (visible when wallet connected + has positions) */}
-            <ErrorBoundary fallback={null}>
-              <MyPositions onSelectBatch={(id) => setExpandedBatchId(id)} />
-            </ErrorBoundary>
-
             {/* Cards grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -60,32 +51,13 @@ export function VisionPage() {
                 ))}
               </div>
             ) : batches && batches.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
-                  {batches.map((batch: BatchInfo) => (
-                    <div key={batch.id} className="animate-fade-up">
-                      <BatchCard
-                        batch={batch}
-                        onClick={() => setExpandedBatchId(
-                          expandedBatchId === batch.id ? null : batch.id
-                        )}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <SpringExpand isOpen={expandedBatchId !== null && !!batches.find(b => b.id === expandedBatchId)}>
-                  <div className="mt-4 p-4 bg-surface border border-border-medium rounded-card">
-                    <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">{t('vision_page.batch_unavailable')}</div>}>
-                      {expandedBatchId !== null && batches.find(b => b.id === expandedBatchId) && (
-                        <ExpandedBatch
-                          batchId={expandedBatchId}
-                          batch={batches.find(b => b.id === expandedBatchId)!}
-                        />
-                      )}
-                    </ErrorBoundary>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
+                {batches.map((batch: BatchInfo) => (
+                  <div key={batch.id} className="animate-fade-up">
+                    <BatchCard batch={batch} onClick={() => {}} />
                   </div>
-                </SpringExpand>
-              </>
+                ))}
+              </div>
             ) : (
               <EmptyState
                 title={t('empty.no_active_batches')}

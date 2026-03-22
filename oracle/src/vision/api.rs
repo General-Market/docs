@@ -90,17 +90,9 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
     axum::Router::new()
         .route("/vision/batches", get(list_batches))
         .route("/vision/batch/:id/state", get(batch_state))
-        .route("/vision/batch/:id/history", get(batch_history))
-        .route("/vision/backtest", post(backtest))
         .route("/vision/bitmap", post(submit_bitmap))
-        .route("/vision/balance/:batch_id/:player", get(get_balance))
-        .route("/vision/reveal/:batch_id/:tick_id", get(get_reveals))
         .route("/vision/markets", get(markets))
         .route("/vision/leaderboard", get(vision_leaderboard))
-        // Dual-balance endpoints (Vision First Deposit)
-        .route("/vision/user/:address/balance", get(get_user_balance))
-        .route("/vision/deposit/:order_id/status", get(get_deposit_status))
-        .route("/vision/withdraw/:withdraw_id/status", get(get_withdraw_status))
         .route("/vision/player/:address/profile", get(player_profile))
         // Round-based aliases for E2E test compatibility
         .route("/vision/rounds/active", get(rounds_active))
@@ -282,12 +274,12 @@ async fn list_batches(
                 {
                     players
                         .iter()
-                        .fold(U256::zero(), |acc, p| acc + p.balance)
+                        .fold(U256::zero(), |acc, p| acc + p.deposit)
                 } else {
                     U256::zero()
                 };
 
-                let current_tick = state.scheduler.next_tick_for_batch(batch_id).await;
+                let current_tick = 0;
 
                 let config_hash_str = row.config_hash.clone().unwrap_or_default();
                 let market_count = market_counts
@@ -362,7 +354,7 @@ async fn batch_state(
 
     match batch_data {
         Some((batch, players)) => {
-            let next_tick = state.scheduler.next_tick_for_batch(id).await;
+            let next_tick = 0;
 
             let mut player_infos = Vec::with_capacity(players.len());
             for p in &players {
@@ -370,9 +362,9 @@ async fn batch_state(
                     || state.bitmap_store.get_active(id, p.player).await.is_some();
                 player_infos.push(PlayerInfo {
                     address: format!("{:?}", p.player),
-                    stake_per_tick: p.stake_per_tick.to_string(),
-                    balance: p.balance.to_string(),
-                    start_tick: p.start_tick,
+                    stake_per_tick: p.deposit.to_string(),
+                    balance: p.deposit.to_string(),
+                    start_tick: 0,
                     has_bitmap,
                 });
             }
@@ -694,7 +686,7 @@ async fn submit_bitmap(
     let batch_config_hash = state.scheduler.get_batch(req.batch_id).await
         .map(|b| b.config_hash)
         .unwrap_or_default();
-    let target_tick_id = state.scheduler.next_tick_for_batch(req.batch_id).await;
+    let target_tick_id = 0;
 
     // Store the bitmap in pending slot (verifies hash, persists to DB)
     match state
@@ -806,7 +798,7 @@ async fn get_balance(
         // Get stake_per_tick from in-memory state
         let stake = state.scheduler.get_batch_state(batch_id).await
             .and_then(|(_, players)| {
-                players.iter().find(|p| p.player == player).map(|p| p.stake_per_tick.to_string())
+                players.iter().find(|p| p.player == player).map(|p| p.deposit.to_string())
             })
             .unwrap_or_else(|| "0".to_string());
 
@@ -845,8 +837,8 @@ async fn get_balance(
                     let response = BalanceResponse {
                         batch_id,
                         player: player_hex,
-                        balance: pos.balance.to_string(),
-                        stake_per_tick: pos.stake_per_tick.to_string(),
+                        balance: pos.deposit.to_string(),
+                        stake_per_tick: pos.deposit.to_string(),
                         bls_sig: String::new(),
                         signer_bitmap: "0".to_string(),
                         tick_id: 0,
@@ -885,7 +877,7 @@ async fn get_reveals(
             // Tick N ends at: (created_at_tick + tick_id + 1) * tick_duration
             let tick_end =
                 (batch.created_at_tick + tick_id + 1) * batch.tick_duration;
-            let reveal_deadline = tick_end + state.config.reveal_window_secs;
+            let reveal_deadline = tick_end + 600;
 
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -1085,7 +1077,7 @@ async fn vision_leaderboard(
                 let entry = player_data
                     .entry(p.player)
                     .or_insert((0, 0, 0, 0, 0, 0, 0, 0, 0));
-                let balance = p.balance.as_u128();
+                let balance = p.deposit.as_u128();
                 entry.0 += balance;
                 let initial = p.initial_deposit.as_u128();
                 entry.1 += initial;
@@ -1559,7 +1551,7 @@ async fn get_user_balance(
         }
     };
 
-    let (real_balance, virtual_balance) = state.scheduler.get_user_balance(user).await;
+    let (real_balance, virtual_balance) = (ethers::types::U256::zero(), ethers::types::U256::zero());
     let total = real_balance.saturating_add(virtual_balance);
 
     (
@@ -1974,7 +1966,7 @@ async fn player_profile(
     let mut profile_batches: Vec<ProfileBatch> = Vec::new();
 
     for pos in &positions {
-        let balance_wei: i128 = pos.balance.parse().unwrap_or(0);
+        let balance_wei: i128 = pos.deposit.parse().unwrap_or(0);
         let deposited_wei: i128 = pos.total_deposited.parse().unwrap_or(0);
         let pnl_wei = balance_wei - deposited_wei;
 
@@ -2213,7 +2205,7 @@ async fn rounds_active(
             for row in rows {
                 let batch_id = row.id as u64;
                 let player_count = state.scheduler.player_count(batch_id).await;
-                let next_tick = state.scheduler.next_tick_for_batch(batch_id).await;
+                let next_tick = 0;
 
                 // Determine status from scheduler state
                 let status = if player_count == 0 {

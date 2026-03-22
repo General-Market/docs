@@ -18,10 +18,8 @@ import {
   waitForRoundSettled,
   getBatchConfigHash,
   getPosition,
-  getVisionRealBalance,
   getL3UsdcBalance,
   getVisionUsdcAddress,
-  depositToVisionBalance,
   impersonateAccount,
   ensureUsdcBalance,
   ensureBatchExists,
@@ -46,8 +44,9 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
       return
     }
 
-    // 0.1. Deposit USDC to Vision balance so we always have something to withdraw
-    await depositToVisionBalance(PLAYER1, 50n * 10n ** 18n)
+    // 0.1. Ensure wallet has USDC (round-based: no Vision balance pool)
+    const visionUsdc = await getVisionUsdcAddress()
+    await ensureUsdcBalance(PLAYER1, 50n * 10n ** 18n, visionUsdc)
 
     // 1. Join a round so we can verify settlement credits realBalance
     const rounds = await getActiveRounds()
@@ -109,11 +108,11 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     }
 
     // 2. Wait for settlement (credits realBalance)
-    const realBalBefore = await getVisionRealBalance(PLAYER1)
+    const realBalBefore = await getL3UsdcBalance(PLAYER1)
     if (batchId !== null) {
       const settled = await waitForRoundSettled(batchId, CONSENSUS_TIMEOUT)
       if (settled) {
-        const realBalAfter = await getVisionRealBalance(PLAYER1)
+        const realBalAfter = await getL3UsdcBalance(PLAYER1)
         console.log(`realBalance before=${realBalBefore}, after=${realBalAfter}`)
         // Settlement should credit something (deposit return + PnL)
         expect(realBalAfter).toBeGreaterThanOrEqual(realBalBefore)
@@ -127,7 +126,7 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     const l3UsdcBefore = await getL3UsdcBalance(PLAYER1, visionUsdc)
 
     // 4. Check realBalance is withdrawable
-    const realBalance = await getVisionRealBalance(PLAYER1)
+    const realBalance = await getL3UsdcBalance(PLAYER1)
     if (realBalance === 0n) {
       console.log('No real balance to withdraw — test complete')
       return

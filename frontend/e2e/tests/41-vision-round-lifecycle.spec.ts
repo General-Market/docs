@@ -17,7 +17,8 @@ import {
   PLAYER1, PLAYER2,
   getActiveRounds, joinRoundDirect, waitForRoundSettled,
   getRoundResults, getRoundBitmaps,
-  getVisionRealBalance, getBatchConfigHash, getPosition,
+  getL3UsdcBalance, getBatchConfigHash, getPosition,
+  getVisionUsdcAddress,
   impersonateAccount, ensureUsdcBalance,
   randomBets, oppositeBets,
 } from '../helpers/vision-api'
@@ -159,17 +160,18 @@ test.describe.serial('Vision Round Lifecycle', () => {
     }
   })
 
-  test('41f: settled funds credited to Vision balance', async () => {
+  test('41f: settled funds sent to player wallets', async () => {
     if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    const visionUsdc = await getVisionUsdcAddress()
     const [p1Balance, p2Balance] = await Promise.all([
-      getVisionRealBalance(PLAYER1),
-      getVisionRealBalance(PLAYER2),
+      getL3UsdcBalance(PLAYER1, visionUsdc),
+      getL3UsdcBalance(PLAYER2, visionUsdc),
     ])
 
-    // After settlement, both players should have non-negative realBalance
+    // After settlement, both players should have USDC in wallet
     expect(p1Balance).toBeGreaterThanOrEqual(0n)
     expect(p2Balance).toBeGreaterThanOrEqual(0n)
-    console.log(`Post-settlement realBalance: P1=${p1Balance}, P2=${p2Balance}`)
+    console.log(`Post-settlement wallet USDC: P1=${p1Balance}, P2=${p2Balance}`)
   })
 
   test('41g: new round auto-created after settlement', async () => {

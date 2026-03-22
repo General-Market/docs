@@ -137,7 +137,7 @@ test("Stage 3: bots join batches", async () => {
     const pos = await getPosition(batchId, SWARM_ADDRESSES[0]);
     if (pos.bitmapHash !== ZERO_HASH) {
       console.log(
-        `  Bot 0 in batch ${batchId}: stake=${pos.stakePerTick}, balance=${pos.balance}`
+        `  Bot 0 in batch ${batchId}: deposit=${pos.deposit}`
       );
     }
   }
@@ -191,7 +191,7 @@ test("Stage 4: tick resolution via BLS consensus", async () => {
     const changed = results.filter(
       (r) => r.status === "fulfilled" &&
         r.value.bitmapHash !== ZERO_HASH &&
-        r.value.balance !== r.value.totalDeposited
+        r.value.deposit !== r.value.totalDeposited
     ).length;
     console.log(`  Batch ${batchId}: ${changed}/${SWARM_COUNT} balances changed`);
     expect(changed).toBeGreaterThan(0);

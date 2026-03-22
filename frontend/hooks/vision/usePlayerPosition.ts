@@ -6,12 +6,9 @@ import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 
 export interface PlayerPosition {
-  balance: bigint
-  stakePerTick: bigint
+  deposit: bigint
   totalDeposited: bigint
   totalClaimed: bigint
-  lastClaimedTick: bigint
-  startTick: bigint
   joinTimestamp: bigint
   bitmapHash: string
 }
@@ -35,25 +32,19 @@ export function usePlayerPosition(batchId: number | undefined) {
 
   const pos = data as {
     bitmapHash: string
-    stakePerTick: bigint
-    startTick: bigint
-    balance: bigint
-    lastClaimedTick: bigint
+    deposit: bigint
     joinTimestamp: bigint
     totalDeposited: bigint
     totalClaimed: bigint
   } | undefined
 
-  const isJoined = pos !== undefined && pos.stakePerTick > 0n
+  const isJoined = pos !== undefined && pos.deposit > 0n
 
   return {
     position: isJoined ? {
-      balance: pos.balance,
-      stakePerTick: pos.stakePerTick,
+      deposit: pos.deposit,
       totalDeposited: pos.totalDeposited,
       totalClaimed: pos.totalClaimed,
-      lastClaimedTick: pos.lastClaimedTick,
-      startTick: pos.startTick,
       joinTimestamp: pos.joinTimestamp,
       bitmapHash: pos.bitmapHash,
     } : null,

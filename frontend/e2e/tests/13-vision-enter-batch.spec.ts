@@ -16,10 +16,11 @@ import { ensureWalletConnected } from '../helpers/selectors'
 import {
   PLAYER1,
   getPosition,
-  getVisionPlayerBalance,
-  depositToVisionBalance,
   ensureBatchExists,
   getBatches,
+  ensureUsdcBalance,
+  getVisionUsdcAddress,
+  impersonateAccount,
 } from '../helpers/vision-api'
 
 /**
@@ -58,11 +59,10 @@ test.describe('Vision Enter Batch (UI)', () => {
     // 0. Ensure Vision is deployed and has batches
     await ensureBatchExists()
 
-    // 0.5. Ensure test user has Vision balance (deposit if needed)
-    const currentBalance = await getVisionPlayerBalance(PLAYER1)
-    if (currentBalance < BigInt(10) * BigInt(10 ** 18)) {
-      await depositToVisionBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18))
-    }
+    // 0.5. Ensure test user has wallet USDC (round-based: no Vision balance pool)
+    const visionUsdc = await getVisionUsdcAddress()
+    await impersonateAccount(PLAYER1)
+    await ensureUsdcBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18), visionUsdc)
 
     // 1. Find a source with few markets to minimize DOM operations
     const target = await pickSmallSource()

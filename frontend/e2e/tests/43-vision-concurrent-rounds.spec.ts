@@ -18,8 +18,8 @@ import {
   waitForRoundSettled,
   getRoundResults,
   getPosition,
-  getVisionRealBalance,
-  getVisionPlayerBalance,
+  getL3UsdcBalance,
+  getVisionUsdcAddress,
   getBatchConfigHash,
   impersonateAccount,
   ensureUsdcBalance,
@@ -98,7 +98,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
       await ensureUsdcBalance(PLAYER1, DEPOSIT * 4n)
 
       // Snapshot balance before joining
-      balanceBefore = await getVisionPlayerBalance(PLAYER1)
+      balanceBefore = await getL3UsdcBalance(PLAYER1)
 
       const bets1 = randomBets(MARKET_COUNT)
       const bets2 = randomBets(MARKET_COUNT)
@@ -136,7 +136,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
 
   test('43d: total USDC deducted equals sum of both deposits', async () => {
     if (noRoundsAvailable) { console.log('No unjoined rounds — graceful pass'); return }
-    const balanceAfter = await getVisionPlayerBalance(PLAYER1)
+    const balanceAfter = await getL3UsdcBalance(PLAYER1)
 
     // The player's Vision balance should have decreased by at least deposit1 + deposit2.
     // fullJoinBatch deposits to Vision balance then joinBatch debits from it,
@@ -175,7 +175,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
 
   test('43f: settled round credits realBalance', async () => {
     if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
-    const realBalance = await getVisionRealBalance(PLAYER1)
+    const realBalance = await getL3UsdcBalance(PLAYER1)
     // After settlement the player should have non-negative realBalance
     // (payout credited regardless of win/loss — even losers get remainder)
     expect(realBalance).toBeGreaterThanOrEqual(0n)

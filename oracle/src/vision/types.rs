@@ -1,13 +1,13 @@
 //! Vision type definitions
 //!
-//! Core data structures for the Vision prediction market system.
+//! Core data structures for the Vision prediction market system (round-based).
 
 use ethers::types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 
 /// A batch of prediction markets created by a batch creator.
 ///
-/// New auto-batch system: config_hash points to off-chain config (markets, thresholds).
+/// Auto-batch system: config_hash points to off-chain config (markets, thresholds).
 /// On-chain stores only the hash. Full config fetched from data-node.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Batch {
@@ -35,7 +35,6 @@ pub struct Batch {
 }
 
 /// Per-market config from off-chain batch config.
-/// Replaces on-chain market_ids/resolution_types/custom_thresholds.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketConfig {
     pub asset_id: String,
@@ -52,26 +51,15 @@ pub struct MarketConfig {
 pub struct PlayerPosition {
     pub player: Address,
     pub bitmap_hash: H256,
-    pub stake_per_tick: U256,
-    pub start_tick: u64,
-    pub balance: U256,
+    /// The player's deposit for this round (formerly stake_per_tick).
+    pub deposit: U256,
+    /// Total amount deposited (for PnL tracking).
     pub initial_deposit: U256,
 }
 
-/// A bitmap stored off-chain, linking a player's predictions to their on-chain hash.
-#[derive(Debug, Clone)]
-pub struct StoredBitmap {
-    pub player: Address,
-    pub batch_id: u64,
-    pub bitmap: Vec<u8>,
-    pub hash: H256,
-    pub received_at: u64,
-}
-
-/// A bitmap in the two-slot (pending/active) store.
+/// A bitmap in the store.
 ///
-/// Carries config_hash and target_tick_id so that stale bitmaps can be
-/// identified and evicted when the batch config rotates mid-stream.
+/// Carries config_hash so stale bitmaps can be identified when config rotates.
 #[derive(Clone, Debug)]
 pub struct SlottedBitmap {
     pub player: Address,
@@ -80,12 +68,12 @@ pub struct SlottedBitmap {
     pub hash: H256,
     /// keccak256 of the batch config this bitmap was built against.
     pub config_hash: H256,
-    /// The tick for which this bitmap is intended.
+    /// Target tick ID (0 for round-based single-round bitmaps).
     pub target_tick_id: u64,
     pub received_at: u64,
 }
 
-/// The result of settling a single tick across all markets in a batch.
+/// The result of resolving all markets in a batch round.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TickResult {
     pub batch_id: u64,
@@ -95,7 +83,7 @@ pub struct TickResult {
     pub voided_players: Vec<Address>,
 }
 
-/// Balance change for a player after tick settlement.
+/// Balance change for a player after round settlement.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerBalance {
     pub player: Address,
@@ -104,24 +92,23 @@ pub struct PlayerBalance {
     pub delta: i128,
 }
 
-/// The result of a single market within a tick.
+/// The result of a single market within a round.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketResult {
     pub market_id: H256,
     /// Human-readable asset identifier (for settlement recording)
     pub asset_id: String,
     pub outcome: MarketOutcome,
-    /// Start price at tick open (f64 kept for logging/serialization)
+    /// Start price at round open (f64 kept for logging/serialization)
     pub start_price: f64,
-    /// End price at tick close (f64 kept for logging/serialization)
+    /// End price at round close (f64 kept for logging/serialization)
     pub end_price: f64,
     /// Percent change in basis points (integer, deterministic).
-    /// 100 bps = 1%, 30 bps = 0.3%, 300 bps = 3%.
     pub pct_change_bps: i64,
     pub player_results: Vec<PlayerMarketResult>,
 }
 
-/// Possible outcomes for a market at tick resolution.
+/// Possible outcomes for a market at resolution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MarketOutcome {
     Up,
@@ -132,7 +119,7 @@ pub enum MarketOutcome {
     AllLosers,
 }
 
-/// A player's result for a single market within a tick.
+/// A player's result for a single market within a round.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerMarketResult {
     pub player: Address,
@@ -148,119 +135,6 @@ pub struct PlayerMarketResult {
 pub enum Side {
     Up,
     Down,
-}
-
-// =============================================================================
-// Dual-balance deposit/withdraw types (Vision First Deposit)
-// =============================================================================
-
-/// Status of a cross-chain deposit order (Settlement → L3 Vision).
-///
-/// State machine: Pending → CreditedOnL3 → CompletedOnSettlement
-///                Pending → Refunded (on failure, only from Pending)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DepositStatus {
-    /// Deposit detected on Settlement, waiting for finality + L3 credit.
-    Pending,
-    /// creditBalance() confirmed on L3, waiting for completeVisionDeposit() on Settlement.
-    CreditedOnL3,
-    /// Full round-trip complete: L3 credited + Settlement marked done.
-    CompletedOnSettlement,
-    /// Deposit refunded on Settlement (only from Pending state).
-    Refunded,
-}
-
-impl DepositStatus {
-    /// Parse from database string representation.
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "pending" => Some(Self::Pending),
-            "credited_on_l3" => Some(Self::CreditedOnL3),
-            "completed" => Some(Self::CompletedOnSettlement),
-            "refunded" => Some(Self::Refunded),
-            _ => None,
-        }
-    }
-
-    /// Convert to database string representation.
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Pending => "pending",
-            Self::CreditedOnL3 => "credited_on_l3",
-            Self::CompletedOnSettlement => "completed",
-            Self::Refunded => "refunded",
-        }
-    }
-}
-
-impl std::fmt::Display for DepositStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-/// A pending cross-chain deposit order tracked by the oracle.
-///
-/// Persisted to `vision_deposit_orders` table for crash recovery.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PendingVisionDeposit {
-    /// Cross-chain order ID from SettlementBridgeCustody.
-    pub order_id: u64,
-    /// User address (depositor).
-    pub user: Address,
-    /// Amount in 18-decimal internal format (converted from 6-dec on Settlement).
-    pub amount: U256,
-    /// Unix timestamp when the deposit was detected on Settlement.
-    pub created_at: u64,
-    /// Current status in the deposit state machine.
-    pub status: DepositStatus,
-}
-
-/// Status of a cross-chain withdraw order (L3 Vision → Settlement).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum WithdrawStatus {
-    /// WithdrawToSettlementRequested detected on L3, waiting for Settlement completion.
-    Pending,
-    /// completeVisionWithdraw() confirmed on Settlement.
-    Completed,
-}
-
-impl WithdrawStatus {
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "pending" => Some(Self::Pending),
-            "completed" => Some(Self::Completed),
-            _ => None,
-        }
-    }
-
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Pending => "pending",
-            Self::Completed => "completed",
-        }
-    }
-}
-
-impl std::fmt::Display for WithdrawStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-/// A pending cross-chain withdraw order tracked by the oracle.
-///
-/// Persisted to `vision_withdraw_orders` table for crash recovery.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PendingVisionWithdraw {
-    /// Withdraw ID from Vision.sol's withdrawNonce.
-    pub withdraw_id: u64,
-    /// User address (withdrawer).
-    pub user: Address,
-    /// Amount in 18-decimal internal format.
-    pub amount: U256,
-    /// Current status.
-    pub status: WithdrawStatus,
 }
 
 // =============================================================================

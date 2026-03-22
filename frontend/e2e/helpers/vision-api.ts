@@ -217,19 +217,16 @@ const VISION_GET_BATCH_ABI = [{
       { name: 'creator', type: 'address' },
       { name: 'sourceId', type: 'bytes32' },
       { name: 'configHash', type: 'bytes32' },
-      { name: 'nextConfigHash', type: 'bytes32' },
       { name: 'tickDuration', type: 'uint256' },
       { name: 'lockOffset', type: 'uint256' },
-      { name: 'nextLockOffset', type: 'uint256' },
       { name: 'createdAtTick', type: 'uint256' },
-      { name: 'lastPromotionTick', type: 'uint256' },
       { name: 'paused', type: 'bool' },
     ],
   }],
 }] as const
 
 const VISION_JOIN_ABI = [{
-  name: 'joinBatch',
+  name: 'joinBatchDirect',
   type: 'function',
   stateMutability: 'nonpayable',
   inputs: [
@@ -256,10 +253,7 @@ const VISION_POSITION_ABI = [{
     components: [
       { name: 'bitmapHash', type: 'bytes32' },
       { name: 'configHash', type: 'bytes32' },
-      { name: 'stakePerTick', type: 'uint256' },
-      { name: 'startTick', type: 'uint256' },
-      { name: 'balance', type: 'uint256' },
-      { name: 'lastClaimedTick', type: 'uint256' },
+      { name: 'deposit', type: 'uint256' },
       { name: 'joinTimestamp', type: 'uint256' },
       { name: 'totalDeposited', type: 'uint256' },
       { name: 'totalClaimed', type: 'uint256' },
@@ -524,7 +518,7 @@ async function joinBatch(
 ): Promise<void> {
   const data = encodeFunctionData({
     abi: VISION_JOIN_ABI,
-    functionName: 'joinBatch',
+    functionName: 'joinBatchDirect',
     args: [BigInt(batchId), configHash, depositAmount, stakePerTick, bitmapHash],
   })
   await l3SendTx(from, getVisionAddress(), data)
@@ -533,10 +527,7 @@ async function joinBatch(
 export interface PlayerPosition {
   bitmapHash: string
   configHash: string
-  stakePerTick: bigint
-  startTick: bigint
-  balance: bigint
-  lastClaimedTick: bigint
+  deposit: bigint
   joinTimestamp: bigint
   totalDeposited: bigint
   totalClaimed: bigint
@@ -550,7 +541,7 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   })
   const result = await l3EthCall(getVisionAddress(), data)
 
-  // Decode: 9 words of 32 bytes each (configHash added between bitmapHash and stakePerTick)
+  // Decode: 6 words of 32 bytes each
   const hex = result.replace('0x', '')
   const words = []
   for (let i = 0; i < hex.length; i += 64) {
@@ -560,13 +551,10 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   return {
     bitmapHash: '0x' + words[0],
     configHash: '0x' + words[1],
-    stakePerTick: BigInt('0x' + words[2]),
-    startTick: BigInt('0x' + words[3]),
-    balance: BigInt('0x' + words[4]),
-    lastClaimedTick: BigInt('0x' + words[5]),
-    joinTimestamp: BigInt('0x' + words[6]),
-    totalDeposited: BigInt('0x' + words[7]),
-    totalClaimed: BigInt('0x' + words[8]),
+    deposit: BigInt('0x' + words[2]),
+    joinTimestamp: BigInt('0x' + words[3]),
+    totalDeposited: BigInt('0x' + words[4]),
+    totalClaimed: BigInt('0x' + words[5]),
   }
 }
 
@@ -719,25 +707,13 @@ export async function fullJoinBatch(
   const bmHash = hashBitmap(bitmap)
   const bmHex = bitmapToHex(bitmap)
 
-  // 2. Approve Vision's USDC and deposit to Vision balance (dual-balance architecture)
+  // 2. Approve USDC to Vision contract (joinBatchDirect uses safeTransferFrom)
   await approveVision(player, depositAmount)
-  const depositBalanceData = encodeFunctionData({
-    abi: [{
-      name: 'depositBalance',
-      type: 'function',
-      stateMutability: 'nonpayable',
-      inputs: [{ name: 'amount', type: 'uint256' }],
-      outputs: [],
-    }] as const,
-    functionName: 'depositBalance',
-    args: [depositAmount],
-  })
-  await l3SendTx(player, getVisionAddress(), depositBalanceData)
 
   // 3. Wait for tick lock window to pass (last lockOffset seconds of each tick are locked)
   await waitForUnlock(batchId)
 
-  // 4. Join batch on-chain (debits from Vision balance, requires configHash binding)
+  // 4. Join batch on-chain (transfers USDC from wallet via joinBatchDirect)
   await joinBatch(player, batchId, configHash, depositAmount, stakePerTick, bmHash)
 
   // 5. Submit bitmap to issuers
@@ -783,13 +759,12 @@ export async function getBatchesFromChain(): Promise<BatchInfo[]> {
       const words: string[] = []
       for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
       // ABI decode: struct with all fixed-size fields is returned inline (no offset pointer)
-      // Tuple: creator(0), sourceId(1), configHash(2), nextConfigHash(3),
-      //        tickDuration(4), lockOffset(5), nextLockOffset(6),
-      //        createdAtTick(7), lastPromotionTick(8), paused(9)
+      // Tuple: creator(0), sourceId(1), configHash(2), tickDuration(3),
+      //        lockOffset(4), createdAtTick(5), paused(6)
       const tupleBase = 0
       const creator = '0x' + words[tupleBase + 0].slice(24)
-      const tickDuration = Number(BigInt('0x' + words[tupleBase + 4]))
-      const paused = BigInt('0x' + words[tupleBase + 9]) !== 0n
+      const tickDuration = Number(BigInt('0x' + words[tupleBase + 3]))
+      const paused = BigInt('0x' + words[tupleBase + 6]) !== 0n
 
       if (creator !== '0x' + '0'.repeat(40)) {
         batches.push({
@@ -894,103 +869,7 @@ export async function waitForBatches(timeoutMs = 30_000): Promise<BatchInfo[]> {
 
 // ── Vision balance helpers ──────────────────────────────────
 
-const VISION_DEPOSIT_BALANCE_ABI = [{
-  name: 'depositBalance',
-  type: 'function',
-  stateMutability: 'nonpayable',
-  inputs: [{ name: 'amount', type: 'uint256' }],
-  outputs: [],
-}] as const
-
-const VISION_WITHDRAW_BALANCE_ABI = [{
-  name: 'withdrawBalance',
-  type: 'function',
-  stateMutability: 'nonpayable',
-  inputs: [{ name: 'amount', type: 'uint256' }],
-  outputs: [],
-}] as const
-
-const VISION_BALANCE_OF_ABI = [{
-  name: 'balanceOf',
-  type: 'function',
-  stateMutability: 'view',
-  inputs: [{ name: 'user', type: 'address' }],
-  outputs: [{ name: '', type: 'uint256' }],
-}] as const
-
-const VISION_REAL_BALANCE_ABI = [{
-  name: 'realBalance',
-  type: 'function',
-  stateMutability: 'view',
-  inputs: [{ name: '', type: 'address' }],
-  outputs: [{ name: '', type: 'uint256' }],
-}] as const
-
-/**
- * Deposit L3 USDC into Vision realBalance for a player.
- * Mints USDC if needed, approves Vision, then calls depositBalance().
- */
-export async function depositToVisionBalance(player: string, amount: bigint): Promise<void> {
-  await impersonateAccount(player)
-  const visionUsdc = await getVisionUsdcAddress()
-  await ensureUsdcBalance(player, amount, visionUsdc)
-  await approveVision(player, amount)
-  const data = encodeFunctionData({
-    abi: VISION_DEPOSIT_BALANCE_ABI,
-    functionName: 'depositBalance',
-    args: [amount],
-  })
-  await l3SendTx(player, getVisionAddress(), data)
-}
-
-/**
- * Read a player's total Vision balance (real + virtual).
- */
-export async function getVisionPlayerBalance(player: string): Promise<bigint> {
-  const data = encodeFunctionData({
-    abi: VISION_BALANCE_OF_ABI,
-    functionName: 'balanceOf',
-    args: [player as `0x${string}`],
-  })
-  const result = await l3EthCall(getVisionAddress(), data)
-  return safeBigInt(result)
-}
-
-/**
- * Read a player's real balance on Vision.
- */
-export async function getVisionRealBalance(player: string): Promise<bigint> {
-  const data = encodeFunctionData({
-    abi: VISION_REAL_BALANCE_ABI,
-    functionName: 'realBalance',
-    args: [player as `0x${string}`],
-  })
-  const result = await l3EthCall(getVisionAddress(), data)
-  return safeBigInt(result)
-}
-
-const VISION_VIRTUAL_BALANCE_ABI = [{
-  name: 'virtualBalance',
-  type: 'function',
-  stateMutability: 'view',
-  inputs: [{ name: '', type: 'address' }],
-  outputs: [{ name: '', type: 'uint256' }],
-}] as const
-
-/**
- * Read a player's virtual balance on Vision (credited by issuers from Settlement deposits).
- */
-export async function getVisionVirtualBalance(player: string): Promise<bigint> {
-  const data = encodeFunctionData({
-    abi: VISION_VIRTUAL_BALANCE_ABI,
-    functionName: 'virtualBalance',
-    args: [player as `0x${string}`],
-  })
-  const result = await l3EthCall(getVisionAddress(), data)
-  return safeBigInt(result)
-}
-
-// ── Settlement-side helpers for bridge deposit/withdraw E2E ──────
+// ── Settlement-side helpers ──────
 
 const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC
 

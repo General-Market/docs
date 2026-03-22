@@ -9,6 +9,7 @@ import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
 import { indexL3 } from '@/lib/wagmi'
+import { useDeployment } from '@/hooks/useDeployment'
 
 export interface UseJoinBatchParams {
   batchId: bigint
@@ -20,7 +21,7 @@ export interface UseJoinBatchParams {
 }
 
 export interface UseJoinBatchReturn {
-  /** Execute the full join flow: encode bitmap -> check balance -> joinBatch */
+  /** Execute the full join flow: encode bitmap -> approve USDC -> joinBatchDirect */
   join: (params: UseJoinBatchParams) => void
   /** The encoded bitmap bytes (available after join is called) */
   bitmap: Uint8Array | null
@@ -28,8 +29,8 @@ export interface UseJoinBatchReturn {
   bitmapHash: `0x${string}` | null
   /** JoinBatch tx hash */
   joinHash: `0x${string}` | undefined
-  /** Current step: 'idle' | 'checking-balance' | 'joining' | 'done' | 'error' */
-  step: 'idle' | 'checking-balance' | 'joining' | 'done' | 'error'
+  /** Current step: 'idle' | 'approving' | 'joining' | 'done' | 'error' */
+  step: 'idle' | 'approving' | 'joining' | 'done' | 'error'
   /** Whether wallet prompt is pending */
   isPending: boolean
   /** Whether a tx is confirming on-chain */
@@ -40,29 +41,76 @@ export interface UseJoinBatchReturn {
   reset: () => void
 }
 
+const ERC20_ABI = [
+  {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
 /**
- * Hook to join a Vision batch.
+ * Hook to join a Vision batch (round-based).
  *
- * Flow (dual-balance architecture):
+ * Flow:
  * 1. Encode bets into bitmap, compute keccak256 hash
- * 2. Check Vision balance >= depositAmount (no USDC approve needed — joinBatch pulls from Vision balance)
- * 3. Call Vision.joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash)
+ * 2. Check wallet USDC balance >= depositAmount
+ * 3. Approve USDC to Vision contract (if needed)
+ * 4. Call Vision.joinBatchDirect(batchId, configHash, depositAmount, depositAmount, bitmapHash)
  *
- * After joinBatch succeeds, the caller should use useSubmitBitmap to reveal
+ * After joinBatchDirect succeeds, the caller should use useSubmitBitmap to reveal
  * the actual bitmap bytes to the oracle nodes.
  */
 export function useJoinBatch(): UseJoinBatchReturn {
   const { address } = useAccount()
+  const { getAddress } = useDeployment()
+  const usdcAddress = getAddress('L3_WUSDC')
 
-  const [step, setStep] = useState<'idle' | 'checking-balance' | 'joining' | 'done' | 'error'>('idle')
+  const [step, setStep] = useState<'idle' | 'approving' | 'joining' | 'done' | 'error'>('idle')
   const [bitmap, setBitmap] = useState<Uint8Array | null>(null)
   const [bitmapHash, setBitmapHash] = useState<`0x${string}` | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [pendingParams, setPendingParams] = useState<UseJoinBatchParams | null>(null)
 
-  // Track whether effects have already handled transitions
   const joinHandled = useRef(false)
+  const approveHandled = useRef(false)
 
-  // --- JoinBatch ---
+  // --- Approve ---
+  const {
+    writeContract: writeApprove,
+    data: approveHash,
+    isPending: isApprovePending,
+    error: approveError,
+    reset: resetApprove,
+  } = useChainWriteContract()
+  const {
+    isLoading: isApproveConfirming,
+    isSuccess: isApproveSuccess,
+  } = useWaitForTransactionReceipt({ hash: approveHash, chainId: indexL3.id })
+
+  // --- JoinBatchDirect ---
   const {
     writeContract: writeJoin,
     data: joinHash,
@@ -77,13 +125,22 @@ export function useJoinBatch(): UseJoinBatchReturn {
     error: joinReceiptError,
   } = useWaitForTransactionReceipt({ hash: joinHash, chainId: indexL3.id })
 
-  // --- Read Vision balance (realBalance + virtualBalance) ---
-  const { data: visionBalance } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
+  // --- Read wallet USDC balance ---
+  const { data: walletBalance } = useReadContract({
+    address: usdcAddress,
+    abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    query: { enabled: !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  // --- Read allowance ---
+  const { data: allowance } = useReadContract({
+    address: usdcAddress,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, VISION_ADDRESS] : undefined,
+    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
   })
 
   // Toast notifications for join
@@ -93,7 +150,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
     isConfirming: isJoinConfirming,
     isSuccess: isJoinSuccess,
     error: joinError,
-    label: 'Join batch',
+    label: 'Join round',
   })
 
   const join = useCallback((params: UseJoinBatchParams) => {
@@ -106,26 +163,57 @@ export function useJoinBatch(): UseJoinBatchReturn {
     setBitmapHash(hash)
     setErrorMsg(null)
     joinHandled.current = false
+    approveHandled.current = false
 
-    // 2. Check balance (no approve needed — joinBatch pulls from Vision balance internally)
-    const balance = (visionBalance as bigint | undefined) ?? 0n
+    // 2. Check wallet USDC balance
+    const balance = (walletBalance as bigint | undefined) ?? 0n
     if (balance < params.depositAmount) {
-      setErrorMsg(`Insufficient Vision balance. Have ${formatUnits(balance, 18)}, need ${formatUnits(params.depositAmount, 18)} USDC. Deposit USDC first.`)
+      setErrorMsg(`Insufficient USDC in wallet. Have ${formatUnits(balance, 18)}, need ${formatUnits(params.depositAmount, 18)} USDC.`)
       setStep('error')
       return
     }
 
-    // 3. Call joinBatch directly
+    // 3. Check allowance — approve if needed
+    const currentAllowance = (allowance as bigint | undefined) ?? 0n
+    if (currentAllowance < params.depositAmount) {
+      setPendingParams(params)
+      setStep('approving')
+      writeApprove({
+        address: usdcAddress,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [VISION_ADDRESS, params.depositAmount],
+      })
+      return
+    }
+
+    // 4. Allowance sufficient — call joinBatchDirect directly
+    setPendingParams(null)
     setStep('joining')
     writeJoin({
       address: VISION_ADDRESS,
       abi: VISION_ABI,
-      functionName: 'joinBatch',
-      args: [params.batchId, params.configHash, params.depositAmount, params.stakePerTick, hash],
+      functionName: 'joinBatchDirect',
+      args: [params.batchId, params.configHash, params.depositAmount, params.depositAmount, hash],
     })
-  }, [address, visionBalance, writeJoin])
+  }, [address, walletBalance, allowance, writeApprove, writeJoin, usdcAddress])
 
-  // JoinBatch success -> done
+  // Approve success -> call joinBatchDirect
+  useEffect(() => {
+    if (!isApproveSuccess || approveHandled.current || !pendingParams || !bitmapHash) return
+    approveHandled.current = true
+    setStep('joining')
+    resetApprove()
+    writeJoin({
+      address: VISION_ADDRESS,
+      abi: VISION_ABI,
+      functionName: 'joinBatchDirect',
+      args: [pendingParams.batchId, pendingParams.configHash, pendingParams.depositAmount, pendingParams.depositAmount, bitmapHash],
+    })
+    setPendingParams(null)
+  }, [isApproveSuccess, pendingParams, bitmapHash, writeJoin, resetApprove])
+
+  // JoinBatchDirect success -> done
   useEffect(() => {
     if (!isJoinSuccess || joinHandled.current) return
     joinHandled.current = true
@@ -135,15 +223,23 @@ export function useJoinBatch(): UseJoinBatchReturn {
 
   // Error handling
   useEffect(() => {
+    if (approveError) {
+      const msg = approveError.message || 'USDC approve failed'
+      setErrorMsg(msg.slice(0, 300))
+      setStep('error')
+      resetApprove()
+    }
+  }, [approveError, resetApprove])
+
+  useEffect(() => {
     if (joinError) {
-      const msg = joinError.message || 'Join batch failed'
+      const msg = joinError.message || 'Join round failed'
       setErrorMsg(msg.slice(0, 300))
       setStep('error')
       resetJoin()
     }
   }, [joinError, resetJoin])
 
-  // Handle receipt errors
   useEffect(() => {
     if (isJoinReceiptError && joinReceiptError) {
       const msg = joinReceiptError.message || 'Join transaction reverted'
@@ -158,8 +254,10 @@ export function useJoinBatch(): UseJoinBatchReturn {
     setBitmap(null)
     setBitmapHash(null)
     setErrorMsg(null)
+    setPendingParams(null)
     resetJoin()
-  }, [resetJoin])
+    resetApprove()
+  }, [resetJoin, resetApprove])
 
   return {
     join,
@@ -167,8 +265,8 @@ export function useJoinBatch(): UseJoinBatchReturn {
     bitmapHash,
     joinHash,
     step,
-    isPending: isJoinPending,
-    isConfirming: isJoinConfirming,
+    isPending: isJoinPending || isApprovePending,
+    isConfirming: isJoinConfirming || isApproveConfirming,
     error: errorMsg,
     reset,
   }

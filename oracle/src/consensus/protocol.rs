@@ -19,13 +19,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
-use crate::vision::deposit_watcher::{
-    build_credit_balance_hash, build_complete_deposit_hash,
-    build_refund_deposit_hash, build_complete_withdraw_hash,
-    build_credit_balance_calldata, build_complete_deposit_calldata,
-    build_refund_deposit_calldata, build_complete_withdraw_calldata,
-};
-use crate::vision::pending_ops::{PendingOpsQueue, VisionOp, OpResult};
+// Deleted: deposit_watcher and pending_ops imports (round-only purge)
 
 use super::ConsensusError;
 use super::handler_macros::{bridge_proposal_handler, bridge_sign_handler};
@@ -218,21 +212,7 @@ const VISION_REFUND_TIMEOUT: u64 = 7200;
 ///
 /// Stored on `ConsensusProtocol` and set by the bootstrap code that also
 /// configures the deposit watcher.
-#[derive(Clone)]
-pub struct VisionConsensusConfig {
-    /// L3 RPC provider (for reading depositProcessed, withdrawRequests).
-    pub l3_provider: Arc<Provider<Http>>,
-    /// Settlement RPC provider (for reading visionDeposits).
-    pub settlement_provider: Arc<Provider<Http>>,
-    /// Vision.sol address on L3.
-    pub vision_address: Address,
-    /// SettlementBridgeCustody address on Settlement.
-    pub custody_address: Address,
-    /// L3 chain ID (for hash domain separation).
-    pub l3_chain_id: u64,
-    /// Settlement chain ID (for hash domain separation).
-    pub settlement_chain_id: u64,
-}
+// VisionConsensusConfig deleted — round-only model has no deposit watcher consensus
 
 /// Result of a consensus round
 #[derive(Debug)]
@@ -419,15 +399,14 @@ where
     /// The leader stores a sender here; the message dispatch forwards sign messages through it.
     pub vision_sign_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<VisionSignMessage>>>>,
     /// Vision deposit/withdraw consensus config (providers, addresses, chain IDs).
-    /// Set via `set_vision_consensus_config()`. Required for follower validation.
-    vision_consensus_config: RwLock<Option<VisionConsensusConfig>>,
+    // vision_consensus_config deleted (round-only purge)
     /// Forwarding channel for incoming VisionBalanceProofsBatch messages.
     /// Set by the engine bootstrap; message dispatch forwards incoming batches here.
     /// The engine's aggregation task reads from the other end.
-    pub vision_balance_proofs_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBalanceProofsBatch>>>>,
+    // vision_balance_proofs_tx deleted (round-only purge)
     /// Forwarding channel for incoming bitmap gossip messages (Gossip/Request/Response).
     /// Set by the engine bootstrap; the bitmap gossip task reads from the other end.
-    pub vision_bitmap_gossip_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBitmapGossip>>>>,
+    // vision_bitmap_gossip_tx deleted (round-only purge)
     /// Forwarding channel for incoming VisionCreateBatchSign messages.
     /// Set in main.rs; the BatchLifecycleManager reads from the other end.
     pub vision_create_batch_sign_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::lifecycle::IncomingCreateBatchSign>>>>,
@@ -521,9 +500,7 @@ where
             last_prices: RwLock::new(std::collections::HashMap::new()),
             known_assets: RwLock::new(Vec::new()),
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
-            vision_consensus_config: RwLock::new(None),
-            vision_balance_proofs_tx: Arc::new(std::sync::Mutex::new(None)),
-            vision_bitmap_gossip_tx: Arc::new(std::sync::Mutex::new(None)),
+            // vision channels deleted (round-only purge)
             vision_create_batch_sign_tx: Arc::new(std::sync::Mutex::new(None)),
         }
     }
@@ -627,8 +604,10 @@ where
     ///
     /// When set, follower handlers can validate vision proposals by reading
     /// on-chain state from L3 and Settlement.
-    pub async fn set_vision_consensus_config(&self, config: VisionConsensusConfig) {
-        let mut vision_cfg = self.vision_consensus_config.write().await;
+    // set_vision_consensus_config deleted (round-only purge)
+    #[allow(dead_code)]
+    pub async fn _set_vision_consensus_config_deleted(&self) {
+        let _unused = 0;
         *vision_cfg = Some(config);
     }
 
@@ -3130,25 +3109,9 @@ where
                 }
             }
             MessageHandleResult::ProcessVisionBalanceProofsBatch {
-                from, batch_id, tick_id, proofs, signer_index,
+                from: _, batch_id, tick_id, proofs: _, signer_index,
             } => {
-                debug!(batch_id, tick_id, signer_index, "Received VisionBalanceProofsBatch — forwarding to aggregator");
-                if let Ok(guard) = self.vision_balance_proofs_tx.lock() {
-                    if let Some(tx) = guard.as_ref() {
-                        let incoming = crate::vision::engine::IncomingBalanceProofsBatch {
-                            from_peer: from,
-                            batch_id,
-                            tick_id,
-                            proofs: proofs.into_iter().map(|(player, balance, sig)| (player, balance, sig.0)).collect(),
-                            signer_index,
-                        };
-                        if let Err(e) = tx.try_send(incoming) {
-                            warn!(batch_id, tick_id, error = %e, "Failed to forward VisionBalanceProofsBatch to aggregator");
-                        }
-                    } else {
-                        debug!(batch_id, tick_id, "VisionBalanceProofsBatch received but aggregator channel not set");
-                    }
-                }
+                debug!(batch_id, tick_id, signer_index, "VisionBalanceProofsBatch — ignored (round-only)");
             }
             // Vision createBatch co-signing
             MessageHandleResult::ProcessVisionCreateBatchProposal {
@@ -3179,69 +3142,19 @@ where
             }
             // Vision bitmap gossip — forward to bitmap gossip task
             MessageHandleResult::ProcessBitmapGossip {
-                from, batch_id, player, bitmap_hash, config_hash, target_tick_id,
+                from: _, batch_id, player, bitmap_hash: _, config_hash: _, target_tick_id: _,
             } => {
-                debug!(batch_id, ?player, ?bitmap_hash, "Received BitmapGossip — forwarding to gossip task");
-                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
-                    if let Some(tx) = guard.as_ref() {
-                        let incoming = crate::vision::engine::IncomingBitmapGossip::Gossip {
-                            from,
-                            batch_id,
-                            player,
-                            bitmap_hash,
-                            config_hash,
-                            target_tick_id,
-                        };
-                        if let Err(e) = tx.try_send(incoming) {
-                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapGossip to gossip task");
-                        }
-                    } else {
-                        debug!(batch_id, ?player, "BitmapGossip received but gossip task channel not set");
-                    }
-                }
+                debug!(batch_id, ?player, "BitmapGossip — ignored (round-only)");
             }
             MessageHandleResult::ProcessBitmapRequest {
-                from, batch_id, player, bitmap_hash,
+                from: _, batch_id, player, bitmap_hash: _,
             } => {
-                debug!(batch_id, ?player, ?bitmap_hash, "Received BitmapRequest — forwarding to gossip task");
-                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
-                    if let Some(tx) = guard.as_ref() {
-                        let incoming = crate::vision::engine::IncomingBitmapGossip::Request {
-                            from,
-                            batch_id,
-                            player,
-                            bitmap_hash,
-                        };
-                        if let Err(e) = tx.try_send(incoming) {
-                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapRequest to gossip task");
-                        }
-                    } else {
-                        debug!(batch_id, ?player, "BitmapRequest received but gossip task channel not set");
-                    }
-                }
+                debug!(batch_id, ?player, "BitmapRequest — ignored (round-only)");
             }
             MessageHandleResult::ProcessBitmapResponse {
-                from, batch_id, player, bitmap, bitmap_hash, config_hash, target_tick_id,
+                from: _, batch_id, player, bitmap: _, bitmap_hash: _, config_hash: _, target_tick_id: _,
             } => {
-                debug!(batch_id, ?player, ?bitmap_hash, bitmap_len = bitmap.len(), "Received BitmapResponse — forwarding to gossip task");
-                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
-                    if let Some(tx) = guard.as_ref() {
-                        let incoming = crate::vision::engine::IncomingBitmapGossip::Response {
-                            from,
-                            batch_id,
-                            player,
-                            bitmap,
-                            bitmap_hash,
-                            config_hash,
-                            target_tick_id,
-                        };
-                        if let Err(e) = tx.try_send(incoming) {
-                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapResponse to gossip task");
-                        }
-                    } else {
-                        debug!(batch_id, ?player, "BitmapResponse received but gossip task channel not set");
-                    }
-                }
+                debug!(batch_id, ?player, "BitmapResponse — ignored (round-only)");
             }
             // AA keeper arbitration — forward to arbitration subsystem
             MessageHandleResult::ForwardToArbitration(msg) => {
@@ -8218,7 +8131,8 @@ where
         message_hash: H256,
         leader_signature: common::types::BLSSignature,
     ) -> Result<(), Error> {
-        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        // vision_consensus_config deleted (round-only purge)
+                return;
         let vision_cfg = match vision_cfg_guard.as_ref() {
             Some(cfg) => cfg.clone(),
             None => {
@@ -8313,7 +8227,8 @@ where
         message_hash: H256,
         leader_signature: common::types::BLSSignature,
     ) -> Result<(), Error> {
-        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        // vision_consensus_config deleted (round-only purge)
+                return;
         let vision_cfg = match vision_cfg_guard.as_ref() {
             Some(cfg) => cfg.clone(),
             None => {
@@ -8410,7 +8325,8 @@ where
         message_hash: H256,
         leader_signature: common::types::BLSSignature,
     ) -> Result<(), Error> {
-        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        // vision_consensus_config deleted (round-only purge)
+                return;
         let vision_cfg = match vision_cfg_guard.as_ref() {
             Some(cfg) => cfg.clone(),
             None => {
@@ -8518,7 +8434,8 @@ where
         message_hash: H256,
         leader_signature: common::types::BLSSignature,
     ) -> Result<(), Error> {
-        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        // vision_consensus_config deleted (round-only purge)
+                return;
         let vision_cfg = match vision_cfg_guard.as_ref() {
             Some(cfg) => cfg.clone(),
             None => {
@@ -8681,7 +8598,8 @@ where
     ) -> Result<(), Error> {
         // Get vision_address and chain_id from the VisionConsensusConfig
         let (vision_address, l3_chain_id) = {
-            let guard = self.vision_consensus_config.read().await;
+            // vision_consensus_config deleted
+                return;
             match guard.as_ref() {
                 Some(cfg) => (cfg.vision_address, cfg.l3_chain_id),
                 None => {

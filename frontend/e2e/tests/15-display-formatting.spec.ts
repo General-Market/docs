@@ -20,9 +20,11 @@ import {
 } from '../helpers/selectors'
 import {
   PLAYER1,
-  depositToVisionBalance,
   ensureBatchExists,
-  getVisionPlayerBalance,
+  ensureUsdcBalance,
+  getL3UsdcBalance,
+  getVisionUsdcAddress,
+  impersonateAccount,
 } from '../helpers/vision-api'
 
 /** Parse a dollar string like "$4,110.50" or "$1.2K" into a number */
@@ -109,11 +111,13 @@ test.describe('Display Formatting — Source Detail', () => {
   test('source detail pool TVL is not raw wei', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Ensure Vision batches exist and player has balance (so pool has deposits)
+    // Ensure Vision batches exist and player has wallet USDC
     await ensureBatchExists()
-    const balance = await getVisionPlayerBalance(PLAYER1)
+    const visionUsdc = await getVisionUsdcAddress()
+    const balance = await getL3UsdcBalance(PLAYER1, visionUsdc)
     if (balance < BigInt(10) * BigInt(10 ** 18)) {
-      await depositToVisionBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18))
+      await impersonateAccount(PLAYER1)
+      await ensureUsdcBalance(PLAYER1, BigInt(100) * BigInt(10 ** 18), visionUsdc)
     }
 
     // Use pumpfun — test 13 enters batches here, so it should have deposits

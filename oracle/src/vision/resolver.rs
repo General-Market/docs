@@ -95,7 +95,7 @@ impl TickResolver {
         market_configs: &[MarketConfig],
     ) -> Result<TickResult, ResolverError> {
         // 1. Filter active players (balance > 0)
-        let active: Vec<&PlayerPosition> = players.iter().filter(|p| !p.balance.is_zero()).collect();
+        let active: Vec<&PlayerPosition> = players.iter().filter(|p| !p.deposit.is_zero()).collect();
 
         if active.is_empty() {
             return Err(ResolverError::NoActivePlayers(batch.id));
@@ -212,8 +212,8 @@ impl TickResolver {
                 let per_market_stake = if num_markets.is_zero() {
                     U256::zero()
                 } else {
-                    let base = player.stake_per_tick / num_markets;
-                    let remainder = player.stake_per_tick % num_markets;
+                    let base = player.deposit / num_markets;
+                    let remainder = player.deposit % num_markets;
                     if U256::from(market_idx as u64) < remainder {
                         base + U256::one()
                     } else {
@@ -306,13 +306,13 @@ impl TickResolver {
             .map(|p| {
                 let delta = player_deltas.get(&p.player).copied().unwrap_or(0);
                 let new_balance = if delta >= 0 {
-                    p.balance + U256::from(delta as u128)
+                    p.deposit + U256::from(delta as u128)
                 } else {
-                    p.balance.saturating_sub(U256::from((-delta) as u128))
+                    p.deposit.saturating_sub(U256::from((-delta) as u128))
                 };
                 PlayerBalance {
                     player: p.player,
-                    old_balance: p.balance,
+                    old_balance: p.deposit,
                     new_balance,
                     delta,
                 }
@@ -725,16 +725,13 @@ mod tests {
 
     fn make_player(
         address: Address,
-        stake_per_tick: u128,
-        balance: u128,
+        deposit_amount: u128,
         _join_timestamp: u64,
     ) -> PlayerPosition {
         PlayerPosition {
             player: address,
             bitmap_hash: H256::zero(),
-            stake_per_tick: U256::from(stake_per_tick),
-            start_tick: 0,
-            balance: U256::from(balance),
+            deposit: U256::from(deposit_amount),
             initial_deposit: U256::from(balance),
         }
     }

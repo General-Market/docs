@@ -125,15 +125,27 @@ impl BatchLifecycleManager {
 
     /// Main loop. Runs until shutdown signal.
     pub async fn run(&self) {
-        if self.config.round_based_sources.is_empty() {
-            info!("BatchLifecycleManager: no round_based_sources configured, exiting");
+        // Discover sources from data-node recommended batches (all sources are round-based)
+        let source_names: Vec<String> = match batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await {
+            Ok(batches) => {
+                let mut names: Vec<String> = batches.iter().map(|b| b.source_id.clone()).collect();
+                names.sort();
+                names.dedup();
+                names
+            }
+            Err(e) => {
+                warn!(error = %e, "Failed to fetch sources from data-node — lifecycle manager cannot start");
+                return;
+            }
+        };
+
+        if source_names.is_empty() {
+            info!("BatchLifecycleManager: no sources found from data-node, exiting");
             return;
         }
 
         // Build per-source state
-        let mut sources: Vec<SourceState> = self
-            .config
-            .round_based_sources
+        let mut sources: Vec<SourceState> = source_names
             .iter()
             .enumerate()
             .map(|(i, name)| {
@@ -155,8 +167,8 @@ impl BatchLifecycleManager {
             .collect();
 
         info!(
-            sources = ?self.config.round_based_sources,
-            "BatchLifecycleManager starting"
+            source_count = source_names.len(),
+            "BatchLifecycleManager starting — all sources are round-based"
         );
 
         // Fetch initial tick durations from data-node recommended configs
@@ -1151,24 +1163,5 @@ impl BatchLifecycleManager {
     }
 }
 
-/// Parse resolution type string to u8 code.
-/// Mirror of engine.rs parse_resolution_type — kept local to avoid circular dependency.
-fn parse_resolution_type(s: &str) -> u8 {
-    match s {
-        "up_0" => 0,
-        "up_30" => 1,
-        "up_x" => 2,
-        "down_0" => 3,
-        "down_30" => 4,
-        "down_x" => 5,
-        "flat_0" => 6,
-        "flat_x" => 7,
-        "up_300" => 8,
-        "up_3000" => 9,
-        "down_300" => 10,
-        "down_3000" => 11,
-        "flat_300" => 12,
-        "flat_3000" => 13,
-        _ => 255,
-    }
-}
+// parse_resolution_type is now in shared.rs
+use super::shared::parse_resolution_type;

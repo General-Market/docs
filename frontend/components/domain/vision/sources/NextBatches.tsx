@@ -2,23 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { getBatchTickState, formatTickDuration } from '@/lib/vision/tick'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import Image from 'next/image'
 import { Link } from '@/i18n/routing'
-
-function formatTimer(seconds: number): string {
-  if (seconds <= 0) return '0:00'
-  if (seconds >= 3600) {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    return `${h}:${m.toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
-  }
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 
 /** Category color mapping for the pill badges */
 const CATEGORY_COLORS: Record<string, string> = {
@@ -34,32 +21,23 @@ const CATEGORY_COLORS: Record<string, string> = {
   space:         'bg-violet-50 text-violet-700',
 }
 
-interface BatchWithTick {
+interface BatchDisplay {
   batch: BatchInfo
-  remaining: number
-  elapsed: number
-  tickDuration: number
-  isLocked: boolean
   logo?: string
   displayName: string
   category: string
   sourceKey: string
 }
 
-function BatchCard({ item }: { item: BatchWithTick }) {
+function BatchCard({ item }: { item: BatchDisplay }) {
   const catColors = CATEGORY_COLORS[item.category] ?? 'bg-gray-50 text-gray-700'
-  const urgencyPct = 1 - item.remaining / item.tickDuration
-  const progressWidth = `${Math.min(urgencyPct * 100, 100)}%`
 
   return (
     <Link
       href={`/source/${item.sourceKey}`}
-      className={`
-        shrink-0 flex flex-col px-5 py-4 border bg-white transition-all w-[220px] cursor-pointer
-        ${item.isLocked ? 'border-red-300 border-2' : 'border-border-light hover:border-black'}
-      `}
+      className="shrink-0 flex flex-col px-5 py-4 border bg-white transition-all w-[220px] cursor-pointer border-border-light hover:border-black"
     >
-      {/* Source name — quiet, lets the number dominate */}
+      {/* Source name */}
       <div className="flex items-center gap-2 mb-2 min-w-0">
         {item.logo && (
           <Image
@@ -75,33 +53,19 @@ function BatchCard({ item }: { item: BatchWithTick }) {
         </span>
       </div>
 
-      {/* Timer — the hero of the card */}
-      <span
-        className={`text-stat font-black tabular-nums leading-none font-mono ${item.isLocked ? 'text-red-600' : 'text-black'}`}
-      >
-        {formatTimer(item.remaining)}
+      {/* Player count */}
+      <span className="text-stat font-black tabular-nums leading-none font-mono text-black">
+        {item.batch.playerCount}
       </span>
+      <span className="text-micro text-text-muted mt-1">players</span>
 
-      {/* Progress bar */}
-      <div className="h-[3px] bg-border-light mt-3 mb-2 overflow-hidden">
-        <div
-          className={`h-full transition-all duration-1000 ${item.isLocked ? 'bg-red-500' : 'bg-black'}`}
-          style={{ width: progressWidth }}
-        />
-      </div>
-
-      {/* Footer: category + tick + tick# */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-micro font-bold uppercase px-1.5 py-0.5 rounded ${catColors}`}>
-            {item.category}
-          </span>
-          <span className="text-micro font-medium text-text-muted">
-            {formatTickDuration(item.tickDuration)}
-          </span>
-        </div>
+      {/* Footer: category */}
+      <div className="flex items-center justify-between mt-3">
+        <span className={`text-micro font-bold uppercase px-1.5 py-0.5 rounded ${catColors}`}>
+          {item.category}
+        </span>
         <span className="text-micro font-bold font-mono text-text-muted tabular-nums">
-          #{item.batch.currentTick}
+          #{item.batch.id}
         </span>
       </div>
     </Link>
@@ -113,27 +77,12 @@ export function NextBatches() {
   const { data: apiBatches } = useBatches()
   const { sources: registrySources } = useSourceRegistry()
 
-  // Initialize with 0 to avoid hydration mismatch
-  const [now, setNow] = useState(0)
-
-  useEffect(() => {
-    setNow(Date.now())
-    const interval = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const sortedBatches = useMemo((): BatchWithTick[] => {
+  const sortedBatches = useMemo((): BatchDisplay[] => {
     if (!apiBatches || apiBatches.length === 0) return []
 
     return apiBatches
       .filter(b => b.marketCount > 0)
       .map(batch => {
-        const tickDuration = batch.tickDuration > 0 ? batch.tickDuration : 600
-        const tickState = now === 0
-          ? { elapsed: 0, remaining: tickDuration, tickDuration, isLocked: false, lockOffset: 0 }
-          : getBatchTickState(tickDuration)
-
-        // Resolve display info from source registry
         const source = findSource(registrySources, batch.sourceId)
         const displayName = source?.name ?? batch.sourceId
         const logo = source?.logo
@@ -141,20 +90,14 @@ export function NextBatches() {
 
         return {
           batch,
-          remaining: tickState.remaining,
-          elapsed: tickState.elapsed,
-          tickDuration,
-          isLocked: tickState.isLocked,
           logo,
           displayName,
           category,
           sourceKey: source?.sourceId ?? batch.sourceId,
         }
       })
-      .sort((a, b) => a.remaining - b.remaining)
-  }, [apiBatches, registrySources, now])
-
-  const lockedCount = sortedBatches.filter(b => b.isLocked).length
+      .sort((a, b) => b.batch.playerCount - a.batch.playerCount)
+  }, [apiBatches, registrySources])
 
   if (sortedBatches.length === 0) return null
 
@@ -167,9 +110,6 @@ export function NextBatches() {
           </div>
           <div className="flex items-center gap-3 text-micro font-semibold text-text-muted">
             <span>{t('next_batches.batches_count', { count: sortedBatches.length })}</span>
-            {lockedCount > 0 && (
-              <span className="text-red-500">{t('next_batches.locked_count', { count: lockedCount })}</span>
-            )}
           </div>
         </div>
 

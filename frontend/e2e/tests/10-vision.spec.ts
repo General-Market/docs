@@ -172,13 +172,11 @@ test.describe('Vision', () => {
       getPosition(batchId, PLAYER2),
     ])
 
-    expect(pos1.balance).toBe(deposit)
-    expect(pos1.stakePerTick).toBe(stakePerTick)
+    expect(pos1.deposit).toBe(deposit)
     expect(pos1.totalDeposited).toBe(deposit)
     expect(pos1.bitmapHash).toBe(p1Result.bitmapHash)
 
-    expect(pos2.balance).toBe(deposit)
-    expect(pos2.stakePerTick).toBe(stakePerTick)
+    expect(pos2.deposit).toBe(deposit)
     expect(pos2.totalDeposited).toBe(deposit)
     expect(pos2.bitmapHash).toBe(p2Result.bitmapHash)
 

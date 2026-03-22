@@ -394,10 +394,7 @@ impl OracleConfig {
                         rpc_ws_url: std::env::var("ORACLE_VISION_RPC_WS_URL")
                             .unwrap_or_else(|_| "ws://localhost:8546".into()),
                         start_block: parse_env_var("ORACLE_VISION_START_BLOCK").unwrap_or(0),
-                        reveal_window_secs: parse_env_var("ORACLE_VISION_REVEAL_WINDOW_SECS").unwrap_or(600),
-                        commitment_offset: parse_env_var("ORACLE_VISION_COMMITMENT_OFFSET").unwrap_or(9),
                         staleness_threshold_secs: parse_env_var("ORACLE_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
-                        tick_poll_interval_ms: parse_env_var("ORACLE_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
                         snapshot_hmac_secret: std::env::var("SNAPSHOT_HMAC_SECRET").ok(),
                         // BLS tick consensus fields (T-32)
@@ -422,10 +419,6 @@ impl OracleConfig {
                             .unwrap_or_else(|_| "5000000000000000".into()),
                         deposit_auto_refund_timeout_secs: parse_env_var("ORACLE_VISION_DEPOSIT_AUTO_REFUND_TIMEOUT_SECS").unwrap_or(7200),
                         // Round-based lifecycle
-                        round_based_sources: std::env::var("ORACLE_VISION_ROUND_BASED_SOURCES")
-                            .ok()
-                            .map(|s| s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect())
-                            .unwrap_or_default(),
                         oracle_registry_address: std::env::var("ORACLE_ORACLE_REGISTRY_ADDRESS")
                             .unwrap_or_default(),
                     })

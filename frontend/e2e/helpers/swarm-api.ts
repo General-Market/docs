@@ -49,15 +49,9 @@ export const SWARM_COUNT = SWARM_ADDRESSES.length;
 // ── ABI Definitions (typed, matching IVision.sol exactly) ──
 
 const VISION_ABI = parseAbi([
-  "function getPosition(uint256 batchId, address player) view returns ((bytes32 bitmapHash, bytes32 configHash, uint256 stakePerTick, uint256 startTick, uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, bool isVirtual))",
+  "function getPosition(uint256 batchId, address player) view returns ((bytes32 bitmapHash, bytes32 configHash, uint256 deposit, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed))",
   "function currentTickId(uint256 batchId) view returns (uint256)",
-  "function balanceOf(address user) view returns (uint256)",
-  "function realBalance(address user) view returns (uint256)",
-  "function virtualBalance(address user) view returns (uint256)",
-  "function totalRealBalance() view returns (uint256)",
-  "function totalVirtualBalance() view returns (uint256)",
-  "function accumulatedRealFees() view returns (uint256)",
-  "function accumulatedVirtualFees() view returns (uint256)",
+  "function accumulatedFees() view returns (uint256)",
 ]);
 
 const ERC20_ABI = parseAbi([
@@ -183,28 +177,11 @@ export async function getCurrentTick(batchId: number): Promise<bigint> {
   });
 }
 
-export async function getVisionBalance(player: string): Promise<bigint> {
+export async function getAccumulatedFees(): Promise<bigint> {
   return publicClient.readContract({
     address: CONTRACTS.Vision as Hex,
     abi: VISION_ABI,
-    functionName: "balanceOf",
-    args: [player as Hex],
-  });
-}
-
-export async function getTotalRealBalance(): Promise<bigint> {
-  return publicClient.readContract({
-    address: CONTRACTS.Vision as Hex,
-    abi: VISION_ABI,
-    functionName: "totalRealBalance",
-  });
-}
-
-export async function getAccumulatedRealFees(): Promise<bigint> {
-  return publicClient.readContract({
-    address: CONTRACTS.Vision as Hex,
-    abi: VISION_ABI,
-    functionName: "accumulatedRealFees",
+    functionName: "accumulatedFees",
   });
 }
 
@@ -303,31 +280,22 @@ export interface InvariantResult {
 }
 
 /**
- * Verify Vision contract solvency:
- * USDC.balanceOf(Vision) >= totalRealBalance + accumulatedRealFees
+ * Verify Vision contract solvency (round-based):
+ * USDC.balanceOf(Vision) >= sum(active deposits) + accumulatedFees
  *
- * Note: totalRealBalance tracks UNALLOCATED real balance only.
- * Active position balances are funded from totalRealBalance via _debitBalance(),
- * so the USDC stays in the contract but moves out of totalRealBalance.
- * The invariant USDC >= totalRealBalance + fees is the contract's own check.
- *
- * We ALSO sum active real position balances for swarm bots as an additional
- * lower-bound check. This catches over-crediting bugs in claimRewards.
+ * In round-based model, each player's deposit is held in the contract
+ * until settleBatch() transfers payouts directly to wallets.
  */
 export async function verifySolvency(
   batchIds: number[]
 ): Promise<InvariantResult> {
-  const [contractUsdc, totalReal, realFees] = await Promise.all([
+  const [contractUsdc, fees] = await Promise.all([
     getVisionContractUsdc(),
-    getTotalRealBalance(),
-    getAccumulatedRealFees(),
+    getAccumulatedFees(),
   ]);
 
-  // Contract's own invariant (necessary condition)
-  const contractInvariant = contractUsdc >= totalReal + realFees;
-
-  // Additional check: sum swarm bots' active position balances (real only)
-  let swarmActiveReal = 0n;
+  // Sum active deposits across swarm bots
+  let totalActiveDeposits = 0n;
   for (const batchId of batchIds.slice(0, 10)) {
     const results = await Promise.allSettled(
       SWARM_ADDRESSES.map((addr) => getPosition(batchId, addr))
@@ -336,22 +304,18 @@ export async function verifySolvency(
       if (r.status !== "fulfilled") continue;
       const pos = r.value;
       if (pos.bitmapHash === ("0x" + "0".repeat(64)) as Hex) continue;
-      if (!pos.isVirtual) {
-        swarmActiveReal += pos.balance;
-      }
+      totalActiveDeposits += pos.deposit;
     }
   }
 
-  // Swarm active balances + unallocated should not exceed contract USDC
-  const totalAccountedFor = totalReal + swarmActiveReal + realFees;
-  const passed = contractInvariant && contractUsdc >= totalAccountedFor;
+  const passed = contractUsdc >= totalActiveDeposits;
 
   return {
     passed,
     name: "Solvency",
-    detail: `USDC.balanceOf(Vision) >= totalRealBalance + swarmActivePositions + fees`,
-    expected: `>= ${formatUnits(totalAccountedFor, DECIMALS)} USDC`,
-    actual: `${formatUnits(contractUsdc, DECIMALS)} USDC`,
+    detail: `USDC.balanceOf(Vision) >= sum(active deposits)`,
+    expected: `>= ${formatUnits(totalActiveDeposits, DECIMALS)} USDC`,
+    actual: `${formatUnits(contractUsdc, DECIMALS)} USDC (fees: ${formatUnits(fees, DECIMALS)})`,
   };
 }
 
@@ -367,7 +331,7 @@ export async function verifyBatchConservation(
   batchId: number,
   players: string[]
 ): Promise<InvariantResult> {
-  let totalBalance = 0n;
+  let totalDeposit = 0n;
   let totalDeposited = 0n;
   let positionCount = 0;
 
@@ -379,13 +343,13 @@ export async function verifyBatchConservation(
     if (r.status !== "fulfilled") continue;
     const pos = r.value;
     if (pos.bitmapHash === ("0x" + "0".repeat(64)) as Hex) continue;
-    totalBalance += pos.balance;
+    totalDeposit += pos.deposit;
     totalDeposited += pos.totalDeposited;
     positionCount++;
   }
 
   // Soft check: log but don't fail (subset invariant is not guaranteed)
-  const diff = totalBalance - totalDeposited;
+  const diff = totalDeposit - totalDeposited;
   const passed = true; // Always passes — this is informational
 
   return {
@@ -395,7 +359,7 @@ export async function verifyBatchConservation(
       ? `Swarm bots net +${formatUnits(diff, DECIMALS)} (winning from non-swarm players)`
       : `Swarm bots net ${formatUnits(diff, DECIMALS)} (fees extracted or losing)`,
     expected: "informational",
-    actual: `balance=${formatUnits(totalBalance, DECIMALS)}, deposited=${formatUnits(totalDeposited, DECIMALS)}`,
+    actual: `deposit=${formatUnits(totalDeposit, DECIMALS)}, totalDeposited=${formatUnits(totalDeposited, DECIMALS)}`,
   };
 }
 

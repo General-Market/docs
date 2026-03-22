@@ -66,5 +66,5 @@ pub use rebalance_request::{
 };
 pub use keys::{InMemoryKeyRegistry, KeyRegistry};
 pub use messages::ConsensusMessageHandler;
-pub use protocol::{ConfigUpdate, ConsensusConfig, ConsensusProtocol, ConsensusResult, VisionConsensusConfig, VisionSignMessage};
+pub use protocol::{ConfigUpdate, ConsensusConfig, ConsensusProtocol, ConsensusResult, VisionSignMessage};
 pub use state::{ConsensusPhase, ConsensusRound, ConsensusState, ConsensusTimeouts};

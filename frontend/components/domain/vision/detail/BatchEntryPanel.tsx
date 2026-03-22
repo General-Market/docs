@@ -6,22 +6,17 @@ import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
-import { useDeposit } from '@/hooks/vision/useDeposit'
-import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
-import { usePlayerProfile } from '@/hooks/usePlayerProfile'
-import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
-import { getBatchTickState } from '@/lib/vision/tick'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { SpringPress } from '@/components/ui/spring'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { BalanceDepositModal } from '../BalanceDepositModal'
 import StrategyList from './StrategyList'
 import { useTranslations } from 'next-intl'
+import { useDeployment } from '@/hooks/useDeployment'
 
 interface BatchEntryPanelProps {
   bitmapEditor: BitmapEditor
@@ -30,21 +25,15 @@ interface BatchEntryPanelProps {
   marketIds?: string[]
 }
 
-/**
- * Format seconds into MM:SS or HH:MM:SS display.
- */
-function formatCountdown(totalSeconds: number): string {
-  if (totalSeconds <= 0) return '00:00'
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-  const mm = String(m).padStart(2, '0')
-  const ss = String(s).padStart(2, '0')
-  if (h > 0) {
-    return `${String(h).padStart(2, '0')}:${mm}:${ss}`
-  }
-  return `${mm}:${ss}`
-}
+const ERC20_BALANCE_ABI = [
+  {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
 
 export default function BatchEntryPanel({
   bitmapEditor,
@@ -53,7 +42,6 @@ export default function BatchEntryPanel({
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
   // -- Batch data --
-  // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
@@ -75,50 +63,8 @@ export default function BatchEntryPanel({
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
 
-  // -- Player profile for per-tick history --
-  const { address, isConnected } = useAccount()
-  const { profile } = usePlayerProfile(address ?? '0x0000000000000000000000000000000000000000')
-  const batchTicks = useMemo(() => {
-    if (!profile || !activeBatch) return []
-    const batch = profile.batches.find(b => b.batchId === activeBatch.id)
-    return batch?.ticks ?? []
-  }, [profile, activeBatch])
-
-  // -- Tick history expand/collapse --
-  const [showTickHistory, setShowTickHistory] = useState(false)
-
-  // -- Toast notification on tick resolution (balance change) --
-  const { suppress: suppressBalanceToast } = useBalanceChangeNotification(position?.balance, isJoined)
-
-  // -- Join + submit hooks --
-  const {
-    join,
-    bitmap: encodedBitmap,
-    bitmapHash,
-    step: joinStep,
-    isPending: isJoinPending,
-    isConfirming: isJoinConfirming,
-    error: joinError,
-    reset: resetJoin,
-  } = useJoinBatch()
-
-  // -- Deposit hook (for adding funds when already joined) --
-  const {
-    deposit: depositMore,
-    step: depositStep,
-    isPending: isDepositPending,
-    isConfirming: isDepositConfirming,
-    error: depositError,
-    reset: resetDeposit,
-  } = useDeposit()
-
-  const {
-    submitBitmap,
-    isSubmitting,
-    error: submitError,
-  } = useSubmitBitmap()
-
   // -- Wallet connection --
+  const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const handleConnectWallet = useCallback(async () => {
     const injectedConnector = connectors.find(c => c.id === 'injected')
@@ -132,125 +78,108 @@ export default function BatchEntryPanel({
     connect({ connector: injectedConnector, chainId: indexL3.id })
   }, [connect, connectors])
 
-  // -- Vision balance (for deposit prompt when empty) --
-  const { total: visionBalance, isLoading: isBalanceLoading } = useVisionBalance()
-  const hasZeroBalance = !isBalanceLoading && visionBalance === 0n
+  // -- Wallet USDC balance (round-based: no Vision balance pool) --
+  const { getAddress } = useDeployment()
+  const usdcAddress = getAddress('L3_WUSDC')
+  const { data: walletUsdcRaw, isLoading: isBalanceLoading } = useReadContract({
+    address: usdcAddress,
+    abi: ERC20_BALANCE_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
+  })
+  const walletUsdc = (walletUsdcRaw as bigint | undefined) ?? 0n
+  const hasZeroBalance = !isBalanceLoading && walletUsdc === 0n
+
+  // -- Join + submit hooks --
+  const {
+    join,
+    bitmap: encodedBitmap,
+    bitmapHash,
+    step: joinStep,
+    isPending: isJoinPending,
+    isConfirming: isJoinConfirming,
+    error: joinError,
+    reset: resetJoin,
+  } = useJoinBatch()
+
+  const {
+    submitBitmap,
+    isSubmitting,
+    error: submitError,
+  } = useSubmitBitmap()
 
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
-  const [showDepositModal, setShowDepositModal] = useState(false)
-  const [betsSubmittedTick, setBetsSubmittedTick] = useState<number | null>(null)
 
-  // -- Per-batch tick timer --
-  const tickDuration = activeBatch?.tickDuration ?? 600
-  const [tickState, setTickState] = useState(() => getBatchTickState(tickDuration))
-  useEffect(() => {
-    const td = activeBatch?.tickDuration ?? 600
-    const interval = setInterval(() => {
-      setTickState(getBatchTickState(td))
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [activeBatch?.tickDuration])
-
-  // -- Derived --
-  const counts = bitmapEditor.getCounts(sourceId, marketIds)
-  const stakeValue = parseFloat(stakeInput) || 0
-  const hasStake = stakeValue > 0
-  const hasPredictions = counts.up + counts.down > 0
-  const activeStep = isJoined ? depositStep : joinStep
-  // New joins require: stake + ALL markets set (up or down) + configHash.
-  // Already-joined players can deposit more without setting new bets.
-  const allMarketsSet = counts.empty === 0 && marketIds.length > 0
-  const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (allMarketsSet && !!configHash))
-
-  // -- After on-chain join succeeds, submit bitmap to issuers --
+  // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
     if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
     submitBitmap({
       batchId: activeBatch.id,
       bitmap: encodedBitmap,
       bitmapHash,
-    }).then(() => {
-      setBetsSubmittedTick(activeBatch.currentTick)
     }).finally(() => {
       resetJoin()
       refetchPosition()
     })
   }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition])
 
-  // -- After deposit succeeds, refetch position to update balance --
-  useEffect(() => {
-    if (depositStep !== 'done') return
-    refetchPosition()
-    resetDeposit()
-  }, [depositStep, refetchPosition, resetDeposit])
-
-  // -- When tick advances, clear the "just submitted" flag --
-  // The oracle persists bitmaps across ticks (flip() keeps active entries),
-  // so the player's predictions remain active even without re-submitting.
-  // The UI uses hasPredictions (from bitmapEditor state) to show "carry forward".
-  useEffect(() => {
-    if (betsSubmittedTick !== null && activeBatch && activeBatch.currentTick > betsSubmittedTick) {
-      setBetsSubmittedTick(null)
-    }
-  }, [activeBatch?.currentTick, betsSubmittedTick])
-
   // -- Get public client for direct reads --
   const publicClient = usePublicClient({ chainId: indexL3.id })
 
-  // -- Enter batch handler --
+  // -- Derived --
+  const counts = bitmapEditor.getCounts(sourceId, marketIds)
+  const stakeValue = parseFloat(stakeInput) || 0
+  const hasStake = stakeValue > 0
+  const hasPredictions = counts.up + counts.down > 0
+  const allMarketsSet = counts.empty === 0 && marketIds.length > 0
+  const canSubmit = isConnected && hasStake && joinStep === 'idle'
+    && !isJoined && allMarketsSet && !!configHash
+
+  // -- Enter round handler --
   const handleEnterBatch = useCallback(async () => {
     if (!activeBatch || !canSubmit) return
 
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e18))
 
-    // Suppress the "tick resolved" toast — this balance change is user-initiated
-    suppressBalanceToast()
+    // Re-read configHash from on-chain RIGHT BEFORE joinBatchDirect
+    let liveConfigHash = configHash
+    if (!liveConfigHash) return
 
-    if (isJoined) {
-      // Already in the batch — deposit additional funds instead of joinBatch
-      depositMore(BigInt(activeBatch.id), depositAmount)
-    } else {
-      // First time joining — need configHash and bets
-      // Re-read configHash from on-chain RIGHT BEFORE joinBatch to prevent promotion race
-      let liveConfigHash = configHash
-      if (!liveConfigHash) return
-
-      try {
-        if (publicClient) {
-          const batchData = await publicClient.readContract({
-            address: VISION_ADDRESS,
-            abi: VISION_ABI,
-            functionName: 'getBatch',
-            args: [BigInt(activeBatch.id)],
-          })
-          liveConfigHash = (batchData as any)?.configHash ?? configHash
-        }
-      } catch (e) {
-        console.warn('Failed to re-read configHash, using cached value', e)
-        // Fall through to use cached configHash
+    try {
+      if (publicClient) {
+        const batchData = await publicClient.readContract({
+          address: VISION_ADDRESS,
+          abi: VISION_ABI,
+          functionName: 'getBatch',
+          args: [BigInt(activeBatch.id)],
+        })
+        liveConfigHash = (batchData as any)?.configHash ?? configHash
       }
-
-      // Build bets array from bitmap state in market order
-      const bets: BetDirection[] = marketIds.map((id) => {
-        const cell = bitmapEditor.state[id]
-        if (cell === 'up') return 'UP'
-        if (cell === 'down') return 'DOWN'
-        return 'DOWN' // default unset to DOWN
-      })
-
-      join({
-        batchId: BigInt(activeBatch.id),
-        configHash: liveConfigHash!,
-        depositAmount,
-        stakePerTick: depositAmount, // stake entire deposit per tick for now
-        bets,
-        marketCount: marketIds.length,
-      })
+    } catch (e) {
+      console.warn('Failed to re-read configHash, using cached value', e)
     }
-  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, isJoined, depositMore, publicClient])
+
+    // Build bets array from bitmap state in market order
+    const bets: BetDirection[] = marketIds.map((id) => {
+      const cell = bitmapEditor.state[id]
+      if (cell === 'up') return 'UP'
+      if (cell === 'down') return 'DOWN'
+      return 'DOWN'
+    })
+
+    join({
+      batchId: BigInt(activeBatch.id),
+      configHash: liveConfigHash!,
+      depositAmount,
+      stakePerTick: depositAmount, // round-based: deposit = stake
+      bets,
+      marketCount: marketIds.length,
+    })
+  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, publicClient])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
@@ -259,53 +188,27 @@ export default function BatchEntryPanel({
   const buttonLabel = useMemo(() => {
     if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
     if (isSubmitting) return t('batch_entry_panel.submitting')
-    if (isJoinConfirming || isDepositConfirming) return t('batch_entry_panel.confirming')
-    if (isJoinPending || isDepositPending) return t('batch_entry_panel.waiting_for_wallet')
-    if (joinStep === 'checking-balance') return t('batch_entry_panel.checking_balance')
+    if (isJoinConfirming) return t('batch_entry_panel.confirming')
+    if (isJoinPending) return t('batch_entry_panel.waiting_for_wallet')
+    if (joinStep === 'approving') return 'Approving USDC...'
     if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
-    if (depositStep === 'depositing') return t('batch_entry_panel.depositing')
-    if (isJoined) {
-      if (stakeValue > 0) return t('batch_entry_panel.deposit_amount', { amount: stakeValue.toString() })
-      return t('batch_entry_panel.deposit_more')
-    }
+    if (isJoined) return 'In Round'
     if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
     return t('batch_entry_panel.enter_batch')
-  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
+  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined])
 
-  const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
-    || (depositStep !== 'idle' && depositStep !== 'error' && depositStep !== 'done')
+  const isProcessing = joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done'
 
-  const displayError = joinError || depositError || submitError
-
-  // -- Tick history summary --
-  const tickSummary = useMemo(() => {
-    if (batchTicks.length === 0) return null
-    const wins = batchTicks.filter(t => t.pnl > 0).length
-    const losses = batchTicks.filter(t => t.pnl < 0).length
-    const flats = batchTicks.filter(t => t.pnl === 0).length
-    const totalPnl = batchTicks.reduce((sum, t) => sum + t.pnl, 0)
-    return { wins, losses, flats, total: batchTicks.length, totalPnl }
-  }, [batchTicks])
+  const displayError = joinError || submitError
 
   return (
     <div>
-      {/* ── Active Position Banner (top of panel, unmistakable) ── */}
+      {/* -- Active Position Banner (round-based) -- */}
       {isJoined && position && (() => {
-        const balance = position.balance
-        const deposited = position.totalDeposited
-        const claimed = position.totalClaimed
-        const pnl = balance - deposited + claimed
-        const pnlPercent = deposited > 0n
-          ? Number((pnl * 10000n) / deposited) / 100
-          : 0
-        const balanceNum = parseFloat(formatUnits(balance, VISION_USDC_DECIMALS))
-        const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
-        const stakeNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
-        const isUp = pnl > 0n
-        const isDown = pnl < 0n
+        const deposit = position.deposit
+        const depositNum = parseFloat(formatUnits(deposit, VISION_USDC_DECIMALS))
         return (
           <div className="border-2 border-emerald-400 bg-emerald-50 px-4 py-3 mb-1">
-            {/* Status badge */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -313,46 +216,24 @@ export default function BatchEntryPanel({
                   {t('batch_entry_panel_extra.in_batch_status', { id: activeBatch?.id ?? '' })}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-emerald-600">
-                {t('batch_entry_panel_extra.usdc_per_tick_short', { amount: stakeNum.toFixed(2) })}
-              </span>
             </div>
-            {/* Balance + PnL — large, at a glance */}
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">{t('batch_entry_panel.balance')}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Deposit</div>
                 <div className="text-[22px] font-black font-mono text-neutral-900 tabular-nums leading-tight">
-                  {balanceNum.toFixed(2)}
+                  {depositNum.toFixed(2)}
                   <span className="text-[11px] font-medium text-neutral-400 ml-1">USDC</span>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">{t('batch_entry_panel.pnl')}</div>
-                <div className={`text-[18px] font-black font-mono tabular-nums leading-tight ${isUp ? 'text-color-up' : isDown ? 'text-color-down' : 'text-neutral-500'}`}>
-                  {isUp ? '+' : ''}{pnlNum.toFixed(2)}
-                  <span className="text-[10px] ml-0.5">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
-                </div>
-              </div>
             </div>
-            {/* Win/Loss summary bar */}
-            {tickSummary && (
-              <div className="mt-2 pt-2 border-t border-emerald-200">
-                <div className="flex items-center justify-between text-[10px] font-mono tabular-nums">
-                  <span className="text-color-up font-bold">{tickSummary.wins}{t('batch_entry_panel.won').charAt(0)}</span>
-                  <span className="text-color-down font-bold">{tickSummary.losses}{t('batch_entry_panel.lost').charAt(0)}</span>
-                  {tickSummary.flats > 0 && <span className="text-neutral-400 font-bold">{tickSummary.flats}{t('batch_entry_panel.flat').charAt(0)}</span>}
-                  <span className="text-neutral-400">{t('batch_entry_panel.show_all_ticks', { count: tickSummary.total })}</span>
-                  <span className={`font-bold ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                    {tickSummary.totalPnl >= 0 ? '+' : ''}{tickSummary.totalPnl.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            )}
+            <p className="mt-2 text-[10px] text-neutral-400 text-center">
+              {t('batch_entry_panel_extra.settlement_auto')}
+            </p>
           </div>
         )
       })()}
 
-      {/* ── Not Joined Banner ── */}
+      {/* -- Not Joined Banner -- */}
       {isConnected && !isJoined && activeBatch && (
         <div className="border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 mb-1">
           <div className="flex items-center gap-1.5">
@@ -366,24 +247,19 @@ export default function BatchEntryPanel({
       )}
 
       <div className="border border-neutral-200 bg-white px-4 py-3">
-        {/* Header + Timer — single compact row */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold text-neutral-900">
-                {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
-              </h2>
-            </div>
+            <h2 className="text-sm font-semibold text-neutral-900">
+              {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
+            </h2>
             <p className="text-[10px] text-text-muted">
-              {activeBatch ? t('batch_entry_panel.tick_label', { tick: activeBatch.currentTick.toString() }) : t('batch_entry_panel.waiting_for_batch')}
+              {activeBatch ? `Round #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
             </p>
           </div>
-          <p className="text-[24px] font-mono font-black tracking-tight leading-none text-black">
-            {formatCountdown(tickState.remaining)}
-          </p>
         </div>
 
-        {/* Bitmap summary — visual bar + labels */}
+        {/* Bitmap summary */}
         <div className="mb-3">
           <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
             <span className="text-color-up">{t('batch_entry_panel.up_count', { count: counts.up })}</span>
@@ -406,25 +282,7 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Tick status messages */}
-        {isJoined && betsSubmittedTick !== null && (
-          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-emerald-700">{t('batch_entry_panel.bets_set_for_tick')}</p>
-          </div>
-        )}
-        {isJoined && betsSubmittedTick === null && hasPredictions && (
-          <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-sky-700">{t('batch_entry_panel.bets_carry_forward')}</p>
-            <p className="text-[10px] text-sky-600 mt-0.5">{t('batch_entry_panel.bets_carry_forward_detail')}</p>
-          </div>
-        )}
-        {isJoined && betsSubmittedTick === null && !hasPredictions && (
-          <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-            <p className="text-[11px] font-semibold text-amber-700">{t('batch_entry_panel.sitting_out')}</p>
-          </div>
-        )}
-
-        {/* Connect wallet prompt when not connected */}
+        {/* Connect wallet prompt */}
         {!isConnected && !isJoined && (
           <button
             type="button"
@@ -435,66 +293,54 @@ export default function BatchEntryPanel({
             <p className="text-[10px] text-neutral-500 mt-0.5">{t('batch_entry_panel.connect_wallet_prompt')}</p>
           </button>
         )}
-        {/* Deposit prompt when connected but balance is 0 */}
+
+        {/* Wallet USDC balance hint when zero */}
         {isConnected && hasZeroBalance && !isJoined && (
-          <button
-            type="button"
-            onClick={() => setShowDepositModal(true)}
-            className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2 text-left hover:bg-yellow-100 transition-colors"
-          >
-            <p className="text-[11px] font-bold text-yellow-700">{t('batch_entry_panel.no_vision_balance')}</p>
-            <p className="text-[10px] text-yellow-600 mt-0.5">{t('batch_entry_panel.deposit_to_play')}</p>
-          </button>
+          <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
+            <p className="text-[11px] font-bold text-yellow-700">No USDC in wallet</p>
+            <p className="text-[10px] text-yellow-600 mt-0.5">You need USDC on L3 to enter a round.</p>
+          </div>
         )}
 
         {/* Stake input + quick buttons */}
-        <div className="mb-3">
-          <div className="relative">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              value={stakeInput}
-              onChange={(e) => setStakeInput(e.target.value)}
-              className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
-              USDC
-            </span>
+        {!isJoined && (
+          <div className="mb-3">
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={stakeInput}
+                onChange={(e) => setStakeInput(e.target.value)}
+                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
+                USDC
+              </span>
+            </div>
+            <div className="flex gap-1 mt-1.5 fluid-btn-group">
+              {quickAmounts.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setStakeInput(String(amt))}
+                  className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                >
+                  ${amt}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-1 mt-1.5 fluid-btn-group">
-            {quickAmounts.map((amt) => (
-              <button
-                key={amt}
-                type="button"
-                onClick={() => setStakeInput(String(amt))}
-                className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
-              >
-                ${amt}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
 
-        {/* Error display — with dismiss to reset state for retry */}
+        {/* Error display */}
         {displayError && (
           <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
-            <div>
-              <p className="line-clamp-2">{displayError}</p>
-              {displayError.includes('Insufficient Vision balance') && (
-                <button
-                  type="button"
-                  onClick={() => setShowDepositModal(true)}
-                  className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
-                >
-                  {t('common_labels.deposit_usdc')}
-                </button>
-              )}
-            </div>
+            <p className="line-clamp-2">{displayError}</p>
             <button
               type="button"
-              onClick={() => { resetJoin(); resetDeposit() }}
+              onClick={() => resetJoin()}
               className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
               title={t('batch_entry_panel.dismiss')}
             >
@@ -503,16 +349,18 @@ export default function BatchEntryPanel({
           </div>
         )}
 
-        {/* Enter batch button — connects wallet when not connected */}
-        <SpringPress disabled={!canSubmit || isProcessing}>
-          <WalletActionButton
-            onClick={handleEnterBatch}
-            disabled={!canSubmit || isProcessing}
-            className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
-          >
-            {buttonLabel}
-          </WalletActionButton>
-        </SpringPress>
+        {/* Enter round button */}
+        {!isJoined && (
+          <SpringPress disabled={!canSubmit || isProcessing}>
+            <WalletActionButton
+              onClick={handleEnterBatch}
+              disabled={!canSubmit || isProcessing}
+              className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {buttonLabel}
+            </WalletActionButton>
+          </SpringPress>
+        )}
 
         {/* Batch info footer */}
         {activeBatch && (
@@ -529,70 +377,6 @@ export default function BatchEntryPanel({
           marketIds={marketIds}
         />
       </div>
-
-      {/* ── Tick History (separate section, always visible when joined) ── */}
-      {isJoined && position && batchTicks.length > 0 && (() => {
-        const stakePerTickNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
-        const sorted = [...batchTicks].sort((a, b) => b.tickId - a.tickId)
-        const visibleTicks = showTickHistory ? sorted : sorted.slice(0, 5)
-        return (
-          <div className="mt-1 border border-neutral-200 bg-white px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[11px] font-bold text-neutral-700 uppercase tracking-[0.06em]">
-                {t('common_labels.tick_history')}
-              </h3>
-              {tickSummary && (
-                <span className={`text-[11px] font-bold font-mono tabular-nums ${tickSummary.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                  {tickSummary.totalPnl >= 0 ? '+' : ''}{tickSummary.totalPnl.toFixed(2)} USDC
-                </span>
-              )}
-            </div>
-            {/* Column header */}
-            <div className="flex items-center text-[9px] font-semibold uppercase tracking-[0.06em] text-neutral-300 mb-0.5 px-1">
-              <span className="w-[40px]">{t('batch_entry_panel.tick_header')}</span>
-              <span className="w-[50px] text-right">{t('batch_entry_panel.staked_header')}</span>
-              <span className="flex-1 text-right">{t('batch_entry_panel.pnl')}</span>
-              <span className="w-[48px] text-right">{t('batch_entry_panel.result_header')}</span>
-            </div>
-            <div className={showTickHistory ? 'max-h-[300px] overflow-y-auto' : ''}>
-              {visibleTicks.map((tick) => {
-                const pnlSign = tick.pnl >= 0 ? '+' : ''
-                return (
-                  <div
-                    key={tick.tickId}
-                    className="flex items-center text-[10px] font-mono tabular-nums px-1 py-[3px] border-b border-neutral-100 last:border-b-0"
-                  >
-                    <span className="w-[40px] text-neutral-500">#{tick.tickId}</span>
-                    <span className="w-[50px] text-right text-neutral-400">{stakePerTickNum.toFixed(2)}</span>
-                    <span className={`flex-1 text-right font-semibold ${tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'}`}>
-                      {pnlSign}{tick.pnl.toFixed(2)}
-                    </span>
-                    <span className={`w-[48px] text-right text-[9px] font-bold ${
-                      tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'
-                    }`}>
-                      {tick.pnl > 0 ? t('batch_entry_panel.won') : tick.pnl < 0 ? t('batch_entry_panel.lost') : t('batch_entry_panel.flat')}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            {sorted.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setShowTickHistory(!showTickHistory)}
-                className="mt-1.5 w-full text-center text-[10px] font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
-              >
-                {showTickHistory ? t('batch_entry_panel.show_less') : t('batch_entry_panel.show_all_ticks', { count: sorted.length })}
-              </button>
-            )}
-            <p className="mt-2 text-[10px] text-neutral-400 text-center">
-              {t('batch_entry_panel_extra.settlement_auto')}
-            </p>
-          </div>
-        )
-      })()}
-
-      {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
     </div>
   )
 }

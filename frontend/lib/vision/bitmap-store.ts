@@ -9,7 +9,12 @@
  * Value: JSON array of StoredBet entries (capped at 500 per address)
  */
 
-import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+/** Inline type for batch history entries (replaces deleted useBatchHistory import) */
+export interface BatchHistoryEntry {
+  tickId: number
+  resolvedAt?: number | string
+  marketOutcomes: { marketId: string; wentUp: boolean; pctChange: number; endPrice: number }[]
+}
 
 export interface StoredBet {
   batchId: number

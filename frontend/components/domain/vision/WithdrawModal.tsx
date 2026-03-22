@@ -1,21 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
-import { useQuery } from '@tanstack/react-query'
-import { useWithdraw } from '@/hooks/vision/useWithdraw'
-import { useClaim } from '@/hooks/vision/useClaim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
-import { getTxUrl } from '@/lib/utils/explorer'
-
-type Mode = 'choose' | 'withdraw' | 'claim'
+import { useTranslations } from 'next-intl'
 
 interface WithdrawModalProps {
   batchId: number
@@ -23,20 +14,14 @@ interface WithdrawModalProps {
 }
 
 /**
- * Modal for withdrawing or claiming rewards from a Vision batch.
+ * Round-based settlement modal.
  *
- * Provides two options:
- * - "Withdraw All": fetches BLS proof from oracle, calls Vision.withdraw()
- * - "Claim Rewards": fetches BLS proof with tick range, calls Vision.claimRewards()
- *
- * Both require a BLS-signed balance proof from the oracle nodes.
- * Withdraw deducts a 0.3% fee on profit.
+ * In the round model, settleBatch() sends USDC directly to player wallets.
+ * This modal shows the round result. No manual claim or withdraw needed.
  */
 export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const t = useTranslations('vision')
   const { address, isConnected } = useAccount()
-  const { capture } = usePostHogTracker()
-  const [mode, setMode] = useState<Mode>('choose')
 
   // Read on-chain position
   const { data: position } = useReadContract({
@@ -50,130 +35,14 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   const pos = position as {
     bitmapHash: string
-    stakePerTick: bigint
-    startTick: bigint
-    balance: bigint
-    lastClaimedTick: bigint
+    deposit: bigint
     joinTimestamp: bigint
     totalDeposited: bigint
     totalClaimed: bigint
   } | undefined
 
-  const onChainBalance = pos?.balance ?? 0n
   const totalDeposited = pos?.totalDeposited ?? 0n
-  const totalClaimed = pos?.totalClaimed ?? 0n
-  const lastClaimedTick = pos?.lastClaimedTick ?? 0n
-  const startTick = pos?.startTick ?? 0n
-
-  // Fetch oracle balance proof for real-time PnL
-  const { data: oracleBalanceData } = useQuery({
-    queryKey: ['vision-oracle-balance', batchId, address],
-    queryFn: async () => {
-      const res = await fetch(`/api/vision/balance/${batchId}/${address}`)
-      if (!res.ok) return null
-      return res.json()
-    },
-    enabled: !!address && isConnected,
-    refetchInterval: 10_000,
-    staleTime: 5000,
-  })
-
-  // Oracle balance as bigint (balance proof response uses wei string)
-  const oracleBalance: bigint | null = oracleBalanceData?.balance
-    ? BigInt(oracleBalanceData.balance)
-    : null
-
-  // Use oracle balance for PnL when available; fall back to on-chain
-  const effectiveBalance = oracleBalance ?? onChainBalance
-
-  // Profit calculation: effectiveBalance - totalDeposited + totalClaimed (net profit)
-  const profit = effectiveBalance > totalDeposited ? effectiveBalance - totalDeposited + totalClaimed : 0n
-  const estimatedFee = (profit * 3n) / 1000n // 0.3% on profit
-
-  // --- Withdraw hook ---
-  const {
-    withdraw,
-    withdrawHash,
-    step: withdrawStep,
-    isPending: isWithdrawPending,
-    isConfirming: isWithdrawConfirming,
-    proof: withdrawProof,
-    error: withdrawError,
-    reset: resetWithdraw,
-  } = useWithdraw()
-
-  // --- Claim hook ---
-  const {
-    claim,
-    claimHash,
-    step: claimStep,
-    isPending: isClaimPending,
-    isConfirming: isClaimConfirming,
-    proof: claimProof,
-    error: claimError,
-    reset: resetClaim,
-  } = useClaim()
-
-  // Read batch info for current tick
-  const { data: batchData } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'getBatch',
-    args: [BigInt(batchId)],
-    chainId: indexL3.id,
-    query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
-  })
-
-  const batchInfo = batchData as {
-    creator: string
-    marketIds: string[]
-    resolutionTypes: number[]
-    tickDuration: bigint
-    customThresholds: bigint[]
-    createdAtTick: bigint
-    paused: boolean
-  } | undefined
-
-  // Compute claimable tick range
-  const fromTick = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
-  // createdAtTick + elapsed is approximate; the real current tick comes from the batch state
-  // For now use a reasonable estimate — the oracle will validate
-  const hasClaimableTicks = lastClaimedTick < (batchInfo?.createdAtTick ?? 0n) + 100n // rough check
-
-  const handleWithdraw = useCallback(() => {
-    capture('vision_withdraw_submitted', { batch_id: batchId, amount: onChainBalance > 0n ? formatUnits(onChainBalance, VISION_USDC_DECIMALS) : '0' })
-    setMode('withdraw')
-    withdraw(BigInt(batchId))
-  }, [batchId, withdraw, capture, onChainBalance])
-
-  const handleClaim = useCallback(() => {
-    setMode('claim')
-    // fromTick = lastClaimedTick + 1, toTick = we pass 0 and let oracle determine current tick
-    // In practice the frontend should know the current resolved tick from batch state
-    const from = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
-    // toTick = 0 means "up to latest resolved tick" — oracle handles this
-    claim(BigInt(batchId), from, 0n)
-  }, [batchId, lastClaimedTick, startTick, claim])
-
-  const handleReset = useCallback(() => {
-    setMode('choose')
-    resetWithdraw()
-    resetClaim()
-  }, [resetWithdraw, resetClaim])
-
-  const activeStep = mode === 'withdraw' ? withdrawStep : mode === 'claim' ? claimStep : 'idle'
-  const activeError = mode === 'withdraw' ? withdrawError : mode === 'claim' ? claimError : null
-  const activePending = mode === 'withdraw' ? isWithdrawPending : isClaimPending
-  const activeConfirming = mode === 'withdraw' ? isWithdrawConfirming : isClaimConfirming
-  const isProcessing = activePending || activeConfirming || activeStep === 'fetching-proof'
-
-  const stepLabel = (() => {
-    if (activeStep === 'fetching-proof') return t('withdraw_modal_steps.fetching_proof')
-    if (activeStep === 'withdrawing') return activePending ? t('withdraw_modal_steps.confirm_withdrawal') : t('withdraw_modal_steps.submitting_withdrawal')
-    if (activeStep === 'claiming') return activePending ? t('withdraw_modal_steps.confirm_claim') : t('withdraw_modal_steps.submitting_claim')
-    if (activeStep === 'done') return mode === 'withdraw' ? t('withdraw_modal_steps.withdrawal_done') : t('withdraw_modal_steps.claim_done')
-    return ''
-  })()
+  const deposit = pos?.deposit ?? 0n
 
   return (
     <SpringBackdrop className={glass.backdrop} onClick={onClose}>
@@ -182,7 +51,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">
-              {mode === 'withdraw' ? t('withdraw_modal.title_withdraw', { id: batchId }) : mode === 'claim' ? t('withdraw_modal.title_claim', { id: batchId }) : t('withdraw_modal.title_choose', { id: batchId })}
+              {t('withdraw_modal.title_choose', { id: batchId })}
             </h2>
             <ModalClose onClick={onClose} />
           </div>
@@ -191,164 +60,37 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
             <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">{t('withdraw_modal.connect_wallet')}</p>
             </div>
-          ) : activeStep === 'done' ? (
-            <div className="space-y-4">
-              <div className={`${glass.success} p-6 text-center`}>
-                <p className="text-color-up font-semibold text-lg mb-1">
-                  {mode === 'withdraw' ? t('withdraw_modal.withdrawal_successful') : t('withdraw_modal.claim_successful')}
-                </p>
-                {mode === 'withdraw' && withdrawProof && (
-                  <p className="text-text-secondary text-sm">
-                    {t('withdraw_modal.usdc_returned', { amount: parseFloat(formatUnits(BigInt(withdrawProof.balance), VISION_USDC_DECIMALS)).toFixed(2) })}
-                  </p>
-                )}
-                {mode === 'claim' && claimProof && (
-                  <p className="text-text-secondary text-sm">
-                    {t('withdraw_modal.rewards_claimed', { from: claimProof.fromTick, to: claimProof.toTick })}
-                  </p>
-                )}
-                {(withdrawHash || claimHash) && (
-                  <a
-                    href={getTxUrl((withdrawHash || claimHash)!, 'l3')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors inline-block"
-                  >
-                    Tx: {((withdrawHash || claimHash)!).slice(0, 10)}...{((withdrawHash || claimHash)!).slice(-8)} ↗
-                  </a>
-                )}
-              </div>
-              <button
-                onClick={handleReset}
-                className={glass.ctaSecondary}
-              >
-                {t('withdraw_modal.back')}
-              </button>
-              <button
-                onClick={onClose}
-                className={glass.cancel}
-              >
-                {t('withdraw_modal.close')}
-              </button>
-            </div>
           ) : (
             <div className="space-y-4">
               {/* Position overview */}
               <div className={`${glass.section} p-4 space-y-3`}>
-                {/* Oracle balance — real-time, primary display */}
-                {oracleBalance !== null ? (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.oracle_balance')}</span>
-                      <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                        {parseFloat(formatUnits(oracleBalance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
-                      </span>
-                    </div>
-                    {onChainBalance !== oracleBalance && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
-                        <span className="text-sm text-text-secondary tabular-nums font-mono">
-                          {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
-                        </span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
-                    <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                      {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Deposit</span>
+                  <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
+                    {deposit > 0n ? parseFloat(formatUnits(deposit, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
+                  </span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
                   <span className="text-sm text-text-secondary tabular-nums font-mono">
                     {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
-                {profit > 0n && (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.profit')}</span>
-                      <span className="text-sm text-color-up tabular-nums font-mono">
-                        +{parseFloat(formatUnits(profit, VISION_USDC_DECIMALS)).toFixed(2)} USDC
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.est_fee')}</span>
-                      <span className="text-sm text-text-muted tabular-nums font-mono">
-                        -{parseFloat(formatUnits(estimatedFee, VISION_USDC_DECIMALS)).toFixed(2)} USDC
-                      </span>
-                    </div>
-                  </>
-                )}
               </div>
 
-              {/* Step indicator */}
-              {activeStep !== 'idle' && activeStep !== 'error' && (
-                <div className={`${glass.section} p-4`}>
-                  <div className="flex items-center gap-3">
-                    <div className={glass.spinner} />
-                    <span className="text-sm text-text-secondary">{stepLabel}</span>
-                  </div>
-                </div>
-              )}
+              {/* Round-based settlement notice */}
+              <div className={`${glass.section} p-4`}>
+                <p className="text-sm text-text-secondary">
+                  Settlement sends USDC directly to your wallet when the round ends. No manual claim needed.
+                </p>
+              </div>
 
-              {/* Error */}
-              {activeError && (
-                <div className={`${glass.error} p-4 text-color-down`}>
-                  <p className="font-medium">{t('withdraw_modal.error_title')}</p>
-                  <p className="text-sm mt-1 break-all">{activeError}</p>
-                  <button
-                    onClick={handleReset}
-                    className="text-xs text-color-down underline mt-2"
-                  >
-                    {t('withdraw_modal.try_again')}
-                  </button>
-                </div>
-              )}
-
-              {/* Action buttons — show only in choose mode or when not processing */}
-              {mode === 'choose' && !isProcessing && (
-                <div className="space-y-3">
-                  {/* Withdraw All */}
-                  <WalletActionButton
-                    onClick={handleWithdraw}
-                    disabled={onChainBalance === 0n}
-                    className={glass.ctaDown}
-                  >
-                    {t('withdraw_modal.withdraw_all')}
-                  </WalletActionButton>
-                  <p className="text-xs text-text-muted text-center">
-                    {t('withdraw_modal.withdraw_description')}
-                  </p>
-
-                  <div className="border-t border-border-light my-2" />
-
-                  {/* Claim Rewards */}
-                  <WalletActionButton
-                    onClick={handleClaim}
-                    disabled={onChainBalance === 0n}
-                    className={`${glass.ctaSecondary} disabled:opacity-40 disabled:cursor-not-allowed fluid-press`}
-                  >
-                    {t('withdraw_modal.claim_rewards')}
-                  </WalletActionButton>
-                  <p className="text-xs text-text-muted text-center">
-                    {t('withdraw_modal.claim_description')}
-                  </p>
-                </div>
-              )}
-
-              {/* Cancel during processing */}
-              {isProcessing && (
-                <button
-                  onClick={handleReset}
-                  className={glass.cancel}
-                >
-                  {t('withdraw_modal.cancel')}
-                </button>
-              )}
+              <button
+                onClick={onClose}
+                className={glass.cancel}
+              >
+                {t('withdraw_modal.close')}
+              </button>
             </div>
           )}
         </div>

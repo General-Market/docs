@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
-import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 import type { ResolvedMarket } from '@/hooks/vision/useResolvedMarkets'
 import { categorizeMarkets, formatMarketName, type MarketCategory } from '@/lib/vision/market-categories'
 import { SpringExpand } from '@/components/ui/spring'
@@ -10,7 +9,7 @@ import { useTranslations } from 'next-intl'
 
 interface MarketAccordionProps {
   batch: BatchInfo
-  history: BatchHistoryEntry[]
+  history: { marketOutcomes: { marketId: string; endPrice: number; pctChange: number; wentUp: boolean }[]; tickId: number }[]
   bets: Record<string, boolean>
   onToggleBet: (marketId: string) => void
   onBulkBet: (marketIds: string[], direction: boolean) => void

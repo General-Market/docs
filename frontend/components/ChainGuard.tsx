@@ -11,7 +11,7 @@ import { indexL3, settlementChain } from '@/lib/wagmi'
  * to Index L3 whenever connected on the wrong chain.
  *
  * Vision pages allow Settlement as an additional chain because cross-chain
- * deposits (useDepositToVision) require the wallet to be on Settlement.
+ * deposits require the wallet to be on Settlement.
  */
 export function ChainGuard({ children }: { children: React.ReactNode }) {
   const { isConnected } = useAccount()

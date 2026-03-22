@@ -1,6 +1,6 @@
 //! Vision configuration
 //!
-//! Configuration for the Vision prediction market subsystem.
+//! Configuration for the Vision prediction market subsystem (round-based only).
 
 use serde::{Deserialize, Serialize};
 
@@ -19,22 +19,15 @@ pub struct VisionConfig {
     pub rpc_ws_url: String,
     /// Block number to start syncing events from.
     pub start_block: u64,
-    /// Window (in seconds) for players to reveal bitmaps after commitment.
-    pub reveal_window_secs: u64,
-    /// Number of ticks before the current tick that commitments target.
-    pub commitment_offset: u64,
     /// Maximum age (in seconds) for price data before it is considered stale.
     pub staleness_threshold_secs: u64,
-    /// Interval (in milliseconds) between tick polling checks.
-    pub tick_poll_interval_ms: u64,
     /// Optional bearer token for authenticating data-node HTTP requests.
     pub data_node_token: Option<String>,
     /// Shared HMAC secret for verifying snapshot responses from data-node (IS-7).
-    /// If set, snapshot responses must include a valid X-Snapshot-HMAC header.
     pub snapshot_hmac_secret: Option<String>,
 
     // =========================================================================
-    // BLS tick consensus fields (T-32)
+    // BLS consensus fields
     // =========================================================================
 
     /// L3 chain ID for BLS hash domain separation. Default: 111222333 (Index L3).
@@ -45,10 +38,10 @@ pub struct VisionConfig {
     pub node_index: u8,
 
     // =========================================================================
-    // Dual-balance / cross-chain deposit fields (Vision First Deposit)
+    // Settlement / cross-chain fields
     // =========================================================================
 
-    /// Settlement RPC URL for watching VisionDepositCreated events.
+    /// Settlement RPC URL.
     pub settlement_rpc_url: String,
     /// SettlementBridgeCustody contract address on Settlement.
     pub settlement_bridge_custody_address: String,
@@ -69,14 +62,7 @@ pub struct VisionConfig {
     // Round-based batch lifecycle fields
     // =========================================================================
 
-    /// Source IDs managed by the BatchLifecycleManager (round-based batches).
-    /// Sources listed here are excluded from the tick engine's resolution loop.
-    #[serde(default)]
-    pub round_based_sources: Vec<String>,
-
     /// OracleRegistry contract address on L3.
-    /// Used by BatchLifecycleManager to read lastSnapshotNonce for BLS createBatch calls.
-    /// Populated from the main oracle config; falls back to the hardcoded deployment address.
     #[serde(default)]
     pub oracle_registry_address: String,
 }
@@ -90,27 +76,23 @@ impl Default for VisionConfig {
             database_url: "postgres://localhost:5432/vision".into(),
             rpc_ws_url: "ws://localhost:8546".into(),
             start_block: 0,
-            reveal_window_secs: 600,
-            commitment_offset: 9,
             staleness_threshold_secs: 300,
-            tick_poll_interval_ms: 1000,
             data_node_token: None,
             snapshot_hmac_secret: None,
-            // BLS tick consensus defaults
+            // BLS consensus defaults
             chain_id: 111222333,
             num_oracles: 1,
             node_index: 0,
-            // Cross-chain deposit defaults
+            // Settlement defaults
             settlement_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
             settlement_bridge_custody_address: String::new(),
             settlement_chain_id: 42161,
-            deposit_poll_interval_ms: 1000,  // Fast polling for bridge speed
-            deposit_finality_confirmations: 3,  // Sonic has instant finality (was 15)
-            gas_drip_amount_wei: "10000000000000000".into(), // 0.01 GM
-            gas_drip_threshold_wei: "5000000000000000".into(), // 0.005 GM
-            deposit_auto_refund_timeout_secs: 7200, // 2 hours
+            deposit_poll_interval_ms: 1000,
+            deposit_finality_confirmations: 3,
+            gas_drip_amount_wei: "10000000000000000".into(),
+            gas_drip_threshold_wei: "5000000000000000".into(),
+            deposit_auto_refund_timeout_secs: 7200,
             // Round-based lifecycle
-            round_based_sources: Vec::new(),
             oracle_registry_address: String::new(),
         }
     }

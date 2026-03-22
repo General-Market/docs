@@ -2,12 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
-import type { BatchHistoryEntry, MarketOutcome } from '@/hooks/vision/useBatchHistory'
 import { useTranslations } from 'next-intl'
 
 interface VisualTabProps {
   batch: BatchInfo
-  history: BatchHistoryEntry[]
+  history: { marketOutcomes: { marketId: string; endPrice: number; pctChange: number; wentUp: boolean }[]; tickId: number }[]
   bets: Record<string, boolean> // marketId -> true=UP, false=DOWN
   onToggleBet: (marketId: string) => void
 }

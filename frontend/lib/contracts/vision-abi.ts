@@ -1,6 +1,7 @@
 /**
- * Vision.sol ABI — matches hash-based contract (sourceId + configHash design).
- * Derived from IVision.sol interface after 3-round review fixes.
+ * Vision.sol ABI — round-based model.
+ * Direct USDC in via joinBatchDirect(), direct USDC out via settleBatch().
+ * No dual-balance, no claimRewards, no deposit/withdraw balance pool.
  */
 
 export const VISION_ABI = [
@@ -21,38 +22,6 @@ export const VISION_ABI = [
     type: 'function',
   },
   {
-    inputs: [
-      { name: 'sourceId', type: 'bytes32' },
-      { name: 'configHash', type: 'bytes32' },
-      { name: 'tickDuration', type: 'uint256' },
-      { name: 'lockOffset', type: 'uint256' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-      { name: 'depositAmount', type: 'uint256' },
-      { name: 'stakePerTick', type: 'uint256' },
-      { name: 'bitmapHash', type: 'bytes32' },
-    ],
-    name: 'createBatchAndJoin',
-    outputs: [{ name: 'batchId', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'configHash', type: 'bytes32' },
-      { name: 'lockOffset', type: 'uint256' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'updateBatchConfig',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
     inputs: [{ name: 'batchId', type: 'uint256' }],
     name: 'getBatch',
     outputs: [
@@ -63,12 +32,9 @@ export const VISION_ABI = [
           { name: 'creator', type: 'address' },
           { name: 'sourceId', type: 'bytes32' },
           { name: 'configHash', type: 'bytes32' },
-          { name: 'nextConfigHash', type: 'bytes32' },
           { name: 'tickDuration', type: 'uint256' },
           { name: 'lockOffset', type: 'uint256' },
-          { name: 'nextLockOffset', type: 'uint256' },
           { name: 'createdAtTick', type: 'uint256' },
-          { name: 'lastPromotionTick', type: 'uint256' },
           { name: 'paused', type: 'bool' },
         ],
       },
@@ -114,7 +80,7 @@ export const VISION_ABI = [
       { name: 'stakePerTick', type: 'uint256' },
       { name: 'bitmapHash', type: 'bytes32' },
     ],
-    name: 'joinBatch',
+    name: 'joinBatchDirect',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -133,44 +99,6 @@ export const VISION_ABI = [
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    name: 'deposit',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'fromTick', type: 'uint256' },
-      { name: 'toTick', type: 'uint256' },
-      { name: 'newBalance', type: 'uint256' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'claimRewards',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'finalBalance', type: 'uint256' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'withdraw',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
       { name: 'player', type: 'address' },
     ],
     name: 'getPosition',
@@ -181,10 +109,7 @@ export const VISION_ABI = [
         components: [
           { name: 'bitmapHash', type: 'bytes32' },
           { name: 'configHash', type: 'bytes32' },
-          { name: 'stakePerTick', type: 'uint256' },
-          { name: 'startTick', type: 'uint256' },
-          { name: 'balance', type: 'uint256' },
-          { name: 'lastClaimedTick', type: 'uint256' },
+          { name: 'deposit', type: 'uint256' },
           { name: 'joinTimestamp', type: 'uint256' },
           { name: 'totalDeposited', type: 'uint256' },
           { name: 'totalClaimed', type: 'uint256' },
@@ -192,6 +117,22 @@ export const VISION_ABI = [
       },
     ],
     stateMutability: 'view',
+    type: 'function',
+  },
+
+  // ============ SETTLEMENT ============
+  {
+    inputs: [
+      { name: 'batchId', type: 'uint256' },
+      { name: 'players', type: 'address[]' },
+      { name: 'payouts', type: 'uint256[]' },
+      { name: 'blsSignature', type: 'bytes' },
+      { name: 'referenceNonce', type: 'uint256' },
+      { name: 'signersBitmask', type: 'uint256' },
+    ],
+    name: 'settleBatch',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
 
@@ -242,7 +183,7 @@ export const VISION_ABI = [
     type: 'function',
   },
 
-  // ============ ISSUER OPERATIONS ============
+  // ============ ADMIN ============
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },
@@ -263,20 +204,6 @@ export const VISION_ABI = [
       { name: 'signersBitmask', type: 'uint256' },
     ],
     name: 'unpause',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'player', type: 'address' },
-      { name: 'finalBalance', type: 'uint256' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'forceWithdraw',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -325,115 +252,11 @@ export const VISION_ABI = [
     type: 'function',
   },
 
-  // ============ DUAL-BALANCE (First Deposit Architecture) ============
-  {
-    inputs: [
-      { name: 'user', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-      { name: 'orderId', type: 'bytes32' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'creditBalance',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    name: 'depositBalance',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    name: 'withdrawBalance',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    name: 'withdrawToSettlement',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'user', type: 'address' }],
-    name: 'realBalance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'user', type: 'address' }],
-    name: 'virtualBalance',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ name: 'user', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-
-  // ============ DUAL-BALANCE EVENTS ============
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-      { indexed: false, name: 'orderId', type: 'bytes32' },
-    ],
-    name: 'BalanceCredited',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-    ],
-    name: 'BalanceDeposited',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-    ],
-    name: 'BalanceWithdrawn',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'user', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-    ],
-    name: 'WithdrawToSettlementRequested',
-    type: 'event',
-  },
-
   // ============ CONSTANTS / STATE ============
   {
     inputs: [],
     name: 'USDC',
     outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'MIN_STAKE_PER_TICK',
-    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function',
   },
@@ -471,7 +294,7 @@ export const VISION_ABI = [
     inputs: [
       { indexed: true, name: 'batchId', type: 'uint256' },
       { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'stakePerTick', type: 'uint256' },
+      { indexed: false, name: 'deposit', type: 'uint256' },
       { indexed: false, name: 'bitmapHash', type: 'bytes32' },
     ],
     name: 'PlayerJoined',
@@ -482,60 +305,17 @@ export const VISION_ABI = [
     inputs: [
       { indexed: true, name: 'batchId', type: 'uint256' },
       { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
+      { indexed: false, name: 'payout', type: 'uint256' },
     ],
-    name: 'PlayerDeposited',
+    name: 'PlayerSettled',
     type: 'event',
   },
   {
     anonymous: false,
     inputs: [
       { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
     ],
-    name: 'RewardsClaimed',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-    ],
-    name: 'PlayerWithdrawn',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'amount', type: 'uint256' },
-    ],
-    name: 'ForceWithdrawn',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: false, name: 'configHash', type: 'bytes32' },
-      { indexed: false, name: 'lockOffset', type: 'uint256' },
-    ],
-    name: 'BatchConfigUpdated',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: false, name: 'oldConfigHash', type: 'bytes32' },
-      { indexed: false, name: 'newConfigHash', type: 'bytes32' },
-      { indexed: false, name: 'tick', type: 'uint256' },
-    ],
-    name: 'BatchConfigPromoted',
+    name: 'BatchSettled',
     type: 'event',
   },
   {

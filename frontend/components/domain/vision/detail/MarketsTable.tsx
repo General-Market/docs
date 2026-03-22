@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
-import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
@@ -16,15 +15,12 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from 'recharts'
-import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 import { useTranslations, useLocale } from 'next-intl'
 
 interface MarketsTableProps {
   sourceId: string
   bitmapEditor: BitmapEditor
-  isResolving?: boolean
 }
 
 interface PriceHistoryPoint {
@@ -127,7 +123,7 @@ function formatVolume(vol: string | null): string {
 
 // ── Asset Price History Chart ──
 
-function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSourceId: string; assetId: string; tickHistory?: BatchHistoryEntry[] }) {
+function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string; assetId: string }) {
   const t = useTranslations('vision')
   const locale = useLocale()
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
@@ -256,22 +252,6 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
             }}
             formatter={(val: number) => [formatValue(val), t('markets_table.value_tooltip')]}
           />
-          {/* Resolution time markers */}
-          {(tickHistory ?? []).map((tick) => {
-            if (!tick.resolvedAt) return null
-            const ts = new Date(typeof tick.resolvedAt === 'number' ? tick.resolvedAt * 1000 : tick.resolvedAt).toISOString()
-            const outcome = tick.marketOutcomes?.find(mo => mo.marketId === assetId)
-            return (
-              <ReferenceLine
-                key={tick.tickId}
-                x={ts}
-                stroke={outcome?.wentUp ? '#16a34a' : '#dc2626'}
-                strokeDasharray="3 3"
-                strokeWidth={1}
-                opacity={0.6}
-              />
-            )
-          })}
           <Line
             type="monotone"
             dataKey="value"
@@ -288,7 +268,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
 
 // ── Markets Table ──
 
-export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTableProps) {
+export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const t = useTranslations('vision')
   // Source metadata from registry
   const { sources } = useSourceRegistry()
@@ -350,9 +330,6 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     }
     return map
   }, [batchConfigData, sourceMarkets])
-
-  // Fetch tick history for consensus arrows
-  const { data: tickHistory } = useBatchHistory(activeBatch?.id ?? null)
 
   const [search, setSearch] = useState('')
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
@@ -435,7 +412,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
         )}
 
         {/* Market rows — tall viewport, content-visibility for offscreen perf */}
-        <div className={`max-h-[calc(100vh-280px)] overflow-y-auto ${isResolving ? 'rows-resolving' : ''}`}>
+        <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
           {visibleMarkets.map((market, idx) => {
             const change1d = formatChangePct(market.changePct)
             const vol = formatVolume(market.volume24h)
@@ -532,7 +509,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                 {/* Expanded history chart */}
                 <SpringExpand isOpen={isExpanded}>
                   <div className="border-b border-border-light">
-                    <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} tickHistory={tickHistory ?? []} />
+                    <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} />
                   </div>
                 </SpringExpand>
               </div>
