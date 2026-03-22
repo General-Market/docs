@@ -80,6 +80,7 @@ pub struct CachedItpState {
     pub assets: Vec<ethers::types::Address>,
     pub weights: Vec<ethers::types::U256>,
     pub inventory: Vec<ethers::types::U256>,
+    pub nav: ethers::types::U256,
     pub name: String,
     pub symbol: String,
     pub settlement_address: Option<String>,

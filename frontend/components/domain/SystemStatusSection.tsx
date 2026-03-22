@@ -113,7 +113,14 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
 
   // Build ITP name lookup: itpId → display name
   // Supports both plain number IDs ("1", "2") and bytes32 hex ("0x000...0001")
+  // Falls back to itp-id-names.json for ITPs not in deployedItps
   const itpNameMap = new Map<string, string>()
+  // Load static names first (fallback)
+  const staticNames: Record<string, { name: string; ticker: string }> = require('@/lib/itp-id-names.json')
+  for (const [hexId, meta] of Object.entries(staticNames)) {
+    itpNameMap.set(hexId.toLowerCase(), `$${meta.ticker}`)
+  }
+  // Override with dynamic names from deployedItps
   if (deployedItps) {
     for (const itp of deployedItps) {
       const key = itp.itpId.toLowerCase()

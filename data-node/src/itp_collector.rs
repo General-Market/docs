@@ -179,10 +179,7 @@ async fn store_snapshot_from_cache(
     let weights_strs: Vec<String> = cached.weights.iter().map(|v| v.to_string()).collect();
     let total_supply_str = cached.total_supply.to_string();
 
-    // Compute NAV from inventory and weights (NAV = sum(qty * weight) but we store as-is)
-    // For periodic snapshots we need to re-derive nav; cache doesn't store it.
-    // Use "0" as placeholder — the API layer computes NAV from inventory + prices anyway.
-    let nav_str = "0".to_string();
+    let nav_str = cached.nav.to_string();
 
     let ts = Utc::now();
 
@@ -271,8 +268,8 @@ pub async fn run(
                 }
 
                 match fetch_itp_state_with_retry(contract_ref, itp_id_bytes).await {
-                    Ok((id_hex, creator, total_supply, _nav, assets, weights, inventory)) => {
-                        Ok((i, id_hex, creator, total_supply, assets, weights, inventory))
+                    Ok((id_hex, creator, total_supply, nav, assets, weights, inventory)) => {
+                        Ok((i, id_hex, creator, total_supply, nav, assets, weights, inventory))
                     }
                     Err(e) => {
                         warn!(itp = i, %e, "Failed to hydrate ITP state");
@@ -286,7 +283,7 @@ pub async fn run(
 
         for result in results {
             match result {
-                Ok((i, itp_id_hex, creator, total_supply, assets, weights, inventory)) => {
+                Ok((i, itp_id_hex, creator, total_supply, nav, assets, weights, inventory)) => {
                     // Store init snapshot if needed
                     match db::has_init_snapshot(&pool, &itp_id_hex).await {
                         Ok(false) => {
@@ -326,6 +323,7 @@ pub async fn run(
                         assets,
                         weights,
                         inventory,
+                        nav,
                         name: String::new(),
                         symbol: String::new(),
                         settlement_address: None,
@@ -425,7 +423,7 @@ pub async fn run(
                     } else {
                         // Populate cache from the freshly-fetched state
                         let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
-                        if let Ok((_id, creator, total_supply, _nav, assets, weights, inventory)) =
+                        if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                             fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                         {
                             let cached = CachedItpState {
@@ -434,6 +432,7 @@ pub async fn run(
                                 assets,
                                 weights,
                                 inventory,
+                                nav,
                                 name: String::new(),
                                 symbol: String::new(),
                                 settlement_address: None,
@@ -557,7 +556,7 @@ pub async fn run(
                     } else {
                         // Update cache from the fresh RPC data
                         let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
-                        if let Ok((_id, creator, total_supply, _nav, assets, weights, inventory)) =
+                        if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                             fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                         {
                             let cached = CachedItpState {
@@ -566,6 +565,7 @@ pub async fn run(
                                 assets,
                                 weights,
                                 inventory,
+                                nav,
                                 name: String::new(),
                                 symbol: String::new(),
                                 settlement_address: None,
@@ -722,7 +722,7 @@ pub async fn run(
                     let mut itp_id_bytes = [0u8; 32];
                     ethers::types::U256::from(i).to_big_endian(&mut itp_id_bytes);
                     let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
-                    if let Ok((_id, creator, total_supply, _nav, assets, weights, inventory)) =
+                    if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                         fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                     {
                         let cached_state = CachedItpState {
@@ -731,6 +731,7 @@ pub async fn run(
                             assets,
                             weights,
                             inventory,
+                            nav,
                             name: String::new(),
                             symbol: String::new(),
                             settlement_address: None,
