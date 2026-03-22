@@ -38,6 +38,19 @@ DECIMALS = 18
 def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
     """One poll cycle: join new batches, then check existing positions."""
     oracle_urls = oracle_urls_fn()
+
+    # Round-based mode: lifecycle manager creates batches. Skip static batch discovery.
+    if cfg.get("round_based", False):
+        # Approve max once at the start
+        if not getattr(tracker, '_usdc_approved', False):
+            executor.approve_usdc(2**256 - 1)
+            tracker._usdc_approved = True
+        tracker.check_rounds(strategy=strategy)
+        exited = tracker.check_all()
+        for bid in exited:
+            risk.record_exit(bid)
+        return
+
     batches = fetch_batches(cfg["vision_api"], executor=executor)
 
     for batch in batches:
