@@ -101,7 +101,15 @@ class Tracker:
                 return
             all_batches = resp.json().get("batches", [])
             # Filter: non-paused, has markets, not already joined
-            active = [b for b in all_batches if not b.get("paused") and b.get("market_count", 0) > 0]
+            # Deduplicate: only the LATEST batch per source (highest ID = most recent round)
+            by_source = {}
+            for b in all_batches:
+                if b.get("paused") or b.get("market_count", 0) == 0:
+                    continue
+                src = b.get("source_id", "")
+                if src not in by_source or b.get("id", 0) > by_source[src].get("id", 0):
+                    by_source[src] = b
+            active = list(by_source.values())
             max_batches = self._config.get("max_batches", 50)
             joined = 0
             for batch in active:
