@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Fetch YouTube transcripts for all YC launches.
-Uses youtube-transcript-api. Resumable via checkpoint file.
+Uses pytubefix (bypasses youtube-transcript-api IP blocks).
+Resumable via checkpoint file.
 """
 
 import csv
@@ -11,15 +12,13 @@ import re
 import sys
 import time
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from pytubefix import YouTube
 
 INPUT_JSON = "yc_launches.json"
 OUTPUT_CSV = "yc_launches_with_transcripts.csv"
 OUTPUT_JSON = "yc_launches_with_transcripts.json"
 FAILED_LOG = "yc_transcript_failures.json"
 CHECKPOINT = "yc_transcripts_checkpoint.json"
-
-api = YouTubeTranscriptApi()
 
 
 def extract_youtube_id(url):
@@ -35,19 +34,54 @@ def extract_youtube_id(url):
     return None
 
 
+def srt_to_text(srt):
+    """Convert SRT captions to plain text."""
+    lines = []
+    for line in srt.split('\n'):
+        line = line.strip()
+        # Skip sequence numbers, timestamps, empty lines
+        if not line or line.isdigit() or '-->' in line:
+            continue
+        lines.append(line)
+    return ' '.join(lines)
+
+
 def fetch_transcript(video_id):
     try:
-        result = api.fetch(video_id, languages=['en'])
-        snippets = list(result)
-        if not snippets:
+        yt = YouTube('https://www.youtube.com/watch?v=' + video_id)
+        caps = yt.captions
+
+        if not caps:
             return "", "no_transcript"
-        text = " ".join(s.text for s in snippets)
-        return text.strip(), "ok"
+
+        # Prefer English manual, then English auto, then first available
+        chosen = None
+        cap_list = list(caps)
+        for c in cap_list:
+            if c.code == 'en':
+                chosen = c
+                break
+        if not chosen:
+            for c in cap_list:
+                if c.code.startswith('en') or c.code == 'a.en':
+                    chosen = c
+                    break
+        if not chosen:
+            chosen = cap_list[0]
+
+        srt = chosen.generate_srt_captions()
+        text = srt_to_text(srt)
+
+        if not text or len(text) < 5:
+            return "", "no_transcript"
+
+        return text, "ok"
+
     except Exception as e:
-        err = str(e)
-        if "No transcripts" in err or "TranscriptsDisabled" in err or "NoTranscript" in err or "disabled" in err.lower():
+        err = str(e).split('\n')[0][:150]
+        if "no captions" in err.lower():
             return "", "no_transcript"
-        return "", "error: " + err.split('\n')[0][:150]
+        return "", "error: " + err
 
 
 def load_checkpoint():
@@ -122,7 +156,6 @@ def main():
         else:
             error_count += 1
             consecutive_errors += 1
-            # If 20 consecutive errors, likely rate limited — pause
             if consecutive_errors >= 20:
                 print("  ** 20 consecutive errors, saving and sleeping 60s...")
                 save_checkpoint(checkpoint)
@@ -133,7 +166,7 @@ def main():
             print("  [%d/%d] ok=%d no_transcript=%d error=%d (skipped=%d)" % (
                 i + 1, len(yt_launches), ok_count, no_transcript_count, error_count, skipped))
 
-        time.sleep(3)  # 3s between requests — avoid IP burn
+        time.sleep(2)
 
     save_checkpoint(checkpoint)
 

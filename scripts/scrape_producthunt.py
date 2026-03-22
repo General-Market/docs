@@ -108,7 +108,7 @@ def save_checkpoint(data):
 
 
 def main():
-    token = os.environ.get("PH_TOKEN", "")
+    token = os.environ.get("PH_TOKEN", "J4rH7W8fS58ybNJHTNFQYS_j3Ki05gV9Ao_ugk31dpY")
 
     # Check for --token arg
     for i, arg in enumerate(sys.argv):

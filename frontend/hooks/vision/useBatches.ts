@@ -24,7 +24,7 @@ export function useBatches() {
       const data = await res.json()
       // API returns { batches: [...] } with snake_case fields
       const raw: any[] = data.batches ?? (Array.isArray(data) ? data : [])
-      return raw.map((b: any) => ({
+      const all = raw.map((b: any) => ({
         id: b.id,
         creator: b.creator ?? '',
         sourceId: b.source_id ?? b.sourceId ?? '',
@@ -38,6 +38,12 @@ export function useBatches() {
         currentTick: b.current_tick ?? b.currentTick ?? 0,
         paused: b.paused ?? false,
       }))
+      // Deduplicate: keep only the LATEST active batch per source (highest ID = most recent round)
+      const bySource = new Map<string, BatchInfo>()
+      for (const b of all.filter(x => !x.paused).sort((a, z) => z.id - a.id)) {
+        if (!bySource.has(b.sourceId)) bySource.set(b.sourceId, b)
+      }
+      return Array.from(bySource.values())
     },
     refetchInterval: 10000,
   })

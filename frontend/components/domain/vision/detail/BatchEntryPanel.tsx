@@ -45,7 +45,11 @@ export default function BatchEntryPanel({
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
-    return batches.find(b => b.sourceId === sourceId) ?? null
+    // Prefer the LATEST non-paused batch for this source (highest ID = most recent round)
+    const matching = batches
+      .filter(b => b.sourceId === sourceId && !b.paused)
+      .sort((a, b) => b.id - a.id)
+    return matching[0] ?? batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
   // -- Read configHash from on-chain batch state --
