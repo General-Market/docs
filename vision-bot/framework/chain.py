@@ -67,9 +67,8 @@ VISION_ABI = [
                     {"name": "bitmapHash", "type": "bytes32"},
                     {"name": "configHash", "type": "bytes32"},
                     {"name": "deposit", "type": "uint256"},
-                    {"name": "totalDeposited", "type": "uint256"},
                     {"name": "joinTimestamp", "type": "uint256"},
-                    {"name": "isActive", "type": "bool"},
+                    {"name": "totalDeposited", "type": "uint256"},
                 ],
             }
         ],
@@ -99,8 +98,7 @@ VISION_ABI = [
                     {"name": "configHash", "type": "bytes32"},
                     {"name": "tickDuration", "type": "uint256"},
                     {"name": "lockOffset", "type": "uint256"},
-                    {"name": "createdAtTick", "type": "int256"},
-                    {"name": "totalDeposited", "type": "uint256"},
+                    {"name": "createdAtTick", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
                 ],
             }
@@ -229,9 +227,8 @@ class Executor:
             "bitmapHash": raw[0],
             "configHash": raw[1],
             "deposit": raw[2],
-            "totalDeposited": raw[3],
-            "joinTimestamp": raw[4],
-            "isActive": raw[5],
+            "joinTimestamp": raw[3],
+            "totalDeposited": raw[4],
         }
 
     def get_batch_info(self, batch_id: int) -> dict:
@@ -244,8 +241,7 @@ class Executor:
             "tickDuration": info[3],
             "lockOffset": info[4],
             "createdAtTick": info[5],
-            "totalDeposited": info[6],
-            "paused": info[7],
+            "paused": info[6],
         }
 
     def next_batch_id(self) -> int:
