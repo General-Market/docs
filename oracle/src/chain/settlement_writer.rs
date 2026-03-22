@@ -130,7 +130,7 @@ impl SettlementChainWriter {
     /// DOES NOT BLOCK — caller decides what to do (skip cycle, retry later).
     async fn check_gas_available(&self) -> Result<(), SettlementWriterError> {
         use ethers::providers::Middleware;
-        let min_balance = U256::from(50_000_000_000_000_000u64); // 0.05 native tokens
+        let min_balance = U256::from(1_000_000_000_000_000u64); // 0.001 native tokens (reduced for testnet)
         let balance = self.client.get_balance(self.client.address(), None).await
             .map_err(|e| SettlementWriterError::ProviderError(format!("gas balance check: {}", e)))?;
         if balance < min_balance {

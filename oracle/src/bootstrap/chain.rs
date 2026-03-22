@@ -308,7 +308,7 @@ impl<'a> ChainBuilder<'a> {
                         info!(node_id, bridge_proxy = %bridge_proxy, address = ?writer.address(), "SettlementChainWriter initialized");
                         // Startup gas balance warning
                         if let Ok(balance) = writer.get_balance().await {
-                            let min_balance = ethers::types::U256::from(50_000_000_000_000_000u64);
+                            let min_balance = ethers::types::U256::from(5_000_000_000_000_000u64); // 0.005 S
                             if balance < min_balance {
                                 warn!(
                                     address = ?writer.address(),
