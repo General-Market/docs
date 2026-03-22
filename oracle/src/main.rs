@@ -3687,14 +3687,14 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             if valid && !pending {
                 tracing::warn!(order_id = o.id.as_u64(), status = ?o.status, "Skipping non-pending order");
             }
-            // SAFETY: L3-native path must NEVER fill BUY orders.
-            // Buy orders require settlement (completeBuyOrder → AP vault) to ensure
-            // ITP shares are backed by underlying assets. Without settlement, minted
-            // shares are unbacked. Only SELL orders are safe to process L3-natively.
-            if o.side == common::types::Side::Buy {
-                tracing::warn!(order_id = o.id.as_u64(), "REJECTED: BUY order in L3-native path — must go through settlement pipeline");
-                return false;
-            }
+            // SAFETY: L3-native path must NEVER fill ANY ITP orders.
+            // BUY: requires completeBuyOrder (USDC → AP vault) for asset backing.
+            // SELL: requires AP to sell underlying assets and return USDC via settlement.
+            // Without settlement, buys mint unbacked shares and sells drain the L3 pool
+            // while the AP keeps the underlying assets.
+            // ALL orders must go through the cross-chain settlement pipeline.
+            tracing::warn!(order_id = o.id.as_u64(), side = ?o.side, "REJECTED: L3-native order — must go through settlement pipeline");
+            return false;
             valid && pending
         })
         .collect();
@@ -3948,16 +3948,14 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     // the inline pipeline also runs fills (with a different cycle number).
     // When the fills loop wins the race, the inline path falls to the
     // "already-filled" path which still handles mintBridgedShares correctly.
-    // SAFETY: Filter out BUY orders — L3-native path must NEVER fill buys.
-    // Buy orders require settlement (completeBuyOrder → AP vault) to ensure
-    // ITP shares are backed by underlying assets.
+    // SAFETY: L3-native path must NEVER fill ANY ITP orders.
+    // BUY: requires completeBuyOrder (USDC → AP vault) for asset backing.
+    // SELL: requires AP to sell underlying assets and return USDC via settlement.
+    // ALL orders must go through the cross-chain settlement pipeline.
     let l3_batched_orders: Vec<_> = batched_orders.into_iter()
         .filter(|o| {
-            if o.side == common::types::Side::Buy {
-                tracing::warn!(order_id = o.id.as_u64(), "REJECTED: BATCHED BUY order in L3-native path — must go through settlement pipeline");
-                return false;
-            }
-            true
+            tracing::warn!(order_id = o.id.as_u64(), side = ?o.side, "REJECTED: BATCHED L3-native order — must go through settlement pipeline");
+            false
         })
         .collect();
 
