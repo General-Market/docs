@@ -16,7 +16,7 @@
     },
     {
       "name": "Vision",
-      "address": "0xadc1f5bddcc30f8eba131cb58d75375b5cbfc96a",
+      "address": "0x5E3afdBE5B8abdb9C1301161e624f23737EF7E0c",
       "hasCode": true,
       "chain": "l3"
     },
@@ -42,8 +42,8 @@
   "optionalContracts": [
     {
       "name": "MockBitgetVault",
-      "address": "0x6372a9B5a5839246B521cca5988509A862133Aa1",
-      "hasCode": true,
+      "address": "0xB4daA64068Ec9d9aaF7EF30017665107De099594",
+      "hasCode": false,
       "chain": "l3"
     },
     {
@@ -60,8 +60,8 @@
     },
     {
       "name": "BLSCustody",
-      "address": "0x1526112DaceF480E49fdE662dB95b9B8358f6A57",
-      "hasCode": true,
+      "address": "0x39BE5762fD0D89971f17B80DF54f87E150C2b7Bf",
+      "hasCode": false,
       "chain": "l3"
     }
   ],
@@ -76,6 +76,8 @@
     "firstBatchExists": false
   },
   "staleAddresses": [
+    "[optional] MockBitgetVault (0xB4daA64068Ec9d9aaF7EF30017665107De099594) has no code on L3",
+    "[optional] BLSCustody (0x39BE5762fD0D89971f17B80DF54f87E150C2b7Bf) has no code on L3",
     "Morpho collateralToken (0x8e7E09517c58b4A3e17d66f5DeCd160Aa9DD7e29) has NO CODE — needs redeployment"
   ]
 }

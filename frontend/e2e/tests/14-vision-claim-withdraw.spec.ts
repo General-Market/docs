@@ -122,8 +122,8 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     }
 
     // 3. Record L3 USDC balance before withdraw
-    const visionUsdc = await getVisionUsdcAddress()
-    const l3UsdcBefore = await getL3UsdcBalance(PLAYER1, visionUsdc)
+    const withdrawUsdc = await getVisionUsdcAddress()
+    const l3UsdcBefore = await getL3UsdcBalance(PLAYER1, withdrawUsdc)
 
     // 4. Check realBalance is withdrawable
     const realBalance = await getL3UsdcBalance(PLAYER1)
