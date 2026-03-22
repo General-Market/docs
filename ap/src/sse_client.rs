@@ -40,7 +40,9 @@ impl SseChainEventClient {
     /// * `topics` - event types to subscribe to (e.g., ["order-submitted", "fill-confirmed"])
     pub fn new(base_url: String, topics: Vec<String>) -> Self {
         let client = Client::builder()
-            .no_proxy() // SSE streams must not use system proxy
+            .connect_timeout(Duration::from_secs(10))
+            .read_timeout(Duration::from_secs(30)) // Must be > SSE keepalive interval (15s)
+            .no_proxy()
             .build()
             .expect("failed to build HTTP client for SSE");
         Self {
