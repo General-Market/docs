@@ -241,18 +241,10 @@ where
             info!(from_block, to_block = latest_block, new_event_count, "OrderSubmitted events found in scan range");
         }
 
-        // Add newly discovered order IDs — and clear stale settled entries
-        // If an OrderSubmitted event appears for an ID in settled_order_ids,
-        // it means the contract was reset (resetOrderState reuses IDs).
+        // Add newly discovered order IDs
         {
-            let mut settled = self.settled_order_ids.write().await;
             let mut known = self.known_order_ids.write().await;
             for event in &events {
-                // Clear stale settled entry if order was re-submitted after contract reset
-                if settled.contains(&event.order_id) {
-                    tracing::warn!(order_id = %event.order_id, "Clearing stale settled entry — order re-submitted after contract reset");
-                    settled.remove(&event.order_id);
-                }
                 if !known.contains(&event.order_id) {
                     known.push(event.order_id);
                 }
