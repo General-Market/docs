@@ -18,6 +18,8 @@ const HOVER_LIST_CAP = 100
 interface SourceCardProps {
   source: VisionSource
   bitmapEditor: BitmapEditor
+  /** Position in the grid — first 12 get priority loading */
+  index?: number
   /** Accurate asset count from admin health (overrides markets.length for display) */
   metaAssetCount?: number
   /** Source status from admin health: healthy, stale, dead, etc. */
@@ -88,7 +90,7 @@ function formatValue(v: string, isPrice?: boolean, unit?: string): string {
   return `0${suffix}`
 }
 
-export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
+export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus }: SourceCardProps) {
   const t = useTranslations('vision')
   const router = useRouter()
 
@@ -210,7 +212,8 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
               alt={source.name}
               width={logoSize.w}
               height={logoSize.h}
-              loading="lazy"
+              priority={index < 12}
+              loading={index < 12 ? 'eager' : 'lazy'}
               className="max-w-[90%] object-contain"
               style={{ maxHeight: logoSize.maxH }}
             />

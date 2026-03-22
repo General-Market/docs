@@ -199,6 +199,7 @@ export function SourcesGrid() {
                 <SourceCard
                   source={{ ...source, id: source.sourceId }}
                   bitmapEditor={bitmapEditor}
+                  index={i}
                   metaAssetCount={meta?.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : undefined}
                   metaStatus={meta?.sources ? getSourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
                 />
