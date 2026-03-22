@@ -90,27 +90,39 @@ class Tracker:
         return to_remove
 
     def check_rounds(self, strategy=None):
-        """Round-based mode: join current betting batch for each subscription."""
+        """Round-based mode: join ALL active batches from the oracle API."""
         urls = self._oracle_urls_fn()
         if not urls:
             return
-        for source, timeframe in self._config.get("round_subscriptions", []):
-            try:
-                resp = requests.get(
-                    f"{urls[0]}/vision/rounds/active",
-                    params={"source": source, "timeframe": timeframe},
-                    timeout=10,
-                )
-                if not resp.ok:
+        try:
+            # Fetch all non-paused batches from oracle
+            resp = requests.get(f"{urls[0]}/vision/batches", timeout=10)
+            if not resp.ok:
+                return
+            all_batches = resp.json().get("batches", [])
+            # Filter: non-paused, has markets, not already joined
+            active = [b for b in all_batches if not b.get("paused") and b.get("market_count", 0) > 0]
+            max_batches = self._config.get("max_batches", 50)
+            joined = 0
+            for batch in active:
+                bid = batch.get("id", -1)
+                if bid in self.active_ids or bid < 0:
                     continue
-                batches = resp.json().get("rounds", [])
-                for batch in batches:
-                    bid = batch["batchId"]
-                    if bid in self.active_ids:
-                        continue
-                    self._join_round(batch, strategy=strategy)
-            except Exception as e:
-                log.warning("Round check failed for %s/%d: %s", source, timeframe, e)
+                if joined >= max_batches:
+                    break
+                try:
+                    # Adapt oracle batch format to what _join_round expects
+                    round_info = {
+                        "batchId": bid,
+                        "configHash": batch.get("config_hash", ""),
+                        "marketCount": batch.get("market_count", 0),
+                    }
+                    self._join_round(round_info, strategy=strategy)
+                    joined += 1
+                except Exception as e:
+                    log.warning("Failed to join batch %d: %s", bid, e)
+        except Exception as e:
+            log.warning("Round check failed: %s", e)
 
     def _join_round(self, batch: dict, strategy=None):
         """Join a round-based batch: approve USDC, call joinBatchDirect, submit bitmap."""
@@ -127,8 +139,11 @@ class Tracker:
         bitmap = encode_bitmap(bets, market_count)
         bitmap_hash = hash_bitmap(bitmap)
 
-        # On-chain: approve + join
-        self._executor.approve_usdc(deposit)
+        # On-chain: approve max once (not per-join — multiple joins in one cycle exhaust allowance)
+        MAX_UINT = 2**256 - 1
+        if not getattr(self, '_usdc_approved', False):
+            self._executor.approve_usdc(MAX_UINT)
+            self._usdc_approved = True
         if isinstance(config_hash, str):
             config_hash = bytes.fromhex(config_hash.replace("0x", ""))
         self._executor.join_batch_direct(batch_id, config_hash, deposit, stake, bitmap_hash)
