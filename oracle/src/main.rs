@@ -1283,6 +1283,16 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                     let is_sync_leader = node_index_for_task == 0;
                     let first_sync = mirror_sync_first.load(Ordering::Acquire);
                     let snapshot_stale = mirror_sync_needed.load(Ordering::Acquire);
+                    // Followers: clear mirror_sync_first after grace period so settlement
+                    // polling is not permanently blocked. The leader proposes the sync;
+                    // followers participate via P2P handlers. If the sync never arrives
+                    // (leader crashed, consensus failed), followers must still be able to
+                    // poll settlement for cross-chain orders.
+                    if !is_sync_leader && first_sync && bridge_ready {
+                        mirror_sync_first.store(false, Ordering::Release);
+                        info!(cycle = current_cycle, node_index = node_index_for_task,
+                            "Follower: clearing mirror_sync_first (grace period passed)");
+                    }
                     if is_sync_leader && (first_sync || snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
