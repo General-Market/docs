@@ -1,10 +1,16 @@
-# Only allow binaries, config files, and proxy script into Docker context
+# Allow binaries, source (for multi-stage builds), config files, and proxy script
 *
 !target/release/oracle
 !target/release/data-node
 !target/release/ap
 !target/release/curator
 !target/release/itp-bot
+# Source code for multi-stage Rust builds
+!Cargo.toml
+!Cargo.lock
+!oracle/
+!common/
+!ap/
 !scripts/sonic-rpc-proxy.py
 !frontend/public/deployed-assets.json
 !itp-bot/manifest.json
