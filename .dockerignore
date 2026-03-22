@@ -10,6 +10,7 @@
 !Cargo.lock
 !oracle/
 !common/
+!itp-bot/
 !scripts/sonic-rpc-proxy.py
 !frontend/public/deployed-assets.json
 !itp-bot/manifest.json
