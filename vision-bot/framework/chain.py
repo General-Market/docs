@@ -193,18 +193,25 @@ class Executor:
     # ── internal ──
 
     def _build_tx(self, gas: int = 300_000) -> dict:
+        # Track nonce locally to avoid conflicts when sending multiple txs per cycle
+        if not hasattr(self, '_nonce'):
+            self._nonce = self.w3.eth.get_transaction_count(self.bot_addr)
+        nonce = self._nonce
+        self._nonce += 1
         return {
             "from": self.bot_addr,
             "gas": gas,
             "gasPrice": self.w3.eth.gas_price,
-            "nonce": self.w3.eth.get_transaction_count(self.bot_addr),
+            "nonce": nonce,
         }
 
     def _sign_and_send(self, tx: dict) -> bytes:
         signed = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
         if receipt["status"] == 0:
+            # Reset nonce on revert — the nonce wasn't consumed
+            self._nonce = self.w3.eth.get_transaction_count(self.bot_addr)
             raise RuntimeError(f"Transaction reverted: {tx_hash.hex()}")
         return tx_hash
 

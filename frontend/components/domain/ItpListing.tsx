@@ -15,6 +15,7 @@ import { ITP_PAGE_CONTENT } from '@/lib/itp-page-content'
 import { SpringNumber } from '@/components/ui/spring'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useItpCreators } from '@/hooks/useItpCreators'
+import { useItpNames } from '@/hooks/useItpNames'
 
 const PROTOCOL_DEPLOYER = '0xc0d3ca67da45613e7c5b2d55f09b00b3c99721f4'
 
@@ -175,20 +176,41 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const itpIds = useMemo(() => rows.map(r => r.itpId), [rows])
   const { creators } = useItpCreators(itpIds)
 
+  // Fetch on-chain names for ITPs not in the static mapping
+  const unknownItpIds = useMemo(() =>
+    rows
+      .filter(r => r.name.startsWith('ITP #') || r.name.startsWith('ITP#'))
+      .map(r => r.itpId),
+    [rows]
+  )
+  const onChainNames = useItpNames(unknownItpIds)
+
+  // Merge on-chain names into rows
+  const namedRows = useMemo(() => {
+    if (onChainNames.size === 0) return rows
+    return rows.map(r => {
+      const resolved = onChainNames.get(r.itpId.toLowerCase())
+      if (resolved && (r.name.startsWith('ITP #') || r.name.startsWith('ITP#'))) {
+        return { ...r, name: resolved.name || r.name, symbol: resolved.symbol || r.symbol }
+      }
+      return r
+    })
+  }, [rows, onChainNames])
+
   const unofficialCount = useMemo(() => {
     let count = 0
-    for (const row of rows) {
+    for (const row of namedRows) {
       const creator = creators.get(row.itpId)
       if (creator && creator !== PROTOCOL_DEPLOYER) count++
     }
     return count
-  }, [rows, creators])
+  }, [namedRows, creators])
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, Set<FundCategoryId>>()
-    for (const row of rows) map.set(row.itpId, getCategoriesForTicker(row.symbol, row.name))
+    for (const row of namedRows) map.set(row.itpId, getCategoriesForTicker(row.symbol, row.name))
     return map
-  }, [rows])
+  }, [namedRows])
 
   const categoryCounts = useMemo(() => {
     const counts = Object.fromEntries(FUND_CATEGORY_IDS.map(c => [c, 0])) as Record<FundCategoryId, number>
@@ -199,10 +221,10 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   }, [categoryMap])
 
   useEffect(() => {
-    if (onItpsLoaded && rows.length > 0) {
-      onItpsLoaded(rows.map(r => ({ itpId: r.itpId, name: r.name, symbol: r.symbol })))
+    if (onItpsLoaded && namedRows.length > 0) {
+      onItpsLoaded(namedRows.map(r => ({ itpId: r.itpId, name: r.name, symbol: r.symbol })))
     }
-  }, [rows, onItpsLoaded])
+  }, [namedRows, onItpsLoaded])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -214,7 +236,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   }
 
   const sorted = useMemo(() => {
-    let list = rows
+    let list = namedRows
     if (activeCategory === 'unofficial') {
       list = list.filter(r => {
         const creator = creators.get(r.itpId)
