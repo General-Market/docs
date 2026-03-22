@@ -291,13 +291,7 @@ struct Args {
     #[arg(long)]
     vision_start_block: Option<u64>,
 
-    /// Reveal window in seconds for Vision bitmap commits (default: 600).
-    #[arg(long)]
-    vision_reveal_window_secs: Option<u64>,
-
-    /// Tick poll interval in milliseconds for Vision engine (default: 1000).
-    #[arg(long)]
-    vision_tick_poll_interval_ms: Option<u64>,
+    // vision_reveal_window_secs and vision_tick_poll_interval_ms deleted (round-only purge)
 
     /// Settlement RPC URL for watching Vision deposit events.
     #[arg(long)]
@@ -613,7 +607,7 @@ fn oracle_api_routes(state: Arc<OracleApiState>) -> axum::Router {
         .merge(admin)
 }
 
-async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, oracle_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<oracle::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<oracle::vision::pending_ops::PendingOpsQueue>, shared_config: SharedConfig, flushing: Arc<AtomicBool>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, oracle_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<oracle::vision::config::VisionConfig>, shared_config: SharedConfig, flushing: Arc<AtomicBool>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -767,26 +761,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
     let oracle_registry_for_sync_task = oracle_registry_address_for_sync;
     let work_tx_for_task = work_tx;
 
-    // Use the shared PendingOpsQueue passed into run_main_loop from main()
-    let vision_ops_queue_for_task = vision_ops_queue_shared.clone();
-
-    // Vision ops consensus task parameters (derived from vision config)
-    // These are Option so the consensus task can skip if Vision is not configured
-    let vision_ops_l3_provider_for_task: Option<Arc<ethers::providers::Provider<ethers::providers::Http>>> =
-        vision_config.as_ref().filter(|c| c.enabled && !c.rpc_ws_url.is_empty()).and_then(|c| {
-            ethers::providers::Provider::<ethers::providers::Http>::try_from(c.rpc_ws_url.as_str()).ok().map(Arc::new)
-        });
-    let vision_ops_settlement_provider_for_task: Option<Arc<ethers::providers::Provider<ethers::providers::Http>>> =
-        vision_config.as_ref().filter(|c| c.enabled && !c.settlement_rpc_url.is_empty()).and_then(|c| {
-            ethers::providers::Provider::<ethers::providers::Http>::try_from(c.settlement_rpc_url.as_str()).ok().map(Arc::new)
-        });
-    let vision_ops_vision_address_for_task: Option<ethers::types::Address> =
-        vision_config.as_ref().filter(|c| c.enabled).and_then(|c| c.vision_address.parse().ok());
-    let vision_ops_custody_address_for_task: Option<ethers::types::Address> =
-        vision_config.as_ref().filter(|c| c.enabled).and_then(|c| c.settlement_bridge_custody_address.parse().ok());
-    let vision_ops_l3_chain_id_for_task: u64 = 111_222_333u64;
-    let vision_ops_settlement_chain_id_for_task: u64 =
-        vision_config.as_ref().map(|c| c.settlement_chain_id).unwrap_or(421_614u64);
+    // Vision ops consensus task deleted (round-only purge)
 
     // Build quote_tokens map: asset address → quote token address (USDC or USDT)
     // Oracle determines which quote token each asset trades against based on Bitget pair suffix
@@ -895,7 +870,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
         let mirror_sync_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_first = Arc::new(AtomicBool::new(true)); // Trigger sync on first eligible cycle
         let mirror_sync_needed = Arc::new(AtomicBool::new(false)); // Set by SnapshotTooOld errors to trigger immediate retry
-        let vision_ops_active = Arc::new(AtomicBool::new(false));
+        // vision_ops_active deleted (round-only purge)
 
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
@@ -1329,57 +1304,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Vision ops consensus task — drain PendingOpsQueue and submit BLS-signed txns
-                    // Runs on settlement_poll_due interval (same as bridge tasks)
-                    if settlement_poll_due && !vision_ops_active.load(Ordering::Acquire) {
-                        if let (
-                            Some(ref l3_prov),
-                            Some(ref settlement_prov),
-                            Some(ref l3_writer),
-                            Some(ref settlement_writer),
-                            Some(vision_addr),
-                            Some(custody_addr),
-                        ) = (
-                            &vision_ops_l3_provider_for_task,
-                            &vision_ops_settlement_provider_for_task,
-                            &consensus_chain_writer_for_task,
-                            &settlement_writer_for_task,
-                            vision_ops_vision_address_for_task,
-                            vision_ops_custody_address_for_task,
-                        ) {
-                            // Only spawn if the queue has pending ops to drain
-                            if vision_ops_queue_for_task.has_queued() {
-                                vision_ops_active.store(true, Ordering::Release);
-                                let flag = vision_ops_active.clone();
-                                let p = protocol.clone();
-                                let q = vision_ops_queue_for_task.clone();
-                                let l3p = Arc::clone(l3_prov);
-                                let sp = Arc::clone(settlement_prov);
-                                let l3w: Arc<dyn common::traits::ChainWriter> =
-                                    Arc::clone(l3_writer) as Arc<dyn common::traits::ChainWriter>;
-                                let sw: Arc<dyn common::traits::ChainWriter> =
-                                    Arc::clone(settlement_writer) as Arc<dyn common::traits::ChainWriter>;
-                                let va = vision_addr;
-                                let ca = custody_addr;
-                                let l3_cid = vision_ops_l3_chain_id_for_task;
-                                let s_cid = vision_ops_settlement_chain_id_for_task;
-                                tokio::spawn(async move {
-                                    let _guard = FlagGuard(flag);
-                                    match tokio::time::timeout(
-                                        std::time::Duration::from_secs(60),
-                                        p.run_vision_ops(
-                                            &q, &l3p, &sp, &l3w, &sw,
-                                            va, ca, l3_cid, s_cid,
-                                        ),
-                                    ).await {
-                                        Ok(Err(e)) => warn!(error = %e, "Vision ops consensus task failed"),
-                                        Ok(Ok(())) => {},
-                                        Err(_) => warn!("Vision ops timed out after 60s, releasing flag"),
-                                    }
-                                });
-                            }
-                        }
-                    }
+                    // Vision ops consensus task deleted (round-only purge)
 
                     // Stale order watchdog: ONLY on heartbeat cycles, check every 50
                     // Non-blocking: skip if orchestrator lock is held by spawned tasks
@@ -4005,7 +3930,18 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     // the inline pipeline also runs fills (with a different cycle number).
     // When the fills loop wins the race, the inline path falls to the
     // "already-filled" path which still handles mintBridgedShares correctly.
-    let l3_batched_orders = batched_orders;
+    // SAFETY: Filter out BUY orders — L3-native path must NEVER fill buys.
+    // Buy orders require settlement (completeBuyOrder → AP vault) to ensure
+    // ITP shares are backed by underlying assets.
+    let l3_batched_orders: Vec<_> = batched_orders.into_iter()
+        .filter(|o| {
+            if o.side == common::types::Side::Buy {
+                tracing::warn!(order_id = o.id.as_u64(), "REJECTED: BATCHED BUY order in L3-native path — must go through settlement pipeline");
+                return false;
+            }
+            true
+        })
+        .collect();
 
     if l3_batched_orders.is_empty() {
         return;
@@ -4523,12 +4459,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(block) = args.vision_start_block {
                 vision_cfg.start_block = block;
             }
-            if let Some(secs) = args.vision_reveal_window_secs {
-                vision_cfg.reveal_window_secs = secs;
-            }
-            if let Some(ms) = args.vision_tick_poll_interval_ms {
-                vision_cfg.tick_poll_interval_ms = ms;
-            }
+            // reveal_window_secs and tick_poll_interval_ms deleted (round-only purge)
             vision_cfg.data_node_token = args.data_node_token.clone();
             // Cross-chain deposit config — CLI args first, then env var fallbacks
             if let Some(ref url) = args.vision_settlement_rpc_url {
@@ -4552,16 +4483,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             vision_cfg.num_oracles = args.num_oracles as usize;
             // node_id is 1-indexed (u32), node_index is 0-indexed (u8)
             vision_cfg.node_index = args.node_id.map(|id| (id.saturating_sub(1)) as u8).unwrap_or(0);
-            // Round-based sources: read from env var (no CLI arg — config-only)
-            if vision_cfg.round_based_sources.is_empty() {
-                if let Ok(sources) = std::env::var("ORACLE_VISION_ROUND_BASED_SOURCES") {
-                    vision_cfg.round_based_sources = sources
-                        .split(',')
-                        .map(|s| s.trim().to_string())
-                        .filter(|s| !s.is_empty())
-                        .collect();
-                }
-            }
+            // round_based_sources deleted — all sources are round-based
             Some(vision_cfg)
         } else {
             None
@@ -4720,7 +4642,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let tables = [
                                     "vision_batches", "vision_batch_state", "vision_bitmaps",
                                     "vision_positions", "vision_tick_results", "vision_user_balances",
-                                    "vision_deposit_orders", "vision_withdraw_orders", "vision_balance_proofs",
+                                    // vision_deposit_orders, vision_withdraw_orders, vision_balance_proofs dropped (round-only purge)
                                     "vision_kv_store", "vision_player_tick_deltas",
                                     "signed_batch_configs", "batch_configs", "batch_settlements",
                                     "oracle_health_snapshots", "vision_last_resolved", "vision_reference_prices",
@@ -4862,8 +4784,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Shared PendingOpsQueue: deposit watcher (in main) enqueues ops,
     // vision ops consensus task (in run_main_loop) drains and submits them.
-    let vision_ops_queue: Arc<oracle::vision::pending_ops::PendingOpsQueue> =
-        Arc::new(oracle::vision::pending_ops::PendingOpsQueue::new());
+    // PendingOpsQueue deleted (round-only purge)
 
     // Parse oracle + mirror configs before config is consumed by bootstrap
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
@@ -5044,10 +4965,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tokio::sync::mpsc::channel::<common::types::P2PMessage>(256);
             // incoming_proofs_rx: consensus protocol forwards VisionBalanceProofsBatch messages here
             let (vision_balance_proofs_tx, vision_balance_proofs_rx) =
-                tokio::sync::mpsc::channel::<oracle::vision::engine::IncomingBalanceProofsBatch>(256);
+                tokio::sync::mpsc::channel::<()>(1); // deleted (round-only purge)
             // incoming_gossip_rx: consensus protocol forwards BitmapGossip messages here
             let (vision_gossip_tx, vision_gossip_rx) =
-                tokio::sync::mpsc::channel::<oracle::vision::engine::IncomingBitmapGossip>(256);
+                tokio::sync::mpsc::channel::<()>(1); // deleted (round-only purge)
 
             // Relay task: drain broadcast_rx and call transport.broadcast() for each message
             if let Some(ref transport) = components.p2p.transport {
@@ -5088,19 +5009,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let engine_key_registry: Option<Arc<dyn oracle::KeyRegistry>> =
                 components.consensus.keys.key_registry.clone()
                     .map(|kr| kr as Arc<dyn oracle::KeyRegistry>);
-            tokio::spawn(async move {
-                oracle::vision::engine::run(
-                    engine_scheduler,
-                    engine_resolver,
-                    engine_config,
-                    engine_shutdown,
-                    engine_bls_keypair,
-                    engine_broadcast_tx,
-                    Some(vision_balance_proofs_rx),
-                    Some(vision_gossip_rx),
-                    engine_key_registry,
-                ).await;
-            });
+            // engine::run deleted (round-only purge)
+            // All engine variables (engine_scheduler, engine_resolver, etc.) are now unused
+            let _ = (engine_scheduler, engine_resolver, engine_config, engine_shutdown,
+                     engine_bls_keypair, engine_broadcast_tx, engine_key_registry);
 
             // Initialize Postgres pool, chain listener, and API routes
             match sqlx::postgres::PgPoolOptions::new()
@@ -5142,83 +5054,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         chain_listener.run(cl_shutdown).await;
                     });
 
-                    // Spawn VisionDepositWatcher (cross-chain deposit/withdraw orchestrator)
-                    {
-                        let settlement_rpc_url = vision_cfg.settlement_rpc_url.clone();
-                        let settlement_custody_address: ethers::types::Address = vision_cfg
-                            .settlement_bridge_custody_address
-                            .parse()
-                            .unwrap_or_else(|_| {
-                                warn!("Invalid settlement_bridge_custody_address, deposit watcher will have zeroed address");
-                                ethers::types::Address::zero()
-                            });
+                    // VisionDepositWatcher deleted (round-only purge)
 
-                        let dw_settlement_provider = Arc::new(
-                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&settlement_rpc_url)
-                                .expect("valid Settlement RPC URL for deposit watcher"),
-                        );
-                        let dw_l3_provider = Arc::new(
-                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_cfg.rpc_ws_url)
-                                .expect("valid L3 RPC URL for deposit watcher"),
-                        );
-
-                        // L3 chain writer for gas drip (plain native transfer, not BLS).
-                        let dw_l3_writer: Option<Arc<dyn common::traits::ChainWriter>> =
-                            components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
-
-                        // PendingOpsQueue: deposit watcher enqueues, consensus task drains
-                        let deposit_watcher = oracle::vision::deposit_watcher::VisionDepositWatcher::new(
-                            dw_settlement_provider,
-                            dw_l3_provider,
-                            vision_address,
-                            settlement_custody_address,
-                            pool.clone(),
-                            vision_cfg.clone(),
-                            dw_l3_writer,
-                            vision_ops_queue.clone(), // shared queue: deposit watcher enqueues, consensus task drains
-                            111_222_333u64, // L3 chain ID
-                            vision_cfg.settlement_chain_id,
-                        );
-
-                        let dw_shutdown = components.shutdown.clone();
-                        tokio::spawn(async move {
-                            deposit_watcher.run(dw_shutdown).await;
-                        });
-                        info!(node_id, "VisionDepositWatcher spawned");
-
-                        // Set VisionConsensusConfig on the consensus protocol so followers
-                        // can validate credit/refund/withdraw proposals.
-                        if let Some(ref protocol) = components.consensus.protocol {
-                            let vcc_l3_provider = Arc::new(
-                                ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_cfg.rpc_ws_url)
-                                    .expect("valid L3 RPC for VisionConsensusConfig"),
-                            );
-                            let vcc_settlement_provider = Arc::new(
-                                ethers::providers::Provider::<ethers::providers::Http>::try_from(&settlement_rpc_url)
-                                    .expect("valid Settlement RPC for VisionConsensusConfig"),
-                            );
-                            protocol.set_vision_consensus_config(oracle::VisionConsensusConfig {
-                                l3_provider: vcc_l3_provider,
-                                settlement_provider: vcc_settlement_provider,
-                                vision_address,
-                                custody_address: settlement_custody_address,
-                                l3_chain_id: 111_222_333u64,
-                                settlement_chain_id: vision_cfg.settlement_chain_id,
-                            }).await;
-                            info!(node_id, "VisionConsensusConfig set on protocol");
-
-                            // Wire balance-proof and bitmap-gossip forwarding channels into protocol
-                            if let Ok(mut guard) = protocol.vision_balance_proofs_tx.lock() {
-                                *guard = Some(vision_balance_proofs_tx);
-                                info!(node_id, "vision_balance_proofs_tx installed on consensus protocol");
-                            }
-                            if let Ok(mut guard) = protocol.vision_bitmap_gossip_tx.lock() {
-                                *guard = Some(vision_gossip_tx);
-                                info!(node_id, "vision_bitmap_gossip_tx installed on consensus protocol");
-                            }
-
-                            // Wire createBatch co-sign channel into protocol (if lifecycle manager will use it)
-                            if !vision_cfg.round_based_sources.is_empty() {
+                    // Wire createBatch co-sign channel into protocol
+                    if let Some(ref protocol) = components.consensus.protocol {
                                 let (lm_sign_tx, lm_sign_rx) =
                                     tokio::sync::mpsc::channel::<oracle::vision::lifecycle::IncomingCreateBatchSign>(64);
                                 if let Ok(mut guard) = protocol.vision_create_batch_sign_tx.lock() {
@@ -5253,11 +5092,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 );
                                 tokio::spawn(async move { lm.run().await });
                                 info!(
-                                    sources = ?vision_cfg.round_based_sources,
+                                    sources = ?Vec::<String>::new() /* round_based_sources deleted */,
                                     "BatchLifecycleManager spawned (with P2P co-sign)"
                                 );
-                            }
-                        }
                     }
 
                     // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
@@ -5274,7 +5111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Spawn BatchLifecycleManager for round-based sources (no-P2P fallback).
                     // The P2P path above spawns it inside `if let Some(ref protocol)`.
                     // This path handles single-oracle dev mode where protocol is None.
-                    if !vision_cfg.round_based_sources.is_empty() && components.consensus.protocol.is_none() {
+                    if !Vec::<String>::new() /* round_based_sources deleted */.is_empty() && components.consensus.protocol.is_none() {
                         let lm_chain_writer = components.chain.writer.clone();
                         let lm_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
                         let lm_peer_id: [u8; 32] = components.consensus.keys.peer_id;
@@ -5293,7 +5130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                         tokio::spawn(async move { lm.run().await });
                         info!(
-                            sources = ?vision_cfg.round_based_sources,
+                            sources = ?Vec::<String>::new() /* round_based_sources deleted */,
                             "BatchLifecycleManager spawned (no-P2P mode)"
                         );
                     }
@@ -5316,7 +5153,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     info!(
                         node_id,
                         vision_address = %vision_cfg.vision_address,
-                        "Vision subsystem enabled (tick engine + API on health port)"
+                        "Vision subsystem enabled (round-based only)"
                     );
                 }
                 Err(e) => {
@@ -5384,7 +5221,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, oracle_registry_for_sync, vision_config, vision_ops_queue, shared_config, flushing).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, oracle_registry_for_sync, vision_config, shared_config, flushing).await {
         error!(code = "E008", error = %e, "Oracle node error");
         std::process::exit(1);
     }
