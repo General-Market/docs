@@ -64,7 +64,7 @@ pub use consensus::{
     AggregationStatus, ConsensusConfig, ConsensusMessageHandler, ConsensusPhase,
     ConsensusProtocol, ConsensusResult, ConsensusRound, ConsensusState, ConsensusTimeouts,
     InMemoryKeyRegistry, ItpCreationConfig, ItpCreationError, ItpCreationResult, KeyRegistry,
-    SignatureAggregator, VisionConsensusConfig,
+    SignatureAggregator,
 };
 pub use execution::{
     CrossChainOrchestrator, CrossChainOrchestratorConfig, CrossChainResult,

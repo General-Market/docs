@@ -1966,7 +1966,7 @@ async fn player_profile(
     let mut profile_batches: Vec<ProfileBatch> = Vec::new();
 
     for pos in &positions {
-        let balance_wei: i128 = pos.deposit.parse().unwrap_or(0);
+        let balance_wei: i128 = pos.balance.parse().unwrap_or(0);
         let deposited_wei: i128 = pos.total_deposited.parse().unwrap_or(0);
         let pnl_wei = balance_wei - deposited_wei;
 
