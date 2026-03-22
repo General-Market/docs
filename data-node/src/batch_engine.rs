@@ -50,8 +50,10 @@ const LOCK_PCT_SLOW: f64 = 0.04;    // 86400s+ sync → lock last 4%
 /// Minimum lock offset in seconds (never less than 5s)
 const MIN_LOCK_OFFSET_SECS: u64 = 5;
 
-/// Maximum markets per batch (bitmap is uint256 = 256 bits)
-const MAX_MARKETS_PER_BATCH: usize = 256;
+/// Maximum markets per batch.
+/// The on-chain bitmap uses raw bytes (not uint256), so we can go beyond 256.
+/// Each byte = 8 markets. 8192 markets = 1024 bytes bitmap.
+const MAX_MARKETS_PER_BATCH: usize = 8192;
 
 /// Source metadata: (source_id, display_name, sync_interval_secs)
 pub type SourceMeta = (&'static str, &'static str, u64);
