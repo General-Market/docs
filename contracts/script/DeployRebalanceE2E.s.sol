@@ -222,19 +222,10 @@ contract DeployRebalanceE2E is DeployBLSHelper {
         MockERC20(btc).mint(admin, VAULT_INITIAL_BALANCE + AP_INITIAL_BALANCE);
         MockERC20(eth).mint(admin, VAULT_INITIAL_BALANCE + AP_INITIAL_BALANCE);
 
-        // Fund L3 custody (18 decimals)
-        MockERC20(l3Wusdc).transfer(l3BridgeCustodyProxy, CUSTODY_INITIAL_BALANCE);
-        console.log("  L3BridgeCustody funded with L3_WUSDC (18 dec)");
-        // Fund Settlement custody (6 decimals) - Story 7-6b
-        MockERC20(settlementUsdc).transfer(settlementBridgeCustodyProxy, SETTLEMENT_CUSTODY_INITIAL_BALANCE);
-        console.log("  SettlementBridgeCustody funded with SETTLEMENT_USDC (6 dec)");
-
-        // Fund vault with trading tokens (18 decimals)
-        _fundVault(btc);
-        _fundVault(eth);
-        // Fund vault with Settlement USDC (6 decimals) - Story 7-6b
-        _fundVaultSettlement(settlementUsdc, SETTLEMENT_VAULT_INITIAL_BALANCE);
-        console.log("  MockBitgetVault funded");
+        // Vault and custody start at ZERO — only real user deposits fund them.
+        console.log("  MockBitgetVault: 0 (funded only by completeBuyOrder)");
+        console.log("  SettlementBridgeCustody: 0 (funded only by user deposits)");
+        console.log("  L3BridgeCustody: 0 (funded only by bridge operations)");
 
         // Fund AP
         MockERC20(btc).mint(ap, AP_INITIAL_BALANCE);

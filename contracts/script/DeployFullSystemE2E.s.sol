@@ -308,39 +308,13 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _fundContracts() internal {
         console.log("Phase 9: Fund Contracts");
-
-        // Mint L3 tokens (18 decimals) to admin for distribution
-        // +VAULT_INITIAL_BALANCE_18DEC for MockBitgetVault (AP settlement uses L3_WUSDC, not SETTLEMENT_USDC)
-        MockERC20(l3Wusdc).mint(admin, CUSTODY_INITIAL_BALANCE_18DEC * 2 + VAULT_INITIAL_BALANCE_18DEC * 2);
-
-        // Mint Settlement USDC (6 decimals) to admin for distribution
-        // Story 7-6b: Use 6-decimal amounts for real USDC
-        // +VAULT_INITIAL_BALANCE_6DEC for MockBitgetVault (AP quote token for on-chain settlement)
-        MockERC20(settlementUsdc).mint(admin, VAULT_INITIAL_BALANCE_6DEC * 2 + CUSTODY_INITIAL_BALANCE_6DEC * 2);
-
-        // Mint MockUSDT (18 decimals) to admin for vault funding (USDT-pair swapStable)
-        MockERC20(mockUsdt).mint(admin, VAULT_INITIAL_BALANCE_18DEC);
-
-        // Fund L3BridgeCustody with L3_WUSDC (18 decimals, for bridge L3→Settlement in Phase 2)
-        MockERC20(l3Wusdc).transfer(l3BridgeCustodyProxy, CUSTODY_INITIAL_BALANCE_18DEC);
-        console.log("  L3BridgeCustody funded with L3_WUSDC (18 dec)");
-
-        // Fund SettlementBridgeCustody with SETTLEMENT_USDC (6 decimals, for cross-chain buy in Phase 4)
-        // Story 7-6b: Use 6-decimal amounts for Settlement USDC
-        MockERC20(settlementUsdc).transfer(settlementBridgeCustodyProxy, CUSTODY_INITIAL_BALANCE_6DEC);
-        console.log("  SettlementBridgeCustody funded with SETTLEMENT_USDC (6 dec)");
-
-        // Fund MockBitgetVault with L3_WUSDC (18 decimals — AP settlement uses L3_WUSDC)
-        _fundVault(l3Wusdc);
-        console.log("  MockBitgetVault funded with L3_WUSDC (18 dec)");
-
-        // Fund MockBitgetVault with SETTLEMENT_USDC (6 decimals — AP quote token for on-chain settlement)
-        _fundVaultSettlement(settlementUsdc, VAULT_INITIAL_BALANCE_6DEC);
-        console.log("  MockBitgetVault funded with SETTLEMENT_USDC (6 dec)");
-
-        // Fund MockBitgetVault with MockUSDT (18 decimals — for USDT-pair swapStable)
-        _fundVault(mockUsdt);
-        console.log("  MockBitgetVault funded with MOCK_USDT (18 dec)");
+        // Vault and custody start at ZERO balance.
+        // Only real user deposits (via SettlementBridgeCustody.buyITPFromSettlement)
+        // and oracle-initiated completeBuyOrder transfers should fund these contracts.
+        // Pre-funding masks broken settlement pipelines and allows unbacked ITP minting.
+        console.log("  MockBitgetVault: 0 (funded only by completeBuyOrder)");
+        console.log("  SettlementBridgeCustody: 0 (funded only by user deposits)");
+        console.log("  L3BridgeCustody: 0 (funded only by bridge operations)");
     }
 
     function _fundUser() internal {

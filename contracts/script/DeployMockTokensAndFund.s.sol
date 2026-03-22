@@ -55,17 +55,8 @@ contract DeployMockTokensAndFund is Script {
         mockETH.mint(deployer, FUND_AMOUNT);
         console.log("Minted 627 of each token to deployer");
 
-        // Approve vault for all tokens
-        mockUSDC.approve(vaultAddress, type(uint256).max);
-        mockBTC.approve(vaultAddress, type(uint256).max);
-        mockETH.approve(vaultAddress, type(uint256).max);
-        console.log("Approved vault for all tokens");
-
-        // Fund vault with 627 of each token
-        vault.fundVault(address(mockUSDC), FUND_AMOUNT);
-        vault.fundVault(address(mockBTC), FUND_AMOUNT);
-        vault.fundVault(address(mockETH), FUND_AMOUNT);
-        console.log("Funded vault with 627 of each token");
+        // Vault starts at ZERO — only real user deposits fund it.
+        console.log("MockBitgetVault: 0 (funded only by completeBuyOrder)");
 
         // Verify balances
         uint256 vaultUSDC = mockUSDC.balanceOf(vaultAddress);
