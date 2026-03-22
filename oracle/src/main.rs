@@ -1907,22 +1907,34 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 }
             }
 
-            // Merge startup-discovered orders (one-time drain from background scan)
+            // Merge startup-discovered orders (retry until processed)
+            // Orders are only removed from the queue when the orchestrator has
+            // recorded their status (meaning consensus succeeded and the order
+            // was submitted to L3). Unprocessed orders stay for the next cycle.
             {
                 let mut startup = startup_buy_orders.lock().await;
                 if !startup.is_empty() {
-                    let extra_orders = std::mem::take(&mut *startup);
-                    info!(count = extra_orders.len(), "Injecting startup-discovered buy orders into pipeline");
                     let orch = orchestrator.read().await;
-                    for order in extra_orders {
+                    let mut keep = Vec::new();
+                    let mut injected = 0u32;
+                    for order in startup.drain(..) {
                         if orch.get_order_status(&order.order_id).await.is_some() {
+                            // Already processed — drop from queue
                             continue;
                         }
                         if order.deadline.as_u64() > 0 && order.deadline.as_u64() < now_secs {
+                            // Expired — drop from queue
                             continue;
                         }
-                        new_orders.push(order);
+                        new_orders.push(order.clone());
+                        keep.push(order);
+                        injected += 1;
                     }
+                    if injected > 0 {
+                        info!(count = injected, "Injecting startup-discovered buy orders into pipeline (retained for retry)");
+                    }
+                    // Put unprocessed orders back for the next cycle
+                    *startup = keep;
                 }
             }
 
