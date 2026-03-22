@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
+import { encodeFunctionData, decodeFunctionResult } from 'viem'
+import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
+import { L3_RPC_URL } from '@/lib/config'
 import type { SectionProps } from '../SectionRenderer'
 
 function asOfToday(locale?: string) {
@@ -13,6 +16,38 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
   const t = useTranslations('markets.itp_page')
   const locale = useLocale()
   const [copied, setCopied] = useState<string | null>(null)
+  const [creatorAddress, setCreatorAddress] = useState<string | null>(null)
+
+  // Fetch creator address from L3 on mount
+  useEffect(() => {
+    let cancelled = false
+    async function fetchCreator() {
+      try {
+        const calldata = encodeFunctionData({
+          abi: INDEX_ABI,
+          functionName: 'getITPState',
+          args: [itpId as `0x${string}`],
+        })
+        const res = await fetch(L3_RPC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'eth_call', params: [{ to: INDEX_PROTOCOL.index, data: calldata }, 'latest'] }),
+          signal: AbortSignal.timeout(10_000),
+        })
+        const json = await res.json()
+        if (json.result && !cancelled) {
+          const decoded = decodeFunctionResult({
+            abi: INDEX_ABI,
+            functionName: 'getITPState',
+            data: json.result,
+          }) as [string, bigint, bigint, string[], bigint[], bigint[]]
+          setCreatorAddress(decoded[0])
+        }
+      } catch { /* creator display is non-critical */ }
+    }
+    fetchCreator()
+    return () => { cancelled = true }
+  }, [itpId])
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text)
@@ -61,12 +96,19 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       copyable: true,
     },
     { label: t('fund_facts.number_of_holdings'), value: assetCount > 0 ? `${assetCount}` : '—' },
+    ...(creatorAddress ? [{
+      label: 'Creator',
+      value: truncate(creatorAddress),
+      full: creatorAddress,
+      copyable: true,
+      testId: 'creator-address',
+    }] : []),
   ]
 
-  type Fact = { label: string; value: string; full?: string; copyable?: boolean; asOf?: boolean }
+  type Fact = { label: string; value: string; full?: string; copyable?: boolean; asOf?: boolean; testId?: string }
 
   const FactRow = ({ f }: { f: Fact }) => (
-    <div className="flex justify-between py-3 border-b border-border-light">
+    <div className="flex justify-between py-3 border-b border-border-light" {...(f.testId ? { 'data-testid': f.testId } : {})}>
       <div>
         <span className="text-sm text-text-secondary">{f.label}</span>
         {f.asOf && <div className="text-micro text-text-muted">{t('fund_facts.as_of', { date: asOfToday(locale) })}</div>}

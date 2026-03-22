@@ -210,17 +210,19 @@ export function Header() {
                     )}
                   </button>
                 ))}
-                {/* About — secondary, desktop only */}
-                <Link
-                  href="/about"
+                {/* Docs — secondary, desktop only */}
+                <a
+                  href="https://docs.generalmarket.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`ml-2 px-3 py-5 text-caption transition-colors duration-300 ${
                     isDark
                       ? 'text-zinc-500 hover:text-zinc-300'
                       : 'text-text-secondary hover:text-black'
                   }`}
                 >
-                  {t('nav.about')}
-                </Link>
+                  {t('footer.docs')}
+                </a>
               </nav>
 
               {/* Right side — Language + Balance + Wallet + Hamburger */}
@@ -372,7 +374,6 @@ export function Header() {
                         )}
 
                         {[
-                          { href: '/about', label: t('nav.about'), external: false },
                           { href: 'https://docs.generalmarket.io', label: t('footer.docs'), external: true },
                           { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord'), external: true },
                           { href: '/privacy', label: t('footer.privacy_policy'), external: false },

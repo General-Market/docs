@@ -143,57 +143,13 @@ class Tracker:
         log.info("Joined round %d (%d markets)", batch_id, market_count)
 
     def _try_claim(self, batch_id: int, pos: dict):
-        """
-        GET /vision/balance/{batch_id}/{player} -- check for bls_sig.
-        If present: read on-chain position for tick range, call executor.claim_rewards()
-        If absent: log and skip
-        """
-        urls = self._oracle_urls_fn()
-        if not urls:
-            return
-        try:
-            player = self._executor.bot_addr
-            resp = requests.get(f"{urls[0]}/vision/balance/{batch_id}/{player}", timeout=10)
-            if not resp.ok:
-                return
-            data = resp.json()
-            bls_sig = data.get("bls_sig", "")
-            if not bls_sig:
-                log.info("Batch %d: claim ready, waiting for BLS proofs", batch_id)
-                return
-            signer_bitmap = int(data.get("signer_bitmap", "0"))
-
-            # Read on-chain position for correct tick range
-            on_chain = self._executor.get_position(batch_id)
-            last_claimed = on_chain["lastClaimedTick"]
-            start_tick = on_chain["startTick"]
-            from_tick = last_claimed + 1 if last_claimed > 0 else start_tick + 1
-
-            to_tick = int(data.get("tick_id", 0))
-            if to_tick == 0 or to_tick < from_tick:
-                log.info("Batch %d: no new ticks to claim (from=%d, oracle_tick=%d)", batch_id, from_tick, to_tick)
-                return
-
-            new_balance = int(data.get("balance", pos["balance"]))
-            ref_nonce = self._executor.last_snapshot_nonce()
-
-            self._executor.claim_rewards(
-                batch_id,
-                from_tick,
-                to_tick,
-                new_balance,
-                bytes.fromhex(bls_sig.replace("0x", "")),
-                ref_nonce,
-                signer_bitmap,
-            )
-            pos["last_claimed_tick"] = to_tick
-            pos["balance"] = new_balance
-            log.info("Batch %d: claimed ticks %d-%d", batch_id, from_tick, to_tick)
-        except Exception as e:
-            log.warning("Batch %d: claim failed: %s", batch_id, e)
+        """Round-based settlement handles claims automatically via oracle consensus.
+        This is a no-op in the current contract — kept as stub for future use."""
+        log.debug("Batch %d: auto-claim not available (round-based settlement)", batch_id)
 
     def _try_withdraw(self, batch_id: int, pos: dict) -> bool:
-        """Same pattern as claim but calls executor.withdraw(). Returns True if withdrawn."""
+        """Round-based settlement handles withdrawals automatically.
+        Check oracle for position status and mark inactive if settled."""
         urls = self._oracle_urls_fn()
         if not urls:
             return False
@@ -203,25 +159,14 @@ class Tracker:
             if not resp.ok:
                 return False
             data = resp.json()
-            bls_sig = data.get("bls_sig", "")
-            if not bls_sig:
-                log.info("Batch %d: withdraw ready, waiting for BLS proofs", batch_id)
-                return False
-            signer_bitmap = int(data.get("signer_bitmap", "0"))
-            final_balance = int(data.get("balance", pos["balance"]))
-            ref_nonce = self._executor.last_snapshot_nonce()
-            self._executor.withdraw(
-                batch_id,
-                final_balance,
-                bytes.fromhex(bls_sig.replace("0x", "")),
-                ref_nonce,
-                signer_bitmap,
-            )
-            pos["balance"] = 0
-            log.info("Batch %d: withdrawn (final: %d)", batch_id, final_balance)
-            return True
+            # If oracle reports position settled, mark as exited
+            if data.get("settled", False):
+                pos["balance"] = int(data.get("balance", 0))
+                log.info("Batch %d: settled (final: %d)", batch_id, pos["balance"])
+                return True
+            return False
         except Exception as e:
-            log.warning("Batch %d: withdraw failed: %s", batch_id, e)
+            log.warning("Batch %d: withdraw check failed: %s", batch_id, e)
             return False
 
     def _fetch_balance(self, batch_id: int) -> int | None:

@@ -1,19 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Link, useRouter } from '@/i18n/routing'
 import type { VisionSource } from '@/lib/vision/sources'
 import { getDataNodeSourceId } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
-import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
+import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { SpringCard } from '@/components/ui/spring'
-
-/** Max entries shown in the hover overlay */
-const HOVER_LIST_CAP = 100
 
 interface SourceCardProps {
   source: VisionSource
@@ -37,11 +34,6 @@ function formatAge(iso: string): string {
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   return `${Math.floor(hrs / 24)}d ago`
-}
-
-/** Default is 'up' — undefined state means up */
-function getCellState(state: Record<string, CellState>, marketId: string): CellState {
-  return state[marketId] ?? 'up'
 }
 
 /** Shorten multi-word value labels to fit the Type column on 1 line */
@@ -71,25 +63,6 @@ function shortTypeLabel(label: string): string {
   return SHORT_TYPE_LABELS[label] ?? label
 }
 
-/** Format a numeric value for compact display */
-function formatValue(v: string, isPrice?: boolean, unit?: string): string {
-  const n = parseFloat(v)
-  if (isNaN(n)) return v
-  const prefix = isPrice ? '$' : ''
-  const suffix = !isPrice && unit ? ` ${unit}` : ''
-  if (n >= 1_000_000_000) return `${prefix}${(n / 1_000_000_000).toFixed(1)}B${suffix}`
-  if (n >= 1_000_000) return `${prefix}${(n / 1_000_000).toFixed(1)}M${suffix}`
-  if (n >= 1_000) return `${prefix}${(n / 1_000).toFixed(1)}K${suffix}`
-  if (isPrice) {
-    if (n >= 1) return `$${n.toFixed(2)}`
-    if (n > 0) return `$${n.toFixed(4)}`
-    return '$0'
-  }
-  if (n >= 1) return `${n.toFixed(1)}${suffix}`
-  if (n > 0) return `${n.toFixed(2)}${suffix}`
-  return `0${suffix}`
-}
-
 export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus }: SourceCardProps) {
   const t = useTranslations('vision')
   const router = useRouter()
@@ -98,14 +71,6 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const dataNodeId = getDataNodeSourceId(source.id)
   const { data: sourceSnapshot, isLoading } = useSourceSnapshot(dataNodeId)
 
-  // Derive sorted markets from lazy-loaded snapshot
-  const sortedMarkets = useMemo(() => {
-    if (!sourceSnapshot?.prices) return []
-    return [...sourceSnapshot.prices]
-      .sort((a, b) => parseFloat(b.value) - parseFloat(a.value))
-      .slice(0, HOVER_LIST_CAP)
-  }, [sourceSnapshot?.prices])
-
   const totalMarkets = sourceSnapshot?.prices?.length ?? 0
   const displayMarketCount = metaAssetCount ?? totalMarkets
 
@@ -113,11 +78,6 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const statusLabel = metaStatus === 'healthy' ? t('source_card.status_live') : metaStatus === 'stale' ? t('source_card.status_stale') : metaStatus === 'dead' ? t('source_card.status_dead') : displayMarketCount > 0 ? t('source_card.status_live') : t('source_card.status_pending')
   const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
   const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
-
-  // Bitmap editor counts (from lazy-loaded data)
-  const upCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'up').length
-  const downCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'down').length
-  const totalSet = upCount + downCount
 
   // Count-up: start at 0, tick to real value when card enters viewport
   const metricsRef = useRef<HTMLDivElement>(null)
@@ -131,34 +91,6 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [])
-
-  // Drag-paint state
-  const paintRef = useRef<{ active: boolean; target: CellState }>({ active: false, target: 'up' })
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, marketId: string) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const current = getCellState(bitmapEditor.state, marketId)
-      const next: CellState = current === 'up' ? 'down' : current === 'down' ? 'empty' : 'up'
-      bitmapEditor.setCell(marketId, next)
-      paintRef.current = { active: true, target: next }
-    },
-    [bitmapEditor],
-  )
-
-  const handleMouseEnter = useCallback(
-    (e: React.MouseEvent, marketId: string) => {
-      if (!paintRef.current.active) return
-      e.preventDefault()
-      bitmapEditor.setCell(marketId, paintRef.current.target)
-    },
-    [bitmapEditor],
-  )
-
-  const handleMouseUp = useCallback(() => {
-    paintRef.current.active = false
   }, [])
 
   // Determine brand background style
@@ -176,8 +108,13 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     return (r * 0.299 + g * 0.587 + b * 0.114) > 200
   })()
 
-  // Per-source logo size overrides
-  const logoSize = source.id === 'pumpfun' ? { w: 280, h: 80, maxH: '80px' } : { w: 240, h: 60, maxH: '60px' }
+  // Per-source logo size overrides (2x for circular/seal logos)
+  const LARGE_LOGOS = new Set(['nwps', 'wildfire', 'parking', 'mta_subway', 'queue_times'])
+  const logoSize = source.id === 'pumpfun'
+    ? { w: 420, h: 120, maxH: '120px' }
+    : LARGE_LOGOS.has(source.id)
+      ? { w: 480, h: 120, maxH: '120px' }
+      : { w: 360, h: 90, maxH: '90px' }
 
   // View Transitions API — morph card brand into detail hero
   const handleViewTransition = useCallback((e: React.MouseEvent) => {
@@ -202,9 +139,8 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     >
       {/* Brand image area */}
       <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
-          {/* Brand logo face — fades out on hover */}
           <div
-            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 group-hover:opacity-0 ${isLightBg ? 'border-b border-border-light' : ''}`}
+            className={`absolute inset-0 flex items-center justify-center ${isLightBg ? 'border-b border-border-light' : ''}`}
             style={{ ...brandStyle, viewTransitionName: `source-brand-${source.id}` } as React.CSSProperties}
           >
             <Image
@@ -220,72 +156,6 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded glass-badge text-white/90">
               {getCategoryLabel(source.category).toUpperCase()}
             </span>
-          </div>
-
-          {/* Market list overlay — crossfades in on hover */}
-          <div
-            className="absolute inset-0 opacity-0 scale-[0.98] transition-[opacity,transform] duration-300 group-hover:opacity-100 group-hover:scale-100 bg-[var(--surface)] flex flex-col"
-          >
-            {sortedMarkets.length > 0 ? (
-              <>
-                {/* Header */}
-                <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between shrink-0">
-                  <h4 className="text-label font-bold text-[var(--foreground)] truncate">{source.name}</h4>
-                  <span className="text-micro font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{totalMarkets}</span>
-                </div>
-
-                {/* Scrollable market entries sorted by $ */}
-                {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
-                <div className="flex-1 overflow-y-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-                  {sortedMarkets.map((m, i) => {
-                    const cellState = getCellState(bitmapEditor.state, m.assetId)
-                    const borderColor = cellState === 'up' ? 'border-l-[var(--up)]' : cellState === 'down' ? 'border-l-[var(--down)]' : 'border-l-transparent'
-                    return (
-                      <div
-                        key={m.assetId}
-                        className={`flex items-center justify-between px-2.5 py-[3px] border-l-2 ${borderColor} ${i % 2 === 0 ? 'bg-white/50' : ''} hover:bg-black/[0.03] cursor-pointer select-none`}
-                        title={m.name || m.symbol}
-                        onMouseDown={e => handleMouseDown(e, m.assetId)}
-                        onMouseEnter={e => handleMouseEnter(e, m.assetId)}
-                      >
-                        <span className="text-micro text-[var(--foreground)] truncate mr-2 leading-tight">
-                          {m.name || m.symbol}
-                        </span>
-                        <span className="text-micro font-mono font-bold text-[var(--foreground)] shrink-0 tabular-nums">
-                          {formatValue(m.value, source.isPrice, source.valueUnit)}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  {totalMarkets > HOVER_LIST_CAP && (
-                    <div className="px-2.5 py-1.5 text-center">
-                      <span className="text-micro font-semibold text-[var(--foreground)]/60">
-                        {t('source_card.more_count', { count: totalMarkets - HOVER_LIST_CAP })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-3 py-1 border-t border-[var(--border)] flex items-center gap-3 text-micro font-semibold shrink-0">
-                  <span className="text-[var(--up)]">{upCount} {t('source_card.up')}</span>
-                  <span className="text-[var(--down)]">{downCount} {t('source_card.down')}</span>
-                  <span className="text-[#999]">{sortedMarkets.length - totalSet} —</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center">
-                {isLoading ? (
-                  <div className="text-label font-semibold text-text-muted animate-pulse">{t('source_card.loading')}</div>
-                ) : (
-                  <div className="text-center px-4">
-                    <div className="text-label font-semibold text-text-muted">
-                      {displayMarketCount > 0 ? t('source_card.assets_count', { count: displayMarketCount }) : t('source_card.no_markets')}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 

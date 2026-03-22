@@ -269,6 +269,14 @@
     "investment_objective": {
       "why_title": "Why This Index?",
       "objective_title": "Investment Objective"
+    },
+    "metadata": {
+      "description_title": "About This Index",
+      "website": "Website",
+      "video": "Video",
+      "creator": "Creator",
+      "community_badge": "Community",
+      "community_index": "Community Index"
     }
   },
   "listing": {
@@ -280,6 +288,9 @@
     "category_income": "Income",
     "category_sector": "Sector",
     "category_thematic": "Thematic",
+    "category_unofficial": "Unofficial",
+    "community_badge": "Community",
+    "creator_label": "Creator",
     "table": {
       "ticker": "Ticker",
       "name": "Name",

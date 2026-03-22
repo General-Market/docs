@@ -128,11 +128,10 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             batch_id, market_count, bets.count("UP"), bets.count("DOWN"),
         )
 
-        # Dual-balance flow: deposit USDC into Vision balance, then joinBatch pulls from it
+        # Direct join: approve USDC then joinBatchDirect transfers it in one step
         executor.approve_usdc(deposit_wei)
-        executor.deposit_balance(deposit_wei)
         stake_wei = int(cfg["stake"] * 10**DECIMALS)
-        executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+        executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
         time.sleep(2)  # initial wait for block confirmation
         submit_bitmap(oracle_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
@@ -235,19 +234,13 @@ def main():
     )
 
     # Recover bitmaps for any positions loaded from pnl.json that have no stored bitmap.
-    # Positions joined with the null bitmap hash are unrecoverable and must be withdrawn.
+    # Positions joined with the null bitmap hash are unrecoverable — mark poisoned and skip.
     poisoned = tracker.recover_bitmaps(strategy, cfg["data_node"], oracle_urls_fn())
     if poisoned:
         log.info(
-            "%d positions have unrecoverable null-hash bitmaps — attempting forced withdrawal",
+            "%d positions have unrecoverable null-hash bitmaps — marked poisoned, will skip",
             len(poisoned),
         )
-        for bid in poisoned:
-            try:
-                tracker._try_withdraw(bid, tracker.positions[bid])
-                log.info("Batch %d: forced withdrawal succeeded", bid)
-            except Exception as e:
-                log.warning("Batch %d: forced withdrawal failed: %s", bid, e)
 
     # Run
     if "--once" in sys.argv:

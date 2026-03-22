@@ -1988,6 +1988,7 @@ services:
     volumes:
       - /tmp/curator-key.txt:/tmp/curator-key.txt:ro
       - $VPS_BE_DIR/oracle-bytecode.json:/app/oracle-bytecode.json:ro
+      - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
     command:
       - "--unified-mode"
       - "--rpc-url"

@@ -39,7 +39,7 @@ ERC20_ABI = [
 
 VISION_ABI = [
     {
-        "name": "joinBatch",
+        "name": "joinBatchDirect",
         "type": "function",
         "stateMutability": "nonpayable",
         "inputs": [
@@ -66,13 +66,10 @@ VISION_ABI = [
                 "components": [
                     {"name": "bitmapHash", "type": "bytes32"},
                     {"name": "configHash", "type": "bytes32"},
-                    {"name": "stakePerTick", "type": "uint256"},
-                    {"name": "startTick", "type": "uint256"},
-                    {"name": "balance", "type": "uint256"},
-                    {"name": "lastClaimedTick", "type": "uint256"},
-                    {"name": "joinTimestamp", "type": "uint256"},
+                    {"name": "deposit", "type": "uint256"},
                     {"name": "totalDeposited", "type": "uint256"},
-                    {"name": "isVirtual", "type": "bool"},
+                    {"name": "joinTimestamp", "type": "uint256"},
+                    {"name": "isActive", "type": "bool"},
                 ],
             }
         ],
@@ -100,14 +97,10 @@ VISION_ABI = [
                     {"name": "creator", "type": "address"},
                     {"name": "sourceId", "type": "bytes32"},
                     {"name": "configHash", "type": "bytes32"},
-                    {"name": "nextConfigHash", "type": "bytes32"},
                     {"name": "tickDuration", "type": "uint256"},
                     {"name": "lockOffset", "type": "uint256"},
-                    {"name": "nextLockOffset", "type": "uint256"},
-                    {"name": "nextTickDuration", "type": "uint256"},
-                    {"name": "epochOffset", "type": "int256"},
-                    {"name": "createdAtTick", "type": "uint256"},
-                    {"name": "lastPromotionTick", "type": "uint256"},
+                    {"name": "createdAtTick", "type": "int256"},
+                    {"name": "totalDeposited", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
                 ],
             }
@@ -121,34 +114,6 @@ VISION_ABI = [
         "outputs": [{"name": "", "type": "uint256"}],
     },
     {
-        "name": "claimRewards",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "batchId", "type": "uint256"},
-            {"name": "fromTick", "type": "uint256"},
-            {"name": "toTick", "type": "uint256"},
-            {"name": "newBalance", "type": "uint256"},
-            {"name": "blsSignature", "type": "bytes"},
-            {"name": "referenceNonce", "type": "uint256"},
-            {"name": "signersBitmask", "type": "uint256"},
-        ],
-        "outputs": [],
-    },
-    {
-        "name": "withdraw",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "batchId", "type": "uint256"},
-            {"name": "finalBalance", "type": "uint256"},
-            {"name": "blsSignature", "type": "bytes"},
-            {"name": "referenceNonce", "type": "uint256"},
-            {"name": "signersBitmask", "type": "uint256"},
-        ],
-        "outputs": [],
-    },
-    {
         "name": "updateBitmap",
         "type": "function",
         "stateMutability": "nonpayable",
@@ -156,61 +121,6 @@ VISION_ABI = [
             {"name": "batchId", "type": "uint256"},
             {"name": "configHash", "type": "bytes32"},
             {"name": "newHash", "type": "bytes32"},
-        ],
-        "outputs": [],
-    },
-    {
-        "name": "deposit",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "batchId", "type": "uint256"},
-            {"name": "amount", "type": "uint256"},
-        ],
-        "outputs": [],
-    },
-    {
-        "name": "depositBalance",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "amount", "type": "uint256"},
-        ],
-        "outputs": [],
-    },
-    {
-        "name": "withdrawBalance",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "amount", "type": "uint256"},
-        ],
-        "outputs": [],
-    },
-    {
-        "name": "balanceOf",
-        "type": "function",
-        "stateMutability": "view",
-        "inputs": [{"name": "user", "type": "address"}],
-        "outputs": [{"name": "", "type": "uint256"}],
-    },
-    {
-        "name": "realBalance",
-        "type": "function",
-        "stateMutability": "view",
-        "inputs": [{"name": "user", "type": "address"}],
-        "outputs": [{"name": "", "type": "uint256"}],
-    },
-    {
-        "name": "joinBatchDirect",
-        "type": "function",
-        "stateMutability": "nonpayable",
-        "inputs": [
-            {"name": "batchId", "type": "uint256"},
-            {"name": "configHash", "type": "bytes32"},
-            {"name": "depositAmount", "type": "uint256"},
-            {"name": "stakePerTick", "type": "uint256"},
-            {"name": "bitmapHash", "type": "bytes32"},
         ],
         "outputs": [],
     },
@@ -318,13 +228,10 @@ class Executor:
         return {
             "bitmapHash": raw[0],
             "configHash": raw[1],
-            "stakePerTick": raw[2],
-            "startTick": raw[3],
-            "balance": raw[4],
-            "lastClaimedTick": raw[5],
-            "joinTimestamp": raw[6],
-            "totalDeposited": raw[7],
-            "isVirtual": raw[8],
+            "deposit": raw[2],
+            "totalDeposited": raw[3],
+            "joinTimestamp": raw[4],
+            "isActive": raw[5],
         }
 
     def get_batch_info(self, batch_id: int) -> dict:
@@ -334,15 +241,11 @@ class Executor:
             "creator": info[0],
             "sourceId": info[1],
             "configHash": info[2],
-            "nextConfigHash": info[3],
-            "tickDuration": info[4],
-            "lockOffset": info[5],
-            "nextLockOffset": info[6],
-            "nextTickDuration": info[7],
-            "epochOffset": info[8],
-            "createdAtTick": info[9],
-            "lastPromotionTick": info[10],
-            "paused": info[11],
+            "tickDuration": info[3],
+            "lockOffset": info[4],
+            "createdAtTick": info[5],
+            "totalDeposited": info[6],
+            "paused": info[7],
         }
 
     def next_batch_id(self) -> int:
@@ -359,25 +262,15 @@ class Executor:
         self._sign_and_send(tx)
         logger.info("USDC approved: %d", amount)
 
-    def join_batch(
-        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
-    ):
-        """Call Vision.joinBatch on-chain."""
-        tx = self.vision.functions.joinBatch(
-            batch_id, config_hash, deposit, stake, bitmap_hash
-        ).build_transaction(self._build_tx(gas=500_000))
-        tx_hash = self._sign_and_send(tx)
-        logger.info("Joined batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
-
     def join_batch_direct(
         self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
     ):
-        """Join a round-based batch with direct USDC transfer."""
+        """Join a batch with direct USDC transfer (approve first)."""
         tx = self.vision.functions.joinBatchDirect(
             batch_id, config_hash, deposit, stake, bitmap_hash
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
-        logger.info("Joined round %d direct (tx: %s)", batch_id, tx_hash.hex()[:16])
+        logger.info("Joined batch %d direct (tx: %s)", batch_id, tx_hash.hex()[:16])
 
     def register_bot(self, endpoint: str = "", pubkey_hash: bytes = b""):
         """Register as a bot on the Vision contract."""
@@ -391,44 +284,7 @@ class Executor:
         tx_hash = self._sign_and_send(tx)
         logger.info("Bot registered (tx: %s)", tx_hash.hex()[:16])
 
-    # ── write: lifecycle ──
-
-    def claim_rewards(
-        self,
-        batch_id: int,
-        from_tick: int,
-        to_tick: int,
-        new_balance: int,
-        bls_sig: bytes,
-        reference_nonce: int,
-        signers_bitmask: int,
-    ):
-        """Claim rewards for a tick range."""
-        tx = self.vision.functions.claimRewards(
-            batch_id, from_tick, to_tick, new_balance, bls_sig,
-            reference_nonce, signers_bitmask,
-        ).build_transaction(self._build_tx(gas=500_000))
-        tx_hash = self._sign_and_send(tx)
-        logger.info(
-            "Claimed rewards batch=%d ticks=%d-%d (tx: %s)",
-            batch_id, from_tick, to_tick, tx_hash.hex()[:16],
-        )
-
-    def withdraw(
-        self,
-        batch_id: int,
-        final_balance: int,
-        bls_sig: bytes,
-        reference_nonce: int,
-        signers_bitmask: int,
-    ):
-        """Withdraw from a batch."""
-        tx = self.vision.functions.withdraw(
-            batch_id, final_balance, bls_sig,
-            reference_nonce, signers_bitmask,
-        ).build_transaction(self._build_tx(gas=500_000))
-        tx_hash = self._sign_and_send(tx)
-        logger.info("Withdraw batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16])
+    # ── write: bitmap ──
 
     def update_bitmap(self, batch_id: int, config_hash: bytes, new_hash: bytes):
         """Update bitmap hash on-chain."""
@@ -439,30 +295,6 @@ class Executor:
         logger.info(
             "Bitmap updated batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16]
         )
-
-    def deposit_more(self, batch_id: int, amount: int):
-        """Deposit additional USDC into a batch position."""
-        tx = self.vision.functions.deposit(
-            batch_id, amount
-        ).build_transaction(self._build_tx(gas=300_000))
-        tx_hash = self._sign_and_send(tx)
-        logger.info(
-            "Deposited %d more into batch=%d (tx: %s)",
-            amount, batch_id, tx_hash.hex()[:16],
-        )
-
-    def deposit_balance(self, amount: int):
-        """Deposit USDC into Vision balance (dual-balance architecture).
-        Must approve USDC first. Credits realBalance[bot]."""
-        tx = self.vision.functions.depositBalance(
-            amount
-        ).build_transaction(self._build_tx(gas=300_000))
-        tx_hash = self._sign_and_send(tx)
-        logger.info("depositBalance %d (tx: %s)", amount, tx_hash.hex()[:16])
-
-    def vision_balance(self) -> int:
-        """Read total Vision balance (realBalance + virtualBalance)."""
-        return self.vision.functions.balanceOf(self.bot_addr).call()
 
 
 # ── Oracle discovery ───────────────────────────────────────────

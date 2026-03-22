@@ -269,6 +269,14 @@
     "investment_objective": {
       "why_title": "왜 이 인덱스인가?",
       "objective_title": "투자 목표"
+    },
+    "metadata": {
+      "description_title": "이 인덱스에 대하여",
+      "website": "웹사이트",
+      "video": "동영상",
+      "creator": "생성자",
+      "community_badge": "커뮤니티",
+      "community_index": "커뮤니티 인덱스"
     }
   },
   "listing": {
@@ -280,6 +288,9 @@
     "category_income": "수익",
     "category_sector": "섹터",
     "category_thematic": "테마",
+    "category_unofficial": "비공식",
+    "community_badge": "커뮤니티",
+    "creator_label": "생성자",
     "table": {
       "ticker": "티커",
       "name": "이름",

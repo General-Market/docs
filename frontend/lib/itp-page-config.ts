@@ -14,6 +14,7 @@ export type SectionId =
   | 'fund-facts'
   | 'trade-cta'
   | 'investment-objective'
+  | 'itp-metadata'
 
 export type TabId = 'overview' | 'performance' | 'key-facts' | 'holdings'
 
@@ -30,7 +31,7 @@ export interface ItpPageConfig {
 
 const DEFAULT_CONFIG: ItpPageConfig = {
   tabs: {
-    overview: ['breakdown', 'concentration'],
+    overview: ['itp-metadata', 'breakdown', 'concentration'],
     performance: ['performance'],
     'key-facts': ['fund-facts'],
     holdings: ['holdings'],
@@ -54,7 +55,7 @@ export function getItpPageConfigByTicker(ticker: string): ItpPageConfig {
 
   return {
     tabs: {
-      overview: ['investment-objective', 'breakdown', 'concentration', 'founders'],
+      overview: ['itp-metadata', 'investment-objective', 'breakdown', 'concentration', 'founders'],
       performance: ['performance'],
       'key-facts': ['fund-facts'],
       holdings: ['holdings'],

@@ -14,6 +14,14 @@ import { useRouter } from '@/i18n/routing'
 import { ITP_PAGE_CONTENT } from '@/lib/itp-page-content'
 import { SpringNumber } from '@/components/ui/spring'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useItpCreators } from '@/hooks/useItpCreators'
+
+const PROTOCOL_DEPLOYER = '0xc0d3ca67da45613e7c5b2d55f09b00b3c99721f4'
+
+function truncateAddress(addr: string): string {
+  if (addr.length <= 12) return addr
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+}
 
 interface ItpRow {
   itpId: string
@@ -72,11 +80,12 @@ function formatNetAssets(usd: number): string {
 }
 
 /* ── Category taxonomy — iShares-style asset class grouping, with overlap ── */
-type CategoryId = 'broad-market' | 'factor' | 'income' | 'sector' | 'thematic'
+type FundCategoryId = 'broad-market' | 'factor' | 'income' | 'sector' | 'thematic'
+type CategoryId = FundCategoryId | 'unofficial'
 
-const FUND_CATEGORY_IDS: CategoryId[] = ['broad-market', 'factor', 'income', 'sector', 'thematic']
+const FUND_CATEGORY_IDS: FundCategoryId[] = ['broad-market', 'factor', 'income', 'sector', 'thematic']
 
-const LABEL_TO_PRIMARY: Record<string, CategoryId> = {
+const LABEL_TO_PRIMARY: Record<string, FundCategoryId> = {
   'Macro Index': 'broad-market',
   'Crypto Index': 'broad-market',
   'Momentum Index': 'factor',
@@ -90,7 +99,7 @@ const LABEL_TO_PRIMARY: Record<string, CategoryId> = {
   'Founder Index': 'thematic',
 }
 
-const OVERLAP_KEYWORDS: Record<CategoryId, RegExp> = {
+const OVERLAP_KEYWORDS: Record<FundCategoryId, RegExp> = {
   'broad-market': /broad|top.?100|all.?(50|sector)|rotation|capped quarterly/i,
   factor: /momentum|mom\b|low.?vol|min.?var|dual|multi.?factor|contrarian|decoupler/i,
   income: /tvl|yield|revenue|lending|staking|fee eff/i,
@@ -98,14 +107,14 @@ const OVERLAP_KEYWORDS: Record<CategoryId, RegExp> = {
   thematic: /founder|alumni|phd|ivy|stanford|harvard|mit|berkeley|cornell|immigrant|ex-\w|serial entrepreneur|no.?degree|military|faang|peak build|elder|veteran|young founder|experienced|visibility|age spread|waterloo|multinational|american|european|chinese|asian|canadian|british|australian|german|mba|stealth/i,
 }
 
-function getCategoriesForTicker(ticker: string, name: string): Set<CategoryId> {
-  const cats = new Set<CategoryId>()
+function getCategoriesForTicker(ticker: string, name: string): Set<FundCategoryId> {
+  const cats = new Set<FundCategoryId>()
   const content = ITP_PAGE_CONTENT[ticker.toUpperCase()]
   if (content?.label) {
     const primary = LABEL_TO_PRIMARY[content.label]
     if (primary) cats.add(primary)
   }
-  for (const [id, re] of Object.entries(OVERLAP_KEYWORDS) as [CategoryId, RegExp][]) {
+  for (const [id, re] of Object.entries(OVERLAP_KEYWORDS) as [FundCategoryId, RegExp][]) {
     if (re.test(name) || re.test(ticker)) cats.add(id)
   }
   if (cats.size === 0) cats.add('broad-market')
@@ -162,14 +171,27 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const rows = useMemo(() => navSnapshotsToRows(navList), [navList])
   const totalAum = useMemo(() => rows.reduce((sum, r) => sum + r.aum, 0), [rows])
 
+  // Batch-read creators for all ITPs to distinguish official vs unofficial
+  const itpIds = useMemo(() => rows.map(r => r.itpId), [rows])
+  const { creators } = useItpCreators(itpIds)
+
+  const unofficialCount = useMemo(() => {
+    let count = 0
+    for (const row of rows) {
+      const creator = creators.get(row.itpId)
+      if (creator && creator !== PROTOCOL_DEPLOYER) count++
+    }
+    return count
+  }, [rows, creators])
+
   const categoryMap = useMemo(() => {
-    const map = new Map<string, Set<CategoryId>>()
+    const map = new Map<string, Set<FundCategoryId>>()
     for (const row of rows) map.set(row.itpId, getCategoriesForTicker(row.symbol, row.name))
     return map
   }, [rows])
 
   const categoryCounts = useMemo(() => {
-    const counts = Object.fromEntries(FUND_CATEGORY_IDS.map(c => [c, 0])) as Record<CategoryId, number>
+    const counts = Object.fromEntries(FUND_CATEGORY_IDS.map(c => [c, 0])) as Record<FundCategoryId, number>
     for (const cats of categoryMap.values()) {
       for (const cat of cats) counts[cat]++
     }
@@ -193,8 +215,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
   const sorted = useMemo(() => {
     let list = rows
-    if (activeCategory) {
-      list = list.filter(r => categoryMap.get(r.itpId)?.has(activeCategory))
+    if (activeCategory === 'unofficial') {
+      list = list.filter(r => {
+        const creator = creators.get(r.itpId)
+        return creator && creator !== PROTOCOL_DEPLOYER
+      })
+    } else if (activeCategory) {
+      list = list.filter(r => categoryMap.get(r.itpId)?.has(activeCategory as FundCategoryId))
     }
     if (deferredSearch.trim()) {
       const q = deferredSearch.toLowerCase().trim()
@@ -214,7 +241,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [rows, deferredSearch, activeCategory, categoryMap, sortKey, sortDir])
+  }, [rows, deferredSearch, activeCategory, categoryMap, creators, sortKey, sortDir])
 
   const PAGE_SIZE = 15
   const [page, setPage] = useState(0)
@@ -307,6 +334,19 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                   </button>
                 )
               })}
+              {unofficialCount > 0 && (
+                <button
+                  onClick={() => setActiveCategory(activeCategory === 'unofficial' ? null : 'unofficial')}
+                  className={`px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                    activeCategory === 'unofficial'
+                      ? 'border-black text-black'
+                      : 'border-transparent text-text-secondary hover:text-text-primary hover:border-[#ccc]'
+                  }`}
+                >
+                  {t('listing.category_unofficial')}
+                  <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{unofficialCount}</span>
+                </button>
+              )}
             </div>
             <div className="pb-2">
               <input
@@ -396,9 +436,29 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       </td>
                       {/* Name — brand-colored like iShares */}
                       <td className="py-3 px-4">
-                        <span className="text-caption text-brand-dark">
-                          {row.name}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-caption text-brand-dark">
+                            {row.name}
+                          </span>
+                          {(() => {
+                            const creator = creators.get(row.itpId)
+                            if (!creator || creator === PROTOCOL_DEPLOYER) return null
+                            return (
+                              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#7c6f3e] bg-[#f5f0e0] px-1.5 py-0.5 rounded">
+                                {t('listing.community_badge')}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                        {(() => {
+                          const creator = creators.get(row.itpId)
+                          if (!creator || creator === PROTOCOL_DEPLOYER) return null
+                          return (
+                            <div className="text-[11px] font-mono text-text-muted mt-0.5">
+                              {truncateAddress(creator)}
+                            </div>
+                          )
+                        })()}
                       </td>
                       {/* Chart button */}
                       <td className="py-3 px-2 w-8">

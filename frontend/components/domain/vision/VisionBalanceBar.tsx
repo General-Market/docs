@@ -49,7 +49,7 @@ export function VisionBalanceBar() {
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      <span className="text-caption sm:text-caption font-bold font-mono tabular-nums text-black">
+      <span className="text-caption sm:text-caption font-bold font-mono tabular-nums text-white">
         <span className="hidden sm:inline text-text-muted font-medium mr-1">{t('vision_balance_bar.balance_label')}</span>
         {fmtBal(balance)}
         <span className="hidden sm:inline text-text-muted font-medium ml-1">USDC</span>

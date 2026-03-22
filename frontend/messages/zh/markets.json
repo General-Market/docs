@@ -269,6 +269,14 @@
     "investment_objective": {
       "why_title": "为什么选择这个指数？",
       "objective_title": "投资目标"
+    },
+    "metadata": {
+      "description_title": "关于此指数",
+      "website": "网站",
+      "video": "视频",
+      "creator": "创建者",
+      "community_badge": "社区",
+      "community_index": "社区指数"
     }
   },
   "listing": {
@@ -280,6 +288,9 @@
     "category_income": "收益",
     "category_sector": "行业",
     "category_thematic": "主题",
+    "category_unofficial": "非官方",
+    "community_badge": "社区",
+    "creator_label": "创建者",
     "table": {
       "ticker": "代码",
       "name": "名称",

@@ -269,6 +269,14 @@
     "investment_objective": {
       "why_title": "なぜこのインデックス？",
       "objective_title": "投資目的"
+    },
+    "metadata": {
+      "description_title": "このインデックスについて",
+      "website": "ウェブサイト",
+      "video": "動画",
+      "creator": "作成者",
+      "community_badge": "コミュニティ",
+      "community_index": "コミュニティインデックス"
     }
   },
   "listing": {
@@ -280,6 +288,9 @@
     "category_income": "インカム",
     "category_sector": "セクター",
     "category_thematic": "テーマ",
+    "category_unofficial": "非公式",
+    "community_badge": "コミュニティ",
+    "creator_label": "作成者",
     "table": {
       "ticker": "ティッカー",
       "name": "名称",

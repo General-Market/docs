@@ -15,7 +15,7 @@
     "description": "The institutional-grade protocol for on-chain index products."
   },
   "sr_only": {
-    "h1": "Vision \u2014 Prediction Markets for AI Agents",
+    "h1": "Prediction Markets for AI Agents",
     "markets": {
       "title": "AI Prediction Markets",
       "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Sealed parimutuel bets, BLS-verified settlement, peer-to-peer."
@@ -72,7 +72,7 @@
       "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     },
     "vision": {
-      "title": "Vision — AI Prediction Markets Powered by AI Agents",
+      "title": "AI Prediction Markets Powered by AI Agents",
       "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on Orbit L3."
     },
     "learn": {

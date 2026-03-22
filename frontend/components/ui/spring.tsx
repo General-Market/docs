@@ -10,7 +10,7 @@ import {
   type Transition,
   type HTMLMotionProps,
 } from 'framer-motion'
-import { useRef, useEffect, type ReactNode } from 'react'
+import { useRef, useEffect, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 // ── Spring Configs ──────────────────────────────────────────
@@ -399,8 +399,6 @@ export function SpringTab({
 // Subsequent navigations: real spring entrance.
 // Used by template.tsx.
 
-let hasInitialized = false
-
 interface SpringPageProps {
   children: ReactNode
   className?: string
@@ -408,15 +406,12 @@ interface SpringPageProps {
 
 export function SpringPage({ children, className }: SpringPageProps) {
   const reduced = useReducedMotion()
-  const isFirstMount = useRef(!hasInitialized)
+  const [mounted, setMounted] = useState(false)
 
-  if (isFirstMount.current) {
-    hasInitialized = true
-    isFirstMount.current = false
-    return <div className={className}>{children}</div>
-  }
+  useEffect(() => { setMounted(true) }, [])
 
-  if (reduced) {
+  // First render (SSR + hydration): plain div, no motion — avoids hydration mismatch
+  if (!mounted || reduced) {
     return <div className={className}>{children}</div>
   }
 

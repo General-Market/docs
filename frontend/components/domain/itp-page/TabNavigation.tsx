@@ -16,6 +16,7 @@ import { FundingOverview } from './sections/FundingOverview'
 import { FundFacts } from './sections/FundFacts'
 import { TradeCta } from './sections/TradeCta'
 import { InvestmentObjective } from './sections/InvestmentObjective'
+import { ItpMetadataSection } from './sections/ItpMetadataSection'
 
 const REGISTRY: Record<SectionId, React.ComponentType<SectionProps>> = {
   'key-stats': KeyStatsBar,
@@ -29,6 +30,7 @@ const REGISTRY: Record<SectionId, React.ComponentType<SectionProps>> = {
   'fund-facts': FundFacts,
   'trade-cta': TradeCta,
   'investment-objective': InvestmentObjective,
+  'itp-metadata': ItpMetadataSection,
 }
 
 // Anchor nav label keys (resolved via i18n)

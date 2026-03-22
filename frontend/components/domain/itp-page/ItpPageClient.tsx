@@ -6,6 +6,7 @@ import { getItpPageConfig } from '@/lib/itp-page-config'
 import { HeroSection } from './HeroSection'
 import { TabNavigation } from './TabNavigation'
 import { KeyStatsBar } from './sections/KeyStatsBar'
+import { RebalanceSection } from './RebalanceSection'
 import { BuyItpModal } from '@/components/domain/BuyItpModal'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
@@ -60,6 +61,11 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
       <TabNavigation
         config={config}
         sectionProps={sectionProps}
+      />
+
+      <RebalanceSection
+        itpId={itpId}
+        enrichment={enrichment}
       />
 
       {buyModalOpen && (

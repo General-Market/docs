@@ -5,7 +5,7 @@ import { FRONTEND_URL } from './env';
  * 3-phase test execution with separate wallet keys per chain:
  *
  * Phase 1 — DATA (2 projects):
- *   itp-data (DEPLOYER_KEY):    01 → 02 → 03 → 04 → 05 → 07 → 08 → 10-morpho → 18 → 26 → 36
+ *   itp-data (DEPLOYER_KEY):    01 → 02 → 03 → 04 → 05 → 07 → 08 → 10-morpho → 18 → 26 → 36 → 47
  *   vision-data (VISION_PLAYER_KEY): 10-vision → 12 → 13 → 15 → 25 → 14 → 19 → 20 → 21 → 41 → 42 → 43 → 44
  *
  * Phase 2 — UI VERIFY (depends on respective Phase 1 project):
@@ -49,11 +49,11 @@ export default defineConfig({
     {
       name: 'itp-data',
       // 0[1-578]: tests 01-05, 07, 08. NOT 06 (moved to ui-verify-itp).
-      testMatch: /(^|\/)0[1-578]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$|(^|\/)36-.*\.spec\.ts$/,
+      testMatch: /(^|\/)0[1-578]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$|(^|\/)36-.*\.spec\.ts$|(^|\/)47-.*\.spec\.ts$/,
     },
     {
       name: 'vision-data',
-      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)4[1-9]-.*\.spec\.ts$/,
+      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)4[1-6]-.*\.spec\.ts$|(^|\/)4[89]-.*\.spec\.ts$/,
     },
     // Phase 2: UI verification (depends on respective Phase 1 only — limited blast radius)
     {
