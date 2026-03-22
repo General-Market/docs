@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { L3_RPC_URL } from '@/lib/config'
 
 // getItpNameSymbol(bytes32) selector
 const SELECTOR = '0xc47f0027'

@@ -21,7 +21,7 @@ CHECKPOINT = "ph_daily_checkpoint.json"
 
 # Fetch top products posted on a specific date
 QUERY = """
-query($postedAfter: DateTime!, $postedBefore: DateTime!, $cursor: String) {
+query($postedAfter: DateTime!, $postedBefore: DateTime!) {
   posts(first: 5, order: VOTES, postedAfter: $postedAfter, postedBefore: $postedBefore) {
     pageInfo {
       hasNextPage

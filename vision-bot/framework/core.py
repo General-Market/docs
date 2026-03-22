@@ -120,8 +120,8 @@ def load_config(path=None):
     """Load config.toml, merge with env var overrides. Returns flat dict."""
     defaults = {
         "strategy": "random",
-        "deposit": 10,
-        "stake": 1,
+        "deposit": 10.0,
+        "stake": 1.0,
         "max_batches": 50,
         "max_exposure": 1000,
         "poll_interval": 30,
