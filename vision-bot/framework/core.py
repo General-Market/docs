@@ -173,7 +173,7 @@ def load_config(path=None):
             elif default_type == float:
                 defaults[conf_key] = float(val)
             elif default_type == int:
-                defaults[conf_key] = int(val)
+                defaults[conf_key] = int(float(val))
             else:
                 defaults[conf_key] = val
     # ORACLE_URLS: comma-separated list of URLs
