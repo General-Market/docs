@@ -56,7 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let registry = token_registry::TokenRegistry::from_deployed_assets(&args.deployed_assets)?;
     info!(path = %args.deployed_assets, "Token registry loaded");
 
-    let contract_addr: Address = args.index_address.parse()?;
+    let index_address_str = args.resolve_index_address()?;
+    let contract_addr: Address = index_address_str.parse()?;
     let chain = chain::ChainClient::new(&args.rpc_url, contract_addr, wallet)?;
 
     // ── 5. Log startup info ─────────────────────────────────────────────────

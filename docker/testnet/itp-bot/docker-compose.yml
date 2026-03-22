@@ -15,12 +15,20 @@ services:
       - /tmp/bot-key.txt:/tmp/bot-key.txt:ro
       - ../../../itp-bot/manifest.json:/app/manifest.json:ro
       - ../../../frontend/public/deployed-assets.json:/app/deployed-assets.json:ro
+      - ../../../deployments/active-deployment.json:/app/deployment.json:ro
     environment:
       - DATA_NODE_URL=http://localhost:8200
       - DATA_NODE_AUTH_TOKEN=${DATA_NODE_AUTH_TOKEN}
       - L3_RPC_URL=http://142.132.164.24/
-      - INDEX_ADDRESS=${INDEX_ADDRESS}
       - BOT_KEY_FILE=/tmp/bot-key.txt
+      - DEPLOYED_ASSETS_PATH=/app/deployed-assets.json
+    command:
+      - "--manifest"
+      - "/app/manifest.json"
+      - "--deployed-assets"
+      - "/app/deployed-assets.json"
+      - "--deployment-file"
+      - "/app/deployment.json"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8210/health"]
       interval: 30s
