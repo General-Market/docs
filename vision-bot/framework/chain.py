@@ -210,8 +210,14 @@ class Executor:
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
         if receipt["status"] == 0:
-            # Reset nonce on revert — the nonce wasn't consumed
+            # Reset nonce on revert — the nonce wasn't consumed on Orbit L3
+            # (nonce IS consumed on revert, but reset anyway to re-sync)
             self._nonce = self.w3.eth.get_transaction_count(self.bot_addr)
+            # Try to get revert reason
+            try:
+                self.w3.eth.call(tx, receipt["blockNumber"])
+            except Exception as e:
+                logger.error("Revert reason: %s", e)
             raise RuntimeError(f"Transaction reverted: {tx_hash.hex()}")
         return tx_hash
 
