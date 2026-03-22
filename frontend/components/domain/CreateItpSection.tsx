@@ -433,39 +433,30 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     return () => clearTimeout(timer)
   }, [isConfirming])
 
-  // Poll L3 ITP count after Settlement tx succeeds — detect oracle consensus
+  // Poll data-node for new ITP after Settlement tx succeeds
   useEffect(() => {
-    if (!isSuccess || itpCountBefore === null || consensusReached) return
+    if (!isSuccess || consensusReached) return
 
     let cancelled = false
     const poll = async () => {
       try {
-        const res = await fetch(`/api/rpc`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0', id: 1, method: 'eth_call',
-            params: [{
-              to: INDEX_PROTOCOL.index,
-              // getItpCount() selector
-              data: '0x2fa9f978',
-            }, 'latest'],
-          }),
-        })
-        if (!res.ok) return
-        const { result } = await res.json()
-        const count = Number(BigInt(result))
-        if (count > itpCountBefore && !cancelled) {
+        // Check if the next ITP ID exists in the data-node
+        const nextId = itpCountBefore != null ? itpCountBefore + 1 : 1
+        const itpIdHex = '0x' + nextId.toString(16).padStart(64, '0')
+        const res = await fetch(`/api/dn/itp-price?itp_id=${encodeURIComponent(itpIdHex)}`)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        // If data-node returns a valid ITP with assets, consensus reached
+        if (data.itp_id && data.assets_total > 0 && !cancelled) {
           setConsensusReached(true)
-          capture('create_itp_consensus_reached', { itp_count: count })
+          capture('create_itp_consensus_reached', { itp_id: data.itp_id })
         }
-      } catch { /* poll continues */ }
+      } catch { /* continue polling */ }
     }
 
     const interval = setInterval(poll, 3_000)
-    poll() // check immediately
-    // Give up after 5 minutes
-    const timeout = setTimeout(() => { clearInterval(interval) }, 300_000)
+    poll()
+    const timeout = setTimeout(() => clearInterval(interval), 300_000)
 
     return () => {
       cancelled = true
