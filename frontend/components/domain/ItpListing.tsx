@@ -263,7 +263,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [rows, deferredSearch, activeCategory, categoryMap, creators, sortKey, sortDir])
+  }, [namedRows, deferredSearch, activeCategory, categoryMap, creators, sortKey, sortDir])
 
   const PAGE_SIZE = 15
   const [page, setPage] = useState(0)
@@ -314,7 +314,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
               </div>
               <div>
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('listing.funds_label')}</div>
-                <div className="text-heading font-black font-mono tabular-nums text-black">{rows.length}</div>
+                <div className="text-heading font-black font-mono tabular-nums text-black">{namedRows.length}</div>
               </div>
             </div>
           )}
@@ -335,7 +335,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                 }`}
               >
                 {t('listing.category_all')}
-                <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{rows.length}</span>
+                <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{namedRows.length}</span>
               </button>
               {FUND_CATEGORY_IDS.map(catId => {
                 const count = categoryCounts[catId]

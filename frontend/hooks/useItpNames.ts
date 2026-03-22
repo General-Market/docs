@@ -1,14 +1,35 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { encodeFunctionData, decodeFunctionResult } from 'viem'
-import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { L3_RPC_URL } from '@/lib/config'
 
+// getItpNameSymbol(bytes32) selector
+const SELECTOR = '0xc47f0027'
+
+function decodeStringPair(hex: string): [string, string] {
+  const bytes = hex.startsWith('0x') ? hex.slice(2) : hex
+  if (bytes.length < 128) return ['', '']
+
+  // ABI: offset1(32) + offset2(32) + len1(32) + data1... + len2(32) + data2...
+  const offset1 = parseInt(bytes.slice(0, 64), 16) * 2
+  const offset2 = parseInt(bytes.slice(64, 128), 16) * 2
+  const len1 = parseInt(bytes.slice(offset1, offset1 + 64), 16)
+  const data1 = bytes.slice(offset1 + 64, offset1 + 64 + len1 * 2)
+  const len2 = parseInt(bytes.slice(offset2, offset2 + 64), 16)
+  const data2 = bytes.slice(offset2 + 64, offset2 + 64 + len2 * 2)
+
+  const decode = (h: string) => {
+    const arr = []
+    for (let i = 0; i < h.length; i += 2) arr.push(parseInt(h.slice(i, i + 2), 16))
+    return String.fromCharCode(...arr)
+  }
+
+  return [decode(data1), decode(data2)]
+}
+
 /**
  * Batch-fetch ITP names from on-chain for ITP IDs not in the static mapping.
- * Calls getItpNameSymbol(bytes32) on the Index contract.
  */
 export function useItpNames(itpIds: string[]): Map<string, { name: string; symbol: string }> {
   const [names, setNames] = useState<Map<string, { name: string; symbol: string }>>(new Map())
@@ -20,16 +41,12 @@ export function useItpNames(itpIds: string[]): Map<string, { name: string; symbo
     async function fetchNames() {
       const results = new Map<string, { name: string; symbol: string }>()
 
-      // Batch in groups of 20 to avoid overwhelming the RPC
       for (let i = 0; i < itpIds.length; i += 20) {
         const batch = itpIds.slice(i, i + 20)
         const promises = batch.map(async (itpId) => {
           try {
-            const calldata = encodeFunctionData({
-              abi: INDEX_ABI,
-              functionName: 'getItpNameSymbol',
-              args: [itpId as `0x${string}`],
-            })
+            const paddedId = itpId.startsWith('0x') ? itpId.slice(2) : itpId
+            const calldata = SELECTOR + paddedId.padStart(64, '0')
             const res = await fetch(L3_RPC_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -41,12 +58,8 @@ export function useItpNames(itpIds: string[]): Map<string, { name: string; symbo
               signal: AbortSignal.timeout(5000),
             })
             const json = await res.json()
-            if (json.result && json.result !== '0x') {
-              const [name, symbol] = decodeFunctionResult({
-                abi: INDEX_ABI,
-                functionName: 'getItpNameSymbol',
-                data: json.result,
-              }) as [string, string]
+            if (json.result && json.result !== '0x' && json.result.length > 130) {
+              const [name, symbol] = decodeStringPair(json.result)
               if (name || symbol) {
                 results.set(itpId.toLowerCase(), { name, symbol })
               }
@@ -67,6 +80,7 @@ export function useItpNames(itpIds: string[]): Map<string, { name: string; symbo
 
     fetchNames()
     return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itpIds.join(',')])
 
   return names

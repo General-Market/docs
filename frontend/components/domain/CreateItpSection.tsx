@@ -440,7 +440,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     let cancelled = false
     const poll = async () => {
       try {
-        const res = await fetch(`/rpc`, {
+        const res = await fetch(`/api/rpc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
