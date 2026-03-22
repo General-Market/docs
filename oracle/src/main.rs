@@ -3699,14 +3699,6 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             if valid && !pending {
                 tracing::warn!(order_id = o.id.as_u64(), status = ?o.status, "Skipping non-pending order");
             }
-            // SAFETY: L3-native path must NEVER fill ANY ITP orders.
-            // BUY: requires completeBuyOrder (USDC → AP vault) for asset backing.
-            // SELL: requires AP to sell underlying assets and return USDC via settlement.
-            // Without settlement, buys mint unbacked shares and sells drain the L3 pool
-            // while the AP keeps the underlying assets.
-            // ALL orders must go through the cross-chain settlement pipeline.
-            tracing::warn!(order_id = o.id.as_u64(), side = ?o.side, "REJECTED: L3-native order — must go through settlement pipeline");
-            return false;
             valid && pending
         })
         .collect();
@@ -3960,16 +3952,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     // the inline pipeline also runs fills (with a different cycle number).
     // When the fills loop wins the race, the inline path falls to the
     // "already-filled" path which still handles mintBridgedShares correctly.
-    // SAFETY: L3-native path must NEVER fill ANY ITP orders.
-    // BUY: requires completeBuyOrder (USDC → AP vault) for asset backing.
-    // SELL: requires AP to sell underlying assets and return USDC via settlement.
-    // ALL orders must go through the cross-chain settlement pipeline.
-    let l3_batched_orders: Vec<_> = batched_orders.into_iter()
-        .filter(|o| {
-            tracing::warn!(order_id = o.id.as_u64(), side = ?o.side, "REJECTED: BATCHED L3-native order — must go through settlement pipeline");
-            false
-        })
-        .collect();
+    let l3_batched_orders = batched_orders;
 
     if l3_batched_orders.is_empty() {
         return;
