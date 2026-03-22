@@ -1452,6 +1452,31 @@ cmd_start() {
     [ "$VPS_CHAIN_ID" = "$CHAIN_ID" ] || { echo -e "  ${RED}L3 not reachable${NC}"; exit 1; }
     echo -e "  ${GREEN}L3 OK${NC}"
 
+    # Refresh BLS snapshots to prevent SnapshotTooOld (86400 block limit)
+    echo -e "${BLUE}[1b/8] Refreshing BLS snapshots...${NC}"
+    local L3_REG=$(read_deployment_addr "OracleRegistry")
+    if [ -n "$L3_REG" ] && [ "$L3_REG" != "null" ]; then
+        local L3_NONCE=$(cast call "$L3_REG" "registryNonce()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null | awk '{print $1}')
+        local L3_AGG=$(cast call "$L3_REG" "getAggregatedPubkey()(bytes)" --rpc-url "$RPC_URL" 2>/dev/null)
+        if [ -n "$L3_NONCE" ] && [ -n "$L3_AGG" ]; then
+            cast send "$L3_REG" "setAggregatedPubkey(bytes,uint256)" "$L3_AGG" "$L3_NONCE" \
+                --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" > /dev/null 2>&1 \
+                && echo -e "  ${GREEN}L3 snapshot refreshed (nonce=$L3_NONCE)${NC}" \
+                || echo -e "  ${YELLOW}L3 snapshot refresh failed (non-critical)${NC}"
+        fi
+    fi
+    local SONIC_REG=$(read_deployment_addr "SettlementOracleRegistry")
+    if [ -n "$SONIC_REG" ] && [ "$SONIC_REG" != "null" ]; then
+        local SONIC_NONCE=$(cast call "$SONIC_REG" "registryNonce()(uint256)" --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null | awk '{print $1}')
+        local SONIC_AGG=$(cast call "$SONIC_REG" "getAggregatedPubkey()(bytes)" --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null)
+        if [ -n "$SONIC_NONCE" ] && [ -n "$SONIC_AGG" ]; then
+            cast send "$SONIC_REG" "setAggregatedPubkey(bytes,uint256)" "$SONIC_AGG" "$SONIC_NONCE" \
+                --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --legacy > /dev/null 2>&1 \
+                && echo -e "  ${GREEN}Sonic snapshot refreshed (nonce=$SONIC_NONCE)${NC}" \
+                || echo -e "  ${YELLOW}Sonic snapshot refresh failed (non-critical)${NC}"
+        fi
+    fi
+
     # Kill old bare processes (prevents port conflicts on migration)
     _kill_old_processes
 
