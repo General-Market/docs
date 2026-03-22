@@ -1,5 +1,5 @@
 # Stage 1: Build oracle binary
-FROM rust:1.86-slim-bookworm AS builder
+FROM rust:slim-bookworm AS builder
 RUN apt-get update && apt-get install -y pkg-config libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
