@@ -18,3 +18,4 @@
 !deployments/vision-batches.json
 !vision-bot/
 !docker/testnet/vision-swarm/config.toml
+!data-node/
