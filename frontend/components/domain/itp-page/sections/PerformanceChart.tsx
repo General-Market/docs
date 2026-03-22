@@ -20,7 +20,8 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const t = useTranslations('markets.itp_page.performance')
   const locale = useLocale()
   const [tf, setTf] = useState<NavTimeframe>('1h')
-  const { data, isLoading } = useItpNavSeries(itpId, tf)
+  const createdAtSec = createdAt ? Math.floor(new Date(createdAt).getTime() / 1000) : undefined
+  const { data, isLoading } = useItpNavSeries(itpId, tf, createdAtSec)
   const [hover, setHover] = useState<ChartHoverInfo | null>(null)
 
   const chartData = useMemo(() => {
