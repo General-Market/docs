@@ -110,13 +110,13 @@ class Tracker:
                 if src not in by_source or b.get("id", 0) > by_source[src].get("id", 0):
                     by_source[src] = b
             active = list(by_source.values())
-            max_batches = self._config.get("max_batches", 50)
+            max_per_cycle = 5  # Don't flood with joins — 5 per cycle max
             joined = 0
             for batch in active:
                 bid = batch.get("id", -1)
                 if bid in self.active_ids or bid < 0:
                     continue
-                if joined >= max_batches:
+                if joined >= max_per_cycle:
                     break
                 try:
                     # Adapt oracle batch format to what _join_round expects
