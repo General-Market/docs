@@ -1012,6 +1012,14 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                     }
 
                     // Cross-chain BUY — detect + bridge + submit + immediate batch/fills/mint (merged pipeline)
+                    if current_cycle % 100 == 0 {
+                        info!(cycle = current_cycle, settlement_poll_due, bridge_ready, mirror_sync_pending,
+                            buy_active = buy_active.load(Ordering::Acquire),
+                            has_reader = settlement_reader_for_task.is_some(),
+                            has_orch = bridge_orchestrator_for_task.is_some(),
+                            has_writer = settlement_writer_for_task.is_some(),
+                            "Cross-chain buy gate check");
+                    }
                     if settlement_poll_due && !buy_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
