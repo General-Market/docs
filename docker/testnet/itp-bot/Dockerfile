@@ -1,6 +1,6 @@
 # Stage 1: Build
 FROM rust:slim-bookworm AS builder
-RUN apt-get update && apt-get install -y pkg-config libssl-dev libpq-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y pkg-config libssl-dev libpq-dev perl && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY itp-bot/ itp-bot/
