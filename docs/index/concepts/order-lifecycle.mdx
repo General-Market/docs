@@ -9,59 +9,69 @@ You click a button. Behind that click, three machines decide whether to trust ea
 
 ## Buy Flow
 
-Ten steps between your USDC and your tokens. Each one can fail. None of them do, almost always.
+Six steps between your USDC and your tokens. Each one can fail. None of them do, almost always.
 
 <Steps>
-  <Step title="USDC Approval">
-    The wallet approves the contract to spend USDC. A one-time act of trust. Or per-transaction, if your wallet is more cautious than you are.
+  <Step title="User Submits Buy on L3">
+    `submitOrder(itpId, amount, BUY)`. Your USDC is **escrowed** on L3. It is no longer yours. It is not yet theirs. It belongs to the protocol until the machines have finished agreeing.
   </Step>
-  <Step title="Submit Order">
-    `submitOrder(itpId, amount, BUY)`. Your USDC moves to the contract and is **escrowed**. It is no longer yours. It is not yet theirs. It belongs to the protocol.
+  <Step title="Oracle Bridges Buy to Settlement">
+    The oracle nodes detect the pending buy order, reach BLS consensus, and relay it to the Settlement chain. Your USDC intent crosses the chain boundary — cryptographically signed, not optimistically assumed.
   </Step>
-  <Step title="Order is PENDING">
-    Your order enters `PENDING`. It sits on-chain, visible to the oracle nodes. It will stay there for about one second. In that second, three machines decide whether to trust each other. This is consensus.
+  <Step title="completeBuyOrder Releases USDC to AP">
+    `completeBuyOrder()` is called on Settlement with a valid BLS signature. The contract verifies the signature and releases the escrowed USDC to the AP vault. The money is now in the hands of the entity that will spend it. This step **must succeed** before any shares are minted. The backing invariant is enforced here, nowhere else.
   </Step>
-  <Step title="COLLECT Phase">
-    The oracle nodes detect pending orders during **COLLECT** (200ms). All orders are gathered into a candidate batch. The clock is already running.
+  <Step title="AP Buys Underlying Assets">
+    The Authorized Participant receives the USDC and buys the underlying assets on **Bitget**. Real order books. Real counterparties. The abstraction ends here.
   </Step>
-  <Step title="PROPOSE Phase">
-    The cycle's **leader** (round-robin election) proposes a batch. Order IDs, batch hash. A proposal is an opinion backed by cryptography.
+  <Step title="confirmFills Mints Shares on L3">
+    `confirmFills()` is called on L3. The contract checks each fill against the **0.1% price tolerance**. If it passes, ITP shares are **minted** to your wallet. The exposure begins.
   </Step>
-  <Step title="BLS Signing">
-    Peer nodes **validate** the batch — checking order data, prices, consistency. Each signs the batch hash with its BLS private key. Agreement is not given. It is earned.
-  </Step>
-  <Step title="Signature Aggregation">
-    The leader collects signatures. Once `ceil(2n/3)` of registered oracles have signed, the signatures collapse into a single compact proof. Many voices, one signature.
-  </Step>
-  <Step title="Batch Confirmation">
-    `confirmBatch()` is called on-chain with the aggregated BLS signature. The contract verifies it against the registered public key. Orders move to `BATCHED`. The consensus is now permanent.
-  </Step>
-  <Step title="Exchange Execution">
-    The Authorized Participant (AP) sees `TradeRequest` events. It executes real trades on **Bitget**. Real order books. Real counterparties. The abstraction ends here.
-  </Step>
-  <Step title="Fill Confirmation">
-    The AP calls `confirmFills()` on-chain. The contract checks each fill against the **0.1% price tolerance**. If it passes, ITP tokens are **minted** to your wallet. Status: `FILLED`. The journey is over. The exposure begins.
+  <Step title="BridgedITP Minted on Settlement">
+    `mintBridgedShares()` is called on Settlement with BLS verification. A BridgedITP token — an ERC-20 replica of your L3 shares — is minted to your wallet on Settlement. You now hold the same position on both chains.
   </Step>
 </Steps>
+
+### Buy Flow — Full Infrastructure Diagram
+
+<img src="/images/index/buy-flow.svg" alt="Buy flow infrastructure diagram — USDC escrowed on L3, oracle BLS consensus bridges to Settlement, completeBuyOrder releases USDC to AP, AP buys on Bitget, confirmFills mints shares on L3, mintBridgedShares creates BridgedITP on Settlement" />
+
+<Info>
+The buy flow touches two chains and requires four BLS consensus rounds. The critical invariant: `completeBuyOrder` on Settlement must succeed before shares are minted anywhere. If it fails, `refundBuyOrder` returns your USDC. No shares minted, no damage done. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
+</Info>
 
 ## Sell Flow
 
-Selling is the buy flow in reverse. The same consensus, the same execution, the same precision. Only the direction changes, and with it, the emotion.
+Selling is the buy flow in reverse — except the money must cross a chain boundary before it reaches you. The same consensus, the same execution, the same refusal to cut corners. Only the direction changes, and with it, the emotion.
 
 <Steps>
-  <Step title="Submit Sell Order">
-    `submitOrder(itpId, amount, SELL)`. Your ITP tokens are escrowed. You have decided to leave.
+  <Step title="Submit Sell Order on L3">
+    `submitOrder(itpId, amount, SELL)`. Your ITP shares are **escrowed** on L3. They are no longer yours. They are not yet gone. You have decided to leave, but the protocol has not yet agreed.
   </Step>
-  <Step title="Consensus and Batching">
-    The same COLLECT, PROPOSE, and BLS signing phases. The protocol does not distinguish between conviction and capitulation.
+  <Step title="Oracle Bridges Sell to Settlement">
+    The oracle nodes detect the pending sell order, reach BLS consensus, and relay it to the Settlement chain. The sell intent crosses the chain boundary — cryptographically signed, not optimistically assumed.
   </Step>
-  <Step title="Exchange Execution">
-    The AP sells the underlying assets on Bitget.
+  <Step title="AP Sells Underlying Assets">
+    The Authorized Participant receives the `TradeRequest` and sells the underlying assets on **Bitget**. Real order books, real counterparties. The abstraction ends here, as it does for buys.
   </Step>
-  <Step title="Settlement">
-    `confirmFills()` is called. The contract **burns** your ITP tokens and **returns USDC** at the execution price. You are whole again. Or less than whole. The math will tell you.
+  <Step title="AP Returns USDC to Settlement Custody">
+    The AP deposits the USDC proceeds into the Settlement custody contract. The money exists. It is accounted for. It is not yet yours.
+  </Step>
+  <Step title="completeSellOrder Transfers USDC to User">
+    `completeSellOrder()` is called on Settlement with a valid BLS signature. The contract verifies the signature, transfers USDC from the AP vault to your wallet on Settlement. You are whole again. Or less than whole. The math will tell you.
+  </Step>
+  <Step title="confirmFills Burns Shares on L3">
+    `confirmFills()` is called on L3. The escrowed ITP shares are **burned**. The position ceases to exist on both chains simultaneously. What was yours is now no one's.
   </Step>
 </Steps>
+
+### Sell Flow — Full Infrastructure Diagram
+
+<img src="/images/index/sell-flow.svg" alt="Sell flow infrastructure diagram — ITP shares escrowed on L3, oracle BLS consensus batches order, AP sells on Bitget, USDC returned to Settlement custody, completeSellOrder pays user, confirmFills burns shares on L3" />
+
+<Info>
+The sell flow touches two chains and requires four BLS consensus rounds. The USDC arrives on Settlement, not on L3. If you deposited from Settlement, this is where you expect it. If you traded natively on L3, the bridge handles the conversion. See the [Bridge Architecture](/index/architecture/bridge) for the full cross-chain diagram.
+</Info>
 
 ## Cycle Timing
 
