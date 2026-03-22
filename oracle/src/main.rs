@@ -3744,6 +3744,14 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             if valid && !pending {
                 tracing::warn!(order_id = o.id.as_u64(), status = ?o.status, "Skipping non-pending order");
             }
+            // SAFETY: L3-native path must NEVER fill BUY orders.
+            // Buy orders require settlement (completeBuyOrder → AP vault) to ensure
+            // ITP shares are backed by underlying assets. Without settlement, minted
+            // shares are unbacked. Only SELL orders are safe to process L3-natively.
+            if o.side == common::types::Side::Buy {
+                tracing::warn!(order_id = o.id.as_u64(), "REJECTED: BUY order in L3-native path — must go through settlement pipeline");
+                return false;
+            }
             valid && pending
         })
         .collect();
