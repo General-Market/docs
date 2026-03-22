@@ -132,6 +132,7 @@ impl SseChainEventClient {
         match envelope.event_type.as_str() {
             "order-submitted" => self.parse_order_submitted(&envelope),
             "fill-confirmed" => self.parse_fill_confirmed(&envelope),
+            "asset-trade-request" => self.parse_asset_trade_request(&envelope),
             "rebalance-requested" => {
                 debug!("Received rebalance-requested event (not yet mapped to ChainEvent)");
                 None
@@ -203,6 +204,58 @@ impl SseChainEventClient {
             order_id,
             fill_price,
             fill_amount,
+        })
+    }
+
+    /// Parse an "asset-trade-request" event.
+    ///
+    /// Event: AssetTradeRequest(uint256 indexed cycleNumber, address indexed asset,
+    ///         uint8 side, uint256 usdcAmount, uint256 price, address quoteToken)
+    ///
+    /// 2 indexed → topics[1..2], 4 non-indexed → 128 bytes data.
+    fn parse_asset_trade_request(&self, envelope: &ChainEventEnvelope) -> Option<ChainEvent> {
+        let log_data = &envelope.data;
+        let topics = log_data.get("topics")?.as_array()?;
+        if topics.len() < 3 {
+            warn!("asset-trade-request: expected >= 3 topics, got {}", topics.len());
+            return None;
+        }
+
+        let cycle_number = parse_topic_u64(topics.get(1)?)?;
+        let asset = parse_topic_address(topics.get(2)?)?;
+
+        let data_hex = log_data.get("data")?.as_str()?;
+        let data_bytes = hex::decode(data_hex.strip_prefix("0x").unwrap_or(data_hex)).ok()?;
+        if data_bytes.len() < 128 {
+            warn!("asset-trade-request: data too short ({}), expected >= 128", data_bytes.len());
+            return None;
+        }
+
+        let side = data_bytes[31]; // uint8 side (padded to 32 bytes, value in last byte)
+        let usdc_amount = U256::from_big_endian(&data_bytes[32..64]);
+        let price = U256::from_big_endian(&data_bytes[64..96]);
+        let mut quote_token = [0u8; 20];
+        quote_token.copy_from_slice(&data_bytes[108..128]); // address is last 20 of 32 bytes
+
+        let block_number = envelope.block_number;
+        let tx_hash_str = log_data.get("transactionHash").and_then(|v| v.as_str()).unwrap_or("0x0");
+        let tx_hash_bytes = hex::decode(tx_hash_str.strip_prefix("0x").unwrap_or(tx_hash_str)).unwrap_or_default();
+        let mut tx_hash = [0u8; 32];
+        if tx_hash_bytes.len() >= 32 { tx_hash.copy_from_slice(&tx_hash_bytes[..32]); }
+        let log_index = log_data.get("logIndex").and_then(|v| v.as_u64()).unwrap_or(0);
+
+        info!(cycle_number, side, "SSE: received asset-trade-request event");
+
+        Some(ChainEvent::AssetTradeRequest {
+            cycle_number,
+            asset,
+            side,
+            usdc_amount,
+            price,
+            quote_token,
+            block_number,
+            tx_hash,
+            log_index,
         })
     }
 }

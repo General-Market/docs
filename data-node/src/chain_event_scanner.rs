@@ -31,6 +31,7 @@ struct EventSignatures {
     order_submitted: H256,
     fill_confirmed: H256,
     rebalance_requested: H256,
+    asset_trade_request: H256,
 
     // Settlement events (BridgeProxy + SettlementBridgeCustody)
     create_itp_requested: H256,
@@ -50,6 +51,9 @@ impl EventSignatures {
             )),
             rebalance_requested: H256::from(keccak256(
                 "RebalanceRequested(address,bytes32,uint256[],address[],uint256[],string)",
+            )),
+            asset_trade_request: H256::from(keccak256(
+                "AssetTradeRequest(uint256,address,uint8,uint256,uint256,address)",
             )),
             create_itp_requested: H256::from(keccak256(
                 "CreateItpRequested(address,uint256,string,string,uint256[],address[])",
@@ -158,6 +162,7 @@ impl ChainEventScanner {
             sigs.order_submitted,
             sigs.fill_confirmed,
             sigs.rebalance_requested,
+            sigs.asset_trade_request,
         ];
 
         // Settlement topic0 hashes
@@ -182,6 +187,7 @@ impl ChainEventScanner {
             sigs.order_submitted,
             sigs.fill_confirmed,
             sigs.rebalance_requested,
+            sigs.asset_trade_request,
         ));
 
         // Spawn Settlement scanner (polls every 1s — Sonic has instant finality)
@@ -222,6 +228,7 @@ fn l3_event_type(
     order_submitted: H256,
     fill_confirmed: H256,
     rebalance_requested: H256,
+    asset_trade_request: H256,
 ) -> Option<&'static str> {
     if topic0 == order_submitted {
         Some("order-submitted")
@@ -229,6 +236,8 @@ fn l3_event_type(
         Some("fill-confirmed")
     } else if topic0 == rebalance_requested {
         Some("rebalance-requested")
+    } else if topic0 == asset_trade_request {
+        Some("asset-trade-request")
     } else {
         None
     }
@@ -270,6 +279,7 @@ async fn scan_loop(
     order_submitted: H256,
     fill_confirmed: H256,
     rebalance_requested: H256,
+    asset_trade_request: H256,
 ) {
     if index_addr == Address::zero() {
         warn!("L3 event scanner disabled: no Index contract address");
@@ -324,6 +334,7 @@ async fn scan_loop(
                         order_submitted,
                         fill_confirmed,
                         rebalance_requested,
+                        asset_trade_request,
                     ) {
                         let envelope = ChainEventEnvelope {
                             event_type: event_type.to_string(),

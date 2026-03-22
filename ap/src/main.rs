@@ -400,6 +400,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             "order-submitted".to_string(),
             "fill-confirmed".to_string(),
             "rebalance-requested".to_string(),
+            "asset-trade-request".to_string(),
         ];
         let sse_client = SseChainEventClient::new(data_node_url.clone(), sse_topics);
 
