@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 
 // getItpNameSymbol(bytes32) selector
-const SELECTOR = '0xc47f0027'
+const SELECTOR = '0x693dd6b6'
 
 function decodeStringPair(hex: string): [string, string] {
   const bytes = hex.startsWith('0x') ? hex.slice(2) : hex
@@ -46,7 +46,7 @@ export function useItpNames(itpIds: string[]): Map<string, { name: string; symbo
           try {
             const paddedId = itpId.startsWith('0x') ? itpId.slice(2) : itpId
             const calldata = SELECTOR + paddedId.padStart(64, '0')
-            const res = await fetch(L3_RPC_URL, {
+            const res = await fetch('/api/rpc', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
