@@ -6900,7 +6900,7 @@ async fn sse_chain_events(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
     Query(params): Query<ChainEventsQuery>,
-) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, StatusCode> {
+) -> Result<(HeaderMap, Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>), StatusCode> {
     let ip = extract_client_ip(&headers);
     let guard = state.sse_limiter.try_acquire(ip)
         .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
@@ -6943,10 +6943,16 @@ async fn sse_chain_events(
         }
     });
 
-    Ok(Sse::new(ReceiverStream::new(mpsc_rx)).keep_alive(
-        axum::response::sse::KeepAlive::new()
-            .interval(Duration::from_secs(15))
-            .text("ping"),
+    let mut resp_headers = HeaderMap::new();
+    resp_headers.insert("X-Accel-Buffering", "no".parse().unwrap());
+
+    Ok((
+        resp_headers,
+        Sse::new(ReceiverStream::new(mpsc_rx)).keep_alive(
+            axum::response::sse::KeepAlive::new()
+                .interval(Duration::from_secs(15))
+                .text("ping"),
+        ),
     ))
 }
 
