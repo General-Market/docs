@@ -1,4 +1,4 @@
-//! Timeout metrics for Prometheus monitoring
+//! Timeout metrics tracking
 //!
 //! Tracks timeout counts, retries, failures, and in-flight orders.
 
@@ -139,32 +139,6 @@ impl TimeoutMetrics {
         }
     }
 
-    /// Format metrics in Prometheus exposition format
-    pub fn to_prometheus(&self) -> String {
-        let snapshot = self.snapshot();
-        format!(
-            r#"# HELP ap_order_timeouts_total Total number of order timeouts
-# TYPE ap_order_timeouts_total counter
-ap_order_timeouts_total {}
-
-# HELP ap_order_retries_total Total number of order retries
-# TYPE ap_order_retries_total counter
-ap_order_retries_total {}
-
-# HELP ap_order_failures_total Total number of permanently failed orders
-# TYPE ap_order_failures_total counter
-ap_order_failures_total {}
-
-# HELP ap_orders_in_flight Current number of orders being tracked
-# TYPE ap_orders_in_flight gauge
-ap_orders_in_flight {}
-"#,
-            snapshot.timeouts_total,
-            snapshot.retries_total,
-            snapshot.failures_total,
-            snapshot.in_flight
-        )
-    }
 }
 
 impl Default for TimeoutMetrics {
@@ -271,15 +245,4 @@ mod tests {
         assert_eq!(snapshot.in_flight, 1);
     }
 
-    #[test]
-    fn test_prometheus_format() {
-        let metrics = TimeoutMetrics::new();
-        metrics.record_timeout();
-        metrics.record_failure();
-
-        let output = metrics.to_prometheus();
-        assert!(output.contains("ap_order_timeouts_total 1"));
-        assert!(output.contains("ap_order_failures_total 1"));
-        assert!(output.contains("# TYPE ap_order_timeouts_total counter"));
-    }
 }

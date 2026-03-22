@@ -10,7 +10,7 @@ use ap::external::bitget_vault::BitgetVaultClient;
 use ap::sse_client::SseChainEventClient;
 use ethers::types::Address as EthAddress;
 use ap::limit_enforcer::{LimitOrderEnforcer, ValidationResult, LIMIT_TOLERANCE_BPS, BPS_DENOMINATOR};
-use ap::metrics::{APMetrics, PrometheusFormatter};
+use ap::metrics::APMetrics;
 use ap::timeout::{TimeoutConfig, TimeoutHandler};
 use clap::Parser;
 use common::adapters::{DataNodeChainReader, DeploymentConfig, RpcChainReader, RpcChainWriter};
@@ -177,16 +177,6 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
     };
 
     (status_code, Json(serde_json::to_value(&health_details).unwrap_or_default()))
-}
-
-/// GET /metrics — Prometheus text format (AC #6)
-async fn handle_metrics(State(state): State<AppState>) -> impl IntoResponse {
-    let prometheus_output = PrometheusFormatter::format(&state.metrics).await;
-    (
-        StatusCode::OK,
-        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
-        prometheus_output,
-    )
 }
 
 /// GET /prices — delegate to data-node backend
@@ -849,7 +839,6 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
     let app = Router::new()
         .route("/health", get(handle_health))
         .route("/", get(handle_health))
-        .route("/metrics", get(handle_metrics))
         .route("/prices", get(handle_prices))
         .route("/nav", get(handle_nav))
         .with_state(app_state)

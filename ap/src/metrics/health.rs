@@ -46,14 +46,6 @@ impl HealthStatus {
         matches!(self, HealthStatus::Unhealthy)
     }
 
-    /// Get numeric value for Prometheus gauge (0=unhealthy, 1=degraded, 2=healthy)
-    pub fn as_prometheus_value(&self) -> u64 {
-        match self {
-            HealthStatus::Unhealthy => 0,
-            HealthStatus::Degraded => 1,
-            HealthStatus::Healthy => 2,
-        }
-    }
 }
 
 impl std::fmt::Display for HealthStatus {
@@ -137,12 +129,6 @@ mod tests {
         assert!(HealthStatus::Unhealthy.is_unhealthy());
     }
 
-    #[test]
-    fn test_health_status_prometheus_value() {
-        assert_eq!(HealthStatus::Healthy.as_prometheus_value(), 2);
-        assert_eq!(HealthStatus::Degraded.as_prometheus_value(), 1);
-        assert_eq!(HealthStatus::Unhealthy.as_prometheus_value(), 0);
-    }
 
     #[test]
     fn test_health_status_display() {

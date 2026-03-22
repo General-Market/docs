@@ -22,6 +22,13 @@ import "../interfaces/IBridgeProxy.sol";
 contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, ISettlementBridgeCustody {
     using SafeERC20 for IERC20;
 
+    /// @notice Legacy Vision deposit struct (was in TypesLib, moved here after purge)
+    struct VisionDeposit {
+        address user;
+        uint256 amount;
+        uint256 createdAt;
+    }
+
     // ============ CONSTANTS ============
 
     /// @notice Maximum deadline duration for cross-chain orders (24 hours)
@@ -90,7 +97,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     // ============ VISION DEPOSIT/WITHDRAW STATE ============
 
     /// @notice Vision deposit tracking: orderId => deposit details
-    mapping(uint256 => TypesLib.VisionDeposit) public visionDeposits;
+    mapping(uint256 => VisionDeposit) public visionDeposits;
 
     /// @notice Replay protection for Vision withdrawals
     mapping(uint256 => bool) public withdrawProcessed;
@@ -618,8 +625,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     // ============ VISION DEPOSIT/WITHDRAW ============
 
-    /// @inheritdoc ISettlementBridgeCustody
-    function depositToVision(uint256 usdcAmount) external override returns (uint256 orderId) {
+    // ---- Legacy Vision deposit/withdraw (retained for existing settlement users) ----
+
+    event VisionDepositCreated(uint256 indexed orderId, address indexed user, uint256 amount);
+    event VisionDepositCompleted(uint256 indexed orderId);
+    event VisionDepositRefunded(uint256 indexed orderId, address indexed user, uint256 usdcAmount);
+    event VisionWithdrawCompleted(uint256 indexed withdrawId, address indexed user, uint256 usdcAmount);
+
+    function depositToVision(uint256 usdcAmount) external returns (uint256 orderId) {
         if (usdcAmount < MIN_USDC_AMOUNT) {
             revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, MIN_USDC_AMOUNT);
         }
@@ -631,7 +644,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         orderId = crossChainOrderId;
         crossChainOrderId = orderId + 1;
 
-        visionDeposits[orderId] = TypesLib.VisionDeposit({
+        visionDeposits[orderId] = VisionDeposit({
             user: msg.sender,
             amount: internalAmount,
             createdAt: block.timestamp
@@ -640,14 +653,13 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         emit VisionDepositCreated(orderId, msg.sender, internalAmount);
     }
 
-    /// @inheritdoc ISettlementBridgeCustody
     function completeVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
-        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+    ) external {
+        VisionDeposit storage dep = visionDeposits[orderId];
         if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
 
         bytes32 message = keccak256(abi.encode(
@@ -661,17 +673,16 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         emit VisionDepositCompleted(orderId);
     }
 
-    /// @inheritdoc ISettlementBridgeCustody
     function refundVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external {
         // Defense-in-depth: reject refund if deposit was already completed (even though
         // completeVisionDeposit deletes the struct, this guards against edge cases)
         if (depositCompleted[orderId]) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
-        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+        VisionDeposit storage dep = visionDeposits[orderId];
         if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
         if (block.timestamp - dep.createdAt <= REFUND_TIMEOUT) revert ErrorsLib.E153_RefundTooEarly(orderId);
 
@@ -696,7 +707,6 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         emit VisionDepositRefunded(orderId, user, usdcAmount);
     }
 
-    /// @inheritdoc ISettlementBridgeCustody
     function completeVisionWithdraw(
         uint256 withdrawId,
         address user,
@@ -704,7 +714,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
-    ) external override {
+    ) external {
         if (withdrawProcessed[withdrawId]) revert ErrorsLib.E132_VisionWithdrawAlreadyProcessed(withdrawId);
 
         bytes32 message = keccak256(abi.encode(
@@ -726,9 +736,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         emit VisionWithdrawCompleted(withdrawId, user, usdcAmount);
     }
 
-    /// @inheritdoc ISettlementBridgeCustody
-    function getVisionDeposit(uint256 orderId) external view override returns (address user, uint256 amount, uint256 createdAt) {
-        TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
+    function getVisionDeposit(uint256 orderId) external view returns (address user, uint256 amount, uint256 createdAt) {
+        VisionDeposit storage dep = visionDeposits[orderId];
         return (dep.user, dep.amount, dep.createdAt);
     }
 

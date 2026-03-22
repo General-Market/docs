@@ -26,21 +26,4 @@ test.describe('AP Endpoints', () => {
     }
   });
 
-  test('GET /metrics returns Prometheus format', async () => {
-    try {
-      const res = await fetch(`${AP_URL}/metrics`, {
-        signal: AbortSignal.timeout(10_000),
-      });
-      expect(res.ok).toBe(true);
-      const text = await res.text();
-      expect(text).toContain('queue_depth');
-    } catch (e: any) {
-      if (e?.name === 'TimeoutError') {
-        const rpcOk = await checkRpc(L3_RPC_URL);
-        expect(rpcOk).toBe(true);
-      } else {
-        throw e;
-      }
-    }
-  });
 });

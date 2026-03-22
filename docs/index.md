@@ -58,7 +58,6 @@ index/
 │   └── test/               # Foundry tests
 │
 ├── scripts/                # Shell scripts (e2e, deployment)
-├── monitoring/             # Prometheus + Grafana config
 ├── deployments/            # Contract addresses per network
 └── docs/                   # This documentation
 ```

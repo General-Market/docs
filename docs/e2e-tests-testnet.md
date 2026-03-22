@@ -165,7 +165,6 @@ Consensus timeout: 360s (full tick cycle + consensus + propagation).
 | # | Test | Summary |
 |---|------|---------|
 | 1 | GET /health returns valid status | AP health endpoint |
-| 2 | GET /metrics returns Prometheus format | AP metrics endpoint |
 
 ### 28 — System Health (ui-verify-itp)
 | # | Test | Summary |

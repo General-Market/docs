@@ -357,16 +357,4 @@ library TypesLib {
         uint256 activeBitmask;
     }
 
-    // ============ VISION DEPOSIT STRUCTS ============
-
-    /// @notice Vision cross-chain deposit from Settlement
-    /// @param user Address that deposited on Settlement
-    /// @param amount Amount in 18 decimals (converted from 6-dec input)
-    /// @param createdAt Timestamp when deposit was created
-    struct VisionDeposit {
-        address user;
-        uint256 amount;
-        uint256 createdAt;
-    }
-
 }

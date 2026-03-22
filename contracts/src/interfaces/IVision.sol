@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title IVision — Auto-batch prediction market interface
-/// @notice Resolves issues 1-10 from the 3-round review. Hash-based batches with
-///         deferred config promotion, lock windows, sourceId idempotency, and
-///         atomic createBatchAndJoin.
+/// @title IVision — Round-based prediction market interface
+/// @notice Each batch = one round. Direct USDC in via joinBatchDirect(),
+///         direct USDC out via settleBatch(). No persistent balance, no ticks.
 /// @dev BLS replay protection uses the EXISTING 256-nonce sliding window in
 ///      BLSVerifier (referenceNonce + signersBitmask). No second nonce mechanism.
 interface IVision {
@@ -12,38 +11,25 @@ interface IVision {
     // ============ STRUCTS ============
 
     /// @notice On-chain batch — all market detail lives off-chain, only the config
-    ///         hash is stored. Config promotion is deferred: `updateBatchConfig()`
-    ///         writes to `nextConfigHash`/`nextLockOffset`; at the next tick boundary,
-    ///         `_promoteConfigIfNeeded()` copies next -> active.
+    ///         hash is stored. One config per batch lifetime (no promotion).
     struct Batch {
         address creator;                 // first user who created the batch
-        bytes32 sourceId;                // keccak256(source_id_string) — F13
-        bytes32 configHash;              // active config hash (keccak256 of ABI-encoded config)
-        bytes32 nextConfigHash;          // pending config hash for next tick — F3
-        uint256 tickDuration;            // seconds per tick
-        uint256 lockOffset;              // active lock window (seconds before tick end)
-        uint256 nextLockOffset;          // pending lock offset for next tick — F3
-        uint256 nextTickDuration;        // staged tickDuration for next promotion
-        int256 epochOffset;              // signed offset for tick continuity across tickDuration changes
+        bytes32 sourceId;                // keccak256(source_id_string)
+        bytes32 configHash;              // config hash (keccak256 of ABI-encoded config)
+        uint256 tickDuration;            // seconds per tick (used for lock window)
+        uint256 lockOffset;              // lock window (seconds before tick end)
         uint256 createdAtTick;           // block.timestamp / tickDuration at creation
-        uint256 lastPromotionTick;       // tick at which config was last promoted — F3
         bool paused;
     }
 
     /// @notice Player position within a batch.
-    /// @dev `configHash` records which config the player's bitmap was submitted against (F21).
+    /// @dev Sentinel: deposit != 0 means player is joined.
     struct PlayerPosition {
         bytes32 bitmapHash;              // keccak256 of the player's bitmap
-        bytes32 configHash;              // config hash active when bitmap was last set — F21
-        uint256 stakePerTick;
-        uint256 startTick;
-        uint256 balance;
-        uint256 lastClaimedTick;
+        bytes32 configHash;              // config hash active when bitmap was last set
+        uint256 deposit;                 // USDC deposited for this round
         uint256 joinTimestamp;
         uint256 totalDeposited;
-        // totalClaimed removed: fees are applied once at withdraw(), not at claimRewards().
-        // Tracking intermediate claimed amounts for fee deduction caused double-counting.
-        bool isVirtual;                  // true if funded from virtualBalance (SOL-2)
     }
 
     struct Bot {
@@ -53,7 +39,7 @@ interface IVision {
         bool isActive;
     }
 
-    // ============ CUSTOM ERRORS (Issue 10) ============
+    // ============ CUSTOM ERRORS ============
 
     error BatchNotFound();
     error BatchPaused();
@@ -62,26 +48,19 @@ interface IVision {
     error StakeBelowMinimum();
     error AlreadyJoined();
     error NotJoined();
-    error TickAlreadyClaimed();
-    error InvalidTickRange();
     error InvalidTickDuration();
-    error InvalidLockOffset();           // lockOffset >= tickDuration
-    error LockOffsetTooLarge();          // lockOffset >= tickDuration in updateBatchConfig
+    error InvalidLockOffset();
+    error LockOffsetTooLarge();
     error InsolventPayout();
     error BotAlreadyRegistered();
     error BotNotRegistered();
-    error TickLocked();                  // bet/update during lock window — F6
-    error InvalidBLSSignature();         // kept for backwards compat event decoding
-    error InsufficientBalance();         // withdrawBalance/withdrawToSettlement amount exceeds balance
-    error AlreadyProcessed();            // depositProcessed[depositId] already true
-    error ZeroAddress();                 // creditBalance with user == address(0)
-    error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
-    error InvalidArrayLength();          // players.length != payouts.length or empty
-    error BatchAlreadySettled();         // settleBatch called on already-settled batch
+    error TickLocked();
+    error InvalidBLSSignature();
+    error InvalidArrayLength();
+    error BatchAlreadySettled();
 
     // ============ EVENTS ============
 
-    /// @param sourceId keccak256(source_id_string) for reverse lookup
     event BatchCreated(
         uint256 indexed batchId,
         bytes32 indexed sourceId,
@@ -91,92 +70,35 @@ interface IVision {
         uint256 lockOffset
     );
 
-    event BatchConfigUpdated(
-        uint256 indexed batchId,
-        bytes32 nextConfigHash,
-        uint256 nextLockOffset,
-        uint256 nextTickDuration
-    );
-
-    event BatchConfigPromoted(
-        uint256 indexed batchId,
-        bytes32 oldConfigHash,
-        bytes32 newConfigHash,
-        uint256 atTick
-    );
-
     event BatchPausedEvent(uint256 indexed batchId);
     event BatchUnpaused(uint256 indexed batchId);
 
     event PlayerJoined(
         uint256 indexed batchId,
         address indexed player,
-        uint256 stakePerTick,
+        uint256 deposit,
         bytes32 bitmapHash,
-        bytes32 configHash                // which config the bitmap targets
+        bytes32 configHash
     );
-
-    event PlayerDeposited(uint256 indexed batchId, address indexed player, uint256 amount);
 
     event BitmapUpdated(
         uint256 indexed batchId,
         address indexed player,
         bytes32 newBitmapHash,
-        bytes32 configHash                // which config the bitmap targets
+        bytes32 configHash
     );
-
-    event RewardsClaimed(uint256 indexed batchId, address indexed player, uint256 amount);
-    event PlayerWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
-    event ForceWithdrawn(uint256 indexed batchId, address indexed player, uint256 amount);
-
-    event BotRegistered(address indexed bot, string endpoint);
-    event BotDeregistered(address indexed bot);
-    event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
-
-    /// @notice Emitted when collectFees() is called.
-    /// @param realFees    Fees from real-funded positions (credited to realBalance)
-    /// @param virtualFees Fees from virtual-funded positions (credited to virtualBalance)
-    event FeeCollected(uint256 realFees, uint256 virtualFees);
-
-    // ============ ROUND-BASED SETTLEMENT EVENTS ============
 
     event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout, uint256 fee);
     event BatchSettled(uint256 indexed batchId, uint256 playerCount);
 
-    // ============ DUAL-BALANCE EVENTS ============
-
-    /// @notice Emitted when virtual balance is credited via cross-chain deposit
-    event BalanceCredited(address indexed user, uint256 amount, uint256 indexed depositId);
-
-    /// @notice Emitted when real balance is deposited directly on L3
-    event BalanceDeposited(address indexed user, uint256 amount);
-
-    /// @notice Emitted when real balance is withdrawn to L3 wallet
-    event RealBalanceWithdrawn(address indexed user, uint256 amount);
-
-    /// @notice Emitted when virtual balance withdrawal to Settlement is requested
-    event WithdrawToSettlementRequested(address indexed user, uint256 amount, uint256 indexed withdrawId);
-
-    /// @notice Emitted when _debitBalance draws from user's dual balance pools
-    event BalanceDebited(address indexed user, uint256 fromVirtual, uint256 fromReal);
+    event BotRegistered(address indexed bot, string endpoint);
+    event BotDeregistered(address indexed bot);
+    event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
+    event FeeCollected(uint256 amount);
 
     // ============ BATCH MANAGEMENT ============
 
-    /// @notice Create a new batch for a sourceId. Idempotent: if sourceId already has
-    ///         a batch, returns the existing batchId without reverting (F5).
-    /// @dev BLS message = keccak256(abi.encode(
-    ///        block.chainid, address(this), "CREATE_BATCH",
-    ///        sourceId, configHash, tickDuration, lockOffset
-    ///      ))
-    ///      Uses existing BLSVerifier nonce window — no separate nonce (F25/Issue 8).
-    /// @param sourceId       keccak256(source_id_string)
-    /// @param configHash     keccak256 of ABI-encoded batch config (F2)
-    /// @param tickDuration   seconds per tick
-    /// @param lockOffset     seconds before tick end where betting closes
-    /// @param blsSignature   aggregated BLS signature
-    /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask bitmask of signing oracles
-    /// @return batchId       the batch ID (new or existing)
+    /// @notice Create a new batch for a sourceId.
     function createBatch(
         bytes32 sourceId,
         bytes32 configHash,
@@ -187,90 +109,21 @@ interface IVision {
         uint256 signersBitmask
     ) external returns (uint256 batchId);
 
-    /// @notice Atomic create-or-lookup + join (Issue 1).
-    ///         Solves the problem that callers cannot read return values from
-    ///         state-changing transactions. This combines createBatch (idempotent)
-    ///         and joinBatch into a single atomic transaction.
-    /// @dev If sourceId already has a batch, skips creation. Then joins.
-    ///      BLS signature covers the CREATE_BATCH domain tag (same as createBatch).
-    /// @param sourceId       keccak256(source_id_string)
-    /// @param configHash     keccak256 of ABI-encoded batch config
-    /// @param tickDuration   seconds per tick
-    /// @param lockOffset     seconds before tick end
-    /// @param blsSignature   aggregated BLS signature (over create params)
-    /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask bitmask of signing oracles
-    /// @param depositAmount  USDC amount to deposit
-    /// @param stakePerTick   USDC staked per tick
-    /// @param bitmapHash     keccak256 of the player's prediction bitmap
-    /// @return batchId       the batch ID (new or existing)
-    function createBatchAndJoin(
-        bytes32 sourceId,
-        bytes32 configHash,
-        uint256 tickDuration,
-        uint256 lockOffset,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask,
-        uint256 depositAmount,
-        uint256 stakePerTick,
-        bytes32 bitmapHash
-    ) external returns (uint256 batchId);
-
-    /// @notice Update a batch's config hash and optionally tickDuration.
-    ///         Takes effect NEXT tick (F3 deferred promotion). Writes to
-    ///         nextConfigHash/nextLockOffset/nextTickDuration; promotion happens
-    ///         lazily via _promoteConfigIfNeeded().
-    /// @dev BLS message = keccak256(abi.encode(
-    ///        block.chainid, address(this), "UPDATE_BATCH_CONFIG",
-    ///        batchId, configHash, lockOffset, tickDuration
-    ///      ))
-    ///      Distinct domain tag from CREATE_BATCH (Issue 9).
-    ///      Enforces lock window check (Issue 9) -- cannot update config during lock.
-    ///      If configHash == batch.configHash AND tickDuration unchanged AND no pending, no-op.
-    function updateBatchConfig(
-        uint256 batchId,
-        bytes32 configHash,
-        uint256 lockOffset,
-        uint256 tickDuration,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
-    ) external;
-
     function getBatch(uint256 batchId) external view returns (Batch memory);
 
-    /// @notice Look up batchId by sourceId (F13/F23)
+    /// @notice Look up batchId by sourceId
     function getBatchIdBySourceId(bytes32 sourceId) external view returns (uint256);
 
-    /// @notice Get current tick ID for a batch, with underflow guard (F14)
+    /// @notice Get current tick ID for a batch, with underflow guard
     function currentTickId(uint256 batchId) external view returns (uint256);
 
     // ============ PLAYER OPERATIONS ============
 
-    /// @notice Join an existing batch. Enforces lock window (F6).
-    /// @dev configHash param binds the bitmap to the active config (Issue 2/F21).
-    ///      Triggers _promoteConfigIfNeeded() before checking lock window.
-    /// @param batchId        the batch to join
-    /// @param configHash     active configHash the player's bitmap is built against
-    /// @param depositAmount  USDC amount to deposit
-    /// @param stakePerTick   USDC staked per tick
-    /// @param bitmapHash     keccak256 of the player's prediction bitmap
-    function joinBatch(
-        uint256 batchId,
-        bytes32 configHash,
-        uint256 depositAmount,
-        uint256 stakePerTick,
-        bytes32 bitmapHash
-    ) external;
-
     /// @notice Join a batch via direct USDC transfer from player wallet.
-    ///         Unlike joinBatch() which debits from the dual-balance system,
-    ///         this pulls USDC directly via safeTransferFrom.
     /// @param batchId        the batch to join
     /// @param configHash     active configHash the player's bitmap is built against
     /// @param depositAmount  USDC amount to deposit (transferred from player wallet)
-    /// @param stakePerTick   USDC staked per tick
+    /// @param stakePerTick   USDC staked (equals depositAmount for round-based)
     /// @param bitmapHash     keccak256 of the player's prediction bitmap
     function joinBatchDirect(
         uint256 batchId,
@@ -280,33 +133,11 @@ interface IVision {
         bytes32 bitmapHash
     ) external;
 
-    /// @notice Update prediction bitmap. Enforces lock window (Issue 6/F6).
-    /// @dev configHash param binds the new bitmap to the active config (Issue 2).
-    ///      Triggers _promoteConfigIfNeeded() before checking lock window.
+    /// @notice Update prediction bitmap. Enforces lock window.
     function updateBitmap(
         uint256 batchId,
         bytes32 configHash,
         bytes32 newBitmapHash
-    ) external;
-
-    function deposit(uint256 batchId, uint256 amount) external;
-
-    function claimRewards(
-        uint256 batchId,
-        uint256 fromTick,
-        uint256 toTick,
-        uint256 newBalance,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
-    ) external;
-
-    function withdraw(
-        uint256 batchId,
-        uint256 finalBalance,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
     ) external;
 
     function getPosition(uint256 batchId, address player) external view returns (PlayerPosition memory);
@@ -321,11 +152,8 @@ interface IVision {
 
     function collectFees() external;
 
-    /// @notice Pending fees from real-funded positions (backed by L3 USDC in contract)
+    /// @notice Pending fees (backed by L3 USDC in contract)
     function accumulatedRealFees() external view returns (uint256);
-
-    /// @notice Pending fees from virtual-funded positions (backed by Settlement custody)
-    function accumulatedVirtualFees() external view returns (uint256);
 
     function updateFeeCollector(
         address newCollector,
@@ -350,28 +178,8 @@ interface IVision {
         uint256 signersBitmask
     ) external;
 
-    function forceWithdraw(
-        uint256 batchId,
-        address player,
-        uint256 finalBalance,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
-    ) external;
-
     /// @notice Settle an entire batch in one transaction (round-based flow).
-    ///         Oracle computes payouts off-chain, BLS-signs the result, and calls this.
-    ///         Credits realBalance/virtualBalance directly — players withdraw via existing
-    ///         withdrawBalance() or withdrawToSettlement().
-    /// @dev Two-pass design: Pass 1 validates solvency (sum(payouts) <= sum(deposits)),
-    ///      Pass 2 deletes positions and credits balances. Players array MUST be strictly
-    ///      ascending by address to prevent duplicates.
-    /// @param batchId        the batch to settle
-    /// @param players        strictly ascending array of player addresses
-    /// @param payouts        corresponding payout amounts (same length as players)
-    /// @param blsSignature   aggregated BLS signature over settlement data
-    /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask bitmask of signing oracles
+    ///         USDC is transferred directly to player wallets.
     function settleBatch(
         uint256 batchId,
         address[] calldata players,
@@ -380,58 +188,4 @@ interface IVision {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external;
-
-    // ============ DUAL-BALANCE OPERATIONS ============
-
-    /// @notice Credit virtual balance after cross-chain deposit (BLS-gated, oracles only)
-    /// @dev No L3 USDC enters the contract. Backed by SettlementBridgeCustody on Settlement.
-    /// @param user        User to credit
-    /// @param amount      Amount in 18 decimals
-    /// @param depositId   Cross-chain deposit ID (for idempotency)
-    /// @param blsSignature Aggregated BLS signature
-    /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing oracles
-    function creditBalance(
-        address user,
-        uint256 amount,
-        uint256 depositId,
-        bytes calldata blsSignature,
-        uint256 referenceNonce,
-        uint256 signersBitmask
-    ) external;
-
-    /// @notice Direct deposit from L3 (user already has USDC on L3)
-    /// @param amount Amount in 18 decimals (L3 USDC)
-    function depositBalance(uint256 amount) external;
-
-    /// @notice Withdraw real balance to caller's L3 wallet
-    /// @param amount Amount in 18 decimals
-    function withdrawBalance(uint256 amount) external;
-
-    /// @notice Withdraw virtual balance back to Settlement via oracle bridge
-    /// @param amount Amount in 18 decimals
-    function withdrawToSettlement(uint256 amount) external;
-
-    /// @notice Total available balance for a user (real + virtual)
-    /// @param user User address
-    /// @return Total balance in 18 decimals
-    function balanceOf(address user) external view returns (uint256);
-
-    /// @notice Per-user L3 USDC balance — backed by real L3 USDC in the contract
-    function realBalance(address user) external view returns (uint256);
-
-    /// @notice Per-user virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement
-    function virtualBalance(address user) external view returns (uint256);
-
-    /// @notice Aggregate real balance tracking for solvency invariants
-    function totalRealBalance() external view returns (uint256);
-
-    /// @notice Aggregate virtual balance tracking for solvency invariants
-    function totalVirtualBalance() external view returns (uint256);
-
-    /// @notice Whether a cross-chain deposit ID has been processed
-    function depositProcessed(uint256 depositId) external view returns (bool);
-
-    /// @notice Auto-incrementing withdraw request ID
-    function withdrawNonce() external view returns (uint256);
 }

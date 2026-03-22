@@ -103,7 +103,7 @@ Index L3 is a blockchain-based platform with two product lines: Index Token Prod
 | `timeout/` | 60-second timeout tracking with 3 retries (NFR8) |
 | `limit_enforcer/` | 0.1% price tolerance validation |
 | `buffer/` | Buffer management for partial fills |
-| `metrics/` | Prometheus metrics and health endpoints |
+| `metrics/` | Health status and internal metrics |
 
 **Event Pipeline:**
 ```
@@ -235,7 +235,6 @@ KeyStatsBar, HoldingsTable, PerformanceChart, NavCanvas, PortfolioBreakdown, Fou
 | **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
 | **Wallet** | wagmi + viem | - | Wallet connection and chain interaction |
 | **DEX Integration** | 1inch | v6 | Quote API, Fusion+ cross-chain |
-| **Monitoring** | Prometheus + Grafana | - | Metrics and dashboards |
 
 ---
 
@@ -325,8 +324,6 @@ cd frontend && npx playwright test --config=e2e/playwright.config.ts e2e/tests/0
 | Oracle 1-N | 9001-900N |
 | AP | 9100 |
 | Frontend | 3000 |
-| Prometheus | 9090 |
-| Grafana | 3000 |
 
 ---
 

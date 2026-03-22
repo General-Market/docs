@@ -46,7 +46,7 @@ pub use timeout::{
 };
 pub use metrics::{
     APMetrics, HealthDetails, HealthStatus, HealthThresholds, MetricsSnapshot,
-    PrometheusFormatter, Thresholds,
+    Thresholds,
 };
 
 // External integrations (Story 5.1+, 6.4, 6.17)

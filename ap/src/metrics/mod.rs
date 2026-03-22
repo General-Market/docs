@@ -1,7 +1,7 @@
 //! AP Metrics & Health module
 //!
 //! Provides comprehensive metrics collection and health reporting for the AP service.
-//! Metrics are exposed in Prometheus format via `/metrics` and health status via `/health`.
+//! Health status is exposed via `/health`.
 //!
 //! ## Metrics Collected
 //!
@@ -21,7 +21,6 @@
 //! - `unhealthy`: queue_depth > 500 OR violations_24h > 3
 
 pub mod health;
-pub mod prometheus;
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -31,7 +30,6 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 pub use health::{HealthDetails, HealthStatus, MetricsSnapshot, Thresholds};
-pub use prometheus::PrometheusFormatter;
 
 /// Default rolling window size for fill time calculations
 const DEFAULT_ROLLING_WINDOW_SIZE: usize = 100;

@@ -332,23 +332,6 @@ async fn test_is_max_retries_exceeded() {
     assert!(handler.is_max_retries_exceeded(&order_id).await);
 }
 
-/// Test: Prometheus metrics format
-#[tokio::test]
-async fn test_prometheus_metrics_format() {
-    let config = TimeoutConfig::default();
-    let handler = TimeoutHandler::new(config);
-
-    handler.track_order("test".to_string()).await;
-    handler.metrics().record_timeout();
-    handler.metrics().record_failure();
-
-    let prometheus_output = handler.metrics().to_prometheus();
-    assert!(prometheus_output.contains("ap_order_timeouts_total 1"));
-    assert!(prometheus_output.contains("ap_order_failures_total 1"));
-    assert!(prometheus_output.contains("ap_orders_in_flight 1"));
-    assert!(prometheus_output.contains("# TYPE ap_order_timeouts_total counter"));
-}
-
 /// Test: Handler default
 #[tokio::test]
 async fn test_handler_default() {
