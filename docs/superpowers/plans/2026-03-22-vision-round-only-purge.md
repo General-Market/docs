@@ -986,3 +986,85 @@ Add to `oracle/migrations/010_drop_continuous_tables.sql`:
 | **Total** | **26** | **~12,700** | **~1,100** |
 
 Net: **-11,600 lines**. The original plan missed ~4,000 lines of deletion across the consensus layer, P2P types, frontend components, vision-bot, and scripts.
+
+---
+
+## Addendum 2: Round 2 Audit Consensus (6/6 FAIL → gaps closed)
+
+### Resolution 1: stakePerTick — FINAL DECISION
+
+**Rename to `deposit` everywhere. Sentinel = `deposit != 0`.** Do NOT use `joinTimestamp`.
+
+- Solidity: keep `stakePerTick` parameter name in `joinBatchDirect()` (matches spec) but rename struct field to `deposit` in `PlayerPosition`
+- Oracle Rust: rename `stake_per_tick` → `deposit` in `PlayerPosition`
+- Frontend: rename in ABI, hooks, E2E helpers
+- Sentinel check: `deposit != 0` (not `joinTimestamp != 0`)
+- Update Tasks 1, 8, 20, 21 accordingly — they now all say the same thing
+
+### Resolution 2: Migration 001-004 recreate dropped tables
+
+Add to Task 26: null out the continuous table CREATE statements in migrations 001-004 by adding `-- PURGED: round-only migration 010 dropped these` comments. Or: consolidate into a single `000_reset.sql` that runs all creates for surviving tables only.
+
+### Resolution 3: Tasks 11+22 merged into single frontend purge
+
+Tasks 11 and 22 execute as ONE atomic operation. No intermediate `tsc --noEmit` between them.
+
+### Additional files to add to delete/refactor lists:
+
+#### Oracle:
+- DELETE: `_joinBatch()` internal helper in Vision.sol (references deleted `_debitBalance()`)
+- DELETE: `IVision.sol` getter function signatures for deleted state vars (`realBalance`, `virtualBalance`, `totalRealBalance`, `totalVirtualBalance`, `accumulatedVirtualFees`, `depositProcessed`, `withdrawNonce`)
+- DECIDE: `collectFees()` → rewrite to transfer `accumulatedRealFees` directly via `safeTransfer`, delete `accumulatedVirtualFees` routing
+- DECIDE: Bitmap gossip → lifecycle.rs needs `IncomingBitmapGossip` channel OR delete `ProcessBitmap*` dispatch arms from `protocol.rs`/`messages.rs`. Decision: DELETE bitmap gossip P2P entirely — lifecycle manager fetches bitmaps from DB, not P2P gossip.
+- CLEAN: `settlement_writer.rs:1608-1658` — dead `ChainWriter` adapter for deposit watcher
+
+#### Frontend:
+- DELETE: `hooks/vision/useVisionPoints.ts` (imports deleted `usePlayerBatches`)
+- REFACTOR: `app/[locale]/points/PointsPageClient.tsx` — remove `useVisionPoints` import
+- CLEAN: `components/domain/vision/sources/NextBatches.tsx` — remove `tick.ts` imports
+- CLEAN: `lib/vision/bitmap-store.ts` — remove `BatchHistoryEntry` type import
+- REGENERATE: `vision-abi.ts` — must include `joinBatchDirect` with updated `PlayerPosition` struct (field `deposit` instead of `stakePerTick`)
+- REWRITE: `joinRoundDirect()` in `vision-api.ts` → approve USDC, then call `joinBatchDirect(batchId, configHash, deposit, deposit, bitmapHash)`
+- UPDATE: `VISION_GET_BATCH_ABI` — remove deleted struct fields from tuple definition
+- UPDATE: `VISION_POSITION_ABI` — remove `startTick`, `balance`, `lastClaimedTick`, `isVirtual`, rename `stakePerTick` → `deposit`
+- REWRITE: `verifySolvency()` in `swarm-api.ts` — check `USDC.balanceOf(Vision) >= sum(active deposits)`
+
+#### E2E tests explicit delete list:
+DELETE these test files (they test deleted flows):
+- `12-vision-deposit.spec.ts`
+- `19-vision-settlement-bridge-deposit.spec.ts`
+- `20-vision-settlement-withdraw.spec.ts`
+- `33-vision-positions.spec.ts`
+
+REWRITE these (adapt to round-based):
+- `13-vision-enter-batch.spec.ts` — use `joinBatchDirect`, check `deposit != 0`
+- `14-vision-claim-withdraw.spec.ts` — settlement sends USDC to wallet, no manual claim
+- `25-vision-tick-resolution.spec.ts` → rename to round-resolution, check wallet USDC after settle
+- `29-faucet.spec.ts` — mint USDC to wallet (no BalanceDepositModal)
+- `41-vision-round-lifecycle.spec.ts` — check wallet USDC balance after settlement (not realBalance)
+- `43-vision-concurrent-rounds.spec.ts` — same
+
+#### Vision-bot additions to Task 23:
+- REWRITE: `bot.py` — remove `round_based` flag, make `joinBatchDirect` the only path
+- DELETE: `AGENTS.md` continuous-model documentation (rewrite for round-based)
+- CLEAN: `framework/core.py` — remove `auto_claim`, `auto_withdraw`, `STAKE_PER_TICK` defaults
+- CLEAN: `docker/testnet/vision-swarm/swarm.env.example` — remove `STAKE_PER_TICK`
+- CLEAN: `docker/testnet/vision-swarm/config.toml` — remove claim/withdraw config keys
+
+#### Scripts additions to Task 24:
+- DELETE or REWRITE: `scripts/fix-null-bitmaps.py`, `scripts/force-withdraw-poisoned.ts`, `scripts/recover-poisoned-positions.py`
+
+#### testnet.sh additions to Task 9:
+- UPDATE: DB truncation list at line 872 — remove references to dropped tables
+- REMOVE: `--vision-reveal-window-secs` and `--vision-tick-poll-interval-ms` from `_oracle_command_yaml()`
+
+### Updated totals after Round 2:
+
+| Metric | Original Plan | After Round 1 Audit | After Round 2 Audit |
+|--------|--------------|--------------------|--------------------|
+| Tasks | 16 | 26 | 26 (expanded scope) |
+| Files to delete | ~15 | ~25 | ~30 |
+| Files to refactor | ~15 | ~25 | ~35 |
+| Lines deleted | ~7,600 | ~11,600 | ~12,500 |
+| Lines created | ~700 | ~1,100 | ~1,200 |
+| Net | -6,900 | -10,500 | -11,300 |
