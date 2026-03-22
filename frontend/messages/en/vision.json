@@ -434,7 +434,7 @@
     "not_in_batch": "Not in batch #{id}",
     "set_predictions_prompt": "Set predictions and enter below to play.",
     "update_predictions": "Update predictions",
-    "set_predictions": "Set predictions for next tick",
+    "set_predictions": "Set predictions",
     "tick_label": "Tick {tick}",
     "waiting_for_batch": "Waiting for batch...",
     "up_count": "{count} UP",

@@ -195,7 +195,7 @@ test.describe('Vision Sources — Detail', () => {
     const title = sourceHeroTitle(page)
     await expect(title).toBeVisible({ timeout: 60_000 })
 
-    // BatchEntryPanel heading: "Set predictions for next tick"
+    // BatchEntryPanel heading: "Set predictions"
     const heading = enterBatchHeading(page)
     await expect(heading).toBeVisible({ timeout: 30_000 })
 

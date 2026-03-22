@@ -1095,7 +1095,13 @@ impl BatchLifecycleManager {
                 "INSERT INTO vision_round_players
                      (batch_id, player, deposited, payout, pnl, correct_count, total_markets, settled_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-                 ON CONFLICT DO NOTHING",
+                 ON CONFLICT (batch_id, player) DO UPDATE SET
+                     pnl = EXCLUDED.pnl,
+                     payout = EXCLUDED.payout,
+                     deposited = EXCLUDED.deposited,
+                     correct_count = EXCLUDED.correct_count,
+                     total_markets = EXCLUDED.total_markets,
+                     settled_at = EXCLUDED.settled_at",
             )
             .bind(settlement.batch_id as i64)
             .bind(format!("{:?}", player))

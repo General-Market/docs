@@ -112,6 +112,9 @@ export default function BatchEntryPanel({
 
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
+  const [faucetLoading, setFaucetLoading] = useState(false)
+  const [faucetSuccess, setFaucetSuccess] = useState(false)
+  const [faucetError, setFaucetError] = useState<string | null>(null)
 
   // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
@@ -180,6 +183,33 @@ export default function BatchEntryPanel({
       marketCount: marketIds.length,
     })
   }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, publicClient])
+
+  // -- Faucet handler --
+  const handleFaucet = useCallback(async () => {
+    if (!address || faucetLoading) return
+    setFaucetLoading(true)
+    setFaucetError(null)
+    setFaucetSuccess(false)
+    try {
+      const res = await fetch('/api/faucet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, amount: '1000', gas: true }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        setFaucetError(data.error || 'Faucet request failed')
+      } else {
+        setFaucetSuccess(true)
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => setFaucetSuccess(false), 4000)
+      }
+    } catch (e: any) {
+      setFaucetError(e.message || 'Network error')
+    } finally {
+      setFaucetLoading(false)
+    }
+  }, [address, faucetLoading])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
@@ -254,7 +284,7 @@ export default function BatchEntryPanel({
               {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
             </h2>
             <p className="text-[10px] text-text-muted">
-              {activeBatch ? `Round #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
+              {activeBatch ? `Batch #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
             </p>
           </div>
         </div>
@@ -294,11 +324,26 @@ export default function BatchEntryPanel({
           </button>
         )}
 
-        {/* Wallet USDC balance hint when zero */}
+        {/* Wallet USDC balance hint when zero + faucet */}
         {isConnected && hasZeroBalance && !isJoined && (
           <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
             <p className="text-[11px] font-bold text-yellow-700">No USDC in wallet</p>
             <p className="text-[10px] text-yellow-600 mt-0.5">You need USDC on L3 to enter a round.</p>
+            {faucetSuccess ? (
+              <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">1,000 USDC + gas minted. Refresh in a moment.</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFaucet}
+                disabled={faucetLoading}
+                className="mt-1.5 w-full rounded border border-yellow-500 bg-yellow-100 py-1 text-[11px] font-semibold text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
+              >
+                {faucetLoading ? 'Minting...' : 'Get Test USDC'}
+              </button>
+            )}
+            {faucetError && (
+              <p className="text-[10px] text-red-600 mt-1">{faucetError}</p>
+            )}
           </div>
         )}
 

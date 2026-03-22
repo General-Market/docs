@@ -50,7 +50,7 @@ test.describe('Vision Lock Phase UI', () => {
     await ensureWalletConnected(page, TEST_ADDRESS)
 
     // 5. Wait for the batch entry panel to appear
-    const entryPanel = page.getByText('Set predictions for next tick')
+    const entryPanel = page.getByText('Set predictions')
     const hasPanel = await entryPanel.isVisible({ timeout: 30_000 }).catch(() => false)
 
     if (!hasPanel) {
