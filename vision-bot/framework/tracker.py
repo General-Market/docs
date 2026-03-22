@@ -136,8 +136,8 @@ class Tracker:
         """Join a round-based batch: approve USDC, call joinBatchDirect, submit bitmap."""
         batch_id = batch.get("batchId", batch.get("id"))
         config_hash = batch.get("configHash", batch.get("config_hash", b"\x00" * 32))
-        deposit = self._config.get("deposit", 10) * 10**18
-        stake = self._config.get("stake", 1) * 10**18
+        deposit = int(self._config.get("deposit", 10) * 10**18)
+        stake = int(self._config.get("stake", 1) * 10**18)
 
         # Generate predictions
         from framework.core import encode_bitmap, hash_bitmap
