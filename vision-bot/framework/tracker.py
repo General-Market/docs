@@ -126,14 +126,14 @@ class Tracker:
 
     def _join_round(self, batch: dict, strategy=None):
         """Join a round-based batch: approve USDC, call joinBatchDirect, submit bitmap."""
-        batch_id = batch["batchId"]
-        config_hash = batch.get("configHash", b"\x00" * 32)
+        batch_id = batch.get("batchId", batch.get("id"))
+        config_hash = batch.get("configHash", batch.get("config_hash", b"\x00" * 32))
         deposit = self._config.get("deposit", 10) * 10**18
         stake = self._config.get("stake", 1) * 10**18
 
         # Generate predictions
         from framework.core import encode_bitmap, hash_bitmap
-        market_count = batch.get("marketCount", 10)
+        market_count = batch.get("marketCount", batch.get("market_count", 10))
         markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
         bets = strategy.predict(markets) if strategy else [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
         bitmap = encode_bitmap(bets, market_count)
