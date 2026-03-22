@@ -9,7 +9,7 @@ x-oracle-base: &oracle-base
     context: ../../..
     dockerfile: docker/testnet/oracle/Dockerfile
   network_mode: host
-  restart: "no"
+  restart: unless-stopped
   logging:
     driver: json-file
     options:

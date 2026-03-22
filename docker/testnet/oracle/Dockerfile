@@ -5,10 +5,9 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY oracle/ oracle/
 COPY common/ common/
-COPY ap/ ap/
-COPY curator/ curator/
-COPY data-node/ data-node/
-COPY itp-bot/ itp-bot/
+# Strip workspace to only oracle + common (avoid copying ap, curator, data-node, itp-bot)
+RUN sed -i 's/members = \[/members = [/' Cargo.toml && \
+    sed -i '/"ap"/d; /"curator"/d; /"data-node"/d; /"itp-bot"/d' Cargo.toml
 RUN cargo build --release -p oracle
 
 # Stage 2: Runtime
