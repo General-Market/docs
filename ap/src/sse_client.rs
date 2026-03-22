@@ -41,7 +41,8 @@ impl SseChainEventClient {
     pub fn new(base_url: String, topics: Vec<String>) -> Self {
         let client = Client::builder()
             .connect_timeout(Duration::from_secs(10))
-            .read_timeout(Duration::from_secs(30)) // Must be > SSE keepalive interval (15s)
+            // No read_timeout — SSE streams must stay open indefinitely.
+            // The keepalive ping every 15s keeps the TCP connection alive.
             .no_proxy()
             .build()
             .expect("failed to build HTTP client for SSE");
