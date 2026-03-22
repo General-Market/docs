@@ -773,11 +773,13 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
   const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const { writeContractAsync } = useChainWriteContract()
 
   const handleCancel = useCallback(async (orderId: number) => {
     setCancellingId(orderId)
+    setCancelError(null)
     try {
       await writeContractAsync({
         address: INDEX_PROTOCOL.index,
@@ -785,8 +787,17 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
         functionName: 'cancelOrder',
         args: [BigInt(orderId)],
       })
-    } catch (err) {
-      console.error('Cancel order failed:', err)
+    } catch (err: any) {
+      const msg = err?.shortMessage || err?.message || 'Cancel failed'
+      if (msg.includes('E138') || msg.includes('NotCancellable')) {
+        setCancelError('Order already batched — cannot cancel')
+      } else if (msg.includes('E129') || msg.includes('NotOrderOwner')) {
+        setCancelError('Only the order creator can cancel')
+      } else if (msg.includes('rejected')) {
+        setCancelError('Transaction rejected')
+      } else {
+        setCancelError(msg.length > 80 ? msg.slice(0, 80) + '...' : msg)
+      }
     } finally {
       setCancellingId(null)
     }
@@ -877,13 +888,18 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                 </td>
                 <td className="px-4 py-3 text-right">
                   {order.status === 0 && order.orderId > 0 && (
-                    <button
-                      onClick={() => handleCancel(order.orderId)}
-                      disabled={cancellingId === order.orderId}
-                      className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors fluid-press"
-                    >
-                      {cancellingId === order.orderId ? t('orders_table.cancelling') : t('orders_table.cancel')}
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      <button
+                        onClick={() => handleCancel(order.orderId)}
+                        disabled={cancellingId === order.orderId}
+                        className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors fluid-press"
+                      >
+                        {cancellingId === order.orderId ? t('orders_table.cancelling') : t('orders_table.cancel')}
+                      </button>
+                      {cancelError && cancellingId === null && (
+                        <span className="text-[10px] text-red-500 max-w-[140px] text-right">{cancelError}</span>
+                      )}
+                    </div>
                   )}
                 </td>
               </motion.tr>
