@@ -1783,6 +1783,8 @@ CMD
         [ -n "$BRIDGE_PROXY" ] && cat <<CMD
       - "--bridge-proxy"
       - "$BRIDGE_PROXY"
+      - "--settlement-custody"
+      - "$VISION_SETTLEMENT_CUSTODY"
 CMD
         if [ -n "$VISION_ADDR" ]; then
             cat <<CMD
