@@ -1586,7 +1586,7 @@ pub struct ProfilePnlPoint {
 
 /// Player profile — stats, batches, and P&L chart in a single call.
 ///
-/// Aggregates from `vision_player_tick_deltas`, `vision_positions`,
+/// Aggregates from `vision_round_players`, `vision_positions`,
 /// and `vision_batches`. Returns display-ready dollars, percentages,
 /// pre-sorted batches, and hourly-bucketed P&L history.
 async fn player_profile(
@@ -1606,24 +1606,23 @@ async fn player_profile(
     }
     let address = address_str.to_lowercase();
 
-    // -- Q0: per-batch delta aggregates --
+    // -- Q0: per-batch settled round aggregates --
     #[derive(Debug, sqlx::FromRow)]
-    struct DeltaAggRow {
+    struct RoundAggRow {
         batch_id: i64,
-        total_delta: Option<String>,
-        last_deposited: Option<String>,
-        tick_count: Option<i64>,
+        total_pnl: Option<String>,
+        total_deposited: Option<String>,
+        round_count: Option<i64>,
     }
 
-    // -- Q1: recent ticks per batch (max 60) --
+    // -- Q1: recent settled rounds (max 60) --
     #[derive(Debug, sqlx::FromRow)]
-    struct TickRow {
+    struct RoundRow {
         batch_id: i64,
-        tick_id: i64,
-        delta: String,
-        won: bool,
-        #[allow(dead_code)]
-        rn: Option<i64>,
+        correct_count: i32,
+        total_markets: i32,
+        pnl: String,
+        settled_at: chrono::DateTime<chrono::Utc>,
     }
 
     // -- Q2: active positions --
@@ -1634,12 +1633,13 @@ async fn player_profile(
         total_deposited: String,
     }
 
-    // -- Q3: P&L history --
+    // -- Q3: P&L history (from settled rounds) --
     #[derive(Debug, sqlx::FromRow)]
     struct HistoryRow {
         delta: String,
         resolved_at: Option<chrono::DateTime<chrono::Utc>>,
     }
+
 
     // -- Q4: batch metadata --
     #[derive(Debug, sqlx::FromRow)]
@@ -1650,20 +1650,18 @@ async fn player_profile(
 
     // Run all 4 independent queries in parallel (Q4 depends on Q0+Q2 results)
     let (q0_result, q1_result, q2_result, q3_result) = tokio::join!(
-        sqlx::query_as::<_, DeltaAggRow>(
-            "SELECT batch_id, SUM(delta::numeric)::text as total_delta, \
-             MAX(total_deposited) as last_deposited, COUNT(*) as tick_count \
-             FROM vision_player_tick_deltas WHERE LOWER(player) = $1 GROUP BY batch_id"
+        sqlx::query_as::<_, RoundAggRow>(
+            "SELECT batch_id, SUM(pnl::numeric)::text as total_pnl, \
+             SUM(deposited::numeric)::text as total_deposited, COUNT(*) as round_count \
+             FROM vision_round_players WHERE LOWER(player) = $1 GROUP BY batch_id"
         )
         .bind(&address)
         .fetch_all(&state.pool),
 
-        sqlx::query_as::<_, TickRow>(
-            "WITH ranked AS (\
-                SELECT batch_id, tick_id, delta, won, \
-                       ROW_NUMBER() OVER (PARTITION BY batch_id ORDER BY tick_id DESC) as rn \
-                FROM vision_player_tick_deltas WHERE LOWER(player) = $1\
-            ) SELECT batch_id, tick_id, delta, won, rn FROM ranked WHERE rn <= 60"
+        sqlx::query_as::<_, RoundRow>(
+            "SELECT batch_id, correct_count, total_markets, pnl, settled_at \
+             FROM vision_round_players WHERE LOWER(player) = $1 \
+             ORDER BY settled_at DESC LIMIT 60"
         )
         .bind(&address)
         .fetch_all(&state.pool),
@@ -1676,26 +1674,26 @@ async fn player_profile(
         .fetch_all(&state.pool),
 
         sqlx::query_as::<_, HistoryRow>(
-            "SELECT delta, resolved_at \
-             FROM vision_player_tick_deltas WHERE LOWER(player) = $1 \
-             ORDER BY resolved_at DESC LIMIT 5000"
+            "SELECT pnl as delta, settled_at as resolved_at \
+             FROM vision_round_players WHERE LOWER(player) = $1 \
+             ORDER BY settled_at DESC LIMIT 5000"
         )
         .bind(&address)
         .fetch_all(&state.pool),
     );
 
     // Unwrap results — return 500 on any DB failure
-    let delta_aggs = match q0_result {
+    let round_aggs = match q0_result {
         Ok(rows) => rows,
         Err(e) => {
-            warn!(error = %e, "Profile Q0 (delta aggregates) failed");
+            warn!(error = %e, "Profile Q0 (round aggregates) failed");
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
         }
     };
-    let tick_rows = match q1_result {
+    let round_rows = match q1_result {
         Ok(rows) => rows,
         Err(e) => {
-            warn!(error = %e, "Profile Q1 (tick rows) failed");
+            warn!(error = %e, "Profile Q1 (round rows) failed");
             return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
         }
     };
@@ -1715,7 +1713,7 @@ async fn player_profile(
     };
 
     // Collect all batch IDs for Q4
-    let mut all_batch_ids: Vec<i64> = delta_aggs.iter().map(|r| r.batch_id).collect();
+    let mut all_batch_ids: Vec<i64> = round_aggs.iter().map(|r| r.batch_id).collect();
     for p in &positions {
         if !all_batch_ids.contains(&p.batch_id) {
             all_batch_ids.push(p.batch_id);
@@ -1748,27 +1746,27 @@ async fn player_profile(
     };
 
     // -- Build lookup maps --
-    let delta_map: std::collections::HashMap<i64, &DeltaAggRow> =
-        delta_aggs.iter().map(|r| (r.batch_id, r)).collect();
+    let round_agg_map: std::collections::HashMap<i64, &RoundAggRow> =
+        round_aggs.iter().map(|r| (r.batch_id, r)).collect();
 
     let position_map: std::collections::HashMap<i64, &PositionRow> =
         positions.iter().map(|r| (r.batch_id, r)).collect();
 
-    // Group tick_rows by batch, reverse to oldest-first
-    let mut ticks_by_batch: std::collections::HashMap<i64, Vec<ProfileTick>> =
+    // Group round_rows by batch, reverse to oldest-first
+    let mut rounds_by_batch: std::collections::HashMap<i64, Vec<ProfileTick>> =
         std::collections::HashMap::new();
-    for t in &tick_rows {
-        let delta_wei: i128 = t.delta.parse().unwrap_or(0);
-        let pnl = delta_wei as f64 / 1e18;
-        ticks_by_batch.entry(t.batch_id).or_default().push(ProfileTick {
-            tick_id: t.tick_id,
+    for r in &round_rows {
+        let pnl_wei: i128 = r.pnl.parse().unwrap_or(0);
+        let pnl = pnl_wei as f64 / 1e18;
+        rounds_by_batch.entry(r.batch_id).or_default().push(ProfileTick {
+            tick_id: r.settled_at.timestamp(),
             pnl: (pnl * 100.0).round() / 100.0,
-            won: t.won,
+            won: pnl_wei > 0,
         });
     }
-    // Reverse each batch's ticks so oldest is first
-    for ticks in ticks_by_batch.values_mut() {
-        ticks.reverse();
+    // Reverse each batch's rounds so oldest is first
+    for rounds in rounds_by_batch.values_mut() {
+        rounds.reverse();
     }
 
     // -- Compute aggregate stats using i128 arithmetic --
@@ -1793,9 +1791,9 @@ async fn player_profile(
             total_wins += 1;
         }
 
-        let tick_count = delta_map
+        let tick_count = round_agg_map
             .get(&pos.batch_id)
-            .and_then(|d| d.tick_count)
+            .and_then(|d| d.round_count)
             .unwrap_or(0);
 
         let deposited_f = deposited_wei as f64 / 1e18;
@@ -1811,17 +1809,17 @@ async fn player_profile(
             balance: (balance_f * 100.0).round() / 100.0,
             tick_count,
             roi: (roi * 100.0).round() / 100.0,
-            ticks: ticks_by_batch.remove(&pos.batch_id).unwrap_or_default(),
+            ticks: rounds_by_batch.remove(&pos.batch_id).unwrap_or_default(),
         });
     }
 
-    // Exited batches: have deltas but no active position
-    for agg in &delta_aggs {
+    // Exited batches: have settled rounds but no active position
+    for agg in &round_aggs {
         if position_map.contains_key(&agg.batch_id) {
             continue; // already counted as active
         }
-        let delta_wei: i128 = agg.total_delta.as_deref().unwrap_or("0").parse().unwrap_or(0);
-        let deposited_wei: i128 = agg.last_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0);
+        let delta_wei: i128 = agg.total_pnl.as_deref().unwrap_or("0").parse().unwrap_or(0);
+        let deposited_wei: i128 = agg.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0);
 
         total_pnl_wei += delta_wei;
         total_deposited_wei += deposited_wei;
@@ -1830,7 +1828,7 @@ async fn player_profile(
             total_wins += 1;
         }
 
-        let tick_count = agg.tick_count.unwrap_or(0);
+        let tick_count = agg.round_count.unwrap_or(0);
         let deposited_f = deposited_wei as f64 / 1e18;
         let pnl_f = delta_wei as f64 / 1e18;
         let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
@@ -1843,7 +1841,7 @@ async fn player_profile(
             balance: 0.0,
             tick_count,
             roi: (roi * 100.0).round() / 100.0,
-            ticks: ticks_by_batch.remove(&agg.batch_id).unwrap_or_default(),
+            ticks: rounds_by_batch.remove(&agg.batch_id).unwrap_or_default(),
         });
     }
 
