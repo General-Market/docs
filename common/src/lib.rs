@@ -17,6 +17,7 @@ pub mod keys;
 pub mod logging;
 pub mod mocks;
 pub mod observer;
+pub mod persistence;
 pub mod rate_limit;
 pub mod runtime;
 pub mod traits;
