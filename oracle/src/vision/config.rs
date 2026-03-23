@@ -76,7 +76,7 @@ impl Default for VisionConfig {
             database_url: "postgres://localhost:5432/vision".into(),
             rpc_ws_url: "ws://localhost:8546".into(),
             start_block: 0,
-            staleness_threshold_secs: 300,
+            staleness_threshold_secs: 1800,
             data_node_token: None,
             snapshot_hmac_secret: None,
             // BLS consensus defaults
