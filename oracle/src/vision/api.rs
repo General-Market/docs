@@ -1693,7 +1693,7 @@ async fn player_profile(
         sqlx::query_as::<_, RoundRow>(
             "SELECT batch_id, correct_count, total_markets, pnl, settled_at \
              FROM vision_round_players WHERE LOWER(player) = $1 \
-             ORDER BY settled_at DESC LIMIT 60"
+             ORDER BY settled_at DESC LIMIT 500"
         )
         .bind(&address)
         .fetch_all(&state.pool),
@@ -1801,19 +1801,31 @@ async fn player_profile(
     let position_map: std::collections::HashMap<i64, &PositionRow> =
         positions.iter().map(|r| (r.batch_id, r)).collect();
 
-    // Group round_rows by batch, reverse to oldest-first
+    // Group round_rows by SOURCE (not batch) — each round creates a new batch_id
+    // but the frontend groups by source. We need ticks keyed by source_id.
+    // Also keep the old batch-level map for legacy tick-engine batches.
+    let mut rounds_by_source: std::collections::HashMap<String, Vec<ProfileTick>> =
+        std::collections::HashMap::new();
     let mut rounds_by_batch: std::collections::HashMap<i64, Vec<ProfileTick>> =
         std::collections::HashMap::new();
     for r in &round_rows {
         let pnl_wei: i128 = r.pnl.parse().unwrap_or(0);
         let pnl = pnl_wei as f64 / 1e18;
-        rounds_by_batch.entry(r.batch_id).or_default().push(ProfileTick {
+        let tick = ProfileTick {
             tick_id: r.settled_at.timestamp(),
             pnl: (pnl * 100.0).round() / 100.0,
             won: pnl_wei > 0,
-        });
+        };
+        // Group by source using batch_meta_map
+        if let Some(source) = batch_meta_map.get(&r.batch_id) {
+            rounds_by_source.entry(source.clone()).or_default().push(tick.clone());
+        }
+        rounds_by_batch.entry(r.batch_id).or_default().push(tick);
     }
-    // Reverse each batch's rounds so oldest is first
+    // Reverse so oldest is first
+    for rounds in rounds_by_source.values_mut() {
+        rounds.reverse();
+    }
     for rounds in rounds_by_batch.values_mut() {
         rounds.reverse();
     }
@@ -1858,15 +1870,22 @@ async fn player_profile(
         let pnl_f = pnl_wei as f64 / 1e18;
         let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
 
+        let source = batch_meta_map.get(&pos.batch_id).cloned().unwrap_or_default();
+        // Get ticks by source (covers all rounds across all batches for this source)
+        // Use remove so each source's ticks are only attached once
+        let ticks = rounds_by_source.remove(&source)
+            .or_else(|| rounds_by_batch.remove(&pos.batch_id))
+            .unwrap_or_default();
+
         profile_batches.push(ProfileBatch {
             batch_id: pos.batch_id,
-            source_id: batch_meta_map.get(&pos.batch_id).cloned().unwrap_or_default(),
+            source_id: source,
             status: "active".to_string(),
             deposited: (deposited_f * 100.0).round() / 100.0,
             balance: (balance_f * 100.0).round() / 100.0,
             tick_count,
             roi: (roi * 100.0).round() / 100.0,
-            ticks: rounds_by_batch.remove(&pos.batch_id).unwrap_or_default(),
+            ticks,
         });
     }
 
@@ -1890,15 +1909,20 @@ async fn player_profile(
         let pnl_f = delta_wei as f64 / 1e18;
         let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
 
+        let source = batch_meta_map.get(&agg.batch_id).cloned().unwrap_or_default();
+        let ticks = rounds_by_source.remove(&source)
+            .or_else(|| rounds_by_batch.remove(&agg.batch_id))
+            .unwrap_or_default();
+
         profile_batches.push(ProfileBatch {
             batch_id: agg.batch_id,
-            source_id: batch_meta_map.get(&agg.batch_id).cloned().unwrap_or_default(),
+            source_id: source,
             status: "exited".to_string(),
             deposited: (deposited_f * 100.0).round() / 100.0,
             balance: 0.0,
             tick_count,
             roi: (roi * 100.0).round() / 100.0,
-            ticks: rounds_by_batch.remove(&agg.batch_id).unwrap_or_default(),
+            ticks,
         });
     }
 
