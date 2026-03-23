@@ -6,7 +6,7 @@
         "crypto"
       ],
       "name": "CoinGecko Crypto",
-      "description": "Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.",
+      "description": "Cryptocurrency market data \u2014 prices, volumes, market caps for thousands of tokens.",
       "category": "finance",
       "logo": "/source-imgs/new-coingecko.webp",
       "brandBg": "#f5f5f5",
@@ -15,12 +15,14 @@
       ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "pumpfun",
       "name": "Pump.fun Tokens",
-      "description": "Solana memecoin launchpad — real-time prices, volumes, and market caps for recently launched tokens.",
+      "description": "Solana memecoin launchpad \u2014 real-time prices, volumes, and market caps for recently launched tokens.",
       "category": "finance",
       "logo": "/source-imgs/new-pumpfun.webp",
       "brandBg": "linear-gradient(135deg,#00d18c,#1a1a2e)",
@@ -32,7 +34,9 @@
       "isPrice": true,
       "internalIds": [
         "pumpfun"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "defillama",
@@ -40,7 +44,7 @@
         "defi"
       ],
       "name": "DefiLlama DeFi",
-      "description": "DeFi protocol analytics — TVL, yields, fees, volumes across all major chains and protocols.",
+      "description": "DeFi protocol analytics \u2014 TVL, yields, fees, volumes across all major chains and protocols.",
       "category": "finance",
       "logo": "/source-imgs/new-defillama.webp",
       "brandBg": "#1b1b1b",
@@ -49,7 +53,9 @@
       ],
       "valueLabel": "TVL",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "syncIntervalSecs": 120,
+      "batchEligible": true
     },
     {
       "sourceId": "finnhub",
@@ -57,7 +63,7 @@
         "stocks"
       ],
       "name": "Finnhub Stocks",
-      "description": "Real-time stock market data — US equities, forex, and crypto with company fundamentals.",
+      "description": "Real-time stock market data \u2014 US equities, forex, and crypto with company fundamentals.",
       "category": "finance",
       "logo": "/source-imgs/new-finnhub.webp",
       "brandBg": "#000000",
@@ -67,12 +73,14 @@
       ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "nasdaq",
       "name": "Nasdaq Listings",
-      "description": "Official Nasdaq exchange data — listed securities, ETFs, and index constituents.",
+      "description": "Official Nasdaq exchange data \u2014 listed securities, ETFs, and index constituents.",
       "category": "finance",
       "logo": "/source-imgs/new-nasdaq.svg",
       "brandBg": "#f5f5f5",
@@ -84,12 +92,14 @@
       "isPrice": true,
       "internalIds": [
         "nasdaq"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": false
     },
     {
       "sourceId": "zillow",
       "name": "Zillow Real Estate",
-      "description": "US housing market data — home values, rent indices, inventory, and price-to-rent ratios.",
+      "description": "US housing market data \u2014 home values, rent indices, inventory, and price-to-rent ratios.",
       "category": "finance",
       "logo": "/source-imgs/zillow.svg",
       "brandBg": "#1b1b1b",
@@ -101,12 +111,14 @@
       "isPrice": true,
       "internalIds": [
         "zillow"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "polymarket",
       "name": "Polymarket Predictions",
-      "description": "Prediction market data — real-time odds and volumes for events across politics, crypto, sports.",
+      "description": "Prediction market data \u2014 real-time odds and volumes for events across politics, crypto, sports.",
       "category": "finance",
       "logo": "/source-imgs/new-polymarket.webp",
       "brandBg": "#1b1b1b",
@@ -118,12 +130,14 @@
       "isPrice": false,
       "internalIds": [
         "polymarket"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "finra",
       "name": "FINRA Short Interest",
-      "description": "Short selling data — daily short volume and total volume for all US exchange-listed securities.",
+      "description": "Short selling data \u2014 daily short volume and total volume for all US exchange-listed securities.",
       "category": "finance",
       "logo": "/source-imgs/finra.svg",
       "brandBg": "#e8edf4",
@@ -135,7 +149,9 @@
       "isPrice": false,
       "internalIds": [
         "finra"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "finra_short_vol",
@@ -152,12 +168,14 @@
       "isPrice": false,
       "internalIds": [
         "finra_short_vol"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "futures",
       "name": "Continuous Futures",
-      "description": "Continuous front-month futures contracts — commodities, indices, currencies, and interest rates.",
+      "description": "Continuous front-month futures contracts \u2014 commodities, indices, currencies, and interest rates.",
       "category": "finance",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
@@ -169,12 +187,14 @@
       "isPrice": true,
       "internalIds": [
         "futures"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "bchain",
       "name": "Bitcoin On-Chain",
-      "description": "Bitcoin blockchain metrics — hashrate, difficulty, block size, miner revenue, transaction volume.",
+      "description": "Bitcoin blockchain metrics \u2014 hashrate, difficulty, block size, miner revenue, transaction volume.",
       "category": "finance",
       "logo": "/source-imgs/new-bitcoin.webp",
       "brandBg": "#f5f5f5",
@@ -186,7 +206,9 @@
       "isPrice": true,
       "internalIds": [
         "bchain"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "yahoo_drinks",
@@ -203,12 +225,14 @@
       "isPrice": true,
       "internalIds": [
         "yahoo_drinks"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "twse",
       "name": "Taiwan Stock Exchange",
-      "description": "TWSE market data — daily OHLCV, foreign investor flows, margin trading for Taiwanese equities.",
+      "description": "TWSE market data \u2014 daily OHLCV, foreign investor flows, margin trading for Taiwanese equities.",
       "category": "finance",
       "logo": "/source-imgs/new-twse.svg",
       "brandBg": "#f5f5f5",
@@ -220,12 +244,14 @@
       "isPrice": true,
       "internalIds": [
         "twse"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "bestbuy",
       "name": "Best Buy Products",
-      "description": "Consumer electronics pricing — real-time sale prices across 7 categories from top-selling products.",
+      "description": "Consumer electronics pricing \u2014 real-time sale prices across 7 categories from top-selling products.",
       "category": "finance",
       "logo": "/source-imgs/new-bestbuy.webp",
       "brandBg": "#f5f5f5",
@@ -237,7 +263,9 @@
       "isPrice": true,
       "internalIds": [
         "bestbuy"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "fred",
@@ -245,7 +273,7 @@
         "rates"
       ],
       "name": "FRED Interest Rates",
-      "description": "Federal Reserve Economic Data — interest rates, yield curves, money supply, employment, inflation.",
+      "description": "Federal Reserve Economic Data \u2014 interest rates, yield curves, money supply, employment, inflation.",
       "category": "economic",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
@@ -254,12 +282,14 @@
       ],
       "valueLabel": "Rate",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "eia",
       "name": "EIA Energy Data",
-      "description": "Energy Information Administration — crude oil, natural gas, electricity, renewable energy.",
+      "description": "Energy Information Administration \u2014 crude oil, natural gas, electricity, renewable energy.",
       "category": "economic",
       "logo": "/source-imgs/new-eia.webp",
       "brandBg": "#00526e",
@@ -271,7 +301,9 @@
       "isPrice": false,
       "internalIds": [
         "eia"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "treasury",
@@ -279,7 +311,7 @@
         "bonds"
       ],
       "name": "US Treasury Yields",
-      "description": "Daily yield curve rates — T-bills, notes, and bonds from 1-month to 30-year maturities.",
+      "description": "Daily yield curve rates \u2014 T-bills, notes, and bonds from 1-month to 30-year maturities.",
       "category": "economic",
       "logo": "/source-imgs/new-treasury.svg",
       "brandBg": "#0057b7",
@@ -289,12 +321,14 @@
       ],
       "valueLabel": "Yield",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "ecb",
       "name": "ECB Exchange Rates",
-      "description": "European Central Bank — exchange rates, monetary aggregates, bank lending, euro area indicators.",
+      "description": "European Central Bank \u2014 exchange rates, monetary aggregates, bank lending, euro area indicators.",
       "category": "economic",
       "logo": "/source-imgs/new-ecb.svg",
       "brandBg": "#f0f2f5",
@@ -306,12 +340,14 @@
       "isPrice": false,
       "internalIds": [
         "ecb"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "boe",
       "name": "Bank of England FX",
-      "description": "Daily spot exchange rates observed around 4pm London — 27 currencies against Sterling, sourced from Bloomberg BFIX and LSEG.",
+      "description": "Daily spot exchange rates observed around 4pm London \u2014 27 currencies against Sterling, sourced from Bloomberg BFIX and LSEG.",
       "category": "economic",
       "logo": "/source-imgs/new-boe.svg",
       "brandBg": "#1d1d1d",
@@ -323,12 +359,14 @@
       "isPrice": false,
       "internalIds": [
         "boe"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": false
     },
     {
       "sourceId": "worldbank",
       "name": "World Bank Indicators",
-      "description": "Development indicators — GDP, population, poverty, health, education for 200+ countries.",
+      "description": "Development indicators \u2014 GDP, population, poverty, health, education for 200+ countries.",
       "category": "economic",
       "logo": "/source-imgs/new-worldbank.svg",
       "brandBg": "#f5f5f5",
@@ -340,12 +378,14 @@
       "isPrice": false,
       "internalIds": [
         "worldbank"
-      ]
+      ],
+      "syncIntervalSecs": 604800,
+      "batchEligible": true
     },
     {
       "sourceId": "bls",
       "name": "Bureau of Labor Stats",
-      "description": "Bureau of Labor Statistics — CPI, unemployment, job openings, producer prices, wage data.",
+      "description": "Bureau of Labor Statistics \u2014 CPI, unemployment, job openings, producer prices, wage data.",
       "category": "economic",
       "logo": "/source-imgs/new-bls.svg",
       "brandBg": "#f5f5f5",
@@ -357,7 +397,9 @@
       "isPrice": false,
       "internalIds": [
         "bls"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "adzuna",
@@ -374,12 +416,14 @@
       "isPrice": false,
       "internalIds": [
         "adzuna"
-      ]
+      ],
+      "syncIntervalSecs": 1800,
+      "batchEligible": true
     },
     {
       "sourceId": "usa_spending",
       "name": "Federal Spending",
-      "description": "Federal spending — contracts, grants, loans, and government outlays by agency and program.",
+      "description": "Federal spending \u2014 contracts, grants, loans, and government outlays by agency and program.",
       "category": "economic",
       "logo": "/source-imgs/usaspending.webp",
       "brandBg": "#f5f5f5",
@@ -391,12 +435,14 @@
       "isPrice": true,
       "internalIds": [
         "usa_spending"
-      ]
+      ],
+      "syncIntervalSecs": 3600,
+      "batchEligible": true
     },
     {
       "sourceId": "imf",
       "name": "IMF Indicators",
-      "description": "International Monetary Fund — GDP, trade, debt, reserves, and fiscal indicators for 190+ countries.",
+      "description": "International Monetary Fund \u2014 GDP, trade, debt, reserves, and fiscal indicators for 190+ countries.",
       "category": "economic",
       "logo": "/source-imgs/new-imf.svg",
       "brandBg": "#002244",
@@ -408,7 +454,9 @@
       "isPrice": false,
       "internalIds": [
         "imf"
-      ]
+      ],
+      "syncIntervalSecs": 2592000,
+      "batchEligible": true
     },
     {
       "sourceId": "opec",
@@ -425,12 +473,14 @@
       "isPrice": true,
       "internalIds": [
         "opec"
-      ]
+      ],
+      "syncIntervalSecs": 2592000,
+      "batchEligible": true
     },
     {
       "sourceId": "cftc",
       "name": "CFTC Commitments",
-      "description": "Commitments of Traders — weekly positions of commercial and speculative traders in futures markets.",
+      "description": "Commitments of Traders \u2014 weekly positions of commercial and speculative traders in futures markets.",
       "category": "economic",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
@@ -442,7 +492,9 @@
       "isPrice": false,
       "internalIds": [
         "cftc"
-      ]
+      ],
+      "syncIntervalSecs": 604800,
+      "batchEligible": true
     },
     {
       "sourceId": "sec",
@@ -452,7 +504,7 @@
         "sec_insider"
       ],
       "name": "SEC Filings",
-      "description": "Institutional investment disclosures — 13F holdings, EDGAR filings, and insider transactions.",
+      "description": "Institutional investment disclosures \u2014 13F holdings, EDGAR filings, and insider transactions.",
       "category": "regulatory",
       "logo": "/source-imgs/new-sec.svg",
       "brandBg": "#0a3055",
@@ -463,12 +515,14 @@
       ],
       "valueLabel": "Filings",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "syncIntervalSecs": 21600,
+      "batchEligible": true
     },
     {
       "sourceId": "congress",
       "name": "Congress Votes",
-      "description": "US legislative data — bill introductions, votes, committee actions, congressional metrics.",
+      "description": "US legislative data \u2014 bill introductions, votes, committee actions, congressional metrics.",
       "category": "regulatory",
       "logo": "/source-imgs/congress.webp",
       "brandBg": "linear-gradient(135deg,#1a2744,#2d4a7a)",
@@ -480,12 +534,14 @@
       "isPrice": false,
       "internalIds": [
         "congress"
-      ]
+      ],
+      "syncIntervalSecs": 86400,
+      "batchEligible": true
     },
     {
       "sourceId": "courtlistener",
       "name": "Federal Courts",
-      "description": "Daily federal court filing counts — opinions, docket entries, and new cases across 34 courts.",
+      "description": "Daily federal court filing counts \u2014 opinions, docket entries, and new cases across 34 courts.",
       "category": "regulatory",
       "logo": "/source-imgs/new-courtlistener.webp",
       "brandBg": "#f5f5f5",
@@ -497,12 +553,14 @@
       "isPrice": false,
       "internalIds": [
         "courtlistener"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "nyc311",
       "name": "NYC 311 Complaints",
-      "description": "Real-time New York City 311 complaint counts across 30 categories — noise, rodents, parking, and more.",
+      "description": "Real-time New York City 311 complaint counts across 30 categories \u2014 noise, rodents, parking, and more.",
       "category": "regulatory",
       "logo": "/source-imgs/new-nyc311.svg",
       "brandBg": "#002D72",
@@ -514,12 +572,14 @@
       "isPrice": false,
       "internalIds": [
         "nyc311"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": false
     },
     {
       "sourceId": "github",
       "name": "GitHub Repositories",
-      "description": "Open source activity — stars, forks, issues, commits, and contributor metrics.",
+      "description": "Open source activity \u2014 stars, forks, issues, commits, and contributor metrics.",
       "category": "tech",
       "logo": "/source-imgs/new-github.webp",
       "brandBg": "#24292e",
@@ -531,12 +591,14 @@
       "isPrice": false,
       "internalIds": [
         "github"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "npm",
       "name": "npm Packages",
-      "description": "JavaScript ecosystem — daily/weekly download counts and framework adoption trends.",
+      "description": "JavaScript ecosystem \u2014 daily/weekly download counts and framework adoption trends.",
       "category": "tech",
       "logo": "/source-imgs/new-npm.webp",
       "brandBg": "#f5f5f5",
@@ -548,12 +610,14 @@
       "isPrice": false,
       "internalIds": [
         "npm"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "pypi",
       "name": "PyPI Packages",
-      "description": "Python package index — download statistics, version releases, and adoption metrics.",
+      "description": "Python package index \u2014 download statistics, version releases, and adoption metrics.",
       "category": "tech",
       "logo": "/source-imgs/new-pypi.svg",
       "brandBg": "#006dad",
@@ -565,12 +629,14 @@
       "isPrice": false,
       "internalIds": [
         "pypi"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "crates_io",
       "name": "Crates.io Rust",
-      "description": "Rust ecosystem — crate downloads, versions, and dependency metrics.",
+      "description": "Rust ecosystem \u2014 crate downloads, versions, and dependency metrics.",
       "category": "tech",
       "logo": "/source-imgs/new-cratesio.webp",
       "brandBg": "#173d13",
@@ -582,12 +648,14 @@
       "isPrice": false,
       "internalIds": [
         "crates_io"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "stackexchange",
       "name": "StackOverflow",
-      "description": "Developer activity — daily new question counts by popular tag tracking framework and language adoption.",
+      "description": "Developer activity \u2014 daily new question counts by popular tag tracking framework and language adoption.",
       "category": "tech",
       "logo": "/source-imgs/new-stackoverflow.webp",
       "brandBg": "#f5f5f5",
@@ -599,12 +667,14 @@
       "isPrice": false,
       "internalIds": [
         "stackexchange"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "hackernews",
       "name": "Hacker News",
-      "description": "Tech community pulse — top stories, trending topics, engagement from Y Combinator's forum.",
+      "description": "Tech community pulse \u2014 top stories, trending topics, engagement from Y Combinator's forum.",
       "category": "tech",
       "logo": "/source-imgs/new-hackernews.svg",
       "brandBg": "#f66a0a",
@@ -616,12 +686,14 @@
       "isPrice": false,
       "internalIds": [
         "hackernews"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "cloudflare",
       "name": "Cloudflare DNS",
-      "description": "Internet traffic insights — domain popularity, traffic trends, and attack analytics.",
+      "description": "Internet traffic insights \u2014 domain popularity, traffic trends, and attack analytics.",
       "category": "tech",
       "logo": "/source-imgs/new-cloudflare.svg",
       "brandBg": "#f5f5f5",
@@ -633,12 +705,14 @@
       "isPrice": false,
       "internalIds": [
         "cloudflare"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "ioda",
       "name": "Internet Outages",
-      "description": "Internet connectivity score for 50 countries — BGP, Active Probing, and Darknet signals via IODA.",
+      "description": "Internet connectivity score for 50 countries \u2014 BGP, Active Probing, and Darknet signals via IODA.",
       "category": "tech",
       "logo": "/source-imgs/new-ioda.svg",
       "brandBg": "#1a1a2e",
@@ -650,12 +724,14 @@
       "isPrice": false,
       "internalIds": [
         "ioda"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "openalex",
       "name": "OpenAlex Papers",
-      "description": "Scholarly work tracker — daily new publication counts by research field across 25 academic disciplines.",
+      "description": "Scholarly work tracker \u2014 daily new publication counts by research field across 25 academic disciplines.",
       "category": "academic",
       "logo": "/source-imgs/new-openalex.webp",
       "brandBg": "#f5f5f5",
@@ -667,12 +743,14 @@
       "isPrice": false,
       "internalIds": [
         "openalex"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "crossref",
       "name": "Crossref Citations",
-      "description": "Scholarly publishing — daily new DOI registrations by document type tracking research output trends.",
+      "description": "Scholarly publishing \u2014 daily new DOI registrations by document type tracking research output trends.",
       "category": "academic",
       "logo": "/source-imgs/new-crossref.webp",
       "brandBg": "#f5f5f5",
@@ -684,12 +762,14 @@
       "isPrice": false,
       "internalIds": [
         "crossref"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "pubmed",
       "name": "PubMed Medical",
-      "description": "NCBI biomedical literature — daily new article counts by topic across 24 medical research areas.",
+      "description": "NCBI biomedical literature \u2014 daily new article counts by topic across 24 medical research areas.",
       "category": "academic",
       "logo": "/source-imgs/new-pubmed.webp",
       "brandBg": "#f5f5f5",
@@ -701,12 +781,14 @@
       "isPrice": false,
       "internalIds": [
         "pubmed"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "twitch",
       "name": "Twitch Streaming",
-      "description": "Live streaming metrics — viewer counts, active streams, top categories, channel growth.",
+      "description": "Live streaming metrics \u2014 viewer counts, active streams, top categories, channel growth.",
       "category": "entertainment",
       "logo": "/source-imgs/new-twitch.webp",
       "brandBg": "#9146FF",
@@ -718,12 +800,14 @@
       "isPrice": false,
       "internalIds": [
         "twitch"
-      ]
+      ],
+      "syncIntervalSecs": 60,
+      "batchEligible": true
     },
     {
       "sourceId": "tmdb",
       "name": "Movies & TV",
-      "description": "Film and television — box office, ratings, popularity scores, and trending titles.",
+      "description": "Film and television \u2014 box office, ratings, popularity scores, and trending titles.",
       "category": "entertainment",
       "logo": "/source-imgs/new-tmdb.svg",
       "brandBg": "#032551",
@@ -735,12 +819,14 @@
       "isPrice": false,
       "internalIds": [
         "tmdb"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "lastfm",
       "name": "Last.fm Music",
-      "description": "Music analytics — top artist listener counts, playcounts, and chart trends from Last.fm.",
+      "description": "Music analytics \u2014 top artist listener counts, playcounts, and chart trends from Last.fm.",
       "category": "entertainment",
       "logo": "/source-imgs/new-lastfm.webp",
       "brandBg": "#f5f5f5",
@@ -752,12 +838,14 @@
       "isPrice": false,
       "internalIds": [
         "lastfm"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "steam",
       "name": "Steam Gaming",
-      "description": "PC gaming — concurrent players, game releases, review scores, and player count trends.",
+      "description": "PC gaming \u2014 concurrent players, game releases, review scores, and player count trends.",
       "category": "entertainment",
       "logo": "/source-imgs/new-steam.webp",
       "brandBg": "#171a21",
@@ -769,12 +857,14 @@
       "isPrice": false,
       "internalIds": [
         "steam"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "anilist",
       "name": "AniList Anime",
-      "description": "Anime and manga — popularity, ratings, seasonal rankings, community engagement.",
+      "description": "Anime and manga \u2014 popularity, ratings, seasonal rankings, community engagement.",
       "category": "entertainment",
       "logo": "/source-imgs/new-anilist.webp",
       "brandBg": "#152232",
@@ -786,12 +876,14 @@
       "isPrice": false,
       "internalIds": [
         "anilist"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "reddit",
       "name": "Reddit Communities",
-      "description": "Community analytics — subscriber counts and active users across 100+ curated subreddits.",
+      "description": "Community analytics \u2014 subscriber counts and active users across 100+ curated subreddits.",
       "category": "entertainment",
       "logo": "/source-imgs/new-reddit.webp",
       "brandBg": "#1a1a2e",
@@ -803,12 +895,14 @@
       "isPrice": false,
       "internalIds": [
         "reddit"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "chaturbate",
       "name": "Chaturbate Live",
-      "description": "Adult streaming metrics — live viewer counts for top models from the public affiliate API.",
+      "description": "Adult streaming metrics \u2014 live viewer counts for top models from the public affiliate API.",
       "category": "entertainment",
       "logo": "/source-imgs/new-chaturbate.webp",
       "brandBg": "#f5f5f5",
@@ -820,12 +914,14 @@
       "isPrice": false,
       "internalIds": [
         "chaturbate"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "bgg",
       "name": "Board Games",
-      "description": "Board game trends — hotness rankings for top 50 board games from the BGG community.",
+      "description": "Board game trends \u2014 hotness rankings for top 50 board games from the BGG community.",
       "category": "entertainment",
       "logo": "/source-imgs/new-bgg.webp",
       "brandBg": "#f5f5f5",
@@ -837,12 +933,14 @@
       "isPrice": false,
       "internalIds": [
         "bgg"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "backpacktf",
       "name": "Backpack.tf Trading",
-      "description": "TF2 economy — item prices, unusual hat values, and virtual item trading volume.",
+      "description": "TF2 economy \u2014 item prices, unusual hat values, and virtual item trading volume.",
       "category": "entertainment",
       "logo": "/source-imgs/new-backpacktf.webp",
       "brandBg": "#363636",
@@ -854,12 +952,14 @@
       "isPrice": true,
       "internalIds": [
         "backpacktf"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "fourchan",
       "name": "4chan Boards",
-      "description": "Imageboard sentiment — post volumes, trending topics across /biz/, /pol/, and more.",
+      "description": "Imageboard sentiment \u2014 post volumes, trending topics across /biz/, /pol/, and more.",
       "category": "entertainment",
       "logo": "/source-imgs/fourchan.webp",
       "brandBg": "linear-gradient(135deg,#6b8e6b,#3d5c3d)",
@@ -871,12 +971,14 @@
       "isPrice": false,
       "internalIds": [
         "fourchan"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "sports",
       "name": "Sports Stats",
-      "description": "Live sports data — scores, standings, schedules, stats across NFL, NBA, MLB, NHL.",
+      "description": "Live sports data \u2014 scores, standings, schedules, stats across NFL, NBA, MLB, NHL.",
       "category": "entertainment",
       "logo": "/source-imgs/new-espn.svg",
       "brandBg": "#1b1b1b",
@@ -888,7 +990,9 @@
       "isPrice": false,
       "internalIds": [
         "sports"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "pandascore",
@@ -896,7 +1000,7 @@
         "esports"
       ],
       "name": "Esports",
-      "description": "Esports match tracking — live scores across CS2, LoL, Dota 2, Valorant, and more.",
+      "description": "Esports match tracking \u2014 live scores across CS2, LoL, Dota 2, Valorant, and more.",
       "category": "entertainment",
       "logo": "/source-imgs/new-pandascore.webp",
       "brandBg": "#f5f5f5",
@@ -905,14 +1009,16 @@
       ],
       "valueLabel": "Score",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "queue_times",
       "name": "Theme Park Waits",
-      "description": "Average ride wait times across 30+ major theme parks worldwide — Disney, Universal, and more.",
+      "description": "Average ride wait times across 30+ major theme parks worldwide \u2014 Disney, Universal, and more.",
       "category": "entertainment",
-      "logo": "/source-imgs/new-queuetimes.webp",
+      "logo": "/source-imgs/new-queuetimes.svg",
       "brandBg": "#1a1a2e",
       "prefixes": [
         "queue_times_"
@@ -922,12 +1028,14 @@
       "isPrice": false,
       "internalIds": [
         "queue_times"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "mcbroken",
       "name": "McBroken Ice Cream",
-      "description": "McDonald's ice cream machine broken percentage across 30 US cities — real-time status tracking.",
+      "description": "McDonald's ice cream machine broken percentage across 30 US cities \u2014 real-time status tracking.",
       "category": "entertainment",
       "logo": "/source-imgs/new-mcbroken.svg",
       "brandBg": "#FFC72C",
@@ -939,12 +1047,14 @@
       "isPrice": false,
       "internalIds": [
         "mcbroken"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": false
     },
     {
       "sourceId": "earthquake",
       "name": "USGS Earthquakes",
-      "description": "Seismic event data — real-time magnitudes, depths, and locations from the seismic network.",
+      "description": "Seismic event data \u2014 real-time magnitudes, depths, and locations from the seismic network.",
       "category": "geophysical",
       "logo": "/source-imgs/new-usgs.svg",
       "brandBg": "#f5f5f5",
@@ -956,12 +1066,14 @@
       "isPrice": false,
       "internalIds": [
         "earthquake"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "volcano",
       "name": "Volcano Activity",
-      "description": "Volcanic activity monitoring — alert levels, eruption status, hazard assessments worldwide.",
+      "description": "Volcanic activity monitoring \u2014 alert levels, eruption status, hazard assessments worldwide.",
       "category": "geophysical",
       "logo": "/source-imgs/new-volcano.webp",
       "brandBg": "#c0cfe0",
@@ -973,12 +1085,14 @@
       "isPrice": false,
       "internalIds": [
         "volcano"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "weather",
       "name": "NOAA Weather",
-      "description": "Official NWS forecasts — point forecasts, area discussions, and observation data across the US.",
+      "description": "Official NWS forecasts \u2014 point forecasts, area discussions, and observation data across the US.",
       "category": "geophysical",
       "logo": "/source-imgs/new-noaa.webp",
       "brandBg": "#f5f5f5",
@@ -986,16 +1100,18 @@
         "weather_"
       ],
       "valueLabel": "Temperature",
-      "valueUnit": "°F",
+      "valueUnit": "\u00b0F",
       "isPrice": false,
       "internalIds": [
         "weather"
-      ]
+      ],
+      "syncIntervalSecs": 3600,
+      "batchEligible": true
     },
     {
       "sourceId": "weather_alerts",
       "name": "Weather Alerts",
-      "description": "National Weather Service — warnings, watches, advisories for severe weather across the US.",
+      "description": "National Weather Service \u2014 warnings, watches, advisories for severe weather across the US.",
       "category": "geophysical",
       "logo": "/source-imgs/new-nws.svg",
       "brandBg": "#FFF3E0",
@@ -1007,12 +1123,14 @@
       "isPrice": false,
       "internalIds": [
         "weather_alerts"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "openmeteo",
       "name": "Open-Meteo",
-      "description": "Global weather forecasts — temperature, precipitation, wind, and historical climate data.",
+      "description": "Global weather forecasts \u2014 temperature, precipitation, wind, and historical climate data.",
       "category": "geophysical",
       "logo": "/source-imgs/new-openmeteo.webp",
       "brandBg": "#f5f5f5",
@@ -1020,16 +1138,18 @@
         "openmeteo_"
       ],
       "valueLabel": "Temperature",
-      "valueUnit": "°C",
+      "valueUnit": "\u00b0C",
       "isPrice": false,
       "internalIds": [
         "openmeteo"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": false
     },
     {
       "sourceId": "airnow",
       "name": "Air Quality",
-      "description": "EPA air quality index — real-time AQI readings across 300+ US metropolitan reporting areas.",
+      "description": "EPA air quality index \u2014 real-time AQI readings across 300+ US metropolitan reporting areas.",
       "category": "geophysical",
       "logo": "/source-imgs/new-airnow.webp",
       "brandBg": "#f5f5f5",
@@ -1041,12 +1161,14 @@
       "isPrice": false,
       "internalIds": [
         "airnow"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "usgs_water",
       "name": "USGS Water",
-      "description": "River discharge monitoring — real-time streamflow data from USGS stations across 15 US states.",
+      "description": "River discharge monitoring \u2014 real-time streamflow data from USGS stations across 15 US states.",
       "category": "geophysical",
       "logo": "/source-imgs/new-usgswater.webp",
       "brandBg": "#f5f5f5",
@@ -1054,11 +1176,13 @@
         "usgs_water_"
       ],
       "valueLabel": "Discharge",
-      "valueUnit": "ft³/s",
+      "valueUnit": "ft\u00b3/s",
       "isPrice": false,
       "internalIds": [
         "usgs_water"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "noaa_met",
@@ -1071,11 +1195,13 @@
         "noaa_met_"
       ],
       "valueLabel": "Temp",
-      "valueUnit": "°F",
+      "valueUnit": "\u00b0F",
       "isPrice": false,
       "internalIds": [
         "noaa_met"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "noaa_tides",
@@ -1092,7 +1218,9 @@
       "isPrice": false,
       "internalIds": [
         "noaa_tides"
-      ]
+      ],
+      "syncIntervalSecs": 900,
+      "batchEligible": true
     },
     {
       "sourceId": "ndbc",
@@ -1109,7 +1237,9 @@
       "isPrice": false,
       "internalIds": [
         "ndbc"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "nwps",
@@ -1126,7 +1256,9 @@
       "isPrice": false,
       "internalIds": [
         "nwps"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "nrc_nuclear",
@@ -1143,12 +1275,14 @@
       "isPrice": false,
       "internalIds": [
         "nrc_nuclear"
-      ]
+      ],
+      "syncIntervalSecs": 3600,
+      "batchEligible": true
     },
     {
       "sourceId": "wildfire",
       "name": "Wildfire Tracking",
-      "description": "Satellite fire detection — real-time active fire data from MODIS and VIIRS instruments.",
+      "description": "Satellite fire detection \u2014 real-time active fire data from MODIS and VIIRS instruments.",
       "category": "geophysical",
       "logo": "/source-imgs/new-firms.webp",
       "brandBg": "#2d1810",
@@ -1160,12 +1294,14 @@
       "isPrice": false,
       "internalIds": [
         "wildfire"
-      ]
+      ],
+      "syncIntervalSecs": 1800,
+      "batchEligible": true
     },
     {
       "sourceId": "epidemic",
       "name": "Disease Tracking",
-      "description": "Global disease tracking — case counts, deaths, vaccination rates by country.",
+      "description": "Global disease tracking \u2014 case counts, deaths, vaccination rates by country.",
       "category": "geophysical",
       "logo": "/source-imgs/new-diseasesh.webp",
       "brandBg": "#1b1b1b",
@@ -1177,12 +1313,14 @@
       "isPrice": false,
       "internalIds": [
         "epidemic"
-      ]
+      ],
+      "syncIntervalSecs": 1800,
+      "batchEligible": true
     },
     {
       "sourceId": "power_outages",
       "name": "US Power Outages",
-      "description": "Customers without power per US state from the DOE ODIN platform — real-time utility reports.",
+      "description": "Customers without power per US state from the DOE ODIN platform \u2014 real-time utility reports.",
       "category": "geophysical",
       "logo": "/source-imgs/new-poweroutage.webp",
       "brandBg": "#f5f5f5",
@@ -1194,12 +1332,14 @@
       "isPrice": false,
       "internalIds": [
         "power_outages"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "flights",
       "name": "Global Flights",
-      "description": "Aviation tracking — live flight counts, airport traffic, airline ops, airspace congestion.",
+      "description": "Aviation tracking \u2014 live flight counts, airport traffic, airline ops, airspace congestion.",
       "category": "transport",
       "logo": "/source-imgs/new-flights.webp",
       "brandBg": "#2a2a2a",
@@ -1211,7 +1351,9 @@
       "isPrice": false,
       "internalIds": [
         "flights"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "gtfs_rt",
@@ -1219,7 +1361,7 @@
         "gtfs_transit"
       ],
       "name": "Transit Realtime",
-      "description": "Public transit feeds — real-time bus/rail positions, service alerts, schedule adherence.",
+      "description": "Public transit feeds \u2014 real-time bus/rail positions, service alerts, schedule adherence.",
       "category": "transport",
       "logo": "/source-imgs/new-transitland2.svg",
       "brandBg": "#f0f2f5",
@@ -1228,15 +1370,17 @@
       ],
       "valueLabel": "Delay",
       "valueUnit": "min",
-      "isPrice": false
+      "isPrice": false,
+      "syncIntervalSecs": 120,
+      "batchEligible": true
     },
     {
       "sourceId": "citybikes",
       "name": "CityBikes",
-      "description": "Available bikes across 30 major bike-sharing networks worldwide — real-time station data.",
+      "description": "Available bikes across 30 major bike-sharing networks worldwide \u2014 real-time station data.",
       "category": "transport",
       "logo": "/source-imgs/new-citybikes.svg",
-      "brandBg": "linear-gradient(135deg,#ffb800,#f59e00)",
+      "brandBg": "#1a1a1a",
       "prefixes": [
         "citybikes_"
       ],
@@ -1245,7 +1389,9 @@
       "isPrice": false,
       "internalIds": [
         "citybikes"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "parking",
@@ -1262,12 +1408,14 @@
       "isPrice": false,
       "internalIds": [
         "parking"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "tomtom_traffic",
       "name": "TomTom Traffic",
-      "description": "Real-time road congestion ratios for 20+ highway corridors — current speed vs free-flow speed.",
+      "description": "Real-time road congestion ratios for 20+ highway corridors \u2014 current speed vs free-flow speed.",
       "category": "transport",
       "logo": "/source-imgs/new-tomtomtraffic.webp",
       "brandBg": "#f5f5f5",
@@ -1279,12 +1427,14 @@
       "isPrice": false,
       "internalIds": [
         "tomtom_traffic"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "tomtom_evcharge",
       "name": "EV Charging",
-      "description": "Available EV charging connectors at 25+ major charging hubs worldwide — real-time availability.",
+      "description": "Available EV charging connectors at 25+ major charging hubs worldwide \u2014 real-time availability.",
       "category": "transport",
       "logo": "/source-imgs/new-tomtomev.webp",
       "brandBg": "#f5f5f5",
@@ -1296,12 +1446,14 @@
       "isPrice": false,
       "internalIds": [
         "tomtom_evcharge"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "cbp_border",
       "name": "Border Wait Times",
-      "description": "US Customs and Border Protection — real-time passenger and commercial wait times at all ports of entry.",
+      "description": "US Customs and Border Protection \u2014 real-time passenger and commercial wait times at all ports of entry.",
       "category": "transport",
       "logo": "/source-imgs/new-cbpborder.webp",
       "brandBg": "#1a2744",
@@ -1313,7 +1465,9 @@
       "isPrice": false,
       "internalIds": [
         "cbp_border"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "faa_delays",
@@ -1330,12 +1484,14 @@
       "isPrice": false,
       "internalIds": [
         "faa_delays"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "db_trains",
       "name": "Deutsche Bahn",
-      "description": "Average train delay in minutes at 58 major German stations — real-time departure data from Deutsche Bahn.",
+      "description": "Average train delay in minutes at 58 major German stations \u2014 real-time departure data from Deutsche Bahn.",
       "category": "transport",
       "logo": "/source-imgs/new-dbtrains.svg",
       "brandBg": "#ec0016",
@@ -1347,14 +1503,16 @@
       "isPrice": false,
       "internalIds": [
         "db_trains"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": false
     },
     {
       "sourceId": "mta_subway",
       "name": "NYC Subway",
-      "description": "Disruption severity for 24 NYC subway lines — real-time service status from MTA.",
+      "description": "Disruption severity for 24 NYC subway lines \u2014 real-time service status from MTA.",
       "category": "transport",
-      "logo": "/source-imgs/new-mta.webp",
+      "logo": "/source-imgs/new-mta.svg",
       "brandBg": "#0039A6",
       "prefixes": [
         "mta_subway_"
@@ -1364,12 +1522,14 @@
       "isPrice": false,
       "internalIds": [
         "mta_subway"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "paris_metro",
       "name": "Paris Metro",
-      "description": "Disruption severity for 16 Paris metro lines — real-time service status from RATP/IDFM.",
+      "description": "Disruption severity for 16 Paris metro lines \u2014 real-time service status from RATP/IDFM.",
       "category": "transport",
       "logo": "/source-imgs/new-ratp.webp",
       "brandBg": "#003B80",
@@ -1381,12 +1541,14 @@
       "isPrice": false,
       "internalIds": [
         "paris_metro"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "ryanair",
       "name": "Ryanair Delays",
-      "description": "Average flight delay in minutes at 40 major Ryanair airports — schedule vs ADS-B tracking.",
+      "description": "Average flight delay in minutes at 40 major Ryanair airports \u2014 schedule vs ADS-B tracking.",
       "category": "transport",
       "logo": "/source-imgs/new-ryanair.svg",
       "brandBg": "#f5f5f5",
@@ -1398,12 +1560,14 @@
       "isPrice": false,
       "internalIds": [
         "ryanair"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "tfl_tube",
       "name": "London Underground",
-      "description": "Disruption severity for 11 London Underground lines — real-time status from TfL.",
+      "description": "Disruption severity for 11 London Underground lines \u2014 real-time status from TfL.",
       "category": "transport",
       "logo": "/source-imgs/new-tfl.svg",
       "brandBg": "#f5f5f5",
@@ -1415,12 +1579,14 @@
       "isPrice": false,
       "internalIds": [
         "tfl_tube"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": true
     },
     {
       "sourceId": "aisstream",
       "name": "Ship Tracking",
-      "description": "Real-time AIS stream — live vessel positions, speeds, and routes from AIS receivers.",
+      "description": "Real-time AIS stream \u2014 live vessel positions, speeds, and routes from AIS receivers.",
       "category": "transport",
       "logo": "/source-imgs/new-aisstream.webp",
       "brandBg": "#1b1b1b",
@@ -1432,12 +1598,14 @@
       "isPrice": false,
       "internalIds": [
         "aisstream"
-      ]
+      ],
+      "syncIntervalSecs": 60,
+      "batchEligible": true
     },
     {
       "sourceId": "maritime",
       "name": "Port Data",
-      "description": "Ship tracking — vessel positions, port traffic, shipping lane activity, cargo movements.",
+      "description": "Ship tracking \u2014 vessel positions, port traffic, shipping lane activity, cargo movements.",
       "category": "transport",
       "logo": "/source-imgs/new-marinetraffic.webp",
       "brandBg": "#1b1b1b",
@@ -1449,12 +1617,14 @@
       "isPrice": false,
       "internalIds": [
         "maritime"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "ebird",
       "name": "eBird Observations",
-      "description": "Global birding data — species checklists, hotspot activity, migration timing from Cornell Lab.",
+      "description": "Global birding data \u2014 species checklists, hotspot activity, migration timing from Cornell Lab.",
       "category": "nature",
       "logo": "/source-imgs/new-ebird.svg",
       "brandBg": "#f5f5f5",
@@ -1466,12 +1636,14 @@
       "isPrice": false,
       "internalIds": [
         "ebird"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "animals",
       "name": "Wildlife Tracking",
-      "description": "Citizen science biodiversity — species sightings, observation counts, ecological trends.",
+      "description": "Citizen science biodiversity \u2014 species sightings, observation counts, ecological trends.",
       "category": "nature",
       "logo": "/source-imgs/new-inaturalist.svg",
       "brandBg": "#f5f5f5",
@@ -1483,12 +1655,14 @@
       "isPrice": false,
       "internalIds": [
         "animals"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "movebank",
       "name": "Animal Migration",
-      "description": "Animal movement tracking — GPS telemetry for wildlife migration studies worldwide.",
+      "description": "Animal movement tracking \u2014 GPS telemetry for wildlife migration studies worldwide.",
       "category": "nature",
       "logo": "/source-imgs/movebank.webp",
       "brandBg": "#e8f0e8",
@@ -1500,12 +1674,14 @@
       "isPrice": false,
       "internalIds": [
         "movebank"
-      ]
+      ],
+      "syncIntervalSecs": 1800,
+      "batchEligible": true
     },
     {
       "sourceId": "shelter",
       "name": "Animal Shelters",
-      "description": "Stray animal counts at shelters by species and status — dogs and cats via Socrata open data.",
+      "description": "Stray animal counts at shelters by species and status \u2014 dogs and cats via Socrata open data.",
       "category": "nature",
       "logo": "/source-imgs/new-shelter.webp",
       "brandBg": "#f5f5f5",
@@ -1517,12 +1693,14 @@
       "isPrice": false,
       "internalIds": [
         "shelter"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "spaceweather",
       "name": "Space Weather",
-      "description": "Solar activity — solar flares, geomagnetic storms, Kp index, space weather alerts.",
+      "description": "Solar activity \u2014 solar flares, geomagnetic storms, Kp index, space weather alerts.",
       "category": "space",
       "logo": "/source-imgs/new-noaa.webp",
       "brandBg": "#c0c8d0",
@@ -1534,12 +1712,14 @@
       "isPrice": false,
       "internalIds": [
         "spaceweather"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "iss",
       "name": "ISS Tracker",
-      "description": "International Space Station — real-time orbital position, crew count, pass predictions.",
+      "description": "International Space Station \u2014 real-time orbital position, crew count, pass predictions.",
       "category": "space",
       "logo": "/source-imgs/new-iss.webp",
       "brandBg": "#0c0a1a",
@@ -1551,12 +1731,14 @@
       "isPrice": false,
       "internalIds": [
         "iss"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "mil_aircraft",
       "name": "Military Aircraft",
-      "description": "Defense aviation — military flights, tanker ops, surveillance movements via ADS-B.",
+      "description": "Defense aviation \u2014 military flights, tanker ops, surveillance movements via ADS-B.",
       "category": "space",
       "logo": "/source-imgs/new-milaircraft.webp",
       "brandBg": "#1a2332",
@@ -1568,12 +1750,14 @@
       "isPrice": false,
       "internalIds": [
         "mil_aircraft"
-      ]
+      ],
+      "syncIntervalSecs": 600,
+      "batchEligible": true
     },
     {
       "sourceId": "lichess",
       "name": "Lichess Chess",
-      "description": "Live chess activity — player counts, game starts, and tournament participation on Lichess.",
+      "description": "Live chess activity \u2014 player counts, game starts, and tournament participation on Lichess.",
       "category": "entertainment",
       "logo": "/source-imgs/new-hackernews.svg",
       "brandBg": "#f5f5f5",
@@ -1585,7 +1769,9 @@
       "isPrice": false,
       "internalIds": [
         "lichess"
-      ]
+      ],
+      "syncIntervalSecs": 300,
+      "batchEligible": false
     }
   ],
   "categories": [
