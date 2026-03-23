@@ -1020,16 +1020,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         return assetPrices[assetIdx];
     }
 
-    /// @inheritdoc IInvestment
-    function batchGetPrices(uint256[] calldata indices) external view returns (uint256[] memory prices) {
-        prices = new uint256[](indices.length);
-        for (uint256 i = 0; i < indices.length;) {
-            prices[i] = assetPrices[indices[i]];
-            unchecked {
-                ++i;
-            }
-        }
-    }
+    // batchGetPrices removed to fit code size limit — use multicall + getPrice()
 
 
     // ============ ADMIN FUNCTIONS ============
@@ -1062,11 +1053,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         emit EventsLib.StalenessLimitUpdated(assetType, maxSeconds);
     }
 
-    /// @notice Configure staleness limits for multiple asset types in batch
-    /// @dev Delegated to AdminLib.
-    function setStalenessLimitsBatch(uint256[] calldata assetTypes, uint256[] calldata maxSeconds) external {
-        AdminLib.setStalenessLimitsBatch(assetTypes, maxSeconds, stalenessLimits, governance);
-    }
+    // setStalenessLimitsBatch removed for code size — use setStalenessLimit in loop
 
     /// @notice Configure a venue pool for inventory tracking
     /// @dev Delegated to AdminLib.

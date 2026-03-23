@@ -192,10 +192,7 @@ interface IIndex {
     /// @return price The asset price in USDC (18 decimals)
     function getPrice(uint256 assetIdx) external view returns (uint256 price);
 
-    /// @notice Get prices for multiple assets (legacy, reads dead storage)
-    /// @param indices Array of asset indices
-    /// @return prices Array of prices in USDC (18 decimals each)
-    function batchGetPrices(uint256[] calldata indices) external view returns (uint256[] memory prices);
+    // batchGetPrices removed — use multicall + getPrice()
 
     // ============ ITP NAV FUNCTIONS ============
 
@@ -212,10 +209,7 @@ interface IIndex {
     /// @param maxSeconds Maximum allowed staleness in seconds
     function setStalenessLimit(uint256 assetType, uint256 maxSeconds) external;
 
-    /// @notice Configure staleness limits for multiple asset types in batch
-    /// @param assetTypes Array of asset type identifiers
-    /// @param maxSeconds Array of maximum staleness values
-    function setStalenessLimitsBatch(uint256[] calldata assetTypes, uint256[] calldata maxSeconds) external;
+    // setStalenessLimitsBatch removed — use setStalenessLimit in loop
 
     /// @notice Configure a venue pool for inventory tracking
     /// @param venueId The venue identifier
