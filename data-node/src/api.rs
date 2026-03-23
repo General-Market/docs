@@ -337,12 +337,14 @@ pub struct AppState {
     pub source_registry: crate::source_registry::SourceRegistry,
     /// SSE connection limiter — 500 total, 10 per IP
     pub sse_limiter: Arc<SseLimiter>,
-    /// Cached leaderboard data from oracle (30s TTL)
-    pub leaderboard_cache: Arc<crate::vision_api::LeaderboardCache>,
+    /// Leaderboard proxy to oracle (15s TTL cache)
+    pub leaderboard_cache: Arc<crate::vision_api::LeaderboardProxyCache>,
     /// Cached player profile data from oracle (30s TTL)
     pub profile_cache: Arc<crate::vision_api::ProfileCache>,
     /// Morpho batch markets loaded from batch-markets.json
     pub batch_markets: Vec<BatchMarketEntry>,
+    /// Cumulative count of lagged events across all SSE chain-event consumers
+    pub chain_event_lag_total: std::sync::atomic::AtomicU64,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -531,18 +533,21 @@ struct HealthResponse {
     db_connected: bool,
     last_fetch_at: Option<DateTime<Utc>>,
     symbols_tracked: usize,
+    chain_event_lag_total: u64,
 }
 
 async fn health(State(state): State<Arc<AppState>>) -> Json<HealthResponse> {
     let db_connected = db::is_connected(&state.pool).await;
     let last_fetch_at = *state.collector.last_fetch_at.read().await;
     let symbols_tracked = *state.collector.symbols_tracked.read().await;
+    let chain_event_lag_total = state.chain_event_lag_total.load(std::sync::atomic::Ordering::Relaxed);
 
     Json(HealthResponse {
         status: if db_connected { "healthy".into() } else { "degraded".into() },
         db_connected,
         last_fetch_at,
         symbols_tracked,
+        chain_event_lag_total,
     })
 }
 
@@ -6308,8 +6313,10 @@ async fn sse_stream(
                 if gen != last_oracle_gen {
                     let data = cache.oracle.read().await;
                     let json = serde_json::to_string(&*data).unwrap_or_default();
-                    if tx.send(Ok(Event::default().event("oracle-prices").data(json))).await.is_err() { break; }
-                    last_oracle_gen = gen;
+                    match tx.try_send(Ok(Event::default().event("oracle-prices").data(json))) {
+                        Ok(_) => { consecutive_drops = 0; last_oracle_gen = gen; }
+                        Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                    }
                 }
             }
 
@@ -6318,9 +6325,13 @@ async fn sse_stream(
                 if gen != last_system_gen {
                     let json = cache.system_snapshot_json.read().await.clone();
                     if !json.is_empty() {
-                        if tx.send(Ok(Event::default().event("system-status").data(json))).await.is_err() { break; }
+                        match tx.try_send(Ok(Event::default().event("system-status").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_system_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
+                    } else {
+                        last_system_gen = gen;
                     }
-                    last_system_gen = gen;
                 }
             }
 
@@ -6329,8 +6340,10 @@ async fn sse_stream(
                 if gen != last_morpho_markets_gen {
                     let data = cache.morpho_markets.read().await;
                     let json = serde_json::to_string(&*data).unwrap_or_default();
-                    if tx.send(Ok(Event::default().event("morpho-markets").data(json))).await.is_err() { break; }
-                    last_morpho_markets_gen = gen;
+                    match tx.try_send(Ok(Event::default().event("morpho-markets").data(json))) {
+                        Ok(_) => { consecutive_drops = 0; last_morpho_markets_gen = gen; }
+                        Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                    }
                 }
             }
 
@@ -6339,8 +6352,10 @@ async fn sse_stream(
                 if gen != last_morpho_vault_gen {
                     let data = cache.morpho_vault.read().await;
                     let json = serde_json::to_string(&*data).unwrap_or_default();
-                    if tx.send(Ok(Event::default().event("morpho-vault").data(json))).await.is_err() { break; }
-                    last_morpho_vault_gen = gen;
+                    match tx.try_send(Ok(Event::default().event("morpho-vault").data(json))) {
+                        Ok(_) => { consecutive_drops = 0; last_morpho_vault_gen = gen; }
+                        Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                    }
                 }
             }
 
@@ -6352,8 +6367,10 @@ async fn sse_stream(
                     let gen = u.balances_gen.get();
                     if gen != last_bal_gen {
                         let json = serde_json::to_string(&u.balances).unwrap_or_default();
-                        if tx.send(Ok(Event::default().event("user-balances").data(json))).await.is_err() { break; }
-                        last_bal_gen = gen;
+                        match tx.try_send(Ok(Event::default().event("user-balances").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_bal_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
                     }
                 }
 
@@ -6361,8 +6378,10 @@ async fn sse_stream(
                     let gen = u.allowances_gen.get();
                     if gen != last_allow_gen {
                         let json = serde_json::to_string(&u.allowances).unwrap_or_default();
-                        if tx.send(Ok(Event::default().event("user-allowances").data(json))).await.is_err() { break; }
-                        last_allow_gen = gen;
+                        match tx.try_send(Ok(Event::default().event("user-allowances").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_allow_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
                     }
                 }
 
@@ -6370,8 +6389,10 @@ async fn sse_stream(
                     let gen = u.orders_gen.get();
                     if gen != last_orders_gen {
                         let json = serde_json::to_string(&u.orders).unwrap_or_default();
-                        if tx.send(Ok(Event::default().event("user-orders").data(json))).await.is_err() { break; }
-                        last_orders_gen = gen;
+                        match tx.try_send(Ok(Event::default().event("user-orders").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_orders_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
                     }
                 }
 
@@ -6379,8 +6400,10 @@ async fn sse_stream(
                     let gen = u.positions_gen.get();
                     if gen != last_pos_gen {
                         let json = serde_json::to_string(&u.positions).unwrap_or_default();
-                        if tx.send(Ok(Event::default().event("user-positions").data(json))).await.is_err() { break; }
-                        last_pos_gen = gen;
+                        match tx.try_send(Ok(Event::default().event("user-positions").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_pos_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
                     }
                 }
 
@@ -6388,8 +6411,10 @@ async fn sse_stream(
                     let gen = u.cost_basis_gen.get();
                     if gen != last_cb_gen {
                         let json = serde_json::to_string(&u.cost_basis).unwrap_or_default();
-                        if tx.send(Ok(Event::default().event("user-cost-basis").data(json))).await.is_err() { break; }
-                        last_cb_gen = gen;
+                        match tx.try_send(Ok(Event::default().event("user-cost-basis").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_cb_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
                     }
                 }
             }
@@ -6955,7 +6980,8 @@ async fn sse_chain_events(
                     }
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                    tracing::warn!(lagged = n, "SSE chain-events consumer lagged");
+                    let prev = state.chain_event_lag_total.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
+                    tracing::warn!(lagged = n, cumulative = prev + n, "SSE chain-events consumer lagged");
                     continue;
                 }
                 Err(_) => break,

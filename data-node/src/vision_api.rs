@@ -12,7 +12,6 @@ use axum::response::{IntoResponse, Json, Response};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 
 use crate::api::AppState;
 
@@ -355,7 +354,7 @@ pub async fn batch_history(
     })))
 }
 
-// ---- GET /vision/leaderboard (precomputed from Postgres) ----
+// ---- GET /vision/leaderboard (proxied from oracle) ----
 
 #[derive(Deserialize)]
 pub struct LeaderboardQuery {
@@ -363,242 +362,87 @@ pub struct LeaderboardQuery {
     pub batch_id: Option<u64>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct LeaderboardEntry {
-    rank: usize,
-    wallet_address: String,
-    pnl: f64,
-    win_rate: f64,
-    roi: f64,
-    total_volume: f64,
-    portfolio_bets: i64,
-    avg_portfolio_size: f64,
-    largest_portfolio: i64,
+/// Leaderboard proxy cache — forwards to the oracle endpoint (single source of truth)
+/// with a 15s TTL cache to avoid hammering the oracle on every request.
+pub struct LeaderboardProxyCache {
+    oracle_url: String,
+    client: reqwest::Client,
+    cache: mini_moka::sync::Cache<String, String>,
 }
 
-/// Precomputed leaderboard data, refreshed every 30s from shared Postgres.
-///
-/// Stores per-batch and global leaderboards so the API handler never queries at request time.
-pub struct LeaderboardCache {
-    /// batch_id → ranked leaderboard entries
-    per_batch: RwLock<HashMap<u64, Vec<LeaderboardEntry>>>,
-    /// Global leaderboard (aggregated across all batches)
-    global: RwLock<Vec<LeaderboardEntry>>,
-    /// source_name → batch_id (from vision-batches.json manifest)
-    source_to_batch: HashMap<String, u64>,
-    updated_at: RwLock<DateTime<Utc>>,
-}
-
-impl LeaderboardCache {
-    pub fn new(_oracle_url: String) -> Self {
-        // Load source → batch_id mapping from deployment manifest
-        let mut source_to_batch = HashMap::new();
-        let manifest_paths = [
-            "deployments/vision-batches.json",
-            "/app/deployments/vision-batches.json",
-        ];
-        for path in &manifest_paths {
-            if let Ok(contents) = std::fs::read_to_string(path) {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
-                    if let Some(batches) = val.get("batches").and_then(|b| b.as_object()) {
-                        for (name, info) in batches {
-                            if let Some(id) = info.get("batchId").and_then(|v| v.as_u64()) {
-                                source_to_batch.insert(name.clone(), id);
-                            }
-                        }
-                    }
-                }
-                tracing::info!(
-                    count = source_to_batch.len(),
-                    path,
-                    "Leaderboard: loaded source→batch mapping"
-                );
-                break;
-            }
-        }
-
+impl LeaderboardProxyCache {
+    pub fn new(oracle_url: String) -> Self {
         Self {
-            per_batch: RwLock::new(HashMap::new()),
-            global: RwLock::new(Vec::new()),
-            source_to_batch,
-            updated_at: RwLock::new(Utc::now()),
+            oracle_url,
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap_or_default(),
+            cache: mini_moka::sync::Cache::builder()
+                .max_capacity(100)
+                .time_to_live(std::time::Duration::from_secs(15))
+                .build(),
         }
     }
 
-    /// Background refresh — call every 30s from a spawned task.
-    pub async fn refresh(&self, pool: &sqlx::PgPool) {
-        #[derive(sqlx::FromRow)]
-        struct Row {
-            player: String,
-            batch_id: i64,
-            balance: Option<String>,
-            total_deposited: Option<String>,
-        }
-
-        let rows = sqlx::query_as::<_, Row>(
-            "SELECT player, batch_id, balance::text, total_deposited::text
-             FROM vision_positions
-             WHERE total_deposited::numeric > 0",
-        )
-        .fetch_all(pool)
-        .await;
-
-        let rows = match rows {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::warn!("Leaderboard refresh failed: {e}");
-                return;
-            }
+    pub async fn get_or_fetch(&self, source_id: Option<&str>, batch_id: Option<u64>) -> Result<String, StatusCode> {
+        // Build cache key from query params
+        let cache_key = match (source_id, batch_id) {
+            (Some(s), _) => format!("source:{}", s),
+            (_, Some(b)) => format!("batch:{}", b),
+            _ => "global".to_string(),
         };
 
-        // Per-batch aggregation: batch_id → player → stats
-        let mut batch_players: HashMap<u64, HashMap<String, (f64, f64)>> = HashMap::new();
-        // Global aggregation: player → (total_balance, total_deposited, batches, wins)
-        let mut global_players: HashMap<String, (f64, f64, i64, i64)> = HashMap::new();
-
-        for row in &rows {
-            let bid = row.batch_id as u64;
-            let balance = row
-                .balance
-                .as_deref()
-                .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(0.0);
-            let deposited = row
-                .total_deposited
-                .as_deref()
-                .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(0.0);
-
-            // Per-batch
-            batch_players
-                .entry(bid)
-                .or_default()
-                .entry(row.player.clone())
-                .and_modify(|(b, d)| {
-                    *b += balance;
-                    *d += deposited;
-                })
-                .or_insert((balance, deposited));
-
-            // Global
-            let g = global_players.entry(row.player.clone()).or_insert((0.0, 0.0, 0, 0));
-            g.0 += balance;
-            g.1 += deposited;
-            g.2 += 1;
-            if balance > deposited {
-                g.3 += 1;
-            }
+        if let Some(cached) = self.cache.get(&cache_key) {
+            return Ok(cached);
         }
 
-        // Build per-batch leaderboards
-        let mut new_per_batch = HashMap::new();
-        for (bid, players) in &batch_players {
-            let mut entries: Vec<LeaderboardEntry> = players
-                .iter()
-                .map(|(addr, (bal, dep))| {
-                    let pnl = (bal - dep) / 1e18;
-                    let vol = dep / 1e18;
-                    let roi = if *dep > 0.0 { (pnl / vol) * 100.0 } else { 0.0 };
-                    let win = if *bal > *dep { 1.0 } else { 0.0 };
-                    LeaderboardEntry {
-                        rank: 0,
-                        wallet_address: addr.clone(),
-                        pnl,
-                        win_rate: win * 100.0,
-                        roi,
-                        total_volume: vol,
-                        portfolio_bets: 1,
-                        avg_portfolio_size: 0.0,
-                        largest_portfolio: 0,
-                    }
-                })
-                .collect();
-            entries.sort_by(|a, b| b.pnl.partial_cmp(&a.pnl).unwrap_or(std::cmp::Ordering::Equal));
-            for (i, e) in entries.iter_mut().enumerate() {
-                e.rank = i + 1;
-            }
-            new_per_batch.insert(*bid, entries);
+        // Build oracle URL with query params
+        let mut url = format!("{}/vision/leaderboard", self.oracle_url);
+        let mut params = vec![];
+        if let Some(s) = source_id {
+            params.push(format!("source_id={}", s));
+        }
+        if let Some(b) = batch_id {
+            params.push(format!("batch_id={}", b));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
         }
 
-        // Build global leaderboard
-        let mut global_entries: Vec<LeaderboardEntry> = global_players
-            .iter()
-            .map(|(addr, (bal, dep, batches, wins))| {
-                let pnl = (bal - dep) / 1e18;
-                let vol = dep / 1e18;
-                let roi = if *dep > 0.0 { (pnl / vol) * 100.0 } else { 0.0 };
-                let win_rate = if *batches > 0 {
-                    (*wins as f64 / *batches as f64) * 100.0
-                } else {
-                    0.0
-                };
-                LeaderboardEntry {
-                    rank: 0,
-                    wallet_address: addr.clone(),
-                    pnl,
-                    win_rate,
-                    roi,
-                    total_volume: vol,
-                    portfolio_bets: *batches,
-                    avg_portfolio_size: 0.0,
-                    largest_portfolio: 0,
+        match self.client.get(&url).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                if let Ok(body) = resp.text().await {
+                    self.cache.insert(cache_key, body.clone());
+                    return Ok(body);
                 }
-            })
-            .collect();
-        global_entries.sort_by(|a, b| b.pnl.partial_cmp(&a.pnl).unwrap_or(std::cmp::Ordering::Equal));
-        for (i, e) in global_entries.iter_mut().enumerate() {
-            e.rank = i + 1;
+                Err(StatusCode::BAD_GATEWAY)
+            }
+            _ => Err(StatusCode::BAD_GATEWAY),
         }
-
-        *self.per_batch.write().await = new_per_batch;
-        *self.global.write().await = global_entries;
-        *self.updated_at.write().await = Utc::now();
-    }
-
-    /// Read precomputed leaderboard — zero allocation for the common case.
-    pub async fn get(
-        &self,
-        source_id: Option<&str>,
-        batch_id: Option<u64>,
-    ) -> serde_json::Value {
-        let updated = *self.updated_at.read().await;
-
-        // Resolve source_id to batch_id
-        let effective_batch = match (source_id, batch_id) {
-            (Some(s), _) => self.source_to_batch.get(s).copied(),
-            (_, Some(b)) => Some(b),
-            _ => None,
-        };
-
-        let entries = if let Some(bid) = effective_batch {
-            let per_batch = self.per_batch.read().await;
-            per_batch.get(&bid).cloned().unwrap_or_default()
-        } else {
-            self.global.read().await.clone()
-        };
-
-        serde_json::json!({
-            "leaderboard": entries,
-            "updatedAt": updated.to_rfc3339(),
-        })
     }
 }
 
-/// Vision leaderboard — precomputed from Postgres every 30s.
+/// Vision leaderboard — proxied from oracle (single source of truth).
 ///
-/// Supports `?source_id=pumpfun` (resolved to batch_id via manifest)
-/// or `?batch_id=N` for a single batch.
+/// Supports `?source_id=pumpfun` or `?batch_id=N` for filtered views.
 pub async fn leaderboard(
     State(state): State<Arc<AppState>>,
     Query(params): Query<LeaderboardQuery>,
-) -> Json<serde_json::Value> {
-    Json(
-        state
-            .leaderboard_cache
-            .get(params.source_id.as_deref(), params.batch_id)
-            .await,
-    )
+) -> impl IntoResponse {
+    match state
+        .leaderboard_cache
+        .get_or_fetch(params.source_id.as_deref(), params.batch_id)
+        .await
+    {
+        Ok(json) => (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            json,
+        )
+            .into_response(),
+        Err(status) => (status, "Leaderboard unavailable").into_response(),
+    }
 }
 
 // ---- GET /vision/player/:address/profile ----
