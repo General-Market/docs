@@ -5,7 +5,12 @@ services:
   curator:
     build:
       context: ../../..
-      dockerfile: docker/testnet/curator/Dockerfile
+      dockerfile: docker/rust-service.Dockerfile
+      args:
+        SERVICE: curator
+        EXTRA_MEMBERS: oracle
+        RUNTIME_DEPS: "ca-certificates libssl3 curl"
+    command: ["/usr/local/bin/curator"]
     container_name: testnet-curator
     network_mode: host
     restart: "no"
