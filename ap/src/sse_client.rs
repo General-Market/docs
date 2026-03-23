@@ -4,6 +4,7 @@
 //! text/event-stream format into `ChainEvent` variants that feed into the AP's
 //! existing event processing pipeline via an mpsc channel.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use common::traits::ChainEvent;
@@ -24,6 +25,11 @@ struct ChainEventEnvelope {
     data: serde_json::Value,
 }
 
+/// How long to wait for any SSE frame (event or keepalive) before declaring
+/// the connection dead. 25s is comfortably above the data-node's 15s
+/// keepalive interval — a miss means the TCP pipe is half-open.
+const SSE_LIVENESS_TIMEOUT: Duration = Duration::from_secs(25);
+
 /// SSE client that connects to data-node's chain-events endpoint and converts
 /// events into `ChainEvent` variants sent through an mpsc channel.
 pub struct SseChainEventClient {
@@ -31,12 +37,14 @@ pub struct SseChainEventClient {
     topics: Vec<String>,
     /// Optional auth token — sent as X-AP-Auth header (validated by nginx)
     auth_token: Option<String>,
+    /// Counter: how many times the liveness timeout has fired since process start
+    liveness_timeouts: AtomicU64,
 }
 
 impl SseChainEventClient {
     pub fn new(base_url: String, topics: Vec<String>) -> Self {
         let auth_token = std::env::var("AP_SSE_AUTH_TOKEN").ok();
-        Self { base_url, topics, auth_token }
+        Self { base_url, topics, auth_token, liveness_timeouts: AtomicU64::new(0) }
     }
 
     fn sse_url(&self) -> String {
@@ -95,30 +103,51 @@ impl SseChainEventClient {
 
         info!("SSE stream connected to data-node");
 
-        while let Some(event) = es.next().await {
-            match event {
-                Ok(SseEvent::Open) => {
-                    debug!("SSE connection opened");
-                }
-                Ok(SseEvent::Message(msg)) => {
-                    // msg.event = event type, msg.data = JSON payload
-                    if let Some(chain_event) = self.parse_sse_event(&msg.event, &msg.data) {
-                        if tx.send(chain_event).await.is_err() {
-                            return Ok(()); // Channel closed
+        loop {
+            match tokio::time::timeout(SSE_LIVENESS_TIMEOUT, es.next()).await {
+                Ok(Some(event)) => {
+                    match event {
+                        Ok(SseEvent::Open) => {
+                            debug!("SSE connection opened");
+                        }
+                        Ok(SseEvent::Message(msg)) => {
+                            if let Some(chain_event) = self.parse_sse_event(&msg.event, &msg.data) {
+                                if tx.send(chain_event).await.is_err() {
+                                    return Ok(()); // Channel closed
+                                }
+                            }
+                        }
+                        Err(reqwest_eventsource::Error::StreamEnded) => {
+                            return Ok(());
+                        }
+                        Err(e) => {
+                            es.close();
+                            return Err(format!("SSE error: {}", e));
                         }
                     }
                 }
-                Err(reqwest_eventsource::Error::StreamEnded) => {
+                Ok(None) => {
+                    // Stream exhausted
                     return Ok(());
                 }
-                Err(e) => {
+                Err(_elapsed) => {
+                    // No event or keepalive for 25s — connection is dead
+                    let count = self.liveness_timeouts.fetch_add(1, Ordering::Relaxed) + 1;
+                    warn!(
+                        timeout_secs = SSE_LIVENESS_TIMEOUT.as_secs(),
+                        total_timeouts = count,
+                        "SSE liveness timeout — no event or keepalive in {}s, reconnecting",
+                        SSE_LIVENESS_TIMEOUT.as_secs()
+                    );
                     es.close();
-                    return Err(format!("SSE error: {}", e));
+                    return Err(format!(
+                        "SSE liveness timeout ({}s, occurrence #{})",
+                        SSE_LIVENESS_TIMEOUT.as_secs(),
+                        count
+                    ));
                 }
             }
         }
-
-        Ok(())
     }
 
     fn parse_sse_event(&self, event_type: &str, data: &str) -> Option<ChainEvent> {
