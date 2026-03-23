@@ -57,18 +57,18 @@ impl BitgetVaultReader {
             .map_err(|e| BitgetVaultReaderError::ContractCallFailed(format!("getFill failed: {}", e)))?;
 
         // Check if trade exists (trade_id in response is 0 for non-existent trades)
-        if fill.0.is_zero() && trade_id != 0 {
+        if fill.trade_id.is_zero() && trade_id != 0 {
             return Ok(None);
         }
 
         Ok(Some(BitgetVaultFill {
-            trade_id: fill.0.as_u64(),
-            sell_token: fill.1,
-            buy_token: fill.2,
-            sell_amount: fill.3,
-            buy_amount: fill.4,
-            trader: fill.5,
-            timestamp: fill.6.as_u64(),
+            trade_id: fill.trade_id.as_u64(),
+            sell_token: fill.sell_token,
+            buy_token: fill.buy_token,
+            sell_amount: fill.sell_amount,
+            buy_amount: fill.buy_amount,
+            trader: fill.trader,
+            timestamp: fill.timestamp.as_u64(),
         }))
     }
 

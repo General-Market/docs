@@ -222,10 +222,10 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
         </div>
       </div>
 
-      {/* Error banner */}
+      {/* Error banner — muted, not alarming */}
       {error && (
-        <div className="px-4 py-2 text-caption text-color-down bg-red-50 border border-red-200">
-          {error}
+        <div className="px-4 py-2 text-caption text-text-muted bg-surface border-b border-border-light">
+          Unable to reach L3 &mdash; showing last known data
         </div>
       )}
 

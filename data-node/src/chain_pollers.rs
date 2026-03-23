@@ -74,6 +74,7 @@ abigen!(
     OracleRegistryPoller,
     r#"[
         function getActiveOracleEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+        function getOracle(uint256 oracleId) external view returns (address addr, bytes32 ip, bytes blsPubkey, uint256 status, uint256 registeredAt)
         function activeOracleCount() external view returns (uint256)
         function registryNonce() external view returns (uint256)
         function aggregatedPubkey() external view returns (bytes)
@@ -811,10 +812,22 @@ pub async fn poll_oracle_registry_once(state: &AppState) -> Result<(), Box<dyn s
     // Returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
     let (ids, ips, pubkeys) = registry.get_active_oracle_endpoints().call().await?;
 
+    // Fetch the actual signer address for each oracle via getOracle(id)
+    let mut addresses: Vec<Address> = Vec::with_capacity(ids.len());
+    for id in &ids {
+        match registry.get_oracle(*id).call().await {
+            Ok((addr, _ip, _pubkey, _status, _registered_at)) => addresses.push(addr),
+            Err(e) => {
+                warn!("Failed to fetch oracle {} address: {}", id, e);
+                addresses.push(Address::zero());
+            }
+        }
+    }
+
     let cached: Vec<CachedOracle> = ids
         .iter()
         .enumerate()
-        .map(|(i, id)| {
+        .map(|(i, _id)| {
             // Decode bytes32 IP as UTF-8 string (null-terminated)
             let ip_bytes = ips.get(i).map(|b| b.as_ref()).unwrap_or(&[]);
             let ip_str = String::from_utf8_lossy(
@@ -822,7 +835,7 @@ pub async fn poll_oracle_registry_once(state: &AppState) -> Result<(), Box<dyn s
             ).to_string();
             let pubkey = pubkeys.get(i).map(|b| format!("0x{}", hex::encode(b))).unwrap_or_default();
             CachedOracle {
-                address: format!("oracle-{}", id),
+                address: format!("{:?}", addresses[i]),
                 endpoint: ip_str,
                 bls_pubkey: pubkey,
             }

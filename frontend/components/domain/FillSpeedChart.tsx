@@ -1,28 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
   ReferenceLine,
 } from 'recharts'
-
-interface OrderDataPoint {
-  time: number // unix timestamp
-  timeLabel: string
-  buyAmount: number | null
-  sellAmount: number | null
-  orderId: number
-  filled: boolean
-  fillTime?: number // seconds
-}
 
 interface FillSpeedEntry {
   order_id: number
@@ -35,49 +26,42 @@ interface FillSpeedEntry {
   fill_amount: string | null
 }
 
+interface ChartPoint {
+  index: number
+  orderId: number
+  side: number // 0=buy, 1=sell
+  amount: number // in tokens (divided by 1e18)
+  barValue: number // positive for buy, negative for sell
+  filled: boolean
+  fillLatency: number | null // seconds
+  submitTime: string
+  dateLabel: string
+}
+
 /**
- * Displays order flow chart using the /fill-speed data-node endpoint.
+ * Order flow chart — bar chart of buy/sell amounts over time,
+ * colored by fill status. Fill latency visible in tooltip.
  *
- * Previously this scanned ALL OrderSubmitted + FillConfirmed events via getLogs
- * from block 0 every 5 seconds -- extremely heavy on-chain read.
+ * Previously used AreaChart with separate buy/sell series and
+ * connectNulls={false}, which made most orders invisible due to
+ * null gaps between alternating sides. Outlier amounts (1269 vs 10)
+ * crushed the Y-axis, hiding 95% of data points.
  *
- * Now fetches from /fill-speed which returns global order flow data with
- * submit + fill timestamps, enabling fill latency computation.
+ * Now: single BarChart, buys as positive bars, sells as negative.
+ * Filled = solid, unfilled = dimmed. All orders visible.
  */
 export function FillSpeedChart() {
   const t = useTranslations('system')
-  const [data, setData] = useState<OrderDataPoint[]>([])
+  const [raw, setRaw] = useState<FillSpeedEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [avgFillTime, setAvgFillTime] = useState(0)
 
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`${DATA_NODE_URL}/fill-speed`)
       if (!res.ok) throw new Error(`Fill-speed fetch failed: ${res.status}`)
       const entries: FillSpeedEntry[] = await res.json()
-
-      const points: OrderDataPoint[] = entries.map((e) => {
-        const unixTime = Math.floor(new Date(e.submit_time).getTime() / 1000)
-        return {
-          time: unixTime,
-          timeLabel: formatTime(unixTime),
-          buyAmount: e.side === 0 ? parseFloat(e.amount) / 1e18 : null,
-          sellAmount: e.side === 1 ? parseFloat(e.amount) / 1e18 : null,
-          orderId: e.order_id,
-          filled: e.fill_time !== null,
-          fillTime: e.fill_latency_secs ?? undefined,
-        }
-      })
-
-      const filledPoints = points.filter((p) => p.fillTime !== undefined)
-      const avg =
-        filledPoints.length > 0
-          ? filledPoints.reduce((sum, p) => sum + p.fillTime!, 0) / filledPoints.length
-          : 0
-
-      setData(points)
-      setAvgFillTime(avg)
+      setRaw(entries)
       setError(null)
     } catch (e: any) {
       setError(e.message || 'Failed to fetch data')
@@ -88,15 +72,55 @@ export function FillSpeedChart() {
 
   useEffect(() => {
     fetchData()
-    // Poll every 30s instead of 5s since we're hitting REST, not chain
     const interval = setInterval(fetchData, 30_000)
     return () => clearInterval(interval)
   }, [fetchData])
 
-  const totalOrders = data.length
-  const filledOrders = data.filter(d => d.filled).length
-  const activeBuys = data.filter(d => d.buyAmount !== null && d.buyAmount > 0).length
-  const activeSells = data.filter(d => d.sellAmount !== null && d.sellAmount > 0).length
+  const data: ChartPoint[] = useMemo(() => {
+    // Reverse so oldest first (left-to-right chronological)
+    const sorted = [...raw].reverse()
+    return sorted.map((e, i) => {
+      const amount = parseFloat(e.amount) / 1e18
+      return {
+        index: i,
+        orderId: e.order_id,
+        side: e.side,
+        amount,
+        barValue: e.side === 0 ? amount : -amount,
+        filled: e.fill_time !== null,
+        fillLatency: e.fill_latency_secs,
+        submitTime: e.submit_time,
+        dateLabel: formatDateTime(e.submit_time),
+      }
+    })
+  }, [raw])
+
+  const stats = useMemo(() => {
+    const total = data.length
+    const filled = data.filter(d => d.filled).length
+    const buys = data.filter(d => d.side === 0).length
+    const sells = data.filter(d => d.side === 1).length
+    const latencies = data
+      .filter(d => d.fillLatency !== null)
+      .map(d => d.fillLatency!)
+    const avgLatency = latencies.length > 0
+      ? latencies.reduce((a, b) => a + b, 0) / latencies.length
+      : 0
+    const medianLatency = latencies.length > 0
+      ? latencies.sort((a, b) => a - b)[Math.floor(latencies.length / 2)]
+      : 0
+    return { total, filled, buys, sells, avgLatency, medianLatency }
+  }, [data])
+
+  // Compute Y-axis domain using P95 to avoid outlier distortion
+  const yDomain = useMemo(() => {
+    if (data.length === 0) return [-10, 10]
+    const absAmounts = data.map(d => d.amount).sort((a, b) => a - b)
+    // Use P95 as the cap — outliers beyond this are clipped
+    const p95Index = Math.floor(absAmounts.length * 0.95)
+    const cap = absAmounts[p95Index] * 1.15 // 15% headroom
+    return [-cap, cap]
+  }, [data])
 
   if (error) {
     return (
@@ -114,9 +138,11 @@ export function FillSpeedChart() {
           <h2 className="text-xl font-bold text-text-primary">{t('order_flow.title')}</h2>
           <p className="text-sm text-text-secondary">{t('order_flow.description')}</p>
         </div>
-        {avgFillTime > 0 && (
+        {stats.medianLatency > 0 && (
           <div className="text-right">
-            <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{avgFillTime.toFixed(1)}s</p>
+            <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">
+              {formatLatency(stats.medianLatency)}
+            </p>
             <p className="text-xs text-text-secondary">{t('order_flow.avg_fill_time')}</p>
           </div>
         )}
@@ -125,19 +151,19 @@ export function FillSpeedChart() {
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="bg-muted rounded-lg p-2.5 text-center">
-          <p className="text-lg font-bold text-text-primary font-mono tabular-nums">{totalOrders}</p>
+          <p className="text-lg font-bold text-text-primary font-mono tabular-nums">{stats.total}</p>
           <p className="text-xs text-text-muted">{t('order_flow.total_orders')}</p>
         </div>
         <div className="bg-surface-up rounded-lg p-2.5 text-center">
-          <p className="text-lg font-bold text-color-up font-mono tabular-nums">{activeBuys}</p>
+          <p className="text-lg font-bold text-color-up font-mono tabular-nums">{stats.buys}</p>
           <p className="text-xs text-text-muted">{t('order_flow.active_buys')}</p>
         </div>
         <div className="bg-surface-down rounded-lg p-2.5 text-center">
-          <p className="text-lg font-bold text-color-down font-mono tabular-nums">{activeSells}</p>
+          <p className="text-lg font-bold text-color-down font-mono tabular-nums">{stats.sells}</p>
           <p className="text-xs text-text-muted">{t('order_flow.active_sells')}</p>
         </div>
         <div className="bg-muted rounded-lg p-2.5 text-center">
-          <p className="text-lg font-bold text-zinc-900 font-mono tabular-nums">{filledOrders}</p>
+          <p className="text-lg font-bold text-zinc-900 font-mono tabular-nums">{stats.filled}</p>
           <p className="text-xs text-text-muted">{t('order_flow.filled')}</p>
         </div>
       </div>
@@ -153,30 +179,27 @@ export function FillSpeedChart() {
       ) : (
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <defs>
-                <linearGradient id="buyGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16A34A" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#16A34A" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="sellGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#DC2626" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#DC2626" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" />
               <XAxis
-                dataKey="timeLabel"
+                dataKey="dateLabel"
                 stroke="#D4D4D8"
                 tick={{ fill: '#A1A1AA', fontSize: 10 }}
+                interval="preserveStartEnd"
               />
               <YAxis
                 stroke="#D4D4D8"
                 tick={{ fill: '#A1A1AA', fontSize: 11 }}
-                label={{ value: t('order_flow_chart.amount_label'), angle: -90, position: 'insideLeft', fill: '#A1A1AA' }}
-                domain={[0, 'auto']}
+                domain={yDomain}
+                tickFormatter={(v: number) => {
+                  const abs = Math.abs(v)
+                  if (abs >= 1000) return `${(abs / 1000).toFixed(0)}k`
+                  if (abs >= 100) return abs.toFixed(0)
+                  return abs.toFixed(0)
+                }}
               />
               <Tooltip
+                cursor={{ fill: 'rgba(0,0,0,0.04)' }}
                 contentStyle={{
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E4E4E7',
@@ -185,69 +208,45 @@ export function FillSpeedChart() {
                   fontFamily: 'var(--font-jetbrains-mono), monospace',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
                 }}
-                labelStyle={{ color: '#18181B' }}
-                formatter={(value: number, name: string) => {
-                  if (value === null) return [null, null]
-                  const label = name === 'buyAmount' ? t('order_flow_chart.tooltip_buy') : t('order_flow_chart.tooltip_sell')
-                  return [value === 0 ? t('order_flow_chart.tooltip_filled') : value.toFixed(4), label]
-                }}
-                labelFormatter={(label: string, items: any[]) => {
-                  const point = items?.[0]?.payload as OrderDataPoint | undefined
-                  if (!point) return label
-                  if (point.filled && point.fillTime !== undefined) {
-                    return t('order_flow_chart.tooltip_filled_in', { id: String(point.orderId), time: label, seconds: String(point.fillTime) })
-                  }
-                  return t('order_flow_chart.tooltip_order', { id: String(point.orderId), time: label })
-                }}
-              />
-              <ReferenceLine y={0} stroke="#E4E4E7" />
-              <Area
-                type="monotone"
-                dataKey="buyAmount"
-                stroke="#16A34A"
-                strokeWidth={2}
-                fill="url(#buyGradient)"
-                connectNulls={false}
-                dot={(props: any) => {
-                  if (props.value === null) return <g key={props.index} />
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null
+                  const p = payload[0].payload as ChartPoint
                   return (
-                    <circle
-                      key={props.index}
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={4}
-                      fill="#16A34A"
-                      stroke="#16A34A"
-                      strokeWidth={props.value === 0 ? 1 : 2}
-                      opacity={props.value === 0 ? 0.4 : 1}
-                    />
+                    <div className="bg-white border border-border-light rounded-xl p-3 shadow-lg text-xs font-mono">
+                      <div className="text-text-primary font-semibold mb-1">
+                        Order #{p.orderId}
+                      </div>
+                      <div className="text-text-secondary">{p.dateLabel}</div>
+                      <div className="mt-1.5 space-y-0.5">
+                        <div>
+                          <span className={p.side === 0 ? 'text-color-up' : 'text-color-down'}>
+                            {p.side === 0 ? 'BUY' : 'SELL'}
+                          </span>
+                          {' '}{p.amount.toFixed(2)} GM
+                        </div>
+                        {p.filled ? (
+                          <div className="text-text-secondary">
+                            Filled in {formatLatency(p.fillLatency!)}
+                          </div>
+                        ) : (
+                          <div className="text-amber-500">Pending</div>
+                        )}
+                      </div>
+                    </div>
                   )
                 }}
               />
-              <Area
-                type="monotone"
-                dataKey="sellAmount"
-                stroke="#DC2626"
-                strokeWidth={2}
-                fill="url(#sellGradient)"
-                connectNulls={false}
-                dot={(props: any) => {
-                  if (props.value === null) return <g key={props.index} />
-                  return (
-                    <circle
-                      key={props.index}
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={4}
-                      fill="#DC2626"
-                      stroke="#DC2626"
-                      strokeWidth={props.value === 0 ? 1 : 2}
-                      opacity={props.value === 0 ? 0.4 : 1}
-                    />
-                  )
-                }}
-              />
-            </AreaChart>
+              <ReferenceLine y={0} stroke="#D4D4D8" strokeWidth={1} />
+              <Bar dataKey="barValue" radius={[2, 2, 0, 0]} maxBarSize={8}>
+                {data.map((entry) => (
+                  <Cell
+                    key={entry.orderId}
+                    fill={entry.side === 0 ? '#16A34A' : '#DC2626'}
+                    fillOpacity={entry.filled ? 0.85 : 0.3}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
@@ -256,25 +255,39 @@ export function FillSpeedChart() {
       {data.length > 0 && (
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border-light text-xs text-text-secondary">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-color-up"></span>
+            <span className="w-3 h-3 rounded-sm bg-color-up opacity-85"></span>
             <span>{t('order_flow.legend_buy')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-color-down"></span>
+            <span className="w-3 h-3 rounded-sm bg-color-down opacity-85"></span>
             <span>{t('order_flow.legend_sell')}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-border-medium"></span>
-            <span>{t('order_flow.legend_filled')}</span>
+            <span className="w-3 h-3 rounded-sm bg-border-medium opacity-30"></span>
+            <span>Pending</span>
           </div>
-          <span className="ml-auto font-mono tabular-nums">{t('order_flow.orders_count', { count: totalOrders })}</span>
+          <span className="ml-auto font-mono tabular-nums">{t('order_flow.orders_count', { count: stats.total })}</span>
         </div>
       )}
     </div>
   )
 }
 
-function formatTime(unixTimestamp: number): string {
-  const d = new Date(unixTimestamp * 1000)
-  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+/** Format seconds into a human-readable latency string */
+function formatLatency(secs: number): string {
+  if (secs < 60) return `${secs.toFixed(0)}s`
+  if (secs < 3600) return `${(secs / 60).toFixed(1)}m`
+  const hours = secs / 3600
+  if (hours < 24) return `${hours.toFixed(1)}h`
+  return `${(hours / 24).toFixed(1)}d`
+}
+
+/** Format ISO timestamp to compact date+time */
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  const month = (d.getMonth() + 1).toString()
+  const day = d.getDate().toString()
+  const hours = d.getHours().toString().padStart(2, '0')
+  const mins = d.getMinutes().toString().padStart(2, '0')
+  return `${month}/${day} ${hours}:${mins}`
 }

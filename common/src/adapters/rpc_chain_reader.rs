@@ -81,18 +81,18 @@ impl RpcChainReader {
         }
     }
 
-    /// Convert an on-chain ITP tuple to our ITPCore type
-    fn convert_itp(raw: ([u8; 32], [u8; 32], Address, U256, U256, U256, U256, U256, U256)) -> ITPCore {
+    /// Convert an on-chain ITP struct to our ITPCore type
+    fn convert_itp(raw: super::abi::index_contract::Itpcore) -> ITPCore {
         ITPCore {
-            name: H256::from(raw.0),
-            symbol: H256::from(raw.1),
-            creator: raw.2,
-            created_at: raw.3,
-            fee_rate: raw.4,
-            status: raw.5,
-            total_supply: raw.6,
-            total_value: raw.7,
-            asset_count: raw.8,
+            name: H256::from(raw.name),
+            symbol: H256::from(raw.symbol),
+            creator: raw.creator,
+            created_at: raw.created_at,
+            fee_rate: raw.fee_rate,
+            status: raw.status,
+            total_supply: raw.total_supply,
+            total_value: raw.total_value,
+            asset_count: raw.asset_count,
         }
     }
 
@@ -228,11 +228,11 @@ impl ChainReader for RpcChainReader {
                 Ok(raw) => {
                     oracles.push(Oracle {
                         id: i,
-                        addr: raw.0,
-                        ip: H256::from(raw.1),
-                        bls_pubkey: raw.2,
-                        registered_at: raw.3,
-                        status: U256::from(raw.4),
+                        addr: raw.addr,
+                        ip: H256::from(raw.ip),
+                        bls_pubkey: raw.bls_pubkey,
+                        registered_at: raw.registered_at,
+                        status: raw.status,
                     });
                 }
                 Err(e) => {

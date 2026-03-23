@@ -90,13 +90,14 @@ impl ChainWriter for RpcChainWriter {
         let cycle = U256::from(cycle_number);
         let ids: Vec<U256> = order_ids.iter().map(|&id| U256::from(id)).collect();
         let sig = Bytes::from(bls_signature);
-        let ref_nonce = U256::from(reference_nonce);
+        let _ref_nonce = U256::from(reference_nonce);
+        let _signers_bitmask = signers_bitmask;
 
         let contract = self.index_contract.clone();
         let client = self.client.clone();
 
         // Build and estimate gas, then send
-        let call = contract.confirm_batch(cycle, ids.clone(), sig.clone(), ref_nonce, signers_bitmask);
+        let call = contract.confirm_batch(cycle, ids.clone(), sig.clone());
         let mut tx: TypedTransaction = call.tx.clone();
         let gas = self.estimate_gas_with_multiplier(&tx).await?;
         tx.set_gas(gas);
@@ -136,26 +137,27 @@ impl ChainWriter for RpcChainWriter {
     ) -> Result<TxHash, Error> {
         let cycle = U256::from(cycle_number);
         let sig = Bytes::from(bls_signature);
-        let ref_nonce = U256::from(reference_nonce);
+        let _ref_nonce = U256::from(reference_nonce);
+        let _signers_bitmask = signers_bitmask;
 
-        // Convert Fill structs to ABI tuple format
-        let abi_fills: Vec<(U256, U256, U256, U256, [u8; 32])> = fills
+        // Convert Fill structs to ABI Fill format
+        let abi_fills: Vec<super::abi::index_contract::Fill> = fills
             .iter()
             .map(|f| {
-                (
-                    f.order_id,
-                    f.fill_price,
-                    f.fill_amount,
-                    f.cycle_number,
-                    f.tx_hash.into(),
-                )
+                super::abi::index_contract::Fill {
+                    order_id: f.order_id,
+                    fill_price: f.fill_price,
+                    fill_amount: f.fill_amount,
+                    cycle_number: f.cycle_number,
+                    tx_hash: f.tx_hash.into(),
+                }
             })
             .collect();
 
         let contract = self.index_contract.clone();
         let client = self.client.clone();
 
-        let call = contract.confirm_fills(cycle, abi_fills, sig.clone(), ref_nonce, signers_bitmask);
+        let call = contract.confirm_fills(cycle, abi_fills, sig.clone());
         let mut tx: TypedTransaction = call.tx.clone();
         let gas = self.estimate_gas_with_multiplier(&tx).await?;
         tx.set_gas(gas);

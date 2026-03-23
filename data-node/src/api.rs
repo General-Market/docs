@@ -1360,17 +1360,38 @@ async fn aum_ranking(
     State(state): State<Arc<AppState>>,
 ) -> (StatusCode, [(axum::http::header::HeaderName, &'static str); 1], String) {
     let cached = state.chain_cache.aum_ranking_json.read().await;
-    if cached.is_empty() {
+    if !cached.is_empty() {
         return (
-            StatusCode::SERVICE_UNAVAILABLE,
+            StatusCode::OK,
             [(axum::http::header::CONTENT_TYPE, "application/json")],
-            "[]".to_string(),
+            cached.clone(),
         );
+    }
+    drop(cached);
+
+    // Cache empty (still warming up) — compute on-demand so the frontend
+    // doesn't see a 503 on first load.
+    let json = compute_aum_ranking_json(&state).await;
+    if json == r#"{"snapshots":[],"all_symbols":{}}"# {
+        // Genuinely no ITP data yet
+        return (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            json,
+        );
+    }
+    // Populate the cache so subsequent requests are fast
+    {
+        let mut w = state.chain_cache.aum_ranking_json.write().await;
+        if w.is_empty() {
+            *w = json.clone();
+            state.chain_cache.aum_ranking_gen.bump();
+        }
     }
     (
         StatusCode::OK,
         [(axum::http::header::CONTENT_TYPE, "application/json")],
-        cached.clone(),
+        json,
     )
 }
 
@@ -1786,7 +1807,7 @@ async fn fill_speed(
 ) -> Result<Json<Vec<FillSpeedEntry>>, (StatusCode, Json<ErrorResponse>)> {
     let rows = sqlx::query_as::<_, (i64, i16, String, DateTime<Utc>, Option<DateTime<Utc>>, Option<String>, Option<String>)>(
         "SELECT order_id, side, amount, order_timestamp, fill_timestamp, fill_price, fill_amount \
-         FROM trades ORDER BY order_timestamp DESC LIMIT 200"
+         FROM trades ORDER BY order_timestamp DESC LIMIT 1000"
     )
     .fetch_all(&state.pool)
     .await
@@ -5794,27 +5815,82 @@ pub async fn build_system_snapshot_json(state: &AppState) -> String {
 
 /// Precompute AUM ranking from in-memory caches (itp_states + live_cache.tickers).
 /// Returns pre-serialized JSON stored in chain_cache.aum_ranking_json.
+///
+/// Shape matches what the frontend `useInventoryRanking` hook expects:
+/// ```json
+/// {
+///   "snapshots": [{
+///     "timestamp": 1711234567,
+///     "label": "ITP Name",
+///     "event_type": "live",
+///     "itp_id": "0x...",
+///     "total_aum": "12345.67",
+///     "computed_nav": "1.05",
+///     "perf_ratio": "1.05",
+///     "ranked": [{
+///       "address": "0x...",
+///       "symbol": "BTC",
+///       "aum": "6000.00",
+///       "weight_pct": "48.6",
+///       "qty_per_share": "0.001",
+///       "rank": 1
+///     }]
+///   }],
+///   "all_symbols": { "0xabc...": "BTC", ... }
+/// }
+/// ```
 pub async fn compute_aum_ranking_json(state: &AppState) -> String {
     #[derive(serde::Serialize)]
-    struct ItpAumEntry {
-        itp_id: String,
-        name: String,
+    struct RankedAsset {
+        address: String,
         symbol: String,
-        nav_per_share: f64,
-        total_supply: String,
-        aum_usd: f64,
-        asset_count: usize,
-        settlement_address: Option<String>,
+        aum: String,
+        weight_pct: String,
+        qty_per_share: String,
+        rank: usize,
+    }
+
+    #[derive(serde::Serialize)]
+    struct Snapshot {
+        timestamp: i64,
+        label: String,
+        event_type: String,
+        itp_id: String,
+        total_aum: String,
+        computed_nav: String,
+        perf_ratio: String,
+        ranked: Vec<RankedAsset>,
+    }
+
+    #[derive(serde::Serialize)]
+    struct Response {
+        snapshots: Vec<Snapshot>,
+        all_symbols: HashMap<String, String>,
     }
 
     let itp_cache = state.chain_cache.itp_states.read().await;
     let tickers = state.live_cache.tickers.read().await;
+    let now = chrono::Utc::now().timestamp();
 
-    let mut entries: Vec<ItpAumEntry> = Vec::new();
+    let mut all_symbols: HashMap<String, String> = HashMap::new();
+
+    // Build per-ITP snapshots with per-asset breakdown
+    struct ItpEntry {
+        snapshot: Snapshot,
+        aum: f64,
+    }
+    let mut itp_entries: Vec<ItpEntry> = Vec::new();
 
     for (itp_id, itp_state) in &itp_cache.states {
-        // Compute NAV = sum(qty[i] * price[i]) / 1e18
+        let total_supply_f = itp_state.total_supply.as_u128() as f64;
+        if total_supply_f == 0.0 {
+            continue;
+        }
+
+        // Build per-asset ranking for this ITP
+        let mut asset_entries: Vec<(String, String, f64, f64, f64)> = Vec::new(); // (addr, symbol, aum, weight_frac, qty_per_share)
         let mut nav_sum: f64 = 0.0;
+
         for (i, asset_addr) in itp_state.assets.iter().enumerate() {
             if i >= itp_state.inventory.len() {
                 continue;
@@ -5827,44 +5903,95 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
                 .and_then(|pair| tickers.get(pair.as_str()))
                 .and_then(|t| t.last_price.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            nav_sum += qty * price;
+
+            let asset_nav_contribution = qty * price; // in 1e18-scaled units
+            nav_sum += asset_nav_contribution;
+
+            // Derive symbol from the Bitget pair (strip trailing "USDT")
+            let symbol = state
+                .symbol_map
+                .get(&addr_lower)
+                .map(|pair| pair.trim_end_matches("USDT").to_string())
+                .unwrap_or_else(|| format!("{}...{}", &addr_lower[..6], &addr_lower[addr_lower.len().saturating_sub(4)..]) );
+
+            all_symbols.insert(addr_lower.clone(), symbol.clone());
+
+            let qty_per_share = qty / 1e18;
+            let asset_aum = (asset_nav_contribution / 1e18) * (total_supply_f / 1e18);
+
+            asset_entries.push((addr_lower, symbol, asset_aum, asset_nav_contribution, qty_per_share));
         }
+
         let nav_per_share = nav_sum / 1e18;
+        let total_aum = nav_per_share * total_supply_f / 1e18;
 
-        // AUM = NAV × totalSupply / 1e18
-        let total_supply_f = itp_state.total_supply.as_u128() as f64;
-        let aum_usd = nav_per_share * total_supply_f / 1e18;
+        if total_aum <= 0.0 {
+            continue;
+        }
 
-        entries.push(ItpAumEntry {
-            itp_id: itp_id.clone(),
-            name: itp_state.name.clone(),
-            symbol: itp_state.symbol.clone(),
-            nav_per_share,
-            total_supply: itp_state.total_supply.to_string(),
-            aum_usd,
-            asset_count: itp_state.assets.len(),
-            settlement_address: itp_state.settlement_address.clone(),
+        // Sort assets by AUM descending and assign ranks
+        asset_entries.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+
+        let ranked: Vec<RankedAsset> = asset_entries
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, _, aum, _, _))| *aum > 0.0)
+            .map(|(rank, (addr, symbol, aum, nav_contrib, qty_ps))| {
+                let weight_pct = if nav_sum > 0.0 { nav_contrib / nav_sum * 100.0 } else { 0.0 };
+                RankedAsset {
+                    address: addr.clone(),
+                    symbol: symbol.clone(),
+                    aum: format!("{:.2}", aum),
+                    weight_pct: format!("{:.2}", weight_pct),
+                    qty_per_share: format!("{:.10}", qty_ps),
+                    rank: rank + 1,
+                }
+            })
+            .collect();
+
+        let label = if itp_state.name.is_empty() {
+            itp_state.symbol.clone()
+        } else {
+            itp_state.name.clone()
+        };
+
+        itp_entries.push(ItpEntry {
+            aum: total_aum,
+            snapshot: Snapshot {
+                timestamp: now,
+                label,
+                event_type: "live".to_string(),
+                itp_id: itp_id.clone(),
+                total_aum: format!("{:.2}", total_aum),
+                computed_nav: format!("{:.6}", nav_per_share),
+                perf_ratio: format!("{:.6}", nav_per_share), // NAV is the perf ratio vs $1 initial
+                ranked,
+            },
         });
     }
 
-    // Sort by AUM descending
-    entries.sort_by(|a, b| b.aum_usd.partial_cmp(&a.aum_usd).unwrap_or(std::cmp::Ordering::Equal));
+    // Sort ITPs by AUM descending
+    itp_entries.sort_by(|a, b| b.aum.partial_cmp(&a.aum).unwrap_or(std::cmp::Ordering::Equal));
 
-    // Dedup by (name, symbol) — keep highest AUM (already first after sort)
+    // Dedup by (label, itp symbol from snapshot label) — keep highest AUM
     {
         let mut seen = std::collections::HashSet::new();
-        entries.retain(|e| {
-            if e.name.is_empty() && e.symbol.is_empty() {
-                return true; // keep unnamed ITPs (legacy, dedup by itp_id only)
+        itp_entries.retain(|e| {
+            if e.snapshot.label.is_empty() {
+                return true;
             }
-            seen.insert((e.name.clone(), e.symbol.clone()))
+            seen.insert(e.snapshot.label.clone())
         });
     }
 
-    // Drop zero-AUM ghosts
-    entries.retain(|e| e.aum_usd > 0.0);
+    let snapshots: Vec<Snapshot> = itp_entries.into_iter().map(|e| e.snapshot).collect();
 
-    serde_json::to_string(&entries).unwrap_or_else(|_| "[]".to_string())
+    let resp = Response {
+        snapshots,
+        all_symbols,
+    };
+
+    serde_json::to_string(&resp).unwrap_or_else(|_| r#"{"snapshots":[],"all_symbols":{}}"#.to_string())
 }
 
 async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {

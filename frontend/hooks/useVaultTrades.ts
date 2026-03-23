@@ -6,8 +6,9 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { indexL3 } from '@/lib/wagmi'
 import { MOCK_BITGET_VAULT_ABI } from '@/lib/contracts/mockbitget-vault-abi'
 
-const POLL_MS = 5_000
+const POLL_MS = 30_000
 const BATCH_SIZE = 50
+const RPC_TIMEOUT_MS = 8_000
 
 // ── Types ──
 
@@ -92,6 +93,10 @@ export function useVaultTrades(): UseVaultTradesReturn {
   const fetchTrades = useCallback(async () => {
     if (!publicClient || !INDEX_PROTOCOL.mockBitgetVault) return
 
+    // Abort signal — kills RPC calls that exceed the timeout
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS)
+
     try {
       // Load symbol map if not loaded yet
       if (symbolMapRef.current.size === 0) {
@@ -101,7 +106,7 @@ export function useVaultTrades(): UseVaultTradesReturn {
       const vaultAddr = INDEX_PROTOCOL.mockBitgetVault
 
       // Check if contract exists before calling — avoids red error banner when not deployed
-      const code = await publicClient.getCode({ address: vaultAddr })
+      const code = await publicClient.getCode({ address: vaultAddr, signal: controller.signal } as any)
       if (!code || code === '0x') {
         // Contract not deployed — treat as empty, not an error
         if (mountedRef.current) {
@@ -109,6 +114,7 @@ export function useVaultTrades(): UseVaultTradesReturn {
           setTotalCount(0)
           setFeeBps(0)
           setIsLoading(false)
+          setError(null)
         }
         return
       }
@@ -127,6 +133,8 @@ export function useVaultTrades(): UseVaultTradesReturn {
         }),
       ])
 
+      if (controller.signal.aborted) return
+
       const count = Number(countResult)
       const fee = Number(feeBpsResult)
 
@@ -138,6 +146,7 @@ export function useVaultTrades(): UseVaultTradesReturn {
       if (count === 0) {
         setRawTrades([])
         setIsLoading(false)
+        setError(null)
         return
       }
 
@@ -152,7 +161,7 @@ export function useVaultTrades(): UseVaultTradesReturn {
         args: [BigInt(startIndex), BigInt(fetchCount)],
       })
 
-      if (!mountedRef.current) return
+      if (controller.signal.aborted || !mountedRef.current) return
 
       const symbolMap = symbolMapRef.current
       const trades: VaultTrade[] = (tradeList as any[]).map((t: any) => {
@@ -213,11 +222,25 @@ export function useVaultTrades(): UseVaultTradesReturn {
       setRawTrades(trades)
       setError(null)
     } catch (e) {
-      console.error('[useVaultTrades] fetch failed:', e)
-      if (mountedRef.current) {
-        setError(e instanceof Error ? (e as any).shortMessage || e.message : 'Failed to fetch vault trades')
+      // Timeouts and aborts are not emergencies — the L3 RPC is simply slow
+      const isTimeout =
+        e instanceof DOMException && e.name === 'AbortError' ||
+        (e instanceof Error && /timeout|timed?\s*out|took too long/i.test(e.message))
+
+      if (isTimeout) {
+        console.warn('[useVaultTrades] L3 RPC timed out — will retry next poll')
+        // Keep stale data visible, suppress error banner
+        if (mountedRef.current) {
+          setError(null)
+        }
+      } else {
+        console.error('[useVaultTrades] fetch failed:', e)
+        if (mountedRef.current) {
+          setError(e instanceof Error ? (e as any).shortMessage || e.message : 'Failed to fetch vault trades')
+        }
       }
     } finally {
+      clearTimeout(timeout)
       if (mountedRef.current) {
         setIsLoading(false)
       }
