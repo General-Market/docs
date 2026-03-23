@@ -221,6 +221,18 @@ export function useJoinBatch(): UseJoinBatchReturn {
     resetJoin()
   }, [isJoinSuccess, resetJoin])
 
+  // Timeout: if confirming for >30s, assume success (L3 RPC may be rate-limited)
+  useEffect(() => {
+    if (!isJoinConfirming || !joinHash) return
+    const timer = setTimeout(() => {
+      if (step === 'joining' && !joinHandled.current) {
+        joinHandled.current = true
+        setStep('done')
+      }
+    }, 30_000)
+    return () => clearTimeout(timer)
+  }, [isJoinConfirming, joinHash, step])
+
   // Error handling
   useEffect(() => {
     if (approveError) {
