@@ -20,7 +20,7 @@ services:
       - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
       - ../../../data/symbol-map.json:/app/data/symbol-map.json:ro
       - ../../../assets.json:/app/assets.json:ro
-      - ../../../data-node/config/sources-display.json:/app/config/sources-display.json:ro
+      - ../../../frontend/data/sources-display.json:/app/config/sources-display.json:ro
       - ../../../deployments/batch-markets.json:/app/deployments/batch-markets.json:ro
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
