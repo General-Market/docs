@@ -394,7 +394,7 @@ impl OracleConfig {
                         rpc_ws_url: std::env::var("ORACLE_VISION_RPC_WS_URL")
                             .unwrap_or_else(|_| "ws://localhost:8546".into()),
                         start_block: parse_env_var("ORACLE_VISION_START_BLOCK").unwrap_or(0),
-                        staleness_threshold_secs: parse_env_var("ORACLE_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
+                        staleness_threshold_secs: parse_env_var("ORACLE_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(1800),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
                         snapshot_hmac_secret: std::env::var("SNAPSHOT_HMAC_SECRET").ok(),
                         // BLS tick consensus fields (T-32)
