@@ -24,7 +24,8 @@ function formatVolume(vol: number): string {
 
 export function TopPlayers({ sourceId }: { sourceId?: string }) {
   const t = useTranslations('vision')
-  const { leaderboard, isLoading } = useVisionLeaderboard(undefined, sourceId)
+  // Global leaderboard — per-source PnL not yet tracked (vision_round_players has no source column)
+  const { leaderboard, isLoading } = useVisionLeaderboard()
   const top5 = leaderboard.slice(0, 5)
 
   return (
