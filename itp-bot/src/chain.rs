@@ -9,7 +9,7 @@ use tracing::info;
 abigen!(
     IInvestment,
     r#"[
-        function getITPState(bytes32 itpId) view returns (address[] assets, uint256[] weights, uint256[] inventory, uint256 nav, uint256 totalSupply)
+        function getITPState(bytes32 itpId) view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
         function getITPInfo(bytes32 itpId) view returns (string name, string symbol, address creator, uint256 createdAt, uint8 status, uint256 assetCount)
         function itpCount() view returns (uint256)
         function requestRebalance(bytes32 itpId, uint256[] removeIndices, address[] addAssets, uint256[] newWeights, string note)
@@ -77,11 +77,11 @@ impl ChainClient {
         Ok(count)
     }
 
-    /// Read full ITP state: (assets, weights, inventory, nav, totalSupply).
+    /// Read full ITP state: (creator, totalSupply, nav, assets, weights, inventory).
     pub async fn get_itp_state(
         &self,
         itp_id: [u8; 32],
-    ) -> Result<(Vec<Address>, Vec<U256>, Vec<U256>, U256, U256), Box<dyn std::error::Error>> {
+    ) -> Result<(Address, U256, U256, Vec<Address>, Vec<U256>, Vec<U256>), Box<dyn std::error::Error>> {
         let state = self.contract.get_itp_state(itp_id).call().await?;
         Ok(state)
     }

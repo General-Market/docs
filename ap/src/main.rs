@@ -419,16 +419,21 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             use common::traits::ChainEvent;
             use std::collections::HashSet;
             let mut processed_events: HashSet<String> = HashSet::new();
+            let mut max_block_seen: u64 = 0;
+            const DEDUP_CONFIRMATION_DEPTH: u64 = 64;
             while let Some(chain_event) = chain_event_rx.recv().await {
                 // Deduplicate SSE events by block:tx_hash:log_index
                 let event_id = match &chain_event {
                     ChainEvent::TradeRequest { block_number, tx_hash, log_index, .. } => {
+                        max_block_seen = max_block_seen.max(*block_number);
                         Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
                     }
                     ChainEvent::AssetTradeRequest { block_number, tx_hash, log_index, .. } => {
+                        max_block_seen = max_block_seen.max(*block_number);
                         Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
                     }
                     ChainEvent::WithdrawalRequest { block_number, tx_hash, log_index, .. } => {
+                        max_block_seen = max_block_seen.max(*block_number);
                         Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
                     }
                     _ => None,
@@ -438,9 +443,24 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
                         tracing::debug!(event_id = %id, "Duplicate SSE event, skipping");
                         continue;
                     }
-                    // Prevent unbounded growth: prune when set gets large
-                    if processed_events.len() > 100_000 {
-                        processed_events.clear();
+                    // Block-based retention: evict finalized events instead of clearing everything
+                    if processed_events.len() > 50_000 {
+                        let safe_block = max_block_seen.saturating_sub(DEDUP_CONFIRMATION_DEPTH);
+                        let old_len = processed_events.len();
+                        processed_events.retain(|event_id| {
+                            event_id
+                                .split(':')
+                                .next()
+                                .and_then(|block_str| block_str.parse::<u64>().ok())
+                                .map(|block| block >= safe_block)
+                                .unwrap_or(true) // Keep entries we can't parse
+                        });
+                        tracing::debug!(
+                            old_size = old_len,
+                            new_size = processed_events.len(),
+                            safe_block,
+                            "Pruned dedup set: evicted events older than safe block"
+                        );
                     }
                 }
                 let ap_event = match chain_event {

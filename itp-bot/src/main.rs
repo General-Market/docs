@@ -136,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             // Get on-chain state
-            let (on_chain_assets, on_chain_weights, _inventory, nav, total_supply) =
+            let (_creator, total_supply, nav, on_chain_assets, on_chain_weights, _inventory) =
                 match chain.get_itp_state(itp_id_bytes).await {
                     Ok(state) => state,
                     Err(e) => {
