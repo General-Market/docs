@@ -480,6 +480,9 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vision/leaderboard", get(crate::vision_api::leaderboard))
         .route("/vision/player/:address/profile", get(crate::vision_api::player_profile_proxy))
         .route("/vision/ws", get(crate::vision_ws::ws_handler))
+        // Points system
+        .route("/points", get(crate::points::get_points))
+        .route("/points/leaderboard", get(crate::points::get_leaderboard))
         // Source registry
         .route("/sources/registry", get(sources_registry))
         // Batch config endpoints

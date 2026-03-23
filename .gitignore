@@ -4,6 +4,10 @@
 .next/
 *.tsbuildinfo
 
+# Points CSV backups (written by data-node every 4h)
+backups/
+data-node/backups/
+
 # Rust
 Cargo.lock
 *.rs.bk

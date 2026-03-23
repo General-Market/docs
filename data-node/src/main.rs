@@ -33,6 +33,7 @@ mod source_registry;
 mod trade_collector;
 mod work_queue;
 mod market_data;
+mod points;
 mod vision_api;
 mod vision_batch_cache;
 mod vision_ws;
@@ -2596,7 +2597,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             format!("http://{}:{}", args.bind, args.port),
         )),
         leaderboard_cache: Arc::new(crate::vision_api::LeaderboardProxyCache::new(oracle_url.clone())),
-        profile_cache: Arc::new(crate::vision_api::ProfileCache::new(oracle_url)),
+        profile_cache: Arc::new(crate::vision_api::ProfileCache::new(oracle_url.clone())),
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
         chain_event_tx: chain_event_tx.clone(),
         source_registry,
@@ -2647,6 +2648,17 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         );
         let (_l3_handle, _settlement_handle) = scanner.start().await;
         info!("Chain event scanner started (L3 + Settlement)");
+    }
+
+    // Spawn points engine (vision round-based + index hourly)
+    {
+        let points_pool = app_state.pool.clone();
+        let points_chain_cache = Arc::clone(&app_state.chain_cache);
+        let points_oracle_url = oracle_url.clone();
+        tokio::spawn(async move {
+            points::run(points_pool, points_chain_cache, points_oracle_url).await;
+        });
+        info!("Points engine started (Vision=30s poll, Index=hourly)");
     }
 
     // Clone pool for explorer API before app_state is moved into the main router
