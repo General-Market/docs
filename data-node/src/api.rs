@@ -1476,14 +1476,34 @@ async fn portfolio(
                 }
             }
 
+            // Multi-layer price resolution (same as /itp-price):
+            // 1. Live cache (WebSocket-fed Bitget tickers)
+            // 2. Freshest of (prices table, klines table)
             let symbol_refs: Vec<&str> = symbols.iter().map(|s| s.as_str()).collect();
-            let price_rows = db::query_latest_prices_batch(&state.pool, &symbol_refs)
-                .await
-                .map_err(|e| db_error(e))?;
+            let mut tickers = state.live_cache.get_prices(&symbol_refs).await;
+            let missing: Vec<&str> = symbol_refs.iter()
+                .filter(|s| !tickers.contains_key(**s))
+                .copied()
+                .collect();
+            if !missing.is_empty() {
+                if let Ok(rows) = db::query_freshest_prices_batch(&state.pool, &missing).await {
+                    for row in rows {
+                        tickers.entry(row.symbol.clone()).or_insert(CachedTicker {
+                            last_price: row.price,
+                            best_bid: String::new(),
+                            best_ask: String::new(),
+                            timestamp_ms: row.fetched_at.timestamp_millis() as u64,
+                        });
+                    }
+                }
+            }
 
-            let price_map: HashMap<&str, f64> = price_rows
-                .iter()
-                .filter_map(|r| r.price.parse::<f64>().ok().map(|p| (r.symbol.as_str(), p)))
+            let price_map: HashMap<&str, f64> = symbols.iter()
+                .filter_map(|s| {
+                    tickers.get(s.as_str())
+                        .and_then(|t| t.last_price.parse::<f64>().ok())
+                        .map(|p| (s.as_str(), p))
+                })
                 .collect();
 
             let mut nav_sum: f64 = 0.0;
