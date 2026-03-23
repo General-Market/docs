@@ -1,291 +1,124 @@
 ---
 title: "Points & Rewards"
-description: "Earn Vision points through trading activity — commitment multipliers, leaderboard rankings, and reward tiers"
+description: "Earn points across three pools — Vision prediction rounds, ITP creation, and ITP holding. 10,000 pts/day, server-computed."
 ---
 
-Points accrue for participation, not for being right. The protocol rewards presence. Accuracy is your own problem. This is perhaps the most honest incentive structure in decentralized finance -- you are paid for showing up, and whether you win or lose is treated as a separate, more personal matter.
+Points accrue for participation, not for being right. The protocol rewards presence. Accuracy is your own problem. This is perhaps the most honest incentive structure in decentralized finance — you are paid for showing up, and whether you win or lose is treated as a separate, more personal matter.
 
 ## Overview
 
-Vision runs a **Season 1** points program that rewards users for providing liquidity across
-prediction batches. Points accumulate over time and will convert to tokens at the end of the
-season.
-
-The core idea: every batch emits a fixed number of points every tick, and those points are
-split among participants proportional to their USDC share of the batch.
+Vision runs a **Season 1** points program that rewards users across **three pools** totaling
+**10,000 points per day**. Points are computed server-side in the data-node, stored in
+Postgres, and backed up to CSV every 4 hours.
 
 ```
  +=======================================================================+
- |                        VISION POINTS SYSTEM                           |
+ |                     UNIFIED POINTS SYSTEM                             |
  |                                                                       |
- |   +-- Season 1 --------------------------------------------------+   |
- |   |                                                               |   |
- |   |   Deposit USDC     Points accrue        Convert to tokens     |   |
- |   |   into batches  ->  every tick (~10m) ->  at season end       |   |
- |   |                                                               |   |
- |   +---------------------------------------------------------------+   |
+ |   Pool              Budget       Mechanic                             |
+ |   ────              ──────       ────────                             |
+ |   Vision            5,000/day    Deposit share in settled rounds      |
+ |   Index Creator     2,500/day    NAV growth of your ITP               |
+ |   Index Holder      2,500/day    Weighted portfolio performance       |
+ |                     ──────                                            |
+ |   TOTAL             10,000/day                                        |
  |                                                                       |
- |   Current emission: 100 pts / tick / batch                            |
- |   Tick interval:    ~10 minutes (600 seconds)                         |
- |   Ticks per day:    144                                               |
  +=======================================================================+
 ```
 
-## How Points Are Calculated
+## Vision Pool (5,000 pts/day)
 
-Each batch independently emits **100 points every tick**. Your share of those points equals
-your share of the batch's total deposits. The mathematics is simple. The implications are
-not -- you earn more when fewer people are beside you, which means the loneliest positions
-are the most rewarding.
-
-```
-your_points_per_tick = 100 x (your_deposit / total_batch_deposits)
-```
-
-### Per-User Computation
+When a prediction round settles, points are distributed among all participants
+proportional to their deposit size. The bigger your deposit relative to the pool,
+the more points you earn. Accuracy is irrelevant.
 
 ```
- INPUT                           FORMULA                          OUTPUT
- +------------------+                                     +------------------+
- | Your balance     |--+                                  | Points per tick  |
- | in batch (USDC)  |  |    your_share = balance / TVL    | Points per hour  |
- +------------------+  +--> pts_tick   = 100 x share  --> | Estimated total  |
- | Batch TVL        |  |    pts_hour  = pts_tick x 6      | (since join)     |
- | (total deposits) |--+    est_total = pts_tick x ticks  +------------------+
- +------------------+            elapsed since join
+ Round #42 settles:
+ +------------------------------------------------------------------+
+ |                                                                  |
+ |  Per-round budget depends on how many rounds settle per day.     |
+ |  More rounds = smaller per-round allocation.                     |
+ |  Budget clamped to [10, 500] pts/round.                          |
+ |                                                                  |
+ |  Your share: your_deposit / total_deposited                      |
+ |  Your points: round_budget × your_share                          |
+ |                                                                  |
+ +------------------------------------------------------------------+
 ```
-
-The frontend reads your balance and the batch TVL on-chain, then computes points
-client-side. Points are not stored in contracts -- they are derived from deposit state.
 
 ### Worked Example
 
 ```
- Scenario: You deposit $50 into a batch with $200 total TVL
+ Scenario: Round settles with $200 total deposits, ~100 rounds/day
  +------------------------------------------------------------------+
  |                                                                  |
- |  your_share   = $50 / $200 = 0.25  (25%)                        |
- |  pts_per_tick = 100 x 0.25 = 25 pts                             |
- |  pts_per_hour = 25 x 6     = 150 pts/hr                         |
- |                                                                  |
- |  After 24 hours:                                                 |
- |  est_total    = 25 x 144   = 3,600 pts                          |
+ |  round_budget  = 5,000 / 100 = 50 pts                           |
+ |  your_deposit  = $50                                             |
+ |  your_share    = $50 / $200 = 0.25  (25%)                       |
+ |  your_points   = 50 × 0.25 = 12.5 pts                           |
  |                                                                  |
  +------------------------------------------------------------------+
 ```
 
 <Info>
-Points are recalculated on every page load based on current on-chain state. If someone
-else deposits into your batch, your share decreases and your earning rate drops. If they
-withdraw, your share increases. Other people's departures are, mathematically, your gain.
+Points are awarded once per round at settlement. No continuous accrual.
+Each round is independent — deposit USDC, make predictions, wait for settlement,
+collect USDC + points, repeat.
 </Info>
 
-## Daily Points Distribution
+## Index Creator Pool (2,500 pts/day)
 
-The total daily emission across the protocol depends on the number of active batches:
-
-```
- +-------------------+----------+----------+-----------+---------------+
- | Parameter         |  Value   |          |           |               |
- +-------------------+----------+----------+-----------+---------------+
- | Pts / tick / batch|   100    |          |           |               |
- | Ticks / day       |   144    | (every 10 minutes)  |               |
- | Batches           |   ~100   |          |           |               |
- | Total / day       |  ~1.44M  | = 100 x 144 x 100   |               |
- +-------------------+----------+----------+-----------+---------------+
-
- Per-batch breakdown:
-
-   100 pts/tick x 6 ticks/hr x 24 hrs = 14,400 pts/day per batch
-   14,400 x 100 batches               = 1,440,000 pts/day total
-```
-
-## Point Categories
-
-Points are currently earned through a single mechanism: **liquidity provision** in Vision
-batches. There are no bonuses for prediction accuracy, winning, or trading volume. The
-protocol does not care if you are good at this. It cares that you are here.
-
-```
- EARNING ACTIONS                          POINTS?
- +--------------------------------------+---------+
- | Deposit USDC into a batch            |   YES   | <-- proportional to share
- +--------------------------------------+---------+
- | Hold position across ticks           |   YES   | <-- accrues every ~10 min
- +--------------------------------------+---------+
- | Win a prediction                     |   NO    | <-- not a factor
- +--------------------------------------+---------+
- | Trade volume                         |   NO    | <-- not a factor
- +--------------------------------------+---------+
- | Referrals                            |   NO    | <-- not implemented
- +--------------------------------------+---------+
- | Streaks / badges                     |   NO    | <-- not implemented
- +--------------------------------------+---------+
-```
-
-<Info>
-Points reward **participation**, not prediction skill. A player who loses every prediction
-but stays deposited earns the same points as one who wins every prediction, assuming equal
-deposit sizes. The universe is indifferent to talent. The protocol is, too.
-</Info>
-
-### Coverage Strategy
-
-Since points are distributed per-batch, spreading your capital across many batches is a
-key strategy. Empty or low-TVL batches give you a larger share of that batch's 100 pts/tick.
-The optimal play is to go where no one else is. The alpha is in the abandoned corners.
-
-```
- STRATEGY COMPARISON: $100 total deposit
- +------------------------------------------------------------------+
- |                                                                  |
- |  Strategy A: All in one batch                                    |
- |  +--------------------------+                                    |
- |  | Batch #1: $100 / $1000   |  share = 10%  -> 10 pts/tick      |
- |  +--------------------------+                                    |
- |  Total: 10 pts/tick = 60 pts/hr                                  |
- |                                                                  |
- |  Strategy B: Spread across 10 batches                            |
- |  +--------------------------+                                    |
- |  | Batch #1:  $10 / $100    |  share = 10%  -> 10 pts/tick      |
- |  | Batch #2:  $10 / $50     |  share = 20%  -> 20 pts/tick      |
- |  | Batch #3:  $10 / $10     |  share = 100% -> 100 pts/tick     |
- |  | Batch #4:  $10 / $500    |  share = 2%   -> 2 pts/tick       |
- |  | ... (6 more batches)     |                                    |
- |  +--------------------------+                                    |
- |  Total: 132+ pts/tick (varies by batch TVLs)                     |
- |                                                                  |
- |  Empty batches = 100% of that batch's points to you.             |
- +------------------------------------------------------------------+
-```
-
-## Leaderboard
-
-The leaderboard ranks all Vision players by **total trading volume**. It is a public record
-of commitment -- not of success, but of participation. The distinction matters. It is served
-by the oracle API and displayed on the `/points` page.
-
-```
- +======================================================================+
- |                         LEADERBOARD                                  |
- +------+------------------+----------+---------+-------+               |
- | RANK |     PLAYER       |  VOLUME  | BATCHES |  ROI  |               |
- +------+------------------+----------+---------+-------+               |
- | 1st  | 0xA1b2...c3d4    |  $52.1K  |    47   | +8.2% |               |
- | 2nd  | 0xE5f6...g7h8    |  $41.3K  |    38   | +5.1% |               |
- | 3rd  | 0xI9j0...k1l2    |  $28.7K  |    25   | +3.4% |               |
- |  4   | 0xM3n4...o5p6    |  $15.2K  |    19   | -1.2% |               |
- |  5   | 0xQ7r8...s9t0    |  $12.8K  |    14   | +2.7% |               |
- | ...  |      ...         |   ...    |   ...   |  ...  |               |
- +------+------------------+----------+---------+-------+               |
- |                                                                      |
- |  Columns:                                                            |
- |  - Volume:  total USDC traded across all batches                     |
- |  - Batches: number of distinct batches participated in               |
- |  - ROI:     return on investment (profit / volume)                   |
- +======================================================================+
-```
-
-The leaderboard is fetched from the oracle's `/vision/leaderboard` endpoint and refreshes
-every 5 seconds. Your own row is highlighted when your wallet is connected.
-
-<Info>
-The leaderboard ranks by **volume**, not by points. Points are a separate metric tied to
-liquidity provision, while the leaderboard shows overall trading activity.
-</Info>
-
-## Points Earning Flow
-
-Here is how points flow from the protocol to your wallet. The mechanism is continuous,
-quiet, and impartial -- like interest accruing on the fact that you exist in the system:
-
-```
-  VISION PROTOCOL                     YOUR WALLET
-  +------------------+                +------------------+
-  |                  |                |                  |
-  |  Batch #1        |   tick fires   |  Points accrue   |
-  |  +-----------+   |   every ~10m   |  based on your   |
-  |  | 100 pts   |---+--------------->|  share of each   |
-  |  | per tick  |   |                |  batch's TVL     |
-  |  +-----------+   |                |                  |
-  |                  |                |  +-------------+ |
-  |  Batch #2        |                |  | Batch #1:   | |
-  |  +-----------+   |                |  |  25 pts/tick | |
-  |  | 100 pts   |---+--------------->|  | Batch #2:   | |
-  |  | per tick  |   |                |  | 100 pts/tick | |
-  |  +-----------+   |                |  | Batch #3:   | |
-  |                  |                |  |   8 pts/tick | |
-  |  Batch #3        |                |  +-------------+ |
-  |  +-----------+   |                |                  |
-  |  | 100 pts   |---+--------------->|  Total:          |
-  |  | per tick  |   |                |  133 pts/tick    |
-  |  +-----------+   |                |  798 pts/hr      |
-  |                  |                |                  |
-  |  ... x 100       |                |  Season total:   |
-  |  batches         |                |  accumulates     |
-  |                  |                |  until airdrop   |
-  +------------------+                +------------------+
-```
-
-## Multiplier Stack (Planned)
-
-<Info>
-The current Season 1 implementation has **no multipliers**. The system described below is
-from the unified points design spec and is planned for a future release.
-</Info>
-
-The unified points system introduces a **fixed budget model** that replaces the current
-per-batch emission. Under this model, the protocol emits a fixed number of points per hour
-across three pools:
-
-```
- UNIFIED POINTS BUDGET (planned)
- +===================================================================+
- |                                                                   |
- |  +---------------------+  48,000 pts/hr   50.0% of total         |
- |  |   VISION POOL       |  TVL share per batch, per tick          |
- |  +---------------------+                                         |
- |            |                                                      |
- |            v                                                      |
- |  +---------------------+  24,000 pts/hr   25.0% of total         |
- |  |  INDEX CREATOR POOL |  Ranked by NAV growth of your ITP       |
- |  +---------------------+                                         |
- |            |                                                      |
- |            v                                                      |
- |  +---------------------+  24,000 pts/hr   25.0% of total         |
- |  |  INDEX HOLDER POOL  |  Ranked by weighted portfolio perf      |
- |  +---------------------+                                         |
- |            |                                                      |
- |            v                                                      |
- |  +---------------------+                                         |
- |  |  TOTAL: 96,000/hr   |  = 2,304,000 pts/day                   |
- |  +---------------------+                                         |
- |                                                                   |
- +===================================================================+
-```
-
-### Index Pool Ranking (Planned)
-
-The Creator and Holder pools use a **0.7x exponential decay** ranking curve to distribute
-their budgets. Higher-ranked players earn disproportionately more:
+Create an ITP that outperforms. The protocol ranks all ITPs by **NAV growth since
+creation** every hour and distributes 2,500/24 ≈ 104 points per hour using a
+**0.7x exponential decay** curve. Only ITPs with positive growth qualify.
 
 ```
  EXPONENTIAL DECAY DISTRIBUTION (0.7x)
  +===================================================================+
  |                                                                   |
- |  Rank   Weight    Share     Points (of 24,000/hr)                 |
- |  ----   ------    -----     ------                                |
- |   #1    1.000     36.1%     8,658  ████████████████████████████   |
- |   #2    0.700     25.2%     6,061  ████████████████████           |
- |   #3    0.490     17.7%     4,243  █████████████                  |
- |   #4    0.343     12.4%     2,970  █████████                      |
- |   #5    0.240      8.7%     2,079  ██████                         |
+ |  Rank   Weight    Share     Points/hr                             |
+ |  ----   ------    -----     ---------                             |
+ |   #1    1.000     36.1%     37.6   ████████████████████████████   |
+ |   #2    0.700     25.2%     26.3   ████████████████████           |
+ |   #3    0.490     17.7%     18.4   █████████████                  |
+ |   #4    0.343     12.4%     12.9   █████████                      |
+ |   #5    0.240      8.7%      9.0   ██████                         |
  |                                                                   |
  |  Formula: weight = 0.7 ^ (rank - 1)                              |
- |  Points  = floor( (weight / sum_weights) x 24,000 )              |
- |  Remainder goes to rank #1                                        |
+ |  Only positive NAV growth qualifies.                              |
  |                                                                   |
  +===================================================================+
+```
+
+## Index Holder Pool (2,500 pts/day)
+
+Hold ITP shares with rising NAV. The protocol ranks all holders by **weighted
+portfolio performance** — your returns across all ITPs you hold, weighted by
+position size. Same 0.7x decay distribution as the Creator pool.
+
+```
+ Performance = Σ(shares × NAV_growth × cost_basis) / Σ(shares × cost_basis)
+```
+
+Holders with negative or zero performance earn nothing. The market rewards
+the patient and punishes the unlucky. The protocol merely observes.
+
+## Leaderboard
+
+The `/points` page shows a unified leaderboard ranked by **total points** across all three
+pools. Each player's breakdown is visible: Vision, Creator, Holder, and Total.
+
+```
+ +======================================================================+
+ |                         LEADERBOARD                                  |
+ +------+------------------+---------+---------+---------+--------+     |
+ | RANK |     PLAYER       | VISION  | CREATOR | HOLDER  | TOTAL  |     |
+ +------+------------------+---------+---------+---------+--------+     |
+ | 1st  | 0xA1b2...c3d4    |  5,200  |  2,400  |  1,800  | 9,400  |     |
+ | 2nd  | 0xE5f6...g7h8    |  4,100  |  1,600  |    900  | 6,600  |     |
+ | 3rd  | 0xI9j0...k1l2    |  2,800  |     0   |  1,200  | 4,000  |     |
+ +------+------------------+---------+---------+---------+--------+     |
+ +======================================================================+
 ```
 
 ## What Points Are For
@@ -294,8 +127,8 @@ Points are a promise. Like most promises in crypto, the details are forthcoming:
 
 | Purpose | Status |
 |---------|--------|
-| **Leaderboard ranking** | Live -- public, social incentive |
-| **Future airdrop** | Planned -- points convert to tokens at end of season |
+| **Leaderboard ranking** | Live — public, social incentive |
+| **Future airdrop** | Planned — points convert to tokens at end of season |
 | **Governance weight** | Not planned |
 | **Fee discounts** | Not planned |
 
@@ -305,70 +138,44 @@ point decay, expiry, or cap on individual earnings. Your points persist. Whether
 will justify the waiting is a prediction market of its own.
 </Info>
 
-## Scope: What Is NOT in Season 1
+## Technical Details
 
-The points system is intentionally minimal. What is not built is not broken. What is not
-promised cannot disappoint:
-
-```
- +-----------------------------------+----------+
- | Feature                           | Status   |
- +-----------------------------------+----------+
- | Multipliers / streak bonuses      | None     |
- | Prediction accuracy bonus         | None     |
- | Referral bonuses                  | None     |
- | Point decay or expiry             | None     |
- | Badges or tiers                   | None     |
- | Backend persistence               | None *   |
- | Contract-level points             | None     |
- +-----------------------------------+----------+
-
- * Points are computed client-side from on-chain state.
-   The unified points spec plans to move computation
-   to the data-node with Postgres persistence.
-```
-
-## Technical Implementation
-
-Points are computed entirely in the frontend via the `useVisionPoints` hook. No contracts
-or backend services are involved in the current implementation. The points exist only as
-a derivation from on-chain state -- they are real in the way that a shadow is real.
+Points are computed in the data-node (`points.rs`) and stored in Postgres.
 
 ```
  DATA FLOW
  +================================================================+
  |                                                                |
- |  Vision.sol (L3)                                               |
- |       |                                                        |
- |       |  on-chain balances + TVL                               |
+ |  Oracle API                                                    |
+ |       |  settled rounds + player deposits                      |
  |       v                                                        |
- |  usePlayerBatches()  -- reads player positions via RPC         |
+ |  data-node (points.rs)                                         |
+ |       |  - Polls every 30s for settled Vision rounds           |
+ |       |  - Hourly cron for Index Creator + Holder pools        |
+ |       |  - CSV backup every 4 hours                            |
+ |       v                                                        |
+ |  Postgres (points_ledger + points_totals)                      |
  |       |                                                        |
  |       v                                                        |
- |  useBatches()  -- reads all batch metadata from oracle API     |
+ |  GET /points?user=     → player totals per pool                |
+ |  GET /points/leaderboard → ranked by total points              |
  |       |                                                        |
- |       +----> useVisionPoints()                                 |
- |              - Computes share = balance / TVL                  |
- |              - pts/tick = 100 x share                          |
- |              - pts/hour = pts/tick x (3600 / tickDuration)     |
- |              - est total = pts/tick x ticks since join         |
- |              |                                                 |
- |              v                                                 |
- |         /points page  -- renders positions table + totals      |
- |                                                                |
- |  useVisionLeaderboard()  -- fetches /vision/leaderboard        |
- |       |                     from oracle API                    |
  |       v                                                        |
- |  Leaderboard table  -- ranks players by volume                 |
+ |  Frontend (usePoints hook → /points page)                      |
  |                                                                |
  +================================================================+
 ```
 
 ### Key Constants
 
-| Constant | Value | Location |
-|----------|-------|----------|
-| `POINTS_PER_TICK_PER_BATCH` | 100 | `useVisionPoints.ts` |
-| `USDC_DECIMALS` | 18 | L3 uses 18-decimal USDC |
-| Default tick duration | 600s (10 min) | Fallback if batch has no `tickDuration` |
-| Leaderboard refresh | 5,000ms | `useVisionLeaderboard.ts` |
+| Constant | Value | Notes |
+|----------|-------|-------|
+| Total daily budget | 10,000 pts | Fixed |
+| Vision pool | 5,000 pts/day | 50% of budget |
+| Creator pool | 2,500 pts/day | 25% of budget |
+| Holder pool | 2,500 pts/day | 25% of budget |
+| Per-round budget | 10–500 pts | Clamped, adapts to round frequency |
+| Decay factor | 0.7x | For ranked distributions |
+| Vision poll interval | 30s | Checks for new settlements |
+| Index cron | Hourly | At :00 each hour |
+| CSV backup | Every 4 hours | Keeps last 10 copies |
