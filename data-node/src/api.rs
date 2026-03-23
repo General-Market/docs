@@ -62,7 +62,11 @@ impl HealthStatsCache {
 }
 
 /// Spawns a background task that refreshes stale/zero/change stats every 60s.
-pub fn spawn_health_stats_refresh(pool: PgPool, cache: Arc<HealthStatsCache>) {
+pub fn spawn_health_stats_refresh(
+    pool: PgPool,
+    cache: Arc<HealthStatsCache>,
+    interval_map: HashMap<String, u64>,
+) {
     tokio::spawn(async move {
         // Small delay to let sources register first
         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
@@ -73,7 +77,7 @@ pub fn spawn_health_stats_refresh(pool: PgPool, cache: Arc<HealthStatsCache>) {
         }
         // Full refresh with stale/zero counts
         loop {
-            match refresh_health_stats(&pool, &cache).await {
+            match refresh_health_stats(&pool, &cache, &interval_map).await {
                 Ok(n) => tracing::info!("health stats cache refreshed ({} sources)", n),
                 Err(e) => tracing::warn!("health stats cache refresh failed: {}", e),
             }
@@ -117,13 +121,12 @@ async fn refresh_health_stats_fast(
 async fn refresh_health_stats(
     pool: &PgPool,
     cache: &HealthStatsCache,
+    interval_map: &HashMap<String, u64>,
 ) -> Result<usize, String> {
     let start = std::time::Instant::now();
     let now = Utc::now();
 
-    // Build interval lookup from SOURCE_META
-    let interval_lookup: HashMap<&str, u64> =
-        SOURCE_META.iter().map(|(id, _, iv)| (*id, *iv)).collect();
+    let interval_lookup = interval_map;
 
     let mut stats: HashMap<String, HealthStatsEntry> = HashMap::new();
 
@@ -4716,125 +4719,6 @@ async fn market_batch_history(
 
 // ---- /snapshot ----
 
-/// Known source metadata (hardcoded from source implementations).
-/// Used to build the SourceSchedule list without runtime references.
-/// Source metadata: (source_id, display_name, sync_interval_secs)
-/// source_id MUST match the value returned by each source's `source_id()` trait method.
-const SOURCE_META: &[(&str, &str, u64)] = &[
-    // ── Original sources (21, all via MarketDataSource trait) ──────────────
-    ("crypto", "CoinGecko Crypto", 600),                   // coingecko: 10min cycle, 40 pages via /coins/markets
-    ("defi", "DefiLlama DeFi", 120),                      // defillama: source_id="defi"
-    ("stocks", "Stocks (Finnhub)", 600),                   // finnhub
-    ("rates", "Federal Reserve (FRED)", 86400),            // fred
-    ("bls", "Bureau of Labor Statistics", 86400),          // bls
-    ("worldbank", "World Bank", 604800),                   // worldbank
-    ("eia", "US Energy (EIA)", 86400),                     // eia
-    ("ecb", "ECB Euro Rates", 86400),                      // ecb
-    ("boe", "Bank of England FX Rates", 86400),            // boe
-    ("weather", "Weather (Open-Meteo)", 3600),             // openmeteo
-    ("sec_13f", "SEC EDGAR 13F", 21600),                   // sec_edgar
-    ("sec_efts", "SEC EFTS Filing Counts", 14400),         // sec_efts
-    ("sec_insider", "SEC Insider Trading", 14400),         // sec_insider
-    ("finra_short_vol", "FINRA Daily Short Volume", 86400),// finra_short_vol
-    ("finra", "FINRA Short Interest", 86400),              // finra
-    ("congress", "Congressional Trading", 86400),          // congress
-    ("cftc", "CFTC Commitments", 604800),                  // nasdaq/cftc
-    ("futures", "Continuous Futures", 86400),               // nasdaq/chris
-    ("bchain", "Bitcoin On-Chain", 86400),                 // nasdaq/bchain
-    ("opec", "OPEC", 2592000),                             // nasdaq/opec
-    ("imf", "IMF Indicators", 2592000),                    // nasdaq/imf
-    ("bonds", "US Treasury Yields", 86400),                // treasury
-    // ── New sources (15 additional) ─────────────────────────────────────────
-    ("anilist", "AniList Anime & Manga", 600),             // anilist
-    ("backpacktf", "backpack.tf TF2 Items", 600),          // backpacktf
-    ("cloudflare", "Cloudflare Radar", 600),               // cloudflare
-    ("crates_io", "crates.io Rust Packages", 600),         // crates_io
-    ("fourchan", "4chan", 600),                             // fourchan
-    ("github", "GitHub Repositories", 600),                // github
-    ("hackernews", "Hacker News", 300),                    // hackernews
-    ("npm", "npm Package Downloads", 600),                 // npm
-    ("polymarket", "Polymarket Predictions", 300),         // polymarket
-    ("pypi", "PyPI Python Packages", 600),                 // pypi
-    ("steam", "Steam Games", 600),                         // steam
-    ("tmdb", "TMDb Movies, TV & Celebrities", 300),          // tmdb
-    ("lastfm", "Last.fm Music Artists", 600),              // lastfm
-    ("twitch", "Twitch Live Streaming", 60),               // twitch
-    ("twse", "Taiwan Stock Exchange", 600),                // twse
-    ("zillow", "Zillow Real Estate", 86400),               // zillow
-    // ── Bet on Everything sources (10) ────────────────────────────────────
-    ("volcano", "USGS Volcanoes", 600),
-    ("earthquake", "USGS Earthquakes", 300),
-    ("spaceweather", "NOAA Space Weather", 600),
-    ("wildfire", "NASA FIRMS Wildfires", 1800),
-    ("flights", "OpenSky Flights", 600),
-    ("mil_aircraft", "Military Aircraft", 600),
-    ("maritime", "AIS Maritime", 600),
-    ("epidemic", "disease.sh Epidemics", 1800),
-    ("sports", "ESPN Live Scores", 600),
-    ("iss", "ISS Position", 600),
-    ("weather_alerts", "NWS Severe Weather", 300),
-    ("animals", "Wildlife Observations", 600),
-    ("movebank", "Movebank Animal GPS", 1800),
-    ("ebird", "eBird Observations", 600),
-    ("aisstream", "AIS Ship Tracking", 60),
-    ("gtfs_transit", "GTFS Transit", 120),
-    ("usa_spending", "US Defense Spending", 3600),
-    ("pumpfun", "Pump.fun Tokens", 300),
-    ("usgs_water", "USGS Water Monitoring", 600),
-    // ── Social / Live sources ─────────────────────────────────────────────
-    ("reddit", "Reddit Communities", 600),
-    ("chaturbate", "Chaturbate Live Cams", 600),
-    // ── Esports ─────────────────────────────────────────────────────────
-    ("esports", "PandaScore Esports", 300),
-    // ── Environment & Transport ───────────────────────────────────────
-    ("noaa_tides", "NOAA Tides & Currents", 900),
-    ("nrc_nuclear", "NRC Nuclear Reactors", 3600),
-    ("citybikes", "CityBikes Bike Sharing", 600),
-    ("ndbc", "NDBC Ocean Buoys", 600),
-    ("noaa_met", "NOAA Ocean Meteorology", 600),
-    ("nwps", "NWPS River Gauges", 600),
-    ("airnow", "AirNow Air Quality", 600),
-    // ── Government / Legal ──────────────────────────────────────────────
-    ("courtlistener", "CourtListener Federal Courts", 600),
-    // ── Education / Research ──────────────────────────────────────────────
-    ("openalex", "OpenAlex Scholarly Works", 600),
-    ("crossref", "Crossref DOI Registry", 600),
-    ("pubmed", "PubMed Biomedical Research", 600),
-    ("stackexchange", "Stack Exchange Developer Q&A", 600),
-    // ── Animals ──────────────────────────────────────────────────────────
-    ("shelter", "Animal Shelters", 600),
-    // ── Autos & Vehicles ──────────────────────────────────────────────
-    ("parking", "ParkAPI Parking Garages", 600),
-    ("tomtom_traffic", "TomTom Traffic Flow", 600),
-    ("tomtom_evcharge", "TomTom EV Charging", 600),
-    // ── Board Games & Shopping ──────────────────────────────────────────
-    ("bgg", "BoardGameGeek Hotness", 600),
-    ("bestbuy", "Best Buy Products", 600),
-    // ── Jobs / Labor ──────────────────────────────────────────────────────
-    ("adzuna", "Adzuna Job Market", 1800),
-    // ── Tourism ──────────────────────────────────────────────────────────
-    ("queue_times", "Queue-Times Theme Parks", 600),
-    ("cbp_border", "CBP Border Wait Times", 600),
-    ("faa_delays", "FAA Airport Delays", 600),
-    // ── Drink Sources ───────────────────────────────────────────────────────
-    ("yahoo_drinks", "Yahoo Drink Markets", 600),
-    // ── European Transport ────────────────────────────────────────────────
-    ("db_trains", "Deutsche Bahn Train Delays", 300),
-    ("paris_metro", "Paris Métro Delays", 300),
-    ("tfl_tube", "TfL Tube Delays", 300),
-    ("ryanair", "Ryanair Flight Delays", 300),
-    ("mta_subway", "MTA Subway Delays", 300),
-    // ── Internet / Infrastructure ──────────────────────────────────────
-    ("ioda", "IODA Internet Outages", 600),
-    ("power_outages", "US Power Outages", 600),
-    // ── Government / City ──────────────────────────────────────────────
-    ("nyc311", "NYC 311 Complaints", 600),
-    // ── Food / Entertainment ────────────────────────────────────────────
-    ("mcbroken", "McBroken Ice Cream", 600),
-    // ── Chess ──────────────────────────────────────────────────────────
-    ("lichess", "Lichess Chess", 300),
-];
-
 /// Per-source explanation of why assets may be stale.
 /// Shown in health UI to distinguish naturally dormant sources from broken ones.
 fn stale_reason_for(source_id: &str) -> &'static str {
@@ -4969,11 +4853,12 @@ struct SnapshotFullResponse {
 
 use crate::market_data::models::MarketPriceSummary;
 
-/// Build source schedule list from DB stats + hardcoded metadata (36 entries: 21 original + 15 new)
-async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, anyhow::Error> {
+/// Build source schedule list from DB stats + source registry
+async fn build_source_schedules(
+    pool: &PgPool,
+    registry: &crate::source_registry::SourceRegistry,
+) -> Result<Vec<SourceSchedule>, anyhow::Error> {
     // Use market_prices_latest cache table (374K rows) instead of market_prices (65M rows).
-    // The old query did COUNT(DISTINCT asset_id) on the full 18 GB market_prices table,
-    // taking 10+ minutes and stacking up connections that block migrations on restart.
     let rows: Vec<(String, i64, Option<DateTime<Utc>>)> = sqlx::query_as(
         r#"
         SELECT source, COUNT(*) as cnt, MAX(fetched_at) as last_sync
@@ -5002,10 +4887,14 @@ async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, an
     let now = Utc::now();
     let mut schedules = Vec::new();
 
+    let all_meta = registry.all_source_meta();
+    let known_ids: std::collections::HashSet<String> =
+        all_meta.iter().map(|(id, _, _)| id.clone()).collect();
+
     // Add known sources
-    for (id, name, interval) in SOURCE_META {
+    for (id, name, interval) in &all_meta {
         let (count, last_sync) = db_stats
-            .get(*id)
+            .get(id.as_str())
             .cloned()
             .unwrap_or((0, None));
 
@@ -5036,29 +4925,30 @@ async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, an
         });
     }
 
-    // Add any DB sources not in the hardcoded list
+    // Add any DB sources not in the registry
     for (src, (count, last_sync)) in &db_stats {
-        if !SOURCE_META.iter().any(|(id, _, _)| id == src) {
-            let status = if *count == 0 {
-                "pending"
-            } else if let Some(last) = last_sync {
-                let age = (now - *last).num_seconds() as u64;
-                if age < 86400 * 3 { "healthy" } else { "stale" }
-            } else {
-                "pending"
-            };
-
-            schedules.push(SourceSchedule {
-                source_id: src.clone(),
-                display_name: src.replace('_', " "),
-                enabled: *count > 0,
-                sync_interval_secs: 86400,
-                last_sync: *last_sync,
-                next_sync: None,
-                estimated_next_update: None,
-                status: status.to_string(),
-            });
+        if known_ids.contains(src) {
+            continue;
         }
+        let status = if *count == 0 {
+            "pending"
+        } else if let Some(last) = last_sync {
+            let age = (now - *last).num_seconds() as u64;
+            if age < 86400 * 3 { "healthy" } else { "stale" }
+        } else {
+            "pending"
+        };
+
+        schedules.push(SourceSchedule {
+            source_id: src.clone(),
+            display_name: src.replace('_', " "),
+            enabled: *count > 0,
+            sync_interval_secs: 86400,
+            last_sync: *last_sync,
+            next_sync: None,
+            estimated_next_update: None,
+            status: status.to_string(),
+        });
     }
 
     Ok(schedules)
@@ -5068,7 +4958,7 @@ async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, an
 async fn snapshot_meta(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SnapshotMetaResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let schedules = build_source_schedules(&state.pool)
+    let schedules = build_source_schedules(&state.pool, &state.source_registry)
         .await
         .map_err(internal_error)?;
 
@@ -5108,7 +4998,7 @@ async fn snapshot_meta(
 async fn snapshot(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<SnapshotFullResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let schedules = build_source_schedules(&state.pool)
+    let schedules = build_source_schedules(&state.pool, &state.source_registry)
         .await
         .map_err(internal_error)?;
 
@@ -5960,6 +5850,20 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
     // Sort by AUM descending
     entries.sort_by(|a, b| b.aum_usd.partial_cmp(&a.aum_usd).unwrap_or(std::cmp::Ordering::Equal));
 
+    // Dedup by (name, symbol) — keep highest AUM (already first after sort)
+    {
+        let mut seen = std::collections::HashSet::new();
+        entries.retain(|e| {
+            if e.name.is_empty() && e.symbol.is_empty() {
+                return true; // keep unnamed ITPs (legacy, dedup by itp_id only)
+            }
+            seen.insert((e.name.clone(), e.symbol.clone()))
+        });
+    }
+
+    // Drop zero-AUM ghosts
+    entries.retain(|e| e.aum_usd > 0.0);
+
     serde_json::to_string(&entries).unwrap_or_else(|_| "[]".to_string())
 }
 
@@ -6521,9 +6425,10 @@ async fn admin_sources_health(
     let health_stats = state.health_stats_cache.get_all().await;
 
     // Assemble results for all known sources
+    let all_meta = state.source_registry.all_source_meta();
     let mut sources = Vec::new();
-    for (id, name, interval) in SOURCE_META {
-        let hs = health_stats.get(*id);
+    for (id, name, interval) in &all_meta {
+        let hs = health_stats.get(id.as_str());
         let total_assets = hs.map(|h| h.total_assets).unwrap_or(0);
         let active_assets = hs.map(|h| h.active_assets).unwrap_or(0);
         let newest = hs.and_then(|h| h.newest_record);
@@ -6609,7 +6514,7 @@ async fn admin_sources_health(
                 ("ok".to_string(), 0, 0, None, None, 0, None)
             };
 
-        let hs = health_stats.get(*id);
+        let hs = health_stats.get(id.as_str());
         let zero_value = hs.map(|h| h.zero_count).unwrap_or(0);
         let stale = hs.map(|h| h.stale_count).unwrap_or(0);
         let stale_dormant = hs.map(|h| h.stale_dormant).unwrap_or(0);
@@ -6651,11 +6556,11 @@ async fn admin_sources_health(
         });
     }
 
-    // Also include any DB sources not in SOURCE_META
-    let known_ids: std::collections::HashSet<&str> =
-        SOURCE_META.iter().map(|(id, _, _)| *id).collect();
+    // Also include any DB sources not in the registry
+    let known_ids: std::collections::HashSet<String> =
+        all_meta.iter().map(|(id, _, _)| id.clone()).collect();
     for (source, hs_u) in &health_stats {
-        if known_ids.contains(source.as_str()) {
+        if known_ids.contains(source) {
             continue;
         }
         let newest = hs_u.newest_record;
@@ -6749,11 +6654,7 @@ async fn admin_source_assets(
     let now = Utc::now();
 
     // Find the sync interval for this source (for stale detection)
-    let sync_interval = SOURCE_META
-        .iter()
-        .find(|(id, _, _)| *id == source_id)
-        .map(|(_, _, interval)| *interval)
-        .unwrap_or(600);
+    let sync_interval = state.source_registry.sync_interval_for(&source_id);
 
     let rows: Vec<(
         String,                // asset_id
