@@ -224,77 +224,78 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
           </div>
         </div>
 
-        {/* RIGHT — Borrow / Against ITP */}
+        {/* RIGHT — Borrow USDC */}
         <div className="border border-black/[0.06] rounded-xl overflow-hidden">
-          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl flex items-center justify-between">
-            <span>{t('borrow_panel.title')}</span>
-            {selectedCollateral && (
-              <button
-                onClick={() => { setSelectedCollateral(null); toggleAction(null) }}
-                className="text-micro font-semibold text-white/60 hover:text-white/90 transition-colors"
-              >
-                {t('collateral_selector.title')}
-              </button>
-            )}
+          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
+            {t('borrow_panel.title')}
           </div>
           <div className="p-5 space-y-4">
-            {!selectedCollateral ? (
-              /* Step 1: Pick collateral ITP */
+            {/* Position summary (always visible when position exists) */}
+            {selectedCollateral && (
               <>
-                <CollateralSelector onSelect={(c) => { setSelectedCollateral(c); toggleAction('borrow') }} />
-              </>
-            ) : (
-              /* Step 2: Deposit collateral + Borrow USDC */
-              <>
-                <div className="flex items-center gap-2 pb-2 border-b border-border-light">
-                  <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-text-primary text-[9px] font-bold">{selectedCollateral.symbol.slice(0, 3)}</span>
+                <div className="flex items-center justify-between pb-2 border-b border-border-light">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-muted rounded-full flex items-center justify-center shrink-0">
+                      <span className="text-text-primary text-[9px] font-bold">{selectedCollateral.symbol.slice(0, 3)}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-text-primary">{selectedCollateral.name}</span>
                   </div>
-                  <span className="text-sm font-semibold text-text-primary">{selectedCollateral.name}</span>
-                  <span className="text-xs text-text-muted font-mono">${selectedCollateral.symbol}</span>
+                  <button
+                    onClick={() => { setSelectedCollateral(null); toggleAction(null) }}
+                    className="text-micro font-semibold text-text-muted hover:text-text-primary transition-colors"
+                  >
+                    {t('borrow_panel.change_itp')}
+                  </button>
                 </div>
-
                 <InfoRow label={t('borrow_panel.collateral_value')} value={collateralValue} />
                 <InfoRow label={t('borrow_panel.outstanding_debt')} value={outstandingDebt} />
                 <InfoRow label={t('borrow_panel.max_borrow', { lltv: lltvPercent.toFixed(0) })} value={maxBorrow} />
+              </>
+            )}
 
-                {/* Action buttons */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button
-                    onClick={() => toggleAction('borrow')}
-                    className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
-                      activeAction === 'borrow'
-                        ? 'bg-black/80 text-white'
-                        : 'bg-brand text-white hover:bg-brand-dark'
-                    }`}
-                  >
-                    {t('actions.borrow_usdc')}
-                  </button>
-                  <button
-                    onClick={() => toggleAction('repay')}
-                    className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
-                      activeAction === 'repay'
-                        ? 'bg-black/[0.05] border-black/20 text-text-primary'
-                        : 'border-black/10 text-text-primary hover:bg-black/[0.04]'
-                    }`}
-                  >
-                    {t('actions.repay')}
-                  </button>
-                </div>
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => toggleAction('borrow')}
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
+                  activeAction === 'borrow'
+                    ? 'bg-black/80 text-white'
+                    : 'bg-brand text-white hover:bg-brand-dark'
+                }`}
+              >
+                {t('actions.borrow_usdc')}
+              </button>
+              <button
+                onClick={() => toggleAction('repay')}
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
+                  activeAction === 'repay'
+                    ? 'bg-black/[0.05] border-black/20 text-text-primary'
+                    : 'border-black/10 text-text-primary hover:bg-black/[0.04]'
+                }`}
+              >
+                {t('actions.repay')}
+              </button>
+            </div>
 
-                {/* Inline action forms */}
-                {activeAction === 'borrow' && (
-                  <div className="border-t border-border-light pt-4 space-y-4">
+            {/* Borrow flow: pick ITP first, then deposit + borrow */}
+            {activeAction === 'borrow' && (
+              <div className="border-t border-border-light pt-4">
+                {!selectedCollateral ? (
+                  <CollateralSelector onSelect={(c) => setSelectedCollateral(c)} />
+                ) : (
+                  <div className="space-y-4">
                     <DepositCollateral market={selectedCollateral.market} itpId={selectedCollateral.itpId} onSuccess={refetchPosition} />
                     <BorrowUsdc market={selectedCollateral.market} onSuccess={() => toggleAction(null)} />
                   </div>
                 )}
-                {activeAction === 'repay' && (
-                  <div className="border-t border-border-light pt-4">
-                    <RepayDebt market={selectedCollateral.market} itpId={selectedCollateral.itpId} onSuccess={() => toggleAction(null)} />
-                  </div>
-                )}
-              </>
+              </div>
+            )}
+
+            {/* Repay flow */}
+            {activeAction === 'repay' && selectedCollateral && (
+              <div className="border-t border-border-light pt-4">
+                <RepayDebt market={selectedCollateral.market} itpId={selectedCollateral.itpId} onSuccess={() => toggleAction(null)} />
+              </div>
             )}
           </div>
         </div>

@@ -21,10 +21,11 @@
     "no_borrows_notice": "Vault earns yield when users borrow USDC against ITP collateral. No active borrows at the moment."
   },
   "borrow_panel": {
-    "title": "Borrow \u2014 Against ITP",
+    "title": "Borrow USDC",
     "collateral_value": "Collateral (ITP value)",
     "outstanding_debt": "Outstanding Debt",
-    "max_borrow": "Max Borrow ({lltv}% LTV)"
+    "max_borrow": "Max Borrow ({lltv}% LTV)",
+    "change_itp": "Change"
   },
   "actions": {
     "deposit": "Deposit",
@@ -172,8 +173,8 @@
     "view_on_explorer": "View on explorer"
   },
   "collateral_selector": {
-    "title": "Select Collateral",
-    "description": "Choose an ITP to use as collateral for borrowing USDC",
+    "title": "Borrow against which ITP?",
+    "description": "Pick an ITP from your wallet to use as collateral",
     "no_itps": "No ITPs with lending markets in your wallet",
     "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
     "balance": "Balance",

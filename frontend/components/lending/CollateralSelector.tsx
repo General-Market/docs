@@ -66,7 +66,8 @@ export function CollateralSelector({ onSelect }: CollateralSelectorProps) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-text-secondary mb-3">{t('description')}</p>
+      <p className="text-sm font-semibold text-text-primary mb-1">{t('title')}</p>
+      <p className="text-xs text-text-muted mb-3">{t('description')}</p>
       {eligibleItps.map(itp => {
         const balFormatted = parseFloat(formatUnits(itp.balance, 18)).toFixed(2)
         return (
