@@ -10,7 +10,15 @@ import { ProfileTabs } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
 import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { usePoints } from '@/hooks/usePoints'
 import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
+
+function formatPoints(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  if (n >= 1) return Math.floor(n).toLocaleString()
+  return '0'
+}
 
 function ProfileContent({ address }: { address: string }) {
   const searchParams = useSearchParams()
@@ -18,6 +26,7 @@ function ProfileContent({ address }: { address: string }) {
   const t = useTranslations('pages.profile')
   const tab = (searchParams.get('tab') === 'index' ? 'index' : 'vision') as 'vision' | 'index'
   const { profile, isLoading } = usePlayerProfile(address)
+  const { points } = usePoints(address)
 
   const handleTabChange = (newTab: 'vision' | 'index') => {
     router.replace(`?tab=${newTab}`)
@@ -26,20 +35,14 @@ function ProfileContent({ address }: { address: string }) {
   const pnl = profile?.stats.pnl ?? 0
   const pnlColor = pnl >= 0 ? 'text-color-up' : 'text-color-down'
 
-  const visionStats = [
+  const stats = [
     { label: t('pnl'), value: formatPnL(profile?.stats.pnl ?? 0), color: pnlColor },
     { label: t('roi'), value: formatROI(profile?.stats.roi ?? 0) },
     { label: t('win_rate'), value: `${(profile?.stats.winRate ?? 0).toFixed(1)}%` },
+    { label: t('rounds'), value: String(profile?.stats.totalBatches ?? 0) },
     { label: t('volume'), value: formatVolume(profile?.stats.totalDeposited ?? 0) },
-    { label: t('batches'), value: String(profile?.stats.totalBatches ?? 0) },
+    { label: t('points'), value: formatPoints(points.total), color: 'text-color-up' },
   ]
-
-  const indexStats = [
-    { label: t('portfolio_value'), value: '\u2014' },
-    { label: t('holdings'), value: '\u2014' },
-  ]
-
-  const stats = tab === 'vision' ? visionStats : indexStats
 
   if (isLoading) {
     return (

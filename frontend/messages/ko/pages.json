@@ -870,10 +870,9 @@
     "pnl": "P&L",
     "roi": "ROI",
     "win_rate": "Win Rate",
+    "rounds": "Rounds",
     "volume": "Volume",
-    "batches": "Batches",
-    "portfolio_value": "Portfolio Value",
-    "holdings": "Holdings",
+    "points": "Points",
     "no_profile": "No profile data found for this address."
   }
 }

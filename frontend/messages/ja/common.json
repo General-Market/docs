@@ -363,23 +363,28 @@
     "switch_network": "Switch Network"
   },
   "profile": {
-    "tick_history": "Tick History",
-    "batch": "Batch",
+    "round_history": "Round History",
+    "batch": "Source",
     "roi": "ROI",
     "active": "Active",
-    "exited": "Exited",
-    "itp_coming_soon": "ITP portfolio tracking coming soon",
-    "no_pnl_data": "No P&L data available yet",
+    "exited": "Settled",
+    "no_pnl_data": "No P&L data yet",
     "pnl_label": "P&L",
     "tab_index": "Index",
     "tab_vision": "Vision",
     "loss": "Loss",
     "win": "Win",
-    "no_vision_history": "No Vision betting history yet",
-    "ticks": "{count} ticks",
+    "no_vision_history": "No round history yet",
+    "rounds_count": "{count} rounds",
     "deposited": "deposited",
-    "deposited_amount": "{amount} deposited",
-    "tick_title": "Tick #{tickId}: {sign}${pnl}",
-    "last_active": "Last active {time}"
+    "deposited_amount": "${amount} deposited",
+    "round_title": "Round #{tickId}: {sign}${pnl}",
+    "last_active": "Last active {time}",
+    "points_title": "Points",
+    "points_vision": "Vision",
+    "points_creator": "Creator",
+    "points_holder": "Holder",
+    "points_total": "Total",
+    "no_index_data": "No ITP holdings found"
   }
 }

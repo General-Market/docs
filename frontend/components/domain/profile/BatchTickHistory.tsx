@@ -17,7 +17,7 @@ export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
       {/* Column headers */}
       <div className="flex items-center gap-3 px-3 py-2 text-micro font-semibold uppercase tracking-[0.08em] text-text-muted border-b border-border-light">
         <div className="w-[140px] shrink-0">{t('profile.batch')}</div>
-        <div className="flex-1">{t('profile.tick_history')}</div>
+        <div className="flex-1">{t('profile.round_history')}</div>
         <div className="w-[72px] shrink-0 text-right">{t('profile.roi')}</div>
       </div>
 

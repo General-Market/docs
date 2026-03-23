@@ -52,7 +52,7 @@ export function TickSquares({ ticks }: TickSquaresProps) {
               borderRadius: 2,
               backgroundColor: color,
             }}
-            title={t('profile.tick_title', { tickId: tick.tickId, sign, pnl: tick.pnl.toFixed(2) })}
+            title={t('profile.round_title', { tickId: tick.tickId, sign, pnl: tick.pnl.toFixed(2) })}
           />
         )
       })}
