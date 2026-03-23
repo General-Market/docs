@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { ProfileBatch } from '@/hooks/usePlayerProfile'
 import { BatchTickRow } from './BatchTickRow'
 import { TickSquaresLegend } from './TickSquares'
+
+const PAGE_SIZE = 20
 
 interface BatchTickHistoryProps {
   batches: ProfileBatch[]
@@ -11,6 +14,9 @@ interface BatchTickHistoryProps {
 
 export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
   const t = useTranslations('common')
+  const [visible, setVisible] = useState(PAGE_SIZE)
+  const shown = batches.slice(0, visible)
+  const hasMore = visible < batches.length
 
   return (
     <div>
@@ -21,14 +27,22 @@ export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
         <div className="w-[72px] shrink-0 text-right">{t('profile.roi')}</div>
       </div>
 
-      {/* Rows */}
-      {batches.map((batch) => (
+      {/* Rows — paginated */}
+      {shown.map((batch) => (
         <BatchTickRow key={`${batch.sourceId}-${batch.batchId}`} batch={batch} />
       ))}
 
-      {/* Legend */}
-      <div className="px-3 py-2 border-t border-border-light">
+      {/* Load more / Legend */}
+      <div className="px-3 py-2 border-t border-border-light flex items-center justify-between">
         <TickSquaresLegend />
+        {hasMore && (
+          <button
+            onClick={() => setVisible(v => v + PAGE_SIZE)}
+            className="text-label font-bold text-black hover:underline"
+          >
+            Show more ({batches.length - visible} remaining)
+          </button>
+        )}
       </div>
     </div>
   )
