@@ -3,7 +3,6 @@
  * Loaded directly from deployment JSON (single source of truth).
  * File is copied from deployments/active-deployment.json by start.sh step 6.
  */
-import { L3_RPC_URL } from '../config'
 import deployment from './deployment.json'
 
 const c = deployment.contracts
@@ -30,7 +29,6 @@ export const CHAIN_ID = deployment.chainId
 
 // Legacy / General Market compat (unused but other files import these)
 export const CONTRACT_ADDRESS = c.Index as `0x${string}`
-export const RESOLUTION_CONTRACT_ADDRESS = (c as any).Governance as `0x${string}` || '' as `0x${string}`
 export const COLLATERAL_TOKEN_ADDRESS = c.L3_WUSDC as `0x${string}`
 export const COLLATERAL_SYMBOL: string = 'USDC'
 export const COLLATERAL_DECIMALS = 18
@@ -40,35 +38,14 @@ export const BACKEND_URL = typeof window !== 'undefined'
   : (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001')  // Server: direct
 
 // Legacy exports
-export const BASE_CHAIN_ID = CHAIN_ID
 export const USDC_ADDRESS = COLLATERAL_TOKEN_ADDRESS
 export const USDC_DECIMALS = COLLATERAL_DECIMALS
 
 export function getContractAddress(): `0x${string}` { return CONTRACT_ADDRESS }
-export function getResolutionContractAddress(): `0x${string}` { return RESOLUTION_CONTRACT_ADDRESS }
 export function getBackendUrl(): string {
   if (typeof window !== 'undefined') return '/api/backend'
   return process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
 }
-
-interface NetworkConfig {
-  chainId: number
-  chainName: string
-  contracts: { agiArenaCore: `0x${string}`; resolutionDAO: `0x${string}` }
-  collateralToken: { address: `0x${string}`; symbol: string; decimals: number }
-  rpcUrl: string
-}
-
-const activeNetwork: NetworkConfig = {
-  chainId: CHAIN_ID,
-  chainName: 'Index L3',
-  contracts: { agiArenaCore: CONTRACT_ADDRESS, resolutionDAO: RESOLUTION_CONTRACT_ADDRESS },
-  collateralToken: { address: COLLATERAL_TOKEN_ADDRESS, symbol: COLLATERAL_SYMBOL, decimals: COLLATERAL_DECIMALS },
-  rpcUrl: L3_RPC_URL,
-}
-
-export function getActiveNetwork(): NetworkConfig { return activeNetwork }
-export function getNetworks(): Record<string, NetworkConfig> { return { 'index-l3': activeNetwork } }
 
 export function formatCollateralAmount(amount: bigint | number): string {
   const value = typeof amount === 'bigint' ? Number(amount) : amount

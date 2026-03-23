@@ -50,7 +50,8 @@ function CoinLogo({ symbol, coinMap, size = 18 }: { symbol: string; coinMap: Rec
     />
   )
 }
-const DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+// Anvil account 0 — used for local dev rebalance simulation via eth_sendTransaction
+const ANVIL_DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
 interface RebalanceModalProps {
   itpId: string
@@ -348,7 +349,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
 
         // Execute on L3 via raw RPC (deployer simulates oracle consensus)
         const hash = await rpcCall(L3_RPC, 'eth_sendTransaction', [{
-          from: DEPLOYER,
+          from: ANVIL_DEPLOYER,
           to: L3_INDEX,
           data: calldata,
           gas: '0x500000',

@@ -1,11 +1,11 @@
-//! Standardized error codes for Index L3 protocol (E001-E010)
+//! Standardized error codes for Index L3 protocol (E001-E006)
 //!
 //! These error codes match the Solidity ErrorsLib.sol for cross-language consistency.
 //! See architecture.md Section 21 for error code definitions.
 
 use thiserror::Error;
 
-/// Protocol-level error codes for Index L3 (E001-E010)
+/// Protocol-level error codes for Index L3 (E001-E006)
 ///
 /// These errors represent business logic failures in the Index protocol
 /// and are designed to match the Solidity ErrorsLib.sol custom errors.
@@ -74,50 +74,6 @@ pub enum IndexError {
         /// The bytes32 identifier that was not found (hex string)
         itp_id: String,
     },
-
-    /// E007: Asset in this ITP is being delisted
-    ///
-    /// No new orders accepted for assets in delisting process
-    #[error("[E007] Asset delisting: asset={asset}")]
-    AssetDelisting {
-        /// The address of the asset being delisted (hex string)
-        asset: String,
-    },
-
-    /// E008: Liquidity source is currently unavailable
-    ///
-    /// External liquidity source (AP, DEX) is offline or unreachable
-    #[error("[E008] Source unavailable: source_id={source_id}")]
-    SourceUnavailable {
-        /// The identifier of the unavailable source (hex string)
-        source_id: String,
-    },
-
-    /// E009: Order has expired past its deadline
-    ///
-    /// Orders auto-cancel after 1 hour (default deadline), user receives full refund
-    #[error("[E009] Order expired: order_id={order_id}, deadline={deadline}, current_time={current_time}")]
-    OrderExpired {
-        /// The unique identifier of the expired order (u128 to match Solidity uint256 range)
-        order_id: u128,
-        /// The order's expiration timestamp
-        deadline: u64,
-        /// The current timestamp
-        current_time: u64,
-    },
-
-    /// E010: Order was only partially filled
-    ///
-    /// Remainder is automatically refunded to user
-    #[error("[E010] Fill incomplete: order_id={order_id}, requested={requested}, filled={filled}")]
-    FillIncomplete {
-        /// The unique identifier of the partially filled order (u128 to match Solidity uint256 range)
-        order_id: u128,
-        /// The original requested amount
-        requested: u128,
-        /// The actual filled amount
-        filled: u128,
-    },
 }
 
 #[cfg(test)]
@@ -183,50 +139,6 @@ mod tests {
         };
         assert!(err.to_string().starts_with("[E006]"));
         assert!(err.to_string().contains("itp_id=0x1234"));
-    }
-
-    #[test]
-    fn test_e007_asset_delisting() {
-        let err = IndexError::AssetDelisting {
-            asset: "0xtoken".to_string(),
-        };
-        assert!(err.to_string().starts_with("[E007]"));
-        assert!(err.to_string().contains("asset=0xtoken"));
-    }
-
-    #[test]
-    fn test_e008_source_unavailable() {
-        let err = IndexError::SourceUnavailable {
-            source_id: "uniswap-v3".to_string(),
-        };
-        assert!(err.to_string().starts_with("[E008]"));
-        assert!(err.to_string().contains("source_id=uniswap-v3"));
-    }
-
-    #[test]
-    fn test_e009_order_expired() {
-        let err = IndexError::OrderExpired {
-            order_id: 12345,
-            deadline: 1700000000,
-            current_time: 1700003600,
-        };
-        assert!(err.to_string().starts_with("[E009]"));
-        assert!(err.to_string().contains("order_id=12345"));
-        assert!(err.to_string().contains("deadline=1700000000"));
-        assert!(err.to_string().contains("current_time=1700003600"));
-    }
-
-    #[test]
-    fn test_e010_fill_incomplete() {
-        let err = IndexError::FillIncomplete {
-            order_id: 99999,
-            requested: 10000,
-            filled: 7500,
-        };
-        assert!(err.to_string().starts_with("[E010]"));
-        assert!(err.to_string().contains("order_id=99999"));
-        assert!(err.to_string().contains("requested=10000"));
-        assert!(err.to_string().contains("filled=7500"));
     }
 
     #[test]

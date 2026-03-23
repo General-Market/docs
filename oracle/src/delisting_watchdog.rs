@@ -4,7 +4,7 @@
 //! and call `requestRebalance()` (permissionless) on L3 Index contract to emit
 //! `RebalanceRequested` events. The existing consensus pipeline handles the rest.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -42,9 +42,6 @@ pub struct DelistingWatchdog {
     chain_reader: Arc<dyn ChainReader>,
     chain_writer: Arc<dyn ChainWriter>,
     symbol_map: SymbolMap,
-    /// reverse map: base_coin (e.g. "SUI") → address (for future use)
-    #[allow(dead_code)]
-    reverse_map: HashMap<String, Address>,
     /// Index contract address on L3
     index_address: Address,
 }
@@ -57,23 +54,12 @@ impl DelistingWatchdog {
         symbol_map: SymbolMap,
         index_address: Address,
     ) -> Self {
-        // Build reverse map: for each (address -> "SUIUSDT"), extract "SUI" as base_coin
-        let mut reverse_map = HashMap::new();
-        for addr in symbol_map.assets() {
-            if let Some(pair) = symbol_map.get_symbol(addr) {
-                // Extract base coin from pair like "SUIUSDT" -> "SUI"
-                let base_coin = extract_base_coin(pair);
-                reverse_map.insert(base_coin, *addr);
-            }
-        }
-
         Self {
             data_node_url,
             http_client: Client::new(),
             chain_reader,
             chain_writer,
             symbol_map,
-            reverse_map,
             index_address,
         }
     }

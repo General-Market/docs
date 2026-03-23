@@ -14,7 +14,7 @@ use ap::limit_enforcer::{LimitOrderEnforcer, ValidationResult, LIMIT_TOLERANCE_B
 use ap::metrics::APMetrics;
 use ap::timeout::{TimeoutConfig, TimeoutHandler};
 use clap::Parser;
-use common::adapters::{DataNodeChainReader, DeploymentConfig, RpcChainReader, RpcChainWriter};
+use common::adapters::{DeploymentConfig, RpcChainReader, RpcChainWriter};
 use common::mocks::{MockBitgetBuilder, MockChainBuilder};
 use common::rate_limit::{BitgetRateLimiter, RateLimiterTier};
 use common::traits::{APClient, ChainWriter};
@@ -372,9 +372,6 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             .map_err(|e| format!("Failed to create RPC provider: {}", e))?;
         let provider = Arc::new(provider);
 
-        // Create DataNodeChainReader for L3 state reads
-        let _data_node_reader = Arc::new(DataNodeChainReader::new(data_node_url.clone()));
-
         // Create chain writer for fill confirmation (AC #3) - still via RPC
         let private_key_hex = config.effective_private_key()
             .map_err(|e| format!("Failed to read private key: {}", e))?
@@ -398,7 +395,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             rpc = %rpc_url,
             index = ?index_addr,
             chain_id = deployment.chain_id,
-            "Data-node mode initialized (DataNodeChainReader + SSE events, RpcChainWriter)"
+            "Data-node mode initialized (SSE events, RpcChainWriter)"
         );
 
         // SSE mode: bypass EventMonitor, create mpsc channel directly for APEvent delivery
@@ -1209,7 +1206,9 @@ async fn process_events(
                                                     .and_then(|v| v.as_str())
                                                 {
                                                     if let Ok(rp) = ethers::types::U256::from_dec_str(price_str) {
-                                                        let _ = settlement.vault_client.set_price(asset_addr, rp).await;
+                                                        if let Err(e) = settlement.vault_client.set_price(asset_addr, rp).await {
+                                                            warn!(asset = ?asset_addr, error = %e, "set_price failed — trades may use stale price");
+                                                        }
                                                     }
                                                 }
                                                 // Read bid/ask for spread-aware amount computation
@@ -1695,7 +1694,9 @@ async fn process_events(
                             }
 
                             // Set price on vault
-                            let _ = settlement.vault_client.set_price(assets[i], prices[i]).await;
+                            if let Err(e) = settlement.vault_client.set_price(assets[i], prices[i]).await {
+                                warn!(order_id, asset = ?assets[i], error = %e, "set_price failed — trade may use stale price");
+                            }
 
                             // Determine sell/buy tokens based on side
                             let (sell_token, buy_token, sell_amt, buy_amt) = if side == 0 {

@@ -34,30 +34,6 @@ library ErrorsLib {
     /// @param itpId The bytes32 identifier that was not found
     error E006_ITPNotFound(bytes32 itpId);
 
-    /// @notice E007: Asset in this ITP is being delisted
-    /// @dev No new orders accepted for assets in delisting process
-    /// @param asset The address of the asset being delisted
-    error E007_AssetDelisting(address asset);
-
-    /// @notice E008: Liquidity source is currently unavailable
-    /// @dev External liquidity source (AP, DEX) is offline or unreachable
-    /// @param sourceId The identifier of the unavailable source
-    error E008_SourceUnavailable(bytes32 sourceId);
-
-    /// @notice E009: Order has expired past its deadline
-    /// @dev Orders auto-cancel after 1 hour (default deadline), user receives full refund
-    /// @param orderId The unique identifier of the expired order
-    /// @param deadline The order's expiration timestamp
-    /// @param currentTime The current block timestamp
-    error E009_OrderExpired(uint256 orderId, uint256 deadline, uint256 currentTime);
-
-    /// @notice E010: Order was only partially filled
-    /// @dev Remainder is automatically refunded to user
-    /// @param orderId The unique identifier of the partially filled order
-    /// @param requested The original requested amount
-    /// @param filled The actual filled amount
-    error E010_FillIncomplete(uint256 orderId, uint256 requested, uint256 filled);
-
     /// @notice E011: Invalid slippage tier specified
     /// @dev Valid slippage tiers are 0 (0.3%), 1 (1%), or 2 (3%)
     /// @param tier The invalid tier that was submitted
@@ -176,10 +152,6 @@ library ErrorsLib {
     /// @param currentTime Current block timestamp
     error E034_OrderNotYetExpired(uint256 orderId, uint256 deadline, uint256 currentTime);
 
-    /// @notice E035: OracleRegistry not configured (required for production)
-    /// @dev In production, oracleRegistry must be set for BLS verification
-    error E035_OracleRegistryNotSet();
-
     // ============ UPGRADE ERRORS (Story 2.7 Code Review) ============
 
     /// @notice E038: Zero address not allowed for implementation
@@ -203,9 +175,6 @@ library ErrorsLib {
 
     /// @notice E043: Zero address not allowed for oracle registry
     error E043_ZeroOracleRegistry();
-
-    /// @notice E044: Cannot use emergency upgrade when standard upgrade pending
-    error E044_StandardUpgradePending();
 
     /// @notice E036: Fill cycle number mismatch
     /// @param fillCycleNumber Cycle number in the fill struct
@@ -303,27 +272,10 @@ library ErrorsLib {
 
     // ============ REBALANCE ERRORS (Story 6.11) ============
 
-    /// @notice E065: Caller is not the ITP creator (required for proposeRebalance)
-    /// @param caller The unauthorized caller
-    /// @param creator The ITP creator address
-    error E065_NotITPCreator(address caller, address creator);
-
     /// @notice E066: ITP is not active (required for rebalance)
     /// @param itpId The ITP identifier
     /// @param status Current ITP status
     error E066_ITPNotActive(bytes32 itpId, uint256 status);
-
-    /// @notice E067: A pending rebalance already exists for this ITP
-    /// @param itpId The ITP identifier
-    error E067_RebalanceAlreadyPending(bytes32 itpId);
-
-    /// @notice E068: No active pending rebalance for this ITP
-    /// @param itpId The ITP identifier
-    error E068_NoActiveRebalance(bytes32 itpId);
-
-    /// @notice E069: Weights mismatch with pending rebalance target
-    /// @param itpId The ITP identifier
-    error E069_WeightsMismatch(bytes32 itpId);
 
     // ============ BRIDGE PROXY ERRORS (Story 6.21) ============
 
@@ -384,15 +336,6 @@ library ErrorsLib {
     /// @param existingBridgedItp The existing BridgedITP address
     error E07C_OrbitItpAlreadyMapped(bytes32 orbitItpId, address existingBridgedItp);
 
-    /// @notice E07D: Insufficient signers for threshold BLS verification
-    /// @param provided Number of valid signers in bitmap
-    /// @param required Minimum required signers
-    error E07D_InsufficientSigners(uint256 provided, uint256 required);
-
-    /// @notice E07E: Invalid aggregated pubkey length (must be 128 bytes for G2)
-    /// @param length The actual length
-    error E07E_InvalidAggregatedPubkeyLength(uint256 length);
-
     // ============ DECIMAL CONVERSION ERRORS (Story 7.6b) ============
 
     /// @notice E07F: USDC amount too small (must be at least 0.001 USDC = 1000 units in 6 decimals)
@@ -424,15 +367,6 @@ library ErrorsLib {
     /// @param currentDepth Current number of pending orders
     /// @param maxDepth Maximum allowed pending orders
     error E083_QueueFull(uint256 currentDepth, uint256 maxDepth);
-
-    /// @notice E084: BLS signature verification failed for price update
-    error E084_InvalidBLSPriceSignature();
-
-    /// @notice E085: Asset price is stale (timestamp too old)
-    /// @param assetIdx The asset index
-    /// @param priceAge Age of the price in seconds
-    /// @param maxAge Maximum allowed age in seconds
-    error E085_StalePrice(uint256 assetIdx, uint256 priceAge, uint256 maxAge);
 
     // ============ ARCHITECTURE GAP FIX ERRORS (Story 7.17) ============
 

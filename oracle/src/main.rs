@@ -5020,27 +5020,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 });
             }
 
-            // Spawn tick engine
-            let engine_scheduler = scheduler.clone();
-            let engine_resolver = resolver.clone();
-            let engine_config = vision_cfg.clone();
-            let engine_shutdown = components.shutdown.clone();
-            let engine_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
-            let engine_broadcast_tx = if components.p2p.transport.is_some() {
-                Some(vision_broadcast_tx.clone())
-            } else {
-                None
-            };
-            // Wire key registry so balance proof aggregation can verify BLS signatures
-            // from peer oracles before accepting them into the aggregation set (HIGH-4).
-            let engine_key_registry: Option<Arc<dyn oracle::KeyRegistry>> =
-                components.consensus.keys.key_registry.clone()
-                    .map(|kr| kr as Arc<dyn oracle::KeyRegistry>);
-            // engine::run deleted (round-only purge)
-            // All engine variables (engine_scheduler, engine_resolver, etc.) are now unused
-            let _ = (engine_scheduler, engine_resolver, engine_config, engine_shutdown,
-                     engine_bls_keypair, engine_broadcast_tx, engine_key_registry);
-
             // Initialize Postgres pool, chain listener, and API routes
             match sqlx::postgres::PgPoolOptions::new()
                 .max_connections(3)

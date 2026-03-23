@@ -6,7 +6,7 @@
 use super::{BootstrapError, BootstrapParams, PriceComponents};
 use crate::{
     BackendPriceFetcher, BitgetPriceFetcher, DexPriceSource, DexPriceSourceConfig, OracleConfig,
-    PriceFetcher, PriceValidator, SymbolMap,
+    PriceFetcher, SymbolMap,
 };
 use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
 use common::integrations::oneinch::{CachedQuoteClient, OneInchQuoteClient, OneInchRateLimitHandler, QuoteCacheConfig};
@@ -90,10 +90,6 @@ impl<'a> PriceBuilder<'a> {
 
         // Build DEX price source
         let dex_source = self.build_dex_source(&shared_cached_client).await;
-
-        // Initialize price validator (currently unused but ready)
-        let _price_validator = PriceValidator::new();
-        info!(self.node_id, "PriceValidator initialized");
 
         Ok(PriceComponents {
             fetcher,

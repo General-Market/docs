@@ -7,10 +7,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { formatEther, formatUnits } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_TOKEN_ADDRESS, COLLATERAL_SYMBOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { useApBalances } from '@/hooks/useApBalances'
-import { DATA_NODE_URL, AP_URL } from '@/lib/config'
-
-// AP address from index-system.env
-const AP_ADDRESS = '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC' as `0x${string}`
+import { DATA_NODE_URL, AP_URL, AP_ADDRESS } from '@/lib/config'
 
 // Pagination config
 const ITEMS_PER_PAGE = 25

@@ -58,6 +58,7 @@ export const VISION_API_URL = typeof window !== 'undefined'
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
+export const AP_ADDRESS = (process.env.NEXT_PUBLIC_AP_ADDRESS || '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC') as `0x${string}`
 export const L3_EXPLORER_URL = process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
 export const SETTLEMENT_EXPLORER_URL = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || 'https://testnet.sonicscan.org'
 
