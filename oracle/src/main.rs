@@ -148,8 +148,8 @@ struct Args {
     #[arg(long)]
     skip_reconstruction: bool,
 
-    /// Signature threshold for BLS consensus (default: auto-calculate from oracle count).
-    #[arg(long)]
+    /// Emergency override for BLS signature threshold (default: auto-calculate from oracle count).
+    #[arg(long = "emergency-threshold-override", alias = "signature-threshold")]
     signature_threshold: Option<usize>,
 
     /// Number of oracles in the network (default: 3).
@@ -4773,12 +4773,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         consensus_round_timeout_secs: args.consensus_round_timeout_secs,
     };
 
-    // Deprecation warning for --signature-threshold
+    // Warning for emergency threshold override
     if args.signature_threshold.is_some() {
         warn!(
-            "DEPRECATED: --signature-threshold is deprecated and will be removed in a future release. \
-             Threshold is now auto-computed from on-chain activeOracleCount using BFT 2/3+1 formula. \
-             The override is still honoured for this run, but please remove it from your launch config."
+            "EMERGENCY OVERRIDE: --emergency-threshold-override is active. \
+             Threshold is normally auto-computed from on-chain activeOracleCount using BFT 2/3+1 formula. \
+             The override is honoured for this run. Remove it once the emergency is resolved."
         );
     }
 

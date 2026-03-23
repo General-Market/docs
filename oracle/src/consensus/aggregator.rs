@@ -12,16 +12,13 @@ use ethers::types::U256;
 use tracing::{debug, info, warn};
 
 /// Threshold constants for consensus
-pub const QUORUM_THRESHOLD: usize = 14; // 14/20 online required
 pub const DISAGREEMENT_PERCENT: u8 = 20; // 20% disagree triggers retry
 pub const MAX_PRICE_RETRIES: u8 = 3;
 pub const MAX_BATCH_RETRIES: u8 = 3;
 
-/// BFT threshold: ceil(2n/3). Requires >=2/3 of oracles to sign.
-/// For n=20: threshold=14. For n=3: threshold=2.
+/// BFT threshold: delegates to the canonical `bls_threshold` in common.
 pub fn compute_threshold(num_oracles: usize) -> usize {
-    if num_oracles == 0 { return 1; }
-    (num_oracles * 2 + 2) / 3
+    common::consensus::threshold::bls_threshold(num_oracles)
 }
 
 /// Status of signature aggregation
@@ -90,7 +87,9 @@ impl SignatureAggregator {
 
     /// Update the signature threshold at runtime (for registry auto-update)
     pub fn set_threshold(&mut self, threshold: usize) {
-        assert!(threshold >= 2, "BLS threshold must be >= 2, got {}", threshold);
+        if threshold == 0 {
+            tracing::warn!("set_threshold(0) — no active oracles, consensus halted");
+        }
         self.required_signatures = threshold;
     }
 
@@ -395,7 +394,6 @@ mod tests {
 
     #[test]
     fn test_threshold_constants() {
-        assert_eq!(QUORUM_THRESHOLD, 14);
         assert_eq!(DISAGREEMENT_PERCENT, 20);
         assert_eq!(MAX_PRICE_RETRIES, 3);
         assert_eq!(MAX_BATCH_RETRIES, 3);
@@ -435,7 +433,7 @@ mod tests {
 
     #[test]
     fn test_compute_threshold_zero_nodes() {
-        // 0 oracles returns 1 (guard)
-        assert_eq!(compute_threshold(0), 1);
+        // 0 oracles returns 0 (no consensus possible)
+        assert_eq!(compute_threshold(0), 0);
     }
 }

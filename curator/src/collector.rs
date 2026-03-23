@@ -385,9 +385,9 @@ pub fn compute_signers_bitmask(signer_ids: &[u8]) -> U256 {
     bitmask
 }
 
-/// Compute BFT threshold: max(2, ceil(n * 2 / 3))
+/// Compute BFT threshold: max(2, bls_threshold) — curator enforces minimum 2.
 pub fn compute_threshold(oracle_count: usize) -> usize {
-    std::cmp::max(2, (oracle_count * 2 + 2) / 3)
+    std::cmp::max(2, common::consensus::threshold::bls_threshold(oracle_count))
 }
 
 /// BLS-signed price data ready for on-chain submission

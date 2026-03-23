@@ -160,27 +160,13 @@ pub fn sign_registry_sync_message(
     Ok(signature.0)
 }
 
-/// Compute the BLS threshold for consensus (strict BFT: floor(2n/3) + 1)
-///
-/// For n active oracles, threshold = floor(2n/3) + 1.
-/// This is the standard BFT threshold tolerating floor(n/3) Byzantine faults.
-///
-/// Examples:
-/// - 3 oracles: threshold = 3 (all must sign — can't tolerate any fault with only 3 nodes)
-/// - 4 oracles: threshold = 3
-/// - 5 oracles: threshold = 4
-/// - 6 oracles: threshold = 5
-/// - 20 oracles: threshold = 14
+/// Compute the BLS threshold for consensus — delegates to canonical `bls_threshold`.
 ///
 /// **IMPORTANT**: This threshold value is embedded in the BLS-signed message.
 /// MirrorOracleRegistry.sol (Story 8.2) must use the same formula to verify
 /// that enough signatures were collected before accepting a sync update.
 pub fn compute_threshold(active_count: u64) -> u64 {
-    if active_count == 0 {
-        return 0;
-    }
-    // BFT: ceil(2n/3)
-    (active_count * 2 + 2) / 3
+    common::consensus::threshold::bls_threshold(active_count as usize) as u64
 }
 
 // ============================================================================
