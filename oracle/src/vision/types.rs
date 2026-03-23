@@ -17,21 +17,12 @@ pub struct Batch {
     pub source_id: H256,
     /// Active config hash (keccak256 of ABI-encoded batch config)
     pub config_hash: H256,
-    /// Pending config hash (promoted at tick boundary via lazy promotion)
-    pub next_config_hash: H256,
     pub tick_duration: u64,
     /// Active lock window offset in seconds
     pub lock_offset: u64,
-    /// Pending lock window offset (promoted with next_config_hash)
-    pub next_lock_offset: u64,
-    /// Pending tick duration (promoted with next_config_hash at tick boundary)
-    pub next_tick_duration: Option<u64>,
-    /// Signed epoch offset for tick continuity across tickDuration changes
-    pub epoch_offset: i64,
     pub created_at_tick: u64,
-    /// Last tick at which config was promoted (prevents mid-tick changes)
-    pub last_promotion_tick: u64,
     pub paused: bool,
+    pub settled: bool,
 }
 
 /// Per-market config from off-chain batch config.

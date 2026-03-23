@@ -114,38 +114,30 @@ impl TickScheduler {
         Ok(())
     }
 
-    /// Update a batch's pending config (next_config_hash + next_lock_offset + next_tick_duration).
+    /// Update a batch's config hash directly (round-based: no pending/promotion).
     pub async fn on_batch_config_updated(
         &self,
         batch_id: u64,
         new_config_hash: H256,
-        new_lock_offset: u64,
-        new_tick_duration: u64,
+        _new_lock_offset: u64,
+        _new_tick_duration: u64,
     ) {
         let mut batches = self.batches.write().await;
         if let Some(batch) = batches.get_mut(&batch_id) {
-            batch.next_config_hash = new_config_hash;
-            batch.next_lock_offset = new_lock_offset;
-            batch.next_tick_duration = Some(new_tick_duration);
+            batch.config_hash = new_config_hash;
         }
     }
 
-    /// Promote next_config_hash to active config_hash.
+    /// Promote config hash (legacy event — just sets config_hash directly).
     pub async fn on_batch_config_promoted(
         &self,
         batch_id: u64,
         config_hash: H256,
-        promoted_at_tick: u64,
+        _promoted_at_tick: u64,
     ) {
         let mut batches = self.batches.write().await;
         if let Some(batch) = batches.get_mut(&batch_id) {
             batch.config_hash = config_hash;
-            batch.lock_offset = batch.next_lock_offset;
-            if let Some(new_td) = batch.next_tick_duration.take() {
-                batch.tick_duration = new_td;
-            }
-            batch.last_promotion_tick = promoted_at_tick;
-            batch.next_config_hash = H256::zero();
         }
     }
 
@@ -244,11 +236,10 @@ impl TickScheduler {
     /// Load batch metadata and player positions from DB on startup.
     pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
         // 1. Load batches
-        let batch_rows: Vec<(i64, String, i64, i64, bool, String, String, String, i64, i64, Option<i64>)> =
+        let batch_rows: Vec<(i64, String, i64, i64, bool, String, String, i64)> =
             sqlx::query_as(
                 "SELECT id, creator, tick_duration, created_at_tick, paused, \
-                 source_id, config_hash, next_config_hash, next_lock_offset, last_promotion_tick, \
-                 next_tick_duration \
+                 source_id, config_hash, COALESCE(lock_offset, 0) \
                  FROM vision_batches WHERE NOT paused AND (state = 'active' OR state IS NULL)",
             )
             .fetch_all(pool)
@@ -256,21 +247,17 @@ impl TickScheduler {
 
         {
             let mut batches = self.batches.write().await;
-            for (id, creator, tick_duration, created_at_tick, paused, source_id, config_hash, next_config_hash, next_lock_offset, last_promotion_tick, next_tick_duration) in &batch_rows {
+            for (id, creator, tick_duration, created_at_tick, paused, source_id, config_hash, lock_offset) in &batch_rows {
                 let batch = Batch {
                     id: *id as u64,
                     creator: creator.parse().unwrap_or_default(),
                     source_id: source_id.parse().unwrap_or_default(),
                     config_hash: config_hash.parse().unwrap_or_default(),
-                    next_config_hash: next_config_hash.parse().unwrap_or_default(),
                     tick_duration: *tick_duration as u64,
-                    lock_offset: 0,
-                    next_lock_offset: *next_lock_offset as u64,
-                    next_tick_duration: next_tick_duration.map(|v| v as u64),
-                    epoch_offset: 0,
+                    lock_offset: *lock_offset as u64,
                     created_at_tick: *created_at_tick as u64,
-                    last_promotion_tick: *last_promotion_tick as u64,
                     paused: *paused,
+                    settled: false, // loaded from active batches, not settled
                 };
                 batches.insert(batch.id, batch);
             }
@@ -320,15 +307,11 @@ mod tests {
             creator: Address::zero(),
             source_id: H256::zero(),
             config_hash: H256::zero(),
-            next_config_hash: H256::zero(),
             tick_duration,
             lock_offset: 0,
-            next_lock_offset: 0,
-            next_tick_duration: None,
-            epoch_offset: 0,
             created_at_tick,
-            last_promotion_tick: 0,
             paused: false,
+            settled: false,
         }
     }
 

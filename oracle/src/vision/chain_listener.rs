@@ -81,13 +81,10 @@ impl EventTopics {
 struct FetchedBatchData {
     source_id: H256,
     config_hash: H256,
-    next_config_hash: H256,
     lock_offset: u64,
-    next_lock_offset: u64,
-    next_tick_duration: Option<u64>,
-    epoch_offset: i64,
     created_at_tick: u64,
-    last_promotion_tick: u64,
+    paused: bool,
+    settled: bool,
 }
 
 impl ChainListener {
@@ -303,15 +300,11 @@ impl ChainListener {
                 creator,
                 source_id: fetched.source_id,
                 config_hash: fetched.config_hash,
-                next_config_hash: fetched.next_config_hash,
                 tick_duration,
                 lock_offset: fetched.lock_offset,
-                next_lock_offset: fetched.next_lock_offset,
-                next_tick_duration: fetched.next_tick_duration,
-                epoch_offset: fetched.epoch_offset,
                 created_at_tick: fetched.created_at_tick,
-                last_promotion_tick: fetched.last_promotion_tick,
-                paused: false,
+                paused: fetched.paused,
+                settled: fetched.settled,
             },
             None => {
                 // Fallback: use block timestamp to compute created_at_tick
@@ -334,15 +327,11 @@ impl ChainListener {
                     creator,
                     source_id: source_id_from_event,
                     config_hash: config_hash_from_event,
-                    next_config_hash: H256::zero(),
                     tick_duration,
                     lock_offset: 0,
-                    next_lock_offset: 0,
-                    next_tick_duration: None,
-                    epoch_offset: 0,
                     created_at_tick,
-                    last_promotion_tick: 0,
                     paused: false,
+                    settled: false,
                 }
             }
         };
@@ -437,10 +426,9 @@ impl ChainListener {
         info!(batch_id, "BatchUnpaused");
     }
 
-    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 nextConfigHash, uint256 nextLockOffset, uint256 nextTickDuration)`
+    /// Handle `BatchConfigUpdated` (legacy event — no longer emitted by current contract).
     ///
-    /// Emitted when a batch creator (or BLS consensus) updates the pending config.
-    /// Sets next_config_hash, next_lock_offset, and next_tick_duration on the batch; promotion happens at tick boundary.
+    /// Kept for backward-compatible log replay. Updates config_hash directly.
     async fn handle_batch_config_updated(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -466,11 +454,9 @@ impl ChainListener {
 
         // 2. Update Postgres
         if let Err(e) = sqlx::query(
-            "UPDATE vision_batches SET next_config_hash = $1, next_lock_offset = $2, next_tick_duration = $3 WHERE id = $4",
+            "UPDATE vision_batches SET config_hash = $1 WHERE id = $2",
         )
         .bind(format!("{:?}", new_config_hash))
-        .bind(new_lock_offset as i64)
-        .bind(new_tick_duration as i64)
         .bind(batch_id as i64)
         .execute(&self.pool)
         .await
@@ -483,13 +469,13 @@ impl ChainListener {
             new_config_hash = ?new_config_hash,
             new_lock_offset,
             new_tick_duration,
-            "BatchConfigUpdated"
+            "BatchConfigUpdated (legacy)"
         );
     }
 
-    /// Handle `BatchConfigPromoted(uint256 indexed batchId, bytes32 oldConfigHash, bytes32 newConfigHash, uint256 atTick)`
+    /// Handle `BatchConfigPromoted` (legacy event — no longer emitted by current contract).
     ///
-    /// Emitted when next_config_hash is promoted to active config_hash at a tick boundary.
+    /// Kept for backward-compatible log replay. Updates config_hash directly.
     async fn handle_batch_config_promoted(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -514,13 +500,9 @@ impl ChainListener {
 
         // 2. Update Postgres
         if let Err(e) = sqlx::query(
-            "UPDATE vision_batches SET config_hash = $1, last_promotion_tick = $2, \
-             tick_duration = COALESCE(next_tick_duration, tick_duration), \
-             next_tick_duration = NULL \
-             WHERE id = $3",
+            "UPDATE vision_batches SET config_hash = $1 WHERE id = $2",
         )
         .bind(format!("{:?}", config_hash))
-        .bind(promoted_at_tick as i64)
         .bind(batch_id as i64)
         .execute(&self.pool)
         .await
@@ -532,7 +514,7 @@ impl ChainListener {
             batch_id,
             config_hash = ?config_hash,
             promoted_at_tick,
-            "BatchConfigPromoted"
+            "BatchConfigPromoted (legacy)"
         );
     }
 
@@ -712,10 +694,9 @@ impl ChainListener {
             if let Some(f) = self.fetch_batch_from_contract(*bid as u64).await {
                 if f.config_hash != H256::zero() {
                     let h = format!("0x{}", hex::encode(f.config_hash));
-                    let nh = format!("0x{}", hex::encode(f.next_config_hash));
                     let s = format!("0x{}", hex::encode(f.source_id));
-                    if sqlx::query("UPDATE vision_batches SET config_hash=$1, next_config_hash=$2, source_id=$3, lock_offset=$4, created_at_tick=$5, last_promotion_tick=$6 WHERE id=$7")
-                        .bind(&h).bind(&nh).bind(&s).bind(f.lock_offset as i64).bind(f.created_at_tick as i64).bind(f.last_promotion_tick as i64).bind(*bid)
+                    if sqlx::query("UPDATE vision_batches SET config_hash=$1, source_id=$2, lock_offset=$3, created_at_tick=$4 WHERE id=$5")
+                        .bind(&h).bind(&s).bind(f.lock_offset as i64).bind(f.created_at_tick as i64).bind(*bid)
                         .execute(&self.pool).await.is_ok() {
                         self.scheduler.update_config_hash(*bid as u64, f.config_hash, f.source_id).await;
                         repaired += 1;
@@ -753,25 +734,20 @@ impl ChainListener {
             }
         };
 
-        // Decode the 12-field Batch struct tuple (must match IVision.sol exactly):
-        // (address creator, bytes32 sourceId, bytes32 configHash, bytes32 nextConfigHash,
-        //  uint256 tickDuration, uint256 lockOffset, uint256 nextLockOffset,
-        //  uint256 nextTickDuration, int256 epochOffset,
-        //  uint256 createdAtTick, uint256 lastPromotionTick, bool paused)
+        // Decode the 8-field Batch struct tuple (must match IVision.sol exactly):
+        // (address creator, bytes32 sourceId, bytes32 configHash,
+        //  uint256 tickDuration, uint256 lockOffset,
+        //  uint256 createdAtTick, bool paused, bool settled)
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
                 abi::ParamType::Address,           // [0] creator
                 abi::ParamType::FixedBytes(32),     // [1] sourceId
                 abi::ParamType::FixedBytes(32),     // [2] configHash
-                abi::ParamType::FixedBytes(32),     // [3] nextConfigHash
-                abi::ParamType::Uint(256),          // [4] tickDuration
-                abi::ParamType::Uint(256),          // [5] lockOffset
-                abi::ParamType::Uint(256),          // [6] nextLockOffset
-                abi::ParamType::Uint(256),          // [7] nextTickDuration
-                abi::ParamType::Int(256),           // [8] epochOffset
-                abi::ParamType::Uint(256),          // [9] createdAtTick
-                abi::ParamType::Uint(256),          // [10] lastPromotionTick
-                abi::ParamType::Bool,               // [11] paused
+                abi::ParamType::Uint(256),          // [3] tickDuration
+                abi::ParamType::Uint(256),          // [4] lockOffset
+                abi::ParamType::Uint(256),          // [5] createdAtTick
+                abi::ParamType::Bool,               // [6] paused
+                abi::ParamType::Bool,               // [7] settled
             ])],
             &result,
         ) {
@@ -800,71 +776,38 @@ impl ChainListener {
             _ => H256::zero(),
         };
 
-        // tuple[3] = nextConfigHash
-        let next_config_hash = match &tuple[3] {
-            Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
-            _ => H256::zero(),
-        };
-
-        // tuple[4] = tickDuration (skip, from event)
-        // tuple[5] = lockOffset
-        let lock_offset = match &tuple[5] {
+        // tuple[3] = tickDuration (skip, from event)
+        // tuple[4] = lockOffset
+        let lock_offset = match &tuple[4] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
 
-        // tuple[6] = nextLockOffset
-        let next_lock_offset = match &tuple[6] {
+        // tuple[5] = createdAtTick
+        let created_at_tick = match &tuple[5] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
 
-        // tuple[7] = nextTickDuration
-        let next_tick_duration = match &tuple[7] {
-            Token::Uint(v) => {
-                let val = v.as_u64();
-                if val > 0 { Some(val) } else { None }
-            }
-            _ => None,
+        // tuple[6] = paused
+        let paused = match &tuple[6] {
+            Token::Bool(v) => *v,
+            _ => false,
         };
 
-        // tuple[8] = epochOffset (int256 — interpret as signed)
-        let epoch_offset = match &tuple[8] {
-            Token::Int(v) => {
-                // ethers Int token stores as U256; interpret two's complement for negative
-                if v.bit(255) {
-                    // negative: -(2^256 - v)
-                    let neg = (!*v).overflowing_add(U256::one()).0;
-                    -(neg.as_u64() as i64)
-                } else {
-                    v.as_u64() as i64
-                }
-            }
-            _ => 0i64,
-        };
-
-        // tuple[9] = createdAtTick
-        let created_at_tick = match &tuple[9] {
-            Token::Uint(v) => v.as_u64(),
-            _ => 0,
-        };
-
-        // tuple[10] = lastPromotionTick
-        let last_promotion_tick = match &tuple[10] {
-            Token::Uint(v) => v.as_u64(),
-            _ => 0,
+        // tuple[7] = settled
+        let settled = match &tuple[7] {
+            Token::Bool(v) => *v,
+            _ => false,
         };
 
         Some(FetchedBatchData {
             source_id,
             config_hash,
-            next_config_hash,
             lock_offset,
-            next_lock_offset,
-            next_tick_duration,
-            epoch_offset,
             created_at_tick,
-            last_promotion_tick,
+            paused,
+            settled,
         })
     }
 

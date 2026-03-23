@@ -697,15 +697,11 @@ mod tests {
             creator: Address::zero(),
             source_id: H256::zero(),
             config_hash: H256::zero(),
-            next_config_hash: H256::zero(),
             tick_duration,
             lock_offset: 0,
-            next_lock_offset: 0,
-            next_tick_duration: None,
-            epoch_offset: 0,
             created_at_tick: 0,
-            last_promotion_tick: 0,
             paused: false,
+            settled: false,
         }
     }
 
