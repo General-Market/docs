@@ -6,7 +6,7 @@ use tokio::sync::broadcast;
 use tracing::{debug, info, warn};
 
 /// Broadcast channel capacity for chain events.
-pub const CHAIN_EVENT_CHANNEL_SIZE: usize = 1024;
+pub const CHAIN_EVENT_CHANNEL_SIZE: usize = 4096;
 
 /// Envelope for chain events broadcast to SSE consumers.
 #[derive(Debug, Clone, Serialize, Deserialize)]

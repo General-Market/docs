@@ -2597,6 +2597,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         source_registry,
         sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(sse_max, sse_per_ip)),
         batch_markets,
+        chain_event_lag_total: std::sync::atomic::AtomicU64::new(0),
     });
 
     // Spawn chain pollers via run_collector_loop
