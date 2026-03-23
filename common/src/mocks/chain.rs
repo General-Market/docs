@@ -681,7 +681,7 @@ mod tests {
         assert_eq!(orders[0].id, order.id);
 
         // Submit batch
-        let tx = mock.submit_batch(1, vec![1], vec![0u8; 96]).await.unwrap();
+        let tx = mock.submit_batch(1, vec![1], vec![0u8; 96], 0, U256::zero()).await.unwrap();
         assert_ne!(tx, H256::zero());
 
         // Confirm fill
@@ -692,7 +692,7 @@ mod tests {
             cycle_number: U256::from(1),
             tx_hash: H256::random(),
         };
-        let tx = mock.confirm_fills(1, vec![fill], vec![0u8; 96]).await.unwrap();
+        let tx = mock.confirm_fills(1, vec![fill], vec![0u8; 96], 0, U256::zero()).await.unwrap();
         assert_ne!(tx, H256::zero());
 
         // Order should be removed from pending
