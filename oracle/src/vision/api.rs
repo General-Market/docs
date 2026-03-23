@@ -1651,8 +1651,8 @@ async fn player_profile(
     #[derive(Debug, sqlx::FromRow)]
     struct RoundRow {
         batch_id: i64,
-        correct_count: i32,
-        total_markets: i32,
+        correct_count: i64,
+        total_markets: i64,
         pnl: String,
         settled_at: chrono::DateTime<chrono::Utc>,
     }
