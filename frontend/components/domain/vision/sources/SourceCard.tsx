@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Link, useRouter } from '@/i18n/routing'
 import type { VisionSource } from '@/lib/vision/sources'
-import { getDataNodeSourceId } from '@/lib/vision/sources'
+import { toInternalId } from '@/lib/vision/source-ids'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
@@ -68,7 +68,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const router = useRouter()
 
   // Fetch per-source data immediately on mount
-  const dataNodeId = getDataNodeSourceId(source.id)
+  const dataNodeId = toInternalId(source.id)
   const { data: sourceSnapshot, isLoading } = useSourceSnapshot(dataNodeId)
 
   const totalMarkets = sourceSnapshot?.prices?.length ?? 0

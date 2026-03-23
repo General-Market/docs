@@ -9,7 +9,6 @@ import {
   type SourceSchedule,
 } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
-import { SOURCE_DISPLAY_OVERRIDES } from '@/lib/vision/source-categories'
 import { useTranslations } from 'next-intl'
 
 // ---------------------------------------------------------------------------
