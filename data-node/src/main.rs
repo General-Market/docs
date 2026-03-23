@@ -2504,15 +2504,20 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     // Background health stats cache (refreshes every 60s)
     let health_stats_cache = Arc::new(api::HealthStatsCache::new());
-    api::spawn_health_stats_refresh(pool.clone(), Arc::clone(&health_stats_cache));
+    let interval_map = source_registry.internal_id_meta()
+        .into_iter()
+        .map(|(id, (_, iv))| (id, iv))
+        .collect::<std::collections::HashMap<String, u64>>();
+    api::spawn_health_stats_refresh(pool.clone(), Arc::clone(&health_stats_cache), interval_map);
 
-    // Start batch engine
+    // Start batch engine (sources from registry)
     let batch_state = Arc::new(batch_engine::BatchEngineState::new());
     {
         let batch_pool = pool.clone();
         let batch_state_clone = Arc::clone(&batch_state);
+        let batch_sources = source_registry.batch_sources();
         tokio::spawn(async move {
-            batch_engine::run(batch_pool, batch_state_clone, batch_engine::BATCH_SOURCES).await;
+            batch_engine::run(batch_pool, batch_state_clone, batch_sources).await;
         });
         info!("BatchEngine started");
     }

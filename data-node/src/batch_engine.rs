@@ -55,115 +55,9 @@ const MIN_LOCK_OFFSET_SECS: u64 = 5;
 /// Each byte = 8 markets. 8192 markets = 1024 bytes bitmap.
 const MAX_MARKETS_PER_BATCH: usize = 8192;
 
-/// Source metadata: (source_id, display_name, sync_interval_secs)
-pub type SourceMeta = (&'static str, &'static str, u64);
-
-/// All batch-eligible sources — mirrors SOURCE_META in api.rs.
-pub const BATCH_SOURCES: &[SourceMeta] = &[
-    // ── Original sources ──────────────────────────────────────────────────
-    ("crypto", "CoinGecko Crypto", 600),
-    ("defi", "DefiLlama DeFi", 120),
-    ("stocks", "Stocks (Finnhub)", 600),
-    ("rates", "Federal Reserve (FRED)", 86400),
-    ("bls", "Bureau of Labor Statistics", 86400),
-    ("worldbank", "World Bank", 604800),
-    ("eia", "US Energy (EIA)", 86400),
-    ("ecb", "ECB Euro Rates", 86400),
-    ("weather", "Weather (Open-Meteo)", 3600),
-    ("sec_13f", "SEC EDGAR 13F", 21600),
-    ("sec_efts", "SEC EFTS Filing Counts", 14400),
-    ("sec_insider", "SEC Insider Trading", 14400),
-    ("finra_short_vol", "FINRA Daily Short Volume", 86400),
-    ("finra", "FINRA Short Interest", 86400),
-    ("congress", "Congressional Trading", 86400),
-    ("cftc", "CFTC Commitments", 604800),
-    ("futures", "Continuous Futures", 86400),
-    ("bchain", "Bitcoin On-Chain", 86400),
-    ("opec", "OPEC", 2592000),
-    ("imf", "IMF Indicators", 2592000),
-    ("bonds", "US Treasury Yields", 86400),
-    // ── New sources ─────────────────────────────────────────────────────
-    ("anilist", "AniList Anime & Manga", 600),
-    ("backpacktf", "backpack.tf TF2 Items", 600),
-    ("cloudflare", "Cloudflare Radar", 600),
-    ("crates_io", "crates.io Rust Packages", 600),
-    ("fourchan", "4chan", 600),
-    ("github", "GitHub Repositories", 600),
-    ("hackernews", "Hacker News", 300),
-    ("npm", "npm Package Downloads", 600),
-    ("polymarket", "Polymarket Predictions", 300),
-    ("pypi", "PyPI Python Packages", 600),
-    ("steam", "Steam Games", 600),
-    ("tmdb", "TMDb Movies, TV & Celebrities", 300),
-    ("lastfm", "Last.fm Music Artists", 600),
-    ("twitch", "Twitch Live Streaming", 60),
-    ("twse", "Taiwan Stock Exchange", 600),
-    ("zillow", "Zillow Real Estate", 86400),
-    // ── Bet on Everything sources ────────────────────────────────────
-    ("volcano", "USGS Volcanoes", 600),
-    ("earthquake", "USGS Earthquakes", 300),
-    ("spaceweather", "NOAA Space Weather", 600),
-    ("wildfire", "NASA FIRMS Wildfires", 1800),
-    ("flights", "OpenSky Flights", 600),
-    ("mil_aircraft", "Military Aircraft", 600),
-    ("maritime", "AIS Maritime", 600),
-    ("epidemic", "disease.sh Epidemics", 1800),
-    ("sports", "ESPN Live Scores", 600),
-    ("iss", "ISS Position", 600),
-    ("weather_alerts", "NWS Severe Weather", 300),
-    ("animals", "Wildlife Observations", 600),
-    ("movebank", "Movebank Animal GPS", 1800),
-    ("ebird", "eBird Observations", 600),
-    ("aisstream", "AIS Ship Tracking", 60),
-    ("gtfs_transit", "GTFS Transit", 120),
-    ("usa_spending", "US Defense Spending", 3600),
-    ("pumpfun", "Pump.fun Tokens", 300),
-    ("usgs_water", "USGS Water Monitoring", 600),
-    // ── Social / Live sources ─────────────────────────────────────────
-    ("reddit", "Reddit Communities", 600),
-    ("chaturbate", "Chaturbate Live Cams", 600),
-    // ── Esports ─────────────────────────────────────────────────────
-    ("esports", "PandaScore Esports", 300),
-    // ── Environment & Transport ───────────────────────────────────
-    ("noaa_tides", "NOAA Tides & Currents", 900),
-    ("nrc_nuclear", "NRC Nuclear Reactors", 3600),
-    ("citybikes", "CityBikes Bike Sharing", 600),
-    ("ndbc", "NDBC Ocean Buoys", 600),
-    ("noaa_met", "NOAA Ocean Meteorology", 600),
-    ("nwps", "NWPS River Gauges", 600),
-    ("airnow", "AirNow Air Quality", 600),
-    // ── Government / Legal ──────────────────────────────────────────
-    ("courtlistener", "CourtListener Federal Courts", 600),
-    // ── Education / Research ──────────────────────────────────────────
-    ("openalex", "OpenAlex Scholarly Works", 600),
-    ("crossref", "Crossref DOI Registry", 600),
-    ("pubmed", "PubMed Biomedical Research", 600),
-    ("stackexchange", "Stack Exchange Developer Q&A", 600),
-    // ── Animals ──────────────────────────────────────────────────────
-    ("shelter", "Animal Shelters", 600),
-    // ── Autos & Vehicles ──────────────────────────────────────────
-    ("parking", "ParkAPI Parking Garages", 600),
-    ("tomtom_traffic", "TomTom Traffic Flow", 600),
-    ("tomtom_evcharge", "TomTom EV Charging", 600),
-    // ── Board Games & Shopping ──────────────────────────────────────
-    ("bgg", "BoardGameGeek Hotness", 600),
-    ("bestbuy", "Best Buy Products", 600),
-    // ── Jobs / Labor ──────────────────────────────────────────────
-    ("adzuna", "Adzuna Job Market", 1800),
-    // ── Tourism ──────────────────────────────────────────────────────
-    ("queue_times", "Queue-Times Theme Parks", 600),
-    ("cbp_border", "CBP Border Wait Times", 600),
-    ("faa_delays", "FAA Airport Delays", 600),
-    // ── Drink Sources ─────────────────────────────────────────────
-    ("yahoo_drinks", "Yahoo Drink Markets", 600),
-    // ── Transport & Infrastructure (new) ────────────────────────
-    ("tfl_tube", "London TfL Tube Status", 300),
-    ("paris_metro", "Paris Metro Status", 300),
-    ("mta_subway", "NYC MTA Subway Alerts", 300),
-    ("ryanair", "Ryanair Flight Delays", 600),
-    ("ioda", "Internet Outage Detection (IODA)", 600),
-    ("power_outages", "US Power Outages", 600),
-];
+/// Source metadata tuple: (source_id, display_name, sync_interval_secs).
+/// Built at startup from the source registry (sources-display.json).
+pub type SourceMeta = (String, String, u64);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -786,7 +680,7 @@ async fn recover_last_config_from_db(
 }
 
 /// Run the batch engine. Recomputes all source configs every 60s.
-pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMeta]) {
+pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<SourceMeta>) {
     info!("BatchEngine started with {} sources", sources.len());
 
     // Load signed configs from DB (crash recovery)
@@ -801,12 +695,12 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
     loop {
         let mut configs = Vec::new();
 
-        for &(source_id, display_name, sync_interval) in sources {
+        for (source_id, display_name, sync_interval) in &sources {
             if let Some(config) =
-                generate_batch_config(&pool, source_id, display_name, sync_interval).await
+                generate_batch_config(&pool, source_id, display_name, *sync_interval).await
             {
                 if let Err(e) = store_batch_config(&pool, &config).await {
-                    warn!(source = source_id, %e, "Failed to store batch config");
+                    warn!(source = %source_id, %e, "Failed to store batch config");
                 }
                 configs.push(config);
             }
@@ -817,8 +711,8 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
         let live_source_ids: std::collections::HashSet<String> =
             configs.iter().map(|c| c.source_id.clone()).collect();
 
-        for &(source_id, display_name, sync_interval) in sources {
-            if live_source_ids.contains(source_id) {
+        for (source_id, display_name, sync_interval) in &sources {
+            if live_source_ids.contains(source_id.as_str()) {
                 continue;
             }
 
@@ -827,7 +721,7 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
                 recover_last_config_from_db(&pool, source_id, display_name).await
             {
                 info!(
-                    source = source_id,
+                    source = %source_id,
                     age_secs = (Utc::now() - recovered.created_at).num_seconds(),
                     markets = recovered.markets.len(),
                     "Recovered stale config from DB for missing source"
@@ -838,10 +732,10 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
 
             // Last resort: static fallback from vision-recommended-configs.json
             if let Some((config_hash, tick_dur, lock_off, _count)) =
-                static_fallbacks.get(source_id)
+                static_fallbacks.get(source_id.as_str())
             {
                 info!(
-                    source = source_id,
+                    source = %source_id,
                     "Using static fallback config (no live or DB data)"
                 );
                 configs.push(BatchConfig {
@@ -857,7 +751,7 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
             }
 
             warn!(
-                source = source_id,
+                source = %source_id,
                 tick_secs = sync_interval,
                 "Source has no live data, no DB history, and no static fallback"
             );
