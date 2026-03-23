@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { DATA_NODE_SERVER } from '@/lib/config'
+import { getDataNodeServer } from '@/lib/config'
 import { toInternalId } from '@/lib/vision/source-ids'
 
 async function tryFetch(source: string): Promise<Response | null> {
   try {
     const res = await fetch(
-      `${DATA_NODE_SERVER}/batches/source/${encodeURIComponent(source)}/config`,
+      `${getDataNodeServer()}/batches/source/${encodeURIComponent(source)}/config`,
       { cache: 'no-store', signal: AbortSignal.timeout(8000) }
     )
     if (res.ok) return res

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VISION_API_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 
 // Catch-all proxy for Vision API paths not handled by specific route handlers.
 // In App Router, specific routes (batches/, bitmap/, leaderboard/, etc.) take
@@ -12,7 +12,7 @@ export const maxDuration = 300
 async function proxyRequest(req: NextRequest, pathSegments: string[]) {
   const path = pathSegments.join('/')
   // Vision API expects /vision/ prefix on upstream
-  const url = `${VISION_API_URL}/vision/${path}${req.nextUrl.search}`
+  const url = `${getIssuerVisionUrl()}/vision/${path}${req.nextUrl.search}`
 
   const headers = new Headers()
   for (const [key, value] of req.headers.entries()) {

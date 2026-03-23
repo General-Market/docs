@@ -1,4 +1,4 @@
-import { AA_DATA_NODE_URL, DATA_NODE_SERVER } from '@/lib/config'
+import { getAaDataNodeUrl, getDataNodeServer } from '@/lib/config'
 import itpIdNames from '@/lib/itp-id-names.json'
 
 const ITP_NAMES = itpIdNames as Record<string, { name: string; ticker: string }>
@@ -29,7 +29,7 @@ export interface ItpSummary {
  */
 export async function getItpSummaries(): Promise<ItpSummary[]> {
   try {
-    const res = await fetch(`${AA_DATA_NODE_URL}/aum-ranking`, {
+    const res = await fetch(`${getAaDataNodeUrl()}/aum-ranking`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     })
@@ -64,7 +64,7 @@ export async function getItpDetail(itpId: string): Promise<{
   assetCount: number
   holdings: { symbol: string; weight: number; price: number }[]
 } | null> {
-  const dnUrl = DATA_NODE_SERVER
+  const dnUrl = getDataNodeServer()
   try {
     const priceRes = await fetch(`${dnUrl}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
       cache: 'no-store',

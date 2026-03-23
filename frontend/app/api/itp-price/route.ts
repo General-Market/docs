@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { DATA_NODE_SERVER, L3_RPC_SERVER } from '@/lib/config'
+import { getDataNodeServer, getL3RpcServer } from '@/lib/config'
 import deployment from '@/lib/contracts/deployment.json'
-
-const DATA_NODE_URL = DATA_NODE_SERVER
-
-// L3 chain (Orbit) — for on-chain NAV fallback
-const L3_RPC = L3_RPC_SERVER
 const INDEX_CONTRACT = deployment.contracts.Index
 
 // getITPState(bytes32) selector
 const GET_ITP_STATE_SELECTOR = '0x7bfb3953'
 
 async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(L3_RPC, {
+  const res = await fetch(getL3RpcServer(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
@@ -32,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   // Try data-node first (has live API prices → more accurate NAV)
   try {
-    const res = await fetch(`${DATA_NODE_URL}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
+    const res = await fetch(`${getDataNodeServer()}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(3_000),
     })

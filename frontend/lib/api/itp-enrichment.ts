@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import { AA_DATA_NODE_URL } from '@/lib/config'
+import { getAaDataNodeUrl } from '@/lib/config'
 import { normalizeUniversityName } from '@/lib/university-logos'
 import type {
   CoinMapEntry,
@@ -163,7 +163,7 @@ async function fetchDefiProtocolsCached(): Promise<any[]> {
     return defiProtocolsCache.data
   }
   try {
-    const res = await fetch(`${AA_DATA_NODE_URL}/defillama/protocols`, {
+    const res = await fetch(`${getAaDataNodeUrl()}/defillama/protocols`, {
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return defiProtocolsCache?.data || []
@@ -221,7 +221,7 @@ async function fetchRaisesCached(): Promise<any[]> {
     return defiRaisesCache.data
   }
   try {
-    const res = await fetch(`${AA_DATA_NODE_URL}/defillama/raises`, {
+    const res = await fetch(`${getAaDataNodeUrl()}/defillama/raises`, {
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) return defiRaisesCache?.data || []
@@ -296,7 +296,7 @@ export async function computeEnrichment(itpId: string): Promise<ItpEnrichment> {
   // Resolve holdings via /chain/l3/itp-state → symbol-map → coin symbols
   try {
     const stateRes = await fetch(
-      `${AA_DATA_NODE_URL}/chain/l3/itp-state?itp_id=${encodeURIComponent(itpId)}`,
+      `${getAaDataNodeUrl()}/chain/l3/itp-state?itp_id=${encodeURIComponent(itpId)}`,
       { signal: AbortSignal.timeout(5000) }
     )
     if (stateRes.ok) {

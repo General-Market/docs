@@ -1,4 +1,4 @@
-import { ISSUER_VISION_URL as ORACLE_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 
 export async function GET(
   _request: Request,
@@ -6,7 +6,7 @@ export async function GET(
 ) {
   try {
     const { batchId } = await params
-    const res = await fetch(`${ORACLE_VISION_URL}/vision/rounds/${batchId}/results`, {
+    const res = await fetch(`${getIssuerVisionUrl()}/vision/rounds/${batchId}/results`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })

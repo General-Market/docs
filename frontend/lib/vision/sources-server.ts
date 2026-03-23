@@ -2,7 +2,7 @@
 // Use these in server components, API routes, sitemap.ts — anywhere hooks are unavailable.
 // Client components: use useSourceRegistry() from @/hooks/vision/useSourceRegistry instead.
 
-import { DATA_NODE_SERVER } from '@/lib/config'
+import { getDataNodeServer } from '@/lib/config'
 
 export interface SourceDisplayServer {
   sourceId: string
@@ -47,7 +47,7 @@ export async function getSourceRegistryServer(): Promise<SourceRegistryServer> {
   }
 
   try {
-    const res = await fetch(`${DATA_NODE_SERVER}/sources/registry`)
+    const res = await fetch(`${getDataNodeServer()}/sources/registry`)
     if (!res.ok) {
       return cached ?? { sources: [], categories: [] }
     }

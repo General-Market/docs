@@ -1,5 +1,5 @@
 import { keccak256, toHex } from 'viem'
-import { ISSUER_VISION_URL as ORACLE_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
     // Oracle endpoint is /vision/rounds/active (not /vision/rounds which 404s)
     // Source filter doesn't work server-side — fetch all, filter here
-    const res = await fetch(`${ORACLE_VISION_URL}/vision/rounds/active`, {
+    const res = await fetch(`${getIssuerVisionUrl()}/vision/rounds/active`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })

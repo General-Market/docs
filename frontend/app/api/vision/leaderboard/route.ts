@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { ISSUER_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 import { toInternalId } from '@/lib/vision/source-ids'
-
-const ISSUER_URL = ISSUER_VISION_URL
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +11,7 @@ export async function GET(request: Request) {
     if (sourceId) params.set('source_id', toInternalId(sourceId))
     else if (batchId) params.set('batch_id', batchId)
     const qs = params.toString() ? `?${params.toString()}` : ''
-    const res = await fetch(`${ISSUER_URL}/vision/leaderboard${qs}`, {
+    const res = await fetch(`${getIssuerVisionUrl()}/vision/leaderboard${qs}`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })

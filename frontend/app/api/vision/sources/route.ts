@@ -1,4 +1,4 @@
-import { DATA_NODE_SERVER } from '@/lib/config'
+import { getDataNodeServer } from '@/lib/config'
 import visionBatches from '@/lib/contracts/vision-batches.json'
 
 // Names of all deployed batches — the only sources worth showing users.
@@ -24,7 +24,7 @@ function hasDeployedBatch(source: any): boolean {
 
 export async function GET() {
   try {
-    const res = await fetch(`${DATA_NODE_SERVER}/sources/registry`, { next: { revalidate: 300 } })
+    const res = await fetch(`${getDataNodeServer()}/sources/registry`, { next: { revalidate: 300 } })
     if (!res.ok) return Response.json({ sources: [], categories: [] }, { status: 502 })
     const data = await res.json()
     const sources = (data.sources ?? [])

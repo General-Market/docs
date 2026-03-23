@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { ISSUER_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 
 export async function GET(
   _request: Request,
@@ -11,7 +11,7 @@ export async function GET(
   }
   try {
     const res = await fetch(
-      `${ISSUER_VISION_URL}/vision/player/${address.toLowerCase()}/profile`,
+      `${getIssuerVisionUrl()}/vision/player/${address.toLowerCase()}/profile`,
       { cache: 'no-store', signal: AbortSignal.timeout(15000) }
     )
     if (!res.ok) return NextResponse.json({ error: 'Profile unavailable' }, { status: res.status })

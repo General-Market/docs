@@ -7,21 +7,21 @@ import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 import { getItpSummaries } from '@/lib/api/server-data'
-import { ISSUER_VISION_URL, DATA_NODE_SERVER } from '@/lib/config'
+import { getIssuerVisionUrl, getDataNodeServer } from '@/lib/config'
 import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 
 async function fetchAboutStats() {
   const [itps, leaderboardData, batchData, snapshotMeta] = await Promise.all([
     getItpSummaries(),
-    fetch(`${ISSUER_VISION_URL}/vision/leaderboard`, {
+    fetch(`${getIssuerVisionUrl()}/vision/leaderboard`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     }).then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(`${ISSUER_VISION_URL}/vision/batches`, {
+    fetch(`${getIssuerVisionUrl()}/vision/batches`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     }).then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(`${DATA_NODE_SERVER}/snapshot/meta`, {
+    fetch(`${getDataNodeServer()}/snapshot/meta`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     }).then(r => r.ok ? r.json() : null).catch(() => null),

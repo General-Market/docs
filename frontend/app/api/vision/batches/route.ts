@@ -1,4 +1,4 @@
-import { ISSUER_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 import { keccak256, toHex } from 'viem'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
 import sourcesData from '@/data/sources-display.json'
@@ -37,7 +37,7 @@ function resolveSourceId(batchId: number, rawSourceId: string): string {
 
 export async function GET() {
   try {
-    const res = await fetch(`${ISSUER_VISION_URL}/vision/batches`, {
+    const res = await fetch(`${getIssuerVisionUrl()}/vision/batches`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })

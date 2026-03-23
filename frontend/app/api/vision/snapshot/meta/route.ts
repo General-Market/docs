@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { AA_DATA_NODE_URL } from '@/lib/config'
-
-const AA_DATA_NODE = AA_DATA_NODE_URL
+import { getAaDataNodeUrl } from '@/lib/config'
 
 interface BulkSourceEntry {
   totalAssets: number
@@ -27,7 +25,7 @@ function deriveStatus(entry: BulkSourceEntry): string {
 export async function GET() {
   try {
     // Single bulk call instead of ~90 individual requests
-    const res = await fetch(`${AA_DATA_NODE}/market/stats`, {
+    const res = await fetch(`${getAaDataNodeUrl()}/market/stats`, {
       signal: AbortSignal.timeout(5_000),
     })
     if (!res.ok) throw new Error(`Bulk stats HTTP ${res.status}`)

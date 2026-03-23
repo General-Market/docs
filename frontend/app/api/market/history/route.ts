@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AA_DATA_NODE_URL } from '@/lib/config'
+import { getAaDataNodeUrl } from '@/lib/config'
 
 /**
  * Proxy market price history from data-node.
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing source or asset' }, { status: 400 })
   }
 
-  const url = new URL(`${AA_DATA_NODE_URL}/market/prices/${source}/${encodeURIComponent(asset)}/history`)
+  const url = new URL(`${getAaDataNodeUrl()}/market/prices/${source}/${encodeURIComponent(asset)}/history`)
   if (from) url.searchParams.set('from', from)
   if (to) url.searchParams.set('to', to)
 

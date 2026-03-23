@@ -1,32 +1,61 @@
 // Centralized runtime URL configuration.
 // All hooks/components import from here instead of redeclaring env vars locally.
 // Browser-side URLs go through /api/* catch-all proxies — no mixed-content, no CORS.
+//
+// IMPORTANT: Server-only URLs are exported as getter functions, not constants.
+// Next.js webpack inlines `process.env.LITERAL` at build time — if a var is
+// absent during the build, the compiled bundle has `undefined` baked in and
+// falls through to the localhost default forever. Getter functions read
+// process.env at call time, so the Vercel runtime value is always used.
 
-// ── Server-only URLs (used by next.config.ts, API route handlers) ──
+// ── Build-time safe (used by next.config.ts at config load) ──
 export const REWRITES_BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
-export const AA_DATA_NODE_URL = process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
-export const DATA_NODE_SERVER = process.env.DATA_NODE_URL || 'http://localhost:8200'
-export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || process.env.ORACLE_VISION_URL || 'http://localhost:10001'
 export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
+
+// ── Server-only URLs (API route handlers) ──
+// Exported as functions — call them, don't reference them as bare values.
+//   Before: fetch(`${ISSUER_VISION_URL}/path`)
+//   After:  fetch(`${getIssuerVisionUrl()}/path`)
+export function getAaDataNodeUrl(): string {
+  return process.env['AA_DATA_NODE_URL'] || 'http://localhost:8200'
+}
+
+export function getDataNodeServer(): string {
+  return process.env['DATA_NODE_URL'] || 'http://localhost:8200'
+}
+
+export function getIssuerVisionUrl(): string {
+  return process.env['ISSUER_VISION_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001'
+}
+
+export function getL3RpcServer(): string {
+  return process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
+}
+
+// Backward-compat aliases — kept for any remaining import sites.
+// These read at module load but use bracket access so webpack won't inline them.
+export const AA_DATA_NODE_URL = process.env['AA_DATA_NODE_URL'] || 'http://localhost:8200'
+export const DATA_NODE_SERVER = process.env['DATA_NODE_URL'] || 'http://localhost:8200'
+export const ISSUER_VISION_URL = process.env['ISSUER_VISION_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001'
+export const L3_RPC_SERVER = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://localhost:8545'
 
 // ── Isomorphic URLs (browser → proxy, server → direct) ──
 export const DATA_NODE_URL = typeof window !== 'undefined'
   ? '/api/dn'
-  : (process.env.DATA_NODE_URL || 'http://localhost:8200')
+  : (process.env['DATA_NODE_URL'] || 'http://localhost:8200')
 
 export const ORACLE_URL = typeof window !== 'undefined'
   ? '/api/oracle'
-  : (process.env.ORACLE_URL || 'http://localhost:9001')
+  : (process.env['ORACLE_URL'] || 'http://localhost:9001')
 
 // Vision API — browser goes through catch-all proxy, server goes direct.
 // Accepts VISION_API_URL or ORACLE_VISION_URL (post issuer→oracle rename).
 export const VISION_API_URL = typeof window !== 'undefined'
   ? '/api'
-  : (process.env.VISION_API_URL || process.env.ORACLE_VISION_URL || 'http://localhost:10001')
+  : (process.env['VISION_API_URL'] || process.env['ORACLE_VISION_URL'] || 'http://localhost:10001')
 
 // ── Client-side URLs ──
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
-export const L3_RPC_SERVER = process.env.L3_RPC_URL || process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 export const L3_EXPLORER_URL = process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''

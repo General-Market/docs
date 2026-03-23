@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { AA_DATA_NODE_URL } from '@/lib/config'
+import { getAaDataNodeUrl } from '@/lib/config'
 import { allInternalIds } from '@/lib/vision/source-ids'
-
-const AA_DATA_NODE = AA_DATA_NODE_URL
 const DETAIL_LIMIT = 10_000   // Per-source detail page (crypto=10K, defi=6K)
 const GRID_CAP_PER_SOURCE = 200  // Grid view bitmap preview cap
 
@@ -34,7 +32,7 @@ export async function GET(request: Request) {
       let snapshots: Array<Record<string, unknown>> = []
       for (const internalId of allInternalIds(sourceFilter)) {
         const res = await fetch(
-          `${AA_DATA_NODE}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
+          `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
           { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
         )
         if (!res.ok) continue
@@ -53,7 +51,7 @@ export async function GET(request: Request) {
     }
 
     // Grid view: fetch first 5000 for bitmap preview (fast, ~2s)
-    const res = await fetch(`${AA_DATA_NODE}/vision/snapshot?limit=5000`, {
+    const res = await fetch(`${getAaDataNodeUrl()}/vision/snapshot?limit=5000`, {
       next: { revalidate: 30 },
       signal: AbortSignal.timeout(15_000),
     })

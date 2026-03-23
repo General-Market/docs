@@ -12,7 +12,7 @@ import { privateKeyToAccount } from 'viem/accounts'
  * - gas=true: also sends 0.5 S (Sonic testnet native token) for settlement txs
  */
 
-import { L3_RPC_SERVER, SETTLEMENT_RPC_URL } from '@/lib/config'
+import { getL3RpcServer, SETTLEMENT_RPC_URL } from '@/lib/config'
 
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
 
@@ -58,18 +58,18 @@ export async function POST(req: NextRequest) {
       id: L3_CHAIN_ID,
       name: 'Index L3',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [L3_RPC_SERVER] } },
+      rpcUrls: { default: { http: [getL3RpcServer()] } },
     } as const
 
     const l3Wallet = createWalletClient({
       account,
       chain: l3Chain,
-      transport: http(L3_RPC_SERVER),
+      transport: http(getL3RpcServer()),
     })
 
     const l3Public = createPublicClient({
       chain: l3Chain,
-      transport: http(L3_RPC_SERVER),
+      transport: http(getL3RpcServer()),
     })
 
     // Read Vision's USDC address from the contract, fall back to deployment JSON

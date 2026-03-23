@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { AA_DATA_NODE_URL } from '@/lib/config'
+import { getAaDataNodeUrl } from '@/lib/config'
 
 const VALID_ENDPOINTS = ['history', 'latest']
 const VALID_RANGES = ['1h', '6h', '24h', '7d', '30d']
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid range' }, { status: 400 })
   }
 
-  const url = new URL(`${AA_DATA_NODE_URL}/explorer/health/${endpoint}`)
+  const url = new URL(`${getAaDataNodeUrl()}/explorer/health/${endpoint}`)
   url.searchParams.set('range', range)
 
   try {

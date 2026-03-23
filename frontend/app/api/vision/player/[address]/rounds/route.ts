@@ -1,4 +1,4 @@
-import { ISSUER_VISION_URL as ORACLE_VISION_URL } from '@/lib/config'
+import { getIssuerVisionUrl } from '@/lib/config'
 
 export async function GET(
   request: Request,
@@ -8,7 +8,7 @@ export async function GET(
     const { address } = await params
     const { searchParams } = new URL(request.url)
     const qs = new URLSearchParams(searchParams)
-    const res = await fetch(`${ORACLE_VISION_URL}/vision/player/${address}/rounds?${qs}`, {
+    const res = await fetch(`${getIssuerVisionUrl()}/vision/player/${address}/rounds?${qs}`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })

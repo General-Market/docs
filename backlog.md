@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260323-v2p8 (Vision 0-player investigation)
+
+- [DECISION] Server-only env vars in config.ts converted from module-level constants to getter functions. Next.js webpack inlines `process.env.LITERAL` at build time — if the var was absent during the Vercel build, `undefined` is baked into the bundle forever, falling through to localhost defaults. Getter functions (`getIssuerVisionUrl()`, etc.) use bracket access (`process.env['KEY']`) and read at call time, immune to inlining.
+- [FAILED] `Object.defineProperty(exports, ...)` for lazy getters — incompatible with ESM bundling.
+- [FAILED] `Proxy` objects as string stand-ins — won't coerce in template literals.
+- [DECISION] Old constant exports kept with bracket access for any remaining client-side imports. All API routes and server libraries migrated to getter functions.
+
 ## Session: 20260323-y7k3 (YC + Product Hunt launch scraping)
 
 - [DECISION] YC launches scraped via Algolia public API (2,696 launches). YouTube transcripts fetched via pytubefix (bypasses IP blocks that killed youtube-transcript-api and yt-dlp).
