@@ -8,7 +8,7 @@
  * 3. Settlement of one round does not corrupt the other
  * 4. Pool conservation on the settled round
  *
- * On fresh deploy (fewer than 2 active rounds), logs and passes gracefully.
+ * On fresh deploy (fewer than 2 active rounds), skips with explicit warnings.
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -50,7 +50,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
     const rounds = await getActiveRounds()
 
     if (rounds.length < 2) {
-      console.log(`Only ${rounds.length} active round(s) — need 2 for concurrent test. Round-based sources may not be configured or oracle has not spawned enough rounds. Graceful pass.`)
+      console.warn(`SKIP: Only ${rounds.length} active round(s) — need 2 for concurrent test. Oracle may not have spawned enough rounds yet.`)
       noRoundsAvailable = true
       return
     }
@@ -70,7 +70,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
     }
 
     if (unjoinedRounds.length < 2) {
-      console.log(`Only ${unjoinedRounds.length} unjoined round(s) — need 2. Graceful pass.`)
+      console.warn(`SKIP: Only ${unjoinedRounds.length} unjoined round(s) — need 2.`)
       noRoundsAvailable = true
       return
     }
@@ -86,9 +86,9 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43b: player joins both rounds independently', async () => {
-    if (noRoundsAvailable) { console.log('No unjoined rounds — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No rounds available — depends on 43a.'); return }
     if (round1BatchId <= 0 || round2BatchId <= 0) {
-      console.log('Round batch IDs not set — skipping join')
+      console.warn('SKIP: Round batch IDs not set — depends on 43a.')
       noRoundsAvailable = true
       return
     }
@@ -116,7 +116,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43c: positions exist on both batches with correct deposits', async () => {
-    if (noRoundsAvailable) { console.log('No unjoined rounds — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No rounds available — depends on 43a.'); return }
     const [pos1, pos2] = await Promise.all([
       getPosition(round1BatchId, PLAYER1),
       getPosition(round2BatchId, PLAYER1),
@@ -135,7 +135,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43d: total USDC deducted equals sum of both deposits', async () => {
-    if (noRoundsAvailable) { console.log('No unjoined rounds — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No rounds available — depends on 43a.'); return }
     const balanceAfter = await getL3UsdcBalance(PLAYER1)
 
     // The player's Vision balance should have decreased by at least deposit1 + deposit2.
@@ -152,7 +152,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43e: wait for at least one round to settle', async () => {
-    if (noRoundsAvailable) { console.log('No unjoined rounds — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No rounds available — depends on 43a.'); return }
 
     console.log(`Waiting up to ${ROUND_SETTLE_TIMEOUT / 1000}s for either round ${round1BatchId} or ${round2BatchId} to settle...`)
 
@@ -163,7 +163,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
     ])
 
     if (!result.ok) {
-      console.log(`Neither round settled within ${ROUND_SETTLE_TIMEOUT / 1000}s. This is expected on fresh deploys with long tick durations or when round-based sources are still initializing. Graceful pass.`)
+      console.warn(`SKIP: Neither round settled within ${ROUND_SETTLE_TIMEOUT / 1000}s. Expected on fresh deploys with long tick durations.`)
       noRoundsAvailable = true // prevent downstream assertions on settlement data
       return
     }
@@ -174,7 +174,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43f: settled round credits realBalance', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 43a/43e.'); return }
     const realBalance = await getL3UsdcBalance(PLAYER1)
     // After settlement the player should have non-negative realBalance
     // (payout credited regardless of win/loss — even losers get remainder)
@@ -183,7 +183,7 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43g: unsettled round position still active', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 43a/43e.'); return }
     const pos = await getPosition(unsettledBatchId, PLAYER1)
 
     // The position on the other round must still show the original deposit
@@ -194,11 +194,11 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   })
 
   test('43h: pool conservation on settled round', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 43a/43e.'); return }
     const results = await getRoundResults(settledBatchId)
 
     if (!results || !results.players || results.players.length === 0) {
-      console.log(`No results for settled round ${settledBatchId} — oracle may still be aggregating. Graceful pass.`)
+      console.warn(`SKIP: No results for settled round ${settledBatchId} — oracle may still be aggregating.`)
       return
     }
 

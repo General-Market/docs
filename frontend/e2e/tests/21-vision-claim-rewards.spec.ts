@@ -40,10 +40,7 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
     await ensureBatchExists()
 
     const chainBatches = await getBatchesFromChain()
-    if (chainBatches.length === 0) {
-      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
-      return
-    }
+    expect(chainBatches.length, 'Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches').toBeGreaterThan(0)
 
     // Sort batches by tick_duration ascending — prefer the shortest tick for faster settlement
     const sortedBatches = [...chainBatches].sort((a, b) => a.tick_duration - b.tick_duration)
@@ -96,7 +93,7 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
     }
 
     if (batchId === 0) {
-      console.log('No joinable batches found — all joined or none exist')
+      console.warn('SKIP: No joinable batches found — all joined or none exist.')
       return
     }
 

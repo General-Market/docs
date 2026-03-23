@@ -20,7 +20,7 @@ test.describe('Vision Leaderboard', () => {
     console.log(`Global leaderboard: ${lb.length} players`)
 
     if (lb.length === 0) {
-      console.log('No leaderboard data yet — fresh deploy, no rounds settled')
+      console.warn('SKIP: No leaderboard data yet — no rounds settled. Expected on fresh deploys.')
       return
     }
 
@@ -31,7 +31,7 @@ test.describe('Vision Leaderboard', () => {
       console.log(`  ${p.walletAddress.slice(0, 12)}... pnl=${p.pnl.toFixed(2)} winRate=${p.winRate}%`)
     }
     if (nonZero.length < 2) {
-      console.log('Fewer than 2 players with non-zero PnL — fresh deploy, insufficient activity')
+      console.warn('SKIP: Fewer than 2 players with non-zero PnL — insufficient activity. Expected on fresh deploys.')
       return
     }
   })
@@ -47,7 +47,7 @@ test.describe('Vision Leaderboard', () => {
     console.log(`Per-source (defi) leaderboard: ${lb.length} players`)
 
     if (lb.length === 0) {
-      console.log('No per-source leaderboard data yet — fresh deploy, no rounds settled for defi')
+      console.warn('SKIP: No per-source leaderboard data yet — no rounds settled for defi. Expected on fresh deploys.')
       return
     }
   })
@@ -98,7 +98,7 @@ test.describe('Vision Leaderboard', () => {
 
     // Fresh deploy: no sources will have activity yet — that is not a failure
     if (sourcesWithNonZero === 0) {
-      console.log('No sources have non-zero PnL activity — fresh deploy, no rounds settled yet')
+      console.warn('SKIP: No sources have non-zero PnL activity — no rounds settled yet. Expected on fresh deploys.')
       return
     }
 
@@ -184,7 +184,7 @@ test.describe('Vision Leaderboard', () => {
     // Fresh deploy or no meaningful activity: if NO source has non-zero PnL,
     // empty leaderboards are expected — not a config/mapping failure.
     if (active.length === 0) {
-      console.log('No sources have non-zero PnL activity — fresh deploy, no rounds settled yet')
+      console.warn('SKIP: No sources have non-zero PnL activity — no rounds settled yet. Expected on fresh deploys.')
       if (broken.length > 0) {
         console.log(`(${broken.length} sources returned 0 players — expected when no ticks have resolved)`)
       }
@@ -218,7 +218,7 @@ test.describe('Vision Leaderboard', () => {
     console.log(`defillama (→defi) leaderboard: ${lb.length} players`)
 
     if (lb.length === 0) {
-      console.log('No leaderboard data for defi batch — fresh deploy, no rounds settled yet')
+      console.warn('SKIP: No leaderboard data for defi batch — no rounds settled yet. Expected on fresh deploys.')
       return
     }
   })

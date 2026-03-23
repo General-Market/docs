@@ -10,7 +10,7 @@
  * 6. Balances credited to both players
  * 7. New round auto-created after settlement
  *
- * On fresh deploy (no round-based sources configured), logs and passes.
+ * On fresh deploy (no round-based sources configured), skips with explicit warnings.
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -44,7 +44,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
     const rounds = await getActiveRounds()
 
     if (rounds.length === 0) {
-      console.log('No active rounds — round-based sources not configured or oracle has not spawned rounds yet. Graceful pass.')
+      console.warn('SKIP: No active rounds — oracle may not have spawned rounds yet. This is expected on fresh deploys.')
       noRoundsAvailable = true
       return
     }
@@ -64,7 +64,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
     }
 
     if (roundBatchId === 0) {
-      console.log('All active rounds already joined by PLAYER1 — no fresh round to test. Graceful pass.')
+      console.warn('SKIP: All active rounds already joined by PLAYER1 — no fresh round to test.')
       noRoundsAvailable = true
       return
     }
@@ -75,7 +75,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
 
   test('41b: two players join round with opposite bets', async () => {
     if (noRoundsAvailable) {
-      console.log('No rounds available — nothing to join')
+      console.warn('SKIP: No rounds available — nothing to join. Depends on 41a.')
       return
     }
     expect(roundBatchId).toBeGreaterThan(0)
@@ -97,7 +97,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
 
   test('41c: round auto-settles after betting window', async () => {
     if (noRoundsAvailable) {
-      console.log('No rounds available — settlement not applicable')
+      console.warn('SKIP: No rounds available — settlement not applicable. Depends on 41a.')
       return
     }
     expect(roundBatchId).toBeGreaterThan(0)
@@ -108,7 +108,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
     if (!settled) {
       // On fresh deploy or long-tick batches, settlement may not arrive in time.
       // Log clearly but do not fail — the oracle may not have processed the tick yet.
-      console.log(`Round ${roundBatchId} did not settle within ${ROUND_SETTLE_TIMEOUT / 1000}s. This is expected on fresh deploys with long tick durations or when round-based sources are still initializing.`)
+      console.warn(`SKIP: Round ${roundBatchId} did not settle within ${ROUND_SETTLE_TIMEOUT / 1000}s. Expected on fresh deploys with long tick durations.`)
       noRoundsAvailable = true // downstream tests should not assert on settlement data
       return
     }
@@ -116,11 +116,11 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41d: settlement results show correct predictions and PnL', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 41a/41c.'); return }
     const results = await getRoundResults(roundBatchId)
 
     if (!results || !results.players || results.players.length === 0) {
-      console.log(`No results available for round ${roundBatchId} — oracle may still be aggregating. Graceful pass.`)
+      console.warn(`SKIP: No results available for round ${roundBatchId} — oracle may still be aggregating.`)
       return
     }
 
@@ -146,11 +146,11 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41e: bitmaps are transparent after settlement', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 41a/41c.'); return }
     const bitmaps = await getRoundBitmaps(roundBatchId)
 
     if (!bitmaps || !bitmaps.markets || bitmaps.markets.length === 0) {
-      console.log(`No bitmap data for round ${roundBatchId} — graceful pass`)
+      console.warn(`SKIP: No bitmap data for round ${roundBatchId} — oracle may still be aggregating.`)
       return
     }
 
@@ -161,7 +161,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41f: settled funds sent to player wallets', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 41a/41c.'); return }
     const visionUsdc = await getVisionUsdcAddress()
     const [p1Balance, p2Balance] = await Promise.all([
       getL3UsdcBalance(PLAYER1, visionUsdc),
@@ -175,12 +175,12 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41g: new round auto-created after settlement', async () => {
-    if (noRoundsAvailable) { console.log('No settled round — graceful pass'); return }
+    if (noRoundsAvailable) { console.warn('SKIP: No settled round — depends on 41a/41c.'); return }
 
     // The lifecycle manager spawns a fresh betting round
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
-      console.log('No new active round after settlement — oracle may need time to spawn the next round. Graceful pass.')
+      console.warn('SKIP: No new active round after settlement — oracle may need time to spawn the next round.')
       return
     }
 

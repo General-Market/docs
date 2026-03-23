@@ -43,10 +43,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
 
     // Check on-chain batch count — oracle API may return stale data from old deployment
     const chainBatches = await getBatchesFromChain()
-    if (chainBatches.length === 0) {
-      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
-      return
-    }
+    expect(chainBatches.length, 'Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches').toBeGreaterThan(0)
 
     // 1. Find active round where PLAYER1 hasn't joined — prefer short-tick batches
     let batchId = 0
@@ -94,7 +91,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
           }
         }
         if (batchId === 0) {
-          console.log('No joinable batches found on-chain — all joined or none exist')
+          console.warn('SKIP: No joinable batches found on-chain — all joined or none exist.')
           return
         }
         console.log(`Oracle had no active rounds — found batch ${batchId} on-chain (tick=${selectedTickDuration}s)`)

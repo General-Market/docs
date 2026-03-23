@@ -92,7 +92,7 @@ test.describe('Vision Leaderboard Sorting', () => {
     const rowCount = await rows.count()
 
     if (rowCount < 2) {
-      console.log(`Only ${rowCount} row(s) — cannot verify sort order`)
+      console.warn(`SKIP: Only ${rowCount} row(s) — cannot verify sort order. Expected on fresh deploys.`)
       return
     }
 
@@ -176,7 +176,7 @@ test.describe('Vision Leaderboard Sorting', () => {
     const rows = table.locator('tbody tr')
     const rowCount = await rows.count()
     if (rowCount === 0) {
-      console.log('Leaderboard has 0 rows — nothing to validate')
+      console.warn('SKIP: Leaderboard has 0 rows — no players yet. Expected on fresh deploys.')
       return
     }
 

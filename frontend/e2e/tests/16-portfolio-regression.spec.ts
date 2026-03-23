@@ -134,7 +134,7 @@ test.describe('Portfolio Totals', () => {
     const totalValueLabel = page.getByText(/total\s*value/i).first()
     const hasLabel = await totalValueLabel.isVisible({ timeout: 45_000 }).catch(() => false)
     if (!hasLabel) {
-      console.log('Portfolio "Total Value" label not visible — SSE data may not have arrived')
+      console.warn('SKIP: Portfolio "Total Value" label not visible — SSE data may not have arrived.')
       return
     }
 
@@ -142,14 +142,14 @@ test.describe('Portfolio Totals', () => {
     const totalValueContainer = totalValueLabel.locator('..')
     const hasDollar = await totalValueContainer.filter({ hasText: /\$[\d,]+/ }).isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasDollar) {
-      console.log('Portfolio Total Value has no dollar amount yet — SSE stream may be delayed')
+      console.warn('SKIP: Portfolio Total Value has no dollar amount yet — SSE stream may be delayed.')
       return
     }
 
     const totalValueText = await totalValueContainer.textContent() || ''
     const match = totalValueText.match(/\$?([\d,]+\.?\d*)/)
     if (!match) {
-      console.log(`Portfolio Total Value text didn't match dollar pattern: "${totalValueText}"`)
+      console.warn(`SKIP: Portfolio Total Value text didn't match dollar pattern: "${totalValueText}"`)
       return
     }
     const totalValue = parseFloat(match[1].replace(/,/g, ''))

@@ -88,7 +88,7 @@ test.describe('Vision Sources — Browse', () => {
       }
     }
     if (!filterPill) {
-      console.log('No category pills found — skipping filter test')
+      console.warn('SKIP: No category pills found — UI may not have rendered category filters.')
       return
     }
     await filterPill.click({ force: true })

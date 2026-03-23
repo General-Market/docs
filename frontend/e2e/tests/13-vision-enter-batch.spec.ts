@@ -133,7 +133,7 @@ test.describe('Vision Enter Batch (UI)', () => {
     // If already joined, the button says "Deposit more" — test still passes
     const btnText = await enterBatchBtn.textContent()
     if (btnText && /Deposit/i.test(btnText) && !/Enter/i.test(btnText)) {
-      console.log('Already joined batch — deposit flow verified')
+      console.warn('SKIP: Already joined batch — deposit flow verified, skipping enter flow.')
       return
     }
 

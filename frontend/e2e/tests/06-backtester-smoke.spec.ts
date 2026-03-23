@@ -312,7 +312,7 @@ test.describe('Backtester Smoke Tests', () => {
 
   test('DL categories (if any) produce valid results', async () => {
     if (dlCategories.length === 0) {
-      console.log('No DefiLlama categories — skipping')
+      console.warn('SKIP: No DefiLlama categories available — DL collector may not have run yet.')
       return
     }
 
@@ -418,7 +418,7 @@ test.describe('Backtester Smoke Tests', () => {
       if (result.error) {
         console.log(`defi weighting ${w} error: ${result.error}`)
       }
-      // Should at least not crash — either valid results or graceful error
+      // Should at least not crash — either valid results or a handled error
       expect(result.stats !== null || result.error !== null).toBe(true)
     })
   }
@@ -438,7 +438,7 @@ test.describe('Backtester Smoke Tests', () => {
       if (result.error) {
         console.log(`github weighting ${w} error: ${result.error}`)
       }
-      // GitHub data may not be available yet — should gracefully handle
+      // GitHub data may not be available yet — should handle errors without crashing
       expect(result.stats !== null || result.error !== null).toBe(true)
     })
   }

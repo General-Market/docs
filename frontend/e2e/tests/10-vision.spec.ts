@@ -57,9 +57,9 @@ test.describe('Vision', () => {
     // Verify batches exist on-chain first, then check oracle API.
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
-      // Batches exist on-chain but oracle hasn't indexed them yet — not a test failure
+      // Batches exist on-chain but oracle hasn't indexed them yet
       const chainBatches = await ensureBatchExists()
-      console.log(`Oracle returned 0 active rounds but ${chainBatches.length} batches exist on-chain — oracle may need restart`)
+      console.warn(`SKIP: Oracle returned 0 active rounds but ${chainBatches.length} batches exist on-chain — oracle may need restart.`)
       return
     }
     expect(rounds[0].status).toBe('betting')
@@ -99,10 +99,7 @@ test.describe('Vision', () => {
 
     // Check on-chain batch count — oracle API may return stale data from old deployment
     const chainBatches = await getBatchesFromChain()
-    if (chainBatches.length === 0) {
-      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
-      return
-    }
+    expect(chainBatches.length, 'Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches').toBeGreaterThan(0)
 
     // 1. Find an active round that PLAYER1 hasn't joined yet
     let batchId = 0
@@ -132,7 +129,7 @@ test.describe('Vision', () => {
         configHash = found.configHash
         console.log(`Oracle had no active rounds — found batch ${batchId} on-chain`)
       } catch {
-        console.log('No joinable batches found on-chain — all joined or none exist')
+        console.warn('SKIP: No joinable batches found on-chain — all joined or none exist.')
         return
       }
     }

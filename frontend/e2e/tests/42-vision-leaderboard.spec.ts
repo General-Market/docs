@@ -3,7 +3,7 @@
  * Validates that the leaderboard API returns expected fields
  * and includes results from round-based batches when available.
  *
- * On fresh deploy (no rounds settled), logs and passes gracefully.
+ * Hard-asserts API availability; soft-skips when no round data exists yet.
  */
 import { test, expect } from '@playwright/test'
 import { VISION_API, RPC_TIMEOUT } from '../env'
@@ -16,20 +16,14 @@ test.describe('Vision Leaderboard', () => {
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })
 
-    if (!res.ok) {
-      console.log(`Leaderboard API returned ${res.status} — endpoint may not be deployed yet. Graceful pass.`)
-      return
-    }
+    expect(res.ok, `Leaderboard API returned ${res.status} — endpoint must be deployed`).toBe(true)
 
     const data = await res.json()
 
-    if (!data.leaderboard) {
-      console.log('Leaderboard response missing "leaderboard" key — API schema may differ. Graceful pass.')
-      return
-    }
+    expect(data).toHaveProperty('leaderboard')
 
     if (data.leaderboard.length === 0) {
-      console.log('Leaderboard empty — no players have completed rounds yet. Graceful pass.')
+      console.warn('SKIP: Leaderboard empty — no players have completed rounds yet. Expected on fresh deploys.')
       return
     }
 
@@ -50,7 +44,7 @@ test.describe('Vision Leaderboard', () => {
       expect(typeof entry.roundsPlayed).toBe('number')
       console.log(`Leaderboard entry has round fields: roundsPlayed=${entry.roundsPlayed}, roundsWon=${entry.roundsWon ?? 'N/A'}`)
     } else {
-      console.log('Leaderboard entries do not yet include roundsPlayed/roundsWon — oracle may not have aggregated round data. Graceful pass.')
+      console.warn('SKIP: Leaderboard entries do not yet include roundsPlayed/roundsWon — oracle may not have aggregated round data.')
     }
   })
 
@@ -59,16 +53,13 @@ test.describe('Vision Leaderboard', () => {
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })
 
-    if (!res.ok) {
-      console.log(`Leaderboard API returned ${res.status} — graceful pass`)
-      return
-    }
+    expect(res.ok, `Leaderboard API returned ${res.status} — endpoint must be reachable`).toBe(true)
 
     const data = await res.json()
     const entries = data.leaderboard ?? []
 
     if (entries.length === 0) {
-      console.log('Leaderboard empty — no round results to verify. Graceful pass.')
+      console.warn('SKIP: Leaderboard empty — no round results to verify. Expected on fresh deploys.')
       return
     }
 
@@ -89,7 +80,7 @@ test.describe('Vision Leaderboard', () => {
       }
     } else {
       // Acceptable if round lifecycle tests haven't run or oracle hasn't aggregated yet
-      console.log(`PLAYER1 (${PLAYER1}) not on leaderboard — round results may not be aggregated yet. Graceful pass.`)
+      console.warn(`SKIP: PLAYER1 (${PLAYER1}) not on leaderboard — round results may not be aggregated yet.`)
     }
   })
 })

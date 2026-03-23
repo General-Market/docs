@@ -28,10 +28,7 @@ test.describe('Portfolio & Orders', () => {
 
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
     const hasTab = await positionsTab.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasTab) {
-      console.log('Portfolio Positions tab not visible — UI layout may have changed')
-      return
-    }
+    expect(hasTab, 'Portfolio Positions tab must be visible — deployed UI component').toBe(true)
   })
 
   test('Positions tab shows formatted values', async ({ walletPage: page }) => {
@@ -53,10 +50,7 @@ test.describe('Portfolio & Orders', () => {
       await ensureWalletConnected(page, TEST_ADDRESS)
       hasTab = await positionsTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
-    if (!hasTab) {
-      console.log('Positions tab not visible after retry — UI layout may have changed')
-      return
-    }
+    expect(hasTab, 'Positions tab must be visible after retry — deployed UI component').toBe(true)
     await positionsTab.click()
 
     // Should contain dollar amounts or share counts, not raw 18-digit numbers
@@ -84,10 +78,7 @@ test.describe('Portfolio & Orders', () => {
       await ensureWalletConnected(page, TEST_ADDRESS)
       hasTab = await tradesTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
-    if (!hasTab) {
-      console.log('Trades tab not visible — UI layout may have changed')
-      return
-    }
+    expect(hasTab, 'Trades tab must be visible — deployed UI component').toBe(true)
     await tradesTab.click()
 
     // Tab rendered — content may be empty if no trades. Assert tab didn't crash.

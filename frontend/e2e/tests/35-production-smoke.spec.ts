@@ -212,7 +212,7 @@ test.describe('SSE Data Stream', () => {
       }
       reader.cancel()
       if (!found) {
-        console.log('SSE itp-nav event not received within 10 reads — data-node may not have NAV data yet')
+        console.warn('SKIP: SSE itp-nav event not received within 10 reads — data-node may not have NAV data yet.')
         return
       }
 
@@ -604,16 +604,13 @@ test.describe('Explorer (/explorer)', () => {
   test('Orders tab renders chart cards', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     const ordersTab = page.locator('button:has-text("Orders")').first()
-    if (!await ordersTab.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      console.log('Orders tab not found on explorer page')
-      return
-    }
+    expect(await ordersTab.isVisible({ timeout: 10_000 }).catch(() => false), 'Orders tab must exist on explorer page').toBe(true)
     await ordersTab.click()
     // Check for any order-related content
     const hasContent = await page.locator('text=/Pending Orders|Orders Processed|Cycle Duration/').first()
       .isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasContent) {
-      console.log('Orders tab content not rendered — SSE data may not have arrived')
+      console.warn('SKIP: Orders tab content not rendered — SSE data may not have arrived yet.')
       return
     }
   })
@@ -854,7 +851,7 @@ test.describe('Static Pages', () => {
     test(`${path} loads with expected content`, async ({ page }) => {
       const res = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 30_000 })
       if (res && res.status() === 404) {
-        console.log(`${path} returned 404 — page may not exist`)
+        console.warn(`SKIP: ${path} returned 404 — page may not exist in this environment.`)
         return
       }
       await assertNoError(page)

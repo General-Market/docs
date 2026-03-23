@@ -39,10 +39,7 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
 
     // Check on-chain batch count — oracle API may return stale data from old deployment
     const chainBatches = await getBatchesFromChain()
-    if (chainBatches.length === 0) {
-      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
-      return
-    }
+    expect(chainBatches.length, 'Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches').toBeGreaterThan(0)
 
     // 0.1. Ensure wallet has USDC (round-based: no Vision balance pool)
     const visionUsdc = await getVisionUsdcAddress()

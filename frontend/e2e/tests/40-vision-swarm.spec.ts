@@ -54,7 +54,7 @@ test("Stage 1: infrastructure health", async () => {
     // Data-node being unreachable doesn't block vision swarm testing if oracles are up
   }
 
-  // Check oracle health via HTTP (falls back to SSH, then graceful skip)
+  // Check oracle health via HTTP (falls back to SSH, then explicit skip)
   let oraclesReachable = 0;
   for (const port of ORACLE_PORTS) {
     try {
@@ -147,7 +147,7 @@ test("Stage 3: bots join batches", async () => {
 
 test("Stage 4: tick resolution via BLS consensus", async () => {
   if (FAST_BATCHES.length === 0) {
-    console.log("No fast-ticking batches. Skipping.");
+    console.warn("SKIP: No fast-ticking batches — oracle may not have spawned short-tick rounds yet.");
     return;
   }
 
