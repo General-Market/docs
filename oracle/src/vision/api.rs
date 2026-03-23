@@ -65,6 +65,14 @@ pub struct VisionState {
 
 /// Decode a bytes32 hex string (e.g. "0x636f696e6765636b6f00...") to a UTF-8 string,
 /// stripping trailing null bytes. Returns the hex as-is if decoding fails.
+///
+/// **Why this exists:** On-chain, `sourceId` is stored as `keccak256(name + "_" + version)` —
+/// a lossy hash that only round-trips for short ASCII strings fitting in 32 bytes.
+/// The `vision_batch_lifecycle` table stores the plain-text source name, but batches
+/// discovered via `chain_listener.rs` (BatchCreated events) are written to `vision_batches`
+/// only — they never get a lifecycle row. This fallback decodes the raw hex for those
+/// orphan batches. It will produce garbage for actual keccak hashes (by design — the
+/// caller gets a hex string back, which is better than nothing).
 fn bytes32_hex_to_string(hex: &str) -> String {
     let hex = hex.strip_prefix("0x").unwrap_or(hex);
     if let Ok(bytes) = hex::decode(hex) {
@@ -305,7 +313,9 @@ async fn list_batches(
                     .unwrap_or(0);
 
                 // Prefer plain-text source name from lifecycle table;
-                // fall back to decoding the keccak hash for legacy batches
+                // fall back to decoding the on-chain bytes32 for batches that
+                // lack a lifecycle row (discovered via chain_listener events,
+                // or created before lifecycle tracking existed).
                 let source_id = lifecycle_sources
                     .get(&batch_id)
                     .cloned()
@@ -393,7 +403,8 @@ async fn batch_state(
                 });
             }
 
-            // Prefer plain-text source name from lifecycle table
+            // Prefer plain-text source name from lifecycle table.
+            // Fallback: batches without lifecycle rows (chain_listener discovery path).
             let lifecycle_source: Option<String> = sqlx::query_scalar(
                 "SELECT source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
             )
@@ -1743,7 +1754,8 @@ async fn player_profile(
 
     // -- Q4: batch metadata --
     // LEFT JOIN vision_batch_lifecycle to get plain-text source names;
-    // fall back to bytes32_hex_to_string for legacy batches without lifecycle entries.
+    // fall back to bytes32_hex_to_string for batches without lifecycle entries
+    // (chain_listener discovery path, or pre-lifecycle-era batches).
     let batch_meta_map: std::collections::HashMap<i64, String> = if all_batch_ids.is_empty() {
         std::collections::HashMap::new()
     } else {
@@ -2065,8 +2077,9 @@ async fn rounds_active(
                     "betting" // continuous batches are always in betting phase
                 };
 
-                // betting_end + source_id from vision_batch_lifecycle (plain text names)
-                // Falls back to now + tick_duration / hash decode if lifecycle record doesn't exist
+                // betting_end + source_id from vision_batch_lifecycle (plain text names).
+                // Falls back to now + tick_duration / hash decode if lifecycle record
+                // doesn't exist (chain_listener discovery path).
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()

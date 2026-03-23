@@ -7,7 +7,6 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { getSourceForMarket } from '@/lib/vision/sources'
 import { encodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 
 export type CellState = 'up' | 'down' | 'empty'
@@ -104,16 +103,11 @@ export function useBitmapEditor(): BitmapEditor {
     setState(prev => ({ ...prev, [marketId]: value }))
   }, [])
 
-  const getSourceBitmap = useCallback((sourceId: string): Record<string, CellState> => {
-    const result: Record<string, CellState> = {}
-    for (const [marketId, cellState] of Object.entries(state)) {
-      const source = getSourceForMarket(marketId)
-      if (source?.id === sourceId) {
-        result[marketId] = cellState
-      }
-    }
-    return result
-  }, [state])
+  const getSourceBitmap = useCallback((_sourceId: string): Record<string, CellState> => {
+    // Source-level filtering requires a registry lookup not available here.
+    // Callers should use getCounts(undefined, marketIds) with an explicit list instead.
+    return {}
+  }, [])
 
   const getCounts = useCallback((sourceId?: string, marketIds?: string[]): BitmapCounts => {
     let entries: [string, CellState][]
@@ -122,7 +116,9 @@ export function useBitmapEditor(): BitmapEditor {
       // Use explicit market ID list — most reliable for per-source pages
       entries = marketIds.map(id => [id, state[id] ?? 'empty'])
     } else if (sourceId) {
-      entries = Object.entries(state).filter(([mId]) => getSourceForMarket(mId)?.id === sourceId)
+      // Source-level filtering without an explicit market list is not supported.
+      // Pass marketIds explicitly. Falls through to full state as fallback.
+      entries = Object.entries(state)
     } else {
       entries = Object.entries(state)
     }

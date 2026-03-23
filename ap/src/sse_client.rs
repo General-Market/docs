@@ -25,10 +25,9 @@ struct ChainEventEnvelope {
     data: serde_json::Value,
 }
 
-/// How long to wait for any SSE frame (event or keepalive) before declaring
-/// the connection dead. 25s is comfortably above the data-node's 15s
-/// keepalive interval — a miss means the TCP pipe is half-open.
-const SSE_LIVENESS_TIMEOUT: Duration = Duration::from_secs(25);
+/// Default liveness timeout (seconds). Used when `AP_SSE_LIVENESS_TIMEOUT_SECS`
+/// is not set. 25s is comfortably above the data-node's 15s keepalive interval.
+const DEFAULT_SSE_LIVENESS_TIMEOUT_SECS: u64 = 25;
 
 /// SSE client that connects to data-node's chain-events endpoint and converts
 /// events into `ChainEvent` variants sent through an mpsc channel.
@@ -37,6 +36,9 @@ pub struct SseChainEventClient {
     topics: Vec<String>,
     /// Optional auth token — sent as X-AP-Auth header (validated by nginx)
     auth_token: Option<String>,
+    /// How long to wait for any SSE frame (event or keepalive) before declaring
+    /// the connection dead.
+    liveness_timeout: Duration,
     /// Counter: how many times the liveness timeout has fired since process start
     liveness_timeouts: AtomicU64,
 }
@@ -44,7 +46,18 @@ pub struct SseChainEventClient {
 impl SseChainEventClient {
     pub fn new(base_url: String, topics: Vec<String>) -> Self {
         let auth_token = std::env::var("AP_SSE_AUTH_TOKEN").ok();
-        Self { base_url, topics, auth_token, liveness_timeouts: AtomicU64::new(0) }
+        let liveness_secs = std::env::var("AP_SSE_LIVENESS_TIMEOUT_SECS")
+            .ok()
+            .and_then(|v| {
+                v.parse::<u64>().ok().or_else(|| {
+                    warn!(value = %v, "Invalid AP_SSE_LIVENESS_TIMEOUT_SECS, using default {}s", DEFAULT_SSE_LIVENESS_TIMEOUT_SECS);
+                    None
+                })
+            })
+            .unwrap_or(DEFAULT_SSE_LIVENESS_TIMEOUT_SECS);
+        let liveness_timeout = Duration::from_secs(liveness_secs);
+        info!(liveness_timeout_secs = liveness_secs, "SSE liveness timeout configured");
+        Self { base_url, topics, auth_token, liveness_timeout, liveness_timeouts: AtomicU64::new(0) }
     }
 
     fn sse_url(&self) -> String {
@@ -104,7 +117,7 @@ impl SseChainEventClient {
         info!("SSE stream connected to data-node");
 
         loop {
-            match tokio::time::timeout(SSE_LIVENESS_TIMEOUT, es.next()).await {
+            match tokio::time::timeout(self.liveness_timeout, es.next()).await {
                 Ok(Some(event)) => {
                     match event {
                         Ok(SseEvent::Open) => {
@@ -131,18 +144,18 @@ impl SseChainEventClient {
                     return Ok(());
                 }
                 Err(_elapsed) => {
-                    // No event or keepalive for 25s — connection is dead
+                    // No event or keepalive within liveness window — connection is dead
                     let count = self.liveness_timeouts.fetch_add(1, Ordering::Relaxed) + 1;
                     warn!(
-                        timeout_secs = SSE_LIVENESS_TIMEOUT.as_secs(),
+                        timeout_secs = self.liveness_timeout.as_secs(),
                         total_timeouts = count,
                         "SSE liveness timeout — no event or keepalive in {}s, reconnecting",
-                        SSE_LIVENESS_TIMEOUT.as_secs()
+                        self.liveness_timeout.as_secs()
                     );
                     es.close();
                     return Err(format!(
                         "SSE liveness timeout ({}s, occurrence #{})",
-                        SSE_LIVENESS_TIMEOUT.as_secs(),
+                        self.liveness_timeout.as_secs(),
                         count
                     ));
                 }

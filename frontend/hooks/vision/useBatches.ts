@@ -1,33 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { keccak256, toHex } from 'viem'
-import sourcesDisplayData from '@/data/sources-display.json'
-
-// Lazy-initialized hash→name lookup
-let _hashToName: Record<string, string> | null = null
-
-function getHashLookup(): Record<string, string> {
-  if (_hashToName) return _hashToName
-  _hashToName = {}
-  try {
-    const sources = (sourcesDisplayData as any).sources ?? []
-    for (const source of sources) {
-      const sid = source.sourceId ?? ''
-      for (const iid of source.internalIds ?? []) {
-        for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
-          const hash = keccak256(toHex(iid + suffix)).toLowerCase()
-          _hashToName[hash] = sid
-        }
-      }
-    }
-  } catch { /* build time — viem may not be ready */ }
-  return _hashToName
-}
-
-function resolveSourceId(rawSourceId: string): string {
-  if (!rawSourceId || !rawSourceId.startsWith('0x') || rawSourceId.length < 10) return rawSourceId
-  const lookup = getHashLookup()
-  return lookup[rawSourceId.toLowerCase()] ?? rawSourceId
-}
 
 export interface BatchInfo {
   id: number
@@ -56,7 +27,7 @@ export function useBatches() {
       const all = raw.map((b: any) => ({
         id: b.id,
         creator: b.creator ?? '',
-        sourceId: resolveSourceId(b.source_id ?? b.sourceId ?? ''),
+        sourceId: b.source_id ?? b.sourceId ?? '',
         configHash: b.config_hash ?? b.configHash ?? '',
         marketIds: b.market_ids ?? b.marketIds ?? [],
         resolutionTypes: b.resolution_types ?? b.resolutionTypes ?? [],
