@@ -1027,44 +1027,11 @@ async fn vision_leaderboard(
         return leaderboard_from_postgres(&state.pool, None, Some(bid)).await;
     }
 
-    // When source_id is provided, try Postgres first — it covers completed/paused batches
-    // that have been evicted from in-memory state. Fall back to the in-memory scheduler
-    // only when Postgres has no tick-delta rows for this source (table not yet populated).
+    // Per-source leaderboard: delegate to Postgres which JOINs vision_round_players
+    // with vision_batches to filter by source_id. This covers both active and settled rounds.
     if let Some(ref source_id) = query.source_id {
-        let mut pg_candidates: Vec<String> = Vec::new();
-        pg_candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(source_id.as_bytes()))));
-        for v in 1..=5u8 {
-            let versioned = format!("{}_v{}", source_id, v);
-            pg_candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
-        }
-        pg_candidates.push(string_to_bytes32_hex(source_id));
-
-        // Always use in-memory path for per-source — live balances are more accurate
-        // than Postgres tick deltas (which miss voided/refunded players).
-        // Fall through to the in-memory aggregation below; source_filter restricts it.
+        return leaderboard_from_postgres(&state.pool, Some(source_id.as_str()), None).await;
     }
-
-    let include_rounds = query.include_rounds.unwrap_or(true);
-
-    // Build the set of source_id H256 candidates to match against (when filter provided).
-    let source_filter: Option<Vec<H256>> = query.source_id.as_deref().map(|sid| {
-        let mut candidates = Vec::new();
-        candidates.push(H256::from(ethers::utils::keccak256(sid.as_bytes())));
-        for v in 1..=5u8 {
-            let versioned = format!("{}_v{}", sid, v);
-            candidates.push(H256::from(ethers::utils::keccak256(versioned.as_bytes())));
-        }
-        // Bytes32 ASCII fallback (legacy)
-        let legacy_hex = string_to_bytes32_hex(sid);
-        if let Ok(bytes) = hex::decode(legacy_hex.trim_start_matches("0x")) {
-            if bytes.len() == 32 {
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(&bytes);
-                candidates.push(H256::from(arr));
-            }
-        }
-        candidates
-    });
 
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins,
     //            rounds_played, rounds_won, total_correct, total_markets)
@@ -1153,69 +1120,38 @@ async fn leaderboard_from_postgres(
     batch_id: Option<u64>,
 ) -> axum::response::Response {
     let query = if let Some(sid) = source_id {
-        // source_id in Postgres is keccak256(name + "_" + version) stored as "0x..." hex.
-        // The frontend sends human-readable strings (e.g. "coingecko").
-        // Try keccak256(name), keccak256(name_v1) ... keccak256(name_v5) + bytes32 fallback.
+        // Round-only: per-source leaderboard from vision_round_players
+        // JOIN vision_batches to filter by source keccak256 hash candidates
         let mut candidates: Vec<String> = Vec::new();
-        // Bare name
         candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(sid.as_bytes()))));
-        // Versioned: name_v1 through name_v5
         for v in 1..=5u8 {
             let versioned = format!("{}_v{}", sid, v);
             candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
         }
-        // Bytes32 ASCII fallback (legacy)
         candidates.push(string_to_bytes32_hex(sid));
         let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
-        // Use tick deltas for accurate PnL (vision_positions.balance lags behind)
         format!(
-            "WITH source_batches AS (
-                SELECT id FROM vision_batches WHERE source_id IN ({in_clause})
-             ),
-             positions AS (
-                SELECT vp.player, SUM(vp.total_deposited::numeric) as deposited,
-                       COUNT(DISTINCT vp.batch_id) as batches
-                FROM vision_positions vp WHERE vp.batch_id IN (SELECT id FROM source_batches)
-                GROUP BY vp.player
-             ),
-             deltas AS (
-                SELECT td.player, SUM(td.delta::numeric) as pnl,
-                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins,
-                       COUNT(*) as tick_count
-                FROM vision_player_tick_deltas td
-                WHERE td.batch_id IN (SELECT id FROM source_batches) AND td.delta::numeric <> 0
-                GROUP BY td.player
-             )
-             SELECT COALESCE(p.player, d.player) as player,
-                    (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
-                    COALESCE(p.deposited, 0)::text as total_deposited,
-                    COALESCE(d.tick_count, COALESCE(p.batches, 0))::bigint as batches_joined,
-                    COALESCE(d.wins, 0)::bigint as wins
-             FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
+            "SELECT vrp.player,
+                    SUM(vrp.payout::numeric)::text as total_balance,
+                    SUM(vrp.deposited::numeric)::text as total_deposited,
+                    COUNT(*)::bigint as batches_joined,
+                    SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins
+             FROM vision_round_players vrp
+             JOIN vision_batches vb ON vrp.batch_id = vb.id
+             WHERE vb.source_id IN ({in_clause})
+             GROUP BY vrp.player",
             in_clause = in_clause
         )
     } else if let Some(bid) = batch_id {
         format!(
-            "WITH positions AS (
-                SELECT vp.player, SUM(vp.total_deposited::numeric) as deposited,
-                       COUNT(DISTINCT vp.batch_id) as batches
-                FROM vision_positions vp WHERE vp.batch_id = {bid}
-                GROUP BY vp.player
-             ),
-             deltas AS (
-                SELECT td.player, SUM(td.delta::numeric) as pnl,
-                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins,
-                       COUNT(*) as tick_count
-                FROM vision_player_tick_deltas td
-                WHERE td.batch_id = {bid} AND td.delta::numeric <> 0
-                GROUP BY td.player
-             )
-             SELECT COALESCE(p.player, d.player) as player,
-                    (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
-                    COALESCE(p.deposited, 0)::text as total_deposited,
-                    COALESCE(d.tick_count, COALESCE(p.batches, 0))::bigint as batches_joined,
-                    COALESCE(d.wins, 0)::bigint as wins
-             FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
+            "SELECT player,
+                    SUM(payout::numeric)::text as total_balance,
+                    SUM(deposited::numeric)::text as total_deposited,
+                    COUNT(*)::bigint as batches_joined,
+                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins
+             FROM vision_round_players
+             WHERE batch_id = {bid}
+             GROUP BY player",
             bid = bid
         )
     } else {
@@ -2165,12 +2101,26 @@ async fn rounds_active(
                     "betting" // continuous batches are always in betting phase
                 };
 
-                // betting_end = next tick timestamp (tick_duration from now as rough estimate)
+                // betting_end from vision_batch_lifecycle (real timestamp set at round creation)
+                // Falls back to now + tick_duration if lifecycle record doesn't exist
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                let betting_end_ts = now + row.tick_duration as u64;
+                let betting_end_ts = {
+                    let lifecycle_end: Option<(chrono::DateTime<chrono::Utc>,)> = sqlx::query_as(
+                        "SELECT betting_end FROM vision_batch_lifecycle WHERE batch_id = $1"
+                    )
+                    .bind(batch_id as i64)
+                    .fetch_optional(&state.pool)
+                    .await
+                    .ok()
+                    .flatten();
+                    match lifecycle_end {
+                        Some((ts,)) => ts.timestamp() as u64,
+                        None => now + row.tick_duration as u64,
+                    }
+                };
 
                 let config_hash = row.config_hash.clone().filter(|h| !h.is_empty());
 

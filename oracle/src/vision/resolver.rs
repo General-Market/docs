@@ -116,11 +116,17 @@ impl TickResolver {
         }
 
         // 3. Resolve each market using market_configs
-        // Flat stake weighting: each player's stake_per_tick is split evenly across markets.
-        // Remainder distributed one-unit-extra to the first N markets where N = remainder.
+        // Pre-pass: count non-cancelled markets so cancelled ones don't eat stake.
+        // A cancelled market (no price data or stale) contributes nothing — its stake
+        // share is redistributed across the remaining active markets.
+        let active_market_count = market_configs.iter().filter(|mc| {
+            let mid = mc.market_id;
+            prices.get_prices(&mid).is_some() && !prices.is_stale(&mid, self.config.staleness_threshold_secs, now)
+        }).count();
+        let num_markets = U256::from(active_market_count.max(1) as u64);
+
         let mut market_results = Vec::new();
         let mut player_deltas: HashMap<Address, i128> = HashMap::new();
-        let num_markets = U256::from(market_configs.len() as u64);
 
         for (market_idx, mc) in market_configs.iter().enumerate() {
             let market_id = mc.market_id;
@@ -385,6 +391,13 @@ fn compute_pct_change_bps(start_price: i128, end_price: i128) -> i64 {
 /// - 12: FLAT_300 — flat if < 300 bps (3%) (ternary: Flat/Up/Down)
 /// - 13: FLAT_3000 — flat if < 3000 bps (30%) (ternary: Flat/Up/Down)
 fn resolve_outcome_bps(pct_change_bps: i64, resolution_type: u8, threshold_bps: u32) -> MarketOutcome {
+    // Zero change → Flat (refund all). A market with no price movement carries
+    // no information — picking a deterministic winner would systematically bias
+    // random bitmaps and drain players via protocol fees.
+    if pct_change_bps == 0 {
+        return MarketOutcome::Flat;
+    }
+
     let threshold = threshold_bps as i64;
     match resolution_type {
         // UP_0: any positive is UP
