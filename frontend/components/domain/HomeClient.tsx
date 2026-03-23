@@ -7,7 +7,7 @@ import { Footer } from '@/components/layout/Footer'
 import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
 import { PortfolioSection } from '@/components/domain/PortfolioSection'
 import { CreateItpSection } from '@/components/domain/CreateItpSection'
-import { VaultModal } from '@/components/domain/VaultModal'
+import { LendingPage } from '@/components/lending/LendingPage'
 import { BacktestSection } from '@/components/domain/simulation/BacktestSection'
 import { RebalanceModal } from '@/components/domain/RebalanceModal'
 import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
@@ -390,7 +390,7 @@ export function HomeClient() {
                 )}
                 {id === 'lend' && (
                   <div className="px-6 lg:px-12 py-8">
-                    <VaultModal inline onClose={() => {}} />
+                    <LendingPage />
                   </div>
                 )}
                 {id === 'backtest' && (

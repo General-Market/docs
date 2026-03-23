@@ -153,12 +153,38 @@
       "my_balance": "My Balance",
       "borrow_apy": "Borrow APY",
       "tvl": "TVL",
-      "lltv": "LLTV"
+      "available": "Available",
+      "lltv": "LLTV",
+      "position": ""
     },
     "loading": "Loading markets...",
     "no_markets": "No markets available",
     "market_pair": "{name} / USDC",
     "coming_soon": "Coming Soon"
+  },
+  "positions": {
+    "title": "Your Positions",
+    "collateral": "Collateral",
+    "debt": "Debt",
+    "health": "Health"
+  },
+  "market_modal": {
+    "title": "{name}",
+    "tab_supply": "Supply",
+    "tab_borrow": "Borrow",
+    "tab_repay": "Repay",
+    "tab_withdraw": "Withdraw",
+    "position_summary": "Position",
+    "collateral_value": "Collateral",
+    "debt_value": "Debt",
+    "health_factor": "Health Factor",
+    "connect_wallet": "Connect wallet to manage positions"
+  },
+  "vault_supply": {
+    "title": "USDC Vault",
+    "description": "Earn yield from borrower interest",
+    "your_deposits": "Your Deposits",
+    "vault_tvl": "Vault TVL"
   },
   "common": {
     "something_went_wrong": "Something went wrong",

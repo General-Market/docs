@@ -163,14 +163,6 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   const willClosePosition = parsedAmount === collateralAmount && debtAmount === 0n
 
   return (
-    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">{t('withdraw_collateral.title')}</h2>
-      <p className="text-text-secondary text-sm mb-4">
-        {debtAmount === 0n
-          ? t('withdraw_collateral.description_no_debt')
-          : t('withdraw_collateral.description_with_debt')}
-      </p>
-
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
@@ -279,6 +271,5 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
           </div>
         )}
       </div>
-    </div>
   )
 }

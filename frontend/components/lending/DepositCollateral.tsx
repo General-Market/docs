@@ -179,12 +179,6 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
     : t('deposit_collateral.button.deposit_collateral')
 
   return (
-    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
-      <h2 className="text-lg font-bold text-text-primary mb-4">{t('deposit_collateral.title')}</h2>
-      <p className="text-text-secondary text-sm mb-4">
-        {t('deposit_collateral.description')}
-      </p>
-
       <div className="space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
@@ -264,6 +258,5 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
           </div>
         )}
       </div>
-    </div>
   )
 }
