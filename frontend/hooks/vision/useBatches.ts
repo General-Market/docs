@@ -2,22 +2,31 @@ import { useQuery } from '@tanstack/react-query'
 import { keccak256, toHex } from 'viem'
 import sourcesDisplayData from '@/data/sources-display.json'
 
-// Build hash→name lookup: keccak256(internalId + suffix) → displaySourceId
-// The on-chain sourceId is keccak256("pumpfun_v2"), frontend uses "pumpfun"
-const _hashToName: Record<string, string> = {}
-for (const source of (sourcesDisplayData as any).sources ?? []) {
-  const sid = source.sourceId ?? ''
-  for (const iid of source.internalIds ?? []) {
-    for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
-      const hash = keccak256(toHex(iid + suffix)).toLowerCase()
-      _hashToName[hash] = sid
+// Lazy-initialized hash→name lookup
+let _hashToName: Record<string, string> | null = null
+
+function getHashLookup(): Record<string, string> {
+  if (_hashToName) return _hashToName
+  _hashToName = {}
+  try {
+    const sources = (sourcesDisplayData as any).sources ?? []
+    for (const source of sources) {
+      const sid = source.sourceId ?? ''
+      for (const iid of source.internalIds ?? []) {
+        for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
+          const hash = keccak256(toHex(iid + suffix)).toLowerCase()
+          _hashToName[hash] = sid
+        }
+      }
     }
-  }
+  } catch { /* build time — viem may not be ready */ }
+  return _hashToName
 }
 
 function resolveSourceId(rawSourceId: string): string {
-  if (!rawSourceId.startsWith('0x')) return rawSourceId
-  return _hashToName[rawSourceId.toLowerCase()] ?? rawSourceId
+  if (!rawSourceId || !rawSourceId.startsWith('0x') || rawSourceId.length < 10) return rawSourceId
+  const lookup = getHashLookup()
+  return lookup[rawSourceId.toLowerCase()] ?? rawSourceId
 }
 
 export interface BatchInfo {
