@@ -99,6 +99,20 @@ pub struct EventMonitor<R: ChainReader> {
 impl<R: ChainReader + 'static> EventMonitor<R> {
     /// Create a new EventMonitor
     pub fn new(chain_reader: Arc<R>, config: EventMonitorConfig) -> Self {
+        Self::with_shared_dedup(chain_reader, config, None)
+    }
+
+    /// Create a new EventMonitor with an optional externally-owned dedup set.
+    ///
+    /// When `shared_dedup` is `Some`, the monitor uses that set for duplicate
+    /// detection instead of creating its own. This allows SSE and RPC event
+    /// paths to share a single dedup set — an event seen by one path is
+    /// automatically filtered by the other.
+    pub fn with_shared_dedup(
+        chain_reader: Arc<R>,
+        config: EventMonitorConfig,
+        shared_dedup: Option<Arc<RwLock<HashSet<String>>>>,
+    ) -> Self {
         let block_tracker = BlockTracker::with_state_file(
             config.chain_id,
             config.state_file.clone(),
@@ -107,16 +121,27 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
         // Keep enough blocks for reorg detection (at least 2x confirmation depth)
         let max_recent_blocks = (config.confirmation_depth * 3).max(100) as usize;
 
+        let processed_events = shared_dedup
+            .unwrap_or_else(|| Arc::new(RwLock::new(HashSet::new())));
+
         Self {
             chain_reader,
             config,
             block_tracker,
             event_queue,
-            processed_events: Arc::new(RwLock::new(HashSet::new())),
+            processed_events,
             metrics: Arc::new(RwLock::new(EventMonitorMetrics::default())),
             recent_blocks: Arc::new(RwLock::new(HashMap::new())),
             max_recent_blocks,
         }
+    }
+
+    /// Get a clone of the shared dedup set handle.
+    ///
+    /// Callers can pass this to SSE bridge tasks or other event consumers
+    /// so all paths dedup against the same set.
+    pub fn shared_dedup(&self) -> Arc<RwLock<HashSet<String>>> {
+        self.processed_events.clone()
     }
 
     /// Initialize the event monitor (load persisted state)
@@ -696,10 +721,45 @@ impl<R: ChainReader + 'static> EventMonitor<R> {
     }
 }
 
+/// Evict finalized entries from a shared dedup set.
+///
+/// Event IDs use the format `"{block_number}:{tx_hash}:{log_index}"`.
+/// Entries from blocks older than `safe_block` are removed. The threshold
+/// triggers at `high_water` entries to avoid scanning on every call.
+///
+/// This is the same logic used inside `EventMonitor::cleanup_processed_events`,
+/// extracted so the SSE bridge task in `main.rs` can share it without owning
+/// an EventMonitor instance.
+pub async fn cleanup_dedup_set(
+    dedup: &RwLock<HashSet<String>>,
+    safe_block: u64,
+    high_water: usize,
+) {
+    let mut set = dedup.write().await;
+    if set.len() > high_water {
+        let old_len = set.len();
+        set.retain(|event_id| {
+            event_id
+                .split(':')
+                .next()
+                .and_then(|block_str| block_str.parse::<u64>().ok())
+                .map(|block| block >= safe_block)
+                .unwrap_or(true)
+        });
+        tracing::debug!(
+            old_size = old_len,
+            new_size = set.len(),
+            safe_block,
+            "Dedup set pruned: evicted events older than safe block"
+        );
+    }
+}
+
 /// Builder for EventMonitor
 pub struct EventMonitorBuilder<R: ChainReader> {
     chain_reader: Option<Arc<R>>,
     config: EventMonitorConfig,
+    shared_dedup: Option<Arc<RwLock<HashSet<String>>>>,
 }
 
 impl<R: ChainReader + 'static> EventMonitorBuilder<R> {
@@ -708,6 +768,7 @@ impl<R: ChainReader + 'static> EventMonitorBuilder<R> {
         Self {
             chain_reader: None,
             config: EventMonitorConfig::default(),
+            shared_dedup: None,
         }
     }
 
@@ -753,13 +814,20 @@ impl<R: ChainReader + 'static> EventMonitorBuilder<R> {
         self
     }
 
+    /// Inject a shared dedup set so SSE and RPC paths filter against the same
+    /// set of already-seen event IDs.
+    pub fn with_shared_dedup(mut self, dedup: Arc<RwLock<HashSet<String>>>) -> Self {
+        self.shared_dedup = Some(dedup);
+        self
+    }
+
     /// Build the EventMonitor
     pub fn build(self) -> Result<EventMonitor<R>, APError> {
         let chain_reader = self
             .chain_reader
             .ok_or_else(|| APError::Subscription("ChainReader not provided".to_string()))?;
 
-        Ok(EventMonitor::new(chain_reader, self.config))
+        Ok(EventMonitor::with_shared_dedup(chain_reader, self.config, self.shared_dedup))
     }
 }
 

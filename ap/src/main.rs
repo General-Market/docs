@@ -297,6 +297,13 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         start_block: Some(0),
     };
 
+    // Shared dedup set: a single HashSet that both SSE and RPC event paths
+    // check before processing an event. If either path has already seen an
+    // event ID, the other path skips it. Eviction uses block-based retention
+    // via `cleanup_dedup_set`.
+    let shared_dedup: Arc<RwLock<std::collections::HashSet<String>>> =
+        Arc::new(RwLock::new(std::collections::HashSet::new()));
+
     // Chain initialization: real chain or mock chain (Story 6.3)
     // Each branch builds, inits, and extracts the event receiver since
     // EventMonitor<MockChain> and EventMonitor<RpcChainReader> are distinct types.
@@ -320,6 +327,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             .with_state_file(monitor_config.state_file.clone())
             .with_queue_capacity(monitor_config.queue_capacity)
             .with_start_block(0)
+            .with_shared_dedup(shared_dedup.clone())
             .build()
             .map_err(|e| format!("Failed to create EventMonitor: {}", e))?;
         monitor.init().map_err(|e| format!("Failed to init EventMonitor: {}", e))?;
@@ -414,11 +422,11 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         });
 
         // Spawn ChainEvent -> APEvent converter (replicates EventMonitor::handle_chain_event logic)
+        // Uses the shared dedup set so SSE and RPC paths filter against the same set.
         let event_tx_clone = event_tx.clone();
+        let sse_dedup = shared_dedup.clone();
         tokio::spawn(async move {
             use common::traits::ChainEvent;
-            use std::collections::HashSet;
-            let mut processed_events: HashSet<String> = HashSet::new();
             let mut max_block_seen: u64 = 0;
             const DEDUP_CONFIRMATION_DEPTH: u64 = 64;
             while let Some(chain_event) = chain_event_rx.recv().await {
@@ -439,29 +447,17 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
                     _ => None,
                 };
                 if let Some(id) = event_id {
-                    if !processed_events.insert(id.clone()) {
-                        tracing::debug!(event_id = %id, "Duplicate SSE event, skipping");
-                        continue;
+                    // Check-and-insert against the shared dedup set
+                    {
+                        let mut dedup = sse_dedup.write().await;
+                        if !dedup.insert(id.clone()) {
+                            tracing::debug!(event_id = %id, "Duplicate SSE event (shared dedup), skipping");
+                            continue;
+                        }
                     }
-                    // Block-based retention: evict finalized events instead of clearing everything
-                    if processed_events.len() > 50_000 {
-                        let safe_block = max_block_seen.saturating_sub(DEDUP_CONFIRMATION_DEPTH);
-                        let old_len = processed_events.len();
-                        processed_events.retain(|event_id| {
-                            event_id
-                                .split(':')
-                                .next()
-                                .and_then(|block_str| block_str.parse::<u64>().ok())
-                                .map(|block| block >= safe_block)
-                                .unwrap_or(true) // Keep entries we can't parse
-                        });
-                        tracing::debug!(
-                            old_size = old_len,
-                            new_size = processed_events.len(),
-                            safe_block,
-                            "Pruned dedup set: evicted events older than safe block"
-                        );
-                    }
+                    // Block-based eviction via the shared cleanup function
+                    let safe_block = max_block_seen.saturating_sub(DEDUP_CONFIRMATION_DEPTH);
+                    ap::event_monitor::cleanup_dedup_set(&sse_dedup, safe_block, 50_000).await;
                 }
                 let ap_event = match chain_event {
                     ChainEvent::TradeRequest {
@@ -571,6 +567,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             .with_state_file(monitor_config.state_file.clone())
             .with_queue_capacity(monitor_config.queue_capacity)
             .with_start_block(0)
+            .with_shared_dedup(shared_dedup.clone())
             .build()
             .map_err(|e| format!("Failed to create EventMonitor: {}", e))?;
         monitor.init().map_err(|e| format!("Failed to init EventMonitor: {}", e))?;

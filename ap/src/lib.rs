@@ -34,7 +34,7 @@ pub use block_tracker::BlockTracker;
 pub use common;
 pub use config::{APConfig, ConfigBuilder, ConfigError};
 pub use error::APError;
-pub use event_monitor::{EventMonitor, EventMonitorBuilder, EventMonitorConfig};
+pub use event_monitor::{EventMonitor, EventMonitorBuilder, EventMonitorConfig, cleanup_dedup_set};
 pub use event_queue::{APEvent, EventQueue, EventReceiver};
 pub use event_types::{TradeRequestEvent, WithdrawalRequestEvent};
 pub use limit_enforcer::{
