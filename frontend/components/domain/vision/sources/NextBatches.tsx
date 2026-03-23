@@ -3,9 +3,25 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
+import { useRounds } from '@/hooks/vision/useRounds'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import Image from 'next/image'
 import { Link } from '@/i18n/routing'
+
+function BatchTimer({ bettingEnd }: { bettingEnd: string | null }) {
+  const [remaining, setRemaining] = useState(0)
+  useEffect(() => {
+    if (!bettingEnd) return
+    const update = () => setRemaining(Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000)))
+    update()
+    const iv = setInterval(update, 1000)
+    return () => clearInterval(iv)
+  }, [bettingEnd])
+  if (!bettingEnd || remaining <= 0) return <span className="text-micro text-red-500 font-bold">Settling</span>
+  const m = Math.floor(remaining / 60)
+  const s = remaining % 60
+  return <span className="text-micro font-bold font-mono tabular-nums text-text-muted">{m}:{s.toString().padStart(2, '0')}</span>
+}
 
 /** Category color mapping for the pill badges */
 const CATEGORY_COLORS: Record<string, string> = {
@@ -27,6 +43,7 @@ interface BatchDisplay {
   displayName: string
   category: string
   sourceKey: string
+  bettingEnd: string | null
 }
 
 function BatchCard({ item }: { item: BatchDisplay }) {
@@ -59,14 +76,12 @@ function BatchCard({ item }: { item: BatchDisplay }) {
       </span>
       <span className="text-micro text-text-muted mt-1">players</span>
 
-      {/* Footer: category */}
+      {/* Footer: category + timer */}
       <div className="flex items-center justify-between mt-3">
         <span className={`text-micro font-bold uppercase px-1.5 py-0.5 rounded ${catColors}`}>
           {item.category}
         </span>
-        <span className="text-micro font-bold font-mono text-text-muted tabular-nums">
-          #{item.batch.id}
-        </span>
+        <BatchTimer bettingEnd={item.bettingEnd} />
       </div>
     </Link>
   )
@@ -76,9 +91,18 @@ export function NextBatches() {
   const t = useTranslations('vision')
   const { data: apiBatches } = useBatches()
   const { sources: registrySources } = useSourceRegistry()
+  const { data: rounds } = useRounds()
 
   const sortedBatches = useMemo((): BatchDisplay[] => {
     if (!apiBatches || apiBatches.length === 0) return []
+
+    // Build batchId → bettingEnd from rounds
+    const roundMap = new Map<number, string>()
+    if (rounds) {
+      for (const r of rounds) {
+        if (r.bettingEnd) roundMap.set(r.batchId, r.bettingEnd)
+      }
+    }
 
     return apiBatches
       .filter(b => b.marketCount > 0 && !b.paused)
@@ -94,10 +118,11 @@ export function NextBatches() {
           displayName,
           category,
           sourceKey: source?.sourceId ?? batch.sourceId,
+          bettingEnd: roundMap.get(batch.id) ?? null,
         }
       })
       .sort((a, b) => b.batch.playerCount - a.batch.playerCount)
-  }, [apiBatches, registrySources])
+  }, [apiBatches, registrySources, rounds])
 
   if (sortedBatches.length === 0) return null
 
