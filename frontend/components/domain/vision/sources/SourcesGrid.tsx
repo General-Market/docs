@@ -3,13 +3,35 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
-import { getAssetCountForSource, getSourceStatusFromMeta } from '@/lib/vision/sources'
+import { allInternalIds } from '@/lib/vision/source-ids'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
+
+function assetCountForSource(sourceId: string, assetCounts: Record<string, number>): number {
+  if (assetCounts[sourceId]) return assetCounts[sourceId]
+  let total = 0
+  for (const iid of allInternalIds(sourceId)) {
+    total += assetCounts[iid] ?? 0
+  }
+  return total
+}
+
+function sourceStatusFromMeta(
+  sourceId: string,
+  sources: Array<{ sourceId: string; status: string }>,
+): string {
+  const direct = sources.find(x => x.sourceId === sourceId)
+  if (direct) return direct.status
+  for (const iid of allInternalIds(sourceId)) {
+    const s = sources.find(x => x.sourceId === iid)
+    if (s) return s.status
+  }
+  return 'unknown'
+}
 
 export function SourcesGrid() {
   const t = useTranslations('vision')
@@ -26,13 +48,10 @@ export function SourcesGrid() {
       ? registrySources
       : registrySources.filter(s => s.category === activeCategory)
 
-    if (!meta?.sources) return byCategory
-    return byCategory.filter(source => {
-      const status = getSourceStatusFromMeta(source.sourceId, meta.sources)
-      if (status === 'healthy' || status === 'stale') return true
-      const assetCount = meta.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : 0
-      return assetCount > 0
-    })
+    // Show all registry sources — the hasDeployedBatch filter in the API
+    // already ensures only valid sources appear. No need to double-filter
+    // against meta which uses internal IDs that may not match.
+    return byCategory
   }, [activeCategory, registrySources, meta?.sources, meta?.assetCounts])
 
   // Dynamic stats from live meta endpoint, with registry fallbacks
@@ -200,8 +219,8 @@ export function SourcesGrid() {
                   source={{ ...source, id: source.sourceId }}
                   bitmapEditor={bitmapEditor}
                   index={i}
-                  metaAssetCount={meta?.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : undefined}
-                  metaStatus={meta?.sources ? getSourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
+                  metaAssetCount={meta?.assetCounts ? assetCountForSource(source.sourceId, meta.assetCounts) : undefined}
+                  metaStatus={meta?.sources ? sourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
                 />
               </div>
             ))}
