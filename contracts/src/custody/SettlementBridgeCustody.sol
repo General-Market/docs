@@ -156,7 +156,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @notice Update the oracle registry used for BLS verification
     /// @dev Admin-only, allows fixing registry pointer without full upgrade
     function setOracleRegistry(address newRegistry) external {
-        if (msg.sender != custodyAdmin) revert ErrorsLib.E043_ZeroOracleRegistry();
+        if (msg.sender != custodyAdmin) revert ErrorsLib.E061_Unauthorized(msg.sender, custodyAdmin);
         if (newRegistry == address(0)) revert ErrorsLib.E043_ZeroOracleRegistry();
         oracleRegistry = IOracleRegistry(newRegistry);
         __BLSVerifier_init(newRegistry);
@@ -178,6 +178,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         uint256 sourceChainId,
         uint256 amount,
         uint256 nonce,
+        address recipient,
         TypesLib.ReleaseProof calldata proof,
         bytes calldata blsSignature,
         uint256 referenceNonce,
@@ -205,7 +206,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
         // Build message for BLS verification
         // Message: keccak256(abi.encode(chainid, this, proof, amount, nonce))
-        bytes32 message = keccak256(abi.encode(block.chainid, address(this), proof, amount, nonce));
+        bytes32 message = keccak256(abi.encode(block.chainid, address(this), recipient, proof, amount, nonce));
 
         // Verify BLS signature (11/20 threshold)
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
@@ -220,7 +221,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         // Transfer 6-decimal USDC from contract to caller
         // Note: usdcAmount can be zero if internal amount was very small (dust only)
         if (usdcAmount > 0) {
-            usdc.safeTransfer(msg.sender, usdcAmount);
+            usdc.safeTransfer(recipient, usdcAmount);
         }
 
         // Emit events with 18-decimal internal amount for cross-chain consistency
@@ -668,6 +669,12 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         depositCompleted[orderId] = true;
+
+        uint256 usdcAmount = DecimalLib.toUsdc(dep.amount);
+        if (usdcAmount <= visionReserve) {
+            visionReserve -= usdcAmount;
+        }
+
         delete visionDeposits[orderId];
 
         emit VisionDepositCompleted(orderId);
@@ -697,7 +704,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         // Delete before external calls (CEI pattern)
         delete visionDeposits[orderId];
 
-        if (usdcAmount > visionReserve) usdcAmount = visionReserve; // truncation guard
+        if (usdcAmount > visionReserve) revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, visionReserve);
         visionReserve -= usdcAmount;
 
         if (usdcAmount > 0) {
@@ -726,7 +733,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         withdrawProcessed[withdrawId] = true;
 
         uint256 usdcAmount = DecimalLib.toUsdc(amount);
-        if (usdcAmount > visionReserve) usdcAmount = visionReserve; // truncation guard
+        if (usdcAmount > visionReserve) revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, visionReserve);
         visionReserve -= usdcAmount;
 
         if (usdcAmount > 0) {

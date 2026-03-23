@@ -355,7 +355,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     ) external nonReentrant {
         Batch storage b = _batches[batchId];
         if (b.tickDuration == 0) revert BatchNotFound();
-        if (b.paused) revert BatchAlreadySettled();
+        if (b.settled) revert BatchAlreadySettled();
         if (players.length != payouts.length) revert InvalidArrayLength();
         if (players.length == 0) revert InvalidArrayLength();
 
@@ -405,7 +405,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             emit PlayerSettled(batchId, players[i], netPayout, fee);
         }
 
-        b.paused = true;
+        b.settled = true;
         emit BatchSettled(batchId, players.length);
     }
 }

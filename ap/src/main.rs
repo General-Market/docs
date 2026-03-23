@@ -2,6 +2,7 @@
 //!
 //! Monitors events, manages order queues, and executes trades on Bitget.
 
+use ap::circuit_breaker::CircuitBreaker;
 use ap::config::{APConfig, ConfigBuilder};
 use ap::event_monitor::{EventMonitorBuilder, EventMonitorConfig};
 use ap::event_queue::{APEvent, EventReceiver};
@@ -416,7 +417,32 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         let event_tx_clone = event_tx.clone();
         tokio::spawn(async move {
             use common::traits::ChainEvent;
+            use std::collections::HashSet;
+            let mut processed_events: HashSet<String> = HashSet::new();
             while let Some(chain_event) = chain_event_rx.recv().await {
+                // Deduplicate SSE events by block:tx_hash:log_index
+                let event_id = match &chain_event {
+                    ChainEvent::TradeRequest { block_number, tx_hash, log_index, .. } => {
+                        Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
+                    }
+                    ChainEvent::AssetTradeRequest { block_number, tx_hash, log_index, .. } => {
+                        Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
+                    }
+                    ChainEvent::WithdrawalRequest { block_number, tx_hash, log_index, .. } => {
+                        Some(format!("{}:{:x?}:{}", block_number, tx_hash, log_index))
+                    }
+                    _ => None,
+                };
+                if let Some(id) = event_id {
+                    if !processed_events.insert(id.clone()) {
+                        tracing::debug!(event_id = %id, "Duplicate SSE event, skipping");
+                        continue;
+                    }
+                    // Prevent unbounded growth: prune when set gets large
+                    if processed_events.len() > 100_000 {
+                        processed_events.clear();
+                    }
+                }
                 let ap_event = match chain_event {
                     ChainEvent::TradeRequest {
                         cycle_number, pair_id, side, amount, limit_price,
@@ -789,6 +815,13 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         Err(e) => { warn!(error = %e, "Failed to open audit trail, continuing without it"); None }
     };
     let audit_clone = audit_trail.clone();
+    // Circuit breaker: 50k USDC max single trade, 500k USDC max per cycle, halt after 5 consecutive failures
+    let circuit_breaker = Arc::new(CircuitBreaker::new(
+        U256::exp10(18) * 50_000,   // 50,000 USDC (18 decimals)
+        U256::exp10(18) * 500_000,  // 500,000 USDC per cycle
+        5,
+    ));
+    let cb_clone = circuit_breaker.clone();
     tokio::spawn(async move {
         process_events(
             event_receiver_clone,
@@ -799,6 +832,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             enforcer_clone,
             settlement_clone,
             audit_clone,
+            cb_clone,
         ).await;
     });
 
@@ -880,6 +914,7 @@ async fn process_events(
     limit_enforcer: Arc<tokio::sync::Mutex<LimitOrderEnforcer>>,
     on_chain_settlement: Option<OnChainSettlement>,
     audit: Option<common::audit::AuditTrail>,
+    circuit_breaker: Arc<CircuitBreaker>,
 ) {
     info!("Event processing task started");
 
@@ -1081,9 +1116,23 @@ async fn process_events(
                     let metrics = metrics.clone();
                     let asset_trade = asset_trade.clone();
                     let audit_for_task = audit.clone();
+                    let cb = circuit_breaker.clone();
 
                     tokio::spawn(async move {
                         if let Some(ref settlement) = settlement {
+                            // Circuit breaker gate
+                            if let Err(reason) = cb.check_trade(asset_trade.usdc_amount, asset_trade.cycle_number) {
+                                error!(
+                                    code = "E009",
+                                    cycle = asset_trade.cycle_number,
+                                    asset = ?asset_trade.asset,
+                                    reason = %reason,
+                                    "Circuit breaker blocked trade"
+                                );
+                                metrics.increment_orders_failed();
+                                return;
+                            }
+
                             let scale = U256::exp10(18);
                             let asset_addr = Address::from(asset_trade.asset);
                             let quote = settlement.quote_token;
@@ -1095,8 +1144,19 @@ async fn process_events(
                                 error!(code = "E008", "AssetTradeRequest has zero price, skipping");
                                 return;
                             } else {
-                                asset_trade.usdc_amount.checked_mul(scale)
-                                    .unwrap_or_default() / asset_trade.price
+                                let scaled = match asset_trade.usdc_amount.checked_mul(scale) {
+                                    Some(v) => v,
+                                    None => {
+                                        error!(
+                                            code = "E008",
+                                            asset = ?asset_trade.asset,
+                                            usdc_amount = %asset_trade.usdc_amount,
+                                            "Overflow computing asset_amount: usdc * scale overflowed U256"
+                                        );
+                                        return;
+                                    }
+                                };
+                                scaled / asset_trade.price
                             };
 
                             if asset_amount.is_zero() {
@@ -1197,7 +1257,18 @@ async fn process_events(
                                         warn!("ask price is zero for asset, using oracle price fallback");
                                         asset_amount
                                     } else {
-                                        asset_trade.usdc_amount.checked_mul(scale).unwrap_or_default() / ask
+                                        match asset_trade.usdc_amount.checked_mul(scale) {
+                                            Some(v) => v / ask,
+                                            None => {
+                                                error!(
+                                                    code = "E008",
+                                                    asset = ?asset_trade.asset,
+                                                    usdc_amount = %asset_trade.usdc_amount,
+                                                    "Overflow computing adj_amount (ask): usdc * scale overflowed U256"
+                                                );
+                                                return;
+                                            }
+                                        }
                                     }
                                 } else {
                                     asset_amount // fallback to oracle price
@@ -1210,7 +1281,19 @@ async fn process_events(
                                         warn!("bid price is zero for asset, using oracle price fallback");
                                         asset_trade.usdc_amount
                                     } else {
-                                        asset_amount.checked_mul(bid).unwrap_or_default() / scale
+                                        match asset_amount.checked_mul(bid) {
+                                            Some(v) => v / scale,
+                                            None => {
+                                                error!(
+                                                    code = "E008",
+                                                    asset = ?asset_trade.asset,
+                                                    asset_amount = %asset_amount,
+                                                    bid = %bid,
+                                                    "Overflow computing adj_usdc (bid): amount * bid overflowed U256"
+                                                );
+                                                return;
+                                            }
+                                        }
                                     }
                                 } else {
                                     asset_trade.usdc_amount // fallback to oracle price
@@ -1218,8 +1301,14 @@ async fn process_events(
                                 (asset_addr, effective_quote, asset_amount, adj_usdc)
                             };
 
-                            let trade_id = asset_trade.cycle_number * 10000
-                                + asset_trade.log_index;
+                            let trade_id_bytes = ethers::utils::keccak256(
+                                ethers::abi::encode(&[
+                                    ethers::abi::Token::Uint(U256::from(asset_trade.cycle_number)),
+                                    ethers::abi::Token::FixedBytes(asset_trade.tx_hash.as_bytes().to_vec()),
+                                    ethers::abi::Token::Uint(U256::from(asset_trade.log_index)),
+                                ])
+                            );
+                            let trade_id = U256::from_big_endian(&trade_id_bytes).low_u64();
                             match settlement.vault_client.execute_trade(
                                 trade_id, sell_token, buy_token, sell_amt, buy_amt,
                             ).await {
@@ -1255,6 +1344,7 @@ async fn process_events(
                                         }
                                     }
 
+                                    cb.record_success();
                                     metrics.increment_orders_processed();
                                     if let Some(ref at) = audit_for_task {
                                         at.log("ap", "VAULT_TRADE_EXECUTED", &serde_json::json!({
@@ -1270,6 +1360,7 @@ async fn process_events(
                                     }
                                 }
                                 Err(e) => {
+                                    cb.record_failure();
                                     error!(
                                         code = "E008",
                                         cycle = asset_trade.cycle_number,

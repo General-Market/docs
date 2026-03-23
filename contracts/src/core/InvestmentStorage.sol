@@ -59,6 +59,9 @@ abstract contract InvestmentStorage {
     /// @notice Tracks which cycles have been processed (replay protection)
     mapping(uint256 => bool) public cycleProcessed;
 
+    /// @notice Tracks which cycles have had asset trades emitted (replay protection)
+    mapping(uint256 => bool) public assetTradesEmitted;
+
     /// @notice Reference to OracleRegistry for BLS signature verification
     IOracleRegistry public oracleRegistry;
 

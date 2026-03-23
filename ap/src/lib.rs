@@ -18,6 +18,7 @@
 //! - External integrations (Epic 5): Bitget and other external APIs
 
 pub mod block_tracker;
+pub mod circuit_breaker;
 pub mod config;
 pub mod error;
 pub mod event_monitor;

@@ -20,6 +20,7 @@ interface IVision {
         uint256 lockOffset;              // lock window (seconds before tick end)
         uint256 createdAtTick;           // block.timestamp / tickDuration at creation
         bool paused;
+        bool settled;
     }
 
     /// @notice Player position within a batch.

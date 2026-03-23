@@ -108,6 +108,7 @@ interface ISettlementBridgeCustody {
         uint256 sourceChainId,
         uint256 amount,
         uint256 nonce,
+        address recipient,
         TypesLib.ReleaseProof calldata proof,
         bytes calldata blsSignature,
         uint256 referenceNonce,

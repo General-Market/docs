@@ -246,10 +246,19 @@ impl BitgetVaultClient {
             }
         };
 
-        let receipt = pending
-            .await
-            .map_err(|e| BitgetVaultError::ApprovalFailed(format!("approve receipt failed: {}", e)))?
-            .ok_or_else(|| BitgetVaultError::ApprovalFailed("no receipt".to_string()))?;
+        let receipt = match pending.await {
+            Ok(Some(r)) => r,
+            Ok(None) => {
+                warn!("approve sent but no receipt returned, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::ApprovalFailed("no receipt".to_string()));
+            }
+            Err(e) => {
+                warn!(error = %e, "approve receipt failed, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::ApprovalFailed(format!("approve receipt failed: {}", e)));
+            }
+        };
 
         if receipt.status == Some(ethers::types::U64::from(0)) {
             return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
@@ -329,10 +338,21 @@ impl BitgetVaultClient {
             }
         };
 
-        let receipt = pending
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("executeTrade receipt failed: {}", e)))?
-            .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+        let receipt = match pending.await {
+            Ok(Some(r)) => r,
+            Ok(None) => {
+                // Transaction sent but no receipt — nonce consumed on-chain, resync
+                warn!("executeTrade sent but no receipt returned, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed("no receipt".to_string()));
+            }
+            Err(e) => {
+                // Receipt timeout/error — tx may have landed on-chain, resync nonce
+                warn!(error = %e, "executeTrade receipt failed, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed(format!("executeTrade receipt failed: {}", e)));
+            }
+        };
 
         if receipt.status == Some(ethers::types::U64::from(0)) {
             return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
@@ -404,10 +424,19 @@ impl BitgetVaultClient {
             }
         };
 
-        let receipt = pending
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("setPrice receipt failed: {}", e)))?
-            .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+        let receipt = match pending.await {
+            Ok(Some(r)) => r,
+            Ok(None) => {
+                warn!("setPrice sent but no receipt returned, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed("no receipt".to_string()));
+            }
+            Err(e) => {
+                warn!(error = %e, "setPrice receipt failed, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed(format!("setPrice receipt failed: {}", e)));
+            }
+        };
 
         if receipt.status == Some(ethers::types::U64::from(0)) {
             return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
@@ -506,10 +535,19 @@ impl BitgetVaultClient {
             }
         };
 
-        let receipt = pending
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("swapStable receipt failed: {}", e)))?
-            .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+        let receipt = match pending.await {
+            Ok(Some(r)) => r,
+            Ok(None) => {
+                warn!("swapStable sent but no receipt returned, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed("no receipt".to_string()));
+            }
+            Err(e) => {
+                warn!(error = %e, "swapStable receipt failed, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed(format!("swapStable receipt failed: {}", e)));
+            }
+        };
 
         if receipt.status == Some(ethers::types::U64::from(0)) {
             return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));
@@ -579,10 +617,19 @@ impl BitgetVaultClient {
             }
         };
 
-        let receipt = pending
-            .await
-            .map_err(|e| BitgetVaultError::TransactionFailed(format!("withdraw receipt failed: {}", e)))?
-            .ok_or_else(|| BitgetVaultError::TransactionFailed("no receipt".to_string()))?;
+        let receipt = match pending.await {
+            Ok(Some(r)) => r,
+            Ok(None) => {
+                warn!("withdraw sent but no receipt returned, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed("no receipt".to_string()));
+            }
+            Err(e) => {
+                warn!(error = %e, "withdraw receipt failed, resyncing nonce");
+                let _ = self.resync_nonce().await;
+                return Err(BitgetVaultError::TransactionFailed(format!("withdraw receipt failed: {}", e)));
+            }
+        };
 
         if receipt.status == Some(ethers::types::U64::from(0)) {
             return Err(BitgetVaultError::TransactionFailed(format!("tx reverted: {:?}", receipt.transaction_hash)));

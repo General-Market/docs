@@ -386,6 +386,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         uint256 signersBitmask
     ) external {
         if (!cycleProcessed[cycleNumber]) revert ErrorsLib.E128_CycleNotConfirmed(cycleNumber);
+        if (assetTradesEmitted[cycleNumber]) revert ErrorsLib.E019_CycleAlreadyProcessed(cycleNumber);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "assetTrades", cycleNumber, trades
@@ -403,6 +404,8 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             );
             unchecked { ++i; }
         }
+
+        assetTradesEmitted[cycleNumber] = true;
     }
 
     /// @inheritdoc IInvestment
@@ -482,6 +485,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     function _processFill(TypesLib.Fill calldata fill, TypesLib.LimitOrder storage order) internal {
         if (order.side == TypesLib.Side.BUY) {
             // BUY: Calculate shares based on fill price and amount
+            if (fill.fillPrice == 0) {
+                revert ErrorsLib.E037_ZeroSharesCalculated(fill.fillAmount, fill.fillPrice);
+            }
             uint256 shares = (fill.fillAmount * 1e18) / fill.fillPrice;
 
             // H-3 fix: Ensure minimum shares to prevent dust/rounding attacks
@@ -639,8 +645,8 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             revert ErrorsLib.E034_OrderNotYetExpired(orderId, order.deadline, block.timestamp);
         }
 
-        // Verify order is in PENDING or BATCHED status (can't refund already filled orders)
-        if (order.status == TypesLib.OrderStatus.FILLED || order.status == TypesLib.OrderStatus.EXPIRED) {
+        // Verify order is in PENDING or BATCHED status (whitelist — blocks CANCELLED, FILLED, EXPIRED)
+        if (order.status != TypesLib.OrderStatus.PENDING && order.status != TypesLib.OrderStatus.BATCHED) {
             revert ErrorsLib.E024_InvalidOrderStatus(
                 orderId,
                 uint256(order.status),
@@ -688,6 +694,10 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         // 0. Check system pause
         if (governance.isPaused()) {
             revert ErrorsLib.E004_SystemPaused();
+        }
+        // Security: only admin can create ITPs (bridge proxy calls via admin relay)
+        if (msg.sender != governance.admin()) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
 
         // Idempotency check: if bridgeNonce was already used, return existing itpId

@@ -78,22 +78,26 @@ pub fn admin_router_with_log_handle(
 }
 
 /// Auth middleware -- applied as a layer on the admin router.
-/// If `admin_token` is set, requires `x-admin-token` header to match.
-/// If not set, all requests pass (warn at startup in this case).
+/// Requires `x-admin-token` header to match the configured admin token.
+/// If no admin token is configured, rejects all requests (fail-closed).
 async fn auth_middleware(
     State(state): State<AdminState>,
     request: axum::extract::Request,
     next: axum::middleware::Next,
 ) -> Result<axum::response::Response, StatusCode> {
-    if let Some(ref token) = state.admin_token {
-        let provided = request.headers()
-            .get("x-admin-token")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-        if provided != token {
-            return Err(StatusCode::UNAUTHORIZED);
-        }
+    // If no admin token configured, reject all requests (fail-closed)
+    let Some(ref token) = state.admin_token else {
+        return Err(StatusCode::FORBIDDEN);
+    };
+
+    let provided = request.headers()
+        .get("x-admin-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if provided != token {
+        return Err(StatusCode::UNAUTHORIZED);
     }
+
     Ok(next.run(request).await)
 }
 

@@ -226,6 +226,19 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
             revert ErrorsLib.E048_InsufficientSignerCount(signerCount, REVERSAL_THRESHOLD);
         }
 
+        // Validate actual bitmask signer count meets emergency threshold
+        {
+            uint256 _bitmask = signersBitmask;
+            uint256 actualSigners;
+            while (_bitmask != 0) {
+                actualSigners += _bitmask & 1;
+                _bitmask >>= 1;
+            }
+            if (actualSigners < REVERSAL_THRESHOLD) {
+                revert ErrorsLib.E048_InsufficientSignerCount(actualSigners, REVERSAL_THRESHOLD);
+            }
+        }
+
         // Build message for BLS verification
         // Message: keccak256(abi.encode(chainid, this, "reverse", nonce, signerCount))
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "reverse", nonce, signerCount));

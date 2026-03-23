@@ -78,8 +78,8 @@ def join_and_submit(key, batch):
     for url in ORACLE_URLS:
         try:
             resp = requests.post(f"{url}/vision/bitmap", json={
-                "player": addr, "batchId": bid,
-                "bitmap": bitmap_hex, "bitmapHash": bitmap_hash,
+                "player": addr, "batch_id": bid,
+                "bitmap_hex": bitmap_hex, "expected_hash": bitmap_hash,
             }, timeout=5)
             if resp.ok:
                 submitted += 1

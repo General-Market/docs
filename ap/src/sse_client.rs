@@ -29,11 +29,14 @@ struct ChainEventEnvelope {
 pub struct SseChainEventClient {
     base_url: String,
     topics: Vec<String>,
+    /// Optional auth token — sent as X-AP-Auth header (validated by nginx)
+    auth_token: Option<String>,
 }
 
 impl SseChainEventClient {
     pub fn new(base_url: String, topics: Vec<String>) -> Self {
-        Self { base_url, topics }
+        let auth_token = std::env::var("AP_SSE_AUTH_TOKEN").ok();
+        Self { base_url, topics, auth_token }
     }
 
     fn sse_url(&self) -> String {
@@ -82,7 +85,13 @@ impl SseChainEventClient {
         url: &str,
         tx: &mpsc::Sender<ChainEvent>,
     ) -> Result<(), String> {
-        let mut es = EventSource::get(url);
+        // Build SSE request with auth header if configured (C1 fix)
+        let mut builder = reqwest::Client::new().get(url);
+        if let Some(ref token) = self.auth_token {
+            builder = builder.header("X-AP-Auth", token);
+            debug!("SSE request includes X-AP-Auth header");
+        }
+        let mut es = EventSource::new(builder).map_err(|e| format!("SSE build error: {}", e))?;
 
         info!("SSE stream connected to data-node");
 

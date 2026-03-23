@@ -329,9 +329,8 @@ contract OracleRegistry is IOracleRegistry, Initializable, UUPSUpgradeable {
             block.chainid, address(this), "removeOracleByVote", oracleId
         ));
 
-        // Verify against snapshot's aggregated pubkey
-        bytes memory pubkey = _fixedToPubkey(snap.aggregatedPubkey);
-        if (!BLSLib.verifyBLS(pubkey, message, blsSignature)) {
+        // Verify using multi-pairing (same as all other BLS-gated functions)
+        if (!this.verifyBLSMultiPairing(signersBitmask, message, blsSignature)) {
             revert InvalidBLSSignature();
         }
 
