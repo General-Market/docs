@@ -1,38 +1,33 @@
-import { getIssuerVisionUrl } from '@/lib/config'
 import { keccak256, toHex } from 'viem'
+import { getIssuerVisionUrl } from '@/lib/config'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
-import sourcesData from '@/data/sources-display.json'
+import sourcesDisplay from '@/data/sources-display.json'
 
-// Reverse map: batchId → human-readable source key + deploy configHash
-const BATCH_ID_TO_SOURCE: Record<number, string> = {}
+// Static deploy configHash fallback: patches zero hashes from oracle
 const BATCH_ID_TO_CONFIG_HASH: Record<number, string> = {}
-for (const [key, val] of Object.entries(visionBatchesJson.batches)) {
+for (const [, val] of Object.entries(visionBatchesJson.batches)) {
   const v = val as any
-  BATCH_ID_TO_SOURCE[v.batchId] = key
   if (v.configHash) BATCH_ID_TO_CONFIG_HASH[v.batchId] = v.configHash
 }
 
-// Fallback: resolve keccak256(name_vN) hashes for lifecycle-created batches
+// Build keccak hash → display sourceId lookup
+// On-chain source_id = keccak256(internalId + "_v2") etc.
 const HASH_TO_SOURCE: Record<string, string> = {}
-for (const source of (sourcesData as any).sources ?? []) {
-  const sid = source.sourceId ?? ''
-  for (const iid of source.internalIds ?? []) {
+for (const s of (sourcesDisplay as any).sources) {
+  const ids: string[] = s.internalIds ?? [s.sourceId]
+  for (const iid of ids) {
     for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
       const hash = keccak256(toHex(iid + suffix)).toLowerCase()
-      HASH_TO_SOURCE[hash] = sid
+      HASH_TO_SOURCE[hash] = s.sourceId
     }
+    // Also map plain internal ID
+    HASH_TO_SOURCE[iid.toLowerCase()] = s.sourceId
   }
 }
 
-function resolveSourceId(batchId: number, rawSourceId: string): string {
-  // First try static deploy mapping
-  const staticName = BATCH_ID_TO_SOURCE[batchId]
-  if (staticName) return staticName
-  // Fallback: resolve keccak hash to display name
-  if (rawSourceId?.startsWith('0x') && rawSourceId.length > 10) {
-    return HASH_TO_SOURCE[rawSourceId.toLowerCase()] ?? rawSourceId
-  }
-  return rawSourceId
+function resolveSourceId(rawId: string): string {
+  const lower = rawId.toLowerCase()
+  return HASH_TO_SOURCE[lower] ?? rawId
 }
 
 export async function GET() {
@@ -44,14 +39,17 @@ export async function GET() {
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)
     const data = await res.json()
 
-    // Enrich: replace keccak256 hex source_id with human-readable name + inject deploy configHash
+    // Patch zero config hashes from static deploy output
     for (const batch of (data.batches ?? [])) {
-      batch.source_id = resolveSourceId(batch.id, batch.source_id ?? '')
-      // Inject configHash from deploy output when oracle returns zero hash
       const isZeroHash = !batch.config_hash || batch.config_hash === '0x' + '0'.repeat(64)
       if (isZeroHash && BATCH_ID_TO_CONFIG_HASH[batch.id]) {
         batch.config_hash = BATCH_ID_TO_CONFIG_HASH[batch.id]
       }
+    }
+
+    // Resolve keccak hashes to display names and deduplicate
+    for (const batch of (data.batches ?? [])) {
+      batch.source_id = resolveSourceId(batch.source_id ?? '')
     }
 
     // Deduplicate: keep latest NON-PAUSED batch per source (highest ID = most recent round)
