@@ -464,14 +464,14 @@ impl BatchLifecycleManager {
 
             let market_id = H256::from(keccak256(asset_id.as_bytes()));
 
-            // Parse price (prefer value_scaled, fall back to f64 value)
+            // Parse price (prefer valueScaled/value_scaled, fall back to value as string or f64)
             let value: i128 =
-                if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.as_str()) {
+                if let Some(scaled) = snap.get("valueScaled").or_else(|| snap.get("value_scaled")).and_then(|v| v.as_str()) {
                     match scaled.parse::<i128>() {
                         Ok(v) => v,
                         Err(_) => continue,
                     }
-                } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
+                } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse::<f64>().ok()))) {
                     (f * 1e8).round() as i128
                 } else {
                     continue;

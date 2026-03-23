@@ -1318,55 +1318,186 @@ Dash over colon works everywhere except Government (−10) and Fintech (−3). E
 
 These have not been measured yet. They require deeper NLP or manual annotation.
 
-### Narrative & Rhetorical Structure
+### New Angle 1: ABT (And-But-Therefore) Structure
 
-1. **ABT (And-But-Therefore) structure** — Does the body follow the ABT framework? ("We do X, AND the market wants it, BUT existing solutions fail, THEREFORE we built Y.") Classify each body into ABT vs non-ABT. Correlate with votes. The ABT frame is the backbone of Hollywood screenwriting — does it work in a 500-word launch post?
+| Structure | n | Median | Avg |
+|---|---|---|---|
+| **but-only** | **1,703** | **38** | **86.5** |
+| full ABT (but + therefore) | 409 | 33 | 80.9 |
+| therefore-only | 83 | 26 | 87.7 |
+| no ABT | 501 | 33 | 74.8 |
 
-2. **Specificity of the villain** — Does the launch name a specific antagonist? ("Excel spreadsheets", "manual data entry", "3-day turnaround times") vs vague enemies ("legacy systems", "outdated processes", "the status quo"). Concrete villains may outperform abstract ones.
+The Hollywood screenwriting framework doesn't translate. Full ABT (but + therefore in the expected positions) underperforms a simple "but" alone. The "but" is the engine — it creates tension. The "therefore" (so we built, that's why, which is why) apparently reads as self-congratulatory. Launches that set up a tension and let the reader draw the conclusion outperform those that complete the syllogism.
 
-3. **Future-casting vs present-tense** — Does the post describe what the product *will* do ("we're building") vs what it *does* do ("we do")? Present-tense confidence vs future-tense ambition.
+**Overlap note:** Extends the narrative arc analysis (Section 15) but focuses on rhetorical transitions rather than keyword density.
 
-4. **Founder voice vs company voice** — "I built this because..." vs "Company X provides..." First-person singular vs corporate third-person in body text. Correlate with votes.
+---
 
-5. **The "micro-story" test** — Does the body contain a narrative with a character, a conflict, and a resolution? Even a single sentence: "A nurse in Ohio was spending 3 hours a day on prior auth calls. Now she spends 5 minutes." Presence of micro-stories vs pure feature lists.
+### New Angle 2: Specificity of the Villain
 
-### Structural Patterns
+| Villain Type | n | Median | Avg |
+|---|---|---|---|
+| Vague villain (legacy, outdated) | 115 | **37** | 64.7 |
+| No named villain | 1,948 | 36 | 80.8 |
+| Concrete villain (Excel, PDFs, etc) | 633 | 34 | 95.5 |
+| Both | 39 | 33 | 93.3 |
 
-6. **The "above the fold" test** — What's in the first 100 words of body text? Classify: product description, problem statement, metric/traction, personal story, bold claim. Correlate the opening content type with votes.
+Counterintuitive: vague villains slightly outperform concrete ones at the median. Naming "Excel" or "PDFs" doesn't help — the avg is higher (95.5 vs 64.7), meaning a few breakout launches name concrete villains, but the typical launch does not benefit.
 
-7. **Section ordering** — What order do sections appear? Map the sequence: TL;DR → Problem → Solution → How it works → Team → Ask. Does the order matter?
+**Individual villains:**
 
-8. **Whitespace ratio** — Character count vs visible content. Posts with more whitespace (short paragraphs, line breaks, headers) may read better. Ratio of blank lines to content lines vs votes.
+| Villain | n | Median |
+|---|---|---|
+| **Slack** | 243 | **40** |
+| **Jira** | 44 | **40** |
+| Spreadsheet | 49 | 39 |
+| Salesforce | 99 | 39 |
+| Paper | 80 | 38 |
+| Email | 858 | 37 |
+| Excel | 104 | 36 |
+| PDF | 55 | 36 |
+| HubSpot | 65 | 34 |
+| **Google Sheets** | **28** | **25** |
+| **Manual data entry** | **33** | **28** |
 
-9. **List-to-prose ratio** — What % of the body is bullet points vs flowing paragraphs? Some launches are pure lists. Others are essays. Which ratio wins?
+Slack and Jira are the best villains to name (median 40). Google Sheets and "manual data entry" are the worst — they frame your product as a spreadsheet replacement, which is the most crowded category in YC history. Naming the villain only works when the villain is a product people have a relationship with, not a generic process.
 
-10. **The "demo sentence"** — Does the post contain a sentence that describes the product *in action*? ("You paste a URL, we return a structured dataset in 3 seconds.") vs feature descriptions ("Our platform offers advanced data extraction.") Process descriptions vs capability claims.
+**Overlap note:** Different from Angle 23 (concrete/abstract language). This measures the named antagonist, not general specificity.
 
-### Social & Behavioral
+---
 
-11. **Launch title A/B testing** — Companies that launched multiple times often changed their title. For each repeat launcher, which title structure won? What did they change between attempts?
+### New Angle 3: Future-Casting vs Present-Tense
 
-12. **Comment bait** — Does the tagline or body contain a provocative/contrarian claim that would invite discussion? ("Compliance doesn't need to be theater", "Your spreadsheet is lying to you") Controversy as engagement driver.
+| Tense | n | Median | Avg |
+|---|---|---|---|
+| **Future-tense only** | **500** | **40** | 85.3 |
+| Present-tense only | 593 | 37 | 92.3 |
+| Both | 170 | 34 | 77.9 |
 
-13. **Named-user story** — Does the body contain a named person or company case study? ("Sarah at Acme Corp reduced her onboarding time by 80%") Named examples vs anonymous claims.
+Future-tense outperforms present-tense on median. Counterintuitive again — "we're building" beats "we do" at the median. The crowd apparently rewards ambition over proof in the launch context. They're investing attention in a promise, not evaluating a finished product.
 
-14. **Urgency without discount** — Scarcity signals that don't involve money: "We're onboarding 10 companies this month", "Beta closes Friday", "3 spots left in our pilot." Non-monetary urgency vs monetary urgency.
+Using both tenses (present + future) is the worst-performing combination — it reads as hedging, neither committed to the vision nor grounded in the product.
 
-### Visual & Format
+---
 
-15. **First emoji position** — Where does the first emoji appear? Title, tagline, first paragraph, deep in body? Early emoji vs late emoji vote difference.
+### New Angle 4: Founder Voice vs Company Voice
 
-16. **Screenshot/demo presence** — Bodies that reference visual demos ("see the screenshot below", "[demo gif]", embedded media) vs pure text. Product demonstration vs product description.
+| Voice | n | Median | Avg |
+|---|---|---|---|
+| **Personal (I built/realized)** | **61** | **40** | **95.4** |
+| Corporate (Company provides) | 1,023 | 39 | 89.6 |
+| Team/mixed (we/our) | 1,612 | 34 | 79.2 |
 
-17. **Typography density** — Sentences per paragraph. Posts with 1–2 sentence paragraphs (scannable) vs 4+ sentence paragraphs (dense). Reading ease proxy.
+Personal first-person ("I built", "I realized") wins, but only 61 launches use it — 2.3%. Corporate voice nearly matches (39 vs 40). The real loser is the default team voice ("we") — median 34, five points below both alternatives.
 
-### Meta-Patterns
+This doesn't contradict the earlier "we" pronoun analysis (Section 4). That measured pronoun frequency; this measures voice register. "We" as a pronoun is fine. "We built X for Y" as a default mode is not — it lacks authorship.
 
-18. **Launch post vs landing page alignment** — Do the tagline and title match the company's actual homepage? Or is the launch post telling a different story? Alignment between launch narrative and product positioning.
+**Overlap note:** Extends the We/You pronoun analysis with a different dimension (register, not frequency).
 
-19. **Batch peer comparison** — Within the same batch, do launches that differentiate from their batchmates (unique industry, unique angle) outperform those in crowded categories? Intra-batch competition effect.
+---
 
-20. **The "would you click?" test** — Using only the title + tagline (no body, no video), predict vote quartile. How much of the outcome is determined before the reader opens the post? Title-tagline-only predictive power vs full-post features.
+### New Angle 5: Micro-Stories
+
+| Group | n | Median | Avg |
+|---|---|---|---|
+| **Has micro-story** | **410** | **45** | **93.4** |
+| No micro-story | 2,286 | 34 | 81.8 |
+
+**+11 median lift. One of the strongest single-feature signals in the entire dataset.**
+
+15% of launches include a micro-story ("used to...now", "before...after", "was spending X hours...reduced to Y"). They outperform consistently. This is not a proxy for length or metrics — it's a narrative structure that makes the transformation concrete and human.
+
+The micro-story is the before/after claim (Section 9) given a character. "Reduced turnaround by 80%" is a metric. "Sarah used to spend 3 hours on prior auth calls. Now she spends 5 minutes." is a micro-story. The micro-story wins.
+
+---
+
+### New Angle 6: First 100 Words — Content Type
+
+| Opening Type | n | Median | Avg |
+|---|---|---|---|
+| **Product-first** | **203** | **42** | **105.5** |
+| Story-first | 60 | 40 | 69.2 |
+| Metric-first | 291 | 35 | 109.1 |
+| Other | 1,693 | 36 | 81.0 |
+| Problem-first | 449 | 33 | 68.5 |
+
+Product-first openings (median 42) beat problem-first (33) by nine points. This contradicts the transcript finding where pain-first hooks win — in body text, the reader wants to know what you do immediately. The problem is context; the product is news. Lead with the news.
+
+Metric-first has the highest avg (109) but below-median median (35) — a few breakout launches lead with a number, but it's a high-variance strategy. Story-first (40) works nearly as well as product-first with a fraction of the sample.
+
+---
+
+### New Angle 7: Section Ordering
+
+| First Section | n | Median | Avg |
+|---|---|---|---|
+| **Team** | **71** | **45** | 85.9 |
+| **TL;DR** | **537** | **43** | **103.1** |
+| Problem | 730 | 39 | 81.8 |
+| Other | 375 | 35 | 84.9 |
+| Solution | 33 | 33 | 133.1 |
+| Ask | 37 | 32 | 61.2 |
+| Traction | 11 | 30 | 191.5 |
+
+Leading with the **Team** section (median 45) is the best opening move — a finding nobody would predict. The crowd apparently wants to know who's building before they evaluate what's being built. TL;DR as first section (43) is the second-best opener and the most common among top performers.
+
+Opening with your **Ask** (32) or **Traction** (30) is the worst. The ask-first post reads as a plea. The traction-first post reads as a pitch deck slide pasted into a text box.
+
+---
+
+### New Angle 8: Whitespace Ratio (Scannability)
+
+| Quartile | Description | n | Median |
+|---|---|---|---|
+| Q1 | Dense (least whitespace) | 674 | **32** |
+| Q2 | Moderate-dense | 674 | 36 |
+| Q3 | **Moderate-airy** | 674 | **38** |
+| Q4 | Airy (most whitespace) | 674 | 37 |
+
+Dense posts (Q1, median 32) underperform by 6 points. The sweet spot is moderate-airy (Q3, 38) — enough breathing room to scan, not so much that the post feels hollow. Maximum airiness (Q4) slightly declines — the reader needs substance between the line breaks.
+
+---
+
+### New Angle 9: List-to-Prose Ratio
+
+| List Ratio | n | Median | Avg |
+|---|---|---|---|
+| No lists (0%) | 655 | 34 | 80.1 |
+| **Light (1–20%)** | **694** | **39** | **84.9** |
+| Medium (20–50%) | 1,243 | 36 | 86.4 |
+| Heavy (50%+) | 104 | **30** | 61.6 |
+
+A light sprinkling of lists (1–20% of lines) is the sweet spot: median 39. No lists at all underperforms (34). Heavy lists (>50%) collapse to 30 — the post becomes a spec sheet and loses the narrative thread.
+
+**Overlap note:** Extends the bullet-point presence analysis (Section 8) with a ratio dimension. Presence helps (+5 in earlier analysis); proportion matters more.
+
+---
+
+### New Angle 10: Demo Sentence — Process vs Capability
+
+| Description Type | n | Median | Avg |
+|---|---|---|---|
+| Both | 10 | 38 | 76.3 |
+| Capability (platform offers X) | 128 | 36 | 75.3 |
+| **Neither** | **2,377** | **36** | **85.7** |
+| Process (You do X, we do Y) | 191 | 34 | 62.6 |
+
+Neither approach helps. The "process description" pattern ("You paste a URL, we return...") actually underperforms baseline by −2. The "capability" pattern ("our platform offers...") is flat. The vast majority (2,377) use neither and perform at median.
+
+This is the one angle that returned a null result. The audience doesn't care whether you describe the how or the what — they care whether the outcome matters to them.
+
+---
+
+### New Angle 17: Typography Density (Sentences per Paragraph)
+
+| Density | Sent/Para | n | Median | Avg |
+|---|---|---|---|---|
+| Scannable | ≤1.5 | 634 | 33 | 83.2 |
+| **Moderate** | **1.5–2.5** | **1,773** | **38** | **83.3** |
+| Dense | 2.5–4 | 265 | 31 | 90.5 |
+| **Wall of text** | **>4** | **24** | **20** | **33.3** |
+
+Moderate paragraph density (1.5–2.5 sentences per paragraph) is the sweet spot: median 38. Ultra-scannable posts with ≤1.5 sentences per paragraph actually underperform (33) — too fragmented, no flow. Walls of text (>4 sentences per paragraph) collapse to median 20. The optimal paragraph is 2 sentences: one setup, one payoff.
 
 ---
 
