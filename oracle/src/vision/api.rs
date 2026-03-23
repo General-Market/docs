@@ -1121,15 +1121,10 @@ async fn leaderboard_from_postgres(
 ) -> axum::response::Response {
     let query = if let Some(sid) = source_id {
         // Round-only: per-source leaderboard from vision_round_players
-        // JOIN vision_batches to filter by source keccak256 hash candidates
-        let mut candidates: Vec<String> = Vec::new();
-        candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(sid.as_bytes()))));
-        for v in 1..=5u8 {
-            let versioned = format!("{}_v{}", sid, v);
-            candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
-        }
-        candidates.push(string_to_bytes32_hex(sid));
-        let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
+        // JOIN vision_batch_lifecycle (plain source names) instead of vision_batches
+        // (which stores keccak256 hashes that don't match frontend source IDs).
+        // Sanitize sid to prevent SQL injection (alphanumeric + underscore only)
+        let safe_sid = sid.chars().filter(|c| c.is_alphanumeric() || *c == '_').collect::<String>();
         format!(
             "SELECT vrp.player,
                     SUM(vrp.payout::numeric)::text as total_balance,
@@ -1137,10 +1132,10 @@ async fn leaderboard_from_postgres(
                     COUNT(*)::bigint as batches_joined,
                     SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins
              FROM vision_round_players vrp
-             JOIN vision_batches vb ON vrp.batch_id = vb.id
-             WHERE vb.source_id IN ({in_clause})
+             JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+             WHERE vbl.source_id = '{safe_sid}'
              GROUP BY vrp.player",
-            in_clause = in_clause
+            safe_sid = safe_sid
         )
     } else if let Some(bid) = batch_id {
         format!(
