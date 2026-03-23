@@ -7,6 +7,7 @@ pub mod adapters;
 pub mod audit;
 pub mod bindings;
 pub mod bls;
+pub mod component;
 pub mod consensus;
 pub mod decimals;
 pub mod error;
@@ -22,6 +23,7 @@ pub mod types;
 
 pub use bindings::*;
 pub use bls::{BLSKeyPair, Bn254BLSSigner};
+pub use component::*;
 pub use error::Error;
 pub use errors::IndexError;
 pub use keys::{
