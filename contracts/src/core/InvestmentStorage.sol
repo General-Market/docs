@@ -59,9 +59,6 @@ abstract contract InvestmentStorage {
     /// @notice Tracks which cycles have been processed (replay protection)
     mapping(uint256 => bool) public cycleProcessed;
 
-    /// @notice Tracks which cycles have had asset trades emitted (replay protection)
-    mapping(uint256 => bool) public assetTradesEmitted;
-
     /// @notice Reference to OracleRegistry for BLS signature verification
     IOracleRegistry public oracleRegistry;
 
@@ -168,6 +165,10 @@ abstract contract InvestmentStorage {
     /// @notice Incremented on each deployment/state change. Services poll this to detect staleness.
     uint256 public deploymentNonce;
 
+    /// @notice Tracks which cycles have had asset trades emitted (C7 replay protection)
+    /// @dev Added AFTER deploymentNonce to preserve UUPS storage layout (slot 36)
+    mapping(uint256 => bool) public assetTradesEmitted;
+
     // ============ STORAGE GAP ============
 
     /// @dev Reserved storage slots for future upgrades.
@@ -184,8 +185,8 @@ abstract contract InvestmentStorage {
     ///        stalenessLimits(28), venuePools(29), _itpNavs(30),
     ///        _bridgeNonceToItpId(31), authorizedBridge(32),
     ///        failedFillEscrow(33), batchedTimestamp(34),
-    ///        deploymentNonce(35) = 36 slots used
+    ///        deploymentNonce(35), assetTradesEmitted(36) = 37 slots used
     ///      Target: 50 total slots for upgradeability buffer
-    ///      Gap: 50 - 36 = 14 slots
-    uint256[14] private __gap;
+    ///      Gap: 50 - 37 = 13 slots
+    uint256[13] private __gap;
 }
