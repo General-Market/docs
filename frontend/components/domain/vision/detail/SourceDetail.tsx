@@ -7,6 +7,7 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
+import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
@@ -14,6 +15,68 @@ import { TopPlayers } from './TopPlayers'
 import BatchEntryPanel from './BatchEntryPanel'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
+import { useAccount } from 'wagmi'
+
+function WalletSourceStats({ sourceId }: { sourceId: string }) {
+  const { address } = useAccount()
+  const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
+  const entry = useMemo(() => {
+    if (!address || !leaderboard.length) return null
+    return leaderboard.find(p => p.walletAddress.toLowerCase() === address.toLowerCase()) ?? null
+  }, [address, leaderboard])
+
+  if (!address || !entry) return null
+
+  const pnlColor = entry.pnl > 0 ? 'text-green-600' : entry.pnl < 0 ? 'text-red-600' : 'text-text-muted'
+  const pnlSign = entry.pnl > 0 ? '+' : ''
+
+  return (
+    <div className="mt-3 bg-black text-white px-5 py-3 flex items-center gap-8">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Your Stats</div>
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Rounds</div>
+        <div className="text-[15px] font-bold font-mono">{entry.roundsPlayed}</div>
+      </div>
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Won</div>
+        <div className="text-[15px] font-bold font-mono text-green-400">{entry.roundsWon}</div>
+      </div>
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Win Rate</div>
+        <div className="text-[15px] font-bold font-mono">{entry.winRate.toFixed(1)}%</div>
+      </div>
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Volume</div>
+        <div className="text-[15px] font-bold font-mono">${entry.totalVolume.toFixed(2)}</div>
+      </div>
+      <div className="flex-1" />
+      <div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">P&L</div>
+        <div className={`text-[18px] font-black font-mono ${pnlColor}`}>
+          {pnlSign}${Math.abs(entry.pnl).toFixed(2)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CountdownTimer({ bettingEnd }: { bettingEnd: string | null }) {
+  const [remaining, setRemaining] = useState<number>(0)
+  useEffect(() => {
+    if (!bettingEnd) return
+    const update = () => {
+      const diff = Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000))
+      setRemaining(diff)
+    }
+    update()
+    const iv = setInterval(update, 1000)
+    return () => clearInterval(iv)
+  }, [bettingEnd])
+  if (!bettingEnd || remaining <= 0) return <span className="text-red-600">Settling...</span>
+  const m = Math.floor(remaining / 60)
+  const s = remaining % 60
+  return <span className="tabular-nums">{m}:{s.toString().padStart(2, '0')}</span>
+}
 
 interface SourceDetailProps {
   sourceId: string
@@ -173,6 +236,14 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
             </div>
           </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+              Time Left
+            </div>
+            <div className="text-[16px] font-bold font-mono text-black">
+              <CountdownTimer bettingEnd={activeRound?.bettingEnd ?? null} />
+            </div>
+          </div>
           {/* Set status */}
           <div className="flex-1" />
           <div>
@@ -184,6 +255,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             </div>
           </div>
         </div>
+
+        {/* Connected wallet stats for this source */}
+        <WalletSourceStats sourceId={sourceId} />
 
         {/* Content split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
