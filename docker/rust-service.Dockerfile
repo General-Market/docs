@@ -31,10 +31,11 @@ COPY itp-bot/ itp-bot/
 COPY ap/ ap/
 COPY curator/ curator/
 
-# Strip workspace to only needed members (sed-deletion approach — proven, minimal).
-# Always keep "common" + SERVICE + any EXTRA_MEMBERS; delete everything else.
+# Strip workspace to only needed members.
+# Extract member names from the members array (lines matching `    "name"`),
+# then delete lines for members not in KEEP list.
 RUN KEEP="common ${SERVICE} ${EXTRA_MEMBERS}" && \
-    for member in $(grep -oP '"[^"]+' Cargo.toml | tr -d '"' | grep -v '^\['); do \
+    for member in $(sed -n '/^members/,/^\]/p' Cargo.toml | grep -oP '"\K[^"]+'); do \
       echo " $KEEP " | grep -q " $member " || sed -i "/\"$member\"/d" Cargo.toml; \
     done
 
