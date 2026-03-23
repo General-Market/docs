@@ -1234,10 +1234,11 @@ async fn process_events(
                             // Respect oracle-directed quoteToken per asset pair.
                             // Decimal mismatch fixed in MockBitgetVault.executeTrade() directly.
                             let event_qt = EthAddress::from(asset_trade.quote_token);
-                            let needs_swap = !event_qt.is_zero() && event_qt != quote;
-                            let effective_quote = if needs_swap { event_qt } else { quote };
+                            let mut needs_swap = !event_qt.is_zero() && event_qt != quote;
+                            let mut effective_quote = if needs_swap { event_qt } else { quote };
 
                             // Pre-trade swap: BUY with non-USDC quote → swap USDC→quoteToken
+                            // On failure: fall back to USDC (swap is advisory, not required)
                             if needs_swap && asset_trade.side == 0 {
                                 match settlement.vault_client.swap_stable(
                                     quote, effective_quote, asset_trade.usdc_amount,
@@ -1252,9 +1253,9 @@ async fn process_events(
                                         );
                                     }
                                     Err(e) => {
-                                        error!(code = "E008", error = %e, "Pre-trade stablecoin swap failed, skipping trade");
-                                        metrics.increment_orders_failed();
-                                        return;
+                                        warn!(code = "E008", error = %e, "Pre-trade stablecoin swap failed, falling back to USDC");
+                                        needs_swap = false;
+                                        effective_quote = quote;
                                     }
                                 }
                             }
