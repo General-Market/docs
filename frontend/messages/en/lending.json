@@ -171,6 +171,16 @@
     "rate_limited": "Rate limited, retry in {seconds}s",
     "view_on_explorer": "View on explorer"
   },
+  "collateral_selector": {
+    "title": "Select Collateral",
+    "description": "Choose an ITP to use as collateral for borrowing USDC",
+    "no_itps": "No ITPs with lending markets in your wallet",
+    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
+    "balance": "Balance",
+    "nav": "NAV",
+    "no_market": "No lending market",
+    "select": "Select"
+  },
   "lend_modal": {
     "title": "Borrow against {name}",
     "description": "Borrow USDC against your {symbol} collateral via Morpho",

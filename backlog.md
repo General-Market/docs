@@ -1,5 +1,23 @@
 # Design Decision Backlog
 
+## Session: 20260323-2100-k8f3 (Lending Fixes)
+
+- [DECISION] Data-node IRM rate reading: replicate CuratorRateIRM._getRate() logic in Rust (read rates + lastRateUpdate, apply punitive fallback) instead of calling borrowRateView() which requires complex struct args.
+- [DECISION] Borrow flow redesigned: collateral-first selection. User clicks "Borrow USDC" → CollateralSelector shows ITPs with lending markets → pick one → DepositCollateral + BorrowUsdc inline. Replaces: click ITP row → separate LendItpModal.
+- [DECISION] Removed fake APR fallback (`2 + utilization * 0.15`) from useAllMorphoMarkets. Was masking broken rate pipeline.
+- [DECISION] DeployBatchMarkets.s.sol now calls setRates() after market creation. Root cause of 0% APR: rates were never initialized on testnet.
+- [FAILED] Calling borrowRateView() from data-node — requires MarketParams and Market structs as args. Too complex for a poller. Replicating the 3-line _getRate logic in Rust is cleaner.
+- [DECISION] Auto-market creation for new ITPs deferred to medium-term (Task #6). Requires oracle pipeline changes + on-chain registry. For now: documented admin step.
+
+## Session: 20260323-points (Unified Points System)
+
+- [DECISION] Points budget: 10,000 pts/day total. Vision 5K (50%), Creator 2.5K (25%), Holder 2.5K (25%). Down from spec's 96K/hr (2.3M/day) — tight emission.
+- [DECISION] Vision points are round-based, not tick-based. Old spec assumed continuous balances + ticks. New round-based batches (deposit→bet→settle→USDC back) make per-round deposit-proportional distribution the natural unit.
+- [DECISION] Per-round budget estimated from settled rounds in last hour × 24. Clamped to [10, 500] pts/round to prevent dust or gorging.
+- [DECISION] Index pools use 0.7x exponential decay for ranked distribution. Rank 1 gets ~36%, rank 2 gets ~25%, rank 3 gets ~17%. Only positive growth qualifies.
+- [DECISION] Points computed server-side in data-node (Rust), stored in Postgres. Frontend reads from API, does not compute points.
+- [DECISION] Idempotency via UNIQUE(player, pool, reason) constraint. Missed hours are not backfilled — acceptable for testnet.
+
 ## Session: 20260323-v2p8 (Vision 0-player investigation)
 
 - [DECISION] Server-only env vars in config.ts converted from module-level constants to getter functions. Next.js webpack inlines `process.env.LITERAL` at build time — if the var was absent during the Vercel build, `undefined` is baked into the bundle forever, falling through to localhost defaults. Getter functions (`getIssuerVisionUrl()`, etc.) use bracket access (`process.env['KEY']`) and read at call time, immune to inlining.

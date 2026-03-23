@@ -171,6 +171,16 @@
     "rate_limited": "请求频率受限，请在 {seconds} 秒后重试",
     "view_on_explorer": "在浏览器中查看"
   },
+  "collateral_selector": {
+    "title": "Select Collateral",
+    "description": "Choose an ITP to use as collateral for borrowing USDC",
+    "no_itps": "No ITPs with lending markets in your wallet",
+    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
+    "balance": "Balance",
+    "nav": "NAV",
+    "no_market": "No lending market",
+    "select": "Select"
+  },
   "lend_modal": {
     "title": "以 {name} 抵押借款",
     "description": "通过 Morpho 以 {symbol} 抵押品借入 USDC",

@@ -171,6 +171,16 @@
     "rate_limited": "요청 제한, {seconds}초 후 재시도",
     "view_on_explorer": "익스플로러에서 보기"
   },
+  "collateral_selector": {
+    "title": "Select Collateral",
+    "description": "Choose an ITP to use as collateral for borrowing USDC",
+    "no_itps": "No ITPs with lending markets in your wallet",
+    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
+    "balance": "Balance",
+    "nav": "NAV",
+    "no_market": "No lending market",
+    "select": "Select"
+  },
   "lend_modal": {
     "title": "{name} 담보 대출",
     "description": "Morpho를 통해 {symbol} 담보로 USDC를 대출합니다",

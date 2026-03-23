@@ -171,6 +171,16 @@
     "rate_limited": "レート制限中です。{seconds}秒後に再試行してください",
     "view_on_explorer": "エクスプローラーで表示"
   },
+  "collateral_selector": {
+    "title": "Select Collateral",
+    "description": "Choose an ITP to use as collateral for borrowing USDC",
+    "no_itps": "No ITPs with lending markets in your wallet",
+    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
+    "balance": "Balance",
+    "nav": "NAV",
+    "no_market": "No lending market",
+    "select": "Select"
+  },
   "lend_modal": {
     "title": "{name}を担保に借入",
     "description": "Morpho経由で{symbol}担保にUSDCを借入",

@@ -31,7 +31,6 @@ export function useAllMorphoMarkets() {
       let borrowApy = 0
       const ratePerSec = Number(BigInt(m.borrow_rate_per_second || '0')) / 1e18
       if (ratePerSec > 0) borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
-      if (borrowApy === 0 && utilization > 0) borrowApy = 2 + utilization * 0.15
 
       const supplyApy = utilization > 0 ? (borrowApy * utilization) / 100 : 0
       const lltv = BigInt(m.lltv || '770000000000000000')

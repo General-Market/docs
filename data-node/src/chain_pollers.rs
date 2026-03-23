@@ -67,8 +67,14 @@ abigen!(
     IrmReader,
     r#"[
         function rates(bytes32 marketId) external view returns (uint256)
+        function lastRateUpdate(bytes32 marketId) external view returns (uint256)
     ]"#
 );
+
+/// CuratorRateIRM punitive rate: 100% APR ~ 31_709_791_983 WAD per-second.
+/// Applied when rate is 0 (never set) or stale (>48h since last update).
+const PUNITIVE_RATE: u128 = 31_709_791_983;
+const MAX_RATE_STALENESS: u64 = 48 * 3600; // 48 hours
 
 abigen!(
     OracleRegistryPoller,
@@ -183,10 +189,22 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
                 market_id_bytes[..len].copy_from_slice(&bytes[..len]);
             }
             let (tsa, tss, tba, tbs, lu, _fee) = morpho.market(market_id_bytes).call().await.unwrap_or_default();
-            // Per-market IRM (each market can have a different IRM contract)
+            // Per-market IRM: read stored rate + staleness, apply punitive fallback
             let irm_addr: Address = bm.irm.parse().unwrap_or_default();
             let irm = IrmReader::new(irm_addr, provider);
-            let rate = irm.rates(market_id_bytes).call().await.unwrap_or_default();
+            let raw_rate = irm.rates(market_id_bytes).call().await.unwrap_or_default();
+            let last_update_ts = irm.last_rate_update(market_id_bytes).call().await.unwrap_or_default();
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let effective_rate = if raw_rate.is_zero()
+                || now.saturating_sub(last_update_ts.as_u64()) > MAX_RATE_STALENESS
+            {
+                ethers::types::U256::from(PUNITIVE_RATE)
+            } else {
+                raw_rate
+            };
             CachedMorphoMarket {
                 market_id: bm.market_id,
                 collateral_token: bm.collateral_token,
@@ -194,7 +212,7 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
                 total_supply_shares: tss.to_string(),
                 total_borrow_assets: tba.to_string(),
                 total_borrow_shares: tbs.to_string(),
-                borrow_rate_per_second: rate.to_string(),
+                borrow_rate_per_second: effective_rate.to_string(),
                 lltv: bm.lltv,
                 oracle: bm.oracle,
                 last_update: lu as u64,
@@ -288,7 +306,17 @@ pub async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error
 
     let borrow_rate_ray = if irm_addr != Address::zero() {
         let irm = IrmReader::new(irm_addr, Arc::clone(&state.l3_provider));
-        irm.rates(market_id_arr).call().await.unwrap_or_default().to_string()
+        let raw_rate = irm.rates(market_id_arr).call().await.unwrap_or_default();
+        let last_upd = irm.last_rate_update(market_id_arr).call().await.unwrap_or_default();
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        if raw_rate.is_zero() || now.saturating_sub(last_upd.as_u64()) > MAX_RATE_STALENESS {
+            PUNITIVE_RATE.to_string()
+        } else {
+            raw_rate.to_string()
+        }
     } else {
         "0".to_string()
     };

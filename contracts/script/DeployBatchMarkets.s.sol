@@ -134,6 +134,19 @@ contract DeployBatchMarkets is Script {
         vault.setSupplyQueue(supplyQueue);
         console.log("Supply queue set with", marketCount + offset, "markets");
 
+        // Set initial borrow rates for all batch markets (5% APR default)
+        // 5% APR = 0.05 * 1e18 / 31_536_000 ≈ 1_585_489_599
+        uint256 defaultRate = vm.envOr("DEFAULT_BORROW_RATE", uint256(1585489599));
+        CuratorRateIRM curatorIrm = CuratorRateIRM(curatorIrmAddr);
+        Id[] memory rateIds = new Id[](marketCount);
+        uint256[] memory rateValues = new uint256[](marketCount);
+        for (uint256 i = 0; i < marketCount; i++) {
+            rateIds[i] = deployments[i].marketId;
+            rateValues[i] = defaultRate;
+        }
+        curatorIrm.setRates(rateIds, rateValues);
+        console.log("Borrow rates set for", marketCount, "markets");
+
         vm.stopBroadcast();
 
         // Write batch deployment JSON
