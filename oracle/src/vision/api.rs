@@ -1110,6 +1110,8 @@ struct LeaderboardRow {
     total_deposited: Option<String>,
     batches_joined: Option<i64>,
     wins: Option<i64>,
+    total_correct: Option<i64>,
+    total_markets: Option<i64>,
 }
 
 /// Build leaderboard from Postgres — used when source_id or batch_id filter is set.
@@ -1130,7 +1132,9 @@ async fn leaderboard_from_postgres(
                     SUM(vrp.payout::numeric)::text as total_balance,
                     SUM(vrp.deposited::numeric)::text as total_deposited,
                     COUNT(*)::bigint as batches_joined,
-                    SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins
+                    SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins,
+                    SUM(vrp.correct_count)::bigint as total_correct,
+                    SUM(vrp.total_markets)::bigint as total_markets
              FROM vision_round_players vrp
              JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
              WHERE vbl.source_id = '{safe_sid}'
@@ -1143,7 +1147,9 @@ async fn leaderboard_from_postgres(
                     SUM(payout::numeric)::text as total_balance,
                     SUM(deposited::numeric)::text as total_deposited,
                     COUNT(*)::bigint as batches_joined,
-                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins
+                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins,
+                    SUM(correct_count)::bigint as total_correct,
+                    SUM(total_markets)::bigint as total_markets
              FROM vision_round_players
              WHERE batch_id = {bid}
              GROUP BY player",
@@ -1194,82 +1200,10 @@ async fn leaderboard_from_postgres(
         entry.1 += dep;
         entry.2 += batches;
         entry.3 += wins;
-    }
-
-    // Merge settled round results — filter by source/batch when provided
-    let round_query = if let Some(sid) = source_id {
-        // Same keccak256 candidate matching as the main leaderboard query
-        let mut candidates: Vec<String> = Vec::new();
-        candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(sid.as_bytes()))));
-        for v in 1..=5u8 {
-            let versioned = format!("{}_v{}", sid, v);
-            candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
-        }
-        candidates.push(string_to_bytes32_hex(sid));
-        let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
-        format!(
-            "SELECT vrp.player,
-                    SUM(vrp.payout::numeric)::text as total_payout,
-                    SUM(vrp.deposited::numeric)::text as total_deposited,
-                    SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
-                    COUNT(*)::bigint as rounds_played,
-                    SUM(vrp.correct_count)::bigint as total_correct,
-                    SUM(vrp.total_markets)::bigint as total_markets
-             FROM vision_round_players vrp
-             JOIN vision_batches vb ON vrp.batch_id = vb.id
-             WHERE vb.source_id IN ({})
-             GROUP BY vrp.player",
-            in_clause
-        )
-    } else if let Some(bid) = batch_id {
-        format!(
-            "SELECT player,
-                    SUM(payout::numeric)::text as total_payout,
-                    SUM(deposited::numeric)::text as total_deposited,
-                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
-                    COUNT(*)::bigint as rounds_played,
-                    SUM(correct_count)::bigint as total_correct,
-                    SUM(total_markets)::bigint as total_markets
-             FROM vision_round_players
-             WHERE batch_id = {}
-             GROUP BY player",
-            bid
-        )
-    } else {
-        "SELECT player,
-                SUM(payout::numeric)::text as total_payout,
-                SUM(deposited::numeric)::text as total_deposited,
-                SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
-                COUNT(*)::bigint as rounds_played,
-                SUM(correct_count)::bigint as total_correct,
-                SUM(total_markets)::bigint as total_markets
-         FROM vision_round_players
-         GROUP BY player".to_string()
-    };
-    if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(&round_query)
-    .fetch_all(pool)
-    .await
-    {
-        for row in round_rows {
-            let entry = merged
-                .entry(row.player)
-                .or_insert((0.0, 0.0, 0, 0, 0, 0, 0, 0));
-
-            let payout: f64 = row.total_payout.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
-            let dep: f64 = row.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
-            entry.0 += payout;
-            entry.1 += dep;
-
-            let rp = row.rounds_played.unwrap_or(0) as u64;
-            let rw = row.wins.as_deref().unwrap_or("0").parse::<u64>().unwrap_or(0);
-
-            entry.2 += rp as usize;
-            entry.3 += rw as usize;
-            entry.4 += rp;
-            entry.5 += rw;
-            entry.6 += row.total_correct.unwrap_or(0) as u64;
-            entry.7 += row.total_markets.unwrap_or(0) as u64;
-        }
+        entry.4 += batches as u64;   // rounds_played
+        entry.5 += wins as u64;      // rounds_won
+        entry.6 += r.total_correct.unwrap_or(0) as u64;
+        entry.7 += r.total_markets.unwrap_or(0) as u64;
     }
 
     // Sort by PnL descending
