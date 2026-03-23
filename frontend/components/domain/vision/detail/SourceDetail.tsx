@@ -60,19 +60,31 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
   )
 }
 
-function CountdownTimer({ bettingEnd }: { bettingEnd: string | null }) {
+function CountdownTimer({ bettingEnd, tickDuration }: { bettingEnd: string | null; tickDuration?: number }) {
   const [remaining, setRemaining] = useState<number>(0)
+  const [overdue, setOverdue] = useState<number>(0)
   useEffect(() => {
     if (!bettingEnd) return
     const update = () => {
-      const diff = Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000))
-      setRemaining(diff)
+      const diff = Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000)
+      setRemaining(Math.max(0, diff))
+      setOverdue(diff < 0 ? Math.abs(diff) : 0)
     }
     update()
     const iv = setInterval(update, 1000)
     return () => clearInterval(iv)
   }, [bettingEnd])
-  if (!bettingEnd || remaining <= 0) return <span className="text-red-600">Settling...</span>
+  if (!bettingEnd) return <span className="text-text-muted">--:--</span>
+  if (remaining <= 0) {
+    // Show settlement progress — next round starts soon
+    const td = tickDuration || 300
+    const pct = Math.min(100, Math.round((overdue / td) * 100))
+    return (
+      <span className="text-amber-600 animate-pulse">
+        Next round ~{Math.max(0, td - overdue)}s
+      </span>
+    )
+  }
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
   return <span className="tabular-nums">{m}:{s.toString().padStart(2, '0')}</span>
@@ -241,7 +253,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               Time Left
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              <CountdownTimer bettingEnd={activeRound?.bettingEnd ?? null} />
+              <CountdownTimer bettingEnd={activeRound?.bettingEnd ?? null} tickDuration={activeBatch?.tickDuration} />
             </div>
           </div>
           {/* Set status */}

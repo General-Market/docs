@@ -12,12 +12,13 @@ function BatchTimer({ bettingEnd }: { bettingEnd: string | null }) {
   const [remaining, setRemaining] = useState(0)
   useEffect(() => {
     if (!bettingEnd) return
-    const update = () => setRemaining(Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000)))
+    const update = () => setRemaining(Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000))
     update()
     const iv = setInterval(update, 1000)
     return () => clearInterval(iv)
   }, [bettingEnd])
-  if (!bettingEnd || remaining <= 0) return <span className="text-micro text-red-500 font-bold">Settling</span>
+  if (!bettingEnd) return null
+  if (remaining <= 0) return <span className="text-micro text-amber-600 font-bold animate-pulse">New round soon</span>
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
   return <span className="text-micro font-bold font-mono tabular-nums text-text-muted">{m}:{s.toString().padStart(2, '0')}</span>
