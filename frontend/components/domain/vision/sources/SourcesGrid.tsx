@@ -30,7 +30,7 @@ export function SourcesGrid() {
     return byCategory.filter(source => {
       const status = getSourceStatusFromMeta(source.sourceId, meta.sources)
       if (status === 'healthy' || status === 'stale') return true
-      const assetCount = meta.assetCounts?.[source.sourceId] ?? 0
+      const assetCount = meta.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : 0
       return assetCount > 0
     })
   }, [activeCategory, registrySources, meta?.sources, meta?.assetCounts])

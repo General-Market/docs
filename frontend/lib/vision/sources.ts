@@ -6,6 +6,8 @@
 //
 // This file is kept for backward compatibility; the stubs below return empty/null.
 
+import { allInternalIds } from '@/lib/vision/source-ids'
+
 export type SourceCategory = string
 
 export interface VisionSource {
@@ -63,7 +65,14 @@ export function getAssetCountForSource(
   sourceId: string,
   assetCounts: Record<string, number>,
 ): number {
-  return assetCounts[sourceId] ?? 0
+  // Try display ID first
+  if (assetCounts[sourceId]) return assetCounts[sourceId]
+  // Resolve internal IDs — sum all (covers multi-internal sources like "sec")
+  let total = 0
+  for (const iid of allInternalIds(sourceId)) {
+    total += assetCounts[iid] ?? 0
+  }
+  return total
 }
 
 /** @deprecated Use meta.sources from useMarketSnapshotMeta() */
@@ -71,8 +80,14 @@ export function getSourceStatusFromMeta(
   sourceId: string,
   sources: Array<{ sourceId: string; status: string }>,
 ): string {
-  const s = sources.find(x => x.sourceId === sourceId)
-  return s?.status ?? 'unknown'
+  // Try display ID first, then resolve all internal IDs (data-node uses internal IDs)
+  const direct = sources.find(x => x.sourceId === sourceId)
+  if (direct) return direct.status
+  for (const iid of allInternalIds(sourceId)) {
+    const s = sources.find(x => x.sourceId === iid)
+    if (s) return s.status
+  }
+  return 'unknown'
 }
 
 /** @deprecated Use source.valueLabel from useSourceRegistry() */
