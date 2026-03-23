@@ -170,7 +170,8 @@ pub async fn poll_morpho_vault_once(state: &AppState) -> Result<(), Box<dyn std:
 }
 
 pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    if state.batch_markets.is_empty() { return Ok(()); }
+    let batch_markets = state.batch_markets.read().await;
+    if batch_markets.is_empty() { return Ok(()); }
 
     let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
     let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
@@ -178,7 +179,7 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
     let provider = Arc::clone(&state.l3_provider);
 
     // Parallel: fetch all markets concurrently, per-market IRM
-    let futs: Vec<_> = state.batch_markets.iter().map(|bm| {
+    let futs: Vec<_> = batch_markets.iter().map(|bm| {
         let morpho = morpho.clone();
         let provider = Arc::clone(&provider);
         let bm = bm.clone();
@@ -208,6 +209,8 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
             CachedMorphoMarket {
                 market_id: bm.market_id,
                 collateral_token: bm.collateral_token,
+                loan_token: bm.loan_token,
+                irm: bm.irm,
                 total_supply_assets: tsa.to_string(),
                 total_supply_shares: tss.to_string(),
                 total_borrow_assets: tba.to_string(),
@@ -225,6 +228,20 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
     let mut cache = state.chain_cache.morpho_markets.write().await;
     *cache = results;
     state.chain_cache.morpho_markets_gen.bump();
+    Ok(())
+}
+
+/// Hot-reload batch-markets.json if it has changed (new markets deployed).
+pub async fn poll_batch_markets_reload(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let fresh = crate::api::load_batch_markets(&state.batch_markets_path);
+    let current = state.batch_markets.read().await;
+    if fresh.len() != current.len() {
+        drop(current);
+        let count = fresh.len();
+        let mut w = state.batch_markets.write().await;
+        *w = fresh;
+        tracing::info!(count, "Hot-reloaded batch markets (count changed)");
+    }
     Ok(())
 }
 
@@ -549,7 +566,8 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
 // ── Morpho position poller ──
 
 pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    if state.batch_markets.is_empty() {
+    let batch_markets = state.batch_markets.read().await;
+    if batch_markets.is_empty() {
         return Ok(());
     }
 
@@ -569,7 +587,7 @@ pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn st
     let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
 
     // Pre-parse all market IDs once
-    let market_ids: Vec<(String, [u8; 32])> = state.batch_markets.iter().filter_map(|bm| {
+    let market_ids: Vec<(String, [u8; 32])> = batch_markets.iter().filter_map(|bm| {
         let hex_str = bm.market_id.strip_prefix("0x").unwrap_or(&bm.market_id);
         let bytes = hex::decode(hex_str).ok()?;
         let mut arr = [0u8; 32];

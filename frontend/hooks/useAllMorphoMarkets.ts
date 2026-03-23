@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { useSSEMorphoMarkets, type MorphoMarketSSE } from './useSSE'
+import { mergeSSEMarket } from '@/lib/contracts/morpho-markets-registry'
 
 const SECONDS_PER_YEAR = 365.25 * 86400
 
@@ -23,6 +24,8 @@ export function useAllMorphoMarkets() {
     if (!sseMarkets || sseMarkets.length === 0) return map
 
     for (const m of sseMarkets) {
+      // Auto-register SSE-discovered markets into the static registry
+      mergeSSEMarket(m)
       const totalSupplyAssets = BigInt(m.total_supply_assets || '0')
       const totalBorrowAssets = BigInt(m.total_borrow_assets || '0')
       const utilization = totalSupplyAssets > 0n

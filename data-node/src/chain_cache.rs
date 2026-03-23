@@ -101,6 +101,8 @@ pub struct MorphoVaultState {
 pub struct CachedMorphoMarket {
     pub market_id: String,
     pub collateral_token: String,
+    pub loan_token: String,
+    pub irm: String,
     pub total_supply_assets: String,
     pub total_supply_shares: String,
     pub total_borrow_assets: String,

@@ -292,9 +292,20 @@ pub struct BatchMarketEntry {
     pub market_id: String,
     #[serde(rename = "collateralToken")]
     pub collateral_token: String,
+    #[serde(rename = "loanToken", default)]
+    pub loan_token: String,
     pub oracle: String,
     pub irm: String,
     pub lltv: String,
+}
+
+/// Load batch markets from JSON file. Used at startup and for hot-reload.
+pub fn load_batch_markets(path: &str) -> Vec<BatchMarketEntry> {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
+        .and_then(|v| serde_json::from_value(v["markets"].clone()).ok())
+        .unwrap_or_default()
 }
 
 pub struct AppState {
@@ -344,8 +355,10 @@ pub struct AppState {
     pub leaderboard_cache: Arc<crate::vision_api::LeaderboardProxyCache>,
     /// Cached player profile data from oracle (30s TTL)
     pub profile_cache: Arc<crate::vision_api::ProfileCache>,
-    /// Morpho batch markets loaded from batch-markets.json
-    pub batch_markets: Vec<BatchMarketEntry>,
+    /// Morpho batch markets (hot-reloaded from batch-markets.json)
+    pub batch_markets: tokio::sync::RwLock<Vec<BatchMarketEntry>>,
+    /// Path to batch-markets.json for hot-reload
+    pub batch_markets_path: String,
     /// Cumulative count of lagged events across all SSE chain-event consumers
     pub chain_event_lag_total: std::sync::atomic::AtomicU64,
 }
@@ -2748,9 +2761,11 @@ async fn morpho_position(
     // Resolve market_id, oracle, lltv — per-market when market_id is provided
     let (market_id_str, oracle_addr, lltv) = if let Some(ref mid) = params.market_id {
         let mid_norm = mid.strip_prefix("0x").unwrap_or(mid).to_lowercase();
-        let bm = state.batch_markets.iter().find(|m| {
+        let bm_guard = state.batch_markets.read().await;
+        let bm = bm_guard.iter().find(|m| {
             m.market_id.strip_prefix("0x").unwrap_or(&m.market_id).to_lowercase() == mid_norm
-        });
+        }).cloned();
+        drop(bm_guard);
         match bm {
             Some(entry) => (
                 mid.clone(),

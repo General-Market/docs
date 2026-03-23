@@ -119,6 +119,8 @@ export interface MorphoPositionSnapshot {
 export interface MorphoMarketSSE {
   market_id: string
   collateral_token: string
+  loan_token: string
+  irm: string
   total_supply_assets: string
   total_borrow_assets: string
   total_supply_shares: string

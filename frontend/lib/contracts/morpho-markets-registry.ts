@@ -97,6 +97,38 @@ try {
 }
 
 /**
+ * Merge SSE-discovered markets into the registry at runtime.
+ * Called by useAllMorphoMarkets when new markets appear in the SSE stream
+ * that aren't in the static JSON (e.g. after a batch deploy + data-node hot-reload).
+ */
+export function mergeSSEMarket(m: {
+  market_id: string
+  collateral_token: string
+  loan_token: string
+  oracle: string
+  irm: string
+  lltv: string
+}): void {
+  const key = m.collateral_token.toLowerCase()
+  if (MARKETS[key]) return // already registered
+  if (!m.loan_token || !m.irm) return // SSE fields not yet populated
+
+  const morphoAddr = c.MORPHO as `0x${string}`
+  const vaultAddr = c.METAMORPHO_VAULT as `0x${string}`
+
+  MARKETS[key] = {
+    marketId: m.market_id as `0x${string}`,
+    loanToken: m.loan_token as `0x${string}`,
+    collateralToken: m.collateral_token as `0x${string}`,
+    oracle: m.oracle as `0x${string}`,
+    irm: m.irm as `0x${string}`,
+    lltv: BigInt(m.lltv || '770000000000000000'),
+    morpho: morphoAddr,
+    vault: vaultAddr,
+  }
+}
+
+/**
  * Look up the Morpho market for a given ITP collateral token address.
  */
 export function getMorphoMarketForItp(collateralTokenAddress: string | undefined): MorphoMarketEntry | null {
