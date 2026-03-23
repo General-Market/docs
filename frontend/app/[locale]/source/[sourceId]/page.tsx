@@ -25,10 +25,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${source.name} | Vision`,
     description,
-    openGraph: {
-      title: `${source.name} — Vision Data Source`,
-      description,
-    },
   }
 }
 

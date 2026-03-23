@@ -13,10 +13,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     alternates: {
       canonical: '/index',
     },
-    openGraph: {
-      type: 'website',
-      siteName: 'General Market',
-    },
   }
 }
 

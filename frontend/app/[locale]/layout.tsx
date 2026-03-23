@@ -28,14 +28,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     },
     description: t('description'),
     keywords: t('keywords').split(', '),
-    openGraph: {
-      locale,
-      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'General Market' }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      images: ['/og-image.png'],
-    },
     alternates: {
       canonical: locale === 'en' ? '/' : `/${locale}`,
       languages: {

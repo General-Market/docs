@@ -43,21 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     nav: nav.toFixed(4),
   })
 
-  const ogTitle = t('og_title', { name })
-
   return {
     title: t('title', { name, symbol }),
     description,
-    openGraph: {
-      title: ogTitle,
-      description,
-      url: `https://www.generalmarket.io/itp/${itpId}`,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: ogTitle,
-      description,
-    },
   }
 }
 

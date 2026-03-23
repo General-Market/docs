@@ -42,17 +42,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       index: true,
       follow: true,
     },
-    openGraph: {
-      title: frontmatter.title,
-      description: frontmatter.description,
-      url: `https://www.generalmarket.io/learn/${frontmatter.slug}`,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: frontmatter.title,
-      description: frontmatter.description,
-    },
   };
 }
 
