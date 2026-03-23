@@ -488,7 +488,7 @@ impl BatchLifecycleManager {
             let change_pct = snap
                 .get("change_pct")
                 .or_else(|| snap.get("changePct"))
-                .and_then(|v| v.as_f64())
+                .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse::<f64>().ok())))
                 .unwrap_or(0.0);
 
             // Derive start price from end price and change_pct
@@ -903,16 +903,17 @@ impl BatchLifecycleManager {
         let node_bitmap: i64 = 1i64 << node_index;
 
         // 4. Shared-DB aggregation with SELECT FOR UPDATE
+        let my_payouts_hash_hex = format!("0x{}", hex::encode(payouts_hash));
         let mut tx = self.pool.begin().await?;
 
-        let existing: Option<(Vec<u8>, i64, bool)> = sqlx::query_as(
-            "SELECT bls_sig, signer_bitmap, submitted FROM vision_settlement_proofs WHERE batch_id = $1 FOR UPDATE"
+        let existing: Option<(Vec<u8>, i64, bool, String)> = sqlx::query_as(
+            "SELECT bls_sig, signer_bitmap, submitted, players_hash FROM vision_settlement_proofs WHERE batch_id = $1 FOR UPDATE"
         )
         .bind(batch_id as i64)
         .fetch_optional(&mut *tx)
         .await?;
 
-        let (final_sig, final_bitmap, already_submitted) = if let Some((existing_sig, existing_bitmap, submitted)) = existing {
+        let (final_sig, final_bitmap, already_submitted) = if let Some((existing_sig, existing_bitmap, submitted, stored_hash)) = existing {
             if submitted {
                 // Already submitted on-chain by another oracle — nothing to do.
                 tx.commit().await?;
@@ -924,6 +925,21 @@ impl BatchLifecycleManager {
                 // This oracle already signed — idempotent.
                 tx.commit().await?;
                 debug!(batch_id, node_index, "Already signed this settlement — skipping");
+                return Ok(());
+            }
+
+            // Guard: verify our payouts hash matches the stored one.
+            // If they differ, we computed different resolution outcomes — signing
+            // would produce an invalid aggregated BLS signature.
+            if stored_hash != my_payouts_hash_hex {
+                tx.commit().await?;
+                warn!(
+                    batch_id,
+                    node_index,
+                    our_hash = %my_payouts_hash_hex,
+                    stored_hash = %stored_hash,
+                    "Payouts hash mismatch — skipping BLS sign to avoid invalid aggregation"
+                );
                 return Ok(());
             }
 
@@ -962,13 +978,12 @@ impl BatchLifecycleManager {
             (merged_sig, merged_bitmap, false)
         } else {
             // First signer — insert new row
-            let players_hash_hex = format!("0x{}", hex::encode(payouts_hash));
             sqlx::query(
                 "INSERT INTO vision_settlement_proofs (batch_id, players_hash, bls_sig, signer_bitmap)
                  VALUES ($1, $2, $3, $4)"
             )
             .bind(batch_id as i64)
-            .bind(&players_hash_hex)
+            .bind(&my_payouts_hash_hex)
             .bind(&sig_bytes[..])
             .bind(node_bitmap)
             .execute(&mut *tx)
