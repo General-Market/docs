@@ -2,27 +2,16 @@
 
 use std::sync::Arc;
 
+use common::adapters::abi::InvestmentContract;
 use ethers::prelude::*;
 use tracing::info;
-
-// Generate contract bindings for ITP-related functions on Index.sol
-abigen!(
-    IInvestment,
-    r#"[
-        function getITPState(bytes32 itpId) view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
-        function getITPInfo(bytes32 itpId) view returns (string name, string symbol, address creator, uint256 createdAt, uint8 status, uint256 assetCount)
-        function itpCount() view returns (uint256)
-        function requestRebalance(bytes32 itpId, uint256[] removeIndices, address[] addAssets, uint256[] newWeights, string note)
-        function createITP(string name, string symbol, uint256[] weights, address[] assets, uint256[] prices, uint256 bridgeNonce) returns (bytes32 itpId)
-    ]"#
-);
 
 /// Type alias for the signer middleware used throughout.
 pub type SignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 
 /// L3 chain client for ITP operations.
 pub struct ChainClient {
-    contract: IInvestment<SignerClient>,
+    contract: InvestmentContract<SignerClient>,
     wallet_address: Address,
 }
 
@@ -44,7 +33,7 @@ impl ChainClient {
         let wallet_address = wallet.address();
         let client = SignerMiddleware::new(provider, wallet);
         let client = Arc::new(client);
-        let contract = IInvestment::new(contract_addr, client);
+        let contract = InvestmentContract::new(contract_addr, client);
 
         info!(
             contract = ?contract_addr,
@@ -73,7 +62,7 @@ impl ChainClient {
 
     /// Return the total number of ITPs that exist on-chain.
     pub async fn itp_count(&self) -> Result<U256, Box<dyn std::error::Error>> {
-        let count = self.contract.itp_count().call().await?;
+        let count = self.contract.get_itp_count().call().await?;
         Ok(count)
     }
 
