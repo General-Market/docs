@@ -4019,6 +4019,22 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         return;
     }
 
+    // Emit per-asset trades before fills (AP needs these to execute trades on MockBitgetVault)
+    {
+        let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = l3_batched_orders.iter()
+            .map(|o| (o.itp_id, o.side as u8, o.amount))
+            .collect();
+        match protocol.run_asset_trades_phase(fills_cycle, &asset_trade_orders, &chain_reader, fills_am_leader, quote_tokens.as_ref()).await {
+            Ok(at_result) => {
+                info!(cycle = current_cycle, fills_cycle, signer_count = at_result.signature_count,
+                    "BATCHED L3-native asset trades emitted");
+            }
+            Err(e) => {
+                warn!(cycle = current_cycle, fills_cycle, error = %e, "BATCHED asset trades emission failed (fills will proceed)");
+            }
+        }
+    }
+
     match protocol.run_fills_confirm_phase(fills_cycle, fills, fills_am_leader).await {
         Ok(fills_result) => {
             if fills_result.signature_count > 0 {
