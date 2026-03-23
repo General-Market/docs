@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260323-y7k3 (YC + Product Hunt launch scraping)
+
+- [DECISION] YC launches scraped via Algolia public API (2,696 launches). YouTube transcripts fetched via pytubefix (bypasses IP blocks that killed youtube-transcript-api and yt-dlp).
+- [TODO] PH YouTube transcripts — 672+ videos with YouTube links in `ph_daily_top.json`. Run same pytubefix pipeline after YC finishes.
+- [TODO] Download MP4s for music-only/no-voice YC videos — 211+ videos with `no_transcript` status need keyframe extraction + OCR for text. 55 already downloaded, 14 failed (bot check on specific video IDs — permanent, not IP-related). Rerun `scripts/download_notranscript_videos.py` after transcript scan finishes for final count.
+- [TODO] Same for PH — after PH transcripts run, download MP4s for no-transcript PH videos and OCR them.
+
 ## Session: 20260320-f6x1 (Finding F6 — permissionless expiry claim)
 
 - [DECISION] Added `claimExpiredOrder(uint256 orderId)` to Investment.sol — permissionless, no BLS required. Anyone can trigger refund after `deadline + 24h`. This is the last-resort safety net when AP crashes and oracles are unavailable. Existing BLS-gated refund paths remain the primary mechanism; this only activates after 24 hours of complete system failure.

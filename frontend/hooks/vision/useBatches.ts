@@ -1,4 +1,28 @@
 import { useQuery } from '@tanstack/react-query'
+import { keccak256, toHex } from 'viem'
+
+// Build hash→name lookup from sources-display.json internalIds
+// The oracle returns sourceId as keccak256(name + "_v2") but the frontend uses plain names
+const _hashToName: Record<string, string> = {}
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const sourcesData = require('@/data/sources-display.json')
+  for (const source of sourcesData.sources ?? []) {
+    for (const iid of source.internalIds ?? []) {
+      // Try multiple version suffixes
+      for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
+        const versioned = iid + suffix
+        const hash = keccak256(toHex(versioned)).toLowerCase()
+        _hashToName[hash] = source.sourceId
+      }
+    }
+  }
+} catch { /* sources not available at build time */ }
+
+function resolveSourceId(rawSourceId: string): string {
+  if (!rawSourceId.startsWith('0x')) return rawSourceId
+  return _hashToName[rawSourceId.toLowerCase()] ?? rawSourceId
+}
 
 export interface BatchInfo {
   id: number
@@ -27,7 +51,7 @@ export function useBatches() {
       const all = raw.map((b: any) => ({
         id: b.id,
         creator: b.creator ?? '',
-        sourceId: b.source_id ?? b.sourceId ?? '',
+        sourceId: resolveSourceId(b.source_id ?? b.sourceId ?? ''),
         configHash: b.config_hash ?? b.configHash ?? '',
         marketIds: b.market_ids ?? b.marketIds ?? [],
         resolutionTypes: b.resolution_types ?? b.resolutionTypes ?? [],
