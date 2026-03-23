@@ -445,17 +445,18 @@ mod tests {
 
     #[test]
     fn test_convert_itp() {
-        let raw = (
-            [1u8; 32],                   // name
-            [2u8; 32],                   // symbol
-            Address::zero(),             // creator
-            U256::from(1000),            // createdAt
-            U256::from(100),             // feeRate
-            U256::from(0),               // status (Active)
-            U256::from(1000000),         // totalSupply
-            U256::from(2000000),         // totalValue
-            U256::from(5),               // assetCount
-        );
+        use super::super::abi::index_contract::Itpcore;
+        let raw = Itpcore {
+            name: [1u8; 32],
+            symbol: [2u8; 32],
+            creator: Address::zero(),
+            created_at: U256::from(1000),
+            fee_rate: U256::from(100),
+            status: U256::from(0),
+            total_supply: U256::from(1000000),
+            total_value: U256::from(2000000),
+            asset_count: U256::from(5),
+        };
 
         let itp = RpcChainReader::convert_itp(raw);
         assert_eq!(itp.name, H256::from([1u8; 32]));
