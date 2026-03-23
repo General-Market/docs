@@ -185,7 +185,9 @@ fn truncate(s: &str, max_len: usize) -> String {
         s.to_string()
     } else {
         // Find last valid char boundary at or before max_len - 3
-        let end = s.floor_char_boundary(max_len - 3);
+        let mut end = max_len - 3;
+        while end > 0 && !s.is_char_boundary(end) { end -= 1; }
+        let end = end;
         format!("{}...", &s[..end])
     }
 }
