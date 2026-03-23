@@ -13,14 +13,12 @@ test.describe('System Health', () => {
   test('System Status section loads on /index#system', async ({ page }) => {
     // System section is behind sidebar navigation — use #system hash to activate it
     await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Active Oracles/i).first()).toBeVisible({ timeout: 30_000 })
   })
 
   test('oracle nodes show active status', async ({ page }) => {
     // Navigate directly to System section via hash
     await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
     const systemSection = page.locator('#system')
     await expect(systemSection).toBeVisible({ timeout: 30_000 })
     await systemSection.scrollIntoViewIfNeeded()
@@ -29,7 +27,6 @@ test.describe('System Health', () => {
     if (!hasNodes) {
       // Retry — SSE data may not have loaded yet
       await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(5_000)
       await page.locator('#system').scrollIntoViewIfNeeded()
       hasNodes = await page.getByText(/Alpha|Beta|Gamma/i).first().isVisible({ timeout: 45_000 }).catch(() => false)
     }
@@ -55,14 +52,12 @@ test.describe('System Health', () => {
   test('consensus status resolves to Healthy, Offline, or checking', async ({ page }) => {
     // System section is behind sidebar navigation — use #system hash to activate it
     await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Healthy|Offline|checking/i).first()).toBeVisible({ timeout: 30_000 })
   })
 
   test('orders total label is visible', async ({ page }) => {
     // System section is behind sidebar navigation — use #system hash to activate it
     await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Orders.*total/i).first()).toBeVisible({ timeout: 30_000 })
   })
 

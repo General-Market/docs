@@ -80,10 +80,7 @@ test.describe('USDC Balance Consistency', () => {
 
     await ensureWalletConnected(page, TEST_ADDRESS)
 
-    // Wait for page data to load
-    await page.waitForTimeout(5_000)
-
-    // Get header USDC balance (formatted like "99,824.00 USDC")
+    // Wait for header USDC balance to load (formatted like "99,824.00 USDC")
     const headerUsdcEl = page.locator('header').getByText(/[\d,]+\.\d{2}\s*USDC/)
     await expect(headerUsdcEl).toBeVisible({ timeout: 30_000 })
     const headerText = await headerUsdcEl.textContent() || ''

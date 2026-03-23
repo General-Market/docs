@@ -28,15 +28,11 @@ test.describe('Vision Leaderboard Sorting', () => {
     // Leaderboard is on source detail pages, not the home page.
     // Navigate to a source with a deployed batch.
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     // Wait for the leaderboard section heading
     const leaderboardSection = page.locator('#leaderboard')
     const hasSection = await leaderboardSection.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasSection) {
-      console.log('No #leaderboard section on source page — component may have changed')
-      return
-    }
+    expect(hasSection, 'Leaderboard section (#leaderboard) must exist on source detail page').toBe(true)
 
     // Check if the leaderboard table rendered (vs empty state)
     const table = leaderboardSection.locator('table')
@@ -47,11 +43,10 @@ test.describe('Vision Leaderboard Sorting', () => {
       const emptyMsg = page.getByText(/No players yet|Failed to load/)
       const isEmpty = await emptyMsg.isVisible({ timeout: 5_000 }).catch(() => false)
       if (isEmpty) {
-        console.log('Leaderboard empty — no players have completed rounds yet')
+        console.warn('SKIP: Leaderboard empty — no players have completed rounds yet. Expected on fresh deploys.')
         return
       }
-      // Loading skeleton may still be visible
-      console.log('Leaderboard table not rendered — may still be loading')
+      console.warn('SKIP: Leaderboard table not rendered — may still be loading.')
       return
     }
 
@@ -79,19 +74,15 @@ test.describe('Vision Leaderboard Sorting', () => {
     test.setTimeout(120_000)
 
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     const leaderboardSection = page.locator('#leaderboard')
     const hasSection = await leaderboardSection.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasSection) {
-      console.log('No #leaderboard section on source page')
-      return
-    }
+    expect(hasSection, 'Leaderboard section (#leaderboard) must exist on source detail page').toBe(true)
 
     const table = leaderboardSection.locator('table')
     const hasTable = await table.first().isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTable) {
-      console.log('No leaderboard table — skipping sort verification')
+      console.warn('SKIP: No leaderboard table — no players have completed rounds yet. Expected on fresh deploys.')
       return
     }
 
@@ -133,14 +124,10 @@ test.describe('Vision Leaderboard Sorting', () => {
     test.setTimeout(120_000)
 
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     const leaderboardSection = page.locator('#leaderboard')
     const hasSection = await leaderboardSection.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasSection) {
-      console.log('No #leaderboard section on source page')
-      return
-    }
+    expect(hasSection, 'Leaderboard section (#leaderboard) must exist on source detail page').toBe(true)
 
     const sectionText = await leaderboardSection.textContent() || ''
 
@@ -174,19 +161,15 @@ test.describe('Vision Leaderboard Sorting', () => {
     test.setTimeout(120_000)
 
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     const leaderboardSection = page.locator('#leaderboard')
     const hasSection = await leaderboardSection.isVisible({ timeout: 15_000 }).catch(() => false)
-    if (!hasSection) {
-      console.log('No #leaderboard section on source page')
-      return
-    }
+    expect(hasSection, 'Leaderboard section (#leaderboard) must exist on source detail page').toBe(true)
 
     const table = leaderboardSection.locator('table')
     const hasTable = await table.first().isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTable) {
-      console.log('No leaderboard table — skipping range validation')
+      console.warn('SKIP: No leaderboard table — no players have completed rounds yet. Expected on fresh deploys.')
       return
     }
 
@@ -247,18 +230,14 @@ test.describe('Vision Leaderboard Sorting', () => {
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })
 
-    // Accept both 200 (data) and 502 (no data yet)
-    if (!res.ok) {
-      console.log(`Leaderboard API returned ${res.status} — acceptable if no data yet`)
-      return
-    }
+    expect(res.ok, `Leaderboard API returned ${res.status} — endpoint must be reachable`).toBe(true)
 
     const data = await res.json()
     expect(data).toHaveProperty('leaderboard')
     expect(Array.isArray(data.leaderboard)).toBe(true)
 
     if (data.leaderboard.length === 0) {
-      console.log('Leaderboard API returned empty array — no players yet')
+      console.warn('SKIP: Leaderboard empty — no players yet. Expected on fresh deploys.')
       return
     }
 

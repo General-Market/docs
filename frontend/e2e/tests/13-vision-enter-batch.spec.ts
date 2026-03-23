@@ -89,7 +89,6 @@ test.describe('Vision Enter Batch (UI)', () => {
     if (!hasMarkets) {
       // Retry — data-node snapshot fetch can be slow on first load
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
       hasMarkets = await upButton
         .waitFor({ state: 'visible', timeout: 60_000 })
         .then(() => true)
@@ -114,8 +113,8 @@ test.describe('Vision Enter Batch (UI)', () => {
       } else {
         await dnButtons.nth(i).click()
       }
-      // Breathing room between clicks
-      if (i % 10 === 9) await page.waitForTimeout(100)
+      // Breathing room between clicks — DOM needs time to process rapid click events
+      if (i % 10 === 9) await new Promise(r => setTimeout(r, 100))
     }
 
     // 6. Verify bitmap summary shows predictions set

@@ -28,7 +28,7 @@ test.describe('Vision Lock Phase UI', () => {
     // 2. Get active rounds to find a source with an active betting window
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
-      console.log('No active rounds — cannot verify lock phase UI. Skipping.')
+      console.warn('SKIP: No active rounds — oracle may not have spawned rounds yet. Cannot verify lock phase UI.')
       return
     }
 
@@ -54,7 +54,7 @@ test.describe('Vision Lock Phase UI', () => {
     const hasPanel = await entryPanel.isVisible({ timeout: 30_000 }).catch(() => false)
 
     if (!hasPanel) {
-      console.log('Batch entry panel not visible — source may have no active batch. Skipping.')
+      console.warn('SKIP: Batch entry panel not visible — source may have no active batch.')
       return
     }
 
@@ -92,7 +92,9 @@ test.describe('Vision Lock Phase UI', () => {
 
     // Navigate to the main Vision page (/) which has the NextBatches carousel
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000) // Let SSE batch data arrive
+    // Wait for SSE batch data — source cards indicate data has arrived
+    await page.locator('[data-testid="source-card"], a[href*="/source/"]').first()
+      .waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
 
     // The NextBatches carousel shows batch cards with countdown timers
     // Locked batches get a red border and red countdown text
@@ -133,7 +135,7 @@ test.describe('Vision Lock Phase UI', () => {
     // Pure API check — no browser needed
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
-      console.log('No active rounds from API — skipping status check')
+      console.warn('SKIP: No active rounds from API — oracle may not have spawned rounds yet.')
       return
     }
 

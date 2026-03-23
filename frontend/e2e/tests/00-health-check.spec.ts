@@ -59,7 +59,6 @@ test.describe('Health Check', () => {
     let itpVisible = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       itpVisible = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(itpVisible).toBe(true);

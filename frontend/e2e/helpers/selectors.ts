@@ -20,7 +20,7 @@ export async function ensureWalletConnected(page: Page, address: string): Promis
   const skipBtn = page.getByRole('button', { name: 'Skip' });
   if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await skipBtn.click();
-    await page.waitForTimeout(500);
+    await skipBtn.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
   }
 
   const truncated = address.slice(0, 6) + '...' + address.slice(-4);
@@ -167,8 +167,7 @@ export const sellModal = {
 /** Navigate to Lending section via URL hash — HomeClient reads hash on mount */
 export async function navigateToLending(page: Page): Promise<boolean> {
   await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.waitForTimeout(2_000);
-  return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
+  return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 15_000 }).catch(() => false);
 }
 
 /** Scoped locator for the lending section */

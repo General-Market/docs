@@ -23,7 +23,11 @@ async function navigateToItpPage(page: import('@playwright/test').Page, itpId: s
     },
     { timeout: 30_000 }
   ).catch(() => {});
-  await page.waitForTimeout(2_000);
+  // Wait for wagmi connector to initialize
+  await page.waitForFunction(
+    () => !!document.querySelector('button[class*="connect"], header button'),
+    { timeout: 10_000 }
+  ).catch(() => {});
 }
 
 test.describe('ITP Detail & Rebalance', () => {
@@ -53,7 +57,6 @@ test.describe('ITP Detail & Rebalance', () => {
     const holdingsTab = page.getByText('Holdings', { exact: true }).first();
     if (await holdingsTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await holdingsTab.click();
-      await page.waitForTimeout(1_000);
     }
 
     // Holdings table should show at least one row or the holdings heading
@@ -80,7 +83,6 @@ test.describe('ITP Detail & Rebalance', () => {
     const keyFactsTab = page.getByText('Key Facts', { exact: true }).first();
     if (await keyFactsTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await keyFactsTab.click();
-      await page.waitForTimeout(2_000);
     }
 
     // Wait for creator address to load (fetched async)
@@ -130,7 +132,6 @@ test.describe('ITP Detail & Rebalance', () => {
     const toggleBtn = page.locator('[data-testid="rebalance-toggle"]');
     await expect(toggleBtn).toBeVisible({ timeout: 10_000 });
     await toggleBtn.click();
-    await page.waitForTimeout(1_000);
 
     // Verify the rebalance table loaded with asset rows
     const rebalanceTable = page.locator('[data-testid="rebalance-table"]');
@@ -143,7 +144,6 @@ test.describe('ITP Detail & Rebalance', () => {
     // Click "Equal Weights" to set all weights equally
     const equalBtn = page.locator('[data-testid="rebalance-equal"]');
     await equalBtn.click();
-    await page.waitForTimeout(500);
 
     // Verify weight sum is 100%
     const weightSum = page.locator('[data-testid="rebalance-weight-sum"]');
@@ -161,7 +161,6 @@ test.describe('ITP Detail & Rebalance', () => {
 
     await firstInput.fill(newFirst);
     await secondInput.fill(newSecond);
-    await page.waitForTimeout(500);
 
     // Weight sum should still be ~100%
     await expect(weightSum).toContainText('100.00%', { timeout: 5_000 });

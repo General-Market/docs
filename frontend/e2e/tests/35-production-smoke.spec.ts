@@ -281,22 +281,16 @@ test.describe('Vision — Home Page (/)', () => {
     // Data comes from useSourceRegistry — needs time to load
     const sourceLinks = page.locator('a[href*="/source/"]')
     const firstVisible = await sourceLinks.first().isVisible({ timeout: 25_000 }).catch(() => false)
-    if (!firstVisible) {
-      // Source registry may be empty on fresh deploy — log and pass gracefully
-      console.warn('No source cards rendered — source registry may be empty or loading')
-      return
-    }
+    expect(firstVisible, 'Source cards must render — source registry should not be empty on a deployed environment').toBe(true)
     const count = await sourceLinks.count()
     expect(count).toBeGreaterThanOrEqual(1)
   })
 
   test('source cards show pool/player data (not all dashes)', async ({ page }) => {
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    // SSE pool data can take up to 15s to arrive
-    await page.waitForTimeout(10_000)
-    // Look for dollar signs in source cards (pool amounts) or player counts
+    // Wait for SSE pool data to populate source cards
     const poolValues = page.locator('text=/\\$\\d/')
-    const hasPools = await poolValues.first().isVisible({ timeout: 15_000 }).catch(() => false)
+    const hasPools = await poolValues.first().isVisible({ timeout: 25_000 }).catch(() => false)
     const playerValues = page.locator('text=/\\d+ player/i')
     const hasPlayers = await playerValues.first().isVisible({ timeout: 5_000 }).catch(() => false)
     // At least some sources should show pool values or player counts
@@ -336,15 +330,12 @@ test.describe('Vision — Source Detail', () => {
   test('/source/finnhub shows batch bar with TICK, PLAYERS, POOL', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
 
-    // Wait for batch data to load
-    await page.waitForTimeout(5_000)
-
     // Tick label should be visible (uppercase label in batch bar)
-    await expect(page.locator('text=Tick').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Tick').first()).toBeVisible({ timeout: 15_000 })
     // Players label should be visible
-    await expect(page.locator('text=Players').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Players').first()).toBeVisible({ timeout: 10_000 })
     // Pool label should be visible
-    await expect(page.locator('text=Pool').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Pool').first()).toBeVisible({ timeout: 10_000 })
 
     // TICK should show #number (value rendered as e.g. "#42")
     const tickValue = page.locator('text=/^#\\d+$/').first()
@@ -362,7 +353,10 @@ test.describe('Vision — Source Detail', () => {
 
   test('/source/finnhub shows markets table with prices', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(8_000)
+
+    // Wait for markets data to load — UP/DOWN buttons or market names
+    await page.locator('button:has-text("UP"), button:has-text("DOWN"), text=/AAPL|TSLA|MSFT/i').first()
+      .waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
 
     // Market rows should render (UP/DOWN buttons or price data or market names)
     const marketContent = page.locator('button:has-text("UP"), button:has-text("DOWN"), [data-testid="market-tile"]')
@@ -379,7 +373,6 @@ test.describe('Vision — Source Detail', () => {
 
   test('/source/finnhub has batch entry panel', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(5_000)
 
     // BatchEntryPanel shows "Enter Batch" button or "Deposit" variants or "Connect Wallet"
     const entryPanel = page.locator('text=/Enter Batch|Deposit|Connect Wallet/').first()
@@ -388,7 +381,6 @@ test.describe('Vision — Source Detail', () => {
 
   test('/source/finnhub shows Top Players section', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(5_000)
 
     const topPlayers = page.locator('text=Top Players').first()
     await expect(topPlayers).toBeVisible({ timeout: 15_000 })
@@ -396,7 +388,6 @@ test.describe('Vision — Source Detail', () => {
 
   test('/source/finnhub shows batch info', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(5_000)
 
     // Source page should show some batch content (players, markets, pool, round status)
     const hasContent = await page.locator('text=/Players|Markets|Pool|Round|Betting|Enter/i').first()
@@ -437,19 +428,16 @@ test.describe('Index — ITP Listing (/index)', () => {
 
   test('ITP table shows NAV or price data ($)', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    // NAV comes via SSE or REST — wait for data to load
-    await page.waitForTimeout(8_000)
-    // Look for any dollar amount in the ITP listing (NAV, AUM, or hero band)
+    // NAV comes via SSE or REST — dollar amount appears when data loads
     const dollarValue = page.locator('text=/\\$\\d+\\.\\d{2}/').first()
-    await expect(dollarValue).toBeVisible({ timeout: 15_000 })
+    await expect(dollarValue).toBeVisible({ timeout: 30_000 })
   })
 
   test('ITP table shows AUM', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(5_000)
     // AUM should show as dollar amount (in hero band "Total Net Assets" or per-row)
     const aumValue = page.locator('text=/\\$\\d+/').first()
-    await expect(aumValue).toBeVisible({ timeout: 15_000 })
+    await expect(aumValue).toBeVisible({ timeout: 20_000 })
   })
 
   test('ITP rows have Buy action', async ({ page }) => {
@@ -468,7 +456,6 @@ test.describe('ITP Detail (/itp/[itpId])', () => {
   test('ITP detail page loads with name, NAV, and breadcrumbs', async ({ page }) => {
     // Navigate to /index first, then click a table row to get to ITP detail
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(8_000)
 
     // Wait for network idle to avoid framer-motion re-renders unmounting the row mid-click
     await page.waitForLoadState('networkidle').catch(() => {})
@@ -559,7 +546,8 @@ test.describe('Explorer (/explorer)', () => {
 
   test('tab navigation works for all tabs', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    // Wait for explorer page to render tabs
+    await page.locator('button:has-text("Consensus")').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
     // Actual tabs from translations (pages.explorer.tabs.*):
     // Consensus, Orders, Price Feeds, P2P Network, Cycles, ITP & NAV, Vision, Sources, System, System Health, Chain & Gas
     const TABS = ['Consensus', 'Orders', 'Price Feeds', 'P2P Network', 'Cycles', 'ITP & NAV', 'Vision', 'Sources', 'System', 'System Health', 'Chain & Gas']
@@ -571,7 +559,6 @@ test.describe('Explorer (/explorer)', () => {
         const scrollable = page.locator('.overflow-x-auto').first()
         if (await scrollable.isVisible().catch(() => false)) {
           await scrollable.evaluate(el => el.scrollLeft += 200)
-          await page.waitForTimeout(500)
         }
       }
       // At minimum, tab should exist in DOM
@@ -581,18 +568,16 @@ test.describe('Explorer (/explorer)', () => {
 
   test('time range buttons work', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await expect(page.getByRole('button', { name: '1h', exact: true })).toBeVisible({ timeout: 15_000 })
     for (const range of ['1h', '6h', '24h', '7d', '30d']) {
       await expect(page.getByRole('button', { name: range, exact: true })).toBeVisible({ timeout: 5_000 })
     }
     // Click a different range and verify it activates
     await page.getByRole('button', { name: '7d', exact: true }).click()
-    await page.waitForTimeout(2_000)
   })
 
   test('Consensus tab renders charts with data', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(5_000)
     // Consensus tab is default, should show chart titles (from translations)
     await expect(page.locator('text=Quorum Status').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.locator('text=Network Health').first()).toBeVisible({ timeout: 5_000 })
@@ -618,14 +603,12 @@ test.describe('Explorer (/explorer)', () => {
 
   test('Orders tab renders chart cards', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
     const ordersTab = page.locator('button:has-text("Orders")').first()
-    if (!await ordersTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    if (!await ordersTab.isVisible({ timeout: 10_000 }).catch(() => false)) {
       console.log('Orders tab not found on explorer page')
       return
     }
     await ordersTab.click()
-    await page.waitForTimeout(3_000)
     // Check for any order-related content
     const hasContent = await page.locator('text=/Pending Orders|Orders Processed|Cycle Duration/').first()
       .isVisible({ timeout: 10_000 }).catch(() => false)
@@ -637,29 +620,26 @@ test.describe('Explorer (/explorer)', () => {
 
   test('P2P Network tab shows peer data', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("P2P Network")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("P2P Network")').first().click()
-    await page.waitForTimeout(3_000)
-    await expect(page.locator('text=Connected Peers').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Connected Peers').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('text=Messages Sent / Received').first()).toBeVisible({ timeout: 5_000 })
     await expect(page.locator('text=Peer Health').first()).toBeVisible({ timeout: 5_000 })
   })
 
   test('Cycles tab shows cycle performance', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("Cycles")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("Cycles")').first().click()
-    await page.waitForTimeout(3_000)
-    await expect(page.locator('text=Cycle Duration').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Cycle Duration').first()).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('text=Slow Cycle Alerts').first()).toBeVisible({ timeout: 5_000 })
     await expect(page.locator('text=Orders per Cycle').first()).toBeVisible({ timeout: 5_000 })
   })
 
   test('System Health tab shows health charts', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("System Health")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("System Health")').first().click()
-    await page.waitForTimeout(3_000)
     // Actual chart titles in SystemHealthSection:
     // "Network Status", "Quorum History", "Consensus Success Rate", "Error Rate"
     await expect(page.locator('text=Network Status').first()).toBeVisible({ timeout: 10_000 })
@@ -670,9 +650,8 @@ test.describe('Explorer (/explorer)', () => {
 
   test('Price Feeds tab shows feed charts', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("Price Feeds")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("Price Feeds")').first().click()
-    await page.waitForTimeout(3_000)
     // Actual chart titles in PriceFeedSection:
     // "Price Feeds" heading, "Consensus Duration Trend"
     await expect(page.locator('text=Price Feeds').first()).toBeVisible({ timeout: 10_000 })
@@ -681,22 +660,19 @@ test.describe('Explorer (/explorer)', () => {
 
   test('ITP & NAV tab shows ITP data', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
 
     // Tab button text is "ITP & NAV" — use regex to handle potential rendering of &amp;
     const itpTab = page.locator('button').filter({ hasText: /ITP.*NAV/ }).first()
-    const tabVisible = await itpTab.isVisible({ timeout: 5_000 }).catch(() => false)
+    const tabVisible = await itpTab.isVisible({ timeout: 10_000 }).catch(() => false)
     if (!tabVisible) {
       // Tab may be scrolled out of view — scroll the tab bar
       const scrollable = page.locator('.overflow-x-auto').first()
       if (await scrollable.isVisible().catch(() => false)) {
         await scrollable.evaluate(el => el.scrollLeft += 400)
-        await page.waitForTimeout(500)
       }
     }
     await expect(itpTab).toBeVisible({ timeout: 10_000 })
     await itpTab.click()
-    await page.waitForTimeout(5_000)
 
     // ITPSection renders "ITP Metrics" heading, "Pending Order Volume", "ITP Overview"
     // These are always rendered regardless of SSE data
@@ -725,9 +701,8 @@ test.describe('Explorer (/explorer)', () => {
 
   test('Chain & Gas tab shows consensus and P2P charts', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("Chain & Gas")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("Chain & Gas")').first().click()
-    await page.waitForTimeout(5_000)
     // Actual chart titles in ChainGasSection:
     // "Consensus Throughput", "Message Volume", "Order Pipeline", "Cycle Performance"
     await expect(page.locator('text=Consensus Throughput').first()).toBeVisible({ timeout: 10_000 })
@@ -742,17 +717,15 @@ test.describe('Explorer (/explorer)', () => {
 
   test('Vision tab shows batch data from API', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
     // Explorer may not have a separate Vision tab — check if we're on explorer page
-    const hasVisionTab = await page.locator('button:has-text("Vision")').first().isVisible().catch(() => false)
+    const hasVisionTab = await page.locator('button:has-text("Vision")').first().isVisible({ timeout: 10_000 }).catch(() => false)
     if (hasVisionTab) {
       await page.locator('button:has-text("Vision")').first().click()
-      await page.waitForTimeout(5_000)
     }
     // Check for any Vision-related content on the page
     const hasVisionContent = await page.locator('text=/Batch|Vision|TVL|Active Batches/i').first().isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasVisionContent) {
-      console.log('Vision tab content not found on explorer — page may not have Vision section')
+      console.warn('SKIP: Vision tab content not found on explorer — page may not have Vision section.')
       return
     }
     // Verify whatever Vision content is visible
@@ -764,10 +737,10 @@ test.describe('Explorer (/explorer)', () => {
     const histRes = await fetch(apiUrl('/api/explorer/health?endpoint=history&range=24h'), {
       signal: AbortSignal.timeout(15_000),
     })
-    if (!histRes.ok) return // Skip if explorer not configured
+    if (!histRes.ok) { console.warn(`SKIP: Explorer API returned ${histRes.status} — explorer may not be configured.`); return }
     const histData = await histRes.json()
     const snapshots = histData.snapshots || []
-    if (snapshots.length === 0) return // No data
+    if (snapshots.length === 0) { console.warn('SKIP: Explorer returned 0 snapshots — no history data yet.'); return }
 
     // Verify consensus data is non-zero (this is the core health signal)
     const hasConsensusData = snapshots.some((s: any) => s.consensus_rounds_total > 0)
@@ -786,7 +759,10 @@ test.describe('Explorer (/explorer)', () => {
 
     // Load explorer page and verify charts render with actual data
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(8_000)
+
+    // Wait for chart data to render — SVG paths appear when Recharts processes data
+    await page.locator('.recharts-line-curve, .recharts-area-curve, .recharts-area-area').first()
+      .waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
 
     // Charts should render SVG paths (lines/areas with data, not just empty grids)
     const chartPaths = page.locator('.recharts-line-curve, .recharts-area-curve, .recharts-area-area')
@@ -902,7 +878,8 @@ test.describe('Index Sub-Tabs (/index)', () => {
 
   test('all sidebar navigation items are visible', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    // Wait for sidebar to render
+    await page.locator('button:has-text("Markets")').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
     // On desktop, sidebar items are buttons in the <aside>
     // On mobile, they're in a bottom nav bar
     // Check at least the desktop sidebar or mobile nav
@@ -919,9 +896,8 @@ test.describe('Index Sub-Tabs (/index)', () => {
 
   test('switching to Create Index section renders form', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("Create Index")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("Create Index")').first().click()
-    await page.waitForTimeout(2_000)
     // CreateItpSection should show form elements (Name, Symbol inputs, asset selection)
     const content = page.locator('text=/Create ITP|Name|Symbol|Assets|Weight/i').first()
     await expect(content).toBeVisible({ timeout: 10_000 })
@@ -929,7 +905,7 @@ test.describe('Index Sub-Tabs (/index)', () => {
 
   test('switching to Backtesting section renders simulation controls', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("Backtesting")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("Backtesting")').first().click()
     // BacktestSection auto-runs after data-node health check (can take ~30s)
     // First verify controls render
@@ -947,9 +923,8 @@ test.describe('Index Sub-Tabs (/index)', () => {
 
   test('switching to System section shows oracle nodes with status', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
+    await page.locator('button:has-text("System")').first().waitFor({ state: 'visible', timeout: 10_000 })
     await page.locator('button:has-text("System")').first().click()
-    await page.waitForTimeout(5_000)
     // System section should show node names and status indicators
     const content = page.locator('text=/Alpha|Beta|Gamma|Contract|Chain/i').first()
     await expect(content).toBeVisible({ timeout: 10_000 })
@@ -1006,7 +981,7 @@ test.describe('Navigation & Layout', () => {
     const sourceLink = page.locator('a[href*="/source/earthquake"]').first()
     if (await sourceLink.isVisible({ timeout: 15_000 }).catch(() => false)) {
       await sourceLink.click()
-      await page.waitForTimeout(3_000)
+      await page.waitForURL(/\/source\/earthquake/, { timeout: 15_000 }).catch(() => {})
       await assertNoError(page)
       // Should show earthquake source detail
       const content = page.locator('text=/Earthquake|USGS|Tick|Players/i').first()
@@ -1016,7 +991,6 @@ test.describe('Navigation & Layout', () => {
 
   test('navigating from /index to ITP detail works', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(8_000)
 
     // Wait for network idle to avoid framer-motion re-renders unmounting the row mid-click
     await page.waitForLoadState('networkidle').catch(() => {})

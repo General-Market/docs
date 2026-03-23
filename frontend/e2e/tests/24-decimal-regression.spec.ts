@@ -22,17 +22,14 @@ test.describe('Decimal Regression Tests', () => {
     let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     if (!hasCards) {
       // Third attempt — data-node SSE can return empty initially then populate
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(5_000);
       hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(hasCards).toBe(true);
-    await page.waitForTimeout(2_000);
 
     // Scan the entire visible body text for raw bigint values
     const bodyText = await page.evaluate(() => document.body.innerText);
@@ -62,7 +59,6 @@ test.describe('Decimal Regression Tests', () => {
     let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(hasCards).toBe(true);
@@ -92,7 +88,6 @@ test.describe('Decimal Regression Tests', () => {
 
     // Navigate to Vision (root page)
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(3_000);
 
     // Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {});
@@ -114,7 +109,6 @@ test.describe('Decimal Regression Tests', () => {
     let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(hasCards).toBe(true);

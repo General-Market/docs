@@ -16,7 +16,7 @@ test.describe('Vision Batch Entry', () => {
 
     // Navigate to first source detail page (route is /source/[id], singular)
     await page.goto('/source/coingecko')
-    await page.waitForTimeout(2_000)
+    await page.waitForLoadState('domcontentloaded')
 
     // The Enter Batch panel should be visible on source detail pages
     const enterBatch = page.getByText(/Enter Batch|Stake|Place Bets|USDC/i).first()
@@ -26,8 +26,7 @@ test.describe('Vision Batch Entry', () => {
   test('batch list shows at least one live or pending batch', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
-    await page.goto('/')
-    await page.waitForTimeout(3_000)
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
 
     // Look for the "Live Batches" heading from NextBatches component
     const heading = page.getByText(/Live Batches/i).first()

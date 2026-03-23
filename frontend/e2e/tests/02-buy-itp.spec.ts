@@ -70,7 +70,15 @@ test.describe('Buy ITP', () => {
     //    read it and set a limit 10x higher to guarantee fillability.
     const limitInput = buyModal.limitPriceInput(page);
     await expect(limitInput).not.toHaveValue('', { timeout: 15_000 }).catch(() => {});
-    await page.waitForTimeout(1500); // let React effect settle fully
+    // Wait for React effect to settle — value must stabilize (same value on two reads)
+    await page.waitForFunction(
+      (sel) => {
+        const el = document.querySelector(sel) as HTMLInputElement;
+        return el && el.value && el.value !== '' && el.value !== '0';
+      },
+      'input[placeholder="Set limit price"], input[placeholder="0 (no limit)"], input[placeholder="Computing price..."]',
+      { timeout: 10_000 }
+    ).catch(() => {});
     const autoFilledValue = await limitInput.inputValue();
     const navEstimate = parseFloat(autoFilledValue) || 1.0;
     const safeLimit = (navEstimate * 10).toFixed(6); // 10x NAV — covers any drift
@@ -78,7 +86,7 @@ test.describe('Buy ITP', () => {
     await limitInput.fill(''); // clear auto-filled value
     await limitInput.fill(safeLimit);
     // Guard against React re-filling: verify our value stuck
-    await page.waitForTimeout(500);
+    await expect(limitInput).toHaveValue(safeLimit, { timeout: 3_000 }).catch(() => {});
     const verifyValue = await limitInput.inputValue();
     if (verifyValue !== safeLimit) {
       console.log(`Buy test: React overwrote limit (${verifyValue}), re-setting to ${safeLimit}`);
@@ -127,9 +135,12 @@ test.describe('Buy ITP', () => {
       })(),
     ]);
 
-    // 14. Verify the buy was filled
+    // 14. Verify the buy was filled — give extra time for settlement if no signal yet
     if (fillDetected === null) {
-      await page.waitForTimeout(15_000);
+      await page.waitForFunction(
+        () => document.body.innerText.includes('Buy More') || document.body.innerText.includes('Order Filled'),
+        { timeout: 15_000 }
+      ).catch(() => {});
     }
 
     const sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);

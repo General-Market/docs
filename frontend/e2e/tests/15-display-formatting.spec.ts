@@ -58,7 +58,7 @@ test.describe('Display Formatting — Leaderboard', () => {
     // Wait for TopPlayers section bar — if no players yet, test passes trivially (no raw wei to find)
     const topPlayersBar = page.locator('.section-bar').filter({ hasText: 'Top Players' })
     const hasLeaderboard = await topPlayersBar.isVisible({ timeout: 30_000 }).catch(() => false)
-    if (!hasLeaderboard) return // No leaderboard data yet — nothing to check
+    if (!hasLeaderboard) { console.warn('SKIP: No leaderboard data yet — oracle may not have aggregated round data.'); return }
 
     // Find dollar values in tabular-nums cells (Volume and P&L columns)
     const dollarCells = page.locator('.tabular-nums').filter({ hasText: /\$/ })
@@ -86,7 +86,7 @@ test.describe('Display Formatting — Leaderboard', () => {
 
     const topPlayersBar = page.locator('.section-bar').filter({ hasText: 'Top Players' })
     const hasLeaderboard = await topPlayersBar.isVisible({ timeout: 30_000 }).catch(() => false)
-    if (!hasLeaderboard) return // No leaderboard data yet — nothing to check
+    if (!hasLeaderboard) { console.warn('SKIP: No leaderboard data yet — oracle may not have aggregated round data.'); return }
 
     // Win rate cells contain percentages like "45.3%"
     const percentCells = page.locator('.tabular-nums').filter({ hasText: /%/ })
@@ -138,7 +138,7 @@ test.describe('Display Formatting — Source Detail', () => {
     const poolValues = page.locator('.text-color-up').filter({ hasText: /\$/ })
     const hasPool = await poolValues.first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!hasPool) {
-      // No pool values visible — likely no deposits in this source's batches
+      console.warn('SKIP: No pool values visible — likely no deposits in this source\'s batches yet.')
       return
     }
     const count = await poolValues.count()
@@ -167,7 +167,6 @@ test.describe('Display Formatting — ITP Table', () => {
     let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(5_000)
       hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
@@ -206,14 +205,11 @@ test.describe('Display Formatting — ITP Table', () => {
     test.setTimeout(120_000)
 
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    // Wait for React hydration — client-rendered table needs time to mount
-    await page.waitForTimeout(2_000)
 
     const cards = itpCard(page)
     let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(5_000)
       hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
@@ -250,8 +246,7 @@ test.describe('Display Formatting — Source Cards', () => {
     let hasCards = await cards.first().isVisible({ timeout: 20_000 }).catch(() => false)
     if (!hasCards) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      await page.waitForTimeout(2_000)
-      hasCards = await cards.first().isVisible({ timeout: 5_000 }).catch(() => false)
+      hasCards = await cards.first().isVisible({ timeout: 10_000 }).catch(() => false)
     }
     // Source cards must be visible — page should be fully loaded
     expect(hasCards, 'Source cards should be visible after scroll').toBeTruthy()
@@ -320,7 +315,6 @@ test.describe('Display Formatting — Lending', () => {
 
     // Navigate to ITP listing and switch to Lend section via hash
     await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     // The Lend section is a motion.div with id="lend" — becomes visible when activeSection === 'lend'
     const lendSection = page.locator('#lend')
@@ -328,16 +322,15 @@ test.describe('Display Formatting — Lending', () => {
 
     // Wait for markets table to render inside the Lend section
     const marketsTable = lendSection.locator('table')
-    let hasTable = await marketsTable.first().isVisible({ timeout: 15_000 }).catch(() => false)
+    let hasTable = await marketsTable.first().isVisible({ timeout: 20_000 }).catch(() => false)
     if (!hasTable) {
       // Retry — scroll into view explicitly
       await lendSection.scrollIntoViewIfNeeded()
-      await page.waitForTimeout(3_000)
       hasTable = await marketsTable.first().isVisible({ timeout: 15_000 }).catch(() => false)
     }
     if (!hasTable) {
-      // No markets table in Lend section — skip gracefully
-      console.log('No lending markets table visible — skipping TVL check')
+      console.warn('SKIP: No lending markets table visible — Morpho markets may not be deployed.')
+
       return
     }
 
@@ -359,12 +352,10 @@ test.describe('Display Formatting — Lending', () => {
 
     // Navigate to Lend section which has inline VaultModal
     await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await page.waitForTimeout(3_000)
 
     const lendSection = page.locator('#lend')
     await expect(lendSection).toBeVisible({ timeout: 30_000 })
     await lendSection.scrollIntoViewIfNeeded()
-    await page.waitForTimeout(2_000)
 
     // The Lend section's VaultModal shows "Supply & Borrow" or "Borrow" panel inline
     // Look for dollar values in the entire Lend section (Supply/Borrow panels + markets table)
@@ -407,7 +398,14 @@ test.describe('Display Formatting — Balances', () => {
   test('no raw bigint values in page text', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {})
-    await page.waitForTimeout(5_000) // Let page hydrate fully
+    // Wait for page hydration — React must have rendered meaningful content
+    await page.waitForFunction(
+      () => {
+        const body = document.body.innerText;
+        return body.length > 100; // Page has substantive content
+      },
+      { timeout: 15_000 }
+    ).catch(() => {})
 
     const bodyText = await page.locator('body').textContent() || ''
 

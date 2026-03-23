@@ -9,7 +9,8 @@ import { ensureWalletConnected } from '../helpers/selectors'
 async function navigateToPortfolio(page: import('@playwright/test').Page) {
   // Portfolio is behind sidebar navigation — use #portfolio hash to activate it
   await page.goto('/index#portfolio', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-  await page.waitForTimeout(3_000)
+  // Wait for portfolio section to become visible (hash triggers activeSection switch)
+  await page.locator('#portfolio').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
 }
 
 test.describe('Portfolio & Orders', () => {
@@ -23,7 +24,6 @@ test.describe('Portfolio & Orders', () => {
     const portfolioBtn = page.getByRole('button', { name: /Portfolio/i }).first()
     if (await portfolioBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await portfolioBtn.click()
-      await page.waitForTimeout(2_000)
     }
 
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
@@ -44,7 +44,6 @@ test.describe('Portfolio & Orders', () => {
     const portfolioBtn = page.getByRole('button', { name: /Portfolio/i }).first()
     if (await portfolioBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await portfolioBtn.click()
-      await page.waitForTimeout(2_000)
     }
 
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
@@ -76,7 +75,6 @@ test.describe('Portfolio & Orders', () => {
     const portfolioBtn = page.getByRole('button', { name: /Portfolio/i }).first()
     if (await portfolioBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await portfolioBtn.click()
-      await page.waitForTimeout(2_000)
     }
 
     const tradesTab = page.getByRole('button', { name: /Trades/i }).first()
@@ -93,7 +91,8 @@ test.describe('Portfolio & Orders', () => {
     await tradesTab.click()
 
     // Tab rendered — content may be empty if no trades. Assert tab didn't crash.
-    await page.waitForTimeout(3_000)
+    // Wait for tab content to stabilize after click
+    await page.waitForLoadState('networkidle').catch(() => {})
     const bodyText = await page.locator('body').textContent()
     // No raw wei in trade amounts
     expect(bodyText).not.toMatch(/\d{18,}/)

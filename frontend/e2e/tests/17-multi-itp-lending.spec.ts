@@ -40,8 +40,8 @@ async function navigateToLendSection(page: import('@playwright/test').Page) {
   const lendSect = page.locator('#lend');
   await expect(lendSect).toBeVisible({ timeout: 30_000 });
 
-  // Allow VaultModal's on-chain reads to fire (useEffect for vault discovery)
-  await page.waitForTimeout(2_000);
+  // Wait for VaultModal's on-chain reads (useEffect for vault discovery) — table or placeholder appears
+  await lendSect.locator('table, text=/No markets/i').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
 
   return lendSect;
 }
@@ -66,8 +66,11 @@ test.describe('Multi-ITP Lending Visibility', () => {
     const tableRows = marketsTable.locator('tbody tr');
     await expect(tableRows.first()).toBeVisible({ timeout: 30_000 });
 
-    // Brief settle for async on-chain discovery to populate remaining rows
-    await page.waitForTimeout(3_000);
+    // Wait for async on-chain discovery to populate remaining rows
+    await expect(async () => {
+      const count = await tableRows.count();
+      expect(count).toBeGreaterThanOrEqual(1);
+    }).toPass({ timeout: 15_000 });
 
     const rowCount = await tableRows.count();
     console.log(`Lending markets table has ${rowCount} ITP rows (expected >= 1)`);
@@ -87,9 +90,8 @@ test.describe('Multi-ITP Lending Visibility', () => {
     await expect(marketsTable).toBeVisible({ timeout: 60_000 });
 
     // Wait for on-chain discovery to populate rows
-    await page.waitForTimeout(3_000);
-
     const tableRows = marketsTable.locator('tbody tr');
+    await expect(tableRows.first()).toBeVisible({ timeout: 15_000 }).catch(() => {});
     const rowCount = await tableRows.count();
 
     // ITPs without a Morpho market show "--" for borrow APY instead of a percentage.

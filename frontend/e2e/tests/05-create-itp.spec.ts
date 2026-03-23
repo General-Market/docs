@@ -30,10 +30,16 @@ async function navigateToCreateSection(page: import('@playwright/test').Page) {
     { timeout: 30_000 }
   ).catch(() => {});
 
-  // Give the hash-reading useEffect time to fire and re-render
-  await page.waitForTimeout(2_000);
-
+  // Wait for the hash-reading useEffect to fire and make #create visible
   const createSection = page.locator('#create');
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#create');
+      return el && !el.classList.contains('invisible');
+    },
+    { timeout: 5_000 }
+  ).catch(() => {});
+
   const stillInvisible = await createSection.evaluate(
     el => el.classList.contains('invisible')
   ).catch(() => true);
@@ -42,7 +48,6 @@ async function navigateToCreateSection(page: import('@playwright/test').Page) {
     // Hash navigation failed — click the sidebar button as fallback
     const sidebarBtn = page.getByRole('button', { name: 'Create Index' });
     await sidebarBtn.click({ timeout: 10_000 });
-    await page.waitForTimeout(1_000);
   }
 
   // Final assertion: the create section must be visible
@@ -143,7 +148,8 @@ test.describe('Create ITP', () => {
       } catch {
         console.log('Bridge relay timed out after 5 min — oracles may not be relaying ITP creation events from settlement chain');
         console.log('Settlement tx succeeded (step 10 passed), but L3 relay did not complete');
-        return; // Graceful exit — the settlement-side of create ITP works, relay is a separate concern
+        console.warn('SKIP: Bridge relay timed out — settlement tx succeeded but L3 relay did not complete. Relay is a separate concern.');
+        return;
       }
       const newCount = await getItpCountL3();
 

@@ -68,8 +68,13 @@ test.describe('Vision Sources — Browse', () => {
       expect(c).toBeGreaterThan(10)
       allCount = c
     }).toPass({ timeout: 45_000 })
-    // Extra settle — NextBatches re-sorts every 1s which can change card visibility
-    await page.waitForTimeout(5_000)
+    // Wait for card count to stabilize — NextBatches re-sorts every 1s
+    await expect(async () => {
+      const a = await cards.count()
+      await new Promise(r => setTimeout(r, 2_000))
+      const b = await cards.count()
+      expect(a).toBe(b)
+    }).toPass({ timeout: 15_000 })
     allCount = await cards.count()
 
     // Click a small category — try several until one exists and has fewer cards

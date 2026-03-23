@@ -17,7 +17,6 @@ test.describe('Backtester Deploy Handoff', () => {
     const backtestNav = page.getByRole('button', { name: /Backtesting/i }).first()
     await expect(backtestNav).toBeVisible({ timeout: 30_000 })
     await backtestNav.click()
-    await page.waitForTimeout(2_000)
 
     const backtestSection = page.locator('#backtest')
     await expect(backtestSection).toBeVisible({ timeout: 30_000 })

@@ -37,7 +37,6 @@ test.describe('Slippage Gear Icon', () => {
     const buyBtn = buyButton(page, 0);
     await expect(buyBtn).toBeVisible({ timeout: 15_000 });
     await buyBtn.click();
-    await page.waitForTimeout(1_000);
 
     // Check if modal actually opened (gear icon should be inside it)
     const gearButton = page.locator('button[title="Slippage"]');
@@ -49,7 +48,6 @@ test.describe('Slippage Gear Icon', () => {
 
     // Click gear icon to expand slippage options
     await gearButton.click();
-    await page.waitForTimeout(500);
 
     // Now 0.3% tier button should be visible
     await expect(tightTier.first()).toBeVisible();
@@ -76,7 +74,6 @@ test.describe('Slippage Gear Icon', () => {
     const sellBtn = sellButton(page, 0);
     await expect(sellBtn).toBeVisible({ timeout: 15_000 });
     await sellBtn.click();
-    await page.waitForTimeout(1_000);
 
     // Check if sell modal actually opened
     const gearButton = page.locator('button[title="Slippage"]');
@@ -98,7 +95,7 @@ test.describe('Batch Entry Panel', () => {
     const sourceLink = page.locator('a[href*="/source/"]').first();
     await expect(sourceLink).toBeVisible({ timeout: 30_000 });
     await sourceLink.click();
-    await page.waitForTimeout(3_000);
+    await page.waitForURL(/\/source\//, { timeout: 30_000 }).catch(() => {});
 
     // Source detail page should render — verify basic structure
     // The source name or "markets" text should be visible
@@ -121,18 +118,16 @@ test.describe('Batch Entry Panel', () => {
 
   test('withdraw button is NOT visible for unconnected wallet', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3_000);
 
     const sourceLink = page.locator('a[href*="/source/"]').first();
     let hasSource = await sourceLink.isVisible({ timeout: 15_000 }).catch(() => false);
     if (!hasSource) {
       await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasSource = await sourceLink.isVisible({ timeout: 30_000 }).catch(() => false);
     }
     expect(hasSource).toBe(true);
     await sourceLink.click();
-    await page.waitForTimeout(3_000);
+    await page.waitForURL(/\/source\//, { timeout: 30_000 }).catch(() => {});
 
     // Without a connected wallet, the Withdraw button should not be visible
     const withdrawBtn = page.getByRole('button', { name: /Withdraw/ });
@@ -147,18 +142,16 @@ test.describe('Batch Entry Panel', () => {
 
   test('Enter Batch button is disabled without stake', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3_000);
 
     const sourceLink = page.locator('a[href*="/source/"]').first();
     let hasSource = await sourceLink.isVisible({ timeout: 15_000 }).catch(() => false);
     if (!hasSource) {
       await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasSource = await sourceLink.isVisible({ timeout: 30_000 }).catch(() => false);
     }
     expect(hasSource).toBe(true);
     await sourceLink.click();
-    await page.waitForTimeout(3_000);
+    await page.waitForURL(/\/source\//, { timeout: 30_000 }).catch(() => {});
 
     // The Enter Batch button should be disabled when no stake is set (predictions default to DOWN)
     const enterBtn = page.getByRole('button', { name: /Enter Batch/ });
@@ -174,7 +167,6 @@ test.describe('Orderbook Aggregation', () => {
   test('orderbook defaults to 0.5% aggregation (not raw)', async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    await page.waitForTimeout(3_000);
 
     // Intercept orderbook API calls to verify aggregation_bps param
     const orderbookRequests: string[] = [];
@@ -189,13 +181,16 @@ test.describe('Orderbook Aggregation', () => {
     let hasCards = await itpCard.isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       hasCards = await itpCard.isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(hasCards).toBe(true);
 
     await itpCard.hover();
-    await page.waitForTimeout(2_000);
+    // Wait for orderbook request to fire after hover
+    await page.waitForFunction(
+      () => performance.getEntriesByType('resource').some(r => r.name.includes('itp-orderbook')),
+      { timeout: 10_000 }
+    ).catch(() => {});
 
     // Check that at least one request was made with aggregation_bps=50
     const hasCorrectAggregation = orderbookRequests.some(url =>
@@ -243,23 +238,23 @@ test.describe('Leaderboard Per-Source', () => {
     let topPlayersVisible = await topPlayers.waitFor({ state: 'visible', timeout: 30_000 }).then(() => true).catch(() => false);
     if (!topPlayersVisible) {
       await page.goto('/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       topPlayersVisible = await topPlayers.waitFor({ state: 'visible', timeout: 30_000 }).then(() => true).catch(() => false);
     }
     expect(topPlayersVisible).toBe(true);
 
-    // useVisionLeaderboard has refetchInterval=5s. After batchId resolves,
-    // the next refetch will include batch_id. Wait 2 full refetch cycles.
-    await page.waitForTimeout(12_000);
+    // useVisionLeaderboard has refetchInterval=5s. Wait for a request with batch_id to appear.
+    await expect(async () => {
+      expect(leaderboardRequests.some(url => url.includes('batch_id='))).toBe(true);
+    }).toPass({ timeout: 15_000 }).catch(() => {});
 
     // At least one leaderboard request should include batch_id
     const hasBatchFilter = leaderboardRequests.some(url =>
       url.includes('batch_id=')
     );
     if (leaderboardRequests.length === 0) {
-      console.log('No leaderboard requests observed — finnhub may not have batch data');
+      console.warn('SKIP: No leaderboard requests observed — finnhub may not have batch data.');
     } else if (!hasBatchFilter) {
-      console.log('Leaderboard requests observed but no batch_id — no batch config on testnet');
+      console.warn('SKIP: Leaderboard requests observed but no batch_id — no batch config on testnet.');
     } else {
       expect(hasBatchFilter).toBe(true);
     }

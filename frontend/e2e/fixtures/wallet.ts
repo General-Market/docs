@@ -147,8 +147,8 @@ function createWalletFixture(privateKey: `0x${string}`, address: string, startUr
         navigated = true;
       } catch {
         if (attempt < 3) {
-          // Wait briefly then retry — server may recover between attempts
-          await page.waitForTimeout(2_000);
+          // Brief backoff before retry — server may recover between attempts
+          await new Promise(r => setTimeout(r, 2_000));
         }
       }
     }
@@ -166,8 +166,11 @@ function createWalletFixture(privateKey: `0x${string}`, address: string, startUr
       },
       { timeout: 30_000 }
     ).catch(() => {});
-    // Extra buffer for wagmi connector initialization
-    await page.waitForTimeout(2_000);
+    // Wait for wagmi connector to initialize — address button appears when wallet connects
+    await page.waitForFunction(
+      () => !!document.querySelector('button[class*="connect"], header button'),
+      { timeout: 10_000 }
+    ).catch(() => {});
 
     await use(page);
   };
