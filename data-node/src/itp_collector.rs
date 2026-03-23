@@ -21,6 +21,7 @@ abigen!(
     r#"[
         function getItpCount() external view returns (uint256)
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
+        function getItpNameSymbol(bytes32 itpId) external view returns (string name, string symbol)
         event ITPCreated(bytes32 indexed itpId, address indexed creator, bytes32 name, bytes32 symbol, address[] assets, uint256[] weights)
         event Rebalanced(bytes32 indexed itpId, address[] newAssets, uint256[] newWeights, uint256[] newInventory, uint256 nav)
         event FillConfirmed(uint256 indexed orderId, uint256 indexed cycleNumber, uint256 fillPrice, uint256 fillAmount)
@@ -141,6 +142,26 @@ async fn fetch_itp_state_with_retry(
         }
     }
     unreachable!()
+}
+
+/// Decode a Solidity bytes32 (right-padded with zeros) into a UTF-8 string.
+fn bytes32_to_string(b: [u8; 32]) -> String {
+    let end = b.iter().position(|&x| x == 0).unwrap_or(32);
+    String::from_utf8_lossy(&b[..end]).to_string()
+}
+
+/// Fetch name and symbol for an ITP from chain. Falls back to empty strings on failure.
+async fn fetch_name_symbol(
+    contract: &IndexCollector<Provider<Http>>,
+    itp_id_bytes: [u8; 32],
+) -> (String, String) {
+    match contract.get_itp_name_symbol(itp_id_bytes.into()).call().await {
+        Ok((name, symbol)) => (name, symbol),
+        Err(e) => {
+            debug!(itp_id = %format!("0x{}", hex::encode(itp_id_bytes)), %e, "getItpNameSymbol failed, using empty");
+            (String::new(), String::new())
+        }
+    }
 }
 
 /// Backfill the orderId->itpId map by scanning OrderSubmitted events in batches with retry.
@@ -380,6 +401,12 @@ pub async fn run(
                         _ => {}
                     }
 
+                    // Fetch name/symbol from chain
+                    let hex_str = itp_id_hex.strip_prefix("0x").unwrap_or(&itp_id_hex);
+                    let mut itp_id_bytes = [0u8; 32];
+                    let _ = hex::decode_to_slice(hex_str, &mut itp_id_bytes);
+                    let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
+
                     // Populate cache
                     let cached = CachedItpState {
                         creator,
@@ -388,8 +415,8 @@ pub async fn run(
                         weights,
                         inventory,
                         nav,
-                        name: String::new(),
-                        symbol: String::new(),
+                        name,
+                        symbol,
                         settlement_address: None,
                     };
                     {
@@ -490,6 +517,9 @@ pub async fn run(
                         if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                             fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                         {
+                            // Decode name/symbol from event bytes32 fields
+                            let name = bytes32_to_string(event.name);
+                            let symbol = bytes32_to_string(event.symbol);
                             let cached = CachedItpState {
                                 creator,
                                 total_supply,
@@ -497,8 +527,8 @@ pub async fn run(
                                 weights,
                                 inventory,
                                 nav,
-                                name: String::new(),
-                                symbol: String::new(),
+                                name,
+                                symbol,
                                 settlement_address: None,
                             };
                             let mut cache = chain_cache.itp_states.write().await;
@@ -623,6 +653,13 @@ pub async fn run(
                         if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                             fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                         {
+                            // Preserve existing name/symbol from cache (set at creation time)
+                            let mut cache = chain_cache.itp_states.write().await;
+                            let (prev_name, prev_symbol, prev_settlement) = cache
+                                .states
+                                .get(&itp_id_hex)
+                                .map(|s| (s.name.clone(), s.symbol.clone(), s.settlement_address.clone()))
+                                .unwrap_or_default();
                             let cached = CachedItpState {
                                 creator,
                                 total_supply,
@@ -630,11 +667,10 @@ pub async fn run(
                                 weights,
                                 inventory,
                                 nav,
-                                name: String::new(),
-                                symbol: String::new(),
-                                settlement_address: None,
+                                name: prev_name,
+                                symbol: prev_symbol,
+                                settlement_address: prev_settlement,
                             };
-                            let mut cache = chain_cache.itp_states.write().await;
                             cache.states.insert(itp_id_hex, cached);
                         }
                     }
@@ -789,6 +825,7 @@ pub async fn run(
                     if let Ok((_id, creator, total_supply, nav, assets, weights, inventory)) =
                         fetch_itp_state_with_retry(&contract, itp_id_bytes).await
                     {
+                        let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
                         let cached_state = CachedItpState {
                             creator,
                             total_supply,
@@ -796,8 +833,8 @@ pub async fn run(
                             weights,
                             inventory,
                             nav,
-                            name: String::new(),
-                            symbol: String::new(),
+                            name,
+                            symbol,
                             settlement_address: None,
                         };
                         let mut cache = chain_cache.itp_states.write().await;
@@ -847,27 +884,44 @@ pub async fn run(
 
                 match contract.get_itp_state(itp_id_bytes.into()).call().await {
                     Ok((creator, total_supply, _nav, assets, weights, inventory)) => {
-                        let mut cache = chain_cache.itp_states.write().await;
-                        if let Some(cached) = cache.states.get_mut(itp_id_hex) {
-                            // Check for drift
-                            let supply_drifted = cached.total_supply != total_supply;
-                            let assets_drifted = cached.assets != assets;
-                            let inventory_drifted = cached.inventory != inventory;
+                        let needs_name_backfill;
+                        {
+                            let mut cache = chain_cache.itp_states.write().await;
+                            if let Some(cached) = cache.states.get_mut(itp_id_hex) {
+                                // Check for drift
+                                let supply_drifted = cached.total_supply != total_supply;
+                                let assets_drifted = cached.assets != assets;
+                                let inventory_drifted = cached.inventory != inventory;
 
-                            if supply_drifted || assets_drifted || inventory_drifted {
-                                info!(
-                                    itp_id = %itp_id_hex,
-                                    supply_drifted,
-                                    assets_drifted,
-                                    inventory_drifted,
-                                    "Reconciliation: correcting cache drift"
-                                );
-                                cached.creator = creator;
-                                cached.total_supply = total_supply;
-                                cached.assets = assets;
-                                cached.weights = weights;
-                                cached.inventory = inventory;
-                                corrections += 1;
+                                if supply_drifted || assets_drifted || inventory_drifted {
+                                    info!(
+                                        itp_id = %itp_id_hex,
+                                        supply_drifted,
+                                        assets_drifted,
+                                        inventory_drifted,
+                                        "Reconciliation: correcting cache drift"
+                                    );
+                                    cached.creator = creator;
+                                    cached.total_supply = total_supply;
+                                    cached.assets = assets;
+                                    cached.weights = weights;
+                                    cached.inventory = inventory;
+                                    corrections += 1;
+                                }
+                                needs_name_backfill = cached.name.is_empty();
+                            } else {
+                                needs_name_backfill = false;
+                            }
+                        }
+                        // Backfill name/symbol if still empty (legacy cache entries)
+                        if needs_name_backfill {
+                            let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
+                            if !name.is_empty() {
+                                let mut cache = chain_cache.itp_states.write().await;
+                                if let Some(cached) = cache.states.get_mut(itp_id_hex) {
+                                    cached.name = name;
+                                    cached.symbol = symbol;
+                                }
                             }
                         }
                     }
