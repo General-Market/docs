@@ -17,20 +17,16 @@ import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
 const PRIMARY_NAV = [
   { id: 'index',    href: '/index',    labelKey: 'nav.investment' },
   { id: 'vision',   href: '/',         labelKey: 'nav.vision' },
-  { id: 'explorer', href: '/explorer', labelKey: 'nav.explorer' },
-  { id: 'points',   href: '/points',   labelKey: 'nav.points' },
 ] as const
 
 type PageId = typeof PRIMARY_NAV[number]['id']
 
 // Pages whose mood darkens the header
-const DARK_PAGES = new Set<string>(['vision', 'explorer'])
+const DARK_PAGES = new Set<string>(['vision'])
 
 function resolveActivePage(pathname: string): PageId | null {
   if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
-  if (pathname === '/explorer' || pathname.startsWith('/explorer/')) return 'explorer'
-  if (pathname === '/points') return 'points'
-  if (pathname === '/' || pathname.startsWith('/source/')) return 'vision'
+  if (pathname === '/' || pathname.startsWith('/source/') || pathname.startsWith('/profile/')) return 'vision'
   return null
 }
 
@@ -42,7 +38,7 @@ export function Header() {
 
   const activePage = resolveActivePage(pathname)
   const isDark = activePage !== null && DARK_PAGES.has(activePage)
-  const showVisionBalance = activePage === 'vision' || activePage === 'points'
+  const showVisionBalance = activePage === 'vision'
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -225,8 +221,28 @@ export function Header() {
                 </a>
               </nav>
 
-              {/* Right side — Language + Balance + Wallet + Hamburger */}
+              {/* Right side — Links + Balance + Wallet + Hamburger */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                {/* Profile link — when connected */}
+                {mounted && authenticated && address && (
+                  <Link
+                    href={`/profile/${address}`}
+                    className={`hidden sm:inline text-label font-bold transition-colors ${
+                      isDark ? 'text-zinc-400 hover:text-white' : 'text-text-muted hover:text-black'
+                    }`}
+                  >
+                    Portfolio
+                  </Link>
+                )}
+                {/* Points link */}
+                <Link
+                  href="/points"
+                  className={`text-label font-bold font-mono transition-colors ${
+                    isDark ? 'text-text-muted hover:text-white' : 'text-text-muted hover:text-black'
+                  }`}
+                >
+                  0 pts
+                </Link>
                 <div className="hidden sm:block">
                   <LanguageSwitcher variant={isDark ? 'dark' : 'light'} />
                 </div>

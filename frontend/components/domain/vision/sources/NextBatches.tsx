@@ -71,10 +71,15 @@ function BatchCard({ item }: { item: BatchDisplay }) {
         </span>
       </div>
 
-      {/* Player count */}
-      <span className="text-stat font-black tabular-nums leading-none font-mono text-black">
-        {item.batch.playerCount}
-      </span>
+      {/* Player count + round */}
+      <div className="flex items-baseline gap-2">
+        <span className="text-stat font-black tabular-nums leading-none font-mono text-black">
+          {item.batch.playerCount}
+        </span>
+        <span className="text-micro font-bold font-mono text-text-muted tabular-nums">
+          #{item.batch.id}
+        </span>
+      </div>
       <span className="text-micro text-text-muted mt-1">players</span>
 
       {/* Footer: category + timer */}

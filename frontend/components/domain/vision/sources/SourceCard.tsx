@@ -23,17 +23,27 @@ interface SourceCardProps {
   metaStatus?: string
 }
 
-/** Format a timestamp as relative age (e.g. "2m ago", "1h ago") */
-function formatAge(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  if (diff < 0) return 'now'
-  const secs = Math.floor(diff / 1000)
-  if (secs < 60) return `${secs}s ago`
-  const mins = Math.floor(secs / 60)
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
+/** Live-ticking relative age component (re-renders every 10s) */
+function LiveAge({ iso }: { iso?: string }) {
+  const [age, setAge] = useState('—')
+  useEffect(() => {
+    if (!iso) return
+    const calc = () => {
+      const diff = Date.now() - new Date(iso).getTime()
+      if (diff < 0) return 'now'
+      const secs = Math.floor(diff / 1000)
+      if (secs < 60) return `${secs}s ago`
+      const mins = Math.floor(secs / 60)
+      if (mins < 60) return `${mins}m ago`
+      const hrs = Math.floor(mins / 60)
+      if (hrs < 24) return `${hrs}h ago`
+      return `${Math.floor(hrs / 24)}d ago`
+    }
+    setAge(calc())
+    const iv = setInterval(() => setAge(calc()), 10_000)
+    return () => clearInterval(iv)
+  }, [iso])
+  return <>{age}</>
 }
 
 /** Shorten multi-word value labels to fit the Type column on 1 line */
@@ -195,7 +205,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.updated')}</div>
-            <span className="text-caption font-bold text-black">{sourceSnapshot?.generatedAt ? formatAge(sourceSnapshot.generatedAt) : '—'}</span>
+            <span className="text-caption font-bold text-black"><LiveAge iso={sourceSnapshot?.generatedAt} /></span>
           </div>
         </div>
       </div>
