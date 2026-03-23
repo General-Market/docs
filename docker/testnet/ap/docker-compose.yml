@@ -9,7 +9,7 @@ services:
       dockerfile: docker/testnet/ap/Dockerfile
     container_name: testnet-ap
     network_mode: host
-    restart: "no"
+    restart: unless-stopped
     volumes:
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
     healthcheck:
