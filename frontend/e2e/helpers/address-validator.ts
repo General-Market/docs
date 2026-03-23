@@ -36,6 +36,17 @@ export interface DeploymentHealth {
     firstBatchExists: boolean
   }
   staleAddresses: string[]  // Human-readable list of problems
+  // Precondition fields — populated by ensurePreconditions() in global-setup
+  preconditions?: {
+    hasVisionBatches: boolean       // nextBatchId > 0 on-chain
+    onChainBatchCount: number       // actual nextBatchId value
+    deployerHasUsdc: boolean        // deployer L3 USDC balance > 0
+    deployerUsdcBalance: string     // raw balance as string (18 dec)
+    dataNodeReachable: boolean      // data-node /health responds
+    dataNodeStatus?: string         // response status or error
+    visionApiReachable: boolean     // vision API /vision/batches responds
+    visionApiBatchCount: number     // batches returned by API
+  }
 }
 
 // ── RPC helper ──
