@@ -16,6 +16,7 @@ pub mod integrations;
 pub mod keys;
 pub mod logging;
 pub mod mocks;
+pub mod observer;
 pub mod rate_limit;
 pub mod runtime;
 pub mod traits;
@@ -31,6 +32,7 @@ pub use keys::{
     Ed25519KeyStorage, EncryptedFileStorage, InMemoryStorage,
 };
 pub use mocks::*;
+pub use observer::*;
 pub use rate_limit::*;
 pub use traits::*;
 pub use types::*;
