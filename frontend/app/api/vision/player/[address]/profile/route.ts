@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getIssuerVisionUrl } from '@/lib/config'
+import { getDataNodeServer } from '@/lib/config'
 
 export async function GET(
   _request: Request,
@@ -10,8 +10,9 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
   }
   try {
+    // Route through data-node proxy (has 30s ProfileCache) instead of direct to oracle
     const res = await fetch(
-      `${getIssuerVisionUrl()}/vision/player/${address.toLowerCase()}/profile`,
+      `${getDataNodeServer()}/vision/player/${address.toLowerCase()}/profile`,
       { cache: 'no-store', signal: AbortSignal.timeout(15000) }
     )
     if (!res.ok) return NextResponse.json({ error: 'Profile unavailable' }, { status: res.status })
