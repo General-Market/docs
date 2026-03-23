@@ -178,8 +178,8 @@ impl SseChainEventClient {
             return None;
         }
 
-        // data layout: side(32) | amount(32) | limitPrice(32) | slippageTier(32) | deadline(32) | pairId(32)
-        let side = data_bytes[31]; // uint8 side, padded to 32 bytes — value in last byte
+        // data layout: pairId(32) | side(32) | amount(32) | limitPrice(32) | slippageTier(32) | deadline(32)
+        let side = data_bytes[63]; // uint8 side is word 2 (offset 32-63), value in last byte
 
         info!(order_id, side, "SSE: received order-submitted event");
 
