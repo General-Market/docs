@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { ProfileTick } from '@/hooks/usePlayerProfile'
 
@@ -23,13 +23,18 @@ function getQuartiles(values: number[]): number[] {
   return [q1, q2, q3]
 }
 
+function formatDate(ts: number): string {
+  const d = new Date(ts * 1000)
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 interface TickSquaresProps {
   ticks: ProfileTick[]
 }
 
 export function TickSquares({ ticks }: TickSquaresProps) {
-  const t = useTranslations('common')
   const recent = ticks.slice(-60)
+  const [hover, setHover] = useState<number | null>(null)
 
   const quartiles = useMemo(() => {
     const absPnls = recent.map((t) => Math.abs(t.pnl))
@@ -37,23 +42,35 @@ export function TickSquares({ ticks }: TickSquaresProps) {
   }, [recent])
 
   return (
-    <div className="flex-1 flex gap-[2px] items-center overflow-x-auto">
-      {recent.map((tick) => {
+    <div className="flex-1 flex gap-[2px] items-center overflow-x-auto relative">
+      {recent.map((tick, i) => {
         const intensity = computeQuartileIndex(Math.abs(tick.pnl), quartiles)
         const color = tick.won ? WIN_COLORS[intensity] : LOSS_COLORS[intensity]
         const sign = tick.pnl >= 0 ? '+' : ''
         return (
           <div
             key={tick.tickId}
-            className="shrink-0"
+            className="shrink-0 relative cursor-pointer"
             style={{
               width: 11,
               height: 11,
               borderRadius: 2,
               backgroundColor: color,
             }}
-            title={t('profile.round_title', { tickId: tick.tickId, sign, pnl: tick.pnl.toFixed(2) })}
-          />
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          >
+            {hover === i && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none">
+                <div className="bg-black text-white text-[10px] font-mono px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                  <div className={tick.won ? 'text-green-400' : 'text-red-400'}>
+                    {sign}${Math.abs(tick.pnl).toFixed(2)} {tick.won ? 'WIN' : 'LOSS'}
+                  </div>
+                  <div className="text-white/50">{formatDate(tick.tickId)}</div>
+                </div>
+              </div>
+            )}
+          </div>
         )
       })}
     </div>
@@ -61,11 +78,9 @@ export function TickSquares({ ticks }: TickSquaresProps) {
 }
 
 export function TickSquaresLegend() {
-  const t = useTranslations('common')
-
   return (
     <div className="flex items-center gap-1 text-micro text-text-muted">
-      <span>{t('profile.loss')}</span>
+      <span>Loss</span>
       {[...LOSS_COLORS].reverse().map((c, i) => (
         <div
           key={`loss-${i}`}
@@ -79,7 +94,7 @@ export function TickSquaresLegend() {
           style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: c }}
         />
       ))}
-      <span>{t('profile.win')}</span>
+      <span>Win</span>
     </div>
   )
 }
