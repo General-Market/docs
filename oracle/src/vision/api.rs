@@ -1829,9 +1829,17 @@ async fn player_profile(
     let mut profile_batches: Vec<ProfileBatch> = Vec::new();
 
     for pos in &positions {
-        let balance_wei: i128 = pos.balance.parse().unwrap_or(0);
         let deposited_wei: i128 = pos.total_deposited.parse().unwrap_or(0);
-        let pnl_wei = balance_wei - deposited_wei;
+        // vision_positions.balance is never updated after settlement — it stays
+        // at initial_deposit. Real PnL lives in vision_round_players. Use the
+        // settled round aggregate if available, otherwise fall back to position balance.
+        let round_pnl_wei: i128 = round_agg_map
+            .get(&pos.batch_id)
+            .and_then(|a| a.total_pnl.as_deref())
+            .and_then(|s| s.parse::<i128>().ok())
+            .unwrap_or(0);
+        let balance_wei = deposited_wei + round_pnl_wei;
+        let pnl_wei = round_pnl_wei;
 
         total_pnl_wei += pnl_wei;
         total_deposited_wei += deposited_wei;
