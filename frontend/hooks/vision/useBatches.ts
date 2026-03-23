@@ -1,23 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { keccak256, toHex } from 'viem'
+import sourcesDisplayData from '@/data/sources-display.json'
 
-// Build hash→name lookup from sources-display.json internalIds
-// The oracle returns sourceId as keccak256(name + "_v2") but the frontend uses plain names
+// Build hash→name lookup: keccak256(internalId + suffix) → displaySourceId
+// The on-chain sourceId is keccak256("pumpfun_v2"), frontend uses "pumpfun"
 const _hashToName: Record<string, string> = {}
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const sourcesData = require('@/data/sources-display.json')
-  for (const source of sourcesData.sources ?? []) {
-    for (const iid of source.internalIds ?? []) {
-      // Try multiple version suffixes
-      for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
-        const versioned = iid + suffix
-        const hash = keccak256(toHex(versioned)).toLowerCase()
-        _hashToName[hash] = source.sourceId
-      }
+for (const source of (sourcesDisplayData as any).sources ?? []) {
+  const sid = source.sourceId ?? ''
+  for (const iid of source.internalIds ?? []) {
+    for (const suffix of ['', '_v1', '_v2', '_v3', '_v4', '_v5']) {
+      const hash = keccak256(toHex(iid + suffix)).toLowerCase()
+      _hashToName[hash] = sid
     }
   }
-} catch { /* sources not available at build time */ }
+}
 
 function resolveSourceId(rawSourceId: string): string {
   if (!rawSourceId.startsWith('0x')) return rawSourceId

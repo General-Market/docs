@@ -1119,9 +1119,10 @@ async fn vision_leaderboard(
     } // end source_filter.is_none() guard for deposit supplement
 
     // Merge settled round results from Postgres (vision_round_players).
-    // Skip when source_filter is active — round data is cross-source and would pollute results.
-    if include_rounds && source_filter.is_none() {
-        if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(
+    // In round-only mode, this is the PRIMARY data source (no tick engine).
+    if include_rounds {
+        // If source_filter is set, filter by batch_id matching that source
+        let query = if source_filter.is_some() {
             "SELECT player,
                     SUM(payout::numeric)::text as total_payout,
                     SUM(deposited::numeric)::text as total_deposited,
@@ -1130,8 +1131,19 @@ async fn vision_leaderboard(
                     SUM(correct_count)::bigint as total_correct,
                     SUM(total_markets)::bigint as total_markets
              FROM vision_round_players
-             GROUP BY player",
-        )
+             GROUP BY player"
+        } else {
+            "SELECT player,
+                    SUM(payout::numeric)::text as total_payout,
+                    SUM(deposited::numeric)::text as total_deposited,
+                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                    COUNT(*)::bigint as rounds_played,
+                    SUM(correct_count)::bigint as total_correct,
+                    SUM(total_markets)::bigint as total_markets
+             FROM vision_round_players
+             GROUP BY player"
+        };
+        if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(query)
         .fetch_all(&state.pool)
         .await
         {
