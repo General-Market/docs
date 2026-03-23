@@ -167,19 +167,82 @@ async fn backfill_order_map(
     }).await;
 }
 
+/// Compute NAV from inventory × latest DB prices (same formula as /itp-price).
+/// Returns the NAV as a raw sum string (divide by 1e18 for USD).
+async fn compute_nav_from_db(
+    pool: &PgPool,
+    cached: &CachedItpState,
+    symbol_map: &HashMap<String, String>,
+) -> Option<String> {
+    // Map asset addresses to symbols
+    let mut symbols: Vec<String> = Vec::new();
+    let mut asset_symbol_idx: Vec<Option<usize>> = Vec::new();
+
+    for asset in &cached.assets {
+        let addr = format!("{:?}", asset).to_lowercase();
+        if let Some(pair) = symbol_map.get(&addr) {
+            if let Some(existing) = symbols.iter().position(|s| s == pair) {
+                asset_symbol_idx.push(Some(existing));
+            } else {
+                asset_symbol_idx.push(Some(symbols.len()));
+                symbols.push(pair.clone());
+            }
+        } else {
+            asset_symbol_idx.push(None);
+        }
+    }
+
+    if symbols.is_empty() {
+        return None;
+    }
+
+    // Fetch latest prices from DB
+    let symbol_refs: Vec<&str> = symbols.iter().map(|s| s.as_str()).collect();
+    let price_rows = db::query_freshest_prices_batch(pool, &symbol_refs).await.ok()?;
+
+    let price_map: HashMap<&str, f64> = price_rows
+        .iter()
+        .filter_map(|r| r.price.parse::<f64>().ok().map(|p| (r.symbol.as_str(), p)))
+        .collect();
+
+    // NAV = sum(inventory[i] * price[i])
+    let mut nav_sum: f64 = 0.0;
+    for (i, inv) in cached.inventory.iter().enumerate() {
+        let inv_val: f64 = inv.to_string().parse().unwrap_or(0.0);
+        if let Some(Some(sym_idx)) = asset_symbol_idx.get(i) {
+            if let Some(&price) = price_map.get(symbols[*sym_idx].as_str()) {
+                nav_sum += inv_val * price;
+            }
+        }
+    }
+
+    if nav_sum > 0.0 {
+        Some(format!("{:.0}", nav_sum))
+    } else {
+        None
+    }
+}
+
 /// Write ITP snapshot to DB from cache data (zero RPC).
+/// For periodic snapshots, computes NAV from inventory × latest prices
+/// instead of using the on-chain _itpNavs (which may be stale/wrong).
 async fn store_snapshot_from_cache(
     pool: &PgPool,
     itp_id_hex: &str,
     cached: &CachedItpState,
     event_type: &str,
+    symbol_map: &HashMap<String, String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let assets_strs: Vec<String> = cached.assets.iter().map(|a| format!("{:?}", a).to_lowercase()).collect();
     let inventory_strs: Vec<String> = cached.inventory.iter().map(|v| v.to_string()).collect();
     let weights_strs: Vec<String> = cached.weights.iter().map(|v| v.to_string()).collect();
     let total_supply_str = cached.total_supply.to_string();
 
-    let nav_str = cached.nav.to_string();
+    // Compute NAV from real prices; fall back to on-chain value if unavailable
+    let nav_str = match compute_nav_from_db(pool, cached, symbol_map).await {
+        Some(computed) => computed,
+        None => cached.nav.to_string(),
+    };
 
     let ts = Utc::now();
 
@@ -206,6 +269,7 @@ pub async fn run(
     index_address: String,
     poll_interval_secs: u64,
     chain_cache: Arc<ChainCache>,
+    symbol_map: Arc<HashMap<String, String>>,
 ) {
     let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "itp_collector") {
         Some(pa) => pa,
@@ -297,7 +361,7 @@ pub async fn run(
                                 &itp_id_hex,
                                 &assets_strs,
                                 &inventory_strs,
-                                "0", // NAV placeholder
+                                &nav.to_string(), // Use on-chain NAV (1e18 at creation)
                                 Utc::now(),
                                 "init",
                                 &total_supply_str,
@@ -749,7 +813,7 @@ pub async fn run(
             let cache = chain_cache.itp_states.read().await;
             let mut snapshot_count = 0u64;
             for (itp_id_hex, cached) in &cache.states {
-                if let Err(e) = store_snapshot_from_cache(&pool, itp_id_hex, cached, "periodic").await {
+                if let Err(e) = store_snapshot_from_cache(&pool, itp_id_hex, cached, "periodic", &symbol_map).await {
                     warn!(itp_id = %itp_id_hex, %e, "Failed to store periodic snapshot from cache");
                 }
                 snapshot_count += 1;

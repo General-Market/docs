@@ -249,6 +249,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Create chain cache early so itp_collector can populate it
     let chain_cache_early = Arc::new(chain_cache::ChainCache::new());
 
+    // Wrap symbol_map in Arc for sharing across threads
+    let symbol_map = Arc::new(symbol_map);
+
     // Start ITP collector in background (if index_address is configured)
     if let Some(ref index_address) = args.index_address {
         let itp_pool = pool.clone();
@@ -256,6 +259,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         let itp_index_address = index_address.clone();
         let itp_poll_interval = args.itp_poll_interval;
         let itp_chain_cache = Arc::clone(&chain_cache_early);
+        let itp_symbol_map = Arc::clone(&symbol_map);
 
         tokio::spawn(async move {
             itp_collector::run(
@@ -265,6 +269,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 itp_index_address,
                 itp_poll_interval,
                 itp_chain_cache,
+                itp_symbol_map,
             )
             .await;
         });
@@ -2562,7 +2567,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     let app_state = Arc::new(AppState {
         pool,
         collector: collector_state,
-        symbol_map,
+        symbol_map: (*symbol_map).clone(),
         cache: api::PriceCache::new(5), // 5-second TTL
         live_cache,
         l3_provider,

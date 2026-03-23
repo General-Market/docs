@@ -612,18 +612,23 @@ pub async fn delete_stale_snapshots(
 
 /// Query daily NAV time series for an ITP from stored snapshots.
 /// Returns (timestamp, nav_f64) pairs sorted chronologically.
+/// Filters out broken NAV values: "0" placeholders and unscaled oracle garbage
+/// (values below 1e15, i.e. < $0.001 per share).
 pub async fn query_itp_nav_series(
     pool: &PgPool,
     itp_id: &str,
     from: DateTime<Utc>,
     to: DateTime<Utc>,
 ) -> Result<Vec<(i64, f64)>, sqlx::Error> {
-    // Get one NAV per day by taking the last snapshot of each day
+    // Get one NAV per day by taking the last snapshot of each day.
+    // nav::numeric > 1e15 filters out "0" (init placeholders) and small
+    // unscaled values the oracle pushed incorrectly (e.g. "675").
     let rows = sqlx::query_as::<_, (DateTime<Utc>, String)>(
         "SELECT DISTINCT ON (date_trunc('day', valid_from))
                 valid_from, nav
          FROM itp_snapshots
          WHERE itp_id = $1 AND valid_from >= $2 AND valid_from <= $3
+           AND nav::numeric > 1e15
          ORDER BY date_trunc('day', valid_from), valid_from DESC"
     )
     .bind(itp_id)
