@@ -1,16 +1,5 @@
 [
   {
-    "type": "constructor",
-    "inputs": [
-      {
-        "name": "_bridgeProxy",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
     "type": "function",
     "name": "bridgeProxy",
     "inputs": [],
@@ -86,7 +75,7 @@
     "name": "deployedItps",
     "inputs": [
       {
-        "name": "",
+        "name": "orbitItpId",
         "type": "bytes32",
         "internalType": "bytes32"
       }
@@ -130,15 +119,5 @@
       }
     ],
     "anonymous": false
-  },
-  {
-    "type": "error",
-    "name": "ALREADY_DEPLOYED",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "ONLY_BRIDGE_PROXY",
-    "inputs": []
   }
 ]

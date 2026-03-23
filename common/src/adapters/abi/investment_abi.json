@@ -1,6 +1,32 @@
 [
   {
     "type": "function",
+    "name": "cancelOrder",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimExpiredOrder",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "configureVenuePool",
     "inputs": [
       {
@@ -40,6 +66,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -90,6 +126,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -184,6 +230,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -475,6 +531,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -493,6 +559,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -562,6 +638,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -714,6 +800,16 @@
         "name": "blsSignature",
         "type": "bytes",
         "internalType": "bytes"
+      },
+      {
+        "name": "referenceNonce",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "signersBitmask",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
