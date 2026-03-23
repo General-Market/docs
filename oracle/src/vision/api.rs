@@ -1051,10 +1051,6 @@ async fn vision_leaderboard(
         candidates
     });
 
-    // Aggregate from in-memory scheduler (active batches only).
-    // When source_filter is Some, restrict to batches whose source_id matches.
-    let all_ids = state.scheduler.get_all_batch_ids().await;
-
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins,
     //            rounds_played, rounds_won, total_correct, total_markets)
     let mut player_data: std::collections::HashMap<
@@ -1062,87 +1058,19 @@ async fn vision_leaderboard(
         (u128, u128, usize, usize, usize, u64, u64, u64, u64),
     > = std::collections::HashMap::new();
 
-    for batch_id in &all_ids {
-        if let Some((batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
-            if batch.paused {
-                continue;
-            }
-            // Skip batches that don't belong to the requested source.
-            if let Some(ref candidates) = source_filter {
-                if !candidates.contains(&batch.source_id) {
-                    continue;
-                }
-            }
-            for p in &players {
-                let entry = player_data
-                    .entry(p.player)
-                    .or_insert((0, 0, 0, 0, 0, 0, 0, 0, 0));
-                let balance = p.deposit.as_u128();
-                entry.0 += balance;
-                let initial = p.initial_deposit.as_u128();
-                entry.1 += initial;
-                entry.2 += 1;
-                if balance > initial {
-                    entry.4 += 1;
-                }
-            }
-        }
-    }
-
-    // Supplement with Postgres deposits for active batches.
-    // Skip when source_filter is active — in-memory state already covers those batches.
-    if source_filter.is_none() {
-    if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
-        "SELECT vp.player, SUM(vp.total_deposited::numeric)::text as total_deposited
-         FROM vision_positions vp
-         JOIN vision_batches vb ON vp.batch_id = vb.id
-         WHERE vb.paused = false
-         GROUP BY vp.player",
-    )
-    .fetch_all(&state.pool)
-    .await
+    // Round-only mode: use settled round results from Postgres as the SOLE data source.
+    // The in-memory scheduler holds unsettled positions (deposit == initial_deposit → PnL=0),
+    // which would pollute the leaderboard with phantom $0 entries.
     {
-        for row in rows {
-            if let Ok(addr) = row.player.parse::<Address>() {
-                if let Some(entry) = player_data.get_mut(&addr) {
-                    if let Some(ref dep_str) = row.total_deposited {
-                        if let Ok(dep) = dep_str.parse::<u128>() {
-                            if dep > 0 {
-                                entry.1 = dep;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    } // end source_filter.is_none() guard for deposit supplement
-
-    // Merge settled round results from Postgres (vision_round_players).
-    // In round-only mode, this is the PRIMARY data source (no tick engine).
-    if include_rounds {
-        // If source_filter is set, filter by batch_id matching that source
-        let query = if source_filter.is_some() {
-            "SELECT player,
-                    SUM(payout::numeric)::text as total_payout,
-                    SUM(deposited::numeric)::text as total_deposited,
-                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
-                    COUNT(*)::bigint as rounds_played,
-                    SUM(correct_count)::bigint as total_correct,
-                    SUM(total_markets)::bigint as total_markets
-             FROM vision_round_players
-             GROUP BY player"
-        } else {
-            "SELECT player,
-                    SUM(payout::numeric)::text as total_payout,
-                    SUM(deposited::numeric)::text as total_deposited,
-                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
-                    COUNT(*)::bigint as rounds_played,
-                    SUM(correct_count)::bigint as total_correct,
-                    SUM(total_markets)::bigint as total_markets
-             FROM vision_round_players
-             GROUP BY player"
-        };
+        let query = "SELECT player,
+                SUM(payout::numeric)::text as total_payout,
+                SUM(deposited::numeric)::text as total_deposited,
+                SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                COUNT(*)::bigint as rounds_played,
+                SUM(correct_count)::bigint as total_correct,
+                SUM(total_markets)::bigint as total_markets
+         FROM vision_round_players
+         GROUP BY player";
         if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(query)
         .fetch_all(&state.pool)
         .await
@@ -1153,13 +1081,13 @@ async fn vision_leaderboard(
                         .entry(addr)
                         .or_insert((0, 0, 0, 0, 0, 0, 0, 0, 0));
 
-                    // Add round payout to total balance
+                    // Payout = what the player received back
                     if let Some(ref p) = row.total_payout {
                         if let Ok(v) = p.parse::<u128>() {
                             entry.0 += v;
                         }
                     }
-                    // Add round deposited to total deposited
+                    // Deposited = what the player put in
                     if let Some(ref d) = row.total_deposited {
                         if let Ok(v) = d.parse::<u128>() {
                             entry.1 += v;
@@ -1169,11 +1097,8 @@ async fn vision_leaderboard(
                     let rp = row.rounds_played.unwrap_or(0) as u64;
                     let rw = row.wins.as_deref().unwrap_or("0").parse::<u64>().unwrap_or(0);
 
-                    // Count rounds as batches too (for overall win_rate)
                     entry.2 += rp as usize;
                     entry.4 += rw as usize;
-
-                    // Round-specific fields
                     entry.5 += rp;
                     entry.6 += rw;
                     entry.7 += row.total_correct.unwrap_or(0) as u64;
@@ -1181,7 +1106,6 @@ async fn vision_leaderboard(
                 }
             }
         }
-        // If the table doesn't exist yet the query simply fails and we skip — no panic.
     }
 
     let leaderboard = build_leaderboard_from_map(player_data);
