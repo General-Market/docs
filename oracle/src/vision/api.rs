@@ -259,16 +259,18 @@ async fn list_batches(
 
     match rows {
         Ok(rows) => {
-            // Build batch_id → market_count from vision_batch_lifecycle (persisted at creation)
-            // with fallback to recommended configs (for batches created before market_count column)
+            // Build batch_id → (source_id, market_count) from vision_batch_lifecycle
+            // (persisted at creation with plain text source names)
             let mut lifecycle_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
-            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, Option<i32>)>(
-                "SELECT batch_id, market_count FROM vision_batch_lifecycle WHERE market_count IS NOT NULL"
+            let mut lifecycle_sources: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
+            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, String, Option<i32>)>(
+                "SELECT batch_id, source_id, market_count FROM vision_batch_lifecycle"
             )
             .fetch_all(&state.pool)
             .await
             {
-                for (bid, mc) in lc_rows {
+                for (bid, src, mc) in lc_rows {
+                    lifecycle_sources.insert(bid as u64, src);
                     if let Some(count) = mc {
                         lifecycle_counts.insert(bid as u64, count as usize);
                     }
@@ -302,10 +304,17 @@ async fn list_batches(
                     .or_else(|| recommended_counts.get(&config_hash_str).copied())
                     .unwrap_or(0);
 
+                // Prefer plain-text source name from lifecycle table;
+                // fall back to decoding the keccak hash for legacy batches
+                let source_id = lifecycle_sources
+                    .get(&batch_id)
+                    .cloned()
+                    .unwrap_or_else(|| bytes32_hex_to_string(&row.source_id.unwrap_or_default()));
+
                 summaries.push(BatchSummary {
                     id: batch_id,
                     creator: row.creator,
-                    source_id: bytes32_hex_to_string(&row.source_id.unwrap_or_default()),
+                    source_id,
                     config_hash: config_hash_str,
                     tick_duration: row.tick_duration as u64,
                     player_count,
@@ -384,10 +393,22 @@ async fn batch_state(
                 });
             }
 
+            // Prefer plain-text source name from lifecycle table
+            let lifecycle_source: Option<String> = sqlx::query_scalar(
+                "SELECT source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
+            )
+            .bind(id as i64)
+            .fetch_optional(&state.pool)
+            .await
+            .ok()
+            .flatten();
+            let source_id = lifecycle_source
+                .unwrap_or_else(|| bytes32_hex_to_string(&format!("{:?}", batch.source_id)));
+
             let response = BatchStateResponse {
                 id: batch.id,
                 creator: format!("{:?}", batch.creator),
-                source_id: bytes32_hex_to_string(&format!("{:?}", batch.source_id)),
+                source_id,
                 config_hash: format!("{:?}", batch.config_hash),
                 tick_duration: batch.tick_duration,
                 created_at_tick: batch.created_at_tick,
@@ -1721,11 +1742,17 @@ async fn player_profile(
     }
 
     // -- Q4: batch metadata --
+    // LEFT JOIN vision_batch_lifecycle to get plain-text source names;
+    // fall back to bytes32_hex_to_string for legacy batches without lifecycle entries.
     let batch_meta_map: std::collections::HashMap<i64, String> = if all_batch_ids.is_empty() {
         std::collections::HashMap::new()
     } else {
         match sqlx::query_as::<_, BatchMetaRow>(
-            "SELECT id, COALESCE(source_id, '') as source_id_raw FROM vision_batches WHERE id = ANY($1)"
+            "SELECT vb.id,
+                    COALESCE(vbl.source_id, vb.source_id, '') as source_id_raw
+             FROM vision_batches vb
+             LEFT JOIN vision_batch_lifecycle vbl ON vbl.batch_id = vb.id
+             WHERE vb.id = ANY($1)"
         )
         .bind(&all_batch_ids)
         .fetch_all(&state.pool)
@@ -1734,7 +1761,17 @@ async fn player_profile(
             Ok(rows) => rows
                 .into_iter()
                 .map(|r| {
-                    let source = bytes32_hex_to_string(&r.source_id_raw.unwrap_or_default());
+                    let raw = r.source_id_raw.unwrap_or_default();
+                    // lifecycle source_id is plain text (e.g. "crypto");
+                    // vision_batches source_id is a 0x-prefixed keccak hash.
+                    // If it starts with "0x", it's a hash — decode it.
+                    let source = if raw.starts_with("0x") {
+                        bytes32_hex_to_string(&raw)
+                    } else if raw.is_empty() {
+                        "unknown".to_string()
+                    } else {
+                        raw
+                    };
                     (r.id, source)
                 })
                 .collect(),
@@ -2028,32 +2065,35 @@ async fn rounds_active(
                     "betting" // continuous batches are always in betting phase
                 };
 
-                // betting_end from vision_batch_lifecycle (real timestamp set at round creation)
-                // Falls back to now + tick_duration if lifecycle record doesn't exist
+                // betting_end + source_id from vision_batch_lifecycle (plain text names)
+                // Falls back to now + tick_duration / hash decode if lifecycle record doesn't exist
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                let betting_end_ts = {
-                    let lifecycle_end: Option<(chrono::DateTime<chrono::Utc>,)> = sqlx::query_as(
-                        "SELECT betting_end FROM vision_batch_lifecycle WHERE batch_id = $1"
+                let (betting_end_ts, lifecycle_source) = {
+                    let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
+                        "SELECT betting_end, source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
                     )
                     .bind(batch_id as i64)
                     .fetch_optional(&state.pool)
                     .await
                     .ok()
                     .flatten();
-                    match lifecycle_end {
-                        Some((ts,)) => ts.timestamp() as u64,
-                        None => now + row.tick_duration as u64,
+                    match lifecycle_row {
+                        Some((ts, src)) => (ts.timestamp() as u64, Some(src)),
+                        None => (now + row.tick_duration as u64, None),
                     }
                 };
+
+                let source_id = lifecycle_source
+                    .unwrap_or_else(|| bytes32_hex_to_string(&row.source_id.unwrap_or_default()));
 
                 let config_hash = row.config_hash.clone().filter(|h| !h.is_empty());
 
                 rounds.push(RoundInfoResponse {
                     batch_id,
-                    source_id: bytes32_hex_to_string(&row.source_id.unwrap_or_default()),
+                    source_id,
                     timeframe_secs: row.tick_duration as u64,
                     status: status.to_string(),
                     player_count,
