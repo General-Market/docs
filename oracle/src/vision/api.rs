@@ -259,8 +259,22 @@ async fn list_batches(
 
     match rows {
         Ok(rows) => {
-            // Build config_hash → market_count map from data-node recommended batches
-            let market_counts = fetch_market_counts(&state.config.data_node_url).await;
+            // Build batch_id → market_count from vision_batch_lifecycle (persisted at creation)
+            // with fallback to recommended configs (for batches created before market_count column)
+            let mut lifecycle_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, Option<i32>)>(
+                "SELECT batch_id, market_count FROM vision_batch_lifecycle WHERE market_count IS NOT NULL"
+            )
+            .fetch_all(&state.pool)
+            .await
+            {
+                for (bid, mc) in lc_rows {
+                    if let Some(count) = mc {
+                        lifecycle_counts.insert(bid as u64, count as usize);
+                    }
+                }
+            }
+            let recommended_counts = fetch_market_counts(&state.config.data_node_url).await;
 
             let mut summaries = Vec::with_capacity(rows.len());
             for row in rows {
@@ -282,9 +296,10 @@ async fn list_batches(
                 let current_tick = 0;
 
                 let config_hash_str = row.config_hash.clone().unwrap_or_default();
-                let market_count = market_counts
-                    .get(&config_hash_str)
+                let market_count = lifecycle_counts
+                    .get(&batch_id)
                     .copied()
+                    .or_else(|| recommended_counts.get(&config_hash_str).copied())
                     .unwrap_or(0);
 
                 summaries.push(BatchSummary {

@@ -577,7 +577,7 @@ impl BatchLifecycleManager {
         );
 
         // Record intent in Postgres (all oracles do this for local tracking)
-        let lifecycle_id = self.record_round_lifecycle(source_name, config_hash_str, tick_duration).await?;
+        let lifecycle_id = self.record_round_lifecycle(source_name, config_hash_str, tick_duration, market_count).await?;
 
         // Only leader submits on-chain. Followers detect via BatchCreated events.
         let is_leader = self.config.node_index == 0;
@@ -1051,6 +1051,7 @@ impl BatchLifecycleManager {
         source_name: &str,
         config_hash: &str,
         tick_duration: u64,
+        market_count: usize,
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         let now = chrono::Utc::now();
         let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
@@ -1064,8 +1065,8 @@ impl BatchLifecycleManager {
             .unwrap_or(1000);
 
         sqlx::query(
-            "INSERT INTO vision_batch_lifecycle (batch_id, source_id, config_hash, timeframe_secs, betting_start, betting_end, settlement_deadline, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            "INSERT INTO vision_batch_lifecycle (batch_id, source_id, config_hash, timeframe_secs, betting_start, betting_end, settlement_deadline, market_count, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
              ON CONFLICT (batch_id) DO NOTHING",
         )
         .bind(next_id)
@@ -1075,6 +1076,7 @@ impl BatchLifecycleManager {
         .bind(now)
         .bind(betting_end)
         .bind(settlement_deadline)
+        .bind(market_count as i32)
         .execute(&self.pool)
         .await?;
 
