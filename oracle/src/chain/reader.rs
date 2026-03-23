@@ -932,11 +932,14 @@ fn parse_log_to_event(log: &Log) -> Option<ChainEvent> {
         let order_id = log.topics.get(1)?.to_low_u64_be();
         let user: [u8; 20] = log.topics.get(2)?[12..32].try_into().ok()?;
         let itp_id: [u8; 32] = log.data.get(0..32)?.try_into().ok()?;
+        // data layout: pairId(32) | side(32) | amount(32) | ...
+        let side = *log.data.get(63)?; // uint8 side in second 32-byte word
 
         Some(ChainEvent::OrderSubmitted {
             order_id,
             user,
             itp_id,
+            side,
         })
     } else if signature.as_bytes() == fill_confirmed_sig {
         // Parse FillConfirmed event
