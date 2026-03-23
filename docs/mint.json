@@ -157,6 +157,14 @@
       ]
     },
     {
+      "group": "Architecture",
+      "pages": [
+        "vision/architecture/overview",
+        "vision/architecture/batch-lifecycle",
+        "vision/architecture/continuous-betting"
+      ]
+    },
+    {
       "group": "Operations",
       "pages": ["vision/risks"]
     },
