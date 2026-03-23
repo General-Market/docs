@@ -2,7 +2,10 @@ services:
   itp-bot:
     build:
       context: ../../..
-      dockerfile: docker/testnet/itp-bot/Dockerfile
+      dockerfile: docker/rust-service.Dockerfile
+      args:
+        SERVICE: itp-bot
+        RUNTIME_DEPS: "ca-certificates libssl3 curl"
     container_name: testnet-itp-bot
     network_mode: host
     restart: unless-stopped
@@ -23,6 +26,7 @@ services:
       - BOT_KEY_FILE=/tmp/bot-key.txt
       - DEPLOYED_ASSETS_PATH=/app/deployed-assets.json
     command:
+      - "/usr/local/bin/itp-bot"
       - "--manifest"
       - "/app/manifest.json"
       - "--deployed-assets"

@@ -1716,6 +1716,7 @@ _start_data_node_docker() {
 services:
   data-node:
     command:
+      - "/usr/local/bin/data-node"
       - "serve"
       - "--database-url"
       - "postgres://max@localhost/index_prices"
@@ -1783,6 +1784,7 @@ _start_oracles_docker() {
     _oracle_command_yaml() {
         local NODE_ID=$1 PORT=$2 BLS_IDX=$3 PEERS=$4
         cat <<CMD
+      - "/usr/local/bin/oracle"
       - "--node-id"
       - "$NODE_ID"
       - "--port"

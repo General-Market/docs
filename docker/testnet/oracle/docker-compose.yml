@@ -7,7 +7,10 @@
 x-oracle-base: &oracle-base
   build:
     context: ../../..
-    dockerfile: docker/testnet/oracle/Dockerfile
+    dockerfile: docker/rust-service.Dockerfile
+    args:
+      SERVICE: oracle
+      EXTRA_BINS: bls-tool
   network_mode: host
   restart: unless-stopped
   logging:

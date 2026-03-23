@@ -5,7 +5,9 @@ services:
   data-node:
     build:
       context: ../../..
-      dockerfile: docker/testnet/data-node/Dockerfile
+      dockerfile: docker/rust-service.Dockerfile
+      args:
+        SERVICE: data-node
     container_name: testnet-data-node
     network_mode: host
     restart: "no"
