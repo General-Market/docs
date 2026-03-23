@@ -7,6 +7,7 @@ pub mod adapters;
 pub mod audit;
 pub mod bindings;
 pub mod bls;
+pub mod consensus;
 pub mod decimals;
 pub mod error;
 pub mod errors;

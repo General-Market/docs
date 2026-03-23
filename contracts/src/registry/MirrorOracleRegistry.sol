@@ -184,9 +184,10 @@ contract MirrorOracleRegistry is IMirrorOracleRegistry, IOracleRegistry, Initial
             if ((signersBitmask & ~activeBitmask) != 0) {
                 revert ErrorsLib.E020_InvalidBLSSignature();
             }
-            // Check 2/3 threshold
+            // Check 2/3 threshold — must match BLSVerifier canonical formula
             uint256 signerCount = _popcount(signersBitmask);
-            if (signerCount < (activeCount * 2 + 2) / 3) {
+            uint256 requiredThreshold = activeCount <= 1 ? activeCount : (activeCount * 2 + 2) / 3;
+            if (signerCount < requiredThreshold) {
                 revert ErrorsLib.E020_InvalidBLSSignature();
             }
             // Multi-pairing verification using current individual pubkeys

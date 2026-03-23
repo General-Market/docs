@@ -84,8 +84,8 @@ abstract contract BLSVerifier {
         // Validate signers bitmask is a subset of active bitmask (no stray bits)
         if ((signersBitmask & ~snap.activeBitmask) != 0) revert BLSVerifier__BitmaskInvalid();
 
-        // Check threshold: ceil(2n/3) for production, 1 for testnet (activeCount <= 3)
-        uint256 threshold = snap.activeCount <= 3 ? 1 : (snap.activeCount * 2 + 2) / 3;
+        // Check threshold: ceil(2n/3). n=0→0, n=1→1, n=2→2, n=3→2, etc.
+        uint256 threshold = snap.activeCount <= 1 ? snap.activeCount : (snap.activeCount * 2 + 2) / 3;
         if (_popcount(signersBitmask) < threshold) revert BLSVerifier__BelowThreshold();
 
         // Verify BLS signature against individual signer pubkeys (multi-pairing)
