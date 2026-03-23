@@ -28,6 +28,8 @@ pub enum ChainEvent {
         order_id: u64,
         user: [u8; 20],
         itp_id: [u8; 32],
+        /// Trade side: 0=BUY, 1=SELL (extracted from event data)
+        side: u8,
     },
     /// Fill was confirmed
     FillConfirmed {

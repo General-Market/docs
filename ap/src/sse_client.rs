@@ -178,12 +178,16 @@ impl SseChainEventClient {
             return None;
         }
 
-        info!(order_id, "SSE: received order-submitted event");
+        // data layout: side(32) | amount(32) | limitPrice(32) | slippageTier(32) | deadline(32) | pairId(32)
+        let side = data_bytes[31]; // uint8 side, padded to 32 bytes — value in last byte
+
+        info!(order_id, side, "SSE: received order-submitted event");
 
         Some(ChainEvent::OrderSubmitted {
             order_id,
             user,
             itp_id,
+            side,
         })
     }
 

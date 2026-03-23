@@ -4,6 +4,8 @@
 
 use tokio::sync::mpsc;
 
+use ethers::types::U256;
+
 use crate::error::APError;
 use crate::event_types::{AssetTradeRequestEvent, TradeRequestEvent, WithdrawalRequestEvent};
 
@@ -19,6 +21,10 @@ pub enum APEvent {
     AssetTradeRequest(AssetTradeRequestEvent),
     /// Withdrawal request from blockchain
     WithdrawalRequest(WithdrawalRequestEvent),
+    /// Order submitted on L3 — AP tracks for ITP ID + side lookup
+    OrderSubmitted { order_id: u64, user: [u8; 20], itp_id: [u8; 32], side: u8 },
+    /// Fill confirmed on L3 — AP derives per-asset trades from ITP state
+    FillConfirmed { order_id: u64, fill_price: U256, fill_amount: U256 },
 }
 
 impl APEvent {
@@ -28,6 +34,8 @@ impl APEvent {
             APEvent::TradeRequest(e) => e.block_number,
             APEvent::AssetTradeRequest(e) => e.block_number,
             APEvent::WithdrawalRequest(e) => e.block_number,
+            APEvent::OrderSubmitted { .. } => 0, // SSE events don't carry block number
+            APEvent::FillConfirmed { .. } => 0,
         }
     }
 
@@ -37,6 +45,8 @@ impl APEvent {
             APEvent::TradeRequest(e) => format!("trade:{}", e.event_id()),
             APEvent::AssetTradeRequest(e) => format!("asset_trade:{}", e.event_id()),
             APEvent::WithdrawalRequest(e) => format!("withdrawal:{}", e.event_id()),
+            APEvent::OrderSubmitted { order_id, .. } => format!("order_submitted:{}", order_id),
+            APEvent::FillConfirmed { order_id, .. } => format!("fill_confirmed:{}", order_id),
         }
     }
 }

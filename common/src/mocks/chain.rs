@@ -137,6 +137,7 @@ impl MockChain {
             order_id: order_id.as_u64(),
             user: order.user.into(),
             itp_id: order.itp_id.into(),
+            side: u8::from(order.side),
         });
 
         order_id
