@@ -52,6 +52,21 @@ pub fn compute_settlement(
         }
     }
 
+    // Safety net: any player with zero payout who deposited must get a refund.
+    // This catches edge cases where bitmaps were purged, market was cancelled
+    // after side_inputs were built, or any other path that drops a player's stake.
+    let deposit_map_safety: std::collections::HashMap<Address, U256> =
+        player_deposits.iter().cloned().collect();
+    for (addr, payout) in player_payouts.iter_mut() {
+        if payout.is_zero() {
+            if let Some(deposit) = deposit_map_safety.get(addr) {
+                if !deposit.is_zero() {
+                    *payout = *deposit;
+                }
+            }
+        }
+    }
+
     // Sort by address ascending (contract requires strictly ascending order)
     let mut sorted: Vec<(Address, U256, u32)> = player_payouts
         .into_iter()
