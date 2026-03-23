@@ -59,6 +59,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends ${RUNTIME_DEPS}
 
 COPY --from=builder /output/bin/ /usr/local/bin/
 
+ARG SERVICE
+ENV SERVICE_BIN=${SERVICE}
 RUN useradd -r -s /bin/false svc && mkdir -p /app/logs && chown -R svc:svc /app
 USER svc
 WORKDIR /app
+ENTRYPOINT ["/bin/sh", "-c", "exec /usr/local/bin/${SERVICE_BIN} \"$@\"", "--"]
