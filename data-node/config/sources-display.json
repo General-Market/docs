@@ -2,13 +2,17 @@
   "sources": [
     {
       "sourceId": "coingecko",
-      "internalIds": ["crypto"],
+      "internalIds": [
+        "crypto"
+      ],
       "name": "CoinGecko Crypto",
       "description": "Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.",
       "category": "finance",
       "logo": "/source-imgs/new-coingecko.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["crypto_"],
+      "prefixes": [
+        "crypto_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
       "isPrice": true
@@ -20,33 +24,47 @@
       "category": "finance",
       "logo": "/source-imgs/new-pumpfun.webp",
       "brandBg": "linear-gradient(135deg,#00d18c,#1a1a2e)",
-      "prefixes": ["pumpfun_"],
+      "prefixes": [
+        "pumpfun_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "pumpfun"
+      ]
     },
     {
       "sourceId": "defillama",
-      "internalIds": ["defi"],
+      "internalIds": [
+        "defi"
+      ],
       "name": "DefiLlama DeFi",
       "description": "DeFi protocol analytics — TVL, yields, fees, volumes across all major chains and protocols.",
       "category": "finance",
       "logo": "/source-imgs/new-defillama.webp",
       "brandBg": "#1b1b1b",
-      "prefixes": ["defi_"],
+      "prefixes": [
+        "defi_"
+      ],
       "valueLabel": "TVL",
       "valueUnit": "USD",
       "isPrice": true
     },
     {
       "sourceId": "finnhub",
-      "internalIds": ["stocks"],
+      "internalIds": [
+        "stocks"
+      ],
       "name": "Finnhub Stocks",
       "description": "Real-time stock market data — US equities, forex, and crypto with company fundamentals.",
       "category": "finance",
       "logo": "/source-imgs/new-finnhub.webp",
       "brandBg": "#000000",
-      "prefixes": ["stock_", "stocks_"],
+      "prefixes": [
+        "stock_",
+        "stocks_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
       "isPrice": true
@@ -58,10 +76,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-nasdaq.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["nasdaq_"],
+      "prefixes": [
+        "nasdaq_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "nasdaq"
+      ]
     },
     {
       "sourceId": "zillow",
@@ -70,10 +93,15 @@
       "category": "finance",
       "logo": "/source-imgs/zillow.svg",
       "brandBg": "#1b1b1b",
-      "prefixes": ["zillow_"],
+      "prefixes": [
+        "zillow_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "zillow"
+      ]
     },
     {
       "sourceId": "polymarket",
@@ -82,10 +110,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-polymarket.webp",
       "brandBg": "#1b1b1b",
-      "prefixes": ["poly_"],
+      "prefixes": [
+        "poly_"
+      ],
       "valueLabel": "Probability",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "polymarket"
+      ]
     },
     {
       "sourceId": "finra",
@@ -94,10 +127,15 @@
       "category": "finance",
       "logo": "/source-imgs/finra.svg",
       "brandBg": "#e8edf4",
-      "prefixes": ["finra_"],
+      "prefixes": [
+        "finra_"
+      ],
       "valueLabel": "Short Volume",
       "valueUnit": "shares",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "finra"
+      ]
     },
     {
       "sourceId": "finra_short_vol",
@@ -106,10 +144,15 @@
       "category": "finance",
       "logo": "/source-imgs/finra.svg",
       "brandBg": "#e8edf4",
-      "prefixes": ["finra_short_vol_"],
+      "prefixes": [
+        "finra_short_vol_"
+      ],
       "valueLabel": "Short Volume",
       "valueUnit": "shares",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "finra_short_vol"
+      ]
     },
     {
       "sourceId": "futures",
@@ -118,10 +161,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["futures_"],
+      "prefixes": [
+        "futures_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "futures"
+      ]
     },
     {
       "sourceId": "bchain",
@@ -130,10 +178,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-bitcoin.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["bchain_"],
+      "prefixes": [
+        "bchain_"
+      ],
       "valueLabel": "Value",
       "valueUnit": "",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "bchain"
+      ]
     },
     {
       "sourceId": "yahoo_drinks",
@@ -142,10 +195,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-yahoodrinks.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["yahoo_drinks_"],
+      "prefixes": [
+        "yahoo_drinks_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "yahoo_drinks"
+      ]
     },
     {
       "sourceId": "twse",
@@ -154,10 +212,15 @@
       "category": "finance",
       "logo": "/source-imgs/new-twse.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["twse_"],
+      "prefixes": [
+        "twse_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "TWD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "twse"
+      ]
     },
     {
       "sourceId": "bestbuy",
@@ -166,20 +229,29 @@
       "category": "finance",
       "logo": "/source-imgs/new-bestbuy.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["bestbuy_"],
+      "prefixes": [
+        "bestbuy_"
+      ],
       "valueLabel": "Sale Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "bestbuy"
+      ]
     },
     {
       "sourceId": "fred",
-      "internalIds": ["rates"],
+      "internalIds": [
+        "rates"
+      ],
       "name": "FRED Interest Rates",
       "description": "Federal Reserve Economic Data — interest rates, yield curves, money supply, employment, inflation.",
       "category": "economic",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["fred_"],
+      "prefixes": [
+        "fred_"
+      ],
       "valueLabel": "Rate",
       "valueUnit": "%",
       "isPrice": false
@@ -191,20 +263,30 @@
       "category": "economic",
       "logo": "/source-imgs/new-eia.webp",
       "brandBg": "#00526e",
-      "prefixes": ["eia_"],
+      "prefixes": [
+        "eia_"
+      ],
       "valueLabel": "Value",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "eia"
+      ]
     },
     {
       "sourceId": "treasury",
-      "internalIds": ["bonds"],
+      "internalIds": [
+        "bonds"
+      ],
       "name": "US Treasury Yields",
       "description": "Daily yield curve rates — T-bills, notes, and bonds from 1-month to 30-year maturities.",
       "category": "economic",
       "logo": "/source-imgs/new-treasury.svg",
       "brandBg": "#0057b7",
-      "prefixes": ["treasury_", "tsy_"],
+      "prefixes": [
+        "treasury_",
+        "tsy_"
+      ],
       "valueLabel": "Yield",
       "valueUnit": "%",
       "isPrice": false
@@ -216,10 +298,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-ecb.svg",
       "brandBg": "#f0f2f5",
-      "prefixes": ["ecb_"],
+      "prefixes": [
+        "ecb_"
+      ],
       "valueLabel": "Value",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "ecb"
+      ]
     },
     {
       "sourceId": "boe",
@@ -228,10 +315,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-boe.svg",
       "brandBg": "#1d1d1d",
-      "prefixes": ["boe_"],
+      "prefixes": [
+        "boe_"
+      ],
       "valueLabel": "Rate",
       "valueUnit": "vs GBP",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "boe"
+      ]
     },
     {
       "sourceId": "worldbank",
@@ -240,10 +332,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-worldbank.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["worldbank_"],
+      "prefixes": [
+        "worldbank_"
+      ],
       "valueLabel": "Value",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "worldbank"
+      ]
     },
     {
       "sourceId": "bls",
@@ -252,10 +349,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-bls.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["bls_"],
+      "prefixes": [
+        "bls_"
+      ],
       "valueLabel": "Index",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "bls"
+      ]
     },
     {
       "sourceId": "adzuna",
@@ -264,10 +366,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-adzuna.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["adzuna_"],
+      "prefixes": [
+        "adzuna_"
+      ],
       "valueLabel": "Avg Salary",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "adzuna"
+      ]
     },
     {
       "sourceId": "usa_spending",
@@ -276,10 +383,15 @@
       "category": "economic",
       "logo": "/source-imgs/usaspending.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["usa_spending_"],
+      "prefixes": [
+        "usa_spending_"
+      ],
       "valueLabel": "Amount",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "usa_spending"
+      ]
     },
     {
       "sourceId": "imf",
@@ -288,10 +400,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-imf.svg",
       "brandBg": "#002244",
-      "prefixes": ["imf_"],
+      "prefixes": [
+        "imf_"
+      ],
       "valueLabel": "Value",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "imf"
+      ]
     },
     {
       "sourceId": "opec",
@@ -300,10 +417,15 @@
       "category": "economic",
       "logo": "/source-imgs/new-eia.webp",
       "brandBg": "#005fa3",
-      "prefixes": ["opec_"],
+      "prefixes": [
+        "opec_"
+      ],
       "valueLabel": "Basket Price",
       "valueUnit": "USD/bbl",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "opec"
+      ]
     },
     {
       "sourceId": "cftc",
@@ -312,20 +434,33 @@
       "category": "economic",
       "logo": "/source-imgs/new-fred.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["cftc_"],
+      "prefixes": [
+        "cftc_"
+      ],
       "valueLabel": "Contracts",
       "valueUnit": "lots",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "cftc"
+      ]
     },
     {
       "sourceId": "sec",
-      "internalIds": ["sec_13f", "sec_efts", "sec_insider"],
+      "internalIds": [
+        "sec_13f",
+        "sec_efts",
+        "sec_insider"
+      ],
       "name": "SEC Filings",
       "description": "Institutional investment disclosures — 13F holdings, EDGAR filings, and insider transactions.",
       "category": "regulatory",
       "logo": "/source-imgs/new-sec.svg",
       "brandBg": "#0a3055",
-      "prefixes": ["sec_edgar_", "sec_efts_", "sec_insider_"],
+      "prefixes": [
+        "sec_edgar_",
+        "sec_efts_",
+        "sec_insider_"
+      ],
       "valueLabel": "Filings",
       "valueUnit": "",
       "isPrice": false
@@ -337,10 +472,15 @@
       "category": "regulatory",
       "logo": "/source-imgs/congress.webp",
       "brandBg": "linear-gradient(135deg,#1a2744,#2d4a7a)",
-      "prefixes": ["congress_"],
+      "prefixes": [
+        "congress_"
+      ],
       "valueLabel": "Count",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "congress"
+      ]
     },
     {
       "sourceId": "courtlistener",
@@ -349,10 +489,15 @@
       "category": "regulatory",
       "logo": "/source-imgs/new-courtlistener.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["court_"],
+      "prefixes": [
+        "court_"
+      ],
       "valueLabel": "Filings",
       "valueUnit": "/day",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "courtlistener"
+      ]
     },
     {
       "sourceId": "nyc311",
@@ -361,10 +506,15 @@
       "category": "regulatory",
       "logo": "/source-imgs/new-nyc311.svg",
       "brandBg": "#002D72",
-      "prefixes": ["nyc311_"],
+      "prefixes": [
+        "nyc311_"
+      ],
       "valueLabel": "Complaints",
       "valueUnit": "/24h",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "nyc311"
+      ]
     },
     {
       "sourceId": "github",
@@ -373,10 +523,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-github.webp",
       "brandBg": "#24292e",
-      "prefixes": ["github_"],
+      "prefixes": [
+        "github_"
+      ],
       "valueLabel": "Stars",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "github"
+      ]
     },
     {
       "sourceId": "npm",
@@ -385,10 +540,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-npm.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["npm_"],
+      "prefixes": [
+        "npm_"
+      ],
       "valueLabel": "Downloads",
       "valueUnit": "/wk",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "npm"
+      ]
     },
     {
       "sourceId": "pypi",
@@ -397,10 +557,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-pypi.svg",
       "brandBg": "#006dad",
-      "prefixes": ["pypi_"],
+      "prefixes": [
+        "pypi_"
+      ],
       "valueLabel": "Downloads",
       "valueUnit": "/day",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "pypi"
+      ]
     },
     {
       "sourceId": "crates_io",
@@ -409,10 +574,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-cratesio.webp",
       "brandBg": "#173d13",
-      "prefixes": ["crates_io_"],
+      "prefixes": [
+        "crates_io_"
+      ],
       "valueLabel": "Downloads",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "crates_io"
+      ]
     },
     {
       "sourceId": "stackexchange",
@@ -421,10 +591,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-stackoverflow.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["stackexchange_"],
+      "prefixes": [
+        "stackexchange_"
+      ],
       "valueLabel": "Questions",
       "valueUnit": "/day",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "stackexchange"
+      ]
     },
     {
       "sourceId": "hackernews",
@@ -433,10 +608,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-hackernews.svg",
       "brandBg": "#f66a0a",
-      "prefixes": ["hn_"],
+      "prefixes": [
+        "hn_"
+      ],
       "valueLabel": "Score",
       "valueUnit": "pts",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "hackernews"
+      ]
     },
     {
       "sourceId": "cloudflare",
@@ -445,10 +625,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-cloudflare.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["cloudflare_"],
+      "prefixes": [
+        "cloudflare_"
+      ],
       "valueLabel": "Rank",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "cloudflare"
+      ]
     },
     {
       "sourceId": "ioda",
@@ -457,10 +642,15 @@
       "category": "tech",
       "logo": "/source-imgs/new-ioda.svg",
       "brandBg": "#1a1a2e",
-      "prefixes": ["ioda_"],
+      "prefixes": [
+        "ioda_"
+      ],
       "valueLabel": "Connectivity",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "ioda"
+      ]
     },
     {
       "sourceId": "openalex",
@@ -469,10 +659,15 @@
       "category": "academic",
       "logo": "/source-imgs/new-openalex.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["openalex_"],
+      "prefixes": [
+        "openalex_"
+      ],
       "valueLabel": "Papers",
       "valueUnit": "/day",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "openalex"
+      ]
     },
     {
       "sourceId": "crossref",
@@ -481,10 +676,15 @@
       "category": "academic",
       "logo": "/source-imgs/new-crossref.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["crossref_"],
+      "prefixes": [
+        "crossref_"
+      ],
       "valueLabel": "DOIs",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "crossref"
+      ]
     },
     {
       "sourceId": "pubmed",
@@ -493,10 +693,15 @@
       "category": "academic",
       "logo": "/source-imgs/new-pubmed.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["pubmed_"],
+      "prefixes": [
+        "pubmed_"
+      ],
       "valueLabel": "Articles",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "pubmed"
+      ]
     },
     {
       "sourceId": "twitch",
@@ -505,10 +710,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-twitch.webp",
       "brandBg": "#9146FF",
-      "prefixes": ["twitch_"],
+      "prefixes": [
+        "twitch_"
+      ],
       "valueLabel": "Viewers",
       "valueUnit": "live",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "twitch"
+      ]
     },
     {
       "sourceId": "tmdb",
@@ -517,10 +727,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-tmdb.svg",
       "brandBg": "#032551",
-      "prefixes": ["tmdb_"],
+      "prefixes": [
+        "tmdb_"
+      ],
       "valueLabel": "Popularity",
       "valueUnit": "score",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "tmdb"
+      ]
     },
     {
       "sourceId": "lastfm",
@@ -529,10 +744,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-lastfm.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["lastfm_"],
+      "prefixes": [
+        "lastfm_"
+      ],
       "valueLabel": "Listeners",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "lastfm"
+      ]
     },
     {
       "sourceId": "steam",
@@ -541,10 +761,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-steam.webp",
       "brandBg": "#171a21",
-      "prefixes": ["steam_"],
+      "prefixes": [
+        "steam_"
+      ],
       "valueLabel": "Players",
       "valueUnit": "online",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "steam"
+      ]
     },
     {
       "sourceId": "anilist",
@@ -553,10 +778,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-anilist.webp",
       "brandBg": "#152232",
-      "prefixes": ["anilist_"],
+      "prefixes": [
+        "anilist_"
+      ],
       "valueLabel": "Popularity",
       "valueUnit": "score",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "anilist"
+      ]
     },
     {
       "sourceId": "reddit",
@@ -565,10 +795,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-reddit.webp",
       "brandBg": "#1a1a2e",
-      "prefixes": ["reddit_"],
+      "prefixes": [
+        "reddit_"
+      ],
       "valueLabel": "Subscribers",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "reddit"
+      ]
     },
     {
       "sourceId": "chaturbate",
@@ -577,10 +812,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-chaturbate.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["cb_model_"],
+      "prefixes": [
+        "cb_model_"
+      ],
       "valueLabel": "Viewers",
       "valueUnit": "live",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "chaturbate"
+      ]
     },
     {
       "sourceId": "bgg",
@@ -589,10 +829,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-bgg.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["bgg_"],
+      "prefixes": [
+        "bgg_"
+      ],
       "valueLabel": "Hotness",
       "valueUnit": "#",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "bgg"
+      ]
     },
     {
       "sourceId": "backpacktf",
@@ -601,10 +846,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-backpacktf.webp",
       "brandBg": "#363636",
-      "prefixes": ["backpacktf_"],
+      "prefixes": [
+        "backpacktf_"
+      ],
       "valueLabel": "Price",
       "valueUnit": "USD",
-      "isPrice": true
+      "isPrice": true,
+      "internalIds": [
+        "backpacktf"
+      ]
     },
     {
       "sourceId": "fourchan",
@@ -613,10 +863,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/fourchan.webp",
       "brandBg": "linear-gradient(135deg,#6b8e6b,#3d5c3d)",
-      "prefixes": ["fourchan_"],
+      "prefixes": [
+        "fourchan_"
+      ],
       "valueLabel": "Activity",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "fourchan"
+      ]
     },
     {
       "sourceId": "sports",
@@ -625,20 +880,29 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-espn.svg",
       "brandBg": "#1b1b1b",
-      "prefixes": ["sport_"],
+      "prefixes": [
+        "sport_"
+      ],
       "valueLabel": "Score",
       "valueUnit": "pts",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "sports"
+      ]
     },
     {
       "sourceId": "pandascore",
-      "internalIds": ["esports"],
+      "internalIds": [
+        "esports"
+      ],
       "name": "Esports",
       "description": "Esports match tracking — live scores across CS2, LoL, Dota 2, Valorant, and more.",
       "category": "entertainment",
       "logo": "/source-imgs/new-pandascore.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["esport_"],
+      "prefixes": [
+        "esport_"
+      ],
       "valueLabel": "Score",
       "valueUnit": "",
       "isPrice": false
@@ -650,10 +914,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-queuetimes.webp",
       "brandBg": "#1a1a2e",
-      "prefixes": ["queue_times_"],
+      "prefixes": [
+        "queue_times_"
+      ],
       "valueLabel": "Avg Wait",
       "valueUnit": "min",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "queue_times"
+      ]
     },
     {
       "sourceId": "mcbroken",
@@ -662,10 +931,15 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-mcbroken.svg",
       "brandBg": "#FFC72C",
-      "prefixes": ["mcbroken_"],
+      "prefixes": [
+        "mcbroken_"
+      ],
       "valueLabel": "% Broken",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "mcbroken"
+      ]
     },
     {
       "sourceId": "earthquake",
@@ -674,10 +948,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-usgs.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["earthquake_"],
+      "prefixes": [
+        "earthquake_"
+      ],
       "valueLabel": "Magnitude",
       "valueUnit": "M",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "earthquake"
+      ]
     },
     {
       "sourceId": "volcano",
@@ -686,10 +965,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-volcano.webp",
       "brandBg": "#c0cfe0",
-      "prefixes": ["volcano_"],
+      "prefixes": [
+        "volcano_"
+      ],
       "valueLabel": "Alert Level",
       "valueUnit": "0-4",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "volcano"
+      ]
     },
     {
       "sourceId": "weather",
@@ -698,10 +982,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-noaa.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["weather_"],
+      "prefixes": [
+        "weather_"
+      ],
       "valueLabel": "Temperature",
       "valueUnit": "°F",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "weather"
+      ]
     },
     {
       "sourceId": "weather_alerts",
@@ -710,10 +999,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-nws.svg",
       "brandBg": "#FFF3E0",
-      "prefixes": ["weather_alert_"],
+      "prefixes": [
+        "weather_alert_"
+      ],
       "valueLabel": "Count",
       "valueUnit": "alerts",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "weather_alerts"
+      ]
     },
     {
       "sourceId": "openmeteo",
@@ -722,10 +1016,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-openmeteo.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["openmeteo_"],
+      "prefixes": [
+        "openmeteo_"
+      ],
       "valueLabel": "Temperature",
       "valueUnit": "°C",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "openmeteo"
+      ]
     },
     {
       "sourceId": "airnow",
@@ -734,10 +1033,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-airnow.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["airnow_"],
+      "prefixes": [
+        "airnow_"
+      ],
       "valueLabel": "AQI",
       "valueUnit": "0-500",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "airnow"
+      ]
     },
     {
       "sourceId": "usgs_water",
@@ -746,10 +1050,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-usgswater.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["usgs_water_"],
+      "prefixes": [
+        "usgs_water_"
+      ],
       "valueLabel": "Discharge",
       "valueUnit": "ft³/s",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "usgs_water"
+      ]
     },
     {
       "sourceId": "noaa_met",
@@ -758,10 +1067,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-noaamet.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["noaa_met_"],
+      "prefixes": [
+        "noaa_met_"
+      ],
       "valueLabel": "Temp",
       "valueUnit": "°F",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "noaa_met"
+      ]
     },
     {
       "sourceId": "noaa_tides",
@@ -770,10 +1084,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-noaatides.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["noaa_tide_"],
+      "prefixes": [
+        "noaa_tide_"
+      ],
       "valueLabel": "Water Level",
       "valueUnit": "ft",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "noaa_tides"
+      ]
     },
     {
       "sourceId": "ndbc",
@@ -782,10 +1101,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-ndbc.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["ndbc_"],
+      "prefixes": [
+        "ndbc_"
+      ],
       "valueLabel": "Wave Height",
       "valueUnit": "m",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "ndbc"
+      ]
     },
     {
       "sourceId": "nwps",
@@ -794,10 +1118,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-nwps.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["nwps_"],
+      "prefixes": [
+        "nwps_"
+      ],
       "valueLabel": "Stage Height",
       "valueUnit": "ft",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "nwps"
+      ]
     },
     {
       "sourceId": "nrc_nuclear",
@@ -806,10 +1135,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-nrcnuclear.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["nrc_"],
+      "prefixes": [
+        "nrc_"
+      ],
       "valueLabel": "Power",
       "valueUnit": "%",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "nrc_nuclear"
+      ]
     },
     {
       "sourceId": "wildfire",
@@ -818,10 +1152,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-firms.webp",
       "brandBg": "#2d1810",
-      "prefixes": ["wildfire_"],
+      "prefixes": [
+        "wildfire_"
+      ],
       "valueLabel": "Hotspots",
       "valueUnit": "fires",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "wildfire"
+      ]
     },
     {
       "sourceId": "epidemic",
@@ -830,10 +1169,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-diseasesh.webp",
       "brandBg": "#1b1b1b",
-      "prefixes": ["epidemic_"],
+      "prefixes": [
+        "epidemic_"
+      ],
       "valueLabel": "Cases",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "epidemic"
+      ]
     },
     {
       "sourceId": "power_outages",
@@ -842,10 +1186,15 @@
       "category": "geophysical",
       "logo": "/source-imgs/new-poweroutage.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["power_outages_"],
+      "prefixes": [
+        "power_outages_"
+      ],
       "valueLabel": "Affected",
       "valueUnit": "customers",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "power_outages"
+      ]
     },
     {
       "sourceId": "flights",
@@ -854,20 +1203,29 @@
       "category": "transport",
       "logo": "/source-imgs/new-flights.webp",
       "brandBg": "#2a2a2a",
-      "prefixes": ["flights_"],
+      "prefixes": [
+        "flights_"
+      ],
       "valueLabel": "Flights",
       "valueUnit": "active",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "flights"
+      ]
     },
     {
       "sourceId": "gtfs_rt",
-      "internalIds": ["gtfs_transit"],
+      "internalIds": [
+        "gtfs_transit"
+      ],
       "name": "Transit Realtime",
       "description": "Public transit feeds — real-time bus/rail positions, service alerts, schedule adherence.",
       "category": "transport",
       "logo": "/source-imgs/new-transitland2.svg",
       "brandBg": "#f0f2f5",
-      "prefixes": ["gtfs_"],
+      "prefixes": [
+        "gtfs_"
+      ],
       "valueLabel": "Delay",
       "valueUnit": "min",
       "isPrice": false
@@ -879,10 +1237,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-citybikes.svg",
       "brandBg": "linear-gradient(135deg,#ffb800,#f59e00)",
-      "prefixes": ["citybikes_"],
+      "prefixes": [
+        "citybikes_"
+      ],
       "valueLabel": "Available",
       "valueUnit": "bikes",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "citybikes"
+      ]
     },
     {
       "sourceId": "parking",
@@ -891,10 +1254,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-parkapi.webp",
       "brandBg": "linear-gradient(135deg,#e8eaf6,#c5cae9)",
-      "prefixes": ["parking_"],
+      "prefixes": [
+        "parking_"
+      ],
       "valueLabel": "Free Spaces",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "parking"
+      ]
     },
     {
       "sourceId": "tomtom_traffic",
@@ -903,10 +1271,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-tomtomtraffic.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["tomtom_traffic_"],
+      "prefixes": [
+        "tomtom_traffic_"
+      ],
       "valueLabel": "Congestion",
       "valueUnit": "ratio",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "tomtom_traffic"
+      ]
     },
     {
       "sourceId": "tomtom_evcharge",
@@ -915,10 +1288,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-tomtomev.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["tomtom_evcharge_"],
+      "prefixes": [
+        "tomtom_evcharge_"
+      ],
       "valueLabel": "Available",
       "valueUnit": "connectors",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "tomtom_evcharge"
+      ]
     },
     {
       "sourceId": "cbp_border",
@@ -927,10 +1305,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-cbpborder.webp",
       "brandBg": "#1a2744",
-      "prefixes": ["cbp_border_"],
+      "prefixes": [
+        "cbp_border_"
+      ],
       "valueLabel": "Wait Time",
       "valueUnit": "min",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "cbp_border"
+      ]
     },
     {
       "sourceId": "faa_delays",
@@ -939,10 +1322,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-faadelays.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["faa_delays_"],
+      "prefixes": [
+        "faa_delays_"
+      ],
       "valueLabel": "Delay",
       "valueUnit": "0/1",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "faa_delays"
+      ]
     },
     {
       "sourceId": "db_trains",
@@ -951,10 +1339,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-dbtrains.svg",
       "brandBg": "#ec0016",
-      "prefixes": ["db_trains_"],
+      "prefixes": [
+        "db_trains_"
+      ],
       "valueLabel": "Avg Delay",
       "valueUnit": "min",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "db_trains"
+      ]
     },
     {
       "sourceId": "mta_subway",
@@ -963,10 +1356,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-mta.webp",
       "brandBg": "#0039A6",
-      "prefixes": ["mta_subway_"],
+      "prefixes": [
+        "mta_subway_"
+      ],
       "valueLabel": "Disruption",
       "valueUnit": "0-5",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "mta_subway"
+      ]
     },
     {
       "sourceId": "paris_metro",
@@ -975,10 +1373,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-ratp.webp",
       "brandBg": "#003B80",
-      "prefixes": ["paris_metro_"],
+      "prefixes": [
+        "paris_metro_"
+      ],
       "valueLabel": "Disruption",
       "valueUnit": "0-4",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "paris_metro"
+      ]
     },
     {
       "sourceId": "ryanair",
@@ -987,10 +1390,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-ryanair.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["ryanair_"],
+      "prefixes": [
+        "ryanair_"
+      ],
       "valueLabel": "Avg Delay",
       "valueUnit": "min",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "ryanair"
+      ]
     },
     {
       "sourceId": "tfl_tube",
@@ -999,10 +1407,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-tfl.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["tfl_tube_"],
+      "prefixes": [
+        "tfl_tube_"
+      ],
       "valueLabel": "Disruption",
       "valueUnit": "0-8",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "tfl_tube"
+      ]
     },
     {
       "sourceId": "aisstream",
@@ -1011,10 +1424,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-aisstream.webp",
       "brandBg": "#1b1b1b",
-      "prefixes": ["aisstream_"],
+      "prefixes": [
+        "aisstream_"
+      ],
       "valueLabel": "Vessels",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "aisstream"
+      ]
     },
     {
       "sourceId": "maritime",
@@ -1023,10 +1441,15 @@
       "category": "transport",
       "logo": "/source-imgs/new-marinetraffic.webp",
       "brandBg": "#1b1b1b",
-      "prefixes": ["maritime_"],
+      "prefixes": [
+        "maritime_"
+      ],
       "valueLabel": "Ships",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "maritime"
+      ]
     },
     {
       "sourceId": "ebird",
@@ -1035,10 +1458,15 @@
       "category": "nature",
       "logo": "/source-imgs/new-ebird.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["ebird_"],
+      "prefixes": [
+        "ebird_"
+      ],
       "valueLabel": "Observations",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "ebird"
+      ]
     },
     {
       "sourceId": "animals",
@@ -1047,10 +1475,15 @@
       "category": "nature",
       "logo": "/source-imgs/new-inaturalist.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["animals_"],
+      "prefixes": [
+        "animals_"
+      ],
       "valueLabel": "Observations",
       "valueUnit": "/24h",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "animals"
+      ]
     },
     {
       "sourceId": "movebank",
@@ -1059,10 +1492,15 @@
       "category": "nature",
       "logo": "/source-imgs/movebank.webp",
       "brandBg": "#e8f0e8",
-      "prefixes": ["movebank_"],
+      "prefixes": [
+        "movebank_"
+      ],
       "valueLabel": "Locations",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "movebank"
+      ]
     },
     {
       "sourceId": "shelter",
@@ -1071,10 +1509,15 @@
       "category": "nature",
       "logo": "/source-imgs/new-shelter.webp",
       "brandBg": "#f5f5f5",
-      "prefixes": ["shelter_"],
+      "prefixes": [
+        "shelter_"
+      ],
       "valueLabel": "Count",
       "valueUnit": "animals",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "shelter"
+      ]
     },
     {
       "sourceId": "spaceweather",
@@ -1083,10 +1526,15 @@
       "category": "space",
       "logo": "/source-imgs/new-noaa.webp",
       "brandBg": "#c0c8d0",
-      "prefixes": ["spaceweather_"],
+      "prefixes": [
+        "spaceweather_"
+      ],
       "valueLabel": "Kp Index",
       "valueUnit": "0-9",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "spaceweather"
+      ]
     },
     {
       "sourceId": "iss",
@@ -1095,10 +1543,15 @@
       "category": "space",
       "logo": "/source-imgs/new-iss.webp",
       "brandBg": "#0c0a1a",
-      "prefixes": ["iss_"],
+      "prefixes": [
+        "iss_"
+      ],
       "valueLabel": "Position",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "iss"
+      ]
     },
     {
       "sourceId": "mil_aircraft",
@@ -1107,10 +1560,15 @@
       "category": "space",
       "logo": "/source-imgs/new-milaircraft.webp",
       "brandBg": "#1a2332",
-      "prefixes": ["mil_aircraft_"],
+      "prefixes": [
+        "mil_aircraft_"
+      ],
       "valueLabel": "Count",
       "valueUnit": "",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "mil_aircraft"
+      ]
     },
     {
       "sourceId": "lichess",
@@ -1119,22 +1577,67 @@
       "category": "entertainment",
       "logo": "/source-imgs/new-hackernews.svg",
       "brandBg": "#f5f5f5",
-      "prefixes": ["lichess_"],
+      "prefixes": [
+        "lichess_"
+      ],
       "valueLabel": "Players",
       "valueUnit": "online",
-      "isPrice": false
+      "isPrice": false,
+      "internalIds": [
+        "lichess"
+      ]
     }
   ],
   "categories": [
-    { "key": "finance", "label": "Finance", "order": 0 },
-    { "key": "economic", "label": "Economics & Rates", "order": 1 },
-    { "key": "regulatory", "label": "Regulatory & Policy", "order": 2 },
-    { "key": "tech", "label": "Tech & Dev", "order": 3 },
-    { "key": "academic", "label": "Academic", "order": 4 },
-    { "key": "entertainment", "label": "Entertainment & Gaming", "order": 5 },
-    { "key": "geophysical", "label": "Weather & Environment", "order": 6 },
-    { "key": "transport", "label": "Transport & Tourism", "order": 7 },
-    { "key": "nature", "label": "Nature & Wildlife", "order": 8 },
-    { "key": "space", "label": "Science & Space", "order": 9 }
+    {
+      "key": "finance",
+      "label": "Finance",
+      "order": 0
+    },
+    {
+      "key": "economic",
+      "label": "Economics & Rates",
+      "order": 1
+    },
+    {
+      "key": "regulatory",
+      "label": "Regulatory & Policy",
+      "order": 2
+    },
+    {
+      "key": "tech",
+      "label": "Tech & Dev",
+      "order": 3
+    },
+    {
+      "key": "academic",
+      "label": "Academic",
+      "order": 4
+    },
+    {
+      "key": "entertainment",
+      "label": "Entertainment & Gaming",
+      "order": 5
+    },
+    {
+      "key": "geophysical",
+      "label": "Weather & Environment",
+      "order": 6
+    },
+    {
+      "key": "transport",
+      "label": "Transport & Tourism",
+      "order": 7
+    },
+    {
+      "key": "nature",
+      "label": "Nature & Wildlife",
+      "order": 8
+    },
+    {
+      "key": "space",
+      "label": "Science & Space",
+      "order": 9
+    }
   ]
 }

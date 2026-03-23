@@ -1349,6 +1349,22 @@ json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
     # Sync sources-display.json to frontend (data-node is source of truth)
     [ -f "data-node/config/sources-display.json" ] && cp data-node/config/sources-display.json frontend/data/sources-display.json
 
+    # Auto-populate missing internalIds (sourceId as default — required for frontend batch matching)
+    python3 -c "
+import json
+data = json.load(open('frontend/data/sources-display.json'))
+sources = data.get('sources', [])
+fixed = 0
+for s in sources:
+    if not s.get('internalIds') and s.get('sourceId'):
+        s['internalIds'] = [s['sourceId']]
+        fixed += 1
+if fixed:
+    data['sources'] = sources
+    json.dump(data, open('frontend/data/sources-display.json', 'w'), indent=2, ensure_ascii=False)
+    print(f'  Auto-populated internalIds for {fixed} sources')
+" 2>/dev/null || true
+
     # Regenerate deployed-assets.json and symbol-map.json from assets.json.
     # Must happen BEFORE switch-env so oracles/data-node get fresh symbol maps.
     python3 -c "
