@@ -351,12 +351,12 @@ async fn award_creator_points(
         })
         .collect();
 
-    // For ITPs without meta, seed them now from chain cache
+    // For ITPs without meta, seed them now from chain cache.
+    // All ITPs start at $1 (1.0) by design — use that as creation NAV.
     for (itp_id, cached) in &itp_states.states {
         if !meta_map.contains_key(itp_id) {
             let creator_addr = format!("{:?}", cached.creator).to_lowercase();
-            let nav_f64 = nav_lookup.get(itp_id).copied().unwrap_or(1.0);
-            if ensure_itp_meta(pool, itp_id, &creator_addr, nav_f64).await? {
+            if ensure_itp_meta(pool, itp_id, &creator_addr, 1.0).await? {
                 info!(itp_id, "Seeded itp_meta for new ITP");
             }
         }
@@ -380,20 +380,15 @@ async fn award_creator_points(
         .map(|s| (s.itp_id.clone(), s.nav_per_share))
         .collect();
 
-    // Compute NAV growth for each ITP
-    struct ItpGrowth {
-        creator: String,
-        growth_pct: f64,
-    }
+    // Compute NAV growth per ITP, then aggregate best growth per creator
+    let mut creator_best_growth: HashMap<String, f64> = HashMap::new();
 
-    let mut growths: Vec<ItpGrowth> = Vec::new();
     for (itp_id, creator, nav_at_creation) in &meta_rows {
         let nav_creation = nav_at_creation.to_f64().unwrap_or(1.0);
         if nav_creation <= 0.0 {
             continue;
         }
 
-        // Get current NAV from chain cache
         let current_nav = match nav_lookup.get(itp_id) {
             Some(&nav) => nav,
             None => continue,
@@ -401,29 +396,36 @@ async fn award_creator_points(
 
         let growth = (current_nav - nav_creation) / nav_creation;
         if growth > 0.0 {
-            growths.push(ItpGrowth {
-                creator: creator.clone(),
-                growth_pct: growth,
-            });
+            let entry = creator_best_growth
+                .entry(creator.to_lowercase())
+                .or_insert(0.0);
+            if growth > *entry {
+                *entry = growth;
+            }
         }
     }
 
-    if growths.is_empty() {
-        debug!("No ITPs with positive growth, skipping creator points");
+    if creator_best_growth.is_empty() {
+        debug!("No creators with positive ITP growth, skipping creator points");
         return Ok(0);
     }
 
-    // Sort by growth descending
-    growths.sort_by(|a, b| b.growth_pct.partial_cmp(&a.growth_pct).unwrap_or(std::cmp::Ordering::Equal));
+    // Sort creators by best growth descending
+    let mut ranked: Vec<(String, f64)> = creator_best_growth.into_iter().collect();
+    ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-    // Distribute with exponential decay
-    let awards = distribute_ranked(&growths.iter().map(|g| g.creator.clone()).collect::<Vec<_>>(), CREATOR_BUDGET_PER_HOUR, &reason, "index_creator");
+    let awards = distribute_ranked(
+        &ranked.iter().map(|(c, _)| c.clone()).collect::<Vec<_>>(),
+        CREATOR_BUDGET_PER_HOUR,
+        &reason,
+        "index_creator",
+    );
 
     let inserted = award_points(pool, &awards).await?;
     if inserted > 0 {
         info!(
             hour = %hour_key,
-            eligible_itps = growths.len(),
+            eligible_creators = ranked.len(),
             awarded = inserted,
             "Creator points awarded"
         );
@@ -848,14 +850,25 @@ pub async fn get_leaderboard(
 // ── Background loop ───────────────────────────────────────────────────────
 
 /// Main points engine loop. Runs forever.
-///
-/// - Every 30s: polls oracle for settled rounds, awards vision points
-/// - Every hour (at :00): awards index creator + holder points
+/// All three pools award hourly at :00.
 pub async fn run(pool: PgPool, chain_cache: Arc<ChainCache>, oracle_url: String) {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()
         .unwrap_or_default();
+
+    // One-time fix: reset itp_meta.nav_at_creation to 1.0 (all ITPs start at $1).
+    // Earlier seeding incorrectly used the current NAV at seeding time.
+    match sqlx::query("UPDATE itp_meta SET nav_at_creation = 1.0 WHERE nav_at_creation != 1.0")
+        .execute(&pool)
+        .await
+    {
+        Ok(r) if r.rows_affected() > 0 => {
+            info!(fixed = r.rows_affected(), "Reset itp_meta nav_at_creation to $1");
+        }
+        Err(e) => warn!(error = %e, "Failed to reset itp_meta nav_at_creation"),
+        _ => {}
+    }
 
     info!("Points engine started");
 

@@ -12,6 +12,7 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
+import { usePoints } from '@/hooks/usePoints'
 
 // ── Navigation ────────────────────────────────────────────
 const PRIMARY_NAV = [
@@ -52,6 +53,8 @@ export function Header() {
   const chainId = useChainId()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const isWrongNetwork = isConnected && chainId !== indexL3.id
+
+  const { points } = usePoints(address)
 
   const { data: usdcRaw } = useReadContract({
     address: USDC_ADDRESS,
@@ -206,19 +209,6 @@ export function Header() {
                     )}
                   </button>
                 ))}
-                {/* Docs — secondary, desktop only */}
-                <a
-                  href="https://docs.generalmarket.io"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`ml-2 px-3 py-5 text-caption transition-colors duration-300 ${
-                    isDark
-                      ? 'text-zinc-500 hover:text-zinc-300'
-                      : 'text-text-secondary hover:text-black'
-                  }`}
-                >
-                  {t('footer.docs')}
-                </a>
               </nav>
 
               {/* Right side — Links + Balance + Wallet + Hamburger */}
@@ -241,7 +231,7 @@ export function Header() {
                     isDark ? 'text-text-muted hover:text-white' : 'text-text-muted hover:text-black'
                   }`}
                 >
-                  0 pts
+                  {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
                 </Link>
                 <div className="hidden sm:block">
                   <LanguageSwitcher variant={isDark ? 'dark' : 'light'} />
@@ -390,8 +380,8 @@ export function Header() {
                         )}
 
                         {[
-                          { href: 'https://docs.generalmarket.io', label: t('footer.docs'), external: true },
                           { href: 'https://discord.gg/xsfgzwR6', label: t('footer.discord'), external: true },
+                          { href: 'https://docs.generalmarket.io', label: t('footer.docs'), external: true },
                           { href: '/privacy', label: t('footer.privacy_policy'), external: false },
                           { href: '/terms', label: t('footer.terms_of_service'), external: false },
                         ].map((item) => item.external ? (
