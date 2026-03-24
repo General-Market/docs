@@ -150,15 +150,15 @@ impl BatchLifecycleManager {
             return;
         }
 
-        // Build per-source state
-        let mut sources: Vec<SourceState> = source_names
+        // Build per-source state, each wrapped in Arc<Mutex> for independent mutation
+        let sources: Vec<Arc<tokio::sync::Mutex<SourceState>>> = source_names
             .iter()
             .enumerate()
             .map(|(i, name)| {
                 let batch_version = std::env::var("BATCH_VERSION").unwrap_or_else(|_| "v2".to_string());
                 let versioned = format!("{}_{}", name, batch_version);
                 let source_id = H256::from(keccak256(versioned.as_bytes()));
-                SourceState {
+                Arc::new(tokio::sync::Mutex::new(SourceState {
                     source_name: name.clone(),
                     source_id,
                     tick_duration_secs: 0, // populated on first config fetch
@@ -168,24 +168,23 @@ impl BatchLifecycleManager {
                     stagger_offset: std::time::Duration::from_secs(
                         SOURCE_STAGGER_SECS * i as u64,
                     ),
-                }
+                }))
             })
             .collect();
 
         info!(
             source_count = source_names.len(),
-            "BatchLifecycleManager starting — all sources are round-based"
+            "BatchLifecycleManager starting — all sources are round-based (concurrent)"
         );
 
         // Fetch initial tick durations from data-node recommended configs
-        if let Err(e) = self.populate_tick_durations(&mut sources).await {
+        if let Err(e) = self.populate_tick_durations(&sources).await {
             warn!(error = %e, "Failed to fetch initial tick durations — will retry");
         }
 
-        // Sort by tick_duration ascending — short-tick sources get serviced first.
-        // The lifecycle loop is sequential, so alphabetical ordering starves sources
-        // in the second half when large-market sources (twitch, polymarket) block.
-        sources.sort_by_key(|s| s.tick_duration_secs);
+        // Semaphore: limit concurrent source processing to avoid thundering herd
+        const MAX_CONCURRENT_SOURCES: usize = 10;
+        let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_SOURCES));
 
         // Poll interval: 1 second (fine-grained enough to respect stagger offsets)
         let poll_interval = tokio::time::Duration::from_secs(1);
@@ -195,130 +194,136 @@ impl BatchLifecycleManager {
             interval.tick().await;
 
             let now_instant = std::time::Instant::now();
+            let mut join_set: JoinSet<()> = JoinSet::new();
 
-            for source in &mut sources {
-                // Skip sources without a known tick duration (config not yet fetched)
-                if source.tick_duration_secs == 0 {
-                    continue;
-                }
+            for source_lock in &sources {
+                // Quick check under lock: is this source due?
+                let due_info = {
+                    let mut source = source_lock.lock().await;
 
-                let elapsed = now_instant.duration_since(source.last_heartbeat);
-                let required = std::time::Duration::from_secs(source.tick_duration_secs)
-                    + source.stagger_offset;
+                    if source.tick_duration_secs == 0 {
+                        None
+                    } else {
+                        let elapsed = now_instant.duration_since(source.last_heartbeat);
+                        let required = std::time::Duration::from_secs(source.tick_duration_secs)
+                            + source.stagger_offset;
 
-                // On first iteration, stagger_offset delays the first heartbeat.
-                // After the first heartbeat, stagger_offset is zeroed out —
-                // subsequent heartbeats fire at tick_duration intervals.
-                if elapsed < required {
-                    continue;
-                }
+                        if elapsed < required {
+                            None
+                        } else {
+                            // Mark heartbeat now so the next poll won't re-fire
+                            source.last_heartbeat = now_instant;
+                            source.stagger_offset = std::time::Duration::ZERO;
+                            Some((source.source_name.clone(), source.source_id))
+                        }
+                    }
+                };
 
-                // Fire heartbeat
-                source.last_heartbeat = now_instant;
-                // After first heartbeat, remove stagger so subsequent ticks are regular
-                source.stagger_offset = std::time::Duration::ZERO;
+                let (source_name, source_id) = match due_info {
+                    Some(info) => info,
+                    None => continue,
+                };
 
-                info!(
-                    source = %source.source_name,
-                    tick_duration = source.tick_duration_secs,
-                    current_batch = ?source.current_batch_id,
-                    previous_batch = ?source.previous_batch_id,
-                    "Lifecycle heartbeat"
-                );
+                // Spawn a task for this source's heartbeat
+                let mgr = Arc::clone(&self);
+                let sem = Arc::clone(&semaphore);
+                let src_lock = Arc::clone(source_lock);
 
-                // Step 1: Resolve previous batch if it exists
-                if let Some(prev_id) = source.previous_batch_id {
-                    match self.resolve_and_settle(prev_id, &source.source_name).await {
-                        Ok(settlement) => {
-                            info!(
-                                source = %source.source_name,
-                                batch_id = prev_id,
-                                players = settlement.players.len(),
-                                total_markets = settlement.total_markets,
-                                "Round settled"
-                            );
-                            // Record settlement in DB
-                            if let Err(e) = self.record_settlement(&settlement).await {
-                                error!(
+                join_set.spawn(async move {
+                    // Acquire semaphore permit — blocks if MAX_CONCURRENT_SOURCES active
+                    let _permit = match sem.acquire().await {
+                        Ok(p) => p,
+                        Err(_) => return, // semaphore closed
+                    };
+
+                    // Read state snapshot
+                    let prev_batch_id = {
+                        let source = src_lock.lock().await;
+                        info!(
+                            source = %source.source_name,
+                            tick_duration = source.tick_duration_secs,
+                            current_batch = ?source.current_batch_id,
+                            previous_batch = ?source.previous_batch_id,
+                            "Lifecycle heartbeat"
+                        );
+                        source.previous_batch_id
+                    };
+
+                    // Step 1: Resolve previous batch if it exists
+                    if let Some(prev_id) = prev_batch_id {
+                        match mgr.resolve_and_settle(prev_id, &source_name).await {
+                            Ok(settlement) => {
+                                info!(
+                                    source = %source_name,
                                     batch_id = prev_id,
-                                    error = %e,
-                                    "Failed to record settlement in DB"
+                                    players = settlement.players.len(),
+                                    total_markets = settlement.total_markets,
+                                    "Round settled"
                                 );
+                                if let Err(e) = mgr.record_settlement(&settlement).await {
+                                    error!(batch_id = prev_id, error = %e, "Failed to record settlement in DB");
+                                }
+                                if let Err(e) = mgr.sign_and_aggregate_settlement(&settlement).await {
+                                    error!(batch_id = prev_id, error = %e, "Settlement BLS signing/aggregation failed");
+                                }
+                                if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
+                                    error!(batch_id = prev_id, error = %e, "mark_settled failed");
+                                }
+                                if let Err(e) = mgr.bitmap_store.purge_batch_from_db(&mgr.pool, prev_id).await {
+                                    error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                                }
                             }
+                            Err(e) => {
+                                warn!(source = %source_name, batch_id = prev_id, error = %e, "Failed to resolve previous round");
+                            }
+                        }
+                        src_lock.lock().await.previous_batch_id = None;
+                    }
 
-                            // BLS sign + aggregate in shared DB, submit on-chain at quorum
-                            if let Err(e) = self.sign_and_aggregate_settlement(&settlement).await {
-                                error!(
-                                    batch_id = prev_id,
-                                    error = %e,
-                                    "Settlement BLS signing/aggregation failed"
-                                );
-                            }
+                    // Step 2: Rotate current → previous
+                    {
+                        let mut source = src_lock.lock().await;
+                        source.previous_batch_id = source.current_batch_id.take();
+                    }
 
-                            // Cleanup: mark settled in scheduler, purge bitmaps
-                            if let Err(e) = self.scheduler.mark_settled(&self.pool, prev_id).await {
-                                error!(batch_id = prev_id, error = %e, "mark_settled failed");
-                            }
-                            if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, prev_id).await {
-                                error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                    // Step 3: Create new batch
+                    match mgr.create_new_round(&source_name).await {
+                        Ok(lifecycle_id) => {
+                            let on_chain_id = mgr.poll_for_on_chain_batch(
+                                source_id,
+                                &source_name,
+                            ).await;
+
+                            match on_chain_id {
+                                Some(id) => {
+                                    info!(
+                                        source = %source_name,
+                                        lifecycle_id,
+                                        on_chain_batch_id = id,
+                                        "New round created — on-chain batch resolved"
+                                    );
+                                    src_lock.lock().await.current_batch_id = Some(id);
+                                }
+                                None => {
+                                    warn!(
+                                        source = %source_name,
+                                        lifecycle_id,
+                                        "New round created but on-chain batch not yet visible in scheduler — will resolve next heartbeat"
+                                    );
+                                }
                             }
                         }
                         Err(e) => {
-                            warn!(
-                                source = %source.source_name,
-                                batch_id = prev_id,
-                                error = %e,
-                                "Failed to resolve previous round"
-                            );
+                            warn!(source = %source_name, error = %e, "Failed to create new round — will retry next heartbeat");
                         }
                     }
-                    source.previous_batch_id = None;
-                }
+                });
+            }
 
-                // Step 2: Rotate current → previous
-                source.previous_batch_id = source.current_batch_id.take();
-
-                // Step 3: Create new batch (fetch fresh config from data-node)
-                match self.create_new_round(&source.source_name).await {
-                    Ok(lifecycle_id) => {
-                        // create_new_round returns a Postgres lifecycle ID, not the
-                        // on-chain batch_id. The chain listener registers the real
-                        // batch via BatchCreated events. Poll the scheduler briefly
-                        // to resolve the on-chain ID — that's what resolve_and_settle
-                        // needs when this batch rotates into previous_batch_id.
-                        let on_chain_id = self.poll_for_on_chain_batch(
-                            source.source_id,
-                            &source.source_name,
-                        ).await;
-
-                        match on_chain_id {
-                            Some(id) => {
-                                info!(
-                                    source = %source.source_name,
-                                    lifecycle_id,
-                                    on_chain_batch_id = id,
-                                    "New round created — on-chain batch resolved"
-                                );
-                                source.current_batch_id = Some(id);
-                            }
-                            None => {
-                                warn!(
-                                    source = %source.source_name,
-                                    lifecycle_id,
-                                    "New round created but on-chain batch not yet visible in scheduler — will resolve next heartbeat"
-                                );
-                                // Store nothing; next heartbeat will create a fresh batch.
-                                // Better to skip one round than settle with the wrong ID.
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        warn!(
-                            source = %source.source_name,
-                            error = %e,
-                            "Failed to create new round — will retry next heartbeat"
-                        );
-                    }
+            // Await all spawned source tasks before next poll
+            while let Some(result) = join_set.join_next().await {
+                if let Err(e) = result {
+                    error!(error = %e, "Source lifecycle task panicked");
                 }
             }
         }
@@ -329,12 +334,13 @@ impl BatchLifecycleManager {
     /// Fetch recommended configs from data-node to populate tick durations.
     async fn populate_tick_durations(
         &self,
-        sources: &mut [SourceState],
+        sources: &[Arc<tokio::sync::Mutex<SourceState>>],
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let recommended =
             batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await?;
 
-        for source in sources.iter_mut() {
+        for source_lock in sources {
+            let mut source = source_lock.lock().await;
             // Match by source name (data-node uses raw names, not hashes)
             if let Some(batch) = recommended.iter().find(|b| b.source_id == source.source_name) {
                 source.tick_duration_secs = batch.tick_duration_secs;

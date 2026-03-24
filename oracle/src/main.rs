@@ -690,6 +690,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     Some(lm_sign_rx),
                                     lm_peer_id,
                                 );
+                                let lm = std::sync::Arc::new(lm);
                                 tokio::spawn(async move { lm.run().await });
                                 info!(
                                     sources = ?Vec::<String>::new() /* round_based_sources deleted */,
@@ -728,6 +729,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             None, // no co-sign rx
                             lm_peer_id,
                         );
+                        let lm = std::sync::Arc::new(lm);
                         tokio::spawn(async move { lm.run().await });
                         info!(
                             sources = ?Vec::<String>::new() /* round_based_sources deleted */,
