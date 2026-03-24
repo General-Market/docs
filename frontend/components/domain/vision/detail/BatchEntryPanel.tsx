@@ -11,7 +11,7 @@ import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
-import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
+import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringPress } from '@/components/ui/spring'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import StrategyList from './StrategyList'
@@ -23,6 +23,8 @@ interface BatchEntryPanelProps {
   sourceId: string
   /** All market IDs relevant to this source */
   marketIds?: string[]
+  /** ISO timestamp when betting closes for current round */
+  bettingEnd?: string | null
 }
 
 const ERC20_BALANCE_ABI = [
@@ -39,13 +41,19 @@ export default function BatchEntryPanel({
   bitmapEditor,
   sourceId,
   marketIds = [],
+  bettingEnd,
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
+
+  // -- Contract addresses from deployment.json (auto-synced) --
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+  const usdcAddress = getAddress('L3_WUSDC')
+
   // -- Batch data --
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
-    // Prefer the LATEST non-paused batch for this source (highest ID = most recent round)
     const matching = batches
       .filter(b => b.sourceId === sourceId && !b.paused)
       .sort((a, b) => b.id - a.id)
@@ -55,12 +63,12 @@ export default function BatchEntryPanel({
   // -- Read configHash from on-chain batch state --
   const activeBatchId = activeBatch?.id ?? null
   const { data: onChainBatch } = useReadContract({
-    address: VISION_ADDRESS,
+    address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getBatch',
     args: activeBatchId !== null ? [BigInt(activeBatchId)] : undefined,
     chainId: indexL3.id,
-    query: { enabled: activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: activeBatchId !== null && visionAddress !== '0x0000000000000000000000000000000000000000' },
   })
   const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
 
@@ -83,8 +91,6 @@ export default function BatchEntryPanel({
   }, [connect, connectors])
 
   // -- Wallet USDC balance (round-based: no Vision balance pool) --
-  const { getAddress } = useDeployment()
-  const usdcAddress = getAddress('L3_WUSDC')
   const { data: walletUsdcRaw, isLoading: isBalanceLoading } = useReadContract({
     address: usdcAddress,
     abi: ERC20_BALANCE_ABI,
@@ -142,8 +148,11 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const allMarketsSet = counts.empty === 0 && marketIds.length > 0
+  const depositAmount = hasStake ? BigInt(Math.round(stakeValue * 1e18)) : 0n
+  const exceedsBalance = isConnected && hasStake && depositAmount > walletUsdc
+  const bettingClosed = bettingEnd ? new Date(bettingEnd).getTime() < Date.now() : false
   const canSubmit = isConnected && hasStake && joinStep === 'idle'
-    && !isJoined && allMarketsSet && !!configHash
+    && !isJoined && allMarketsSet && !!configHash && !exceedsBalance && !bettingClosed
 
   // -- Enter round handler --
   const handleEnterBatch = useCallback(async () => {
@@ -159,7 +168,7 @@ export default function BatchEntryPanel({
     try {
       if (publicClient) {
         const batchData = await publicClient.readContract({
-          address: VISION_ADDRESS,
+          address: visionAddress,
           abi: VISION_ABI,
           functionName: 'getBatch',
           args: [BigInt(activeBatch.id)],
@@ -221,15 +230,16 @@ export default function BatchEntryPanel({
   // -- Button label --
   const buttonLabel = useMemo(() => {
     if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
+    if (bettingClosed) return 'Betting closed — next round soon'
+    if (isJoined || joinStep === 'done') return 'In Round'
     if (isSubmitting) return t('batch_entry_panel.submitting')
     if (isJoinConfirming) return t('batch_entry_panel.confirming')
     if (isJoinPending) return t('batch_entry_panel.waiting_for_wallet')
     if (joinStep === 'approving') return 'Approving USDC...'
     if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
-    if (isJoined) return 'In Round'
     if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
     return t('batch_entry_panel.enter_batch')
-  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined])
+  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined, bettingClosed])
 
   const isProcessing = joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done'
 
@@ -380,6 +390,29 @@ export default function BatchEntryPanel({
                 </button>
               ))}
             </div>
+            {/* Balance display + max button */}
+            {isConnected && (
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-[10px] text-neutral-400">
+                  Balance: {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const max = parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS))
+                    if (max > 0) setStakeInput(String(Math.floor(max * 100) / 100))
+                  }}
+                  className="text-[10px] font-semibold text-neutral-500 hover:text-neutral-700 transition-colors"
+                >
+                  MAX
+                </button>
+              </div>
+            )}
+            {exceedsBalance && (
+              <p className="text-[10px] text-red-500 mt-1">
+                Insufficient balance. You have {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC.
+              </p>
+            )}
           </div>
         )}
 

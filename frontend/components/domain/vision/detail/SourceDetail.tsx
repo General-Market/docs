@@ -77,14 +77,10 @@ function CountdownTimer({ bettingEnd, tickDuration }: { bettingEnd: string | nul
   }, [bettingEnd])
   if (!bettingEnd) return <span className="text-text-muted">--:--</span>
   if (remaining <= 0) {
-    // Show settlement progress — next round starts soon
     const td = tickDuration || 300
-    const pct = Math.min(100, Math.round((overdue / td) * 100))
-    return (
-      <span className="text-amber-600 animate-pulse">
-        Next round ~{Math.max(0, td - overdue)}s
-      </span>
-    )
+    const eta = Math.max(0, td - overdue)
+    if (eta <= 0) return <span className="text-amber-600 animate-pulse">Settling...</span>
+    return <span className="text-amber-600 animate-pulse">Next round ~{eta}s</span>
   }
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
@@ -281,6 +277,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                 bitmapEditor={bitmapEditor}
                 sourceId={sourceId}
                 marketIds={marketIds}
+                bettingEnd={activeRound?.bettingEnd}
               />
             </div>
           </div>
