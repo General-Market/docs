@@ -133,10 +133,10 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const sseNavList = useSSENav()
   const [restNavList, setRestNavList] = useState<NavSnapshot[]>([])
 
-  // Always fetch REST immediately for fast initial render, SSE takes over when connected
+  // Fetch REST on mount + poll every 30s so new ITPs appear without page reload
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    const fetchRanking = async () => {
       try {
         const res = await fetch('/api/dn/aum-ranking')
         if (!res.ok || cancelled) return
@@ -155,9 +155,11 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
           })))
         }
       } catch (e) { console.error('[ItpListing] REST nav fetch failed:', e) }
-    })()
-    return () => { cancelled = true }
-  }, []) // Run once on mount
+    }
+    fetchRanking()
+    const interval = setInterval(fetchRanking, 30_000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [])
 
   const navList = sseNavList.length > 0 && sseNavList.some(n => (n.nav_per_share ?? 0) > 0)
     ? sseNavList
