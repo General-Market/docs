@@ -1,10 +1,10 @@
 //! Points system — 10,000 pts/day across three pools.
 //!
-//! - Vision (5,000/day): awarded when rounds settle, proportional to deposit size
+//! - Vision (5,000/day): hourly, proportional to deposit size across active batches
 //! - Index Creator (2,500/day): hourly, ranked by ITP NAV growth, 0.7x exponential decay
 //! - Index Holder (2,500/day): hourly, ranked by weighted portfolio performance, 0.7x decay
 //!
-//! All computation lives here. The oracle provides settled round data.
+//! Vision points use live deposit data from the oracle's batch state endpoints.
 //! ITP data comes from chain cache + itp_meta table.
 
 use std::collections::HashMap;
@@ -22,7 +22,7 @@ use crate::chain_cache::ChainCache;
 // ── Budget constants ──────────────────────────────────────────────────────
 
 /// Vision pool: 5,000 pts/day = ~208.33 pts/hr
-const VISION_BUDGET_PER_DAY: f64 = 5_000.0;
+const VISION_BUDGET_PER_HOUR: f64 = 5_000.0 / 24.0;
 
 /// Index Creator pool: 2,500 pts/day = ~104.17 pts/hr
 const CREATOR_BUDGET_PER_HOUR: f64 = 2_500.0 / 24.0;
@@ -33,37 +33,35 @@ const HOLDER_BUDGET_PER_HOUR: f64 = 2_500.0 / 24.0;
 /// Exponential decay factor for ranked distributions
 const DECAY_FACTOR: f64 = 0.7;
 
-// ── Oracle types ──────────────────────────────────────────────────────────
+// ── Oracle batch types ────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
-struct OracleRound {
-    #[serde(alias = "batch_id", alias = "batchId")]
-    batch_id: i64,
-    #[serde(alias = "settled_at", alias = "settledAt")]
-    settled_at: Option<String>,
-    #[serde(alias = "player_count", alias = "playerCount")]
-    player_count: Option<i64>,
-    status: Option<String>,
+struct OracleBatchSummary {
+    id: u64,
+    #[serde(default)]
+    player_count: usize,
 }
 
 #[derive(Debug, Deserialize)]
-struct OracleRoundResult {
-    #[serde(alias = "batch_id", alias = "batchId")]
-    batch_id: i64,
-    settled: Option<bool>,
-    players: Option<Vec<OraclePlayerResult>>,
+struct OracleBatchesResponse {
+    batches: Vec<OracleBatchSummary>,
 }
 
 #[derive(Debug, Deserialize)]
-struct OraclePlayerResult {
-    player: String,
-    deposited: String,
-    payout: String,
-    pnl: String,
-    #[serde(alias = "correct_count", alias = "correctCount")]
-    correct_count: Option<i64>,
-    #[serde(alias = "total_markets", alias = "totalMarkets")]
-    total_markets: Option<i64>,
+struct OracleBatchState {
+    #[serde(default)]
+    players: Vec<OracleBatchPlayer>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OracleBatchPlayer {
+    address: String,
+    /// Total deposit balance in wei (18 decimals)
+    #[serde(default)]
+    balance: String,
+    /// Stake per tick in wei (18 decimals)
+    #[serde(default)]
+    stake_per_tick: String,
 }
 
 // ── API response types ────────────────────────────────────────────────────
@@ -177,73 +175,109 @@ async fn ensure_itp_meta(
 
 // ── Vision points ─────────────────────────────────────────────────────────
 
-/// Process a settled round: distribute vision points proportional to deposit.
-///
-/// Per-round budget = VISION_BUDGET_PER_DAY / estimated_rounds_per_day.
-/// We estimate rounds_per_day from the number of rounds settled in the last hour × 24.
-/// Minimum: 10 pts/round (prevents dust when many rounds settle).
-/// Maximum: 500 pts/round (prevents single-round gorging when few rounds exist).
-async fn process_settled_round(
+/// Award vision points for the current hour based on deposits in active batches.
+/// Polls all active batches from the oracle, sums each player's deposits,
+/// and distributes VISION_BUDGET_PER_HOUR proportionally.
+async fn award_vision_points(
     pool: &PgPool,
     oracle_url: &str,
     client: &reqwest::Client,
-    batch_id: i64,
-    rounds_last_hour: u64,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
-    // Check if we already processed this round
+    let hour_key = Utc::now().format("%Y-%m-%dT%H").to_string();
+    let reason = format!("vision:hourly:{}", hour_key);
+
+    // Check idempotency
     let existing: (i64,) = sqlx::query_as(
         "SELECT COUNT(*) FROM points_ledger WHERE reason = $1 AND pool = 'vision'",
     )
-    .bind(format!("vision:round:{}", batch_id))
+    .bind(&reason)
     .fetch_one(pool)
     .await?;
 
     if existing.0 > 0 {
-        debug!(batch_id, "Round already processed for points, skipping");
+        debug!(hour = %hour_key, "Vision points already awarded this hour");
         return Ok(0);
     }
 
-    // Fetch round results from oracle
-    let url = format!("{}/vision/rounds/{}/results", oracle_url, batch_id);
+    // Fetch all active batches from oracle
+    let url = format!("{}/vision/batches", oracle_url);
     let resp = client.get(&url).send().await?;
     if !resp.status().is_success() {
-        return Err(format!("Oracle returned {} for round {}", resp.status(), batch_id).into());
+        return Err(format!("Oracle returned {} for batches", resp.status()).into());
     }
 
-    let results: OracleRoundResult = resp.json().await?;
-    let players = results.players.unwrap_or_default();
-    if players.is_empty() {
-        debug!(batch_id, "Round has no players, skipping");
+    let batches_resp: OracleBatchesResponse = resp.json().await?;
+    let active_batches: Vec<&OracleBatchSummary> = batches_resp
+        .batches
+        .iter()
+        .filter(|b| b.player_count > 0)
+        .collect();
+
+    if active_batches.is_empty() {
+        debug!("No active batches with players, skipping vision points");
         return Ok(0);
     }
 
-    // Compute per-round budget
-    // Estimate rounds/day from last hour's rate (minimum 1 round/hr → 24/day)
-    let est_rounds_per_day = (rounds_last_hour.max(1) as f64) * 24.0;
-    let round_budget = (VISION_BUDGET_PER_DAY / est_rounds_per_day)
-        .max(10.0)
-        .min(500.0);
+    // For each batch with players, fetch state to get deposit amounts
+    let mut player_deposits: HashMap<String, f64> = HashMap::new();
 
-    // Total deposits for this round
-    let total_deposited: f64 = players
-        .iter()
-        .map(|p| parse_wei_to_f64(&p.deposited))
-        .sum();
+    for batch in &active_batches {
+        let state_url = format!("{}/vision/batch/{}/state", oracle_url, batch.id);
+        let state_resp = match client.get(&state_url).send().await {
+            Ok(r) if r.status().is_success() => r,
+            Ok(r) => {
+                debug!(batch_id = batch.id, status = %r.status(), "Skipping batch state fetch");
+                continue;
+            }
+            Err(e) => {
+                debug!(batch_id = batch.id, error = %e, "Failed to fetch batch state");
+                continue;
+            }
+        };
 
+        let state: OracleBatchState = match state_resp.json().await {
+            Ok(s) => s,
+            Err(e) => {
+                debug!(batch_id = batch.id, error = %e, "Failed to parse batch state");
+                continue;
+            }
+        };
+
+        for player in &state.players {
+            // Use balance (total deposit) or fall back to stake_per_tick
+            let deposit_str = if !player.balance.is_empty() && player.balance != "0" {
+                &player.balance
+            } else {
+                &player.stake_per_tick
+            };
+            let deposit = parse_wei_to_f64(deposit_str);
+            if deposit > 0.0 {
+                *player_deposits
+                    .entry(player.address.to_lowercase())
+                    .or_insert(0.0) += deposit;
+            }
+        }
+    }
+
+    if player_deposits.is_empty() {
+        debug!("No player deposits found across active batches");
+        return Ok(0);
+    }
+
+    // Total deposits across all players
+    let total_deposited: f64 = player_deposits.values().sum();
     if total_deposited <= 0.0 {
         return Ok(0);
     }
 
-    // Distribute proportionally
-    let reason = format!("vision:round:{}", batch_id);
-    let awards: Vec<_> = players
+    // Distribute proportionally to deposits
+    let awards: Vec<_> = player_deposits
         .iter()
-        .map(|p| {
-            let deposit = parse_wei_to_f64(&p.deposited);
+        .map(|(player, deposit)| {
             let share = deposit / total_deposited;
-            let pts = round_budget * share;
+            let pts = VISION_BUDGET_PER_HOUR * share;
             (
-                p.player.to_lowercase(),
+                player.clone(),
                 "vision".to_string(),
                 pts,
                 reason.clone(),
@@ -255,10 +289,11 @@ async fn process_settled_round(
     let inserted = award_points(pool, &awards).await?;
     if inserted > 0 {
         info!(
-            batch_id,
-            players = players.len(),
-            budget = format!("{:.1}", round_budget),
-            "Vision points awarded for round"
+            hour = %hour_key,
+            batches = active_batches.len(),
+            players = player_deposits.len(),
+            total_tvl = format!("{:.2}", total_deposited),
+            "Vision points awarded"
         );
     }
 
@@ -822,29 +857,7 @@ pub async fn run(pool: PgPool, chain_cache: Arc<ChainCache>, oracle_url: String)
         .build()
         .unwrap_or_default();
 
-    // Track which rounds we've seen as settled
-    let mut processed_rounds: std::collections::HashSet<i64> = std::collections::HashSet::new();
-
-    // Pre-load already processed rounds from DB
-    let existing: Vec<(String,)> = sqlx::query_as(
-        "SELECT DISTINCT reason FROM points_ledger WHERE pool = 'vision' AND reason LIKE 'vision:round:%'",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap_or_default();
-
-    for (reason,) in existing {
-        if let Some(id_str) = reason.strip_prefix("vision:round:") {
-            if let Ok(id) = id_str.parse::<i64>() {
-                processed_rounds.insert(id);
-            }
-        }
-    }
-
-    info!(
-        already_processed = processed_rounds.len(),
-        "Points engine started"
-    );
+    info!("Points engine started");
 
     let mut last_hourly_run: Option<u32> = None;
     let mut last_backup_hour: Option<u32> = None;
@@ -858,8 +871,9 @@ pub async fn run(pool: PgPool, chain_cache: Arc<ChainCache>, oracle_url: String)
     loop {
         interval.tick().await;
 
-        // ── CSV backup every 4 hours ──
         let current_hour = Utc::now().hour();
+
+        // ── CSV backup every 4 hours ──
         if current_hour % BACKUP_INTERVAL_HOURS == 0 && last_backup_hour != Some(current_hour) {
             last_backup_hour = Some(current_hour);
             if let Err(e) = backup_points_to_csv(&pool).await {
@@ -867,44 +881,14 @@ pub async fn run(pool: PgPool, chain_cache: Arc<ChainCache>, oracle_url: String)
             }
         }
 
-        // ── Vision: check for newly settled rounds ──
-        match fetch_settled_rounds(&client, &oracle_url).await {
-            Ok(rounds) => {
-                let rounds_last_hour = rounds.len() as u64;
-                for round in rounds {
-                    if processed_rounds.contains(&round.batch_id) {
-                        continue;
-                    }
-
-                    match process_settled_round(
-                        &pool,
-                        &oracle_url,
-                        &client,
-                        round.batch_id,
-                        rounds_last_hour,
-                    )
-                    .await
-                    {
-                        Ok(n) => {
-                            processed_rounds.insert(round.batch_id);
-                            if n > 0 {
-                                debug!(batch_id = round.batch_id, awards = n, "Round processed");
-                            }
-                        }
-                        Err(e) => {
-                            warn!(batch_id = round.batch_id, error = %e, "Failed to process round");
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                warn!(error = %e, "Failed to fetch settled rounds");
-            }
-        }
-
-        // ── Index: hourly cron at :00 ──
+        // ── All pools: hourly cron at :00 ──
         if last_hourly_run != Some(current_hour) {
             last_hourly_run = Some(current_hour);
+
+            // Vision points (deposit-proportional across active batches)
+            if let Err(e) = award_vision_points(&pool, &oracle_url, &client).await {
+                error!(error = %e, "Failed to award vision points");
+            }
 
             // Creator points
             if let Err(e) = award_creator_points(&pool, &chain_cache).await {
@@ -919,73 +903,3 @@ pub async fn run(pool: PgPool, chain_cache: Arc<ChainCache>, oracle_url: String)
     }
 }
 
-/// Fetch recently settled rounds from oracle.
-/// Returns rounds settled in the last hour for budget estimation.
-async fn fetch_settled_rounds(
-    client: &reqwest::Client,
-    oracle_url: &str,
-) -> Result<Vec<OracleRound>, Box<dyn std::error::Error + Send + Sync>> {
-    // Try the rounds endpoint first
-    let url = format!("{}/vision/rounds/active", oracle_url);
-    let resp = client.get(&url).send().await?;
-
-    if !resp.status().is_success() {
-        // Fall back to batches endpoint
-        let url2 = format!("{}/vision/batches", oracle_url);
-        let resp2 = client.get(&url2).send().await?;
-        if !resp2.status().is_success() {
-            return Err(format!("Oracle returned {}", resp2.status()).into());
-        }
-        let data: serde_json::Value = resp2.json().await?;
-        let batches = data["batches"].as_array().cloned().unwrap_or_default();
-        let rounds: Vec<OracleRound> = batches
-            .into_iter()
-            .filter_map(|b| serde_json::from_value(b).ok())
-            .filter(|r: &OracleRound| {
-                r.settled_at.is_some()
-                    || r.status.as_deref() == Some("settled")
-            })
-            .collect();
-        return Ok(rounds);
-    }
-
-    let data: serde_json::Value = resp.json().await?;
-    let rounds_arr = data["rounds"].as_array().cloned().unwrap_or_default();
-
-    // Also fetch settled rounds — active endpoint only returns non-settled
-    let settled_url = format!("{}/vision/batches?include_settled=true", oracle_url);
-    let settled_resp = client.get(&settled_url).send().await;
-    let mut all_rounds: Vec<OracleRound> = Vec::new();
-
-    // Parse active rounds
-    for r in rounds_arr {
-        if let Ok(round) = serde_json::from_value::<OracleRound>(r) {
-            if round.settled_at.is_some() || round.status.as_deref() == Some("settled") {
-                all_rounds.push(round);
-            }
-        }
-    }
-
-    // Parse settled batches if available
-    if let Ok(resp) = settled_resp {
-        if resp.status().is_success() {
-            if let Ok(data) = resp.json::<serde_json::Value>().await {
-                let batches = data["batches"].as_array().cloned().unwrap_or_default();
-                for b in batches {
-                    if let Ok(round) = serde_json::from_value::<OracleRound>(b) {
-                        if round.settled_at.is_some()
-                            || round.status.as_deref() == Some("settled")
-                        {
-                            // Deduplicate
-                            if !all_rounds.iter().any(|r| r.batch_id == round.batch_id) {
-                                all_rounds.push(round);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(all_rounds)
-}

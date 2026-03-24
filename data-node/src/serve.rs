@@ -2593,7 +2593,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         tokio::spawn(async move {
             crate::points::run(points_pool, points_chain_cache, points_oracle_url).await;
         });
-        info!("Points engine started (Vision=30s poll, Index=hourly)");
+        info!("Points engine started (all pools hourly)");
     }
 
     // Clone pool for explorer API before app_state is moved into the main router
