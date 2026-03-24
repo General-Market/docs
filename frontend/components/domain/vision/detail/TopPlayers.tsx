@@ -3,7 +3,7 @@
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SpringRow } from '@/components/ui/spring'
 import { useTranslations } from 'next-intl'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { TopPlayersSkeleton } from '@/components/ui/VisionLoader'
 
 function truncateAddress(address: string): string {
   if (!address || address.length < 12) return address || '--'
@@ -51,9 +51,7 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
           <div className="text-right">{t('top_players.pnl')}</div>
         </div>
 
-        {isLoading && (
-          <VisionLoader context="leaderboard" compact />
-        )}
+        {isLoading && <TopPlayersSkeleton />}
 
         {!isLoading && top5.length === 0 && (
           <div className="px-4 py-6 text-center text-[13px] text-text-muted">

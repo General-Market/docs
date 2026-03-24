@@ -10,7 +10,7 @@ import {
 } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { useTranslations } from 'next-intl'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { MarketsGridSkeleton } from '@/components/ui/VisionLoader'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -636,7 +636,7 @@ export function VisionMarketsGrid() {
           </div>
         ) : !pricesLoaded ? (
           <div className="flex flex-col items-center justify-center h-full">
-            <VisionLoader context="markets" />
+            <MarketsGridSkeleton />
             {/* Mini source breakdown while loading */}
             {enabledSources.length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center max-w-md -mt-8">

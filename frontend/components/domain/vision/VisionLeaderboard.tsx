@@ -2,7 +2,7 @@
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { useTranslations } from 'next-intl'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { LeaderboardSkeleton } from '@/components/ui/VisionLoader'
 
 /**
  * Vision leaderboard showing player rankings by PnL.
@@ -13,7 +13,7 @@ export function VisionLeaderboard() {
   const { leaderboard, isLoading, isError } = useVisionLeaderboard()
 
   if (isLoading) {
-    return <VisionLoader context="leaderboard" compact />
+    return <LeaderboardSkeleton />
   }
 
   if (isError || leaderboard.length === 0) {

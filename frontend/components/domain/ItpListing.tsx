@@ -16,7 +16,7 @@ import { SpringNumber } from '@/components/ui/spring'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useItpCreators } from '@/hooks/useItpCreators'
 import { useItpNames } from '@/hooks/useItpNames'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { ItpTableSkeleton } from '@/components/ui/VisionLoader'
 
 const PROTOCOL_DEPLOYER = '0xc0d3ca67da45613e7c5b2d55f09b00b3c99721f4'
 
@@ -141,10 +141,12 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
         const res = await fetch('/api/dn/aum-ranking')
         if (!res.ok || cancelled) return
         const data = await res.json()
-        if (Array.isArray(data) && data.length > 0 && !cancelled) {
-          setRestNavList(data.map((d: any) => ({
+        // aum-ranking returns { snapshots: [...], all_symbols: {...} }
+        const items = Array.isArray(data) ? data : (data?.snapshots ?? [])
+        if (items.length > 0 && !cancelled) {
+          setRestNavList(items.map((d: any) => ({
             itp_id: d.itp_id || '',
-            name: d.name || '',
+            name: d.name || d.label || '',
             symbol: d.symbol || '',
             nav_per_share: d.nav_per_share || 0,
             total_supply: d.total_supply || '0',
@@ -391,7 +393,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="px-6 lg:px-12 pb-8">
         <div className="max-w-site mx-auto">
           {loading ? (
-            <VisionLoader context="index" />
+            <ItpTableSkeleton />
           ) : sorted.length === 0 ? (
             <div className="text-center py-20 text-text-muted text-body">
               {searchQuery || activeCategory ? t('listing.no_funds_filtered') : t('listing.no_funds')}

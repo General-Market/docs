@@ -10,7 +10,7 @@ import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { SourceCardsSkeleton } from '@/components/ui/VisionLoader'
 
 function assetCountForSource(sourceId: string, assetCounts: Record<string, number>): number {
   if (assetCounts[sourceId]) return assetCounts[sourceId]
@@ -204,7 +204,7 @@ export function SourcesGrid() {
       <div className="px-6 lg:px-12 py-6">
         <div className="max-w-site mx-auto">
           {registryLoading && filteredSources.length === 0 ? (
-            <VisionLoader context="sources" />
+            <SourceCardsSkeleton />
           ) : (
           <div
             ref={gridRef}

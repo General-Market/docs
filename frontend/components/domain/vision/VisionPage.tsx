@@ -9,7 +9,7 @@ import { CreateBatchModal } from './CreateBatchModal'
 import { VisionLeaderboard } from './VisionLeaderboard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { BatchCardsSkeleton } from '@/components/ui/VisionLoader'
 
 export function VisionPage() {
   const t = useTranslations('vision')
@@ -46,7 +46,7 @@ export function VisionPage() {
 
             {/* Cards grid */}
             {isLoading ? (
-              <VisionLoader context="markets" />
+              <BatchCardsSkeleton />
             ) : batches && batches.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
                 {batches.map((batch: BatchInfo) => (

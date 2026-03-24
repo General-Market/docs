@@ -16,7 +16,7 @@ import BatchEntryPanel from './BatchEntryPanel'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
-import { VisionLoader } from '@/components/ui/VisionLoader'
+import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 
 function WalletSourceStats({ sourceId }: { sourceId: string }) {
   const { address } = useAccount()
@@ -181,13 +181,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     : 'Waiting'
 
   if (isRegistryLoading && !initialSource) {
-    return (
-      <div className="px-6 lg:px-12 py-12">
-        <div className="max-w-5xl mx-auto">
-          <VisionLoader context="sources" />
-        </div>
-      </div>
-    )
+    return <SourceDetailSkeleton />
   }
 
   if (!source) {
