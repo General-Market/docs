@@ -432,7 +432,7 @@ impl BatchLifecycleManager {
 
         // Fetch snapshot prices from data-node
         let snapshot_url = format!(
-            "{}/vision/snapshot?source={}&limit=10000",
+            "{}/vision/snapshot?source={}&limit=50000",
             self.config.data_node_url, source_name
         );
         let client = reqwest::Client::builder()
@@ -1129,7 +1129,7 @@ impl BatchLifecycleManager {
         source_name: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let snapshot_url = format!(
-            "{}/vision/snapshot?source={}&limit=10000",
+            "{}/vision/snapshot?source={}&limit=50000",
             self.config.data_node_url, source_name
         );
         let client = reqwest::Client::builder()

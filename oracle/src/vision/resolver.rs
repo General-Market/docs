@@ -391,13 +391,10 @@ fn compute_pct_change_bps(start_price: i128, end_price: i128) -> i64 {
 /// - 12: FLAT_300 — flat if < 300 bps (3%) (ternary: Flat/Up/Down)
 /// - 13: FLAT_3000 — flat if < 3000 bps (30%) (ternary: Flat/Up/Down)
 fn resolve_outcome_bps(pct_change_bps: i64, resolution_type: u8, threshold_bps: u32) -> MarketOutcome {
-    // Zero change → Flat (refund all). A market with no price movement carries
-    // no information — picking a deterministic winner would systematically bias
-    // random bitmaps and drain players via protocol fees.
-    if pct_change_bps == 0 {
-        return MarketOutcome::Flat;
-    }
-
+    // No blanket zero-change override. Each resolution type handles zero correctly:
+    // - Ternary types (UP_0, DOWN_0, FLAT_X) return Flat for zero
+    // - Binary types (UP_30, UP_X, DOWN_30) return the non-favored side for zero
+    // With real start prices (saved at round creation), exact-zero is vanishingly rare.
     let threshold = threshold_bps as i64;
     match resolution_type {
         // UP_0: any positive is UP
