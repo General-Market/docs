@@ -258,7 +258,11 @@
     "assets_count": "{count} assets",
     "more_count": "+{count} more",
     "up": "UP",
-    "down": "DN"
+    "down": "DN",
+    "settlement": "Settlement",
+    "settlement_healthy": "98% settled",
+    "settlement_delayed": "Settling...",
+    "settlement_inactive": "Inactive"
   },
   "next_batches": {
     "live_batches": "Live Batches",

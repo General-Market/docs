@@ -258,7 +258,11 @@
     "assets_count": "{count}개 자산",
     "more_count": "+{count}개",
     "up": "UP",
-    "down": "DN"
+    "down": "DN",
+    "settlement": "정산",
+    "settlement_healthy": "98% 정산됨",
+    "settlement_delayed": "정산 중...",
+    "settlement_inactive": "비활성"
   },
   "next_batches": {
     "live_batches": "라이브 배치",

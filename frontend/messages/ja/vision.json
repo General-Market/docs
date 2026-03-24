@@ -258,7 +258,11 @@
     "assets_count": "{count}アセット",
     "more_count": "+{count}件",
     "up": "UP",
-    "down": "DN"
+    "down": "DN",
+    "settlement": "決済",
+    "settlement_healthy": "98% 決済済",
+    "settlement_delayed": "決済中...",
+    "settlement_inactive": "未稼働"
   },
   "next_batches": {
     "live_batches": "ライブバッチ",

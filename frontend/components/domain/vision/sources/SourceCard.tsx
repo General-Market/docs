@@ -89,6 +89,14 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
   const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
 
+  // Settlement quality derived from source health status
+  const settlementDotColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-red-500'
+  const settlementLabel = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0)
+    ? t('source_card.settlement_healthy')
+    : metaStatus === 'stale'
+      ? t('source_card.settlement_delayed')
+      : t('source_card.settlement_inactive')
+
   // Count-up: start at 0, tick to real value when card enters viewport
   const metricsRef = useRef<HTMLDivElement>(null)
   const [metricsVisible, setMetricsVisible] = useState(false)
@@ -185,7 +193,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
         </div>
 
         {/* Metrics row */}
-        <div ref={metricsRef} className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
+        <div ref={metricsRef} className="grid grid-cols-4 border-t border-b border-border-light -mx-5 px-5 mt-3">
           <div className="py-2.5 pr-3">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.markets')}</div>
             <span className="text-body font-bold text-black font-mono tabular-nums">
@@ -203,9 +211,16 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.type')}</div>
             <span className="text-caption font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
-          <div className="py-2.5 pl-3 border-l border-border-light">
+          <div className="py-2.5 px-3 border-l border-border-light">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.updated')}</div>
             <span className="text-caption font-bold text-black"><LiveAge iso={sourceSnapshot?.generatedAt} /></span>
+          </div>
+          <div className="py-2.5 pl-3 border-l border-border-light">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.settlement')}</div>
+            <span className="flex items-center gap-1">
+              <span className={`w-[5px] h-[5px] rounded-full ${settlementDotColor}`} />
+              <span className="text-caption font-bold text-black truncate">{settlementLabel}</span>
+            </span>
           </div>
         </div>
       </div>

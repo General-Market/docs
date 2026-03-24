@@ -258,7 +258,11 @@
     "assets_count": "{count}个资产",
     "more_count": "+{count}个",
     "up": "UP",
-    "down": "DN"
+    "down": "DN",
+    "settlement": "结算",
+    "settlement_healthy": "98% 已结算",
+    "settlement_delayed": "结算中...",
+    "settlement_inactive": "未激活"
   },
   "next_batches": {
     "live_batches": "实时批次",
