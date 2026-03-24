@@ -210,7 +210,7 @@ export function HomeClient() {
                 <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
                   {/* Group label — aligned with icon column */}
                   <div className="pl-7 pr-6 mb-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55">
                       {group.label}
                     </span>
                   </div>
@@ -227,7 +227,7 @@ export function HomeClient() {
                           className={`group relative w-full flex items-center gap-3 pl-4 pr-3 py-[9px] rounded text-[13px] text-left ${
                             isActive
                               ? 'text-white font-semibold'
-                              : 'text-white/60 hover:text-white/85 hover:bg-white/[0.04]'
+                              : 'text-white/75 hover:text-white hover:bg-white/[0.05]'
                           }`}
                         >
                           {/* ── Morphing blob background ── */}
@@ -243,7 +243,7 @@ export function HomeClient() {
                           {/* ── Accent bar removed ── */}
 
                           <span className={`relative z-10 shrink-0 w-4 h-4 flex items-center justify-center transition-colors duration-200 ${
-                            isActive ? 'text-white' : 'text-white/50 group-hover:text-white/75'
+                            isActive ? 'text-white' : 'text-white/65 group-hover:text-white'
                           }`}>
                             {Icon && <Icon active={isActive} />}
                           </span>
