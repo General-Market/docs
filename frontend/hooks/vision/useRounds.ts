@@ -21,16 +21,24 @@ export function useRounds(sourceId?: string) {
       const res = await fetch(`/api/vision/rounds${params}`)
       if (!res.ok) return []
       const data = await res.json()
-      return (data.rounds ?? []).map((r: any) => ({
-        batchId: r.batchId ?? r.batch_id ?? r.id,
-        sourceId: r.sourceId ?? r.source_id ?? '',
-        status: r.status ?? 'betting',
-        playerCount: r.playerCount ?? r.player_count ?? 0,
-        tvl: r.tvl ?? '0',
-        bettingEnd: r.bettingEnd ?? r.betting_end ?? null,
-        settledAt: r.settledAt ?? r.settled_at ?? null,
-        marketCount: r.marketCount ?? r.market_count ?? 0,
-      }))
+      const now = Date.now()
+      return (data.rounds ?? [])
+        .map((r: any) => ({
+          batchId: r.batchId ?? r.batch_id ?? r.id,
+          sourceId: r.sourceId ?? r.source_id ?? '',
+          status: r.status ?? 'betting',
+          playerCount: r.playerCount ?? r.player_count ?? 0,
+          tvl: r.tvl ?? '0',
+          bettingEnd: r.bettingEnd ?? r.betting_end ?? null,
+          settledAt: r.settledAt ?? r.settled_at ?? null,
+          marketCount: r.marketCount ?? r.market_count ?? 0,
+        }))
+        // Only keep rounds with future bettingEnd (or no bettingEnd set)
+        .filter((r: RoundInfo) => {
+          if (!r.bettingEnd) return true
+          // Allow 2x tick grace period for settlement
+          return new Date(r.bettingEnd).getTime() + 600_000 > now
+        })
     },
     refetchInterval: 5000,
   })
