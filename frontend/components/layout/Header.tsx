@@ -295,13 +295,13 @@ export function Header() {
                 ) : (
                   <button
                     onClick={handleLogin}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-semibold tracking-[-0.01em] rounded-lg transition-all duration-300 fluid-press ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
                       isDark
-                        ? 'bg-white text-zinc-900 hover:bg-zinc-100 shadow-sm'
-                        : 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm'
+                        ? 'border-white/20 text-white hover:bg-white/10'
+                        : 'border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
                     }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     {t('wallet.login')}
                   </button>
                 )}
