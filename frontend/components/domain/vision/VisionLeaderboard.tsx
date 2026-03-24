@@ -2,6 +2,7 @@
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { useTranslations } from 'next-intl'
+import { VisionLoader } from '@/components/ui/VisionLoader'
 
 /**
  * Vision leaderboard showing player rankings by PnL.
@@ -12,15 +13,7 @@ export function VisionLeaderboard() {
   const { leaderboard, isLoading, isError } = useVisionLeaderboard()
 
   if (isLoading) {
-    return (
-      <div className="py-8">
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-12 bg-surface rounded-card animate-pulse" />
-          ))}
-        </div>
-      </div>
-    )
+    return <VisionLoader context="leaderboard" compact />
   }
 
   if (isError || leaderboard.length === 0) {

@@ -10,6 +10,7 @@ import {
 } from '@/hooks/vision/useMarketSnapshot'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { useTranslations } from 'next-intl'
+import { VisionLoader } from '@/components/ui/VisionLoader'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -634,25 +635,11 @@ export function VisionMarketsGrid() {
             )}
           </div>
         ) : !pricesLoaded ? (
-          <div className="flex flex-col items-center justify-center h-full gap-6">
-            {/* Animated loading indicator */}
-            <div className="relative">
-              <div className="w-16 h-16 border-2 border-border-light rounded-full" />
-              <div className="absolute inset-0 w-16 h-16 border-2 border-transparent border-t-brand rounded-full animate-spin" />
-            </div>
-            <div className="text-center font-mono">
-              <p className="text-lg text-text-secondary mb-1">
-                {t('vision_markets_grid.loading_markets', { count: totalAssets > 0 ? totalAssets.toLocaleString() : '50,000+' })}
-              </p>
-              <p className="text-sm text-text-muted">
-                {enabledSources.length > 0
-                  ? t('vision_markets_grid.loading_sources_description', { count: enabledSources.length.toString() })
-                  : t('vision_markets_grid.fetching_data')}
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center h-full">
+            <VisionLoader context="markets" />
             {/* Mini source breakdown while loading */}
             {enabledSources.length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center max-w-md">
+              <div className="flex flex-wrap gap-2 justify-center max-w-md -mt-8">
                 {enabledSources.map((s) => {
                   const count = assetCountBySource[s.sourceId] || 0
                   return (

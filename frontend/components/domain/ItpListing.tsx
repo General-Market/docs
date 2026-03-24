@@ -16,6 +16,7 @@ import { SpringNumber } from '@/components/ui/spring'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useItpCreators } from '@/hooks/useItpCreators'
 import { useItpNames } from '@/hooks/useItpNames'
+import { VisionLoader } from '@/components/ui/VisionLoader'
 
 const PROTOCOL_DEPLOYER = '0xc0d3ca67da45613e7c5b2d55f09b00b3c99721f4'
 
@@ -390,7 +391,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="px-6 lg:px-12 pb-8">
         <div className="max-w-site mx-auto">
           {loading ? (
-            <div className="text-center py-20 text-text-muted text-body">{t('listing.loading_funds')}</div>
+            <VisionLoader context="index" />
           ) : sorted.length === 0 ? (
             <div className="text-center py-20 text-text-muted text-body">
               {searchQuery || activeCategory ? t('listing.no_funds_filtered') : t('listing.no_funds')}

@@ -324,6 +324,32 @@ h1, h2, h3, .type-display, .type-stat-value,
   border-radius: 4px;
 }
 
+/* ── VisionLoader — chart line draws itself, then breathes ── */
+.vision-loader-chart path {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: vl-draw 1.6s var(--ease-out-expo) forwards,
+             vl-breathe 3s ease-in-out 1.6s infinite;
+}
+.vision-loader-glow {
+  opacity: 0.15;
+  filter: blur(3px);
+}
+@keyframes vl-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes vl-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vision-loader-chart path {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.5;
+  }
+}
+
 /* Button interactions — institutional */
 .btn-interactive {
   transition: opacity 0.15s ease;
