@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
@@ -85,10 +85,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const needsOracleName = isConnected && !existingDeployerName
 
   const { switchChainAsync } = useSwitchChain()
+  const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
   const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
   const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: settlementChainId })
 
-  // Toast notifications for ITP creation
+  // Toast notifications for ITP creation (tx is on Settlement, not L3)
   useTransactionNotification({
     hash,
     isPending,
@@ -96,6 +97,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     isSuccess,
     error: (writeError || confirmError) as Error | null,
     label: 'Create ITP',
+    chain: 'settlement',
   })
 
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
@@ -371,6 +373,28 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         prices: prices.map(p => p.toString()),
         metadata: { description, websiteUrl, videoUrl },
       })
+
+      // Pre-simulate on Settlement public client (not wallet provider) to catch
+      // chain-routing issues where wallet's eth_estimateGas hits the wrong chain.
+      if (settlementPublicClient) {
+        try {
+          await settlementPublicClient.simulateContract({
+            address: INDEX_PROTOCOL.bridgeProxy,
+            abi: BRIDGE_PROXY_ABI,
+            functionName: 'requestCreateItp',
+            args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
+            account: address,
+          })
+          console.log('[CreateITP] Pre-simulation passed on Settlement')
+        } catch (simErr: any) {
+          console.error('[CreateITP] Pre-simulation failed:', simErr)
+          const reason = simErr.shortMessage || simErr.message || 'Simulation failed'
+          setTxError(reason.slice(0, 300))
+          capture('create_itp_failed', { error_message: reason.slice(0, 200), step: 'pre_simulate' })
+          return
+        }
+      }
+
       await writeContractAsync({
         address: INDEX_PROTOCOL.bridgeProxy,
         abi: BRIDGE_PROXY_ABI,
