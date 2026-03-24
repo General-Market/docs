@@ -233,20 +233,14 @@ impl TickResolver {
                 });
             }
 
-            // Debug: log per-market side assignments for non-flat outcomes
+            // Per-market side assignments (debug-level to avoid 40K+ lines per batch)
             if !matches!(outcome, MarketOutcome::Flat | MarketOutcome::Cancelled) {
-                let sides_str: Vec<String> = side_inputs.iter().map(|s| {
-                    format!("{}={:?}({})", &format!("{:?}", s.player)[..8], s.side, s.effective_stake)
-                }).collect();
-                tracing::info!(
+                tracing::debug!(
                     batch_id = batch.id,
                     market_idx,
                     asset = %mc.asset_id,
                     outcome = ?outcome,
-                    start_price = %format!("{:.8}", start_price as f64 / 1e8),
-                    end_price = %format!("{:.8}", end_price as f64 / 1e8),
-                    pct_change_bps = pct_change_bps,
-                    sides = %sides_str.join(", "),
+                    pct_change_bps,
                     "Market side assignment"
                 );
             }
@@ -263,17 +257,12 @@ impl TickResolver {
                 let stake = result.effective_stake.as_u128() as i128;
                 let delta = payout_plus_refund - stake;
 
-                // Trace per-market deltas for non-flat outcomes
+                // Per-market player deltas (debug-level)
                 if !matches!(outcome, MarketOutcome::Flat | MarketOutcome::Cancelled) {
-                    tracing::info!(
+                    tracing::debug!(
                         batch_id = batch.id,
                         market_idx,
                         player = %result.player,
-                        side = ?result.side,
-                        effective_stake = %result.effective_stake,
-                        matched_stake = %result.matched_stake,
-                        payout = %result.payout,
-                        refund = %result.refund,
                         delta,
                         "Per-market player result"
                     );

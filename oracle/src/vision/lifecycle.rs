@@ -176,6 +176,11 @@ impl BatchLifecycleManager {
             warn!(error = %e, "Failed to fetch initial tick durations — will retry");
         }
 
+        // Sort by tick_duration ascending — short-tick sources get serviced first.
+        // The lifecycle loop is sequential, so alphabetical ordering starves sources
+        // in the second half when large-market sources (twitch, polymarket) block.
+        sources.sort_by_key(|s| s.tick_duration_secs);
+
         // Poll interval: 1 second (fine-grained enough to respect stagger offsets)
         let poll_interval = tokio::time::Duration::from_secs(1);
         let mut interval = tokio::time::interval(poll_interval);
