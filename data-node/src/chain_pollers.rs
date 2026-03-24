@@ -257,27 +257,20 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
                         let hex_id = format!("0x{}", hex::encode(id_bytes));
                         Some((hex_id, ct))
                     }
-                    Err(e) => {
-                        warn!(collateral = %ct, %e, "BridgedITP.itpId() call failed");
-                        None
-                    }
+                    Err(_) => None
                 }
             }
         }).collect();
         let resolved: Vec<Option<(String, String)>> = futures::future::join_all(futs).await;
-        let resolved_count = resolved.iter().filter(|r| r.is_some()).count();
-        let mut matched = 0usize;
         let mut itp_cache = state.chain_cache.itp_states.write().await;
         for item in resolved.into_iter().flatten() {
             let (itp_id_hex, collateral_token) = item;
             if let Some(entry) = itp_cache.states.get_mut(&itp_id_hex) {
                 if entry.settlement_address.is_none() {
                     entry.settlement_address = Some(collateral_token);
-                    matched += 1;
                 }
             }
         }
-        tracing::info!(resolved_count, matched, "Morpho market → ITP settlement_address resolution");
     }
 
     Ok(())
