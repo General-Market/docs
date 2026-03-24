@@ -1,21 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
+import { formatUnits } from 'viem'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { LendingStatsBanner } from './LendingStatsBanner'
-import { YourPositions } from './YourPositions'
-import { MarketsTable } from './MarketsTable'
-import { MarketActionModal } from './MarketActionModal'
+import { MarketsTable, type MarketRow } from './MarketsTable'
+import { MarketActionPanel } from './MarketActionPanel'
 import { VaultSupplySection } from './VaultSupplySection'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
-
-interface SelectedMarket {
-  market: MorphoMarketEntry
-  itpInfo: { name: string; symbol: string; itpId: string; settlementAddress: string }
-  initialTab?: 'supply' | 'borrow' | 'repay' | 'withdraw'
-}
 
 const ErrorFallback = (
   <div className="bg-surface-down border border-color-down/30 rounded-lg p-6 text-center">
@@ -27,15 +21,7 @@ const ErrorFallback = (
 export function LendingPage() {
   const t = useTranslations('lending')
   const { isConnected } = useAccount()
-  const [selected, setSelected] = useState<SelectedMarket | null>(null)
-
-  const handleSelectMarket = (
-    market: MorphoMarketEntry,
-    itpInfo: { name: string; symbol: string; itpId: string; settlementAddress: string },
-    initialTab?: 'supply' | 'borrow' | 'repay' | 'withdraw'
-  ) => {
-    setSelected({ market, itpInfo, initialTab })
-  }
+  const [selectedRow, setSelectedRow] = useState<MarketRow | null>(null)
 
   // Listen for lending-refresh to trigger re-renders
   const [refreshKey, setRefreshKey] = useState(0)
@@ -43,6 +29,10 @@ export function LendingPage() {
     const handler = () => setRefreshKey(k => k + 1)
     window.addEventListener('lending-refresh', handler)
     return () => window.removeEventListener('lending-refresh', handler)
+  }, [])
+
+  const handleSelectRow = useCallback((row: MarketRow) => {
+    setSelectedRow(row)
   }, [])
 
   return (
@@ -58,28 +48,23 @@ export function LendingPage() {
         {/* Stats banner */}
         <LendingStatsBanner />
 
-        {/* Your active positions (only when connected + has positions) */}
+        {/* Inline action panel — replaces the modal */}
         {isConnected && (
-          <YourPositions onSelectMarket={handleSelectMarket} />
+          <MarketActionPanel
+            selectedRow={selectedRow}
+            onSelectRow={handleSelectRow}
+          />
         )}
 
-        {/* Markets table — the primary interface */}
-        <MarketsTable onSelectMarket={handleSelectMarket} />
+        {/* Markets table — compact Aave-style list */}
+        <MarketsTable
+          onSelectRow={handleSelectRow}
+          selectedCollateralToken={selectedRow?.collateralToken ?? null}
+        />
 
         {/* Vault supply section — for USDC lenders */}
         <VaultSupplySection />
       </ErrorBoundary>
-
-      {/* Per-market action modal */}
-      {selected && (
-        <MarketActionModal
-          market={selected.market}
-          itpInfo={selected.itpInfo}
-          isOpen={true}
-          onClose={() => setSelected(null)}
-          initialTab={selected.initialTab}
-        />
-      )}
     </div>
   )
 }
