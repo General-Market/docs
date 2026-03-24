@@ -197,6 +197,13 @@ impl BatchLifecycleManager {
             let now_instant = std::time::Instant::now();
             let mut join_set: JoinSet<()> = JoinSet::new();
 
+            // Only the leader (node_index == 0) drives the lifecycle.
+            // Followers stay in this loop solely to keep the P2P heartbeat alive
+            // and respond to co-sign requests via the channel listener.
+            if self.config.node_index != 0 {
+                continue;
+            }
+
             for source_lock in &sources {
                 // Quick check under lock: is this source due?
                 let due_info = {
