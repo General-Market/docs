@@ -180,7 +180,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   }, [initialHoldings, availableAssets])
 
   const totalWeight = selectedAssets.reduce((sum, a) => sum + a.weight, 0)
-  const isValidWeights = totalWeight === 100
+  const hasZeroWeight = selectedAssets.some(a => a.weight === 0)
+  const isValidWeights = totalWeight === 100 && !hasZeroWeight
 
   const filteredAssets = availableAssets.filter(
     a => a.symbol.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -388,7 +389,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           console.log('[CreateITP] Pre-simulation passed on Settlement')
         } catch (simErr: any) {
           console.error('[CreateITP] Pre-simulation failed:', simErr)
-          const reason = simErr.shortMessage || simErr.message || 'Simulation failed'
+          let reason = simErr.shortMessage || simErr.message || 'Simulation failed'
+          // Decode known contract error selectors
+          if (reason.includes('0xfb25c4bc')) reason = 'Each asset must have at least 1% weight'
+          else if (reason.includes('0xeac2915e')) reason = 'Unauthorized — wallet not permitted'
+          else if (reason.includes('0x3432baf7')) reason = 'System is paused'
           setTxError(reason.slice(0, 300))
           capture('create_itp_failed', { error_message: reason.slice(0, 200), step: 'pre_simulate' })
           return
@@ -659,7 +664,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                         </div>
                         <div className={`mt-3 pt-3 border-t border-border-light flex justify-between text-sm ${isValidWeights ? 'text-color-up' : 'text-color-down'}`}>
                           <span>{t('configure_weights.total', { value: totalWeight })}</span>
-                          <span className="font-mono tabular-nums font-medium">{isValidWeights ? '' : t('configure_weights.must_be_100')}</span>
+                          <span className="font-mono tabular-nums font-medium">{isValidWeights ? '' : hasZeroWeight ? 'No 0% weights' : t('configure_weights.must_be_100')}</span>
                         </div>
 
                         {/* Continue to finalize */}
