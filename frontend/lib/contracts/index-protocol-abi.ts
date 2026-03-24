@@ -61,22 +61,6 @@ export const BRIDGE_PROXY_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
-  // Signer threshold
-  {
-    inputs: [],
-    name: 'signerThreshold',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  // Get admin nonce
-  {
-    inputs: [{ name: 'admin', type: 'address' }],
-    name: 'getAdminItpCreationNonce',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
   // Constants
   {
     inputs: [],

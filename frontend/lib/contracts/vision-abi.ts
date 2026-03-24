@@ -275,6 +275,25 @@ export const VISION_ABI = [
     type: 'function',
   },
 
+  // ============ CUSTOM ERRORS ============
+  { inputs: [], name: 'BatchNotFound', type: 'error' },
+  { inputs: [], name: 'BatchPaused', type: 'error' },
+  { inputs: [], name: 'Unauthorized', type: 'error' },
+  { inputs: [], name: 'InsufficientDeposit', type: 'error' },
+  { inputs: [], name: 'StakeBelowMinimum', type: 'error' },
+  { inputs: [], name: 'AlreadyJoined', type: 'error' },
+  { inputs: [], name: 'NotJoined', type: 'error' },
+  { inputs: [], name: 'InvalidTickDuration', type: 'error' },
+  { inputs: [], name: 'InvalidLockOffset', type: 'error' },
+  { inputs: [], name: 'LockOffsetTooLarge', type: 'error' },
+  { inputs: [], name: 'InsolventPayout', type: 'error' },
+  { inputs: [], name: 'BotAlreadyRegistered', type: 'error' },
+  { inputs: [], name: 'BotNotRegistered', type: 'error' },
+  { inputs: [], name: 'TickLocked', type: 'error' },
+  { inputs: [], name: 'InvalidBLSSignature', type: 'error' },
+  { inputs: [], name: 'InvalidArrayLength', type: 'error' },
+  { inputs: [], name: 'BatchAlreadySettled', type: 'error' },
+
   // ============ EVENTS ============
   {
     anonymous: false,
