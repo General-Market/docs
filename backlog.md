@@ -1,5 +1,28 @@
 # Design Decision Backlog
 
+## Session: 20260324-1600-j4p2 (ITP Listing + Oracle CreateITP Fixes)
+
+- [DECISION] Removed total_supply==0 filter in compute_aum_ranking_json — newly created ITPs with zero supply were invisible in the listing. Changed to nav_per_share<=0 filter (only skips ITPs with no resolvable prices).
+- [DECISION] Added NavSnapshot-compatible fields (name, symbol, nav_per_share, aum_usd, total_supply) to aum-ranking Snapshot struct. Frontend was calling aum-ranking expecting a flat array but getting {snapshots:[...]}. Frontend now unwraps data.snapshots.
+- [DECISION] Toast explorer link: CreateITP tx is on Settlement (Sonic), not L3. Changed useTransactionNotification to chain:'settlement'. L3_EXPLORER_URL is empty so previous links were dead (#).
+- [DECISION] Governance admin transferred to oracle-1 (0x7099...) on testnet to unblock createITP. The Investment.sol createITP guard checks msg.sender==governance.admin(), but oracle leader submits from its own key.
+- [FAILED] Attempted to add oracleRegistry.isActiveOracle check to createITP in Investment.sol. Contract size (24710 > 24576 limit) prevented deployment. Even Orbit L3 enforces the limit at node level despite higher foundry.toml config. For production: move logic to AdminLib.
+- [DECISION] Raised foundry.toml code_size_limit to 49152 for Orbit L3 compatibility in local tooling.
+
+## Session: 20260324-2200-b3k9 (BridgeProxy requestCreateItp Revert Investigation)
+
+- [DECISION] Added pre-simulation via Settlement public client before writeContractAsync in CreateItpSection. wagmi v3's writeContract uses the wallet's injected provider for eth_estimateGas, which can hit the wrong chain's RPC during chain switches. The public client simulation uses wagmi's configured transport (guaranteed correct RPC), catching errors before the wallet gets involved.
+- [DECISION] Removed stale ABI entries (signerThreshold, getAdminItpCreationNonce) from index-protocol-abi.ts — these functions no longer exist on the deployed BridgeProxy but were left in the manual ABI.
+- [FAILED] Investigated contract-side causes: contract is healthy (not paused, properly initialized, 10 ITPs already created). All explicit reverts in requestCreateItp return rich custom error data. Empty revert data only occurs when calling with 0x calldata or calling an address with no code — confirmed BridgeProxy has no code on L3 (0x), only on Settlement.
+
+## Session: 20260324-1410-q7m1 (BestBuy + Flights Data Fixes)
+
+- [DECISION] BestBuy: added per-second rate window (4 req/sec) to prevent 403 burst errors. API error message explicitly says "per second limit." Previous config (240/min) allowed 7 category requests to fire within 1 second.
+- [DECISION] Flights: increased adsb.lol rate limit from 50/min to 120/min. 50/min caused 44-minute sync times for 25 regions (many requiring multi-query grids for large airspace areas). 120/min should reduce to ~10-15 min.
+- [DECISION] Flights: sync_interval raised from 300s to 1200s (20 min). A 5-minute interval was fiction — the sync took 44 minutes to complete. 20 min gives breathing room after the faster sync.
+- [DECISION] Flights: per-region timestamp (region_now) instead of sync-start timestamp. With 10-15 min syncs, early regions shouldn't carry the timestamp of the last region.
+- [FAILED] Considered adding max-staleness guard to batch engine recovered configs. On closer inspection, the flights stale-recovery was transient (happened only during the 44-min initial sync before data was written). The rate limit fix addresses the root cause.
+
 ## Session: 20260323-2100-k8f3 (Lending Fixes)
 
 - [DECISION] Data-node IRM rate reading: replicate CuratorRateIRM._getRate() logic in Rust (read rates + lastRateUpdate, apply punitive fallback) instead of calling borrowRateView() which requires complex struct args.
