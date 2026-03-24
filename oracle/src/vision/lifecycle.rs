@@ -20,7 +20,8 @@ use ethers::abi::{encode, Token};
 use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
 use sqlx::PgPool;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Semaphore};
+use tokio::task::JoinSet;
 use tracing::{info, warn, error, debug};
 
 use crate::chain::EthersChainWriter;
@@ -124,7 +125,12 @@ impl BatchLifecycleManager {
     }
 
     /// Main loop. Runs until shutdown signal.
-    pub async fn run(&self) {
+    ///
+    /// Sources are processed concurrently (up to 10 at a time) instead of
+    /// sequentially. With 58 sources and large-market batches, the sequential
+    /// loop took hours. Each source's resolve+create now runs in its own
+    /// spawned task, gated by a semaphore.
+    pub async fn run(self: Arc<Self>) {
         // Discover sources from data-node recommended batches (all sources are round-based)
         let source_names: Vec<String> = match batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await {
             Ok(batches) => {
@@ -435,16 +441,27 @@ impl BatchLifecycleManager {
             })
             .collect();
 
-        // Fetch snapshot prices from data-node
-        let snapshot_url = format!(
-            "{}/vision/snapshot?source={}&limit=50000",
-            self.config.data_node_url, source_name
+        // Fetch snapshot prices from data-node — targeted endpoint returns only
+        // the assets we need, avoiding the 33k+ row firehose for large sources.
+        let asset_ids: Vec<String> = market_configs.iter().map(|m| m.asset_id.clone()).collect();
+        let targeted_url = format!(
+            "{}/vision/snapshot/targeted",
+            self.config.data_node_url
         );
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(15))
             .gzip(true)
             .build()?;
-        let json: serde_json::Value = client.get(&snapshot_url).send().await?.json().await?;
+        let json: serde_json::Value = client
+            .post(&targeted_url)
+            .json(&serde_json::json!({
+                "source": source_name,
+                "asset_ids": asset_ids,
+            }))
+            .send()
+            .await?
+            .json()
+            .await?;
 
         let snapshots = json
             .get("snapshots")
@@ -626,7 +643,8 @@ impl BatchLifecycleManager {
 
         // Save start price snapshot — fetched NOW so we have real start prices
         // for comparison at resolution time (instead of reverse-engineering from change_pct).
-        if let Err(e) = self.save_start_prices(lifecycle_id, source_name).await {
+        let asset_ids: Vec<String> = rec_batch.markets.iter().map(|m| m.asset_id.clone()).collect();
+        if let Err(e) = self.save_start_prices(lifecycle_id, source_name, &asset_ids).await {
             warn!(source = %source_name, error = %e, "Failed to save start price snapshot (non-fatal)");
         }
 
@@ -1139,16 +1157,26 @@ impl BatchLifecycleManager {
         &self,
         batch_id: u64,
         source_name: &str,
+        asset_ids: &[String],
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let snapshot_url = format!(
-            "{}/vision/snapshot?source={}&limit=50000",
-            self.config.data_node_url, source_name
+        let targeted_url = format!(
+            "{}/vision/snapshot/targeted",
+            self.config.data_node_url
         );
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(15))
             .gzip(true)
             .build()?;
-        let json: serde_json::Value = client.get(&snapshot_url).send().await?.json().await?;
+        let json: serde_json::Value = client
+            .post(&targeted_url)
+            .json(&serde_json::json!({
+                "source": source_name,
+                "asset_ids": asset_ids,
+            }))
+            .send()
+            .await?
+            .json()
+            .await?;
 
         // Extract just asset_id → value_scaled pairs (compact)
         let mut prices_map = serde_json::Map::new();

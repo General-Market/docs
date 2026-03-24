@@ -488,6 +488,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/snapshot/meta", get(snapshot_meta))
         // Vision market data endpoints
         .route("/vision/snapshot", get(crate::vision_api::snapshot))
+        .route("/vision/snapshot/targeted", axum::routing::post(crate::vision_api::snapshot_targeted))
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
         .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
         .route("/vision/leaderboard", get(crate::vision_api::leaderboard))
@@ -5878,6 +5879,14 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
         computed_nav: String,
         perf_ratio: String,
         ranked: Vec<RankedAsset>,
+        // NavSnapshot-compatible fields for ItpListing REST fallback
+        name: String,
+        symbol: String,
+        nav_per_share: f64,
+        aum_usd: f64,
+        total_supply: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        settlement_address: Option<String>,
     }
 
     #[derive(serde::Serialize)]
@@ -5901,9 +5910,6 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
 
     for (itp_id, itp_state) in &itp_cache.states {
         let total_supply_f = itp_state.total_supply.as_u128() as f64;
-        if total_supply_f == 0.0 {
-            continue;
-        }
 
         // Build per-asset ranking for this ITP
         let mut asset_entries: Vec<(String, String, f64, f64, f64)> = Vec::new(); // (addr, symbol, aum, weight_frac, qty_per_share)
@@ -5943,7 +5949,9 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
         let nav_per_share = nav_sum / 1e18;
         let total_aum = nav_per_share * total_supply_f / 1e18;
 
-        if total_aum <= 0.0 {
+        // Skip ITPs with zero NAV (no prices resolved — broken or empty)
+        // but keep zero-supply ITPs that have a valid NAV (newly created, not yet bought)
+        if nav_per_share <= 0.0 {
             continue;
         }
 
@@ -5977,13 +5985,20 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
             aum: total_aum,
             snapshot: Snapshot {
                 timestamp: now,
-                label,
+                label: label.clone(),
                 event_type: "live".to_string(),
                 itp_id: itp_id.clone(),
                 total_aum: format!("{:.2}", total_aum),
                 computed_nav: format!("{:.6}", nav_per_share),
                 perf_ratio: format!("{:.6}", nav_per_share), // NAV is the perf ratio vs $1 initial
                 ranked,
+                // NavSnapshot-compatible fields
+                name: label,
+                symbol: itp_state.symbol.clone(),
+                nav_per_share,
+                aum_usd: total_aum,
+                total_supply: itp_state.total_supply.to_string(),
+                settlement_address: itp_state.settlement_address.clone(),
             },
         });
     }

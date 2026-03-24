@@ -249,6 +249,105 @@ pub async fn snapshot(
     })
 }
 
+// ---- POST /vision/snapshot/targeted ----
+
+#[derive(Deserialize)]
+pub struct TargetedSnapshotRequest {
+    /// Specific asset IDs to fetch prices for.
+    pub asset_ids: Vec<String>,
+    /// Source filter (required — prevents cross-source collisions).
+    pub source: String,
+}
+
+/// Targeted market data snapshot — returns prices only for the requested asset IDs.
+///
+/// Designed for oracle resolve_and_settle: instead of fetching the entire source
+/// (50k+ rows for polymarket) and discarding 99%, the caller sends the exact
+/// asset IDs it needs. Response format matches GET /vision/snapshot.
+pub async fn snapshot_targeted(
+    State(state): State<Arc<AppState>>,
+    Json(body): Json<TargetedSnapshotRequest>,
+) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
+    if body.asset_ids.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "asset_ids must not be empty".to_string(),
+            }),
+        ));
+    }
+
+    let rows: Vec<(
+        String,          // asset_id
+        String,          // source
+        String,          // symbol
+        String,          // name
+        Decimal,         // value
+        Option<Decimal>, // change_pct
+        Option<Decimal>, // volume_24h
+        Option<Decimal>, // market_cap
+        Option<String>,  // category
+        DateTime<Utc>,   // fetched_at
+    )> = sqlx::query_as(
+        r#"
+        SELECT l.asset_id, l.source, l.symbol,
+            COALESCE(NULLIF(l.name, ''), a.name, l.symbol) AS name,
+            l.value, l.change_pct, l.volume_24h, l.market_cap,
+            COALESCE(l.category, a.category) AS category,
+            l.fetched_at
+        FROM market_prices_latest l
+        LEFT JOIN market_assets a ON a.source = l.source AND a.asset_id = l.asset_id
+        WHERE l.source = $1
+          AND l.asset_id = ANY($2)
+        ORDER BY l.asset_id
+        "#,
+    )
+    .bind(&body.source)
+    .bind(&body.asset_ids)
+    .fetch_all(&state.pool)
+    .await
+    .map_err(internal_error)?;
+
+    let snapshots: Vec<MarketSnapshot> = rows
+        .into_iter()
+        .map(
+            |(asset_id, source, symbol, name, value, change_pct, volume_24h, market_cap, category, fetched_at)| {
+                let value_f64: f64 = value.to_string().parse().unwrap_or(0.0);
+                let value_scaled: i128 = (value_f64 * PRICE_SCALE as f64).round() as i128;
+                MarketSnapshot {
+                    asset_id,
+                    source,
+                    symbol,
+                    name,
+                    value,
+                    value_scaled: value_scaled.to_string(),
+                    price_scale: PRICE_SCALE,
+                    change_pct,
+                    volume_24h,
+                    market_cap,
+                    category,
+                    fetched_at,
+                }
+            },
+        )
+        .collect();
+
+    let body_json = serde_json::json!({
+        "generatedAt": Utc::now(),
+        "count": snapshots.len(),
+        "requested": body.asset_ids.len(),
+        "snapshots": snapshots,
+    });
+
+    let (status, headers, body_str) = add_snapshot_hmac(body_json, &state.snapshot_hmac_secret);
+
+    Ok(SnapshotResponse {
+        status,
+        headers,
+        body: body_str,
+    })
+}
+
 // ---- GET /vision/markets/active ----
 
 /// Active markets catalog for Vision oracles.
