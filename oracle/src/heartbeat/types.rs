@@ -5,14 +5,17 @@
 use common::types::PeerId;
 use std::time::{Duration, Instant};
 
-/// Heartbeat interval (1 second per architecture)
-pub const HEARTBEAT_INTERVAL: Duration = Duration::from_millis(1000);
+/// Heartbeat interval (2 seconds — relaxed from 1s to reduce overhead during heavy settlement)
+pub const HEARTBEAT_INTERVAL: Duration = Duration::from_millis(2000);
 
-/// Threshold for marking a peer as unhealthy (5 seconds = 5 missed heartbeats)
-pub const UNHEALTHY_THRESHOLD: Duration = Duration::from_millis(5000);
+/// Threshold for marking a peer as unhealthy (30 seconds — large batch settlements
+/// can block the event loop for several seconds, causing missed heartbeats.
+/// With 2s interval, this tolerates 15 missed heartbeats before marking unhealthy.)
+pub const UNHEALTHY_THRESHOLD: Duration = Duration::from_millis(30_000);
 
 /// Number of consecutive health check misses before proposing a kick vote
-pub const KICK_VOTE_THRESHOLD: u32 = 3;
+/// (10 checks × 2s = 20s of consecutive unhealthy before kick proposal)
+pub const KICK_VOTE_THRESHOLD: u32 = 10;
 
 /// Health status of a peer
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
