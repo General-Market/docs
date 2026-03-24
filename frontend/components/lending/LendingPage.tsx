@@ -56,6 +56,9 @@ export function LendingPage() {
       // debtAmount from SSE is placeholder '0' — real debt only via useMorphoPosition
       const debtRaw = parseFloat(formatUnits(BigInt(m.debtAmount), 18))
 
+      const userBalRaw = parseFloat(formatUnits(BigInt(m.userBalanceWei), 18))
+      const userBalUsd = userBalRaw * m.navPerShare
+
       return {
         collateralToken: m.collateralToken,
         name: m.name,
@@ -68,6 +71,7 @@ export function LendingPage() {
         lltv: m.lltv,
         collateral: collateralUsd,
         debt: debtRaw,
+        userBalance: userBalUsd,
         market: m.market,
       }
     })
@@ -264,13 +268,15 @@ export function LendingPage() {
               </div>
             </div>
 
-            {/* Markets table */}
-            <MarketsTable
-              rows={filteredRows}
-              selectedCollateralToken={selectedCollateralToken}
-              onSelectRow={handleSelectRow}
-              isLoading={isLoading}
-            />
+            {/* Markets table — scrollable container */}
+            <div className="max-h-[600px] overflow-y-auto border border-border-light">
+              <MarketsTable
+                rows={filteredRows}
+                selectedCollateralToken={selectedCollateralToken}
+                onSelectRow={handleSelectRow}
+                isLoading={isLoading}
+              />
+            </div>
           </div>
 
           {/* [C.R] Right column — sticky action panel */}

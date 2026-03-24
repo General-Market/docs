@@ -25,6 +25,8 @@ export interface EnrichedMarket {
   debtAmount: string
   borrowShares: string
   healthFactor: number
+  /** User's ITP token balance in wei (from SSE balances, matched by itpId) */
+  userBalanceWei: string
   market: MorphoMarketEntry
 }
 
@@ -105,6 +107,9 @@ export function useLendingData(): LendingData {
       // consumers needing debt use useMorphoPosition for the selected market
       const hasPosition = BigInt(collateralAmount) > 0n || BigInt(borrowShares) > 0n
 
+      // Look up user's ITP balance by itpId
+      const userBal = balances?.itp_shares?.[nav.itp_id] || '0'
+
       result.push({
         collateralToken,
         name: nav.name,
@@ -120,12 +125,16 @@ export function useLendingData(): LendingData {
         debtAmount: '0', // requires market-level computation — see useMorphoPosition
         borrowShares,
         healthFactor: Infinity, // requires oracle price — see useMorphoPosition
+        userBalanceWei: userBal,
         market,
       })
     }
 
-    // Position holders first, then by available liquidity descending
+    // Sort: user balance first (highest balance → top), then position holders, then by available
     result.sort((a, b) => {
+      const balA = BigInt(a.userBalanceWei)
+      const balB = BigInt(b.userBalanceWei)
+      if (balA !== balB) return balB > balA ? 1 : balB < balA ? -1 : 0
       if (a.hasPosition !== b.hasPosition) return a.hasPosition ? -1 : 1
       return b.available - a.available
     })

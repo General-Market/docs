@@ -15,6 +15,7 @@ export interface EnrichedMarket {
   lltv: number             // percentage (e.g. 77 = 77%)
   collateral: number       // user's collateral in dollar terms (0 if none)
   debt: number             // user's debt in dollar terms (0 if none)
+  userBalance: number      // user's ITP token balance in dollar terms (0 if none)
   market: MorphoMarketEntry
 }
 
@@ -51,12 +52,12 @@ const HEADERS = [
   { label: 'Borrow APY',  align: 'right' as const, width: 'w-[90px]',  hide: '' },
   { label: 'Available',   align: 'right' as const, width: 'w-[100px]', hide: 'hidden sm:table-cell' },
   { label: 'LLTV',        align: 'right' as const, width: 'w-[70px]',  hide: 'hidden md:table-cell' },
-  { label: 'Position',    align: 'right' as const, width: 'w-[100px]', hide: 'hidden lg:table-cell' },
+  { label: 'Balance',     align: 'right' as const, width: 'w-[100px]', hide: 'hidden lg:table-cell' },
 ] as const
 
 function TableHead() {
   return (
-    <thead>
+    <thead className="sticky top-0 z-10 bg-white">
       <tr className="border-b border-black/[0.06]">
         {HEADERS.map((col) => (
           <th
@@ -136,22 +137,20 @@ const MarketRowComponent = memo(function MarketRowComponent({
         {formatPct(row.lltv, 0)}
       </td>
 
-      {/* Position — full display (lg+) */}
+      {/* Balance — full display (lg+) */}
       <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden lg:table-cell">
-        {active ? (
-          <span>
-            <span className="text-text-primary">{formatDollar(row.collateral)}</span>
-            <span className="text-text-muted mx-0.5">/</span>
-            <span className="text-text-primary">{formatDollar(row.debt)}</span>
-          </span>
+        {row.userBalance > 0 ? (
+          <span className="text-text-primary">{formatDollar(row.userBalance)}</span>
+        ) : active ? (
+          <span className="text-color-up text-[10px]">active</span>
         ) : (
           <span className="text-text-muted">&mdash;</span>
         )}
       </td>
 
-      {/* Position — dot indicator (below lg) */}
+      {/* Balance — dot indicator (below lg) */}
       <td className="px-2 py-3 text-center lg:hidden">
-        {active && (
+        {(active || row.userBalance > 0) && (
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-color-up" />
         )}
       </td>
@@ -163,12 +162,11 @@ const MarketRowComponent = memo(function MarketRowComponent({
 
 function LoadingSkeleton() {
   return (
-    <div className="w-full border border-border-light">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <TableHead />
-          <tbody>
-            {Array.from({ length: 5 }).map((_, i) => (
+    <div className="w-full">
+      <table className="w-full text-sm">
+        <TableHead />
+        <tbody>
+          {Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="h-12 border-b border-black/[0.04] border-l-2 border-l-transparent">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
@@ -189,7 +187,6 @@ function LoadingSkeleton() {
             ))}
           </tbody>
         </table>
-      </div>
     </div>
   )
 }
@@ -213,24 +210,22 @@ export const MarketsTable = memo(function MarketsTable({
   }
 
   return (
-    <div className="w-full border border-border-light">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <TableHead />
-          <tbody>
-            {rows.map((row) => (
-              <MarketRowComponent
-                key={row.collateralToken}
-                row={row}
-                isSelected={
-                  selectedCollateralToken?.toLowerCase() === row.collateralToken.toLowerCase()
-                }
-                onSelect={onSelectRow}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="w-full">
+      <table className="w-full text-sm">
+        <TableHead />
+        <tbody>
+          {rows.map((row) => (
+            <MarketRowComponent
+              key={row.collateralToken}
+              row={row}
+              isSelected={
+                selectedCollateralToken?.toLowerCase() === row.collateralToken.toLowerCase()
+              }
+              onSelect={onSelectRow}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 })
