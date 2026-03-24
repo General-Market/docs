@@ -18,6 +18,19 @@
 - [DECISION] Points computed server-side in data-node (Rust), stored in Postgres. Frontend reads from API, does not compute points.
 - [DECISION] Idempotency via UNIQUE(player, pool, reason) constraint. Missed hours are not backfilled — acceptable for testnet.
 
+## Session: 20260324-1030-p7x1 (Points System Debugging & Fixes)
+
+- [DECISION] Vision points changed from settlement-based to deposit-proportional. Oracle ticks never advance (all stuck at tick 0), so `vision_round_players` is permanently empty. New approach: hourly, poll all active batches via `/vision/batch/{id}/state`, sum deposits per player, distribute 208.33 pts/hr proportionally. Rewards participation (TVL) not outcomes.
+- [FAILED] Settlement-based vision points — the oracle's `/vision/rounds/active` and `/vision/batches` endpoints never report settled rounds. The entire tick resolution pipeline is inactive. Would need oracle fixes to resurrect.
+- [DECISION] itp_meta.nav_at_creation seeded at $1.0 (all ITPs start at $1 by design). Previous code incorrectly used current NAV at seeding time, making growth = 0 for everything. One-time SQL fix on startup resets stale rows.
+- [FAILED] Using current NAV as nav_at_creation — when the points engine first seeds itp_meta, current NAV ≈ creation NAV for recently-created ITPs, producing 0% growth and no points.
+- [DECISION] Creator points aggregated per-creator before distribution. Old code passed duplicate creator addresses to `distribute_ranked`, and `ON CONFLICT DO NOTHING` silently collapsed 174 awards to 1. Now uses HashMap to find best-growth ITP per creator.
+- [DECISION] Docker data-node: migrations dir mounted as volume (`data-node/migrations:/app/data-node/migrations:ro`). The Dockerfile only copies the binary to runtime stage, so migration 028 never existed inside the container. Volume mount ensures future migrations auto-apply.
+- [DECISION] ORACLE_URL added to data-node .env (`http://localhost:10001`). Was unset, defaulting to `localhost:8100` (nothing). Oracles run on 10001-10003 with network_mode: host.
+- [DECISION] Header points counter wired to `usePoints(address)` hook. Was hardcoded `"0 pts"` — a placeholder that never got connected.
+- [DECISION] user_shares backfill added to ITP collector startup: if table is empty, scan all blocks for historical `SharesUpdated` events. Found 0 events — no ITP shares have ever been purchased on testnet. Holder pool = 0 is correct.
+- [FAILED] Expecting holders to exist on testnet — 752 ITPs created but 0 SharesUpdated events across 641K blocks. No buy orders completed. Holder pool legitimately empty.
+
 ## Session: 20260323-v2p8 (Vision 0-player investigation)
 
 - [DECISION] Server-only env vars in config.ts converted from module-level constants to getter functions. Next.js webpack inlines `process.env.LITERAL` at build time — if the var was absent during the Vercel build, `undefined` is baked into the bundle forever, falling through to localhost defaults. Getter functions (`getIssuerVisionUrl()`, etc.) use bracket access (`process.env['KEY']`) and read at call time, immune to inlining.
