@@ -160,8 +160,8 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     await doneBtn.click()
 
     // 13. Verify USDC arrived in L3 wallet
-    const l3UsdcAfter = await getL3UsdcBalance(PLAYER1, visionUsdc)
-    expect(l3UsdcAfter).toBeGreaterThan(l3UsdcBefore)
-    console.log(`Withdraw complete: L3 USDC ${l3UsdcBefore} -> ${l3UsdcAfter}`)
+    const l3UsdcFinal = await getL3UsdcBalance(PLAYER1, visionUsdc)
+    expect(l3UsdcFinal).toBeGreaterThan(l3UsdcBefore)
+    console.log(`Withdraw complete: L3 USDC ${l3UsdcBefore} -> ${l3UsdcFinal}`)
   })
 })
