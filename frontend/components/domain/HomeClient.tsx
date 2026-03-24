@@ -210,7 +210,7 @@ export function HomeClient() {
                 <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
                   {/* Group label — aligned with icon column */}
                   <div className="pl-7 pr-6 mb-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/20">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40">
                       {group.label}
                     </span>
                   </div>
@@ -227,30 +227,23 @@ export function HomeClient() {
                           className={`group relative w-full flex items-center gap-3 pl-4 pr-3 py-[9px] rounded text-[13px] text-left ${
                             isActive
                               ? 'text-white font-semibold'
-                              : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                              : 'text-white/60 hover:text-white/85 hover:bg-white/[0.04]'
                           }`}
                         >
                           {/* ── Morphing blob background ── */}
                           {isActive && (
                             <motion.div
                               layoutId="nav-blob"
-                              className="absolute inset-0 rounded bg-white/[0.07] shadow-[0_0_24px_-6px_rgba(0,163,108,0.2)]"
+                              className="absolute inset-0 rounded bg-white/[0.07]"
                               transition={reduced ? INSTANT : SPRING_BLOB}
                               style={{ originX: 0.5, originY: 0.5 }}
                             />
                           )}
 
-                          {/* ── Morphing accent bar ── */}
-                          {isActive && (
-                            <motion.span
-                              layoutId="nav-accent"
-                              className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-full bg-[#00A36C] shadow-[0_0_12px_2px_rgba(0,163,108,0.35)]"
-                              transition={reduced ? INSTANT : SPRING_ACCENT}
-                            />
-                          )}
+                          {/* ── Accent bar removed ── */}
 
                           <span className={`relative z-10 shrink-0 w-4 h-4 flex items-center justify-center transition-colors duration-200 ${
-                            isActive ? 'text-white' : 'text-white/25 group-hover:text-white/50'
+                            isActive ? 'text-white' : 'text-white/50 group-hover:text-white/75'
                           }`}>
                             {Icon && <Icon active={isActive} />}
                           </span>
