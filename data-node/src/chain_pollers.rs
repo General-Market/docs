@@ -277,7 +277,36 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
 }
 
 /// Hot-reload batch-markets.json if it has changed (new markets deployed).
+/// Discover Morpho markets from the MetaMorpho vault's on-chain supply queue.
+/// Falls back to batch-markets.json if vault address is unavailable.
+/// This means new markets deployed by the curator service appear automatically
+/// within 60 seconds — no manual file update needed.
 pub async fn poll_batch_markets_reload(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Try on-chain discovery first
+    let vault_addr = crate::api::deployment_addr(&state.morpho_deployment, "METAMORPHO_VAULT");
+    let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO");
+
+    if let (Ok(vault), Ok(morpho)) = (vault_addr, morpho_addr) {
+        match discover_markets_from_vault(state, vault, morpho).await {
+            Ok(markets) if !markets.is_empty() => {
+                let current = state.batch_markets.read().await;
+                if markets.len() != current.len() {
+                    drop(current);
+                    let count = markets.len();
+                    let mut w = state.batch_markets.write().await;
+                    *w = markets;
+                    tracing::info!(count, "Discovered batch markets from vault supply queue");
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                tracing::warn!(%e, "On-chain market discovery failed, falling back to file");
+            }
+            _ => {}
+        }
+    }
+
+    // Fallback: reload from batch-markets.json
     let fresh = crate::api::load_batch_markets(&state.batch_markets_path);
     let current = state.batch_markets.read().await;
     if fresh.len() != current.len() {
@@ -285,9 +314,57 @@ pub async fn poll_batch_markets_reload(state: &AppState) -> Result<(), Box<dyn s
         let count = fresh.len();
         let mut w = state.batch_markets.write().await;
         *w = fresh;
-        tracing::info!(count, "Hot-reloaded batch markets (count changed)");
+        tracing::info!(count, "Hot-reloaded batch markets from file");
     }
     Ok(())
+}
+
+/// Read all markets from the MetaMorpho vault's supply queue via on-chain calls.
+async fn discover_markets_from_vault(
+    state: &crate::api::AppState,
+    vault: Address,
+    morpho: Address,
+) -> Result<Vec<crate::api::BatchMarketEntry>, Box<dyn std::error::Error + Send + Sync>> {
+    let provider = Arc::clone(&state.l3_provider);
+
+    // Read supplyQueueLength
+    abigen!(VaultQueueReader, r#"[
+        function supplyQueueLength() external view returns (uint256)
+        function supplyQueue(uint256) external view returns (bytes32)
+    ]"#);
+    abigen!(MorphoParamsReader, r#"[
+        function idToMarketParams(bytes32 id) external view returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)
+    ]"#);
+
+    let vault_reader = VaultQueueReader::new(vault, Arc::clone(&provider));
+    let morpho_reader = MorphoParamsReader::new(morpho, Arc::clone(&provider));
+
+    let queue_len: u64 = vault_reader.supply_queue_length().call().await?.as_u64();
+    if queue_len == 0 {
+        return Ok(Vec::new());
+    }
+
+    let mut markets = Vec::with_capacity(queue_len as usize);
+    for i in 0..queue_len {
+        let market_id_bytes = vault_reader.supply_queue(U256::from(i)).call().await?;
+        let (loan_token, collateral_token, oracle, irm, lltv) =
+            morpho_reader.id_to_market_params(market_id_bytes).call().await?;
+
+        if collateral_token.is_zero() {
+            continue;
+        }
+
+        markets.push(crate::api::BatchMarketEntry {
+            market_id: format!("0x{}", hex::encode(market_id_bytes)),
+            collateral_token: format!("{:?}", collateral_token),
+            loan_token: format!("{:?}", loan_token),
+            oracle: format!("{:?}", oracle),
+            irm: format!("{:?}", irm),
+            lltv: lltv.to_string(),
+        });
+    }
+
+    Ok(markets)
 }
 
 pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
