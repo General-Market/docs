@@ -7,7 +7,7 @@ WORKDIR /app
 COPY vision-bot/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY vision-bot/bot.py vision-bot/markets.json ./
+COPY vision-bot/bot.py vision-bot/swarm_runner.py vision-bot/markets.json ./
 COPY vision-bot/framework/ ./framework/
 COPY vision-bot/strategies/ ./strategies/
 COPY deployments/active-deployment.json deployments/active-deployment.json

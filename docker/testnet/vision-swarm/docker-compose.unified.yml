@@ -1,0 +1,38 @@
+# Unified Vision Swarm — 10 bots in a single container via threads.
+# Replaces 10 × 256MB containers with 1 × 512MB container.
+#
+# Deploy:   docker compose -f docker-compose.unified.yml up -d
+# Logs:     docker logs vision-swarm -f
+# Stop:     docker compose -f docker-compose.unified.yml down
+
+services:
+  vision-swarm:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/vision-swarm/Dockerfile
+    container_name: vision-swarm
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./pnl-data:/app/pnl-data
+    tmpfs:
+      - /tmp
+    env_file:
+      - swarm.env
+    entrypoint: ["python3", "/app/swarm_runner.py"]
+    environment:
+      BOT_COUNT: "10"
+      BOT_KEYS: "${SWARM_BOT_0_KEY},${SWARM_BOT_1_KEY},${SWARM_BOT_2_KEY},${SWARM_BOT_3_KEY},${SWARM_BOT_4_KEY},${SWARM_BOT_5_KEY},${SWARM_BOT_6_KEY},${SWARM_BOT_7_KEY},${SWARM_BOT_8_KEY},${SWARM_BOT_9_KEY}"
+      BOT_STRATEGIES: "momentum,contrarian,random,bullish,bearish,momentum,contrarian,random,bullish,bearish"
+      BOT_STAKES: "0.5,0.3,0.2,0.4,0.6,0.1,0.7,0.8,0.9,0.15"
+      PNL_DIR: "/app/pnl-data"
+      STAGGER_SECS: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
