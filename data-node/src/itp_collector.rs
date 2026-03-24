@@ -454,6 +454,52 @@ pub async fn run(
         info!(orders = map.len(), "Built orderId->itpId map");
     }
 
+    // 1e. Backfill user_shares from historical SharesUpdated events if table is empty
+    {
+        let shares_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM user_shares")
+            .fetch_one(&pool)
+            .await
+            .unwrap_or((0,));
+
+        if shares_count.0 == 0 {
+            info!("Backfilling user_shares from SharesUpdated events (block 0..{current_block})...");
+            let page_size = 10_000u64;
+            let mut from = 0u64;
+            let mut total_events = 0u64;
+            while from <= current_block {
+                let to = (from + page_size).min(current_block);
+                match contract
+                    .shares_updated_filter()
+                    .from_block(from)
+                    .to_block(to)
+                    .query()
+                    .await
+                {
+                    Ok(events) => {
+                        for event in &events {
+                            let itp_id_hex = format!("0x{}", hex::encode(event.itp_id));
+                            let user_addr = format!("{:?}", event.user).to_lowercase();
+                            db::upsert_user_shares(
+                                &pool,
+                                &user_addr,
+                                &itp_id_hex,
+                                &event.user_new_balance.to_string(),
+                            )
+                            .await
+                            .ok();
+                        }
+                        total_events += events.len() as u64;
+                    }
+                    Err(e) => {
+                        warn!(from, to, %e, "SharesUpdated backfill page failed");
+                    }
+                }
+                from = to + 1;
+            }
+            info!(total_events, "user_shares backfill complete");
+        }
+    }
+
     *state.last_block.write().await = current_block;
     *state.last_poll_at.write().await = Some(Utc::now());
     db::set_collector_cursor(&pool, "itp_collector", current_block)
