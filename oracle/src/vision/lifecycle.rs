@@ -445,7 +445,37 @@ impl BatchLifecycleManager {
             .and_then(|s| s.as_array())
             .ok_or("missing 'snapshots' array in data-node response")?;
 
-        // Build MarketPrices from snapshot
+        // Load start prices saved at round creation
+        let start_prices_json: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT start_prices FROM vision_batch_lifecycle WHERE batch_id = $1"
+        )
+        .bind(batch_id as i64)
+        .fetch_optional(&self.pool)
+        .await
+        .ok()
+        .flatten();
+
+        let start_price_map: std::collections::HashMap<String, i128> =
+            start_prices_json
+                .as_ref()
+                .and_then(|v| v.as_object())
+                .map(|obj| {
+                    obj.iter()
+                        .filter_map(|(k, v)| {
+                            let val = v.as_str().and_then(|s| s.parse::<i128>().ok())
+                                .or_else(|| v.as_f64().map(|f| (f * 1e8).round() as i128));
+                            val.map(|v| (k.clone(), v))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
+        let has_start_prices = !start_price_map.is_empty();
+        if !has_start_prices {
+            warn!(batch_id, source = %source_name, "No start prices saved — falling back to change_pct derivation");
+        }
+
+        // Build MarketPrices from snapshot (end prices) + stored start prices
         let mut prices = MarketPrices::new();
         let now_secs = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -464,8 +494,8 @@ impl BatchLifecycleManager {
 
             let market_id = H256::from(keccak256(asset_id.as_bytes()));
 
-            // Parse price (prefer valueScaled/value_scaled, fall back to value as string or f64)
-            let value: i128 =
+            // Parse end price (current value)
+            let end_price: i128 =
                 if let Some(scaled) = snap.get("valueScaled").or_else(|| snap.get("value_scaled")).and_then(|v| v.as_str()) {
                     match scaled.parse::<i128>() {
                         Ok(v) => v,
@@ -477,26 +507,29 @@ impl BatchLifecycleManager {
                     continue;
                 };
 
-            if value == 0 {
+            if end_price == 0 {
                 continue;
             }
 
-            // For round-based batches, start_price = end_price (single snapshot).
-            // The resolver computes pct_change from start vs end.
-            // In a round with a single tick, both reference the same snapshot —
-            // the change_pct from the data-node is the actual movement.
-            let change_pct = snap
-                .get("change_pct")
-                .or_else(|| snap.get("changePct"))
-                .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse::<f64>().ok())))
-                .unwrap_or(0.0);
-
-            // Derive start price from end price and change_pct
-            let start = if change_pct.abs() > 1e-10 {
-                let factor = 1.0 + (change_pct / 100.0);
-                ((value as f64) / factor).round() as i128
+            // Start price: prefer stored snapshot, fall back to change_pct derivation
+            let start_price = if has_start_prices {
+                start_price_map.get(asset_id)
+                    .copied()
+                    .and_then(|sp| if sp != 0 { Some(sp) } else { None })
+                    .unwrap_or(end_price)
             } else {
-                value
+                // Legacy fallback: derive from change_pct
+                let change_pct = snap
+                    .get("change_pct")
+                    .or_else(|| snap.get("changePct"))
+                    .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse::<f64>().ok())))
+                    .unwrap_or(0.0);
+                if change_pct.abs() > 1e-10 {
+                    let factor = 1.0 + (change_pct / 100.0);
+                    ((end_price as f64) / factor).round() as i128
+                } else {
+                    end_price
+                }
             };
 
             let fetched_at = snap
@@ -515,7 +548,7 @@ impl BatchLifecycleManager {
                 })
                 .unwrap_or(now_secs);
 
-            prices.insert(market_id, start, value, fetched_at);
+            prices.insert(market_id, start_price, end_price, fetched_at);
         }
 
         // Flip bitmaps (pending → active) so resolver picks up latest predictions
@@ -578,6 +611,12 @@ impl BatchLifecycleManager {
 
         // Record intent in Postgres (all oracles do this for local tracking)
         let lifecycle_id = self.record_round_lifecycle(source_name, config_hash_str, tick_duration, market_count).await?;
+
+        // Save start price snapshot — fetched NOW so we have real start prices
+        // for comparison at resolution time (instead of reverse-engineering from change_pct).
+        if let Err(e) = self.save_start_prices(lifecycle_id, source_name).await {
+            warn!(source = %source_name, error = %e, "Failed to save start price snapshot (non-fatal)");
+        }
 
         // Only leader submits on-chain. Followers detect via BatchCreated events.
         let is_leader = self.config.node_index == 0;
@@ -1081,6 +1120,49 @@ impl BatchLifecycleManager {
         .await?;
 
         Ok(next_id as u64)
+    }
+
+    /// Save a price snapshot at round creation so the resolver has real start prices.
+    async fn save_start_prices(
+        &self,
+        batch_id: u64,
+        source_name: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let snapshot_url = format!(
+            "{}/vision/snapshot?source={}&limit=10000",
+            self.config.data_node_url, source_name
+        );
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()?;
+        let json: serde_json::Value = client.get(&snapshot_url).send().await?.json().await?;
+
+        // Extract just asset_id → value_scaled pairs (compact)
+        let mut prices_map = serde_json::Map::new();
+        if let Some(snaps) = json.get("snapshots").and_then(|s| s.as_array()) {
+            for snap in snaps {
+                let asset_id = snap.get("asset_id").or_else(|| snap.get("assetId"))
+                    .and_then(|v| v.as_str()).unwrap_or("");
+                let value = snap.get("valueScaled").or_else(|| snap.get("value_scaled"))
+                    .and_then(|v| v.as_str())
+                    .or_else(|| snap.get("value").and_then(|v| v.as_str()));
+                if !asset_id.is_empty() {
+                    if let Some(v) = value {
+                        prices_map.insert(asset_id.to_string(), serde_json::Value::String(v.to_string()));
+                    }
+                }
+            }
+        }
+
+        let prices_json = serde_json::Value::Object(prices_map);
+        sqlx::query("UPDATE vision_batch_lifecycle SET start_prices = $1 WHERE batch_id = $2")
+            .bind(&prices_json)
+            .bind(batch_id as i64)
+            .execute(&self.pool)
+            .await?;
+
+        info!(source = %source_name, batch_id, assets = prices_json.as_object().map(|m| m.len()).unwrap_or(0), "Saved start price snapshot");
+        Ok(())
     }
 
     /// Record settlement results for a round.
