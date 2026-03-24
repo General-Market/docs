@@ -5256,15 +5256,6 @@
     "active": true
   },
   {
-    "asset_id": "RIO",
-    "symbol": "RIO",
-    "name": "RIO",
-    "category": "stocks",
-    "subcategory": "large_cap",
-    "api_ref": "RIO",
-    "active": true
-  },
-  {
     "asset_id": "RIOT",
     "symbol": "RIOT",
     "name": "Riot Platforms",
@@ -5513,15 +5504,6 @@
     "name": "SHOP",
     "category": "stocks",
     "subcategory": "tech",
-    "api_ref": "SHOP",
-    "active": true
-  },
-  {
-    "asset_id": "SHOP",
-    "symbol": "SHOP",
-    "name": "SHOP",
-    "category": "stocks",
-    "subcategory": "large_cap",
     "api_ref": "SHOP",
     "active": true
   },

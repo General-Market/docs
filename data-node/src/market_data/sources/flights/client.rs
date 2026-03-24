@@ -12,7 +12,8 @@
 //!
 //! API: https://api.adsb.lol/v2/lat/{lat}/lon/{lon}/dist/{dist}
 //! Auth: None (community API, no key required)
-//! Rate limit: generous (~60 req/min), max radius 250nm
+//! Rate limit: community API, no published hard limit. We use 120 req/min to keep syncs
+//!             under 15 minutes for all 25 regions (many need multi-query grid coverage).
 
 use anyhow::Result;
 use chrono::Utc;
@@ -131,10 +132,18 @@ impl FlightsMarketSource {
             .build()?;
 
         let rate_limit = RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 50,
-                duration: Duration::from_secs(60),
-            }],
+            windows: vec![
+                // Per-second burst cap — stay polite to a community API
+                RateWindow {
+                    max_requests: 4,
+                    duration: Duration::from_secs(1),
+                },
+                // 120/min sustained — allows full 25-region grid sweep in ~10 min
+                RateWindow {
+                    max_requests: 120,
+                    duration: Duration::from_secs(60),
+                },
+            ],
         };
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
@@ -237,15 +246,23 @@ impl MarketDataSource for FlightsMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(300) // 5 minutes
+        // Sync takes ~10-15 min at 120 req/min (25 regions, multi-query grids).
+        // 20-minute interval gives comfortable breathing room between cycles.
+        Duration::from_secs(1200)
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 50,
-                duration: Duration::from_secs(60),
-            }],
+            windows: vec![
+                RateWindow {
+                    max_requests: 4,
+                    duration: Duration::from_secs(1),
+                },
+                RateWindow {
+                    max_requests: 120,
+                    duration: Duration::from_secs(60),
+                },
+            ],
         }
     }
 
@@ -259,8 +276,6 @@ impl MarketDataSource for FlightsMarketSource {
         if asset_ids.is_empty() {
             return Ok(Vec::new());
         }
-
-        let now = Utc::now();
 
         // Load asset config to get bounding boxes
         let all_entries: Vec<AssetEntry> = serde_json::from_str(ASSET_JSON)?;
@@ -325,6 +340,9 @@ impl MarketDataSource for FlightsMarketSource {
                 .map(|e| e.symbol.clone())
                 .unwrap_or_else(|| format!("FLT/{}", asset_id));
 
+            // Timestamp per-region (sync can take 10+ min across all 25 regions)
+            let region_now = Utc::now();
+
             results.push(PriceUpdate {
                 asset_id: asset_id.clone(),
                 symbol,
@@ -333,7 +351,7 @@ impl MarketDataSource for FlightsMarketSource {
                 change_pct: None,
                 volume_24h: None,
                 market_cap: None,
-                fetched_at: now,
+                fetched_at: region_now,
             });
         }
 

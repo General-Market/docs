@@ -176,17 +176,18 @@ impl SyncEngine {
                     let count = self.sync_count.fetch_add(1, Ordering::Relaxed) + 1;
 
                     match self.sync_prices().await {
-                        Ok((updated, _errors, fetched, active)) => {
+                        Ok((updated, _errors, fetched, active, channel_full)) => {
                             // H3: fetched==0 only goes to error_tracker, NOT circuit breaker
                             if fetched == 0 && active > 0 && !self.source.skips_when_unchanged() {
                                 tracker.record_error(source_id, "API returned 0 prices — source may be broken");
-                            } else if updated == 0 && fetched > 0 {
-                                // NEW-C1: try_send returned Full — prices fetched but not written.
-                                // R4-7: Record in error tracker for health endpoint visibility.
+                            } else if channel_full {
+                                // Channel was actually full — prices fetched but dropped.
                                 warn!("[{}] Sync #{}: fetched {} but channel full, not recording as success", name, count, fetched);
                                 tracker.record_error(source_id, "Write channel full — prices dropped (backpressure)");
                             } else {
-                                info!("[{}] Price sync #{}: {} updated", name, count, updated);
+                                // Success: either prices were written, or all were skipped (unchanged).
+                                // Both are healthy states — the source is alive and responding.
+                                info!("[{}] Price sync #{}: {} updated, {} fetched", name, count, updated, fetched);
                                 if fetched > 0 && active > 0 && (fetched as f64) < (active as f64 * 0.5) {
                                     warn!("[{}] Partial data: {}/{} prices", name, fetched, active);
                                 }
@@ -244,7 +245,7 @@ impl SyncEngine {
         let tracker = super::error_tracker::global();
         let count = self.sync_count.fetch_add(1, Ordering::Relaxed) + 1;
         match self.sync_prices().await {
-            Ok((updated, _errors, fetched, active)) => {
+            Ok((updated, _errors, fetched, active, channel_full)) => {
                 info!("[{}] Price sync #{}: {} updated", name, count, updated);
                 if fetched == 0 && active > 0 && !self.source.skips_when_unchanged() {
                     warn!(
@@ -252,6 +253,10 @@ impl SyncEngine {
                         name, active
                     );
                     tracker.record_error(source_id, "API returned 0 prices");
+                    false
+                } else if channel_full {
+                    warn!("[{}] Channel full during initial sync", name);
+                    tracker.record_error(source_id, "Write channel full — initial sync");
                     false
                 } else {
                     tracker.record_success(source_id);
@@ -279,6 +284,14 @@ impl SyncEngine {
         if assets.is_empty() {
             return Ok(0);
         }
+
+        // Deduplicate by asset_id — Postgres ON CONFLICT DO UPDATE cannot affect a row
+        // a second time within the same statement. Last entry wins for duplicates.
+        let mut seen = std::collections::HashSet::new();
+        let assets: Vec<_> = assets
+            .into_iter()
+            .filter(|a| seen.insert(a.asset_id.clone()))
+            .collect();
 
         let active_ids: Vec<String> = assets.iter().map(|a| a.asset_id.clone()).collect();
 
@@ -350,11 +363,12 @@ impl SyncEngine {
         Ok(assets.len())
     }
 
-    /// Sync prices for all active assets. Returns (updated, errors, fetched, active_assets).
+    /// Sync prices for all active assets. Returns (updated, errors, fetched, active_assets, channel_full).
     ///
     /// All DB writes go through the write channel — no direct INSERT here.
     /// Uses in-memory price cache for change_pct computation.
-    async fn sync_prices(&self) -> Result<(usize, usize, usize, usize)> {
+    /// The `channel_full` flag distinguishes "all prices skipped (unchanged)" from "channel was full."
+    async fn sync_prices(&self) -> Result<(usize, usize, usize, usize, bool)> {
         let source_id = self.source.source_id();
         let sync_start = std::time::Instant::now();
 
@@ -377,7 +391,7 @@ impl SyncEngine {
                 "[{}] No active assets to sync",
                 self.source.display_name()
             );
-            return Ok((0, 0, 0, 0));
+            return Ok((0, 0, 0, 0, false));
         }
 
         // Rate-limit
@@ -462,14 +476,14 @@ impl SyncEngine {
                     cache.retain(|k, _| active_set.contains(k.as_str()));
                 }
                 SendResult::Full => {
-                    // Channel full — prices dropped. Return (0, 0, fetched, active) so
+                    // Channel full — prices dropped. Return channel_full=true so
                     // caller does NOT record this as success. Don't update cache.
                     warn!(
                         "[{}] Write channel full, {} prices dropped (will retry next cycle)",
                         self.source.display_name(),
                         updated
                     );
-                    return Ok((0, 0, fetched, active_assets));
+                    return Ok((0, 0, fetched, active_assets, true));
                 }
                 SendResult::WriterDead => {
                     // BatchWriter is dead — bail to trigger circuit breaker
@@ -487,7 +501,7 @@ impl SyncEngine {
             total_elapsed.as_secs_f64()
         );
 
-        Ok((updated, 0, fetched, active_assets))
+        Ok((updated, 0, fetched, active_assets, false))
     }
 
     /// Deactivate assets that haven't received a price in 7+ days.

@@ -517,14 +517,20 @@ impl BatchLifecycleManager {
                 continue;
             }
 
-            // Start price: prefer stored snapshot, fall back to change_pct derivation
-            let start_price = if has_start_prices {
+            // Start price: prefer stored snapshot, fall back to change_pct derivation.
+            // If start_prices exist but this specific asset is missing, use change_pct
+            // derivation instead of end_price (which would produce a false 0% = draw).
+            let stored_start = if has_start_prices {
                 start_price_map.get(asset_id)
                     .copied()
                     .and_then(|sp| if sp != 0 { Some(sp) } else { None })
-                    .unwrap_or(end_price)
             } else {
-                // Legacy fallback: derive from change_pct
+                None
+            };
+            let start_price = if let Some(sp) = stored_start {
+                sp
+            } else {
+                // Derive from change_pct (works for both legacy batches and missing entries)
                 let change_pct = snap
                     .get("change_pct")
                     .or_else(|| snap.get("changePct"))

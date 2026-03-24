@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn test_asset_count() {
         let entries = load_all_asset_entries(ASSET_JSON).unwrap();
-        assert_eq!(entries.len(), 780, "Expected 780 stock tickers");
+        assert_eq!(entries.len(), 778, "Expected 778 stock tickers");
     }
 
     #[test]

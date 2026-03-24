@@ -84,10 +84,18 @@ impl BestBuyMarketSource {
             .map_err(|_| anyhow::anyhow!("BESTBUY_API_KEY not set"))?;
 
         let rate_limit = RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 240,
-                duration: Duration::from_secs(60),
-            }],
+            windows: vec![
+                // Per-second burst cap: BestBuy enforces "per second limit"
+                RateWindow {
+                    max_requests: 4,
+                    duration: Duration::from_secs(1),
+                },
+                // Per-minute sustained ceiling
+                RateWindow {
+                    max_requests: 200,
+                    duration: Duration::from_secs(60),
+                },
+            ],
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
@@ -135,10 +143,16 @@ impl MarketDataSource for BestBuyMarketSource {
 
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
-            windows: vec![RateWindow {
-                max_requests: 240,
-                duration: Duration::from_secs(60),
-            }],
+            windows: vec![
+                RateWindow {
+                    max_requests: 4,
+                    duration: Duration::from_secs(1),
+                },
+                RateWindow {
+                    max_requests: 200,
+                    duration: Duration::from_secs(60),
+                },
+            ],
         }
     }
 
