@@ -1,0 +1,267 @@
+import React from "react";
+import { Composition, Folder, staticFile } from "remotion";
+import { ChibiExplainer } from "./lib/templates/ChibiExplainer";
+import type { ShortConfig } from "./lib/types";
+import { short01Meta } from "./shorts/short-01/Short01Composition";
+import { short02Meta } from "./shorts/short-02/StonecutterComposition";
+import { short03Meta } from "./shorts/short-03/FebNewTop500Composition";
+import { short04Meta } from "./shorts/short-04/Short04Composition";
+import { visionVCMeta } from "./compositions/vision-vc/VisionVCComposition";
+
+// remotion-scenes showcases
+import {
+  BackgroundShowcase,
+  BACKGROUND_SHOWCASE_DURATION,
+} from "./scenes/BackgroundAnimations";
+import {
+  CinematicShowcase,
+  CINEMATIC_SHOWCASE_DURATION,
+} from "./scenes/CinematicAnimations";
+import { DemoShowcase, DEMO_SHOWCASE_DURATION } from "./scenes/DemoAnimations";
+import {
+  EffectShowcase,
+  EFFECT_SHOWCASE_DURATION,
+} from "./scenes/EffectAnimations";
+import {
+  LayoutShowcase,
+  LAYOUT_SHOWCASE_DURATION,
+} from "./scenes/LayoutAnimations";
+import { ListShowcase, LIST_SHOWCASE_DURATION } from "./scenes/ListAnimations";
+import { LogoShowcase, LOGO_SHOWCASE_DURATION } from "./scenes/LogoAnimations";
+import {
+  ParticleShowcase,
+  PARTICLE_SHOWCASE_DURATION,
+  ParticleEmojiGravity,
+} from "./scenes/ParticleAnimations";
+import {
+  RollerShowcase,
+  ROLLER_SHOWCASE_DURATION,
+} from "./scenes/RollerAnimations";
+import {
+  ShapeShowcase,
+  SHAPE_SHOWCASE_DURATION,
+} from "./scenes/ShapeAnimations";
+import { TextShowcase, TEXT_SHOWCASE_DURATION } from "./scenes/TextAnimations";
+import {
+  ThemeShowcase,
+  THEME_SHOWCASE_DURATION,
+} from "./scenes/ThemeAnimations";
+import {
+  TransitionShowcase,
+  TRANSITION_SHOWCASE_DURATION,
+} from "./scenes/TransitionAnimations";
+import { UIShowcase, UI_SHOWCASE_DURATION } from "./scenes/UIAnimations";
+
+const shorts: ShortConfig[] = [];
+
+export const RemotionRoot: React.FC = () => {
+  return (
+    <>
+      {/* ═══ VISION VC — main composition ═══ */}
+      <Composition
+        id={visionVCMeta.id}
+        component={visionVCMeta.component}
+        durationInFrames={visionVCMeta.durationInFrames}
+        fps={visionVCMeta.fps}
+        width={visionVCMeta.width}
+        height={visionVCMeta.height}
+      />
+
+      {/* ═══ Other shorts ═══ */}
+      <Folder name="Other">
+        <Composition
+          id={short01Meta.id}
+          component={short01Meta.component}
+          durationInFrames={short01Meta.durationInFrames}
+          fps={short01Meta.fps}
+          width={short01Meta.width}
+          height={short01Meta.height}
+        />
+        <Composition
+          id={short02Meta.id}
+          component={short02Meta.component}
+          durationInFrames={short02Meta.durationInFrames}
+          fps={short02Meta.fps}
+          width={short02Meta.width}
+          height={short02Meta.height}
+          defaultProps={{ quality: "draft" as const }}
+        />
+        <Composition
+          id={short03Meta.id}
+          component={short03Meta.component}
+          durationInFrames={short03Meta.durationInFrames}
+          fps={short03Meta.fps}
+          width={short03Meta.width}
+          height={short03Meta.height}
+        />
+        <Composition
+          id={short04Meta.id}
+          component={short04Meta.component}
+          durationInFrames={short04Meta.durationInFrames}
+          fps={short04Meta.fps}
+          width={short04Meta.width}
+          height={short04Meta.height}
+        />
+        <Composition
+          id="EmojiGravity"
+          component={ParticleEmojiGravity}
+          durationInFrames={220}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+      </Folder>
+
+      {/* ═══ Scene Library ═══ */}
+      <Folder name="Scenes">
+        <Composition
+          id="Backgrounds"
+          component={BackgroundShowcase}
+          durationInFrames={BACKGROUND_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Cinematic"
+          component={CinematicShowcase}
+          durationInFrames={CINEMATIC_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Demos"
+          component={DemoShowcase}
+          durationInFrames={DEMO_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Effects"
+          component={EffectShowcase}
+          durationInFrames={EFFECT_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Layouts"
+          component={LayoutShowcase}
+          durationInFrames={LAYOUT_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Lists"
+          component={ListShowcase}
+          durationInFrames={LIST_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Logos"
+          component={LogoShowcase}
+          durationInFrames={LOGO_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Particles"
+          component={ParticleShowcase}
+          durationInFrames={PARTICLE_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Rollers"
+          component={RollerShowcase}
+          durationInFrames={ROLLER_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Shapes"
+          component={ShapeShowcase}
+          durationInFrames={SHAPE_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Text"
+          component={TextShowcase}
+          durationInFrames={TEXT_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Themes"
+          component={ThemeShowcase}
+          durationInFrames={THEME_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="Transitions"
+          component={TransitionShowcase}
+          durationInFrames={TRANSITION_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+        <Composition
+          id="UI"
+          component={UIShowcase}
+          durationInFrames={UI_SHOWCASE_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+        />
+      </Folder>
+
+      {/* Per-short compositions */}
+      {shorts.length > 0 && (
+        <Folder name="Shorts">
+          {shorts.map((config) => (
+            <Composition
+              key={config.id}
+              id={config.id}
+              component={() => <ChibiExplainer config={config} />}
+              durationInFrames={1800}
+              fps={config.fps}
+              width={config.width}
+              height={config.height}
+              defaultProps={{ config }}
+              calculateMetadata={async () => {
+                try {
+                  const resp = await fetch(staticFile(config.captionsPath));
+                  if (resp.ok) {
+                    const captions = await resp.json();
+                    const lastCaption = captions[captions.length - 1];
+                    if (lastCaption?.endMs) {
+                      const durationFrames =
+                        Math.ceil((lastCaption.endMs / 1000) * config.fps) + 60;
+                      return { durationInFrames: durationFrames };
+                    }
+                  }
+                } catch {
+                  // fallback
+                }
+                return { durationInFrames: 1800 };
+              }}
+            />
+          ))}
+        </Folder>
+      )}
+    </>
+  );
+};

@@ -1,0 +1,20 @@
+node_modules/
+dist/
+out/
+.DS_Store
+.env
+
+# Media assets (too large for git)
+public/
+blender_render/
+
+# Media files anywhere
+*.mp4
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.webm
+*.avi
+*.mov
+*.mkv

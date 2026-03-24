@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["blender-mcp"],
+      "env": {}
+    },
+    "thingiverse": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "mcp-thingiverse"],
+      "env": {
+        "THINGIVERSE_TOKEN": "${THINGIVERSE_TOKEN}"
+      }
+    }
+  }
+}

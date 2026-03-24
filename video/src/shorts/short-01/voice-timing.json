@@ -1,0 +1,216 @@
+{
+  "voiceFile": "shorts/short-01/voice-processed.wav",
+  "totalDuration": 65.39,
+  "shots": [
+    {
+      "id": 1,
+      "startTime": 0.0,
+      "endTime": 3.34,
+      "durationSeconds": 3.34
+    },
+    {
+      "id": 2,
+      "startTime": 3.34,
+      "endTime": 4.96,
+      "durationSeconds": 1.62
+    },
+    {
+      "id": 3,
+      "startTime": 4.96,
+      "endTime": 8.7,
+      "durationSeconds": 3.74
+    },
+    {
+      "id": 4,
+      "startTime": 8.7,
+      "endTime": 10.24,
+      "durationSeconds": 1.54
+    },
+    {
+      "id": 5,
+      "startTime": 10.24,
+      "endTime": 11.62,
+      "durationSeconds": 1.38
+    },
+    {
+      "id": 6,
+      "startTime": 11.62,
+      "endTime": 13.78,
+      "durationSeconds": 2.16
+    },
+    {
+      "id": 7,
+      "startTime": 13.78,
+      "endTime": 14.94,
+      "durationSeconds": 1.16
+    },
+    {
+      "id": 8,
+      "startTime": 14.94,
+      "endTime": 16.2,
+      "durationSeconds": 1.26
+    },
+    {
+      "id": 9,
+      "startTime": 16.2,
+      "endTime": 18.34,
+      "durationSeconds": 2.14
+    },
+    {
+      "id": 10,
+      "startTime": 18.34,
+      "endTime": 20.34,
+      "durationSeconds": 2.0
+    },
+    {
+      "id": 11,
+      "startTime": 20.34,
+      "endTime": 21.46,
+      "durationSeconds": 1.12
+    },
+    {
+      "id": 12,
+      "startTime": 21.46,
+      "endTime": 24.0,
+      "durationSeconds": 2.54
+    },
+    {
+      "id": 13,
+      "startTime": 24.0,
+      "endTime": 25.18,
+      "durationSeconds": 1.18
+    },
+    {
+      "id": 14,
+      "startTime": 25.18,
+      "endTime": 26.66,
+      "durationSeconds": 1.48
+    },
+    {
+      "id": 15,
+      "startTime": 26.66,
+      "endTime": 28.92,
+      "durationSeconds": 2.26
+    },
+    {
+      "id": 16,
+      "startTime": 28.92,
+      "endTime": 30.34,
+      "durationSeconds": 1.42
+    },
+    {
+      "id": 17,
+      "startTime": 30.34,
+      "endTime": 32.04,
+      "durationSeconds": 1.7
+    },
+    {
+      "id": 18,
+      "startTime": 32.04,
+      "endTime": 32.8,
+      "durationSeconds": 0.76
+    },
+    {
+      "id": 19,
+      "startTime": 32.8,
+      "endTime": 34.62,
+      "durationSeconds": 1.82
+    },
+    {
+      "id": 20,
+      "startTime": 34.62,
+      "endTime": 36.38,
+      "durationSeconds": 1.76
+    },
+    {
+      "id": 21,
+      "startTime": 36.38,
+      "endTime": 37.94,
+      "durationSeconds": 1.56
+    },
+    {
+      "id": 22,
+      "startTime": 37.94,
+      "endTime": 41.48,
+      "durationSeconds": 3.54
+    },
+    {
+      "id": 23,
+      "startTime": 41.48,
+      "endTime": 43.76,
+      "durationSeconds": 2.28
+    },
+    {
+      "id": 24,
+      "startTime": 43.76,
+      "endTime": 46.86,
+      "durationSeconds": 3.1
+    },
+    {
+      "id": 25,
+      "startTime": 46.86,
+      "endTime": 48.4,
+      "durationSeconds": 1.54
+    },
+    {
+      "id": 26,
+      "startTime": 48.4,
+      "endTime": 49.14,
+      "durationSeconds": 0.74
+    },
+    {
+      "id": 27,
+      "startTime": 49.14,
+      "endTime": 50.62,
+      "durationSeconds": 1.48
+    },
+    {
+      "id": 28,
+      "startTime": 50.62,
+      "endTime": 51.98,
+      "durationSeconds": 1.36
+    },
+    {
+      "id": 29,
+      "startTime": 51.98,
+      "endTime": 53.76,
+      "durationSeconds": 1.78
+    },
+    {
+      "id": 30,
+      "startTime": 53.76,
+      "endTime": 55.78,
+      "durationSeconds": 2.02
+    },
+    {
+      "id": 31,
+      "startTime": 55.78,
+      "endTime": 57.5,
+      "durationSeconds": 1.72
+    },
+    {
+      "id": 32,
+      "startTime": 57.5,
+      "endTime": 59.36,
+      "durationSeconds": 1.86
+    },
+    {
+      "id": 33,
+      "startTime": 59.36,
+      "endTime": 62.72,
+      "durationSeconds": 3.36
+    },
+    {
+      "id": 34,
+      "startTime": 62.72,
+      "endTime": 64.12,
+      "durationSeconds": 1.4
+    },
+    {
+      "id": 35,
+      "startTime": 64.12,
+      "endTime": 65.39,
+      "durationSeconds": 1.27
+    }
+  ]
+}
