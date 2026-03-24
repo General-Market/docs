@@ -212,7 +212,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               {t('source_detail.round')}
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {activeBatch ? `#${activeBatch.id}` : '#0'}
+              {activeBatch ? `#${activeBatch.id}` : activeRound ? `#${activeRound.batchId}` : '—'}
             </div>
           </div>
           <div>
@@ -220,7 +220,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               Status
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {roundStatusLabel}
+              {activeBatch || activeRound ? roundStatusLabel : 'Waiting'}
             </div>
           </div>
           <div>
@@ -228,7 +228,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               {t('source_detail.players')}
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {activeBatch?.playerCount ?? 0}
+              {activeBatch?.playerCount ?? activeRound?.playerCount ?? '—'}
             </div>
           </div>
           <div>
@@ -236,7 +236,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               {t('source_detail.pool')}
             </div>
             <div className="text-[16px] font-bold font-mono text-color-up">
-              {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
+              {activeBatch ? formatTvl(activeBatch.tvl) : '—'}
             </div>
           </div>
           <div>
