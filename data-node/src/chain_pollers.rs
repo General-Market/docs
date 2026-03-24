@@ -77,6 +77,13 @@ const PUNITIVE_RATE: u128 = 31_709_791_983;
 const MAX_RATE_STALENESS: u64 = 48 * 3600; // 48 hours
 
 abigen!(
+    BridgedItpReader,
+    r#"[
+        function itpId() external view returns (bytes32)
+    ]"#
+);
+
+abigen!(
     OracleRegistryPoller,
     r#"[
         function getActiveOracleEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
@@ -102,7 +109,6 @@ abigen!(
         function nextCreationNonce() external view returns (uint256)
         function isPending(uint256 nonce) external view returns (bool)
         function getPendingCreation(uint256 nonce) external view returns (address admin, string name, string symbol, uint256[] weights, address[] assets, uint256[] prices, uint64 createdAt, bool completed)
-        function getBridgedItp(bytes32 orbitItpId) external view returns (address)
     ]"#
 );
 
@@ -229,6 +235,40 @@ pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn st
     let mut cache = state.chain_cache.morpho_markets.write().await;
     *cache = results;
     state.chain_cache.morpho_markets_gen.bump();
+
+    // Resolve settlement_address for ITPs via BridgedITP.itpId() on L3.
+    // Each collateral token is a BridgedITP on L3 with an itpId() getter.
+    // We call itpId() to get the ITP ID, then set settlement_address = collateral_token
+    // on the matching ITP state so the frontend can cross-reference Morpho markets with NAV.
+    let provider = Arc::clone(&state.l3_provider);
+    let itp_cache = state.chain_cache.itp_states.read().await;
+    let needs_resolution: bool = itp_cache.states.values().any(|s| s.settlement_address.is_none());
+    drop(itp_cache);
+
+    if needs_resolution {
+        let futs: Vec<_> = batch_markets.iter().map(|bm| {
+            let provider = Arc::clone(&provider);
+            let ct = bm.collateral_token.clone();
+            async move {
+                let addr: Address = ct.parse().ok()?;
+                let reader = BridgedItpReader::new(addr, provider);
+                let id_bytes = reader.itp_id().call().await.ok()?;
+                let hex_id = format!("0x{}", hex::encode(id_bytes));
+                Some((hex_id, ct))
+            }
+        }).collect();
+        let resolved: Vec<Option<(String, String)>> = futures::future::join_all(futs).await;
+        let mut itp_cache = state.chain_cache.itp_states.write().await;
+        for item in resolved.into_iter().flatten() {
+            let (itp_id_hex, collateral_token) = item;
+            if let Some(entry) = itp_cache.states.get_mut(&itp_id_hex) {
+                if entry.settlement_address.is_none() {
+                    entry.settlement_address = Some(collateral_token);
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -1013,38 +1053,6 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
         }
         Err(e) => {
             warn!(%e, "BridgeProxy address not found in deployment");
-        }
-    }
-
-    // ── Resolve settlement_address for ITPs missing it ─────────────────
-    // Call BridgeProxy.getBridgedItp(itpId) for each ITP that lacks a settlement_address.
-    // This populates the field that the frontend uses to cross-reference Morpho markets with NAV.
-    if let Ok(bridge_addr) = crate::api::deployment_addr(&state.deployment, "BridgeProxy") {
-        let bridge = BridgeProxySettlementReader::new(bridge_addr, Arc::clone(&state.settlement_provider));
-        let itp_cache = state.chain_cache.itp_states.read().await;
-        let unresolved: Vec<String> = itp_cache
-            .states
-            .iter()
-            .filter(|(_, s)| s.settlement_address.is_none())
-            .map(|(id, _)| id.clone())
-            .collect();
-        drop(itp_cache);
-
-        for itp_id_hex in &unresolved {
-            let stripped = itp_id_hex.strip_prefix("0x").unwrap_or(itp_id_hex);
-            let mut id_bytes = [0u8; 32];
-            if hex::decode_to_slice(stripped, &mut id_bytes).is_err() {
-                continue;
-            }
-            match bridge.get_bridged_itp(id_bytes).call().await {
-                Ok(addr) if !addr.is_zero() => {
-                    let mut cache = state.chain_cache.itp_states.write().await;
-                    if let Some(entry) = cache.states.get_mut(itp_id_hex) {
-                        entry.settlement_address = Some(format!("{:?}", addr));
-                    }
-                }
-                _ => {} // Not bridged yet or call failed — skip
-            }
         }
     }
 
