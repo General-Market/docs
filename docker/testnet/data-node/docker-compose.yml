@@ -10,7 +10,7 @@ services:
         SERVICE: data-node
     container_name: testnet-data-node
     network_mode: host
-    restart: "no"
+    restart: unless-stopped
     env_file:
       - ../../../data-node/.env
     volumes:
