@@ -15,6 +15,7 @@ services:
       - ../../../data-node/.env
     volumes:
       - ../../../data-node/.env:/app/data-node/.env:ro
+      - ../../../data-node/migrations:/app/data-node/migrations:ro
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - ../../../deployments/morpho-e2e.json:/app/deployments/morpho-e2e.json:ro
       - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
