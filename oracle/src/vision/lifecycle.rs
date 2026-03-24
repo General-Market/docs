@@ -50,7 +50,7 @@ pub struct IncomingCreateBatchSign {
 const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 30;
 
 /// Stagger interval between sources to avoid thundering herd.
-const SOURCE_STAGGER_SECS: u64 = 7;
+const SOURCE_STAGGER_SECS: u64 = 1;
 
 /// Per-source tracking state for round rotation.
 struct SourceState {
