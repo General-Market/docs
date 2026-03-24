@@ -462,13 +462,42 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
             U256::zero()
         };
 
+        // Poll vault token (collateral) balances for all batch markets.
+        // These are the ERC4626 ITP vault tokens used as Morpho collateral.
+        let batch_markets = state.batch_markets.read().await;
+        let mut itp_shares = std::collections::HashMap::new();
+
+        // Parallel balance reads for all batch market collateral tokens
+        let bal_futs: Vec<_> = batch_markets.iter().map(|bm| {
+            let provider = Arc::clone(&state.l3_provider);
+            let ct = bm.collateral_token.clone();
+            let user_addr = *user;
+            async move {
+                let addr: Address = ct.parse().unwrap_or_default();
+                if addr.is_zero() { return None; }
+                let reader = BalanceReader::new(addr, provider);
+                let bal = reader.balance_of(user_addr).call().await.unwrap_or_default();
+                if bal.is_zero() { return None; }
+                // Resolve itpId from the collateral token
+                let itp_cache = &state.chain_cache.itp_states.read().await;
+                let itp_id = itp_cache.states.iter()
+                    .find(|(_, s)| s.settlement_address.as_ref().map(|a| a.to_lowercase()) == Some(ct.to_lowercase()))
+                    .map(|(id, _)| id.clone());
+                itp_id.map(|id| (id, bal.to_string()))
+            }
+        }).collect();
+        drop(batch_markets);
+        let bal_results = futures::future::join_all(bal_futs).await;
+        for item in bal_results.into_iter().flatten() {
+            let (itp_id, bal) = item;
+            itp_shares.insert(itp_id, bal);
+        }
+
         let mut uc = user_cache.write().await;
-        // Preserve itp_shares — maintained by SharesUpdated events, not by this poller
-        let existing_shares = uc.balances.itp_shares.clone();
         uc.balances = UserBalances {
             usdc_l3: l3_usdc_bal.to_string(),
             usdc_settlement: usdc_bal.to_string(),
-            itp_shares: existing_shares,
+            itp_shares,
             bridged_itp: bridged_bal.to_string(),
             itp_nonce: 0,
             vision_balance: vision_bal.to_string(),
