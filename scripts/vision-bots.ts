@@ -44,6 +44,10 @@ const BOT_COUNT = parseInt(process.env.BOT_COUNT || '10', 10)
 const CLAIM_INTERVAL_MS = 90_000 // claim every 90s
 const REJOIN_INTERVAL_MS = 60_000 // check re-joins every 60s
 
+// Track submitted bitmaps per bot per batch for periodic re-submission.
+// Key = `${botAddress}:${batchId}`, value = { bitmap, hash }.
+const activeBitmaps = new Map<string, { bitmap: Hex; hash: Hex }>()
+
 // Load contract addresses from deployment files
 const activeDeployment = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../deployments/active-deployment.json'), 'utf-8'),
@@ -449,6 +453,9 @@ async function joinBatchForBot(
 
     await submitBitmapToOracles(botAddress, batch.batchId, bitmap, bmpHash)
 
+    // Store for periodic re-submission (survives oracle restarts)
+    activeBitmaps.set(`${botAddress}:${batch.batchId}`, { bitmap, hash: bmpHash })
+
     const upCount = bets.filter(b => b).length
     console.log(`    [+] Joined #${batch.batchId} (${batch.sourceKey}) — ${upCount}/${marketCount} UP`)
     return true
@@ -666,6 +673,20 @@ async function main() {
       }
     }
 
+    // ── Re-submit bitmaps to all oracles ──
+    // Ensures oracle-2/oracle-3 have bitmaps even if initial POST or P2P gossip failed.
+    // Without this, the resolving oracle may void the player (refund instead of win/loss).
+    for (const bot of bots) {
+      for (const batch of batches) {
+        const key = `${bot.botAddress}:${batch.batchId}`
+        const stored = activeBitmaps.get(key)
+        if (!stored) continue
+        try {
+          await submitBitmapToOracles(bot.botAddress, batch.batchId, stored.bitmap, stored.hash)
+        } catch { /* best effort */ }
+      }
+    }
+
     // ── Re-join expired positions ──
     for (const bot of bots) {
       let rejoined = 0
@@ -680,7 +701,8 @@ async function main() {
           }) as any
 
           if (position.balance === 0n || position.stakePerTick === 0n) {
-            // Position expired or empty — re-join
+            // Position expired or empty — purge stale bitmap and re-join
+            activeBitmaps.delete(`${bot.botAddress}:${batch.batchId}`)
             const vBal = await bot.publicClient.readContract({
               address: VISION_ADDRESS,
               abi: VISION_ABI,
