@@ -54,7 +54,8 @@ pub async fn fetch_snapshot_data_inner_with_secret(
 ) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}/vision/snapshot?source={}&limit=10000", data_node_url, source_id);
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(15))
+        .gzip(true)
         .build()?;
 
     let response = client.get(&url).send().await?;

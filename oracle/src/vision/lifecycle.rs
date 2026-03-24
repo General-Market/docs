@@ -436,7 +436,8 @@ impl BatchLifecycleManager {
             self.config.data_node_url, source_name
         );
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(5))
+            .timeout(std::time::Duration::from_secs(15))
+            .gzip(true)
             .build()?;
         let json: serde_json::Value = client.get(&snapshot_url).send().await?.json().await?;
 
@@ -1133,7 +1134,8 @@ impl BatchLifecycleManager {
             self.config.data_node_url, source_name
         );
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(5))
+            .timeout(std::time::Duration::from_secs(15))
+            .gzip(true)
             .build()?;
         let json: serde_json::Value = client.get(&snapshot_url).send().await?.json().await?;
 

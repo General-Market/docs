@@ -60,10 +60,20 @@ pub struct RecommendedMarket {
     pub threshold_source: String,
 }
 
+/// Shared HTTP client for data-node requests. Enables gzip decompression
+/// so large payloads (polymarket: 33k+ markets) transfer compressed.
+fn data_node_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .gzip(true)
+        .build()
+        .expect("failed to build reqwest client")
+}
+
 /// Fetch recommended batches from data-node.
 pub async fn fetch_recommended(data_node_url: &str) -> Result<Vec<RecommendedBatch>, reqwest::Error> {
     let url = format!("{}/batches/recommended", data_node_url);
-    let resp: RecommendedBatchesResponse = reqwest::get(&url).await?.json().await?;
+    let resp: RecommendedBatchesResponse = data_node_client().get(&url).send().await?.json().await?;
     Ok(resp.batches)
 }
 
@@ -73,7 +83,7 @@ pub async fn fetch_config_by_hash(
     hash: &str,
 ) -> Result<RecommendedBatch, reqwest::Error> {
     let url = format!("{}/batches/config/{}", data_node_url, hash);
-    reqwest::get(&url).await?.json().await
+    data_node_client().get(&url).send().await?.json().await
 }
 
 /// Verify a leader's proposed source config against follower's own view.
