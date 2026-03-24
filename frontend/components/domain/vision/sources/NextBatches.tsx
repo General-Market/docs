@@ -17,8 +17,7 @@ function BatchTimer({ bettingEnd }: { bettingEnd: string | null }) {
     const iv = setInterval(update, 1000)
     return () => clearInterval(iv)
   }, [bettingEnd])
-  if (!bettingEnd) return null
-  if (remaining <= 0) return <span className="text-micro text-amber-600 font-bold animate-pulse">New round soon</span>
+  if (!bettingEnd || remaining <= 0) return null
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
   return <span className="text-micro font-bold font-mono tabular-nums text-text-muted">{m}:{s.toString().padStart(2, '0')}</span>
@@ -45,6 +44,7 @@ interface BatchDisplay {
   category: string
   sourceKey: string
   bettingEnd: string | null
+  isBettingOpen: boolean
 }
 
 function BatchCard({ item }: { item: BatchDisplay }) {
@@ -53,7 +53,9 @@ function BatchCard({ item }: { item: BatchDisplay }) {
   return (
     <Link
       href={`/source/${item.sourceKey}`}
-      className="shrink-0 flex flex-col px-5 py-4 border bg-white transition-all w-[220px] cursor-pointer border-border-light hover:border-black"
+      className={`shrink-0 flex flex-col px-5 py-4 border bg-white transition-all w-[220px] cursor-pointer ${
+        item.isBettingOpen ? 'border-black' : 'border-border-light hover:border-black'
+      }`}
     >
       {/* Source name */}
       <div className="flex items-center gap-2 mb-2 min-w-0">
@@ -82,12 +84,16 @@ function BatchCard({ item }: { item: BatchDisplay }) {
       </div>
       <span className="text-micro text-text-muted mt-1">players</span>
 
-      {/* Footer: category + timer */}
+      {/* Footer: category + timer or status */}
       <div className="flex items-center justify-between mt-3">
         <span className={`text-micro font-bold uppercase px-1.5 py-0.5 rounded ${catColors}`}>
           {item.category}
         </span>
-        <BatchTimer bettingEnd={item.bettingEnd} />
+        {item.isBettingOpen ? (
+          <BatchTimer bettingEnd={item.bettingEnd} />
+        ) : (
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Active" />
+        )}
       </div>
     </Link>
   )
@@ -101,6 +107,8 @@ export function NextBatches() {
 
   const sortedBatches = useMemo((): BatchDisplay[] => {
     if (!apiBatches || apiBatches.length === 0) return []
+
+    const now = Date.now()
 
     // Build batchId → bettingEnd from rounds
     const roundMap = new Map<number, string>()
@@ -117,6 +125,8 @@ export function NextBatches() {
         const displayName = source?.name ?? batch.sourceId
         const logo = source?.logo
         const category = source?.category ?? 'finance'
+        const bettingEnd = roundMap.get(batch.id) ?? null
+        const isBettingOpen = bettingEnd ? new Date(bettingEnd).getTime() > now : false
 
         return {
           batch,
@@ -124,10 +134,15 @@ export function NextBatches() {
           displayName,
           category,
           sourceKey: source?.sourceId ?? batch.sourceId,
-          bettingEnd: roundMap.get(batch.id) ?? null,
+          bettingEnd,
+          isBettingOpen,
         }
       })
-      .sort((a, b) => b.batch.playerCount - a.batch.playerCount)
+      // Sort: betting open first (with countdown), then by player count
+      .sort((a, b) => {
+        if (a.isBettingOpen !== b.isBettingOpen) return a.isBettingOpen ? -1 : 1
+        return b.batch.playerCount - a.batch.playerCount
+      })
   }, [apiBatches, registrySources, rounds])
 
   if (sortedBatches.length === 0) return null

@@ -167,14 +167,14 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const totalMarkets = marketIds.length
   const totalSet = counts.up + counts.down
 
-  // Round status display
+  // Round status display — seamless transition between rounds
+  const bettingOpen = activeRound?.bettingEnd
+    ? new Date(activeRound.bettingEnd).getTime() > Date.now()
+    : false
   const roundStatusLabel = activeRound
-    ? activeRound.status === 'betting' ? t('source_detail.betting_open')
-    : activeRound.status === 'settling' ? t('source_detail.settling')
-    : activeRound.status === 'settled' ? t('source_detail.settled')
-    : activeRound.status === 'locked' ? t('source_detail.locked')
-    : activeRound.status
-    : 'Waiting'
+    ? bettingOpen ? t('source_detail.betting_open')
+    : 'Settling'
+    : 'Settling'
 
   if (isRegistryLoading && !initialSource) {
     return <SourceDetailSkeleton />
