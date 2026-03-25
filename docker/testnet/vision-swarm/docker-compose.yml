@@ -1,149 +1,41 @@
 # ╔════════════════════════════════════════════════════════╗
-# ║  Vision Swarm — 10 random-strategy bots                ║
+# ║  Vision Swarm — 10 bots in 1 container (threaded)     ║
 # ╠════════════════════════════════════════════════════════╣
-# ║  Deploy:   scripts/deploy-swarm.sh                     ║
 # ║  Start:    source swarm.env && docker compose up -d     ║
 # ║  Stop:     docker compose down                          ║
-# ║  Logs:     docker compose logs -f swarm-bot-0           ║
-# ║  E2E test: npx playwright test --project=swarm          ║
+# ║  Logs:     docker compose logs -f vision-swarm          ║
 # ╚════════════════════════════════════════════════════════╝
 
-x-bot-common: &bot-common
-  build:
-    context: ../../..
-    dockerfile: docker/testnet/vision-swarm/Dockerfile
-  network_mode: host
-  restart: unless-stopped
-  read_only: true
-  security_opt:
-    - no-new-privileges:true
-  volumes:
-    - ./config.toml:/app/config.toml:ro
-    - ./pnl-data:/app/pnl-data
-  tmpfs:
-    - /tmp
-  env_file:
-    - swarm.env
-  deploy:
-    resources:
-      limits:
-        memory: 256m
-        cpus: "0.25"
-
 services:
-  swarm-bot-0:
-    <<: *bot-common
-    container_name: swarm-bot-0
+  vision-swarm:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/vision-swarm/Dockerfile
+    container_name: vision-swarm
+    entrypoint: ["python", "swarm_runner.py"]
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./pnl-data:/app/pnl-data
+      - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
+    tmpfs:
+      - /tmp
+    env_file:
+      - swarm.env
     environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_0_KEY}
-      PNL_FILE: /app/pnl-data/pnl-0.json
-      STRATEGY: momentum
-      STAKE_PER_TICK: "1.5"
-
-  swarm-bot-1:
-    <<: *bot-common
-    container_name: swarm-bot-1
-    depends_on:
-      swarm-bot-0:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_1_KEY}
-      PNL_FILE: /app/pnl-data/pnl-1.json
-      STRATEGY: contrarian
-      STAKE_PER_TICK: "1.3"
-
-  swarm-bot-2:
-    <<: *bot-common
-    container_name: swarm-bot-2
-    depends_on:
-      swarm-bot-1:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_2_KEY}
-      PNL_FILE: /app/pnl-data/pnl-2.json
-      STRATEGY: random
-      STAKE_PER_TICK: "1.2"
-
-  swarm-bot-3:
-    <<: *bot-common
-    container_name: swarm-bot-3
-    depends_on:
-      swarm-bot-2:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_3_KEY}
-      PNL_FILE: /app/pnl-data/pnl-3.json
-      STRATEGY: bullish
-      STAKE_PER_TICK: "1.4"
-
-  swarm-bot-4:
-    <<: *bot-common
-    container_name: swarm-bot-4
-    depends_on:
-      swarm-bot-3:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_4_KEY}
-      PNL_FILE: /app/pnl-data/pnl-4.json
-      STRATEGY: bearish
-      STAKE_PER_TICK: "1.6"
-
-  swarm-bot-5:
-    <<: *bot-common
-    container_name: swarm-bot-5
-    depends_on:
-      swarm-bot-4:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_5_KEY}
-      PNL_FILE: /app/pnl-data/pnl-5.json
-      STRATEGY: momentum
-      STAKE_PER_TICK: "1.1"
-
-  swarm-bot-6:
-    <<: *bot-common
-    container_name: swarm-bot-6
-    depends_on:
-      swarm-bot-5:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_6_KEY}
-      PNL_FILE: /app/pnl-data/pnl-6.json
-      STRATEGY: contrarian
-      STAKE_PER_TICK: "1.7"
-
-  swarm-bot-7:
-    <<: *bot-common
-    container_name: swarm-bot-7
-    depends_on:
-      swarm-bot-6:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_7_KEY}
-      PNL_FILE: /app/pnl-data/pnl-7.json
-      STRATEGY: random
-      STAKE_PER_TICK: "1.8"
-
-  swarm-bot-8:
-    <<: *bot-common
-    container_name: swarm-bot-8
-    depends_on:
-      swarm-bot-7:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_8_KEY}
-      PNL_FILE: /app/pnl-data/pnl-8.json
-      STRATEGY: bullish
-      STAKE_PER_TICK: "1.9"
-
-  swarm-bot-9:
-    <<: *bot-common
-    container_name: swarm-bot-9
-    depends_on:
-      swarm-bot-8:
-        condition: service_started
-    environment:
-      BOT_PRIVATE_KEY: ${SWARM_BOT_9_KEY}
-      PNL_FILE: /app/pnl-data/pnl-9.json
-      STRATEGY: bearish
-      STAKE_PER_TICK: "1.15"
+      BOT_COUNT: "10"
+      BOT_KEYS: "${SWARM_BOT_0_KEY},${SWARM_BOT_1_KEY},${SWARM_BOT_2_KEY},${SWARM_BOT_3_KEY},${SWARM_BOT_4_KEY},${SWARM_BOT_5_KEY},${SWARM_BOT_6_KEY},${SWARM_BOT_7_KEY},${SWARM_BOT_8_KEY},${SWARM_BOT_9_KEY}"
+      BOT_STRATEGIES: "momentum,contrarian,random,bullish,bearish,momentum,contrarian,random,bullish,bearish"
+      BOT_STAKES: "1.5,1.3,1.2,1.4,1.6,1.1,1.7,1.8,1.9,1.15"
+      STAGGER_SECS: "3"
+      PNL_DIR: "/app/pnl-data"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"

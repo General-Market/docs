@@ -111,7 +111,7 @@ def main():
     strategies = [s.strip() for s in strategies_csv.split(",")]
 
     # Parse stakes
-    stakes_csv = os.environ.get("BOT_STAKES", "0.5,0.3,0.2,0.4,0.6,0.1,0.7,0.8,0.9,0.15")
+    stakes_csv = os.environ.get("BOT_STAKES", "1.5,1.3,1.2,1.4,1.6,1.1,1.7,1.8,1.9,1.15")
     stakes = [float(s.strip()) for s in stakes_csv.split(",")]
 
     # Pad to bot_count
