@@ -260,7 +260,7 @@
     "up": "UP",
     "down": "DN",
     "settlement": "決済",
-    "settlement_healthy": "98% 決済済",
+    "settlement_healthy": "Active",
     "settlement_delayed": "決済中...",
     "settlement_inactive": "未稼働"
   },

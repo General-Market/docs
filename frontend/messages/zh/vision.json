@@ -260,7 +260,7 @@
     "up": "UP",
     "down": "DN",
     "settlement": "结算",
-    "settlement_healthy": "98% 已结算",
+    "settlement_healthy": "Active",
     "settlement_delayed": "结算中...",
     "settlement_inactive": "未激活"
   },

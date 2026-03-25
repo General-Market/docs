@@ -946,6 +946,19 @@ print('Repaired settlement addresses from Sonic deployment')
     done
     echo -e "  ${GREEN}Oracle migrations applied${NC}"
 
+    # Seed vision_batch_lifecycle with source names from vision-batches.json
+    # (The lifecycle manager discovers these over time, but seeding ensures
+    # the player profile API can group batches by source immediately.)
+    echo -e "  Seeding batch lifecycle source names..."
+    python3 -c "
+import json
+vb = json.load(open('deployments/vision-batches.json'))
+for name, b in vb.get('batches', {}).items():
+    bid, ch, td = b['batchId'], b.get('configHash',''), b.get('tickDuration',86400)
+    print(f\"INSERT INTO vision_batch_lifecycle (batch_id, source_id, timeframe_secs, config_hash, betting_start, betting_end, settlement_deadline, market_count) VALUES ({bid}, '{name}', {td}, '{ch}', NOW(), NOW() + INTERVAL '1 day', NOW() + INTERVAL '2 days', 0) ON CONFLICT (batch_id) DO UPDATE SET source_id = '{name}';\")
+" | vps_be_ssh "psql -U max -d $DB_NAME" > /dev/null 2>&1 || true
+    echo -e "  ${GREEN}Batch lifecycle seeded${NC}"
+
     # Delete stale consensus WAL files (prevents old P2P state from poisoning fresh deploy)
     vps_be_ssh "rm -f $VPS_BE_DIR/logs/consensus-*.wal" && echo -e "  ${GREEN}Consensus WAL files cleaned${NC}" || true
 

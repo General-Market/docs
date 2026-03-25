@@ -260,7 +260,7 @@
     "up": "UP",
     "down": "DN",
     "settlement": "Settlement",
-    "settlement_healthy": "98% settled",
+    "settlement_healthy": "Active",
     "settlement_delayed": "Settling...",
     "settlement_inactive": "Inactive"
   },

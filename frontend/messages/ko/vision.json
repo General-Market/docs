@@ -260,7 +260,7 @@
     "up": "UP",
     "down": "DN",
     "settlement": "정산",
-    "settlement_healthy": "98% 정산됨",
+    "settlement_healthy": "Active",
     "settlement_delayed": "정산 중...",
     "settlement_inactive": "비활성"
   },
