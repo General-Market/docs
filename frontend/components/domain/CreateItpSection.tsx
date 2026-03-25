@@ -12,6 +12,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useDeployerName } from '@/hooks/useDeployerName'
+import { useSSENav } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringCard, SpringModal, SpringBackdrop } from '@/components/ui/spring'
@@ -107,6 +108,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   // Oracle consensus polling — track L3 ITP count before/after submission
   const [itpCountBefore, setItpCountBefore] = useState<number | null>(null)
   const [consensusReached, setConsensusReached] = useState(false)
+  const sseNavs = useSSENav()
 
   // Load full asset list from deployed-assets.json on mount
   useEffect(() => {
@@ -462,37 +464,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     return () => clearTimeout(timer)
   }, [isConfirming])
 
-  // Poll data-node for new ITP after Settlement tx succeeds
+  // Wait for new ITP to appear in the SSE listing (visible to all users)
   useEffect(() => {
-    if (!isSuccess || consensusReached) return
-
-    let cancelled = false
-    const poll = async () => {
-      try {
-        // Check if the next ITP ID exists in the data-node
-        const nextId = itpCountBefore != null ? itpCountBefore + 1 : 1
-        const itpIdHex = '0x' + nextId.toString(16).padStart(64, '0')
-        const res = await fetch(`/api/dn/itp-price?itp_id=${encodeURIComponent(itpIdHex)}`)
-        if (!res.ok || cancelled) return
-        const data = await res.json()
-        // If data-node returns a valid ITP with assets, consensus reached
-        if (data.itp_id && data.assets_total > 0 && !cancelled) {
-          setConsensusReached(true)
-          capture('create_itp_consensus_reached', { itp_id: data.itp_id })
-        }
-      } catch { /* continue polling */ }
+    if (!isSuccess || consensusReached || itpCountBefore == null) return
+    const nextId = itpCountBefore + 1
+    const nextIdHex = '0x' + nextId.toString(16).padStart(64, '0')
+    // Check if the new ITP is already in the SSE nav list
+    const found = sseNavs.some(n => n.itp_id?.toLowerCase() === nextIdHex.toLowerCase())
+    if (found) {
+      setConsensusReached(true)
+      capture('create_itp_consensus_reached', { itp_id: nextIdHex })
     }
-
-    const interval = setInterval(poll, 3_000)
-    poll()
-    const timeout = setTimeout(() => clearInterval(interval), 300_000)
-
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-      clearTimeout(timeout)
-    }
-  }, [isSuccess, itpCountBefore, consensusReached])
+  }, [isSuccess, itpCountBefore, consensusReached, sseNavs])
 
   const handleCancel = useCallback(() => {
     resetWrite()
