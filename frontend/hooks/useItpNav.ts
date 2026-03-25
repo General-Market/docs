@@ -49,8 +49,8 @@ export function useItpNav(itpId: string | undefined): ItpNavResult {
 
     try {
       const navResponse = await fetch(
-        `/api/itp-price?itp_id=${id}`,
-        { signal: AbortSignal.timeout(5000) }
+        `/api/itp-price?itp_id=${encodeURIComponent(id)}`,
+        { signal: AbortSignal.timeout(8000) }
       ).then(r => r.ok ? r.json() : null).catch(() => null)
 
       if (navResponse && navResponse.nav && navResponse.nav !== '0') {
@@ -61,16 +61,16 @@ export function useItpNav(itpId: string | undefined): ItpNavResult {
         setError(null)
         hasReceivedNav.current = true
       } else if (!hasReceivedNav.current) {
-        // No data yet — keep loading state
+        // No data yet — keep loading state, don't flash "no prices"
+        return
       }
     } catch (e) {
       console.error('[useItpNav] NAV fetch failed:', e)
       if (!hasReceivedNav.current) {
         setError(e instanceof Error ? e.message : 'Failed to fetch NAV')
       }
-    } finally {
-      setIsLoading(false)
     }
+    setIsLoading(false)
   }, [])
 
   // Reset state when itpId changes
