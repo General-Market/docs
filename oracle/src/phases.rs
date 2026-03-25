@@ -548,7 +548,31 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                     ids
                 }
-                Ok(_) => Vec::new(),
+                Ok(_) => {
+                    // Second fallback: recover stranded Batched orders (status=1 on-chain).
+                    // These were batched in a previous cycle but fills never completed.
+                    match chain_reader.get_batched_orders().await {
+                        Ok(orders) if !orders.is_empty() => {
+                            let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
+                            info!(count = ids.len(), "Recovering stranded Batched orders (status=1)");
+                            {
+                                let mut orch = orchestrator.write().await;
+                                for order in &orders {
+                                    orch.set_order_itp_id(order.id, order.itp_id).await;
+                                    orch.set_order_amount(order.id, order.amount).await;
+                                    let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                                    orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
+                                }
+                            }
+                            ids
+                        }
+                        Ok(_) => Vec::new(),
+                        Err(e) => {
+                            debug!(error = %e, "Failed to scan L3 batched orders");
+                            Vec::new()
+                        }
+                    }
+                }
                 Err(e) => {
                     debug!(error = %e, "Failed to scan L3 pending orders");
                     Vec::new()
