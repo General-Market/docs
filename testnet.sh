@@ -1553,9 +1553,10 @@ cmd_start() {
     # Kill old bare processes (prevents port conflicts on migration)
     _kill_old_processes
 
-    # Pull latest code and rebuild binaries on VPS (ensures rename/schema changes are picked up)
+    # Pull latest code and rebuild binaries on BOTH VPSes
     echo -e "${BLUE}[2/8] Syncing files + rebuilding binaries...${NC}"
     vps_be_ssh "cd $VPS_BE_DIR && git pull origin main 2>&1 | tail -3" || true
+    vps_chain_ssh "cd $VPS_CHAIN_DIR && git pull origin main 2>&1 | tail -3" || true
     # Rebuild all Rust binaries if source changed since last build
     local NEED_REBUILD=false
     for bin in oracle data-node curator itp-bot; do
@@ -1570,10 +1571,10 @@ cmd_start() {
         fi
     done
     if [ "$NEED_REBUILD" = true ]; then
-        echo -e "  Rebuilding binaries on VPS (source changed)..."
+        echo -e "  Rebuilding binaries on VPS 1 (source changed)..."
         vps_be_ssh "source ~/.cargo/env && cd $VPS_BE_DIR && cargo build --release -p oracle -p data-node -p curator -p itp-bot 2>&1 | tail -3" \
-            && echo -e "  ${GREEN}Binaries rebuilt${NC}" \
-            || echo -e "  ${YELLOW}Binary rebuild failed — using existing binaries${NC}"
+            && echo -e "  ${GREEN}VPS 1 binaries rebuilt${NC}" \
+            || echo -e "  ${YELLOW}VPS 1 binary rebuild failed — using existing binaries${NC}"
     else
         echo -e "  ${GREEN}Binaries up to date${NC}"
     fi
@@ -2162,7 +2163,7 @@ services:
       - "--deployment-file"
       - "/app/deployments/active-deployment.json"
       - "--data-node-url"
-      - "http://$VPS_BE_IP:$DATA_NODE_PORT"
+      - "http://10.2.0.3:$DATA_NODE_PORT"
       - "--log-level"
       - "info"
 $([ -n "$INDEX_ADDR" ] && echo '      - "--index-contract"

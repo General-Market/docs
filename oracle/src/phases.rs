@@ -521,9 +521,38 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         // from poisoning the batch — their L3 IDs can collide with settlement order IDs).
         targets.clone()
     } else {
-        // Recovery path: process all SubmittedOnL3 orders
-        let o = orchestrator.read().await;
-        o.get_submitted_bridged_orders().await
+        // Recovery path: process all SubmittedOnL3 orders from bridge
+        let bridge_orders = {
+            let o = orchestrator.read().await;
+            o.get_submitted_bridged_orders().await
+        };
+        if !bridge_orders.is_empty() {
+            bridge_orders
+        } else {
+            // Fallback: scan L3 for direct pending orders (not from bridge).
+            // This enables testnet seeding via direct submitOrder calls.
+            match chain_reader.get_pending_orders().await {
+                Ok(orders) if !orders.is_empty() => {
+                    let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
+                    info!(count = ids.len(), "Found L3 direct pending orders (non-bridge)");
+                    // Inject order metadata into orchestrator so batch/fill can look up ITP IDs.
+                    // For direct L3 orders, settlement ID == L3 ID (no bridge mapping needed).
+                    // resolve_l3_order_ids falls back to settlement IDs when no mapping exists.
+                    {
+                        let mut orch = orchestrator.write().await;
+                        for order in &orders {
+                            orch.set_order_itp_id(order.id, order.itp_id).await;
+                        }
+                    }
+                    ids
+                }
+                Ok(_) => Vec::new(),
+                Err(e) => {
+                    debug!(error = %e, "Failed to scan L3 pending orders");
+                    Vec::new()
+                }
+            }
+        }
     };
 
     if !submitted_orders.is_empty() {
