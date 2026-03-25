@@ -125,18 +125,21 @@ export function LendingPage() {
     if (withPositions.length === 0) return null
 
     let totalCollateralUsd = 0
+    let totalDebtUsd = 0
     let weightedBorrowApy = 0
-    let posWithDebt = 0
+    let totalDebtFloat = 0
     let lowestHealth = Infinity
 
     for (const m of withPositions) {
       const collateral = parseFloat(formatUnits(BigInt(m.collateralAmount), 18))
       totalCollateralUsd += collateral * m.navPerShare
 
-      const borrowShares = BigInt(m.borrowShares)
-      if (borrowShares > 0n) {
-        weightedBorrowApy += m.borrowApy
-        posWithDebt += 1
+      const debtFloat = parseFloat(formatUnits(BigInt(m.debtAmount), 18))
+      totalDebtUsd += debtFloat
+
+      if (debtFloat > 0) {
+        weightedBorrowApy += m.borrowApy * debtFloat
+        totalDebtFloat += debtFloat
       }
 
       if (m.healthFactor < lowestHealth) {
@@ -144,10 +147,11 @@ export function LendingPage() {
       }
     }
 
-    const avgBorrowApy = posWithDebt > 0 ? weightedBorrowApy / posWithDebt : 0
+    const avgBorrowApy = totalDebtFloat > 0 ? weightedBorrowApy / totalDebtFloat : 0
 
     return {
       totalCollateralUsd,
+      totalDebtUsd,
       avgBorrowApy,
       lowestHealthFactor: lowestHealth,
       positionCount: withPositions.length,
@@ -188,11 +192,11 @@ export function LendingPage() {
       <ErrorBoundary fallback={ErrorFallback}>
         {/* [B] PositionDashboard — conditional on connection + position state */}
         {hasPositions ? (
-          <div className="section-bar">
+          <div className="section-bar" data-testid="lending-position-stats">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
               <div className="flex flex-col gap-0.5">
                 <span className="section-bar-title">Total Collateral</span>
-                <span className="section-bar-value">
+                <span className="section-bar-value" data-testid="lending-total-collateral">
                   ${positionStats!.totalCollateralUsd.toLocaleString(undefined, {
                     maximumFractionDigits: 0,
                   })}
@@ -200,19 +204,22 @@ export function LendingPage() {
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="section-bar-title">Total Debt</span>
-                <span className="section-bar-value">
-                  &mdash;
+                <span className="section-bar-value" data-testid="lending-total-debt">
+                  {positionStats!.totalDebtUsd > 0
+                    ? `$${positionStats!.totalDebtUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                    : '\u2014'}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="section-bar-title">Avg Borrow APY</span>
-                <span className="section-bar-value">
+                <span className="section-bar-value" data-testid="lending-avg-borrow-apy">
                   {positionStats!.avgBorrowApy.toFixed(2)}%
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="section-bar-title">Health Factor</span>
                 <span
+                  data-testid="lending-health-factor"
                   className={`section-bar-value ${
                     positionStats!.lowestHealthFactor >= 1.5
                       ? 'text-green-400'

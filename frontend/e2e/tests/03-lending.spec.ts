@@ -225,6 +225,57 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
     expect(posAfterBorrow.borrowShares).toBeGreaterThan(posAfterDeposit.borrowShares);
     console.log('Step 2: Borrow (backend API)');
 
+    // Step 2b: Verify lending stats banner shows real values after borrow
+    // Click the Lending nav button (hash-on-mount doesn't fire on same-page navigation)
+    const lendNav = page.locator('button').filter({ hasText: 'Lending' }).first();
+    await lendNav.click();
+    const lendSection = page.locator('#lend');
+    await expect(lendSection).toBeVisible({ timeout: 30_000 });
+
+    // Position stats banner only appears when SSE recognizes the user's market positions.
+    // The test creates an ad-hoc Morpho market that the data-node may not track in SSE.
+    // When visible: assert all 4 values are correct. When not: skip gracefully.
+    const statsBar = page.locator('[data-testid="lending-position-stats"]');
+    const statsVisible = await statsBar.isVisible({ timeout: 15_000 }).catch(() => false);
+    let debtNum = 0;
+
+    if (statsVisible) {
+      // Total Collateral: must be a real dollar value, not $0
+      const collateralText = await page.locator('[data-testid="lending-total-collateral"]').textContent() || '';
+      expect(collateralText).toMatch(/^\$[\d,]+$/);
+      const collateralNum = parseFloat(collateralText.replace(/[$,]/g, ''));
+      expect(collateralNum, 'Total Collateral should be > 0').toBeGreaterThan(0);
+      expect(collateralNum, 'Total Collateral should be < $10M (not raw wei)').toBeLessThan(10_000_000);
+      console.log(`Stats after borrow — Total Collateral: ${collateralText}`);
+
+      // Total Debt: must show a real value after borrowing, not a dash
+      const debtText = await page.locator('[data-testid="lending-total-debt"]').textContent() || '';
+      expect(debtText, 'Total Debt should not be a dash after borrowing').not.toBe('\u2014');
+      expect(debtText).toMatch(/^\$[\d,]+$/);
+      debtNum = parseFloat(debtText.replace(/[$,]/g, ''));
+      expect(debtNum, 'Total Debt should be > 0 after borrow').toBeGreaterThan(0);
+      expect(debtNum, 'Total Debt should be < $10M (not raw wei)').toBeLessThan(10_000_000);
+      console.log(`Stats after borrow — Total Debt: ${debtText}`);
+
+      // Avg Borrow APY: must not be 0.00% when there is debt
+      const apyText = await page.locator('[data-testid="lending-avg-borrow-apy"]').textContent() || '';
+      expect(apyText).toMatch(/[\d.]+%$/);
+      const apyNum = parseFloat(apyText);
+      expect(apyNum, 'Avg Borrow APY should be > 0 with active debt').toBeGreaterThan(0);
+      expect(apyNum, 'Avg Borrow APY should be < 1000% (sanity)').toBeLessThan(1000);
+      console.log(`Stats after borrow — Avg Borrow APY: ${apyText}`);
+
+      // Health Factor: must be a finite number (not ∞) when there is debt
+      const hfText = await page.locator('[data-testid="lending-health-factor"]').textContent() || '';
+      expect(hfText, 'Health Factor should not be ∞ with active debt').not.toBe('\u221e');
+      const hfNum = parseFloat(hfText);
+      expect(hfNum, 'Health Factor should be > 0').toBeGreaterThan(0);
+      expect(hfNum, 'Health Factor should be < 1000 (sanity)').toBeLessThan(1000);
+      console.log(`Stats after borrow — Health Factor: ${hfText}`);
+    } else {
+      console.log('SKIP: Position stats banner not visible — SSE does not track the test market');
+    }
+
     // Step 3: Repay (direct RPC) — repay the borrowed amount
     // Mint extra USDC to cover accrued interest
     await mintL3Usdc(TEST_ADDRESS, 10n * 10n ** 18n);
@@ -240,6 +291,33 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
     console.log(`Position after repay: borrowShares=${posAfterRepay.borrowShares}`);
     expect(posAfterRepay.borrowShares).toBeLessThan(posAfterBorrow.borrowShares);
     console.log('Step 3: Repay (backend API)');
+
+    // Step 3b: Verify stats changed after repay — debt should decrease or disappear
+    if (statsVisible) {
+      // Navigate to markets first, then back to lending to force re-render with fresh SSE data
+      const marketsNav = page.locator('button').filter({ hasText: 'Markets' }).first();
+      await marketsNav.click();
+      await page.waitForTimeout(1_000);
+      const lendNavRepay = page.locator('button').filter({ hasText: 'Lending' }).first();
+      await lendNavRepay.click();
+      await expect(page.locator('#lend')).toBeVisible({ timeout: 30_000 });
+
+      const statsBarAfterRepay = page.locator('[data-testid="lending-position-stats"]');
+      const repayStatsVisible = await statsBarAfterRepay.isVisible({ timeout: 30_000 }).catch(() => false);
+      if (repayStatsVisible) {
+        const debtAfterRepay = await page.locator('[data-testid="lending-total-debt"]').textContent() || '';
+        const hfAfterRepay = await page.locator('[data-testid="lending-health-factor"]').textContent() || '';
+        if (posAfterRepay.borrowShares === 0n) {
+          expect(debtAfterRepay).toBe('\u2014');
+          expect(hfAfterRepay).toBe('\u221e');
+          console.log('Stats after full repay — Debt: dash, HF: ∞ (correct)');
+        } else {
+          const debtAfterNum = parseFloat(debtAfterRepay.replace(/[$,]/g, ''));
+          expect(debtAfterNum, 'Debt should decrease after repay').toBeLessThan(debtNum);
+          console.log(`Stats after partial repay — Debt: ${debtAfterRepay}`);
+        }
+      }
+    }
 
     // Step 4: Withdraw (direct RPC)
     const withdrawAmount = 5n * 10n ** 18n;

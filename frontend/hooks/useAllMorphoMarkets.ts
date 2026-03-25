@@ -9,6 +9,7 @@ const SECONDS_PER_YEAR = 365.25 * 86400
 export interface AllMarketData {
   totalSupplyAssets: bigint
   totalBorrowAssets: bigint
+  totalBorrowShares: bigint
   utilization: number
   borrowApy: number
   supplyApy: number
@@ -28,6 +29,7 @@ export function useAllMorphoMarkets() {
       mergeSSEMarket(m)
       const totalSupplyAssets = BigInt(m.total_supply_assets || '0')
       const totalBorrowAssets = BigInt(m.total_borrow_assets || '0')
+      const totalBorrowShares = BigInt(m.total_borrow_shares || '0')
       const utilization = totalSupplyAssets > 0n
         ? Number((totalBorrowAssets * 10000n) / totalSupplyAssets) / 100 : 0
 
@@ -39,7 +41,7 @@ export function useAllMorphoMarkets() {
       const lltv = BigInt(m.lltv || '770000000000000000')
 
       map.set(m.collateral_token.toLowerCase(), {
-        totalSupplyAssets, totalBorrowAssets, utilization,
+        totalSupplyAssets, totalBorrowAssets, totalBorrowShares, utilization,
         borrowApy, supplyApy, lltv, marketId: m.market_id,
       })
     }

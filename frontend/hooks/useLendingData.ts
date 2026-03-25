@@ -5,6 +5,7 @@ import { formatUnits } from 'viem'
 import { useSSENav, useSSEBalances, useSSEPositions } from './useSSE'
 import { useAllMorphoMarkets } from './useAllMorphoMarkets'
 import { getMorphoMarketForItp, type MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
+import { calculateHealthFactor } from '@/lib/types/morpho'
 
 // ── Types ──
 
@@ -103,9 +104,19 @@ export function useLendingData(): LendingData {
       const pos = positions?.[mktData.marketId]
       const collateralAmount = pos?.collateral || '0'
       const borrowShares = pos?.borrow_shares || '0'
-      // debt_amount not available from SSE positions — store raw borrow_shares,
-      // consumers needing debt use useMorphoPosition for the selected market
       const hasPosition = BigInt(collateralAmount) > 0n || BigInt(borrowShares) > 0n
+
+      // Compute debt from borrow shares: debt = borrowShares * totalBorrowAssets / totalBorrowShares
+      const borrowSharesBn = BigInt(borrowShares)
+      const debtAmount = (mktData.totalBorrowShares > 0n && borrowSharesBn > 0n)
+        ? (borrowSharesBn * mktData.totalBorrowAssets) / mktData.totalBorrowShares
+        : 0n
+
+      // Compute health factor using NAV-based oracle price (36-decimal Morpho format)
+      const oraclePrice = BigInt(Math.floor(nav.nav_per_share * 1e18)) * BigInt(1e18)
+      const healthFactor = calculateHealthFactor(
+        BigInt(collateralAmount), oraclePrice, debtAmount, mktData.lltv
+      )
 
       // Look up user's ITP balance by itpId
       const userBal = balances?.itp_shares?.[nav.itp_id] || '0'
@@ -122,9 +133,9 @@ export function useLendingData(): LendingData {
         navPerShare: nav.nav_per_share,
         hasPosition,
         collateralAmount,
-        debtAmount: '0', // requires market-level computation — see useMorphoPosition
+        debtAmount: debtAmount.toString(),
         borrowShares,
-        healthFactor: Infinity, // requires oracle price — see useMorphoPosition
+        healthFactor,
         userBalanceWei: userBal,
         market,
       })
