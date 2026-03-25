@@ -535,13 +535,15 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 Ok(orders) if !orders.is_empty() => {
                     let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
                     info!(count = ids.len(), "Found L3 direct pending orders (non-bridge)");
-                    // Inject order metadata into orchestrator so batch/fill can look up ITP IDs.
-                    // For direct L3 orders, settlement ID == L3 ID (no bridge mapping needed).
-                    // resolve_l3_order_ids falls back to settlement IDs when no mapping exists.
+                    // Inject order metadata into orchestrator so batch/fill can look up ITP IDs,
+                    // amounts, and limit prices. For direct L3 orders, settlement ID == L3 ID.
                     {
                         let mut orch = orchestrator.write().await;
                         for order in &orders {
                             orch.set_order_itp_id(order.id, order.itp_id).await;
+                            orch.set_order_amount(order.id, order.amount).await;
+                            let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                            orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
                         }
                     }
                     ids
@@ -668,8 +670,18 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             };
 
             // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
-            // Track which orders are confirmed — only confirmed orders proceed to fills
-            let cbo_confirmed_orders: Vec<ethers::types::U256> = {
+            // Track which orders are confirmed — only confirmed orders proceed to fills.
+            // For L3 direct orders (non-bridge), USDC is already locked in Index contract
+            // by submitOrder, so completeBuyOrder is unnecessary — all orders are confirmed.
+            let is_direct_l3_orders = target_orders.is_none() && {
+                let o = orchestrator.read().await;
+                o.get_submitted_bridged_orders().await.is_empty()
+            };
+            let cbo_confirmed_orders: Vec<ethers::types::U256> = if is_direct_l3_orders {
+                info!(cycle = current_cycle, count = submitted_orders.len(),
+                    "L3 direct orders: skipping completeBuyOrder (USDC locked atomically in submitOrder)");
+                submitted_orders.clone()
+            } else {
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
                 for order_id in &submitted_orders {
@@ -717,7 +729,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
                 confirmed
-            };
+            }};
 
             // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Settlement ID lookup
             // Filter out orders where fill price violates limit (E126 guard)
