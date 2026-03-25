@@ -33,7 +33,7 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
   return (
     <div className="lg:hidden sticky top-0 z-30 bg-white">
       {/* Horizontal progress bar */}
-      <div className="h-[2px] bg-border-light">
+      <div className="h-[2px] bg-zinc-100">
         <div
           className="h-full bg-black transition-all duration-150"
           style={{ width: `${scrollProgress * 100}%` }}
@@ -41,13 +41,13 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
       </div>
 
       {/* TOC toggle */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-light">
-        <span className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100">
+        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-zinc-400">
           {t('learn.mobile_nav.contents')}
         </span>
         <button
           onClick={() => setOpen(!open)}
-          className="text-caption font-semibold text-black"
+          className="text-[12px] font-semibold text-black"
         >
           {open ? t('learn.mobile_nav.close') : t('learn.mobile_nav.menu')}
         </button>
@@ -55,14 +55,15 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 bg-white border-b border-border-light shadow-sm px-4 py-3 space-y-1 max-h-[60vh] overflow-y-auto">
-          {headings.map((h) => (
+        <div className="absolute left-0 right-0 bg-white border-b border-zinc-200 shadow-sm px-4 py-3 space-y-0.5 max-h-[60vh] overflow-y-auto">
+          {headings.map((h, i) => (
             <button
               key={h.id}
               onClick={() => handleClick(h.id)}
-              className="block w-full text-left text-caption text-text-secondary hover:text-black py-1.5 px-2 rounded hover:bg-surface transition-colors"
+              className="flex items-start gap-3 w-full text-left text-[13px] text-zinc-500 hover:text-black py-2 px-3 rounded-xl hover:bg-zinc-50 transition-colors"
             >
-              {h.text}
+              <span className="font-mono text-zinc-400 shrink-0">{i + 1}.</span>
+              <span>{h.text}</span>
             </button>
           ))}
         </div>

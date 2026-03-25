@@ -57,7 +57,7 @@ export const mdxComponents: MDXComponents = {
       <FadeInSection>
         <h2
           id={id}
-          className="scroll-mt-24 border-t-[3px] border-black pt-8 mt-16 mb-6 text-display md:text-display font-black tracking-tight text-black leading-[1.1]"
+          className="scroll-mt-24 pt-8 mt-14 mb-5 text-[24px] md:text-[28px] font-bold tracking-tight text-black leading-[1.15]"
         >
           {children}
         </h2>

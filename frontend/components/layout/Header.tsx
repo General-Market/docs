@@ -110,7 +110,7 @@ export function Header() {
               </Link>
 
               {/* Desktop: 4 equal tabs with spring underline */}
-              <nav className="hidden lg:flex items-center">
+              <nav className="hidden md:flex items-center">
                 {PRIMARY_NAV.map((item) => (
                   <button
                     key={item.id}
@@ -161,7 +161,7 @@ export function Header() {
                 )}
 
                 {/* Hamburger — spring-animated lines → X, mobile only */}
-                <div className="relative lg:hidden">
+                <div className="relative md:hidden">
                   <button
                     className={`p-3 -m-1 transition-colors ${
                       isDark ? 'text-zinc-400 hover:text-white' : 'text-text-muted hover:text-text-primary'
@@ -281,7 +281,7 @@ export function Header() {
 
           {/* ── Mobile tab strip — 4 equal tabs below header ── */}
           <div
-            className={`lg:hidden border-t transition-colors duration-500 ${
+            className={`md:hidden border-t transition-colors duration-500 ${
               isDark ? 'border-zinc-800' : 'border-border-light/50'
             }`}
             style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}

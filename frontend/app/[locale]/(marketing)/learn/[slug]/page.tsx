@@ -10,6 +10,7 @@ import { mdxComponents } from "@/components/mdx";
 import { getArticle, getArticleSlugs } from "@/lib/learn/articles";
 import { ArticleHeader } from "@/components/learn/ArticleHeader";
 import { ArticleSidebar } from "@/components/learn/ArticleSidebar";
+import { ArticleAuthor } from "@/components/learn/ArticleAuthor";
 import { MobileArticleNav } from "@/components/learn/MobileArticleNav";
 
 interface Props {
@@ -124,21 +125,25 @@ export default async function LearnArticlePage({ params }: Props) {
 
       <MobileArticleNav headings={headings} />
 
-      <div className="max-w-5xl mx-auto flex gap-12 px-6 py-12 md:py-16 w-full">
-        <ArticleSidebar headings={headings} category={frontmatter.category} />
+      <div className="max-w-[1200px] mx-auto px-6 py-12 md:py-16 w-full">
+        <div className="flex gap-10 lg:gap-14">
+          <ArticleSidebar headings={headings} category={frontmatter.category} />
 
-        <article className="max-w-3xl flex-1 min-w-0">
-          <MDXRemote
-            source={content}
-            components={mdxComponents}
-            options={{
-              mdxOptions: {
-                remarkPlugins: [remarkGfm],
-                rehypePlugins: [rehypeHighlight],
-              },
-            }}
-          />
-        </article>
+          <article className="max-w-[772px] flex-1 min-w-0">
+            <MDXRemote
+              source={content}
+              components={mdxComponents}
+              options={{
+                mdxOptions: {
+                  remarkPlugins: [remarkGfm],
+                  rehypePlugins: [rehypeHighlight],
+                },
+              }}
+            />
+
+            <ArticleAuthor frontmatter={frontmatter} />
+          </article>
+        </div>
       </div>
 
       <Footer />

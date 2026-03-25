@@ -8,7 +8,6 @@ import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
-import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
@@ -333,13 +332,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
         </div>
 
-        {/* Related links */}
-        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
-          <Link href="/" className="hover:text-black transition-colors">{t('source_detail.all_sources')}</Link>
-          <Link href="/sources" className="hover:text-black transition-colors">{t('source_detail.source_health')}</Link>
-          <Link href="/points" className="hover:text-black transition-colors">{t('source_detail.earn_points')}</Link>
-          <Link href="/about" className="hover:text-black transition-colors">{t('source_detail.about')}</Link>
-        </div>
       </div>
     </div>
   )
