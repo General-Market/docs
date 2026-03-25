@@ -4891,3 +4891,17 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 - [DECISION] Step 9 token deploy uses --resume flag with retry loop (up to 5 attempts) — Orbit L3 drops forge after ~200 TXs. Instead of rm -rf and restarting, --resume re-submits only TXs lacking receipts.
 - [DECISION] All activeOracleCount() comparisons normalize hex/decimal — cast returns hex on Orbit L3 ("0x3") but the script compared against decimal "3".
 - [DECISION] Step 0 no longer deletes Vision/Morpho broadcast dirs (moved to explicit rm in their respective steps). Token + core broadcasts preserved for resume.
+
+### Session 20260325-0100-t3xz
+
+[DECISION] testnet.sh: Gas price parameterized ($GAS_PRICE), auto-adjusts from base fee
+[DECISION] testnet.sh: Docker ENTRYPOINT fix — command override is args only, no binary path
+[DECISION] testnet.sh: VPS 2 now git-pulled during start (was VPS 1 only)
+[DECISION] Oracle phases.rs: Added L3 direct order scanning fallback in buy post-processing
+[DECISION] Oracle signature-threshold: Changed from 1 to 3 (matching on-chain oracle count)
+
+[FAILED] BLS confirmFills manual script — BN254 signature verification reverts on Orbit L3 (BelowThreshold with threshold=1, now fixed to threshold=3 but leader election blocks fills)
+[FAILED] L3 direct order fills via oracle — leader election uses order_id % num_oracles, so oracle node 0 is not always the batch leader. Followers find orders but can't propose (am_leader=false). Need to fix leader election for non-bridge orders to always assign node 0.
+[FAILED] Vision BatchEngine — returns 0 recommended configs because source_id hashes in vision_batches don't match data-node's market source registration. Chain listener populates vision_batches but not batch_configs.
+[FAILED] itp-bot compile — `get_itp_count` method renamed in contract ABI, itp-bot uses old name
+
