@@ -338,12 +338,37 @@ where
     }
 
     async fn get_batched_orders(&self) -> Result<Vec<LimitOrder>, Error> {
-        // Reuse known_order_ids and settled_order_ids populated by get_pending_orders().
-        // Only need to check unsettled orders for status == 1 (Batched).
         let contract = self.index_contract();
         let mut orders = Vec::new();
 
-        let known_ids = self.known_order_ids.read().await.clone();
+        let mut known_ids = self.known_order_ids.read().await.clone();
+
+        // If known_order_ids is empty (e.g., recovery path before Phase A scans),
+        // do a full event scan from genesis to discover all order IDs.
+        if known_ids.is_empty() {
+            info!("get_batched_orders: known_order_ids empty, performing full event scan");
+            let latest_block = self.provider.get_block_number().await.map_err(|e| {
+                Error::ChainRead(format!("Failed to get block number: {}", e))
+            })?.as_u64();
+            let filter = contract.order_submitted_filter().from_block(0u64).to_block(latest_block);
+            let events = filter.query().await.map_err(|e| {
+                Error::ChainRead(format!("Failed to scan OrderSubmitted events: {}", e))
+            })?;
+            info!(count = events.len(), "Full event scan found OrderSubmitted events");
+            for event in &events {
+                if !known_ids.contains(&event.order_id) {
+                    known_ids.push(event.order_id);
+                }
+            }
+            // Persist to shared state so future calls don't re-scan
+            let mut known_w = self.known_order_ids.write().await;
+            for id in &known_ids {
+                if !known_w.contains(id) {
+                    known_w.push(*id);
+                }
+            }
+        }
+
         let settled = self.settled_order_ids.read().await.clone();
         let mut newly_settled = Vec::new();
 
