@@ -1760,11 +1760,10 @@ async fn player_profile(
         std::collections::HashMap::new()
     } else {
         match sqlx::query_as::<_, BatchMetaRow>(
-            "SELECT vb.id,
-                    COALESCE(vbl.source_id, vb.source_id, '') as source_id_raw
-             FROM vision_batches vb
-             LEFT JOIN vision_batch_lifecycle vbl ON vbl.batch_id = vb.id
-             WHERE vb.id = ANY($1)"
+            "SELECT vbl.batch_id as id,
+                    vbl.source_id as source_id_raw
+             FROM vision_batch_lifecycle vbl
+             WHERE vbl.batch_id = ANY($1)"
         )
         .bind(&all_batch_ids)
         .fetch_all(&state.pool)
@@ -1773,18 +1772,8 @@ async fn player_profile(
             Ok(rows) => rows
                 .into_iter()
                 .map(|r| {
-                    let raw = r.source_id_raw.unwrap_or_default();
-                    // lifecycle source_id is plain text (e.g. "crypto");
-                    // vision_batches source_id is a 0x-prefixed keccak hash.
-                    // If it starts with "0x", it's a hash — decode it.
-                    let source = if raw.starts_with("0x") {
-                        bytes32_hex_to_string(&raw)
-                    } else if raw.is_empty() {
-                        "unknown".to_string()
-                    } else {
-                        raw
-                    };
-                    (r.id, source)
+                    let source = r.source_id_raw.unwrap_or_default();
+                    (r.id, if source.is_empty() { "unknown".to_string() } else { source })
                 })
                 .collect(),
             Err(e) => {
@@ -1919,7 +1908,7 @@ async fn player_profile(
             source_id: source,
             status: "exited".to_string(),
             deposited: (deposited_f * 100.0).round() / 100.0,
-            balance: 0.0,
+            balance: ((deposited_f + pnl_f) * 100.0).round() / 100.0,
             tick_count,
             roi: (roi * 100.0).round() / 100.0,
             ticks,
