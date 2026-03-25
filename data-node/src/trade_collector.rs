@@ -88,7 +88,7 @@ async fn backfill_batch(
     for (event, meta) in &order_events {
         let itp_id_hex = format!("0x{}", hex::encode(event.itp_id));
         let user_addr = format!("{:?}", event.user).to_lowercase();
-        let ts = block_timestamp(provider, meta.block_number.as_u64(), &mut ts_cache).await;
+        let ts = block_timestamp(&provider, meta.block_number.as_u64(), &mut ts_cache).await;
         if let Err(e) = db::upsert_trade(
             pool,
             event.order_id.as_u64() as i64,
@@ -120,7 +120,7 @@ async fn backfill_batch(
         .await?;
 
     for (event, meta) in &fill_events {
-        let ts = block_timestamp(provider, meta.block_number.as_u64(), &mut ts_cache).await;
+        let ts = block_timestamp(&provider, meta.block_number.as_u64(), &mut ts_cache).await;
         sqlx::query(
             "UPDATE trades SET fill_price = $1, fill_amount = $2, status = 2, fill_timestamp = $3
              WHERE order_id = $4",
