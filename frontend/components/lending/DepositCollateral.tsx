@@ -199,7 +199,10 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
               className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
-              onClick={() => setAmount(formattedBalance)}
+              onClick={() => {
+                const parsed = parseFloat(formattedBalance)
+                setAmount((Math.floor(parsed * 10000) / 10000).toFixed(4))
+              }}
               disabled={isProcessing}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >

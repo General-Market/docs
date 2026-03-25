@@ -148,18 +148,23 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     ranking.snapshots.length > 0 &&
     vault.assets.length > 0
   ) {
-    const latestSnap = ranking.snapshots[ranking.snapshots.length - 1]
-    if (latestSnap?.ranked) {
-      const vaultBySymbol = new Map(vault.assets.map(a => [a.symbol, a.usdValue]))
-      const ratios = new Map<string, number>()
-      for (const r of latestSnap.ranked) {
-        const vaultUsd = vaultBySymbol.get(r.symbol)
-        if (vaultUsd && vaultUsd > 0 && r.aum > 0) {
-          ratios.set(r.symbol, r.aum / vaultUsd)
-        }
+    // Aggregate AUM across ALL ITP snapshots, not just the last one
+    const vaultBySymbol = new Map(vault.assets.map(a => [a.symbol, a.usdValue]))
+    const aggregatedAum = new Map<string, number>()
+    for (const snap of ranking.snapshots) {
+      if (!snap?.ranked) continue
+      for (const r of snap.ranked) {
+        aggregatedAum.set(r.symbol, (aggregatedAum.get(r.symbol) || 0) + r.aum)
       }
-      ratiosRef.current = ratios
     }
+    const ratios = new Map<string, number>()
+    for (const [symbol, aum] of aggregatedAum) {
+      const vaultUsd = vaultBySymbol.get(symbol)
+      if (vaultUsd && vaultUsd > 0 && aum > 0) {
+        ratios.set(symbol, aum / vaultUsd)
+      }
+    }
+    ratiosRef.current = ratios
   }
 
   // Inventory: live vault values × frozen correction ratios = correct AUM with live ticks
@@ -177,15 +182,20 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         .sort((a, b) => b.usdValue - a.usdValue)
       if (corrected.length > 0) return corrected
     }
-    // Fallback: use ranking data directly (no live price corrections, but shows something)
+    // Fallback: aggregate ranking data across all ITPs (no live price corrections)
     if (ranking.snapshots.length > 0) {
-      const latest = ranking.snapshots[ranking.snapshots.length - 1]
-      if (latest?.ranked) {
-        return latest.ranked
-          .filter(r => r.aum > 0)
-          .map(r => ({ symbol: r.symbol, usdValue: r.aum }))
-          .sort((a, b) => b.usdValue - a.usdValue)
+      const agg = new Map<string, number>()
+      for (const snap of ranking.snapshots) {
+        if (!snap?.ranked) continue
+        for (const r of snap.ranked) {
+          agg.set(r.symbol, (agg.get(r.symbol) || 0) + r.aum)
+        }
       }
+      const result = [...agg.entries()]
+        .filter(([, v]) => v > 0)
+        .map(([symbol, usdValue]) => ({ symbol, usdValue }))
+        .sort((a, b) => b.usdValue - a.usdValue)
+      if (result.length > 0) return result
     }
     return []
   }, [vault.assets, ranking.snapshots])

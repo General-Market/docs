@@ -179,7 +179,10 @@ export function VaultDeposit() {
               className="w-full bg-muted border border-border-medium rounded-lg px-4 py-2.5 text-text-primary text-body font-mono tabular-nums focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
-              onClick={() => setAmount(formattedBalance)}
+              onClick={() => {
+                const parsed = parseFloat(formattedBalance)
+                setAmount((Math.floor(parsed * 100) / 100).toFixed(2))
+              }}
               disabled={isProcessing}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-bold text-zinc-900 hover:text-zinc-700 disabled:opacity-50 uppercase tracking-[0.08em]"
             >

@@ -117,13 +117,10 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   }, [amount, parsedAmount, canWithdraw, withdrawCollateral, capture, market?.collateralToken])
 
   const handleMax = () => {
-    if (debtAmount === 0n) {
-      // No debt - can withdraw all
-      setAmount(formatUnits(collateralAmount, 18))
-    } else {
-      // Has debt - limit to maxWithdraw
-      setAmount(formatUnits(maxWithdraw, 18))
-    }
+    const raw = debtAmount === 0n ? collateralAmount : maxWithdraw
+    const parsed = parseFloat(formatUnits(raw, 18))
+    // Truncate (floor) to 4 decimals so we never exceed the on-chain max
+    setAmount((Math.floor(parsed * 10000) / 10000).toFixed(4))
   }
 
   const [stuckWarning, setStuckWarning] = useState(false)

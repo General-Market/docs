@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
+use chrono::{Utc, TimeZone};
 use ethers::prelude::*;
 use ethers::types::Address;
 use sqlx::PgPool;
@@ -47,6 +47,25 @@ async fn backfill_trade_events(
     }).await;
 }
 
+/// Fetch block timestamp from chain, with cache to avoid redundant RPC calls.
+async fn block_timestamp(
+    provider: &Provider<Http>,
+    block_num: u64,
+    cache: &mut std::collections::HashMap<u64, chrono::DateTime<Utc>>,
+) -> chrono::DateTime<Utc> {
+    if let Some(ts) = cache.get(&block_num) {
+        return *ts;
+    }
+    let ts = match provider.get_block(block_num).await {
+        Ok(Some(block)) => Utc.timestamp_opt(block.timestamp.as_u64() as i64, 0)
+            .single()
+            .unwrap_or_else(Utc::now),
+        _ => Utc::now(),
+    };
+    cache.insert(block_num, ts);
+    ts
+}
+
 /// Process a single batch of blocks: query OrderSubmitted + FillConfirmed and store.
 async fn backfill_batch(
     pool: &PgPool,
@@ -55,6 +74,8 @@ async fn backfill_batch(
     to: u64,
 ) -> Result<usize, Box<dyn std::error::Error + Send + Sync>> {
     let mut count = 0;
+    let provider = contract.client();
+    let mut ts_cache = std::collections::HashMap::new();
 
     // OrderSubmitted
     let order_events = contract
@@ -67,6 +88,7 @@ async fn backfill_batch(
     for (event, meta) in &order_events {
         let itp_id_hex = format!("0x{}", hex::encode(event.itp_id));
         let user_addr = format!("{:?}", event.user).to_lowercase();
+        let ts = block_timestamp(provider, meta.block_number.as_u64(), &mut ts_cache).await;
         if let Err(e) = db::upsert_trade(
             pool,
             event.order_id.as_u64() as i64,
@@ -78,7 +100,7 @@ async fn backfill_batch(
             None,
             None,
             0,
-            Utc::now(),
+            ts,
             None,
             meta.block_number.as_u64() as i64,
         )
@@ -97,14 +119,15 @@ async fn backfill_batch(
         .query_with_meta()
         .await?;
 
-    for (event, _meta) in &fill_events {
+    for (event, meta) in &fill_events {
+        let ts = block_timestamp(provider, meta.block_number.as_u64(), &mut ts_cache).await;
         sqlx::query(
             "UPDATE trades SET fill_price = $1, fill_amount = $2, status = 2, fill_timestamp = $3
              WHERE order_id = $4",
         )
         .bind(event.fill_price.to_string())
         .bind(event.fill_amount.to_string())
-        .bind(Utc::now())
+        .bind(ts)
         .bind(event.order_id.as_u64() as i64)
         .execute(pool)
         .await
@@ -173,6 +196,8 @@ pub async fn run(
             continue;
         }
 
+        let mut ts_cache = std::collections::HashMap::new();
+
         // Query new OrderSubmitted events
         let order_filter = contract
             .order_submitted_filter()
@@ -183,6 +208,7 @@ pub async fn run(
             for (event, meta) in &events {
                 let itp_id_hex = format!("0x{}", hex::encode(event.itp_id));
                 let user_addr = format!("{:?}", event.user).to_lowercase();
+                let ts = block_timestamp(&provider, meta.block_number.as_u64(), &mut ts_cache).await;
                 if let Err(e) = db::upsert_trade(
                     &pool,
                     event.order_id.as_u64() as i64,
@@ -194,7 +220,7 @@ pub async fn run(
                     None,
                     None,
                     0, // pending
-                    Utc::now(),
+                    ts,
                     None,
                     meta.block_number.as_u64() as i64,
                 )
@@ -215,14 +241,15 @@ pub async fn run(
             .to_block(to_block);
 
         if let Ok(events) = fill_filter.query_with_meta().await {
-            for (event, _meta) in &events {
+            for (event, meta) in &events {
+                let ts = block_timestamp(&provider, meta.block_number.as_u64(), &mut ts_cache).await;
                 if let Err(e) = sqlx::query(
                     "UPDATE trades SET fill_price = $1, fill_amount = $2, status = 2, fill_timestamp = $3
                      WHERE order_id = $4",
                 )
                 .bind(event.fill_price.to_string())
                 .bind(event.fill_amount.to_string())
-                .bind(Utc::now())
+                .bind(ts)
                 .bind(event.order_id.as_u64() as i64)
                 .execute(&pool)
                 .await

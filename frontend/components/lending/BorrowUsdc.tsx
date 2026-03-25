@@ -149,7 +149,11 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
-              onClick={() => setAmount(formatMaxBorrow)}
+              onClick={() => {
+                // Truncate (floor) to 2 decimals to avoid exceeding maxBorrow
+                const raw = parseFloat(formatMaxBorrow)
+                setAmount((Math.floor(raw * 100) / 100).toFixed(2))
+              }}
               disabled={isProcessing || maxBorrow === 0n}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >

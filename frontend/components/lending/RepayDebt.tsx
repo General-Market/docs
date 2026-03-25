@@ -174,7 +174,9 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   const handleMax = () => {
     // Set to min of debt and balance
     const maxRepay = currentDebt < usdcBalance ? currentDebt : usdcBalance
-    setAmount(formatUnits(maxRepay, 18))
+    const parsed = parseFloat(formatUnits(maxRepay, 18))
+    // Truncate (floor) to 2 decimals so we never exceed on-chain max
+    setAmount((Math.floor(parsed * 100) / 100).toFixed(2))
     setIsMaxRepay(true)
   }
 

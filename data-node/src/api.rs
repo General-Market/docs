@@ -3186,11 +3186,8 @@ async fn vault_balances_inner(
     // Sort by USD value descending
     assets.sort_by(|a, b| b.usd_value.partial_cmp(&a.usd_value).unwrap_or(std::cmp::Ordering::Equal));
 
-    // AUM = only real collateral (USDC), not mock liquidity tokens
-    let total_usd: f64 = assets.iter()
-        .filter(|a| a.symbol == "USDC")
-        .map(|a| a.usd_value)
-        .sum();
+    // AUM = total vault value across all held assets
+    let total_usd: f64 = assets.iter().map(|a| a.usd_value).sum();
     let token_count = assets.len();
 
     Ok(Json(VaultBalancesResponse {
