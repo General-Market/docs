@@ -1101,7 +1101,9 @@ pub async fn cg_batch_upsert_market_caps(
     Ok(total_affected)
 }
 
-/// Check whether we already have a snapshot for this date.
+/// Check whether we already have a *full* snapshot for this date.
+/// Category sync inserts partial data (~500 coins), so we require at least
+/// 3000 rows to consider the snapshot complete (full market has 5000+).
 pub async fn cg_has_snapshot_for_date(
     pool: &PgPool,
     date: chrono::NaiveDate,
@@ -1112,7 +1114,7 @@ pub async fn cg_has_snapshot_for_date(
     .bind(date)
     .fetch_one(pool)
     .await?;
-    Ok(count > 0)
+    Ok(count >= 3000)
 }
 
 /// Get all distinct coin_ids in the table.

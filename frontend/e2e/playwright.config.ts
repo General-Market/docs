@@ -14,6 +14,7 @@ import { FRONTEND_URL } from './env';
  *
  * Standalone:
  *   production-smoke: 35 (no dependencies — runs immediately)
+ *   page-smoke: 50-52, 56-59, 63-69 (no wallet, no on-chain state — page render verification)
  *
  * Phase 3 — LATE WRITES (depends on Phase 1 AND Phase 2 — no concurrent DEPLOYER usage):
  *   write-after: 30, 31
@@ -85,6 +86,11 @@ export default defineConfig({
     {
       name: 'production-smoke',
       testMatch: /(^|\/)35-.*\.spec\.ts$/,
+    },
+    // Standalone: page smoke tests — no wallet, no on-chain state (50-52, 56-59, 63-69)
+    {
+      name: 'page-smoke',
+      testMatch: /(^|\/)5[0-2]-.*\.spec\.ts$|(^|\/)5[6-9]-.*\.spec\.ts$|(^|\/)63-.*\.spec\.ts$|(^|\/)6[4-9]-.*\.spec\.ts$/,
     },
   ],
   ...(!process.env.E2E_FRONTEND_URL ? {

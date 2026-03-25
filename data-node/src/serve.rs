@@ -341,16 +341,15 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("FNG collector disabled (interval = 0)");
     }
 
-    // ── Auto-reload sim cache daily ──────────────────────────────────────
-    // The sim cache is loaded once at startup and can go stale as new CoinGecko
-    // snapshots arrive. This background task reloads it every 24h so the
-    // backtester chart always has up-to-date prices.
+    // ── Auto-reload sim cache every 4h ──────────────────────────────────
+    // The sim cache is loaded once at startup and goes stale as new CoinGecko
+    // snapshots arrive. This background task reloads it every 4h so the
+    // backtester chart stays current.
     {
         let reload_pool = pool.clone();
         let reload_sim_cache = sim_cache.clone();
         tokio::spawn(async move {
-            // Wait 24h before the first auto-reload (startup already loaded it).
-            let mut interval = tokio::time::interval(Duration::from_secs(24 * 60 * 60));
+            let mut interval = tokio::time::interval(Duration::from_secs(4 * 60 * 60));
             interval.tick().await; // first tick fires immediately — skip it
             loop {
                 interval.tick().await;
@@ -370,12 +369,12 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                         );
                     }
                     Err(e) => {
-                        tracing::error!(%e, "Failed to auto-reload sim cache, will retry in 24h");
+                        tracing::error!(%e, "Failed to auto-reload sim cache, will retry in 4h");
                     }
                 }
             }
         });
-        info!("Sim cache auto-reload scheduled (every 24h)");
+        info!("Sim cache auto-reload scheduled (every 4h)");
     }
 
     // ── Market data providers (from AA) ──────────────────────────────────
