@@ -87,12 +87,18 @@ abigen!(
     OracleRegistryPoller,
     r#"[
         function getActiveOracleEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
-        function getOracle(uint256 oracleId) external view returns (address addr, bytes32 ip, bytes blsPubkey, uint256 status, uint256 registeredAt)
         function activeOracleCount() external view returns (uint256)
         function registryNonce() external view returns (uint256)
         function aggregatedPubkey() external view returns (bytes)
         function consensusPaused() external view returns (bool)
     ]"#
+);
+
+// Separate abigen with JSON ABI for struct-returning function (Solidity-style
+// flat returns break ABI decoding when the contract returns a struct).
+abigen!(
+    OracleRegistryBulk,
+    r#"[{"type":"function","name":"getOracles","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"ip","type":"bytes32"},{"name":"blsPubkey","type":"bytes"},{"name":"status","type":"uint8"},{"name":"registeredAt","type":"uint256"}]}],"stateMutability":"view"}]"#
 );
 
 abigen!(
@@ -1002,39 +1008,28 @@ pub async fn poll_batched_orders_once(state: &AppState) -> Result<(), Box<dyn st
 }
 
 /// Poll the OracleRegistry for active oracle endpoints + BLS pubkeys.
+/// Uses getOracles() (JSON ABI with proper tuple return) to fetch all oracle
+/// data in a single RPC call, avoiding the ABI decode bug that caused
+/// getOracle() to return zero addresses.
 pub async fn poll_oracle_registry_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let registry_addr = crate::api::deployment_addr(&state.deployment, "OracleRegistry")?;
-    let registry = OracleRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
+    let bulk = OracleRegistryBulk::new(registry_addr, Arc::clone(&state.l3_provider));
 
-    // Returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
-    let (ids, ips, pubkeys) = registry.get_active_oracle_endpoints().call().await?;
+    let all_oracles = bulk.get_oracles().call().await?;
 
-    // Fetch the actual signer address for each oracle via getOracle(id)
-    let mut addresses: Vec<Address> = Vec::with_capacity(ids.len());
-    for id in &ids {
-        match registry.get_oracle(*id).call().await {
-            Ok((addr, _ip, _pubkey, _status, _registered_at)) => addresses.push(addr),
-            Err(e) => {
-                warn!("Failed to fetch oracle {} address: {}", id, e);
-                addresses.push(Address::zero());
-            }
-        }
-    }
-
-    let cached: Vec<CachedOracle> = ids
-        .iter()
-        .enumerate()
-        .map(|(i, _id)| {
-            // Decode bytes32 IP as UTF-8 string (null-terminated)
-            let ip_bytes = ips.get(i).map(|b| b.as_ref()).unwrap_or(&[]);
+    // Tuple fields: (addr: H160, ip: [u8;32], blsPubkey: Bytes, status: u8, registeredAt: U256)
+    let cached: Vec<CachedOracle> = all_oracles
+        .into_iter()
+        .filter(|o| o.0 != Address::zero() && o.3 == 1)
+        .map(|o| {
+            let ip_bytes: &[u8] = o.1.as_ref();
             let ip_str = String::from_utf8_lossy(
                 &ip_bytes[..ip_bytes.iter().position(|&b| b == 0).unwrap_or(ip_bytes.len())]
             ).to_string();
-            let pubkey = pubkeys.get(i).map(|b| format!("0x{}", hex::encode(b))).unwrap_or_default();
             CachedOracle {
-                address: format!("{:?}", addresses[i]),
+                address: format!("{:?}", o.0),
                 endpoint: ip_str,
-                bls_pubkey: pubkey,
+                bls_pubkey: format!("0x{}", hex::encode(&o.2)),
             }
         })
         .collect();

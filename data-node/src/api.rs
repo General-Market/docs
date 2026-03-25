@@ -3112,11 +3112,11 @@ async fn vault_balances(
 async fn vault_balances_inner(
     state: &AppState,
 ) -> Result<Json<VaultBalancesResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let settlement = &state.settlement_provider;
+    // MockBitgetVault is deployed on L3 (not settlement)
+    let l3 = &state.l3_provider;
 
     let vault_addr = deployment_addr(&state.deployment, "MockBitgetVault").map_err(|e| rpc_error(e))?;
-    let settlement_usdc_addr = deployment_addr(&state.deployment, "SETTLEMENT_USDC").map_err(|e| rpc_error(e))?;
-    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(settlement));
+    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(l3));
 
     // Get token addresses from symbol map
     let token_addrs: Vec<Address> = state.symbol_map.keys()
@@ -3168,18 +3168,20 @@ async fn vault_balances_inner(
         });
     }
 
-    // Check USDC balance in vault
-    let usdc_token = ERC20Reader::new(settlement_usdc_addr, Arc::clone(settlement));
-    if let Ok(usdc_balance) = usdc_token.balance_of(vault_addr).call().await {
-        if usdc_balance > U256::zero() {
-            let usdc_f64: f64 = usdc_balance.to_string().parse().unwrap_or(0.0);
-            assets.push(VaultAsset {
-                address: format!("{:?}", settlement_usdc_addr),
-                symbol: "USDC".to_string(),
-                balance: usdc_balance.to_string(),
-                price: "1000000000000000000".to_string(), // $1 in wei
-                usd_value: usdc_f64 / 1e6,
-            });
+    // Check L3 USDC (GM) balance in vault — 18 decimals on L3
+    if let Ok(l3_usdc_addr) = deployment_addr(&state.deployment, "L3_WUSDC") {
+        let usdc_token = ERC20Reader::new(l3_usdc_addr, Arc::clone(l3));
+        if let Ok(usdc_balance) = usdc_token.balance_of(vault_addr).call().await {
+            if usdc_balance > U256::zero() {
+                let usdc_f64: f64 = usdc_balance.to_string().parse().unwrap_or(0.0);
+                assets.push(VaultAsset {
+                    address: format!("{:?}", l3_usdc_addr),
+                    symbol: "USDC".to_string(),
+                    balance: usdc_balance.to_string(),
+                    price: "1000000000000000000".to_string(), // $1 in wei
+                    usd_value: usdc_f64 / 1e18, // L3 USDC = 18 decimals
+                });
+            }
         }
     }
 
@@ -6126,10 +6128,10 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     let is_healthy = active_oracles > 0 && last_cycle_number > 0;
 
-    // Fetch vault asset balances from settlement chain (with 60s timeout)
+    // Fetch vault asset balances from L3 (MockBitgetVault is on L3, not settlement)
     let vault_result = tokio::time::timeout(
         std::time::Duration::from_secs(60),
-        build_vault_snapshot(state, &state.settlement_provider),
+        build_vault_snapshot(state, &state.l3_provider),
     ).await;
     let (vault_assets, vault_usd_total) = match vault_result {
         Ok((assets, total)) => (assets, total),
