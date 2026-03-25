@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 
-use crate::metrics::APMetrics;
+use ap::metrics::APMetrics;
 
 // -- Shared state for axum handlers --
 #[derive(Clone)]

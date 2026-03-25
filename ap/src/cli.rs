@@ -5,7 +5,7 @@ use ethers::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::external::bitget_vault::BitgetVaultClient;
+use ap::external::bitget_vault::BitgetVaultClient;
 
 /// On-chain trade settlement configuration for E2E testing (Story 6.17)
 ///
