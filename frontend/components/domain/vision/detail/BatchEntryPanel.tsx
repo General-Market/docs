@@ -41,7 +41,6 @@ export default function BatchEntryPanel({
   bitmapEditor,
   sourceId,
   marketIds = [],
-  bettingEnd,
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
 
@@ -150,9 +149,11 @@ export default function BatchEntryPanel({
   const allMarketsSet = counts.empty === 0 && marketIds.length > 0
   const depositAmount = hasStake ? BigInt(Math.round(stakeValue * 1e18)) : 0n
   const exceedsBalance = isConnected && hasStake && depositAmount > walletUsdc
-  const bettingClosed = bettingEnd ? new Date(bettingEnd).getTime() < Date.now() : false
+  // bettingEnd is advisory only — the on-chain contract enforces the real deadline.
+  // We no longer gate canSubmit on it: a stale oracle bettingEnd timestamp caused
+  // permanent button lockout between rounds.
   const canSubmit = isConnected && hasStake && joinStep === 'idle'
-    && !isJoined && allMarketsSet && !!configHash && !exceedsBalance && !bettingClosed
+    && !isJoined && allMarketsSet && !!configHash && !exceedsBalance
 
   // -- Enter round handler --
   const handleEnterBatch = useCallback(async () => {
@@ -230,7 +231,6 @@ export default function BatchEntryPanel({
   // -- Button label --
   const buttonLabel = useMemo(() => {
     if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
-    if (bettingClosed) return 'Betting closed — next round soon'
     if (isJoined || joinStep === 'done') return 'In Round'
     if (isSubmitting) return t('batch_entry_panel.submitting')
     if (isJoinConfirming) return t('batch_entry_panel.confirming')
@@ -239,7 +239,7 @@ export default function BatchEntryPanel({
     if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
     if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
     return t('batch_entry_panel.enter_batch')
-  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined, bettingClosed])
+  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined])
 
   const isProcessing = joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done'
 

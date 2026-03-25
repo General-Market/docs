@@ -7,6 +7,66 @@ import {
 } from '../helpers/backend-api';
 
 /**
+ * Install route interceptors that prevent the ITP detail page from
+ * drowning the dev server. The page fires:
+ *   - useItpNav: polls /api/itp-price every 1.5s (chains to data-node + L3 RPC)
+ *   - useItpNavSeries: fetches nav-series from data-node (KeyStatsBar + PerformanceChart)
+ *   - RebalanceSection: fetches /api/dn/aum-ranking
+ *   - RebalanceSection: fetches /deployed-assets.json
+ *   - server-side: computeEnrichment (DeFiLlama + CoinGecko)
+ *
+ * Without interception, three test navigations saturate the dev server.
+ */
+async function installItpPageInterceptors(page: import('@playwright/test').Page) {
+  // Mock /api/itp-price — the 1.5s poll is the main offender.
+  // Return a realistic NAV so the test can verify "$X.XXXX" renders.
+  await page.route('**/api/itp-price**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        nav: '1000000000000000000',
+        nav_display: '1.0000',
+        assets_priced: 5,
+        assets_total: 5,
+        source: 'mock',
+      }),
+    });
+  });
+
+  // Mock nav-series — PerformanceChart and KeyStatsBar both fetch this.
+  // Empty points array is sufficient; the chart renders "no data" gracefully.
+  await page.route('**/nav-series**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ points: [] }),
+    });
+  });
+
+  // Mock aum-ranking — RebalanceSection uses it for symbol lookup.
+  // Return empty array; the section falls back to deployed-assets.json.
+  await page.route('**/aum-ranking**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
+  // Mock vault-balances — known to block for 10+ seconds and return 500.
+  // Not directly used on the ITP detail page, but may be fetched by
+  // layout-level components if navigation crosses through /index.
+  await page.route('**/vault-balances**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ assets: [], token_count: 0 }),
+    });
+  });
+}
+
+/**
  * Navigate to an ITP detail page and wait for hydration.
  */
 async function navigateToItpPage(page: import('@playwright/test').Page, itpId: string) {
@@ -46,6 +106,9 @@ test.describe('ITP Detail & Rebalance', () => {
     const state = await getItpStateL3(itpId);
     expect(state.assets.length, 'ITP4 must have assets').toBeGreaterThan(0);
 
+    // Block expensive polling endpoints to prevent dev server overload
+    await installItpPageInterceptors(page);
+
     // Navigate to detail page
     await navigateToItpPage(page, itpId);
 
@@ -76,6 +139,9 @@ test.describe('ITP Detail & Rebalance', () => {
     const itpId = '0x' + '0'.repeat(63) + '4';
     const state = await getItpStateL3(itpId);
     const expectedCreator = state.creator.toLowerCase();
+
+    // Block expensive polling endpoints to prevent dev server overload
+    await installItpPageInterceptors(page);
 
     await navigateToItpPage(page, itpId);
 
@@ -118,6 +184,9 @@ test.describe('ITP Detail & Rebalance', () => {
       'Deployer must be the ITP creator'
     ).toBe(TEST_ADDRESS.toLowerCase());
     expect(state.assets.length, 'ITP must have assets').toBeGreaterThanOrEqual(2);
+
+    // Block expensive polling endpoints to prevent dev server overload
+    await installItpPageInterceptors(page);
 
     // Navigate to the ITP detail page
     await navigateToItpPage(page, itpId);

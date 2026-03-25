@@ -48,8 +48,8 @@ export default defineConfig({
     // Phase 1: produce on-chain state (separate keys, parallel on Anvil)
     {
       name: 'itp-data',
-      // 0[1-578]: tests 01-05, 07, 08. NOT 06 (moved to ui-verify-itp).
-      testMatch: /(^|\/)0[1-578]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$|(^|\/)36-.*\.spec\.ts$|(^|\/)47-.*\.spec\.ts$/,
+      // 0[1-5789]: tests 01-05, 07, 08, 09. NOT 06 (moved to ui-verify-itp).
+      testMatch: /(^|\/)0[1-5789]-.*\.spec\.ts$|(^|\/)10-morpho.*\.spec\.ts$|(^|\/)18-.*\.spec\.ts$|(^|\/)26-.*\.spec\.ts$|(^|\/)36-.*\.spec\.ts$|(^|\/)47-.*\.spec\.ts$/,
     },
     {
       name: 'vision-data',

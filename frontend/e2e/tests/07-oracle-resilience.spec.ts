@@ -1,8 +1,10 @@
 /**
  * Oracle Resilience E2E tests.
  *
- * On Anvil (RUN_RESILIENCE=1): kill/restart oracle processes to test crash recovery.
- * On testnet: verify all oracles are healthy, have peers, and are achieving consensus.
+ * These tests require live oracle processes — they only run when oracles are
+ * reachable (testnet with VPS oracles, or local Anvil with manually started oracles).
+ * On local Anvil, start.sh does NOT launch oracle binaries, so these tests skip
+ * automatically unless oracles happen to be running.
  */
 
 import { test, expect } from '@playwright/test';
@@ -15,11 +17,30 @@ import {
 const TEST_ADDRESS = DEPLOYER_ADDRESS;
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
+/** Probe whether at least one oracle is reachable. Returns false on connection refused. */
+async function oraclesReachable(): Promise<boolean> {
+  for (const url of ORACLE_URLS) {
+    try {
+      const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5_000) });
+      if (res.ok || res.status < 500) return true;
+    } catch {
+      // connection refused — this oracle is dead
+    }
+  }
+  return false;
+}
+
 test.describe.serial('Oracle Resilience', () => {
   test('all oracles healthy with full peer connectivity', async () => {
     test.setTimeout(60_000);
 
-    // Verify each oracle is reachable via SSH tunnel
+    const reachable = await oraclesReachable();
+    if (!reachable) {
+      console.log('No oracle processes reachable — skipping (oracles only run on VPS or with manual local start)');
+      test.skip();
+      return;
+    }
+
     for (let i = 0; i < ORACLE_URLS.length; i++) {
       const url = ORACLE_URLS[i];
       const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(10_000) });
@@ -35,6 +56,13 @@ test.describe.serial('Oracle Resilience', () => {
 
   test('consensus is progressing across all oracles', async () => {
     test.setTimeout(120_000);
+
+    const reachable = await oraclesReachable();
+    if (!reachable) {
+      console.log('No oracle processes reachable — skipping (oracles only run on VPS or with manual local start)');
+      test.skip();
+      return;
+    }
 
     // Record baseline consensus totals
     const baselines: number[] = [];

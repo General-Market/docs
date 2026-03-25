@@ -439,6 +439,27 @@ export async function installApiInterceptors(page: Page): Promise<void> {
   await page.route('**/prices-by-address**', handlePricesByAddress);
   await page.route('**/fast-prices-by-address**', handlePricesByAddress);
 
+  // Intercept vault-balances: the data-node calls MockBitgetVault on the settlement chain
+  // for every token, with a 10s server-side timeout. On local Anvil this hangs or 500s,
+  // blocking the page for 10+ seconds and causing 3 test timeouts. Return empty vault data.
+  await page.route('**/vault-balances**', async (route) => {
+    try {
+      const response = await route.fetch({ timeout: 3_000 });
+      if (response.ok()) {
+        const body = await response.text();
+        await route.fulfill({ status: 200, contentType: 'application/json', body });
+        return;
+      }
+    } catch {
+      // Timeout or network error — fall through to mock
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ assets: [], token_count: 0 }),
+    });
+  });
+
   // Proxy /rpc requests to L3 RPC from Node.js side.
   // Vercel rewrites to raw IPs fail (DNS_HOSTNAME_RESOLVED_PRIVATE),
   // so the deployed site's /rpc proxy is broken. Intercept here instead.

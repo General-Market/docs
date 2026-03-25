@@ -225,7 +225,6 @@ export function SourcesGrid() {
                   index={i}
                   metaAssetCount={meta?.assetCounts ? assetCountForSource(source.sourceId, meta.assetCounts) : undefined}
                   metaStatus={meta?.sources ? sourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
-                  metaLoaded={!metaLoading && !!meta}
                 />
               </div>
             ))}

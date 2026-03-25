@@ -183,11 +183,13 @@ test.describe('Vision', () => {
       return
     }
 
-    expect(pos1.deposit).toBe(deposit)
+    // pos.deposit = stakePerTick (per-tick stake stored in the contract's deposit field)
+    // pos.totalDeposited = depositAmount (full USDC transferred from wallet)
+    expect(pos1.deposit).toBe(stakePerTick)
     expect(pos1.totalDeposited).toBe(deposit)
     expect(pos1.bitmapHash).toBe(p1Result!.bitmapHash)
 
-    expect(pos2.deposit).toBe(deposit)
+    expect(pos2.deposit).toBe(stakePerTick)
     expect(pos2.totalDeposited).toBe(deposit)
     expect(pos2.bitmapHash).toBe(p2Result!.bitmapHash)
 
