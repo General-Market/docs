@@ -512,17 +512,15 @@ pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Resul
                 .or_else(|_| deployment.token_address("L3_WUSDC"))
                 .map_err(|e| format!("Deployment missing SETTLEMENT_USDC/L3_WUSDC token address: {}", e))?;
 
-            // Use settlement chain RPC for MockBitgetVault (vault is on settlement chain)
-            let settlement_rpc = config.effective_settlement_rpc_url()
-                .map_err(|e| format!("On-chain settlement requires settlement RPC: {}", e))?;
-            let settlement_chain_id = config.effective_settlement_chain_id()
-                .map_err(|e| format!("On-chain settlement requires settlement chain ID: {}", e))?;
+            // MockBitgetVault lives on L3 (same chain as Index.sol)
+            let l3_rpc = config.rpc_url.as_deref().unwrap_or("http://localhost:8545");
+            let l3_chain_id = config.chain_id.unwrap_or(111222333);
 
             let vault_client = BitgetVaultClient::new(
-                &settlement_rpc,
+                l3_rpc,
                 &private_key,
                 vault_address,
-                settlement_chain_id,
+                l3_chain_id,
             )
             .map_err(|e| format!("Failed to create BitgetVaultClient: {}", e))?;
 
@@ -530,13 +528,13 @@ pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Resul
             vault_client.initialize_nonce().await
                 .map_err(|e| format!("Failed to initialize vault nonce: {}", e))?;
 
-            let settlement_rpc_display = settlement_rpc.clone();
             info!(
                 vault_address = ?ethers::types::Address::from(vault_address),
                 quote_token = ?quote_token,
-                settlement_rpc = %settlement_rpc_display,
+                l3_rpc = l3_rpc,
+                l3_chain_id = l3_chain_id,
                 data_node = ?config.data_node_url,
-                "On-chain settlement enabled (oracle-driven AssetTradeRequest events)"
+                "On-chain settlement enabled via L3 MockBitgetVault"
             );
 
             // Resolve MockUSDT address from config (Story 7.18)
