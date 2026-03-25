@@ -4,7 +4,8 @@ import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { useDeployment } from '@/hooks/useDeployment'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { useTranslations } from 'next-intl'
 
@@ -22,15 +23,17 @@ interface WithdrawModalProps {
 export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const t = useTranslations('vision')
   const { address, isConnected } = useAccount()
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
 
   // Read on-chain position
   const { data: position } = useReadContract({
-    address: VISION_ADDRESS,
+    address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getPosition',
     args: address ? [BigInt(batchId), address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: !!address && visionAddress !== '0x0000000000000000000000000000000000000000' },
   })
 
   const pos = position as {
@@ -38,7 +41,6 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
     deposit: bigint
     joinTimestamp: bigint
     totalDeposited: bigint
-    totalClaimed: bigint
   } | undefined
 
   const totalDeposited = pos?.totalDeposited ?? 0n

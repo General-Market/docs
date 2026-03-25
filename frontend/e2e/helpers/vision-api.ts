@@ -256,7 +256,6 @@ const VISION_POSITION_ABI = [{
       { name: 'deposit', type: 'uint256' },
       { name: 'joinTimestamp', type: 'uint256' },
       { name: 'totalDeposited', type: 'uint256' },
-      { name: 'totalClaimed', type: 'uint256' },
     ],
   }],
 }] as const
@@ -541,7 +540,7 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   })
   const result = await l3EthCall(getVisionAddress(), data)
 
-  // Decode: 6 words of 32 bytes each
+  // Decode: 5 words of 32 bytes each (totalClaimed was removed from the contract struct)
   const hex = result.replace('0x', '')
   const words = []
   for (let i = 0; i < hex.length; i += 64) {
@@ -549,13 +548,24 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   }
 
   return {
-    bitmapHash: '0x' + words[0],
-    configHash: '0x' + words[1],
-    deposit: BigInt('0x' + words[2]),
-    joinTimestamp: BigInt('0x' + words[3]),
-    totalDeposited: BigInt('0x' + words[4]),
-    totalClaimed: BigInt('0x' + words[5]),
+    bitmapHash: '0x' + (words[0] ?? '0'.repeat(64)),
+    configHash: '0x' + (words[1] ?? '0'.repeat(64)),
+    deposit: words[2] ? BigInt('0x' + words[2]) : 0n,
+    joinTimestamp: words[3] ? BigInt('0x' + words[3]) : 0n,
+    totalDeposited: words[4] ? BigInt('0x' + words[4]) : 0n,
+    totalClaimed: words[5] ? BigInt('0x' + words[5]) : 0n,
   }
+}
+
+/**
+ * Read a player's "real balance" — their L3 USDC balance (Vision USDC token).
+ * Vision pays out directly to player wallets on settlement (no persistent
+ * balance mapping in the contract), so USDC balance IS the real balance.
+ * Returns the raw uint256 (L3 USDC, 18 decimals).
+ */
+export async function getVisionRealBalance(player: string): Promise<bigint> {
+  const visionUsdc = await getVisionUsdcAddress()
+  return getL3UsdcBalance(player, visionUsdc)
 }
 
 // ── Vision issuer API ────────────────────────────────────────

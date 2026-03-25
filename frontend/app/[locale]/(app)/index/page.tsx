@@ -30,6 +30,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     <main className="min-h-screen bg-page flex flex-col">
       {/* SEO-visible content */}
       <div className="sr-only">
+        <h1>{t('h1')}</h1>
         <section aria-label={t('markets.title')}>
           <h2>{t('markets.title')}</h2>
           <p>{t('markets.description')}</p>

@@ -2,24 +2,33 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import SourcesPageClient from './SourcesPageClient'
+import ExplorerPageClient from './ExplorerPageClient'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
-  const t = await getTranslations({ locale, namespace: 'seo.pages.sources_monitoring' })
+  const t = await getTranslations({ locale, namespace: 'seo.pages.explorer' })
   return {
     title: t('title'),
     description: t('description'),
+    alternates: {
+      canonical: '/explorer',
+      languages: {
+        en: '/explorer',
+        ko: '/ko/explorer',
+        ja: '/ja/explorer',
+        zh: '/zh/explorer',
+        'x-default': '/explorer',
+      },
+    },
   }
 }
 
-export default function SourcesPage() {
+export default function ExplorerPage() {
   return (
-    <main className="min-h-screen bg-page flex flex-col">
+    <>
       <Header />
-      <SourcesPageClient />
-      <div className="flex-1" />
+      <ExplorerPageClient />
       <Footer />
-    </main>
+    </>
   )
 }

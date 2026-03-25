@@ -84,9 +84,9 @@
   "staleAddresses": [],
   "preconditions": {
     "hasVisionBatches": true,
-    "onChainBatchCount": 289,
+    "onChainBatchCount": 363,
     "deployerHasUsdc": true,
-    "deployerUsdcBalance": "21076560492927094668116290",
+    "deployerUsdcBalance": "21076182707290533188246440",
     "dataNodeReachable": true,
     "dataNodeStatus": "200 OK",
     "visionApiReachable": true,

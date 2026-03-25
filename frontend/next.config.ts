@@ -9,6 +9,7 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   staticPageGenerationTimeout: 180,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
   // Include data files in serverless function bundles — fs.readFile paths

@@ -20,6 +20,8 @@ export function OrganizationJsonLd({ description }: { description: string }) {
     },
     sameAs: [
       "https://x.com/otc_max",
+      "https://discord.gg/xsfgzwR6",
+      "https://docs.generalmarket.io",
     ],
     description,
   }

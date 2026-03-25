@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       canonical: '/privacy',
     },
     robots: {
-      index: true,
+      index: false,
       follow: true,
     },
   }

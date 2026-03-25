@@ -4,7 +4,7 @@ import { getItpSummaries } from '@/lib/api/server-data'
 import { getSourceIdsServer } from '@/lib/vision/sources-server'
 import { getArticleSlugs, getArticle } from '@/lib/learn/articles'
 
-const baseUrl = 'https://generalmarket.io'
+const baseUrl = 'https://www.generalmarket.io'
 
 function localeUrl(path: string, locale: string): string {
   if (locale === defaultLocale) return `${baseUrl}${path}`
@@ -30,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/index', changeFrequency: 'daily', priority: 0.9 },
     { path: '/sources', changeFrequency: 'daily', priority: 0.5 },
     { path: '/points', changeFrequency: 'daily', priority: 0.5 },
+    { path: '/explorer', changeFrequency: 'daily', priority: 0.5 },
     { path: '/about', changeFrequency: 'monthly' as const, priority: 0.7 },
     { path: '/privacy', changeFrequency: 'monthly', priority: 0.3 },
     { path: '/terms', changeFrequency: 'monthly', priority: 0.3 },
@@ -44,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const route of staticRoutes) {
     entries.push({
       url: localeUrl(route.path, defaultLocale),
-      lastModified: new Date('2026-02-27'),
+      lastModified: new Date(),
       changeFrequency: route.changeFrequency,
       priority: route.priority,
       alternates: alternatesForPath(route.path),

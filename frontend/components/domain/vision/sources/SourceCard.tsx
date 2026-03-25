@@ -97,19 +97,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
       ? t('source_card.settlement_delayed')
       : t('source_card.settlement_inactive')
 
-  // Count-up: start at 0, tick to real value when card enters viewport
   const metricsRef = useRef<HTMLDivElement>(null)
-  const [metricsVisible, setMetricsVisible] = useState(false)
-  useEffect(() => {
-    const el = metricsRef.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setMetricsVisible(true); io.disconnect() } },
-      { threshold: 0.1 },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
 
   // Determine brand background style
   const brandStyle: React.CSSProperties = source.brandBg.startsWith('linear-gradient')
@@ -199,7 +187,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             <span className="text-body font-bold text-black font-mono tabular-nums">
               {displayMarketCount ? (
                 <AnimatedNumber
-                  value={metricsVisible ? displayMarketCount : 0}
+                  value={displayMarketCount}
                   decimals={0}
                   duration={800}
                   formatFn={(v) => Math.round(v).toLocaleString()}

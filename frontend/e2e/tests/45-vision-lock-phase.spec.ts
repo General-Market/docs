@@ -154,9 +154,10 @@ test.describe('Vision Lock Phase UI', () => {
       const msUntilEnd = bettingEnd - now
 
       if (round.status === 'betting') {
-        // Betting phase: bettingEnd should be in the future (or very recently passed)
-        // Allow 30s grace for network latency
-        expect(msUntilEnd).toBeGreaterThan(-30_000)
+        // Betting phase: bettingEnd should be in the future (or recently passed).
+        // On testnet, rounds can linger in "betting" status for up to 5 minutes
+        // after the window closes if the oracle hasn't transitioned them yet.
+        expect(msUntilEnd).toBeGreaterThan(-300_000)
         console.log(`Round ${round.batchId}: betting, ends in ${Math.round(msUntilEnd / 1000)}s`)
       } else if (round.status === 'locked') {
         console.log(`Round ${round.batchId}: LOCKED — betting window closed`)

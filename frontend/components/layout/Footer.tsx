@@ -9,10 +9,10 @@ export function Footer() {
   return (
     <footer className="bg-zinc-950 text-white/60 pt-12 pb-6 px-6 lg:px-12 text-caption">
       <div className="max-w-site mx-auto">
-        {/* 3-column grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 pb-10 border-b border-white/10">
+        {/* 4-column grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 pb-10 border-b border-white/10">
           {/* Col 1: Brand */}
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <span className="text-white font-bold text-body tracking-tight">{t('brand.name')}</span>
             <p className="mt-2 text-white/40 leading-relaxed text-label">
               {t('brand.description')}
@@ -56,12 +56,29 @@ export function Footer() {
               <li><Link href="/index" className="hover:text-white transition-colors">{t('footer.indexes')}</Link></li>
               <li><Link href="/" className="hover:text-white transition-colors">{t('footer.vision')}</Link></li>
               <li><Link href="/sources" className="hover:text-white transition-colors">{t('footer.data_sources')}</Link></li>
-              <li><Link href="/explorer" className="hover:text-white transition-colors">{t('footer.explorer')}</Link></li>
               <li><Link href="/points" className="hover:text-white transition-colors">{t('footer.points')}</Link></li>
             </ul>
           </div>
 
-          {/* Col 3: Resources */}
+          {/* Col 3: Explorers */}
+          <div>
+            <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">Explorers</span>
+            <ul className="space-y-2">
+              <li>
+                <a href={process.env.NEXT_PUBLIC_L3_EXPLORER_URL || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  GM Chain
+                </a>
+              </li>
+              <li>
+                <a href={process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  Settlement (Sonic)
+                </a>
+              </li>
+              <li><Link href="/explorer" className="hover:text-white transition-colors">Transactions</Link></li>
+            </ul>
+          </div>
+
+          {/* Col 4: Resources */}
           <div>
             <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">{t('footer.resources')}</span>
             <ul className="space-y-2">

@@ -233,9 +233,9 @@ export function LendingPage() {
         )}
 
         {/* [C] Two-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
           {/* [C.L] Left column — search + filters + table */}
-          <div className="space-y-3 min-w-0">
+          <div className="space-y-3 min-w-0 overflow-hidden">
             {/* Search bar + filter chips */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1">
@@ -261,7 +261,7 @@ export function LendingPage() {
                 />
               </div>
 
-              <div className="flex gap-1 shrink-0">
+              <div className="flex flex-wrap gap-1 shrink-0">
                 <FilterChip mode="all" label="All" />
                 {isConnected && <FilterChip mode="positions" label="Your positions" />}
                 <FilterChip mode="liquidity" label="Has liquidity" />
@@ -280,7 +280,7 @@ export function LendingPage() {
           </div>
 
           {/* [C.R] Right column — sticky action panel */}
-          <div className="lg:sticky lg:top-6 lg:self-start">
+          <div className="xl:sticky xl:top-6 xl:self-start">
             {isConnected ? (
               <MarketActionPanel
                 selectedMarket={selectedMarketInfo}

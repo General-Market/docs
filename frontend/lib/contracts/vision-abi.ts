@@ -112,7 +112,6 @@ export const VISION_ABI = [
           { name: 'deposit', type: 'uint256' },
           { name: 'joinTimestamp', type: 'uint256' },
           { name: 'totalDeposited', type: 'uint256' },
-          { name: 'totalClaimed', type: 'uint256' },
         ],
       },
     ],

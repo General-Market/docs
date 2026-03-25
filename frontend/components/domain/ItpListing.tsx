@@ -157,7 +157,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       } catch (e) { console.error('[ItpListing] REST nav fetch failed:', e) }
     }
     fetchRanking()
-    const interval = setInterval(fetchRanking, 30_000)
+    const interval = setInterval(fetchRanking, 20_000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [])
 

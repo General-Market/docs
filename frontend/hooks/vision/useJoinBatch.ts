@@ -2,14 +2,44 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
-import { formatUnits } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
+
+/** Map contract error names to user-facing messages */
+const ERROR_MESSAGES: Record<string, string> = {
+  BatchNotFound: 'Batch not found or config changed. Refresh the page.',
+  BatchPaused: 'This batch is paused.',
+  AlreadyJoined: 'You already joined this round.',
+  TickLocked: 'Round is locked — predictions close before settlement.',
+  StakeBelowMinimum: 'Stake too low. Minimum is 0.1 USDC.',
+  InsufficientDeposit: 'Deposit must be at least equal to your stake.',
+  Unauthorized: 'Not authorized for this action.',
+  BatchAlreadySettled: 'This batch has already been settled.',
+}
+
+/** Extract a readable message from a wagmi/viem error */
+function parseContractError(err: Error): string {
+  const msg = err.message || ''
+  // viem decodes custom errors as "Error: ErrorName()" in the message
+  for (const [name, readable] of Object.entries(ERROR_MESSAGES)) {
+    if (msg.includes(name)) return readable
+  }
+  // ERC20 transfer failures
+  if (msg.includes('ERC20InsufficientBalance') || msg.includes('transfer amount exceeds balance'))
+    return 'Insufficient USDC balance.'
+  if (msg.includes('ERC20InsufficientAllowance') || msg.includes('allowance'))
+    return 'USDC allowance too low. Try again — approval may have failed.'
+  // User rejected in wallet
+  if (msg.includes('User rejected') || msg.includes('user rejected'))
+    return 'Transaction rejected in wallet.'
+  // Fallback: trim the viem noise
+  const short = msg.replace(/^ContractFunctionRevertedError:\s*/, '').slice(0, 200)
+  return short || 'Transaction reverted.'
+}
 
 export interface UseJoinBatchParams {
   batchId: bigint
@@ -43,13 +73,6 @@ export interface UseJoinBatchReturn {
 
 const ERC20_ABI = [
   {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
     inputs: [
       { name: 'spender', type: 'address' },
       { name: 'amount', type: 'uint256' },
@@ -76,9 +99,8 @@ const ERC20_ABI = [
  *
  * Flow:
  * 1. Encode bets into bitmap, compute keccak256 hash
- * 2. Check wallet USDC balance >= depositAmount
- * 3. Approve USDC to Vision contract (if needed)
- * 4. Call Vision.joinBatchDirect(batchId, configHash, depositAmount, depositAmount, bitmapHash)
+ * 2. Approve USDC to Vision contract (if needed)
+ * 3. Call Vision.joinBatchDirect(batchId, configHash, depositAmount, depositAmount, bitmapHash)
  *
  * After joinBatchDirect succeeds, the caller should use useSubmitBitmap to reveal
  * the actual bitmap bytes to the oracle nodes.
@@ -86,6 +108,7 @@ const ERC20_ABI = [
 export function useJoinBatch(): UseJoinBatchReturn {
   const { address } = useAccount()
   const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
   const usdcAddress = getAddress('L3_WUSDC')
 
   const [step, setStep] = useState<'idle' | 'approving' | 'joining' | 'done' | 'error'>('idle')
@@ -125,21 +148,12 @@ export function useJoinBatch(): UseJoinBatchReturn {
     error: joinReceiptError,
   } = useWaitForTransactionReceipt({ hash: joinHash, chainId: indexL3.id })
 
-  // --- Read wallet USDC balance ---
-  const { data: walletBalance } = useReadContract({
-    address: usdcAddress,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
-  })
-
   // --- Read allowance ---
   const { data: allowance } = useReadContract({
     address: usdcAddress,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: address ? [address, VISION_ADDRESS] : undefined,
+    args: address ? [address, visionAddress] : undefined,
     query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
   })
 
@@ -165,15 +179,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
     joinHandled.current = false
     approveHandled.current = false
 
-    // 2. Check wallet USDC balance
-    const balance = (walletBalance as bigint | undefined) ?? 0n
-    if (balance < params.depositAmount) {
-      setErrorMsg(`Insufficient USDC in wallet. Have ${formatUnits(balance, 18)}, need ${formatUnits(params.depositAmount, 18)} USDC.`)
-      setStep('error')
-      return
-    }
-
-    // 3. Check allowance — approve if needed
+    // 2. Check allowance — approve if needed
     const currentAllowance = (allowance as bigint | undefined) ?? 0n
     if (currentAllowance < params.depositAmount) {
       setPendingParams(params)
@@ -182,21 +188,21 @@ export function useJoinBatch(): UseJoinBatchReturn {
         address: usdcAddress,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [VISION_ADDRESS, params.depositAmount],
+        args: [visionAddress, params.depositAmount],
       })
       return
     }
 
-    // 4. Allowance sufficient — call joinBatchDirect directly
+    // 3. Allowance sufficient — call joinBatchDirect directly
     setPendingParams(null)
     setStep('joining')
     writeJoin({
-      address: VISION_ADDRESS,
+      address: visionAddress,
       abi: VISION_ABI,
       functionName: 'joinBatchDirect',
       args: [params.batchId, params.configHash, params.depositAmount, params.depositAmount, hash],
     })
-  }, [address, walletBalance, allowance, writeApprove, writeJoin, usdcAddress])
+  }, [address, allowance, writeApprove, writeJoin, usdcAddress, visionAddress])
 
   // Approve success -> call joinBatchDirect
   useEffect(() => {
@@ -205,7 +211,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
     setStep('joining')
     resetApprove()
     writeJoin({
-      address: VISION_ADDRESS,
+      address: visionAddress,
       abi: VISION_ABI,
       functionName: 'joinBatchDirect',
       args: [pendingParams.batchId, pendingParams.configHash, pendingParams.depositAmount, pendingParams.depositAmount, bitmapHash],
@@ -228,16 +234,16 @@ export function useJoinBatch(): UseJoinBatchReturn {
       if (step === 'joining' && !joinHandled.current) {
         joinHandled.current = true
         setStep('done')
+        resetJoin() // Clear hash so wagmi stops polling and isJoinConfirming goes false
       }
     }, 30_000)
     return () => clearTimeout(timer)
-  }, [isJoinConfirming, joinHash, step])
+  }, [isJoinConfirming, joinHash, step, resetJoin])
 
   // Error handling
   useEffect(() => {
     if (approveError) {
-      const msg = approveError.message || 'USDC approve failed'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg(parseContractError(approveError))
       setStep('error')
       resetApprove()
     }
@@ -245,8 +251,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
 
   useEffect(() => {
     if (joinError) {
-      const msg = joinError.message || 'Join round failed'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg(parseContractError(joinError))
       setStep('error')
       resetJoin()
     }
@@ -254,8 +259,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
 
   useEffect(() => {
     if (isJoinReceiptError && joinReceiptError) {
-      const msg = joinReceiptError.message || 'Join transaction reverted'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg(parseContractError(joinReceiptError))
       setStep('error')
       resetJoin()
     }

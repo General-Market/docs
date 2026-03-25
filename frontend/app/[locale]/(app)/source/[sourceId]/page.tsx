@@ -21,10 +21,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const category = getCategoryLabel(source.category)
   const description = `${source.name} — live market data feed with ${source.prefixes.length} market series. Category: ${category}. Trade predictions on Vision.`
+  const path = `/source/${sourceId}`
 
   return {
     title: `${source.name} | Vision`,
     description,
+    alternates: {
+      canonical: path,
+      languages: {
+        en: path,
+        ko: `/ko${path}`,
+        ja: `/ja${path}`,
+        zh: `/zh${path}`,
+        'x-default': path,
+      },
+    },
+    openGraph: {
+      title: `${source.name} — Vision Data Source`,
+      description,
+      images: source.logo ? [{ url: source.logo, alt: source.name }] : undefined,
+    },
+    keywords: [source.name, category, 'prediction market', 'market data', 'Vision', 'General Market'],
   }
 }
 

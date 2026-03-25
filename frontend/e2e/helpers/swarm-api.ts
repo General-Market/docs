@@ -49,7 +49,7 @@ export const SWARM_COUNT = SWARM_ADDRESSES.length;
 // ── ABI Definitions (typed, matching IVision.sol exactly) ──
 
 const VISION_ABI = parseAbi([
-  "function getPosition(uint256 batchId, address player) view returns ((bytes32 bitmapHash, bytes32 configHash, uint256 deposit, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed))",
+  "function getPosition(uint256 batchId, address player) view returns ((bytes32 bitmapHash, bytes32 configHash, uint256 deposit, uint256 joinTimestamp, uint256 totalDeposited))",
   "function currentTickId(uint256 batchId) view returns (uint256)",
   "function accumulatedFees() view returns (uint256)",
 ]);

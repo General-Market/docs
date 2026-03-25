@@ -8,7 +8,6 @@ import { useDeployment } from '@/hooks/useDeployment'
 export interface PlayerPosition {
   deposit: bigint
   totalDeposited: bigint
-  totalClaimed: bigint
   joinTimestamp: bigint
   bitmapHash: string
 }
@@ -35,7 +34,6 @@ export function usePlayerPosition(batchId: number | undefined) {
     deposit: bigint
     joinTimestamp: bigint
     totalDeposited: bigint
-    totalClaimed: bigint
   } | undefined
 
   const isJoined = pos !== undefined && pos.deposit > 0n
@@ -44,7 +42,6 @@ export function usePlayerPosition(batchId: number | undefined) {
     position: isJoined ? {
       deposit: pos.deposit,
       totalDeposited: pos.totalDeposited,
-      totalClaimed: pos.totalClaimed,
       joinTimestamp: pos.joinTimestamp,
       bitmapHash: pos.bitmapHash,
     } : null,

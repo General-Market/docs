@@ -20,6 +20,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: 'seo.metadata' })
+  const tOg = await getTranslations({ locale, namespace: 'seo.og' })
+  const tTw = await getTranslations({ locale, namespace: 'seo.twitter' })
 
   return {
     title: {
@@ -36,6 +38,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         ),
         'x-default': '/',
       },
+    },
+    openGraph: {
+      type: 'website',
+      siteName: tOg('site_name'),
+      title: tOg('title'),
+      description: tOg('description'),
+      locale: locale === 'en' ? 'en_US' : locale,
+      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: tOg('site_name') }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: tTw('title'),
+      description: tTw('description'),
+      images: ['/og-image.png'],
     },
   }
 }
