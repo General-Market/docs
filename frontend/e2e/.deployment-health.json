@@ -73,22 +73,20 @@
   ],
   "morpho": {
     "deployed": true,
-    "collateralTokenAlive": false,
+    "collateralTokenAlive": true,
     "oracleAlive": true,
-    "stale": true
+    "stale": false
   },
   "visionBatches": {
     "count": 47,
     "firstBatchExists": false
   },
-  "staleAddresses": [
-    "Morpho collateralToken (0x9a971f295c854dF72d01d891699DAF5479DE6D9D) has NO CODE — needs redeployment"
-  ],
+  "staleAddresses": [],
   "preconditions": {
     "hasVisionBatches": true,
-    "onChainBatchCount": 258,
+    "onChainBatchCount": 289,
     "deployerHasUsdc": true,
-    "deployerUsdcBalance": "21076762761697497279650970",
+    "deployerUsdcBalance": "21076560492927094668116290",
     "dataNodeReachable": true,
     "dataNodeStatus": "200 OK",
     "visionApiReachable": true,

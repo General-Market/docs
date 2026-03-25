@@ -30,7 +30,7 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
   const top5 = leaderboard.slice(0, 5)
 
   return (
-    <div className="mt-6">
+    <div id="leaderboard" className="mt-6">
       {/* Section bar */}
       <div className="section-bar">
         <div>

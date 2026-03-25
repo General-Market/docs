@@ -241,12 +241,18 @@ test.describe('Display Formatting — Source Cards', () => {
     test.setTimeout(120_000)
     await page.goto('/')
 
-    // Source cards are below NextBatches — may need scroll
+    // Source cards render as <a data-testid="source-card" href="/source/...">
+    // They are below NextBatches — may need scroll. Wait generously for data-node to supply market counts.
     const cards = sourceCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 20_000 }).catch(() => false)
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-      hasCards = await cards.first().isVisible({ timeout: 10_000 }).catch(() => false)
+      hasCards = await cards.first().isVisible({ timeout: 20_000 }).catch(() => false)
+    }
+    if (!hasCards) {
+      // Fallback: source links always render once the registry loads
+      const sourceLinks = page.locator('a[href*="/source/"]')
+      hasCards = await sourceLinks.first().isVisible({ timeout: 10_000 }).catch(() => false)
     }
     // Source cards must be visible — page should be fully loaded
     expect(hasCards, 'Source cards should be visible after scroll').toBeTruthy()

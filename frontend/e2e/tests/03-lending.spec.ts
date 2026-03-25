@@ -19,6 +19,7 @@ import {
   mintMorphoCollateral,
 } from '../helpers/backend-api';
 import { CONTRACTS } from '../env';
+import { keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 
 test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
@@ -73,6 +74,46 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       needFreshMarket = true;
     }
 
+    // Check if stored MARKET_ID matches the keccak256 of current marketParams.
+    // When only the JSON was updated (token address changed) without redeploying the market,
+    // the stored ID is stale — on-chain operations will revert because Morpho validates params
+    // against the market ID. Recompute and compare to catch this drift.
+    if (!needFreshMarket) {
+      const mp = morphoCheck!.marketParams;
+      const expectedMarketId = keccak256(
+        encodeAbiParameters(
+          parseAbiParameters('address, address, address, address, uint256'),
+          [
+            mp.loanToken as `0x${string}`,
+            mp.collateralToken as `0x${string}`,
+            mp.oracle as `0x${string}`,
+            mp.irm as `0x${string}`,
+            BigInt(mp.lltv),
+          ],
+        ),
+      );
+      const storedMarketId = morphoCheck!.contracts.MARKET_ID.toLowerCase();
+      if (expectedMarketId.toLowerCase() !== storedMarketId) {
+        console.log(`Stored MARKET_ID ${storedMarketId} does not match recomputed ID ${expectedMarketId} — marketParams drifted from on-chain market`);
+        needFreshMarket = true;
+      } else {
+        // Params are consistent — but confirm the market actually exists on-chain
+        const marketIdHex = storedMarketId.replace('0x', '');
+        const marketResult = await l3RpcCall('eth_call', [
+          { to: morphoAddr, data: '0x5c60e39a' + marketIdHex },
+          'latest',
+        ]) as string;
+        const hex = (marketResult || '').slice(2);
+        const lastUpdate = hex.length >= 320 ? BigInt('0x' + (hex.slice(256, 320) || '0')) : 0n;
+        if (lastUpdate === 0n) {
+          console.log(`Morpho market ${storedMarketId} not created on-chain (lastUpdate=0) — creating fresh market`);
+          needFreshMarket = true;
+        } else {
+          console.log(`Existing Morpho market verified (lastUpdate=${lastUpdate})`);
+        }
+      }
+    }
+
     if (needFreshMarket) {
       // Create a fresh Morpho market using MOCK_USDT as collateral and current L3_WUSDC as loan token.
       // The existing MORPHO contract, IRM, and LLTV are reused — only the market params change.
@@ -111,19 +152,6 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         marketParams: newMarketParams,
       });
       console.log('Morpho config overridden with fresh market params');
-    } else {
-      // Existing market — verify it was created on-chain
-      const marketId = morphoCheck!.contracts.MARKET_ID.replace('0x', '');
-      const marketResult = await l3RpcCall('eth_call', [
-        { to: morphoAddr, data: '0x5c60e39a' + marketId },
-        'latest',
-      ]) as string;
-      const hex = (marketResult || '').slice(2);
-      const lastUpdate = hex.length >= 320 ? BigInt('0x' + (hex.slice(256, 320) || '0')) : 0n;
-      if (lastUpdate === 0n) {
-        throw new Error('Morpho market not created on-chain (lastUpdate=0)');
-      }
-      console.log(`Existing Morpho market verified (lastUpdate=${lastUpdate})`);
     }
 
     // Re-read config (may have been overridden above)

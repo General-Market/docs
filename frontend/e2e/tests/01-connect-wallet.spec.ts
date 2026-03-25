@@ -1,63 +1,43 @@
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
-import { connectWalletButton } from '../helpers/selectors';
+import { connectWalletButton, ensureWalletConnected } from '../helpers/selectors';
 
 test.describe('Connect Wallet', () => {
   test('connects wallet and shows truncated address', async ({ walletPage: page }) => {
-    test.setTimeout(180_000); // fixture navigation can be slow under parallel load
+    test.setTimeout(180_000);
 
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
     const addrBtn = page.getByRole('button', { name: truncated });
-    const connectBtn = connectWalletButton(page);
 
-    // Wallet may auto-connect via seeded localStorage, or require manual click.
-    // Use a generous timeout — the component only renders the address button after
-    // mount (useEffect) + wagmi reconnect, which can take several render cycles.
-    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
-    if (!autoConnected) {
-      await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-    }
-
-    // Should show truncated address in the wallet button
-    await expect(addrBtn).toBeVisible({ timeout: 30_000 });
+    // On testnet the mock wallet always auto-connects via seeded wagmi localStorage.
+    // Wait directly for the address button — no fallback to Connect button needed.
+    await expect(addrBtn).toBeVisible({ timeout: 60_000 });
   });
 
   test('disconnect button works', async ({ walletPage: page }) => {
+    test.setTimeout(120_000);
+
+    // Ensure connected — handles both auto-connect and manual connect paths.
+    await ensureWalletConnected(page, TEST_ADDRESS);
+
     const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
     const addrBtn = page.getByRole('button', { name: truncated });
-    const connectBtn = connectWalletButton(page);
 
-    // Ensure connected first
-    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
-    if (!autoConnected) {
-      await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-      await expect(addrBtn).toBeVisible({ timeout: 15_000 });
-    }
-
-    // Click the address button to disconnect
+    // Click address button to trigger disconnect
     await addrBtn.click();
 
-    // Should show Login button again
-    await expect(connectWalletButton(page)).toBeVisible({ timeout: 10_000 });
+    // After disconnect the connect button must appear — give generous timeout
+    // because the mock wallet does NOT auto-reconnect after an explicit disconnect.
+    await expect(connectWalletButton(page)).toBeVisible({ timeout: 15_000 });
   });
 
   test('wallet reconnects on page reload', async ({ walletPage: page }) => {
     test.setTimeout(240_000);
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    const addrBtn = page.getByRole('button', { name: truncated });
-    const connectBtn = connectWalletButton(page);
 
     // Ensure connected first
-    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
-    if (!autoConnected) {
-      await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-    }
-    await expect(addrBtn).toBeVisible({ timeout: 60_000 });
+    await ensureWalletConnected(page, TEST_ADDRESS);
+
+    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
+    const addrBtn = page.getByRole('button', { name: truncated });
 
     // Navigate to same URL instead of reload — page.reload() causes frame detach under parallel load
     try {
@@ -67,9 +47,8 @@ test.describe('Connect Wallet', () => {
       await page.goto(page.url(), { waitUntil: 'domcontentloaded', timeout: 60_000 });
     }
 
-    // Wagmi may auto-reconnect from stored state, or we may need to re-connect.
-    // Either we see the address button or the Login button.
-    const addressOrConnect = addrBtn.or(connectWalletButton(page));
-    await expect(addressOrConnect).toBeVisible({ timeout: 30_000 });
+    // Wagmi seeded localStorage — wallet should auto-reconnect on every fresh page load.
+    // The connect button is never expected here; wait for the address directly.
+    await expect(addrBtn).toBeVisible({ timeout: 60_000 });
   });
 });
