@@ -576,18 +576,9 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             "Resolved Settlement→L3 order IDs for batch/fills"
         );
 
-        // Leader election: for bridge orders, use order-based rotation (preserves settlement→L3 mapping).
-        // For L3 direct orders (non-bridge), node 0 is always leader since there's no mapping to preserve.
-        let is_direct_l3 = target_orders.is_none() && {
-            let o = orchestrator.read().await;
-            o.get_submitted_bridged_orders().await.is_empty()
-        };
-        let batch_am_leader = if is_direct_l3 {
-            node_index == 0
-        } else {
-            let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
-            calculate_bridge_leader(batch_key, num_oracles, node_index)
-        };
+        // Use order-based leader election (same node as submit leader, which has the settlement→L3 mapping)
+        let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
+        let batch_am_leader = calculate_bridge_leader(batch_key, num_oracles, node_index);
         info!(cycle = current_cycle, order_count = submitted_orders.len(), batch_am_leader, "Processing batch for SubmittedOnL3 orders");
 
         // Fetch NAV per unique ITP (multi-ITP support)
