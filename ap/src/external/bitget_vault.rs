@@ -671,13 +671,13 @@ impl BitgetVaultClient {
                         info!(op = "get_fill", attempt, "Settlement RPC reconnected after retry");
                     }
                     return Ok(BitgetVaultFill {
-                        trade_id: fill.0.as_u64(),
-                        sell_token: fill.1,
-                        buy_token: fill.2,
-                        sell_amount: fill.3,
-                        buy_amount: fill.4,
-                        trader: fill.5,
-                        timestamp: fill.6.as_u64(),
+                        trade_id: fill.trade_id.as_u64(),
+                        sell_token: fill.sell_token,
+                        buy_token: fill.buy_token,
+                        sell_amount: fill.sell_amount,
+                        buy_amount: fill.buy_amount,
+                        trader: fill.trader,
+                        timestamp: fill.timestamp.as_u64(),
                     });
                 }
                 Err(e) => {
