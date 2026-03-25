@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useAccount, useWaitForTransactionReceipt, usePublicClient, useReadContract } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
-import { ERC20_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
-import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { TransactionStepper } from '@/components/ui/TransactionStepper'
 import type { MicroStep, VisibleStep } from '@/components/ui/TransactionStepper'
@@ -19,21 +19,26 @@ import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
-import { indexL3 } from '@/lib/wagmi'
+import { indexL3, settlementChain, settlementChainId } from '@/lib/wagmi'
+
+/** Settlement USDC decimals — real USDC on Settlement is 6 decimals */
+const SETTLEMENT_USDC_DECIMALS = 6
 
 /**
- * Buy flow micro-steps — Direct L3 path (4 steps + Done):
+ * Buy flow micro-steps — Settlement bridge path (5 steps + Done):
  *
- * Step 1 "Submit":   APPROVE (0), SUBMIT (1)
- * Step 2 "Process":  BATCH (2), FILL (3)
- * Done:              DONE (4)
+ * Step 1 "Submit on Settlement":  APPROVE (0), SUBMIT (1)
+ * Step 2 "Oracle Relay":          RELAY (2) — oracle detects CrossChainOrderCreated, submits on L3
+ * Step 3 "Processing":            BATCH (3), FILL (4)
+ * Done:                           DONE (5)
  */
 enum BuyMicro {
   APPROVE = 0,
   SUBMIT = 1,
-  BATCH = 2,
-  FILL = 3,
-  DONE = 4,
+  RELAY = 2,
+  BATCH = 3,
+  FILL = 4,
+  DONE = 5,
 }
 
 const MINT_ABI = [
@@ -58,8 +63,8 @@ interface BuyItpModalProps {
 export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const t = useTranslations('buy-modal')
   const tc = useTranslations('common')
-  const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient({ chainId: indexL3.id })
+  const { address, isConnected, chainId: currentChainId } = useAccount()
+  const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
   const { showSuccess } = useToast()
 
   const VISIBLE_STEPS: VisibleStep[] = [
@@ -70,6 +75,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
     [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
     [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
+    [BuyMicro.RELAY]: () => 'Oracle relaying to L3...',
     [BuyMicro.BATCH]: () => t('micro_steps.batch'),
     [BuyMicro.FILL]: () => t('micro_steps.fill'),
     [BuyMicro.DONE]: () => t('micro_steps.shares_received'),
@@ -92,6 +98,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [deadlineHours, setDeadlineHours] = useState(1)
   const [micro, setMicro] = useState<number>(-1) // -1 = INPUT mode
   const [orderId, setOrderId] = useState<bigint | null>(null)
+  const [settlementOrderId, setSettlementOrderId] = useState<bigint | null>(null)
   const [txError, setTxError] = useState<string | null>(null)
   const [fillPrice, setFillPrice] = useState<bigint | null>(null)
   const [fillAmount, setFillAmount] = useState<bigint | null>(null)
@@ -106,23 +113,32 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
+  // Settlement chain writes — raw useWriteContract (not the L3-defaulting hook)
+  const { switchChainAsync } = useSwitchChain()
+
   const {
-    writeContract: writeApprove,
+    writeContractAsync: writeApproveAsync,
     data: approveHash,
     isPending: isApprovePending,
     error: approveError,
     reset: resetApprove,
-  } = useChainWriteContract()
-  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({ hash: approveHash })
+  } = useWriteContract()
+  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
+    hash: approveHash,
+    chainId: settlementChainId,
+  })
 
   const {
-    writeContract: writeBuy,
+    writeContractAsync: writeBuyAsync,
     data: buyHash,
     isPending: isBuyPending,
     error: buyError,
     reset: resetBuy,
-  } = useChainWriteContract()
-  const { isLoading: isBuyConfirming, isSuccess: isBuySuccess, data: buyReceipt } = useWaitForTransactionReceipt({ hash: buyHash })
+  } = useWriteContract()
+  const { isLoading: isBuyConfirming, isSuccess: isBuySuccess, data: buyReceipt } = useWaitForTransactionReceipt({
+    hash: buyHash,
+    chainId: settlementChainId,
+  })
 
   const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
   const [stuckWarning, setStuckWarning] = useState(false)
@@ -140,27 +156,27 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
 
-  // L3 USDC balance (18 decimals) — read directly from L3 chain
-  const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
-    address: INDEX_PROTOCOL.l3Usdc,
+  // Settlement USDC balance (6 decimals) — read from Settlement chain
+  const { data: settlementUsdcRaw, refetch: refetchSettlementUsdc } = useReadContract({
+    address: INDEX_PROTOCOL.settlementUsdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: indexL3.id,
+    chainId: settlementChainId,
     query: { enabled: !!address, refetchInterval: 5_000 },
   })
-  const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
+  const usdcBalance = (settlementUsdcRaw as bigint) ?? 0n
 
-  // L3 USDC allowance for Index contract
-  const { data: l3AllowanceRaw, refetch: refetchL3Allowance } = useReadContract({
-    address: INDEX_PROTOCOL.l3Usdc,
+  // Settlement USDC allowance for SettlementBridgeCustody
+  const { data: settlementAllowanceRaw, refetch: refetchSettlementAllowance } = useReadContract({
+    address: INDEX_PROTOCOL.settlementUsdc,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: address ? [address, INDEX_PROTOCOL.index] : undefined,
-    chainId: indexL3.id,
+    args: address ? [address, INDEX_PROTOCOL.settlementCustody] : undefined,
+    chainId: settlementChainId,
     query: { enabled: !!address, refetchInterval: 5_000 },
   })
-  const usdcAllowance = (l3AllowanceRaw as bigint) ?? 0n
+  const usdcAllowance = (settlementAllowanceRaw as bigint) ?? 0n
 
   // L3 user shares for this ITP
   const { data: l3SharesRaw } = useReadContract({
@@ -199,9 +215,9 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [amount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const refetchAllowance = useCallback(async () => {
-    await refetchL3Allowance()
-    await refetchL3Usdc()
-  }, [refetchL3Allowance, refetchL3Usdc])
+    await refetchSettlementAllowance()
+    await refetchSettlementUsdc()
+  }, [refetchSettlementAllowance, refetchSettlementUsdc])
 
   const {
     writeContract: writeMint,
@@ -209,10 +225,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     isPending: isMintPending,
     error: mintError,
     reset: resetMint,
-  } = useChainWriteContract()
+  } = useWriteContract()
   const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHashTx })
 
-  // Mint L3_WUSDC (18 decimals) + drip settlement gas for testing
+  // Mint test USDC + drip settlement gas for testing
   const [faucetLoading, setFaucetLoading] = useState(false)
   const handleMintTestUsdc = useCallback(async () => {
     if (!address) return
@@ -226,32 +242,32 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       })
       const data = await res.json()
       if (data.success) {
-        // Trigger refetch of USDC balance
-        refetchL3Usdc()
+        refetchSettlementUsdc()
       }
     } catch {
-      // Fallback to direct contract call
+      // Fallback to direct contract call (mint Settlement USDC, 6 decimals)
       resetMint()
       writeMint({
-        address: INDEX_PROTOCOL.l3Usdc,
+        address: INDEX_PROTOCOL.settlementUsdc,
         abi: MINT_ABI,
         functionName: 'mint',
-        args: [address, parseUnits('10000', COLLATERAL_DECIMALS)],
+        args: [address, parseUnits('10000', SETTLEMENT_USDC_DECIMALS)],
+        chainId: settlementChainId,
       })
     } finally {
       setFaucetLoading(false)
     }
-  }, [address, writeMint, resetMint, refetchL3Usdc])
+  }, [address, writeMint, resetMint, refetchSettlementUsdc])
 
-  // Amount in 18 decimals (L3_WUSDC)
-  const parsedAmount = amount ? parseUnits(amount, COLLATERAL_DECIMALS) : 0n
+  // Amount in 6 decimals (Settlement USDC)
+  const parsedAmount = amount ? parseUnits(amount, SETTLEMENT_USDC_DECIMALS) : 0n
   const needsApproval = parsedAmount > 0n && usdcAllowance < parsedAmount
 
   const snapshotBalances = useCallback(() => {
     setInitialSharesBn(userShares)
   }, [userShares])
 
-  const handleApprove = useCallback(() => {
+  const handleApprove = useCallback(async () => {
     if (!amount) return
     buyStartTime.current = Date.now()
     capture('buy_submitted', {
@@ -263,17 +279,30 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     setSkippedApproval(false)
     snapshotBalances()
     setMicro(BuyMicro.APPROVE)
-    // Approve L3_WUSDC → Index contract
-    writeApprove({
-      address: INDEX_PROTOCOL.l3Usdc,
+
+    try {
+      // Switch to Settlement chain before approving
+      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+    } catch {
+      setTxError('Please switch to the Settlement chain to buy')
+      setMicro(-1)
+      return
+    }
+
+    // Approve Settlement USDC → SettlementBridgeCustody
+    writeApproveAsync({
+      address: INDEX_PROTOCOL.settlementUsdc,
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [INDEX_PROTOCOL.index, parsedAmount],
+      args: [INDEX_PROTOCOL.settlementCustody, parsedAmount],
+      chainId: settlementChainId,
+    }).catch(() => {
+      // Error handled by approveError effect
     })
-  }, [amount, parsedAmount, writeApprove, snapshotBalances])
+  }, [amount, parsedAmount, writeApproveAsync, snapshotBalances, currentChainId, switchChainAsync, capture, itpId, slippageTier, deadlineHours, limitPrice])
 
   const handleBuy = useCallback(async () => {
-    if (!publicClient || !amount) return
+    if (!settlementPublicClient || !amount) return
     buyHandled.current = false
     setTxError(null)
 
@@ -288,9 +317,18 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }
     setMicro(BuyMicro.SUBMIT)
 
+    try {
+      // Ensure we're on Settlement chain
+      await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
+    } catch {
+      setTxError('Please switch to the Settlement chain to buy')
+      setMicro(-1)
+      return
+    }
+
     let blockTimestamp: bigint
     try {
-      const block = await publicClient.getBlock()
+      const block = await settlementPublicClient.getBlock()
       blockTimestamp = block.timestamp
     } catch {
       blockTimestamp = BigInt(Math.floor(Date.now() / 1000))
@@ -300,21 +338,24 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     const priceBn = limitPrice ? parseUnits(limitPrice, 18) : 0n
     setSubmittedLimitPrice(limitPrice)
 
-    // Direct L3: Index.submitOrder(itpId, BUY=0, amount, limitPrice, slippageTier, deadline)
-    writeBuy({
-      address: INDEX_PROTOCOL.index,
-      abi: INDEX_ABI,
-      functionName: 'submitOrder',
+    // Settlement: SettlementBridgeCustody.buyITPFromSettlement(itpId, usdcAmount, limitPrice, slippageTier, deadline)
+    // usdcAmount is in 6 decimals (Settlement USDC)
+    writeBuyAsync({
+      address: INDEX_PROTOCOL.settlementCustody,
+      abi: SETTLEMENT_CUSTODY_ABI,
+      functionName: 'buyITPFromSettlement',
       args: [
         itpId as `0x${string}`,
-        0, // side = BUY
         parsedAmount,
         priceBn,
         BigInt(slippageTier),
         deadline,
       ],
+      chainId: settlementChainId,
+    }).catch(() => {
+      // Error handled by buyError effect
     })
-  }, [publicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuy, micro, snapshotBalances])
+  }, [settlementPublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
 
   // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
@@ -327,40 +368,40 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [isApproveSuccess, approveHash, refetchAllowance, resetApprove, handleBuy])
 
-  // Buy success -> save hash, extract orderId from OrderSubmitted, advance to BATCH
+  // Buy success -> save hash, extract orderId from CrossChainOrderCreated, advance to RELAY
   useEffect(() => {
     if (!isBuySuccess || !buyReceipt || buyHandled.current) return
     buyHandled.current = true
     if (buyHash) setSavedBuyHash(buyHash)
 
-    // Extract orderId from OrderSubmitted event on Index contract
+    // Extract orderId from CrossChainOrderCreated event on SettlementBridgeCustody
     for (const log of buyReceipt.logs) {
-      if (log.address.toLowerCase() === INDEX_PROTOCOL.index.toLowerCase()) {
+      if (log.address.toLowerCase() === INDEX_PROTOCOL.settlementCustody.toLowerCase()) {
         try {
-          const decoded = decodeEventLog({ abi: INDEX_ABI, data: log.data, topics: log.topics })
-          if (decoded.eventName === 'OrderSubmitted') {
-            setOrderId((decoded.args as any).orderId as bigint)
+          const decoded = decodeEventLog({ abi: SETTLEMENT_CUSTODY_ABI, data: log.data, topics: log.topics })
+          if (decoded.eventName === 'CrossChainOrderCreated') {
+            setSettlementOrderId((decoded.args as any).orderId as bigint)
             break
           }
         } catch {}
       }
     }
 
-    // Direct L3 → skip straight to BATCH (order is already on L3, no bridging)
-    setMicro(BuyMicro.BATCH)
+    // Settlement tx confirmed → advance to RELAY (waiting for oracle to pick it up)
+    setMicro(BuyMicro.RELAY)
     resetBuy()
     // Persist pending order
     try {
       const pending = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
-      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), txHash: buyHash })
+      pending.push({ itpId, side: 0, amount, timestamp: Date.now(), txHash: buyHash, chain: 'settlement' })
       localStorage.setItem('index-pending-orders', JSON.stringify(pending))
     } catch {}
     window.dispatchEvent(new Event('portfolio-refresh'))
   }, [isBuySuccess, buyReceipt, resetBuy, itpId, amount, buyHash])
 
-  // Stall detection: show "safe to close" message after 60s at BATCH/FILL
+  // Stall detection: show "safe to close" message after 60s at RELAY/BATCH/FILL
   useEffect(() => {
-    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) {
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) {
       setProcessStalled(false)
       return
     }
@@ -368,12 +409,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     return () => clearTimeout(timer)
   }, [micro])
 
-  // SSE-driven order tracking: BATCH -> FILL -> DONE
+  // SSE-driven order tracking: once the oracle relays to L3, the order appears in SSE.
+  // RELAY -> BATCH -> FILL -> DONE
   const trackedOrder = useMemo((): UserOrder | undefined => {
-    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return undefined
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return undefined
     if (orderId !== null) {
       return sseOrders.find(o => o.order_id === Number(orderId))
     }
+    // Match by itpId + side (BUY=0), most recent first
     const candidates = sseOrders
       .filter(o => o.itp_id === itpId && o.side === 0)
       .sort((a, b) => b.timestamp - a.timestamp)
@@ -381,10 +424,16 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [sseOrders, orderId, micro, itpId])
 
   useEffect(() => {
-    if (!trackedOrder || micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return
+    if (!trackedOrder || micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
 
+    // Once we see the order in SSE, it means the oracle has relayed it to L3
     if (orderId === null) {
       setOrderId(BigInt(trackedOrder.order_id))
+    }
+
+    // Advance from RELAY to BATCH when the order appears on L3
+    if (micro === BuyMicro.RELAY) {
+      setMicro(BuyMicro.BATCH)
     }
 
     const status = trackedOrder.status
@@ -416,7 +465,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   // Detect L3 shares increase — completion signal (fallback when SSE unavailable)
   useEffect(() => {
-    if (micro < BuyMicro.BATCH || micro >= BuyMicro.DONE) return
+    if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
 
     if (initialSharesBn !== null && userShares > initialSharesBn) {
       // Clean up pending order
@@ -506,6 +555,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const handleReset = useCallback(() => {
     setMicro(-1)
     setOrderId(null)
+    setSettlementOrderId(null)
     setAmount('')
     setFillPrice(null)
     setFillAmount(null)
@@ -522,7 +572,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     onClose()
   }, [capture, itpId, micro, amount, onClose])
 
-  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, COLLATERAL_DECIMALS) : '0'
+  const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, SETTLEMENT_USDC_DECIMALS) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
   const isPending = isApprovePending || isBuyPending
   const isDone = micro === BuyMicro.DONE
@@ -554,15 +604,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       steps.push({
         label: getLabel(BuyMicro.APPROVE),
         txHash: savedApproveHash ?? undefined,
-        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'l3') : undefined,
-        chain: 'l3',
+        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'settlement') : undefined,
+        chain: 'settlement',
       })
     }
 
     steps.push({
       label: getLabel(BuyMicro.SUBMIT),
       txHash: savedBuyHash ?? undefined,
-      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'l3') : undefined,
+      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'settlement') : undefined,
+      chain: 'settlement',
+    })
+
+    steps.push({
+      label: getLabel(BuyMicro.RELAY),
       chain: 'l3',
     })
 
@@ -592,23 +647,24 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const adjustedRanges = useMemo((): [number, number][] => {
     if (skippedApproval) {
-      // 3 items: submit(0), batch(1), fill(2)
+      // 4 items: submit(0), relay(1), batch(2), fill(3)
       return [
-        [0, 1],    // Submit: submit(0)
-        [1, 3],    // Process: batch(1), fill(2)
+        [0, 1],    // Submit on Settlement: submit(0)
+        [1, 4],    // Processing: relay(1), batch(2), fill(3)
       ]
     }
     return [
-      [0, 2],    // Submit: approve(0), submit(1)
-      [2, 4],    // Process: batch(2), fill(3)
+      [0, 2],    // Submit on Settlement: approve(0), submit(1)
+      [2, 5],    // Processing: relay(2), batch(3), fill(4)
     ]
   }, [skippedApproval])
 
   const txRefs = useMemo(() => {
     const refs: { label: string; value: string }[] = []
+    if (settlementOrderId !== null) refs.push({ label: 'Settlement', value: `#${settlementOrderId.toString()}` })
     if (orderId !== null) refs.push({ label: 'L3', value: `#${orderId.toString()}` })
     return refs
-  }, [orderId])
+  }, [orderId, settlementOrderId])
 
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
