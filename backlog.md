@@ -4905,3 +4905,29 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
   Fix needed: make L3 order scanning independent of settlement_poll_due, or add a dedicated L3 order processing loop
   
 [NOTE] Docker build cache on VPS is treacherous — even `--no-cache` doesn't invalidate Rust compilation cache if COPY layer hashes match. Must `touch` source files or `docker builder prune -af` before rebuild.
+
+### Session 20260325 — AP Trade History / Bridge Buy Flow
+
+[DECISION] Removed L3 direct order fill bypass from oracle phases.rs — ALL orders MUST go through AP
+[DECISION] BuyItpModal currently calls Index.submitOrder directly on L3 — this bypasses the bridge and AP entirely
+[DECISION] The correct flow: SettlementBridgeCustody.buyITPFromSettlement (Settlement chain) → oracle relay → AP trades → confirmFills
+
+[TODO] BuyItpModal refactor (CRITICAL):
+  - Switch from L3 Index.submitOrder to Settlement SettlementBridgeCustody.buyITPFromSettlement
+  - Chain switching: L3 → Settlement (chain 14601, Sonic testnet)
+  - USDC decimals: 18 (L3) → 6 (Settlement) 
+  - Target contract: INDEX_PROTOCOL.index → INDEX_PROTOCOL.settlementBridgeCustody
+  - Function: submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256) → buyITPFromSettlement(bytes32,uint256,uint256,uint256,uint256)
+  - Order tracking: L3 orderId → Settlement orderId (different namespace, oracle maps between them)
+  - Stepper: Submit(Settlement) → Oracle Relay → AP Trades → Fill(L3)
+  - Same refactor needed for SellItpModal
+
+[TODO] E2E test for AP trade history:
+  - Submit buy through bridge (SettlementBridgeCustody.buyITPFromSettlement)
+  - Wait for oracle to relay + AP to execute
+  - Verify AP Order Feed table has trade rows
+  - Verify trade details: token, side, amount, price, ITP
+
+[NOTE] AP is running (healthy) but has 0 processed orders, 269 failed (from old deployment).
+  Queue is empty — no new AssetTradeRequest events because oracle's run_asset_trades_phase
+  only fires after confirmFills, which requires the bridge pipeline.
