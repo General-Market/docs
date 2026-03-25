@@ -19,6 +19,12 @@ use super::symbol_map::SymbolMap;
 /// Cache TTL for bulk-fetched tickers (30 seconds)
 const TICKER_CACHE_TTL: Duration = Duration::from_secs(30);
 
+/// After this many consecutive "does not exist" failures, skip the asset
+const DELIST_FAILURE_THRESHOLD: u32 = 3;
+
+/// How long to skip a delisted asset before retrying (1 hour)
+const DELIST_SKIP_DURATION: Duration = Duration::from_secs(3600);
+
 /// Fetches prices from Bitget API
 ///
 /// Uses `BitgetReadOnlyClient` to fetch ticker data and converts it to the
@@ -33,6 +39,9 @@ pub struct BitgetPriceFetcher<C: BitgetReadOnlyClient> {
     symbol_map: SymbolMap,
     /// Cached tickers from bulk fetch: symbol → (ticker, fetch_time)
     ticker_cache: Arc<RwLock<(HashMap<String, BitgetTicker>, Instant)>>,
+    /// Assets that repeatedly fail with "does not exist" — skipped until cooldown expires.
+    /// Key: asset address, Value: (consecutive_failure_count, first_skip_time)
+    delisted_assets: Arc<RwLock<HashMap<Address, (u32, Instant)>>>,
 }
 
 impl<C: BitgetReadOnlyClient> BitgetPriceFetcher<C> {
@@ -46,6 +55,7 @@ impl<C: BitgetReadOnlyClient> BitgetPriceFetcher<C> {
             client,
             symbol_map,
             ticker_cache: Arc::new(RwLock::new((HashMap::new(), Instant::now() - TICKER_CACHE_TTL))),
+            delisted_assets: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -78,6 +88,53 @@ impl<C: BitgetReadOnlyClient> BitgetPriceFetcher<C> {
             Err(e) => {
                 warn!(error = %e, "Bulk ticker fetch failed, will use per-symbol fallback");
             }
+        }
+    }
+
+    /// Check if an asset is on the delist skip-list.
+    /// Returns true if the asset should be skipped (still in cooldown).
+    /// Removes the entry if the cooldown has expired (retry time).
+    async fn is_delisted(&self, asset: &Address) -> bool {
+        let delist = self.delisted_assets.read().await;
+        if let Some(&(count, skip_since)) = delist.get(asset) {
+            if count >= DELIST_FAILURE_THRESHOLD {
+                if skip_since.elapsed() < DELIST_SKIP_DURATION {
+                    return true;
+                }
+                // Cooldown expired — drop read lock and remove entry
+                drop(delist);
+                self.delisted_assets.write().await.remove(asset);
+                return false;
+            }
+        }
+        false
+    }
+
+    /// Record a "does not exist" failure for an asset.
+    /// After DELIST_FAILURE_THRESHOLD consecutive failures, the asset is skipped.
+    async fn record_delist_failure(&self, asset: Address, symbol: &str) {
+        let mut delist = self.delisted_assets.write().await;
+        let entry = delist.entry(asset).or_insert((0, Instant::now()));
+        entry.0 += 1;
+        if entry.0 == DELIST_FAILURE_THRESHOLD {
+            entry.1 = Instant::now();
+            warn!(
+                code = "INFRA-017",
+                asset = ?asset,
+                symbol = %symbol,
+                failures = entry.0,
+                skip_hours = 1,
+                "Asset delisted from exchange — skipping for 1 hour"
+            );
+        }
+    }
+
+    /// Clear delist failure tracking for an asset (called on successful fetch).
+    async fn clear_delist_failure(&self, asset: &Address) {
+        let delist = self.delisted_assets.read().await;
+        if delist.contains_key(asset) {
+            drop(delist);
+            self.delisted_assets.write().await.remove(asset);
         }
     }
 
@@ -177,62 +234,80 @@ fn current_timestamp() -> U256 {
 #[async_trait]
 impl<C: BitgetReadOnlyClient + 'static> PriceFetcher for BitgetPriceFetcher<C> {
     async fn fetch_price(&self, asset: Address) -> Result<Price, PriceFetchError> {
+        // Check delist skip-list before doing any work
+        if self.is_delisted(&asset).await {
+            return Err(PriceFetchError::PriceNotAvailable { asset });
+        }
+
         // Lookup symbol
         let symbol = self.symbol_map.get_symbol(&asset).ok_or_else(|| {
             PriceFetchError::PriceNotAvailable { asset }
         })?;
 
         // Fetch ticker (from cache if available, else direct API call)
-        let ticker = self.get_ticker_cached(symbol).await.map_err(|e| {
-            match e {
-                Error::NotFound(msg) => {
-                    warn!(code = "INFRA-013", asset = ?asset, symbol = %symbol, error = %msg, "Ticker not found on Bitget");
-                    PriceFetchError::PriceNotAvailable { asset }
-                }
-                Error::RateLimit(msg) => {
-                    warn!(code = "INFRA-012", asset = ?asset, error = %msg, "Bitget rate limit hit");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: format!("Rate limit exceeded: {}", msg),
-                    }
-                }
-                Error::Authentication(msg) => {
-                    warn!(code = "INFRA-011", error = %msg, "Bitget authentication failed");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: format!("Authentication error: {}", msg),
-                    }
-                }
-                Error::Timeout(msg) => {
-                    warn!(code = "INFRA-014", asset = ?asset, error = %msg, "Bitget API timeout");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: format!("Request timeout: {}", msg),
-                    }
-                }
-                Error::Serialization(msg) => {
-                    warn!(code = "INFRA-015", asset = ?asset, error = %msg, "Bitget response parse error");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: format!("Invalid response format: {}", msg),
-                    }
-                }
-                Error::ExternalService(msg) => {
-                    warn!(code = "INFRA-016", asset = ?asset, error = %msg, "Bitget external service error");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: format!("External service error: {}", msg),
-                    }
-                }
-                _ => {
-                    warn!(code = "INFRA-013", asset = ?asset, error = %e, "Bitget API error");
-                    PriceFetchError::FetchFailed {
-                        asset,
-                        reason: e.to_string(),
-                    }
-                }
+        let ticker = match self.get_ticker_cached(symbol).await {
+            Ok(t) => {
+                self.clear_delist_failure(&asset).await;
+                t
             }
-        })?;
+            Err(e) => {
+                // Track "does not exist" errors for delist skip-list
+                let is_delisted_error = matches!(&e, Error::ExternalService(msg) if msg.contains("does not exist"))
+                    || matches!(&e, Error::NotFound(_));
+                if is_delisted_error {
+                    self.record_delist_failure(asset, symbol).await;
+                }
+
+                return Err(match e {
+                    Error::NotFound(msg) => {
+                        warn!(code = "INFRA-013", asset = ?asset, symbol = %symbol, error = %msg, "Ticker not found on Bitget");
+                        PriceFetchError::PriceNotAvailable { asset }
+                    }
+                    Error::RateLimit(msg) => {
+                        warn!(code = "INFRA-012", asset = ?asset, error = %msg, "Bitget rate limit hit");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: format!("Rate limit exceeded: {}", msg),
+                        }
+                    }
+                    Error::Authentication(msg) => {
+                        warn!(code = "INFRA-011", error = %msg, "Bitget authentication failed");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: format!("Authentication error: {}", msg),
+                        }
+                    }
+                    Error::Timeout(msg) => {
+                        warn!(code = "INFRA-014", asset = ?asset, error = %msg, "Bitget API timeout");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: format!("Request timeout: {}", msg),
+                        }
+                    }
+                    Error::Serialization(msg) => {
+                        warn!(code = "INFRA-015", asset = ?asset, error = %msg, "Bitget response parse error");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: format!("Invalid response format: {}", msg),
+                        }
+                    }
+                    Error::ExternalService(msg) => {
+                        warn!(code = "INFRA-016", asset = ?asset, error = %msg, "Bitget external service error");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: format!("External service error: {}", msg),
+                        }
+                    }
+                    _ => {
+                        warn!(code = "INFRA-013", asset = ?asset, error = %e, "Bitget API error");
+                        PriceFetchError::FetchFailed {
+                            asset,
+                            reason: e.to_string(),
+                        }
+                    }
+                });
+            }
+        };
 
         // Parse price (use best_ask for buy orders)
         let price = parse_price(&ticker.best_ask, asset)?;
