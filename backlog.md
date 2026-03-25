@@ -4891,3 +4891,17 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 - [DECISION] Step 9 token deploy uses --resume flag with retry loop (up to 5 attempts) — Orbit L3 drops forge after ~200 TXs. Instead of rm -rf and restarting, --resume re-submits only TXs lacking receipts.
 - [DECISION] All activeOracleCount() comparisons normalize hex/decimal — cast returns hex on Orbit L3 ("0x3") but the script compared against decimal "3".
 - [DECISION] Step 0 no longer deletes Vision/Morpho broadcast dirs (moved to explicit rm in their respective steps). Token + core broadcasts preserved for resume.
+
+### Session 20260325-0200 (continued)
+
+[DECISION] L3 direct order scanning added to oracle phases.rs — works, finds pending orders
+[DECISION] completeBuyOrder bypass for L3 direct orders — compiled, deployed, but timing issue prevents the full pipeline from executing
+[DECISION] BLS batch confirmation PROVEN WORKING — oracle-3 collected 3/3 signatures, bitmap=7, confirmBatch tx confirmed on L3
+
+[FAILED] Full L3 order fill pipeline — scanning finds orders, batch confirmation works when leader, but:
+  1. bridge_buy_post_active flag management prevents re-entry after first scan
+  2. settlement_poll_due timing means scan runs infrequently
+  3. CBO bypass was deployed but the pipeline never reaches it due to (1)+(2)
+  Fix needed: make L3 order scanning independent of settlement_poll_due, or add a dedicated L3 order processing loop
+  
+[NOTE] Docker build cache on VPS is treacherous — even `--no-cache` doesn't invalidate Rust compilation cache if COPY layer hashes match. Must `touch` source files or `docker builder prune -af` before rebuild.
