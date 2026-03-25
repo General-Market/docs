@@ -1,7 +1,7 @@
 # Vision Swarm Bot — shared config (keys via BOT_PRIVATE_KEY env)
 strategy = "random"
 deposit = 1
-stake = 1
+stake = 5.0
 max_batches = 50
 max_exposure = 5000
 poll_interval = 30
