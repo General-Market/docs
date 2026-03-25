@@ -529,72 +529,11 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         if !bridge_orders.is_empty() {
             bridge_orders
         } else {
-            // Fallback: scan L3 for direct pending orders (not from bridge).
-            // This enables testnet seeding via direct submitOrder calls.
-            match chain_reader.get_pending_orders().await {
-                Ok(orders) if !orders.is_empty() => {
-                    let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
-                    info!(count = ids.len(), "Found L3 direct pending orders (non-bridge)");
-                    // Inject order metadata into orchestrator so batch/fill can look up ITP IDs,
-                    // amounts, and limit prices. For direct L3 orders, settlement ID == L3 ID.
-                    {
-                        let mut orch = orchestrator.write().await;
-                        for order in &orders {
-                            orch.set_order_itp_id(order.id, order.itp_id).await;
-                            orch.set_order_amount(order.id, order.amount).await;
-                            let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
-                            orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
-                        }
-                    }
-                    ids
-                }
-                Ok(_) => {
-                    // Second fallback: recover stranded Batched orders (status=1 on-chain).
-                    info!("No pending L3 orders found, checking for stranded Batched orders...");
-                    match chain_reader.get_batched_orders().await {
-                        Ok(orders) if !orders.is_empty() => {
-                            let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
-                            info!(count = ids.len(), "Recovering stranded Batched orders (status=1)");
-                            {
-                                let mut orch = orchestrator.write().await;
-                                for order in &orders {
-                                    orch.set_order_itp_id(order.id, order.itp_id).await;
-                                    orch.set_order_amount(order.id, order.amount).await;
-                                    let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
-                                    orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
-                                }
-                            }
-                            ids
-                        }
-                        Ok(_) => Vec::new(),
-                        Err(e) => {
-                            debug!(error = %e, "Failed to scan L3 batched orders");
-                            Vec::new()
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!(error = %e, "Failed to scan L3 pending orders, checking batched fallback...");
-                    // Also try batched recovery on error
-                    match chain_reader.get_batched_orders().await {
-                        Ok(orders) if !orders.is_empty() => {
-                            let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
-                            info!(count = ids.len(), "Recovering stranded Batched orders after pending scan error");
-                            {
-                                let mut orch = orchestrator.write().await;
-                                for order in &orders {
-                                    orch.set_order_itp_id(order.id, order.itp_id).await;
-                                    orch.set_order_amount(order.id, order.amount).await;
-                                    let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
-                                    orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
-                                }
-                            }
-                            ids
-                        }
-                        _ => Vec::new(),
-                    }
-                }
-            }
+            // No bridge orders to process — all ITP orders MUST go through the bridge
+            // pipeline (Settlement → AP → MockBitgetVault) to ensure underlying assets
+            // are actually purchased. Direct L3 fills without AP involvement would mint
+            // unbacked ITP shares — the single worst failure mode.
+            Vec::new()
         }
     };
 
@@ -712,17 +651,9 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 
             // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
             // Track which orders are confirmed — only confirmed orders proceed to fills.
-            // For L3 direct orders (non-bridge), USDC is already locked in Index contract
-            // by submitOrder, so completeBuyOrder is unnecessary — all orders are confirmed.
-            let is_direct_l3_orders = target_orders.is_none() && {
-                let o = orchestrator.read().await;
-                o.get_submitted_bridged_orders().await.is_empty()
-            };
-            let cbo_confirmed_orders: Vec<ethers::types::U256> = if is_direct_l3_orders {
-                info!(cycle = current_cycle, count = submitted_orders.len(),
-                    "L3 direct orders: skipping completeBuyOrder (USDC locked atomically in submitOrder)");
-                submitted_orders.clone()
-            } else {
+            // ALL orders MUST go through completeBuyOrder to release USDC to the AP for
+            // actual underlying asset purchases. Skipping this mints unbacked ITP shares.
+            let cbo_confirmed_orders: Vec<ethers::types::U256> = {
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
                 for order_id in &submitted_orders {
