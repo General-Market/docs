@@ -19,11 +19,8 @@ use super::symbol_map::SymbolMap;
 /// Cache TTL for bulk-fetched tickers (30 seconds)
 const TICKER_CACHE_TTL: Duration = Duration::from_secs(30);
 
-/// After this many consecutive "does not exist" failures, skip the asset
+/// After this many consecutive "does not exist" failures, skip the asset permanently
 const DELIST_FAILURE_THRESHOLD: u32 = 3;
-
-/// How long to skip a delisted asset before retrying (1 hour)
-const DELIST_SKIP_DURATION: Duration = Duration::from_secs(3600);
 
 /// Fetches prices from Bitget API
 ///
@@ -39,9 +36,9 @@ pub struct BitgetPriceFetcher<C: BitgetReadOnlyClient> {
     symbol_map: SymbolMap,
     /// Cached tickers from bulk fetch: symbol → (ticker, fetch_time)
     ticker_cache: Arc<RwLock<(HashMap<String, BitgetTicker>, Instant)>>,
-    /// Assets that repeatedly fail with "does not exist" — skipped until cooldown expires.
-    /// Key: asset address, Value: (consecutive_failure_count, first_skip_time)
-    delisted_assets: Arc<RwLock<HashMap<Address, (u32, Instant)>>>,
+    /// Assets that repeatedly fail with "does not exist" — permanently skipped until restart.
+    /// Key: asset address, Value: consecutive_failure_count
+    delisted_assets: Arc<RwLock<HashMap<Address, u32>>>,
 }
 
 impl<C: BitgetReadOnlyClient> BitgetPriceFetcher<C> {
@@ -91,40 +88,25 @@ impl<C: BitgetReadOnlyClient> BitgetPriceFetcher<C> {
         }
     }
 
-    /// Check if an asset is on the delist skip-list.
-    /// Returns true if the asset should be skipped (still in cooldown).
-    /// Removes the entry if the cooldown has expired (retry time).
+    /// Check if an asset is permanently skipped (delisted from exchange).
     async fn is_delisted(&self, asset: &Address) -> bool {
         let delist = self.delisted_assets.read().await;
-        if let Some(&(count, skip_since)) = delist.get(asset) {
-            if count >= DELIST_FAILURE_THRESHOLD {
-                if skip_since.elapsed() < DELIST_SKIP_DURATION {
-                    return true;
-                }
-                // Cooldown expired — drop read lock and remove entry
-                drop(delist);
-                self.delisted_assets.write().await.remove(asset);
-                return false;
-            }
-        }
-        false
+        matches!(delist.get(asset), Some(&count) if count >= DELIST_FAILURE_THRESHOLD)
     }
 
     /// Record a "does not exist" failure for an asset.
-    /// After DELIST_FAILURE_THRESHOLD consecutive failures, the asset is skipped.
+    /// After DELIST_FAILURE_THRESHOLD consecutive failures, the asset is permanently skipped.
     async fn record_delist_failure(&self, asset: Address, symbol: &str) {
         let mut delist = self.delisted_assets.write().await;
-        let entry = delist.entry(asset).or_insert((0, Instant::now()));
-        entry.0 += 1;
-        if entry.0 == DELIST_FAILURE_THRESHOLD {
-            entry.1 = Instant::now();
+        let count = delist.entry(asset).or_insert(0);
+        *count += 1;
+        if *count == DELIST_FAILURE_THRESHOLD {
             warn!(
                 code = "INFRA-017",
                 asset = ?asset,
                 symbol = %symbol,
-                failures = entry.0,
-                skip_hours = 1,
-                "Asset delisted from exchange — skipping for 1 hour"
+                failures = *count,
+                "Asset delisted from exchange — permanently skipped until restart"
             );
         }
     }
