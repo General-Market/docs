@@ -53,7 +53,7 @@ const MESSAGES: Record<string, string[]> = {
 /** Rotating message line */
 function LoaderCaption({ context = 'default', className }: { context?: string; className?: string }) {
   const pool = MESSAGES[context] || MESSAGES.default
-  const [idx, setIdx] = useState(() => Math.floor(Math.random() * pool.length))
+  const [idx, setIdx] = useState(0)
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {

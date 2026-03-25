@@ -81,7 +81,7 @@ function PerformanceGraphSkeleton({ height }: { height: number }) {
               <div
                 key={i}
                 className="w-2 bg-muted rounded-t"
-                style={{ height: `${20 + Math.random() * 60}%` }}
+                style={{ height: `${[65, 42, 78, 53, 37, 71, 48, 85, 60, 44][i]}%` }}
               />
             ))}
           </div>

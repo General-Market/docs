@@ -615,7 +615,7 @@ function ChartSkeleton({ bars, horizontal }: { bars: number; horizontal?: boolea
             <Bone w="w-10" h="h-3" />
             <div
               className="h-3 bg-border-light rounded animate-pulse"
-              style={{ width: `${30 + Math.random() * 60}%`, animationDelay: `${i * 100}ms` }}
+              style={{ width: `${[55, 72, 40, 63, 48, 67, 52, 45][i % 8]}%`, animationDelay: `${i * 100}ms` }}
             />
           </div>
         ))}
@@ -628,7 +628,7 @@ function ChartSkeleton({ bars, horizontal }: { bars: number; horizontal?: boolea
         <div key={i} className="flex-1 flex flex-col items-center gap-1">
           <div
             className="w-full bg-border-light rounded-t animate-pulse"
-            style={{ height: `${20 + Math.random() * 70}%`, animationDelay: `${i * 80}ms` }}
+            style={{ height: `${[65, 42, 78, 53, 37, 71, 48, 85][i % 8]}%`, animationDelay: `${i * 80}ms` }}
           />
           <Bone w="w-6" h="h-2" />
         </div>
