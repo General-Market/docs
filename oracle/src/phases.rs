@@ -550,7 +550,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 }
                 Ok(_) => {
                     // Second fallback: recover stranded Batched orders (status=1 on-chain).
-                    // These were batched in a previous cycle but fills never completed.
+                    info!("No pending L3 orders found, checking for stranded Batched orders...");
                     match chain_reader.get_batched_orders().await {
                         Ok(orders) if !orders.is_empty() => {
                             let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
@@ -574,8 +574,25 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
                 Err(e) => {
-                    debug!(error = %e, "Failed to scan L3 pending orders");
-                    Vec::new()
+                    warn!(error = %e, "Failed to scan L3 pending orders, checking batched fallback...");
+                    // Also try batched recovery on error
+                    match chain_reader.get_batched_orders().await {
+                        Ok(orders) if !orders.is_empty() => {
+                            let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
+                            info!(count = ids.len(), "Recovering stranded Batched orders after pending scan error");
+                            {
+                                let mut orch = orchestrator.write().await;
+                                for order in &orders {
+                                    orch.set_order_itp_id(order.id, order.itp_id).await;
+                                    orch.set_order_amount(order.id, order.amount).await;
+                                    let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                                    orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
+                                }
+                            }
+                            ids
+                        }
+                        _ => Vec::new(),
+                    }
                 }
             }
         }
