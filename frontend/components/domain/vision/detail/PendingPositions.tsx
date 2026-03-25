@@ -9,19 +9,12 @@ import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
 interface PendingPositionsProps {
   rounds: RoundInfo[]
-  /** The active (betting) batch ID — excluded from the pending list */
   activeBatchId?: number
 }
 
-/**
- * Shows all unsettled positions the connected wallet holds for this source.
- * Only displays settling batches (not the active betting batch, which is
- * handled by BatchEntryPanel).
- */
 export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProps) {
   const { isConnected } = useAccount()
 
-  // All settling batch IDs for this source (exclude the active betting batch)
   const settlingBatchIds = useMemo(
     () =>
       rounds
@@ -36,53 +29,70 @@ export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProp
   if (isLoading) return null
   if (positions.length === 0) return null
 
-  // Build round lookup for extra info
   const roundMap = new Map(rounds.map((r) => [r.batchId, r]))
+  const totalAtStake = positions.reduce(
+    (sum, p) => sum + parseFloat(formatUnits(p.deposit, VISION_USDC_DECIMALS)),
+    0,
+  )
 
   return (
-    <div className="mt-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1.5">
-        Pending Results
+    <div className="mt-4">
+      {/* Header with total */}
+      <div className="flex items-baseline justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-color-warning">
+            Pending Results
+          </span>
+          <span className="text-[10px] font-mono text-text-muted">
+            {positions.length} {positions.length === 1 ? 'position' : 'positions'}
+          </span>
+        </div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-[18px] font-black font-mono tabular-nums text-black tracking-tight">
+            {totalAtStake.toFixed(2)}
+          </span>
+          <span className="text-[10px] font-bold text-text-muted">USDC at stake</span>
+        </div>
       </div>
-      <div className="flex flex-col gap-1">
+
+      {/* Position rows */}
+      <div className="flex flex-col gap-px bg-color-warning/10 border border-color-warning/20">
         {positions.map((pos) => {
           const round = roundMap.get(pos.batchId)
           const deposit = parseFloat(formatUnits(pos.deposit, VISION_USDC_DECIMALS))
           return (
             <div
               key={pos.batchId}
-              className="flex items-center gap-4 bg-surface-warning/40 border-l-[3px] border-l-color-warning border-t border-r border-b border-t-border-light border-r-border-light border-b-border-light px-4 py-2.5"
+              className="flex items-center gap-3 bg-white px-4 py-3"
             >
-              {/* Status indicator */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-warning" />
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.06em] text-color-warning">
-                  Settling
-                </span>
-              </div>
-
-              {/* Batch ID */}
-              <span className="text-caption font-mono font-bold text-text-secondary">
+              {/* Batch ID — subdued */}
+              <span className="text-caption font-mono font-bold text-text-muted tabular-nums w-16 shrink-0">
                 #{pos.batchId}
               </span>
 
-              {/* Deposit */}
-              <div className="flex items-baseline gap-1">
-                <span className="text-body-sm font-black font-mono tabular-nums text-black">
+              {/* Deposit — the hero number */}
+              <div className="flex items-baseline gap-1 flex-1 min-w-0">
+                <span className="text-[20px] font-black font-mono tabular-nums text-black tracking-tight leading-none">
                   {deposit.toFixed(2)}
                 </span>
-                <span className="text-micro text-text-muted">USDC</span>
+                <span className="text-micro font-bold text-text-muted">USDC</span>
               </div>
 
-              {/* Players */}
-              {round && (
-                <span className="text-micro text-text-muted ml-auto">
-                  {round.playerCount} players
+              {/* Players + status */}
+              <div className="flex items-center gap-3 shrink-0">
+                {round && (
+                  <span className="text-micro font-mono text-text-muted tabular-nums">
+                    {round.playerCount} players
+                  </span>
+                )}
+                <span className="text-micro font-black font-mono text-color-warning uppercase tracking-wider">
+                  Settling
                 </span>
-              )}
+              </div>
             </div>
           )
         })}

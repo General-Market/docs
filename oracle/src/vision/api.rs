@@ -2089,14 +2089,6 @@ async fn rounds_active(
             for row in rows {
                 let batch_id = row.id as u64;
                 let player_count = state.scheduler.player_count(batch_id).await;
-                let next_tick = 0;
-
-                // Determine status from scheduler state
-                let status = if player_count == 0 {
-                    "betting"
-                } else {
-                    "betting" // continuous batches are always in betting phase
-                };
 
                 // betting_end + source_id from vision_batch_lifecycle (plain text names).
                 // Falls back to now + tick_duration / hash decode if lifecycle record
@@ -2119,6 +2111,9 @@ async fn rounds_active(
                         None => (now + row.tick_duration as u64, None),
                     }
                 };
+
+                // Derive status from betting_end: past deadline = settling, otherwise betting
+                let status = if now >= betting_end_ts { "settling" } else { "betting" };
 
                 let source_id = lifecycle_source
                     .unwrap_or_else(|| bytes32_hex_to_string(&row.source_id.unwrap_or_default()));

@@ -11,6 +11,8 @@ export interface RoundInfo {
   bettingEnd: string | null
   settledAt: string | null
   marketCount: number
+  /** Tick duration in seconds — used for progress computation */
+  timeframeSecs: number
 }
 
 export function useRounds(sourceId?: string) {
@@ -31,6 +33,7 @@ export function useRounds(sourceId?: string) {
           bettingEnd: r.bettingEnd ?? r.betting_end ?? null,
           settledAt: r.settledAt ?? r.settled_at ?? null,
           marketCount: r.marketCount ?? r.market_count ?? 0,
+          timeframeSecs: r.timeframeSecs ?? r.timeframe_secs ?? 0,
         }))
         // Keep all rounds — oracle already filters to non-paused (unsettled) only.
         // Settled batches have paused=true and won't appear in the API response.
