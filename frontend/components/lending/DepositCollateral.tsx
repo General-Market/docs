@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
-import { parseUnits, formatUnits } from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
+import { parseUnits, formatUnits, erc20Abi } from 'viem'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
-import { useUserState } from '@/hooks/useUserState'
+import { indexL3 } from '@/lib/wagmi'
 import { useItpApproval } from '@/hooks/useItpApproval'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { usePostHogTracker } from '@/hooks/usePostHog'
@@ -35,10 +35,15 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
 
   const collateralToken = market?.collateralToken ?? MORPHO_ADDRESSES.collateralToken
 
-  // Fetch user's ITP balance from backend
-  const userState = useUserState(itpId)
-  const itpBalance = userState.bridgedItpBalance
-  const refetchBalance = userState.refetch
+  // Read ITP share balance directly from chain (collateral token ERC20 on L3)
+  const { data: itpBalance = 0n, refetch: refetchBalance } = useReadContract({
+    address: collateralToken as `0x${string}`,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!address && !!collateralToken, refetchInterval: 10_000 },
+  })
 
   // Approval hook
   const {

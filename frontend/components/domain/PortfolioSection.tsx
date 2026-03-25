@@ -781,12 +781,20 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
     setCancellingId(orderId)
     setCancelError(null)
     try {
-      await writeContractAsync({
+      const hash = await writeContractAsync({
         address: INDEX_PROTOCOL.index,
         abi: INDEX_ABI,
         functionName: 'cancelOrder',
         args: [BigInt(orderId)],
       })
+      // Wait for tx to be mined — catches on-chain reverts
+      if (hash) {
+        const { waitForTransactionReceipt } = await import('wagmi/actions')
+        const { wagmiConfig } = await import('@/lib/wagmi')
+        await waitForTransactionReceipt(wagmiConfig, { hash, timeout: 30_000 })
+      }
+      // Trigger order list refresh
+      window.dispatchEvent(new Event('orders-refresh'))
     } catch (err: any) {
       const msg = err?.shortMessage || err?.message || 'Cancel failed'
       if (msg.includes('E138') || msg.includes('NotCancellable')) {
