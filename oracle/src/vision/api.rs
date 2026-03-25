@@ -102,6 +102,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/markets", get(markets))
         .route("/vision/leaderboard", get(vision_leaderboard))
         .route("/vision/player/:address/profile", get(player_profile))
+        .route("/vision/source/:source_id/history", get(source_batch_history))
         // Round-based aliases for E2E test compatibility
         .route("/vision/rounds/active", get(rounds_active))
         .route("/vision/rounds/:id/results", get(round_results))
@@ -1253,9 +1254,9 @@ async fn leaderboard_from_postgres(
             let pnl = (bal - dep) / decimals;
             let deposited = dep / decimals;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
-            // Market-level win rate: correct predictions / total predictions
-            let win_rate = if *total_markets > 0 {
-                *total_correct as f64 / *total_markets as f64 * 100.0
+            // Profitable rounds rate
+            let win_rate = if *batches > 0 {
+                *wins as f64 / *batches as f64 * 100.0
             } else {
                 0.0
             };
@@ -1323,9 +1324,9 @@ fn build_leaderboard_from_map(
                 } else {
                     0.0
                 };
-                // Market-level win rate: correct predictions / total predictions
-                let win_rate = if *total_markets > 0 {
-                    *total_correct as f64 / *total_markets as f64 * 100.0
+                // Profitable rounds rate
+                let win_rate = if *batches > 0 {
+                    *wins as f64 / *batches as f64 * 100.0
                 } else {
                     0.0
                 };
@@ -1816,15 +1817,7 @@ async fn player_profile(
     let mut total_deposited_wei: i128 = 0;
     let mut total_wins: u64 = 0;
     let mut total_batches: u64 = 0;
-    let mut total_correct: u64 = 0;
-    let mut total_market_predictions: u64 = 0;
     let mut last_active: Option<String> = None;
-
-    // Aggregate correct/total from settled rounds for market-level win rate
-    for r in &rounds {
-        total_correct += r.correct_count.max(0) as u64;
-        total_market_predictions += r.total_markets.max(0) as u64;
-    }
 
     // Active batches: from positions
     let mut profile_batches: Vec<ProfileBatch> = Vec::new();
@@ -2000,9 +1993,9 @@ async fn player_profile(
     } else {
         0.0
     };
-    // Market-level win rate: correct predictions / total predictions
-    let win_rate = if total_market_predictions > 0 {
-        total_correct as f64 / total_market_predictions as f64 * 100.0
+    // Profitable rounds rate: rounds with positive PnL / total rounds
+    let win_rate = if total_batches > 0 {
+        total_wins as f64 / total_batches as f64 * 100.0
     } else {
         0.0
     };
@@ -2025,6 +2018,101 @@ async fn player_profile(
         }),
     )
         .into_response()
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/source/:source_id/history
+// ---------------------------------------------------------------------------
+
+/// Recent settled batches for a given source.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceBatchHistoryEntry {
+    batch_id: i64,
+    player_count: i64,
+    total_pool: f64,
+    avg_pnl: f64,
+    settled_at: String,
+    market_count: i32,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct SourceHistoryRow {
+    batch_id: i64,
+    market_count: Option<i32>,
+    betting_end: chrono::DateTime<chrono::Utc>,
+    player_count: Option<i64>,
+    total_deposited: Option<String>,
+    total_pnl: Option<String>,
+}
+
+async fn source_batch_history(
+    State(state): State<Arc<VisionState>>,
+    Path(source_id): Path<String>,
+) -> impl IntoResponse {
+    // Query lifecycle + aggregated round results for settled batches of this source.
+    // LEFT JOIN vision_round_players aggregates to get player count, pool size, avg PnL.
+    let rows = sqlx::query_as::<_, SourceHistoryRow>(
+        "SELECT vbl.batch_id,
+                vbl.market_count,
+                vbl.betting_end,
+                agg.player_count,
+                agg.total_deposited,
+                agg.total_pnl
+         FROM vision_batch_lifecycle vbl
+         LEFT JOIN (
+             SELECT batch_id,
+                    COUNT(DISTINCT player)::bigint AS player_count,
+                    SUM(deposited)::text AS total_deposited,
+                    SUM(pnl)::text AS total_pnl
+             FROM vision_round_players
+             GROUP BY batch_id
+         ) agg ON agg.batch_id = vbl.batch_id
+         WHERE vbl.source_id = $1
+           AND vbl.betting_end < NOW()
+         ORDER BY vbl.batch_id DESC
+         LIMIT 50"
+    )
+    .bind(&source_id)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(rows) => {
+            let decimals = 1e18_f64;
+            let entries: Vec<SourceBatchHistoryEntry> = rows
+                .into_iter()
+                .map(|r| {
+                    let players = r.player_count.unwrap_or(0);
+                    let total_dep: f64 = r.total_deposited.as_deref()
+                        .and_then(|s| s.parse::<f64>().ok())
+                        .unwrap_or(0.0) / decimals;
+                    let total_pnl: f64 = r.total_pnl.as_deref()
+                        .and_then(|s| s.parse::<f64>().ok())
+                        .unwrap_or(0.0) / decimals;
+                    let avg_pnl = if players > 0 {
+                        total_pnl / players as f64
+                    } else {
+                        0.0
+                    };
+                    SourceBatchHistoryEntry {
+                        batch_id: r.batch_id,
+                        player_count: players,
+                        total_pool: (total_dep * 100.0).round() / 100.0,
+                        avg_pnl: (avg_pnl * 100.0).round() / 100.0,
+                        settled_at: r.betting_end.to_rfc3339(),
+                        market_count: r.market_count.unwrap_or(0),
+                    }
+                })
+                .collect();
+
+            (StatusCode::OK, Json(serde_json::json!({ "batches": entries }))).into_response()
+        }
+        Err(e) => {
+            warn!(source_id = %source_id, error = %e, "source_batch_history query failed");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("DB error: {e}")))).into_response()
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
