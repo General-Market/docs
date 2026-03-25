@@ -1797,6 +1797,8 @@ $([ -n "$INDEX_FLAG" ] && echo '      - "--index-address"
       - "http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
       - "--oracle-health-poll-interval"
       - "60"
+      - "--sources-display-file"
+      - "/app/config/sources-display.json"
 YEOF
 
     rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
