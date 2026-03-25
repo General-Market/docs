@@ -110,6 +110,14 @@ export default function StrategyList({ bitmapEditor, sourceId, marketIds }: Stra
             </svg>
             Claude Code
           </button>
+          {/* Codex */}
+          <button type="button" onClick={() => setSelectedAgent('codex')} className="flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
+            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+              <rect width="24" height="24" rx="5" fill="#000"/>
+              <path d="M7 7h10v2H7zM7 11h7v2H7zM7 15h10v2H7z" fill="#10A37F"/>
+            </svg>
+            Codex
+          </button>
           {/* Cursor */}
           <button type="button" onClick={() => setSelectedAgent('cursor')} className="flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
@@ -118,33 +126,13 @@ export default function StrategyList({ bitmapEditor, sourceId, marketIds }: Stra
             </svg>
             Cursor
           </button>
-          {/* Windsurf */}
-          <button type="button" onClick={() => setSelectedAgent('windsurf')} className="flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
+          {/* Gemini CLI */}
+          <button type="button" onClick={() => setSelectedAgent('gemini-cli')} className="flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <rect width="24" height="24" rx="5" fill="#00B4D8"/>
-              <path d="M4 14c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-              <path d="M4 10c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity=".5"/>
+              <rect width="24" height="24" rx="5" fill="#1A73E8"/>
+              <path d="M12 4l2.5 6.5L21 12l-6.5 1.5L12 20l-2.5-6.5L3 12l6.5-1.5z" fill="#fff"/>
             </svg>
-            Windsurf
-          </button>
-          {/* Devin */}
-          <button type="button" onClick={() => setSelectedAgent('devin')} className="flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <rect width="24" height="24" rx="5" fill="#7C3AED"/>
-              <circle cx="12" cy="12" r="4" fill="none" stroke="#fff" strokeWidth="2"/>
-              <circle cx="12" cy="12" r="1.5" fill="#fff"/>
-              <path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            Devin
-          </button>
-          {/* Cline — spans full width */}
-          <button type="button" onClick={() => setSelectedAgent('cline')} className="col-span-2 flex items-center gap-2 rounded-md border border-[#18181B] px-2 py-1.5 text-label font-bold text-[#52525b] hover:bg-[#18181B] hover:text-white transition-colors fluid-press">
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
-              <rect width="24" height="24" rx="5" fill="#22C55E"/>
-              <path d="M7 8l4 4-4 4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M13 16h4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            Cline
+            Gemini CLI
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
 import BatchEntryPanel from './BatchEntryPanel'
+import { PendingPositions } from './PendingPositions'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { useAccount } from 'wagmi'
@@ -79,8 +80,15 @@ function CountdownTimer({ bettingEnd, tickDuration }: { bettingEnd: string | nul
   if (remaining <= 0) {
     const td = tickDuration || 300
     const eta = Math.max(0, td - overdue)
-    if (eta <= 0) return <span className="text-amber-600 animate-pulse">Settling...</span>
-    return <span className="text-amber-600 animate-pulse">Next round ~{eta}s</span>
+    return (
+      <span className="flex items-center gap-1.5 text-color-warning">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
+        </span>
+        {eta > 0 ? `~${eta}s` : 'Settling'}
+      </span>
+    )
   }
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
@@ -167,14 +175,14 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const totalMarkets = marketIds.length
   const totalSet = counts.up + counts.down
 
-  // Round status display — seamless transition between rounds
+  // Round status — derived from oracle status field (betting | settling)
+  const isSettling = activeRound?.status === 'settling'
   const bettingOpen = activeRound?.bettingEnd
     ? new Date(activeRound.bettingEnd).getTime() > Date.now()
     : false
   const roundStatusLabel = activeRound
-    ? bettingOpen ? t('source_detail.betting_open')
-    : 'Settling'
-    : 'Settling'
+    ? (bettingOpen ? t('source_detail.betting_open') : 'Settling')
+    : 'Waiting'
 
   if (isRegistryLoading && !initialSource) {
     return <SourceDetailSkeleton />
@@ -206,7 +214,11 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={0} tickDuration={0} sourceId={sourceId} urgency={'normal'} />
 
         {/* Batch bar — round status */}
-        <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
+        <div className={`mt-4 border px-5 py-3 flex items-center gap-6 transition-colors duration-300 ${
+          isSettling
+            ? 'bg-surface-warning/50 border-l-[3px] border-l-color-warning border-t border-r border-b border-t-border-light border-r-border-light border-b-border-light'
+            : 'bg-[var(--surface)] border-border-light'
+        }`}>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               {t('source_detail.round')}
@@ -219,7 +231,13 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Status
             </div>
-            <div className="text-[16px] font-bold font-mono text-black">
+            <div className={`text-[16px] font-bold font-mono flex items-center gap-2 ${isSettling ? 'text-color-warning' : 'text-black'}`}>
+              {isSettling && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
+                </span>
+              )}
               {activeBatch || activeRound ? roundStatusLabel : 'Waiting'}
             </div>
           </div>
@@ -241,7 +259,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Time Left
+              {isSettling ? 'Result' : 'Time Left'}
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
               <CountdownTimer bettingEnd={activeRound?.bettingEnd ?? null} tickDuration={activeBatch?.tickDuration} />
@@ -261,6 +279,14 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
 
         {/* Connected wallet stats for this source */}
         <WalletSourceStats sourceId={sourceId} />
+
+        {/* Pending positions — settling batches where user has a deposit */}
+        {rounds && rounds.length > 0 && (
+          <PendingPositions
+            rounds={rounds}
+            activeBatchId={activeBatch?.id}
+          />
+        )}
 
         {/* Content split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">

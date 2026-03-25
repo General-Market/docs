@@ -164,13 +164,15 @@ test.describe('Display Formatting — ITP Table', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
+    // aum-ranking times out in 15s on the client side; allow 30s for cards to appear,
+    // then one quick retry. Total wait stays well under the 180s test timeout.
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {})
+      hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     }
     if (!hasCards) {
-      console.warn('SKIP: ITP cards not visible — /api/dn/vault-balances may be returning 500. Page stuck in loading state.')
+      console.warn('SKIP: ITP cards not visible — data-node (aum-ranking) unreachable or returning an error.')
       return
     }
 
@@ -210,13 +212,15 @@ test.describe('Display Formatting — ITP Table', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
+    // aum-ranking times out in 15s on the client side; allow 30s for cards to appear,
+    // then one quick retry. Total wait stays well under the 120s test timeout.
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => {})
+      hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     }
     if (!hasCards) {
-      console.warn('SKIP: ITP cards not visible — /api/dn/vault-balances may be returning 500. Page stuck in loading state.')
+      console.warn('SKIP: ITP cards not visible — data-node (aum-ranking) unreachable or returning an error.')
       return
     }
 

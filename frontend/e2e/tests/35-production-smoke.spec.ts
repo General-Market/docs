@@ -360,17 +360,16 @@ test.describe('Vision — Source Detail', () => {
   test('/source/defillama shows markets table with prices', async ({ page }) => {
     await page.goto(BASE + '/source/defillama', { waitUntil: 'domcontentloaded', timeout: 45_000 })
 
-    // Wait for markets data to load — UP/DOWN buttons or DeFi protocol names (case-insensitive)
-    await page.locator('button:has-text("UP"), button:has-text("DOWN"), text=/uniswap|aave|curve|lido|maker|compound|sushi|pancake|balancer|venus|benqi|stargate|gmx|radiant|morpho|spark|defi_|tvl_/i').first()
+    // Wait for markets data to load — UP/DOWN buttons or chain TVL names (e.g. "Arbitrum TVL", "Aptos TVL")
+    await page.locator('button:has-text("UP"), button:has-text("DOWN"), text=/ TVL$/i').first()
       .waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {})
 
     // Market rows should render (UP/DOWN buttons or price data or market names)
     const marketContent = page.locator('button:has-text("UP"), button:has-text("DOWN"), [data-testid="market-tile"]')
     const count = await marketContent.count()
     if (count === 0) {
-      // Markets might render differently — check for any DeFi protocol name, market key prefix,
-      // or any table row with substantive text content (protocol names may use different casing)
-      const marketNames = page.locator('text=/uniswap|aave|curve|lido|maker|compound|sushi|pancake|balancer|venus|benqi|stargate|gmx|radiant|morpho|spark|defi_|tvl_/i')
+      // Markets render as chain TVL entries — names end in " TVL" (e.g. "Arbitrum TVL", "Ethereum TVL")
+      const marketNames = page.locator('text=/ TVL/')
       const nameCount = await marketNames.count()
       if (nameCount === 0) {
         // Final fallback: any table row with text content indicates markets loaded

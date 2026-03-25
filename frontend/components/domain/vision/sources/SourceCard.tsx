@@ -21,6 +21,8 @@ interface SourceCardProps {
   metaAssetCount?: number
   /** Source status from admin health: healthy, stale, dead, etc. */
   metaStatus?: string
+  /** Whether the meta API has finished loading — prevents premature null render */
+  metaLoaded?: boolean
 }
 
 /** Live-ticking relative age component (re-renders every 10s) */
@@ -73,7 +75,7 @@ function shortTypeLabel(label: string): string {
   return SHORT_TYPE_LABELS[label] ?? label
 }
 
-export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus }: SourceCardProps) {
+export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus, metaLoaded = false }: SourceCardProps) {
   const t = useTranslations('vision')
   const router = useRouter()
 
@@ -132,8 +134,12 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     })
   }, [router, source.id])
 
-  // Hide card if source has no working data (covers meta-down scenario)
-  if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
+  // Hide card only when we have definitive confirmation of zero data:
+  // - meta has finished loading (metaLoaded=true) AND meta reports 0 assets
+  // - AND the per-source snapshot also resolved with 0 prices
+  // If meta hasn't loaded yet, keep the card visible to avoid premature null render
+  // that breaks E2E tests and creates a flash-of-empty-grid on cold starts.
+  if (!isLoading && totalMarkets === 0 && metaLoaded && !metaAssetCount) return null
 
   return (
     <SpringCard className="bg-white border-r border-b border-border-light overflow-hidden">

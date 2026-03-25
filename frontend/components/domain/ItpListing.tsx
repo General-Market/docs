@@ -132,29 +132,38 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
   const sseNavList = useSSENav()
   const [restNavList, setRestNavList] = useState<NavSnapshot[]>([])
+  // True after the first aum-ranking attempt completes (success or failure)
+  const [restFetched, setRestFetched] = useState(false)
 
   // Fetch REST on mount + poll every 30s so new ITPs appear without page reload
   useEffect(() => {
     let cancelled = false
     const fetchRanking = async () => {
       try {
-        const res = await fetch('/api/dn/aum-ranking')
-        if (!res.ok || cancelled) return
+        const res = await fetch('/api/dn/aum-ranking', { signal: AbortSignal.timeout(15_000) })
+        if (cancelled) return
+        if (!res.ok) { if (!cancelled) setRestFetched(true); return }
         const data = await res.json()
         // aum-ranking returns { snapshots: [...], all_symbols: {...} }
         const items = Array.isArray(data) ? data : (data?.snapshots ?? [])
-        if (items.length > 0 && !cancelled) {
-          setRestNavList(items.map((d: any) => ({
-            itp_id: d.itp_id || '',
-            name: d.name || d.label || '',
-            symbol: d.symbol || '',
-            nav_per_share: d.nav_per_share || 0,
-            total_supply: d.total_supply || '0',
-            aum_usd: d.aum_usd || 0,
-            settlement_address: d.settlement_address || null,
-          })))
+        if (!cancelled) {
+          if (items.length > 0) {
+            setRestNavList(items.map((d: any) => ({
+              itp_id: d.itp_id || '',
+              name: d.name || d.label || '',
+              symbol: d.symbol || '',
+              nav_per_share: d.nav_per_share || 0,
+              total_supply: d.total_supply || '0',
+              aum_usd: d.aum_usd || 0,
+              settlement_address: d.settlement_address || null,
+            })))
+          }
+          setRestFetched(true)
         }
-      } catch (e) { console.error('[ItpListing] REST nav fetch failed:', e) }
+      } catch (e) {
+        console.error('[ItpListing] REST nav fetch failed:', e)
+        if (!cancelled) setRestFetched(true)
+      }
     }
     fetchRanking()
     const interval = setInterval(fetchRanking, 20_000)
@@ -164,7 +173,9 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const navList = sseNavList.length > 0 && sseNavList.some(n => (n.nav_per_share ?? 0) > 0)
     ? sseNavList
     : restNavList
-  const loading = navList.length === 0
+  // Show skeleton only while waiting for the first data source to respond.
+  // Once the REST fetch has settled (success or error) and SSE has no data, stop showing skeleton.
+  const loading = navList.length === 0 && !restFetched
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
   const [chartModal, setChartModal] = useState<{ itpId: string; name: string } | null>(null)

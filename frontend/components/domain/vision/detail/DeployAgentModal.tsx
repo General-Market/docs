@@ -30,6 +30,20 @@ const AGENTS: AgentConfig[] = [
     },
   },
   {
+    id: 'codex',
+    name: 'Codex',
+    icon: (
+      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="5" fill="#000"/>
+        <path d="M7 7h10v2H7zM7 11h7v2H7zM7 15h10v2H7z" fill="#10A37F"/>
+      </svg>
+    ),
+    runStep: {
+      title: 'Run with Codex',
+      code: 'codex "read AGENTS.md, show me markets from markets.json, and start trading on Vision"',
+    },
+  },
+  {
     id: 'cursor',
     name: 'Cursor',
     icon: (
@@ -44,49 +58,17 @@ const AGENTS: AgentConfig[] = [
     },
   },
   {
-    id: 'windsurf',
-    name: 'Windsurf',
+    id: 'gemini-cli',
+    name: 'Gemini CLI',
     icon: (
       <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
-        <rect width="24" height="24" rx="5" fill="#00B4D8"/>
-        <path d="M4 14c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M4 10c2-3 4-3 6 0s4 3 6 0 4-3 6 0" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity=".5"/>
+        <rect width="24" height="24" rx="5" fill="#1A73E8"/>
+        <path d="M12 4l2.5 6.5L21 12l-6.5 1.5L12 20l-2.5-6.5L3 12l6.5-1.5z" fill="#fff"/>
       </svg>
     ),
     runStep: {
-      title: 'Run with Windsurf',
-      code: 'Open folder in Windsurf → Cascade →\n"read AGENTS.md, show me markets from markets.json, and start trading on Vision"',
-    },
-  },
-  {
-    id: 'devin',
-    name: 'Devin',
-    icon: (
-      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
-        <rect width="24" height="24" rx="5" fill="#7C3AED"/>
-        <circle cx="12" cy="12" r="4" fill="none" stroke="#fff" strokeWidth="2"/>
-        <circle cx="12" cy="12" r="1.5" fill="#fff"/>
-        <path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    runStep: {
-      title: 'Run with Devin',
-      code: 'Give Devin the repo URL and prompt:\n"read AGENTS.md, show me markets from markets.json, and start trading on Vision"',
-    },
-  },
-  {
-    id: 'cline',
-    name: 'Cline',
-    icon: (
-      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
-        <rect width="24" height="24" rx="5" fill="#22C55E"/>
-        <path d="M7 8l4 4-4 4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M13 16h4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
-      </svg>
-    ),
-    runStep: {
-      title: 'Run with Cline',
-      code: 'Open in VS Code with Cline →\n"read AGENTS.md, show me markets from markets.json, and start trading on Vision"',
+      title: 'Run with Gemini CLI',
+      code: 'gemini "read AGENTS.md, show me markets from markets.json, and start trading on Vision"',
     },
   },
 ]

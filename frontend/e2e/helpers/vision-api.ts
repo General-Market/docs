@@ -391,8 +391,9 @@ async function waitForUnlock(batchId: number): Promise<void> {
   const words: string[] = []
   for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
 
-  const tickDuration = Number(BigInt('0x' + words[4]))
-  const lockOffset = Number(BigInt('0x' + words[5]))
+  // Struct: creator(0), sourceId(1), configHash(2), tickDuration(3), lockOffset(4), createdAtTick(5), paused(6)
+  const tickDuration = words[3] ? Number(BigInt('0x' + words[3])) : 0
+  const lockOffset = words[4] ? Number(BigInt('0x' + words[4])) : 0
   if (tickDuration === 0 || lockOffset === 0) return
 
   const SAFETY_MARGIN = 3 // seconds before lock window to also wait (tx mining delay)
@@ -421,9 +422,10 @@ export async function getBatchTimingFromChain(batchId: number): Promise<{ tickDu
   const words: string[] = []
   for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
 
+  // Struct: creator(0), sourceId(1), configHash(2), tickDuration(3), lockOffset(4), createdAtTick(5), paused(6)
   return {
-    tickDuration: Number(BigInt('0x' + words[4])),
-    lockOffset: Number(BigInt('0x' + words[5])),
+    tickDuration: words[3] ? Number(BigInt('0x' + words[3])) : 0,
+    lockOffset: words[4] ? Number(BigInt('0x' + words[4])) : 0,
   }
 }
 
@@ -527,6 +529,8 @@ export interface PlayerPosition {
   bitmapHash: string
   configHash: string
   deposit: bigint
+  /** Alias for deposit — same value, different name used in some test helpers */
+  balance: bigint
   joinTimestamp: bigint
   totalDeposited: bigint
   totalClaimed: bigint
@@ -547,10 +551,12 @@ export async function getPosition(batchId: number, player: string): Promise<Play
     words.push(hex.slice(i, i + 64))
   }
 
+  const depositVal = words[2] ? BigInt('0x' + words[2]) : 0n
   return {
     bitmapHash: '0x' + (words[0] ?? '0'.repeat(64)),
     configHash: '0x' + (words[1] ?? '0'.repeat(64)),
-    deposit: words[2] ? BigInt('0x' + words[2]) : 0n,
+    deposit: depositVal,
+    balance: depositVal, // alias — Vision position has no separate balance field
     joinTimestamp: words[3] ? BigInt('0x' + words[3]) : 0n,
     totalDeposited: words[4] ? BigInt('0x' + words[4]) : 0n,
     totalClaimed: words[5] ? BigInt('0x' + words[5]) : 0n,
@@ -772,9 +778,11 @@ export async function getBatchesFromChain(): Promise<BatchInfo[]> {
       // Tuple: creator(0), sourceId(1), configHash(2), tickDuration(3),
       //        lockOffset(4), createdAtTick(5), paused(6)
       const tupleBase = 0
+      if (!words[tupleBase + 0] || words.length < 4) continue
       const creator = '0x' + words[tupleBase + 0].slice(24)
-      const tickDuration = Number(BigInt('0x' + words[tupleBase + 3]))
-      const paused = BigInt('0x' + words[tupleBase + 6]) !== 0n
+      // Struct: creator(0), sourceId(1), configHash(2), tickDuration(3), lockOffset(4), createdAtTick(5), paused(6)
+      const tickDuration = words[tupleBase + 3] ? Number(BigInt('0x' + words[tupleBase + 3])) : 0
+      const paused = words[tupleBase + 6] ? BigInt('0x' + words[tupleBase + 6]) !== 0n : false
 
       if (creator !== '0x' + '0'.repeat(40)) {
         batches.push({
@@ -808,7 +816,8 @@ export async function getBatchConfigHash(batchId: number): Promise<`0x${string}`
   const hex = result.replace('0x', '')
   const words: string[] = []
   for (let w = 0; w < hex.length; w += 64) words.push(hex.slice(w, w + 64))
-  // configHash is at tuple index 2 (struct fields: creator, sourceId, configHash, ...)
+  // Struct: creator(0), sourceId(1), configHash(2), tickDuration(3), ...
+  if (!words[2]) throw new Error(`getBatchConfigHash: empty response for batchId ${batchId}`)
   return ('0x' + words[2]) as `0x${string}`
 }
 

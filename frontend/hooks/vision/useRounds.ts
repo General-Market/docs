@@ -21,7 +21,6 @@ export function useRounds(sourceId?: string) {
       const res = await fetch(`/api/vision/rounds${params}`)
       if (!res.ok) return []
       const data = await res.json()
-      const now = Date.now()
       return (data.rounds ?? [])
         .map((r: any) => ({
           batchId: r.batchId ?? r.batch_id ?? r.id,
@@ -33,12 +32,8 @@ export function useRounds(sourceId?: string) {
           settledAt: r.settledAt ?? r.settled_at ?? null,
           marketCount: r.marketCount ?? r.market_count ?? 0,
         }))
-        // Only keep rounds with future bettingEnd (or no bettingEnd set)
-        .filter((r: RoundInfo) => {
-          if (!r.bettingEnd) return true
-          // Allow 2x tick grace period for settlement
-          return new Date(r.bettingEnd).getTime() + 600_000 > now
-        })
+        // Keep all rounds — oracle already filters to non-paused (unsettled) only.
+        // Settled batches have paused=true and won't appear in the API response.
     },
     refetchInterval: 5000,
   })
