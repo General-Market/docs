@@ -24,7 +24,7 @@ import time
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [bot-%(bot_id)s] %(message)s",
+    format="%(asctime)s [%(levelname)s] [%(threadName)s] %(message)s",
     datefmt="%H:%M:%S",
 )
 
@@ -68,7 +68,8 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
         executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr, oracle_registry_addr)
         risk = RiskCheck(cfg["max_batches"], cfg["max_exposure"] * 10**18)
         oracle_urls_fn = lambda: discover_oracles(cfg["oracle_discovery"], cfg["oracle_urls"], executor.w3)
-        tracker = Tracker(executor, cfg, oracle_urls_fn, pnl_path=pnl_file)
+        cfg["pnl_file"] = pnl_file
+        tracker = Tracker(executor, cfg, oracle_urls_fn)
 
         feed = VisionFeed(
             ws_url=cfg["data_node"].replace("http://", "ws://").replace("https://", "wss://") + "/vision/ws",
