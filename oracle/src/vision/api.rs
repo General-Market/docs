@@ -1253,12 +1253,8 @@ async fn leaderboard_from_postgres(
             let pnl = (bal - dep) / decimals;
             let deposited = dep / decimals;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
-            let win_rate = if *batches > 0 {
-                *wins as f64 / *batches as f64 * 100.0
-            } else {
-                0.0
-            };
-            let avg_correct_pct = if *total_markets > 0 {
+            // Market-level win rate: correct predictions / total predictions
+            let win_rate = if *total_markets > 0 {
                 *total_correct as f64 / *total_markets as f64 * 100.0
             } else {
                 0.0
@@ -1327,12 +1323,8 @@ fn build_leaderboard_from_map(
                 } else {
                     0.0
                 };
-                let win_rate = if *batches > 0 {
-                    *wins as f64 / *batches as f64 * 100.0
-                } else {
-                    0.0
-                };
-                let avg_correct_pct = if *total_markets > 0 {
+                // Market-level win rate: correct predictions / total predictions
+                let win_rate = if *total_markets > 0 {
                     *total_correct as f64 / *total_markets as f64 * 100.0
                 } else {
                     0.0
@@ -1824,7 +1816,15 @@ async fn player_profile(
     let mut total_deposited_wei: i128 = 0;
     let mut total_wins: u64 = 0;
     let mut total_batches: u64 = 0;
+    let mut total_correct: u64 = 0;
+    let mut total_market_predictions: u64 = 0;
     let mut last_active: Option<String> = None;
+
+    // Aggregate correct/total from settled rounds for market-level win rate
+    for r in &rounds {
+        total_correct += r.correct_count.max(0) as u64;
+        total_market_predictions += r.total_markets.max(0) as u64;
+    }
 
     // Active batches: from positions
     let mut profile_batches: Vec<ProfileBatch> = Vec::new();
@@ -2000,8 +2000,9 @@ async fn player_profile(
     } else {
         0.0
     };
-    let win_rate = if total_batches > 0 {
-        total_wins as f64 / total_batches as f64 * 100.0
+    // Market-level win rate: correct predictions / total predictions
+    let win_rate = if total_market_predictions > 0 {
+        total_correct as f64 / total_market_predictions as f64 * 100.0
     } else {
         0.0
     };
