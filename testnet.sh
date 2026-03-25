@@ -1861,7 +1861,7 @@ _start_oracles_docker() {
       - "--num-oracles"
       - "3"
       - "--signature-threshold"
-      - "1"
+      - "3"
       - "--registry-sync"
       - "--data-node-url"
       - "http://localhost:$DATA_NODE_PORT"
