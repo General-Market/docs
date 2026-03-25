@@ -38,7 +38,6 @@ function ProfileContent({ address }: { address: string }) {
   const stats = [
     { label: t('pnl'), value: formatPnL(profile?.stats.pnl ?? 0), color: pnlColor },
     { label: t('roi'), value: formatROI(profile?.stats.roi ?? 0) },
-    { label: t('win_rate'), value: `${(profile?.stats.winRate ?? 0).toFixed(1)}%` },
     { label: t('rounds'), value: String(profile?.stats.totalBatches ?? 0) },
     { label: t('volume'), value: formatVolume(profile?.stats.totalDeposited ?? 0) },
     { label: t('points'), value: formatPoints(points.total), color: 'text-color-up' },

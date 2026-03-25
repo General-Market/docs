@@ -53,7 +53,7 @@ interface LeaderboardEntry {
   rank: number
   walletAddress: string
   pnl: number
-  winRate: number
+  roi: number
   totalVolume: number
   portfolioBets: number
 }
@@ -315,7 +315,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                   <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player_rank')}</th>
                   <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.vision_section.player')}</th>
                   <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.volume')}</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.win_pct')}</th>
+                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">{t('explorer.vision_section.roi')}</th>
                   <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">{t('explorer.vision_section.pnl')}</th>
                 </tr>
               </thead>
@@ -329,8 +329,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
                     <td className="py-1 pr-2 text-label font-mono text-right text-text-muted">
                       {p.totalVolume >= 1000 ? `$${(p.totalVolume / 1000).toFixed(1)}K` : `$${p.totalVolume.toFixed(0)}`}
                     </td>
-                    <td className="py-1 pr-2 text-label font-mono text-right text-black font-semibold">
-                      {p.winRate.toFixed(1)}%
+                    <td className={`py-1 pr-2 text-label font-mono text-right font-semibold ${p.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                      {p.roi >= 0 ? '+' : ''}{p.roi.toFixed(1)}%
                     </td>
                     <td className={`py-1 text-label font-mono text-right font-semibold ${p.pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                       {p.pnl >= 0 ? '+' : ''}${p.pnl.toFixed(2)}

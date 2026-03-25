@@ -37,8 +37,6 @@ export function VisionLeaderboard() {
               <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.pnl_usdc')}</th>
               <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.roi')}</th>
               <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.rounds')}</th>
-              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.win_pct')}</th>
-              <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.correct_pct')}</th>
               <th className="pb-3 pr-4 text-right">{t('vision_leaderboard.volume')}</th>
               <th className="pb-3 text-right">{t('vision_leaderboard.batches')}</th>
             </tr>
@@ -65,12 +63,6 @@ export function VisionLeaderboard() {
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-right text-text-secondary">
                     {entry.roundsPlayed}
-                  </td>
-                  <td className={`py-3 pr-4 font-mono text-xs text-right ${entry.winRate > 50 ? 'text-color-up' : 'text-text-secondary'}`}>
-                    {entry.winRate.toFixed(1)}%
-                  </td>
-                  <td className={`py-3 pr-4 font-mono text-xs text-right ${entry.avgCorrectPct > 50 ? 'text-color-up' : 'text-text-secondary'}`}>
-                    {entry.avgCorrectPct.toFixed(1)}%
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-right text-text-secondary">
                     ${entry.totalVolume.toFixed(2)}

@@ -47,7 +47,7 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
           <div>{t('top_players.player')}</div>
           <div className="text-right">{t('top_players.batches')}</div>
           <div className="text-right">{t('top_players.volume')}</div>
-          <div className="text-right">{t('top_players.profitable')}</div>
+          <div className="text-right">{t('top_players.roi')}</div>
           <div className="text-right">{t('top_players.pnl')}</div>
         </div>
 
@@ -80,8 +80,8 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
               <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
                 {formatVolume(player.totalVolume || player.volume || 0)}
               </div>
-              <div className="text-right font-mono tabular-nums font-semibold text-black">
-                {player.winRate.toFixed(1)}%
+              <div className={`text-right font-mono tabular-nums font-semibold ${player.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                {player.roi >= 0 ? '+' : ''}{player.roi.toFixed(1)}%
               </div>
               <div className={`text-right font-mono tabular-nums font-semibold ${pnl.color}`}>
                 {pnl.text}
