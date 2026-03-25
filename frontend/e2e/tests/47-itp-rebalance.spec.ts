@@ -42,9 +42,9 @@ test.describe('ITP Detail & Rebalance', () => {
     const itpCount = await getItpCountL3();
     expect(itpCount, 'At least one ITP must exist').toBeGreaterThanOrEqual(1);
 
-    const itpId = '0x' + '0'.repeat(63) + '1';
+    const itpId = '0x' + '0'.repeat(63) + '4';
     const state = await getItpStateL3(itpId);
-    expect(state.assets.length, 'ITP1 must have assets').toBeGreaterThan(0);
+    expect(state.assets.length, 'ITP4 must have assets').toBeGreaterThan(0);
 
     // Navigate to detail page
     await navigateToItpPage(page, itpId);
@@ -73,7 +73,7 @@ test.describe('ITP Detail & Rebalance', () => {
   test('ITP detail shows creator address', async ({ walletPage: page }) => {
     test.setTimeout(120_000);
 
-    const itpId = '0x' + '0'.repeat(63) + '1';
+    const itpId = '0x' + '0'.repeat(63) + '4';
     const state = await getItpStateL3(itpId);
     const expectedCreator = state.creator.toLowerCase();
 
@@ -108,8 +108,8 @@ test.describe('ITP Detail & Rebalance', () => {
   test('rebalance request submits successfully', async ({ walletPage: page }) => {
     test.setTimeout(300_000);
 
-    // The deployer (TEST_ADDRESS) created ITP #1
-    const itpId = '0x' + '0'.repeat(63) + '1';
+    // The deployer (TEST_ADDRESS) created ITP #4 (5-asset themed ITP)
+    const itpId = '0x' + '0'.repeat(63) + '4';
     const state = await getItpStateL3(itpId);
 
     // Confirm the deployer is the creator
@@ -188,7 +188,7 @@ test.describe('ITP Detail & Rebalance', () => {
   test('rebalance request via direct RPC succeeds', async () => {
     test.setTimeout(120_000);
 
-    const itpId = '0x' + '0'.repeat(63) + '1';
+    const itpId = '0x' + '0'.repeat(63) + '4';
     const stateBefore = await getItpStateL3(itpId);
     expect(stateBefore.assets.length).toBeGreaterThanOrEqual(2);
 

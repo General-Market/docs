@@ -470,17 +470,11 @@ export async function getAvailableItpIds(limit = 5): Promise<string[]> {
 }
 
 /**
- * Rebalance an ITP by calling requestRebalance on the L3 Index contract
- * (emits RebalanceRequested event on L3) and waiting for oracles to
- * execute it via BLS consensus.
- * Shifts 0.5% weight from asset[0] to asset[1].
+ * Compute the new weight array for a rebalance: shifts 0.5% between asset[0] and asset[1].
+ * Exported so callers can inspect the target weights without submitting a TX.
  */
-export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<void> {
-  const state = await getItpStateL3(itpId);
-  const weightsBefore = state.weights[0];
-
-  // Compute new weights (shift between asset[0] and asset[1])
-  const newWeights = [...state.weights];
+export function computeRebalanceWeights(weights: readonly bigint[]): bigint[] {
+  const newWeights = [...weights];
   const MIN_WEIGHT = 2500000000000000n;
   const DESIRED_SHIFT = 5000000000000000n;
   const maxShift = newWeights[0] - MIN_WEIGHT;
@@ -495,6 +489,19 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     newWeights[0] = newWeights[0] - shift;
     newWeights[1] = newWeights[1] + shift;
   }
+  return newWeights;
+}
+
+/**
+ * Submit a requestRebalance TX on L3 and wait for on-chain confirmation.
+ * Does NOT wait for oracle consensus — that is a separate concern.
+ * Returns the weights[0] value before the request, and the new weights sent,
+ * so callers can later poll for the oracle-driven state change.
+ */
+export async function submitRebalanceRequest(itpId: string): Promise<{ txHash: string; weightsBefore: bigint; newWeights: bigint[] }> {
+  const state = await getItpStateL3(itpId);
+  const weightsBefore = state.weights[0];
+  const newWeights = computeRebalanceWeights(state.weights);
 
   // Send requestRebalance to L3 Index (emits RebalanceRequested event).
   // Oracles use DataNodeChainReader which may not forward RebalanceRequested events.
@@ -518,6 +525,17 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     throw new Error(`requestRebalance tx reverted: ${txHash} status=${receipt?.status}`);
   }
   console.log(`[rebalance] TX confirmed with ${receipt.logs.length} events`);
+  return { txHash, weightsBefore, newWeights };
+}
+
+/**
+ * Rebalance an ITP by calling requestRebalance on the L3 Index contract
+ * (emits RebalanceRequested event on L3) and waiting for oracles to
+ * execute it via BLS consensus.
+ * Shifts 0.5% weight from asset[0] to asset[1].
+ */
+export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<void> {
+  const { weightsBefore } = await submitRebalanceRequest(itpId);
 
   // Wait for oracles to execute the rebalance on L3 (weights change)
   // Rebalance consensus can take 2+ cycles

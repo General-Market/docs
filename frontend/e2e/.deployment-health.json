@@ -4,37 +4,37 @@
   "coreContracts": [
     {
       "name": "Index",
-      "address": "0x61988A72e2c898702bf634D5D2A0278694CC731C",
+      "address": "0x62bfde563b2ab16dda5bcc7c671f797118d19f13",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "OracleRegistry",
-      "address": "0x8B3ABFfDe5e0882CEAC0e05dF13f28b3219172ce",
+      "address": "0x3865c4388bbdc5fec500b1a793464d61d957c906",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Vision",
-      "address": "0x5E3afdBE5B8abdb9C1301161e624f23737EF7E0c",
+      "address": "0x303842120a9e294dea75bbe2261faea9d026d8f9",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3_WUSDC",
-      "address": "0x4c782452e7fA2AE5f11d498a0B43a44B5d97906B",
+      "address": "0x92a770802bb20842207f1a6c4394aa4a62a7e7c2",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "CollateralRegistry",
-      "address": "0x641D149Fe3AC4d2322CC6F69A5C54669fC4e98FE",
+      "address": "0x60e89d4eb6d6539dda67eae3f2e7c9b8827e2851",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3BridgeProxy",
-      "address": "0x60067e4d70463153baD90866c53f8aD577Db1653",
+      "address": "0x7b18672b213875d5edfc71648d96907499a576b7",
       "hasCode": true,
       "chain": "l3"
     }
@@ -42,26 +42,32 @@
   "optionalContracts": [
     {
       "name": "MockBitgetVault",
-      "address": "0xB4daA64068Ec9d9aaF7EF30017665107De099594",
-      "hasCode": false,
+      "address": "0xf6b9e4d7b0b3b9e7917500719ba00cb4f5867985",
+      "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Governance",
-      "address": "0xA639D16d1Ce7760546Ab4b4a9134cb9d799ce246",
+      "address": "0xcf5778a5f7c65a66a4492b79557a5c886deb2649",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3BridgeCustody",
-      "address": "0x595e5ACd4A97578Bf708168BCE107A253CD7Bd6C",
+      "address": "0x64b2b2e7d6cc1d9866254e519d3a54b1b41f6b74",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "BLSCustody",
-      "address": "0x39BE5762fD0D89971f17B80DF54f87E150C2b7Bf",
-      "hasCode": false,
+      "address": "0x90302e415e938a0768d289436888387c1bf2860d",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgedItpFactory",
+      "address": "0x555b9b15c12629faeb223f351bc8405a07d76671",
+      "hasCode": true,
       "chain": "l3"
     }
   ],
@@ -76,8 +82,16 @@
     "firstBatchExists": false
   },
   "staleAddresses": [
-    "[optional] MockBitgetVault (0xB4daA64068Ec9d9aaF7EF30017665107De099594) has no code on L3",
-    "[optional] BLSCustody (0x39BE5762fD0D89971f17B80DF54f87E150C2b7Bf) has no code on L3",
-    "Morpho collateralToken (0x8e7E09517c58b4A3e17d66f5DeCd160Aa9DD7e29) has NO CODE — needs redeployment"
-  ]
+    "Morpho collateralToken (0x9a971f295c854dF72d01d891699DAF5479DE6D9D) has NO CODE — needs redeployment"
+  ],
+  "preconditions": {
+    "hasVisionBatches": true,
+    "onChainBatchCount": 258,
+    "deployerHasUsdc": true,
+    "deployerUsdcBalance": "21076762761697497279650970",
+    "dataNodeReachable": true,
+    "dataNodeStatus": "200 OK",
+    "visionApiReachable": true,
+    "visionApiBatchCount": 100
+  }
 }

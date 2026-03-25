@@ -12,7 +12,7 @@
   },
   "marketParams": {
     "loanToken": "0x92a770802bb20842207f1A6c4394aa4A62a7E7C2",
-    "collateralToken": "0x9a971f295c854dF72d01d891699DAF5479DE6D9D",
+    "collateralToken": "0xefaa7b9140110290ca066bd55539c361005c7a0d",
     "oracle": "0x81B9790C547817078d3CA4f151C7bFC3D0Ee4546",
     "irm": "0xE7311d0B014F747eB286846c1cAD0eE20E12D8Fe",
     "lltv": "770000000000000000"

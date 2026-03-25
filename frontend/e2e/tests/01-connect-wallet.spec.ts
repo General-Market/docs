@@ -9,8 +9,10 @@ test.describe('Connect Wallet', () => {
     const addrBtn = page.getByRole('button', { name: truncated });
     const connectBtn = connectWalletButton(page);
 
-    // Wallet may auto-connect via seeded localStorage, or require manual click
-    const autoConnected = await addrBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+    // Wallet may auto-connect via seeded localStorage, or require manual click.
+    // Use a generous timeout — the component only renders the address button after
+    // mount (useEffect) + wagmi reconnect, which can take several render cycles.
+    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
     if (!autoConnected) {
       await expect(connectBtn).toBeVisible({ timeout: 15_000 });
       await connectBtn.click();
@@ -27,7 +29,7 @@ test.describe('Connect Wallet', () => {
     const connectBtn = connectWalletButton(page);
 
     // Ensure connected first
-    const autoConnected = await addrBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
     if (!autoConnected) {
       await expect(connectBtn).toBeVisible({ timeout: 15_000 });
       await connectBtn.click();
@@ -49,7 +51,7 @@ test.describe('Connect Wallet', () => {
     const connectBtn = connectWalletButton(page);
 
     // Ensure connected first
-    const autoConnected = await addrBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+    const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
     if (!autoConnected) {
       await expect(connectBtn).toBeVisible({ timeout: 15_000 });
       await connectBtn.click();
