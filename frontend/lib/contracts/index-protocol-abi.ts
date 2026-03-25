@@ -276,6 +276,59 @@ export const SETTLEMENT_CUSTODY_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
+  // Sell ITP from Settlement (requires BridgedITP approval first)
+  {
+    inputs: [
+      { name: 'itpId', type: 'bytes32' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'limitPrice', type: 'uint256' },
+      { name: 'slippageTier', type: 'uint256' },
+      { name: 'deadline', type: 'uint256' },
+    ],
+    name: 'sellITPFromSettlement',
+    outputs: [{ name: 'orderId', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  // CrossChainSellOrderCreated event
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: 'orderId', type: 'uint256' },
+      { indexed: true, name: 'itpId', type: 'bytes32' },
+      { indexed: true, name: 'user', type: 'address' },
+      { indexed: false, name: 'bridgedItpAddress', type: 'address' },
+      { indexed: false, name: 'amount', type: 'uint256' },
+      { indexed: false, name: 'limitPrice', type: 'uint256' },
+    ],
+    name: 'CrossChainSellOrderCreated',
+    type: 'event',
+  },
+  // Get cross-chain sell order details
+  {
+    inputs: [{ name: 'orderId', type: 'uint256' }],
+    name: 'getCrossChainSellOrder',
+    outputs: [
+      {
+        components: [
+          { name: 'itpId', type: 'bytes32' },
+          { name: 'user', type: 'address' },
+          { name: 'bridgedItpAddress', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'limitPrice', type: 'uint256' },
+          { name: 'slippageTier', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+          { name: 'createdAt', type: 'uint256' },
+          { name: 'burned', type: 'bool' },
+          { name: 'burnedAt', type: 'uint256' },
+        ],
+        name: '',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
 ] as const
 
 // ERC20 ABI for USDC approval
@@ -540,6 +593,26 @@ export const BRIDGED_ITP_FACTORY_ABI = [
 
 // BridgedITP (ERC20) ABI
 export const BRIDGED_ITP_ABI = [
+  {
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
   {
     inputs: [],
     name: 'name',
