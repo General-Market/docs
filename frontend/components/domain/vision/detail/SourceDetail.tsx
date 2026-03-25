@@ -165,8 +165,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   }, [meta?.sources, sourceId])
 
   const sourceMarkets = snapshotData?.prices ?? []
-  const metaCount = meta?.assetCounts?.[sourceId] ?? 0
-  const marketCount = metaCount > 0 ? metaCount : (sourceMarkets.length || undefined)
+  const marketCount = sourceMarkets.length || undefined
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
   // Active batch matching this source

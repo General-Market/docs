@@ -372,7 +372,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         <div>
           <div className="section-bar-title">{t('markets_table.markets_title')}</div>
           <div className="section-bar-value">
-            {isLoading ? '...' : (meta?.assetCounts?.[sourceId] ?? sourceMarkets.length)}
+            {isLoading ? '...' : sourceMarkets.length}
           </div>
         </div>
         <div className="flex items-center gap-3">

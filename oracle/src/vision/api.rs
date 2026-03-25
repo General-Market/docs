@@ -2097,19 +2097,20 @@ async fn rounds_active(
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                let (betting_end_ts, lifecycle_source) = {
-                    let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
-                        "SELECT betting_end, source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
-                    )
-                    .bind(batch_id as i64)
-                    .fetch_optional(&state.pool)
-                    .await
-                    .ok()
-                    .flatten();
-                    match lifecycle_row {
-                        Some((ts, src)) => (ts.timestamp() as u64, Some(src)),
-                        None => (now + row.tick_duration as u64, None),
-                    }
+                let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
+                    "SELECT betting_end, source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
+                )
+                .bind(batch_id as i64)
+                .fetch_optional(&state.pool)
+                .await
+                .ok()
+                .flatten();
+                // Skip batches with no lifecycle row — they were discovered by chain_listener
+                // but have no real betting_end. A fabricated `now + tick_duration` would drift
+                // on every request, producing a timer that never counts down.
+                let (betting_end_ts, lifecycle_source) = match lifecycle_row {
+                    Some((ts, src)) => (ts.timestamp() as u64, Some(src)),
+                    None => continue,
                 };
 
                 // Derive status from betting_end: past deadline = settling, otherwise betting
