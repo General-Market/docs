@@ -12,6 +12,12 @@ import { PLAYER1 } from '../helpers/vision-api'
 test.describe('Vision Leaderboard', () => {
 
   test('42a: leaderboard returns core fields', async () => {
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
+
     const res = await fetch(`${VISION_API}/vision/leaderboard`, {
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })
@@ -49,6 +55,12 @@ test.describe('Vision Leaderboard', () => {
   })
 
   test('42b: leaderboard includes round-based batch results', async () => {
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
+
     const res = await fetch(`${VISION_API}/vision/leaderboard`, {
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })

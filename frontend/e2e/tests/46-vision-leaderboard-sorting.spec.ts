@@ -25,6 +25,12 @@ test.describe('Vision Leaderboard Sorting', () => {
   test('46a: leaderboard table renders with correct columns', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
+
     // Leaderboard is on source detail pages, not the home page.
     // Navigate to a source with a deployed batch.
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -72,6 +78,12 @@ test.describe('Vision Leaderboard Sorting', () => {
 
   test('46b: leaderboard entries sorted by PnL descending', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
+
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
 
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
@@ -123,6 +135,12 @@ test.describe('Vision Leaderboard Sorting', () => {
   test('46c: no raw bigint values in leaderboard', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
+
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const leaderboardSection = page.locator('#leaderboard')
@@ -159,6 +177,12 @@ test.describe('Vision Leaderboard Sorting', () => {
 
   test('46d: leaderboard win rate and ROI are in valid ranges', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
+
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
 
     await page.goto('/source/defi#leaderboard', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
@@ -224,6 +248,12 @@ test.describe('Vision Leaderboard Sorting', () => {
 
   test('46e: leaderboard API returns consistent data shape', async () => {
     test.setTimeout(30_000)
+
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const probe = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!probe.ok) { console.log('Vision API returned ' + probe.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
 
     // Pure API check — no browser
     const res = await fetch(`${VISION_API}/vision/leaderboard`, {

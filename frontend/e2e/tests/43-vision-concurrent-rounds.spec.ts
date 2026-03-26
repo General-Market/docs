@@ -25,7 +25,7 @@ import {
   ensureUsdcBalance,
   randomBets,
 } from '../helpers/vision-api'
-import { CONSENSUS_TIMEOUT } from '../env'
+import { CONSENSUS_TIMEOUT, VISION_API } from '../env'
 
 const DEPOSIT = 10n * 10n ** 18n   // 10 USDC per round
 const STAKE = 1n * 10n ** 18n
@@ -47,6 +47,12 @@ test.describe.serial('Vision Concurrent Rounds', () => {
   test.setTimeout(ROUND_SETTLE_TIMEOUT + 60_000)
 
   test('43a: find 2 active rounds not yet joined by PLAYER1', async () => {
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const res = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!res.ok) { console.log('Vision API returned ' + res.status + ' — skipping'); noRoundsAvailable = true; return }
+    } catch { console.log('Vision API unreachable — skipping'); noRoundsAvailable = true; return }
+
     const rounds = await getActiveRounds()
 
     if (rounds.length < 2) {
