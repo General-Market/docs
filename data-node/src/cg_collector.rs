@@ -428,6 +428,7 @@ async fn sync_all_category_coins(
 }
 
 /// Backfill historical daily data for coins that only have 1 snapshot (today's).
+/// Prioritizes Bitget-eligible coins (the ones the simulator uses) before others.
 /// Uses 3 concurrent workers sharing the global rate limiter.
 async fn backfill_missing(
     pool: &PgPool,
@@ -437,13 +438,37 @@ async fn backfill_missing(
     // Find coins with no historical data (only today's snapshot or less)
     let existing = db::cg_coins_with_history(pool).await?;
 
+    // Get Bitget-eligible coin_ids first (these are what the sim needs)
+    let all_listings = db::bitget_query_listings(pool, None).await.unwrap_or_default();
+    let bitget_symbols: Vec<String> = all_listings.iter().map(|l| l.base_coin.to_uppercase()).collect();
+    let sym_rows = db::cg_query_coin_symbols_for_bitget(pool, &bitget_symbols).await.unwrap_or_default();
+    let bitget_coin_ids: std::collections::HashSet<String> = sym_rows.into_iter().map(|(id, _)| id).collect();
+
     // Get all coin_ids in our DB
     let all_coins = db::cg_all_coin_ids(pool).await?;
 
-    let need_backfill: Vec<String> = all_coins
-        .into_iter()
-        .filter(|id| !existing.contains(id))
-        .collect();
+    // Split into priority (Bitget) and rest, both filtered to need backfill
+    let mut priority: Vec<String> = Vec::new();
+    let mut rest: Vec<String> = Vec::new();
+    for id in all_coins {
+        if existing.contains(&id) { continue; }
+        if bitget_coin_ids.contains(&id) {
+            priority.push(id);
+        } else {
+            rest.push(id);
+        }
+    }
+
+    info!(
+        bitget_priority = priority.len(),
+        other = rest.len(),
+        already_done = existing.len(),
+        "Backfill: Bitget coins first"
+    );
+
+    // Bitget coins first, then the rest
+    let mut need_backfill = priority;
+    need_backfill.extend(rest);
 
     if need_backfill.is_empty() {
         return Ok(0);
