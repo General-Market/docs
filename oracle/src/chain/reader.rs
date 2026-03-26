@@ -106,6 +106,15 @@ impl Default for ChainReaderConfig {
 /// On L3 with ~1s blocks, this is ~10s of overlap.
 const REORG_BUFFER: u64 = 10;
 
+/// Maximum block range per eth_getLogs query.
+/// Orbit/Geth RPCs silently cap or truncate log queries beyond ~2000-10000 blocks.
+/// 2000 is conservative enough to never hit the ceiling.
+const LOG_QUERY_CHUNK_SIZE: u64 = 2000;
+
+/// How many recent order IDs to check in the fallback ID scan.
+/// At worst this is 100 view calls — trivial cost for guaranteed discovery.
+const ID_SCAN_LOOKBACK: u64 = 100;
+
 /// ChainReader implementation using ethers-rs
 ///
 /// Connects to the Index L3 chain via RPC and provides methods to read
@@ -209,6 +218,117 @@ impl<M: Middleware> EthersChainReader<M> {
             _ => Side::Buy, // Default to buy for unknown side
         }
     }
+
+    /// Fallback order discovery: iterate recent order IDs via nextOrderId().
+    ///
+    /// Event scanning is the primary path but it fails silently in practice —
+    /// RPC log limits, cursor drift, reorgs deeper than REORG_BUFFER. This
+    /// method reads `nextOrderId()` from storage and walks backwards, calling
+    /// `getOrder()` on each. O(ID_SCAN_LOOKBACK) view calls. No events needed.
+    ///
+    /// Returns only Pending (status=0) orders. Also populates the settled cache
+    /// for terminal orders encountered along the way.
+    async fn get_pending_orders_by_id_scan(
+        &self,
+        contract: &IndexContract<M>,
+    ) -> Result<Vec<LimitOrder>, Error> {
+        let next_id: U256 = contract.next_order_id().call().await.map_err(|e| {
+            Error::ChainRead(format!("Failed to call nextOrderId(): {}", e))
+        })?;
+
+        if next_id <= U256::one() {
+            // No orders have ever been submitted (nextOrderId starts at 1)
+            return Ok(Vec::new());
+        }
+
+        // Scan from max(1, nextOrderId - LOOKBACK) up to nextOrderId - 1
+        let highest = next_id - U256::one();
+        let lowest = if next_id > U256::from(ID_SCAN_LOOKBACK) {
+            next_id - U256::from(ID_SCAN_LOOKBACK)
+        } else {
+            U256::one()
+        };
+
+        debug!(
+            lowest = %lowest,
+            highest = %highest,
+            next_order_id = %next_id,
+            "Fallback ID scan: checking recent order IDs"
+        );
+
+        let mut orders = Vec::new();
+        let settled = self.settled_order_ids.read().await.clone();
+        let mut newly_settled = Vec::new();
+
+        let mut id = highest;
+        while id >= lowest {
+            if settled.contains(&id) {
+                if id == lowest { break; }
+                id -= U256::one();
+                continue;
+            }
+
+            match contract.get_order(id).call().await {
+                Ok((order_id, user, pair_id, side, amount, limit_price, slippage_tier, deadline, itp_id, timestamp, status)) => {
+                    if order_id.is_zero() {
+                        // Storage slot empty — skip
+                        if id == lowest { break; }
+                        id -= U256::one();
+                        continue;
+                    }
+
+                    match status {
+                        0 => {
+                            let order = LimitOrder {
+                                id: order_id,
+                                user,
+                                pair_id: pair_id.into(),
+                                side: Self::convert_side(side),
+                                amount,
+                                limit_price,
+                                slippage_tier,
+                                deadline,
+                                itp_id: itp_id.into(),
+                                timestamp,
+                                status: OrderStatus::Pending,
+                            };
+                            orders.push(order);
+
+                            if orders.len() >= self.config.max_orders_per_batch as usize {
+                                break;
+                            }
+                        }
+                        // Terminal states — remember them
+                        2 | 3 | 4 => {
+                            newly_settled.push(id);
+                        }
+                        _ => {}
+                    }
+                }
+                Err(e) => {
+                    trace!(order_id = %id, error = %e, "ID scan: failed to fetch order, skipping");
+                }
+            }
+
+            if id == lowest { break; }
+            id -= U256::one();
+        }
+
+        if !newly_settled.is_empty() {
+            let mut settled_w = self.settled_order_ids.write().await;
+            for sid in &newly_settled {
+                settled_w.insert(*sid);
+            }
+        }
+
+        debug!(
+            scanned_range = %format!("{}..{}", lowest, highest),
+            pending_found = orders.len(),
+            "Fallback ID scan complete"
+        );
+
+        Ok(orders)
+    }
 }
 
 #[async_trait]
@@ -226,30 +346,46 @@ where
 
         // Incremental scan: only query new blocks since last cursor
         let cursor = self.order_cursor.load(Ordering::Relaxed);
-        let from_block = cursor.saturating_sub(REORG_BUFFER);
+        let scan_from = cursor.saturating_sub(REORG_BUFFER);
 
-        let filter = contract
-            .order_submitted_filter()
-            .from_block(from_block)
-            .to_block(latest_block);
-
-        let events = filter.query().await.map_err(|e| {
-            Error::ChainRead(format!("Failed to query OrderSubmitted events: {}", e))
-        })?;
-
-        let new_event_count = events.len();
-        if new_event_count > 0 {
-            info!(from_block, to_block = latest_block, new_event_count, "OrderSubmitted events found in scan range");
-        }
-
-        // Add newly discovered order IDs
+        // Paginate eth_getLogs in chunks to avoid RPC silent truncation.
+        // Orbit/Geth nodes cap log queries at ~2000-10000 blocks;
+        // a 20k-block range returns partial or empty results without error.
+        let mut new_event_count: usize = 0;
         {
             let mut known = self.known_order_ids.write().await;
-            for event in &events {
-                if !known.contains(&event.order_id) {
-                    known.push(event.order_id);
+            let mut chunk_start = scan_from;
+            while chunk_start <= latest_block {
+                let chunk_end = (chunk_start + LOG_QUERY_CHUNK_SIZE).min(latest_block);
+
+                let filter = contract
+                    .order_submitted_filter()
+                    .from_block(chunk_start)
+                    .to_block(chunk_end);
+
+                let events = filter.query().await.map_err(|e| {
+                    Error::ChainRead(format!(
+                        "Failed to query OrderSubmitted events (blocks {}..{}): {}",
+                        chunk_start, chunk_end, e
+                    ))
+                })?;
+
+                if !events.is_empty() {
+                    trace!(from = chunk_start, to = chunk_end, count = events.len(), "OrderSubmitted chunk");
                 }
+
+                for event in &events {
+                    if !known.contains(&event.order_id) {
+                        known.push(event.order_id);
+                    }
+                }
+                new_event_count += events.len();
+                chunk_start = chunk_end + 1;
             }
+        }
+
+        if new_event_count > 0 {
+            info!(from_block = scan_from, to_block = latest_block, new_event_count, "OrderSubmitted events found in scan range");
         }
 
         // Update cursor
@@ -333,8 +469,33 @@ where
             total_known,
             settled = total_settled,
             pending = orders.len(),
-            "Order scan complete"
+            "Order scan complete (event path)"
         );
+
+        // Fallback: if event scan found no pending orders, iterate recent
+        // order IDs directly via nextOrderId(). Event scanning fails silently
+        // in too many ways — RPC log caps, cursor gaps, deep reorgs.
+        // The contract counter is authoritative.
+        if orders.is_empty() {
+            let fallback_orders = self.get_pending_orders_by_id_scan(&contract).await?;
+            if !fallback_orders.is_empty() {
+                info!(
+                    count = fallback_orders.len(),
+                    "Fallback ID scan found pending orders missed by event scan"
+                );
+                // Seed known_order_ids so subsequent event-based cycles track them
+                {
+                    let mut known = self.known_order_ids.write().await;
+                    for order in &fallback_orders {
+                        if !known.contains(&order.id) {
+                            known.push(order.id);
+                        }
+                    }
+                }
+                return Ok(fallback_orders);
+            }
+        }
+
         Ok(orders)
     }
 
@@ -346,21 +507,37 @@ where
 
         // If known_order_ids is empty (e.g., recovery path before Phase A scans),
         // do a full event scan from genesis to discover all order IDs.
+        // Paginated in chunks to avoid RPC silent truncation on large ranges.
         if known_ids.is_empty() {
             info!("get_batched_orders: known_order_ids empty, performing full event scan");
             let latest_block = self.provider.get_block_number().await.map_err(|e| {
                 Error::ChainRead(format!("Failed to get block number: {}", e))
             })?.as_u64();
-            let filter = contract.order_submitted_filter().from_block(0u64).to_block(latest_block);
-            let events = filter.query().await.map_err(|e| {
-                Error::ChainRead(format!("Failed to scan OrderSubmitted events: {}", e))
-            })?;
-            info!(count = events.len(), "Full event scan found OrderSubmitted events");
-            for event in &events {
-                if !known_ids.contains(&event.order_id) {
-                    known_ids.push(event.order_id);
+
+            let mut chunk_start: u64 = 0;
+            let mut total_found: usize = 0;
+            while chunk_start <= latest_block {
+                let chunk_end = (chunk_start + LOG_QUERY_CHUNK_SIZE).min(latest_block);
+                let filter = contract
+                    .order_submitted_filter()
+                    .from_block(chunk_start)
+                    .to_block(chunk_end);
+                let events = filter.query().await.map_err(|e| {
+                    Error::ChainRead(format!(
+                        "Failed to scan OrderSubmitted events (blocks {}..{}): {}",
+                        chunk_start, chunk_end, e
+                    ))
+                })?;
+                for event in &events {
+                    if !known_ids.contains(&event.order_id) {
+                        known_ids.push(event.order_id);
+                    }
                 }
+                total_found += events.len();
+                chunk_start = chunk_end + 1;
             }
+            info!(count = total_found, "Full paginated event scan found OrderSubmitted events");
+
             // Persist to shared state so future calls don't re-scan
             let mut known_w = self.known_order_ids.write().await;
             for id in &known_ids {
@@ -629,34 +806,43 @@ where
             Error::ChainRead(format!("Failed to get latest block number: {}", e))
         })?.as_u64();
 
-        // Incremental scan: only query new blocks since last cursor
+        // Incremental scan: only query new blocks since last cursor.
+        // Paginated in chunks — same rationale as get_pending_orders.
         let cursor = self.rebalance_cursor.load(Ordering::Relaxed);
-        let from_block = cursor.saturating_sub(REORG_BUFFER);
+        let scan_from = cursor.saturating_sub(REORG_BUFFER);
 
-        let filter = contract
-            .rebalance_requested_filter()
-            .from_block(from_block)
-            .to_block(latest_block);
-
-        let events = filter.query_with_meta().await.map_err(|e| {
-            Error::ChainRead(format!("Failed to query RebalanceRequested events: {}", e))
-        })?;
-
-        let new_event_count = events.len();
-
-        // Update known_rebalances cache with new events (keep latest per ITP)
+        let mut new_event_count: usize = 0;
         {
             let mut known = self.known_rebalances.write().await;
-            for (event, meta) in &events {
-                let itp_id: [u8; 32] = event.itp_id.into();
-                let block = meta.block_number.as_u64();
-                let entry = known.entry(itp_id).or_insert_with(|| {
-                    (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0)
-                });
-                if block > entry.3 {
-                    // New event for this ITP — reset return count since it's a fresh request
-                    *entry = (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0);
+            let mut chunk_start = scan_from;
+            while chunk_start <= latest_block {
+                let chunk_end = (chunk_start + LOG_QUERY_CHUNK_SIZE).min(latest_block);
+
+                let filter = contract
+                    .rebalance_requested_filter()
+                    .from_block(chunk_start)
+                    .to_block(chunk_end);
+
+                let events = filter.query_with_meta().await.map_err(|e| {
+                    Error::ChainRead(format!(
+                        "Failed to query RebalanceRequested events (blocks {}..{}): {}",
+                        chunk_start, chunk_end, e
+                    ))
+                })?;
+
+                for (event, meta) in &events {
+                    let itp_id: [u8; 32] = event.itp_id.into();
+                    let block = meta.block_number.as_u64();
+                    let entry = known.entry(itp_id).or_insert_with(|| {
+                        (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0)
+                    });
+                    if block > entry.3 {
+                        // New event for this ITP — reset return count since it's a fresh request
+                        *entry = (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0);
+                    }
                 }
+                new_event_count += events.len();
+                chunk_start = chunk_end + 1;
             }
         }
 

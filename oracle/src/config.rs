@@ -1304,6 +1304,17 @@ impl ConfigBuilder {
         self
     }
 
+    /// Set the data-node URL for chain reads (replaces direct RPC).
+    ///
+    /// When set, `DataNodeChainReader` is used instead of `EthersChainReader`,
+    /// routing `get_pending_orders()` and other chain reads through data-node HTTP.
+    pub fn with_data_node_url(mut self, url: Option<String>) -> Self {
+        if url.is_some() {
+            self.cli_config.data_node_url = url;
+        }
+        self
+    }
+
     /// Build the final configuration.
     ///
     /// Resolution order: CLI > ENV > Config file > Deployment file > Defaults
@@ -1351,9 +1362,13 @@ impl ConfigBuilder {
 /// Plain HTTP is only allowed when --mock is set.
 pub fn validate_data_node_url(url: &str, is_mock: bool) -> Result<(), String> {
     if !is_mock && url.starts_with("http://") {
-        // Allow localhost HTTP for local dev (no --mock needed)
-        let is_localhost = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
-        if !is_localhost {
+        // Allow localhost and private-network HTTP (RFC 1918 + link-local)
+        let is_local = url.starts_with("http://localhost")
+            || url.starts_with("http://127.")
+            || url.starts_with("http://10.")
+            || url.starts_with("http://172.")
+            || url.starts_with("http://192.168.");
+        if !is_local {
             return Err(format!(
                 "Data-node URL '{}' uses plain HTTP. Use HTTPS in production, or pass --mock for development.",
                 url

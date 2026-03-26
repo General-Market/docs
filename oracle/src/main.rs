@@ -55,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.arbitration_threshold,
             args.arbitration_data_node_url.clone(),
         )
+        .with_data_node_url(args.data_node_url.clone())
         .with_data_node_token(args.data_node_token.clone())
         .with_nav_oracle(args.nav_oracle.clone(), args.itp_token.clone())
         .with_mirror_registry(args.mirror_registry.clone())

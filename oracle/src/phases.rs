@@ -527,6 +527,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     // Process batch for SubmittedOnL3 orders
+    info!("Scanning for L3 pending orders...");
     let mut submitted_orders = if let Some(ref targets) = target_orders {
         // Inline path: only process the just-submitted orders (prevents stale L3-native orders
         // from poisoning the batch — their L3 IDs can collide with settlement order IDs).
@@ -564,6 +565,8 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         }
     };
 
+    info!(found = submitted_orders.len(), "L3 pending order scan complete");
+
     // Recovery path can discover 100+ orders. Processing all in one cycle exceeds the 60s
     // timeout before any order completes. Cap per-cycle work to 5 — the rest will be picked
     // up on subsequent settlement_poll_due ticks.
@@ -572,9 +575,14 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders.truncate(5);
     }
 
+    if submitted_orders.is_empty() {
+        debug!("No L3 orders to process");
+        return;
+    }
+
     info!(count = submitted_orders.len(), "Processing L3 orders");
 
-    if !submitted_orders.is_empty() {
+    {
         // Resolve Settlement order IDs → L3 order IDs for BLS hash and on-chain calls.
         // The contract uses L3 IDs, so the BLS hash must match.
         // On the leader, resolve_l3_order_ids uses stored mappings.

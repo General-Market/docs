@@ -1,5 +1,10 @@
 # Design Decision Backlog
 
+## Session: 20260326-1430-r8x3 (DataNodeChainReader Never Used for Consensus)
+
+- [DECISION] Added `ConfigBuilder::with_data_node_url()` and wired it in `main.rs`. The CLI `--data-node-url` flag was parsed by clap but never transferred to `OracleConfig.data_node_url` — the `with_cli_args` method used `..Default::default()` which left it `None`. The env var path (`DATA_NODE_URL`) worked, but Docker containers pass the value via CLI flag, not env var. Result: `ChainBuilder::build_reader` always fell through to `EthersChainReader`.
+- [DECISION] Expanded `validate_data_node_url` to allow RFC 1918 private network IPs (`10.x`, `172.x`, `192.168.x`) in addition to localhost. The VPS private network (`10.2.0.3`) was being rejected in non-mock mode.
+
 ## Session: 20260324-1600-j4p2 (ITP Listing + Oracle CreateITP Fixes)
 
 - [DECISION] Removed total_supply==0 filter in compute_aum_ranking_json — newly created ITPs with zero supply were invisible in the listing. Changed to nav_per_share<=0 filter (only skips ITPs with no resolvable prices).
