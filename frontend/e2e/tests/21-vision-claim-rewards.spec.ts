@@ -36,6 +36,8 @@ const MARKET_COUNT = 10
 
 test.describe('Vision Round Results + Bitmap Transparency', () => {
   test('round settles with correct results and transparent bitmaps', async () => {
+    // Set generous initial timeout — refined below once tick duration is known
+    test.setTimeout(600_000)
     const testStart = Date.now()
 
     // 0. Ensure batches exist on-chain
@@ -110,7 +112,7 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
     // Scale test timeout: tick must end + oracle settles + consensus + propagation
     // Formula: tickDuration (worst case: just started) + 120s buffer for oracle processing
     const settlementTimeoutMs = (tickDuration + 120) * 1000
-    const testTimeoutMs = settlementTimeoutMs + 120_000 // extra 2min for join/setup overhead
+    const testTimeoutMs = Math.max(settlementTimeoutMs + 120_000, 600_000) // at least 10min
     test.setTimeout(testTimeoutMs)
     console.log(`Batch ${batchId}: tickDuration=${tickDuration}s, settlementTimeout=${settlementTimeoutMs / 1000}s, testTimeout=${testTimeoutMs / 1000}s`)
 

@@ -41,6 +41,8 @@ const MARKET_COUNT = 10
 
 test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', () => {
   test('opposite bets resolve with pool conservation and balance credits', async () => {
+    // Set generous initial timeout — refined below once tick duration is known
+    test.setTimeout(600_000)
     const testStart = Date.now()
 
     // 0. Ensure batches exist on-chain
@@ -103,7 +105,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
 
     // Scale test timeout based on tick duration (same pattern as test 21)
     const settlementTimeoutMs = (selectedTickDuration + 120) * 1000
-    const testTimeoutMs = settlementTimeoutMs + 120_000
+    const testTimeoutMs = Math.max(settlementTimeoutMs + 120_000, 600_000) // at least 10min
     test.setTimeout(testTimeoutMs)
     console.log(`Using round ${batchId} (tick_duration=${selectedTickDuration}s, testTimeout=${testTimeoutMs / 1000}s)`)
 
@@ -139,9 +141,10 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     const elapsedMs = Date.now() - testStart
     const remainingMs = testTimeoutMs - elapsedMs - 30_000 // 30s safety margin
     const effectiveTimeout = Math.max(Math.min(settlementTimeoutMs, remainingMs), 10_000)
+    console.log(`Settlement wait: effective=${effectiveTimeout / 1000}s (elapsed=${Math.round(elapsedMs / 1000)}s, remaining=${Math.round(remainingMs / 1000)}s)`)
     const settled = await waitForRoundSettled(batchId, effectiveTimeout)
     if (!settled) {
-      console.log(`Round ${batchId} did not settle within ${effectiveTimeout / 1000}s (tick_duration=${selectedTickDuration}s) — oracle may not have resolved this tick yet`)
+      console.log(`Round ${batchId} did not settle within ${effectiveTimeout / 1000}s (tick_duration=${selectedTickDuration}s) — oracle did not settle within timeout, skipping settlement assertions`)
       return
     }
 
