@@ -91,7 +91,7 @@ export function LendingPage() {
     if (filter === 'positions') {
       rows = rows.filter(r => r.collateral > 0 || r.debt > 0)
     } else if (filter === 'liquidity') {
-      rows = rows.filter(r => r.available > 0)
+      rows = rows.filter(r => r.available > 0 || r.userBalance > 0)
     }
 
     return rows

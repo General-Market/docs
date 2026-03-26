@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { DepositCollateral } from './DepositCollateral'
@@ -64,9 +64,14 @@ export function MarketActionPanel({
     ]
   }, [hasPosition, t])
 
-  // Auto-select the most relevant tab when position state changes
+  // Auto-select the most relevant tab ONLY when the user clicks a different market.
+  // Must NOT re-fire on SSE position updates — that hijacks the user's tab choice.
+  const marketKey = selectedMarket?.collateralToken ?? ''
+  const prevMarketKey = useRef(marketKey)
   useEffect(() => {
     if (!selectedMarket) return
+    if (prevMarketKey.current === marketKey) return // same market — don't override
+    prevMarketKey.current = marketKey
 
     if (healthFactor < 1.2 && hasDebt) {
       setActiveTab('repay')
@@ -77,7 +82,7 @@ export function MarketActionPanel({
     } else {
       setActiveTab('supply')
     }
-  }, [selectedMarket, hasCollateral, hasDebt, healthFactor])
+  }, [marketKey, selectedMarket, hasCollateral, hasDebt, healthFactor])
 
   // If the active tab is no longer in the visible set, reset
   useEffect(() => {

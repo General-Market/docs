@@ -59,7 +59,8 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     reset: resetBundler,
   } = useBundlerExec()
 
-  const parsedAmount = amount ? parseUnits(amount, 18) : 0n
+  let parsedAmount = 0n
+  try { if (amount) parsedAmount = parseUnits(amount, 18) } catch { /* invalid input */ }
   const maxBorrow = position?.maxBorrow ?? 0n
   const currentDebt = position?.debtAmount ?? 0n
   const collateralAmount = position?.collateralAmount ?? 0n
