@@ -2058,27 +2058,28 @@ async fn source_batch_history(
     State(state): State<Arc<VisionState>>,
     Path(source_id): Path<String>,
 ) -> impl IntoResponse {
-    // Query lifecycle + aggregated round results for settled batches of this source.
-    // LEFT JOIN vision_round_players aggregates to get player count, pool size, avg PnL.
+    // Query settled rounds from vision_round_players, getting source from
+    // vision_batch_lifecycle (plain-text source_id). The lifecycle batch_id
+    // gets updated to the on-chain batch_id in submit_create_batch, but this
+    // update can fail — so we also join vision_positions (which always has
+    // the on-chain batch_id) back to lifecycle via a subquery.
+    //
+    // Simplest reliable approach: get all batch_ids that belong to this source
+    // from lifecycle, then aggregate round_players for those batches.
     let rows = sqlx::query_as::<_, SourceHistoryRow>(
-        "SELECT vbl.batch_id,
-                vbl.market_count,
-                vbl.betting_end,
-                agg.player_count,
-                agg.total_deposited,
-                agg.total_pnl
-         FROM vision_batch_lifecycle vbl
-         LEFT JOIN (
-             SELECT batch_id,
-                    COUNT(DISTINCT player)::bigint AS player_count,
-                    SUM(deposited::numeric)::text AS total_deposited,
-                    SUM(pnl::numeric)::text AS total_pnl
-             FROM vision_round_players
-             GROUP BY batch_id
-         ) agg ON agg.batch_id = vbl.batch_id
-         WHERE vbl.source_id = $1
-           AND vbl.betting_end < NOW()
-         ORDER BY vbl.batch_id DESC
+        "WITH source_batches AS (
+             SELECT batch_id FROM vision_batch_lifecycle WHERE source_id = $1
+         )
+         SELECT vrp.batch_id,
+                0 AS market_count,
+                MAX(vrp.settled_at) AS betting_end,
+                COUNT(DISTINCT vrp.player)::bigint AS player_count,
+                SUM(vrp.deposited::numeric)::text AS total_deposited,
+                SUM(vrp.pnl::numeric)::text AS total_pnl
+         FROM vision_round_players vrp
+         WHERE vrp.batch_id IN (SELECT batch_id FROM source_batches)
+         GROUP BY vrp.batch_id
+         ORDER BY vrp.batch_id DESC
          LIMIT 50"
     )
     .bind(&source_id)
