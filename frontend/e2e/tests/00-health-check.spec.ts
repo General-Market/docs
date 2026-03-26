@@ -19,7 +19,15 @@ test.describe('Health Check', () => {
   });
 
   test('backend API is reachable', async () => {
-    const healthy = await checkHealth();
+    test.setTimeout(60_000);
+    // Data-node may still be warming up after itp-data setup — retry with backoff
+    let healthy = false;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      healthy = await checkHealth();
+      if (healthy) break;
+      console.warn(`[health-check] attempt ${attempt}/5 failed, waiting 5s...`);
+      await new Promise(r => setTimeout(r, 5_000));
+    }
     expect(healthy).toBe(true);
   });
 
@@ -53,13 +61,15 @@ test.describe('Health Check', () => {
   });
 
   test('ITP listing appears with at least one ITP', async ({ page }) => {
-    await page.goto('/index');
-    // Wait for ITP cards to load — retry navigation if data-node is slow
+    test.setTimeout(120_000);
+    // After itp-data setup, ITP cards may take time to appear (SSE + data-node indexing)
     const itpCards = page.locator('[id^="itp-card-"]');
-    let itpVisible = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!itpVisible) {
+    let itpVisible = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      itpVisible = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
+      itpVisible = await itpCards.first().isVisible({ timeout: 60_000 }).catch(() => false);
+      if (itpVisible) break;
+      console.warn(`[itp-listing] attempt ${attempt}/3 — no ITP cards yet, retrying...`);
     }
     expect(itpVisible).toBe(true);
   });

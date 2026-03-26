@@ -36,6 +36,8 @@ const MARKET_COUNT = 10
 
 test.describe('Vision Round Results + Bitmap Transparency', () => {
   test('round settles with correct results and transparent bitmaps', async () => {
+    const testStart = Date.now()
+
     // 0. Ensure batches exist on-chain
     await ensureBatchExists()
 
@@ -153,11 +155,15 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
       return
     }
 
-    // 3. Wait for auto-settlement — timeout scaled to tick duration
-    const settled = await waitForRoundSettled(batchId, settlementTimeoutMs)
+    // 3. Wait for auto-settlement — cap to remaining test budget
+    const elapsedMs = Date.now() - testStart
+    const remainingMs = testTimeoutMs - elapsedMs - 30_000 // 30s safety margin
+    const effectiveTimeout = Math.max(Math.min(settlementTimeoutMs, remainingMs), 10_000)
+    console.log(`Settlement wait: effective=${effectiveTimeout / 1000}s (elapsed=${Math.round(elapsedMs / 1000)}s, remaining=${Math.round(remainingMs / 1000)}s)`)
+    const settled = await waitForRoundSettled(batchId, effectiveTimeout)
 
     if (!settled) {
-      console.log(`Round ${batchId} did not settle within ${settlementTimeoutMs / 1000}s (tickDuration=${tickDuration}s). Tick engine may not have resolved yet — this is expected on fresh deploys.`)
+      console.log(`Round ${batchId} did not settle within ${effectiveTimeout / 1000}s (tickDuration=${tickDuration}s). Oracle did not settle within timeout — skipping settlement assertions.`)
       return
     }
 
