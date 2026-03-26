@@ -41,12 +41,13 @@ RUN KEEP="common ${SERVICE} ${EXTRA_MEMBERS}" && \
 
 # Build primary binary + any extras
 RUN cargo build --release --bin ${SERVICE} && \
-    mkdir -p /output/bin && \
+    mkdir -p /output/bin /output/migrations && \
     cp target/release/${SERVICE} /output/bin/ && \
     for bin in ${EXTRA_BINS}; do \
       cargo build --release --bin $bin && \
       cp target/release/$bin /output/bin/; \
-    done
+    done && \
+    if [ -d "${SERVICE}/migrations" ]; then cp -r ${SERVICE}/migrations/* /output/migrations/; fi
 
 
 # ---------------------------------------------------------------------------
@@ -59,6 +60,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ${RUNTIME_DEPS}
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /output/bin/ /usr/local/bin/
+COPY --from=builder /output/migrations/ /app/migrations/
 
 ARG SERVICE
 RUN useradd -r -s /bin/false svc && mkdir -p /app/logs && chown -R svc:svc /app && \
