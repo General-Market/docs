@@ -296,9 +296,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
         </div>
 
-        {/* Connected wallet stats for this source */}
-        <WalletSourceStats sourceId={sourceId} />
-
         {/* Pending positions — settling batches where user has a deposit */}
         {rounds && rounds.length > 0 && (
           <PendingPositions
