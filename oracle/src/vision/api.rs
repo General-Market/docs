@@ -2032,96 +2032,155 @@ async fn player_profile(
 // GET /vision/source/:source_id/history
 // ---------------------------------------------------------------------------
 
-/// Recent settled batches for a given source.
+/// Source batch history entry — settled, settling, or betting.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct SourceBatchHistoryEntry {
     batch_id: i64,
+    status: String,         // "betting", "settling", "settled"
     player_count: i64,
     total_pool: f64,
     avg_pnl: f64,
-    settled_at: String,
+    timestamp: String,      // betting_end for active, settled_at for settled
     market_count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    betting_end: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    settlement_deadline: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SourceHistoryQuery {
+    page: Option<u32>,
+    per_page: Option<u32>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
-struct SourceHistoryRow {
+struct SettledHistoryRow {
     batch_id: i64,
-    market_count: Option<i32>,
-    betting_end: chrono::DateTime<chrono::Utc>,
+    settled_at: chrono::DateTime<chrono::Utc>,
     player_count: Option<i64>,
     total_deposited: Option<String>,
     total_pnl: Option<String>,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+struct ActiveLifecycleRow {
+    batch_id: i64,
+    market_count: Option<i32>,
+    betting_end: chrono::DateTime<chrono::Utc>,
+    settlement_deadline: chrono::DateTime<chrono::Utc>,
+    player_count: Option<i32>,
+    total_deposited: Option<String>,
+}
+
 async fn source_batch_history(
     State(state): State<Arc<VisionState>>,
     Path(source_id): Path<String>,
+    Query(query): Query<SourceHistoryQuery>,
 ) -> impl IntoResponse {
-    // Query settled rounds from vision_round_players, getting source from
-    // vision_batch_lifecycle (plain-text source_id). The lifecycle batch_id
-    // gets updated to the on-chain batch_id in submit_create_batch, but this
-    // update can fail — so we also join vision_positions (which always has
-    // the on-chain batch_id) back to lifecycle via a subquery.
-    //
-    // Simplest reliable approach: get all batch_ids that belong to this source
-    // from lifecycle, then aggregate round_players for those batches.
-    let rows = sqlx::query_as::<_, SourceHistoryRow>(
-        "WITH source_batches AS (
-             SELECT batch_id FROM vision_batch_lifecycle WHERE source_id = $1
-         )
-         SELECT vrp.batch_id,
-                0 AS market_count,
-                MAX(vrp.settled_at) AS betting_end,
+    let page = query.page.unwrap_or(1).max(1);
+    let per_page = query.per_page.unwrap_or(10).min(50);
+    let offset = ((page - 1) * per_page) as i64;
+    let limit = per_page as i64;
+    let decimals = 1e18_f64;
+    let now = chrono::Utc::now();
+
+    // 1) Active batches (betting or settling) — from lifecycle where not yet settled
+    let active_rows = sqlx::query_as::<_, ActiveLifecycleRow>(
+        "SELECT batch_id, market_count, betting_end, settlement_deadline,
+                player_count, total_deposited
+         FROM vision_batch_lifecycle
+         WHERE source_id = $1 AND settled_at IS NULL
+         ORDER BY batch_id DESC"
+    )
+    .bind(&source_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    let mut entries: Vec<SourceBatchHistoryEntry> = active_rows.into_iter().map(|r| {
+        let status = if now < r.betting_end { "betting" } else { "settling" };
+        let dep: f64 = r.total_deposited.as_deref()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(0.0) / decimals;
+        SourceBatchHistoryEntry {
+            batch_id: r.batch_id,
+            status: status.to_string(),
+            player_count: r.player_count.unwrap_or(0) as i64,
+            total_pool: (dep * 100.0).round() / 100.0,
+            avg_pnl: 0.0,
+            timestamp: r.betting_end.to_rfc3339(),
+            market_count: r.market_count.unwrap_or(0),
+            betting_end: Some(r.betting_end.to_rfc3339()),
+            settlement_deadline: Some(r.settlement_deadline.to_rfc3339()),
+        }
+    }).collect();
+
+    // 2) Settled batches — from round_players aggregated, paginated
+    let total_settled: i64 = sqlx::query_scalar(
+        "SELECT COUNT(DISTINCT vrp.batch_id)::bigint
+         FROM vision_round_players vrp
+         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+         WHERE vbl.source_id = $1"
+    )
+    .bind(&source_id)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
+
+    let settled_rows = sqlx::query_as::<_, SettledHistoryRow>(
+        "SELECT vrp.batch_id,
+                MAX(vrp.settled_at) AS settled_at,
                 COUNT(DISTINCT vrp.player)::bigint AS player_count,
                 SUM(vrp.deposited::numeric)::text AS total_deposited,
                 SUM(vrp.pnl::numeric)::text AS total_pnl
          FROM vision_round_players vrp
-         WHERE vrp.batch_id IN (SELECT batch_id FROM source_batches)
+         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+         WHERE vbl.source_id = $1
          GROUP BY vrp.batch_id
          ORDER BY vrp.batch_id DESC
-         LIMIT 50"
+         LIMIT $2 OFFSET $3"
     )
     .bind(&source_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(&state.pool)
-    .await;
+    .await
+    .unwrap_or_default();
 
-    match rows {
-        Ok(rows) => {
-            let decimals = 1e18_f64;
-            let entries: Vec<SourceBatchHistoryEntry> = rows
-                .into_iter()
-                .map(|r| {
-                    let players = r.player_count.unwrap_or(0);
-                    let total_dep: f64 = r.total_deposited.as_deref()
-                        .and_then(|s| s.parse::<f64>().ok())
-                        .unwrap_or(0.0) / decimals;
-                    let total_pnl: f64 = r.total_pnl.as_deref()
-                        .and_then(|s| s.parse::<f64>().ok())
-                        .unwrap_or(0.0) / decimals;
-                    let avg_pnl = if players > 0 {
-                        total_pnl / players as f64
-                    } else {
-                        0.0
-                    };
-                    SourceBatchHistoryEntry {
-                        batch_id: r.batch_id,
-                        player_count: players,
-                        total_pool: (total_dep * 100.0).round() / 100.0,
-                        avg_pnl: (avg_pnl * 100.0).round() / 100.0,
-                        settled_at: r.betting_end.to_rfc3339(),
-                        market_count: r.market_count.unwrap_or(0),
-                    }
-                })
-                .collect();
+    for r in settled_rows {
+        let players = r.player_count.unwrap_or(0);
+        let total_dep = r.total_deposited.as_deref()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(0.0) / decimals;
+        let total_pnl = r.total_pnl.as_deref()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(0.0) / decimals;
+        let avg_pnl = if players > 0 { total_pnl / players as f64 } else { 0.0 };
 
-            (StatusCode::OK, Json(serde_json::json!({ "batches": entries }))).into_response()
-        }
-        Err(e) => {
-            warn!(source_id = %source_id, error = %e, "source_batch_history query failed");
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("DB error: {e}")))).into_response()
-        }
+        entries.push(SourceBatchHistoryEntry {
+            batch_id: r.batch_id,
+            status: "settled".to_string(),
+            player_count: players,
+            total_pool: (total_dep * 100.0).round() / 100.0,
+            avg_pnl: (avg_pnl * 100.0).round() / 100.0,
+            timestamp: r.settled_at.to_rfc3339(),
+            market_count: 0,
+            betting_end: None,
+            settlement_deadline: None,
+        });
     }
+
+    let total_pages = ((total_settled as f64) / per_page as f64).ceil() as u32;
+
+    (StatusCode::OK, Json(serde_json::json!({
+        "batches": entries,
+        "page": page,
+        "perPage": per_page,
+        "totalSettled": total_settled,
+        "totalPages": total_pages,
+    }))).into_response()
 }
 
 // ---------------------------------------------------------------------------

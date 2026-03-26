@@ -304,15 +304,13 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           />
         )}
 
-        {/* Past rounds — settled batch history for this source */}
-        <BatchHistory sourceId={sourceId} />
-
         {/* Content split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
-          {/* Left: Markets + Leaderboard */}
+          {/* Left: Markets + Leaderboard + History */}
           <div className="flex-1 min-w-0">
             <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} />
             <TopPlayers sourceId={sourceId} />
+            <BatchHistory sourceId={sourceId} />
           </div>
 
           {/* Right: Batch entry panel (300px, sticky) */}

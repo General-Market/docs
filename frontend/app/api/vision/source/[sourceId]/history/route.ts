@@ -2,13 +2,15 @@ import { NextResponse } from 'next/server'
 import { getIssuerVisionUrl } from '@/lib/config'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ sourceId: string }> }
 ) {
   const { sourceId } = await params
+  const { searchParams } = new URL(request.url)
+  const qs = searchParams.toString()
   try {
     const res = await fetch(
-      `${getIssuerVisionUrl()}/vision/source/${encodeURIComponent(sourceId)}/history`,
+      `${getIssuerVisionUrl()}/vision/source/${encodeURIComponent(sourceId)}/history${qs ? `?${qs}` : ''}`,
       { cache: 'no-store', signal: AbortSignal.timeout(10000) }
     )
     if (!res.ok) return NextResponse.json({ batches: [] }, { status: res.status })
