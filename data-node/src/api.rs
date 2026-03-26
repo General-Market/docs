@@ -3112,83 +3112,23 @@ async fn vault_balances(
 async fn vault_balances_inner(
     state: &AppState,
 ) -> Result<Json<VaultBalancesResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // MockBitgetVault is deployed on L3 (not settlement)
-    let l3 = &state.l3_provider;
+    // AP Vault = total AUM across all ITPs (sum of nav * supply per ITP)
+    let nav_snapshots = state.chain_cache.nav.read().await;
 
-    let vault_addr = deployment_addr(&state.deployment, "MockBitgetVault").map_err(|e| rpc_error(e))?;
-    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(l3));
-
-    // Get token addresses from symbol map
-    let token_addrs: Vec<Address> = state.symbol_map.keys()
-        .filter_map(|addr_str| addr_str.parse::<Address>().ok())
+    let mut assets: Vec<VaultAsset> = nav_snapshots.iter()
+        .filter(|n| n.aum_usd > 0.0)
+        .map(|n| VaultAsset {
+            address: n.itp_id.clone(),
+            symbol: n.symbol.clone(),
+            balance: n.total_supply.clone(),
+            price: format!("{:.0}", n.nav_per_share * 1e18),
+            usd_value: n.aum_usd,
+        })
         .collect();
+    drop(nav_snapshots);
 
-    let mut assets: Vec<VaultAsset> = Vec::new();
-
-    for token_addr in &token_addrs {
-        let balance = match vault.get_balance(*token_addr).call().await {
-            Ok(b) if b > U256::zero() => b,
-            _ => continue,
-        };
-
-        let symbol = state.symbol_map
-            .get(&format!("{:?}", token_addr).to_lowercase())
-            .map(|pair| pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string())
-            .unwrap_or_else(|| format!("{:?}", token_addr)[..10].to_string());
-
-        // Get price from live cache or DB
-        let pair = state.symbol_map
-            .get(&format!("{:?}", token_addr).to_lowercase());
-        let price_f64 = if let Some(pair) = pair {
-            let symbol_refs = vec![pair.as_str()];
-            let tickers = state.live_cache.get_prices(&symbol_refs).await;
-            if let Some(ticker) = tickers.get(pair.as_str()) {
-                ticker.last_price.parse::<f64>().unwrap_or(0.0)
-            } else {
-                // Fallback to DB
-                match db::query_latest_prices_batch(&state.pool, &[pair.as_str()]).await {
-                    Ok(rows) => rows.first().and_then(|r| r.price.parse::<f64>().ok()).unwrap_or(0.0),
-                    Err(_) => 0.0,
-                }
-            }
-        } else {
-            0.0
-        };
-
-        let price_wei = format!("{:.0}", price_f64 * 1e18);
-        let balance_f64: f64 = balance.to_string().parse().unwrap_or(0.0);
-        let usd_value = balance_f64 * price_f64 / 1e18;
-
-        assets.push(VaultAsset {
-            address: format!("{:?}", token_addr),
-            symbol,
-            balance: balance.to_string(),
-            price: price_wei,
-            usd_value,
-        });
-    }
-
-    // Check L3 USDC (GM) balance in vault — 18 decimals on L3
-    if let Ok(l3_usdc_addr) = deployment_addr(&state.deployment, "L3_WUSDC") {
-        let usdc_token = ERC20Reader::new(l3_usdc_addr, Arc::clone(l3));
-        if let Ok(usdc_balance) = usdc_token.balance_of(vault_addr).call().await {
-            if usdc_balance > U256::zero() {
-                let usdc_f64: f64 = usdc_balance.to_string().parse().unwrap_or(0.0);
-                assets.push(VaultAsset {
-                    address: format!("{:?}", l3_usdc_addr),
-                    symbol: "USDC".to_string(),
-                    balance: usdc_balance.to_string(),
-                    price: "1000000000000000000".to_string(), // $1 in wei
-                    usd_value: usdc_f64 / 1e18, // L3 USDC = 18 decimals
-                });
-            }
-        }
-    }
-
-    // Sort by USD value descending
     assets.sort_by(|a, b| b.usd_value.partial_cmp(&a.usd_value).unwrap_or(std::cmp::Ordering::Equal));
 
-    // AUM = total vault value across all held assets
     let total_usd: f64 = assets.iter().map(|a| a.usd_value).sum();
     let token_count = assets.len();
 
@@ -6128,18 +6068,14 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     let is_healthy = active_oracles > 0 && last_cycle_number > 0;
 
-    // Fetch vault asset balances from L3 (MockBitgetVault is on L3, not settlement)
-    let vault_result = tokio::time::timeout(
-        std::time::Duration::from_secs(60),
-        build_vault_snapshot(state, &state.l3_provider),
-    ).await;
-    let (vault_assets, vault_usd_total) = match vault_result {
-        Ok((assets, total)) => (assets, total),
-        Err(_) => {
-            tracing::warn!("system_snapshot: vault snapshot timed out after 60s");
-            (vec![], 0.0)
-        }
-    };
+    // AP Vault = total AUM across all ITPs (sum of nav * supply per ITP)
+    let nav_snapshots = cache.nav.read().await;
+    let vault_usd_total: f64 = nav_snapshots.iter().map(|n| n.aum_usd).sum();
+    let vault_assets: Vec<VaultAssetInfo> = nav_snapshots.iter()
+        .filter(|n| n.aum_usd > 0.0)
+        .map(|n| VaultAssetInfo { symbol: n.symbol.clone(), usd_value: n.aum_usd })
+        .collect();
+    drop(nav_snapshots);
 
     SystemSnapshot {
         is_healthy,
@@ -6155,66 +6091,6 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         vault_assets,
         vault_usd_total,
     }
-}
-
-async fn build_vault_snapshot(state: &AppState, settlement: &Arc<Provider<Http>>) -> (Vec<VaultAssetInfo>, f64) {
-    let vault_addr = match deployment_addr(&state.deployment, "MockBitgetVault") {
-        Ok(a) => a,
-        Err(_) => return (vec![], 0.0),
-    };
-    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(settlement));
-
-    let token_addrs: Vec<Address> = state.symbol_map.keys()
-        .filter_map(|addr_str| addr_str.parse::<Address>().ok())
-        .collect();
-
-    let mut assets: Vec<VaultAssetInfo> = Vec::new();
-    let mut total_usd = 0.0;
-
-    for token_addr in &token_addrs {
-        let balance = match vault.get_balance(*token_addr).call().await {
-            Ok(b) if b > U256::zero() => b,
-            _ => continue,
-        };
-
-        let symbol = state.symbol_map
-            .get(&format!("{:?}", token_addr).to_lowercase())
-            .map(|pair| pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string())
-            .unwrap_or_else(|| format!("{:?}", token_addr)[..10].to_string());
-
-        let pair = state.symbol_map.get(&format!("{:?}", token_addr).to_lowercase());
-        let price_f64 = if let Some(pair) = pair {
-            let symbol_refs = vec![pair.as_str()];
-            let tickers = state.live_cache.get_prices(&symbol_refs).await;
-            if let Some(ticker) = tickers.get(pair.as_str()) {
-                ticker.last_price.parse::<f64>().unwrap_or(0.0)
-            } else {
-                match db::query_latest_prices_batch(&state.pool, &[pair.as_str()]).await {
-                    Ok(rows) => rows.first().and_then(|r| r.price.parse::<f64>().ok()).unwrap_or(0.0),
-                    Err(_) => 0.0,
-                }
-            }
-        } else {
-            0.0
-        };
-
-        let balance_f64: f64 = balance.to_string().parse().unwrap_or(0.0);
-        let usd_value = balance_f64 * price_f64 / 1e18;
-
-        // Sanity cap: skip assets with unrealistic test-chain balances (>$100M)
-        if usd_value > 100_000_000.0 {
-            continue;
-        }
-
-        total_usd += usd_value;
-        assets.push(VaultAssetInfo { symbol, usd_value });
-    }
-
-    // Sort by USD value descending, keep top 10
-    assets.sort_by(|a, b| b.usd_value.partial_cmp(&a.usd_value).unwrap_or(std::cmp::Ordering::Equal));
-    assets.truncate(10);
-
-    (assets, total_usd)
 }
 
 fn empty_snapshot() -> SystemSnapshot {
