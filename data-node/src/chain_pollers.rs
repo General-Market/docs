@@ -945,42 +945,47 @@ pub async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn s
 /// Also reconciles stale pending orders: if an order has been pending > 60s,
 /// check on-chain status via L3 RPC and update the DB if it's no longer pending.
 pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Reconcile: check on-chain status for orders pending > 60s
-    let stale_rows = sqlx::query_as::<_, (i64,)>(
-        "SELECT order_id FROM trades WHERE status = 0 \
-         AND order_timestamp < NOW() - INTERVAL '60 seconds' \
-         ORDER BY order_id DESC LIMIT 20"
-    )
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    // Reconcile stale pending orders every ~30 polls (30s at 1s interval).
+    // Uses a static counter to avoid running on every poll cycle.
+    {
+        static RECONCILE_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let tick = RECONCILE_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if tick % 30 == 0 {
+            let stale_rows = sqlx::query_as::<_, (i64,)>(
+                "SELECT order_id FROM trades WHERE status = 0 \
+                 AND order_timestamp < NOW() - INTERVAL '60 seconds' \
+                 ORDER BY order_id DESC LIMIT 5"
+            )
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default();
 
-    if !stale_rows.is_empty() {
-        {
-            let index_addr: ethers::types::Address = state.deployment["contracts"]["Index"]
-                .as_str()
-                .and_then(|s| s.parse().ok())
-                .unwrap_or_default();
-            for (order_id,) in &stale_rows {
-                let calldata = format!("0x8f216830{:064x}", order_id);
-                let tx = ethers::types::transaction::eip2718::TypedTransaction::Legacy(
-                    ethers::types::TransactionRequest::new()
-                        .to(index_addr)
-                        .data(ethers::types::Bytes::from(hex::decode(&calldata[2..]).unwrap_or_default()))
-                );
-                if let Ok(result) = state.l3_provider.call(&tx, None).await {
-                    let hex_str = hex::encode(&result);
-                    if hex_str.len() >= 64 {
-                        let status_hex = &hex_str[hex_str.len() - 2..];
-                        let on_chain_status = u8::from_str_radix(status_hex, 16).unwrap_or(0);
-                        if on_chain_status > 0 {
-                            sqlx::query("UPDATE trades SET status = $1 WHERE order_id = $2")
-                                .bind(on_chain_status as i16)
-                                .bind(*order_id)
-                                .execute(&state.pool)
-                                .await
-                                .ok();
-                            tracing::info!(order_id, on_chain_status, "Reconciled stale pending order");
+            if !stale_rows.is_empty() {
+                let index_addr: ethers::types::Address = state.deployment["contracts"]["Index"]
+                    .as_str()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or_default();
+                for (order_id,) in &stale_rows {
+                    let calldata = format!("0x8f216830{:064x}", order_id);
+                    let tx = ethers::types::transaction::eip2718::TypedTransaction::Legacy(
+                        ethers::types::TransactionRequest::new()
+                            .to(index_addr)
+                            .data(ethers::types::Bytes::from(hex::decode(&calldata[2..]).unwrap_or_default()))
+                    );
+                    if let Ok(result) = state.l3_provider.call(&tx, None).await {
+                        let hex_str = hex::encode(&result);
+                        if hex_str.len() >= 64 {
+                            let status_hex = &hex_str[hex_str.len() - 2..];
+                            let on_chain_status = u8::from_str_radix(status_hex, 16).unwrap_or(0);
+                            if on_chain_status > 0 {
+                                sqlx::query("UPDATE trades SET status = $1 WHERE order_id = $2")
+                                    .bind(on_chain_status as i16)
+                                    .bind(*order_id)
+                                    .execute(&state.pool)
+                                    .await
+                                    .ok();
+                                tracing::info!(order_id, on_chain_status, "Reconciled stale pending order");
+                            }
                         }
                     }
                 }
