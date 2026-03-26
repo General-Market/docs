@@ -6890,37 +6890,69 @@ async fn sse_chain_events(
         .topics
         .map(|t| t.split(',').map(|s| s.trim().to_string()).collect());
 
+    tracing::info!(
+        client_ip = ?ip,
+        topics = ?topics,
+        receivers = state.chain_event_tx.receiver_count(),
+        "SSE chain-events client connected"
+    );
+
     let mut rx = state.chain_event_tx.subscribe();
     let (tx, mpsc_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     tokio::spawn(async move {
         let _guard = guard;
+        // Send heartbeat as a real SSE event (not a comment) so that
+        // reqwest_eventsource-based clients see it and reset their
+        // liveness timer.  The Axum KeepAlive comment (`: ping`) is
+        // invisible to compliant SSE parsers that only yield Message events.
+        let mut heartbeat = tokio::time::interval(Duration::from_secs(15));
+        heartbeat.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        // consume the first immediate tick
+        heartbeat.tick().await;
+
         loop {
-            match rx.recv().await {
-                Ok(envelope) => {
-                    // Filter by topic if topics specified
-                    if let Some(ref topic_list) = topics {
-                        if !topic_list.contains(&envelope.event_type) {
+            tokio::select! {
+                result = rx.recv() => {
+                    match result {
+                        Ok(envelope) => {
+                            // Filter by topic if topics specified
+                            if let Some(ref topic_list) = topics {
+                                if !topic_list.contains(&envelope.event_type) {
+                                    continue;
+                                }
+                            }
+                            let json = serde_json::to_string(&envelope).unwrap_or_default();
+                            if tx
+                                .send(Ok(Event::default()
+                                    .event(&envelope.event_type)
+                                    .data(json)))
+                                .await
+                                .is_err()
+                            {
+                                break;
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                            let prev = state.chain_event_lag_total.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
+                            tracing::warn!(lagged = n, cumulative = prev + n, "SSE chain-events consumer lagged");
                             continue;
                         }
+                        Err(_) => break,
                     }
-                    let json = serde_json::to_string(&envelope).unwrap_or_default();
+                }
+                _ = heartbeat.tick() => {
+                    // Real SSE event — not a comment — so reqwest_eventsource yields it.
                     if tx
                         .send(Ok(Event::default()
-                            .event(&envelope.event_type)
-                            .data(json)))
+                            .event("heartbeat")
+                            .data("{}")))
                         .await
                         .is_err()
                     {
                         break;
                     }
                 }
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                    let prev = state.chain_event_lag_total.fetch_add(n, std::sync::atomic::Ordering::Relaxed);
-                    tracing::warn!(lagged = n, cumulative = prev + n, "SSE chain-events consumer lagged");
-                    continue;
-                }
-                Err(_) => break,
             }
         }
     });

@@ -286,6 +286,16 @@ async fn scan_loop(
         return;
     }
 
+    info!(
+        contract = ?index_addr,
+        topics = topic0_filter.len(),
+        reorg_buffer,
+        poll_ms = poll_interval.as_millis() as u64,
+        "L3 event scanner running"
+    );
+
+    let mut ticks_since_log: u64 = 0;
+
     loop {
         tokio::time::sleep(poll_interval).await;
 
@@ -300,6 +310,19 @@ async fn scan_loop(
         // Apply reorg buffer — don't scan blocks that might be reorged
         let safe_head = latest.saturating_sub(reorg_buffer);
         if safe_head <= cursor {
+            ticks_since_log += 1;
+            // Periodic heartbeat so operators know the scanner is alive
+            if ticks_since_log >= 60 {
+                info!(
+                    chain = %chain,
+                    cursor,
+                    latest,
+                    safe_head,
+                    receivers = event_tx.receiver_count(),
+                    "L3 scanner alive — no new blocks in last 60 ticks"
+                );
+                ticks_since_log = 0;
+            }
             continue; // no new finalized blocks
         }
 
@@ -315,12 +338,13 @@ async fn scan_loop(
         match provider.get_logs(&filter).await {
             Ok(logs) => {
                 if !logs.is_empty() {
-                    debug!(
+                    info!(
                         chain = %chain,
                         count = logs.len(),
                         from = from_block,
                         to = to_block,
-                        "Scanned L3 events"
+                        receivers = event_tx.receiver_count(),
+                        "L3 event scanner found events"
                     );
                 }
 
@@ -343,13 +367,25 @@ async fn scan_loop(
                             data: log_to_json(log),
                         };
 
-                        // broadcast::send returns Err only if there are no receivers,
-                        // which is fine — just means nobody is listening yet.
-                        let _ = event_tx.send(envelope);
+                        let send_result = event_tx.send(envelope);
+                        match send_result {
+                            Ok(n) => {
+                                info!(
+                                    event_type,
+                                    block = log.block_number.map(|b| b.as_u64()).unwrap_or(0),
+                                    receivers = n,
+                                    "Broadcast chain event"
+                                );
+                            }
+                            Err(_) => {
+                                debug!(event_type, "Broadcast chain event — no receivers");
+                            }
+                        }
                     }
                 }
 
                 cursor = to_block;
+                ticks_since_log = 0;
             }
             Err(e) => {
                 warn!(
@@ -361,6 +397,19 @@ async fn scan_loop(
                 );
                 // Don't advance cursor — retry same range next tick
             }
+        }
+
+        ticks_since_log += 1;
+        // Periodic heartbeat every ~60s even when scanning normally
+        if ticks_since_log >= 60 {
+            info!(
+                chain = %chain,
+                cursor,
+                latest,
+                receivers = event_tx.receiver_count(),
+                "L3 scanner alive"
+            );
+            ticks_since_log = 0;
         }
     }
 }
@@ -399,6 +448,16 @@ async fn scan_settlement_loop(
         watch_addrs.push(custody_addr);
     }
 
+    info!(
+        contracts = watch_addrs.len(),
+        topics = topic0_filter.len(),
+        reorg_buffer,
+        poll_ms = poll_interval.as_millis() as u64,
+        "Settlement event scanner running"
+    );
+
+    let mut ticks_since_log: u64 = 0;
+
     loop {
         tokio::time::sleep(poll_interval).await;
 
@@ -412,6 +471,11 @@ async fn scan_settlement_loop(
 
         let safe_head = latest.saturating_sub(reorg_buffer);
         if safe_head <= cursor {
+            ticks_since_log += 1;
+            if ticks_since_log >= 60 {
+                info!(cursor, latest, safe_head, "Settlement scanner alive — no new blocks in last 60 ticks");
+                ticks_since_log = 0;
+            }
             continue;
         }
 
@@ -429,11 +493,12 @@ async fn scan_settlement_loop(
         match provider.get_logs(&filter).await {
             Ok(logs) => {
                 if !logs.is_empty() {
-                    debug!(
+                    info!(
                         count = logs.len(),
                         from = from_block,
                         to = to_block,
-                        "Scanned settlement events"
+                        receivers = event_tx.receiver_count(),
+                        "Settlement scanner found events"
                     );
                 }
 
@@ -455,7 +520,15 @@ async fn scan_settlement_loop(
                             block_number: log.block_number.map(|b| b.as_u64()).unwrap_or(0),
                             data: log_to_json(log),
                         };
-                        let _ = event_tx.send(envelope);
+                        let send_result = event_tx.send(envelope);
+                        match send_result {
+                            Ok(n) => {
+                                info!(event_type, block = log.block_number.map(|b| b.as_u64()).unwrap_or(0), receivers = n, "Broadcast settlement event");
+                            }
+                            Err(_) => {
+                                debug!(event_type, "Broadcast settlement event — no receivers");
+                            }
+                        }
                     }
                 }
 
@@ -469,6 +542,12 @@ async fn scan_settlement_loop(
                     "get_logs failed for settlement, will retry next tick"
                 );
             }
+        }
+
+        ticks_since_log += 1;
+        if ticks_since_log >= 60 {
+            info!(cursor, latest, receivers = event_tx.receiver_count(), "Settlement scanner alive");
+            ticks_since_log = 0;
         }
     }
 }

@@ -124,6 +124,11 @@ impl SseChainEventClient {
                             debug!("SSE connection opened");
                         }
                         Ok(SseEvent::Message(msg)) => {
+                            // Heartbeat events keep the connection alive —
+                            // their mere arrival resets the liveness timer.
+                            if msg.event == "heartbeat" {
+                                continue;
+                            }
                             if let Some(chain_event) = self.parse_sse_event(&msg.event, &msg.data) {
                                 if tx.send(chain_event).await.is_err() {
                                     return Ok(()); // Channel closed
