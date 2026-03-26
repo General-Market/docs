@@ -310,7 +310,13 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           <div className="flex-1 min-w-0">
             <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} />
             <TopPlayers sourceId={sourceId} />
-            <BatchHistory sourceId={sourceId} />
+            <BatchHistory
+              sourceId={sourceId}
+              activeBatchId={activeBatch?.id}
+              bettingEnd={activeRound?.bettingEnd ?? null}
+              playerCount={activeBatch?.playerCount ?? activeRound?.playerCount}
+              tvl={activeBatch?.tvl}
+            />
           </div>
 
           {/* Right: Batch entry panel (300px, sticky) */}

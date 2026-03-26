@@ -2032,21 +2032,17 @@ async fn player_profile(
 // GET /vision/source/:source_id/history
 // ---------------------------------------------------------------------------
 
-/// Source batch history entry — settled, settling, or betting.
+/// Source batch history entry — always settled.
+/// Active batch info is injected client-side from the scheduler.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct SourceBatchHistoryEntry {
     batch_id: i64,
-    status: String,         // "betting", "settling", "settled"
+    status: String,
     player_count: i64,
     total_pool: f64,
     avg_pnl: f64,
-    timestamp: String,      // betting_end for active, settled_at for settled
-    market_count: i32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    betting_end: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    settlement_deadline: Option<String>,
+    timestamp: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2064,16 +2060,6 @@ struct SettledHistoryRow {
     total_pnl: Option<String>,
 }
 
-#[derive(Debug, sqlx::FromRow)]
-struct ActiveLifecycleRow {
-    batch_id: i64,
-    market_count: Option<i32>,
-    betting_end: chrono::DateTime<chrono::Utc>,
-    settlement_deadline: chrono::DateTime<chrono::Utc>,
-    player_count: Option<i32>,
-    total_deposited: Option<String>,
-}
-
 async fn source_batch_history(
     State(state): State<Arc<VisionState>>,
     Path(source_id): Path<String>,
@@ -2084,43 +2070,12 @@ async fn source_batch_history(
     let offset = ((page - 1) * per_page) as i64;
     let limit = per_page as i64;
     let decimals = 1e18_f64;
-    let now = chrono::Utc::now();
 
-    // 1) Active batches (betting or settling) — from lifecycle where not yet settled
-    //    Only include recent ones (settlement_deadline within last 2h or future)
-    //    to avoid showing stale lifecycle entries that never got settled_at set.
-    let active_rows = sqlx::query_as::<_, ActiveLifecycleRow>(
-        "SELECT batch_id, market_count, betting_end, settlement_deadline,
-                player_count, total_deposited
-         FROM vision_batch_lifecycle
-         WHERE source_id = $1 AND settled_at IS NULL
-           AND settlement_deadline > NOW() - INTERVAL '2 hours'
-         ORDER BY betting_end DESC"
-    )
-    .bind(&source_id)
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    // Active batch is injected client-side from the scheduler (always accurate).
+    // This endpoint only returns settled batches, ordered by settlement time.
+    let mut entries: Vec<SourceBatchHistoryEntry> = Vec::new();
 
-    let mut entries: Vec<SourceBatchHistoryEntry> = active_rows.into_iter().map(|r| {
-        let status = if now < r.betting_end { "betting" } else { "settling" };
-        let dep: f64 = r.total_deposited.as_deref()
-            .and_then(|s| s.parse::<f64>().ok())
-            .unwrap_or(0.0) / decimals;
-        SourceBatchHistoryEntry {
-            batch_id: r.batch_id,
-            status: status.to_string(),
-            player_count: r.player_count.unwrap_or(0) as i64,
-            total_pool: (dep * 100.0).round() / 100.0,
-            avg_pnl: 0.0,
-            timestamp: r.betting_end.to_rfc3339(),
-            market_count: r.market_count.unwrap_or(0),
-            betting_end: Some(r.betting_end.to_rfc3339()),
-            settlement_deadline: Some(r.settlement_deadline.to_rfc3339()),
-        }
-    }).collect();
-
-    // 2) Settled batches — from round_players aggregated, paginated
+    // Settled batches — from round_players aggregated, paginated
     let total_settled: i64 = sqlx::query_scalar(
         "SELECT COUNT(DISTINCT vrp.batch_id)::bigint
          FROM vision_round_players vrp
@@ -2169,9 +2124,6 @@ async fn source_batch_history(
             total_pool: (total_dep * 100.0).round() / 100.0,
             avg_pnl: (avg_pnl * 100.0).round() / 100.0,
             timestamp: r.settled_at.to_rfc3339(),
-            market_count: 0,
-            betting_end: None,
-            settlement_deadline: None,
         });
     }
 
