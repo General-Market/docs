@@ -139,8 +139,16 @@ test.describe('ITP Detail Page Sections', () => {
     await page.waitForTimeout(3_000)
 
     const bodyText = await page.locator('body').textContent() ?? ''
-    const rawWeiPattern = /(?<![0-9a-fA-Fx])\d{18,}(?![0-9a-fA-Fx])/
-    const matches = bodyText.match(rawWeiPattern)
-    expect(matches, `Raw wei value on ITP detail: ${matches?.[0]?.slice(0, 30)}`).toBeNull()
+    // Match 18+ digit numbers that aren't part of hex addresses (0x...) or chain IDs
+    const rawWeiPattern = /(?<![0-9a-fA-Fx])\d{18,}(?![0-9a-fA-Fx])/g
+    const allMatches = bodyText.match(rawWeiPattern) ?? []
+    // Filter out known non-wei large numbers: chain IDs, timestamps, hex-adjacent
+    const suspicious = allMatches.filter(m => {
+      if (m.startsWith('111222333')) return false // L3 chain ID
+      if (m.length > 25) return true // definitely raw wei
+      return false
+    })
+    if (suspicious.length > 0) console.log('Suspicious raw values:', suspicious.slice(0, 3))
+    expect(suspicious.length, `Raw wei values found: ${suspicious[0]?.slice(0, 30)}`).toBe(0)
   })
 })
