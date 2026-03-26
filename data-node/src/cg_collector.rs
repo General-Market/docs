@@ -283,35 +283,61 @@ async fn snapshot_from_live_prices(
 
     // Fallback: copy the most recent full snapshot to today's date.
     // This gives stale prices but keeps the chart extending to today.
-    let result = sqlx::query(
-        "INSERT INTO coingecko_market_caps
-            (coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)
-         SELECT
-            coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank,
-            $1::date
-         FROM coingecko_market_caps
-         WHERE snapshot_date = (
-            SELECT MAX(snapshot_date) FROM coingecko_market_caps
-            WHERE snapshot_date < $1::date
-              AND (SELECT COUNT(*) FROM coingecko_market_caps c2 WHERE c2.snapshot_date = coingecko_market_caps.snapshot_date) >= 3000
-         )
-         ON CONFLICT (coin_id, snapshot_date) DO UPDATE SET
-            market_cap_usd = EXCLUDED.market_cap_usd,
-            price_usd = EXCLUDED.price_usd,
-            total_volume_usd = EXCLUDED.total_volume_usd,
-            market_cap_rank = EXCLUDED.market_cap_rank,
-            fetched_at = NOW()"
+    // Step 1: find the most recent date with a full snapshot (>= 3000 rows)
+    let source_date = sqlx::query_scalar::<_, NaiveDate>(
+        "SELECT snapshot_date FROM coingecko_market_caps
+         WHERE snapshot_date < $1
+         GROUP BY snapshot_date
+         HAVING COUNT(*) >= 3000
+         ORDER BY snapshot_date DESC
+         LIMIT 1"
     )
     .bind(snapshot_date)
-    .execute(pool)
+    .fetch_optional(pool)
     .await?;
 
+    let source_date = match source_date {
+        Some(d) => d,
+        None => {
+            warn!("No full snapshot found to copy from");
+            return Ok(0);
+        }
+    };
+    info!(%source_date, %snapshot_date, "Copying snapshot from source date");
+
+    // Step 2: use cg_batch_upsert_market_caps (which handles ON CONFLICT correctly)
+    let rows: Vec<db::CgMarketCapRow> = sqlx::query_as::<_, (String, Option<String>, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<i32>)>(
+        "SELECT coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank
+         FROM coingecko_market_caps
+         WHERE snapshot_date = $1"
+    )
+    .bind(source_date)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|(coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank)| {
+        db::CgMarketCapRow {
+            coin_id,
+            symbol,
+            name,
+            market_cap_usd,
+            price_usd,
+            total_volume_usd,
+            market_cap_rank,
+            snapshot_date,
+        }
+    })
+    .collect();
+
+    let inserted = db::cg_batch_upsert_market_caps(pool, &rows).await?;
+
     info!(
-        rows = result.rows_affected(),
+        inserted,
+        %source_date,
         %snapshot_date,
         "Snapshot copied from most recent full snapshot (live prices unavailable)"
     );
-    Ok(result.rows_affected())
+    Ok(inserted)
 }
 
 /// Fetch all categories from CoinGecko and upsert into DB.
