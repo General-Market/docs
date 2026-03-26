@@ -139,11 +139,34 @@ class Tracker:
         deposit = int(self._config.get("deposit", 10) * 10**18)
         stake = int(self._config.get("stake", 1) * 10**18)
 
-        # Generate predictions
+        # Generate predictions using real market data from data-node
         from framework.core import encode_bitmap, hash_bitmap
+        from framework.chain import fetch_batch_config, fetch_markets
         market_count = batch.get("marketCount", batch.get("market_count", 10))
-        markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+
+        # Try to fetch real market config and prices for informed predictions
+        market_ids = []
+        config_hash_hex = ""
+        if isinstance(config_hash, bytes):
+            config_hash_hex = "0x" + config_hash.hex()
+        elif isinstance(config_hash, str):
+            config_hash_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
+
+        if config_hash_hex:
+            batch_cfg = fetch_batch_config(self._config.get("data_node", ""), config_hash_hex)
+            if batch_cfg and batch_cfg.get("markets"):
+                market_ids = [m["assetId"] for m in batch_cfg["markets"]]
+                market_count = len(market_ids)
+
+        if market_ids:
+            markets = fetch_markets(self._config.get("data_node", ""), market_ids)
+        else:
+            markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+
         bets = strategy.predict(markets) if strategy else [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
+        ups = sum(1 for b in bets if b == "UP")
+        log.info("Batch %d: strategy=%s, %d UP / %d DOWN (real_data=%s)",
+                 batch_id, getattr(strategy, 'name', '?'), ups, len(bets) - ups, bool(market_ids))
         bitmap = encode_bitmap(bets, market_count)
         bitmap_hash = hash_bitmap(bitmap)
 

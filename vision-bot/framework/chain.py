@@ -502,6 +502,8 @@ def fetch_markets(data_node_url: str, market_ids: list[str]) -> list[dict]:
     """
     GET /vision/snapshot from data-node.
     Returns list of dicts matching Strategy.predict() input format.
+
+    Data-node returns: {"snapshots": [{"asset_id": ..., "value": ..., "change_pct": ..., ...}]}
     """
     default = [
         {"id": mid, "price": 0, "change": None, "volume": None, "market_cap": None}
@@ -511,20 +513,42 @@ def fetch_markets(data_node_url: str, market_ids: list[str]) -> list[dict]:
         resp = requests.get(f"{data_node_url}/vision/snapshot", timeout=10)
         if resp.ok:
             data = resp.json()
-            by_id = {m["id"]: m for m in data.get("markets", [])}
+            # Data-node uses "snapshots" key with "asset_id" field (not "markets"/"id")
+            snapshots = data.get("snapshots", data.get("markets", []))
+            by_id = {}
+            for m in snapshots:
+                aid = m.get("asset_id", m.get("id", ""))
+                if aid:
+                    by_id[aid] = m
             result = []
+            matched = 0
             for mid in market_ids:
                 if mid in by_id:
                     m = by_id[mid]
+                    # Map data-node fields to strategy format:
+                    # value → price, change_pct → change, volume_24h → volume
+                    price = m.get("value", m.get("price", 0))
+                    if isinstance(price, str):
+                        try:
+                            price = float(price)
+                        except ValueError:
+                            price = 0
+                    change = m.get("change_pct", m.get("change"))
+                    if isinstance(change, str):
+                        try:
+                            change = float(change)
+                        except ValueError:
+                            change = None
                     result.append(
                         {
                             "id": mid,
-                            "price": m.get("price", 0),
-                            "change": m.get("change"),
-                            "volume": m.get("volume"),
+                            "price": price,
+                            "change": change,
+                            "volume": m.get("volume_24h", m.get("volume")),
                             "market_cap": m.get("market_cap"),
                         }
                     )
+                    matched += 1
                 else:
                     result.append(
                         {
@@ -535,7 +559,9 @@ def fetch_markets(data_node_url: str, market_ids: list[str]) -> list[dict]:
                             "market_cap": None,
                         }
                     )
+            if matched > 0:
+                logger.info("Fetched %d/%d market prices from data-node", matched, len(market_ids))
             return result
-    except requests.RequestException:
-        pass
+    except requests.RequestException as e:
+        logger.debug("Snapshot fetch failed: %s", e)
     return default

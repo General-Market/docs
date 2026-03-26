@@ -34,9 +34,10 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
     log = logging.getLogger(f"swarm-{bot_id}")
     log = logging.LoggerAdapter(log, {"bot_id": str(bot_id)})
 
-    # Set env vars that bot.py expects
+    # Thread-safe: set BOT_PRIVATE_KEY BEFORE any import that reads it (strategy seeding).
+    # os.environ is process-global, but the 3s stagger + immediate strategy init makes
+    # this safe in practice. We set it here so RandomStrategy/Biased can seed per-bot.
     os.environ["BOT_PRIVATE_KEY"] = private_key
-    # We can't set per-thread env vars, so we import and configure directly.
 
     try:
         from framework.core import RiskCheck, encode_bitmap, hash_bitmap, load_config, load_strategy
@@ -48,6 +49,8 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
         cfg["strategy"] = strategy
         cfg["stake"] = stake
 
+        # Strategy must be loaded IMMEDIATELY after setting BOT_PRIVATE_KEY
+        # (before next thread overwrites it). The 3s stagger makes this safe.
         strat = load_strategy(strategy)
 
         deploy = load_deployment()
