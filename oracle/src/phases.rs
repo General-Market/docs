@@ -160,6 +160,10 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
 {
     /// Max age before skipping a stale ITP creation request (1 hour)
     const MAX_REQUEST_AGE: std::time::Duration = std::time::Duration::from_secs(3600);
+    /// Max creation requests to process per cycle (prevent Phase A from monopolizing)
+    const MAX_CREATIONS_PER_CYCLE: usize = 2;
+    /// Skip nonce after this many consecutive failures
+    const CREATION_FAIL_THRESHOLD: u32 = 3;
 
     match settlement_reader.get_all_pending_requests().await {
         Ok(pending_requests) => {
@@ -167,8 +171,14 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                 info!(cycle = current_cycle, count = pending_requests.len(), "Found pending ITP creation requests");
 
                 let am_leader = calculate_bridge_leader(current_cycle, num_oracles, node_index);
+                let mut processed_this_cycle = 0usize;
 
                 for request in pending_requests {
+                    if processed_this_cycle >= MAX_CREATIONS_PER_CYCLE {
+                        debug!(cycle = current_cycle, "Reached max ITP creations per cycle, deferring rest");
+                        break;
+                    }
+
                     // Track first-seen time for staleness detection
                     let seen_at = {
                         let mut fs = first_seen.lock().await;
@@ -240,6 +250,7 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                             warn!(nonce = %request.nonce, error = %e, "ITP creation consensus failed");
                         }
                     }
+                    processed_this_cycle += 1;
                 }
             }
         }

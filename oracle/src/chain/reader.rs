@@ -138,7 +138,8 @@ impl EthersChainReader<Provider<Http>> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
             .map_err(|e| Error::ChainRead(format!("Failed to create provider: {}", e)))?;
 
-        let initial_cursor = config.from_block.unwrap_or(0);
+        // 2-hour lookback (7200 blocks at 1s/block) to catch orders submitted during downtime
+        let initial_cursor = config.from_block.unwrap_or(0).saturating_sub(7200);
         Ok(Self {
             provider: Arc::new(provider),
             config,
@@ -156,7 +157,7 @@ impl<M: Middleware> EthersChainReader<M> {
     ///
     /// Useful for testing or when using custom middleware (e.g., signing middleware)
     pub fn with_provider(provider: Arc<M>, config: ChainReaderConfig) -> Self {
-        let initial_cursor = config.from_block.unwrap_or(0);
+        let initial_cursor = config.from_block.unwrap_or(0).saturating_sub(7200);
         Self {
             provider,
             config,

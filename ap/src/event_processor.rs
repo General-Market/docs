@@ -215,6 +215,17 @@ pub(crate) async fn process_events(
                     });
                 }
                 APEvent::AssetTradeRequest(asset_trade) => {
+                    // DISABLED: FillConfirmed path handles per-asset decomposition instead.
+                    // Running both paths causes double trades (different trade IDs, no cross-dedup).
+                    // Re-enable when cross-ITP netting is needed at scale.
+                    info!(
+                        cycle = asset_trade.cycle_number,
+                        asset = ?asset_trade.asset,
+                        "AssetTradeRequest received but SKIPPED (FillConfirmed handles trades)"
+                    );
+                    continue;
+                    #[allow(unreachable_code)]
+                    {
                     // Oracle-driven per-asset trade after cross-ITP netting.
                     // All trade info comes from the event — AP reads NO on-chain state.
                     info!(
@@ -515,6 +526,7 @@ pub(crate) async fn process_events(
                             );
                         }
                     });
+                    } // end unreachable AssetTradeRequest block
                 }
                 APEvent::WithdrawalRequest(withdrawal) => {
                     warn!(
