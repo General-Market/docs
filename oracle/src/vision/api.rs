@@ -2087,12 +2087,15 @@ async fn source_batch_history(
     let now = chrono::Utc::now();
 
     // 1) Active batches (betting or settling) — from lifecycle where not yet settled
+    //    Only include recent ones (settlement_deadline within last 2h or future)
+    //    to avoid showing stale lifecycle entries that never got settled_at set.
     let active_rows = sqlx::query_as::<_, ActiveLifecycleRow>(
         "SELECT batch_id, market_count, betting_end, settlement_deadline,
                 player_count, total_deposited
          FROM vision_batch_lifecycle
          WHERE source_id = $1 AND settled_at IS NULL
-         ORDER BY batch_id DESC"
+           AND settlement_deadline > NOW() - INTERVAL '2 hours'
+         ORDER BY betting_end DESC"
     )
     .bind(&source_id)
     .fetch_all(&state.pool)
@@ -2139,7 +2142,7 @@ async fn source_batch_history(
          JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
          WHERE vbl.source_id = $1
          GROUP BY vrp.batch_id
-         ORDER BY vrp.batch_id DESC
+         ORDER BY MAX(vrp.settled_at) DESC
          LIMIT $2 OFFSET $3"
     )
     .bind(&source_id)
