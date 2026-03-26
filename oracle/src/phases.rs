@@ -731,11 +731,17 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 trades
             };
 
-            // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
-            // Track which orders are confirmed — only confirmed orders proceed to fills.
-            // ALL orders MUST go through completeBuyOrder to release USDC to the AP for
-            // actual underlying asset purchases. Skipping this mints unbacked ITP shares.
-            let cbo_confirmed_orders: Vec<ethers::types::U256> = {
+            // completeBuyOrder: only needed for bridge orders (USDC on Settlement).
+            // L3 direct orders lock USDC atomically in submitOrder — CBO is unnecessary.
+            let is_l3_direct = target_orders.is_none() && {
+                let o = orchestrator.read().await;
+                o.get_submitted_bridged_orders().await.is_empty()
+            };
+            let cbo_confirmed_orders: Vec<ethers::types::U256> = if is_l3_direct {
+                info!(cycle = current_cycle, count = submitted_orders.len(),
+                    "L3 direct orders: skipping completeBuyOrder (USDC locked atomically)");
+                submitted_orders.clone()
+            } else {
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
                 for order_id in &submitted_orders {
@@ -802,7 +808,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
                 confirmed
-            };
+            }}; // close else + let
 
             // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Settlement ID lookup
             // Filter out orders where fill price violates limit (E126 guard)
