@@ -165,6 +165,12 @@ pub trait ChainReader: Send + Sync {
         Ok(0)
     }
 
+    /// Check a single order's on-chain status. Returns Some(status_u8) or None if unavailable.
+    /// Used to filter stale "pending" orders from cached data sources before attempting batch/fill.
+    async fn get_order_on_chain_status(&self, _order_id: ethers::types::U256) -> Option<u8> {
+        None // Default: can't verify, caller should include the order
+    }
+
     /// Get orders in BATCHED state (status=1) that need fills confirmation
     async fn get_batched_orders(&self) -> Result<Vec<LimitOrder>, Error> {
         Ok(vec![])

@@ -612,6 +612,24 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders.truncate(5);
     }
 
+    // Filter out orders already batched/filled/cancelled on-chain.
+    // The data-node cache can lag — verify via the trait's on-chain status check.
+    {
+        let pre = submitted_orders.len();
+        let mut keep = Vec::new();
+        for oid in &submitted_orders {
+            match chain_reader.get_order_on_chain_status(*oid).await {
+                Some(0) => keep.push(*oid),
+                Some(s) => info!(order_id = %oid, on_chain_status = s, "Skipping already-processed order"),
+                None => keep.push(*oid),
+            }
+        }
+        if keep.len() < pre {
+            info!(before = pre, after = keep.len(), "Filtered stale orders");
+        }
+        submitted_orders = keep;
+    }
+
     if submitted_orders.is_empty() {
         debug!("No L3 orders to process");
         return;
