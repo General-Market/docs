@@ -53,6 +53,7 @@ export function useItpNav(itpId: string | undefined): ItpNavResult {
         { signal: AbortSignal.timeout(8000) }
       ).then(r => r.ok ? r.json() : null).catch(() => null)
 
+      console.log('[useItpNav]', id, 'response:', navResponse ? JSON.stringify({ nav: navResponse.nav, display: navResponse.nav_display }).slice(0, 80) : 'null')
       if (navResponse && navResponse.nav && navResponse.nav !== '0') {
         setNavPerShareBn(BigInt(navResponse.nav))
         setNavPerShare(parseFloat(navResponse.nav_display))

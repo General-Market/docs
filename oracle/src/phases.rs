@@ -812,22 +812,20 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         }
                     }
 
-                    // Emit asset trades inline (not fire-and-forget) — AP needs these events
-                    // to execute the underlying asset purchases on the settlement vault.
-                    // Retry once on failure before giving up.
-                    for attempt in 0..2u8 {
-                        match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, &chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
-                            Ok(at_result) => {
-                                info!(cycle = current_cycle, signer_count = at_result.signature_count, "Asset trades emitted successfully");
-                                break;
-                            }
-                            Err(e) if attempt == 0 => {
-                                warn!(cycle = current_cycle, error = %e, "Asset trades emission failed, retrying...");
-                                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                            }
-                            Err(e) => {
-                                warn!(cycle = current_cycle, error = %e, "Asset trades emission failed after retry");
-                            }
+                    // Emit asset trades with a 15s timeout — not fire-and-forget but won't block
+                    // the buy pipeline indefinitely if BLS consensus stalls.
+                    {
+                        let p = protocol.clone();
+                        let cr = chain_reader.clone();
+                        let qt = quote_tokens.clone();
+                        let at = asset_trade_orders.clone();
+                        match tokio::time::timeout(
+                            std::time::Duration::from_secs(15),
+                            p.run_asset_trades_phase(current_cycle, &at, &cr, batch_am_leader, qt.as_ref()),
+                        ).await {
+                            Ok(Ok(at_result)) => info!(cycle = current_cycle, signer_count = at_result.signature_count, "Asset trades emitted"),
+                            Ok(Err(e)) => warn!(cycle = current_cycle, error = %e, "Asset trades emission failed"),
+                            Err(_) => warn!(cycle = current_cycle, "Asset trades emission timed out after 15s"),
                         }
                     }
                 }
