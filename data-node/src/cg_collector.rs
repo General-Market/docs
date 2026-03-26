@@ -183,16 +183,30 @@ async fn run_category_sync(pool: PgPool, api_key: String, limiter: RateLimiter) 
 
 /// Fetch all coins from /coins/markets and store as a daily snapshot.
 /// Returns the full list of coins (with image URLs) for logo sync.
+/// Build today's snapshot from live prices already in the DB (market_prices_latest + market_assets).
+/// The sync engine fetches these without hitting CG rate limits.
+/// Falls back to the CG API if the DB has too few coins.
 async fn snapshot_all_markets(
     pool: &PgPool,
     client: &CoinGeckoClient,
     snapshot_date: NaiveDate,
 ) -> Result<Vec<MarketCoin>, Box<dyn std::error::Error + Send + Sync>> {
+    // Try DB-first: the sync engine already fetched crypto prices into market_prices_latest
+    let db_rows = snapshot_from_live_prices(pool, snapshot_date).await?;
+    if db_rows >= 3000 {
+        info!(rows = db_rows, %snapshot_date, "CoinGecko snapshot built from live DB prices");
+        return Ok(vec![]); // No MarketCoin vec needed — data is already in coingecko_market_caps
+    }
+    warn!(
+        db_rows,
+        "Live DB prices insufficient (<3000), falling back to CG API"
+    );
+
+    // Fallback: fetch from CG API (slow, rate-limited)
     let coins = client.fetch_all_markets().await?;
     let total = coins.len();
-    info!(total, %snapshot_date, "Fetched all CoinGecko markets");
+    info!(total, %snapshot_date, "Fetched all CoinGecko markets from API");
 
-    // Filter to coins with market cap, deduplicate by coin_id
     let mut seen = std::collections::HashSet::new();
     let with_mcap: Vec<_> = coins
         .into_iter()
@@ -200,13 +214,8 @@ async fn snapshot_all_markets(
         .filter(|c| seen.insert(c.id.clone()))
         .collect();
 
-    info!(
-        with_market_cap = with_mcap.len(),
-        total,
-        "Coins with market cap"
-    );
+    info!(with_market_cap = with_mcap.len(), total, "Coins with market cap");
 
-    // Batch insert
     let rows: Vec<db::CgMarketCapRow> = with_mcap
         .iter()
         .map(|c| db::CgMarketCapRow {
@@ -222,9 +231,52 @@ async fn snapshot_all_markets(
         .collect();
 
     let inserted = db::cg_batch_upsert_market_caps(pool, &rows).await?;
-    info!(inserted, coins = rows.len(), %snapshot_date, "CoinGecko snapshot stored");
+    info!(inserted, coins = rows.len(), %snapshot_date, "CoinGecko snapshot stored from API");
 
     Ok(with_mcap)
+}
+
+/// Snapshot from live data already in market_prices_latest (source='crypto').
+/// The CG sync engine populates this table every few minutes without hitting
+/// the aggressive /coins/markets pagination rate limits.
+async fn snapshot_from_live_prices(
+    pool: &PgPool,
+    snapshot_date: NaiveDate,
+) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
+    // Join market_assets (for coin_id/symbol/name) with market_prices_latest (for price/mcap/volume)
+    // and insert directly into coingecko_market_caps.
+    let result = sqlx::query(
+        "INSERT INTO coingecko_market_caps
+            (coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)
+         SELECT
+            a.asset_id,
+            a.symbol,
+            COALESCE(a.name, a.symbol),
+            p.market_cap,
+            p.value,
+            p.volume_24h,
+            ROW_NUMBER() OVER (ORDER BY p.market_cap DESC NULLS LAST)::int4,
+            $1::date
+         FROM market_assets a
+         JOIN market_prices_latest p ON a.source = p.source AND a.asset_id = p.asset_id
+         WHERE a.source = 'crypto'
+           AND a.is_active = true
+           AND p.value > 0
+           AND p.fetched_at >= NOW() - INTERVAL '2 hours'
+         ON CONFLICT (coin_id, snapshot_date) DO UPDATE SET
+            symbol = EXCLUDED.symbol,
+            name = EXCLUDED.name,
+            market_cap_usd = EXCLUDED.market_cap_usd,
+            price_usd = EXCLUDED.price_usd,
+            total_volume_usd = EXCLUDED.total_volume_usd,
+            market_cap_rank = EXCLUDED.market_cap_rank,
+            fetched_at = NOW()"
+    )
+    .bind(snapshot_date)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
 }
 
 /// Fetch all categories from CoinGecko and upsert into DB.
