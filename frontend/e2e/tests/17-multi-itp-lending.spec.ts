@@ -1,16 +1,11 @@
 /**
  * Multi-ITP Lending Visibility E2E Tests
  *
- * Verifies that dynamically created ITPs (ITP2+) appear in the lending
- * markets table via on-chain discovery (getItpCount + itpVaults).
+ * Verifies that dynamically created ITPs appear in the lending markets table
+ * with real data in every column — not just row counts.
  *
- * The lending UI lives inside VaultModal (rendered inline in the #lend section).
- * VaultModal > LendDashboard > MarketsTableInline contains the <table>.
- * Navigation: sidebar click switches activeSection to 'lend' in HomeClient.
- *
- * CRITICAL: All locators must be scoped to #lend — the markets section also
- * has a <table> earlier in the DOM. page.locator('table').first() would match
- * the markets table (now hidden), not the lending table.
+ * Column order (Playwright viewport 1280px = lg, all columns visible):
+ *   1: Market  |  2: NAV  |  3: Borrow APY  |  4: Balance  |  5: Liquidity  |  6: LLTV  |  7: mobile dot (hidden at lg)
  *
  * Depends on: test 05-create-itp.spec.ts having created ITP2.
  * Runs in: ui-verify-itp project (pattern 1[6-7])
@@ -28,82 +23,96 @@ import { getItpCountL3 } from '../helpers/backend-api';
 async function navigateToLendSection(page: import('@playwright/test').Page) {
   await ensureWalletConnected(page, TEST_ADDRESS);
 
-  // The sidebar is hidden lg:flex — Playwright default viewport 1280x720 satisfies lg.
-  // Both desktop sidebar and mobile bottom bar have a "Lending" button — take the first visible.
   const lendingNav = page.getByRole('button', { name: /Lending/i }).first();
   await expect(lendingNav).toBeVisible({ timeout: 30_000 });
   await lendingNav.click();
 
-  // Wait for the motion.div#lend to transition from hidden (opacity:0, invisible)
-  // to active (opacity:1, visible). The className switches immediately but the
-  // spring animation takes ~500ms for opacity.
   const lendSect = page.locator('#lend');
   await expect(lendSect).toBeVisible({ timeout: 30_000 });
 
-  // Wait for VaultModal's on-chain reads (useEffect for vault discovery) — table or placeholder appears
+  // Wait for table or empty state
   await lendSect.locator('table, text=/No markets/i').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
 
   return lendSect;
 }
 
 test.describe('Multi-ITP Lending Visibility', () => {
-  test('lending markets table shows multiple ITPs after ITP creation', async ({ walletPage: page }) => {
+  test('lending markets table shows ITPs with real cell data', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // Verify ITP2+ exists on L3 (created by test 05)
+    // Verify ITP2+ exists on L3
     const itpCount = await getItpCountL3();
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const lendSect = await navigateToLendSection(page);
 
-    // Scope table locator to #lend — the markets section has its own <table>
-    // higher in the DOM which is now hidden. page.locator('table').first()
-    // would match that invisible table and wait forever.
+    // Scope to #lend section
     const marketsTable = lendSect.locator('table').first();
     await expect(marketsTable).toBeVisible({ timeout: 60_000 });
 
-    // Count table body rows (each row = one ITP market)
-    const tableRows = marketsTable.locator('tbody tr');
-    await expect(tableRows.first()).toBeVisible({ timeout: 30_000 });
+    const dataRows = marketsTable.locator('tbody tr');
+    await expect(dataRows.first()).toBeVisible({ timeout: 30_000 });
 
-    // Wait for async on-chain discovery to populate remaining rows
+    // Wait for rows to populate
     await expect(async () => {
-      const count = await tableRows.count();
+      const count = await dataRows.count();
       expect(count).toBeGreaterThanOrEqual(1);
     }).toPass({ timeout: 15_000 });
 
-    const rowCount = await tableRows.count();
-    console.log(`Lending markets table has ${rowCount} ITP rows (expected >= 1)`);
-    expect(rowCount, 'Markets table should show at least one ITP').toBeGreaterThanOrEqual(1);
+    const rowCount = await dataRows.count();
+    console.log(`Lending table: ${rowCount} rows`);
+
+    // ── Verify every row has real data in key columns ──
+    for (let i = 0; i < Math.min(rowCount, 5); i++) {
+      const row = dataRows.nth(i);
+
+      // Col 1: Market name — should contain text (not empty)
+      const marketCell = row.locator('td').nth(0);
+      const marketText = await marketCell.textContent();
+      expect(marketText!.trim().length, `Row ${i}: Market name should not be empty`).toBeGreaterThan(0);
+
+      // Col 2: NAV — should contain a dollar value like "$0.97" or "$1.00"
+      const navCell = row.locator('td').nth(1);
+      const navText = await navCell.textContent();
+      expect(navText, `Row ${i}: NAV should contain $`).toContain('$');
+
+      // Col 3: Borrow APY — should contain a percentage
+      const apyCell = row.locator('td').nth(2);
+      const apyText = await apyCell.textContent();
+      expect(apyText, `Row ${i}: Borrow APY should contain %`).toContain('%');
+
+      // Col 4: Balance — should have content (dollar amount, "active", or em dash)
+      const balanceCell = row.locator('td').nth(3);
+      const balanceText = await balanceCell.textContent();
+      expect(balanceText!.trim().length, `Row ${i}: Balance cell should not be empty`).toBeGreaterThan(0);
+
+      // Col 6: LLTV — should contain a percentage like "77%"
+      const lltvCell = row.locator('td').nth(5);
+      const lltvText = await lltvCell.textContent();
+      expect(lltvText, `Row ${i}: LLTV should contain %`).toContain('%');
+
+      console.log(`  Row ${i}: market="${marketText!.trim().slice(0, 30)}" nav=${navText} apy=${apyText} balance="${balanceText!.trim()}" lltv=${lltvText}`);
+    }
   });
 
-  test('ITP2 row shows borrow data or placeholder when no Morpho market deployed', async ({ walletPage: page }) => {
-    test.setTimeout(180_000);
+  test('Balance column header is visible at default viewport', async ({ walletPage: page }) => {
+    test.setTimeout(120_000);
 
     const itpCount = await getItpCountL3();
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const lendSect = await navigateToLendSection(page);
 
-    // Scope to #lend section — same reason as above
     const marketsTable = lendSect.locator('table').first();
     await expect(marketsTable).toBeVisible({ timeout: 60_000 });
 
-    // Wait for on-chain discovery to populate rows
-    const tableRows = marketsTable.locator('tbody tr');
-    await expect(tableRows.first()).toBeVisible({ timeout: 15_000 }).catch(() => {});
-    const rowCount = await tableRows.count();
+    // Verify column headers include "Balance" and "Liquidity" (not old "Available")
+    const headers = marketsTable.locator('thead th');
+    const headerTexts = await headers.allTextContents();
+    console.log(`Table headers: ${headerTexts.join(' | ')}`);
 
-    // ITPs without a Morpho market show "--" for borrow APY instead of a percentage.
-    // Check if any row has placeholder data (indicates ITP discovered but no market).
-    const placeholderCells = lendSect.locator('td').filter({ hasText: '--' });
-    const hasPlaceholders = await placeholderCells.first().isVisible({ timeout: 5_000 }).catch(() => false);
-
-    if (hasPlaceholders) {
-      console.log(`Found placeholder data (--) — some ITPs lack Morpho markets`);
-    } else {
-      console.log(`All ${rowCount} ITPs have live Morpho market data`);
-    }
-    expect(rowCount, 'Markets table should show at least one ITP row').toBeGreaterThanOrEqual(1);
+    expect(headerTexts.some(h => h.includes('Balance')), 'Balance column header should be visible').toBe(true);
+    expect(headerTexts.some(h => h.includes('Liquidity')), 'Liquidity column header should be visible').toBe(true);
+    expect(headerTexts.some(h => h === 'Available'), '"Available" header should not exist (renamed to Liquidity)').toBe(false);
   });
 });

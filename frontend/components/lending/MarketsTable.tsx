@@ -50,9 +50,9 @@ const HEADERS = [
   { label: 'Market',      align: 'left'  as const, width: '',       hide: '' },
   { label: 'NAV',         align: 'right' as const, width: 'w-[80px]',  hide: 'hidden sm:table-cell' },
   { label: 'Borrow APY',  align: 'right' as const, width: 'w-[90px]',  hide: '' },
-  { label: 'Available',   align: 'right' as const, width: 'w-[100px]', hide: 'hidden sm:table-cell' },
-  { label: 'LLTV',        align: 'right' as const, width: 'w-[70px]',  hide: 'hidden md:table-cell' },
-  { label: 'Balance',     align: 'right' as const, width: 'w-[100px]', hide: 'hidden lg:table-cell' },
+  { label: 'Balance',     align: 'right' as const, width: 'w-[100px]', hide: 'hidden sm:table-cell' },
+  { label: 'Liquidity',   align: 'right' as const, width: 'w-[100px]', hide: 'hidden md:table-cell' },
+  { label: 'LLTV',        align: 'right' as const, width: 'w-[70px]',  hide: 'hidden lg:table-cell' },
 ] as const
 
 function TableHead() {
@@ -69,8 +69,8 @@ function TableHead() {
             {col.label}
           </th>
         ))}
-        {/* Mobile position dot column — visible only below lg */}
-        <th className="w-8 px-2 py-2 lg:hidden" />
+        {/* Mobile position dot column — visible only below sm */}
+        <th className="w-8 px-2 py-2 sm:hidden" />
       </tr>
     </thead>
   )
@@ -127,18 +127,8 @@ const MarketRowComponent = memo(function MarketRowComponent({
         {formatPct(row.borrowApy)}
       </td>
 
-      {/* Available */}
+      {/* Balance — visible at sm+ */}
       <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden sm:table-cell">
-        {formatDollar(row.available)}
-      </td>
-
-      {/* LLTV */}
-      <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden md:table-cell">
-        {formatPct(row.lltv, 0)}
-      </td>
-
-      {/* Balance — full display (lg+) */}
-      <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden lg:table-cell">
         {row.userBalance > 0 ? (
           <span className="text-text-primary">{formatDollar(row.userBalance)}</span>
         ) : active ? (
@@ -148,8 +138,18 @@ const MarketRowComponent = memo(function MarketRowComponent({
         )}
       </td>
 
-      {/* Balance — dot indicator (below lg) */}
-      <td className="px-2 py-3 text-center lg:hidden">
+      {/* Liquidity (totalSupply - totalBorrow) */}
+      <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden md:table-cell">
+        {formatDollar(row.available)}
+      </td>
+
+      {/* LLTV */}
+      <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-primary hidden lg:table-cell">
+        {formatPct(row.lltv, 0)}
+      </td>
+
+      {/* Balance — dot indicator (below sm) */}
+      <td className="px-2 py-3 text-center sm:hidden">
         {(active || row.userBalance > 0) && (
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-color-up" />
         )}
@@ -180,9 +180,9 @@ function LoadingSkeleton() {
                 <td className="px-4 py-3 text-right hidden sm:table-cell"><Bone w="w-12" h="h-3" /></td>
                 <td className="px-4 py-3 text-right"><Bone w="w-14" h="h-3" /></td>
                 <td className="px-4 py-3 text-right hidden sm:table-cell"><Bone w="w-16" h="h-3" /></td>
-                <td className="px-4 py-3 text-right hidden md:table-cell"><Bone w="w-10" h="h-3" /></td>
-                <td className="px-4 py-3 text-right hidden lg:table-cell"><Bone w="w-16" h="h-3" /></td>
-                <td className="px-2 py-3 lg:hidden" />
+                <td className="px-4 py-3 text-right hidden md:table-cell"><Bone w="w-16" h="h-3" /></td>
+                <td className="px-4 py-3 text-right hidden lg:table-cell"><Bone w="w-10" h="h-3" /></td>
+                <td className="px-2 py-3 sm:hidden" />
               </tr>
             ))}
           </tbody>

@@ -115,6 +115,9 @@ export function LendingPage() {
       symbol: row.symbol,
       itpId: row.itpId,
       collateralToken: row.collateralToken,
+      borrowApy: row.borrowApy,
+      lltv: row.lltv,
+      available: row.available,
       market: row.market,
     }
   }, [selectedCollateralToken, selectedMarket, tableRows])
@@ -271,7 +274,7 @@ export function LendingPage() {
               <div className="flex flex-wrap gap-1 shrink-0">
                 <FilterChip mode="all" label="All" />
                 {isConnected && <FilterChip mode="positions" label="Your positions" />}
-                <FilterChip mode="liquidity" label="Has liquidity" />
+                <FilterChip mode="liquidity" label="Has Liquidity" />
               </div>
             </div>
 

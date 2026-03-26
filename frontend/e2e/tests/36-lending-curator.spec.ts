@@ -179,37 +179,38 @@ test.describe('Lending Curator', () => {
       return
     }
 
-    // We have real rows. Verify borrow APY column (3rd column) has content.
-    // Accept "0.00%" (no borrows yet) or a real rate — both are valid.
-    // Only completely empty cells indicate broken data wiring.
+    // We have real rows. Verify key columns have actual content.
+    // Column order: 1=Market, 2=NAV, 3=Borrow APY, 4=Balance, 5=Liquidity, 6=LLTV
     const marketTable = lendSection.locator('table').first()
-    const apyCells = marketTable
+    const dataRows = marketTable
       .locator('tbody tr')
       .filter({ hasNot: page.locator('td[colspan]') })
-      .locator('td:nth-child(3)')
-    const allText = await apyCells.allTextContents()
+    const dataRowCount = await dataRows.count()
 
-    if (allText.length === 0) {
-      console.warn('[36b] No APY cells found — table rendered without APY column. Skipping.')
-      test.skip(true, 'APY column absent: fresh deploy without curator rates')
-      return
-    }
+    // Verify column headers match expected layout (renamed Available → Liquidity)
+    const headers = marketTable.locator('thead th')
+    const headerTexts = await headers.allTextContents()
+    console.log(`[36b] Headers: ${headerTexts.join(' | ')}`)
+    expect(headerTexts.some(h => h.includes('Balance')), 'Balance header should exist').toBe(true)
+    expect(headerTexts.some(h => h.includes('Liquidity')), 'Liquidity header should exist').toBe(true)
 
-    // Accept any non-empty content: "0.00%", "4.25%", "--" are all fine.
-    // Empty string means the IRM returned nothing — curator hasn't initialized rates.
-    const hasContent = allText.some(t => t.trim().length > 0)
-    if (!hasContent) {
-      console.log('[36b] APY cells are all empty — curator has not set rates yet. Acceptable on fresh deploy.')
-      test.skip(true, 'APY cells empty: curator has not set interest rates yet')
-      return
-    }
+    // Verify first row has real data in every visible column
+    for (let i = 0; i < Math.min(dataRowCount, 3); i++) {
+      const row = dataRows.nth(i)
 
-    // Soft check: log whether we have real APY data.
-    const hasRealApy = allText.some(t => t.includes('%') && t !== '0.00%')
-    if (!hasRealApy) {
-      console.log('[36b] Borrow APY is 0% across all markets — no active borrows yet. Acceptable on fresh deploy.')
-    } else {
-      console.log(`[36b] Borrow APY data present: ${allText.join(', ')}`)
+      // NAV (col 2) — should have a dollar value
+      const navText = await row.locator('td').nth(1).textContent()
+      expect(navText, `Row ${i}: NAV should contain $`).toContain('$')
+
+      // Borrow APY (col 3) — should have a percentage (0.00% is valid)
+      const apyText = await row.locator('td').nth(2).textContent()
+      expect(apyText, `Row ${i}: Borrow APY should contain %`).toContain('%')
+
+      // Balance (col 4) — should not be empty (shows $amount, "active", or em dash)
+      const balText = await row.locator('td').nth(3).textContent()
+      expect(balText!.trim().length, `Row ${i}: Balance cell should not be empty`).toBeGreaterThan(0)
+
+      console.log(`[36b] Row ${i}: nav=${navText} apy=${apyText} bal="${balText!.trim()}"`)
     }
   })
 })

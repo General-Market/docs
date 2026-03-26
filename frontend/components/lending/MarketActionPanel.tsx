@@ -17,6 +17,9 @@ export interface SelectedMarket {
   symbol: string
   itpId: string
   collateralToken: string
+  borrowApy: number
+  lltv: number
+  available: number
   market: MorphoMarketEntry
 }
 
@@ -119,20 +122,34 @@ export function MarketActionPanel({
 
   return (
     <div className="border border-border-light bg-white">
-      {/* ── Header: market identity ──────────────────────────────────── */}
+      {/* ── Header: market identity + key rates ────────────────────────── */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border-light">
         <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center shrink-0">
           <span className="text-text-primary text-[10px] font-bold leading-none">
             {selectedMarket.symbol.slice(0, 3)}
           </span>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-text-primary leading-tight truncate">
             {selectedMarket.name}
           </p>
           <p className="text-xs text-text-muted font-mono">
             ${selectedMarket.symbol}
           </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0 text-xs font-mono tabular-nums">
+          <div className="text-right">
+            <span className="text-text-muted block text-[10px] uppercase tracking-wide">APY</span>
+            <span className="text-text-primary font-semibold">
+              {selectedMarket.borrowApy.toFixed(2)}%
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="text-text-muted block text-[10px] uppercase tracking-wide">LLTV</span>
+            <span className="text-text-primary font-semibold">
+              {selectedMarket.lltv.toFixed(0)}%
+            </span>
+          </div>
         </div>
       </div>
 
