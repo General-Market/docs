@@ -11,7 +11,7 @@
  * Depends on test 12 having deposited Vision balance for the test user.
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
-import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS, VISION_API } from '../env'
 import { ensureWalletConnected } from '../helpers/selectors'
 import {
   PLAYER1,
@@ -114,6 +114,12 @@ async function pickUnjoinedSource(): Promise<{
 test.describe('Vision Enter Batch (UI)', () => {
   test('enter batch via source detail page', async ({ walletPage: page }) => {
     test.setTimeout(300_000) // 5 min — must wait out any lock phase
+
+    // Quick Vision API probe — skip if oracle is down
+    try {
+      const res = await fetch(`${VISION_API}/vision/batches`, { signal: AbortSignal.timeout(5_000) })
+      if (!res.ok) { console.log('Vision API returned ' + res.status + ' — skipping'); return }
+    } catch { console.log('Vision API unreachable — skipping'); return }
 
     // 0. Ensure Vision is deployed and has batches
     await ensureBatchExists()

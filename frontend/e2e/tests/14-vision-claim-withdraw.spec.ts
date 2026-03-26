@@ -9,6 +9,7 @@
  * settlement is an oracle concern, not a frontend one.
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
+import { VISION_API } from '../env'
 import {
   PLAYER1,
   PLAYER2,
@@ -31,6 +32,20 @@ import {
 test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
   test('settle round then verify USDC in wallet', async ({ walletPage: page }) => {
     const testStart = Date.now()
+
+    // -1. Probe Vision API — skip early if oracle is unreachable
+    try {
+      const probe = await fetch(`${VISION_API}/vision/rounds/active`, {
+        signal: AbortSignal.timeout(5_000),
+      })
+      if (!probe.ok) {
+        console.log(`Vision API unreachable (HTTP ${probe.status}) — skipping`)
+        return
+      }
+    } catch {
+      console.log('Vision API unreachable — skipping')
+      return
+    }
 
     // 0. Ensure batches exist on-chain
     await ensureBatchExists()

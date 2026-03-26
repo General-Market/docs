@@ -10,7 +10,7 @@
  * the test runs relative to the round lifecycle.
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
-import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS, VISION_API } from '../env'
 import { ensureWalletConnected } from '../helpers/selectors'
 import {
   getActiveRounds,
@@ -18,9 +18,32 @@ import {
   type RoundInfo,
 } from '../helpers/vision-api'
 
+/**
+ * Quick reachability check — 5s timeout. Returns true if the Vision API
+ * responds at all, false otherwise. Prevents the suite from burning 2 min
+ * in retry loops when the oracle is simply not running.
+ */
+async function isVisionApiReachable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${VISION_API}/vision/batches`, {
+      signal: AbortSignal.timeout(5_000),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 test.describe('Vision Lock Phase UI', () => {
   test('45a: betting phase shows enabled entry controls', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
+
+    // 0. Fast-fail: check Vision API reachability before slow retries
+    if (!(await isVisionApiReachable())) {
+      console.warn('SKIP: Vision API unreachable (5s timeout) — oracle is likely down.')
+      test.skip()
+      return
+    }
 
     // 1. Ensure batches exist
     await ensureBatchExists()
@@ -29,6 +52,7 @@ test.describe('Vision Lock Phase UI', () => {
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
       console.warn('SKIP: No active rounds — oracle may not have spawned rounds yet. Cannot verify lock phase UI.')
+      test.skip()
       return
     }
 
@@ -90,6 +114,13 @@ test.describe('Vision Lock Phase UI', () => {
   test('45b: lock phase indicators on NextBatches carousel', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
+    // Fast-fail: no point loading the carousel if the API backing it is dead
+    if (!(await isVisionApiReachable())) {
+      console.warn('SKIP: Vision API unreachable — oracle is likely down.')
+      test.skip()
+      return
+    }
+
     // Navigate to the main Vision page (/) which has the NextBatches carousel
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     // Wait for SSE batch data — source cards indicate data has arrived
@@ -132,10 +163,18 @@ test.describe('Vision Lock Phase UI', () => {
   test('45c: round status reflects betting or locked via API', async () => {
     test.setTimeout(30_000)
 
+    // Fast-fail: don't burn 90s in retries when oracle is simply offline
+    if (!(await isVisionApiReachable())) {
+      console.warn('SKIP: Vision API unreachable — oracle is likely down.')
+      test.skip()
+      return
+    }
+
     // Pure API check — no browser needed
     const rounds = await getActiveRounds()
     if (rounds.length === 0) {
       console.warn('SKIP: No active rounds from API — oracle may not have spawned rounds yet.')
+      test.skip()
       return
     }
 

@@ -75,6 +75,24 @@ test("Stage 1: infrastructure health", async () => {
 // ── Stage 2: Fund + Deploy ──
 
 test("Stage 2: fund and deploy swarm", async () => {
+  // ── Oracle / Vision API health gate ──
+  // If the oracle is down, everything downstream (funding, joining, ticks) is pointless.
+  // Fail fast instead of burning 2+ minutes on a doomed pipeline.
+  try {
+    const res = await fetch(`${FRONTEND_URL}/api/vision/batches`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      console.log(`Oracle/Vision API down — /api/vision/batches returned ${res.status}. Skipping swarm.`);
+      test.skip();
+      return;
+    }
+  } catch (e: any) {
+    console.log(`Oracle/Vision API unreachable — ${e.message}. Skipping swarm.`);
+    test.skip();
+    return;
+  }
+
   // Stop any existing swarm first (idempotent)
   try { stopSwarm(); } catch { /* not running */ }
 

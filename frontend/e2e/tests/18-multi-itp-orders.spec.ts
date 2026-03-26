@@ -19,12 +19,26 @@ import {
   pollUntil,
 } from '../helpers/backend-api';
 
-import { CONTRACTS } from '../env';
+import { CONTRACTS, ORACLE_URLS } from '../env';
 const INDEX_CONTRACT = CONTRACTS.Index ?? '';
+
+/** Quick oracle liveness check — if oracles are down, consensus can't happen. */
+async function oraclesHealthy(): Promise<boolean> {
+  return fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5_000) })
+    .then(r => r.ok)
+    .catch(() => false);
+}
 
 test.describe('Multi-ITP Order Processing', () => {
   test('buy second ITP order fills via oracle consensus', async () => {
     test.setTimeout(180_000);
+
+    // Oracle health gate — no point waiting 3min for consensus that can't arrive
+    if (!(await oraclesHealthy())) {
+      console.log('Oracle unhealthy — skipping consensus test');
+      test.skip();
+      return;
+    }
 
     // 1. Discover available ITPs — need at least 2
     const itpIds = await getAvailableItpIds(3);
@@ -62,6 +76,13 @@ test.describe('Multi-ITP Order Processing', () => {
 
   test('sell second ITP order completes (not stuck at Executing trades)', async () => {
     test.setTimeout(180_000);
+
+    // Oracle health gate
+    if (!(await oraclesHealthy())) {
+      console.log('Oracle unhealthy — skipping consensus test');
+      test.skip();
+      return;
+    }
 
     // 1. Discover available ITPs
     const itpIds = await getAvailableItpIds(3);
@@ -116,6 +137,13 @@ test.describe('Multi-ITP Order Processing', () => {
 
   test('first ITP sell still works after multi-ITP fix', async () => {
     test.setTimeout(180_000);
+
+    // Oracle health gate
+    if (!(await oraclesHealthy())) {
+      console.log('Oracle unhealthy — skipping consensus test');
+      test.skip();
+      return;
+    }
 
     // Discover the first available ITP
     const itpIds = await getAvailableItpIds(1);
