@@ -138,15 +138,26 @@ async function ensurePreconditions(health: DeploymentHealth): Promise<void> {
   console.log(`  Data-node:                 ${preconditions.dataNodeReachable ? 'OK' : 'UNREACHABLE'} (${preconditions.dataNodeStatus ?? 'no response'})`)
   console.log(`  Vision API:                ${preconditions.visionApiReachable ? 'OK' : 'UNREACHABLE'} (${preconditions.visionApiBatchCount} batches)`)
 
-  if (failures.length > 0) {
-    console.error(`\n  PRECONDITION FAILURES (${failures.length}):`)
-    for (const f of failures) {
+  // Split failures into fatal (blocks all tests) and warnings (Vision down shouldn't block ITP/page tests)
+  const visionFailures = failures.filter(f => f.includes('Vision API'))
+  const fatalFailures = failures.filter(f => !f.includes('Vision API'))
+
+  if (visionFailures.length > 0) {
+    console.warn(`\n  VISION WARNINGS (${visionFailures.length}) — Vision tests may fail but other tests will run:`)
+    for (const f of visionFailures) {
+      console.warn(`    ⚠ ${f}`)
+    }
+  }
+
+  if (fatalFailures.length > 0) {
+    console.error(`\n  PRECONDITION FAILURES (${fatalFailures.length}):`)
+    for (const f of fatalFailures) {
       console.error(`    PRECONDITION FAILED: ${f}`)
     }
     console.error('[global-setup] ══════════════════════════════════\n')
     throw new Error(
-      `E2E preconditions not met (${failures.length} failures). Fix the deployment before running tests.\n` +
-      failures.map(f => `  - ${f}`).join('\n')
+      `E2E preconditions not met (${fatalFailures.length} failures). Fix the deployment before running tests.\n` +
+      fatalFailures.map(f => `  - ${f}`).join('\n')
     )
   }
   console.log('\n  All preconditions satisfied')
