@@ -2071,8 +2071,8 @@ async fn source_batch_history(
          LEFT JOIN (
              SELECT batch_id,
                     COUNT(DISTINCT player)::bigint AS player_count,
-                    SUM(deposited)::text AS total_deposited,
-                    SUM(pnl)::text AS total_pnl
+                    SUM(deposited::numeric)::text AS total_deposited,
+                    SUM(pnl::numeric)::text AS total_pnl
              FROM vision_round_players
              GROUP BY batch_id
          ) agg ON agg.batch_id = vbl.batch_id
