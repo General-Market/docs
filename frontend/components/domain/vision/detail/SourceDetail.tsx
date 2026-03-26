@@ -13,6 +13,7 @@ import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
 import BatchEntryPanel from './BatchEntryPanel'
 import { PendingPositions } from './PendingPositions'
+import { BatchHistory } from './BatchHistory'
 import { BatchProgressBar } from '../CountdownRing'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
@@ -40,12 +41,8 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
         <div className="text-[15px] font-bold font-mono">{entry.roundsPlayed}</div>
       </div>
       <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Won</div>
-        <div className="text-[15px] font-bold font-mono text-green-400">{entry.roundsWon}</div>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Win Rate</div>
-        <div className="text-[15px] font-bold font-mono">{entry.winRate.toFixed(1)}%</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">ROI</div>
+        <div className={`text-[15px] font-bold font-mono ${entry.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>{entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%</div>
       </div>
       <div>
         <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Volume</div>
@@ -309,6 +306,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             activeBatchId={activeBatch?.id}
           />
         )}
+
+        {/* Past rounds — settled batch history for this source */}
+        <BatchHistory sourceId={sourceId} />
 
         {/* Content split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">

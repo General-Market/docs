@@ -1254,9 +1254,13 @@ async fn leaderboard_from_postgres(
             let pnl = (bal - dep) / decimals;
             let deposited = dep / decimals;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
-            // Profitable rounds rate
             let win_rate = if *batches > 0 {
                 *wins as f64 / *batches as f64 * 100.0
+            } else {
+                0.0
+            };
+            let avg_correct_pct = if *total_markets > 0 {
+                *total_correct as f64 / *total_markets as f64 * 100.0
             } else {
                 0.0
             };
@@ -1324,9 +1328,13 @@ fn build_leaderboard_from_map(
                 } else {
                     0.0
                 };
-                // Profitable rounds rate
                 let win_rate = if *batches > 0 {
                     *wins as f64 / *batches as f64 * 100.0
+                } else {
+                    0.0
+                };
+                let avg_correct_pct = if *total_markets > 0 {
+                    *total_correct as f64 / *total_markets as f64 * 100.0
                 } else {
                     0.0
                 };
