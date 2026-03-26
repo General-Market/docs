@@ -808,7 +808,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
                 confirmed
-            }}; // close else + let
+            };
 
             // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Settlement ID lookup
             // Filter out orders where fill price violates limit (E126 guard)
