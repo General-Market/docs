@@ -236,36 +236,66 @@ async fn snapshot_all_markets(
     Ok(with_mcap)
 }
 
-/// Snapshot from live data already in market_prices_latest (source='crypto').
-/// The CG sync engine populates this table every few minutes without hitting
-/// the aggressive /coins/markets pagination rate limits.
+/// Build today's snapshot from the best available local data.
+/// Strategy:
+/// 1. Try market_prices_latest (live sync engine data)
+/// 2. Fall back to copying the most recent coingecko_market_caps snapshot
+///    with today's date — stale prices are better than no chart data.
 async fn snapshot_from_live_prices(
     pool: &PgPool,
     snapshot_date: NaiveDate,
 ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
-    // Join market_assets (for coin_id/symbol/name) with market_prices_latest (for price/mcap/volume)
-    // and insert directly into coingecko_market_caps.
+    // Try live prices first (if market_prices_latest is populated)
+    let live_count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM market_prices_latest
+         WHERE source = 'crypto' AND value > 0
+           AND fetched_at >= NOW() - INTERVAL '2 hours'"
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
+
+    if live_count >= 3000 {
+        let result = sqlx::query(
+            "INSERT INTO coingecko_market_caps
+                (coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)
+             SELECT
+                a.asset_id, a.symbol, COALESCE(a.name, a.symbol),
+                p.market_cap, p.value, p.volume_24h,
+                ROW_NUMBER() OVER (ORDER BY p.market_cap DESC NULLS LAST)::int4,
+                $1::date
+             FROM market_assets a
+             JOIN market_prices_latest p ON a.source = p.source AND a.asset_id = p.asset_id
+             WHERE a.source = 'crypto' AND a.is_active = true
+               AND p.value > 0 AND p.fetched_at >= NOW() - INTERVAL '2 hours'
+             ON CONFLICT (coin_id, snapshot_date) DO UPDATE SET
+                symbol = EXCLUDED.symbol, name = EXCLUDED.name,
+                market_cap_usd = EXCLUDED.market_cap_usd, price_usd = EXCLUDED.price_usd,
+                total_volume_usd = EXCLUDED.total_volume_usd, market_cap_rank = EXCLUDED.market_cap_rank,
+                fetched_at = NOW()"
+        )
+        .bind(snapshot_date)
+        .execute(pool)
+        .await?;
+        info!(rows = result.rows_affected(), "Snapshot from live market_prices_latest");
+        return Ok(result.rows_affected());
+    }
+
+    // Fallback: copy the most recent full snapshot to today's date.
+    // This gives stale prices but keeps the chart extending to today.
     let result = sqlx::query(
         "INSERT INTO coingecko_market_caps
             (coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank, snapshot_date)
          SELECT
-            a.asset_id,
-            a.symbol,
-            COALESCE(a.name, a.symbol),
-            p.market_cap,
-            p.value,
-            p.volume_24h,
-            ROW_NUMBER() OVER (ORDER BY p.market_cap DESC NULLS LAST)::int4,
+            coin_id, symbol, name, market_cap_usd, price_usd, total_volume_usd, market_cap_rank,
             $1::date
-         FROM market_assets a
-         JOIN market_prices_latest p ON a.source = p.source AND a.asset_id = p.asset_id
-         WHERE a.source = 'crypto'
-           AND a.is_active = true
-           AND p.value > 0
-           AND p.fetched_at >= NOW() - INTERVAL '2 hours'
+         FROM coingecko_market_caps
+         WHERE snapshot_date = (
+            SELECT MAX(snapshot_date) FROM coingecko_market_caps
+            WHERE snapshot_date < $1::date
+              AND (SELECT COUNT(*) FROM coingecko_market_caps c2 WHERE c2.snapshot_date = coingecko_market_caps.snapshot_date) >= 3000
+         )
          ON CONFLICT (coin_id, snapshot_date) DO UPDATE SET
-            symbol = EXCLUDED.symbol,
-            name = EXCLUDED.name,
             market_cap_usd = EXCLUDED.market_cap_usd,
             price_usd = EXCLUDED.price_usd,
             total_volume_usd = EXCLUDED.total_volume_usd,
@@ -276,6 +306,11 @@ async fn snapshot_from_live_prices(
     .execute(pool)
     .await?;
 
+    info!(
+        rows = result.rows_affected(),
+        %snapshot_date,
+        "Snapshot copied from most recent full snapshot (live prices unavailable)"
+    );
     Ok(result.rows_affected())
 }
 
