@@ -557,11 +557,48 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             }
             all_orders
         } else {
-            // No bridge orders to process — all ITP orders MUST go through the bridge
-            // pipeline (Settlement → AP → MockBitgetVault) to ensure underlying assets
-            // are actually purchased. Direct L3 fills without AP involvement would mint
-            // unbacked ITP shares — the single worst failure mode.
-            Vec::new()
+            // No bridge orders — scan for L3 direct orders
+            info!("Scanning for L3 pending orders...");
+            match chain_reader.get_pending_orders().await {
+                Ok(orders) if !orders.is_empty() => {
+                    let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
+                    info!(count = ids.len(), "Found L3 direct pending orders");
+                    {
+                        let mut orch = orchestrator.write().await;
+                        for order in &orders {
+                            orch.set_order_itp_id(order.id, order.itp_id).await;
+                            orch.set_order_amount(order.id, order.amount).await;
+                            let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                            orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
+                        }
+                    }
+                    ids
+                }
+                Ok(_) => {
+                    // Check for stranded batched orders
+                    match chain_reader.get_batched_orders().await {
+                        Ok(orders) if !orders.is_empty() => {
+                            let ids: Vec<ethers::types::U256> = orders.iter().map(|o| o.id).collect();
+                            info!(count = ids.len(), "Recovering stranded Batched orders");
+                            {
+                                let mut orch = orchestrator.write().await;
+                                for order in &orders {
+                                    orch.set_order_itp_id(order.id, order.itp_id).await;
+                                    orch.set_order_amount(order.id, order.amount).await;
+                                    let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                                    orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
+                                }
+                            }
+                            ids
+                        }
+                        _ => Vec::new(),
+                    }
+                }
+                Err(e) => {
+                    warn!(error = %e, "Failed to scan L3 pending orders");
+                    Vec::new()
+                }
+            }
         }
     };
 
