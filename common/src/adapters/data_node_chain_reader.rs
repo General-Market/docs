@@ -11,6 +11,8 @@ use ethers::types::{Address, Bytes, H256, U256};
 use reqwest::Client;
 use serde::Deserialize;
 
+use tracing::info;
+
 use crate::error::Error;
 use crate::traits::{
     ChainReader, EventFilter, EventStream, ItpInventoryState, PendingRebalance,
@@ -142,12 +144,26 @@ impl DataNodeChainReader {
 #[async_trait]
 impl ChainReader for DataNodeChainReader {
     async fn get_pending_orders(&self) -> Result<Vec<LimitOrder>, Error> {
+        const MAX_ORDERS_PER_CYCLE: usize = 5;
+
         let orders: Vec<CachedOrder> = self.get_json("/chain/l3/pending-orders").await?;
-        Ok(orders
+        let mut orders: Vec<LimitOrder> = orders
             .into_iter()
             .filter(|o| !o.amount.is_empty() && o.amount != "0")
             .map(Self::convert_order)
-            .collect())
+            .collect();
+
+        if orders.len() > MAX_ORDERS_PER_CYCLE {
+            let total = orders.len();
+            orders.truncate(MAX_ORDERS_PER_CYCLE);
+            info!(
+                total,
+                returned = MAX_ORDERS_PER_CYCLE,
+                "Limiting pending orders to prevent batch overflow"
+            );
+        }
+
+        Ok(orders)
     }
 
     async fn get_itp(&self, itp_id: [u8; 32]) -> Result<ITPCore, Error> {

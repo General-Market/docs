@@ -527,7 +527,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     // Process batch for SubmittedOnL3 orders
-    let submitted_orders = if let Some(ref targets) = target_orders {
+    let mut submitted_orders = if let Some(ref targets) = target_orders {
         // Inline path: only process the just-submitted orders (prevents stale L3-native orders
         // from poisoning the batch — their L3 IDs can collide with settlement order IDs).
         targets.clone()
@@ -563,6 +563,16 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             Vec::new()
         }
     };
+
+    // Recovery path can discover 100+ orders. Processing all in one cycle exceeds the 60s
+    // timeout before any order completes. Cap per-cycle work to 5 — the rest will be picked
+    // up on subsequent settlement_poll_due ticks.
+    if submitted_orders.len() > 5 {
+        info!(total = submitted_orders.len(), "Limiting batch to 5 orders per cycle");
+        submitted_orders.truncate(5);
+    }
+
+    info!(count = submitted_orders.len(), "Processing L3 orders");
 
     if !submitted_orders.is_empty() {
         // Resolve Settlement order IDs → L3 order IDs for BLS hash and on-chain calls.
@@ -684,47 +694,66 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 let vault = orchestrator.read().await.config().bitget_vault;
                 let mut confirmed = Vec::new();
                 for order_id in &submitted_orders {
-                    match protocol.run_complete_buy_order_phase(
-                        current_cycle, *order_id, vault, batch_am_leader,
-                    ).await {
-                        Ok(cbo_result) => {
-                            info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
-                            if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), cbo_result.signer_bitmap).await {
-                                    Ok(tx_hash) => {
-                                        info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted, waiting for receipt");
-                                        const RECEIPT_TIMEOUT_SECS: u64 = 60;
-                                        match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
-                                            Ok(receipt) => {
-                                                let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
-                                                if success {
-                                                    info!(?tx_hash, order_id = %order_id, "completeBuyOrder CONFIRMED");
-                                                    confirmed.push(*order_id);
-                                                } else {
-                                                    warn!(?tx_hash, order_id = %order_id, "completeBuyOrder REVERTED — will NOT mint");
+                    info!(order_id = %order_id, "Starting order processing");
+                    let order_result = tokio::time::timeout(
+                        std::time::Duration::from_secs(20),
+                        async {
+                            match protocol.run_complete_buy_order_phase(
+                                current_cycle, *order_id, vault, batch_am_leader,
+                            ).await {
+                                Ok(cbo_result) => {
+                                    info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
+                                    if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
+                                        match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), cbo_result.signer_bitmap).await {
+                                            Ok(tx_hash) => {
+                                                info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted, waiting for receipt");
+                                                const RECEIPT_TIMEOUT_SECS: u64 = 15;
+                                                match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                    Ok(receipt) => {
+                                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                        if success {
+                                                            info!(?tx_hash, order_id = %order_id, "completeBuyOrder CONFIRMED");
+                                                            return Some(*order_id);
+                                                        } else {
+                                                            warn!(?tx_hash, order_id = %order_id, "completeBuyOrder REVERTED — will NOT mint");
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        warn!(order_id = %order_id, error = %e, "completeBuyOrder receipt timeout — will NOT mint");
+                                                    }
                                                 }
                                             }
                                             Err(e) => {
-                                                warn!(order_id = %order_id, error = %e, "completeBuyOrder receipt timeout — will NOT mint");
+                                                let err_str = format!("{}", e);
+                                                if err_str.contains("E125") || err_str.contains("BuyOrderNotFound") {
+                                                    info!(order_id = %order_id, "completeBuyOrder already done (E125) — confirmed");
+                                                    return Some(*order_id);
+                                                } else {
+                                                    warn!(error = %e, order_id = %order_id, "completeBuyOrder failed — will NOT mint");
+                                                }
                                             }
                                         }
-                                    }
-                                    Err(e) => {
-                                        let err_str = format!("{}", e);
-                                        if err_str.contains("E125") || err_str.contains("BuyOrderNotFound") {
-                                            info!(order_id = %order_id, "completeBuyOrder already done (E125) — confirmed");
-                                            confirmed.push(*order_id);
-                                        } else {
-                                            warn!(error = %e, order_id = %order_id, "completeBuyOrder failed — will NOT mint");
-                                        }
+                                    } else if !batch_am_leader {
+                                        // Followers trust consensus — if consensus succeeded, CBO is confirmed
+                                        return Some(*order_id);
                                     }
                                 }
-                            } else if !batch_am_leader {
-                                // Followers trust consensus — if consensus succeeded, CBO is confirmed
-                                confirmed.push(*order_id);
+                                Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed — will NOT mint"),
                             }
+                            None
                         }
-                        Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed — will NOT mint"),
+                    ).await;
+                    match order_result {
+                        Ok(Some(id)) => {
+                            info!(order_id = %order_id, "Order processed successfully");
+                            confirmed.push(id);
+                        }
+                        Ok(None) => {
+                            // Order processing completed but was not confirmed (error already logged above)
+                        }
+                        Err(_) => {
+                            warn!(order_id = %order_id, "Order processing timed out, skipping");
+                        }
                     }
                 }
                 confirmed

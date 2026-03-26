@@ -6940,11 +6940,26 @@ async fn sse_chain_events(
 
 // ---- Chain state HTTP handlers (read from chain_cache) ----
 
+#[derive(Deserialize)]
+struct PendingOrdersQuery {
+    #[serde(default = "default_pending_limit")]
+    limit: usize,
+}
+
+fn default_pending_limit() -> usize {
+    10
+}
+
 async fn chain_l3_pending_orders(
     State(state): State<Arc<AppState>>,
+    Query(params): Query<PendingOrdersQuery>,
 ) -> Json<Vec<crate::chain_cache::CachedLimitOrder>> {
+    let limit = params.limit.min(50);
     let data = state.chain_cache.pending_orders.read().await;
-    Json(data.clone())
+    let mut orders = data.clone();
+    orders.sort_by(|a, b| b.order_id.cmp(&a.order_id));
+    orders.truncate(limit);
+    Json(orders)
 }
 
 async fn chain_l3_batched_orders(
