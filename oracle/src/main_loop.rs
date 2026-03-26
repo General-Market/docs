@@ -455,13 +455,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
-                                    std::time::Duration::from_secs(60),
+                                    std::time::Duration::from_secs(300),
                                     run_cross_chain_processing(
                                         p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
-                                    Err(_) => warn!(cycle, "Cross-chain buy processing timed out after 60s, releasing flag"),
+                                    Err(_) => warn!(cycle, "Cross-chain buy processing timed out after 300s, releasing flag"),
                                 }
                             });
                         }
@@ -492,13 +492,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
-                                    std::time::Duration::from_secs(60),
+                                    std::time::Duration::from_secs(300),
                                     run_cross_chain_buy_post_processing(
                                         p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
-                                    Err(_) => warn!(cycle, "Cross-chain buy post-processing timed out after 60s, releasing flag"),
+                                    Err(_) => warn!(cycle, "Cross-chain buy post-processing timed out after 300s, releasing flag"),
                                 }
                             });
                         }

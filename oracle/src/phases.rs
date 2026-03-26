@@ -604,12 +604,11 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 
     info!(found = submitted_orders.len(), "L3 pending order scan complete");
 
-    // Recovery path can discover 100+ orders. Processing all in one cycle exceeds the 60s
-    // timeout before any order completes. Cap per-cycle work to 5 — the rest will be picked
-    // up on subsequent settlement_poll_due ticks.
-    if submitted_orders.len() > 5 {
-        info!(total = submitted_orders.len(), "Limiting batch to 5 orders per cycle");
-        submitted_orders.truncate(5);
+    // Recovery path can discover 100+ orders. Cap per-cycle work to 100 — the rest will be
+    // picked up on subsequent settlement_poll_due ticks.
+    if submitted_orders.len() > 100 {
+        info!(total = submitted_orders.len(), "Limiting batch to 100 orders per cycle");
+        submitted_orders.truncate(100);
     }
 
     // Filter out orders already batched/filled/cancelled on-chain.

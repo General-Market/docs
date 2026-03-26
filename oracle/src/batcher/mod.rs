@@ -108,7 +108,7 @@ pub struct BatchResult {
 }
 
 /// Default maximum number of orders per batch (FIFO, prevents unbounded collection)
-pub const DEFAULT_MAX_BATCH_SIZE: usize = 50;
+pub const DEFAULT_MAX_BATCH_SIZE: usize = 100;
 
 /// Order Batcher for collecting and validating orders
 pub struct OrderBatcher<C: ChainReader> {
@@ -538,7 +538,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_batch_size_limit_truncates_to_max() {
-        // AC: 200 pending → returns at most 50
+        // AC: 200 pending → returns at most 100
         let itp_id = H256::random();
         let now = 1500u64;
 
@@ -549,7 +549,7 @@ mod tests {
         let mock_chain = builder.build();
 
         let mut batcher = OrderBatcher::new(Arc::new(mock_chain));
-        // Default max_batch_size = 50
+        // Default max_batch_size = 100
         let batch = batcher.get_batch(1, now).await.unwrap();
 
         let total_valid: usize = batch.valid_orders.values().map(|v| v.len()).sum();
