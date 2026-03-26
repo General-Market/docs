@@ -33,7 +33,7 @@ const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Settlement Bridge', () => {
   test('buy ITP via Settlement bridge — oracles relay to L3, BridgedITP minted', async () => {
-    test.setTimeout(480_000);
+    test.setTimeout(180_000); // 3min max — fail fast, don't block the runner
 
     // Discover a valid ITP instead of hardcoding
     const ITP_ID = await getFirstAvailableItpId();
@@ -127,7 +127,7 @@ test.describe('Settlement Bridge', () => {
   });
 
   test('sell ITP via Settlement bridge — oracles relay to L3, USDC returned on Settlement', async () => {
-    test.setTimeout(360_000);
+    test.setTimeout(180_000); // 3min max — fail fast, don't block the runner
 
     // Discover a valid ITP
     const ITP_ID = await getFirstAvailableItpId();

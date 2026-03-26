@@ -24,7 +24,7 @@ const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Multi-ITP Order Processing', () => {
   test('buy second ITP order fills via oracle consensus', async () => {
-    test.setTimeout(240_000);
+    test.setTimeout(180_000);
 
     // 1. Discover available ITPs — need at least 2
     const itpIds = await getAvailableItpIds(3);
@@ -61,7 +61,7 @@ test.describe('Multi-ITP Order Processing', () => {
   });
 
   test('sell second ITP order completes (not stuck at Executing trades)', async () => {
-    test.setTimeout(300_000);
+    test.setTimeout(180_000);
 
     // 1. Discover available ITPs
     const itpIds = await getAvailableItpIds(3);
@@ -115,7 +115,7 @@ test.describe('Multi-ITP Order Processing', () => {
   });
 
   test('first ITP sell still works after multi-ITP fix', async () => {
-    test.setTimeout(300_000);
+    test.setTimeout(180_000);
 
     // Discover the first available ITP
     const itpIds = await getAvailableItpIds(1);
