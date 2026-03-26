@@ -193,6 +193,11 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     let symbol_map = Arc::new(symbol_map);
 
     // Start ITP collector in background (if index_address is configured)
+    // Create chain-event broadcast channel early so trade_collector can use it
+    let (early_chain_event_tx, _) = tokio::sync::broadcast::channel::<crate::chain_event_scanner::ChainEventEnvelope>(
+        crate::chain_event_scanner::CHAIN_EVENT_CHANNEL_SIZE,
+    );
+
     if let Some(ref index_address) = args.index_address {
         let itp_pool = pool.clone();
         let itp_rpc_url = args.rpc_url.clone();
@@ -221,6 +226,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         let trade_rpc_url = args.rpc_url.clone();
         let trade_index_address = index_address.clone();
         let trade_poll_interval = args.itp_poll_interval;
+        let trade_event_tx = early_chain_event_tx.clone();
 
         tokio::spawn(async move {
             crate::trade_collector::run(
@@ -229,6 +235,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                 trade_rpc_url,
                 trade_index_address,
                 trade_poll_interval,
+                Some(trade_event_tx),
             )
             .await;
         });
@@ -2485,9 +2492,8 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     let orderbook_cache = Arc::new(crate::orderbook_aggregator::OrderbookCache::new(2)); // 2s TTL for live ticking
 
     // Chain event broadcast channel for SSE consumers
-    let (chain_event_tx, _) = tokio::sync::broadcast::channel::<crate::chain_event_scanner::ChainEventEnvelope>(
-        crate::chain_event_scanner::CHAIN_EVENT_CHANNEL_SIZE,
-    );
+    // Reuse the channel created early for trade_collector
+    let chain_event_tx = early_chain_event_tx;
 
     // HTTP server — read tuning params from SharedConfig
     let cfg_snap = shared_config.load();

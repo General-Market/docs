@@ -144,6 +144,7 @@ pub async fn run(
     rpc_url: String,
     index_address: String,
     poll_interval_secs: u64,
+    chain_event_tx: Option<tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>>,
 ) {
     let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "trade_collector") {
         Some(pa) => pa,
@@ -259,6 +260,24 @@ pub async fn run(
             }
             if !events.is_empty() {
                 info!(count = events.len(), "Processed new FillConfirmed events");
+                // Broadcast FillConfirmed events to SSE subscribers (AP)
+                if let Some(ref tx) = chain_event_tx {
+                    for (event, meta) in &events {
+                        let envelope = crate::chain_event_scanner::ChainEventEnvelope {
+                            event_type: "fill-confirmed".to_string(),
+                            chain: "l3".to_string(),
+                            block_number: meta.block_number.as_u64(),
+                            data: serde_json::json!({
+                                "orderId": event.order_id.to_string(),
+                                "cycleNumber": event.cycle_number.to_string(),
+                                "fillPrice": event.fill_price.to_string(),
+                                "fillAmount": event.fill_amount.to_string(),
+                            }),
+                        };
+                        let _ = tx.send(envelope);
+                    }
+                    info!(count = events.len(), "Broadcast FillConfirmed events to SSE");
+                }
             }
         }
 
