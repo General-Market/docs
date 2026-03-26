@@ -316,6 +316,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               bettingEnd={activeRound?.bettingEnd ?? null}
               playerCount={activeBatch?.playerCount ?? activeRound?.playerCount}
               tvl={activeBatch?.tvl}
+              tickDuration={activeBatch?.tickDuration}
             />
           </div>
 

@@ -68,9 +68,10 @@ interface BatchHistoryProps {
   bettingEnd?: string | null
   playerCount?: number
   tvl?: string
+  tickDuration?: number
 }
 
-export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl }: BatchHistoryProps) {
+export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration }: BatchHistoryProps) {
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
@@ -146,7 +147,9 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               {bettingEnd ? (
                 <CountdownCell target={bettingEnd} />
               ) : (
-                <span className="font-mono text-[11px] text-color-up">open</span>
+                <span className="font-mono text-[11px] text-color-up">
+                  {tickDuration ? `${Math.floor(tickDuration / 60)}m rounds` : 'open'}
+                </span>
               )}
             </div>
           </div>
