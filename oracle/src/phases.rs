@@ -527,7 +527,23 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             o.get_submitted_bridged_orders().await
         };
         if !bridge_orders.is_empty() {
-            bridge_orders
+            // Process bridge orders, but ALSO check for L3 direct orders
+            let mut all_orders = bridge_orders;
+            if let Ok(pending) = chain_reader.get_pending_orders().await {
+                if !pending.is_empty() {
+                    info!(count = pending.len(), "Also found L3 direct pending orders alongside bridge orders");
+                    let mut orch = orchestrator.write().await;
+                    for order in &pending {
+                        orch.set_order_itp_id(order.id, order.itp_id).await;
+                        orch.set_order_amount(order.id, order.amount).await;
+                        let side_u8 = match order.side { common::types::Side::Buy => 0u8, common::types::Side::Sell => 1u8 };
+                        orch.set_order_limit_price(order.id, order.limit_price, side_u8).await;
+                    }
+                    let ids: Vec<ethers::types::U256> = pending.iter().map(|o| o.id).collect();
+                    all_orders.extend(ids);
+                }
+            }
+            all_orders
         } else {
             // No bridge orders to process — all ITP orders MUST go through the bridge
             // pipeline (Settlement → AP → MockBitgetVault) to ensure underlying assets
