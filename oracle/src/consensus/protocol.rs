@@ -4581,6 +4581,16 @@ where
             }
             match chain_reader.get_itp_inventory_state((*itp_id).into()).await {
                 Ok(state) => {
+                    if state.assets.len() != state.quantities.len() {
+                        warn!(
+                            itp_id = ?itp_id,
+                            assets = state.assets.len(),
+                            quantities = state.quantities.len(),
+                            "ITP assets/quantities length mismatch — skipping"
+                        );
+                        continue;
+                    }
+                    let asset_count = state.assets.len();
                     let inventory: Vec<(Address, U256)> = state.assets
                         .into_iter()
                         .zip(state.quantities.into_iter())
@@ -4589,7 +4599,7 @@ where
                         inventory,
                         nav: state.nav,
                     });
-                    debug!(itp_id = ?itp_id, "Fetched ITP inventory state for decomposition");
+                    info!(itp_id = ?itp_id, asset_count, nav = %state.nav, "ITP inventory loaded for decomposition");
                 }
                 Err(e) => {
                     warn!(itp_id = ?itp_id, error = %e, "Failed to fetch ITP state, skipping");
@@ -4607,10 +4617,8 @@ where
         let mut prices_map = std::collections::HashMap::new();
         match self.price_fetcher.fetch_prices(&all_assets).await {
             Ok(fetched) => {
-                for (i, price) in fetched.iter().enumerate() {
-                    if i < all_assets.len() {
-                        prices_map.insert(all_assets[i], price.price);
-                    }
+                for price in &fetched {
+                    prices_map.insert(price.asset, price.price);
                 }
                 info!(
                     cycle_number,
