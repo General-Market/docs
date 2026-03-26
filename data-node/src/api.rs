@@ -5870,11 +5870,11 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
             let asset_nav_contribution = qty * price; // in 1e18-scaled units
             nav_sum += asset_nav_contribution;
 
-            // Derive symbol from the Bitget pair (strip trailing "USDT")
+            // Derive symbol from the Bitget pair (strip trailing quote currency)
             let symbol = state
                 .symbol_map
                 .get(&addr_lower)
-                .map(|pair| pair.trim_end_matches("USDT").to_string())
+                .map(|pair| pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string())
                 .unwrap_or_else(|| format!("{}...{}", &addr_lower[..6], &addr_lower[addr_lower.len().saturating_sub(4)..]) );
 
             all_symbols.insert(addr_lower.clone(), symbol.clone());
@@ -6009,7 +6009,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
          EXTRACT(EPOCH FROM order_timestamp)::bigint, \
          EXTRACT(EPOCH FROM fill_timestamp)::bigint, \
          CASE WHEN fill_timestamp IS NOT NULL THEN \
-           EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp))::float8 \
+           ABS(EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp)))::float8 \
          END \
          FROM trades ORDER BY order_id DESC LIMIT 20"
     ).fetch_all(&state.pool).await {
@@ -6023,7 +6023,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
                 block_number: 0,
                 block_timestamp: order_ts as u64,
                 status: if status == 2 { "filled".into() } else { "pending".into() },
-                fill_time_seconds: fill_latency,
+                fill_time_seconds: fill_latency.map(|v| v.max(0.0)),
                 fill_cycle: None,
             }
         }).collect(),
@@ -6056,13 +6056,13 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     // Calculate average fill time from DB (last 100 filled orders)
     let avg_fill_time_seconds = match sqlx::query_as::<_, (Option<f64>,)>(
-        "SELECT AVG(latency)::float8 FROM ( \
+        "SELECT AVG(ABS(latency))::float8 FROM ( \
            SELECT EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp))::float8 AS latency \
            FROM trades WHERE status = 2 AND fill_timestamp IS NOT NULL \
            ORDER BY order_id DESC LIMIT 100 \
          ) sub"
     ).fetch_optional(&state.pool).await {
-        Ok(Some((Some(avg),))) if avg > 0.0 => avg,
+        Ok(Some((Some(avg),))) if avg > 0.0 => avg.max(0.0),
         _ => 0.0,
     };
 

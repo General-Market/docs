@@ -69,13 +69,16 @@ function loadSymbolMap(): Promise<Map<string, string>> {
 
 function resolveSymbol(address: string, symbolMap: Map<string, string>): string {
   const lower = address.toLowerCase()
-  // Check WUSDC first
+  // Check both L3 WUSDC and Settlement USDC
   if (lower === INDEX_PROTOCOL.l3Usdc.toLowerCase()) return 'USDC'
+  if (INDEX_PROTOCOL.settlementUsdc && lower === INDEX_PROTOCOL.settlementUsdc.toLowerCase()) return 'USDC'
   return symbolMap.get(lower) || `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
 function isUsdc(address: string): boolean {
-  return address.toLowerCase() === INDEX_PROTOCOL.l3Usdc.toLowerCase()
+  const lower = address.toLowerCase()
+  return lower === INDEX_PROTOCOL.l3Usdc.toLowerCase()
+    || (!!INDEX_PROTOCOL.settlementUsdc && lower === INDEX_PROTOCOL.settlementUsdc.toLowerCase())
 }
 
 // ── Hook ──
