@@ -16,6 +16,7 @@
 #   ./testnet.sh setup-chain    # First-time VPS 2 setup (clone, build AP)
 #   ./testnet.sh deploy         # Deploy contracts from Mac to L3
 #   ./testnet.sh deploy --seed  # Deploy + start services + seed ITP positions & borrows
+#   (reset-chain removed — Orbit L3 re-derives from parent chain, volume wipe causes trie corruption)
 #   ./testnet.sh start          # Start all services on VPSes
 #   ./testnet.sh stop           # Stop all services on VPSes
 #   ./testnet.sh status         # Check what's running
@@ -77,6 +78,12 @@ ORACLE_KEYS=("$ORACLE_1_KEY" "$ORACLE_2_KEY" "$ORACLE_3_KEY")
 
 # AP key — Anvil account 4
 AP_KEY="0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+
+# Curator key — Anvil account 5 (dedicated to avoid nonce conflicts with deployer)
+CURATOR_KEY="0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
+
+# ITP Bot key — Anvil account 6 (dedicated to avoid nonce conflicts with deployer)
+ITP_BOT_KEY="0x92db14e403b83dfe3df233f83dfa3ecda7b66661b024f5ece2e4d04c5f0b8aa2"
 
 # Database
 DB_NAME="index_prices"
@@ -410,68 +417,15 @@ cmd_setup_chain() {
     echo -e "  ${GREEN}VPS 2 setup complete${NC}"
 }
 
-# ── reset-chain: Wipe L3 chain state on VPS 2 ────────────────
-# Stops the chain, deletes sequencer + blockscout volumes, restarts.
-# After this, deployer nonce is 0 and all old contract state is gone.
-cmd_reset_chain() {
-    echo -e "${CYAN}Resetting L3 chain on VPS 2...${NC}"
-
-    echo -e "${BLUE}[1/3] Stopping chain containers...${NC}"
-    vps_chain_ssh "cd /home/max/orbit-l3-testnet && docker compose down -v 2>&1 | tail -3"
-    echo -e "  ${GREEN}Chain stopped + volumes removed${NC}"
-
-    echo -e "${BLUE}[2/3] Restarting chain...${NC}"
-    vps_chain_ssh "cd /home/max/orbit-l3-testnet && docker compose up -d 2>&1 | tail -5"
-
-    echo -e "${BLUE}[3/3] Waiting for chain to be ready...${NC}"
-    local ATTEMPTS=0
-    while [ $ATTEMPTS -lt 60 ]; do
-        CHAIN_READY=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-        if [ "$CHAIN_READY" = "$CHAIN_ID" ]; then
-            BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
-            echo -e "  ${GREEN}L3 ready — chain $CHAIN_ID, block $BLOCK${NC}"
-
-            # Fund deployer with gas (new genesis = empty accounts)
-            echo -e "  Funding deployer from genesis..."
-            # The chain genesis pre-funds the sequencer address. Transfer gas from there.
-            local SEQ_KEY=$(vps_chain_ssh "python3 -c \"import json; print(json.load(open('/home/max/orbit-l3-testnet/config/sequencer_config.json')).get('node',{}).get('staker',{}).get('dangerous',{}).get('without-block-validator',''))\"" 2>/dev/null || echo "")
-            if [ -z "$SEQ_KEY" ]; then
-                # Try reading the genesis dev key from chain config
-                local DEV_KEY=$(vps_chain_ssh "cat /home/max/orbit-l3-testnet/config/dev-key.txt 2>/dev/null" 2>/dev/null || echo "")
-                if [ -n "$DEV_KEY" ]; then
-                    cast send --rpc-url "$RPC_URL" --private-key "$DEV_KEY" --value "$(cast to-wei 1000000 ether)" "$DEPLOYER_ADDRESS" --gas-price "$GAS_PRICE" > /dev/null 2>&1 || true
-                fi
-            fi
-            echo -e "  ${GREEN}Chain reset complete${NC}"
-            return 0
-        fi
-        ATTEMPTS=$((ATTEMPTS + 1))
-        sleep 2
-    done
-
-    echo -e "  ${RED}Chain did not come back after 120s${NC}"
-    return 1
-}
-
 # ── deploy: Deploy contracts from Mac to L3 ──────────────────
 cmd_deploy() {
     # Parse flags
-    local RESET_CHAIN=false
     local AUTO_SEED=false
     for arg in "$@"; do
         case "$arg" in
-            --reset-chain) RESET_CHAIN=true ;;
             --seed) AUTO_SEED=true ;;
         esac
     done
-
-    if [ "$RESET_CHAIN" = true ]; then
-        cmd_reset_chain || exit 1
-        # Also wipe ALL broadcast dirs — fresh chain = fresh nonce = no resume
-        echo -e "${BLUE}Wiping all broadcast dirs (fresh chain)...${NC}"
-        rm -rf contracts/broadcast/*/
-        echo -e "  ${GREEN}All broadcasts wiped${NC}"
-    fi
 
     # Wipe deployment-specific Postgres tables (preserves raw market data)
     # These tables contain state tied to contract addresses that change on redeploy.
@@ -1063,26 +1017,28 @@ for name, b in vb.get('batches', {}).items():
     # Delete stale consensus WAL files (prevents old P2P state from poisoning fresh deploy)
     vps_be_ssh "rm -f $VPS_BE_DIR/logs/consensus-*.wal" && echo -e "  ${GREEN}Consensus WAL files cleaned${NC}" || true
 
-    # Fund Anvil accounts 1-4 (oracles + AP) with GM for gas
-    echo -e "${BLUE}[4/14] Funding oracle + AP accounts with gas...${NC}"
+    # Fund Anvil accounts 1-6 (oracles + AP + curator + itp-bot) with GM for gas
+    echo -e "${BLUE}[4/14] Funding oracle + AP + curator + bot accounts with gas...${NC}"
     ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
     ORACLE_2_ADDR=$(cast wallet address "$ORACLE_2_KEY")
     ORACLE_3_ADDR=$(cast wallet address "$ORACLE_3_KEY")
     AP_ADDR=$(cast wallet address "$AP_KEY")
+    CURATOR_ADDR=$(cast wallet address "$CURATOR_KEY")
+    ITP_BOT_ADDR=$(cast wallet address "$ITP_BOT_KEY")
 
-    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
         cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
             "$addr" --value 10ether > /dev/null 2>&1 || true
     done
-    echo -e "  ${GREEN}Funded 4 accounts with 10 GM each${NC}"
+    echo -e "  ${GREEN}Funded 6 accounts with 10 GM each${NC}"
 
     # Fund accounts with gas on Sonic
     echo -e "${BLUE}[4b/14] Funding accounts with gas on Sonic...${NC}"
-    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
         cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
             "$addr" --value 0.5ether > /dev/null 2>&1 || true
     done
-    echo -e "  ${GREEN}Funded 4 accounts with 0.5 S each on Sonic${NC}"
+    echo -e "  ${GREEN}Funded 6 accounts with 0.5 S each on Sonic${NC}"
 
     # Fund swarm bot wallets with gas + Vision USDC (if addresses.json exists)
     if [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
@@ -1111,7 +1067,7 @@ for name, b in vb.get('batches', {}).items():
     # Verify funded accounts have non-zero balances
     echo -e "  Verifying funded balances..."
     local FUND_OK=true
-    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
         local BAL=$(cast balance --rpc-url "$RPC_URL" "$addr" 2>/dev/null || echo "0")
         if [ "$BAL" = "0" ]; then
             echo -e "  ${RED}WARNING: $addr has 0 balance after funding${NC}"
@@ -1804,15 +1760,15 @@ cmd_start() {
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
     # Docker creates dirs for missing bind-mount sources — must remove with privileged container
     # Multiple cleanup strategies: Alpine container (root), then direct rm (user), then verify
-    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key.txt /hostmp/curator-key.txt' 2>/dev/null; true"
-    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt 2>/dev/null; true"
+    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key-1.txt /hostmp/settlement-key-2.txt /hostmp/settlement-key-3.txt /hostmp/curator-key.txt /hostmp/bot-key.txt' 2>/dev/null; true"
+    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt /tmp/curator-key.txt /tmp/bot-key.txt 2>/dev/null; true"
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
+        # Each oracle uses its OWN key for settlement (avoids nonce conflicts with deployer)
+        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
     done
-    # Settlement key shared by all oracles (same deployer key)
-    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
     # Verify key files are regular files (not directories from Docker bind-mount stubs)
-    vps_be_ssh "for f in /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt; do [ -f \"\$f\" ] || { echo \"FATAL: \$f is not a regular file\"; exit 1; }; done"
+    vps_be_ssh "for f in /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt; do [ -f \"\$f\" ] || { echo \"FATAL: \$f is not a regular file\"; exit 1; }; done"
     echo -e "  ${GREEN}Files synced${NC}"
 
     # Start sonic-proxy
@@ -1985,12 +1941,13 @@ _start_oracles_docker() {
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
     # Recreate key files AFTER docker compose down (which may leave dir stubs)
-    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key.txt' 2>/dev/null; true"
-    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt 2>/dev/null; true"
+    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key-1.txt /hostmp/settlement-key-2.txt /hostmp/settlement-key-3.txt' 2>/dev/null; true"
+    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt 2>/dev/null; true"
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
+        # Each oracle uses its OWN key for settlement (avoids nonce conflicts with deployer)
+        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
     done
-    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
 
     # Dynamic args
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
@@ -2088,7 +2045,7 @@ services:
   oracle-1:
     environment:
       ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-1.txt
-      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key-1.txt
       ORACLE_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
       ORACLE_RPC_URL: "$RPC_URL"
       ORACLE_VISION_ADDRESS: "$VISION_ADDR"
@@ -2105,13 +2062,13 @@ $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
       - /tmp/oracle-key-1.txt:/tmp/oracle-key-1.txt:ro
-      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - /tmp/settlement-key-1.txt:/tmp/settlement-key-1.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
   oracle-2:
     environment:
       ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-2.txt
-      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key-2.txt
       ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
       ORACLE_RPC_URL: "$RPC_URL"
       ORACLE_VISION_ADDRESS: "$VISION_ADDR"
@@ -2128,13 +2085,13 @@ $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
       - /tmp/oracle-key-2.txt:/tmp/oracle-key-2.txt:ro
-      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - /tmp/settlement-key-2.txt:/tmp/settlement-key-2.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
   oracle-3:
     environment:
       ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-3.txt
-      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key-3.txt
       ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
       ORACLE_RPC_URL: "$RPC_URL"
       ORACLE_VISION_ADDRESS: "$VISION_ADDR"
@@ -2151,7 +2108,7 @@ $(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
       - /tmp/oracle-key-3.txt:/tmp/oracle-key-3.txt:ro
-      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - /tmp/settlement-key-3.txt:/tmp/settlement-key-3.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 YEOF
 
@@ -2219,8 +2176,8 @@ _start_curator_docker() {
 
     ORACLE_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
-    # Write curator key file on VPS (same pattern as oracle keys — NOT in CLI args or environment)
-    vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 644 /tmp/curator-key.txt"
+    # Write curator key file on VPS (dedicated key — NOT deployer, avoids nonce conflicts)
+    vps_be_ssh "printf '%s' '${CURATOR_KEY#0x}' > /tmp/curator-key.txt && chmod 644 /tmp/curator-key.txt"
 
     # Use YAML list format (safe from injection)
     # Private key via mounted file (not CLI arg — would be visible in docker inspect/proc)
@@ -2359,9 +2316,9 @@ _start_itp_bot_docker() {
     local INDEX_ADDR_BOT
     INDEX_ADDR_BOT=$(read_deployment_addr "Index")
 
-    # Write bot key file on VPS 1
+    # Write bot key file on VPS 1 (dedicated key — NOT deployer, avoids nonce conflicts)
     vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/bot-key.txt' 2>/dev/null; true"
-    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/bot-key.txt && chmod 644 /tmp/bot-key.txt"
+    vps_be_ssh "printf '%s' '$ITP_BOT_KEY' > /tmp/bot-key.txt && chmod 644 /tmp/bot-key.txt"
 
     local OVERRIDE="$SCRIPT_DIR/.itp-bot-override.yml"
     cat > "$OVERRIDE" <<YEOF
@@ -2399,7 +2356,7 @@ cmd_stop() {
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
-    vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt /tmp/bot-key.txt"
+    vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key-{1,2,3}.txt /tmp/curator-key.txt /tmp/bot-key.txt"
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/*/docker-compose.override.yml"
     echo -e "  ${GREEN}VPS 1 stopped + keys cleaned${NC}"
 
@@ -2815,7 +2772,6 @@ case "${1:-help}" in
     setup-be)    cmd_setup_be ;;
     setup-chain) cmd_setup_chain ;;
     deploy)      shift; cmd_deploy "$@" ;;
-    reset-chain) cmd_reset_chain ;;
     start)       cmd_start ;;
     stop)        cmd_stop ;;
     status)      cmd_status ;;
@@ -2830,8 +2786,7 @@ case "${1:-help}" in
         echo "Commands:"
         echo "  setup-be          First-time VPS 1 setup (PostgreSQL, clone, build)"
         echo "  setup-chain       First-time VPS 2 setup (clone, build AP)"
-        echo "  deploy [--reset-chain] [--seed]  Deploy contracts (--seed auto-starts services + seeds positions)"
-        echo "  reset-chain       Wipe L3 chain state (sequencer + blockscout volumes)"
+        echo "  deploy [--seed]   Deploy contracts (--seed auto-starts services + seeds positions)"
         echo "  start             Start all services on VPSes"
         echo "  stop              Stop all services on VPSes"
         echo "  status            Check what's running"
