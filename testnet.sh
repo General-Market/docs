@@ -1050,7 +1050,7 @@ for name, b in vb.get('batches', {}).items():
             SWARM_USDC=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
         fi
         [ -z "$SWARM_USDC" ] && SWARM_USDC=$(read_deployment_addr "L3_WUSDC")
-        local SWARM_FUND="10000000000000000000000"  # 10k USDC
+        local SWARM_FUND="100000000000000000000000"  # 100k USDC
         while IFS= read -r addr; do
             addr=$(echo "$addr" | tr -d '", ')
             [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
@@ -1838,7 +1838,7 @@ cmd_start() {
             USDC_ADDR=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
         fi
         [ -z "$USDC_ADDR" ] && USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
-        FUND_AMOUNT="10000000000000000000000"  # 10k USDC, 18 decimals
+        FUND_AMOUNT="100000000000000000000000"  # 100k USDC, 18 decimals
         FUND_FAILURES=0
         if [ -n "$USDC_ADDR" ] && [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
             while IFS= read -r addr; do
