@@ -4948,3 +4948,27 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [NOTE] AP is running (healthy) but has 0 processed orders, 269 failed (from old deployment).
   Queue is empty — no new AssetTradeRequest events because oracle's run_asset_trades_phase
   only fires after confirmFills, which requires the bridge pipeline.
+
+## 20260327-0200-x9k4 Session
+
+[DECISION] Parallel consensus agents (5 agents per investigation) — added to CLAUDE.md as standard method
+[DECISION] Removed --reset-chain from testnet.sh — Orbit L3 can't be truly reset
+[DECISION] Separated deployer key from service keys (oracles, curator, ITP bot)
+[DECISION] ITP generation filter: only deploy ITPs where all assets have Bitget feeds (min 2 assets)
+[DECISION] Deployer added as Vision bot #11 + ITP buyer in seed-orders
+
+[FAILED] --reset-chain wipes sequencer volume → trie corruption → hours of re-derivation
+[FAILED] Manual deployment.json editing → address mismatch cascade → orders never fill
+[FAILED] e2e-full-system.json has simulation addresses that diverge from broadcast on Orbit L3
+
+[BUG] oracle peer_scoring: score<0 threshold for "unhealthy" triggers on first missed tick → false partition → mutual ban
+[BUG] oracle phases.rs: E023/E021 errors fall through error handler → infinite retry loop
+[BUG] data-node upsert_trade: ON CONFLICT doesn't update amount column → stale amounts poison oracle fills
+[BUG] vision_batch_lifecycle.batch_id is local auto-increment, not on-chain batchId → rounds_active can't join → bettingEnd null → timer shows --:--
+[BUG] Vision bots funded with wrong USDC after redeploy (L3_WUSDC vs Vision.USDC())
+
+[TODO] Fix rounds_active to join lifecycle table by on-chain batch_id (not lifecycle auto-increment)
+[TODO] Fix Investment.sol size limit (>24576 bytes) to enable seedMint function
+[TODO] Implement get_order_on_chain_status in EthersChainReader (currently no-op)
+[TODO] Add confirmFills per-order error handling (don't let one bad order kill the whole batch)
+[TODO] Separate oracle settlement keys (each oracle uses own key for Sonic, not shared deployer)

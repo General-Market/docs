@@ -2222,6 +2222,9 @@ async fn rounds_active(
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
+                // The lifecycle table uses internal auto-increment batch_ids, not on-chain IDs.
+                // First try direct match (works when lifecycle batch_id = on-chain batch_id).
+                // Fallback: compute betting_end from on-chain created_at_tick + tick_duration.
                 let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String, Option<i32>)> = sqlx::query_as(
                     "SELECT betting_end, source_id, player_count FROM vision_batch_lifecycle WHERE batch_id = $1"
                 )
@@ -2230,6 +2233,41 @@ async fn rounds_active(
                 .await
                 .ok()
                 .flatten();
+
+                // Fallback: if no direct match, compute betting_end from on-chain timing.
+                // created_at_tick (in the contract) is block.timestamp / tick_duration at creation.
+                // betting_end = (created_at_tick + 1) * tick_duration (end of current tick).
+                let lifecycle_row = if lifecycle_row.is_some() {
+                    lifecycle_row
+                } else {
+                    // Read created_at_tick from on-chain
+                    let tick_duration = row.tick_duration as u64;
+                    if tick_duration > 0 {
+                        // Approximate: the batch was created recently, so betting_end ≈ now + remaining time
+                        // Use the on-chain batch's creation block to compute exact timing
+                        let created_at_tick_result: Option<(i64,)> = sqlx::query_as(
+                            "SELECT created_at_tick FROM vision_batches WHERE id = $1"
+                        )
+                        .bind(batch_id as i64)
+                        .fetch_optional(&state.pool)
+                        .await
+                        .ok()
+                        .flatten();
+
+                        if let Some((created_at_tick,)) = created_at_tick_result {
+                            let betting_end_epoch = ((created_at_tick as u64) + 1) * tick_duration;
+                            let dt = chrono::DateTime::from_timestamp(betting_end_epoch as i64, 0)
+                                .unwrap_or_default();
+                            // Resolve source from lifecycle by matching source_id text
+                            let src = row.source_id.as_deref().unwrap_or("").to_string();
+                            Some((dt, src, Some(live_count as i32)))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                };
                 // Skip batches with no lifecycle row — they were discovered by chain_listener
                 // but have no real betting_end. A fabricated `now + tick_duration` would drift
                 // on every request, producing a timer that never counts down.
