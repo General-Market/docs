@@ -259,11 +259,10 @@ async fn list_batches(
     // iterator, we query Postgres for batch IDs and then enrich with live data.
 
     let rows = sqlx::query_as::<_, BatchRow>(
-        "SELECT id, creator, tick_duration, paused, source_id, config_hash
+        "SELECT DISTINCT ON (source_id) id, creator, tick_duration, paused, source_id, config_hash
          FROM vision_batches
          WHERE paused = false
-         ORDER BY id DESC
-         LIMIT 100"
+         ORDER BY source_id, id DESC"
     )
     .fetch_all(&state.pool)
     .await;
@@ -2268,11 +2267,10 @@ async fn rounds_active(
         .await
     } else {
         sqlx::query_as::<_, BatchRow>(
-            "SELECT id, creator, tick_duration, paused, source_id, config_hash
+            "SELECT DISTINCT ON (source_id) id, creator, tick_duration, paused, source_id, config_hash
              FROM vision_batches
              WHERE paused = false
-             ORDER BY id DESC
-             LIMIT 100"
+             ORDER BY source_id, id DESC"
         )
         .fetch_all(&state.pool)
         .await

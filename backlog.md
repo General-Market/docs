@@ -4983,3 +4983,7 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [TODO] Implement get_order_on_chain_status in EthersChainReader (currently no-op)
 [TODO] Add confirmFills per-order error handling (don't let one bad order kill the whole batch)
 [TODO] Separate oracle settlement keys (each oracle uses own key for Sonic, not shared deployer)
+
+[BUG-CRITICAL] Shared mpsc channel in lifecycle.rs causes co-sign message theft between concurrent sources. 25% success rate. Fix: per-source channel dispatch (Option A from Agent 2/5 analysis). File: oracle/src/vision/lifecycle.rs line 98, 846-870.
+[BUG] Oracle-3 P2P disconnects after running for ~1 hour. Root cause unknown — possibly related to peer scoring or connection timeout. Needs investigation.
+[BUG] Vision bots exhaust USDC after ~500 joins. testnet.sh should fund with larger amounts or auto-refund.
