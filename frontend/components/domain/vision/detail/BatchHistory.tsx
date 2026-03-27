@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRounds } from '@/hooks/vision/useRounds'
 
 interface SourceBatch {
   batchId: number
@@ -39,7 +40,7 @@ function timeAgo(iso: string): string {
   return `${days}d ago`
 }
 
-function CountdownCell({ target }: { target: string }) {
+function CountdownCell({ target, label }: { target: string; label: string }) {
   const [remaining, setRemaining] = useState(0)
 
   useEffect(() => {
@@ -52,11 +53,14 @@ function CountdownCell({ target }: { target: string }) {
     return () => clearInterval(iv)
   }, [target])
 
-  if (remaining <= 0) return <span className="font-mono text-[11px] text-color-warning">closing</span>
+  if (remaining <= 0) return (
+    <span className="font-mono text-[10px] text-color-warning">{label} done</span>
+  )
   const m = Math.floor(remaining / 60)
   const s = remaining % 60
   return (
-    <span className={`font-mono text-[11px] tabular-nums ${remaining < 60 ? 'text-color-down' : 'text-text-secondary'}`}>
+    <span className={`font-mono text-[10px] tabular-nums ${remaining < 60 ? 'text-color-down' : 'text-text-secondary'}`}>
+      <span className="text-text-muted">{label}</span>{' '}
       {m}:{s.toString().padStart(2, '0')}
     </span>
   )
@@ -74,6 +78,15 @@ interface BatchHistoryProps {
 export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration }: BatchHistoryProps) {
   const [page, setPage] = useState(1)
 
+  // Live rounds data — polls every 5s for real-time player counts
+  const { data: rounds } = useRounds(sourceId)
+  const liveRound = rounds?.find(r => r.status === 'betting') ?? null
+
+  // Prefer live round data over props for player count and pool (Issue 4 + Issue 2)
+  const livePlayerCount = liveRound?.playerCount ?? playerCount ?? 0
+  const livePool = liveRound?.tvl ?? tvl
+  const liveTickDuration = tickDuration ?? liveRound?.timeframeSecs ?? 0
+
   const { data, isLoading } = useQuery({
     queryKey: ['source-history', sourceId, page],
     queryFn: () => fetchSourceHistory(sourceId, page),
@@ -81,16 +94,21 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
     staleTime: 10_000,
   })
 
-  // Build active batch entry from props (scheduler data, always accurate)
+  // Build active batch entry from live data
   const activeBatch: SourceBatch | null = activeBatchId ? {
     batchId: activeBatchId,
     status: 'open',
-    playerCount: playerCount ?? 0,
-    totalPool: tvl ? parseFloat(tvl) / 1e18 : 0,
+    playerCount: livePlayerCount,
+    totalPool: livePool ? parseFloat(livePool) / 1e18 : 0,
     avgPnl: 0,
     timestamp: bettingEnd ?? new Date().toISOString(),
     bettingEnd,
   } : null
+
+  // Settlement time = bettingEnd + tickDuration
+  const settlementTime = bettingEnd && liveTickDuration
+    ? new Date(new Date(bettingEnd).getTime() + liveTickDuration * 1000).toISOString()
+    : null
 
   const settled = data?.batches?.filter(b => b.status === 'settled') ?? []
   const totalPages = data?.totalPages ?? 0
@@ -118,7 +136,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           <div className="text-right">Players</div>
           <div className="text-right">Pool</div>
           <div className="text-right">Avg P&L</div>
-          <div className="text-right">Time</div>
+          <div className="text-right">Timers</div>
         </div>
 
         {/* Active batch — always first */}
@@ -143,12 +161,17 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">
               —
             </div>
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-0.5">
               {bettingEnd ? (
-                <CountdownCell target={bettingEnd} />
+                <>
+                  <CountdownCell target={bettingEnd} label="Close" />
+                  {settlementTime && (
+                    <CountdownCell target={settlementTime} label="Settle" />
+                  )}
+                </>
               ) : (
                 <span className="font-mono text-[11px] text-color-up">
-                  {tickDuration ? `${Math.floor(tickDuration / 60)}m rounds` : 'open'}
+                  {liveTickDuration ? `${Math.floor(liveTickDuration / 60)}m rounds` : 'open'}
                 </span>
               )}
             </div>
