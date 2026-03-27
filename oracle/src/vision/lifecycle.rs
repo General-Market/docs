@@ -48,7 +48,7 @@ pub struct IncomingCreateBatchSign {
 
 /// How long the leader waits for follower co-signs per attempt (seconds).
 /// Short timeout + retry is better than one long timeout — keeps the pipeline moving.
-const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 10;
+const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 30;
 
 /// Stagger interval between sources to avoid thundering herd.
 const SOURCE_STAGGER_SECS: u64 = 1;
