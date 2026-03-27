@@ -699,21 +699,18 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                 <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(bridgedItpBalance, 18)).toFixed(4)}</span>
               </div>
 
-              {bridgedItpBalance === 0n ? (
-                <div className={`${glass.section} p-8 text-center`}>
-                  <p className="text-text-secondary">{t('no_shares')}</p>
-                </div>
-              ) : (
-                <>
+              <>
                   <div className={`${glass.section} p-4`}>
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('shares_to_sell_label')}</label>
-                      <button
-                        onClick={() => setAmount(formatUnits(bridgedItpBalance, 18))}
-                        className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
-                      >
-                        {tc('actions.max')}
-                      </button>
+                      {bridgedItpBalance > 0n && (
+                        <button
+                          onClick={() => setAmount(formatUnits(bridgedItpBalance, 18))}
+                          className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
+                        >
+                          {tc('actions.max')}
+                        </button>
+                      )}
                     </div>
                     <input
                       type="number"
@@ -722,6 +719,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder="e.g., 10"
                       min="0"
                       step="0.01"
+                      disabled={bridgedItpBalance === 0n}
                       className={glass.input}
                     />
                     {insufficientShares && (
@@ -852,7 +850,6 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     </div>
                   )}
                 </>
-              )}
             </div>
           )}
         </div>
