@@ -1082,8 +1082,8 @@ pub async fn run_simulation(
     };
 
     // Find start date: use override if provided, otherwise earliest date with >= 1 eligible coin.
-    // Clamp to 2020-01-01 minimum — data before that is too sparse.
-    let min_start = chrono::NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+    // Clamp to 2020-06-01 minimum — data before that is too sparse.
+    let min_start = chrono::NaiveDate::from_ymd_opt(2020, 6, 1).unwrap();
     let effective_start = config.start_date.map(|sd| sd.max(min_start)).or(Some(min_start));
     let mut start_idx = None;
     for (i, date) in cache.all_dates.iter().enumerate() {

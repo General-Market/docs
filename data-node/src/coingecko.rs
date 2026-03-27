@@ -284,6 +284,65 @@ impl CoinGeckoClient {
         Ok(by_date.into_values().collect())
     }
 
+    /// Fetch daily historical market chart for a date range.
+    /// Uses `/coins/{id}/market_chart/range` with unix timestamps.
+    pub async fn fetch_daily_market_chart_range(
+        &self,
+        coin_id: &str,
+        from: NaiveDate,
+        to: NaiveDate,
+    ) -> Result<Vec<DailyMarketCap>, CgError> {
+        let from_ts = from
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc()
+            .timestamp()
+            .to_string();
+        let to_ts = to
+            .and_hms_opt(23, 59, 59)
+            .unwrap()
+            .and_utc()
+            .timestamp()
+            .to_string();
+        let url = format!("{BASE_URL}/coins/{coin_id}/market_chart/range");
+        let params = [
+            ("vs_currency", "usd"),
+            ("from", &from_ts),
+            ("to", &to_ts),
+        ];
+        let resp: MarketChartResponse = self.get_json(&url, &params).await?;
+
+        let len = resp
+            .market_caps
+            .len()
+            .min(resp.prices.len())
+            .min(resp.total_volumes.len());
+
+        use std::collections::BTreeMap;
+        let mut by_date: BTreeMap<NaiveDate, DailyMarketCap> = BTreeMap::new();
+
+        for i in 0..len {
+            let ts_ms = resp.market_caps[i].0 as i64;
+            let secs = ts_ms / 1000;
+            let dt = match chrono::DateTime::from_timestamp(secs, 0) {
+                Some(dt) => dt,
+                None => continue,
+            };
+            let date = dt.date_naive();
+            by_date.insert(
+                date,
+                DailyMarketCap {
+                    date,
+                    market_cap: resp.market_caps[i].1,
+                    price: resp.prices[i].1,
+                    volume: resp.total_volumes[i].1,
+                },
+            );
+        }
+
+        Ok(by_date.into_values().collect())
+    }
+
     /// Fetch all categories with market data from /coins/categories.
     pub async fn fetch_categories(&self) -> Result<Vec<CategoryData>, CgError> {
         let url = format!("{BASE_URL}/coins/categories");

@@ -1,11 +1,15 @@
 //! CoinGecko historical market-cap backfill.
 //!
-//! Fetches monthly market_chart data for every coin that has a market cap and
+//! Fetches market_chart data for every coin that has a market cap and
 //! stores it in the `coingecko_market_caps` table.
+//!
+//! With `--since YYYY-MM-DD`, uses the range API to fetch only recent data
+//! (much faster than full history for filling gaps).
 
 use std::sync::Arc;
 use std::time::Instant;
 
+use chrono::NaiveDate;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
@@ -19,6 +23,17 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
     tracing_subscriber::fmt().with_env_filter(filter).init();
 
     let started = Instant::now();
+
+    // Parse --since if provided
+    let since_date: Option<NaiveDate> = match &args.since {
+        Some(s) => {
+            let d = NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid --since date '{}': {}", s, e))?;
+            info!(%d, "Range mode: fetching data from this date onwards");
+            Some(d)
+        }
+        None => None,
+    };
 
     // Connect to DB
     let pool = db::create_pool(&args.database_url).await?;
@@ -75,7 +90,15 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
     info!(stored, date = %today, "Today's snapshot stored");
 
     // Step 3: Determine which coins need historical backfill
-    let work: Vec<(String, Option<String>, Option<String>)> = if args.skip_existing {
+    // In --since mode, process ALL coins (they need the recent range filled).
+    // Without --since, respect --skip-existing.
+    let work: Vec<(String, Option<String>, Option<String>)> = if since_date.is_some() {
+        info!("Step 3: Range mode — all {} coins will be fetched", to_process.len());
+        to_process
+            .iter()
+            .map(|c| (c.id.clone(), c.symbol.clone(), c.name.clone()))
+            .collect()
+    } else if args.skip_existing {
         info!("Step 3: Checking which coins already have historical data...");
         let existing = db::cg_coins_with_history(&pool).await?;
         let need_backfill: Vec<_> = to_process
@@ -102,9 +125,11 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
         return Ok(());
     }
 
-    // Step 4: Backfill historical monthly data per coin
+    // Step 4: Backfill historical data per coin
+    let mode_label = if since_date.is_some() { "range" } else { "full" };
     info!(
-        "Step 4: Backfilling historical daily market caps ({} coins, {} workers)...",
+        "Step 4: Backfilling {} daily market caps ({} coins, {} workers)...",
+        mode_label,
         work.len(),
         args.concurrency
     );
@@ -126,6 +151,8 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
         let failed_counter = Arc::clone(&coins_failed);
         let api_key = args.coingecko_api_key.clone();
         let shared_limiter = limiter.clone();
+        let range_from = since_date;
+        let range_to = today;
 
         handles.spawn(async move {
             // All workers share the same rate limiter
@@ -150,14 +177,22 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
 
                 let done = done_counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
-                match client.fetch_daily_market_chart(&coin_id).await {
+                let fetch_result = if let Some(from) = range_from {
+                    client.fetch_daily_market_chart_range(&coin_id, from, range_to).await
+                } else {
+                    client.fetch_daily_market_chart(&coin_id).await
+                };
+
+                match fetch_result {
                     Ok(data_points) => {
                         if data_points.is_empty() {
-                            info!(
-                                worker = worker_id,
-                                coin = %coin_id,
-                                "[{done}/{coins_total}] No historical data"
-                            );
+                            if done % 100 == 0 || done == coins_total {
+                                info!(
+                                    worker = worker_id,
+                                    coin = %coin_id,
+                                    "[{done}/{coins_total}] No data"
+                                );
+                            }
                             continue;
                         }
 
@@ -170,7 +205,7 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
                                 market_cap_usd: Some(dp.market_cap),
                                 price_usd: Some(dp.price),
                                 total_volume_usd: Some(dp.volume),
-                                market_cap_rank: None, // not available in historical data
+                                market_cap_rank: None,
                                 snapshot_date: dp.date,
                             })
                             .collect();
@@ -181,7 +216,6 @@ pub async fn run(args: CgBackfillArgs) -> Result<(), Box<dyn std::error::Error>>
                                 inserted_counter
                                     .fetch_add(inserted, std::sync::atomic::Ordering::Relaxed);
 
-                                // Log progress every coin, with ETA every 100
                                 if done % 100 == 0 || done == coins_total {
                                     let elapsed = backfill_start.elapsed().as_secs_f64();
                                     let rate = done as f64 / elapsed;

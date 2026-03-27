@@ -624,7 +624,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.start_from')}<HelpTip text={t('filter.start_from_help')} /></label>
           <div className="flex items-center gap-1">
             {[
-              { label: t('filter.start_all'), value: '2020-01-01' },
+              { label: t('filter.start_all'), value: '2020-06-01' },
               { label: t('filter.start_5y'), value: fiveYearsAgo() },
               { label: t('filter.start_3y'), value: threeYearsAgo() },
               { label: t('filter.start_1y'), value: oneYearAgo() },
@@ -644,13 +644,13 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             <input
               type="date"
               className={`bg-muted border rounded-lg px-3 py-1.5 text-sm text-text-primary w-[130px] ${
-                filters.start_date && !['2020-01-01', fiveYearsAgo(), threeYearsAgo(), oneYearAgo()].includes(filters.start_date)
+                filters.start_date && !['2020-06-01', fiveYearsAgo(), threeYearsAgo(), oneYearAgo()].includes(filters.start_date)
                   ? 'border-border-medium bg-white'
                   : 'border-border-light'
               }`}
               value={filters.start_date}
               onChange={e => update({ start_date: e.target.value })}
-              min="2020-01-01"
+              min="2020-06-01"
             />
           </div>
         </div>

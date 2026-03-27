@@ -344,6 +344,10 @@ pub struct CgBackfillArgs {
     #[arg(long, default_value = "5")]
     pub concurrency: usize,
 
+    /// Only fetch data from this date onwards (YYYY-MM-DD). Uses range API instead of full history.
+    #[arg(long)]
+    pub since: Option<String>,
+
     /// Log level
     #[arg(long, default_value = "info", env = "DATA_NODE_LOG_LEVEL")]
     pub log_level: String,

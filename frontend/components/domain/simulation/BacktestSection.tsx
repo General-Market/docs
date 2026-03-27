@@ -39,7 +39,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     sweep: 'none',
     sweep_categories: [],
     threshold_pct: null,
-    start_date: '2020-01-01',
+    start_date: '2020-06-01',
     fng_mode: '',
     fng_fear: 25,
     fng_greed: 75,
