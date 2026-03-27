@@ -252,6 +252,20 @@ class Executor:
         """Return the next batch ID (= total count of batches)."""
         return self.vision.functions.nextBatchId().call()
 
+    def is_tick_locked(self, batch_id: int) -> bool:
+        """Check if a batch is currently in its lock window (last N seconds of the tick).
+        Returns True if joining would revert with TickLocked()."""
+        info = self.get_batch_info(batch_id)
+        tick_duration = info["tickDuration"]
+        lock_offset = info["lockOffset"]
+        if lock_offset == 0:
+            return False
+        block = self.w3.eth.get_block("latest")
+        ts = block["timestamp"]
+        current_abs_tick = ts // tick_duration
+        tick_end = (current_abs_tick + 1) * tick_duration
+        return ts >= tick_end - lock_offset
+
     # ── write: join flow ──
 
     def approve_usdc(self, amount: int):

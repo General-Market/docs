@@ -1242,6 +1242,33 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         emit EventsLib.ExpiredOrderClaimed(orderId, order.user, msg.sender, order.amount);
     }
 
+    // ============ ADMIN FUNCTIONS (TESTNET) ============
+
+    /// @notice Admin-only: mint ITP shares for testnet seeding (bypasses order pipeline)
+    /// @param itpId The ITP identifier
+    /// @param to Recipient address
+    /// @param shares Amount of shares to mint (18 decimals)
+    function seedMint(bytes32 itpId, address to, uint256 shares) external {
+        if (msg.sender != governance.admin()) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
+        }
+        if (!_itpExists[itpId]) {
+            revert ErrorsLib.E006_ITPNotFound(itpId);
+        }
+
+        TypesLib.ITPCore storage itp = _itps[itpId];
+        itp.totalSupply += shares;
+        _userShares[itpId][to] += shares;
+
+        address vault = itpVaults[itpId];
+        if (vault != address(0)) {
+            (bool success,) = vault.call(abi.encodeWithSignature("mint(address,uint256)", to, shares));
+            if (!success) {
+                revert ErrorsLib.E063_MintFailed(vault, itpId);
+            }
+        }
+    }
+
     // ============ INTERNAL FUNCTIONS ============
 
     // BLS verification via inherited BLSVerifier._verifyBLS()

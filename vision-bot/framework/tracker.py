@@ -26,6 +26,7 @@ class Tracker:
         self._oracle_urls_fn = oracle_urls_fn
         self._positions: dict[int, dict] = {}  # batch_id -> position info
         self._history: list[dict] = []  # completed positions
+        self._skip_ids: set[int] = set()  # batch IDs that reverted — never retry
         self._load_history()
 
     def on_join(self, batch_id: int, deposit_wei: int, bitmap: bytes, bets: list[str], bitmap_hash: bytes | None = None):
@@ -114,8 +115,31 @@ class Tracker:
             joined = 0
             for batch in active:
                 bid = batch.get("id", -1)
-                if bid in self.active_ids or bid < 0:
+                if bid in self.active_ids or bid in self._skip_ids or bid < 0:
                     continue
+
+                # On-chain guard: if already joined, track the position and skip.
+                # Prevents AlreadyJoined() reverts when tracker state was lost
+                # (process restart, pnl.json out of sync, etc.)
+                try:
+                    pos = self._executor.get_position(bid)
+                    if pos["joinTimestamp"] > 0:
+                        log.debug("Batch %d: already joined on-chain, adding to tracker", bid)
+                        self._positions[bid] = {
+                            "batch_id": bid,
+                            "deposited": pos["totalDeposited"],
+                            "balance": pos["totalDeposited"],
+                            "pnl": 0,
+                            "bitmap": None,
+                            "bitmap_hash": pos.get("bitmapHash"),
+                            "bets": [],
+                            "joined_at": pos["joinTimestamp"],
+                            "last_claimed_tick": 0,
+                        }
+                        continue
+                except Exception:
+                    pass  # chain read failed, proceed with join attempt
+
                 if joined >= max_per_cycle:
                     break
                 try:
@@ -129,6 +153,8 @@ class Tracker:
                     joined += 1
                 except Exception as e:
                     log.warning("Failed to join batch %d: %s", bid, e)
+                    # Permanent skip: don't retry batches that revert
+                    self._skip_ids.add(bid)
         except Exception as e:
             log.warning("Round check failed: %s", e)
 
@@ -170,6 +196,14 @@ class Tracker:
         bitmap = encode_bitmap(bets, market_count)
         bitmap_hash = hash_bitmap(bitmap)
 
+        # Skip batches in lock window to avoid TickLocked() reverts
+        try:
+            if self._executor.is_tick_locked(batch_id):
+                log.debug("Batch %d: tick locked, skipping", batch_id)
+                return
+        except Exception:
+            pass  # proceed if check fails
+
         # On-chain: approve max once (not per-join — multiple joins in one cycle exhaust allowance)
         MAX_UINT = 2**256 - 1
         if not getattr(self, '_usdc_approved', False):
@@ -178,6 +212,10 @@ class Tracker:
         if isinstance(config_hash, str):
             config_hash = bytes.fromhex(config_hash.replace("0x", ""))
         self._executor.join_batch_direct(batch_id, config_hash, deposit, stake, bitmap_hash)
+
+        # Wait for block confirmation before submitting bitmap to oracles
+        # (oracles need to index the PlayerJoined event first)
+        time.sleep(2)
 
         # Submit bitmap to oracles
         from framework.chain import submit_bitmap

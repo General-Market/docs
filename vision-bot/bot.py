@@ -158,6 +158,14 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             batch_id, market_count, bets.count("UP"), bets.count("DOWN"),
         )
 
+        # Skip batches in lock window to avoid TickLocked() reverts
+        try:
+            if executor.is_tick_locked(batch_id):
+                log.debug("Batch %d: tick locked, skipping", batch_id)
+                continue
+        except Exception:
+            pass  # proceed if check fails
+
         # Direct join: approve USDC then joinBatchDirect transfers it in one step
         executor.approve_usdc(deposit_wei)
         stake_wei = int(cfg["stake"] * 10**DECIMALS)

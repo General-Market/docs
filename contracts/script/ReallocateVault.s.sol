@@ -11,8 +11,8 @@ contract ReallocateVault is Script {
 
     function run() external {
         uint256 key = vm.envOr("DEPLOYER_KEY", uint256(0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537));
-        address morphoAddr = vm.envOr("MORPHO", address(0xecf30fA79bb8aB854932E3De0a7D75Cf19cFd867));
-        address vaultAddr = vm.envOr("METAMORPHO_VAULT", address(0xEd0B49a94104D65B8280B0B505402523A2fDBB6d));
+        address morphoAddr = vm.envOr("MORPHO", address(0xb1a301C89cB313084Bb4367f8D30a21AD7c3D449));
+        address vaultAddr = vm.envOr("METAMORPHO_VAULT", address(0xE67Eee49D5032D5618d7549F5dE866FF442F1Eee));
         bool spread = vm.envOr("SPREAD", false);
 
         IMorpho morpho = IMorpho(morphoAddr);

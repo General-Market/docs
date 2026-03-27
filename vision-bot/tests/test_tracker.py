@@ -297,17 +297,68 @@ def test_check_rounds_joins_new_batch():
         "round_subscriptions": [("crypto", 300)],
         "deposit": 10,
         "stake": 1,
+        "data_node": "",
     })
-    # Mock oracle returning active round
+    # get_position must return joinTimestamp=0 for the new batch (not yet joined)
+    executor.get_position.return_value = {
+        "bitmapHash": b"\x00" * 32,
+        "configHash": b"\x00" * 32,
+        "stakePerTick": 0,
+        "startTick": 0,
+        "balance": 0,
+        "lastClaimedTick": 0,
+        "joinTimestamp": 0,
+        "totalDeposited": 0,
+        "isVirtual": False,
+    }
+    executor.is_tick_locked.return_value = False
+    # Mock oracle returning active batch
     mock_resp = MagicMock()
     mock_resp.ok = True
     mock_resp.json.return_value = {
-        "rounds": [{"batchId": 99, "configHash": "0x" + "ab" * 32, "marketCount": 14}]
+        "batches": [{"id": 99, "source_id": "crypto", "config_hash": "0x" + "ab" * 32, "market_count": 14}]
     }
     with patch("framework.tracker.requests.get", return_value=mock_resp), \
-         patch("framework.chain.submit_bitmap"):
+         patch("framework.chain.submit_bitmap"), \
+         patch("framework.chain.fetch_batch_config", return_value=None):
         tracker.check_rounds()
 
     executor.approve_usdc.assert_called_once()
     executor.join_batch_direct.assert_called_once()
     assert 99 in tracker.active_ids
+
+
+# ─── Test 14: check_rounds skips already-joined batches (AlreadyJoined fix) ──
+
+def test_check_rounds_skips_already_joined_on_chain():
+    """Batches already joined on-chain must be tracked silently, not re-attempted."""
+    tracker, executor, _ = make_tracker({
+        "deposit": 10,
+        "stake": 1,
+        "data_node": "",
+    })
+    # On-chain: position exists (joinTimestamp > 0)
+    executor.get_position.return_value = {
+        "bitmapHash": b"\xab" * 32,
+        "configHash": b"\xcd" * 32,
+        "stakePerTick": 1_000_000_000_000_000_000,
+        "startTick": 0,
+        "balance": 10_000_000_000_000_000_000,
+        "lastClaimedTick": 0,
+        "joinTimestamp": 1774600000,
+        "totalDeposited": 100_000_000_000_000_000_000,
+        "isVirtual": False,
+    }
+    mock_resp = MagicMock()
+    mock_resp.ok = True
+    mock_resp.json.return_value = {
+        "batches": [{"id": 42, "source_id": "crypto", "config_hash": "0x" + "ab" * 32, "market_count": 10}]
+    }
+    with patch("framework.tracker.requests.get", return_value=mock_resp):
+        tracker.check_rounds()
+
+    # joinBatchDirect must NOT be called — the batch was already joined
+    executor.join_batch_direct.assert_not_called()
+    # But the position should be tracked
+    assert 42 in tracker.active_ids
+    assert tracker._positions[42]["deposited"] == 100_000_000_000_000_000_000
