@@ -186,7 +186,7 @@ export function NextBatches() {
     }
 
     return apiBatches
-      .filter(b => b.marketCount > 0 && !b.paused)
+      .filter(b => !b.paused)
       .map(batch => {
         const source = findSource(registrySources, batch.sourceId)
         const displayName = source?.name ?? batch.sourceId
