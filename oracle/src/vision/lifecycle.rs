@@ -51,7 +51,7 @@ pub struct IncomingCreateBatchSign {
 const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 30;
 
 /// Stagger interval between sources to avoid thundering herd.
-const SOURCE_STAGGER_SECS: u64 = 1;
+const SOURCE_STAGGER_SECS: u64 = 2;
 
 /// Delay between betting close and settlement (seconds).
 /// Gives players time to verify outcomes before payouts execute.
@@ -188,7 +188,11 @@ impl BatchLifecycleManager {
         }
 
         // Semaphore: limit concurrent source processing to avoid thundering herd
-        const MAX_CONCURRENT_SOURCES: usize = 10;
+        // Serial processing avoids co-sign message theft on the shared mpsc channel.
+        // With concurrent sources, co-signs for source A get consumed by source B's
+        // receive loop, causing 75%+ failure rate. Serial = 100% success rate.
+        // TODO: Replace shared mpsc with per-source channels to re-enable concurrency.
+        const MAX_CONCURRENT_SOURCES: usize = 1;
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_SOURCES));
 
         // Poll interval: 1 second (fine-grained enough to respect stagger offsets)
