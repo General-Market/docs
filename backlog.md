@@ -4987,3 +4987,9 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [BUG-CRITICAL] Shared mpsc channel in lifecycle.rs causes co-sign message theft between concurrent sources. 25% success rate. Fix: per-source channel dispatch (Option A from Agent 2/5 analysis). File: oracle/src/vision/lifecycle.rs line 98, 846-870.
 [BUG] Oracle-3 P2P disconnects after running for ~1 hour. Root cause unknown — possibly related to peer scoring or connection timeout. Needs investigation.
 [BUG] Vision bots exhaust USDC after ~500 joins. testnet.sh should fund with larger amounts or auto-refund.
+
+[BUG] Batch entry panel shows "Update predictions" + strategy buttons for CLOSED rounds. Should disable/hide when bettingEnd has passed.
+[BUG] Round history shows 0 players/$0 even when user is IN the batch (confirmed by position panel). Chain listener lag means oracle doesn't reflect recent PlayerJoined events in time for the API response.
+[BUG] Position panel says "IN BATCH" but round history says 0 players — data source mismatch (on-chain vs oracle Postgres).
+[TODO] Per-source co-sign channels to restore concurrent batch creation (currently serialized as workaround).
+[TODO] Deploy batches for remaining 30 batch-eligible sources not in DeployAllVisionBatches.
