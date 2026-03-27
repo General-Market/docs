@@ -335,10 +335,27 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               : 'text-text-muted'
           const topSign = topPnl > 0 ? '+' : ''
 
+          // Build tooltip lines from available lifecycle data
+          const tooltipLines: string[] = []
+          if (batch.bettingStart) tooltipLines.push(`Betting opened: ${formatTimestamp(batch.bettingStart)}`)
+          if (batch.bettingEnd) tooltipLines.push(`Betting closed: ${formatTimestamp(batch.bettingEnd)}`)
+          if (batch.settledAt) tooltipLines.push(`Settled: ${formatTimestamp(batch.settledAt)}`)
+          else tooltipLines.push(`Settled: ${formatTimestamp(batch.timestamp)}`)
+          if (batch.marketCount != null) tooltipLines.push(`Markets: ${batch.marketCount}`)
+          if (batch.bettingEnd && batch.settledAt) {
+            const dur = Math.floor((new Date(batch.settledAt).getTime() - new Date(batch.bettingEnd).getTime()) / 1000)
+            if (dur > 0) {
+              const m = Math.floor(dur / 60)
+              const s = dur % 60
+              tooltipLines.push(`Settlement time: ${m}:${s.toString().padStart(2, '0')}`)
+            }
+          }
+
           return (
             <div
               key={batch.batchId}
-              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light last:border-0 ${
+              title={tooltipLines.join('\n')}
+              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light last:border-0 cursor-default transition-colors hover:bg-surface/50 ${
                 participated
                   ? 'bg-white'
                   : 'bg-surface/30'

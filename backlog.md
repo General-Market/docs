@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260327-1410-t3m8 (Round History Timer Fix + Hover Tooltip)
+
+- [DECISION] Timer loop fix: useLockedBettingEnds ref locks bettingEnd per batchId on first sight. The oracle's rounds_active endpoint computes bettingEnd = (current_tick + 1) * tick_duration, which advances every tick. Without locking, the frontend timer resets instead of transitioning through Closed -> Settling -> Settled. The ref is pruned when rounds leave the active list.
+- [DECISION] Hover tooltip on settled rows: native title attribute with betting start/end timestamps, settlement timestamp, market count, and settlement duration. Minimal — no custom tooltip component, no state, just title. The oracle API now returns bettingStart and marketCount from vision_batch_lifecycle.
+- [DECISION] Oracle SettledHistoryRow struct already had betting_end; added betting_start and market_count. SQL GROUP BY extended to include the new lifecycle columns. No migration needed — columns already exist from migration 008/011.
+
 ## Session: 20260326-1830-k9v4 (NAV Investigation + Lending Filter + E2E)
 
 - [DECISION] Added nav_per_share<=0 filter in useLendingData.ts — zero-NAV ITPs (no price feed resolved) were showing as $0.00 markets in lending UI. The SSE nav stream from poll_nav_once emits partial NAVs including zero, unlike aum-ranking which already skips them.
