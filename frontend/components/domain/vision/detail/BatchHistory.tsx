@@ -409,7 +409,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               </div>
               <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right">
-                <ActiveTimers bettingEnd={locked.bettingEnd} settlementEnd={roundSettlementEnd} />
+                <ActiveTimers bettingEnd={locked.bettingEnd} settlementEnd={roundSettlementEnd} playerCount={players} />
               </div>
             </div>
           )
@@ -417,8 +417,9 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
         {/* Fallback: show single active batch from props if no live or retained rounds */}
         {page === 1 && activeRounds.length === 0 && retainedRounds.length === 0 && activeBatch && (() => {
           const participated = participatedBatches.has(activeBatch.batchId)
+          const knownJoined = participated || !!isJoinedOnChain
           const userEntry = participatedBatches.get(activeBatch.batchId)
-          const players = participated ? Math.max(activeBatch.playerCount, 1) : activeBatch.playerCount
+          const players = knownJoined ? Math.max(activeBatch.playerCount, 1) : activeBatch.playerCount
           const pool = participated && userEntry ? Math.max(activeBatch.totalPool, userEntry.deposited) : activeBatch.totalPool
           return (
           <div className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${participated ? 'bg-white' : 'bg-surface/60'}`}>
@@ -434,7 +435,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             </div>
             <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
             <div className="text-right">
-              <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} />
+              <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} playerCount={players} />
             </div>
           </div>
           )

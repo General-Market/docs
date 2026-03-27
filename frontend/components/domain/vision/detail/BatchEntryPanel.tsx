@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAccount, useReadContract, useConnect, usePublicClient } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -72,6 +73,7 @@ export default function BatchEntryPanel({
   bettingEnd,
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
+  const queryClient = useQueryClient()
 
   // -- Contract addresses from deployment.json (auto-synced) --
   const { getAddress } = useDeployment()
