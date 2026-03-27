@@ -154,7 +154,7 @@ impl PeerScorer {
         let unhealthy = self
             .scores
             .iter()
-            .filter(|e| e.value().score.load(Ordering::Relaxed) < 0)
+            .filter(|e| e.value().score.load(Ordering::Relaxed) < -5000) // -50.0 = ban threshold
             .count();
 
         if total >= 2 && unhealthy * 2 > total {
