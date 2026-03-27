@@ -241,4 +241,111 @@ mod tests {
         assert!(settlement.players[0] < settlement.players[1]);
         assert!(settlement.players[1] < settlement.players[2]);
     }
+
+    /// Verify zero-sum when a player's bitmap doesn't cover all markets.
+    /// The uncovered market stake must be refunded as payout = stake,
+    /// ensuring total payouts == total deposits (the parimutuel invariant).
+    #[test]
+    fn test_uncovered_bitmap_refund_preserves_zero_sum() {
+        // 2 markets. Player 1 covers both (normal). Player 2 covers only market 0
+        // (bitmap too short for market 1). Per-market stake = deposit / 2.
+        //
+        // Market 0: P1 UP (50), P2 DOWN (500) — outcome UP → P1 wins
+        //   matched = min(50, 500) = 50
+        //   P1: payout = 100, refund = 0   (2 * 50)
+        //   P2: payout = 0,   refund = 450 (500 - 50)
+        //
+        // Market 1: P1 UP (50) — outcome DOWN → P1 loses. P2 not in matching.
+        //   Only one side → refund_all
+        //   P1: payout = 50, refund = 0
+        //   P2: uncovered → self-refund entry: payout = 500, refund = 0
+        let result = TickResult {
+            batch_id: 1,
+            tick_id: 1,
+            market_results: vec![
+                MarketResult {
+                    market_id: H256::zero(),
+                    asset_id: "m0".to_string(),
+                    outcome: MarketOutcome::Up,
+                    start_price: 100.0,
+                    end_price: 110.0,
+                    pct_change_bps: 1000,
+                    player_results: vec![
+                        PlayerMarketResult {
+                            player: addr(1),
+                            side: Side::Up,
+                            effective_stake: U256::from(50),
+                            matched_stake: U256::from(50),
+                            payout: U256::from(100),
+                            refund: U256::zero(),
+                        },
+                        PlayerMarketResult {
+                            player: addr(2),
+                            side: Side::Down,
+                            effective_stake: U256::from(500),
+                            matched_stake: U256::from(50),
+                            payout: U256::zero(),
+                            refund: U256::from(450),
+                        },
+                    ],
+                },
+                MarketResult {
+                    market_id: H256::from_low_u64_be(1),
+                    asset_id: "m1".to_string(),
+                    outcome: MarketOutcome::Down,
+                    start_price: 100.0,
+                    end_price: 90.0,
+                    pct_change_bps: -1000,
+                    player_results: vec![
+                        // P1: only player → all-same-side refund
+                        PlayerMarketResult {
+                            player: addr(1),
+                            side: Side::Up,
+                            effective_stake: U256::from(50),
+                            matched_stake: U256::zero(),
+                            payout: U256::from(50),
+                            refund: U256::zero(),
+                        },
+                        // P2: bitmap uncovered → self-refund (the fix)
+                        PlayerMarketResult {
+                            player: addr(2),
+                            side: Side::Up, // opposite of outcome, doesn't count as correct
+                            effective_stake: U256::from(500),
+                            matched_stake: U256::zero(),
+                            payout: U256::from(500), // full stake refunded
+                            refund: U256::zero(),
+                        },
+                    ],
+                },
+            ],
+            player_balances: vec![],
+            voided_players: vec![],
+        };
+
+        let deposits = vec![
+            (addr(1), U256::from(100)),
+            (addr(2), U256::from(1000)),
+        ];
+        let settlement = compute_settlement(&result, &deposits);
+
+        let total_payouts: U256 = settlement.payouts.iter().copied().fold(U256::zero(), |a, b| a + b);
+        let total_deposits: U256 = deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
+
+        // Zero-sum: total payouts == total deposits
+        assert_eq!(
+            total_payouts, total_deposits,
+            "Parimutuel invariant violated: payouts={total_payouts} != deposits={total_deposits}"
+        );
+
+        // P1: 100 (market 0 win) + 50 (market 1 refund) = 150
+        let p1_idx = settlement.players.iter().position(|a| *a == addr(1)).unwrap();
+        assert_eq!(settlement.payouts[p1_idx], U256::from(150));
+
+        // P2: 450 (market 0 loss refund) + 500 (market 1 uncovered refund) = 950
+        let p2_idx = settlement.players.iter().position(|a| *a == addr(2)).unwrap();
+        assert_eq!(settlement.payouts[p2_idx], U256::from(950));
+
+        // P2 correct_count should be 0 (uncovered market side is opposite of outcome)
+        assert_eq!(settlement.correct_counts[p2_idx], 0);
+    }
 }

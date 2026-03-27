@@ -202,16 +202,13 @@ impl TickResolver {
 
             // Decode bitmaps -> player sides for this market
             let mut side_inputs = Vec::new();
+            // Track players whose bitmap doesn't cover this market — their
+            // allocated per_market_stake must be refunded (not silently lost).
+            let mut uncovered_refunds: Vec<(Address, U256)> = Vec::new();
             for (player, bitmap) in &revealed_players {
                 // Flat indexing: one bitmap per tick, bit_index = market position in config
                 let bit_index = market_idx;
                 let bit = get_bitmap_bit(bitmap, bit_index);
-                // IS-6: if bitmap doesn't cover this market, skip the player
-                let side = match bit {
-                    Some(true) => Side::Up,
-                    Some(false) => Side::Down,
-                    None => continue, // player didn't cover this market
-                };
                 // Flat stake: split stake_per_tick evenly across all markets.
                 // Remainder (stake_per_tick % num_markets) is distributed one unit extra
                 // to the first N markets where N = remainder.
@@ -224,6 +221,16 @@ impl TickResolver {
                         base + U256::one()
                     } else {
                         base
+                    }
+                };
+                let side = match bit {
+                    Some(true) => Side::Up,
+                    Some(false) => Side::Down,
+                    None => {
+                        // Bitmap doesn't cover this market — refund the allocated stake.
+                        // Without this, the stake vanishes and breaks zero-sum.
+                        uncovered_refunds.push((player.player, per_market_stake));
+                        continue;
                     }
                 };
                 side_inputs.push(SideMatchInput {
@@ -272,7 +279,7 @@ impl TickResolver {
             }
 
             // Build PlayerMarketResult for this market
-            let player_results = match_results
+            let mut player_results: Vec<PlayerMarketResult> = match_results
                 .iter()
                 .map(|r| PlayerMarketResult {
                     player: r.player,
@@ -283,6 +290,32 @@ impl TickResolver {
                     refund: r.refund,
                 })
                 .collect();
+
+            // Append self-refund entries for players whose bitmaps didn't cover
+            // this market. Their payout = their allocated stake (full refund).
+            // Side is set opposite to outcome so correct_count isn't inflated.
+            if !uncovered_refunds.is_empty() {
+                tracing::warn!(
+                    batch_id = batch.id,
+                    market_idx,
+                    uncovered_players = uncovered_refunds.len(),
+                    "Bitmap too short — refunding allocated stake for uncovered market"
+                );
+            }
+            for (player, stake) in &uncovered_refunds {
+                let refund_side = match outcome {
+                    MarketOutcome::Up => Side::Down,
+                    _ => Side::Up,
+                };
+                player_results.push(PlayerMarketResult {
+                    player: *player,
+                    side: refund_side,
+                    effective_stake: *stake,
+                    matched_stake: U256::zero(),
+                    payout: *stake,
+                    refund: U256::zero(),
+                });
+            }
 
             market_results.push(MarketResult {
                 market_id,
