@@ -40,29 +40,86 @@ function timeAgo(iso: string): string {
   return `${days}d ago`
 }
 
-function CountdownCell({ target, label }: { target: string; label: string }) {
+function useCountdown(target: string | null) {
   const [remaining, setRemaining] = useState(0)
-
   useEffect(() => {
+    if (!target) return
     const update = () => {
       const diff = Math.floor((new Date(target).getTime() - Date.now()) / 1000)
-      setRemaining(Math.max(0, diff))
+      setRemaining(diff)
     }
     update()
     const iv = setInterval(update, 1000)
     return () => clearInterval(iv)
   }, [target])
+  return remaining
+}
 
-  if (remaining <= 0) return (
-    <span className="font-mono text-[10px] text-color-warning">{label} done</span>
-  )
-  const m = Math.floor(remaining / 60)
-  const s = remaining % 60
+function formatTimer(secs: number) {
+  if (secs <= 0) return '0:00'
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+/** Renders the timer cell for an active round showing close + settle phases */
+function ActiveTimers({ bettingEnd, settlementEnd }: { bettingEnd: string | null; settlementEnd: string | null }) {
+  const closeRemaining = useCountdown(bettingEnd)
+  const settleRemaining = useCountdown(settlementEnd)
+
+  // Phase 1: Betting open — show both timers
+  if (closeRemaining > 0) {
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <span className={`font-mono text-[10px] tabular-nums ${closeRemaining < 60 ? 'text-color-down font-bold' : 'text-text-secondary'}`}>
+          <span className="text-text-muted">Close</span> {formatTimer(closeRemaining)}
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-text-muted">
+          Settle {formatTimer(settleRemaining)}
+        </span>
+      </div>
+    )
+  }
+
+  // Phase 2: Betting closed, waiting for settlement — show only settle timer
+  if (settleRemaining > 0) {
+    return (
+      <div className="flex flex-col items-end gap-0.5">
+        <span className="font-mono text-[10px] text-color-warning font-bold">Closed</span>
+        <span className={`font-mono text-[10px] tabular-nums ${settleRemaining < 30 ? 'text-color-down font-bold' : 'text-text-secondary'}`}>
+          Settle {formatTimer(settleRemaining)}
+        </span>
+      </div>
+    )
+  }
+
+  // Phase 3: Both expired — settling
   return (
-    <span className={`font-mono text-[10px] tabular-nums ${remaining < 60 ? 'text-color-down' : 'text-text-secondary'}`}>
-      <span className="text-text-muted">{label}</span>{' '}
-      {m}:{s.toString().padStart(2, '0')}
-    </span>
+    <span className="font-mono text-[10px] text-text-muted">Settling...</span>
+  )
+}
+
+/** Status badge for active rounds */
+function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
+  const closeRemaining = useCountdown(bettingEnd)
+  if (closeRemaining > 0) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-up opacity-50" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-up" />
+        </span>
+        <span className="text-[10px] font-bold text-color-up uppercase tracking-wider">Open</span>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-warning" />
+      </span>
+      <span className="text-[10px] font-bold text-color-warning uppercase tracking-wider">Closed</span>
+    </div>
   )
 }
 
@@ -80,9 +137,11 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
 
   // Live rounds data — polls every 5s for real-time player counts
   const { data: rounds } = useRounds(sourceId)
-  const liveRound = rounds?.find(r => r.status === 'betting') ?? null
+  // Show ALL active rounds (betting + settling can overlap with 30s overlap)
+  const activeRounds = (rounds ?? []).filter(r => r.status === 'betting' || r.status === 'settling')
+  const liveRound = activeRounds[0] ?? null
 
-  // Prefer live round data over props for player count and pool (Issue 4 + Issue 2)
+  // Prefer live round data over props for player count and pool
   const livePlayerCount = liveRound?.playerCount ?? playerCount ?? 0
   const livePool = liveRound?.tvl ?? tvl
   const liveTickDuration = tickDuration ?? liveRound?.timeframeSecs ?? 0
@@ -139,41 +198,53 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           <div className="text-right">Timers</div>
         </div>
 
-        {/* Active batch — always first */}
-        {activeBatch && page === 1 && (
+        {/* Active rounds — show all (betting + settling can overlap) */}
+        {page === 1 && activeRounds.map((round) => {
+          const roundBettingEnd = round.bettingEnd ?? bettingEnd
+          const roundTickDuration = round.timeframeSecs ?? liveTickDuration
+          const roundSettlementEnd = roundBettingEnd && roundTickDuration
+            ? new Date(new Date(roundBettingEnd).getTime() + roundTickDuration * 1000).toISOString()
+            : null
+          const pool = round.tvl ? parseFloat(round.tvl) / 1e18 : 0
+
+          return (
+            <div
+              key={round.batchId}
+              className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2.5 border-b border-border-light bg-surface/60"
+            >
+              <div className="font-mono text-[12px] font-bold text-black tabular-nums">
+                #{round.batchId}
+              </div>
+              <ActiveStatus bettingEnd={roundBettingEnd ?? null} />
+              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
+                {round.playerCount ?? 0}
+              </div>
+              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
+                ${pool < 0.01 ? '0' : pool.toFixed(2)}
+              </div>
+              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">—</div>
+              <div className="text-right">
+                <ActiveTimers bettingEnd={roundBettingEnd ?? null} settlementEnd={roundSettlementEnd} />
+              </div>
+            </div>
+          )
+        })}
+        {/* Fallback: show single active batch from props if no live rounds */}
+        {page === 1 && activeRounds.length === 0 && activeBatch && (
           <div className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2.5 border-b border-border-light bg-surface/60">
             <div className="font-mono text-[12px] font-bold text-black tabular-nums">
               #{activeBatch.batchId}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-up opacity-50" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-up" />
-              </span>
-              <span className="text-[10px] font-bold text-color-up uppercase tracking-wider">Open</span>
-            </div>
+            <ActiveStatus bettingEnd={bettingEnd ?? null} />
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
               {activeBatch.playerCount}
             </div>
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
               ${activeBatch.totalPool < 0.01 ? '0' : activeBatch.totalPool.toFixed(2)}
             </div>
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">
-              —
-            </div>
-            <div className="text-right flex flex-col items-end gap-0.5">
-              {bettingEnd ? (
-                <>
-                  <CountdownCell target={bettingEnd} label="Close" />
-                  {settlementTime && (
-                    <CountdownCell target={settlementTime} label="Settle" />
-                  )}
-                </>
-              ) : (
-                <span className="font-mono text-[11px] text-color-up">
-                  {liveTickDuration ? `${Math.floor(liveTickDuration / 60)}m rounds` : 'open'}
-                </span>
-              )}
+            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">—</div>
+            <div className="text-right">
+              <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} />
             </div>
           </div>
         )}
