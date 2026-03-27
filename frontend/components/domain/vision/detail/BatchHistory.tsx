@@ -198,8 +198,17 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
 
   // Live rounds data — polls every 5s for real-time player counts
   const { data: rounds } = useRounds(sourceId)
-  // Show ALL active rounds (betting + settling can overlap with 30s overlap)
-  const activeRounds = (rounds ?? []).filter(r => r.status === 'betting' || r.status === 'settling')
+  // Only show RECENT active rounds — filter out stale ones from hours ago.
+  // A round is "recent" if its bettingEnd is within 2x tickDuration of now.
+  const now = Date.now()
+  const activeRounds = (rounds ?? []).filter(r => {
+    if (r.status !== 'betting' && r.status !== 'settling') return false
+    if (!r.bettingEnd) return false
+    const beTime = new Date(r.bettingEnd).getTime()
+    const td = (r.timeframeSecs ?? 300) * 1000
+    // Keep if betting end is in the future, or expired less than 2x tick_duration ago
+    return (beTime + td * 2) > now
+  })
   const liveRound = activeRounds[0] ?? null
 
   // Lock bettingEnd per batchId — prevents timer reset when oracle advances current_tick.
