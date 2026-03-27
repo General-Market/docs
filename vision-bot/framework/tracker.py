@@ -165,12 +165,16 @@ class Tracker:
         deposit = int(self._config.get("deposit", 10) * 10**18)
         stake = int(self._config.get("stake", 1) * 10**18)
 
-        # Generate predictions using real market data from data-node
+        # Generate predictions using real market data from data-node.
+        # The ONLY trustworthy source of market count is fetch_batch_config
+        # (keyed by config_hash, which is immutable per batch). The oracle
+        # API's market_count is a stale echo from creation time — never use
+        # it for bitmap sizing. A short bitmap means uncovered markets,
+        # concentrated risk, and amplified losses.
         from framework.core import encode_bitmap, hash_bitmap
         from framework.chain import fetch_batch_config, fetch_markets
-        market_count = batch.get("marketCount", batch.get("market_count", 10))
 
-        # Try to fetch real market config and prices for informed predictions
+        # Fetch the authoritative market list from data-node by config hash
         market_ids = []
         config_hash_hex = ""
         if isinstance(config_hash, bytes):
@@ -182,17 +186,32 @@ class Tracker:
             batch_cfg = fetch_batch_config(self._config.get("data_node", ""), config_hash_hex)
             if batch_cfg and batch_cfg.get("markets"):
                 market_ids = [m["assetId"] for m in batch_cfg["markets"]]
-                market_count = len(market_ids)
 
-        if market_ids:
-            markets = fetch_markets(self._config.get("data_node", ""), market_ids)
-        else:
-            markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+        # Refuse to join if we cannot determine the real market list.
+        # A bitmap built on a guess is worse than no bitmap at all —
+        # it is a bet with the wrong number of limbs.
+        if not market_ids:
+            log.warning(
+                "Batch %d: cannot determine market list from data-node "
+                "(config_hash=%s) — refusing to join with unreliable count",
+                batch_id, config_hash_hex[:18],
+            )
+            return
+
+        market_count = len(market_ids)
+        markets = fetch_markets(self._config.get("data_node", ""), market_ids)
 
         bets = strategy.predict(markets) if strategy else [random.choice(["UP", "DOWN"]) for _ in range(market_count)]
+
+        # Defensive: ensure bets list covers every market.
+        # Strategies return one prediction per input market, but if a strategy
+        # is buggy and returns fewer, pad with random to avoid a short bitmap.
+        while len(bets) < market_count:
+            bets.append(random.choice(["UP", "DOWN"]))
+
         ups = sum(1 for b in bets if b == "UP")
-        log.info("Batch %d: strategy=%s, %d UP / %d DOWN (real_data=%s)",
-                 batch_id, getattr(strategy, 'name', '?'), ups, len(bets) - ups, bool(market_ids))
+        log.info("Batch %d: strategy=%s, %d UP / %d DOWN (%d markets, verified)",
+                 batch_id, getattr(strategy, 'name', '?'), ups, len(bets) - ups, market_count)
         bitmap = encode_bitmap(bets, market_count)
         bitmap_hash = hash_bitmap(bitmap)
 
@@ -369,10 +388,13 @@ class Tracker:
                         ]
                         bets = strategy.predict(markets)
                     else:
-                        market_count = pos.get("market_count", 10)
-                        dummy = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None}
-                                 for i in range(market_count)]
-                        bets = strategy.predict(dummy)
+                        log.warning(
+                            "Batch %d: cannot fetch market config for recovery — marking poisoned",
+                            batch_id,
+                        )
+                        pos["poisoned"] = True
+                        poisoned.append(batch_id)
+                        continue
 
                     bitmap = encode_bitmap(bets, market_count)
                     bm_hash = hash_bitmap(bitmap)
@@ -419,9 +441,13 @@ class Tracker:
                     ]
                     bets = strategy.predict(markets)
                 else:
-                    market_count = pos.get("market_count", 10)
-                    dummy = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
-                    bets = strategy.predict(dummy)
+                    log.warning(
+                        "Batch %d: cannot fetch market config for hash recovery — marking poisoned",
+                        batch_id,
+                    )
+                    pos["poisoned"] = True
+                    poisoned.append(batch_id)
+                    continue
 
                 bitmap = encode_bitmap(bets, market_count)
                 bm_hash = hash_bitmap(bitmap)

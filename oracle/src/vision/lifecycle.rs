@@ -481,13 +481,37 @@ impl BatchLifecycleManager {
             });
         }
 
-        // Fetch market config from data-node
-        let recommended =
-            batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await?;
-        let rec_batch = recommended
-            .iter()
-            .find(|b| b.source_id == source_name)
-            .ok_or_else(|| format!("no recommended config for source {}", source_name))?;
+        // Fetch market config by the batch's PINNED config hash — not the current
+        // recommended config. The recommended config drifts as assets become
+        // healthy/unhealthy between batch creation and resolution. Players built
+        // their bitmaps against the creation-time config; resolving against a
+        // different config produces bitmap length mismatches and lost stakes.
+        let config_hash_hex = format!("{:?}", batch.config_hash);
+        let rec_batch = match batch_config_orchestrator::fetch_config_by_hash(
+            &self.config.data_node_url,
+            &config_hash_hex,
+        )
+        .await
+        {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                // Fallback: if the pinned config is no longer in data-node (purged),
+                // use current recommended. This is the old behavior — imperfect but
+                // better than failing the entire settlement.
+                warn!(
+                    batch_id,
+                    config_hash = %config_hash_hex,
+                    error = %e,
+                    "Pinned config not found — falling back to current recommended (bitmap length mismatch possible)"
+                );
+                let recommended =
+                    batch_config_orchestrator::fetch_recommended(&self.config.data_node_url).await?;
+                recommended
+                    .into_iter()
+                    .find(|b| b.source_id == source_name)
+                    .ok_or_else(|| format!("no recommended config for source {}", source_name))?
+            }
+        };
 
         let market_configs: Vec<MarketConfig> = rec_batch
             .markets

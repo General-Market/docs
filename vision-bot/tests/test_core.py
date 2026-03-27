@@ -38,11 +38,17 @@ class TestEncodeBitmap:
         """0 markets -> empty bytes."""
         assert encode_bitmap([], 0) == b""
 
-    def test_bets_shorter_than_count(self):
-        """Missing entries treated as DOWN."""
+    def test_bets_shorter_than_count_raises(self):
+        """Short bets must raise ValueError — silent truncation caused $55K loss."""
         bets = ["UP"]  # only 1 bet for 8 markets
+        with pytest.raises(ValueError, match="Bitmap underflow"):
+            encode_bitmap(bets, 8)
+
+    def test_bets_longer_than_count_ok(self):
+        """Extra bets beyond count are harmlessly ignored."""
+        bets = ["UP"] * 10  # 10 bets for 8 markets
         result = encode_bitmap(bets, 8)
-        assert result == bytes([0x80])  # only MSB set
+        assert result == bytes([0xFF])  # only first 8 matter
 
     def test_16_markets_two_bytes(self):
         """16 markets produce 2 bytes."""

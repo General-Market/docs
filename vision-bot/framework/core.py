@@ -17,11 +17,20 @@ from web3 import Web3
 
 
 def encode_bitmap(bets: list[str], count: int) -> bytes:
-    """["UP","DOWN",...] -> packed bytes. 1=UP, 0=DOWN, big-endian."""
+    """["UP","DOWN",...] -> packed bytes. 1=UP, 0=DOWN, big-endian.
+
+    Raises ValueError if bets is shorter than count — a short bitmap
+    means uncovered markets, concentrated risk, and silent losses.
+    """
+    if len(bets) < count:
+        raise ValueError(
+            f"Bitmap underflow: {len(bets)} bets for {count} markets. "
+            f"Refusing to encode — a short bitmap is a quiet catastrophe."
+        )
     byte_count = (count + 7) // 8
     bitmap = bytearray(byte_count)
     for i in range(count):
-        if i < len(bets) and bets[i] == "UP":
+        if bets[i] == "UP":
             byte_idx = i // 8
             bit_idx = 7 - (i % 8)
             bitmap[byte_idx] |= 1 << bit_idx

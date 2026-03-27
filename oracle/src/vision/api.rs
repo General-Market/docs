@@ -749,6 +749,31 @@ async fn submit_bitmap(
         .unwrap_or_default();
     let target_tick_id = 0;
 
+    // Validate bitmap length covers all markets in this batch.
+    // A short bitmap causes the player's stake on uncovered markets to be
+    // refunded but diluted — effectively gambling at half strength.
+    if let Ok(Some(mc)) = sqlx::query_scalar::<_, i32>(
+        "SELECT market_count FROM vision_batch_lifecycle WHERE batch_id = $1 ORDER BY id DESC LIMIT 1"
+    )
+    .bind(req.batch_id as i64)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        let required_bytes = ((mc as usize) + 7) / 8;
+        if bitmap.len() < required_bytes {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ApiError::new(format!(
+                    "Bitmap too short: {} bytes covers {} markets, batch has {}",
+                    bitmap.len(),
+                    bitmap.len() * 8,
+                    mc
+                ))),
+            )
+                .into_response();
+        }
+    }
+
     // Store the bitmap in pending slot (verifies hash, persists to DB)
     match state
         .bitmap_store

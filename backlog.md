@@ -1,5 +1,10 @@
 # Design Decision Backlog
 
+## Session: 20260327-1530-b7k1 (Bitmap Length Mismatch Root Cause)
+
+- [DECISION] Root cause: `resolve_and_settle` fetched `fetch_recommended()` (current config) instead of the batch's pinned `config_hash`. Market lists drift as assets become healthy/unhealthy between batch creation and resolution. Bot builds bitmap against creation-time config (N markets), oracle resolves against resolution-time config (M markets where M > N). Fix: use `fetch_config_by_hash(batch.config_hash)` with fallback to recommended if pinned config is purged.
+- [DECISION] No validation exists anywhere in the pipeline for bitmap length vs market count — not in the contract (stores hash only), not in bitmap_store (verifies keccak256 only), not in the resolver (returns None for out-of-bounds). The resolver's existing self-refund for uncovered markets is a safety net, not a fix.
+
 ## Session: 20260327-1410-t3m8 (Round History Timer Fix + Hover Tooltip)
 
 - [DECISION] Timer loop fix: useLockedBettingEnds ref locks bettingEnd per batchId on first sight. The oracle's rounds_active endpoint computes bettingEnd = (current_tick + 1) * tick_duration, which advances every tick. Without locking, the frontend timer resets instead of transitioning through Closed -> Settling -> Settled. The ref is pruned when rounds leave the active list.

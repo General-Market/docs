@@ -110,7 +110,9 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             log.warning("Batch %d: cannot read configHash from chain: %s", batch_id, e)
             continue
 
-        # Fetch real market config from data-node to get actual market count
+        # Fetch real market config from data-node to get actual market count.
+        # The config_hash is immutable per batch — the data-node response is
+        # the ONLY authoritative source for bitmap sizing.
         if isinstance(config_hash, bytes):
             config_hash_hex = "0x" + config_hash.hex()
         elif isinstance(config_hash, str):
@@ -122,33 +124,40 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             market_ids = [m["assetId"] for m in batch_cfg["markets"]]
             market_count = len(market_ids)
         else:
-            market_ids = batch.get("market_ids", [])
-            market_count = batch.get("market_count", cfg.get("market_count", 10))
+            # Cannot determine real market list — skip this batch entirely.
+            # A bitmap built on a guessed count is a bet with the wrong anatomy.
+            log.warning(
+                "Batch %d: cannot fetch market config from data-node "
+                "(config_hash=%s) — skipping to avoid short bitmap",
+                batch_id, config_hash_hex[:18],
+            )
+            continue
 
-        if market_ids:
-            # Subscribe to batch if not already subscribed
-            feed.subscribe([str(batch_id)], history_days=7)
-            # Get latest prices from live feed
-            raw_prices = feed.prices(str(batch_id))
-            if raw_prices:
-                markets = [
-                    {
-                        "id": mid,
-                        "price": raw_prices.get(mid, {}).get("price", 0),
-                        "change": raw_prices.get(mid, {}).get("change_pct"),
-                        "volume": raw_prices.get(mid, {}).get("volume_24h"),
-                        "market_cap": None,
-                    }
-                    for mid in market_ids
-                ]
-            else:
-                # Fallback to HTTP if WS hasn't received data yet
-                markets = fetch_markets(cfg["data_node"], market_ids)
-            bets = strategy.predict(markets)
+        # market_ids is always populated here (early continue above if not)
+        # Subscribe to batch if not already subscribed
+        feed.subscribe([str(batch_id)], history_days=7)
+        # Get latest prices from live feed
+        raw_prices = feed.prices(str(batch_id))
+        if raw_prices:
+            markets = [
+                {
+                    "id": mid,
+                    "price": raw_prices.get(mid, {}).get("price", 0),
+                    "change": raw_prices.get(mid, {}).get("change_pct"),
+                    "volume": raw_prices.get(mid, {}).get("volume_24h"),
+                    "market_cap": None,
+                }
+                for mid in market_ids
+            ]
         else:
-            # Hash-based design: no market_ids, generate bets for market_count
-            dummy_markets = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
-            bets = strategy.predict(dummy_markets)
+            # Fallback to HTTP if WS hasn't received data yet
+            markets = fetch_markets(cfg["data_node"], market_ids)
+        bets = strategy.predict(markets)
+
+        # Defensive: pad bets if strategy returned fewer than market_count
+        import random as _rng
+        while len(bets) < market_count:
+            bets.append(_rng.choice(["UP", "DOWN"]))
 
         bitmap = encode_bitmap(bets, market_count)
         bm_hash = hash_bitmap(bitmap)

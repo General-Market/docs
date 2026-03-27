@@ -452,7 +452,7 @@ def fetch_batches(api_url: str, executor=None) -> list[dict]:
                 "batch_id": entry["batchId"],
                 "source_name": source_name,
                 "config_hash": entry["configHash"],
-                "market_count": 10,  # default for hash-based design
+                "market_count": 0,  # unknown — bot MUST fetch from data-node by config_hash
                 "paused": False,
             })
         if batches:
@@ -472,7 +472,7 @@ def fetch_batches(api_url: str, executor=None) -> list[dict]:
                             "id": i,
                             "batch_id": i,
                             "config_hash": "0x" + info["configHash"].hex(),
-                            "market_count": 10,
+                            "market_count": 0,  # unknown — bot MUST fetch from data-node
                             "paused": False,
                         })
                 except Exception:
