@@ -475,6 +475,7 @@ cmd_deploy() {
 
     # Wipe deployment-specific Postgres tables (preserves raw market data)
     # These tables contain state tied to contract addresses that change on redeploy.
+    # NEVER add vision_player_points or vision_epoch_log — those are persistent lifetime stats.
     echo -e "${BLUE}Wiping stale deployment data from Postgres...${NC}"
     vps_be_ssh "psql -U max -d index_prices -c \"
         TRUNCATE
@@ -1020,6 +1021,7 @@ print('Repaired settlement addresses from Sonic deployment')
         echo -e "  ${GREEN}Deployment nonce now: $DEPLOY_NONCE — services will auto-flush${NC}"
     else
         # Fallback: manual TRUNCATE for contracts without deploymentNonce
+        # NEVER add vision_player_points or vision_epoch_log — those are persistent lifetime stats.
         echo -e "  ${YELLOW}Contract lacks deploymentNonce — falling back to manual TRUNCATE${NC}"
         if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
             vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements, vision_balance_proofs, vision_batches, vision_batch_state, vision_bitmaps, vision_deposit_orders, vision_kv_store, vision_positions, vision_tick_results, vision_user_balances, vision_withdraw_orders, itp_snapshots, trades, user_shares, oracle_health_snapshots CASCADE;'" \

@@ -738,6 +738,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
 
+                    // Spawn 4-hour epoch points worker
+                    {
+                        let epoch_pool = pool.clone();
+                        let epoch_shutdown = components.shutdown.clone();
+                        let epoch_node_index = vision_cfg.node_index;
+                        tokio::spawn(async move {
+                            oracle::vision::epoch_points::run(epoch_pool, epoch_shutdown, epoch_node_index).await;
+                        });
+                        info!("EpochPoints worker spawned");
+                    }
+
                     let vision_state = Arc::new(oracle::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),

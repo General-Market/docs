@@ -108,6 +108,8 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/rounds/:id/results", get(round_results))
         .route("/vision/rounds/:id/bitmaps", get(round_bitmaps))
         .route("/vision/player/:address/rounds", get(player_rounds))
+        .route("/vision/points", get(vision_points))
+        .route("/vision/points/:address", get(vision_points_player))
         .with_state(state)
 }
 
@@ -2466,6 +2468,108 @@ async fn player_rounds(
             (StatusCode::OK, Json(serde_json::json!({ "rounds": Vec::<()>::new() }))).into_response()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/points — lifetime points leaderboard
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, serde::Serialize, sqlx::FromRow)]
+struct PointsEntry {
+    player: String,
+    total_points: i64,
+    rounds_played: i32,
+    total_deposited: String,
+    total_pnl: String,
+    last_epoch_ts: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+async fn vision_points(
+    State(state): State<Arc<VisionState>>,
+) -> axum::response::Response {
+    let rows: Vec<PointsEntry> = match sqlx::query_as(
+        "SELECT player, total_points, rounds_played, total_deposited, total_pnl, last_epoch_ts
+         FROM vision_player_points
+         ORDER BY total_points DESC
+         LIMIT 200"
+    )
+    .fetch_all(&state.pool)
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            return axum::Json(serde_json::json!({
+                "error": format!("DB error: {}", e),
+                "leaderboard": []
+            })).into_response();
+        }
+    };
+
+    axum::Json(serde_json::json!({
+        "leaderboard": rows,
+        "count": rows.len(),
+    })).into_response()
+}
+
+// GET /vision/points/:address — single player points + epoch history
+async fn vision_points_player(
+    State(state): State<Arc<VisionState>>,
+    Path(address): Path<String>,
+) -> axum::response::Response {
+    let addr = address.to_lowercase();
+
+    let player: Option<PointsEntry> = sqlx::query_as(
+        "SELECT player, total_points, rounds_played, total_deposited, total_pnl, last_epoch_ts
+         FROM vision_player_points
+         WHERE LOWER(player) = $1"
+    )
+    .bind(&addr)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten();
+
+    let rank: Option<i64> = if player.is_some() {
+        sqlx::query_scalar(
+            "SELECT COUNT(*) + 1 FROM vision_player_points WHERE total_points > (
+                SELECT total_points FROM vision_player_points WHERE LOWER(player) = $1
+            )"
+        )
+        .bind(&addr)
+        .fetch_optional(&state.pool)
+        .await
+        .ok()
+        .flatten()
+    } else {
+        None
+    };
+
+    #[derive(serde::Serialize, sqlx::FromRow)]
+    struct EpochRow {
+        epoch_ts: chrono::DateTime<chrono::Utc>,
+        points_delta: i64,
+        rounds_in_epoch: i32,
+        deposited_total: String,
+        pnl_total: String,
+    }
+
+    let epochs: Vec<EpochRow> = sqlx::query_as(
+        "SELECT epoch_ts, points_delta, rounds_in_epoch, deposited_total, pnl_total
+         FROM vision_epoch_log
+         WHERE LOWER(player) = $1
+         ORDER BY epoch_ts DESC
+         LIMIT 50"
+    )
+    .bind(&addr)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    axum::Json(serde_json::json!({
+        "player": player,
+        "rank": rank,
+        "epochs": epochs,
+    })).into_response()
 }
 
 #[cfg(test)]
