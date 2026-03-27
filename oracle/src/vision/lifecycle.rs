@@ -213,7 +213,11 @@ impl BatchLifecycleManager {
                         None
                     } else {
                         let elapsed = now_instant.duration_since(source.last_heartbeat);
-                        let required = std::time::Duration::from_secs(source.tick_duration_secs)
+                        // Fire heartbeat 30s before tick ends so the next round opens
+                        // while the old round is still in its lock window.
+                        const PRE_CREATE_SECS: u64 = 30;
+                        let effective_tick = source.tick_duration_secs.saturating_sub(PRE_CREATE_SECS);
+                        let required = std::time::Duration::from_secs(effective_tick)
                             + source.stagger_offset;
 
                         if elapsed < required {
@@ -257,8 +261,31 @@ impl BatchLifecycleManager {
                         source.previous_batch_id
                     };
 
-                    // Step 1: Resolve previous batch if it exists
+                    // Step 1: Resolve previous batch if its betting period has ended.
+                    // With PRE_CREATE overlap the heartbeat fires 30s early, so the
+                    // batch rotated into `previous` during the CURRENT heartbeat still
+                    // has betting time left. The one already in `previous` from the
+                    // PREVIOUS heartbeat is always safe — but we guard anyway for
+                    // edge cases (oracle restart, delayed heartbeats).
                     if let Some(prev_id) = prev_batch_id {
+                        let betting_ended: bool = sqlx::query_scalar::<_, bool>(
+                            "SELECT betting_end <= NOW() FROM vision_batch_lifecycle WHERE batch_id = $1"
+                        )
+                        .bind(prev_id as i64)
+                        .fetch_optional(&mgr.pool)
+                        .await
+                        .ok()
+                        .flatten()
+                        .unwrap_or(true); // no lifecycle row → treat as ended (chain-discovered batch)
+
+                        if !betting_ended {
+                            info!(
+                                source = %source_name,
+                                batch_id = prev_id,
+                                "Previous batch still in betting period — deferring resolution"
+                            );
+                            // Don't clear previous_batch_id — will retry next heartbeat
+                        } else {
                         match mgr.resolve_and_settle(prev_id, &source_name).await {
                             Ok(settlement) => {
                                 info!(
@@ -286,15 +313,31 @@ impl BatchLifecycleManager {
                             }
                         }
                         src_lock.lock().await.previous_batch_id = None;
+                        } // else betting_ended
                     }
 
-                    // Step 2: Rotate current → previous
+                    // Step 2: Rotate current → previous (only if previous slot is free)
                     {
                         let mut source = src_lock.lock().await;
-                        source.previous_batch_id = source.current_batch_id.take();
+                        if source.previous_batch_id.is_none() {
+                            source.previous_batch_id = source.current_batch_id.take();
+                        } else {
+                            // Previous batch still pending resolution (deferred above).
+                            // Skip rotation — current stays current for one more cycle.
+                            debug!(
+                                source = %source.source_name,
+                                previous = ?source.previous_batch_id,
+                                current = ?source.current_batch_id,
+                                "Skipping rotation — previous batch still pending resolution"
+                            );
+                        }
                     }
 
-                    // Step 3: Create new batch
+                    // Step 3: Create new batch (only if rotation happened — current slot is empty)
+                    let should_create = src_lock.lock().await.current_batch_id.is_none();
+                    if !should_create {
+                        debug!(source = %source_name, "Skipping batch creation — current batch still active");
+                    } else {
                     match mgr.create_new_round(&source_name).await {
                         Ok(lifecycle_id) => {
                             let on_chain_id = mgr.poll_for_on_chain_batch(
@@ -325,6 +368,7 @@ impl BatchLifecycleManager {
                             warn!(source = %source_name, error = %e, "Failed to create new round — will retry next heartbeat");
                         }
                     }
+                    } // if should_create
                 });
             }
 

@@ -492,7 +492,7 @@ async fn generate_batch_config(
     }
 
     let tick_duration_secs = sync_interval_secs;
-    let lock_offset_secs = 0u64; // Continuous betting: no lock window
+    let lock_offset_secs = 30u64; // Lock betting 30s before round ends — next round opens during this window
 
     let markets = compute_asset_thresholds(pool, source_id, &healthy).await;
 
