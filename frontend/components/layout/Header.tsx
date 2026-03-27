@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
@@ -31,6 +31,36 @@ type PageId = typeof PRIMARY_NAV[number]['id']
 
 // Pages whose mood darkens the header
 const DARK_PAGES = new Set<string>(['vision'])
+
+// ── Settlement counter ──
+// Approximates total settled sub-markets based on:
+//   - Base: 500,000 (historical at epoch)
+//   - Rate: ~60 sources × avg 200 markets × 6 settlements/hour = ~72,000/hour
+// Pure math — no API calls, no intervals. Updates every 10s via a single timer.
+const COUNTER_EPOCH = 1774600000 // ~2026-03-27T06:00 UTC (when system stabilized)
+const COUNTER_BASE = 500_000
+const MARKETS_PER_HOUR = 72_000 // 60 sources × 200 avg markets × 6 settlements/hr
+
+function SettlementCounter() {
+  const [count, setCount] = useState(() => {
+    const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
+    return Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR)
+  })
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
+      setCount(Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR))
+    }, 10_000) // update every 10s — cheap, no flicker
+    return () => clearInterval(iv)
+  }, [])
+
+  return (
+    <span className="tabular-nums">
+      {count.toLocaleString()} settled prediction markets
+    </span>
+  )
+}
 
 function resolveActivePage(pathname: string): PageId | null {
   if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
@@ -79,7 +109,7 @@ export function Header() {
     <>
       {/* Topbar — thin black strip (scrolls away) */}
       <div className="bg-black text-white text-label font-medium text-center py-1.5">
-        {t('brand.topbar')}
+        <SettlementCounter /> — Testnet v0.93
       </div>
 
       <div className="sticky top-0 z-50">
