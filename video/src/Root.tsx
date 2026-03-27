@@ -8,7 +8,7 @@ import { short03Meta } from "./shorts/short-03/FebNewTop500Composition";
 import { short04Meta } from "./shorts/short-04/Short04Composition";
 import { visionVCMeta } from "./compositions/vision-vc/VisionVCComposition";
 import { visionVC2Meta } from "./compositions/vision-vc2/VisionVC2Composition";
-
+import { visionVC3Meta } from "./compositions/vision-vc3/VisionVC3Composition";
 
 // remotion-scenes showcases
 import {
@@ -77,6 +77,16 @@ export const RemotionRoot: React.FC = () => {
         fps={visionVC2Meta.fps}
         width={visionVC2Meta.width}
         height={visionVC2Meta.height}
+      />
+
+      {/* ═══ VISION VC3 — Charts (scatter + bar) ═══ */}
+      <Composition
+        id={visionVC3Meta.id}
+        component={visionVC3Meta.component}
+        durationInFrames={visionVC3Meta.durationInFrames}
+        fps={visionVC3Meta.fps}
+        width={visionVC3Meta.width}
+        height={visionVC3Meta.height}
       />
 
       {/* ═══ Other shorts ═══ */}

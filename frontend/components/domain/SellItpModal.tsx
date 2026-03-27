@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient } from 'wagmi'
+import { createPortal } from 'react-dom'
+import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI, BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
+import { BridgedItpFactoryABI } from '@/lib/contracts/generated/bridged_itp_factory-abi'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { TransactionStepper } from '@/components/ui/TransactionStepper'
@@ -132,13 +134,46 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const sellHandled = useRef(false)
   const toastFired = useRef(false)
 
-  // useUserState provides BridgedITP balance, allowance, and address — all on Settlement chain
+  // Keep useUserState for name/symbol only (backend convenience)
   const userState = useUserState(itpId)
   const itpName = userState.bridgedItpName || 'ITP'
   const itpSymbol = userState.bridgedItpSymbol || ''
-  const bridgedItpAddress = userState.bridgedItpAddress as `0x${string}` | ''
-  const bridgedItpBalance = userState.bridgedItpBalance    // 18 decimals
-  const bridgedItpAllowance = userState.bridgedItpAllowanceCustody
+
+  // Read BridgedITP address directly from BridgedItpFactory on Settlement chain
+  const { data: bridgedItpAddrRaw } = useReadContract({
+    address: INDEX_PROTOCOL.bridgedItpFactory,
+    abi: BridgedItpFactoryABI,
+    functionName: 'deployedItps',
+    args: [itpId as `0x${string}`],
+    chainId: settlementChainId,
+    query: { enabled: !!itpId },
+  })
+  const bridgedItpAddress = (bridgedItpAddrRaw as `0x${string}` | undefined) &&
+    bridgedItpAddrRaw !== '0x0000000000000000000000000000000000000000'
+    ? (bridgedItpAddrRaw as `0x${string}`)
+    : ''
+
+  // Read BridgedITP balance on Settlement chain
+  const { data: bridgedBalanceRaw } = useReadContract({
+    address: bridgedItpAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: settlementChainId,
+    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 5_000 },
+  })
+  const bridgedItpBalance = (bridgedBalanceRaw as bigint) ?? 0n  // 18 decimals
+
+  // Read BridgedITP allowance for SettlementBridgeCustody on Settlement chain
+  const { data: bridgedAllowanceRaw } = useReadContract({
+    address: bridgedItpAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, INDEX_PROTOCOL.settlementCustody] : undefined,
+    chainId: settlementChainId,
+    query: { enabled: !!address && !!bridgedItpAddress, refetchInterval: 5_000 },
+  })
+  const bridgedItpAllowance = (bridgedAllowanceRaw as bigint) ?? 0n
 
   const { costBasis } = useItpCostBasis(itpId, address ?? null)
   const { navPerShare, navPerShareBn, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itpId)
@@ -575,7 +610,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     )
   }
 
-  return (
+  return createPortal(
     <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
       <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
@@ -822,6 +857,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           )}
         </div>
       </SpringModal>
-    </SpringBackdrop>
+    </SpringBackdrop>,
+    document.body
   )
 }

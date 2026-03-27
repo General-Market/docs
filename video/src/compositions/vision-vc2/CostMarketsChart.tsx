@@ -22,7 +22,7 @@ import {
   spring,
   Easing,
 } from "remotion";
-import { COLOR, FONT, ANIM } from "./tokens";
+import { COLOR, FONT } from "./tokens";
 
 const FPS = 30;
 
@@ -83,15 +83,13 @@ export const CostMarketsScene: React.FC = () => {
     extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: ease,
   });
 
-  // ── Upward phase ──
-  const upOn = f >= UP_START && f < UP_KILL;
+  // Both arrow sets stay visible until GM appears
+  const upOn = f >= UP_START && f < GM_IN;
+  const leftOn = f >= LEFT_START && f < GM_IN;
 
-  // ── Leftward phase ──
-  const leftOn = f >= LEFT_START && f < ALL_KILL;
-
-  // ── Text visibility (hard cut in, hard cut out) ──
-  const text1On = f >= TEXT1_IN && f < UP_KILL;
-  const text2On = f >= TEXT2_IN && f < ALL_KILL;
+  // Text: hard cut in, stays until GM
+  const text1On = f >= TEXT1_IN && f < LEFT_START;
+  const text2On = f >= TEXT2_IN && f < GM_IN;
 
   // ── GM ──
   const gmS = spring({ frame: Math.max(0, f - GM_IN), fps: FPS, config: { damping: 10, stiffness: 250, mass: 0.4 } });
@@ -131,27 +129,25 @@ export const CostMarketsScene: React.FC = () => {
           })}
         </g>
 
-        {/* ── Upward arrows with ghost trails ────────── */}
+        {/* ── Upward arrows — each keeps its own Y offset ── */}
         {upOn && PLATFORMS.map((p, i) => {
           const cx = px(p.cost), cy = py(p.markets);
-          const localF = f - UP_START - i * 2; // 2-frame stagger
+          const localF = f - UP_START - i * 2;
           const prog = interpolate(localF, [0, UP_DUR], [0, 1], {
             extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: ease,
           });
           if (prog <= 0) return null;
-          const dist = cy - CH.top;
+          // Go up by 70% of distance to top (keeps each at its own height)
+          const dist = (cy - CH.top) * 0.7;
           const tipY = cy - dist * prog;
 
           return (<g key={`u-${p.name}`}>
-            {/* Ghost trails */}
             {Array.from({ length: TRAIL_COUNT }).map((_, t) => {
-              const trailProg = Math.max(0, prog - (t + 1) * TRAIL_SPACING);
-              const trailY = cy - dist * trailProg;
-              return (<line key={t} x1={cx} y1={cy} x2={cx} y2={trailY}
+              const tp = Math.max(0, prog - (t + 1) * TRAIL_SPACING);
+              return (<line key={t} x1={cx} y1={cy} x2={cx} y2={cy - dist * tp}
                 stroke={p.color} strokeWidth={4} strokeLinecap="round"
                 opacity={0.12 - t * 0.03} />);
             })}
-            {/* Main arrow */}
             <line x1={cx} y1={cy} x2={cx} y2={tipY}
               stroke={p.color} strokeWidth={4} strokeLinecap="round" opacity={0.6} />
             <polygon points="0,-10 11,0 -11,0"
@@ -159,9 +155,12 @@ export const CostMarketsScene: React.FC = () => {
           </g>);
         })}
 
-        {/* ── Leftward arrows with ghost trails ──────── */}
+        {/* ── Leftward arrows — each at its own Y with spacing ── */}
         {leftOn && PLATFORMS.map((p, i) => {
           const cx = px(p.cost);
+          const cy = py(p.markets);
+          // Each arrow at its own Y — the tip Y from the upward phase
+          const arrowY = cy - (cy - CH.top) * 0.7;
           const localF = f - LEFT_START - i * 2;
           const prog = interpolate(localF, [0, LEFT_DUR], [0, 1], {
             extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: ease,
@@ -172,16 +171,15 @@ export const CostMarketsScene: React.FC = () => {
 
           return (<g key={`l-${p.name}`}>
             {Array.from({ length: TRAIL_COUNT }).map((_, t) => {
-              const trailProg = Math.max(0, prog - (t + 1) * TRAIL_SPACING);
-              const trailX = cx - dist * trailProg;
-              return (<line key={t} x1={cx} y1={CH.top} x2={trailX} y2={CH.top}
+              const tp = Math.max(0, prog - (t + 1) * TRAIL_SPACING);
+              return (<line key={t} x1={cx} y1={arrowY} x2={cx - dist * tp} y2={arrowY}
                 stroke={p.color} strokeWidth={4} strokeLinecap="round"
                 opacity={0.12 - t * 0.03} />);
             })}
-            <line x1={cx} y1={CH.top} x2={tipX} y2={CH.top}
+            <line x1={cx} y1={arrowY} x2={tipX} y2={arrowY}
               stroke={p.color} strokeWidth={4} strokeLinecap="round" opacity={0.6} />
             <polygon points="-10,0 0,11 0,-11"
-              transform={`translate(${tipX},${CH.top})`} fill={p.color} opacity={0.7} />
+              transform={`translate(${tipX},${arrowY})`} fill={p.color} opacity={0.7} />
           </g>);
         })}
 

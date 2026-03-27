@@ -20,8 +20,6 @@ import {
 } from "remotion";
 import { COLOR, FONT, ANIM } from "./tokens";
 import { PolaroidPhoto } from "./PolaroidPhoto";
-import { CostMarketsScene } from "./CostMarketsChart";
-import { SettlementsBarChart } from "./SettlementsBarChart";
 
 const FPS = 30;
 
@@ -77,10 +75,7 @@ const ITEMS_START = 30;
 const ITEM_DUR = 55;
 const TEXT_EXIT_START = 40;
 const UNLESS_DURATION = ITEMS_START + ITEMS.length * ITEM_DUR + 15;
-const CHART_DURATION = 120; // 4s — tight, no idle
-const TRANSITION = 8;       // crossfade overlap
-const BAR_DURATION = 120;   // 4s — tight
-const TOTAL = INTRO_DURATION + UNLESS_DURATION + CHART_DURATION + BAR_DURATION - TRANSITION;
+const TOTAL = INTRO_DURATION + UNLESS_DURATION;
 
 // ── VC logos ───────────────────────────────────────────────────────
 const VC_LOGOS = ["vc-a16z.png", "vc-sequoia.png", "vc-paradigm.png", "vc-polychain.png"];
@@ -458,21 +453,6 @@ export const VisionVC2Composition: React.FC = () => {
         ))}
       </Sequence>
 
-      {/* Cost vs Markets scatter plot */}
-      <Sequence
-        from={INTRO_DURATION + UNLESS_DURATION}
-        durationInFrames={CHART_DURATION}
-      >
-        <CostMarketsScene />
-      </Sequence>
-
-      {/* Settlements bar chart (overlaps by TRANSITION frames for crossfade) */}
-      <Sequence
-        from={INTRO_DURATION + UNLESS_DURATION + CHART_DURATION - TRANSITION}
-        durationInFrames={BAR_DURATION}
-      >
-        <SettlementsBarChart />
-      </Sequence>
     </AbsoluteFill>
   );
 };
