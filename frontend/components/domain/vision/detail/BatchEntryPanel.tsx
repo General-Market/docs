@@ -149,11 +149,13 @@ export default function BatchEntryPanel({
   const allMarketsSet = counts.empty === 0 && marketIds.length > 0
   const depositAmount = hasStake ? BigInt(Math.round(stakeValue * 1e18)) : 0n
   const exceedsBalance = isConnected && hasStake && depositAmount > walletUsdc
+  const marketCountMismatch = !!(activeBatch?.marketCount && marketIds.length > 0
+    && marketIds.length < activeBatch.marketCount)
   // bettingEnd is advisory only — the on-chain contract enforces the real deadline.
   // We no longer gate canSubmit on it: a stale oracle bettingEnd timestamp caused
   // permanent button lockout between rounds.
   const canSubmit = isConnected && hasStake && joinStep === 'idle'
-    && !isJoined && allMarketsSet && !!configHash && !exceedsBalance
+    && !isJoined && allMarketsSet && !!configHash && !exceedsBalance && !marketCountMismatch
 
   // -- Enter round handler --
   const handleEnterBatch = useCallback(async () => {
@@ -180,6 +182,15 @@ export default function BatchEntryPanel({
       console.warn('Failed to re-read configHash, using cached value', e)
     }
 
+    // Validate bitmap covers ALL markets in the batch config.
+    // A short bitmap means uncovered markets → diluted stake → silent losses.
+    if (activeBatch.marketCount && marketIds.length < activeBatch.marketCount) {
+      console.error(
+        `Bitmap underflow: snapshot has ${marketIds.length} markets, batch config has ${activeBatch.marketCount}. Refresh and retry.`
+      )
+      return
+    }
+
     // Build bets array from bitmap state in market order
     const bets: BetDirection[] = marketIds.map((id) => {
       const cell = bitmapEditor.state[id]
@@ -188,13 +199,18 @@ export default function BatchEntryPanel({
       return 'DOWN'
     })
 
+    // Use batch's authoritative market count, not snapshot length.
+    // The snapshot can lag behind the batch config if assets become
+    // healthy between snapshot fetch and join time.
+    const bitmapMarketCount = activeBatch.marketCount || marketIds.length
+
     join({
       batchId: BigInt(activeBatch.id),
       configHash: liveConfigHash!,
       depositAmount,
       stakePerTick: depositAmount, // round-based: deposit = stake
       bets,
-      marketCount: marketIds.length,
+      marketCount: bitmapMarketCount,
     })
   }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, publicClient])
 
@@ -411,6 +427,11 @@ export default function BatchEntryPanel({
             {exceedsBalance && (
               <p className="text-[10px] text-red-500 mt-1">
                 Insufficient balance. You have {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC.
+              </p>
+            )}
+            {marketCountMismatch && (
+              <p className="text-[10px] text-amber-600 mt-1">
+                Market data out of sync — batch expects {activeBatch?.marketCount} markets but only {marketIds.length} loaded. Refresh the page.
               </p>
             )}
           </div>
