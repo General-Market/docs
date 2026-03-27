@@ -94,14 +94,23 @@ function useLockedRounds(
 
   for (const round of oracleRounds) {
     const raw = round.bettingEnd ?? fallbackBettingEnd ?? null
-    if (raw && !lockedRef.current.has(round.batchId)) {
-      lockedRef.current.set(round.batchId, {
-        batchId: round.batchId,
-        bettingEnd: raw,
-        timeframeSecs: round.timeframeSecs ?? 300,
-        playerCount: round.playerCount ?? 0,
-        tvl: round.tvl ?? '0',
-      })
+    if (raw) {
+      const existing = lockedRef.current.get(round.batchId)
+      if (!existing) {
+        // First time seeing this round — lock bettingEnd and timeframe
+        lockedRef.current.set(round.batchId, {
+          batchId: round.batchId,
+          bettingEnd: raw,
+          timeframeSecs: round.timeframeSecs ?? 300,
+          playerCount: round.playerCount ?? 0,
+          tvl: round.tvl ?? '0',
+        })
+      } else {
+        // Round already locked — update mutable fields (playerCount, tvl)
+        // but keep bettingEnd and timeframeSecs frozen (they must not drift)
+        existing.playerCount = round.playerCount ?? existing.playerCount
+        existing.tvl = round.tvl ?? existing.tvl
+      }
     }
   }
 
@@ -146,7 +155,7 @@ function truncAddr(addr: string): string {
 }
 
 /** Renders the timer cell for an active round showing close + settle phases */
-function ActiveTimers({ bettingEnd, settlementEnd }: { bettingEnd: string | null; settlementEnd: string | null }) {
+function ActiveTimers({ bettingEnd, settlementEnd, playerCount }: { bettingEnd: string | null; settlementEnd: string | null; playerCount?: number }) {
   const closeRemaining = useCountdown(bettingEnd)
   const settleRemaining = useCountdown(settlementEnd)
 
@@ -166,6 +175,16 @@ function ActiveTimers({ bettingEnd, settlementEnd }: { bettingEnd: string | null
 
   // Phase 2: Betting closed, waiting for settlement — show only settle timer
   if (settleRemaining > 0) {
+    // Empty rounds (0 players) will never settle on-chain — oracle skips them.
+    // Show "No players" instead of a countdown to nowhere.
+    if (playerCount === 0) {
+      return (
+        <div className="flex flex-col items-end gap-0.5">
+          <span className="font-mono text-[10px] text-text-muted">Closed</span>
+          <span className="font-mono text-[10px] text-text-muted">No players</span>
+        </div>
+      )
+    }
     return (
       <div className="flex flex-col items-end gap-0.5">
         <span className="font-mono text-[10px] text-color-warning font-bold">Closed</span>
@@ -176,7 +195,10 @@ function ActiveTimers({ bettingEnd, settlementEnd }: { bettingEnd: string | null
     )
   }
 
-  // Phase 3: Both expired — settling
+  // Phase 3: Both expired — empty rounds just vanish, populated rounds show settling
+  if (playerCount === 0) {
+    return <span className="font-mono text-[10px] text-text-muted">Skipped</span>
+  }
   return (
     <span className="font-mono text-[10px] text-text-muted">Settling...</span>
   )
@@ -216,19 +238,22 @@ interface BatchHistoryProps {
   playerCount?: number
   tvl?: string
   tickDuration?: number
+  /** On-chain confirmation that the connected wallet is in the active batch.
+   *  When true and oracle playerCount is 0, we floor at 1. Chain wins over API lag. */
+  isJoinedOnChain?: boolean
 }
 
-export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration }: BatchHistoryProps) {
+export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration, isJoinedOnChain }: BatchHistoryProps) {
   const [page, setPage] = useState(1)
   const { address } = useAccount()
   const { profile } = usePlayerProfile(address ?? '')
 
-  // Map: batchId → user's PnL for rounds the connected wallet participated in
+  // Map: batchId → { pnl, deposited } for rounds the connected wallet participated in
   const participatedBatches = useMemo(() => {
-    if (!profile?.batches) return new Map<number, number>()
-    const map = new Map<number, number>()
+    if (!profile?.batches) return new Map<number, { pnl: number; deposited: number }>()
+    const map = new Map<number, { pnl: number; deposited: number }>()
     for (const b of profile.batches) {
-      map.set(b.batchId, b.balance - b.deposited)
+      map.set(b.batchId, { pnl: b.balance - b.deposited, deposited: b.deposited })
     }
     return map
   }, [profile?.batches])
@@ -253,8 +278,10 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
   // retainedRounds keeps it alive so the UI shows "CLOSED / Settle X:XX".
   const { getLockedBettingEnd, retainedRounds } = useLockedRounds(activeRounds, bettingEnd)
 
-  // Prefer live round data over props for player count and pool
-  const livePlayerCount = liveRound?.playerCount ?? playerCount ?? 0
+  // Prefer live round data over props for player count and pool.
+  // When on-chain says "joined" but oracle says 0, floor at 1 — chain is truth.
+  const rawPlayerCount = liveRound?.playerCount ?? playerCount ?? 0
+  const livePlayerCount = isJoinedOnChain ? Math.max(rawPlayerCount, 1) : rawPlayerCount
   const livePool = liveRound?.tvl ?? tvl
   const liveTickDuration = tickDuration ?? liveRound?.timeframeSecs ?? 0
 
@@ -318,8 +345,14 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           const roundSettlementEnd = roundBettingEnd && roundTickDuration
             ? new Date(new Date(roundBettingEnd).getTime() + roundTickDuration * 1000).toISOString()
             : null
-          const pool = round.tvl ? parseFloat(round.tvl) / 1e18 : 0
+          const rawPool = round.tvl ? parseFloat(round.tvl) / 1e18 : 0
           const participated = participatedBatches.has(round.batchId)
+          // On-chain join confirmation applies to the active batch even before oracle syncs
+          const knownJoined = participated || (isJoinedOnChain && round.batchId === activeBatchId)
+          const userEntry = participatedBatches.get(round.batchId)
+          // Reconcile: if user is in this batch but oracle lags, floor at their deposit
+          const players = knownJoined ? Math.max(round.playerCount ?? 0, 1) : (round.playerCount ?? 0)
+          const pool = participated && userEntry ? Math.max(rawPool, userEntry.deposited) : rawPool
 
           return (
             <div
@@ -333,14 +366,14 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               </div>
               <ActiveStatus bettingEnd={roundBettingEnd} />
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-                {round.playerCount ?? 0}
+                {players}
               </div>
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
                 ${pool < 0.01 ? '0' : pool.toFixed(2)}
               </div>
               <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right">
-                <ActiveTimers bettingEnd={roundBettingEnd} settlementEnd={roundSettlementEnd} />
+                <ActiveTimers bettingEnd={roundBettingEnd} settlementEnd={roundSettlementEnd} playerCount={players} />
               </div>
             </div>
           )
@@ -351,8 +384,11 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           const roundSettlementEnd = new Date(
             new Date(locked.bettingEnd).getTime() + locked.timeframeSecs * 1000
           ).toISOString()
-          const pool = locked.tvl ? parseFloat(locked.tvl) / 1e18 : 0
+          const rawPool = locked.tvl ? parseFloat(locked.tvl) / 1e18 : 0
           const participated = participatedBatches.has(locked.batchId)
+          const userEntry = participatedBatches.get(locked.batchId)
+          const players = participated ? Math.max(locked.playerCount, 1) : locked.playerCount
+          const pool = participated && userEntry ? Math.max(rawPool, userEntry.deposited) : rawPool
 
           return (
             <div
@@ -366,7 +402,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               </div>
               <ActiveStatus bettingEnd={locked.bettingEnd} />
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-                {locked.playerCount}
+                {players}
               </div>
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
                 ${pool < 0.01 ? '0' : pool.toFixed(2)}
@@ -379,24 +415,30 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           )
         })}
         {/* Fallback: show single active batch from props if no live or retained rounds */}
-        {page === 1 && activeRounds.length === 0 && retainedRounds.length === 0 && activeBatch && (
-          <div className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light bg-surface/60`}>
+        {page === 1 && activeRounds.length === 0 && retainedRounds.length === 0 && activeBatch && (() => {
+          const participated = participatedBatches.has(activeBatch.batchId)
+          const userEntry = participatedBatches.get(activeBatch.batchId)
+          const players = participated ? Math.max(activeBatch.playerCount, 1) : activeBatch.playerCount
+          const pool = participated && userEntry ? Math.max(activeBatch.totalPool, userEntry.deposited) : activeBatch.totalPool
+          return (
+          <div className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${participated ? 'bg-white' : 'bg-surface/60'}`}>
             <div className="font-mono text-[12px] font-bold text-black tabular-nums">
               #{activeBatch.batchId}
             </div>
             <ActiveStatus bettingEnd={bettingEnd ?? null} />
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-              {activeBatch.playerCount}
+              {players}
             </div>
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-              ${activeBatch.totalPool < 0.01 ? '0' : activeBatch.totalPool.toFixed(2)}
+              ${pool < 0.01 ? '0' : pool.toFixed(2)}
             </div>
             <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
             <div className="text-right">
               <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} />
             </div>
           </div>
-        )}
+          )
+        })()}
 
         {/* Settled rows */}
         {settled.map((batch) => {
@@ -423,7 +465,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           }
 
           // Winner column: participated → "You: +$X.XX", else "0x029...abc +$0.71"
-          const userPnl = participatedBatches.get(batch.batchId)
+          const userEntry = participatedBatches.get(batch.batchId)
+          const userPnl = userEntry?.pnl
           let winnerText: string | null = null
           let winnerPnl = topPnl
           if (participated && userPnl !== undefined) {

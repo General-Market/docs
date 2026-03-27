@@ -24,6 +24,7 @@ const WalletControls = dynamic(() => import('./WalletControls').then(m => ({ def
 const PRIMARY_NAV = [
   { id: 'index',    href: '/index',    labelKey: 'nav.investment' },
   { id: 'vision',   href: '/',         labelKey: 'nav.vision' },
+  { id: 'explorer', href: '/explorer', labelKey: 'nav.explorer' },
 ] as const
 
 type PageId = typeof PRIMARY_NAV[number]['id']
@@ -33,6 +34,7 @@ const DARK_PAGES = new Set<string>(['vision'])
 
 function resolveActivePage(pathname: string): PageId | null {
   if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
+  if (pathname === '/explorer' || pathname.startsWith('/explorer/')) return 'explorer'
   if (pathname === '/' || pathname.startsWith('/source/') || pathname.startsWith('/profile/')) return 'vision'
   return null
 }

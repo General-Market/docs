@@ -37,10 +37,39 @@ const ERC20_BALANCE_ABI = [
   },
 ] as const
 
+type RoundPhase = 'betting' | 'closed' | 'settling'
+
+function useRoundPhase(bettingEnd: string | null | undefined, tickDuration: number): RoundPhase {
+  const [phase, setPhase] = useState<RoundPhase>('betting')
+
+  useEffect(() => {
+    if (!bettingEnd || tickDuration <= 0) {
+      setPhase('betting')
+      return
+    }
+
+    const compute = () => {
+      const now = Date.now()
+      const end = new Date(bettingEnd).getTime()
+      if (now < end) return 'betting' as const
+      const settlementStart = end + tickDuration * 1000
+      if (now < settlementStart) return 'closed' as const
+      return 'settling' as const
+    }
+
+    setPhase(compute())
+    const id = setInterval(() => setPhase(compute()), 1000)
+    return () => clearInterval(id)
+  }, [bettingEnd, tickDuration])
+
+  return phase
+}
+
 export default function BatchEntryPanel({
   bitmapEditor,
   sourceId,
   marketIds = [],
+  bettingEnd,
 }: BatchEntryPanelProps) {
   const t = useTranslations('vision')
 
@@ -58,6 +87,10 @@ export default function BatchEntryPanel({
       .sort((a, b) => b.id - a.id)
     return matching[0] ?? batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
+
+  // -- Round phase: betting → closed → settling --
+  const tickDuration = activeBatch?.tickDuration ?? 0
+  const roundPhase = useRoundPhase(bettingEnd, tickDuration)
 
   // -- Read configHash from on-chain batch state --
   const activeBatchId = activeBatch?.id ?? null
@@ -261,6 +294,25 @@ export default function BatchEntryPanel({
 
   const displayError = joinError || submitError
 
+  // -- Settlement countdown (only relevant in 'closed' phase) --
+  const [settlementCountdown, setSettlementCountdown] = useState('')
+  useEffect(() => {
+    if (roundPhase !== 'closed' || !bettingEnd || tickDuration <= 0) {
+      setSettlementCountdown('')
+      return
+    }
+    const compute = () => {
+      const settlementTime = new Date(bettingEnd).getTime() + tickDuration * 1000
+      const remaining = Math.max(0, Math.floor((settlementTime - Date.now()) / 1000))
+      const m = Math.floor(remaining / 60)
+      const s = remaining % 60
+      return `${m}:${s.toString().padStart(2, '0')}`
+    }
+    setSettlementCountdown(compute())
+    const id = setInterval(() => setSettlementCountdown(compute()), 1000)
+    return () => clearInterval(id)
+  }, [roundPhase, bettingEnd, tickDuration])
+
   return (
     <div>
       {/* -- Active Position Banner (round-based) -- */}
@@ -319,150 +371,185 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Bitmap summary */}
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
-            <span className="text-color-up">{t('batch_entry_panel.up_count', { count: counts.up })}</span>
-            <span className="text-color-down">{t('batch_entry_panel.down_count', { count: counts.down })}</span>
-            <span className="text-text-muted">{t('batch_entry_panel.unset_count', { count: counts.empty })}</span>
-          </div>
-          <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
-            {counts.up > 0 && (
-              <div
-                className="bg-color-up transition-all"
-                style={{ width: `${(counts.up / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
-              />
-            )}
-            {counts.down > 0 && (
-              <div
-                className="bg-color-down transition-all"
-                style={{ width: `${(counts.down / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
-              />
+        {/* -- Phase: CLOSED (between bettingEnd and settlement) -- */}
+        {roundPhase === 'closed' && (
+          <div className="py-6 text-center">
+            <div className="inline-block w-3 h-3 rounded-full bg-amber-400 mb-2" />
+            <p className="text-[13px] font-bold text-neutral-700">Round closed</p>
+            <p className="text-[11px] text-neutral-500 mt-1">Awaiting settlement</p>
+            {settlementCountdown && (
+              <p className="text-[20px] font-black font-mono text-neutral-900 mt-3 tabular-nums">
+                {settlementCountdown}
+              </p>
             )}
           </div>
-        </div>
-
-        {/* Connect wallet prompt */}
-        {!isConnected && !isJoined && (
-          <button
-            type="button"
-            onClick={handleConnectWallet}
-            className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
-          >
-            <p className="text-[11px] font-bold text-neutral-700">{t('batch_entry_panel.connect_wallet')}</p>
-            <p className="text-[10px] text-neutral-500 mt-0.5">{t('batch_entry_panel.connect_wallet_prompt')}</p>
-          </button>
         )}
 
-        {/* Wallet USDC balance hint when zero + faucet */}
-        {isConnected && hasZeroBalance && !isJoined && (
-          <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
-            <p className="text-[11px] font-bold text-yellow-700">No USDC in wallet</p>
-            <p className="text-[10px] text-yellow-600 mt-0.5">You need USDC on L3 to enter a round.</p>
-            {faucetSuccess ? (
-              <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">1,000 USDC + gas minted. Refresh in a moment.</p>
-            ) : (
+        {/* -- Phase: SETTLING -- */}
+        {roundPhase === 'settling' && (
+          <div className="py-6 text-center">
+            <div className="inline-block w-3 h-3 rounded-full bg-neutral-400 animate-pulse mb-2" />
+            <p className="text-[13px] font-bold text-neutral-700">Settling...</p>
+            <p className="text-[11px] text-neutral-500 mt-1">Results incoming</p>
+          </div>
+        )}
+
+        {/* -- Phase: BETTING (full prediction UI) -- */}
+        {roundPhase === 'betting' && (
+          <>
+            {/* Bitmap summary */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
+                <span className="text-color-up">{t('batch_entry_panel.up_count', { count: counts.up })}</span>
+                <span className="text-color-down">{t('batch_entry_panel.down_count', { count: counts.down })}</span>
+                <span className="text-text-muted">{t('batch_entry_panel.unset_count', { count: counts.empty })}</span>
+              </div>
+              <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
+                {counts.up > 0 && (
+                  <div
+                    className="bg-color-up transition-all"
+                    style={{ width: `${(counts.up / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
+                  />
+                )}
+                {counts.down > 0 && (
+                  <div
+                    className="bg-color-down transition-all"
+                    style={{ width: `${(counts.down / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Connect wallet prompt */}
+            {!isConnected && !isJoined && (
               <button
                 type="button"
-                onClick={handleFaucet}
-                disabled={faucetLoading}
-                className="mt-1.5 w-full rounded border border-yellow-500 bg-yellow-100 py-1 text-[11px] font-semibold text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
+                onClick={handleConnectWallet}
+                className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
               >
-                {faucetLoading ? 'Minting...' : 'Get Test USDC'}
+                <p className="text-[11px] font-bold text-neutral-700">{t('batch_entry_panel.connect_wallet')}</p>
+                <p className="text-[10px] text-neutral-500 mt-0.5">{t('batch_entry_panel.connect_wallet_prompt')}</p>
               </button>
             )}
-            {faucetError && (
-              <p className="text-[10px] text-red-600 mt-1">{faucetError}</p>
-            )}
-          </div>
-        )}
 
-        {/* Stake input + quick buttons */}
-        {!isJoined && (
-          <div className="mb-3">
-            <div className="relative">
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={stakeInput}
-                onChange={(e) => setStakeInput(e.target.value)}
-                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
-                USDC
-              </span>
-            </div>
-            <div className="flex gap-1 mt-1.5 fluid-btn-group">
-              {quickAmounts.map((amt) => (
+            {/* Wallet USDC balance hint when zero + faucet */}
+            {isConnected && hasZeroBalance && !isJoined && (
+              <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
+                <p className="text-[11px] font-bold text-yellow-700">No USDC in wallet</p>
+                <p className="text-[10px] text-yellow-600 mt-0.5">You need USDC on L3 to enter a round.</p>
+                {faucetSuccess ? (
+                  <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">1,000 USDC + gas minted. Refresh in a moment.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleFaucet}
+                    disabled={faucetLoading}
+                    className="mt-1.5 w-full rounded border border-yellow-500 bg-yellow-100 py-1 text-[11px] font-semibold text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
+                  >
+                    {faucetLoading ? 'Minting...' : 'Get Test USDC'}
+                  </button>
+                )}
+                {faucetError && (
+                  <p className="text-[10px] text-red-600 mt-1">{faucetError}</p>
+                )}
+              </div>
+            )}
+
+            {/* Stake input + quick buttons */}
+            {!isJoined && (
+              <div className="mb-3">
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={stakeInput}
+                    onChange={(e) => setStakeInput(e.target.value)}
+                    className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
+                    USDC
+                  </span>
+                </div>
+                <div className="flex gap-1 mt-1.5 fluid-btn-group">
+                  {quickAmounts.map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setStakeInput(String(amt))}
+                      className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                    >
+                      ${amt}
+                    </button>
+                  ))}
+                </div>
+                {/* Balance display + max button */}
+                {isConnected && (
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span className="text-[10px] text-neutral-400">
+                      Balance: {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const max = parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS))
+                        if (max > 0) setStakeInput(String(Math.floor(max * 100) / 100))
+                      }}
+                      className="text-[10px] font-semibold text-neutral-500 hover:text-neutral-700 transition-colors"
+                    >
+                      MAX
+                    </button>
+                  </div>
+                )}
+                {exceedsBalance && (
+                  <p className="text-[10px] text-red-500 mt-1">
+                    Insufficient balance. You have {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC.
+                  </p>
+                )}
+                {marketCountMismatch && (
+                  <p className="text-[10px] text-amber-600 mt-1">
+                    Market data out of sync — batch expects {activeBatch?.marketCount} markets but only {marketIds.length} loaded. Refresh the page.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Error display */}
+            {displayError && (
+              <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
+                <p className="line-clamp-2">{displayError}</p>
                 <button
-                  key={amt}
                   type="button"
-                  onClick={() => setStakeInput(String(amt))}
-                  className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                  onClick={() => resetJoin()}
+                  className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
+                  title={t('batch_entry_panel.dismiss')}
                 >
-                  ${amt}
-                </button>
-              ))}
-            </div>
-            {/* Balance display + max button */}
-            {isConnected && (
-              <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[10px] text-neutral-400">
-                  Balance: {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const max = parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS))
-                    if (max > 0) setStakeInput(String(Math.floor(max * 100) / 100))
-                  }}
-                  className="text-[10px] font-semibold text-neutral-500 hover:text-neutral-700 transition-colors"
-                >
-                  MAX
+                  &times;
                 </button>
               </div>
             )}
-            {exceedsBalance && (
-              <p className="text-[10px] text-red-500 mt-1">
-                Insufficient balance. You have {parseFloat(formatUnits(walletUsdc, VISION_USDC_DECIMALS)).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC.
-              </p>
-            )}
-            {marketCountMismatch && (
-              <p className="text-[10px] text-amber-600 mt-1">
-                Market data out of sync — batch expects {activeBatch?.marketCount} markets but only {marketIds.length} loaded. Refresh the page.
-              </p>
-            )}
-          </div>
-        )}
 
-        {/* Error display */}
-        {displayError && (
-          <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
-            <p className="line-clamp-2">{displayError}</p>
-            <button
-              type="button"
-              onClick={() => resetJoin()}
-              className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
-              title={t('batch_entry_panel.dismiss')}
-            >
-              &times;
-            </button>
-          </div>
-        )}
+            {/* Enter round button */}
+            {!isJoined && (
+              <SpringPress disabled={!canSubmit || isProcessing}>
+                <WalletActionButton
+                  onClick={handleEnterBatch}
+                  disabled={!canSubmit || isProcessing}
+                  className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {buttonLabel}
+                </WalletActionButton>
+              </SpringPress>
+            )}
 
-        {/* Enter round button */}
-        {!isJoined && (
-          <SpringPress disabled={!canSubmit || isProcessing}>
-            <WalletActionButton
-              onClick={handleEnterBatch}
-              disabled={!canSubmit || isProcessing}
-              className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {buttonLabel}
-            </WalletActionButton>
-          </SpringPress>
+            {/* Strategy list */}
+            <StrategyList
+              bitmapEditor={bitmapEditor}
+              sourceId={sourceId}
+              marketIds={marketIds}
+            />
+          </>
         )}
 
         {/* Batch info footer */}
@@ -472,13 +559,6 @@ export default function BatchEntryPanel({
             <span>{t('batch_entry_panel.markets', { count: activeBatch.marketCount || marketIds.length })}</span>
           </div>
         )}
-
-        {/* Strategy list */}
-        <StrategyList
-          bitmapEditor={bitmapEditor}
-          sourceId={sourceId}
-          marketIds={marketIds}
-        />
       </div>
     </div>
   )
