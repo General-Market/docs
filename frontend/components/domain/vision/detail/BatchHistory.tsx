@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
-import { useRounds } from '@/hooks/vision/useRounds'
+import { useRounds, type RoundInfo } from '@/hooks/vision/useRounds'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 
 interface SourceBatch {
@@ -14,8 +14,10 @@ interface SourceBatch {
   avgPnl: number
   topEarnerPnl?: number
   timestamp: string
+  bettingStart?: string | null
   bettingEnd?: string | null
   settledAt?: string | null
+  marketCount?: number | null
 }
 
 interface HistoryResponse {
@@ -64,6 +66,50 @@ function formatTimer(secs: number) {
   const m = Math.floor(secs / 60)
   const s = secs % 60
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+/**
+ * Locks the bettingEnd timestamp per batchId so the timer counts to zero
+ * instead of resetting when the oracle advances current_tick.
+ *
+ * Once a bettingEnd is recorded for a given batchId, subsequent polls that
+ * return a different (later) bettingEnd are ignored — the original deadline
+ * is the truth for this round's lifecycle.
+ */
+function useLockedBettingEnds(rounds: RoundInfo[], fallbackBettingEnd?: string | null) {
+  const lockedRef = useRef<Map<number, string>>(new Map())
+
+  // Lock bettingEnd for each round the first time we see it
+  for (const round of rounds) {
+    const raw = round.bettingEnd ?? fallbackBettingEnd ?? null
+    if (raw && !lockedRef.current.has(round.batchId)) {
+      lockedRef.current.set(round.batchId, raw)
+    }
+  }
+
+  // Prune entries for rounds that disappeared (settled and gone from active list)
+  const activeBatchIds = new Set(rounds.map(r => r.batchId))
+  for (const [id] of lockedRef.current) {
+    if (!activeBatchIds.has(id)) {
+      lockedRef.current.delete(id)
+    }
+  }
+
+  const getLockedBettingEnd = useCallback((batchId: number): string | null => {
+    return lockedRef.current.get(batchId) ?? null
+  }, [])
+
+  return getLockedBettingEnd
+}
+
+/** Format an ISO timestamp for display in tooltips */
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  })
 }
 
 /** Renders the timer cell for an active round showing close + settle phases */
@@ -156,6 +202,10 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
   const activeRounds = (rounds ?? []).filter(r => r.status === 'betting' || r.status === 'settling')
   const liveRound = activeRounds[0] ?? null
 
+  // Lock bettingEnd per batchId — prevents timer reset when oracle advances current_tick.
+  // Once captured, a round's deadline is immutable until the round leaves the active list.
+  const getLockedBettingEnd = useLockedBettingEnds(activeRounds, bettingEnd)
+
   // Prefer live round data over props for player count and pool
   const livePlayerCount = liveRound?.playerCount ?? playerCount ?? 0
   const livePool = liveRound?.tvl ?? tvl
@@ -216,7 +266,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
 
         {/* Active rounds — show all (betting + settling can overlap) */}
         {page === 1 && activeRounds.map((round) => {
-          const roundBettingEnd = round.bettingEnd ?? bettingEnd
+          // Use locked bettingEnd — immune to oracle tick advances
+          const roundBettingEnd = getLockedBettingEnd(round.batchId)
           const roundTickDuration = round.timeframeSecs ?? liveTickDuration
           const roundSettlementEnd = roundBettingEnd && roundTickDuration
             ? new Date(new Date(roundBettingEnd).getTime() + roundTickDuration * 1000).toISOString()
@@ -234,7 +285,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               <div className={`font-mono text-[12px] tabular-nums ${participated ? 'font-bold text-black' : 'font-bold text-black'}`}>
                 #{round.batchId}
               </div>
-              <ActiveStatus bettingEnd={roundBettingEnd ?? null} />
+              <ActiveStatus bettingEnd={roundBettingEnd} />
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
                 {round.playerCount ?? 0}
               </div>
@@ -244,7 +295,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right">
-                <ActiveTimers bettingEnd={roundBettingEnd ?? null} settlementEnd={roundSettlementEnd} />
+                <ActiveTimers bettingEnd={roundBettingEnd} settlementEnd={roundSettlementEnd} />
               </div>
             </div>
           )

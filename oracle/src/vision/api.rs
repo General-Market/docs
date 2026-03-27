@@ -2112,7 +2112,9 @@ async fn source_batch_history(
     let settled_rows = sqlx::query_as::<_, SettledHistoryRow>(
         "SELECT vrp.batch_id,
                 MAX(vrp.settled_at) AS settled_at,
+                vbl.betting_start,
                 vbl.betting_end,
+                vbl.market_count,
                 COUNT(DISTINCT vrp.player)::bigint AS player_count,
                 SUM(vrp.deposited::numeric)::text AS total_deposited,
                 AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
@@ -2120,7 +2122,7 @@ async fn source_batch_history(
          FROM vision_round_players vrp
          JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
          WHERE vbl.source_id = $1
-         GROUP BY vrp.batch_id, vbl.betting_end
+         GROUP BY vrp.batch_id, vbl.betting_start, vbl.betting_end, vbl.market_count
          ORDER BY MAX(vrp.settled_at) DESC
          LIMIT $2 OFFSET $3"
     )
@@ -2151,8 +2153,10 @@ async fn source_batch_history(
             avg_pnl: (avg_abs_pnl * 100.0).round() / 100.0,
             top_earner_pnl: (top_pnl * 100.0).round() / 100.0,
             timestamp: r.settled_at.to_rfc3339(),
+            betting_start: r.betting_start.map(|dt| dt.to_rfc3339()),
             betting_end: r.betting_end.map(|dt| dt.to_rfc3339()),
             settled_at: Some(r.settled_at.to_rfc3339()),
+            market_count: r.market_count,
         });
     }
 
@@ -2283,7 +2287,22 @@ async fn rounds_active(
 
                 // Live scheduler count preferred; fall back to persisted lifecycle count
                 // (survives oracle restarts after settlement zeroes in-memory balances).
-                let player_count = if live_count > 0 { live_count } else { lifecycle_pc };
+                // Third fallback: count distinct players in vision_positions directly.
+                let player_count = if live_count > 0 {
+                    live_count
+                } else if lifecycle_pc > 0 {
+                    lifecycle_pc
+                } else {
+                    sqlx::query_scalar::<_, Option<i64>>(
+                        "SELECT COUNT(DISTINCT player) FROM vision_positions WHERE batch_id = $1"
+                    )
+                    .bind(batch_id as i64)
+                    .fetch_one(&state.pool)
+                    .await
+                    .ok()
+                    .flatten()
+                    .unwrap_or(0) as usize
+                };
 
                 // Compute TVL from in-memory player deposits (same as list_batches).
                 // Falls back to summing vision_positions when scheduler is empty
@@ -2334,7 +2353,7 @@ async fn rounds_active(
                     timeframe_secs: row.tick_duration as u64,
                     status: status.to_string(),
                     player_count,
-                    tvl: tvl.to_string(),
+                    tvl,
                     betting_end: chrono::DateTime::from_timestamp(betting_end_ts as i64, 0)
                         .map(|dt| dt.to_rfc3339())
                         .unwrap_or_else(|| betting_end_ts.to_string()),
