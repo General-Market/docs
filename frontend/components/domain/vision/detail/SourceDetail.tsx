@@ -59,15 +59,13 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
   )
 }
 
-function CountdownTimer({ bettingEnd, tickDuration }: { bettingEnd: string | null; tickDuration?: number }) {
+function CountdownTimer({ bettingEnd }: { bettingEnd: string | null }) {
   const [remaining, setRemaining] = useState<number>(0)
-  const [overdue, setOverdue] = useState<number>(0)
   useEffect(() => {
     if (!bettingEnd) return
     const update = () => {
       const diff = Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000)
       setRemaining(Math.max(0, diff))
-      setOverdue(diff < 0 ? Math.abs(diff) : 0)
     }
     update()
     const iv = setInterval(update, 1000)
@@ -75,15 +73,13 @@ function CountdownTimer({ bettingEnd, tickDuration }: { bettingEnd: string | nul
   }, [bettingEnd])
   if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
   if (remaining <= 0) {
-    const td = tickDuration || 300
-    const eta = Math.max(0, td - overdue)
     return (
-      <span className="flex items-center gap-2 text-color-warning font-mono font-black">
+      <span className="flex items-center gap-2 text-text-muted font-mono font-black">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-text-muted opacity-50" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-text-muted" />
         </span>
-        {eta > 0 ? `~${eta}s` : 'Settling'}
+        New round...
       </span>
     )
   }
@@ -152,7 +148,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
   const { data: rounds } = useRounds(sourceId)
-  const activeRound = rounds?.[0]
   const bitmapEditor = useBitmapEditor()
 
   // Find source schedule from meta
@@ -171,19 +166,16 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Bitmap counts for this source
-  const counts = bitmapEditor.getCounts(sourceId, marketIds)
-  const totalMarkets = marketIds.length
-  const totalSet = counts.up + counts.down
+  // Active betting round — find the round that's actually accepting bets (not settling).
+  // With round overlap, a settling round and a betting round can coexist.
+  // The header always shows the betting round; settling rounds surface in PendingPositions.
+  const bettingRound = useMemo(() => {
+    if (!rounds || rounds.length === 0) return null
+    return rounds.find(r => r.status === 'betting') ?? null
+  }, [rounds])
 
-  // Round status — derived from oracle status field (betting | settling)
-  const isSettling = activeRound?.status === 'settling'
-  const bettingOpen = activeRound?.bettingEnd
-    ? new Date(activeRound.bettingEnd).getTime() > Date.now()
-    : false
-  const roundStatusLabel = activeRound
-    ? (bettingOpen ? t('source_detail.betting_open') : 'Settling')
-    : 'Waiting'
+  // bettingEnd: prefer the active betting round, fall back to activeBatch-derived timing
+  const bettingEnd = bettingRound?.bettingEnd ?? null
 
   if (isRegistryLoading && !initialSource) {
     return <SourceDetailSkeleton />
@@ -214,87 +206,59 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         {/* Source Hero */}
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={0} tickDuration={0} sourceId={sourceId} urgency={'normal'} />
 
-        {/* Batch bar — round status */}
-        <div className={`mt-4 border transition-colors duration-300 overflow-hidden ${
-          isSettling
-            ? 'bg-surface-warning/50 border-color-warning/20'
-            : 'bg-[var(--surface)] border-border-light'
-        }`}>
-          {/* Progress bar — depletes over betting period, pulses when settling */}
-          <BatchProgressBar
-            bettingEnd={activeRound?.bettingEnd ?? null}
-            tickDuration={activeBatch?.tickDuration ?? activeRound?.timeframeSecs ?? 300}
-            isSettling={isSettling}
-          />
-          <div className="flex items-stretch">
-            {/* Left: metadata stats */}
-            <div className="flex items-center gap-5 px-5 py-3">
-              <div>
+        {/* Batch bar — always shows the open betting round */}
+        {activeBatch ? (
+          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
+            <BatchProgressBar
+              bettingEnd={bettingEnd}
+              tickDuration={activeBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+              isSettling={false}
+            />
+            <div className="flex items-center px-5 py-3">
+              {/* Round # */}
+              <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.round')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-black">
-                  {activeBatch ? `#${activeBatch.id}` : activeRound ? `#${activeRound.batchId}` : '—'}
+                  #{activeBatch.id}
                 </div>
               </div>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  Status
-                </div>
-                <div className={`text-[15px] font-bold font-mono flex items-center gap-2 ${isSettling ? 'text-color-warning' : 'text-black'}`}>
-                  {isSettling && (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-50" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
-                    </span>
-                  )}
-                  {activeBatch || activeRound ? roundStatusLabel : 'Waiting'}
-                </div>
-              </div>
-              <div>
+              {/* Players */}
+              <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.players')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-black">
-                  {activeBatch?.playerCount ?? activeRound?.playerCount ?? '—'}
+                  {activeBatch.playerCount}
                 </div>
               </div>
+              {/* Pool */}
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.pool')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-color-up">
-                  {activeBatch ? formatTvl(activeBatch.tvl) : '—'}
+                  {formatTvl(activeBatch.tvl)}
                 </div>
               </div>
-            </div>
-
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Right: timer — the hero element, visually separated */}
-            <div className={`flex items-center gap-5 px-5 py-3 border-l ${
-              isSettling ? 'border-color-warning/20' : 'border-border-light'
-            }`}>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  {t('source_detail.set')}
-                </div>
-                <div className="text-[15px] font-bold font-mono text-color-up">
-                  {totalSet}/{totalMarkets}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  {isSettling ? 'Result' : 'Time Left'}
-                </div>
+              {/* Timer — anchored right, the dominant element */}
+              <div className="ml-auto pl-5">
                 <div className="text-[24px] font-black font-mono text-black leading-none">
-                  <CountdownTimer bettingEnd={activeRound?.bettingEnd ?? null} tickDuration={activeBatch?.tickDuration} />
+                  <CountdownTimer bettingEnd={bettingEnd} />
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
+            <div className="px-5 py-3 text-center">
+              <span className="text-[13px] font-mono text-text-muted animate-pulse">
+                Next round starting...
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Pending positions — settling batches where user has a deposit */}
         {rounds && rounds.length > 0 && (
@@ -313,8 +277,8 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             <BatchHistory
               sourceId={sourceId}
               activeBatchId={activeBatch?.id}
-              bettingEnd={activeRound?.bettingEnd ?? null}
-              playerCount={activeBatch?.playerCount ?? activeRound?.playerCount}
+              bettingEnd={bettingEnd}
+              playerCount={activeBatch?.playerCount ?? bettingRound?.playerCount}
               tvl={activeBatch?.tvl}
               tickDuration={activeBatch?.tickDuration}
             />
@@ -327,7 +291,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                 bitmapEditor={bitmapEditor}
                 sourceId={sourceId}
                 marketIds={marketIds}
-                bettingEnd={activeRound?.bettingEnd}
+                bettingEnd={bettingEnd}
               />
             </div>
           </div>
