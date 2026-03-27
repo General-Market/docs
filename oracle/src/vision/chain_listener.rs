@@ -18,10 +18,13 @@ use tracing::{debug, info, warn};
 use super::tick_scheduler::TickScheduler;
 use super::types::{Batch, PlayerPosition};
 
-/// Poll interval for checking new blocks (seconds).
-const POLL_INTERVAL_SECS: u64 = 2;
+/// Poll interval when caught up to chain tip (milliseconds).
+/// Only used when cursor == tip — the listener sleeps this long before
+/// checking for new blocks.  On fast L3 chains (~0.25s block time) this
+/// keeps latency under 1 second while avoiding busy-spinning.
+const POLL_INTERVAL_MS: u64 = 250;
 
-/// Maximum number of blocks to query per batch to avoid RPC timeouts.
+/// Maximum number of blocks to query per eth_getLogs call.
 const MAX_BLOCK_RANGE: u64 = 2000;
 
 /// Unified chain listener: watches Vision.sol events, updates BOTH the in-memory
@@ -140,14 +143,14 @@ impl ChainListener {
                 Ok(n) => n.as_u64(),
                 Err(e) => {
                     warn!(error = %e, "Failed to get block number, retrying...");
-                    tokio::time::sleep(std::time::Duration::from_secs(POLL_INTERVAL_SECS)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
                     continue;
                 }
             };
 
             if cursor > tip {
-                // Caught up — wait for new blocks
-                tokio::time::sleep(std::time::Duration::from_secs(POLL_INTERVAL_SECS)).await;
+                // Caught up — short sleep then re-check
+                tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
                 continue;
             }
 
@@ -173,6 +176,12 @@ impl ChainListener {
                     }
 
                     cursor = to_block + 1;
+
+                    // If we consumed up to the tip, brief pause for new blocks.
+                    // If still behind, loop immediately — no sleep during catch-up.
+                    if to_block >= tip {
+                        tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+                    }
                 }
                 Err(e) => {
                     warn!(
@@ -181,13 +190,8 @@ impl ChainListener {
                         to = to_block,
                         "Failed to process block range, retrying..."
                     );
-                    tokio::time::sleep(std::time::Duration::from_secs(POLL_INTERVAL_SECS)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
                 }
-            }
-
-            // If caught up to tip, sleep before next poll
-            if to_block >= tip {
-                tokio::time::sleep(std::time::Duration::from_secs(POLL_INTERVAL_SECS)).await;
             }
         }
 
@@ -238,12 +242,11 @@ impl ChainListener {
     // Event handlers — each updates scheduler (in-memory) AND Postgres
     // =========================================================================
 
-    /// Handle `BatchCreated(uint256 indexed batchId, address indexed creator, bytes32 indexed sourceId, uint256 tickDuration)`
+    /// Handle `BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, bytes32 configHash, uint256 tickDuration, uint256 lockOffset)`
     ///
-    /// The event contains batchId, creator, sourceId (all indexed) and tickDuration (data).
-    /// We fetch the full batch from the contract to get configHash, lockOffset, etc.
+    /// All fields are available from the event itself — no contract read needed.
+    /// `createdAtTick` is computed from the block timestamp to avoid an RPC round-trip.
     async fn handle_batch_created(&self, log: &Log) {
-        // Event: BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, bytes32 configHash, uint256 tickDuration, uint256 lockOffset)
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
             None => {
@@ -251,7 +254,7 @@ impl ChainListener {
                 return;
             }
         };
-        let source_id_from_event = log
+        let source_id = log
             .topics
             .get(2)
             .copied()
@@ -263,8 +266,9 @@ impl ChainListener {
                 return;
             }
         };
+
         // data = configHash (bytes32) + tickDuration (uint256) + lockOffset (uint256)
-        let (config_hash_from_event, tick_duration) = if log.data.len() >= 64 {
+        let (config_hash, tick_duration, lock_offset) = if log.data.len() >= 96 {
             let tuple = ethers::abi::decode(
                 &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256), ethers::abi::ParamType::Uint(256)],
                 &log.data,
@@ -276,16 +280,37 @@ impl ChainListener {
                         _ => H256::zero(),
                     };
                     let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
-                    (ch, td)
+                    let lo = tokens[2].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    (ch, td, lo)
                 }
                 Err(_) => {
                     warn!(batch_id, "BatchCreated: failed to decode data tuple");
                     return;
                 }
             }
+        } else if log.data.len() >= 64 {
+            // Legacy: configHash + tickDuration only (no lockOffset)
+            let tuple = ethers::abi::decode(
+                &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256)],
+                &log.data,
+            );
+            match tuple {
+                Ok(tokens) => {
+                    let ch = match &tokens[0] {
+                        Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+                        _ => H256::zero(),
+                    };
+                    let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    (ch, td, 0u64)
+                }
+                Err(_) => {
+                    warn!(batch_id, "BatchCreated: failed to decode data (legacy 2-field)");
+                    return;
+                }
+            }
         } else {
             match decode_single_u256(&log.data) {
-                Some(v) => (H256::zero(), v.as_u64()),
+                Some(v) => (H256::zero(), v.as_u64(), 0u64),
                 None => {
                     warn!(batch_id, "BatchCreated: failed to decode tickDuration from data");
                     return;
@@ -293,47 +318,24 @@ impl ChainListener {
             }
         };
 
-        // Fetch full batch from contract to get sourceId, configHash, etc.
-        let batch = match self.fetch_batch_from_contract(batch_id).await {
-            Some(fetched) => Batch {
-                id: batch_id,
-                creator,
-                source_id: fetched.source_id,
-                config_hash: fetched.config_hash,
-                tick_duration,
-                lock_offset: fetched.lock_offset,
-                created_at_tick: fetched.created_at_tick,
-                paused: fetched.paused,
-                settled: fetched.settled,
-            },
-            None => {
-                // Fallback: use block timestamp to compute created_at_tick
-                let created_at_tick = match self.get_block_timestamp(log).await {
-                    Some(ts) => {
-                        if tick_duration > 0 {
-                            ts / tick_duration
-                        } else {
-                            0
-                        }
-                    }
-                    None => 0,
-                };
-                warn!(
-                    batch_id,
-                    "Failed to fetch batch from contract, using fallback"
-                );
-                Batch {
-                    id: batch_id,
-                    creator,
-                    source_id: source_id_from_event,
-                    config_hash: config_hash_from_event,
-                    tick_duration,
-                    lock_offset: 0,
-                    created_at_tick,
-                    paused: false,
-                    settled: false,
-                }
+        // Compute createdAtTick from block timestamp — avoids an RPC round-trip
+        let created_at_tick = match self.get_block_timestamp(log).await {
+            Some(ts) => {
+                if tick_duration > 0 { ts / tick_duration } else { 0 }
             }
+            None => 0,
+        };
+
+        let batch = Batch {
+            id: batch_id,
+            creator,
+            source_id,
+            config_hash,
+            tick_duration,
+            lock_offset,
+            created_at_tick,
+            paused: false,
+            settled: false,
         };
 
         // 1. Update in-memory scheduler

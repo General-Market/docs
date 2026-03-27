@@ -6,6 +6,7 @@ import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMark
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
+import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SourceHero } from './SourceHero'
@@ -166,6 +167,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
+  // On-chain player position — used to reconcile oracle lag in BatchHistory
+  const { isJoined: isJoinedOnChain } = usePlayerPosition(activeBatch?.id)
+
   // Active betting round — find the round that's actually accepting bets (not settling).
   // With round overlap, a settling round and a betting round can coexist.
   // The header always shows the betting round; settling rounds surface in PendingPositions.
@@ -280,6 +284,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               playerCount={bettingRound?.playerCount ?? activeBatch?.playerCount}
               tvl={bettingRound?.tvl ?? activeBatch?.tvl}
               tickDuration={activeBatch?.tickDuration ?? bettingRound?.timeframeSecs}
+              isJoinedOnChain={isJoinedOnChain}
             />
             <TopPlayers sourceId={sourceId} />
           </div>

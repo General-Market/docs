@@ -170,8 +170,12 @@ export default function BatchEntryPanel({
     }).finally(() => {
       resetJoin()
       refetchPosition()
+      // Invalidate round/batch queries so BatchHistory picks up the new player count
+      // without waiting for the next 5s/10s poll cycle
+      queryClient.invalidateQueries({ queryKey: ['vision-rounds'] })
+      queryClient.invalidateQueries({ queryKey: ['vision-batches'] })
     })
-  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition])
+  }, [joinStep, encodedBitmap, bitmapHash, activeBatch, submitBitmap, resetJoin, refetchPosition, queryClient])
 
   // -- Get public client for direct reads --
   const publicClient = usePublicClient({ chainId: indexL3.id })
