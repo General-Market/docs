@@ -682,10 +682,16 @@ pub async fn upsert_trade(
         "INSERT INTO trades (order_id, user_address, itp_id, side, amount, limit_price, fill_price, fill_amount, status, order_timestamp, fill_timestamp, block_number)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (order_id) DO UPDATE SET
+            amount = EXCLUDED.amount,
+            limit_price = EXCLUDED.limit_price,
+            side = EXCLUDED.side,
+            itp_id = EXCLUDED.itp_id,
+            user_address = EXCLUDED.user_address,
             fill_price = COALESCE(EXCLUDED.fill_price, trades.fill_price),
             fill_amount = COALESCE(EXCLUDED.fill_amount, trades.fill_amount),
             status = EXCLUDED.status,
-            fill_timestamp = COALESCE(EXCLUDED.fill_timestamp, trades.fill_timestamp)"
+            fill_timestamp = COALESCE(EXCLUDED.fill_timestamp, trades.fill_timestamp),
+            block_number = EXCLUDED.block_number"
     )
     .bind(order_id)
     .bind(user_address)
