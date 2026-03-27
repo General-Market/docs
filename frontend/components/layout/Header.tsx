@@ -53,11 +53,11 @@ function TopbarStats() {
       setSettled(Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR))
     }, 10_000)
 
-    // Fetch active market count once (lightweight — batches are already cached)
-    fetch('/api/vision/batches')
-      .then(r => r.ok ? r.json() : { batches: [] })
+    // Fetch active market count from snapshot (has real counts for all sources)
+    fetch('/api/vision/snapshot')
+      .then(r => r.ok ? r.json() : { prices: [] })
       .then(d => {
-        const total = (d.batches ?? []).reduce((sum: number, b: any) => sum + (b.market_count ?? 0), 0)
+        const total = (d.prices ?? []).length
         if (total > 0) setActiveMarkets(total)
       })
       .catch(() => {})
@@ -122,7 +122,7 @@ export function Header() {
     <>
       {/* Topbar — thin black strip (scrolls away) */}
       <div className="bg-black text-white text-label font-medium text-center py-1.5">
-        <TopbarStats /> — Testnet v0.93
+        <TopbarStats />. Testnet v0.93
       </div>
 
       <div className="sticky top-0 z-50">
