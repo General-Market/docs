@@ -3,7 +3,7 @@
  *
  * Same narrative as the original: five data sources, three benefits,
  * the 583,551 hook. Rebuilt in VisionVC2's text-first, spring-physics,
- * warm-paper manifesto style. Single file. No b-roll. No 3D devices.
+ * warm-paper manifesto style. Single file. B-roll behind source cards.
  *
  * ~35.6s at 30fps (1068 frames).
  */
@@ -19,6 +19,7 @@ import {
   Easing,
 } from "remotion";
 import { COLOR, FONT } from "./tokens";
+import { BackgroundLayer } from "./device/BackgroundLayer";
 
 const FPS = 30;
 const GM_GREEN = "#00C853";
@@ -101,10 +102,13 @@ function lerpColor(a: string, b: string, t: number): string {
 
 const LOGO_DIR = "compositions/vision-vc/logos";
 
+const BROLL_DIR = "compositions/vision-vc/broll";
+
 const SOURCES = [
   {
     name: "Deutsche Bahn",
     logo: `${LOGO_DIR}/db-logo.png`,
+    broll: `${BROLL_DIR}/db-video.mp4`,
     metric: "847 delay markets",
     tag: "TRANSPORT",
     tagColor: "#d4920a",
@@ -113,6 +117,7 @@ const SOURCES = [
   {
     name: "McDonald's",
     logo: `${LOGO_DIR}/mcdonalds-logo.png`,
+    broll: `${BROLL_DIR}/mcdonalds-video.mp4`,
     metric: "14,291 outage markets",
     tag: "CONSUMER",
     tagColor: "#c42020",
@@ -121,6 +126,7 @@ const SOURCES = [
   {
     name: "Steam",
     logo: `${LOGO_DIR}/steam-logo.png`,
+    broll: `${BROLL_DIR}/steam-video.mp4`,
     metric: "23,508 player count markets",
     tag: "GAMING",
     tagColor: "#1887dd",
@@ -129,6 +135,7 @@ const SOURCES = [
   {
     name: "Pump.fun",
     logo: `${LOGO_DIR}/pumpfun-logo.png`,
+    broll: `${BROLL_DIR}/pumpfun-video.mp4`,
     metric: "95,500 rug markets",
     tag: "CRYPTO",
     tagColor: "#16a34a",
@@ -137,6 +144,7 @@ const SOURCES = [
   {
     name: "Solar Observatory",
     logo: `${LOGO_DIR}/noaa-logo.png`,
+    broll: `${BROLL_DIR}/solar-video.mp4`,
     metric: "180,000 flare markets",
     tag: "SPACE",
     tagColor: "#e07012",
@@ -284,7 +292,6 @@ const SourceCard: React.FC<{
 }> = ({ source, dur }) => {
   const frame = useCurrentFrame();
 
-  const logoS = spring({ frame, fps: FPS, config: SP.fast });
   const metricS = spring({
     frame: Math.max(0, frame - 6),
     fps: FPS,
@@ -295,74 +302,86 @@ const SourceCard: React.FC<{
     fps: FPS,
     config: SP.medium,
   });
+  const tagS = spring({ frame, fps: FPS, config: SP.fast });
   const exit = useExit(frame, dur - 15, dur);
 
   return (
-    <AbsoluteFill
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {/* Tag */}
+    <AbsoluteFill>
+      {/* B-roll video background */}
+      <BackgroundLayer
+        src={source.broll}
+        brightness={0.85}
+        blur={0}
+        tint="rgba(0,0,0,0.15)"
+        zoom="in"
+        saturation={0.6}
+      />
+
+      {/* Warm-paper scrim for text legibility */}
+      <AbsoluteFill
+        style={{
+          background:
+            "linear-gradient(to top, rgba(245,244,239,0.92) 0%, rgba(245,244,239,0.6) 35%, transparent 60%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Tag — top right */}
       <div
         style={{
+          position: "absolute",
+          top: 40,
+          right: 60,
           fontFamily: FONT.sans,
           fontSize: 14,
           fontWeight: 600,
           color: source.tagColor,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          marginBottom: 24,
-          opacity: interpolate(logoS, [0, 1], [0, 0.7]) * exit.opacity,
+          opacity: interpolate(tagS, [0, 1], [0, 0.8]) * exit.opacity,
         }}
       >
         {source.tag}
       </div>
 
-      {/* Logo */}
-      <Img
-        src={staticFile(source.logo)}
-        style={{
-          height: 100,
-          objectFit: "contain",
-          marginBottom: 32,
-          opacity: interpolate(logoS, [0, 1], [0, 1]) * exit.opacity,
-          transform: `translateY(${interpolate(logoS, [0, 1], [20, 0]) + exit.translateY}px) scale(${interpolate(logoS, [0, 1], [0.9, 1])})`,
-        }}
-      />
-
-      {/* Metric */}
+      {/* Text cluster — bottom left */}
       <div
         style={{
-          fontFamily: FONT.sans,
-          fontSize: 56,
-          fontWeight: 800,
-          color: COLOR.textPrimary,
-          letterSpacing: "-0.02em",
-          marginBottom: 12,
-          opacity: interpolate(metricS, [0, 1], [0, 1]) * exit.opacity,
-          transform: `translateY(${interpolate(metricS, [0, 1], [25, 0]) + exit.translateY}px)`,
+          position: "absolute",
+          left: 80,
+          bottom: 80,
+          maxWidth: 900,
         }}
       >
-        {source.metric}
-      </div>
-
-      {/* Question */}
-      <div
-        style={{
-          fontFamily: FONT.sans,
-          fontSize: 28,
-          fontWeight: 400,
-          color: COLOR.textSecondary,
-          opacity:
-            interpolate(questionS, [0, 1], [0, 0.85]) * exit.opacity,
-          transform: `translateY(${interpolate(questionS, [0, 1], [15, 0]) + exit.translateY}px)`,
-        }}
-      >
-        {source.question}
+        <div
+          style={{
+            fontFamily: FONT.sans,
+            fontSize: 56,
+            fontWeight: 800,
+            color: COLOR.textPrimary,
+            letterSpacing: "-0.02em",
+            marginBottom: 10,
+            opacity: interpolate(metricS, [0, 1], [0, 1]) * exit.opacity,
+            transform: `translateY(${interpolate(metricS, [0, 1], [25, 0]) + exit.translateY}px)`,
+            textShadow: `0 1px 16px ${COLOR.page}`,
+          }}
+        >
+          {source.metric}
+        </div>
+        <div
+          style={{
+            fontFamily: FONT.sans,
+            fontSize: 28,
+            fontWeight: 400,
+            color: COLOR.textSecondary,
+            opacity:
+              interpolate(questionS, [0, 1], [0, 0.85]) * exit.opacity,
+            transform: `translateY(${interpolate(questionS, [0, 1], [15, 0]) + exit.translateY}px)`,
+            textShadow: `0 1px 12px ${COLOR.page}`,
+          }}
+        >
+          {source.question}
+        </div>
       </div>
     </AbsoluteFill>
   );
