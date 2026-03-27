@@ -1168,7 +1168,10 @@ async fn nav_series(
             // If klines exist for this minute, update last-known prices
             if let Some(klines) = minute_klines.get(&minute_ts) {
                 consecutive_empty_minutes = 0;
+                let mut updated_syms: std::collections::HashSet<&str> =
+                    std::collections::HashSet::new();
                 for kline in klines {
+                    updated_syms.insert(&kline.symbol);
                     if let Ok(o) = kline.open.parse::<f64>() {
                         last_open.insert(kline.symbol.clone(), o);
                     }
@@ -1180,6 +1183,17 @@ async fn nav_series(
                     }
                     if let Ok(c) = kline.close.parse::<f64>() {
                         last_close.insert(kline.symbol.clone(), c);
+                    }
+                }
+                // Forward-fill symbols without klines this minute to flat
+                // candle at last_close — same logic as the fully-empty branch.
+                for sym in &symbols {
+                    if !updated_syms.contains(sym.as_str()) {
+                        if let Some(&c) = last_close.get(sym) {
+                            last_open.insert(sym.clone(), c);
+                            last_high.insert(sym.clone(), c);
+                            last_low.insert(sym.clone(), c);
+                        }
                     }
                 }
             } else {
