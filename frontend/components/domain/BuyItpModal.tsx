@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useAccount, useWaitForTransactionReceipt, useWriteContract, useSwitchChain, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, formatUnits, decodeEventLog } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
@@ -705,7 +706,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     )
   }
 
-  return (
+  return createPortal(
     <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
       <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
@@ -929,6 +930,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
           )}
         </div>
       </SpringModal>
-    </SpringBackdrop>
+    </SpringBackdrop>,
+    document.body
   )
 }
