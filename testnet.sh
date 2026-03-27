@@ -637,8 +637,11 @@ cmd_deploy() {
         if [ -n "$POST_INDEX" ] && [ -n "$POST_REGISTRY" ]; then
             local POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
             local POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
-            if [ "$POST_INDEX_CODE" -lt 10 ] || [ "$POST_REG_CODE" -lt 10 ]; then
-                echo -e "  ${YELLOW}Simulation/broadcast address divergence detected — attempting auto-fix from broadcast receipts...${NC}"
+            # ALWAYS rebuild from broadcast receipts on Orbit L3 — simulation addresses
+            # diverge from broadcast due to nonce drift, and old deploys leave code at
+            # stale addresses making the code-length check unreliable.
+            if true; then
+                echo -e "  ${YELLOW}Rebuilding deployment addresses from broadcast receipts (Orbit L3 safety)...${NC}"
                 # Rebuild deployment JSON from broadcast receipts (actual on-chain addresses).
                 # Match proxies to implementations by first constructor arg (impl address).
                 python3 -c "
