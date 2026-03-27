@@ -2056,6 +2056,7 @@ struct SourceBatchHistoryEntry {
     total_pool: f64,
     avg_pnl: f64,
     top_earner_pnl: f64,
+    top_earner_address: Option<String>,
     timestamp: String,
     betting_start: Option<String>,
     betting_end: Option<String>,
@@ -2073,13 +2074,14 @@ struct SourceHistoryQuery {
 struct SettledHistoryRow {
     batch_id: i64,
     settled_at: chrono::DateTime<chrono::Utc>,
-    betting_start: Option<chrono::DateTime<chrono::Utc>>,
-    betting_end: Option<chrono::DateTime<chrono::Utc>>,
+    created_at_tick: Option<i64>,
+    tick_duration: Option<i64>,
     market_count: Option<i32>,
     player_count: Option<i64>,
     total_deposited: Option<String>,
     avg_abs_pnl: Option<String>,
     max_pnl: Option<String>,
+    top_earner_address: Option<String>,
 }
 
 async fn source_batch_history(
@@ -2112,17 +2114,21 @@ async fn source_batch_history(
     let settled_rows = sqlx::query_as::<_, SettledHistoryRow>(
         "SELECT vrp.batch_id,
                 MAX(vrp.settled_at) AS settled_at,
-                vbl.betting_start,
-                vbl.betting_end,
+                vb.created_at_tick,
+                vb.tick_duration,
                 vbl.market_count,
                 COUNT(DISTINCT vrp.player)::bigint AS player_count,
                 SUM(vrp.deposited::numeric)::text AS total_deposited,
                 AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
-                MAX(vrp.pnl::numeric)::text AS max_pnl
+                MAX(vrp.pnl::numeric)::text AS max_pnl,
+                (SELECT sub.player FROM vision_round_players sub
+                 WHERE sub.batch_id = vrp.batch_id
+                 ORDER BY sub.pnl::numeric DESC LIMIT 1) AS top_earner_address
          FROM vision_round_players vrp
          JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+         LEFT JOIN vision_batches vb ON vrp.batch_id = vb.id
          WHERE vbl.source_id = $1
-         GROUP BY vrp.batch_id, vbl.betting_start, vbl.betting_end, vbl.market_count
+         GROUP BY vrp.batch_id, vb.created_at_tick, vb.tick_duration, vbl.market_count
          ORDER BY MAX(vrp.settled_at) DESC
          LIMIT $2 OFFSET $3"
     )
@@ -2145,6 +2151,23 @@ async fn source_batch_history(
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
 
+        // Compute round open/close from on-chain tick data instead of lifecycle
+        // timestamps (which reflect when the lifecycle row was created, not the
+        // actual round window).
+        // open  = created_at_tick * tick_duration
+        // close = (created_at_tick + 1) * tick_duration
+        let (computed_start, computed_end) = match (r.created_at_tick, r.tick_duration) {
+            (Some(cat), Some(td)) if td > 0 => {
+                let open_epoch = cat * td;
+                let close_epoch = (cat + 1) * td;
+                (
+                    chrono::DateTime::from_timestamp(open_epoch, 0).map(|dt| dt.to_rfc3339()),
+                    chrono::DateTime::from_timestamp(close_epoch, 0).map(|dt| dt.to_rfc3339()),
+                )
+            }
+            _ => (None, None),
+        };
+
         entries.push(SourceBatchHistoryEntry {
             batch_id: r.batch_id,
             status: "settled".to_string(),
@@ -2152,9 +2175,10 @@ async fn source_batch_history(
             total_pool: (total_dep * 100.0).round() / 100.0,
             avg_pnl: (avg_abs_pnl * 100.0).round() / 100.0,
             top_earner_pnl: (top_pnl * 100.0).round() / 100.0,
+            top_earner_address: r.top_earner_address,
             timestamp: r.settled_at.to_rfc3339(),
-            betting_start: r.betting_start.map(|dt| dt.to_rfc3339()),
-            betting_end: r.betting_end.map(|dt| dt.to_rfc3339()),
+            betting_start: computed_start,
+            betting_end: computed_end,
             settled_at: Some(r.settled_at.to_rfc3339()),
             market_count: r.market_count,
         });

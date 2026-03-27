@@ -13,6 +13,7 @@ interface SourceBatch {
   totalPool: number
   avgPnl: number
   topEarnerPnl?: number
+  topEarnerAddress?: string | null
   timestamp: string
   bettingStart?: string | null
   bettingEnd?: string | null
@@ -112,6 +113,12 @@ function formatTimestamp(iso: string): string {
   })
 }
 
+/** Truncate an address to 0x029...abc */
+function truncAddr(addr: string): string {
+  if (addr.length < 10) return addr
+  return `${addr.slice(0, 5)}...${addr.slice(-3)}`
+}
+
 /** Renders the timer cell for an active round showing close + settle phases */
 function ActiveTimers({ bettingEnd, settlementEnd }: { bettingEnd: string | null; settlementEnd: string | null }) {
   const closeRemaining = useCountdown(bettingEnd)
@@ -173,8 +180,8 @@ function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
   )
 }
 
-// Grid: Round | Status | Players | Pool | Avg Swing | Top | Time
-const GRID_COLS = 'grid-cols-[56px_72px_52px_64px_72px_64px_1fr]'
+// Grid: Round | Status | Players | Pool | Winner | Time
+const GRID_COLS = 'grid-cols-[56px_64px_52px_60px_1fr_90px]'
 
 interface BatchHistoryProps {
   sourceId: string
@@ -190,25 +197,29 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
   const { address } = useAccount()
   const { profile } = usePlayerProfile(address ?? '')
 
-  // Set of batch IDs the connected wallet participated in
+  // Map: batchId → user's PnL for rounds the connected wallet participated in
   const participatedBatches = useMemo(() => {
-    if (!profile?.batches) return new Set<number>()
-    return new Set(profile.batches.map(b => b.batchId))
+    if (!profile?.batches) return new Map<number, number>()
+    const map = new Map<number, number>()
+    for (const b of profile.batches) {
+      map.set(b.batchId, b.balance - b.deposited)
+    }
+    return map
   }, [profile?.batches])
 
   // Live rounds data — polls every 5s for real-time player counts
   const { data: rounds } = useRounds(sourceId)
-  // Only show RECENT active rounds — filter out stale ones from hours ago.
-  // A round is "recent" if its bettingEnd is within 2x tickDuration of now.
-  const now = Date.now()
-  const activeRounds = (rounds ?? []).filter(r => {
-    if (r.status !== 'betting' && r.status !== 'settling') return false
-    if (!r.bettingEnd) return false
-    const beTime = new Date(r.bettingEnd).getTime()
-    const td = (r.timeframeSecs ?? 300) * 1000
-    // Keep if betting end is in the future, or expired less than 2x tick_duration ago
-    return (beTime + td * 2) > now
-  })
+  // Only show the LATEST active round (highest batchId that's still betting/settling).
+  // Old stale rounds with expired bettingEnd used to leak through — now we pick one.
+  const activeRounds = useMemo(() => {
+    const candidates = (rounds ?? []).filter(
+      r => r.status === 'betting' || r.status === 'settling'
+    )
+    if (candidates.length === 0) return []
+    // Highest batchId = newest round
+    const latest = candidates.reduce((a, b) => (b.batchId > a.batchId ? b : a))
+    return [latest]
+  }, [rounds])
   const liveRound = activeRounds[0] ?? null
 
   // Lock bettingEnd per batchId — prevents timer reset when oracle advances current_tick.
@@ -268,9 +279,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           <div>Status</div>
           <div className="text-right">Players</div>
           <div className="text-right">Pool</div>
-          <div className="text-right">Avg Swing</div>
-          <div className="text-right">Top</div>
-          <div className="text-right">Timers</div>
+          <div className="text-right">Winner</div>
+          <div className="text-right">Time</div>
         </div>
 
         {/* Active rounds — show all (betting + settling can overlap) */}
@@ -301,8 +311,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
                 ${pool < 0.01 ? '0' : pool.toFixed(2)}
               </div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
+              <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right">
                 <ActiveTimers bettingEnd={roundBettingEnd} settlementEnd={roundSettlementEnd} />
               </div>
@@ -322,8 +331,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
               ${activeBatch.totalPool < 0.01 ? '0' : activeBatch.totalPool.toFixed(2)}
             </div>
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
+            <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
             <div className="text-right">
               <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} />
             </div>
@@ -333,41 +341,48 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
         {/* Settled rows */}
         {settled.map((batch) => {
           const participated = participatedBatches.has(batch.batchId)
-          // avgPnl = average absolute PnL (always >= 0, represents typical swing size)
-          const swingColor = batch.avgPnl > 0 ? 'text-text-secondary' : 'text-text-muted'
-
           const topPnl = batch.topEarnerPnl ?? 0
-          const topColor = topPnl > 0
-            ? 'text-color-up'
-            : topPnl < 0
-              ? 'text-color-down'
-              : 'text-text-muted'
           const topSign = topPnl > 0 ? '+' : ''
+          const topAddr = batch.topEarnerAddress ?? null
 
-          // Build tooltip lines from available lifecycle data
+          // Build tooltip from lifecycle data
           const tooltipLines: string[] = []
-          if (batch.bettingStart) tooltipLines.push(`Betting opened: ${formatTimestamp(batch.bettingStart)}`)
-          if (batch.bettingEnd) tooltipLines.push(`Betting closed: ${formatTimestamp(batch.bettingEnd)}`)
+          if (batch.bettingStart) tooltipLines.push(`Opened: ${formatTimestamp(batch.bettingStart)}`)
+          if (batch.bettingEnd) tooltipLines.push(`Closed: ${formatTimestamp(batch.bettingEnd)}`)
           if (batch.settledAt) tooltipLines.push(`Settled: ${formatTimestamp(batch.settledAt)}`)
           else tooltipLines.push(`Settled: ${formatTimestamp(batch.timestamp)}`)
           if (batch.marketCount != null) tooltipLines.push(`Markets: ${batch.marketCount}`)
+          if (batch.avgPnl > 0) tooltipLines.push(`Avg swing: \u00B1$${batch.avgPnl.toFixed(2)}`)
           if (batch.bettingEnd && batch.settledAt) {
             const dur = Math.floor((new Date(batch.settledAt).getTime() - new Date(batch.bettingEnd).getTime()) / 1000)
             if (dur > 0) {
               const m = Math.floor(dur / 60)
               const s = dur % 60
-              tooltipLines.push(`Settlement time: ${m}:${s.toString().padStart(2, '0')}`)
+              tooltipLines.push(`Settlement: ${m}:${s.toString().padStart(2, '0')}`)
             }
+          }
+
+          // Winner column: participated → "You: +$X.XX", else "0x029...abc +$0.71"
+          const userPnl = participatedBatches.get(batch.batchId)
+          let winnerText: string | null = null
+          let winnerPnl = topPnl
+          if (participated && userPnl !== undefined) {
+            const uPnl = userPnl / 1e18
+            const uSign = uPnl > 0 ? '+' : ''
+            winnerText = `You: ${uSign}$${Math.abs(uPnl).toFixed(2)}`
+            winnerPnl = uPnl
+          } else if (topPnl !== 0 && topAddr) {
+            winnerText = `${truncAddr(topAddr)} ${topSign}$${Math.abs(topPnl).toFixed(2)}`
+          } else if (topPnl !== 0) {
+            winnerText = `${topSign}$${Math.abs(topPnl).toFixed(2)}`
           }
 
           return (
             <div
               key={batch.batchId}
               title={tooltipLines.join('\n')}
-              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light last:border-0 cursor-default transition-colors hover:bg-surface/50 ${
-                participated
-                  ? 'bg-white'
-                  : 'bg-surface/30'
+              className={`grid ${GRID_COLS} items-center px-4 py-2 border-b border-border-light last:border-0 cursor-default transition-colors hover:bg-surface/50 ${
+                participated ? 'bg-white' : 'bg-surface/30'
               }`}
             >
               <div className={`font-mono text-[12px] tabular-nums ${participated ? 'font-bold text-black' : 'font-bold text-text-muted'}`}>
@@ -382,28 +397,18 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               <div className={`text-right font-mono text-[12px] tabular-nums ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
                 ${batch.totalPool.toFixed(2)}
               </div>
-              <div className={`text-right font-mono text-[12px] tabular-nums font-semibold ${participated ? swingColor : 'text-text-muted'}`}>
-                {batch.avgPnl > 0 ? `\u00B1$${batch.avgPnl.toFixed(2)}` : '\u2014'}
-              </div>
-              <div className={`text-right font-mono text-[12px] tabular-nums font-semibold ${participated ? topColor : 'text-text-muted'}`}>
-                {topPnl !== 0 ? `${topSign}$${Math.abs(topPnl).toFixed(2)}` : '\u2014'}
+              {/* Winner: "You: +$X" when participated, "0xABC...def +$X" otherwise */}
+              <div className={`text-right font-mono text-[11px] tabular-nums ${
+                winnerText
+                  ? participated
+                    ? winnerPnl > 0 ? 'text-color-up font-semibold' : 'text-color-down font-semibold'
+                    : 'text-text-muted'
+                  : 'text-text-muted'
+              }`}>
+                {winnerText ?? '\u2014'}
               </div>
               <div className={`text-right font-mono text-[10px] ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
-                <div className="flex flex-col items-end gap-0.5">
-                  {batch.bettingEnd && (
-                    <span>Closed {timeAgo(batch.bettingEnd)}</span>
-                  )}
-                  <span>Settled {timeAgo(batch.settledAt ?? batch.timestamp)}</span>
-                  {batch.bettingEnd && batch.settledAt && (() => {
-                    const durationSecs = Math.floor(
-                      (new Date(batch.settledAt).getTime() - new Date(batch.bettingEnd).getTime()) / 1000
-                    )
-                    if (durationSecs <= 0) return null
-                    const m = Math.floor(durationSecs / 60)
-                    const s = durationSecs % 60
-                    return <span className="text-text-muted">{m}:{s.toString().padStart(2, '0')} round</span>
-                  })()}
-                </div>
+                {timeAgo(batch.settledAt ?? batch.timestamp)}
               </div>
             </div>
           )

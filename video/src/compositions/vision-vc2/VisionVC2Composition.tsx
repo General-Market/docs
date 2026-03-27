@@ -77,9 +77,10 @@ const ITEMS_START = 30;
 const ITEM_DUR = 55;
 const TEXT_EXIT_START = 40;
 const UNLESS_DURATION = ITEMS_START + ITEMS.length * ITEM_DUR + 15;
-const CHART_DURATION = 180; // 6s hold on scatter plot
-const BAR_DURATION = 180; // 6s hold on bar chart
-const TOTAL = INTRO_DURATION + UNLESS_DURATION + CHART_DURATION + BAR_DURATION;
+const CHART_DURATION = 120; // 4s — tight, no idle
+const TRANSITION = 8;       // crossfade overlap
+const BAR_DURATION = 120;   // 4s — tight
+const TOTAL = INTRO_DURATION + UNLESS_DURATION + CHART_DURATION + BAR_DURATION - TRANSITION;
 
 // ── VC logos ───────────────────────────────────────────────────────
 const VC_LOGOS = ["vc-a16z.png", "vc-sequoia.png", "vc-paradigm.png", "vc-polychain.png"];
@@ -465,9 +466,9 @@ export const VisionVC2Composition: React.FC = () => {
         <CostMarketsScene />
       </Sequence>
 
-      {/* Settlements per day bar chart */}
+      {/* Settlements bar chart (overlaps by TRANSITION frames for crossfade) */}
       <Sequence
-        from={INTRO_DURATION + UNLESS_DURATION + CHART_DURATION}
+        from={INTRO_DURATION + UNLESS_DURATION + CHART_DURATION - TRANSITION}
         durationInFrames={BAR_DURATION}
       >
         <SettlementsBarChart />
