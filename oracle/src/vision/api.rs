@@ -2243,27 +2243,15 @@ async fn rounds_active(
                     // Read created_at_tick from on-chain
                     let tick_duration = row.tick_duration as u64;
                     if tick_duration > 0 {
-                        // Approximate: the batch was created recently, so betting_end ≈ now + remaining time
-                        // Use the on-chain batch's creation block to compute exact timing
-                        let created_at_tick_result: Option<(i64,)> = sqlx::query_as(
-                            "SELECT created_at_tick FROM vision_batches WHERE id = $1"
-                        )
-                        .bind(batch_id as i64)
-                        .fetch_optional(&state.pool)
-                        .await
-                        .ok()
-                        .flatten();
-
-                        if let Some((created_at_tick,)) = created_at_tick_result {
-                            let betting_end_epoch = ((created_at_tick as u64) + 1) * tick_duration;
-                            let dt = chrono::DateTime::from_timestamp(betting_end_epoch as i64, 0)
-                                .unwrap_or_default();
-                            // Resolve source from lifecycle by matching source_id text
-                            let src = row.source_id.as_deref().unwrap_or("").to_string();
-                            Some((dt, src, Some(live_count as i32)))
-                        } else {
-                            None
-                        }
+                        // Compute betting_end for the CURRENT tick (not the creation tick).
+                        // current_tick = now / tick_duration
+                        // betting_end = (current_tick + 1) * tick_duration
+                        let current_tick = now / tick_duration;
+                        let betting_end_epoch = (current_tick + 1) * tick_duration;
+                        let dt = chrono::DateTime::from_timestamp(betting_end_epoch as i64, 0)
+                            .unwrap_or_default();
+                        let src = row.source_id.as_deref().unwrap_or("").to_string();
+                        Some((dt, src, Some(live_count as i32)))
                     } else {
                         None
                     }
