@@ -137,20 +137,48 @@ interface MarketPolaroid {
   z: number; // stacking order
 }
 
-// Pseudo-random scatter: chaotic pile centered on screen, overlapping
-// Each card lands at a random-ish position within the center area
-const seed = (i: number, m: number) => ((i * 1597 + 51749) % m);
+// Hand-placed positions — no algorithm can replace taste
+// 45 cards scattered across screen, upper 75%, overlapping deliberately
+const POSITIONS: [number, number, number][] = [
+  // [x, y, rotation] — 5 clusters with organic overlap
+  // Cluster: top-left
+  [140, 80, -8], [260, 160, 12], [100, 280, -3], [320, 60, 6], [200, 380, -14],
+  [60, 180, 10], [380, 280, -6], [180, 440, 8], [440, 140, -11],
+  // Cluster: top-center
+  [620, 50, 5], [540, 200, -9], [740, 140, 13], [660, 320, -4], [800, 60, -7],
+  [580, 400, 11], [720, 260, -12], [860, 200, 3], [500, 120, 9],
+  // Cluster: top-right
+  [1020, 100, -10], [1140, 40, 7], [960, 250, 14], [1100, 180, -5], [1200, 300, 8],
+  [1040, 380, -13], [1260, 120, 4], [1160, 420, -8], [1320, 240, 11],
+  // Cluster: far-right
+  [1440, 60, -6], [1560, 180, 9], [1400, 300, -11], [1520, 80, 13], [1640, 260, -4],
+  [1480, 400, 7], [1700, 140, -9], [1580, 360, 5], [1380, 180, 12],
+  // Cluster: mid-band (above the big title)
+  [300, 460, -7], [500, 430, 10], [700, 480, -3], [900, 450, 8], [1100, 470, -12],
+  [1300, 440, 6], [1500, 480, -5], [160, 450, 13], [1660, 430, -8],
+];
+
+// Bezier-curved stagger: slow start, fast middle, slight deceleration at end
+const bezierDelay = (t: number): number => {
+  // Cubic bezier approximation: ease-in-out (0.25, 0.1, 0.25, 1)
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return 3 * t2 - 2 * t3; // smooth S-curve 0→1
+};
+
+const TOTAL_CASCADE_FRAMES = 50; // all 45 cards land within ~1.7s
 
 const MARKET_POLAROIDS: MarketPolaroid[] = MARKET_NAMES.map((m, i) => {
-  // Vary the stagger: first few slower, then accelerating, then rapid burst
-  const phase = i < 8 ? i * 2 : i < 20 ? 16 + (i - 8) * 1.2 : 30 + (i - 20) * 0.6;
+  const t = i / (MARKET_NAMES.length - 1); // 0→1
+  const delay = Math.round(bezierDelay(t) * TOTAL_CASCADE_FRAMES);
+  const pos = POSITIONS[i % POSITIONS.length];
   return {
     name: m.name,
     src: `${MKT_DIR}/${m.file}`,
-    x: 250 + seed(i, 1400),
-    y: 100 + seed(i * 3 + 7, 700),
-    rotation: seed(i * 5 + 2, 24) - 12,
-    delay: Math.round(phase),
+    x: pos[0],
+    y: pos[1],
+    rotation: pos[2],
+    delay,
     z: i,
   };
 });
@@ -163,12 +191,12 @@ const VC_LOGOS = ["vc-a16z.png", "vc-sequoia.png", "vc-paradigm.png", "vc-polych
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── Act 1: The Hook ──
-const BEAT1_DUR = 55;
+const BEAT1_DUR = 72; // 13 words → needs ~65 readable frames
 const BEAT2_DUR = 60;
 const BEAT_GAP = 8;
 const INTRO_DUR = BEAT1_DUR + BEAT2_DUR - BEAT_GAP; // 107
 
-const UNLESS_SOLO_DUR = 50;
+const UNLESS_SOLO_DUR = 33; // 1 word — land, register, leave
 const ACT1_END = INTRO_DUR + UNLESS_SOLO_DUR; // 157
 
 // ── Act 2: The Fixes (frames relative to Unless section Sequence) ──
@@ -188,7 +216,7 @@ const ACT2_END = ACT1_END + UNLESS_SECTION_DUR; // 375
 
 // ── Act 3: The Audacity ──
 const QUESTION_DUR = 70;
-const LOL_DUR = 55;
+const LOL_DUR = 38; // 1 word — slam, beat, gone
 const ACT3_END = ACT2_END + QUESTION_DUR + LOL_DUR; // 500
 
 // ── Act 4: The Reveal ──
@@ -202,13 +230,13 @@ const ACT5_END = ACT4_END + DARKPOOL_DUR; // 780
 
 // ── Act 6: The Pitch ──
 const STOP_DUR = 55;
-const SCALE_DUR = 120;
-const ODDS_DUR = 55;
+const SCALE_DUR = 100; // counter is visual, not reading
+const ODDS_DUR = 65; // 11 words across 2 lines
 const ACT6_END = ACT5_END + STOP_DUR + SCALE_DUR + ODDS_DUR; // 1010
 
 // ── Act 7: CTA + Close ──
 const CTA_DUR = 75;
-const CLOSE_DUR = 110;
+const CLOSE_DUR = 85; // 9 words + hold — doesn't need 3.7s
 const TOTAL = ACT6_END + CTA_DUR + CLOSE_DUR; // 1195
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -243,7 +271,7 @@ const OpeningBeat1: React.FC = () => {
   const frame = useCurrentFrame();
 
   const enterS = spring({ frame, fps: FPS, config: ANIM.springFast });
-  const exit = useExit(frame, BEAT1_DUR - 15, BEAT1_DUR);
+  const exit = useExit(frame, BEAT1_DUR - 12, BEAT1_DUR);
 
   const opacity = interpolate(enterS, [0, 1], [0, 1]) * exit.opacity;
   const translateY = interpolate(enterS, [0, 1], [40, 0]) + exit.translateY;
@@ -349,7 +377,7 @@ const UnlessSolo: React.FC = () => {
   const frame = useCurrentFrame();
 
   const s = spring({ frame, fps: FPS, config: ANIM.springMedium });
-  const exit = useExit(frame, UNLESS_SOLO_DUR - 12, UNLESS_SOLO_DUR);
+  const exit = useExit(frame, UNLESS_SOLO_DUR - 8, UNLESS_SOLO_DUR);
 
   const opacity = interpolate(s, [0, 1], [0, 1]) * exit.opacity;
   const translateY = interpolate(s, [0, 1], [40, 0]) + exit.translateY;
@@ -740,7 +768,7 @@ const PresentingGM: React.FC = () => {
           fontFamily: FONT.sans,
           fontSize: 42,
           fontWeight: 400,
-          color: COLOR.textMuted,
+          color: COLOR.textSecondary,
           fontStyle: "italic",
           opacity: interpolate(s1, [0, 1], [0, 0.7]) * exit.opacity,
           transform: `translateY(${interpolate(s1, [0, 1], [20, 0]) + exit.translateY}px)`,
@@ -790,11 +818,11 @@ const PresentingGM: React.FC = () => {
 
 // ── Scene 10: Market Polaroid rain ──────────────────────────────────
 
-// Polaroid card dimensions — smaller to fit 9 columns
-const MKT_W = 140;
-const MKT_H = 95;
-const MKT_BORDER = 4;
-const MKT_BORDER_BOTTOM = 24;
+// Polaroid card dimensions — bigger, bolder
+const MKT_W = 200;
+const MKT_H = 140;
+const MKT_BORDER = 6;
+const MKT_BORDER_BOTTOM = 28;
 
 const MarketPolaroidCard: React.FC<{
   name: string;
@@ -874,7 +902,7 @@ const MarketPolaroidCard: React.FC<{
             alignItems: "center",
             justifyContent: "center",
             fontFamily: FONT.sans,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 500,
             color: COLOR.textSecondary,
           }}
@@ -927,43 +955,30 @@ const MarketScatter: React.FC = () => {
         ))}
       </div>
 
-      {/* "...Everything Is Now A Market" — floats above the pile */}
+      {/* "...Everything Is Now A Market" — big, bottom, commanding */}
       <div
         style={{
           position: "absolute",
           left: 0,
           right: 0,
-          top: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          bottom: 60,
+          textAlign: "center",
           zIndex: 100,
-          pointerEvents: "none",
         }}
       >
         <div
           style={{
             fontFamily: FONT.sans,
-            fontSize: 56,
-            fontWeight: 700,
+            fontSize: 80,
+            fontWeight: 800,
             color: COLOR.textPrimary,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
-            lineHeight: 1.3,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.1,
             opacity: interpolate(evS, [0, 1], [0, 1]),
-            transform: `scale(${interpolate(evS, [0, 1], [0.9, 1])})`,
-            textShadow: `
-              0 0 40px ${COLOR.page},
-              0 0 60px ${COLOR.page},
-              0 0 80px ${COLOR.page},
-              0 0 100px ${COLOR.page}
-            `,
+            transform: `translateY(${interpolate(evS, [0, 1], [25, 0])}px)`,
           }}
         >
-          ...Everything
-          <br />
-          Is Now A Market
+          ...Everything Is Now A Market
         </div>
       </div>
     </AbsoluteFill>
@@ -1069,7 +1084,7 @@ const DarkPoolScene: React.FC = () => {
           fontFamily: FONT.sans,
           fontSize: 26,
           fontWeight: 400,
-          color: COLOR.textMuted,
+          color: COLOR.textSecondary,
           textAlign: "center",
           maxWidth: 600,
           lineHeight: 1.5,
@@ -1220,7 +1235,7 @@ const ScaleContrast: React.FC = () => {
             fontFamily: FONT.sans,
             fontSize: 28,
             fontWeight: 500,
-            color: COLOR.textMuted,
+            color: COLOR.textSecondary,
             marginBottom: 20,
           }}
         >
@@ -1242,7 +1257,7 @@ const ScaleContrast: React.FC = () => {
             fontFamily: FONT.sans,
             fontSize: 24,
             fontWeight: 400,
-            color: COLOR.textMuted,
+            color: COLOR.textSecondary,
             marginTop: 12,
           }}
         >
@@ -1295,7 +1310,7 @@ const ScaleContrast: React.FC = () => {
             fontFamily: FONT.sans,
             fontSize: 24,
             fontWeight: 400,
-            color: COLOR.textMuted,
+            color: COLOR.textSecondary,
             marginTop: 12,
           }}
         >
