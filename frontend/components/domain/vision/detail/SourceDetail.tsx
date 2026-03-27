@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
+import { useBatchConfig } from '@/hooks/vision/useBatchConfig'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
@@ -158,14 +159,24 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   }, [meta?.sources, sourceId])
 
   const sourceMarkets = snapshotData?.prices ?? []
-  const marketCount = sourceMarkets.length || undefined
-  const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
   // Active batch matching this source
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
+
+  // Fetch the batch's PINNED market list (authoritative, immutable per config_hash).
+  // The snapshot can drift as assets become healthy/stale; the batch config cannot.
+  const { data: batchConfig } = useBatchConfig(activeBatch?.configHash)
+  const marketIds = useMemo(() => {
+    // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
+    if (batchConfig?.markets?.length) {
+      return batchConfig.markets.map(m => m.asset_id)
+    }
+    return sourceMarkets.map(p => p.assetId)
+  }, [batchConfig?.markets, sourceMarkets])
+  const marketCount = marketIds.length || undefined
 
   // On-chain player position — used to reconcile oracle lag in BatchHistory
   const { isJoined: isJoinedOnChain } = usePlayerPosition(activeBatch?.id)
