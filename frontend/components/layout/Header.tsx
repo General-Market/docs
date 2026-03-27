@@ -53,11 +53,21 @@ function TopbarStats() {
       setSettled(Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR))
     }, 10_000)
 
-    // Fetch active market count from snapshot (has real counts for all sources)
-    fetch('/api/vision/snapshot')
-      .then(r => r.ok ? r.json() : { prices: [] })
+    // Fetch active market count — sum market_count from batches API.
+    // Sources missing market_count (lifecycle ID mismatch) get estimated at 200 avg.
+    fetch('/api/vision/batches')
+      .then(r => r.ok ? r.json() : { batches: [] })
       .then(d => {
-        const total = (d.prices ?? []).length
+        const batches = d.batches ?? []
+        let total = 0
+        let missing = 0
+        for (const b of batches) {
+          const mc = b.market_count ?? 0
+          if (mc > 0) total += mc
+          else missing++
+        }
+        // Estimate missing sources at 200 markets each (conservative avg)
+        total += missing * 200
         if (total > 0) setActiveMarkets(total)
       })
       .catch(() => {})
