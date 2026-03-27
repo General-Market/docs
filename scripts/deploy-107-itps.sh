@@ -5,14 +5,14 @@ set -e
 cd "$(dirname "$0")/.."
 
 RPC="${RPC_URL:-http://localhost:8545}"
-echo "=== Phase 1: Create 77 ITPs ==="
+echo "=== Phase 1: Create 63 ITPs ==="
 cd contracts
 forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
     --rpc-url "$RPC" --broadcast --slow -vv
 cd ..
 echo ""
 
-echo "=== Phase 2: Deploy 77 ITP vaults ==="
+echo "=== Phase 2: Deploy 63 ITP vaults ==="
 cd contracts
 forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
     --rpc-url "$RPC" --broadcast --slow -vv

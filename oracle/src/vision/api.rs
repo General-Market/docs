@@ -270,20 +270,24 @@ async fn list_batches(
 
     match rows {
         Ok(rows) => {
-            // Build batch_id → (source_id, market_count) from vision_batch_lifecycle
+            // Build batch_id → (source_id, market_count, player_count) from vision_batch_lifecycle
             // (persisted at creation with plain text source names)
             let mut lifecycle_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
             let mut lifecycle_sources: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
-            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, String, Option<i32>)>(
-                "SELECT batch_id, source_id, market_count FROM vision_batch_lifecycle"
+            let mut lifecycle_player_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, String, Option<i32>, Option<i32>)>(
+                "SELECT batch_id, source_id, market_count, player_count FROM vision_batch_lifecycle"
             )
             .fetch_all(&state.pool)
             .await
             {
-                for (bid, src, mc) in lc_rows {
+                for (bid, src, mc, pc) in lc_rows {
                     lifecycle_sources.insert(bid as u64, src);
                     if let Some(count) = mc {
                         lifecycle_counts.insert(bid as u64, count as usize);
+                    }
+                    if let Some(count) = pc {
+                        lifecycle_player_counts.insert(bid as u64, count as usize);
                     }
                 }
             }
@@ -292,8 +296,15 @@ async fn list_batches(
             let mut summaries = Vec::with_capacity(rows.len());
             for row in rows {
                 let batch_id = row.id as u64;
-                // Enrich with live player count from scheduler
-                let player_count = state.scheduler.player_count(batch_id).await;
+                // Enrich with live player count from scheduler.
+                // Fall back to vision_batch_lifecycle.player_count when the scheduler
+                // returns 0 (e.g. after settlement zeroes balances and oracle restarts).
+                let live_count = state.scheduler.player_count(batch_id).await;
+                let player_count = if live_count > 0 {
+                    live_count
+                } else {
+                    lifecycle_player_counts.get(&batch_id).copied().unwrap_or(0)
+                };
 
                 // Compute TVL from in-memory player positions
                 let tvl = if let Some((_batch, players)) =
@@ -2202,17 +2213,17 @@ async fn rounds_active(
             let mut rounds = Vec::with_capacity(rows.len());
             for row in rows {
                 let batch_id = row.id as u64;
-                let player_count = state.scheduler.player_count(batch_id).await;
+                let live_count = state.scheduler.player_count(batch_id).await;
 
-                // betting_end + source_id from vision_batch_lifecycle (plain text names).
+                // betting_end + source_id + player_count from vision_batch_lifecycle (plain text names).
                 // Falls back to now + tick_duration / hash decode if lifecycle record
                 // doesn't exist (chain_listener discovery path).
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String)> = sqlx::query_as(
-                    "SELECT betting_end, source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
+                let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String, Option<i32>)> = sqlx::query_as(
+                    "SELECT betting_end, source_id, player_count FROM vision_batch_lifecycle WHERE batch_id = $1"
                 )
                 .bind(batch_id as i64)
                 .fetch_optional(&state.pool)
@@ -2222,10 +2233,14 @@ async fn rounds_active(
                 // Skip batches with no lifecycle row — they were discovered by chain_listener
                 // but have no real betting_end. A fabricated `now + tick_duration` would drift
                 // on every request, producing a timer that never counts down.
-                let (betting_end_ts, lifecycle_source) = match lifecycle_row {
-                    Some((ts, src)) => (ts.timestamp() as u64, Some(src)),
+                let (betting_end_ts, lifecycle_source, lifecycle_pc) = match lifecycle_row {
+                    Some((ts, src, pc)) => (ts.timestamp() as u64, Some(src), pc.unwrap_or(0) as usize),
                     None => continue,
                 };
+
+                // Live scheduler count preferred; fall back to persisted lifecycle count
+                // (survives oracle restarts after settlement zeroes in-memory balances).
+                let player_count = if live_count > 0 { live_count } else { lifecycle_pc };
 
                 // Derive status from betting_end: past deadline = settling, otherwise betting
                 let status = if now >= betting_end_ts { "settling" } else { "betting" };

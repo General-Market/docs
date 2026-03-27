@@ -53,8 +53,11 @@ const activeDeployment = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../deployments/active-deployment.json'), 'utf-8'),
 )
 const VISION_ADDRESS = activeDeployment.contracts.Vision as Hex
-const L3_WUSDC = activeDeployment.contracts.L3_WUSDC as Hex
 const ORACLE_REGISTRY = activeDeployment.contracts.OracleRegistry as Hex
+
+// USDC address — read from Vision contract (may differ from deployment L3_WUSDC after redeploy)
+// Initialized async in main() before any bot operations.
+let L3_WUSDC: Hex
 
 // Deployer key (for funding bots with gas + USDC)
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as Hex
@@ -72,6 +75,14 @@ const chain: Chain = {
 }
 
 // ── ABIs ──
+
+const VISION_USDC_ABI = [
+  {
+    name: 'USDC', type: 'function', stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+] as const
 
 const ERC20_ABI = [
   {
@@ -595,6 +606,20 @@ async function runBot(
 }
 
 async function main() {
+  // Resolve USDC from Vision contract (may differ from deployment L3_WUSDC after redeploy)
+  const initClient = createPublicClient({ chain, transport: http(L3_RPC) })
+  try {
+    L3_WUSDC = await initClient.readContract({
+      address: VISION_ADDRESS,
+      abi: VISION_USDC_ABI,
+      functionName: 'USDC',
+    }) as Hex
+    console.log(`  USDC resolved from Vision contract: ${L3_WUSDC}`)
+  } catch {
+    L3_WUSDC = activeDeployment.contracts.L3_WUSDC as Hex
+    console.log(`  USDC fallback to deployment.json: ${L3_WUSDC}`)
+  }
+
   console.log('═══════════════════════════════════════════')
   console.log('  Vision Trading Bots')
   console.log('═══════════════════════════════════════════')

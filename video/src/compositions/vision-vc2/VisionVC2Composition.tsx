@@ -20,6 +20,8 @@ import {
 } from "remotion";
 import { COLOR, FONT, ANIM } from "./tokens";
 import { PolaroidPhoto } from "./PolaroidPhoto";
+import { CostMarketsScene } from "./CostMarketsChart";
+import { SettlementsBarChart } from "./SettlementsBarChart";
 
 const FPS = 30;
 
@@ -75,7 +77,9 @@ const ITEMS_START = 30;
 const ITEM_DUR = 55;
 const TEXT_EXIT_START = 40;
 const UNLESS_DURATION = ITEMS_START + ITEMS.length * ITEM_DUR + 15;
-const TOTAL = INTRO_DURATION + UNLESS_DURATION;
+const CHART_DURATION = 180; // 6s hold on scatter plot
+const BAR_DURATION = 180; // 6s hold on bar chart
+const TOTAL = INTRO_DURATION + UNLESS_DURATION + CHART_DURATION + BAR_DURATION;
 
 // ── VC logos ───────────────────────────────────────────────────────
 const VC_LOGOS = ["vc-a16z.png", "vc-sequoia.png", "vc-paradigm.png", "vc-polychain.png"];
@@ -451,6 +455,22 @@ export const VisionVC2Composition: React.FC = () => {
             startFrame={ITEMS_START + i * ITEM_DUR}
           />
         ))}
+      </Sequence>
+
+      {/* Cost vs Markets scatter plot */}
+      <Sequence
+        from={INTRO_DURATION + UNLESS_DURATION}
+        durationInFrames={CHART_DURATION}
+      >
+        <CostMarketsScene />
+      </Sequence>
+
+      {/* Settlements per day bar chart */}
+      <Sequence
+        from={INTRO_DURATION + UNLESS_DURATION + CHART_DURATION}
+        durationInFrames={BAR_DURATION}
+      >
+        <SettlementsBarChart />
       </Sequence>
     </AbsoluteFill>
   );

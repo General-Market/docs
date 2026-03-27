@@ -16,7 +16,7 @@
     },
     {
       "name": "Vision",
-      "address": "0x303842120a9e294dea75bbe2261faea9d026d8f9",
+      "address": "0xea105318d5345dc8cae685a027f16251208a6de7",
       "hasCode": true,
       "chain": "l3"
     },
@@ -73,23 +73,25 @@
   ],
   "morpho": {
     "deployed": true,
-    "collateralTokenAlive": true,
+    "collateralTokenAlive": false,
     "oracleAlive": true,
-    "stale": false
+    "stale": true
   },
   "visionBatches": {
     "count": 47,
     "firstBatchExists": false
   },
-  "staleAddresses": [],
+  "staleAddresses": [
+    "Morpho collateralToken (0x460768bC37910A32017F55f6fdA012EEe91Da019) has NO CODE — needs redeployment"
+  ],
   "preconditions": {
     "hasVisionBatches": true,
-    "onChainBatchCount": 509,
+    "onChainBatchCount": 47,
     "deployerHasUsdc": true,
-    "deployerUsdcBalance": "21174380392818280739931460",
+    "deployerUsdcBalance": "21184059840587595212182035",
     "dataNodeReachable": true,
     "dataNodeStatus": "200 OK",
-    "visionApiReachable": true,
-    "visionApiBatchCount": 100
+    "visionApiReachable": false,
+    "visionApiBatchCount": 0
   }
 }

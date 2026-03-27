@@ -2626,6 +2626,20 @@ cmd_seed_orders() {
         > /dev/null 2>&1 || { echo -e "${RED}USDC mint to seeder failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Minted 200k USDC to seeder${NC}"
 
+    # Mint 50k USDC to deployer (for deployer's own ITP positions — profile page needs these)
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$USDC_ADDR" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 50000000000000000000000 \
+        > /dev/null 2>&1 || echo -e "  ${YELLOW}USDC mint to deployer failed (may already have balance)${NC}"
+    echo -e "  ${GREEN}Minted 50k USDC to deployer${NC}"
+
+    # Approve USDC spending for deployer (max approval to Index contract)
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$USDC_ADDR" "approve(address,uint256)" "$INDEX_ADDR" "$(cast max-uint)" \
+        > /dev/null 2>&1 || echo -e "  ${YELLOW}Deployer USDC approve failed${NC}"
+    echo -e "  ${GREEN}Deployer approved USDC to Index${NC}"
+
     # ── Step 2: Stop oracles ─────────────────────────────────
     echo -e "${BLUE}[2/6] Stopping oracles...${NC}"
     for i in 1 2 3; do
@@ -2667,6 +2681,32 @@ cmd_seed_orders() {
     ORDER_ID_AFTER=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "nextOrderId()(uint256)" 2>/dev/null || echo "0")
     local ORDERS_PLACED=$((ORDER_ID_AFTER - ORDER_ID_BEFORE))
     echo -e "  ${GREEN}Submitted $ORDERS_PLACED buy orders (nextOrderId: $ORDER_ID_BEFORE → $ORDER_ID_AFTER)${NC}"
+
+    # ── Step 3b: Submit deployer buy orders (first 10 ITPs) ──
+    # The deployer needs ITP shares for the portfolio page to show positions.
+    echo -e "${BLUE}[3b/6] Submitting deployer buy orders (first 10 ITPs)...${NC}"
+    local DEPLOYER_BUY_AMOUNT="500000000000000000000"  # 500 USDC (18 dec)
+    local DEPLOYER_ORDERS=0
+    local EXPIRY=$(($(date +%s) + 86400))
+    for i in $(seq 1 10); do
+        local ITP_ID
+        ITP_ID=$(printf "0x%064x" $i)
+        # Check ITP exists
+        local ITP_CREATOR
+        ITP_CREATOR=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" \
+            "getITPState(bytes32)((address,uint256,uint256,address[],uint256[],uint256[]))" \
+            "$ITP_ID" 2>/dev/null | head -1 | cut -d',' -f1 || echo "")
+        [[ "$ITP_CREATOR" == *"0x0000000000000000000000000000000000000000"* ]] && continue
+        [ -z "$ITP_CREATOR" ] && continue
+
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE \
+            "$INDEX_ADDR" "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
+            "$ITP_ID" 0 "$DEPLOYER_BUY_AMOUNT" 0 1 "$EXPIRY" \
+            > /dev/null 2>&1 && DEPLOYER_ORDERS=$((DEPLOYER_ORDERS + 1)) || \
+            echo -e "  ${YELLOW}Deployer order for ITP $i failed${NC}"
+    done
+    echo -e "  ${GREEN}Deployer submitted $DEPLOYER_ORDERS buy orders${NC}"
 
     # ── Step 4: Restart oracles to process orders ────────────
     echo -e "${BLUE}[4/6] Restarting oracles...${NC}"

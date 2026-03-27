@@ -1,5 +1,17 @@
 # Design Decision Backlog
 
+## Session: 20260326-1830-k9v4 (NAV Investigation + Lending Filter + E2E)
+
+- [DECISION] Added nav_per_share<=0 filter in useLendingData.ts — zero-NAV ITPs (no price feed resolved) were showing as $0.00 markets in lending UI. The SSE nav stream from poll_nav_once emits partial NAVs including zero, unlike aum-ranking which already skips them.
+- [DECISION] Added step 15 to 05-create-itp E2E test: after bridge relay, navigate to /index and verify the created ITP appears in the listing by its symbol "E2ET".
+- [DECISION] Added new E2E test "unofficial tab shows community-created ITPs" — checks if the Unofficial tab renders when non-deployer ITPs exist, clicks it, verifies Community badge appears. Gracefully handles fresh deploys where no unofficial ITPs exist.
+
+## Session: 20260326-1530-f2m7 (False Network Partition on Localhost Oracles)
+
+- [DECISION] Raised partition heuristic threshold from >33% to >50% unhealthy peers. Integer division made 2/3=0, meaning ANY single peer with score<0 triggered "POSSIBLE NETWORK PARTITION" on a 3-node cluster. Now requires strict majority unhealthy.
+- [DECISION] Added 90s startup grace for heartbeat penalty in `PeerScorer::tick()`: -1.0/tick instead of -5.0/tick. Peers reconnecting during rolling restart hemorrhaged score at -60.0/minute, crossing ban threshold in <1 minute. Grace period matches the 60s invalid-message grace but extends to 90s for connection establishment latency.
+- [FAILED] Considered resetting heartbeat counters from WAL replay — WAL stores consensus messages, not scorer state. The scorer is purely in-memory and already resets on process restart. The consecutive_misses=2538 was from the OBSERVING oracle's heartbeat tracker, not from persistence.
+
 ## Session: 20260326-1430-r8x3 (DataNodeChainReader Never Used for Consensus)
 
 - [DECISION] Added `ConfigBuilder::with_data_node_url()` and wired it in `main.rs`. The CLI `--data-node-url` flag was parsed by clap but never transferred to `OracleConfig.data_node_url` — the `with_cli_args` method used `..Default::default()` which left it `None`. The env var path (`DATA_NODE_URL`) worked, but Docker containers pass the value via CLI flag, not env var. Result: `ChainBuilder::build_reader` always fell through to `EthersChainReader`.

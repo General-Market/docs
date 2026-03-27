@@ -575,6 +575,21 @@ impl ChainListener {
             warn!(batch_id, player = %player, error = %e, "Failed to insert position into Postgres");
         }
 
+        // 3. Sync player_count in vision_batch_lifecycle from vision_positions.
+        // Uses a subquery count instead of bare increment to stay idempotent
+        // when the chain_listener replays blocks after a restart.
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_batch_lifecycle SET player_count = (
+                SELECT COUNT(DISTINCT player)::integer FROM vision_positions WHERE batch_id = $1
+             ) WHERE batch_id = $1"
+        )
+        .bind(batch_id as i64)
+        .execute(&self.pool)
+        .await
+        {
+            warn!(batch_id, player = %player, error = %e, "Failed to sync lifecycle player_count");
+        }
+
         info!(
             batch_id,
             player = %player,

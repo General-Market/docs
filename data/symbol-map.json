@@ -1,2486 +1,2678 @@
 {
-  "0xdfb02b697f1255ef0158e195c50766b2efd38981": {
+  "0x830fbb173f5f63e7cabc9a20a8183ffb8aacb896": {
     "pair": "0GUSDT",
     "source": "bitget"
   },
-  "0xcda9e64091e67d8062b955bf0f6e72d9b4942aec": {
+  "0x56bcab0910968829094e9abdc955cf5569019679": {
     "pair": "1INCHUSDT",
     "source": "bitget"
   },
-  "0x0f49de74412534a444dc73c616870607447792b8": {
+  "0x557dbdef8b59bf6fe7dc251165276f5109f86ff9": {
     "pair": "2ZUSDT",
     "source": "bitget"
   },
-  "0x1d4ec9b5316d35f7ebfdeb25898f3c88dc815525": {
+  "0x73191cd90838379a514bbfd157424548adc89961": {
     "pair": "A47USDT",
     "source": "bitget"
   },
-  "0xea2ce61bc3b0f652562749715a540482d37e50b6": {
+  "0x67293be4022f1c390df7a5d8bfd4f46d11654585": {
     "pair": "A8USDT",
     "source": "bitget"
   },
-  "0x0a75035553e8540db8c35eb884daa7891712fd2c": {
+  "0xe06d53c1fbf51bafb00502c7082813976a24cd02": {
     "pair": "AAVEUSDC",
     "source": "bitget"
   },
-  "0x016811078067a449287a02b710f1ddf77173a021": {
+  "0x122c75302dd3a78f049c2eb663d6baa54e511714": {
     "pair": "ABUSDT",
     "source": "bitget"
   },
-  "0x50bc25128422d1e057ef92ae64867870d3e03752": {
+  "0xf266e535fb4bea55397a71dbbade1c8da52a6708": {
     "pair": "ACEUSDT",
     "source": "bitget"
   },
-  "0x101f829abd77aab6b089800beb02c4557419311a": {
+  "0x746fe93a174c2a32a363e29451281cff780ea026": {
     "pair": "ACHUSDT",
     "source": "bitget"
   },
-  "0x2f8a86c6850050111828c4b1aa9450a9d5717577": {
+  "0x2498d9a0aea59827ade25ca778f5872f893d6be8": {
     "pair": "ACMUSDT",
     "source": "bitget"
   },
-  "0x409fb6d4f667589b274b0accffe80f2fe14cc981": {
+  "0xeebaf4fcf68b85a0b41f458c452292802a41873f": {
     "pair": "ACTUSDT",
     "source": "bitget"
   },
-  "0xdbc126839b2232dd723ef150c6b3831f3ba5de30": {
+  "0x19a5d6e7a5d48b6722a0c1a335d879a643365446": {
     "pair": "ACXUSDT",
     "source": "bitget"
   },
-  "0x6dff4acc159ca5c10495b500f76fcbe7b758794d": {
+  "0x542206d887a1fd2dda35792685ae43ad68a988ae": {
     "pair": "ADAUSDC",
     "source": "bitget"
   },
-  "0x3245bbc71c607f67e41060f12cb25a277569d10b": {
+  "0x4dbd0f70cc51f433971b3ddd7a4b2dd60f6ff1d7": {
     "pair": "AERGOUSDT",
     "source": "bitget"
   },
-  "0xa41f5891891ec6fbe64a11bbf3dc972ef20edb83": {
+  "0xc6157e9c0533d2fb7fa58a9f00c99810d3b581bc": {
     "pair": "AEROUSDT",
     "source": "bitget"
   },
-  "0xd22261ab990fe88fe40fa1f913b5b44b023db115": {
+  "0x3ea6b49bb8bc55efac4ee7393383840d8347e0e9": {
     "pair": "AEVOUSDT",
     "source": "bitget"
   },
-  "0xb514c9a7ed2bfd713b68f0e241d5f753d4e7b06f": {
+  "0x0b8b44d109b12ef9080010ed1a65f189c93b34f4": {
     "pair": "AFCUSDT",
     "source": "bitget"
   },
-  "0xeea33fd3991938ba38456f52c3a8d1ec10c58948": {
+  "0xa7ab423c2294e8080741b486cc26350fe5d95f03": {
     "pair": "AGLDUSDT",
     "source": "bitget"
   },
-  "0x0eafca9abf0af871041166ad38972238ad3a6f3e": {
+  "0x7848366040dd3ebcf69f3b097e3ed91ace815e77": {
     "pair": "AIAUSDT",
     "source": "bitget"
   },
-  "0x9fdaaa547d24f38a951d225ffe9fddc14972a04c": {
+  "0xb96330d05a2c205a60e6dda38048a42566e3dfc6": {
     "pair": "AIAVUSDT",
     "source": "bitget"
   },
-  "0x5f0b866245b5e152d585beaf518c14cc669d0cd2": {
+  "0xa7c19fd655faef9c67dcf983875869cb325d3435": {
     "pair": "AINUSDT",
     "source": "bitget"
   },
-  "0x6e3bcb6d0d00747a457f44401487aaaa8acef365": {
+  "0x1b9e7b409df9999fc9b0bf09a1fbecea148d9aec": {
     "pair": "AIOUSDT",
     "source": "bitget"
   },
-  "0x7025db8428ca7b062c961ee131310dc342b15197": {
+  "0xec380f1cd98259aa7dac411ed406a7bc64670017": {
     "pair": "AITECHUSDT",
     "source": "bitget"
   },
-  "0x2e2baec3587dfc13f289673f45ef3ee5ded09602": {
+  "0x8473eab87a393a1fef0c91b8666028f24c48f36f": {
     "pair": "AIUSDT",
     "source": "bitget"
   },
-  "0x3493bfb9b067674b046b3ba3a8199d2562b0f8e6": {
+  "0x6ea80f5b2f70c3ce6d02d13ac9521930a82973a7": {
     "pair": "AIXBTUSDT",
     "source": "bitget"
   },
-  "0x57773e99887f68c5013544133531a16ce01f3154": {
+  "0x46183b99b6986c873397219e127eb43d7e90d607": {
     "pair": "ALCHUSDT",
     "source": "bitget"
   },
-  "0x1e9123ce204b0973cb7cc8af982092d9daca7bb5": {
+  "0x3d68d43dae5e3976c2271bef7ff420eaf7b6f480": {
     "pair": "ALGOUSDT",
     "source": "bitget"
   },
-  "0x3896cbc01eb889275e0bcc2d234e21041dc8aeac": {
+  "0x03c28983f7701cb13c279a60f9cd193cdb60c99d": {
     "pair": "ALICEUSDT",
     "source": "bitget"
   },
-  "0x60acdbb55b49a47fdb4339a2ec6eba50c8036314": {
+  "0xabae29cb348ee07c02ed406858d6b42ec005143f": {
     "pair": "ALLOUSDT",
     "source": "bitget"
   },
-  "0x7274225a2c6d01e05cf55c38186747f2e751efab": {
+  "0x1903f6578a9555e1c2846407803cf96700b688ba": {
     "pair": "ALMANAKUSDT",
     "source": "bitget"
   },
-  "0x85a385d3ee2b9eccdf68032ecef9f65f95cfb3b6": {
+  "0xf0dd27fe7dd875e9b76d7eb1834045219985d284": {
     "pair": "ALPHUSDT",
     "source": "bitget"
   },
-  "0x1f8f1fccb460d1fce806937210a003dd4f1309e7": {
+  "0x6b67d54eae96fee2b6f95f7b9a22e14cb46a23d3": {
     "pair": "ALPINEUSDT",
     "source": "bitget"
   },
-  "0x6b8c9ee1504d4d8a9951ca233cd008640a89e576": {
+  "0xde62ba0ad091d8195e1d89269e2c9b1daf9a5a2b": {
     "pair": "ALTUSDT",
     "source": "bitget"
   },
-  "0x59a03c9b1a938e605110e7bb48baf096cacb7330": {
+  "0x199348f6e25941163ad76cd65698d290ad2a730e": {
     "pair": "ALUSDT",
     "source": "bitget"
   },
-  "0x7737487acde0e343fbb7225ac6140fe95870561f": {
+  "0xf77cc57119bb5b4d705e57f855c99b52799669f5": {
     "pair": "AMPUSDT",
     "source": "bitget"
   },
-  "0xbb9e187bf172a942c9c168733ee2b743fee6667e": {
+  "0x5a55fc79b833ab738e14ef41facf184d2f6692b3": {
     "pair": "ANIMEUSDT",
     "source": "bitget"
   },
-  "0x7740c124fc627c21991a31b4fe21b3ab85d7a4cb": {
+  "0x38cb3bc827606b0c681725d649707b0b90722f98": {
     "pair": "ANKRUSDT",
     "source": "bitget"
   },
-  "0xc0e26791b425a7fa03dde7468b11c2eed86fc83a": {
+  "0xf525b3623f8b14812326391112fb4d4227b43e59": {
     "pair": "APEUSDT",
     "source": "bitget"
   },
-  "0x9ebdd0eea830c91cf477c29b8bfaf75b2c80dfe4": {
+  "0xc322125cd14e3ca6e2c9bac7cfa01666cc9f8a58": {
     "pair": "API3USDT",
     "source": "bitget"
   },
-  "0x5bf700edb3c95fab31a0132f50376c0aded31447": {
+  "0x8ef7b1606a9e795ea16c16a1ad78b731f523653c": {
     "pair": "APRUSDT",
     "source": "bitget"
   },
-  "0x19aff1639d5c1acd45115ff6d0e6707c6b18d7c8": {
+  "0xd22e8784857fcdcf4c8c757c1619548e967833fe": {
     "pair": "APTUSDC",
     "source": "bitget"
   },
-  "0x032847cd87ad973969bf8a9744457f13535a75d4": {
+  "0xfaefd48f4e2470db5a0840c75dbc2a029a2126cd": {
     "pair": "AQTUSDT",
     "source": "bitget"
   },
-  "0x50a2db783d397631d7ee872b467b68c2c7790a6c": {
+  "0x75014900cf6b590565874702327cb50edbc530b3": {
     "pair": "ARBUSDC",
     "source": "bitget"
   },
-  "0xc797700b7318cadf119b2c3fc2c4864b87daa8a6": {
+  "0xe3659664bc70dc508e82497f16a7742592d4b531": {
     "pair": "ARGUSDT",
     "source": "bitget"
   },
-  "0xf14566e99a70d23fbb8a30c9c2044ddcb8bd2653": {
+  "0x774f90a8b26de0460eebecab54651d89c0eed952": {
     "pair": "ARIAIPUSDT",
     "source": "bitget"
   },
-  "0x7cb144c5b6b23c2a7e520df98f3df1b1564c0da5": {
+  "0x2175b3410d4e20a26bc21de60590d28d9a5ce7e0": {
     "pair": "ARIAUSDT",
     "source": "bitget"
   },
-  "0xe8dcacf1f57d141f6c0224074f57819ac5569580": {
+  "0x51db599588e1c32f805e3b2e51e8f5e5d77a41bf": {
     "pair": "ARKMUSDT",
     "source": "bitget"
   },
-  "0x65be899283c80b67f059be745bd7cc80a5487aeb": {
+  "0xdf6f3604ea8b39866e3bd3b81fb5375e68019d28": {
     "pair": "ARKUSDT",
     "source": "bitget"
   },
-  "0xaad7d0b3361cea676477e15fe305df49ce6d3961": {
+  "0xf3b2526563d6e6127b9d5ae263e631f8c37bec2b": {
     "pair": "ARPAUSDT",
     "source": "bitget"
   },
-  "0x1e3491ffdbb69ba32ec2f378bbef55722db2388c": {
+  "0x6849c34626ad4c43001dd1d7c4e94a348db42c25": {
     "pair": "ARTXUSDT",
     "source": "bitget"
   },
-  "0x9deaecf281286aaf9d63e470c4ed885dc90e811c": {
+  "0x01eaff65c449b25b60d2aee7f367f8984fe4839b": {
     "pair": "ARUSDC",
     "source": "bitget"
   },
-  "0x5ff5543bc5b457c645f0a4b7b41de1642d28b5c7": {
+  "0x69210cd2de40b4b38d44953469b5b778bd2f0ac7": {
     "pair": "ASRUSDT",
     "source": "bitget"
   },
-  "0x990dcd515a8555d91e8726818da81562e9f38ddf": {
+  "0x5c898d31073044ccdf2cb9bb2e3f3df760d1fb6b": {
     "pair": "ASTERUSDT",
     "source": "bitget"
   },
-  "0xbfc20d100edd9cc6307fafd39d20c5672a7bf8bf": {
+  "0x27b24be616a2e583a3615f63622bd559ca73eeee": {
     "pair": "ASTRUSDT",
     "source": "bitget"
   },
-  "0x810802991a15dba186ef81e01c67e87442075055": {
+  "0x9fc9dc20a82b81a23026b45d679c9bf62cb3543e": {
     "pair": "ATHUSDT",
     "source": "bitget"
   },
-  "0x353f17226bcabfe3e10a52fc71dd655e2d050c4a": {
+  "0xa386b7c97c7f9fac986d9a715223b6ef9b48c25c": {
     "pair": "ATMUSDT",
     "source": "bitget"
   },
-  "0xdf143a02721728aaa885992ae1f13cd84110e5f7": {
+  "0x1091672f582c765c110f8318ae174deb91ebb865": {
     "pair": "ATOMUSDT",
     "source": "bitget"
   },
-  "0x26ee4f329db0dfe54afb8b4e7ae727e07dd10f72": {
+  "0x497de23042478d9cc4a2d0a1654124e027b436c5": {
     "pair": "AUCTIONUSDT",
     "source": "bitget"
   },
-  "0x075cd98d1e9f5b66e2efc04d2e1780f8985c220b": {
+  "0x4263c1bf5256cf182f16e3ffdf646ae6b9932895": {
     "pair": "AUDIOUSDT",
     "source": "bitget"
   },
-  "0xa7cf574dbda3e019a89d094db2ad973cb7818130": {
+  "0xd086072a9bb948a606b7a6e574a985be8707e49a": {
     "pair": "AUSDT",
     "source": "bitget"
   },
-  "0x271c0bba3bae6bb66fd5794f3b5de23e617b131b": {
+  "0xc27c8b13bc0b0c02585dae7d7a029d73b46fc1c1": {
     "pair": "AVAUSDT",
     "source": "bitget"
   },
-  "0x6c3041cd964b600d2ac6727ebc85392be5cb99c5": {
+  "0xb31201e6ccac5b79a7e39ba5a6960014f660ae12": {
     "pair": "AVAXUSDC",
     "source": "bitget"
   },
-  "0xa06ea90196efe91d3a3b3e84b528724a03a661e6": {
+  "0xc8b9c79a1774b1f6cb96f708146a5d9ff5ce16e0": {
     "pair": "AVNTUSDT",
     "source": "bitget"
   },
-  "0xdfaa64003b55f0b5bbba0635eac9a61e65e831fa": {
+  "0x6117cedb02959228d17b94ab13c095d25801f1be": {
     "pair": "AWEUSDT",
     "source": "bitget"
   },
-  "0x59648dfa9ce494618324097ba84d8202eabd60ff": {
+  "0x0bbbfd43ea16ef79b93192a09beb6de6412b7761": {
     "pair": "AXLUSDT",
     "source": "bitget"
   },
-  "0x6e15fa14ddc832443a71945202c51d80d9a31698": {
+  "0x11109a0857c075ea9d50230e2a3c1520eef6d01f": {
     "pair": "AXSUSDT",
     "source": "bitget"
   },
-  "0xcfb632eaaec228c04369e57f4b2d71f73e6340f5": {
+  "0xb000deeb63583f037be0e1d32160205a39497f49": {
     "pair": "B2USDT",
     "source": "bitget"
   },
-  "0xa04f77153b870c7e894ce081c84a1df2809f9290": {
+  "0xf4fb20b5f58b2cadd0a3d63e379306f9838b9e64": {
     "pair": "BABYDOGEUSDT",
     "source": "bitget"
   },
-  "0x553d7d0aadc8f7c7ea33a9b430de8900593bba1b": {
+  "0x94d65ee450d80e825811f139fc268e13fabbfd50": {
     "pair": "BABYUSDT",
     "source": "bitget"
   },
-  "0x62e951b7a607092aa4179661ee3cebc3d0440054": {
+  "0x12fb3ad5dbb9347e47657c28eb3177865a0e2c4f": {
     "pair": "BANANAS31USDT",
     "source": "bitget"
   },
-  "0x3c2d73a4f4a009bfed99d5d17cc964145f179671": {
+  "0x705751671dc7289fdfd4f3b8ddc7dfeb0603009d": {
     "pair": "BANANAUSDT",
     "source": "bitget"
   },
-  "0x8fc3bbcdfeed06eff9addf8494899186f81ed315": {
+  "0x255c9d3f3637da647301e07f78989e9d34c66d1d": {
     "pair": "BANDUSDT",
     "source": "bitget"
   },
-  "0x756cac148016574a75e5656e1f9719623ff15195": {
+  "0x44155b2568da5fde1d471c5c1cf4828d8c7c956b": {
     "pair": "BANKUSDT",
     "source": "bitget"
   },
-  "0xbafc80840787565b82712c9d1e1f4cfa831379d3": {
+  "0xa6b8ab158849f895a37f3c0da8a3b716bc9c9c0e": {
     "pair": "BANUSDT",
     "source": "bitget"
   },
-  "0x120183544b21464e722ca8a65ede46bcb87f34ac": {
+  "0x964b85817b28e71d9b6720fc54d915dc226b9676": {
     "pair": "BARDUSDT",
     "source": "bitget"
   },
-  "0xb510ed9e291a455703cc9dc39735265372da4ec6": {
+  "0x2af7cc73128e987b57418419ffe6dd7db84b9f15": {
     "pair": "BARUSDT",
     "source": "bitget"
   },
-  "0x4902b0c6432b4674248fd976632724ff76b98039": {
+  "0x6b5fd2dfac05e32bc776aec02bb9f94d35af3b2d": {
     "pair": "BATUSDT",
     "source": "bitget"
   },
-  "0x2bb0f6c5ab3d0ebde987a72d097b487bcf64e2df": {
+  "0x87e16cd10cf091fd6e0621ac07b92e168244784a": {
     "pair": "BAYUSDT",
     "source": "bitget"
   },
-  "0x2340229a8bc86e4d4bb94c8778dc71b46b0b1712": {
+  "0x0cd6799d28444b4e770baa01b302af2c36f6bb8a": {
     "pair": "BBUSDT",
     "source": "bitget"
   },
-  "0xb7e22da3e61a714b4597aca30ea93e931e02c55f": {
+  "0x03de73badce5f90e2d150a1158cea9c76f5c809a": {
     "pair": "BCHUSDC",
     "source": "bitget"
   },
-  "0x88f4b52837f79ad2b3ec16047ca43308eb15116c": {
+  "0x45853c288f7c2bbff0756e8da7ae7df408decea1": {
     "pair": "BDXNUSDT",
     "source": "bitget"
   },
-  "0x932cab8b65e28888a28801eb9bd988c3b0ae03c6": {
+  "0x2ddcad263b5cdf77a90c404e4dbbc7b1edfb5779": {
     "pair": "BEAMUSDT",
     "source": "bitget"
   },
-  "0x8a44736c86cde3f4f846f86b4823486a7e85d68b": {
+  "0xa146cc5a6ecd0f7d6e377dd3f568d2edccb9ad90": {
     "pair": "BERAUSDT",
     "source": "bitget"
   },
-  "0xea382c8139872436c3c7c101ff16f5cdeb40a61c": {
+  "0x5acf21a66ae12886af343100b146cf9f5d206601": {
     "pair": "BGBUSDC",
     "source": "bitget"
   },
-  "0xeea379e7329047260deee53f0bf19f1782ad0e4c": {
+  "0x5e590746d61ca4a2c7750df50a9a0938c5b6f1de": {
     "pair": "BGSCUSDT",
     "source": "bitget"
   },
-  "0xd7970a94f887191ea241d58a21a829da79ca0a9c": {
+  "0xa8ffbabb1c9dd3648791741f5bf577236a8457be": {
     "pair": "BGSOLUSDT",
     "source": "bitget"
   },
-  "0x63248bcd1ece9940d9127965e940cad92d494bdd": {
+  "0x0d752d25c1023186c880085948d469281483faa5": {
     "pair": "BICOUSDT",
     "source": "bitget"
   },
-  "0x637072f38faed667d6264a8e051b64c6112afe9f": {
+  "0xfe29074ba0c9545ddaf656ffb4a068cf45e90aff": {
     "pair": "BIGTIMEUSDT",
     "source": "bitget"
   },
-  "0x6022cf0936ff604dbfb26e169e6db2826aa68244": {
+  "0x051283fb5a66fb93c57f9d452d8763e123a08e0a": {
     "pair": "BIOUSDT",
     "source": "bitget"
   },
-  "0x8fecf072765f05e1bdc1bdb674faa419881c9205": {
+  "0xf54aa6117ff38ac0a4b7d16736e6be6b354dc5a7": {
     "pair": "BIRBUSDT",
     "source": "bitget"
   },
-  "0xdc31d3fc58503e8e6c865ffc9b8556c6d99d4a34": {
+  "0x2f5db4182bd27fef58d3dba443f6bc4acafd4fa4": {
     "pair": "BLASTUSDT",
     "source": "bitget"
   },
-  "0xf670889f422c00111fe24fc38ca453848f88103f": {
+  "0x64fabaabe40a94e4e833f433931b3f7c5523c6d6": {
     "pair": "BLESSUSDT",
     "source": "bitget"
   },
-  "0x94dd35293e3f61d0a919a721010559c0f9fb6c65": {
+  "0x8d508865e81c6dcda6890c07d1b514e86c1e8833": {
     "pair": "BLUEUSDT",
     "source": "bitget"
   },
-  "0x3f4e0e8856e0a45777a95be19300fb1cc105efe3": {
+  "0x4a3b50391b14b1f6e2485bb6aade033e7b541264": {
     "pair": "BLUMUSDT",
     "source": "bitget"
   },
-  "0x49fa8355f98abf5bd6b0aa8e43d53b61edee65b6": {
+  "0x57dcd26c27a0b4e5a239f546d4ac895b172caee8": {
     "pair": "BLURUSDT",
     "source": "bitget"
   },
-  "0x5034bcf4a1a1ec26c7fb86d37bb6cc42d75a725e": {
+  "0xfcf7b9effc7e356fb76a4181d8515efccc65d7d2": {
     "pair": "BMTUSDT",
     "source": "bitget"
   },
-  "0xa98ca1001f64a4d6f8273003a25c1cc686e64551": {
+  "0xd9896556bc68eb58dade045b79d0980e4e9e6016": {
     "pair": "BNBUSDC",
     "source": "bitget"
   },
-  "0x075256b80d3b2fcd77cada7a009da166753268e2": {
+  "0x0a9bbcfbb41a3a2c267202c942770bc72628566d": {
     "pair": "BNTUSDT",
     "source": "bitget"
   },
-  "0xa1599aa1587fbc19ff0ef70edc1a181f42eb806a": {
+  "0xe315f4cf415249c0d79a086459059060ec8b2438": {
     "pair": "BOMEUSDT",
     "source": "bitget"
   },
-  "0x6423e707bfe39bf9ceb6c2da402c2457a061f5d8": {
+  "0x1330785fc0e0a40dcb52f739e70b75b68a39082d": {
     "pair": "BONKUSDT",
     "source": "bitget"
   },
-  "0xe516a02c1be511ca3c5bd53dfea2f9f9de7164c9": {
+  "0xe729034dc6f6739c60e14d43e7b59681256d3670": {
     "pair": "BOSUSDT",
     "source": "bitget"
   },
-  "0xefd944e4475c9ab2270fe970b6de0c1d286fda47": {
+  "0x1aeb990160c09beeec56b737f9a55895eb8a465f": {
     "pair": "BRETTUSDT",
     "source": "bitget"
   },
-  "0x9435c2e966f525312597e9b11476a08215fe31ae": {
+  "0xee11780e4437f8610649cdf2a21fe8562d8c2744": {
     "pair": "BREVUSDT",
     "source": "bitget"
   },
-  "0xd64c9e047cf36f97359fbd1cb6341f143dc09108": {
+  "0x4f675ee2f1be4e18a0871cb4ec58eff09bfb1cce": {
     "pair": "BROCCOLIUSDT",
     "source": "bitget"
   },
-  "0xc1ac03c5ec51dd922cf9e46990d366390dacd84f": {
+  "0x36e9e392fc93599d267ba09755a648140717409e": {
     "pair": "BRUSDT",
     "source": "bitget"
   },
-  "0x434d8c5a7c9f8b16dd91e76cc605292caccde81b": {
+  "0x2d33093f4fe69a8c9f4497a354e177cbe4d43e37": {
     "pair": "BSBUSDT",
     "source": "bitget"
   },
-  "0x2e083e417cd114494fdbe0af8afbe7a83cf300d6": {
+  "0xedb300434c91449bdaa3051ab7113eeacbc36c2d": {
     "pair": "BSUUSDT",
     "source": "bitget"
   },
-  "0x2adab81ea9a491a2271fec3e9f40e0a296fc9498": {
+  "0x95228a3fb5fc459602855a4069cd9b6f2003e821": {
     "pair": "BSVUSDT",
     "source": "bitget"
   },
-  "0x76cfae3b08e175df499b8fab58315a64184201f4": {
+  "0x25789397b3e29a9353c12afec339b392c87e1ed8": {
     "pair": "BTCUSDC",
     "source": "bitget"
   },
-  "0x05d54d345ac80979b01026f24b51e118ce9afaa0": {
+  "0xe455e5ab78f71777599bae7a24f56826d5a35e31": {
     "pair": "BTRUSDT",
     "source": "bitget"
   },
-  "0xca4f54efcca95264cf2b841eb8e0b57a2f1fa0a3": {
+  "0x59aa2fd8324b9b580aa43cc6a30437667d90e156": {
     "pair": "BTTUSDT",
     "source": "bitget"
   },
-  "0xfa7f52df20582c95d28ce63f643188fe69baf4d4": {
+  "0xe1d5a3c8ae39bced8c770be58ea096d864928e2d": {
     "pair": "BTWUSDT",
     "source": "bitget"
   },
-  "0x5c03fa16d30337e88513bd9ad486dce40c2eaa72": {
+  "0x1a0d426bf2adaa7f6d4671cebd04bf5519562f88": {
     "pair": "BUSDT",
     "source": "bitget"
   },
-  "0x00ef3278479dc3857828bd8a7b9057a281a7a974": {
+  "0x30a55cf6cf9f221f29747ceaf616c4eef48aa511": {
     "pair": "BYTEUSDT",
     "source": "bitget"
   },
-  "0xef6921fb8d8c5d9735ce937f22ae4005767d66e5": {
+  "0xa7e681aa3840e3f6e24f9d59107889959e8f254f": {
     "pair": "C98USDT",
     "source": "bitget"
   },
-  "0x088fb70ee53bf104d66015169d6c65e90a27e363": {
+  "0xd68783cd006c534d95f014c678d4990e9f4e0514": {
     "pair": "CAKEUSDT",
     "source": "bitget"
   },
-  "0x4247649f8f88c48e07cb86f51ae8af0363cbc638": {
+  "0x01c47f1aa992b3c820437dbf48656c3d134c79c1": {
     "pair": "CAMPUSDT",
     "source": "bitget"
   },
-  "0x6e792558a49b9d05621a773f67e0e99b31f51981": {
+  "0x59c4ac2992c5165a22d7247c8444964711e3021f": {
     "pair": "CARVUSDT",
     "source": "bitget"
   },
-  "0x265c1f7c6392bf0dd1fa16f1e8abb9e0367d191a": {
+  "0x7edfd86f0a0be184c0e80d8e7aab09838a7a638f": {
     "pair": "CATIUSDT",
     "source": "bitget"
   },
-  "0xe90d862ab9329102bbe03c139f52e5e06014634c": {
+  "0x11193beb9b42c32de8c9320b1ad79375d28d46db": {
     "pair": "CBKUSDT",
     "source": "bitget"
   },
-  "0xb414dbe3f36beb55f5da0a821383c0f746790d8c": {
+  "0xb031017b4811487886f797a714016eebbc59b64c": {
     "pair": "CELOUSDT",
     "source": "bitget"
   },
-  "0xc87885ef604f33f2909da9cdd129d021f9c933e3": {
+  "0x1fe32db6524649f444da0584e0ea491cef2dbb06": {
     "pair": "CELRUSDT",
     "source": "bitget"
   },
-  "0x9f2e8d6d1f49c887aa7960c52ca2e9878c57694f": {
+  "0x918b2bb4c63a6ca8f09b1683a7c75caec362a3ba": {
     "pair": "CESSUSDT",
     "source": "bitget"
   },
-  "0xcef9bcf07025da5825ae0da0364f94c99ef06df9": {
+  "0x14b1ee01ebfdb0ba8dc43da436a73182fc26d832": {
     "pair": "CETUSUSDT",
     "source": "bitget"
   },
-  "0x2e9fb29278775f3d4fca6acd4a44bfcd0e1759a1": {
+  "0x5a59d4d70278389fa9b2bcf9a80b6895a6084dad": {
     "pair": "CFXUSDT",
     "source": "bitget"
   },
-  "0x7e6bf9b1792e3327ab7aa5b35f6e7e2a5c08ea14": {
+  "0x032033d11e549a3932ae00618809379a13f7ba91": {
     "pair": "CGNUSDT",
     "source": "bitget"
   },
-  "0xdb05179f6dd3fcbaa1844201fed8ca2ce4f04f52": {
+  "0xd3bdcc4845150a8d8825c24141ef75f6c5064b23": {
     "pair": "CGPTUSDT",
     "source": "bitget"
   },
-  "0x4e5a25be6b734fe8f1e3fe2cae2692e8d5ec871a": {
+  "0x238e7bf1f0a9f7ff25284c3c64325d19263c7f0e": {
     "pair": "CHEEMSUSDT",
     "source": "bitget"
   },
-  "0xef805a42b3c1cd9b9cd0983c0fcb0d6a8724a141": {
+  "0x2e7e940030cb0344d7291afcaa274ecc51bf2991": {
     "pair": "CHILLGUYUSDT",
     "source": "bitget"
   },
-  "0x9eb3dc250c63e274524cb94735be4a069990cbb5": {
+  "0x18cd8db94e65bede226469f4fcd7fe6f1907fcd6": {
     "pair": "CHRUSDT",
     "source": "bitget"
   },
-  "0x2d2a3ee2be432f513ce0b43bb7700256e41e9cdc": {
+  "0xbb4aea36b1c552da30481998649e70d02069dd53": {
     "pair": "CHZUSDT",
     "source": "bitget"
   },
-  "0xee78501ef0b1b57c0cc266c8994351c91cd4c10f": {
+  "0xc64e8d6c6d417a48f95dbaa8ca7bb03181b99635": {
     "pair": "CKBUSDT",
     "source": "bitget"
   },
-  "0x4e0a8b0f7215ac104d94edadf54af5f93242bb70": {
+  "0x3fa671d5b43a5fc2947d25ed224a2cfe198646a4": {
     "pair": "CLANKERUSDT",
     "source": "bitget"
   },
-  "0x7e308e0ee2de5f58caafd4debe5174c7a85999af": {
+  "0xfe130950958f674cf9a6ea0a093f45ea74da0815": {
     "pair": "COAIUSDT",
     "source": "bitget"
   },
-  "0xe818dee3c51c5a22d6e6d9f89c971550c2eee10d": {
+  "0xd8ada32b47e6221a3efd18668ab0ac1569c5eb3c": {
     "pair": "COLLECTUSDT",
     "source": "bitget"
   },
-  "0xcf31a15bf6e94f6f1e80dc6161cfb3c2505b1467": {
+  "0x46dfaf5d1cb0d84ee7e470356aa97a96a5624d28": {
     "pair": "COMMONUSDT",
     "source": "bitget"
   },
-  "0x67a3c398b5da11fa74fd570e5e2c5eafb25ae128": {
+  "0x537326548cd3b8c67c88f8cb3fe896c6018fc376": {
     "pair": "COMPUSDT",
     "source": "bitget"
   },
-  "0x1457ca39140aa28edf4c08244fba1085e0d345e1": {
+  "0x36f94c5561104059820ec6a0f83a2343618cab5d": {
     "pair": "COOKIEUSDT",
     "source": "bitget"
   },
-  "0xec01e0a13a1277f6ca1fbcf0d78c75e37fedc346": {
+  "0xe4962de45733439599a9bc11f460a546b825f1df": {
     "pair": "COREUSDT",
     "source": "bitget"
   },
-  "0xfc85f1186775ad2cc8270f6b3b521086b4ddb939": {
+  "0x5e16b998fe2ca223dc11679f09c7f38b0ed2d35e": {
     "pair": "COTIUSDT",
     "source": "bitget"
   },
-  "0x8255bd44213d7e4b89c596cadb8ff0c3027fa0ef": {
+  "0xd268fd91304f1da0276fd2916dee2c4b1f9beb4e": {
     "pair": "COWUSDT",
     "source": "bitget"
   },
-  "0x491e55b905eeeb58f3f34621c273724896e2991b": {
+  "0x4ca097f07e9115bdf3cb0dafcb391b0e02b778c5": {
     "pair": "CPOOLUSDT",
     "source": "bitget"
   },
-  "0xf39d3b9b1e161c43ced79a6a4bfaa860d7f34da0": {
+  "0x8f8a43f3a37eac579289ccee46a1685aa0d2153c": {
     "pair": "CREOUSDT",
     "source": "bitget"
   },
-  "0x568b145bfd3881bfb23cc5bcf9819b104fd568d7": {
+  "0x6840e51edc3c430df3cd04c6f80c182f479c1dd7": {
     "pair": "CROSSUSDT",
     "source": "bitget"
   },
-  "0x774315a236c6197d13e3a10152af857953542752": {
+  "0x75bfcb8e7e5b4dedc6ccba6b1f2d97d0ce2e4a75": {
     "pair": "CROUSDT",
     "source": "bitget"
   },
-  "0x80543d8d5b8c663efdbe17010b8b7a36c98e0747": {
+  "0x99b678710262b263a2ad16f4220d0f07aa41eb3b": {
     "pair": "CRVUSDT",
     "source": "bitget"
   },
-  "0xc19931f16ec5af3c1165288143264ab9b6c50ca7": {
+  "0x560186564df4f05d490b32d9051e6456dab6dce6": {
     "pair": "CSPRUSDT",
     "source": "bitget"
   },
-  "0x1ad3d576ffd07dcce975152c6b06e1606bd1e56a": {
+  "0x5779cab602cf0000c5664ba22ccbea5782a88bb9": {
     "pair": "CTCUSDT",
     "source": "bitget"
   },
-  "0xb6715ee8b9717278b85fcfb35652fc6e2099f9ca": {
+  "0x8fd8e3e29be03b8acce0f5f305da312c0fd621b2": {
     "pair": "CTSIUSDT",
     "source": "bitget"
   },
-  "0x87cdececb590f2312b2b653721ecfa1c8e565d0d": {
+  "0x7e40f8e6f9cdf0cb3bf9e6bf557510874afe4b69": {
     "pair": "CUDISUSDT",
     "source": "bitget"
   },
-  "0x6297c388c996b4a962b248e7b065a9931e5b16cb": {
+  "0xa2aed148c060fc25537deeb9c1ae13cf5fd2e2fa": {
     "pair": "CUSDT",
     "source": "bitget"
   },
-  "0xe3090db7de190687bfc42c1d59e0cb87098e0e2f": {
+  "0x122bed02e7ea4ea8bb8c60c0477c5a91633b9602": {
     "pair": "CVCUSDT",
     "source": "bitget"
   },
-  "0xcaf9952547df41ba6afbe41c7898e498adfd4816": {
+  "0x720791550a6012058e22f6e70919e90174e5d60f": {
     "pair": "CVXUSDT",
     "source": "bitget"
   },
-  "0x532dcd7c791ad72aaf8eac2697a8d9165e7e77e8": {
+  "0xa28aca5bfa888096a65bb2219251dd592c325cc5": {
     "pair": "CYBERUSDT",
     "source": "bitget"
   },
-  "0x396d6fddc300b211a39dd54caca7a326fd7411d4": {
+  "0xf3aabfe63cdc82a1a9d08a4efeace637af3ab727": {
     "pair": "CYSUSDT",
     "source": "bitget"
   },
-  "0x7237511b705d7920ea84ecb2b650c8a35ef001dc": {
+  "0xde8f5c2eaeb2a912764101dd032ee7744369e410": {
     "pair": "DAIUSDC",
     "source": "bitget"
   },
-  "0xd6c2e53fa4c6f63b5eb7b42fdd84a0c2bb319d41": {
+  "0x49308160c8ebbbe3b6886a42d3a771ae0c817e0c": {
     "pair": "DBRUSDT",
     "source": "bitget"
   },
-  "0x12ade03af0efac499fdf7101b4a982b9dc6fe953": {
+  "0xf7e011df95b4a2eefd70927fe8da0e0fc2915a88": {
     "pair": "DEEPUSDT",
     "source": "bitget"
   },
-  "0xbd23249e23becd7f191f35098f027a4a2549bf68": {
+  "0xc612c5b778e9e000b1a6d0f74d5ffb6bf0d8c8af": {
     "pair": "DEGENUSDT",
     "source": "bitget"
   },
-  "0xda7c15962ef57b0a90c60055fcd0f7bbb4aca374": {
+  "0xe73b6e3802c8a08cb39a883685a0b1957babf112": {
     "pair": "DENTUSDT",
     "source": "bitget"
   },
-  "0x7f3a5f7491faf5e15e2bc6333a93c86815e3cae9": {
+  "0x4cb22fb9b64459ca82bb8f6cfdc8109f8ac39b3c": {
     "pair": "DMCUSDT",
     "source": "bitget"
   },
-  "0x6a44a4eb9e348caa1d95236e000bc5bc032119aa": {
+  "0x053359daab711a10945b64065fe4c6262ea1f155": {
     "pair": "DNUSDT",
     "source": "bitget"
   },
-  "0x04ab78c3c4f46c576d9958d1348d87c19f23f2cc": {
+  "0x738bb6b3d7b5de319a15f1e8b062c05e23b403e2": {
     "pair": "DODOUSDT",
     "source": "bitget"
   },
-  "0x4b21e12ebb76e165de1a10b758a3af7993b6f7b3": {
+  "0xcd95e0844db0a3d635016e21560eff07082fd76b": {
     "pair": "DOGEUSDC",
     "source": "bitget"
   },
-  "0xdd79f7e2658b7e8e38774ff63e2f0a0fcd2d6798": {
+  "0x9561b8e8270b1fe4005ed1022cf4c907b365882b": {
     "pair": "DOGSUSDT",
     "source": "bitget"
   },
-  "0x1050e305cb4405f3bd84c0848c10fae39f68ef3d": {
+  "0x893eaf3919901c0d00e53b96eae353c9e6f8d3b9": {
     "pair": "DOGUSDT",
     "source": "bitget"
   },
-  "0xda582dab9243988bc1c7bb842e8fbe6bd21eb7d5": {
+  "0x0240c5e65416a281416d66bf1111d3d51d7ac57f": {
     "pair": "DOODUSDT",
     "source": "bitget"
   },
-  "0x65611eadc1a5c1d3928cc4b7260cdbe147ecb045": {
+  "0xa2448ba543e9e915e8e3c4d2b38cb20cbeaac419": {
     "pair": "DOTUSDT",
     "source": "bitget"
   },
-  "0x8ce19f1be0891b3da4fc66b3038ccc7190b471bc": {
+  "0x1f35d238195eddb219b17a728cb951a49414def4": {
     "pair": "DRIFTUSDT",
     "source": "bitget"
   },
-  "0xb84bd20e59e3af8e8c04f08537041a2dbcb0893d": {
+  "0x4e6eb9e3eb5d5216595d6a0357543b41deec0724": {
     "pair": "DTECUSDT",
     "source": "bitget"
   },
-  "0x5e7dc5bd8e0528d982662e4a6bfb7574a184f993": {
+  "0x12c8693831eff8627cff08f6e6001105a14b9b9a": {
     "pair": "DUCKUSDT",
     "source": "bitget"
   },
-  "0x0f8b8b8ee7f367b9770c7a0aabe88c6a0280a794": {
+  "0xb0c24f530d82be72b0e0fe859af9ac1ea0b82474": {
     "pair": "DUSDT",
     "source": "bitget"
   },
-  "0x269a5da856b1dace8af2d92739dcb65b1bdcbb21": {
+  "0xcec485e2753fc34673745088f238f2404b2f1027": {
     "pair": "DUSKUSDT",
     "source": "bitget"
   },
-  "0x43fcff47fad28da1578e7ca582236006468b6715": {
+  "0x3d204047f4a8042cfd7fb7b33189282f0a2a647c": {
     "pair": "DYDXUSDT",
     "source": "bitget"
   },
-  "0x59b96c75e1ca29625441557383851484c97cbf30": {
+  "0x1c663d8e14cfcaec76841a2affde9328d33b2eea": {
     "pair": "DYMUSDT",
     "source": "bitget"
   },
-  "0x155c6aee237cba5101386622c46f3f876c4cc0e8": {
+  "0x7019ec4be1fd8e486e63c4f2a237571bccfed6d4": {
     "pair": "EDENUSDT",
     "source": "bitget"
   },
-  "0xd90f85ad1f1db049c4a9c0fa57a49f82f6379e14": {
+  "0x11ae162ee9d924408c6e9f9c8dd4e30fffdea96d": {
     "pair": "EGL1USDT",
     "source": "bitget"
   },
-  "0x1e5c23ad6ae03e04bc313292dd2678252a67e26d": {
+  "0x246ef61b91c1c7c6cd1a646d9bc0cde5fc374e2d": {
     "pair": "EGLDUSDT",
     "source": "bitget"
   },
-  "0x0f7522ff6274d206efc0a5b69a35dcb0f7856765": {
+  "0x2f4981f02c20ce21326393dcfd7e9b49e7028be2": {
     "pair": "EIGENUSDT",
     "source": "bitget"
   },
-  "0xa5eff67b9dbc79696599ac6f4c57e77f73a704d5": {
+  "0x4794b53ec1b5f45068823aa65bd218a1df6feda1": {
     "pair": "ELAUSDT",
     "source": "bitget"
   },
-  "0xc9c2d41d7360fa38fc8ea68ec2d240aafd33d47a": {
+  "0x23e22fd4ded58938a49c94599247086f47e48a57": {
     "pair": "ELIZAOSUSDT",
     "source": "bitget"
   },
-  "0xc0d1409946779fc01be212532d859eea1a7fe59b": {
+  "0x270205dd2ce7790057110ffdce14b65e741cf58d": {
     "pair": "ENAUSDT",
     "source": "bitget"
   },
-  "0xbf2501670455358b7f8e76d354313a94002018a5": {
+  "0xfeb6c3a6e09b935068d55b8607d54431e9d59f54": {
     "pair": "ENJUSDT",
     "source": "bitget"
   },
-  "0x0be98e3be90c7da964fb0f3cee7a06eb426bed1e": {
+  "0xdfe72df834810adce12f348398de944dc3abaa96": {
     "pair": "ENSOUSDT",
     "source": "bitget"
   },
-  "0x3fb3286b4685644a9971dc8602c72c479f4fa367": {
+  "0x2c8e71f7fd9be7561614a46adaf4943afc4492da": {
     "pair": "ENSUSDT",
     "source": "bitget"
   },
-  "0x6ba203c109c8720fe21185ad118652cc99e9f18d": {
+  "0xefe8ea56f009ef738af10cd6fa5c05cafaaa48d7": {
     "pair": "EPTUSDT",
     "source": "bitget"
   },
-  "0x6a6f3d051057cdc5321ca822b04972c7dd71da2a": {
+  "0xacac8c3ad3a81db76d57a47f0cf9bd497c5b01cc": {
     "pair": "ERAUSDT",
     "source": "bitget"
   },
-  "0xce6998ec3c9527256188626c2af0b1eb1563f113": {
+  "0xf08ebba03a46719c615ba36d0db337e7e59b4d6c": {
     "pair": "ESIMUSDT",
     "source": "bitget"
   },
-  "0x5f771a6f570fb9cabfd59a92facc0bf5985eb533": {
+  "0x0adef47ad06969f77c4213a9b982d7118163c5c6": {
     "pair": "ESPORTSUSDT",
     "source": "bitget"
   },
-  "0x69d7e21d2596ef32b936339654bb6acccdef02cb": {
+  "0xc4978cb69d83b543251b7dccafb657f6fe1cd0e0": {
     "pair": "ESUSDT",
     "source": "bitget"
   },
-  "0xff074d09711362bb13c952bb922d4f4af341b7fa": {
+  "0xfc09603f11daedaffd9d8872878c1a1865fe234f": {
     "pair": "ETCUSDT",
     "source": "bitget"
   },
-  "0x36d2b456316b6d5bf37da2c0c809160c450e0c36": {
+  "0x584430102eb21e6d8ea605f79b946316d9611caa": {
     "pair": "ETHFIUSDT",
     "source": "bitget"
   },
-  "0x82d049ea795403e5258805c3f4ed6321f90fbfcd": {
+  "0xa8f050021888a47e1bc51a9825211f70d61db49e": {
     "pair": "ETHUSDC",
     "source": "bitget"
   },
-  "0x344ebecca021feb0c87330d8830b56d428f20fea": {
+  "0xd452614c6a3fc3fc85f66d601a0005e2843394f7": {
     "pair": "ETHWUSDT",
     "source": "bitget"
   },
-  "0x916dd47a59f3a7facee012f16384d32a3d9a917a": {
+  "0xdb6833424329fca4b64235846ee67c815719aeb6": {
     "pair": "FARTCOINUSDT",
     "source": "bitget"
   },
-  "0x8d39c667118966d56b81d67bafc71e25ce418aa0": {
+  "0xbe9c6bf70ec7b73e593561bb9eca3b4fe1a14fa7": {
     "pair": "FETUSDC",
     "source": "bitget"
   },
-  "0x240aa06ebf679738692065c153afaf4dafa4e0bc": {
+  "0xe835f740d980cdabf379de608c2348d74cebe856": {
     "pair": "FFUSDT",
     "source": "bitget"
   },
-  "0x38c8ace0a09262a5c1db8d25ddcd1723eeb4e408": {
+  "0x392f03700f8b0ef29259463ca5ebd93f22332605": {
     "pair": "FHEUSDT",
     "source": "bitget"
   },
-  "0x5e837a0e961f67e69d5a604731d580bb20362e63": {
+  "0xa73c3035eb4e81421230acd8b0fae29cb5abde25": {
     "pair": "FIDAUSDT",
     "source": "bitget"
   },
-  "0x929db0d5ee2def65924c69bdeaca49cf29485baf": {
+  "0x70bda8aab2d1e9340b3494629b55211a8f9f0427": {
     "pair": "FILUSDC",
     "source": "bitget"
   },
-  "0x5d7043e2970e56ad79d331e80b7e99a568745c2b": {
+  "0xa53f121eaf82c91846d8c82ad58845992ac9c349": {
     "pair": "FLKUSDT",
     "source": "bitget"
   },
-  "0x797be793fbe17496f3f6f82690643d0265726ac8": {
+  "0x50ebf3eda8c1f1544a1e6addfdc6521489bc0a77": {
     "pair": "FLOCKUSDT",
     "source": "bitget"
   },
-  "0xff7dc35d680c7b77436a0ea0573e775873292d10": {
+  "0x9184ac14fe3ecfa1918a357c118d5dc61c0623ae": {
     "pair": "FLOKIUSDT",
     "source": "bitget"
   },
-  "0x935b458177c7eb94cc06989d7aaf2591d76fe750": {
+  "0x35085b1ce103795fd61c1861ec55fbd743b16526": {
     "pair": "FLOWUSDT",
     "source": "bitget"
   },
-  "0x9cdf89f8df2c480ecf48fc960d657ce883869d4c": {
+  "0x47123110edb537b6620ccbb78b5d3f60076796f5": {
     "pair": "FLUXUSDT",
     "source": "bitget"
   },
-  "0x8b4d5dc5f503111bd319720c74c4009673e86e3f": {
+  "0x4ae031f48fea5404e6d0f3fe197b5b28b3ddbdb7": {
     "pair": "FOGOUSDT",
     "source": "bitget"
   },
-  "0x351fdc4b1fb8f51c44d14833c82e18a033489164": {
+  "0xe202214db279a996d6472a2e518ed1692bc7f4f9": {
     "pair": "FORMUSDT",
     "source": "bitget"
   },
-  "0x4f8db4afab3c1008c0b48b15be2daac81abf03b8": {
+  "0xcbaaadfc02ae523021cc253216936fd00eabe209": {
     "pair": "FRAXUSDT",
     "source": "bitget"
   },
-  "0xf5d6afb6a0eec280aa2f598f78b039d9a2692c41": {
+  "0x55071467838033a6080a8c9dcf78317b38931291": {
     "pair": "FROGGIEUSDT",
     "source": "bitget"
   },
-  "0x88ee37331aad5519847af9a7d89e86e32f61f2bd": {
+  "0xe0401be6ccae56472b1faaa62ed31bc8b11b35da": {
     "pair": "FTTUSDT",
     "source": "bitget"
   },
-  "0x0f604b1bca145db02862e414e38a09073fa670f7": {
+  "0xb7cb2b9b9e2de040256cf9d9022570e0cd1c4593": {
     "pair": "FUELUSDT",
     "source": "bitget"
   },
-  "0xe35914483cb9134b4224170893f350bf1b9a2a7c": {
+  "0x0e7d9578926cfb13d428a774440a9ea3062712b9": {
     "pair": "FUNUSDT",
     "source": "bitget"
   },
-  "0xb19bfdc4d1684af1d1135934740a8f60edc10666": {
+  "0xd35b9a953ee18aba416f4e67fd64fee0ad74cdc8": {
     "pair": "FUSDT",
     "source": "bitget"
   },
-  "0x39da7d413afef40c538da1f4f209e4ef3a3ee1a1": {
+  "0x3e393fcc15ff6c1ef12267ead704eec3ee4fd534": {
     "pair": "GAIAUSDT",
     "source": "bitget"
   },
-  "0xdc8cab4cf9426887cf5d0b19988bc5ed6d4e03d8": {
+  "0x794f550c52d4a802637f1629a82d3ee1e4d0a5df": {
     "pair": "GAIBUSDT",
     "source": "bitget"
   },
-  "0xf08e64eabb4d6f97cf13c6eb792a0e6ed08be585": {
+  "0x8b072866f059191ba260eab57ebb15d8a9710348": {
     "pair": "GALAUSDT",
     "source": "bitget"
   },
-  "0xd5a19af735e9f41e72cbcd386d450111f4cbd868": {
+  "0x394c9665b99110a7bfaf1415930a143c664333b1": {
     "pair": "GAME2USDT",
     "source": "bitget"
   },
-  "0x587b5be4cb1ff997f2f834ff6a1ba1e1a35dfcc6": {
+  "0x72755d547f68a27ff0607df4a2600d7509dc9c22": {
     "pair": "GASUSDT",
     "source": "bitget"
   },
-  "0x067439413c9a264e720ebceb4cccd665797b6db6": {
+  "0x304173c0b688f8e40c4faada9bfd1a621ed31656": {
     "pair": "GHOUSDT",
     "source": "bitget"
   },
-  "0x42ceadb8c82c3a2d653f5f3ec152414b4e6d2c6b": {
+  "0x25054cb9db119c459a2d2c597b4c72ebc87149c2": {
     "pair": "GLMRUSDT",
     "source": "bitget"
   },
-  "0xe2b0274b98a843fcccea3de5eab3507b83f74203": {
+  "0xbab5a4085e6ed8fdb3ab048cc20980b78c5a14bc": {
     "pair": "GLMUSDT",
     "source": "bitget"
   },
-  "0xb2ee91c9ccb6ff6522cb2794218f0c9998cb08d3": {
+  "0x93c72966fc783dfa6baefe4abe5a30455916a61e": {
     "pair": "GMTUSDT",
     "source": "bitget"
   },
-  "0xbcb41808b60ecbad69597d86dc7be1434020b281": {
+  "0x4249274d4cce5d824f0d9cc66d3cc5f25e714292": {
     "pair": "GMXUSDT",
     "source": "bitget"
   },
-  "0x971597b25b1d0979f549be29b51723a19f84192d": {
+  "0x0dc1a1b61e23b2a598ad48ffe881662a10347fe3": {
     "pair": "GNOUSDT",
     "source": "bitget"
   },
-  "0x5042cc909683731f127d5cfe9d6d3b1ed90c0e61": {
+  "0x3a7c3694cd2813c69d75244d232fb9e8e8360b3f": {
     "pair": "GNSUSDT",
     "source": "bitget"
   },
-  "0x359e58d98a753096e824e6c033ec321df2d70a73": {
+  "0xa298a983791ba78d0b02cb7304b451c85d41cf68": {
     "pair": "GOATUSDT",
     "source": "bitget"
   },
-  "0xdfe82ef3c63064ab9eb44c5218b7064595f775eb": {
+  "0xffaca973daf4d3c7f6aa9c6f8c42ac20910492fa": {
     "pair": "GODSUSDT",
     "source": "bitget"
   },
-  "0xcbd5d85f904e1b145459b970c3941b8a1472c78a": {
+  "0x820a4c652be0bfd8e26f8cf22c6c84205965eb2e": {
     "pair": "GOMININGUSDT",
     "source": "bitget"
   },
-  "0xb709794d3b05c6fc4c49c37024f788964bb7fcf1": {
+  "0xc912344183c11e4a321bc7b2f984399a35bf8561": {
     "pair": "GPSUSDT",
     "source": "bitget"
   },
-  "0x4d818f5ff2be34dfe315be0f55f7678868611d09": {
+  "0xb193be05d66f1f44f54fba2776c1e83c44b2ed6f": {
     "pair": "GRASSUSDT",
     "source": "bitget"
   },
-  "0xd6e282368617d49fef405b596378e540c5c6b032": {
+  "0x7ba846d791ceb84a7c548e65fb185f4d76da5278": {
     "pair": "GRTUSDT",
     "source": "bitget"
   },
-  "0x944e813c7b4a7385887f09f8a1ed7679d4288bc1": {
+  "0xc41f82be506ad4bee85a6098eb8422d3f3722672": {
     "pair": "GUNUSDT",
     "source": "bitget"
   },
-  "0x75d0f6118709b534e4201fe4d1991d8447047e4c": {
+  "0x8e80bb874c1633c6adadabbab123fc8e4b9f51dd": {
     "pair": "GUSDT",
     "source": "bitget"
   },
-  "0xe01459128eb9d5add65a5b79672a7f36ddf171fd": {
+  "0x403668c1e355e66bfc3ce54d9e9b18ce982a64b0": {
     "pair": "GWEIUSDT",
     "source": "bitget"
   },
-  "0x3c025005eebad41c2de9833ad55633de4b7b8591": {
+  "0xa5cc5e00a4522163eb0bc8562791ecfcbf3e3184": {
     "pair": "HAEDALUSDT",
     "source": "bitget"
   },
-  "0x1d74ef26f61a83f2d87525540f87c0fe1b0361ad": {
+  "0xa50d0321f37b0439a03013f86efcf13a418a0eb8": {
     "pair": "HBARUSDT",
     "source": "bitget"
   },
-  "0x73646e1562e76beb2c501873805d2ecbf89c2a7e": {
+  "0x6ba86db924bd1a061e17395825e2c0081e5435f6": {
     "pair": "HEIUSDT",
     "source": "bitget"
   },
-  "0x8105af0c7ec351a388e00363f522d9d41dd7f2ab": {
+  "0xb776ecfb9546b6690f141519fdbe9fef8f250cad": {
     "pair": "HFTUSDT",
     "source": "bitget"
   },
-  "0x8cd1b97cbed67488acb0aeefd0bc59c0aa3214d1": {
+  "0xbd22e8ba06be717b3b56225c88fcfacb9f3dab31": {
     "pair": "HIGHUSDT",
     "source": "bitget"
   },
-  "0x9615a48623bc279e22810188cb197e15836eb474": {
+  "0x74955b884897d7b90ea5bcdb9a01217b2ad1240b": {
     "pair": "HIPPOUSDT",
     "source": "bitget"
   },
-  "0xfc0a96c3b671cad0e5b6f9a59c6282b0c15af69d": {
+  "0xe018e26c98486213c076e97d8475937725acc4dd": {
     "pair": "HIVEUSDT",
     "source": "bitget"
   },
-  "0x167ca105966c6b2cd7de2be7bba696e662899f51": {
+  "0x9a1479c80e2d0d3dc8b1b588345211ac04f02cce": {
     "pair": "HMSTRUSDT",
     "source": "bitget"
   },
-  "0xa43265fade0de5b8f5905dddc05f9076ca5f0b17": {
+  "0x13d4dbd62e5869319f836ccaa4c7a01c57b78df9": {
     "pair": "HNTUSDT",
     "source": "bitget"
   },
-  "0x99a729f5bd719af8bad08a19956b18dca8c4a07e": {
+  "0x1f85b71deccd69f96798ef4afad34ad86133e8a6": {
     "pair": "HOLDUSDT",
     "source": "bitget"
   },
-  "0x91550edc003aa2cc78bfddd76e7cd0e508396e74": {
+  "0x78cd94612e1c0efeccec7a32a00cb30874dc9960": {
     "pair": "HOLOUSDT",
     "source": "bitget"
   },
-  "0xc1934a066de468161174e1f63584cfb23db31ffb": {
+  "0xaf56e9a1420e98cb13f3e0d8d1c94c1eb87a8795": {
     "pair": "HOMEUSDT",
     "source": "bitget"
   },
-  "0xa435a6e22d6652c2aed200af178ad9aa9f2d63aa": {
+  "0xdd608d3c5366190b374503fc06b8f85d649f1e5d": {
     "pair": "HOOKUSDT",
     "source": "bitget"
   },
-  "0xc4b8fc9a32e4e250a2d5a7776e2ea8137d425aca": {
+  "0xc9a6f31817ca6106ecdeb6b008c9d34fb7f730a6": {
     "pair": "HOTUSDT",
     "source": "bitget"
   },
-  "0x0d88510a8043203dbef0c24cd4185fc7f293a773": {
+  "0x46ba4d202c4cc9a3a1a56170ef1f0b0a1f441249": {
     "pair": "HTXUSDT",
     "source": "bitget"
   },
-  "0x221d504574d04a4e28a5ba0ad79f9ceae991b34e": {
+  "0xaa669609276479cbb3b05b744823595828404082": {
     "pair": "HUMAUSDT",
     "source": "bitget"
   },
-  "0xea6fd27d8e0fd9934a844999bd33c20a4b78a43f": {
+  "0x2aa469cb0b83a188c21f92496ebe989fac10dc43": {
     "pair": "HUSDT",
     "source": "bitget"
   },
-  "0x9998cadad26ec2315539096e7c1f63877f6770c5": {
+  "0x0cde4b466ce6db1b2d4d26d9fe3529a51b538c4d": {
     "pair": "HYPERUSDT",
     "source": "bitget"
   },
-  "0x1bae7b995310b419e755a70e8437ce2ff5f5faf9": {
+  "0xdc72faf96ef57b8484e4e05a5a673913a3f207da": {
     "pair": "HYPEUSDT",
     "source": "bitget"
   },
-  "0x86d76d38258fd29c79c2d3d818d624e602c7bb29": {
+  "0x55d011402f277b32823f070740b79877dfabdc48": {
     "pair": "IAGUSDT",
     "source": "bitget"
   },
-  "0x9deef93c6d64f6bcdd79a698d2542a3f6b65fd32": {
+  "0xc99187edf7be39fc7acd31704d774f547f923c8f": {
     "pair": "ICNTUSDT",
     "source": "bitget"
   },
-  "0xf5edd96041d426161faa1f943cc0511ab9597575": {
+  "0x1e9fbb033cc180fb7ed92ef59bd0f082c61d1fa4": {
     "pair": "ICPUSDC",
     "source": "bitget"
   },
-  "0x084258af0b6691864277c2282281d1ed5c6f2e0a": {
+  "0x3e88af21169c88c0016dd5ff63a47ed150e9c764": {
     "pair": "ICXUSDT",
     "source": "bitget"
   },
-  "0x0c97b60205b7dbee17903cc46cc5238de2c6e6a7": {
+  "0x8e3004f3055594b1e56eda4fa9f48f196e973964": {
     "pair": "IDOLUSDT",
     "source": "bitget"
   },
-  "0xfcacd80bd55710814e4824bdc97bf1f93b1d1a52": {
+  "0x620a0cb733a42c36f9f25a3c8e487da7418e39da": {
     "pair": "IDUSDT",
     "source": "bitget"
   },
-  "0x449c608a9c176baca418ce5ebed9216a4509e101": {
+  "0x1a599b739eb02d65de8099c530da9998b9df4f36": {
     "pair": "IKAUSDT",
     "source": "bitget"
   },
-  "0xf75ca6446d8251c829e7bbc1186c89c9d2a150ac": {
+  "0x420cca2ed9d2d94c01391cfe349598c1a804a73b": {
     "pair": "ILVUSDT",
     "source": "bitget"
   },
-  "0xe505c19016931f659bd10e37ddfa6727842c3258": {
+  "0x5104db3923ffe9956d275f9a6ec9f4238348f666": {
     "pair": "IMUUSDT",
     "source": "bitget"
   },
-  "0x47f3fdc5260a582f0590a2cab3f158f34fcafc41": {
+  "0x7e627494c4bedf6f55e0d035b6cfebc55310e129": {
     "pair": "IMXUSDT",
     "source": "bitget"
   },
-  "0x0331da1072a8b06a4c1a4ba5175ee57fbc43a3fc": {
+  "0xcd13c823d481575caac9f98da04d62d73565a5c2": {
     "pair": "INITUSDT",
     "source": "bitget"
   },
-  "0x6b34ce277012bfe694172157ee6bd7f94e21e991": {
+  "0xf45daab109e94d44e40c503d5cec3a2f66f4074b": {
     "pair": "INJUSDC",
     "source": "bitget"
   },
-  "0x35afe98f2bf2320eaf208bc7750688e930872e15": {
+  "0x305d4cbed0a58864c7e083a76a00729e45e1fe78": {
     "pair": "INTERUSDT",
     "source": "bitget"
   },
-  "0x86d30775468edb86ee262825dae1ea397445724c": {
+  "0x1144c2afe5a201bbe685116f956cf2de9cc0a851": {
     "pair": "INUSDT",
     "source": "bitget"
   },
-  "0xc20a01e7f3815424296fd1586327b5ebd8f70208": {
+  "0xcd0754c80e4288a50415800b06f83221ff1d40dd": {
     "pair": "IOSTUSDT",
     "source": "bitget"
   },
-  "0x477393e2d2bba3cb5400689bcff927868a468616": {
+  "0x1bc1b418fdac55f2db543641261cb90bd687ddf4": {
     "pair": "IOTXUSDT",
     "source": "bitget"
   },
-  "0xe91ccbe59015ba2f554a2a174b6cc098f60aa51f": {
+  "0xc8de8b8a5e6809ea3a5be30d97ced561016da8bf": {
     "pair": "IOUSDT",
     "source": "bitget"
   },
-  "0x4af9d64cb29ee6dd5cad340a8d06e235fda21797": {
+  "0x9a60086b3d54cdce3b4a507af7b31bff5d0669de": {
     "pair": "IPUSDT",
     "source": "bitget"
   },
-  "0x98d68b1dbd2cd3c5805244c993007b46439727cb": {
+  "0x4c99d189bd0a21899d2791832a591376497fd88d": {
     "pair": "IQUSDT",
     "source": "bitget"
   },
-  "0xff1c54e1989d3baea54fac6d88b20895bbf23ed1": {
+  "0x35f0d6f5306f8380c371a2cfaa4080c39688da43": {
     "pair": "IRUSDT",
     "source": "bitget"
   },
-  "0x41806c14a287f8b095e0c62d19cd185e208914a0": {
+  "0xf228daf267451c55ece3c961d2215e5950857307": {
     "pair": "IRYSUSDT",
     "source": "bitget"
   },
-  "0xf83d173acb0e6b1972cdaad30a7e861cf630324b": {
+  "0x3265f99a4adee0d5ef1f756a704215ab3e846f14": {
     "pair": "JASMYUSDT",
     "source": "bitget"
   },
-  "0x4a4594924dd35fca70915522f3fc33793e168a48": {
+  "0x7806c42138cd6f330278a128f0ffb902b377a55e": {
     "pair": "JCTUSDT",
     "source": "bitget"
   },
-  "0x5fe44f68fdfc4065de55e3e18d302d02d8d94ed6": {
+  "0x4e9d963fc1a2beb573bde147c04f920295b5b779": {
     "pair": "JELLYJELLYUSDT",
     "source": "bitget"
   },
-  "0x598833677f03027afd38cd0dfe7aada0d5431f8e": {
+  "0x01603dde6e7e682557b0db85bf921088740a7d57": {
     "pair": "JOEUSDT",
     "source": "bitget"
   },
-  "0x7d94ebacb9a5df84f00b57295c50a03521b4c39d": {
+  "0x9bc9882b12f6cb59b041d797feeb7079346accd6": {
     "pair": "JSTUSDT",
     "source": "bitget"
   },
-  "0xf72d6dc2c357c438f0c6948d4fb8d8a1a588a950": {
+  "0xd0619f157cc8cd8fab79696343c67888850e8ff5": {
     "pair": "JTOUSDT",
     "source": "bitget"
   },
-  "0x873a76f58168b3d2315e994ed45fbb07faf15940": {
+  "0x9a46693a5d56f96e971dbd8990d89a614005e076": {
     "pair": "JUPUSDT",
     "source": "bitget"
   },
-  "0xee0391a95c1a1e89cfc2a606546bc126a6be6217": {
+  "0xa8ae26c7753c4f0fca0db82f663cd8f2f957c76c": {
     "pair": "JUSDT",
     "source": "bitget"
   },
-  "0x53bfbe72b74f62308da289749b6b09021847d4fb": {
+  "0xf337c3eff61bac642969db17e93bd6ea3c58348e": {
     "pair": "JUVUSDT",
     "source": "bitget"
   },
-  "0x17881812afe4d7f56027543cc815fc49e1fe1df3": {
+  "0x31e909389f1c5292c202822bf95a95d0971cee73": {
     "pair": "KAIAUSDT",
     "source": "bitget"
   },
-  "0x12e4359309f0cb01545145710a952d9784336726": {
+  "0x5ddf1bebc5f2b5d6739087969a397eddc443a884": {
     "pair": "KAITOUSDT",
     "source": "bitget"
   },
-  "0x90171eb11bbfe98a69312bc60b04a6d1cd098f23": {
+  "0x269163b802371da81df1ca41c1cfd6c50e9c420d": {
     "pair": "KASUSDT",
     "source": "bitget"
   },
-  "0x677c11be0f944bed5670de4e2196304629086868": {
+  "0x7df01c59b509df5a8f12e17eace66391e0cb275d": {
     "pair": "KAVAUSDT",
     "source": "bitget"
   },
-  "0x71484271e5fc60fedb9acb5d7832f4af9c10b77a": {
+  "0x416ed601e5a4ae8f19258baa681a960b8b3cc696": {
     "pair": "KERNELUSDT",
     "source": "bitget"
   },
-  "0x4235d18431bb4a6ea7d9a12127cd9f6413c40170": {
+  "0x8ef7081f1932fe04ab030a4f7ab829ce1bdf272f": {
     "pair": "KGENUSDT",
     "source": "bitget"
   },
-  "0xc3a52aa970378a25534713d998f91678e629c276": {
+  "0x1ac37ded03de231483644ce4fa007e3d3eae2b3f": {
     "pair": "KITEUSDT",
     "source": "bitget"
   },
-  "0x56d22314a38639135dd8361ab4d7068934faf862": {
+  "0xb781af35ca2b5eb4b4584cd7ff944830dec63ea0": {
     "pair": "KLVUSDT",
     "source": "bitget"
   },
-  "0xd8154ae1575d9a3c2b8c16d884899db2ec0339b8": {
+  "0xdad93ee0c43dd541bdc0678720951f2bb9b69962": {
     "pair": "KMNOUSDT",
     "source": "bitget"
   },
-  "0x389153be37efd92d0c0c3c05cded4cd7be11e91b": {
+  "0x0fd262c5173b3555bd8df9813865037cadd3aa5d": {
     "pair": "KNCUSDT",
     "source": "bitget"
   },
-  "0xde8eae5af55e735c86cc85ed6ee3d8e714a0c802": {
+  "0xebb311a02c96d6da84bd8e27dba4ad5a50a19282": {
     "pair": "KOMAUSDT",
     "source": "bitget"
   },
-  "0x7f1beba3c28a691f9a20fdacf16c63b403c3cfe0": {
+  "0xbbc7fb0a13ede191a2b4c601dd612932afc39df0": {
     "pair": "KSMUSDT",
     "source": "bitget"
   },
-  "0xd989ca3ab9328f5ccd42cc27507658af5bc300e3": {
+  "0x13d78461c3e1991778914ddc5a3b316c2cbdca5f": {
     "pair": "KUBUSDT",
     "source": "bitget"
   },
-  "0x1bc779e7c89467424af39a000213abd1cd2a698f": {
+  "0xe3a7148cfd3a0b7e505cd6e2c00d22f8018b9840": {
     "pair": "KUSDT",
     "source": "bitget"
   },
-  "0xa494e56572e5cbba9c1970f1a8301260e79b550f": {
+  "0x82bc68fc846ea619933df2de3279ea3f56c53d34": {
     "pair": "LABUSDT",
     "source": "bitget"
   },
-  "0x1ff77116af75c1b903513eb2574efcaad000b9c3": {
+  "0x338efdb2fed7dc570296ce803290b37fb53cc11b": {
     "pair": "LATUSDT",
     "source": "bitget"
   },
-  "0x6b67306d651f1978e0759ee22d37fd475f2b4182": {
+  "0xbe498e4de313e218087d2f600dddbed8bda9a3a7": {
     "pair": "LAUSDT",
     "source": "bitget"
   },
-  "0x610499239849b3e87d3caea54f45d5f8ccfebc49": {
+  "0x21ee9c25a8d757b945005efb0b76c8c660711023": {
     "pair": "LAYERUSDT",
     "source": "bitget"
   },
-  "0x755288cd55a64b54cd04a28183a4ba8a638f2f72": {
+  "0xb58220e90f7fc3e0f6a4662b76855dc72f75960f": {
     "pair": "LDOUSDT",
     "source": "bitget"
   },
-  "0x5efc44a55aef21a3f358fb8e03af9aa2ac55c4f8": {
+  "0xe55b255871800813c2c5c012e4f7e91147d54317": {
     "pair": "LIGHTUSDT",
     "source": "bitget"
   },
-  "0xb66b2075f722cc5da1ec7cf9c7f447ac48ee10e6": {
+  "0xdcb38976ea2cbcefba2c9b97b97750fd026c375d": {
     "pair": "LINEAUSDT",
     "source": "bitget"
   },
-  "0xd489b0c7b1cc6147605d583db87480742e3967d9": {
+  "0x1c0616fbdbbff0c6ba25973144b8218215fca376": {
     "pair": "LINKUSDC",
     "source": "bitget"
   },
-  "0x9f8172b2df4f8af43e79cc5a34aa7c06dea1052a": {
+  "0xa0c39819b0c6afc76b299fd1855dbddecce4990c": {
     "pair": "LISTAUSDT",
     "source": "bitget"
   },
-  "0xbbd6344153b045b136700c8237d8a5d9ffac4c93": {
+  "0xca5058e0d596fb69c47a8af75314e33865f542c8": {
     "pair": "LITUSDT",
     "source": "bitget"
   },
-  "0x661a2e562593417eb7c0ee56ac785c4acdba4cf6": {
+  "0x17a080fe1f408551fb1d49b0c370d47aa3e02d98": {
     "pair": "LMWRUSDT",
     "source": "bitget"
   },
-  "0xcb8ff671fd64f313904a7034a7110d8d41d2e684": {
+  "0xb0d69e1447fe667c373be2c88d14f604d6eba9a7": {
     "pair": "LNQUSDT",
     "source": "bitget"
   },
-  "0xf0f9f045f6c1f93539a251887bc7081886583fb8": {
+  "0x116fb90d020246397ad963ada6c7d3c9833c14f0": {
     "pair": "LPTUSDT",
     "source": "bitget"
   },
-  "0xac2516bfc2da09000fc931c541e2a5db08a987ea": {
+  "0x4f72ccee06818592ec21a602819d4d9d6e858994": {
     "pair": "LQTYUSDT",
     "source": "bitget"
   },
-  "0xefa6d7b12f384a846ae41591f7b7e2b0ce7056b2": {
+  "0x0fd2b09dbb68a0870279f3071b866e8603d7d646": {
     "pair": "LRCUSDT",
     "source": "bitget"
   },
-  "0x6c74e039f2ec8403b0ca29f64a3d7575895cd051": {
+  "0x9b02a804eb886bf0caf7512e4422459e0e717fc4": {
     "pair": "LSKUSDT",
     "source": "bitget"
   },
-  "0xd8d22bb58ef22628d866b1bfd17ba15d9bdb2293": {
+  "0x1467972568dae31d71b77fce63a8378688c61072": {
     "pair": "LTCUSDC",
     "source": "bitget"
   },
-  "0x5c7f40574d5afa76a40f2ab805417bae3df58ed5": {
+  "0xfaf21679043be198835e9b6c1f2c445685e7e28a": {
     "pair": "LUMIAUSDT",
     "source": "bitget"
   },
-  "0xd6a75093072b05f009025498aff14f399b0f78e1": {
+  "0xa5e049fdfe0d5cca7e21b9c614514911b080b920": {
     "pair": "LUNAUSDT",
     "source": "bitget"
   },
-  "0x2b5656a79ce1344edd7766afb31d50a942440ddd": {
+  "0xfd91845aef3d08a5b148b4592d560de4ae88ac62": {
     "pair": "LUNCUSDT",
     "source": "bitget"
   },
-  "0x4733c5db021d4b05c937631dacf3cdf3c39a286f": {
+  "0x579a3a75b315889928ee066ae220a1c84c61a37f": {
     "pair": "MAGMAUSDT",
     "source": "bitget"
   },
-  "0x2a9cdb1021eb75dbdcf9904681a3af35a50b2839": {
+  "0xe9effc38e8957dd5c5ad43d6555e307dbb3a7e0e": {
     "pair": "MAKUSDT",
     "source": "bitget"
   },
-  "0xc6d8f3c44ae90063538507bb7805714dad5cc5ca": {
+  "0x9bfc45a944df6d58298dc6e1cf115334a274daec": {
     "pair": "MANAUSDT",
     "source": "bitget"
   },
-  "0xdaa61f9ae5c1bc6dec529edae83d3eb206a5ba5f": {
+  "0x56de5e11e73ae01cdf55caf847458e533958a3e0": {
     "pair": "MANTAUSDT",
     "source": "bitget"
   },
-  "0x05ecc2a66d1c0d882a41081c0467481d98653c5b": {
+  "0xd40d1a54a3059a5e87260e8e6fded8aeb3a7a0e5": {
     "pair": "MANTRAUSDT",
     "source": "bitget"
   },
-  "0x99ca3638c9726362340ae89510079e0f89c84c77": {
+  "0xf3a05b34d6f0f2b7f28ed1a9334b581f83e1ce99": {
     "pair": "MAPOUSDT",
     "source": "bitget"
   },
-  "0x2bb4819c47f552e084de42885234d07441d71e59": {
+  "0xf8e8df22dc1e85df4555104fa7b51d3ac700d528": {
     "pair": "MASKUSDT",
     "source": "bitget"
   },
-  "0x67def55a8d9795d88f699ba78ac7bf7b6773352a": {
+  "0x85a34ad7b99e940d8c27cfb557fcc4aeddae1d01": {
     "pair": "MASUSDT",
     "source": "bitget"
   },
-  "0x6c0b0e48e7bbba8bc2d1c019a744855c6fe23006": {
+  "0xe82c6400387302ecfdae862b7ada9353912dd0d2": {
     "pair": "MAVUSDT",
     "source": "bitget"
   },
-  "0xeebe67095fd42d11e40afd3ada83f7260df0dc38": {
+  "0x23ce1f440185782366a15f407e61ca436890b315": {
     "pair": "MAXEXCHANGEUSDT",
     "source": "bitget"
   },
-  "0xc07ba6cf746f72da4256193197fd9be34def8130": {
+  "0xcfb1c1d6d9c160c2853e4db695f06da7e72bc109": {
     "pair": "MBLUSDT",
     "source": "bitget"
   },
-  "0x441af0f74e1fb2a7de9d361010af7a1138a58678": {
+  "0x80b416350509730ab2ba8f40c662eda9167952db": {
     "pair": "MBOXUSDT",
     "source": "bitget"
   },
-  "0xd704f1ba950725b4dc763270a017f969ac425780": {
+  "0xfd17aaa5f8779e4ba41a877eee26533baa5811a8": {
     "pair": "MEMEUSDT",
     "source": "bitget"
   },
-  "0xf665c98490a70e3ce5f4cc02b4b08d661628b53a": {
+  "0x9feddf7d7d798d5eed33a6bf4c41ec862804777a": {
     "pair": "MERLUSDT",
     "source": "bitget"
   },
-  "0x3877e3ef538ef85b5883958e7be740be45799882": {
+  "0xded80fc9b7e18a3f09c828733bc6340f49bda42e": {
     "pair": "METISUSDT",
     "source": "bitget"
   },
-  "0x1d8940ad0d0ffa77da77418df31af24f5b2743de": {
+  "0x63b94dfb1ed1f88ba972497c13c5c41b571b0efb": {
     "pair": "METUSDT",
     "source": "bitget"
   },
-  "0xf50c35ed2525597e5e9740161f0b942ec23be67d": {
+  "0xa19373eadfa97bb220bc99dba1ceb04c62cc7580": {
     "pair": "MEUSDT",
     "source": "bitget"
   },
-  "0x4325ef8f79afd7355635852e2791f47c5863c605": {
+  "0x7ee827fa93c0515d0dcc444ccdef8a13ecb49046": {
     "pair": "MEWUSDT",
     "source": "bitget"
   },
-  "0x6a6d3c2cbeaacdf244e13c4f4d9d903c4d377afb": {
+  "0x708a55e095237dec3e1d6dced1d0124c599bb7f2": {
     "pair": "MGOUSDT",
     "source": "bitget"
   },
-  "0xe8a14f8ba74ecdbc860d6cdc3c46c9e2afe41659": {
+  "0x0869749836445222e1f51ed5f2d36969b89f2f26": {
     "pair": "MINAUSDT",
     "source": "bitget"
   },
-  "0x94d4720597d33a4eadad50d7ca81310ece0655c1": {
+  "0xc0d76f262e4df7dd44148af6bd86fdf34084ed19": {
     "pair": "MIRAUSDT",
     "source": "bitget"
   },
-  "0x17d64107a379b4c3d9bd6d9fe7c18857fea0ef1b": {
+  "0x759b418dd63a04bd692552dcb8e5a51015539a36": {
     "pair": "MLUSDT",
     "source": "bitget"
   },
-  "0x2c3452cdd3bbb3159703f73472e5a8897ba8f070": {
+  "0xaef877fa5d1914d6c0e6e67910ed82978b7d3288": {
     "pair": "MMTUSDT",
     "source": "bitget"
   },
-  "0x570d909993b6929093b604abfea523f9d25a3c41": {
+  "0xcac11c2a192e72803caf3434953f14a8fff9bdad": {
     "pair": "MOCAUSDT",
     "source": "bitget"
   },
-  "0x0c123226248549c25190f2d0339abf5a8f5a185f": {
+  "0xd0bc99685d88a758f519fdab43f8f5415ecae42d": {
     "pair": "MOEWUSDT",
     "source": "bitget"
   },
-  "0xc4df5b29b4ddce9ec14fa544a3ef9953f03f8a7e": {
+  "0x49425d68e3e7f70403da9814728488b0ae8d4877": {
     "pair": "MOGUSDT",
     "source": "bitget"
   },
-  "0x840cf9dbfce3d58e0794440f38ecb67932bbc8c8": {
+  "0x54bae48ad317d7658f22769e29a12d4e422eb5f7": {
     "pair": "MONUSDT",
     "source": "bitget"
   },
-  "0x15c240610c3c67566be09116c85aeb6ffbd3c714": {
+  "0x87b973b28a82e5b5cba6213cf5dd101fb79af484": {
     "pair": "MOODENGUSDT",
     "source": "bitget"
   },
-  "0x320f9996b0b7b9c22856248c804bbac99a23bb24": {
+  "0x3ec504fde7dbb91cee9447da0aca46c6771382b0": {
     "pair": "MORPHOUSDT",
     "source": "bitget"
   },
-  "0x4651e53fa2eb8e9cbd8088d36f99f372af40fa3c": {
+  "0x222d96907436d059882ed4bd7036c1339846e739": {
     "pair": "MOVEUSDT",
     "source": "bitget"
   },
-  "0xd91d4317fd0932c6b93d4d558445fc8f087133a4": {
+  "0x2ca1640656b8a22a7c170fa5cc589c61551b85cd": {
     "pair": "MOVRUSDT",
     "source": "bitget"
   },
-  "0x0d4fe0b46b85dcf77a19c26f5e5f119cc450e3dc": {
+  "0x96a0d9e88cd0bbca08c172c6fe14d14abbb7ce80": {
     "pair": "MTLUSDT",
     "source": "bitget"
   },
-  "0x4ad0a2f1eb0e4c1a562beabd35bbb09d8be0ce1c": {
+  "0x866c4fb72bf56602f3e52e4802a30fd925789d2d": {
     "pair": "MUBARAKUSDT",
     "source": "bitget"
   },
-  "0x11ae646ecee0eaf9ca016dc1db81d7b47305424c": {
+  "0x4272c83678152daa21d2b1da77f7aaf038862e2a": {
     "pair": "MUSDT",
     "source": "bitget"
   },
-  "0xa0389db8189b658b3190a2ffaed7e0976b21ccc2": {
+  "0x7c8bab8e2341253f11711bd996541b2eb9a0a59d": {
     "pair": "MXUSDT",
     "source": "bitget"
   },
-  "0x24b9bc2e5e33c98f9535b31c27e7df64d4c7b399": {
+  "0xef3fc7ad66232afb8a0f5f6faebe83586b1ca9d6": {
     "pair": "MYXUSDT",
     "source": "bitget"
   },
-  "0x250308d5dcd8907aafaaa936f05ec89f5c92c364": {
+  "0x83d171709bbba9281afa536e621cef4bf7105a6c": {
     "pair": "NAORISUSDT",
     "source": "bitget"
   },
-  "0xeb67804d3ea23f2a66e35189cc2f5ab0d45afa2b": {
+  "0xf9ffddf545b5392c51105ab642676c29ad251e6e": {
     "pair": "NEARUSDC",
     "source": "bitget"
   },
-  "0x0bc120eebb7bd21208415ea3633e6f51f95b0b90": {
+  "0x7b94df8ecb579c3ededf56e5539d0bbbd02fc619": {
     "pair": "NEIROCTOUSDT",
     "source": "bitget"
   },
-  "0x7644606fadd5ad8b19db704ccda97ed723d19527": {
+  "0x17b83a911114387a2e10fa97f4e53046c76fd9ef": {
     "pair": "NEOUSDT",
     "source": "bitget"
   },
-  "0x3f5662a77faf4ba4135950e498b29015f7d37a6f": {
+  "0xd259ec904d3dfb9a731f98623f9e15fc5a3d694c": {
     "pair": "NEROUSDT",
     "source": "bitget"
   },
-  "0x298f18af00b2fe7ccf3cedd0194bbc67f61bdbc4": {
+  "0xfa8b660e5cab74b883b8f86c6adf1d51fd84763e": {
     "pair": "NESSUSDT",
     "source": "bitget"
   },
-  "0x5b698664305a5dbfdac4969599d58ed75e832e13": {
+  "0x9c4dd45b595745867d416af916f8d27c931e9657": {
     "pair": "NEWTUSDT",
     "source": "bitget"
   },
-  "0xc06cb4685e375a28caa1c8e581aae61024d02b87": {
+  "0x01304d471d39ddf12f5a94a9a8c1435e7a21d471": {
     "pair": "NEXOUSDT",
     "source": "bitget"
   },
-  "0xcf5fa41bd50487b613f059196a7d5fe6aa928af0": {
+  "0xb4891045ea85fef90d2e1e6715e078f10f375d4c": {
     "pair": "NFPUSDT",
     "source": "bitget"
   },
-  "0x13cef8ff1a6c7260f56ed232a8affb5231029f2b": {
+  "0xa6f87a7927b2239c2c9bf5c46b9695d5b5f1044e": {
     "pair": "NFTUSDT",
     "source": "bitget"
   },
-  "0x6406aad6634bf5ac9e88813e1665be41afdeae77": {
+  "0xa064a34d640efd162505fcb60fc551e9e3fd165e": {
     "pair": "NILUSDT",
     "source": "bitget"
   },
-  "0xdeb5ed02e18eaada3b45c3e37af4bf2eb535bac0": {
+  "0xca75576c7851af04145d98f20daea45004487ecf": {
     "pair": "NMRUSDT",
     "source": "bitget"
   },
-  "0xe5771f15a68c2ddb687876ed39e5c54e456e2f32": {
+  "0x0cfaa7b49bf1a23f9fa8881d2f7b408c9bb1a94f": {
     "pair": "NODEUSDT",
     "source": "bitget"
   },
-  "0xded3df83c53f9802a88c8d5e45f3e63b01f65e0d": {
+  "0x9189700527dbd828691d4e160faec7870c45b891": {
     "pair": "NOMUSDT",
     "source": "bitget"
   },
-  "0x0a49e7f95b42abda56b2864458207af8a70bd606": {
+  "0xf91dd07254b211b1d1f6148f8d8fa23fa32cb122": {
     "pair": "NOTUSDT",
     "source": "bitget"
   },
-  "0x7ac3558f7ff2d37f6ecc342ca6fb52f64b292e57": {
+  "0xfc65183b88d89b1db3be4c0fb6f72968fd2522b4": {
     "pair": "NPCUSDT",
     "source": "bitget"
   },
-  "0x31b086c262f7a99a774e4123c9463063118d4eb9": {
+  "0x573b43e77b49f30d98160d24939277ec4c20091e": {
     "pair": "NSUSDT",
     "source": "bitget"
   },
-  "0x679a72af5baa84eff51676269a4f3a7621cbee6d": {
+  "0x8e92736ec21e54fd3921545f8f24bea3b02bf58b": {
     "pair": "NTRNUSDT",
     "source": "bitget"
   },
-  "0x9651239ada85e12820f98f1e770d4e6a01af38a9": {
+  "0x1913628d41b2207834008ea588f8ff472d9e5321": {
     "pair": "NXPCUSDT",
     "source": "bitget"
   },
-  "0x2b3e75111d6e3ff521bccf6d7558ce8738d135b3": {
+  "0x42c6a2dcf4854900416935f07832bc91172022f0": {
     "pair": "NYMUSDT",
     "source": "bitget"
   },
-  "0xc7dbf1c2d698d44a2a47e165e51b69053e820224": {
+  "0xe6593114a8eb82056f9f621ae41edd737f0efb42": {
     "pair": "OGNUSDT",
     "source": "bitget"
   },
-  "0x5ac456991b04f5d0c7a8b0a06d670eef6c2ca444": {
+  "0xb621282d17a770416278db31da3437cb52d2aca2": {
     "pair": "OGUSDT",
     "source": "bitget"
   },
-  "0x9a3aa41997bd4aab831646119bbbe7849e7c44e8": {
+  "0x899aca88afb8a5ebde1d0366223cd7751895b548": {
     "pair": "ONDOUSDC",
     "source": "bitget"
   },
-  "0xcdcf857b93fe26c1552fd1f22580f4ae200c9648": {
+  "0x9098fc2c829f502957e2df64c1095e59443617d0": {
     "pair": "ONEUSDT",
     "source": "bitget"
   },
-  "0x3b5537fcc815b10875eaee4121a16f3bcde59d1d": {
+  "0xcc727bc874facc7cd9eaed1965234a8b6717813c": {
     "pair": "ONTUSDT",
     "source": "bitget"
   },
-  "0x0db3851ef1d1e64d1186de990485479d15dd4aa1": {
+  "0x89f4104abf10f6be59cf8fec1a2e48dba8a354b1": {
     "pair": "OPENUSDT",
     "source": "bitget"
   },
-  "0x1f2f58f1fde4c50bb7eb88abddaf77f4ed7fbdb3": {
+  "0xbdfaa5c10969d3d0b284232eaf11803b6e3e84a9": {
     "pair": "OPNUSDT",
     "source": "bitget"
   },
-  "0x5a0b3866f502f39ccae19a668977fbcb4022d348": {
+  "0xafd7ab119bee113ed52acb7c12db3b6f2271036d": {
     "pair": "OPUSDC",
     "source": "bitget"
   },
-  "0xd9e8c914e3ba9299fc6d09af80670e58a72bd8b9": {
+  "0x113bf0f956961294f2a7783d7c2edc9de0028212": {
     "pair": "ORBSUSDT",
     "source": "bitget"
   },
-  "0xfc0a7709a3972a269931377ca84ba49f7f520e23": {
+  "0x2215eb76609152d8e010b5d1f109337d25e8ab41": {
     "pair": "ORCAUSDT",
     "source": "bitget"
   },
-  "0x3381dd1921c1de01935fea7888e43e88f184fb5c": {
+  "0xc65cc055274f46074c66eb519fac1a4bd22dcf5e": {
     "pair": "ORDERUSDT",
     "source": "bitget"
   },
-  "0x9534c0f407cf254a00aa8becc11ee0d7e75873c2": {
+  "0x46bae1e4693059c18ac5f2e29141e98bd1114998": {
     "pair": "ORDIUSDT",
     "source": "bitget"
   },
-  "0x7022ecd39a30763cdd08981c69b488f4c6b2dd3b": {
+  "0x2fbb41d9a4cd4840a207eb11080db62e3671546b": {
     "pair": "OSMOUSDT",
     "source": "bitget"
   },
-  "0x2cc549b8513649ad2b688bffa021668c8c3663bf": {
+  "0x88a367bd035664a89e9ac05c5dec4352c9038b40": {
     "pair": "OXTUSDT",
     "source": "bitget"
   },
-  "0xce3aa7b450664a1235d04183087cc1e209b80904": {
+  "0x1e444539b39c699cb3316f3ceb41ec02d028f209": {
     "pair": "PARTIUSDT",
     "source": "bitget"
   },
-  "0x66538f49143cd8a94b07de07b0c6015c6af14943": {
+  "0x14109c81ce575f16b588dc61190638dd8f3eb6d4": {
     "pair": "PAXGUSDT",
     "source": "bitget"
   },
-  "0xc47f828d1174cf7a57d716dda98a200266b5566d": {
+  "0xf15e1f14f70e2a49394b20cb36c452c69927658c": {
     "pair": "PCIUSDT",
     "source": "bitget"
   },
-  "0xd3b23cbadc5d9b7626c50547710988b38754b08b": {
+  "0x2395bb4a0501340d4f8bcea365a9e45bfbc4da87": {
     "pair": "PEAQUSDT",
     "source": "bitget"
   },
-  "0x044e8d98fc8976e59b50624179fa8d163bcd5532": {
+  "0xae35174fd50b3bb0ee249b51a46a7883875fb5f3": {
     "pair": "PENDLEUSDT",
     "source": "bitget"
   },
-  "0x32ff20801637e1a49b4d49b2769a899130e155f8": {
+  "0x5b616904f5fd768632a2b59eaa37ddf2a8667357": {
     "pair": "PENGUINUSDT",
     "source": "bitget"
   },
-  "0xff5fe146122c19baa51054db8290fb367c133466": {
+  "0x37b2277c256ce1f5afc3cdb13520cd35623de5a0": {
     "pair": "PENGUUSDT",
     "source": "bitget"
   },
-  "0x13e4a75b52b2cbf984f9663f8019e2854457288f": {
+  "0xa407327b3dc9f86ba682acd9b5b83792a70f0a32": {
     "pair": "PEOPLEUSDT",
     "source": "bitget"
   },
-  "0xd59a3b34b54d31c6fb51c7f1f2ba08831f8eb938": {
+  "0x20003125dce912efeec987e0c00150a5371c6c56": {
     "pair": "PEPEUSDC",
     "source": "bitget"
   },
-  "0x44698d423bdef52c919d921cf218d44021ba2a33": {
+  "0xffef6b44bd462acbd101aec2c6dd23e301bef161": {
     "pair": "PHAUSDT",
     "source": "bitget"
   },
-  "0x5bd340f3a21acfd280b46606061fe04db0c4bf07": {
+  "0xf51321d0c48d9aacbf6b856b8370445a5849ad9d": {
     "pair": "PHBUSDT",
     "source": "bitget"
   },
-  "0xeaeeb90fbda93ded0bff0abccc40f0df81c8f23d": {
+  "0x4111c5511fea0a5b5b3e3a338a74c780620d1246": {
     "pair": "PIUSDT",
     "source": "bitget"
   },
-  "0x1621eb40d1c6318412a424555f176ecbc7c6f36e": {
+  "0xfcfe32da00d1dc3ec7912af7f2524a90b7eb839d": {
     "pair": "PIXELUSDT",
     "source": "bitget"
   },
-  "0xf5a8894ac6dd253278ca5a0c18d7b15cd322ca76": {
+  "0xcee57a337966f12b79094d53486a935452039cb1": {
     "pair": "PLAIUSDT",
     "source": "bitget"
   },
-  "0x7df8c5c4f12332b9b3880d2e97c856413e79f4a9": {
+  "0xd2033baeb1b224e801657f6f2418b321e306255e": {
     "pair": "PLANCKUSDT",
     "source": "bitget"
   },
-  "0xfeaf44e1946cb7f15b4ae96721d15df951249233": {
+  "0x6faa1cc74c7b00c3626c8f1b958cd6353d91dcea": {
     "pair": "PLUMEUSDT",
     "source": "bitget"
   },
-  "0xa9d53b3950743446e8dc91e705b88a4b263b955d": {
+  "0x2337e747785b283d8ea10d39c188183967a6df4e": {
     "pair": "PNUTUSDT",
     "source": "bitget"
   },
-  "0x777feafcfae0a45f188616bc0ceabb81cc239ea6": {
+  "0xfbb42346166e55d01c191e2283e6510a8293a64b": {
     "pair": "POLUSDC",
     "source": "bitget"
   },
-  "0x96800d9aca130871f7609857ea7045e86de6856e": {
+  "0x7c75a6ce2077adc060492b9dcfb937c19ea6252e": {
     "pair": "POLYXUSDT",
     "source": "bitget"
   },
-  "0x5939633a65b4fb8efbe2de2e7f634c21acbd8444": {
+  "0xea30889157fb264ef2c45a8dddbd7e9f734abddc": {
     "pair": "PORTALUSDT",
     "source": "bitget"
   },
-  "0x8080a39992220efee6f8e0b4c82526f8e38c4cb7": {
+  "0x5669a5695a982939b046be430d3dca2778966db3": {
     "pair": "PORTOUSDT",
     "source": "bitget"
   },
-  "0xb3068b73249bead157e3679e244399d7c6d3e4cf": {
+  "0x7abaf42333a9085b11a0cc49590fa5c3ab465e6a": {
     "pair": "POWERUSDT",
     "source": "bitget"
   },
-  "0xc9e1dcf6d676978059f8e36ca431c3645dff8cee": {
+  "0x13c79db1f69791af8d15f79ede6e28b8f483d5b4": {
     "pair": "POWRUSDT",
     "source": "bitget"
   },
-  "0x92705d0f3dc1c5bcf4283ab82398d57a89016ef5": {
+  "0x8f291456d3d34049e198dbb5dc5777119186a222": {
     "pair": "PRAIUSDT",
     "source": "bitget"
   },
-  "0xe5cdaa4108b2a71287fc95eedff5f3faa63909a2": {
+  "0xadccf553960fe13adb538be5192f6cfefa7b5510": {
     "pair": "PRCLUSDT",
     "source": "bitget"
   },
-  "0xb3b45d62d5b6c48487e9f661cffad44f9410c893": {
+  "0x694c7caefac2cf1acc424f48161c0af4f00c00dc": {
     "pair": "PRIMEUSDT",
     "source": "bitget"
   },
-  "0x61adff0418dc350677cfbfa4cda07adcc75deec2": {
+  "0x606c77dc13f6364955637a1c09f9c7a1046c99de": {
     "pair": "PROMPTUSDT",
     "source": "bitget"
   },
-  "0xfc5cb0c058a0743406bfe53ae0f306e7dff9edb0": {
+  "0x87ead4b01910fac803cc6b06d525a8779609a9cc": {
     "pair": "PROMUSDT",
     "source": "bitget"
   },
-  "0xbf11db432cccdeba6fbf9267e361a411cdb08d7b": {
+  "0xa3b94648c688e41101d684a4b8413d25aba00d00": {
     "pair": "PROPSUSDT",
     "source": "bitget"
   },
-  "0x90dbd400fac8d3134f466bd95b26cceddb1c14e0": {
+  "0x6846192acc009ac0a3b29042b2ee6cef448b65d9": {
     "pair": "PROVEUSDT",
     "source": "bitget"
   },
-  "0xb07d1eba0bb9b67cb9a06a83669f068117e5de4d": {
+  "0x5410f2c86ade9898638b5c00287a7684a4d6f14f": {
     "pair": "PSGUSDT",
     "source": "bitget"
   },
-  "0x5fb7fee1c3ef06be3ab22efde2668c58439a749f": {
+  "0x63b6c831869f8bdc8997da30118b173fcd018702": {
     "pair": "PUBLICUSDT",
     "source": "bitget"
   },
-  "0x7cd82ad4620d13d8f8a0b2535d462d873482a888": {
+  "0x414e9e21d93c43c8d29c03032cdeeba05edadac8": {
     "pair": "PUFFERUSDT",
     "source": "bitget"
   },
-  "0xcac2406c550408ebc905df0757261574c95aa1ad": {
+  "0x118078b4cd6709a998bb0bbb75156d33e078460b": {
     "pair": "PUMPBTCUSDT",
     "source": "bitget"
   },
-  "0x67ac07a8bb7717b1731d8e3ef9e9b7407afd1868": {
+  "0xe390a4a66380dd393a3d9b32c94e3536a32ab257": {
     "pair": "PUMPUSDT",
     "source": "bitget"
   },
-  "0x69365bbbadba4ff9b53df60f93fdb787028f23f8": {
+  "0x97fb61c661db528bfaada427077f3ab1b6538071": {
     "pair": "PUNDIXUSDT",
     "source": "bitget"
   },
-  "0x0dca957603469fe4994a73e96d580ac3705f35e2": {
+  "0xe04cdb2db91324beb1cf9de9913df46c4fbd3858": {
     "pair": "PUSDT",
     "source": "bitget"
   },
-  "0xdd7db3f871ea63ca6668e3df4111a5d4bdff8031": {
+  "0x1c94bcd5b9096ac80cf864bea501c4bdc4adf272": {
     "pair": "PYRUSDT",
     "source": "bitget"
   },
-  "0xf820e0ba558e197c7f55916709d8fe249c16a8a4": {
+  "0x47c53bd82da1fcda600c0454a006b5624c608682": {
     "pair": "PYTHUSDT",
     "source": "bitget"
   },
-  "0x353d9b5b06f2c0bb9f584c6b8321bc70df74bc64": {
+  "0x7ef97d5eab3a635e5277b4ef7bcdd4aaa5fe10b6": {
     "pair": "PYUSDUSDT",
     "source": "bitget"
   },
-  "0x2daee9ceb4f7194d8d8993d54421b2d8464862ca": {
+  "0x10d6507e6de79a2911e7d0db4da7d0559fb58d66": {
     "pair": "QKCUSDT",
     "source": "bitget"
   },
-  "0xd63bbdd938abbd0e41194a40738ffd04886f741c": {
+  "0x99eed20bc7dc68a3823ee7a13a0b00063160c5f8": {
     "pair": "QNTUSDT",
     "source": "bitget"
   },
-  "0xda5d0dda9fbfc26994a81779c5cd0a5c96040540": {
+  "0xa83993db5b8d764c970dd9e0758687d56e10e1a1": {
     "pair": "QTUMUSDT",
     "source": "bitget"
   },
-  "0x762e011b9efa5281627fe99d05ebafec8b9aea9f": {
+  "0x98df71e082684012a1b6c2fee73170265560b1cf": {
     "pair": "QUBICUSDT",
     "source": "bitget"
   },
-  "0xaf7718ee3c5fdd131b7ca48aacad27cd5c483331": {
+  "0x98bcf84b46a0ce08030fdd59f6410609387da0d6": {
     "pair": "QUSDT",
     "source": "bitget"
   },
-  "0xfc7740a6481d589fb174a5415da09881e64481ff": {
+  "0xded2a1110491226e9843c07928e763c67ed0ee5f": {
     "pair": "RAREUSDT",
     "source": "bitget"
   },
-  "0x51b00687f17bd620ab4f1f076f00b668e6e7ad5e": {
+  "0xe0996380ca0bb9f2d4c9dcba7d9c796fa6c88054": {
     "pair": "RATSUSDT",
     "source": "bitget"
   },
-  "0x7ce676b5ef5dd68fa8f7ee52ce6a5e8c3528ed1e": {
+  "0x7cefba6b85495d983481da7ece896b73e31a13e4": {
     "pair": "RAVEUSDT",
     "source": "bitget"
   },
-  "0xa7427958e459aa993f9e71fdf751b3beb9f0ba85": {
+  "0xe9179cf0f8ce2fe65e1a486a7a2de39be1ac3cec": {
     "pair": "RAYUSDT",
     "source": "bitget"
   },
-  "0xe37368104767eca2805239629a4ee14b5734af1c": {
+  "0x301f4c62afab85d77df222b0c047379a90e8ddec": {
     "pair": "RDACUSDT",
     "source": "bitget"
   },
-  "0x6746cc5aa981250141fdcb79ef4fcbe8f5fee5fc": {
+  "0xfc219c6af85624b1f790ca77a545bdfc9adb0f0f": {
     "pair": "RDNTUSDT",
     "source": "bitget"
   },
-  "0x8a9e3a64e5530a7315eb6e54a4741a1d3f68b9f3": {
+  "0xc95504a3bafe5014e6022e849e7902f0e2769572": {
     "pair": "RECALLUSDT",
     "source": "bitget"
   },
-  "0x4043b4c86d664b914e41ce8b00d9707ae8c45c05": {
+  "0x1f772413395f1e9d2eebbef820c71e3d4e4751e4": {
     "pair": "REDUSDT",
     "source": "bitget"
   },
-  "0x8cc147bf3de6a82fac1fc4a13301d982853c88a5": {
+  "0x24a90e499f9828c3f10119def9bf9760f5ee3723": {
     "pair": "RENDERUSDC",
     "source": "bitget"
   },
-  "0x824c0f0f87d1b0a159cd9b1a195b0d1273d7aa3c": {
+  "0x6059a72d8846bce086d3b7181528563273d1e1d7": {
     "pair": "RESOLVUSDT",
     "source": "bitget"
   },
-  "0x7fb4bfdeade1c8d776a8fde765ca33d39a9de28c": {
+  "0x8b5e923099e83e036ffa463f2dcc59be8f7837c4": {
     "pair": "REZUSDT",
     "source": "bitget"
   },
-  "0xed8557463890977885ee6ef9843713354c64a216": {
+  "0x17dddc721ff647954c44814693d15b3b46d2b80e": {
     "pair": "RHEAUSDT",
     "source": "bitget"
   },
-  "0xf731e348b4825923f04f48418b3e6d139f7dcae4": {
+  "0x42589b1254a61a707ff3ac4a18b1bbcc603c6be3": {
     "pair": "RIFUSDT",
     "source": "bitget"
   },
-  "0x1f64b41c31dde0524fe35961c93d25f22acdca4e": {
+  "0xb56e46bd44da0ddcd5c401a915a173d5e507fcf3": {
     "pair": "RIVERUSDT",
     "source": "bitget"
   },
-  "0xf7a02428a2ab5bdcec94f98dd356b2fe3dfe0f36": {
+  "0xe14bfe6e97de8d38ceec33a6a9dfca21c978e9be": {
     "pair": "RLCUSDT",
     "source": "bitget"
   },
-  "0xab797cbf386e0d7b257308c230d5c0da4a69c886": {
+  "0x87e6be297479a8e5fb9ad926a82487879bad29cb": {
     "pair": "RLSUSDT",
     "source": "bitget"
   },
-  "0x951f6d2df9ea6a152b2e735775ed101be2704bc1": {
+  "0xb958c2b6a01b9dbc3c6f92bf89669bb1fa0ff4b2": {
     "pair": "RLUSDUSDC",
     "source": "bitget"
   },
-  "0xa1154a535210ae45d38842193771f63c7e3e189c": {
+  "0xceb4b26a09df5bb2906f68ee23039d19ea4454ff": {
     "pair": "ROAMUSDT",
     "source": "bitget"
   },
-  "0x791c987204c69f795bd204a5d0fcbae526682997": {
+  "0xe8be0986a3158795c0b08a32dcc3d08b0d7c957b": {
     "pair": "ROBOUSDT",
     "source": "bitget"
   },
-  "0x15bad04640a2d808e59c3bee696a583e65b28111": {
+  "0x7cb8b6c97ba88faeab947fd0979addbd562e7aa0": {
     "pair": "ROLLUSDT",
     "source": "bitget"
   },
-  "0xec28865991162532e6ea0659ae18d27ed48af460": {
+  "0x9e3ad6d8ea5b026354c344fecf03c6a99f19872d": {
     "pair": "RONUSDT",
     "source": "bitget"
   },
-  "0xc8e1ef0cbdffad4256e56b37c4f8986d940c41ee": {
+  "0x20bc48e1c6db5eb39eae296833d19731ca27daca": {
     "pair": "ROSEUSDT",
     "source": "bitget"
   },
-  "0xf6508e98a4d6539f23a68000fe95ec1e5d84d597": {
+  "0xa5cd826ad4124efa90e3e325ac52e18a24145f80": {
     "pair": "RPLUSDT",
     "source": "bitget"
   },
-  "0x54fe51028e3ed22c64c248ce420d02ed5dae4f52": {
+  "0xf0ea78cd6169256de545cb27244c10c31a0f2b08": {
     "pair": "RSRUSDT",
     "source": "bitget"
   },
-  "0x841cb45ca7ebfc1a19576d3a24922b4f0259af0c": {
+  "0x62c176ccb1c697ed298e5491d7db66700fb11852": {
     "pair": "RTXUSDT",
     "source": "bitget"
   },
-  "0x6ca610a4012a9e0301923e1375ad378921550332": {
+  "0x912ca5a6d717e944abf685c2078c3e06a9e3ed21": {
     "pair": "RUNEUSDT",
     "source": "bitget"
   },
-  "0xc40ab1eac9f7823ee7c3e4e1efc6bdbe039fbb53": {
+  "0xd5040e8f062527007955a25094bf8a3150d32976": {
     "pair": "RVNUSDT",
     "source": "bitget"
   },
-  "0xb21a3cd990afdff2cf8eb44c42e630b4fe591f09": {
+  "0xe27016a906641ea6d73b31ab772854b5b0574348": {
     "pair": "RVVUSDT",
     "source": "bitget"
   },
-  "0x3eff26115360880b2c461867ed031c946a9d6290": {
+  "0xd8ed7c88550d76c483700ea04f9dad7f11504471": {
     "pair": "RWAUSDT",
     "source": "bitget"
   },
-  "0x10f1698de0cc0f98292306170fb8aa551866679b": {
+  "0x43f9fa1c6e5a2b3948b8d7be498a0d1125820121": {
     "pair": "SAFEUSDT",
     "source": "bitget"
   },
-  "0x7d40fabd4881935d25057b9b82836a3dc94ae673": {
+  "0x0d014bbddf9034e0298315e3ec52ede0887eaa0f": {
     "pair": "SAGAUSDT",
     "source": "bitget"
   },
-  "0x289b47d5cc02c602ee127e53b20ead64a9c10763": {
+  "0x8b1f66d9890e7ab136c40f7e3ad58634dd37dce8": {
     "pair": "SAHARAUSDT",
     "source": "bitget"
   },
-  "0x08e335d32312fd0d0d59c409cbbb79847fcb8f0a": {
+  "0xa16ca5b4fc083ea2e79459b8794f9c02a9d727e6": {
     "pair": "SANDUSDT",
     "source": "bitget"
   },
-  "0x3e09b9c447a1d81b09b35e715fe8737aa9716f90": {
+  "0xcc69c31f34068a5f9408e5d0e22a95a3eaf72d7a": {
     "pair": "SANTOSUSDT",
     "source": "bitget"
   },
-  "0xd4762f50a03f32579b455cdc21044e92a77fb364": {
+  "0x04bbeef9fccc4df27b2808573c944b2344cf27c1": {
     "pair": "SAPIENUSDT",
     "source": "bitget"
   },
-  "0x045627bedc7b05b2eed17a7bd64e2046800e970a": {
+  "0xd98b525e9799fc3eb250c6011848098b9e394e5c": {
     "pair": "SATSUSDT",
     "source": "bitget"
   },
-  "0xa93225c3af8275c0a5c61e5da085d285be5a8ba1": {
+  "0xade00418a5375c9fbc15d8ba76bcb914766a6186": {
     "pair": "SCAUSDT",
     "source": "bitget"
   },
-  "0x8526360407fa9f4adeb2f35220ff4f5e30bb3a9d": {
+  "0xf9372ad66a87879a0eb13626278fe8d3d0131087": {
     "pair": "SDEXUSDT",
     "source": "bitget"
   },
-  "0xba2f04344ddf552fde19805c923ab8c467c20e14": {
+  "0x193f6295b71cbefc00282d1c7534340434e68c1b": {
     "pair": "SDUSDT",
     "source": "bitget"
   },
-  "0x6a68852baa51f2bc46b51c911a72aa6f6bf3073b": {
+  "0x903d52650328759a443777488b88b8fe504add02": {
     "pair": "SEIUSDT",
     "source": "bitget"
   },
-  "0x41e6fb18760c663c58d017ba36a00d1b4722883a": {
+  "0x6ea3bd4b6f69e8bba66077b19cf280e543ba31f0": {
     "pair": "SENTUSDT",
     "source": "bitget"
   },
-  "0xb53e0632cc76e1a32d5eaa4dba1aee1c2f0a787e": {
+  "0x85e5ca43a8883631b6ad9ab051f76dc587008d57": {
     "pair": "SFPUSDT",
     "source": "bitget"
   },
-  "0x6ebb4a21c236324796eba3b96bcc22bf0b7acdcf": {
+  "0x50876051cf69830ee8ad933295c89e53091a555b": {
     "pair": "SHELLUSDT",
     "source": "bitget"
   },
-  "0x8d3b1a2fb0adac05d301ab9be45ade9f6d29fcc3": {
+  "0xd7c35b87bca4a17d2f6913e8961157e30b47bf33": {
     "pair": "SHIBUSDT",
     "source": "bitget"
   },
-  "0x458ab0f9d2c1347b8e464d53a13d824bec54c815": {
+  "0x7cba32c88919b44cd25c31457129657b201f8f81": {
     "pair": "SIGNUSDT",
     "source": "bitget"
   },
-  "0x61dc34b0f721ca2329d00fc5f6f25ffdaa1d9e60": {
+  "0xe2281b9097ec671605ab5001a04351eabf526971": {
     "pair": "SKLUSDT",
     "source": "bitget"
   },
-  "0x149869e68e0897e44ee52cce659dcdb279073f10": {
+  "0xa904ceddb1bcf4bf5042eaa397d0183657d399ec": {
     "pair": "SKRUSDT",
     "source": "bitget"
   },
-  "0xb86f653250876acbcaa06288360ca9d07306b334": {
+  "0x0845ac3572f641db6050e0137e539babbc3bb271": {
     "pair": "SKYUSDT",
     "source": "bitget"
   },
-  "0xadcc753ce82148af7961ad5c7edca0b0dd229b49": {
+  "0x3482198963c02957865810a85d14129013251894": {
     "pair": "SLPUSDT",
     "source": "bitget"
   },
-  "0xfef65e70ae5c28a1a9dd74df6401f33d7c9372e2": {
+  "0x082bed4f902510cf7d9c05b4386a0f9fdf6a6092": {
     "pair": "SNEKUSDT",
     "source": "bitget"
   },
-  "0xbb22b1d9d829ce692d45049b298aea0fb2976e53": {
+  "0x8fb887eed3bc5513faf83f27e61926b5dd9c4305": {
     "pair": "SNTUSDT",
     "source": "bitget"
   },
-  "0x227b5f269c98024746614418b1abd808d5758558": {
+  "0xc03d45cfb93e82a10d23933dd0e028654815d408": {
     "pair": "SNXUSDT",
     "source": "bitget"
   },
-  "0xcc8810ab9a8c162a255232376ddf1dfa724c08be": {
+  "0xe409da400dd89ad861f7865133dd6e0dc66caef6": {
     "pair": "SOLOUSDT",
     "source": "bitget"
   },
-  "0xd04f38398a779d7fd2a2468f3949086fea4d766b": {
+  "0xdaf1a0c5dc2119260060edbd31875926a84e288e": {
     "pair": "SOLUSDC",
     "source": "bitget"
   },
-  "0x50862d940223e90f2f341b9b73ecee9888ad8016": {
+  "0x710f7f297264fedc0b27857d274d9a97642848c0": {
     "pair": "SOLVUSDT",
     "source": "bitget"
   },
-  "0x767fa10d06cd82ef1902c7322b7ab2b69ed18049": {
+  "0x1935f66e4403f982198b8cc372cd94a948a497e0": {
     "pair": "SOMIUSDT",
     "source": "bitget"
   },
-  "0x5ff34d91908f7850186962428da4d4d147b1c329": {
+  "0xddb19dbe2246900a6e87c1e5b0f0bfa7653f7ca4": {
     "pair": "SONICUSDT",
     "source": "bitget"
   },
-  "0x62dee491ddd2ce70419c0d46e5f63957be48dd19": {
+  "0xd74b9518f00cffc9b26577ec58271295c4181277": {
     "pair": "SOONUSDT",
     "source": "bitget"
   },
-  "0x6af4d383097bb39e0f47be32b3b21ff5ca504ab9": {
+  "0x12d3f15fb1847eeee5eae05caf59abef48ac95f7": {
     "pair": "SOPHUSDT",
     "source": "bitget"
   },
-  "0x9d3268d5392e4561c6633d2ba4e53cef7580448f": {
+  "0x1cc0fdb20b7de400129e572890df09703a1a6b13": {
     "pair": "SPACEUSDT",
     "source": "bitget"
   },
-  "0x27ad7bfd2279d96da7c08d02fa92e0bce00a3ac6": {
+  "0xfbfd936b6713b1dba7693bbbaae8e56c7aa53bb1": {
     "pair": "SPELLUSDT",
     "source": "bitget"
   },
-  "0x4eee4bbad24da078782bb156c02e723b31716c30": {
+  "0x63bd3066065e2ec5d6e7a2201c0133e86d55d2e4": {
     "pair": "SPKUSDT",
     "source": "bitget"
   },
-  "0x516662e53677902c3863f39b246a51299a751d81": {
+  "0xc40dde3a55779a6d04396bf280acb462525be706": {
     "pair": "SSVUSDT",
     "source": "bitget"
   },
-  "0xe3304084d9ed290cb8e494f8e59bca4d2740ba36": {
+  "0xb1cfa9b2826489b941b03b4975a3777e54744585": {
     "pair": "STABLEUSDT",
     "source": "bitget"
   },
-  "0xcd51e04890f7748340526cad2f852778d48988d2": {
+  "0xe6676823b12cc64c29b3280b6b25379524c69bda": {
     "pair": "STETHUSDT",
     "source": "bitget"
   },
-  "0xfe9148223ffe30f5ff996ff72b144b51d5e4b9c6": {
+  "0xf94833000e21e241ba54f57f1cb9570976032794": {
     "pair": "STGUSDT",
     "source": "bitget"
   },
-  "0xd4575554b85992b9bbdb42bb4ab740b076f59f42": {
+  "0x202ad72a8a9b0ae591fdb684b4b32e4261784ae7": {
     "pair": "STORJUSDT",
     "source": "bitget"
   },
-  "0xec20a2bfd319b316f5102feebbc8e10a8aee47d5": {
+  "0x44f417cfaf36f3b1f1599158fa9848fb1ca7468b": {
     "pair": "STOUSDT",
     "source": "bitget"
   },
-  "0x90152109ec91b992d7effffd558ced20a8f19d6a": {
+  "0xcbfc2eb0938318cd3c191732c94fde073d6f4a58": {
     "pair": "STRAXUSDT",
     "source": "bitget"
   },
-  "0x434c837dff97d33c9f616e4a7bf21d680a34cf07": {
+  "0x83d875a609038b437a3374a7d0c831bf6ea8c02a": {
     "pair": "STRKUSDT",
     "source": "bitget"
   },
-  "0xbda5da8a178650baa279829edd8dae99da3953f5": {
+  "0xace78fd45d12972b114aae7ddf65c19ff83c184a": {
     "pair": "STXUSDC",
     "source": "bitget"
   },
-  "0xd903f07e7195656ce732cccf9be1426226e336d9": {
+  "0xec5d1c988b14beecabb932fd9fafe74900e172db": {
     "pair": "SUIUSDC",
     "source": "bitget"
   },
-  "0xf9f1b964896f86cb3e84648686fadd8e98cc6a03": {
+  "0x912776cb5441c37278d2063081404cbbd7dd1326": {
     "pair": "SUNUSDT",
     "source": "bitget"
   },
-  "0x928612719658ee2f48e180e0a71bbd473ea98647": {
+  "0xa47334d24a05bc88c40500eca052cc966845028c": {
     "pair": "SUPERUSDT",
     "source": "bitget"
   },
-  "0xdbb18e7a8042b87b31cc7d2c6ce1d2d5c41b2eba": {
+  "0x04dbec06ca4e7f1870e61e40c55e9a9aa3f5cefc": {
     "pair": "SUSDT",
     "source": "bitget"
   },
-  "0x020ce13312882b8bab222c2f75c96393cd89e7fa": {
+  "0xeab3625220fe91b117cd4d4e6c5dad3105649c9c": {
     "pair": "SUSHIUSDT",
     "source": "bitget"
   },
-  "0x0301f651b0931ce12a70934b7b85ec443e29d97e": {
+  "0xdd975418de97311a5b73d27fa15eb67d27dfefb5": {
     "pair": "SWARMSUSDT",
     "source": "bitget"
   },
-  "0x68d1e036979746d9c4de078dd43553e835c63a17": {
+  "0x3cf3a259d35344e7a9f24d5c6185a229e3df96ca": {
     "pair": "SWCHUSDT",
     "source": "bitget"
   },
-  "0x5cfca4125da211e3acddb34d48a7654ca8d602f3": {
+  "0x41e14c1ae07129365888a055734eb80783a8c809": {
     "pair": "SWEATUSDT",
     "source": "bitget"
   },
-  "0x2db919d4abf7b894654aaee5761fc51bbc22d5e8": {
+  "0x8e68f53876b3d6e3a38f3c32cd3b11252fa28964": {
     "pair": "SWELLUSDT",
     "source": "bitget"
   },
-  "0x5bc13451c4c24cf69e51bf06f99132867c5d4a66": {
+  "0x4efc376a9833cef3ab945591dd1368e1535fb317": {
     "pair": "SXPUSDT",
     "source": "bitget"
   },
-  "0xa9facfd073957126eb102396023786436eb69ee7": {
+  "0x733b7dce37d4b44e37ae31cfe82a0bee7cdc1a17": {
     "pair": "SXTUSDT",
     "source": "bitget"
   },
-  "0x0a0cd543a164a7da24445c63eee44110cf1fa886": {
+  "0xb4a045822ad20ceede006f6e15bc9077b7a95c35": {
     "pair": "SYNUSDT",
     "source": "bitget"
   },
-  "0xacc0ac9f66ef4b4908b4c96edb5800e440b03912": {
+  "0x198fba1188592195813717ec96a17c3d2c1a7e75": {
     "pair": "SYRUPUSDT",
     "source": "bitget"
   },
-  "0x5a24746361f0e7bc59d99b163c8ec85b8b83fbce": {
+  "0xea93e959b92bbbffc2c4d4f93d633ef65345ffd6": {
     "pair": "SYSUSDT",
     "source": "bitget"
   },
-  "0xb6eabdf090995b475905809567ca16fca59d628a": {
+  "0xcbbed18ba5938e240ca17d3b31548b32ff1da89c": {
     "pair": "TACUSDT",
     "source": "bitget"
   },
-  "0x00c2465de894a0879b72f55de55bc3785054e3dd": {
+  "0xf0e533cdbf354cdb9b3d53bc4f24c710af36479f": {
     "pair": "TAGUSDT",
     "source": "bitget"
   },
-  "0xed086d77378c532a1cc393146c6470bedfadcdf6": {
+  "0xc510cc9c6bf7abb8b5d310d1bdb588ccc64f4d89": {
     "pair": "TAIKOUSDT",
     "source": "bitget"
   },
-  "0x9448301c796f6f914d9829935adb0166f30565ee": {
+  "0x0b2860c0558265c70faf83e5d392767b261dce8a": {
     "pair": "TAOUSDC",
     "source": "bitget"
   },
-  "0x8f29bcf3eb56ff75d57fd9f63acffc82a1f370e0": {
+  "0x2541347fe25d16c9d6b407c805482b956c5483ab": {
     "pair": "TCOMUSDT",
     "source": "bitget"
   },
-  "0xaaaaa7946ff7711f409abf4cc02a3db112e3578c": {
+  "0x3eda51bba8ac9320472ae3fa63f16790bd7d25ab": {
     "pair": "THEUSDT",
     "source": "bitget"
   },
-  "0xff83278164c544037cb46f28c62b2bf13225ebda": {
+  "0x49f19e70aacdc55b0d682780fd3c6e8a41a66e5c": {
     "pair": "THQUSDT",
     "source": "bitget"
   },
-  "0x00eabc20d4d87d97e30ad409e7d7020f7aa844f1": {
+  "0x9c519ac892ae91f8a7bb4811f3dd7f71e56ada6a": {
     "pair": "TIAUSDT",
     "source": "bitget"
   },
-  "0x130bd75de04073b5979be5fe1980db3063544d8c": {
+  "0x0fced817683775cf57a3bfb10c763a36c87b9aa2": {
     "pair": "TLMUSDT",
     "source": "bitget"
   },
-  "0x74239d6ec809ec6d68e6e901896c281403aab279": {
+  "0xea927d6fa376f026c40e3cb151942fee1c746d47": {
     "pair": "TLOSUSDT",
     "source": "bitget"
   },
-  "0x9c6d3a25ef77cbf275b029bbe8fb4941c22662c0": {
+  "0x60701d2d798cd7a4d6bf3836e522bbc3a52987f7": {
     "pair": "TNSRUSDT",
     "source": "bitget"
   },
-  "0x833d58b7ab9a871cc90ce5b92d76d6da537d29a7": {
+  "0xa22ae97b7474059b16d595b4b982f6feb2f91a5a": {
     "pair": "TONUSDC",
     "source": "bitget"
   },
-  "0x410fad0084f13582fecb91998f0e4744923fee6d": {
+  "0x15598378d6f8bd617ccda03b63ec5288db8cba92": {
     "pair": "TOSHIUSDT",
     "source": "bitget"
   },
-  "0x061d4af130af7f5cbbdcac4950ccb398e1ad774b": {
+  "0x559d375cfbeb0850723a25ff7e61cd041681df29": {
     "pair": "TOWNSUSDT",
     "source": "bitget"
   },
-  "0x9bdd3bec516072f611a6824126d9c387c7a5c2f7": {
+  "0x64e421fc1cf2273f90df774e6ae46854de64ad97": {
     "pair": "TOWNUSDT",
     "source": "bitget"
   },
-  "0x449a547a7d8800a570d056351546d36c92ad5a99": {
+  "0x8b3f3fe70a60e262a27d9b56764a3d7a80242ebd": {
     "pair": "TRADOORUSDT",
     "source": "bitget"
   },
-  "0x109ac045cf55ad282111a47689c6fa255dd71018": {
+  "0x4a5be3a36990c86f1baa350adf542a1f7c38dadf": {
     "pair": "TRBUSDT",
     "source": "bitget"
   },
-  "0xe44c3d5bf468b91457116c8b29f0844a68c1dc9f": {
+  "0x939e89bcb7e27cde237f05331b39d391caf94e9c": {
     "pair": "TREEUSDT",
     "source": "bitget"
   },
-  "0x553372a5ca1cddf753ef00086ac97a99c5f94a09": {
+  "0x64d6a3980e51eb95be8f82218ffec0f34ecebba0": {
     "pair": "TRIAUSDT",
     "source": "bitget"
   },
-  "0x613888c4eb0c7e5de394cb4ef7a4678d93e70d0d": {
+  "0xdeaf6aea1edc64a7a853e423494d38676ee5849b": {
     "pair": "TRUMPUSDC",
     "source": "bitget"
   },
-  "0x67e0aebbdb675d56e38a95201b7baef42667268a": {
+  "0x947215817df329d4d2dbd597db6b7170bad3ff79": {
     "pair": "TRUSTUSDT",
     "source": "bitget"
   },
-  "0x3f01a5efb39e7a5e5ed3e3092f6a9dc10be84c83": {
+  "0xd92cb194e1b2d879daa224921386aef9c0afcc62": {
     "pair": "TRUUSDT",
     "source": "bitget"
   },
-  "0x4b968d4e05c6c0a9f28dc7b2b9358918c8cb902b": {
+  "0xfe9ee476f5a6d018bb90aaa799419893beb39402": {
     "pair": "TRXUSDC",
     "source": "bitget"
   },
-  "0x9d12224b3ea69696f153c8c05e6bd5facbe75d83": {
+  "0x76ff58a4ed72d39772da6a345e2c52d6e493cca7": {
     "pair": "TURBOUSDT",
     "source": "bitget"
   },
-  "0x708e1ee5edd506e7ed4d4bb18350e65c9f9d2066": {
+  "0xe47d2b242a6216cafb7112facfd28074fc16d640": {
     "pair": "TUSDT",
     "source": "bitget"
   },
-  "0x3ab02d96f0d519224c24297e9611cf08dff9428a": {
+  "0x5de8c585dd46cd07791f19d841fec79618ea2020": {
     "pair": "TUSDUSDT",
     "source": "bitget"
   },
-  "0x71a6a22b5aeadcd1e76c185b5a29649e1a3384d1": {
+  "0x7dc1376e5576be855e96560afd2f1fa33bc8253d": {
     "pair": "TUTUSDT",
     "source": "bitget"
   },
-  "0x3e3595edbad60348c03511a01de82df74abc78ee": {
+  "0x4b935ab56e9dcbe5603ad6627e70cfd7c2079a2f": {
     "pair": "TWTUSDT",
     "source": "bitget"
   },
-  "0x380156d2742fd0cea16ff265d641522de6578f89": {
+  "0x103bc8655c23738f99a8eabd57aefb30e11f4d17": {
     "pair": "U2UUSDT",
     "source": "bitget"
   },
-  "0xe2326e1bd70aec797c946e9edd9e90169f49666c": {
+  "0xdba0d27012819a8bd62a472bfe12039e032f1efa": {
     "pair": "UAIUSDT",
     "source": "bitget"
   },
-  "0x00bb0b64d71c52d21dd02c67711fd7d2a506ec5a": {
+  "0xe6133bde4f12960a364be1503946e993fede7964": {
     "pair": "UMAUSDT",
     "source": "bitget"
   },
-  "0x0ffdebe1ed50891d55a1445f54b9e3ee7414263c": {
+  "0xd8f2fb986b0de84962cafc54bfe5c878cbb11971": {
     "pair": "UNIUSDC",
     "source": "bitget"
   },
-  "0xae713b7a83d221d751b4597358d504b110bf870a": {
+  "0x675af024e173e26c832e6ab594db8dfad6c79834": {
     "pair": "UPCUSDT",
     "source": "bitget"
   },
-  "0x56a9a30bf5630692896369ae3df376e5268f5a29": {
+  "0x5657afd81b3d023503f324e5a2c02ad2af2acc7a": {
     "pair": "USATUSDT",
     "source": "bitget"
   },
-  "0x18ff9432bad036ef4cafa6c9ad6f518b7ca24932": {
+  "0xc745565f232d9a4094dc516da9444d866c62ea9a": {
     "pair": "USD1USDC",
     "source": "bitget"
   },
-  "0x1859665be81b5cfda00d06901e9016d4c27a527e": {
+  "0x747ce31f3a8b9f66155b35fe75cdf001dcb736ae": {
     "pair": "USDCUSDT",
     "source": "bitget"
   },
-  "0x7ba54605d578450d9b9934fbff60f4d55cc7f682": {
+  "0x1ba6bab20395031044e81d10d77ad1225c10bc40": {
     "pair": "USDEUSDC",
     "source": "bitget"
   },
-  "0x972daf78d72f1c7a368e89021b71fa1e2caeea67": {
+  "0x36b7ada1e704b438e1bdf013fdb313d520816daf": {
     "pair": "USDGOUSDC",
     "source": "bitget"
   },
-  "0x4b6c2d881a24a63a6a92a17aecb5daae20acb7eb": {
+  "0x290d7e22bd1d8963a8f0d8106dfa12d75c2ec36b": {
     "pair": "USDSUSDT",
     "source": "bitget"
   },
-  "0x25c6eeb40261d67a27b5c2afe0dded2954746bc7": {
+  "0x5ccfa9ea6bed00dee44beb14aeaa09db839611a8": {
     "pair": "USTCUSDT",
     "source": "bitget"
   },
-  "0x1515ff5d4c50d773c2c65acf4df7ab239333e34a": {
+  "0x5d27403b26365546dd790df22935d07bb79adaf4": {
     "pair": "USUALUSDT",
     "source": "bitget"
   },
-  "0xa824465362063656e654b9efb6458280ed4de7c2": {
+  "0xea2c1d787b9c0b269433e1d5d9e50d82d44f8657": {
     "pair": "USUSDT",
     "source": "bitget"
   },
-  "0xe38023d69529fdfe7a0279b3f6ec9fd59b359558": {
+  "0xbe7e4c61b217c7d072dbb9b9b4fe538780707251": {
     "pair": "UXLINKUSDT",
     "source": "bitget"
   },
-  "0x3a9542fe34fccfb5d07da1559b1c702545e5747a": {
+  "0xcb1fc67d6c90d5a7da465d9be19d9594f1b0606c": {
     "pair": "VANAUSDT",
     "source": "bitget"
   },
-  "0xaf7cc2fdbcac39ddc7e12e30218fdc4be6abc5f7": {
+  "0x3fc4f2cf813894e498308623c17eb895bcb338c3": {
     "pair": "VANRYUSDT",
     "source": "bitget"
   },
-  "0x24cd4cb36539cf6ee3a3df67707b1d47c7bc3a26": {
+  "0xde3e60b8500d46f4c3e92c5a47e0deda9a9aec43": {
     "pair": "VELODROMEUSDT",
     "source": "bitget"
   },
-  "0x359f4df8ddb5cba84734efdeb1cc8d658737a537": {
+  "0x937051a1f118ec80717c81d05622cdd84d76a2d0": {
     "pair": "VELOUSDT",
     "source": "bitget"
   },
-  "0x817c1662833eb0e3f0cf00e7aa005e7d69ab431e": {
+  "0x67df9688a45cf06cebad8fbc961e10d9abb35b6c": {
     "pair": "VELVETUSDT",
     "source": "bitget"
   },
-  "0xb6f7af1e9c95c67e90a3e510bf4d7979a5ae4ae4": {
+  "0x5e2ad821a32a4df83179a5e4d9c660530e8c0bc9": {
     "pair": "VERTUSDT",
     "source": "bitget"
   },
-  "0x61d05c14193ecd32cc421673538f337e4f7e763c": {
+  "0x9c076975126c899142ff0417941d25652b2f216a": {
     "pair": "VETUSDT",
     "source": "bitget"
   },
-  "0xb2bd86dd0b180f9716181e59d33496c04aec138d": {
+  "0x0838c7624099b982f3bea627a949777387424fd2": {
     "pair": "VFYUSDT",
     "source": "bitget"
   },
-  "0x962482f88829851e5087766a26cd704b341bd472": {
+  "0xf86acef0dc2f2b929ea8973aa573a0e40e8340df": {
     "pair": "VICUSDT",
     "source": "bitget"
   },
-  "0x2c187043d2f602b73cd1f0c78651e4f77a3bcedc": {
+  "0xf001a9bc2af8a8a8c84d65597a7e7f13ecbce799": {
     "pair": "VINEUSDT",
     "source": "bitget"
   },
-  "0xde6be3370c2643238e7a62789633fab51415bf67": {
+  "0x6b6b31819006862c2daa7be0c9eb401880a84584": {
     "pair": "VIRTUALUSDT",
     "source": "bitget"
   },
-  "0x5771416c77cb769cf65a55b48f910192f7c1e982": {
+  "0xc664ac5520b6dcd4ccd25e64f58b6b0c5061874f": {
     "pair": "VOOIUSDT",
     "source": "bitget"
   },
-  "0x44aef9909dab1eb3e54b45214033c6439bd191a5": {
+  "0x3d4e3afa43d73f6b3932274163767385a263ba0b": {
     "pair": "VSNUSDT",
     "source": "bitget"
   },
-  "0x484843ebfdc7d31b684ec42f9e3943fe685e05fb": {
+  "0x28cc9a0d1458bdfb5c86392e1f2c10254d3bd77f": {
     "pair": "VTHOUSDT",
     "source": "bitget"
   },
-  "0x838f4c4dcacfacfefeea61cbfc7e474af047bc4a": {
+  "0xe2ee45bcf3700efceb66151e9f20d19963709072": {
     "pair": "WAIUSDT",
     "source": "bitget"
   },
-  "0x6da4c4bcff939ce7f2fc5d1b04e4730f62e0f20d": {
+  "0x4e8b46234aa2494c26eaac992c82066403a979eb": {
     "pair": "WALUSDT",
     "source": "bitget"
   },
-  "0xf68f33f91916670071ba3727805b97c24b32e107": {
+  "0x5bf2cc836ea0ff475f391abd8ee73fc1adc95756": {
     "pair": "WARDUSDT",
     "source": "bitget"
   },
-  "0x375fca32d01ecf6a01fee88cc41fe6c69369c7ec": {
+  "0xd58e9a4a725bd736cc81ee4abc0a41720db74e4a": {
     "pair": "WAVESUSDT",
     "source": "bitget"
   },
-  "0x66005d248fbb872564b44f59f47f9461b9fb109e": {
+  "0xed3dddf879e51bf25469e13b79a38d56b5bcb7d6": {
     "pair": "WAXPUSDT",
     "source": "bitget"
   },
-  "0xa27a307d3de1d47c5cb5320a053d9dc314168fa8": {
+  "0x6995a8459b798c6de3c5728f2fd6d353914f161e": {
     "pair": "WBTCUSDT",
     "source": "bitget"
   },
-  "0x76aa290fb123fe136228065f024730fcbdd4da52": {
+  "0xd96f0f67e654daf502b3a9099c3ddb6effd9d7a0": {
     "pair": "WCTUSDT",
     "source": "bitget"
   },
-  "0xfbf6557a2a4a81ec7e243ceac810b517bf9e52cc": {
+  "0x54e044da1a1095fa2f27ac724ec7990058e9ba12": {
     "pair": "WEETHUSDT",
     "source": "bitget"
   },
-  "0x5d828136a0cee786d736389d8cb8ad68abfdb80b": {
+  "0xc3a2d24422af1fc5ca644d1d85fa0c6b1568a4a8": {
     "pair": "WEMIXUSDT",
     "source": "bitget"
   },
-  "0xe485f59ac59af5d4c927cea230252c175686af01": {
+  "0x84b9d12e6ade86c30262d97ca0f49ee5a85623af": {
     "pair": "WIFUSDT",
     "source": "bitget"
   },
-  "0xc40c1f447cdb8f2454a51bf599e05bc94581ef28": {
+  "0x85b704a1e797fe4bd63c69a7a0072c66bab3ba09": {
     "pair": "WINUSDT",
     "source": "bitget"
   },
-  "0x58f23d16f85d27f8b039b0ad04f93708f0124788": {
+  "0xf591ecc0044a292c4e00e4224e111ad8b8524e7c": {
     "pair": "WLDUSDC",
     "source": "bitget"
   },
-  "0xe25dfcce508ae7ab2a0aeed6832aca99c19e2433": {
+  "0x2e177a802354d6d7194e5a5f5b4504699be2324d": {
     "pair": "WLFIUSDT",
     "source": "bitget"
   },
-  "0xf0a6cce643123457ab4972f35997e80450d53bdd": {
+  "0x49abbb559dcb6da5b817f4e1bf48f696f139287e": {
     "pair": "WOOUSDT",
     "source": "bitget"
   },
-  "0x886061da22d9c9701347de08119e75b5b990f10e": {
+  "0xa0ff720e8ebb06a95f2e94d5db06ffe0aaeccf47": {
     "pair": "WUSDT",
     "source": "bitget"
   },
-  "0xf9282cc7d340ee3270539fe14af2ded5c66f7636": {
+  "0xd993ad1882fc6d2b40e1bb71f0d724b2bc0e61a7": {
     "pair": "WUSDUSDT",
     "source": "bitget"
   },
-  "0x06db4dbc93afd2c304a07bb79c0843a42d7769f3": {
+  "0xd822b3a77e63dbd2fd44e91ac7381f32d2141bbe": {
     "pair": "XAIUSDT",
     "source": "bitget"
   },
-  "0x00395d96cdf3333dc80569cb8443ce6bd00cbd42": {
+  "0x23dc7443c966df955e1d731036fc64c452ef70c9": {
     "pair": "XAUTUSDT",
     "source": "bitget"
   },
-  "0xb525716b6b711617bebe78b22b52c909f23e16c6": {
+  "0x76d35553ebe330e970be0a2c8dedf91b39f3b056": {
     "pair": "XCXUSDT",
     "source": "bitget"
   },
-  "0xdad68832facdffe5d6408ea11e77029d536bc606": {
+  "0x026919da23ec8ebb06a7776ad87c3f1506e1b67f": {
     "pair": "XDCUSDT",
     "source": "bitget"
   },
-  "0xe807a652866dc59c34724af3e5c6d45f91ecf3ea": {
+  "0xe7763cc9b506a5a3d0891dba9b543c2bb4d4bd94": {
     "pair": "XIONUSDT",
     "source": "bitget"
   },
-  "0x3e67cfcf95f8c7578aa9ca5fb95b8647f55c7c3c": {
+  "0x0bca1e5aaf3e12efe489db1cfd789527bad2c1f8": {
     "pair": "XLMUSDC",
     "source": "bitget"
   },
-  "0x98e12297aceecd5af3a7d1098cfefb8789211bec": {
+  "0x1434501b2f272d961ed8f18616870d353052666d": {
     "pair": "XPLUSDT",
     "source": "bitget"
   },
-  "0xa6762b8fb35d142463a7c3d94ac23ebe8970aea9": {
+  "0x97875dfa56042125f597a3f1f6cd4da52eb85042": {
     "pair": "XRPUSDC",
     "source": "bitget"
   },
-  "0x6bee8df1169ecf1f1da795ef5c35a07692910cef": {
+  "0xa2c72c19f397e50e283e311076069bcb49a3599d": {
     "pair": "XTERUSDT",
     "source": "bitget"
   },
-  "0xaa1510dca2d2245c08168bb7370df3ae4d4be6a3": {
+  "0x767f3adfffc6ef3600dc672e52434f23ece12c02": {
     "pair": "XTZUSDT",
     "source": "bitget"
   },
-  "0x8ac36f42afe044de027663ecfb28032e86c02f04": {
+  "0x8a44ce1e705a13a3d9007780bea9e4f33c9b79fd": {
     "pair": "YBUSDT",
     "source": "bitget"
   },
-  "0x8f0ea80eec472dc36e9c70c0b69587931896a7fa": {
+  "0x19bd2f36fb7ddbecf24c3da1127efe996722092b": {
     "pair": "YFIUSDT",
     "source": "bitget"
   },
-  "0x4d25643111946410e366714e30bc06a03a0821a1": {
+  "0x10b47220ac962650a43f693c3b2e4b89c0db4c49": {
     "pair": "YGGUSDT",
     "source": "bitget"
   },
-  "0x6c8965578b090c4dc29ff6085a414e5a099d573d": {
+  "0xbc37fef6945dfd5b08673c757673714384be1240": {
     "pair": "ZAMAUSDT",
     "source": "bitget"
   },
-  "0xea140195a8b7b8a8cc124cd0e7cde1522805b88c": {
+  "0xa4d3c31a9d48da472c57ca8aff8f3b6f4018ec6e": {
     "pair": "ZBCNUSDT",
     "source": "bitget"
   },
-  "0xdc68e523ca9162258b2966c60672f6a0a9844ac6": {
+  "0xe6c5eab6a0dc4bbb11435c4500c84d0dc58c71cd": {
     "pair": "ZBTUSDT",
     "source": "bitget"
   },
-  "0x74bd741b3698c0b5a7496e6cf534053f904b246f": {
+  "0x31eafc5804c0337ac4e79eb124f0ff9dd4f882bf": {
     "pair": "ZECUSDT",
     "source": "bitget"
   },
-  "0x60edf25e6a4a1e8eca960bef526d2d9118986488": {
+  "0x061d1fc4b03f92368c7f4ce4ed47819d59dea1d6": {
     "pair": "ZENTUSDT",
     "source": "bitget"
   },
-  "0x6d704034b6cdbd51f334f6fd977470810c5e02c0": {
+  "0x532fff3ab01ab7f1bf102612c758ce0b6d5764be": {
     "pair": "ZENUSDT",
     "source": "bitget"
   },
-  "0x64e83cfaad0e683c373bb16d7cc2a4efb820e7bc": {
+  "0xdb25d0285bd0fa4d6eb899b3375d72c64870d5e9": {
     "pair": "ZEREBROUSDT",
     "source": "bitget"
   },
-  "0x2a417aeb3d0237ff1e88d8902620752c23ca576a": {
+  "0x289c7b3c5cf9aea873b3e1cdec32316b84a15f87": {
     "pair": "ZETAUSDT",
     "source": "bitget"
   },
-  "0x040ebdf2f0251e0d55f278be74ab4c2ce85ed459": {
+  "0x46ddae37eb26e4848aaeac24ab5dad7d968a4d6e": {
     "pair": "ZIGUSDT",
     "source": "bitget"
   },
-  "0xe53cd80394af02813b343787d559163b6e774827": {
+  "0xf9b72bbf4d1afd4af7a4eda61745a239bdf412ba": {
     "pair": "ZILUSDT",
     "source": "bitget"
   },
-  "0xc309d54ba63a625c06b69e9482d8ea2b0ada0e74": {
+  "0x4858fc9446c781c1d6417abe106502fb15d5bcd8": {
     "pair": "ZKCUSDT",
     "source": "bitget"
   },
-  "0xf890a668146d0deed4434716e5b596f1a337eb44": {
+  "0x68882061f9ff12fb75b89f169673e2c452de65b4": {
     "pair": "ZKJUSDT",
     "source": "bitget"
   },
-  "0x34f99efa34eed41e3ebd8d433782ef98c514f18c": {
+  "0xcd93a5c0243a65eb20421fa3aab3c0c6868d6608": {
     "pair": "ZKLUSDT",
     "source": "bitget"
   },
-  "0x4c06bd047a15ed9ff0e72802f273c654e7ce3572": {
+  "0xc4ef907cc9d6330d9764c8f76a110894614bec1a": {
     "pair": "ZKUSDT",
     "source": "bitget"
   },
-  "0xdf51051c0c1244a73e2dd44629878d24fc3b5a4d": {
+  "0x6369187ddd98f714a02d8981219e664d918a9535": {
     "pair": "ZORAUSDT",
     "source": "bitget"
   },
-  "0xed8fc0ec6a8f50e2157e092468cd8d37745fc69b": {
+  "0xbcb4cc71991b737fcb09fc01eaef72a5f9301cff": {
     "pair": "ZROUSDT",
     "source": "bitget"
   },
-  "0x894f851c7b3c1d6bc016d47083d7d033ae7a409d": {
+  "0xbb225e0ad05d120795356999a9f1525d9f180b13": {
     "pair": "ZRXUSDT",
     "source": "bitget"
   },
-  "0x889fe8fe1dd8b4db2c7fde8331f5c8c8d3476c9f": {
+  "0xcba7b4bd335747a58b83311f8a6fa2a41083d6b5": {
     "pair": "ZTCUSDT",
+    "source": "bitget"
+  },
+  "0x6590848209a115f89e4640f3934b31c056a8e1fe": {
+    "pair": "BNBUSDT",
+    "source": "bitget"
+  },
+  "0xc7131623eb56b34cbbbf3a0c0c9af89de0fbfbb8": {
+    "pair": "BTCUSDT",
+    "source": "bitget"
+  },
+  "0x0dd85bb5bf605eabcbb6466cfc02e9f0d088e6bf": {
+    "pair": "HBARUSDT",
+    "source": "bitget"
+  },
+  "0xec4a6a09fa0c30d888f68a451a0a0f6d4f4e2194": {
+    "pair": "XLMUSDT",
+    "source": "bitget"
+  },
+  "0x792b1d81583089daff470f9876dbc7019df9c6b8": {
+    "pair": "TRXUSDT",
+    "source": "bitget"
+  },
+  "0xdd3399d2dea6b42f2f4fec9a7245b589b012d2d9": {
+    "pair": "ETHUSDT",
+    "source": "bitget"
+  },
+  "0x9a92c124eca6c7a93248189699e6d5c58b85d273": {
+    "pair": "SOLUSDT",
+    "source": "bitget"
+  },
+  "0x1b1c923087fb721aeed93555ec88967af09f6f45": {
+    "pair": "LINKUSDT",
+    "source": "bitget"
+  },
+  "0xfd629c38cb19a5cb8c217e96d7096b3e4a86d599": {
+    "pair": "SANDUSDT",
+    "source": "bitget"
+  },
+  "0xd96d18a5079662b6849cfd4b0e67e5b0857e6812": {
+    "pair": "AXSUSDT",
+    "source": "bitget"
+  },
+  "0x9a1f67998939db8d4a21811c827149d1f1ebb80d": {
+    "pair": "MANAUSDT",
+    "source": "bitget"
+  },
+  "0x5957324392d4b9bac8827b2a7267e67335dd81d4": {
+    "pair": "DOGEUSDT",
+    "source": "bitget"
+  },
+  "0x03e9eba364b781161f43e916e166fe1d435d38c7": {
+    "pair": "GRTUSDT",
+    "source": "bitget"
+  },
+  "0x797dbcb165b37d91382aac74d3456285fd6a18fb": {
+    "pair": "PYTHUSDT",
+    "source": "bitget"
+  },
+  "0x613e76a84fe4401070f571aadb92ee3ec2bcd616": {
+    "pair": "ENJUSDT",
+    "source": "bitget"
+  },
+  "0xff57d40258a18f6500fc148feb1dab50b11f3949": {
+    "pair": "AVAXUSDT",
+    "source": "bitget"
+  },
+  "0xee8800342873f355cde3304d91f39f17d86958cd": {
+    "pair": "ADAUSDT",
+    "source": "bitget"
+  },
+  "0x924e491b46dea88af2e26a344448f21972fc3f73": {
+    "pair": "XRPUSDT",
+    "source": "bitget"
+  },
+  "0x26ba007ffa3e5e8f36883f774ba57d7591151e62": {
+    "pair": "LTCUSDT",
+    "source": "bitget"
+  },
+  "0x8cbc8c894d6d6d6cba79835af2f28bff21df87b4": {
+    "pair": "DOTUSDT",
+    "source": "bitget"
+  },
+  "0x772e94c1f6ab28965f284602e5b7f66f06978736": {
+    "pair": "UNIUSDT",
+    "source": "bitget"
+  },
+  "0x3143821781c87c7f18356032cef1d0e31a414684": {
+    "pair": "NEARUSDT",
+    "source": "bitget"
+  },
+  "0x23edc0a941e510a1768e6a0c154a0c502c5407e2": {
+    "pair": "WLDUSDT",
+    "source": "bitget"
+  },
+  "0xd229983edfa13d32fc2085cf7b7267669139f758": {
+    "pair": "ETCUSDT",
+    "source": "bitget"
+  },
+  "0xe65de13ff26df02339af848e7d1c6b146bc1835c": {
+    "pair": "AAVEUSDT",
+    "source": "bitget"
+  },
+  "0x9989f266703eb69cb6fae30a0dfc189358478426": {
+    "pair": "ICPUSDT",
+    "source": "bitget"
+  },
+  "0x2069b193d86650680a7d133c61a4fdcc7bda542f": {
+    "pair": "SHIBUSDT",
+    "source": "bitget"
+  },
+  "0xa5f65cd956ebdfba9f7965bc5435a967e778e463": {
+    "pair": "PEPEUSDT",
+    "source": "bitget"
+  },
+  "0xfe42c5214bd9d51d34c3cc3541eb087bef61054a": {
+    "pair": "SUIUSDT",
+    "source": "bitget"
+  },
+  "0xb5dc9974e2d4eb8737f1318efdd5365530b1f00b": {
+    "pair": "ZECUSDT",
+    "source": "bitget"
+  },
+  "0x6c38d3179d0e7ab76887c12ff8f924a132ca5fc0": {
+    "pair": "ATOMUSDT",
+    "source": "bitget"
+  },
+  "0x57cac44b1a4242145b72aeadf7912e4a2a6939f6": {
+    "pair": "ALGOUSDT",
+    "source": "bitget"
+  },
+  "0xe5690234ef2a2b6ba597713012425ac73ac6dfc0": {
+    "pair": "FILUSDT",
+    "source": "bitget"
+  },
+  "0xd5ce35d7827f62c48a38ff077f9ee4d1d230deba": {
+    "pair": "APTUSDT",
+    "source": "bitget"
+  },
+  "0x7a3be787bc4c9b8f75a6e7f69ced1596a7894cc4": {
+    "pair": "VETUSDT",
+    "source": "bitget"
+  },
+  "0xa5aa818c3e04bf613b5d48be2d9576e52a5b8513": {
+    "pair": "ARBUSDT",
+    "source": "bitget"
+  },
+  "0xe7bfff63225b64b1d1baa076ac90b0c46ce73a28": {
+    "pair": "BONKUSDT",
+    "source": "bitget"
+  },
+  "0x9e2517a09597b9e383f4f4a859b3f84615abab94": {
+    "pair": "SEIUSDT",
+    "source": "bitget"
+  },
+  "0x9714fa588a071e1a1b978b432151d327e4f624b5": {
+    "pair": "XTZUSDT",
+    "source": "bitget"
+  },
+  "0xcb09287aa891af04a2a7c67117b9a3c534fa47ca": {
+    "pair": "CRVUSDT",
+    "source": "bitget"
+  },
+  "0x763962399ad295c433df40d0bd25545634715575": {
+    "pair": "CHZUSDT",
+    "source": "bitget"
+  },
+  "0x7459738b20391cb68fe0eb09458c975a41599bf9": {
+    "pair": "INJUSDT",
+    "source": "bitget"
+  },
+  "0xf8bae7b8d484c6c54f95f061742f90f90615f89c": {
+    "pair": "TIAUSDT",
+    "source": "bitget"
+  },
+  "0x634db1dd2bfbed114cc8f21378ca2a89bd66a6f5": {
+    "pair": "KSMUSDT",
+    "source": "bitget"
+  },
+  "0xd5d734a45552c4157218e9da1cf7e79e523716fb": {
+    "pair": "COMPUSDT",
+    "source": "bitget"
+  },
+  "0xca167ca4a825d9d572043219a27043fff79ec064": {
+    "pair": "KAVAUSDT",
+    "source": "bitget"
+  },
+  "0x4b3c8f80fb899e395e814887507b625ba6bc0d6d": {
+    "pair": "BATUSDT",
+    "source": "bitget"
+  },
+  "0xf2d6470bbb7cb360432d11bbecddeb64b61d6eda": {
+    "pair": "CELOUSDT",
     "source": "bitget"
   }
 }
