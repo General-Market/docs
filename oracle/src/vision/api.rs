@@ -2055,7 +2055,12 @@ struct SourceBatchHistoryEntry {
     player_count: i64,
     total_pool: f64,
     avg_pnl: f64,
+    top_earner_pnl: f64,
     timestamp: String,
+    betting_start: Option<String>,
+    betting_end: Option<String>,
+    settled_at: Option<String>,
+    market_count: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2068,9 +2073,13 @@ struct SourceHistoryQuery {
 struct SettledHistoryRow {
     batch_id: i64,
     settled_at: chrono::DateTime<chrono::Utc>,
+    betting_start: Option<chrono::DateTime<chrono::Utc>>,
+    betting_end: Option<chrono::DateTime<chrono::Utc>>,
+    market_count: Option<i32>,
     player_count: Option<i64>,
     total_deposited: Option<String>,
-    total_pnl: Option<String>,
+    avg_abs_pnl: Option<String>,
+    max_pnl: Option<String>,
 }
 
 async fn source_batch_history(
@@ -2103,13 +2112,15 @@ async fn source_batch_history(
     let settled_rows = sqlx::query_as::<_, SettledHistoryRow>(
         "SELECT vrp.batch_id,
                 MAX(vrp.settled_at) AS settled_at,
+                vbl.betting_end,
                 COUNT(DISTINCT vrp.player)::bigint AS player_count,
                 SUM(vrp.deposited::numeric)::text AS total_deposited,
-                SUM(vrp.pnl::numeric)::text AS total_pnl
+                AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
+                MAX(vrp.pnl::numeric)::text AS max_pnl
          FROM vision_round_players vrp
          JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
          WHERE vbl.source_id = $1
-         GROUP BY vrp.batch_id
+         GROUP BY vrp.batch_id, vbl.betting_end
          ORDER BY MAX(vrp.settled_at) DESC
          LIMIT $2 OFFSET $3"
     )
@@ -2125,18 +2136,23 @@ async fn source_batch_history(
         let total_dep = r.total_deposited.as_deref()
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
-        let total_pnl = r.total_pnl.as_deref()
+        let avg_abs_pnl = r.avg_abs_pnl.as_deref()
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
-        let avg_pnl = if players > 0 { total_pnl / players as f64 } else { 0.0 };
+        let top_pnl = r.max_pnl.as_deref()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(0.0) / decimals;
 
         entries.push(SourceBatchHistoryEntry {
             batch_id: r.batch_id,
             status: "settled".to_string(),
             player_count: players,
             total_pool: (total_dep * 100.0).round() / 100.0,
-            avg_pnl: (avg_pnl * 100.0).round() / 100.0,
+            avg_pnl: (avg_abs_pnl * 100.0).round() / 100.0,
+            top_earner_pnl: (top_pnl * 100.0).round() / 100.0,
             timestamp: r.settled_at.to_rfc3339(),
+            betting_end: r.betting_end.map(|dt| dt.to_rfc3339()),
+            settled_at: Some(r.settled_at.to_rfc3339()),
         });
     }
 
@@ -2170,6 +2186,7 @@ struct RoundInfoResponse {
     timeframe_secs: u64,
     status: String,
     player_count: usize,
+    tvl: String,
     betting_end: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     config_hash: Option<String>,
@@ -2268,6 +2285,41 @@ async fn rounds_active(
                 // (survives oracle restarts after settlement zeroes in-memory balances).
                 let player_count = if live_count > 0 { live_count } else { lifecycle_pc };
 
+                // Compute TVL from in-memory player deposits (same as list_batches).
+                // Falls back to summing vision_positions when scheduler is empty
+                // (e.g. after oracle restart before chain replay catches up).
+                let tvl = if let Some((_batch, players)) =
+                    state.scheduler.get_batch_state(batch_id).await
+                {
+                    let sum = players
+                        .iter()
+                        .fold(U256::zero(), |acc, p| acc + p.deposit);
+                    if sum > U256::zero() {
+                        sum.to_string()
+                    } else {
+                        // In-memory deposits are zero — try Postgres
+                        sqlx::query_scalar::<_, Option<String>>(
+                            "SELECT COALESCE(SUM(balance::numeric), 0)::text FROM vision_positions WHERE batch_id = $1"
+                        )
+                        .bind(batch_id as i64)
+                        .fetch_one(&state.pool)
+                        .await
+                        .ok()
+                        .flatten()
+                        .unwrap_or_else(|| "0".to_string())
+                    }
+                } else {
+                    sqlx::query_scalar::<_, Option<String>>(
+                        "SELECT COALESCE(SUM(balance::numeric), 0)::text FROM vision_positions WHERE batch_id = $1"
+                    )
+                    .bind(batch_id as i64)
+                    .fetch_one(&state.pool)
+                    .await
+                    .ok()
+                    .flatten()
+                    .unwrap_or_else(|| "0".to_string())
+                };
+
                 // Derive status from betting_end: past deadline = settling, otherwise betting
                 let status = if now >= betting_end_ts { "settling" } else { "betting" };
 
@@ -2282,6 +2334,7 @@ async fn rounds_active(
                     timeframe_secs: row.tick_duration as u64,
                     status: status.to_string(),
                     player_count,
+                    tvl: tvl.to_string(),
                     betting_end: chrono::DateTime::from_timestamp(betting_end_ts as i64, 0)
                         .map(|dt| dt.to_rfc3339())
                         .unwrap_or_else(|| betting_end_ts.to_string()),

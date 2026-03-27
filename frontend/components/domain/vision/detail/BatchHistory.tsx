@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAccount } from 'wagmi'
 import { useRounds } from '@/hooks/vision/useRounds'
+import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 
 interface SourceBatch {
   batchId: number
@@ -10,8 +12,10 @@ interface SourceBatch {
   playerCount: number
   totalPool: number
   avgPnl: number
+  topEarnerPnl?: number
   timestamp: string
   bettingEnd?: string | null
+  settledAt?: string | null
 }
 
 interface HistoryResponse {
@@ -123,6 +127,9 @@ function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
   )
 }
 
+// Grid: Round | Status | Players | Pool | Avg Swing | Top | Time
+const GRID_COLS = 'grid-cols-[56px_72px_52px_64px_72px_64px_1fr]'
+
 interface BatchHistoryProps {
   sourceId: string
   activeBatchId?: number
@@ -134,6 +141,14 @@ interface BatchHistoryProps {
 
 export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration }: BatchHistoryProps) {
   const [page, setPage] = useState(1)
+  const { address } = useAccount()
+  const { profile } = usePlayerProfile(address ?? '')
+
+  // Set of batch IDs the connected wallet participated in
+  const participatedBatches = useMemo(() => {
+    if (!profile?.batches) return new Set<number>()
+    return new Set(profile.batches.map(b => b.batchId))
+  }, [profile?.batches])
 
   // Live rounds data — polls every 5s for real-time player counts
   const { data: rounds } = useRounds(sourceId)
@@ -182,19 +197,20 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
         <div>
           <div className="section-bar-title">Round History</div>
           <div className="section-bar-value">
-            {totalSettled} settled{activeBatch ? ' · 1 open' : ''}
+            {totalSettled} settled{activeBatch ? ' \u00b7 1 open' : ''}
           </div>
         </div>
       </div>
 
       <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+        <div className={`grid ${GRID_COLS} items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted`}>
           <div>Round</div>
           <div>Status</div>
           <div className="text-right">Players</div>
           <div className="text-right">Pool</div>
-          <div className="text-right">Avg P&L</div>
+          <div className="text-right">Avg Swing</div>
+          <div className="text-right">Top</div>
           <div className="text-right">Timers</div>
         </div>
 
@@ -206,13 +222,16 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             ? new Date(new Date(roundBettingEnd).getTime() + roundTickDuration * 1000).toISOString()
             : null
           const pool = round.tvl ? parseFloat(round.tvl) / 1e18 : 0
+          const participated = participatedBatches.has(round.batchId)
 
           return (
             <div
               key={round.batchId}
-              className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2.5 border-b border-border-light bg-surface/60"
+              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${
+                participated ? 'bg-white' : 'bg-surface/60'
+              }`}
             >
-              <div className="font-mono text-[12px] font-bold text-black tabular-nums">
+              <div className={`font-mono text-[12px] tabular-nums ${participated ? 'font-bold text-black' : 'font-bold text-black'}`}>
                 #{round.batchId}
               </div>
               <ActiveStatus bettingEnd={roundBettingEnd ?? null} />
@@ -222,7 +241,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
                 ${pool < 0.01 ? '0' : pool.toFixed(2)}
               </div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">—</div>
+              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
+              <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
               <div className="text-right">
                 <ActiveTimers bettingEnd={roundBettingEnd ?? null} settlementEnd={roundSettlementEnd} />
               </div>
@@ -231,7 +251,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
         })}
         {/* Fallback: show single active batch from props if no live rounds */}
         {page === 1 && activeRounds.length === 0 && activeBatch && (
-          <div className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2.5 border-b border-border-light bg-surface/60">
+          <div className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light bg-surface/60`}>
             <div className="font-mono text-[12px] font-bold text-black tabular-nums">
               #{activeBatch.batchId}
             </div>
@@ -242,7 +262,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
               ${activeBatch.totalPool < 0.01 ? '0' : activeBatch.totalPool.toFixed(2)}
             </div>
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">—</div>
+            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
+            <div className="text-right font-mono text-[12px] tabular-nums text-text-muted">{'\u2014'}</div>
             <div className="text-right">
               <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} />
             </div>
@@ -251,33 +272,61 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
 
         {/* Settled rows */}
         {settled.map((batch) => {
-          const pnlColor = batch.avgPnl > 0
+          const participated = participatedBatches.has(batch.batchId)
+          // avgPnl = average absolute PnL (always >= 0, represents typical swing size)
+          const swingColor = batch.avgPnl > 0 ? 'text-text-secondary' : 'text-text-muted'
+
+          const topPnl = batch.topEarnerPnl ?? 0
+          const topColor = topPnl > 0
             ? 'text-color-up'
-            : batch.avgPnl < 0
+            : topPnl < 0
               ? 'text-color-down'
               : 'text-text-muted'
-          const pnlSign = batch.avgPnl > 0 ? '+' : ''
+          const topSign = topPnl > 0 ? '+' : ''
 
           return (
             <div
               key={batch.batchId}
-              className="grid grid-cols-[56px_72px_64px_72px_80px_1fr] items-center px-4 py-2.5 border-b border-border-light last:border-0"
+              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light last:border-0 ${
+                participated
+                  ? 'bg-white'
+                  : 'bg-surface/30'
+              }`}
             >
-              <div className="font-mono text-[12px] font-bold text-text-muted tabular-nums">
+              <div className={`font-mono text-[12px] tabular-nums ${participated ? 'font-bold text-black' : 'font-bold text-text-muted'}`}>
                 #{batch.batchId}
               </div>
-              <div className="text-[10px] font-mono text-text-muted">Settled</div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
+              <div className={`text-[10px] font-mono ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
+                Settled
+              </div>
+              <div className={`text-right font-mono text-[12px] tabular-nums ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
                 {batch.playerCount}
               </div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
+              <div className={`text-right font-mono text-[12px] tabular-nums ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
                 ${batch.totalPool.toFixed(2)}
               </div>
-              <div className={`text-right font-mono text-[12px] tabular-nums font-semibold ${pnlColor}`}>
-                {pnlSign}${Math.abs(batch.avgPnl).toFixed(2)}
+              <div className={`text-right font-mono text-[12px] tabular-nums font-semibold ${participated ? swingColor : 'text-text-muted'}`}>
+                {batch.avgPnl > 0 ? `\u00B1$${batch.avgPnl.toFixed(2)}` : '\u2014'}
               </div>
-              <div className="text-right font-mono text-[11px] text-text-muted">
-                {timeAgo(batch.timestamp)}
+              <div className={`text-right font-mono text-[12px] tabular-nums font-semibold ${participated ? topColor : 'text-text-muted'}`}>
+                {topPnl !== 0 ? `${topSign}$${Math.abs(topPnl).toFixed(2)}` : '\u2014'}
+              </div>
+              <div className={`text-right font-mono text-[10px] ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
+                <div className="flex flex-col items-end gap-0.5">
+                  {batch.bettingEnd && (
+                    <span>Closed {timeAgo(batch.bettingEnd)}</span>
+                  )}
+                  <span>Settled {timeAgo(batch.settledAt ?? batch.timestamp)}</span>
+                  {batch.bettingEnd && batch.settledAt && (() => {
+                    const durationSecs = Math.floor(
+                      (new Date(batch.settledAt).getTime() - new Date(batch.bettingEnd).getTime()) / 1000
+                    )
+                    if (durationSecs <= 0) return null
+                    const m = Math.floor(durationSecs / 60)
+                    const s = durationSecs % 60
+                    return <span className="text-text-muted">{m}:{s.toString().padStart(2, '0')} round</span>
+                  })()}
+                </div>
               </div>
             </div>
           )

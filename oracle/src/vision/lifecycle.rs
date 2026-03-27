@@ -53,6 +53,10 @@ const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 10;
 /// Stagger interval between sources to avoid thundering herd.
 const SOURCE_STAGGER_SECS: u64 = 1;
 
+/// Delay between betting close and settlement (seconds).
+/// Gives players time to verify outcomes before payouts execute.
+const SETTLEMENT_DELAY_SECS: i64 = 600; // 10 minutes
+
 /// Per-source tracking state for round rotation.
 struct SourceState {
     /// Human-readable source name (e.g. "crypto", "sports").
@@ -213,11 +217,7 @@ impl BatchLifecycleManager {
                         None
                     } else {
                         let elapsed = now_instant.duration_since(source.last_heartbeat);
-                        // Fire heartbeat 30s before tick ends so the next round opens
-                        // while the old round is still in its lock window.
-                        const PRE_CREATE_SECS: u64 = 30;
-                        let effective_tick = source.tick_duration_secs.saturating_sub(PRE_CREATE_SECS);
-                        let required = std::time::Duration::from_secs(effective_tick)
+                        let required = std::time::Duration::from_secs(source.tick_duration_secs)
                             + source.stagger_offset;
 
                         if elapsed < required {
@@ -268,21 +268,22 @@ impl BatchLifecycleManager {
                     // PREVIOUS heartbeat is always safe — but we guard anyway for
                     // edge cases (oracle restart, delayed heartbeats).
                     if let Some(prev_id) = prev_batch_id {
-                        let betting_ended: bool = sqlx::query_scalar::<_, bool>(
-                            "SELECT betting_end <= NOW() FROM vision_batch_lifecycle WHERE batch_id = $1"
+                        let ready_to_settle: bool = sqlx::query_scalar::<_, bool>(
+                            "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE batch_id = $1"
                         )
                         .bind(prev_id as i64)
+                        .bind(SETTLEMENT_DELAY_SECS as f64)
                         .fetch_optional(&mgr.pool)
                         .await
                         .ok()
                         .flatten()
                         .unwrap_or(true); // no lifecycle row → treat as ended (chain-discovered batch)
 
-                        if !betting_ended {
+                        if !ready_to_settle {
                             info!(
                                 source = %source_name,
                                 batch_id = prev_id,
-                                "Previous batch still in betting period — deferring resolution"
+                                "Previous batch in settlement delay window — deferring resolution"
                             );
                             // Don't clear previous_batch_id — will retry next heartbeat
                         } else {
@@ -313,7 +314,7 @@ impl BatchLifecycleManager {
                             }
                         }
                         src_lock.lock().await.previous_batch_id = None;
-                        } // else betting_ended
+                        } // else ready_to_settle
                     }
 
                     // Step 2: Rotate current → previous (only if previous slot is free)
@@ -1182,7 +1183,7 @@ impl BatchLifecycleManager {
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         let now = chrono::Utc::now();
         let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
-        let settlement_deadline = betting_end + chrono::Duration::seconds(tick_duration as i64 * 2);
+        let settlement_deadline = betting_end + chrono::Duration::seconds(SETTLEMENT_DELAY_SECS + tick_duration as i64);
 
         // Use nextBatchId from vision_batches as a proxy for the batch_id
         // (the real batch_id comes from the on-chain createBatch call)

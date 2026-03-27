@@ -42,13 +42,6 @@ pub fn get_strategy(source_id: &str) -> BatchStrategy {
     map.get(source_id).copied().unwrap_or(BatchStrategy::DEFAULT)
 }
 
-/// Lock window as % of tick duration, by source speed class.
-const LOCK_PCT_FAST: f64 = 0.25;    // 30-120s sync → lock last 25%
-const LOCK_PCT_MEDIUM: f64 = 0.25;  // 300-3600s sync → lock last 25%
-const LOCK_PCT_SLOW: f64 = 0.04;    // 86400s+ sync → lock last 4%
-
-/// Minimum lock offset in seconds (never less than 5s)
-const MIN_LOCK_OFFSET_SECS: u64 = 5;
 
 /// Maximum markets per batch.
 /// The on-chain bitmap uses raw bytes (not uint256), so we can go beyond 256.
@@ -146,18 +139,6 @@ pub fn compute_config_hash(
         Token::FixedBytes(markets_root.to_vec()),
     ]);
     keccak256(&outer_encoded)
-}
-
-fn lock_offset_for_interval(sync_interval_secs: u64) -> u64 {
-    let pct = if sync_interval_secs <= 120 {
-        LOCK_PCT_FAST
-    } else if sync_interval_secs <= 3600 {
-        LOCK_PCT_MEDIUM
-    } else {
-        LOCK_PCT_SLOW
-    };
-    let offset = (sync_interval_secs as f64 * pct) as u64;
-    offset.max(MIN_LOCK_OFFSET_SECS)
 }
 
 /// Sanitize a threshold_bps value. Guards against NaN, Infinity, negative.
@@ -492,7 +473,7 @@ async fn generate_batch_config(
     }
 
     let tick_duration_secs = sync_interval_secs;
-    let lock_offset_secs = 30u64; // Lock betting 30s before round ends — next round opens during this window
+    let lock_offset_secs = 0u64; // No lock window — 10min settlement delay makes it unnecessary
 
     let markets = compute_asset_thresholds(pool, source_id, &healthy).await;
 
@@ -804,26 +785,6 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_lock_offset_fast() {
-        assert_eq!(lock_offset_for_interval(60), 15); // 60 * 0.25 = 15
-    }
-
-    #[test]
-    fn test_lock_offset_medium() {
-        assert_eq!(lock_offset_for_interval(600), 150); // 600 * 0.25 = 150
-    }
-
-    #[test]
-    fn test_lock_offset_slow() {
-        assert_eq!(lock_offset_for_interval(86400), 3456); // 86400 * 0.04 = 3456
-    }
-
-    #[test]
-    fn test_lock_offset_minimum() {
-        assert_eq!(lock_offset_for_interval(10), 5); // 10 * 0.25 = 2.5, clamped to MIN=5
-    }
 
     #[test]
     fn test_sanitize_threshold_bps_normal() {
