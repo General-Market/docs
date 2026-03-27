@@ -9,6 +9,7 @@
 //!   3. Record lifecycle in Postgres
 //!   4. Rotate: previous = current, current = new
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -37,14 +38,20 @@ use super::types::{MarketConfig, RoundSettlement};
 
 /// Incoming co-sign message from a follower oracle for a pending createBatch proposal.
 ///
-/// Protocol.rs forwards `VisionCreateBatchSign` messages here via the channel
-/// wired in main.rs.
+/// Protocol.rs routes these to the correct per-source channel via CosignRouter.
 pub struct IncomingCreateBatchSign {
     pub signer_index: u8,
     pub source_id: H256,
     pub message_hash: H256,
     pub signature: BLSSignature,
 }
+
+/// Per-source routing map for co-sign messages.
+///
+/// Each source registers a sender when it starts collecting co-signs,
+/// and removes it when done. Protocol.rs looks up the source_id to
+/// route co-signs to the correct receiver — no cross-source theft.
+pub type CosignRouter = Arc<tokio::sync::RwLock<HashMap<H256, mpsc::Sender<IncomingCreateBatchSign>>>>;
 
 /// How long the leader waits for follower co-signs per attempt (seconds).
 /// Short timeout + retry is better than one long timeout — keeps the pipeline moving.
@@ -94,8 +101,9 @@ pub struct BatchLifecycleManager {
     bls_keypair: Option<Arc<BLSKeyPair>>,
     /// P2P broadcast channel — used by the leader to broadcast VisionCreateBatchProposal.
     broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
-    /// Incoming co-sign channel — protocol.rs forwards VisionCreateBatchSign messages here.
-    create_batch_sign_rx: Option<Arc<tokio::sync::Mutex<mpsc::Receiver<IncomingCreateBatchSign>>>>,
+    /// Per-source co-sign router — protocol.rs routes VisionCreateBatchSign messages
+    /// to the correct source's channel. Each source registers/deregisters on demand.
+    cosign_router: CosignRouter,
     /// This oracle's P2P peer id (32-byte public key hash). Used as leader_id in proposals.
     peer_id: [u8; 32],
 }
@@ -111,7 +119,7 @@ impl BatchLifecycleManager {
         chain_writer: Option<Arc<EthersChainWriter>>,
         bls_keypair: Option<Arc<BLSKeyPair>>,
         broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
-        create_batch_sign_rx: Option<Arc<tokio::sync::Mutex<mpsc::Receiver<IncomingCreateBatchSign>>>>,
+        cosign_router: CosignRouter,
         peer_id: [u8; 32],
     ) -> Self {
         Self {
@@ -124,7 +132,7 @@ impl BatchLifecycleManager {
             chain_writer,
             bls_keypair,
             broadcast_tx,
-            create_batch_sign_rx,
+            cosign_router,
             peer_id,
         }
     }
@@ -187,12 +195,10 @@ impl BatchLifecycleManager {
             warn!(error = %e, "Failed to fetch initial tick durations — will retry");
         }
 
-        // Semaphore: limit concurrent source processing to avoid thundering herd
-        // Serial processing avoids co-sign message theft on the shared mpsc channel.
-        // With concurrent sources, co-signs for source A get consumed by source B's
-        // receive loop, causing 75%+ failure rate. Serial = 100% success rate.
-        // TODO: Replace shared mpsc with per-source channels to re-enable concurrency.
-        const MAX_CONCURRENT_SOURCES: usize = 1;
+        // Semaphore: limit concurrent source processing to avoid thundering herd.
+        // Per-source co-sign channels eliminate cross-source message theft,
+        // so concurrency > 1 is safe.
+        const MAX_CONCURRENT_SOURCES: usize = 10;
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_SOURCES));
 
         // Poll interval: 1 second (fine-grained enough to respect stagger offsets)
@@ -809,6 +815,10 @@ impl BatchLifecycleManager {
 
                 if num_oracles > 1 {
                     if let Some(ref broadcast_tx) = self.broadcast_tx {
+                        // Register a per-source channel BEFORE broadcasting the proposal
+                        let (sign_tx, mut sign_rx) = mpsc::channel::<IncomingCreateBatchSign>(8);
+                        self.cosign_router.write().await.insert(source_id, sign_tx);
+
                         let proposal = P2PMessage::VisionCreateBatchProposal {
                             leader_id: self.peer_id,
                             source_name: source_name.to_string(),
@@ -825,55 +835,51 @@ impl BatchLifecycleManager {
                             warn!(source = %source_name, error = %e, "Failed to broadcast VisionCreateBatchProposal");
                         }
 
-                        // Collect co-signs until threshold or timeout
-                        if let Some(ref sign_rx_mutex) = self.create_batch_sign_rx {
-                            let deadline = tokio::time::Instant::now()
-                                + std::time::Duration::from_secs(CREATE_BATCH_COSIGN_TIMEOUT_SECS);
+                        // Collect co-signs from this source's dedicated channel
+                        let deadline = tokio::time::Instant::now()
+                            + std::time::Duration::from_secs(CREATE_BATCH_COSIGN_TIMEOUT_SECS);
 
-                            loop {
-                                if collected_sigs.len() >= threshold {
-                                    info!(source = %source_name, sigs = collected_sigs.len(), threshold, "BLS threshold met");
+                        loop {
+                            if collected_sigs.len() >= threshold {
+                                info!(source = %source_name, sigs = collected_sigs.len(), threshold, "BLS threshold met");
+                                break;
+                            }
+
+                            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                            if remaining.is_zero() {
+                                warn!(
+                                    source = %source_name,
+                                    sigs = collected_sigs.len(),
+                                    threshold,
+                                    "createBatch co-sign timeout"
+                                );
+                                break;
+                            }
+
+                            match tokio::time::timeout(remaining, sign_rx.recv()).await {
+                                Ok(Some(cosign)) => {
+                                    if cosign.message_hash != message_hash {
+                                        debug!(source = %source_name, "Ignoring co-sign for different message hash");
+                                        continue;
+                                    }
+                                    if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
+                                        debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
+                                        continue;
+                                    }
+                                    debug!(source = %source_name, signer_index = cosign.signer_index, "Co-sign received");
+                                    signer_bits |= 1u64 << cosign.signer_index;
+                                    collected_sigs.push((cosign.signer_index, cosign.signature));
+                                }
+                                Ok(None) => {
+                                    warn!(source = %source_name, "createBatch sign channel closed");
                                     break;
                                 }
-
-                                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-                                if remaining.is_zero() {
-                                    warn!(
-                                        source = %source_name,
-                                        sigs = collected_sigs.len(),
-                                        threshold,
-                                        "createBatch co-sign timeout"
-                                    );
-                                    break;
-                                }
-
-                                let mut rx = sign_rx_mutex.lock().await;
-                                match tokio::time::timeout(remaining, rx.recv()).await {
-                                    Ok(Some(cosign)) => {
-                                        if cosign.source_id != source_id || cosign.message_hash != message_hash {
-                                            debug!(source = %source_name, "Ignoring co-sign for different source/hash");
-                                            continue;
-                                        }
-                                        // Deduplicate by signer_index
-                                        if collected_sigs.iter().any(|(idx, _)| *idx == cosign.signer_index) {
-                                            debug!(source = %source_name, signer_index = cosign.signer_index, "Duplicate co-sign ignored");
-                                            continue;
-                                        }
-                                        debug!(source = %source_name, signer_index = cosign.signer_index, "Co-sign received");
-                                        signer_bits |= 1u64 << cosign.signer_index;
-                                        collected_sigs.push((cosign.signer_index, cosign.signature));
-                                    }
-                                    Ok(None) => {
-                                        warn!(source = %source_name, "createBatch sign channel closed");
-                                        break;
-                                    }
-                                    Err(_) => {
-                                        // timeout
-                                        break;
-                                    }
-                                }
+                                Err(_) => break, // timeout
                             }
                         }
+
+                        // Deregister — channel is done
+                        self.cosign_router.write().await.remove(&source_id);
                     } else {
                         warn!(source = %source_name, "No P2P broadcast channel — submitting with single-oracle sig (will fail 2-of-3 threshold)");
                     }

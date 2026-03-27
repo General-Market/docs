@@ -277,6 +277,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
     _bridge_post_ready: Arc<AtomicBool>,
     startup_buy_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainOrder>>>,
     mirror_sync_needed: Arc<AtomicBool>,
+    metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -361,6 +362,8 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
             new_orders.sort_by_key(|o| o.order_id);
             new_orders.dedup_by_key(|o| o.order_id);
 
+            metrics.update_pending_order_count(new_orders.len() as u64);
+
             if new_orders.is_empty() {
                 debug!(cycle = current_cycle, "No new cross-chain orders");
             } else {
@@ -443,6 +446,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
                                             }).await;
                                         }
                                         just_submitted_ids.push(order.order_id);
+                                        metrics.record_orders_processed(1);
                                         // Immediately continue to batch/fills/mint (merged Phase 1+2)
                                         // instead of returning and waiting for poll-driven Phase 2
                                         info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
@@ -479,6 +483,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
                         quote_tokens.clone(),
                         Some(just_submitted_ids),
                         mirror_sync_needed.clone(),
+                        metrics.clone(),
                     ).await;
                 }
             }
@@ -520,6 +525,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     target_orders: Option<Vec<ethers::types::U256>>,
     mirror_sync_needed: Arc<AtomicBool>,
+    _metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1102,6 +1108,7 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
     startup_sell_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainSellOrderEvent>>>,
     mirror_sync_needed: Arc<AtomicBool>,
+    metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1158,6 +1165,8 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
             new_sell_orders.sort_by_key(|o| o.order_id);
             new_sell_orders.dedup_by_key(|o| o.order_id);
 
+            metrics.update_pending_order_count(new_sell_orders.len() as u64);
+
             if new_sell_orders.is_empty() {
                 debug!(cycle = current_cycle, "No new cross-chain sell orders");
             } else {
@@ -1207,6 +1216,7 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                         let orch = orchestrator.write().await;
                                         orch.set_sell_burn_tx_hash(sell_order.order_id, tx_hash).await;
                                         orch.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellBurnPending).await;
+                                        metrics.record_orders_processed(1);
                                     }
                                     Err(e) => {
                                         // Check on-chain state instead of string matching

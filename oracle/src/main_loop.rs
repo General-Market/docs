@@ -452,12 +452,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
                             let sbo = startup_buy_orders.clone();
                             let msn = mirror_sync_needed.clone();
+                            let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(300),
                                     run_cross_chain_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn, met,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -489,12 +490,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_oracles;
                             let msn = mirror_sync_needed.clone();
+                            let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(300),
                                     run_cross_chain_buy_post_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn, met,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -603,12 +605,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let cursor = settlement_sell_cursor.clone();
                             let sso = startup_sell_orders.clone();
                             let msn = mirror_sync_needed.clone();
+                            let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(60),
                                     run_cross_chain_sell_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso, msn,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso, msn, met,
                                     ),
                                 ).await {
                                     Ok(()) => {},

@@ -657,17 +657,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // VisionDepositWatcher deleted (round-only purge)
 
-                    // Wire createBatch co-sign channel into protocol
+                    // Wire per-source co-sign router into protocol
                     if let Some(ref protocol) = components.consensus.protocol {
-                                let (lm_sign_tx, lm_sign_rx) =
-                                    tokio::sync::mpsc::channel::<oracle::vision::lifecycle::IncomingCreateBatchSign>(64);
-                                if let Ok(mut guard) = protocol.vision_create_batch_sign_tx.lock() {
-                                    *guard = Some(lm_sign_tx);
-                                    info!(node_id, "vision_create_batch_sign_tx installed on consensus protocol");
+                                let cosign_router: oracle::vision::lifecycle::CosignRouter =
+                                    std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
+                                if let Ok(mut guard) = protocol.cosign_router.lock() {
+                                    *guard = Some(cosign_router.clone());
+                                    info!(node_id, "cosign_router installed on consensus protocol");
                                 }
-
-                                // Stash rx for BatchLifecycleManager spawn below
-                                let lm_sign_rx = Arc::new(tokio::sync::Mutex::new(lm_sign_rx));
 
                                 // Spawn BatchLifecycleManager for round-based sources
                                 let lm_chain_writer = components.chain.writer.clone();
@@ -688,7 +685,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     lm_chain_writer,
                                     lm_bls_keypair,
                                     lm_broadcast_tx,
-                                    Some(lm_sign_rx),
+                                    cosign_router.clone(),
                                     lm_peer_id,
                                 );
                                 let lm = std::sync::Arc::new(lm);
@@ -727,7 +724,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             lm_chain_writer,
                             lm_bls_keypair,
                             None, // no broadcast_tx
-                            None, // no co-sign rx
+                            std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())), // empty router (no P2P)
                             lm_peer_id,
                         );
                         let lm = std::sync::Arc::new(lm);

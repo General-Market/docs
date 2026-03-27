@@ -407,9 +407,9 @@ where
     /// Forwarding channel for incoming bitmap gossip messages (Gossip/Request/Response).
     /// Set by the engine bootstrap; the bitmap gossip task reads from the other end.
     // vision_bitmap_gossip_tx deleted (round-only purge)
-    /// Forwarding channel for incoming VisionCreateBatchSign messages.
-    /// Set in main.rs; the BatchLifecycleManager reads from the other end.
-    pub vision_create_batch_sign_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::lifecycle::IncomingCreateBatchSign>>>>,
+    /// Per-source co-sign router for VisionCreateBatchSign messages.
+    /// Each source registers its own channel; protocol routes by source_id.
+    pub cosign_router: Arc<std::sync::Mutex<Option<crate::vision::lifecycle::CosignRouter>>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -501,7 +501,7 @@ where
             known_assets: RwLock::new(Vec::new()),
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
             // vision channels deleted (round-only purge)
-            vision_create_batch_sign_tx: Arc::new(std::sync::Mutex::new(None)),
+            cosign_router: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -3039,12 +3039,12 @@ where
             }
             // Vision createBatch co-signing
             MessageHandleResult::ProcessVisionCreateBatchProposal {
-                from: _, leader_id: _, source_name, source_id,
+                from: _, leader_id, source_name, source_id,
                 config_hash, tick_duration, lock_offset,
                 message_hash, leader_signature: _, reference_nonce: _,
             } => {
                 if let Err(e) = self.handle_vision_create_batch_proposal(
-                    source_name, source_id, config_hash, tick_duration, lock_offset, message_hash,
+                    source_name, source_id, config_hash, tick_duration, lock_offset, message_hash, leader_id,
                 ).await {
                     warn!(error = %e, "Failed to handle VisionCreateBatchProposal");
                 }
@@ -3052,15 +3052,21 @@ where
             MessageHandleResult::ProcessVisionCreateBatchSign {
                 from: _, signer_id: _, signer_index, source_id, message_hash, signature,
             } => {
-                if let Ok(guard) = self.vision_create_batch_sign_tx.lock() {
-                    if let Some(tx) = guard.as_ref() {
+                if let Ok(guard) = self.cosign_router.lock() {
+                    if let Some(ref router) = *guard {
                         let incoming = crate::vision::lifecycle::IncomingCreateBatchSign {
                             signer_index,
                             source_id,
                             message_hash,
                             signature: common::types::BLSSignature(signature.0),
                         };
-                        let _ = tx.try_send(incoming);
+                        // Route to the per-source channel (if registered)
+                        let router_read = router.blocking_read();
+                        if let Some(tx) = router_read.get(&source_id) {
+                            let _ = tx.try_send(incoming);
+                        } else {
+                            debug!(?source_id, "No active co-sign listener for source — discarding");
+                        }
                     }
                 }
             }
@@ -7603,6 +7609,7 @@ where
         tick_duration: u64,
         lock_offset: u64,
         proposed_message_hash: H256,
+        leader_id: PeerId,
     ) -> Result<(), Error> {
         // Get vision_address and chain_id from runtime config
         let vision_address_str = std::env::var("ORACLE_VISION_ADDRESS").unwrap_or_default();
@@ -7653,14 +7660,14 @@ where
             signature: common::types::BLSSignature(signature.0),
         };
 
-        // Broadcast to all peers (leader will pick up the co-sign from the channel)
-        if let Err(e) = self.p2p.broadcast(sign_msg).await {
-            warn!(%source_name, error = %e, "Failed to broadcast VisionCreateBatchSign");
+        // Send co-sign directly to leader (not broadcast — saves N-1 unnecessary messages)
+        if let Err(e) = self.p2p.send_to(leader_id, sign_msg).await {
+            warn!(%source_name, error = %e, "Failed to send VisionCreateBatchSign to leader");
         } else {
             info!(
                 %source_name,
                 signer_index = self.runtime_config.oracle_registry_index(),
-                "Signed and broadcast VisionCreateBatchSign"
+                "Signed and sent VisionCreateBatchSign to leader"
             );
         }
 

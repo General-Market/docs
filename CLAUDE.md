@@ -1,6 +1,6 @@
 ## Investigation Method — Parallel Consensus Agents
 
-When debugging complex issues spanning multiple systems, dispatch 5 sub-agents in parallel. Each agent investigates the FULL problem independently (not just one slice). After all complete, compare findings — agreements become the fix, disagreements get investigated further.
+When debugging complex issues spanning multiple systems, dispatch 4 sub-agents in parallel. Each agent investigates the FULL problem independently (not just one slice). After all complete, compare findings — agreements become the fix, disagreements get investigated further.
 
 **When to use:** UI shows stale/missing data, multiple systems misbehaving, root cause unclear.
 
