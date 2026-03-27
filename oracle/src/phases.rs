@@ -960,8 +960,25 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     // 2. BLS timeout: fills loop likely filled the order concurrently
                     let is_already_filled = fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain");
                     let is_timeout = fills_err.contains("signing timeout");
+                    let is_fill_exceeds = fills_err.contains("a1f4d58b") || fills_err.contains("FillExceedsOrder") || fills_err.contains("E023");
+                    let is_already_batched = fills_err.contains("7a5425d1") || fills_err.contains("OrderAlreadyBatched") || fills_err.contains("E021");
 
-                    if is_already_filled || is_timeout {
+                    if is_fill_exceeds || is_already_batched {
+                        let order_ids: Vec<String> = fills.iter().map(|f| f.order_id.to_string()).collect();
+                        warn!(
+                            cycle = current_cycle,
+                            orders = ?order_ids,
+                            fill_exceeds = is_fill_exceeds,
+                            already_batched = is_already_batched,
+                            "Terminal fill error — marking orders failed and skipping: {}",
+                            fills_err
+                        );
+                        // Mark these orders as terminal so they are not retried
+                        let orch = orchestrator.write().await;
+                        let terminal_ids: Vec<ethers::types::U256> = fills.iter().map(|f| f.order_id).collect();
+                        orch.mark_orders_failed(&terminal_ids).await;
+                        // Continue processing remaining orders — do not retry these
+                    } else if is_already_filled || is_timeout {
                         let should_mint = if is_timeout {
                             // BLS timeout: fills loop may have confirmed. Wait briefly, then
                             // verify on-chain before proceeding to mint.

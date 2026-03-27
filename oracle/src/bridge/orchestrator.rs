@@ -1958,6 +1958,20 @@ impl BridgeOrchestrator {
         );
     }
 
+    /// Mark orders as failed/terminal (will not be retried)
+    /// Used when fills hit unrecoverable errors like E023/FillExceedsOrder or E021/OrderAlreadyBatched.
+    pub async fn mark_orders_failed(&self, order_ids: &[U256]) {
+        for order_id in order_ids {
+            self.set_order_status(*order_id, BridgeOrderStatus::Failed)
+                .await;
+        }
+        warn!(
+            order_count = order_ids.len(),
+            order_ids = ?order_ids.iter().map(|id| id.to_string()).collect::<Vec<_>>(),
+            "Orders marked as Failed (terminal — will not be retried)"
+        );
+    }
+
     /// Mark orders as filled (status update after fills confirmation)
     /// Fills use L3 order IDs, but order_status tracks Settlement order IDs.
     /// This method reverse-maps L3→Settlement before updating status to avoid ID collisions.
