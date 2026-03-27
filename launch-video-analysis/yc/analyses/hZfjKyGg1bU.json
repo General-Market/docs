@@ -1,0 +1,501 @@
+{
+  "video_id": "hZfjKyGg1bU",
+  "status": "ok",
+  "duration_sec": 54.6,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 19,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 10,
+  "text_extractions": [
+    {
+      "timestamp_sec": 8.9,
+      "text": "(Optional New Section The Title about add company. different dig flag flags gets into like lke section that the types would ‘Add"
+    },
+    {
+      "timestamp_sec": 11.9,
+      "text": "(Optional) Financial New Section The Title about add company. different dig flag flags gets into like section that the types would ‘Add"
+    },
+    {
+      "timestamp_sec": 14.8,
+      "text": "(Optional) New Risks Section The Title about add company. different dig flags into is: like lke mye section that the types would ‘Add"
+    },
+    {
+      "timestamp_sec": 17.8,
+      "text": "(Optional) New Risks Section The Title about add company. different dig flag flags like section that the types would ‘Add"
+    },
+    {
+      "timestamp_sec": 20.8,
+      "text": "(Optional New Risks Section The Title about add company. different dig flag flags ike into like section that the types would ‘Add"
+    },
+    {
+      "timestamp_sec": 35.6,
+      "text": "Project Secret Solar"
+    },
+    {
+      "timestamp_sec": 38.6,
+      "text": "[Leave all dan't documents empty exist expected rate? search search? should sted tay the these"
+    },
+    {
+      "timestamp_sec": 44.5,
+      "text": "Atibutes Document"
+    },
+    {
+      "timestamp_sec": 50.5,
+      "text": "Use"
+    },
+    {
+      "timestamp_sec": 53.5,
+      "text": "4/4 ACTIONS CONFIDENCE Narrowed answer c@> ceo documents found same search specitic times:"
+    }
+  ],
+  "pseudo_transcript": "(Optional New Section The Title about add company. different dig flag flags gets into like lke section that the types would ‘Add | (Optional) Financial New Section The Title about add company. different dig flag flags gets into like section that the types would ‘Add | (Optional) New Risks Section The Title about add company. different dig flags into is: like lke mye section that the types would ‘Add | (Optional) New Risks Section The Title about add company. different dig flag flags like section that the types would ‘Add | (Optional New Risks Section The Title about add company. different dig flag flags ike into like section that the types would ‘Add | Project Secret Solar | [Leave all dan't documents empty exist expected rate? search search? should sted tay the these | Atibutes Document | Use | 4/4 ACTIONS CONFIDENCE Narrowed answer c@> ceo documents found same search specitic times:",
+  "frame_type_distribution": {
+    "simple_visual": 0.53,
+    "text_heavy": 0.26,
+    "white_screen": 0.11,
+    "detailed_visual": 0.05,
+    "text_with_visual": 0.05
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          248
+        ],
+        [
+          63,
+          94,
+          49
+        ],
+        [
+          170,
+          123,
+          105
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          141,
+          141,
+          140
+        ],
+        [
+          70,
+          70,
+          70
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 29.7,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          247,
+          246
+        ],
+        [
+          133,
+          146,
+          185
+        ],
+        [
+          139,
+          74,
+          31
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 44.5,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          140,
+          139,
+          135
+        ],
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          81,
+          92,
+          53
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "hZfjKyGg1bU",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 2.24,
+      "bitrate_kbps": 344.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1171.4,
+      "blur_variance": 563.4,
+      "avg_motion": 31.3,
+      "max_motion": 71.81,
+      "motion_variance": 26.43,
+      "avg_brightness": 203.5,
+      "brightness_trend": 9.8,
+      "first_quarter_brightness": 200.3,
+      "last_quarter_brightness": 210.1,
+      "browser_chrome_frames": 2,
+      "browser_chrome_pct": 0.105,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.842,
+      "annotation_frames": 13,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 7.1,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.421,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 216.24421006944445,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 1585.5555546113756
+      },
+      "last_frame": {
+        "timestamp": 53.5,
+        "brightness": 233.0707769097222,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 17.9,
+      "frames_analyzed": 19
+    },
+    "marketing": {
+      "value_prop_timestamp": 8.9,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 1,
+      "features_per_min": 1.1,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 50.5,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 1,
+      "benefit_ratio": 0.0,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 3.54,
+      "emotional_arc": "flat",
+      "question_count": 2,
+      "has_questions": true,
+      "acronym_count": 2,
+      "acronym_density": 0.014,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 143
+    }
+  },
+  "mega": {
+    "video_id": "hZfjKyGg1bU",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 54.6,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 53.8,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 0.895,
+      "sidebar_pct": 0.632,
+      "modal_pct": 0.579,
+      "table_pct": 0.789,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.867,
+      "avg_thirds_score": 0.95,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.021,
+      "repetition_count": 14,
+      "has_bookend": false,
+      "longest_scene_sec": 57.0,
+      "frames_analyzed": 19
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30000/1001",
+      "r_frame_rate": "30000/1001",
+      "bit_rate_stream": 212385,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-08-01T18:37:43.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 51,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 18
+    }
+  }
+}

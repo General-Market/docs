@@ -1,0 +1,487 @@
+{
+  "video_id": "wJzNqnRN-dg",
+  "status": "ok",
+  "duration_sec": 47.7,
+  "resolution": "640x360",
+  "fps": 25.0,
+  "frames_analyzed": 16,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 7,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Data Start"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "2025 500 Add Extraction Hunt Leaderboard Pr. Produ Product Task Top Yearly dunt lents"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "(freemium), 2025 Back Best Design Developer Don't First Founder Hunt Key Midweek Most Positioning; Pricing: Share Stress and are audience. best bets: broad—pick cases, claims clear combos. comments examples. extras, fast features. feedback, fixes, free glance highlight insignts launch: launches offer paid plus popular products real reply results, savings, source specific target tier time too tools top ttle=\"Product unique use user win with work"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "(~3 2025 Categories, Comments Community Competition Creating Engagement Especially Focus Founder Hunt Products The Top Visual and chasing data demos design developer directly drives empty engagement: essential: fierce for from higher. impacts insights... markets minutes) niches. popular predict problems proven rather real report responsiveness reward shows significantly solving strongly success than that the tools, visual vote votes: while"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "\"Numbers AND Both Categories Categories: Dimensions Dominate Engagement Popular That The Winners ‘Most"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Drives Engagement Patterns: Success What"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "0.12-0.16 Actionable Category Framework Names Positioning Selection Short Strategies problem statement strategy"
+    }
+  ],
+  "pseudo_transcript": "Data Start | 2025 500 Add Extraction Hunt Leaderboard Pr. Produ Product Task Top Yearly dunt lents | (freemium), 2025 Back Best Design Developer Don't First Founder Hunt Key Midweek Most Positioning; Pricing: Share Stress and are audience. best bets: broad—pick cases, claims clear combos. comments examples. extras, fast features. feedback, fixes, free glance highlight insignts launch: launches offer paid plus popular products real reply results, savings, source specific target tier time too tools top ttle=\"Product unique use user win with work | (~3 2025 Categories, Comments Community Competition Creating Engagement Especially Focus Founder Hunt Products The Top Visual and chasing data demos design developer directly drives empty engagement: essential: fierce for from higher. impacts insights... markets minutes) niches. popular predict problems proven rather real report responsiveness reward shows significantly solving strongly success than that the tools, visual vote votes: while | \"Numbers AND Both Categories Categories: Dimensions Dominate Engagement Popular That The Winners ‘Most | Drives Engagement Patterns: Success What | 0.12-0.16 Actionable Category Framework Names Positioning Selection Short Strategies problem statement strategy",
+  "frame_type_distribution": {
+    "white_screen": 0.94,
+    "simple_visual": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          252,
+          251,
+          251
+        ],
+        [
+          53,
+          52,
+          50
+        ],
+        [
+          171,
+          169,
+          167
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          247
+        ],
+        [
+          190,
+          179,
+          176
+        ],
+        [
+          16,
+          16,
+          26
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          247,
+          240,
+          236
+        ],
+        [
+          144,
+          111,
+          112
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          250,
+          250
+        ],
+        [
+          169,
+          172,
+          169
+        ],
+        [
+          73,
+          74,
+          74
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "wJzNqnRN-dg",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.73,
+      "bitrate_kbps": 304.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1284.8,
+      "blur_variance": 709.6,
+      "avg_motion": 17.17,
+      "max_motion": 32.58,
+      "motion_variance": 5.97,
+      "avg_brightness": 242.3,
+      "brightness_trend": 0.2,
+      "first_quarter_brightness": 240.7,
+      "last_quarter_brightness": 240.9,
+      "browser_chrome_frames": 2,
+      "browser_chrome_pct": 0.125,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 1.0,
+      "annotation_frames": 15,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 47.7,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.875,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 229.0304123263889,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 927.9324325614084
+      },
+      "last_frame": {
+        "timestamp": 45.0,
+        "brightness": 245.27377170138888,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 5.9,
+      "frames_analyzed": 16
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 1,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 172.9,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 3,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 4.15,
+      "emotional_arc": "declining",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 1,
+      "acronym_density": 0.006,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 165
+    }
+  },
+  "mega": {
+    "video_id": "wJzNqnRN-dg",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 47.8,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.007,
+      "energy_trend": 0.06265,
+      "peak_timestamp_sec": 35.6,
+      "peak_position_pct": 0.75,
+      "dynamic_range_db": 16.2,
+      "onset_density": 4.91,
+      "intro_silence_sec": 0.3,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 2425.0,
+      "avg_spectral_bandwidth": 2399.0,
+      "avg_zcr": 0.1101
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 71.4,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 0.438,
+      "sidebar_pct": 0.0,
+      "modal_pct": 0.0,
+      "table_pct": 0.688,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.062,
+      "desktop_chrome_pct": 0.312,
+      "avg_symmetry": 0.956,
+      "avg_thirds_score": 1.083,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.007,
+      "repetition_count": 13,
+      "has_bookend": true,
+      "longest_scene_sec": 48.0,
+      "frames_analyzed": 16
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "25/1",
+      "r_frame_rate": "25/1",
+      "bit_rate_stream": 253559,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-09-17T04:53:24.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 112.3,
+      "detected_key": "F",
+      "key_confidence": 0.099,
+      "mfcc_mean": [
+        -84.501,
+        89.784,
+        -17.119,
+        13.534,
+        5.154,
+        7.909,
+        0.231,
+        7.153,
+        0.945,
+        4.287,
+        0.592,
+        3.417,
+        -1.065
+      ],
+      "mfcc_std": [
+        93.998,
+        40.134,
+        25.63,
+        17.313,
+        14.919,
+        12.608,
+        10.187,
+        9.739,
+        9.12,
+        8.956,
+        8.522,
+        9.304,
+        7.946
+      ],
+      "avg_spectral_contrast": 18.61,
+      "avg_tonnetz": [
+        -0.0465,
+        0.0531,
+        -0.0297,
+        0.0256,
+        -0.0146,
+        -0.006
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 2038.0,
+          "bandwidth": 2080.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 1873.0,
+          "bandwidth": 1994.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 1970.0,
+          "bandwidth": 2029.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -17.8,
+          "centroid": 2414.0,
+          "bandwidth": 2435.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -17.6,
+          "centroid": 1876.0,
+          "bandwidth": 2009.0
+        },
+        {
+          "timestamp": 15,
+          "type": "music_warm",
+          "rms_db": -16.6,
+          "centroid": 2659.0,
+          "bandwidth": 2631.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -14.3,
+          "centroid": 2600.0,
+          "bandwidth": 2491.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -14.4,
+          "centroid": 2519.0,
+          "bandwidth": 2492.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -14.9,
+          "centroid": 2482.0,
+          "bandwidth": 2450.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -14.8,
+          "centroid": 2576.0,
+          "bandwidth": 2487.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -13.5,
+          "centroid": 2485.0,
+          "bandwidth": 2597.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 2382.0,
+          "bandwidth": 2333.0
+        },
+        {
+          "timestamp": 36,
+          "type": "music_warm",
+          "rms_db": -14.4,
+          "centroid": 2672.0,
+          "bandwidth": 2577.0
+        },
+        {
+          "timestamp": 39,
+          "type": "music_warm",
+          "rms_db": -13.8,
+          "centroid": 2774.0,
+          "bandwidth": 2602.0
+        },
+        {
+          "timestamp": 42,
+          "type": "music_warm",
+          "rms_db": -14.4,
+          "centroid": 2936.0,
+          "bandwidth": 2684.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.733,
+        "music_warm": 0.267
+      },
+      "speech_pct": 0.733,
+      "music_pct": 0.267,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": true,
+      "has_music_intro": false,
+      "has_music_outro": true,
+      "energy_shape": "back_heavy",
+      "strong_sfx_count": 142,
+      "strong_sfx_timestamps": [
+        0.28,
+        0.49,
+        1.04,
+        1.28,
+        1.42,
+        1.56,
+        1.83,
+        2.11,
+        2.39,
+        2.55,
+        2.67,
+        2.81,
+        2.93,
+        3.2,
+        3.46,
+        3.6,
+        3.74,
+        3.99,
+        4.41,
+        4.55
+      ],
+      "n_segments": 15
+    }
+  }
+}

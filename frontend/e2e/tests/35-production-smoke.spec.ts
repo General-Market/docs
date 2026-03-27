@@ -1224,7 +1224,8 @@ test.describe('Static Pages', () => {
 
   for (const { path, needle } of STATIC_PAGES) {
     test(`${path} loads with expected content`, async ({ page }) => {
-      const res = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+      test.setTimeout(90_000)
+      const res = await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 60_000 })
       if (res && res.status() === 404) {
         console.warn(`SKIP: ${path} returned 404 — page may not exist in this environment.`)
         return

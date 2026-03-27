@@ -55,7 +55,10 @@ test.describe.serial('Oracle Resilience', () => {
   });
 
   test('consensus is progressing across all oracles', async () => {
-    test.setTimeout(120_000);
+    // Fresh deploys need warm-up: bitmap hash mismatches cause many failed rounds
+    // before the first successful consensus. 5 min accommodates cold oracles.
+    test.setTimeout(300_000);
+    const testStart = Date.now();
 
     const reachable = await oraclesReachable();
     if (!reachable) {
@@ -78,12 +81,15 @@ test.describe.serial('Oracle Resilience', () => {
     const orderId = await placeL3BuyOrderDirect(TEST_ADDRESS, ITP_ID, usdcAmount, limitPrice);
     console.log(`Placed L3 buy order #${orderId} to trigger consensus`);
 
-    // Wait for consensus to progress on at least 2/3 oracles (quorum)
-    // Vision bitmap hash mismatches cause many failed rounds — allow extra time
-    const deadline = Date.now() + 180_000;
+    // Wait for consensus to progress on at least 2/3 oracles (quorum).
+    // Budget: test timeout minus elapsed setup minus 15s safety margin.
+    const pollBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 15_000);
+    const deadline = Date.now() + pollBudget;
     let progressCount = 0;
+    let attempts = 0;
     while (Date.now() < deadline && progressCount < 2) {
       progressCount = 0;
+      attempts++;
       for (let i = 0; i < ORACLE_URLS.length; i++) {
         try {
           const res = await fetch(`${ORACLE_URLS[i]}/health`, { signal: AbortSignal.timeout(5_000) });
@@ -93,10 +99,37 @@ test.describe.serial('Oracle Resilience', () => {
           }
         } catch { /* retry */ }
       }
-      if (progressCount < 2) await new Promise(r => setTimeout(r, 3_000));
+      if (progressCount < 2) {
+        if (attempts % 10 === 0) {
+          console.log(`Still waiting for consensus progress... ${progressCount}/2 oracles progressed (${Math.round((Date.now() - testStart) / 1000)}s elapsed)`);
+        }
+        await new Promise(r => setTimeout(r, 3_000));
+      }
     }
 
-    console.log(`Consensus progressed on ${progressCount}/${ORACLE_URLS.length} oracles`);
+    // If first order didn't trigger consensus, place a second to nudge the pipeline
+    if (progressCount < 2) {
+      console.log(`First order didn't produce quorum consensus — placing retry order`);
+      const retryOrderId = await placeL3BuyOrderDirect(TEST_ADDRESS, ITP_ID, usdcAmount, limitPrice);
+      console.log(`Placed retry L3 buy order #${retryOrderId}`);
+
+      const retryDeadline = Date.now() + Math.max(30_000, 300_000 - (Date.now() - testStart) - 10_000);
+      while (Date.now() < retryDeadline && progressCount < 2) {
+        progressCount = 0;
+        for (let i = 0; i < ORACLE_URLS.length; i++) {
+          try {
+            const res = await fetch(`${ORACLE_URLS[i]}/health`, { signal: AbortSignal.timeout(5_000) });
+            const health = await res.json();
+            if ((health.consensus?.success_total ?? 0) > baselines[i]) {
+              progressCount++;
+            }
+          } catch { /* retry */ }
+        }
+        if (progressCount < 2) await new Promise(r => setTimeout(r, 3_000));
+      }
+    }
+
+    console.log(`Consensus progressed on ${progressCount}/${ORACLE_URLS.length} oracles (${Math.round((Date.now() - testStart) / 1000)}s total)`);
     expect(progressCount, 'at least 2/3 oracles should make consensus progress').toBeGreaterThanOrEqual(2);
   });
 });

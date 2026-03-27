@@ -14,10 +14,10 @@ async function apiGet(path: string): Promise<Response> {
   });
 }
 
-async function apiPost(path: string, body: Record<string, unknown>): Promise<Response> {
+async function apiPost(path: string, body: Record<string, unknown>, timeoutMs = 15_000): Promise<Response> {
   return fetch(`${BASE}${path}`, {
     method: 'POST',
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(timeoutMs),
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
   });
@@ -34,9 +34,11 @@ test.describe('API Routes Smoke Tests', () => {
   });
 
   test('POST /api/faucet returns 200 with valid address', async () => {
+    // Faucet does on-chain mint + waitForTransactionReceipt (up to 30s).
+    // 15s fetch timeout is too tight for cold RPC — use 45s.
     const res = await apiPost('/api/faucet', {
       address: DEPLOYER_ADDRESS,
-    });
+    }, 45_000);
     expect(res.status).toBeLessThan(500);
   });
 

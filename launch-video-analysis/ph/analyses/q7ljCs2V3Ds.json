@@ -1,0 +1,2052 @@
+{
+  "video_id": "q7ljCs2V3Ds",
+  "status": "ok",
+  "duration_sec": 326.9,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 109,
+  "transition_count": 11,
+  "transitions": [
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.158,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "correlation": 0.156,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "correlation": 0.028,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "correlation": 0.031,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "correlation": 0.363,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "correlation": 0.337,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "correlation": 0.157,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "correlation": 0.384,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 150.0,
+      "correlation": 0.212,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 153.0,
+      "correlation": 0.221,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 324.0,
+      "correlation": 0.072,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 84,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Choose favorite stocks your"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "Choose Hi, I'm Shusuke, and favorite founder stocks the your"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Choose bit favorite introduce more, myself stocks worked your"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "BlackRock Choose Lambda, before favorite starting stocks your"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Choose and favorite investors realized stocks your"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Choose could everyday favorite investors like stocks that you your"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Choose also benefit favorite from insights. similar stocks your"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "Choose Lambda Lambda. While favorite offers stocks your"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Choose favorite features, like stocks variety would your"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Al-powered Looking chat for stocks the wit"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "into"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Lambda excels portfolio"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "hold multiple rts stocks. you ‘suppose"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "CSV holdings upload via your ‘Simply"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "Map analyze key, portfolio. the your"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "LES Pore add all good, looks the then"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "Alternatively, LES Pore can transaction. you"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "also holdings input manually, your"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "bank connect integration with your"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "account analysis. for more oor seamless"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "data rts transaction your ‘Once"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "text": "compared performance the ‘overall"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "500, S&P data, position stats, trade"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "text": "allocation. and asset sector"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "assessing breakdown for rts"
+    },
+    {
+      "timestamp_sec": 87.0,
+      "text": "diversification. rts"
+    },
+    {
+      "timestamp_sec": 90.0,
+      "text": "across all dividend holdings, rts yields"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "text": "Lid portfolio series the time yields,"
+    },
+    {
+      "timestamp_sec": 96.0,
+      "text": "and dividend for forecasted historical"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "advanced goal isto our use"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "text": "allocation best each’ find for rts the"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "text": "reducing risk rts stocks, while"
+    },
+    {
+      "timestamp_sec": 108.0,
+      "text": "You can check ort returns, ‘maximizing"
+    },
+    {
+      "timestamp_sec": 120.0,
+      "text": "low option. prefer risk the you"
+    },
+    {
+      "timestamp_sec": 123.0,
+      "text": "You can could for option the you."
+    },
+    {
+      "timestamp_sec": 132.0,
+      "text": "allow also run strategies. you"
+    },
+    {
+      "timestamp_sec": 135.0,
+      "text": "Demo Hunt I's events. historical market oduct similar"
+    },
+    {
+      "timestamp_sec": 138.0,
+      "text": "Demo Hunt analysis, ita such what"
+    },
+    {
+      "timestamp_sec": 141.0,
+      "text": "Lehman Once happens shook today,"
+    },
+    {
+      "timestamp_sec": 144.0,
+      "text": "Pra might perform portfolio the under your"
+    },
+    {
+      "timestamp_sec": 147.0,
+      "text": "With challenging conditions. these"
+    },
+    {
+      "timestamp_sec": 150.0,
+      "text": "complete get insights, picture you"
+    },
+    {
+      "timestamp_sec": 153.0,
+      "text": "balance, portfolio's profile, risk"
+    },
+    {
+      "timestamp_sec": 156.0,
+      "text": "and potential return"
+    },
+    {
+      "timestamp_sec": 162.0,
+      "text": "San"
+    },
+    {
+      "timestamp_sec": 165.0,
+      "text": "Ourchat frm sidebar the wel, ‘or"
+    },
+    {
+      "timestamp_sec": 168.0,
+      "text": "also but only responds text, ‘not"
+    },
+    {
+      "timestamp_sec": 171.0,
+      "text": "components dynamic presents visual"
+    },
+    {
+      "timestamp_sec": 174.0,
+      "text": "conversation for right the within"
+    },
+    {
+      "timestamp_sec": 177.0,
+      "text": "analysis. data-driven immersive"
+    },
+    {
+      "timestamp_sec": 186.0,
+      "text": "1.92% and i's iow, only relatively"
+    },
+    {
+      "timestamp_sec": 189.0,
+      "text": "for improve looking way you're"
+    },
+    {
+      "timestamp_sec": 195.0,
+      "text": "can metric. scenario, this you ‘this"
+    },
+    {
+      "timestamp_sec": 198.0,
+      "text": "dividend the with yield ‘stocks"
+    },
+    {
+      "timestamp_sec": 213.0,
+      "text": "more right scroll see the ‘can"
+    },
+    {
+      "timestamp_sec": 216.0,
+      "text": "data. fundamental kind"
+    },
+    {
+      "timestamp_sec": 219.0,
+      "text": "English, also but fitered your"
+    },
+    {
+      "timestamp_sec": 222.0,
+      "text": "find language native optimal stocks"
+    },
+    {
+      "timestamp_sec": 234.0,
+      "text": "this way well. you ‘can"
+    },
+    {
+      "timestamp_sec": 237.0,
+      "text": "find option, with"
+    },
+    {
+      "timestamp_sec": 240.0,
+      "text": "You can ease."
+    },
+    {
+      "timestamp_sec": 243.0,
+      "text": "$26. PFE priced"
+    },
+    {
+      "timestamp_sec": 246.0,
+      "text": "add can year, you"
+    },
+    {
+      "timestamp_sec": 258.0,
+      "text": "demo hunt product select the"
+    },
+    {
+      "timestamp_sec": 261.0,
+      "text": "click scenario, then this"
+    },
+    {
+      "timestamp_sec": 264.0,
+      "text": "shares"
+    },
+    {
+      "timestamp_sec": 267.0,
+      "text": "portfolio, updating your"
+    },
+    {
+      "timestamp_sec": 270.0,
+      "text": "already can real see that time."
+    },
+    {
+      "timestamp_sec": 273.0,
+      "text": "dividend has improvements yield"
+    },
+    {
+      "timestamp_sec": 276.0,
+      "text": "2.67% and data increased other"
+    },
+    {
+      "timestamp_sec": 279.0,
+      "text": "also been has updated well."
+    },
+    {
+      "timestamp_sec": 285.0,
+      "text": "emt"
+    },
+    {
+      "timestamp_sec": 288.0,
+      "text": "adjustments and informed quickly"
+    },
+    {
+      "timestamp_sec": 291.0,
+      "text": "chat"
+    },
+    {
+      "timestamp_sec": 294.0,
+      "text": "Lambda beta currently phase,"
+    },
+    {
+      "timestamp_sec": 297.0,
+      "text": "beyond, extends far our vision ‘but"
+    },
+    {
+      "timestamp_sec": 300.0,
+      "text": "coverage expand our this. want"
+    },
+    {
+      "timestamp_sec": 303.0,
+      "text": "and funds, mutual ‘eryptocurrencies,"
+    },
+    {
+      "timestamp_sec": 306.0,
+      "text": "options. want ‘even"
+    },
+    {
+      "timestamp_sec": 309.0,
+      "text": "comprehensive platform that"
+    },
+    {
+      "timestamp_sec": 315.0,
+      "text": "angle for long-term success. ‘every"
+    },
+    {
+      "timestamp_sec": 318.0,
+      "text": "That's about enjoy hope it. you"
+    },
+    {
+      "timestamp_sec": 321.0,
+      "text": "Thank feedback. you."
+    },
+    {
+      "timestamp_sec": 324.0,
+      "text": "The actual advice, and buy construed demonstration for funds, illustrative informational investment nor not offeror ond only opportunities. ore presented provided purposes represent securities securities, should solely solicitation strategies. this ©2024 ‘This ‘or"
+    }
+  ],
+  "pseudo_transcript": "Choose favorite stocks your | Choose Hi, I'm Shusuke, and favorite founder stocks the your | Choose bit favorite introduce more, myself stocks worked your | BlackRock Choose Lambda, before favorite starting stocks your | Choose and favorite investors realized stocks your | Choose could everyday favorite investors like stocks that you your | Choose also benefit favorite from insights. similar stocks your | Choose Lambda Lambda. While favorite offers stocks your | Choose favorite features, like stocks variety would your | Al-powered Looking chat for stocks the wit | into | Lambda excels portfolio | hold multiple rts stocks. you ‘suppose | CSV holdings upload via your ‘Simply | Map analyze key, portfolio. the your | LES Pore add all good, looks the then | Alternatively, LES Pore can transaction. you | also holdings input manually, your | bank connect integration with your | account analysis. for more oor seamless | data rts transaction your ‘Once | compared performance the ‘overall | 500, S&P data, position stats, trade | allocation. and asset sector | assessing breakdown for rts | diversification. rts | across all dividend holdings, rts yields | Lid portfolio series the time yields, | and dividend for forecasted historical | advanced goal isto our use | allocation best each’ find for rts the | reducing risk rts stocks, while | You can check ort returns, ‘maximizing | low option. prefer risk the you | You can could for option the you. | allow also run strategies. you | Demo Hunt I's events. historical market oduct similar | Demo Hunt analysis, ita such what | Lehman Once happens shook today, | Pra might perform portfolio the under your | With challenging conditions. these | complete get insights, picture you | balance, portfolio's profile, risk | and potential return | San | Ourchat frm sidebar the wel, ‘or | also but only responds text, ‘not | components dynamic presents visual | conversation for right the within | analysis. data-driven immersive | 1.92% and i's iow, only relatively | for improve looking way you're | can metric. scenario, this you ‘this | dividend the with yield ‘stocks | more right scroll see the ‘can | data. fundamental kind | English, also but fitered your | find language native optimal stocks | this way well. you ‘can | find option, with | You can ease. | $26. PFE priced | add can year, you | demo hunt product select the | click scenario, then this | shares | portfolio, updating your | already can real see that time. | dividend has improvements yield | 2.67% and data increased other | also been has updated well. | emt | adjustments and informed quickly | chat | Lambda beta currently phase, | beyond, extends far our vision ‘but | coverage expand our this. want | and funds, mutual ‘eryptocurrencies, | options. want ‘even | comprehensive platform that | angle for long-term success. ‘every | That's about enjoy hope it. you | Thank feedback. you. | The actual advice, and buy construed demonstration for funds, illustrative informational investment nor not offeror ond only opportunities. ore presented provided purposes represent securities securities, should solely solicitation strategies. this ©2024 ‘This ‘or",
+  "frame_type_distribution": {
+    "detailed_visual": 0.44,
+    "text_with_visual": 0.3,
+    "simple_visual": 0.24,
+    "white_screen": 0.01,
+    "dark_screen": 0.01
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          244,
+          243
+        ],
+        [
+          135,
+          127,
+          144
+        ],
+        [
+          124,
+          71,
+          28
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          54,
+          54,
+          54
+        ],
+        [
+          27,
+          21,
+          19
+        ],
+        [
+          214,
+          213,
+          211
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          53,
+          54,
+          54
+        ],
+        [
+          26,
+          21,
+          18
+        ],
+        [
+          213,
+          212,
+          210
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 21.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          244,
+          242
+        ],
+        [
+          143,
+          127,
+          138
+        ],
+        [
+          102,
+          59,
+          27
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          244,
+          243
+        ],
+        [
+          141,
+          128,
+          142
+        ],
+        [
+          106,
+          63,
+          28
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          136,
+          137,
+          134
+        ],
+        [
+          77,
+          71,
+          79
+        ],
+        [
+          59,
+          35,
+          15
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 42.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          223,
+          222,
+          220
+        ],
+        [
+          123,
+          117,
+          130
+        ],
+        [
+          106,
+          60,
+          24
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          246,
+          245
+        ],
+        [
+          109,
+          64,
+          28
+        ],
+        [
+          142,
+          145,
+          170
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 48.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          245,
+          243
+        ],
+        [
+          107,
+          61,
+          26
+        ],
+        [
+          137,
+          139,
+          171
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          122,
+          118,
+          121
+        ],
+        [
+          241,
+          241,
+          240
+        ],
+        [
+          90,
+          49,
+          20
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 66.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          167,
+          167,
+          169
+        ],
+        [
+          243,
+          242,
+          240
+        ],
+        [
+          108,
+          63,
+          29
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 72.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          155,
+          151,
+          167
+        ],
+        [
+          111,
+          65,
+          29
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          242,
+          240
+        ],
+        [
+          156,
+          151,
+          166
+        ],
+        [
+          110,
+          66,
+          31
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          243,
+          242,
+          240
+        ],
+        [
+          156,
+          150,
+          166
+        ],
+        [
+          105,
+          60,
+          26
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          153,
+          150,
+          163
+        ],
+        [
+          108,
+          61,
+          24
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          177,
+          159,
+          163
+        ],
+        [
+          72,
+          56,
+          38
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          243,
+          242
+        ],
+        [
+          180,
+          151,
+          145
+        ],
+        [
+          66,
+          45,
+          34
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 150.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          172,
+          173,
+          173
+        ],
+        [
+          145,
+          115,
+          83
+        ],
+        [
+          58,
+          35,
+          34
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 153.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          243,
+          242,
+          239
+        ],
+        [
+          147,
+          152,
+          172
+        ],
+        [
+          107,
+          64,
+          30
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 165.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          171,
+          163,
+          173
+        ],
+        [
+          51,
+          44,
+          39
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 180.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          241
+        ],
+        [
+          166,
+          159,
+          169
+        ],
+        [
+          71,
+          46,
+          33
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 195.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          245,
+          243
+        ],
+        [
+          93,
+          59,
+          33
+        ],
+        [
+          150,
+          151,
+          167
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 210.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          241
+        ],
+        [
+          158,
+          151,
+          167
+        ],
+        [
+          108,
+          63,
+          29
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 225.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          245,
+          243
+        ],
+        [
+          155,
+          156,
+          168
+        ],
+        [
+          98,
+          57,
+          27
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 240.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          242,
+          240
+        ],
+        [
+          156,
+          151,
+          168
+        ],
+        [
+          106,
+          63,
+          30
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 255.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          246,
+          245,
+          243
+        ],
+        [
+          170,
+          167,
+          170
+        ],
+        [
+          73,
+          54,
+          41
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 270.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          242,
+          240
+        ],
+        [
+          147,
+          149,
+          173
+        ],
+        [
+          107,
+          62,
+          27
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 285.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          244,
+          242
+        ],
+        [
+          150,
+          145,
+          166
+        ],
+        [
+          107,
+          62,
+          26
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 300.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          150,
+          151,
+          172
+        ],
+        [
+          106,
+          62,
+          27
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 315.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          243,
+          240
+        ],
+        [
+          147,
+          149,
+          174
+        ],
+        [
+          110,
+          63,
+          28
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 324.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          43,
+          33,
+          28
+        ],
+        [
+          118,
+          120,
+          121
+        ],
+        [
+          202,
+          195,
+          189
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "q7ljCs2V3Ds",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 11.64,
+      "bitrate_kbps": 299.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1065.5,
+      "blur_variance": 281.3,
+      "avg_motion": 16.76,
+      "max_motion": 172.7,
+      "motion_variance": 29.56,
+      "avg_brightness": 201.4,
+      "brightness_trend": 37.3,
+      "first_quarter_brightness": 169.3,
+      "last_quarter_brightness": 206.7,
+      "browser_chrome_frames": 76,
+      "browser_chrome_pct": 0.697,
+      "dark_mode_pct": 0.037,
+      "light_mode_pct": 0.872,
+      "annotation_frames": 109,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 5.9,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.0,
+      "cool_frame_pct": 0.138,
+      "first_frame": {
+        "brightness": 208.88019965277778,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 523.5499669016897
+      },
+      "last_frame": {
+        "timestamp": 324.0,
+        "brightness": 36.75678819444445,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 30.8,
+      "frames_analyzed": 109
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": true,
+      "negative_sentiment_timestamps": 3,
+      "positive_sentiment_timestamps": 3,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 3,
+      "metrics_found": [
+        "92%",
+        "$26.",
+        "67%"
+      ],
+      "metric_placement": "late",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 2,
+      "features_per_min": 0.4,
+      "has_pricing": true,
+      "pricing_texts": [
+        "$26"
+      ],
+      "text_length_variance": 28.2,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.002,
+      "jargon_words": [
+        "lambda"
+      ],
+      "benefit_count": 2,
+      "feature_word_count": 2,
+      "benefit_ratio": 0.5,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 3.79,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 4,
+      "acronym_density": 0.009,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 12,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 457
+    }
+  },
+  "mega": {
+    "video_id": "q7ljCs2V3Ds",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 300.0,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.074,
+      "energy_trend": -0.006957,
+      "peak_timestamp_sec": 260.8,
+      "peak_position_pct": 0.87,
+      "dynamic_range_db": 24.2,
+      "onset_density": 4.83,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 2209.0,
+      "avg_spectral_bandwidth": 2189.0,
+      "avg_zcr": 0.1045
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 3.14,
+      "color_palette_size": 20,
+      "color_consistency": 74.2,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.55,
+      "navbar_pct": 0.991,
+      "sidebar_pct": 0.376,
+      "modal_pct": 0.248,
+      "table_pct": 0.954,
+      "chat_pct": 0.0,
+      "code_pct": 0.028,
+      "terminal_pct": 0.028,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.904,
+      "avg_thirds_score": 0.838,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.073,
+      "repetition_count": 99,
+      "has_bookend": false,
+      "longest_scene_sec": 258.0,
+      "frames_analyzed": 109
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 167530,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-12-25T17:09:53.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 112.3,
+      "detected_key": "A",
+      "key_confidence": 0.092,
+      "mfcc_mean": [
+        -233.288,
+        99.387,
+        -2.915,
+        32.672,
+        4.819,
+        3.629,
+        -5.485,
+        -1.86,
+        -10.24,
+        1.636,
+        -8.208,
+        2.805,
+        -0.176
+      ],
+      "mfcc_std": [
+        99.767,
+        50.662,
+        33.172,
+        23.987,
+        19.562,
+        17.492,
+        14.42,
+        10.877,
+        12.946,
+        9.324,
+        10.733,
+        9.058,
+        8.718
+      ],
+      "avg_spectral_contrast": 18.17,
+      "avg_tonnetz": [
+        0.0276,
+        -0.052,
+        -0.0246,
+        0.0076,
+        0.0034,
+        0.0042
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1952.0,
+          "bandwidth": 1968.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1859.0,
+          "bandwidth": 2009.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1721.0,
+          "bandwidth": 1941.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2012.0,
+          "bandwidth": 2111.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 2464.0,
+          "bandwidth": 2194.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 2048.0,
+          "bandwidth": 2052.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 1927.0,
+          "bandwidth": 2057.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2217.0,
+          "bandwidth": 2162.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -22.7,
+          "centroid": 1956.0,
+          "bandwidth": 2125.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 1597.0,
+          "bandwidth": 1978.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1912.0,
+          "bandwidth": 1974.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 2061.0,
+          "bandwidth": 2029.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -23.6,
+          "centroid": 2223.0,
+          "bandwidth": 2123.0
+        },
+        {
+          "timestamp": 39,
+          "type": "ambient",
+          "rms_db": -29.0,
+          "centroid": 3187.0,
+          "bandwidth": 2483.0
+        },
+        {
+          "timestamp": 42,
+          "type": "ambient",
+          "rms_db": -22.2,
+          "centroid": 2860.0,
+          "bandwidth": 2194.0
+        },
+        {
+          "timestamp": 45,
+          "type": "ambient",
+          "rms_db": -21.7,
+          "centroid": 2636.0,
+          "bandwidth": 2334.0
+        },
+        {
+          "timestamp": 48,
+          "type": "ambient",
+          "rms_db": -22.0,
+          "centroid": 2629.0,
+          "bandwidth": 2255.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 2406.0,
+          "bandwidth": 2202.0
+        },
+        {
+          "timestamp": 54,
+          "type": "music_warm",
+          "rms_db": -27.4,
+          "centroid": 2913.0,
+          "bandwidth": 2571.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 2132.0,
+          "bandwidth": 2238.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 2053.0,
+          "bandwidth": 2176.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 2147.0,
+          "bandwidth": 2205.0
+        },
+        {
+          "timestamp": 66,
+          "type": "ambient",
+          "rms_db": -23.0,
+          "centroid": 2682.0,
+          "bandwidth": 2207.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2170.0,
+          "bandwidth": 2337.0
+        },
+        {
+          "timestamp": 72,
+          "type": "ambient",
+          "rms_db": -19.9,
+          "centroid": 2480.0,
+          "bandwidth": 2120.0
+        },
+        {
+          "timestamp": 75,
+          "type": "music_warm",
+          "rms_db": -23.3,
+          "centroid": 2654.0,
+          "bandwidth": 2567.0
+        },
+        {
+          "timestamp": 78,
+          "type": "ambient",
+          "rms_db": -22.0,
+          "centroid": 3053.0,
+          "bandwidth": 2705.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -24.9,
+          "centroid": 2553.0,
+          "bandwidth": 2513.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -24.4,
+          "centroid": 2716.0,
+          "bandwidth": 2663.0
+        },
+        {
+          "timestamp": 87,
+          "type": "music_warm",
+          "rms_db": -21.4,
+          "centroid": 2876.0,
+          "bandwidth": 2661.0
+        },
+        {
+          "timestamp": 90,
+          "type": "music_warm",
+          "rms_db": -21.3,
+          "centroid": 2910.0,
+          "bandwidth": 2702.0
+        },
+        {
+          "timestamp": 93,
+          "type": "music_warm",
+          "rms_db": -21.3,
+          "centroid": 2608.0,
+          "bandwidth": 2500.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -26.1,
+          "centroid": 3080.0,
+          "bandwidth": 2903.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 2669.0,
+          "bandwidth": 2649.0
+        },
+        {
+          "timestamp": 102,
+          "type": "ambient",
+          "rms_db": -23.0,
+          "centroid": 3194.0,
+          "bandwidth": 2651.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -24.7,
+          "centroid": 2455.0,
+          "bandwidth": 2415.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1793.0,
+          "bandwidth": 1837.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 2053.0,
+          "bandwidth": 1868.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1746.0,
+          "bandwidth": 1872.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 2196.0,
+          "bandwidth": 2103.0
+        },
+        {
+          "timestamp": 120,
+          "type": "ambient",
+          "rms_db": -22.8,
+          "centroid": 2750.0,
+          "bandwidth": 2121.0
+        },
+        {
+          "timestamp": 123,
+          "type": "ambient",
+          "rms_db": -23.4,
+          "centroid": 3107.0,
+          "bandwidth": 2324.0
+        },
+        {
+          "timestamp": 126,
+          "type": "ambient",
+          "rms_db": -24.7,
+          "centroid": 2141.0,
+          "bandwidth": 1870.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -24.2,
+          "centroid": 1692.0,
+          "bandwidth": 1645.0
+        },
+        {
+          "timestamp": 132,
+          "type": "ambient",
+          "rms_db": -23.2,
+          "centroid": 2560.0,
+          "bandwidth": 1862.0
+        },
+        {
+          "timestamp": 135,
+          "type": "ambient",
+          "rms_db": -22.2,
+          "centroid": 2035.0,
+          "bandwidth": 1841.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 1928.0,
+          "bandwidth": 1777.0
+        },
+        {
+          "timestamp": 141,
+          "type": "ambient",
+          "rms_db": -22.4,
+          "centroid": 2307.0,
+          "bandwidth": 1954.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 2453.0,
+          "bandwidth": 2540.0
+        },
+        {
+          "timestamp": 147,
+          "type": "ambient",
+          "rms_db": -24.3,
+          "centroid": 3194.0,
+          "bandwidth": 2797.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 2590.0,
+          "bandwidth": 2477.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -30.9,
+          "centroid": 2922.0,
+          "bandwidth": 2724.0
+        },
+        {
+          "timestamp": 156,
+          "type": "ambient",
+          "rms_db": -25.4,
+          "centroid": 2608.0,
+          "bandwidth": 2425.0
+        },
+        {
+          "timestamp": 159,
+          "type": "ambient",
+          "rms_db": -23.2,
+          "centroid": 2388.0,
+          "bandwidth": 2220.0
+        },
+        {
+          "timestamp": 162,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 2064.0,
+          "bandwidth": 2081.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -24.8,
+          "centroid": 2125.0,
+          "bandwidth": 2265.0
+        },
+        {
+          "timestamp": 168,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 2118.0,
+          "bandwidth": 2088.0
+        },
+        {
+          "timestamp": 171,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 2249.0,
+          "bandwidth": 2221.0
+        },
+        {
+          "timestamp": 174,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 2032.0,
+          "bandwidth": 2109.0
+        },
+        {
+          "timestamp": 177,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 2042.0,
+          "bandwidth": 2174.0
+        },
+        {
+          "timestamp": 180,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1633.0,
+          "bandwidth": 2064.0
+        },
+        {
+          "timestamp": 183,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1721.0,
+          "bandwidth": 2012.0
+        },
+        {
+          "timestamp": 186,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1886.0,
+          "bandwidth": 2017.0
+        },
+        {
+          "timestamp": 189,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1866.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 192,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 2015.0,
+          "bandwidth": 2152.0
+        },
+        {
+          "timestamp": 195,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1738.0,
+          "bandwidth": 2065.0
+        },
+        {
+          "timestamp": 198,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 2150.0,
+          "bandwidth": 2151.0
+        },
+        {
+          "timestamp": 201,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 2125.0,
+          "bandwidth": 2167.0
+        },
+        {
+          "timestamp": 204,
+          "type": "speech",
+          "rms_db": -29.1,
+          "centroid": 1615.0,
+          "bandwidth": 2149.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 1962.0,
+          "bandwidth": 2121.0
+        },
+        {
+          "timestamp": 210,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 1935.0,
+          "bandwidth": 2124.0
+        },
+        {
+          "timestamp": 213,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 1721.0,
+          "bandwidth": 2129.0
+        },
+        {
+          "timestamp": 216,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 2051.0,
+          "bandwidth": 2107.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1893.0,
+          "bandwidth": 2045.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 2026.0,
+          "bandwidth": 2092.0
+        },
+        {
+          "timestamp": 225,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1725.0,
+          "bandwidth": 2054.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -24.5,
+          "centroid": 1767.0,
+          "bandwidth": 2025.0
+        },
+        {
+          "timestamp": 231,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1953.0,
+          "bandwidth": 2200.0
+        },
+        {
+          "timestamp": 234,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 1842.0,
+          "bandwidth": 2118.0
+        },
+        {
+          "timestamp": 237,
+          "type": "ambient",
+          "rms_db": -22.1,
+          "centroid": 2324.0,
+          "bandwidth": 2046.0
+        },
+        {
+          "timestamp": 240,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 2148.0,
+          "bandwidth": 2201.0
+        },
+        {
+          "timestamp": 243,
+          "type": "speech",
+          "rms_db": -27.3,
+          "centroid": 1880.0,
+          "bandwidth": 2193.0
+        },
+        {
+          "timestamp": 246,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 2042.0,
+          "bandwidth": 2387.0
+        },
+        {
+          "timestamp": 249,
+          "type": "speech",
+          "rms_db": -35.4,
+          "centroid": 1927.0,
+          "bandwidth": 2581.0
+        },
+        {
+          "timestamp": 252,
+          "type": "speech",
+          "rms_db": -24.8,
+          "centroid": 2207.0,
+          "bandwidth": 2403.0
+        },
+        {
+          "timestamp": 255,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1888.0,
+          "bandwidth": 2095.0
+        },
+        {
+          "timestamp": 258,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1512.0,
+          "bandwidth": 2006.0
+        },
+        {
+          "timestamp": 261,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1942.0,
+          "bandwidth": 2023.0
+        },
+        {
+          "timestamp": 264,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 2280.0,
+          "bandwidth": 2080.0
+        },
+        {
+          "timestamp": 267,
+          "type": "speech",
+          "rms_db": -24.4,
+          "centroid": 1882.0,
+          "bandwidth": 1946.0
+        },
+        {
+          "timestamp": 270,
+          "type": "speech",
+          "rms_db": -23.5,
+          "centroid": 1921.0,
+          "bandwidth": 2062.0
+        },
+        {
+          "timestamp": 273,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 2096.0,
+          "bandwidth": 2197.0
+        },
+        {
+          "timestamp": 276,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 2239.0,
+          "bandwidth": 2103.0
+        },
+        {
+          "timestamp": 279,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 1948.0,
+          "bandwidth": 2038.0
+        },
+        {
+          "timestamp": 282,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2141.0,
+          "bandwidth": 2244.0
+        },
+        {
+          "timestamp": 285,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 2281.0,
+          "bandwidth": 2148.0
+        },
+        {
+          "timestamp": 288,
+          "type": "speech",
+          "rms_db": -23.7,
+          "centroid": 1996.0,
+          "bandwidth": 2044.0
+        },
+        {
+          "timestamp": 291,
+          "type": "speech",
+          "rms_db": -24.5,
+          "centroid": 1831.0,
+          "bandwidth": 2041.0
+        },
+        {
+          "timestamp": 294,
+          "type": "ambient",
+          "rms_db": -23.0,
+          "centroid": 2322.0,
+          "bandwidth": 2086.0
+        },
+        {
+          "timestamp": 297,
+          "type": "ambient",
+          "rms_db": -21.9,
+          "centroid": 2345.0,
+          "bandwidth": 2086.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.75,
+        "ambient": 0.2,
+        "music_warm": 0.05
+      },
+      "speech_pct": 0.75,
+      "music_pct": 0.05,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "valley",
+      "strong_sfx_count": 727,
+      "strong_sfx_timestamps": [
+        0.07,
+        0.21,
+        0.6,
+        0.88,
+        1.16,
+        1.3,
+        1.42,
+        1.58,
+        2.25,
+        2.41,
+        2.55,
+        2.81,
+        3.62,
+        3.88,
+        4.16,
+        4.44,
+        4.95,
+        5.41,
+        5.55,
+        5.8
+      ],
+      "n_segments": 100
+    }
+  }
+}

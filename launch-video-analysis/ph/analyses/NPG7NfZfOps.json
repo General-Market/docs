@@ -1,0 +1,882 @@
+{
+  "video_id": "NPG7NfZfOps",
+  "status": "ok",
+  "duration_sec": 120.6,
+  "resolution": "640x274",
+  "fps": 30.0,
+  "frames_analyzed": 41,
+  "transition_count": 3,
+  "transitions": [
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.278,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "correlation": 0.28,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "correlation": 0.441,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 19,
+  "text_extractions": [
+    {
+      "timestamp_sec": 9.0,
+      "text": "OBST time"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Googie OCS) Ternary [CHATGPT] and {GOOGLE"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "400008 Bets Bt: Docs) oF: see?"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "400008 Bt: Docs) Docs} oF:"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Data Ternary and tem ‘Algorithms"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "Comments Omer Raw Usor from"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "NBLM emmy feature for proj requests"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "NBLM feature for pro} requests"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "NBLM for pro} requests"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "Ome"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "cme"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "aces"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "SSS"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "text": "Abstract DOCS]"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "Abstract DOCS] HC! O80 [GOOGLE"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "text": "4200008 808"
+    },
+    {
+      "timestamp_sec": 114.0,
+      "text": "+808 AcTOSS Algorithms Class Conference Data Exploring IEEE Imbalance Publication Strategies Tackling Types Varied Xplore and for"
+    },
+    {
+      "timestamp_sec": 117.0,
+      "text": "Across Class Conference Conner Dato EEE IEEE Xplore imbalance strategies tor"
+    },
+    {
+      "timestamp_sec": 120.0,
+      "text": "Class Data Exploring IEEE Imbalance Publication Strategies Types Xplore and"
+    }
+  ],
+  "pseudo_transcript": "OBST time | Googie OCS) Ternary [CHATGPT] and {GOOGLE | 400008 Bets Bt: Docs) oF: see? | 400008 Bt: Docs) Docs} oF: | Data Ternary and tem ‘Algorithms | Comments Omer Raw Usor from | NBLM emmy feature for proj requests | NBLM feature for pro} requests | NBLM for pro} requests | Ome | cme | aces | SSS | Abstract DOCS] | Abstract DOCS] HC! O80 [GOOGLE | 4200008 808 | +808 AcTOSS Algorithms Class Conference Data Exploring IEEE Imbalance Publication Strategies Tackling Types Varied Xplore and for | Across Class Conference Conner Dato EEE IEEE Xplore imbalance strategies tor | Class Data Exploring IEEE Imbalance Publication Strategies Types Xplore and",
+  "frame_type_distribution": {
+    "dark_screen": 0.61,
+    "simple_visual": 0.2,
+    "detailed_visual": 0.15,
+    "text_with_visual": 0.05
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          31,
+          31,
+          31
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          114,
+          112,
+          111
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          32,
+          30,
+          29
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          143,
+          136,
+          134
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          31,
+          29,
+          29
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          129,
+          125,
+          125
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 18.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          45,
+          42,
+          39
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          148,
+          142,
+          138
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          42,
+          37,
+          35
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          137,
+          133,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          249,
+          247
+        ],
+        [
+          16,
+          15,
+          15
+        ],
+        [
+          167,
+          163,
+          161
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          45,
+          41,
+          38
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          125,
+          118,
+          114
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          43,
+          39
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          138,
+          134,
+          129
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          43,
+          40,
+          38
+        ],
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          121,
+          116,
+          114
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          44,
+          40,
+          38
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          116,
+          111,
+          110
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          247,
+          246
+        ],
+        [
+          13,
+          12,
+          12
+        ],
+        [
+          183,
+          126,
+          96
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          42,
+          39
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          134,
+          129,
+          126
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "NPG7NfZfOps",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 3.11,
+      "bitrate_kbps": 216.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1629.6,
+      "blur_variance": 461.1,
+      "avg_motion": 21.89,
+      "max_motion": 146.55,
+      "motion_variance": 39.62,
+      "avg_brightness": 55.0,
+      "brightness_trend": 48.1,
+      "first_quarter_brightness": 33.5,
+      "last_quarter_brightness": 81.6,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.878,
+      "light_mode_pct": 0.049,
+      "annotation_frames": 38,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 9.0,
+      "end_card_duration_sec": 0.6,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.146,
+      "cool_frame_pct": 0.049,
+      "first_frame": {
+        "brightness": 28.06989621350365,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 763.0322015346063
+      },
+      "last_frame": {
+        "timestamp": 120.0,
+        "brightness": 40.061764370437956,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 29.7,
+      "frames_analyzed": 41
+    },
+    "marketing": {
+      "value_prop_timestamp": 9.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 30.8,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 13.01,
+      "emotional_arc": "flat",
+      "question_count": 1,
+      "has_questions": true,
+      "acronym_count": 16,
+      "acronym_density": 0.178,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 4,
+      "has_text_animation": true,
+      "has_before_after": false,
+      "has_data_viz": false,
+      "total_ocr_words": 90
+    }
+  },
+  "mega": {
+    "video_id": "NPG7NfZfOps",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 120.6,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 70.2,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 0.122,
+      "modal_pct": 0.098,
+      "table_pct": 0.707,
+      "chat_pct": 0.024,
+      "code_pct": 0.829,
+      "terminal_pct": 0.293,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.936,
+      "avg_thirds_score": 0.937,
+      "avg_content_aspect": 1.876,
+      "scene_diversity": 0.122,
+      "repetition_count": 31,
+      "has_bookend": false,
+      "longest_scene_sec": 60.0,
+      "frames_analyzed": 41
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 116939,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 51,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 54,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 57,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 60,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 63,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 66,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 69,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 72,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 75,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 78,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 81,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 84,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 87,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 90,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 93,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 96,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 99,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 102,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 105,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 108,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 111,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 114,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 117,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 40
+    }
+  }
+}

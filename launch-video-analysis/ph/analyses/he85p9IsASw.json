@@ -1,0 +1,583 @@
+{
+  "video_id": "he85p9IsASw",
+  "status": "ok",
+  "duration_sec": 41.8,
+  "resolution": "640x360",
+  "fps": 24.0,
+  "frames_analyzed": 14,
+  "transition_count": 5,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "correlation": 0.066,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "correlation": 0.101,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "correlation": 0.31,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "correlation": 0.343,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 10,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "Agents are fix here"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "GTM TEAM"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "24/7 75+ Expert Finds Monitors Outbound Personalizes Powerful Your agent automate buying data every for leads manual qualified research signals sources touch with you"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Expert Inbound Introducing Perry Your"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "(3) 75+ Automates CRM Expert Inbound Qualifies Routes Updates Your and complex data inbound instantly leads perfect real rep sources time with workflows"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "24/7 Auto-updates CRM Catches Custom Expert Finds RevOps Your and business change expands high hiring intent job lead leads like pipeline qualified real-time scoring signals unique your"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Autopilot Persana’s all. handle nts"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "24/7 autopilot."
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "GTM Level ith your"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Company Database People Revenue Revolutionizing and with"
+    }
+  ],
+  "pseudo_transcript": "Agents are fix here | GTM TEAM | 24/7 75+ Expert Finds Monitors Outbound Personalizes Powerful Your agent automate buying data every for leads manual qualified research signals sources touch with you | Expert Inbound Introducing Perry Your | (3) 75+ Automates CRM Expert Inbound Qualifies Routes Updates Your and complex data inbound instantly leads perfect real rep sources time with workflows | 24/7 Auto-updates CRM Catches Custom Expert Finds RevOps Your and business change expands high hiring intent job lead leads like pipeline qualified real-time scoring signals unique your | Autopilot Persana’s all. handle nts | 24/7 autopilot. | GTM Level ith your | Company Database People Revenue Revolutionizing and with",
+  "frame_type_distribution": {
+    "simple_visual": 0.64,
+    "text_heavy": 0.21,
+    "white_screen": 0.07,
+    "text_with_visual": 0.07
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          249
+        ],
+        [
+          248,
+          220,
+          233
+        ],
+        [
+          247,
+          194,
+          222
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          107,
+          161
+        ],
+        [
+          251,
+          198,
+          210
+        ],
+        [
+          51,
+          21,
+          31
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          246,
+          121,
+          157
+        ],
+        [
+          250,
+          212,
+          220
+        ],
+        [
+          102,
+          36,
+          70
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 24.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          246,
+          247
+        ],
+        [
+          236,
+          102,
+          145
+        ],
+        [
+          98,
+          24,
+          63
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          123,
+          159
+        ],
+        [
+          251,
+          200,
+          211
+        ],
+        [
+          44,
+          13,
+          22
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 33.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          125,
+          162
+        ],
+        [
+          244,
+          73,
+          141
+        ],
+        [
+          251,
+          195,
+          207
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          224,
+          232
+        ],
+        [
+          239,
+          94,
+          138
+        ],
+        [
+          147,
+          38,
+          89
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "he85p9IsASw",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.143,
+      "avg_face_count": 0.29,
+      "max_face_count": 3,
+      "avg_face_size_pct": 1.8,
+      "has_multiple_people": 1,
+      "file_size_mb": 2.17,
+      "bitrate_kbps": 436.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 828.3,
+      "blur_variance": 789.6,
+      "avg_motion": 58.07,
+      "max_motion": 93.98,
+      "motion_variance": 19.13,
+      "avg_brightness": 175.8,
+      "brightness_trend": -14.1,
+      "first_quarter_brightness": 188.6,
+      "last_quarter_brightness": 174.5,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.5,
+      "annotation_frames": 11,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 2.8,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.071,
+      "cool_frame_pct": 0.857,
+      "first_frame": {
+        "brightness": 245.2985199652778,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": true,
+        "blur_score": 2.300572916666667
+      },
+      "last_frame": {
+        "timestamp": 39.0,
+        "brightness": 180.1010503472222,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 87.8,
+      "frames_analyzed": 14
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": true,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 2,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 66.2,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.01,
+      "jargon_words": [
+        "pipeline"
+      ],
+      "benefit_count": 4,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 3.68,
+      "emotional_arc": "declining",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 5,
+      "acronym_density": 0.05,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 6,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 100
+    }
+  },
+  "mega": {
+    "video_id": "he85p9IsASw",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 41.8,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.073,
+      "energy_trend": 0.037644,
+      "peak_timestamp_sec": 34.8,
+      "peak_position_pct": 0.83,
+      "dynamic_range_db": 25.8,
+      "onset_density": 4.92,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 2.1,
+      "avg_spectral_centroid": 2788.0,
+      "avg_spectral_bandwidth": 2639.0,
+      "avg_zcr": 0.1223
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 2.63,
+      "color_palette_size": 20,
+      "color_consistency": 73.7,
+      "gradient_frame_pct": 0.071,
+      "high_contrast_frame_pct": 0.214,
+      "navbar_pct": 0.071,
+      "sidebar_pct": 0.429,
+      "modal_pct": 0.143,
+      "table_pct": 0.429,
+      "chat_pct": 0.071,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.833,
+      "avg_thirds_score": 0.978,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.447,
+      "repetition_count": 3,
+      "has_bookend": false,
+      "longest_scene_sec": 9.0,
+      "frames_analyzed": 14
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "24/1",
+      "r_frame_rate": "24/1",
+      "bit_rate_stream": 304864,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-01-16T08:19:57.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 107.7,
+      "detected_key": "F#",
+      "key_confidence": 0.137,
+      "mfcc_mean": [
+        -88.385,
+        60.724,
+        -9.676,
+        22.426,
+        2.578,
+        6.184,
+        2.383,
+        2.549,
+        1.153,
+        5.668,
+        -0.233,
+        2.565,
+        -5.863
+      ],
+      "mfcc_std": [
+        113.439,
+        29.617,
+        22.613,
+        23.472,
+        16.965,
+        14.688,
+        13.996,
+        11.837,
+        9.597,
+        10.401,
+        11.235,
+        9.284,
+        9.453
+      ],
+      "avg_spectral_contrast": 18.11,
+      "avg_tonnetz": [
+        0.0518,
+        -0.1222,
+        0.0356,
+        -0.1062,
+        -0.036,
+        0.0193
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "ambient",
+          "rms_db": -19.7,
+          "centroid": 2880.0,
+          "bandwidth": 2469.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -17.0,
+          "centroid": 2644.0,
+          "bandwidth": 2491.0
+        },
+        {
+          "timestamp": 6,
+          "type": "sfx_sharp",
+          "rms_db": -13.5,
+          "centroid": 3235.0,
+          "bandwidth": 2710.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -10.0,
+          "centroid": 2439.0,
+          "bandwidth": 2609.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -11.5,
+          "centroid": 2361.0,
+          "bandwidth": 2461.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -12.9,
+          "centroid": 2417.0,
+          "bandwidth": 2506.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 2591.0,
+          "bandwidth": 2630.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 2720.0,
+          "bandwidth": 2794.0
+        },
+        {
+          "timestamp": 24,
+          "type": "sfx_sharp",
+          "rms_db": -13.0,
+          "centroid": 3257.0,
+          "bandwidth": 2962.0
+        },
+        {
+          "timestamp": 27,
+          "type": "noise",
+          "rms_db": -15.5,
+          "centroid": 3490.0,
+          "bandwidth": 2821.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -11.4,
+          "centroid": 2764.0,
+          "bandwidth": 2731.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -9.9,
+          "centroid": 2631.0,
+          "bandwidth": 2822.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -12.4,
+          "centroid": 2814.0,
+          "bandwidth": 2796.0
+        }
+      ],
+      "segment_distribution": {
+        "ambient": 0.077,
+        "speech": 0.692,
+        "sfx_sharp": 0.154,
+        "noise": 0.077
+      },
+      "speech_pct": 0.692,
+      "music_pct": 0.0,
+      "sfx_pct": 0.154,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 109,
+      "strong_sfx_timestamps": [
+        0.07,
+        0.51,
+        0.63,
+        1.32,
+        1.7,
+        2.25,
+        2.69,
+        2.81,
+        3.51,
+        3.88,
+        4.34,
+        4.44,
+        5.41,
+        5.67,
+        5.94,
+        6.06,
+        6.22,
+        6.34,
+        6.5,
+        6.62
+      ],
+      "n_segments": 13
+    }
+  }
+}

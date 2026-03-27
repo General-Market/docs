@@ -1,0 +1,1725 @@
+{
+  "video_id": "7LacewMs1VY",
+  "status": "ok",
+  "duration_sec": 268.0,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 90,
+  "transition_count": 8,
+  "transitions": [
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.019,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "correlation": 0.027,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "correlation": 0.062,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "correlation": 0.103,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 177.0,
+      "correlation": 0.095,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 192.0,
+      "correlation": 0.048,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 243.0,
+      "correlation": 0.068,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 264.0,
+      "correlation": 0.021,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 55,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Google"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "and between brain causing due for happens likely memory miscommunication parts recall, recognition responsible the this your"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Key When able about and before, beng beween creating cueto ecagniton een encountered happens mena pats pent response sensation that the this witout wnat yor youve"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Beng When about and before, between creating ecagniton een encountered ex, happens ive key loa misconmunicaton pat pont response sensation sure that the this youve"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "(ne Google Happens Inston Key Seay Wat What You able about and before, being brain creating due eventhough explanations fhe for happens havent how itty loa mec memory misconmunicabonbebween parts pay pont recognition regions responsible sensation source tenor! that the thet ths vu: witout wong works your {he ‘encountered ‘explain"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Dal Deng Google Key Pat ban bout even head het hough iw? mod pro ros tbe teh the when where your"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "$aa Key Ons Search aba and beng between ble causnga cnc current due eam eft even familar, happens haven't ibe, ight likely miscommunication occurs prs situation tenor the this though when win witout wos you your youve ‘moment"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "BGC Google Koy Wat Watt able ati bain being between brain current deja due even familar, happens hat haven't likely meal miscommunication noted oan occurs othe pars pats pinpoint play rain regina sensation situation sity source that the theory: this though when wih without works you your ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "Dea Google Koy One Wat Watt able being betore between causnga creating current deja due even ex, familar, happens likely medal miscommunication occurs pact parts pinpoint play polts rain regions sensation situation sity source that the this though ual wah when without works you your youve ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Dong Google Key Septet Wat ban bout head het iw? ros rye teh the though tr: when where your youve"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "Dal Dong Google Icing Pat Wat bout brn coy creating cul het ply pro prt ron teh the though when where your"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "Deng Pat Wat bout current het ino: ply prt ros teh the though when where your youve"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "Google Key Wat able about beng between current deja due ean even ex, familar, happens hat haven't likely meas medal memory miscommunication noted occurs pact pats play rain regina rer sensation situation sity that the this though when where wih woe wu: you your ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "Key Search able amary beng between cnc current due encountered ett even familar, happens hat haven't iad ibe, likely miscommunication mpl occurs pate pats polts situation source tctngo tenor the this though ved when wher witout wos you youve ‘moment"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "Deng Google Key Pat bal bout brn creating het med mistakenly pray pro ron teh the though when wher your"
+    },
+    {
+      "timestamp_sec": 90.0,
+      "text": "BGC Google Key Overview Search Wat able bain beng between current deja due eam even expaintow familar, happens hat haven't ibe, likely miscommunication oan occurs othe pas pats rain regina sensation situation sity sto tenor that the this though ved when wih works you your youve ‘moment"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "text": "Get Overviews any gist the topic with"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "text": "Alexperiments Labs"
+    },
+    {
+      "timestamp_sec": 114.0,
+      "text": "Mode consider when ‘Things"
+    },
+    {
+      "timestamp_sec": 120.0,
+      "text": "Ask Mode. ex,"
+    },
+    {
+      "timestamp_sec": 123.0,
+      "text": "are backgrounds ex, fun some what"
+    },
+    {
+      "timestamp_sec": 126.0,
+      "text": "Share gle"
+    },
+    {
+      "timestamp_sec": 129.0,
+      "text": "ex,"
+    },
+    {
+      "timestamp_sec": 135.0,
+      "text": "Google ex,"
+    },
+    {
+      "timestamp_sec": 138.0,
+      "text": "AlMode All best the when"
+    },
+    {
+      "timestamp_sec": 144.0,
+      "text": "ore"
+    },
+    {
+      "timestamp_sec": 153.0,
+      "text": "Hams"
+    },
+    {
+      "timestamp_sec": 156.0,
+      "text": "Keyworc The and between difference features gle mat ring, sleep smart smartwatch the tracking what's"
+    },
+    {
+      "timestamp_sec": 159.0,
+      "text": "Sleep deep during heart rate stage tracking: your"
+    },
+    {
+      "timestamp_sec": 165.0,
+      "text": "and between difference features mat ring, sleep smart smartwatch the tracking what's"
+    },
+    {
+      "timestamp_sec": 168.0,
+      "text": "All Mode Places"
+    },
+    {
+      "timestamp_sec": 171.0,
+      "text": "Looking Search.. Working best boston engage- garden ment outdoor photoshoot public schedule the this this. time week when"
+    },
+    {
+      "timestamp_sec": 174.0,
+      "text": "Share Wether ex, gle this"
+    },
+    {
+      "timestamp_sec": 177.0,
+      "text": "(ne Dual Google Key Wat Wed able about and ant being between brain cent cresting deja due efor, encountered even experiences for glitch hat isconmunicabon itty loa meal memory noted: othe pars parts pont recognition regina responsible source the thet wah when witout works wu: your youve"
+    },
+    {
+      "timestamp_sec": 180.0,
+      "text": "Bee Gay Key able abou beng between brln current due enc encountered enor even familar, happens haven't lich likely mea miscommunication oan situation sity the theo this though when win witout wos you your youve ‘moment"
+    },
+    {
+      "timestamp_sec": 183.0,
+      "text": "Bee Key able beng current due enc enor even familiar, glich happens haven't igh likely miscommunication mistakenly occurs pars situation the this though ved when wher win witout wos you your yourbran youve ‘moment"
+    },
+    {
+      "timestamp_sec": 186.0,
+      "text": "$aa BOC Key Search able bain beng between current due eam even familar, happens haven't likely mal mea miscommunication oan occurs pats situation sity tenor the theo thet this though vo\" when where win witout you your youve ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 189.0,
+      "text": "$aa BOC Key Search able bain beng between current due eam even familar, happens haven't likely mal mea memory miscommunication oan occurs parts situation sity tenor the theo thet this though vo\" when where win witout you your youve ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 192.0,
+      "text": "-gokden Boston Garden Here's Light: Photographers Public The Weather: before conditions during for forecast hour hour” isthe mostly natural often outdoor photoshoot. photoshoots provides recommend scheduling shows sunny the this time weather week which why: would «the"
+    },
+    {
+      "timestamp_sec": 198.0,
+      "text": "consider eres scheduling when ‘Things"
+    },
+    {
+      "timestamp_sec": 201.0,
+      "text": "Mode ex,"
+    },
+    {
+      "timestamp_sec": 204.0,
+      "text": "are backgroun fat fun some"
+    },
+    {
+      "timestamp_sec": 207.0,
+      "text": "Share ex, gle"
+    },
+    {
+      "timestamp_sec": 213.0,
+      "text": "Share ex,"
+    },
+    {
+      "timestamp_sec": 216.0,
+      "text": "Google Share ex,"
+    },
+    {
+      "timestamp_sec": 219.0,
+      "text": "All best oogie the thi time when"
+    },
+    {
+      "timestamp_sec": 222.0,
+      "text": "bes the when"
+    },
+    {
+      "timestamp_sec": 225.0,
+      "text": "best boston engage- garden info. ment outdoor photoshoot public schedule the this time week when ‘Organizing"
+    },
+    {
+      "timestamp_sec": 228.0,
+      "text": "42° Boston Garden Thursday While high provides with would"
+    },
+    {
+      "timestamp_sec": 234.0,
+      "text": "Gets"
+    },
+    {
+      "timestamp_sec": 243.0,
+      "text": "Can Google Key One Wat aba able anki anon beng between current due ean even familar, happens hat his ibe, likely mal memory miscommunication occurs parts rain regions reponable sbou sensation situation sity source tenor that the this though ual vo\" wah when works you your youve ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 246.0,
+      "text": "Key able beng between btm. crs current due encountered even familar, happens haven't likely mal menay miscommunication pact pats seneton situation sity the theo thet this though ved when win witout wos you your youve ‘moment “Dela"
+    },
+    {
+      "timestamp_sec": 252.0,
+      "text": "$aa Key One able beng between current due even familar, happens haven't hye iad likely miscommunication mpi occurs pars situation tenor the thet this though ved when wher win witout you your youve ‘moment"
+    },
+    {
+      "timestamp_sec": 255.0,
+      "text": "240202 Bee Google Key Say beng between ble brln cnc current due even familar, happens haven't ibe, lich likely mal meal miscommunication oan situation sity the this though when win witout you your youve ‘moment “Deja"
+    },
+    {
+      "timestamp_sec": 261.0,
+      "text": "BGC Key Wat aba able about beng between current deja due even ex, familar, happens hat haven't likely miscommunication oan occurs rain sensation situation source tenor that the this though vo\" wets when where wih you your ‘moment “Deja"
+    }
+  ],
+  "pseudo_transcript": "Google | and between brain causing due for happens likely memory miscommunication parts recall, recognition responsible the this your | Key When able about and before, beng beween creating cueto ecagniton een encountered happens mena pats pent response sensation that the this witout wnat yor youve | Beng When about and before, between creating ecagniton een encountered ex, happens ive key loa misconmunicaton pat pont response sensation sure that the this youve | (ne Google Happens Inston Key Seay Wat What You able about and before, being brain creating due eventhough explanations fhe for happens havent how itty loa mec memory misconmunicabonbebween parts pay pont recognition regions responsible sensation source tenor! that the thet ths vu: witout wong works your {he ‘encountered ‘explain | Dal Deng Google Key Pat ban bout even head het hough iw? mod pro ros tbe teh the when where your | $aa Key Ons Search aba and beng between ble causnga cnc current due eam eft even familar, happens haven't ibe, ight likely miscommunication occurs prs situation tenor the this though when win witout wos you your youve ‘moment | BGC Google Koy Wat Watt able ati bain being between brain current deja due even familar, happens hat haven't likely meal miscommunication noted oan occurs othe pars pats pinpoint play rain regina sensation situation sity source that the theory: this though when wih without works you your ‘moment “Deja | Dea Google Koy One Wat Watt able being betore between causnga creating current deja due even ex, familar, happens likely medal miscommunication occurs pact parts pinpoint play polts rain regions sensation situation sity source that the this though ual wah when without works you your youve ‘moment “Deja | Dong Google Key Septet Wat ban bout head het iw? ros rye teh the though tr: when where your youve | Dal Dong Google Icing Pat Wat bout brn coy creating cul het ply pro prt ron teh the though when where your | Deng Pat Wat bout current het ino: ply prt ros teh the though when where your youve | Google Key Wat able about beng between current deja due ean even ex, familar, happens hat haven't likely meas medal memory miscommunication noted occurs pact pats play rain regina rer sensation situation sity that the this though when where wih woe wu: you your ‘moment “Deja | Key Search able amary beng between cnc current due encountered ett even familar, happens hat haven't iad ibe, likely miscommunication mpl occurs pate pats polts situation source tctngo tenor the this though ved when wher witout wos you youve ‘moment | Deng Google Key Pat bal bout brn creating het med mistakenly pray pro ron teh the though when wher your | BGC Google Key Overview Search Wat able bain beng between current deja due eam even expaintow familar, happens hat haven't ibe, likely miscommunication oan occurs othe pas pats rain regina sensation situation sity sto tenor that the this though ved when wih works you your youve ‘moment | Get Overviews any gist the topic with | Alexperiments Labs | Mode consider when ‘Things | Ask Mode. ex, | are backgrounds ex, fun some what | Share gle | ex, | Google ex, | AlMode All best the when | ore | Hams | Keyworc The and between difference features gle mat ring, sleep smart smartwatch the tracking what's | Sleep deep during heart rate stage tracking: your | and between difference features mat ring, sleep smart smartwatch the tracking what's | All Mode Places | Looking Search.. Working best boston engage- garden ment outdoor photoshoot public schedule the this this. time week when | Share Wether ex, gle this | (ne Dual Google Key Wat Wed able about and ant being between brain cent cresting deja due efor, encountered even experiences for glitch hat isconmunicabon itty loa meal memory noted: othe pars parts pont recognition regina responsible source the thet wah when witout works wu: your youve | Bee Gay Key able abou beng between brln current due enc encountered enor even familar, happens haven't lich likely mea miscommunication oan situation sity the theo this though when win witout wos you your youve ‘moment | Bee Key able beng current due enc enor even familiar, glich happens haven't igh likely miscommunication mistakenly occurs pars situation the this though ved when wher win witout wos you your yourbran youve ‘moment | $aa BOC Key Search able bain beng between current due eam even familar, happens haven't likely mal mea miscommunication oan occurs pats situation sity tenor the theo thet this though vo\" when where win witout you your youve ‘moment “Deja | $aa BOC Key Search able bain beng between current due eam even familar, happens haven't likely mal mea memory miscommunication oan occurs parts situation sity tenor the theo thet this though vo\" when where win witout you your youve ‘moment “Deja | -gokden Boston Garden Here's Light: Photographers Public The Weather: before conditions during for forecast hour hour” isthe mostly natural often outdoor photoshoot. photoshoots provides recommend scheduling shows sunny the this time weather week which why: would «the | consider eres scheduling when ‘Things | Mode ex, | are backgroun fat fun some | Share ex, gle | Share ex, | Google Share ex, | All best oogie the thi time when | bes the when | best boston engage- garden info. ment outdoor photoshoot public schedule the this time week when ‘Organizing | 42° Boston Garden Thursday While high provides with would | Gets | Can Google Key One Wat aba able anki anon beng between current due ean even familar, happens hat his ibe, likely mal memory miscommunication occurs parts rain regions reponable sbou sensation situation sity source tenor that the this though ual vo\" wah when works you your youve ‘moment “Deja | Key able beng between btm. crs current due encountered even familar, happens haven't likely mal menay miscommunication pact pats seneton situation sity the theo thet this though ved when win witout wos you your youve ‘moment “Dela | $aa Key One able beng between current due even familar, happens haven't hye iad likely miscommunication mpi occurs pars situation tenor the thet this though ved when wher win witout you your youve ‘moment | 240202 Bee Google Key Say beng between ble brln cnc current due even familar, happens haven't ibe, lich likely mal meal miscommunication oan situation sity the this though when win witout you your youve ‘moment “Deja | BGC Key Wat aba able about beng between current deja due even ex, familar, happens hat haven't likely miscommunication oan occurs rain sensation situation source tenor that the this though vo\" wets when where wih you your ‘moment “Deja",
+  "frame_type_distribution": {
+    "simple_visual": 0.46,
+    "dark_screen": 0.43,
+    "text_with_visual": 0.08,
+    "text_heavy": 0.03
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          70,
+          61,
+          44
+        ],
+        [
+          45,
+          36,
+          20
+        ],
+        [
+          238,
+          239,
+          237
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          27,
+          20,
+          16
+        ],
+        [
+          86,
+          68,
+          59
+        ],
+        [
+          174,
+          155,
+          146
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          28,
+          20,
+          16
+        ],
+        [
+          86,
+          67,
+          58
+        ],
+        [
+          174,
+          155,
+          149
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          88,
+          70,
+          63
+        ],
+        [
+          172,
+          156,
+          150
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          88,
+          69,
+          61
+        ],
+        [
+          166,
+          154,
+          148
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          87,
+          69,
+          60
+        ],
+        [
+          169,
+          154,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          88,
+          71,
+          62
+        ],
+        [
+          167,
+          153,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          88,
+          70,
+          60
+        ],
+        [
+          170,
+          155,
+          148
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 93.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          210,
+          221,
+          225
+        ],
+        [
+          54,
+          45,
+          33
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 99.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          70,
+          61,
+          44
+        ],
+        [
+          46,
+          37,
+          20
+        ],
+        [
+          237,
+          238,
+          236
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 102.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          41,
+          35,
+          28
+        ],
+        [
+          154,
+          177,
+          220
+        ],
+        [
+          211,
+          177,
+          198
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          36,
+          33,
+          30
+        ],
+        [
+          203,
+          214,
+          204
+        ],
+        [
+          207,
+          136,
+          195
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          246
+        ],
+        [
+          55,
+          44,
+          35
+        ],
+        [
+          146,
+          132,
+          117
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          242,
+          238
+        ],
+        [
+          47,
+          38,
+          28
+        ],
+        [
+          152,
+          135,
+          122
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 150.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          53,
+          44,
+          29
+        ],
+        [
+          170,
+          160,
+          151
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 165.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          251
+        ],
+        [
+          53,
+          44,
+          30
+        ],
+        [
+          164,
+          147,
+          135
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 177.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          87,
+          70,
+          61
+        ],
+        [
+          169,
+          156,
+          149
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 180.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          89,
+          70,
+          61
+        ],
+        [
+          168,
+          155,
+          148
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 192.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          243,
+          243,
+          246
+        ],
+        [
+          37,
+          30,
+          22
+        ],
+        [
+          142,
+          127,
+          116
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 195.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          242,
+          244,
+          237
+        ],
+        [
+          50,
+          40,
+          29
+        ],
+        [
+          145,
+          130,
+          119
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 210.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          218,
+          226,
+          207
+        ],
+        [
+          54,
+          45,
+          32
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 225.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          247,
+          244,
+          243
+        ],
+        [
+          36,
+          30,
+          27
+        ],
+        [
+          147,
+          134,
+          126
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 240.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          53,
+          44,
+          33
+        ],
+        [
+          211,
+          210,
+          220
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 243.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          87,
+          69,
+          61
+        ],
+        [
+          168,
+          153,
+          146
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 255.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          22,
+          17
+        ],
+        [
+          88,
+          70,
+          61
+        ],
+        [
+          169,
+          154,
+          146
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 264.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          68,
+          59,
+          42
+        ],
+        [
+          250,
+          249,
+          248
+        ],
+        [
+          150,
+          149,
+          136
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "7LacewMs1VY",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 8.31,
+      "bitrate_kbps": 260.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 2416.5,
+      "blur_variance": 1433.6,
+      "avg_motion": 20.33,
+      "max_motion": 160.56,
+      "motion_variance": 36.96,
+      "avg_brightness": 109.5,
+      "brightness_trend": 79.6,
+      "first_quarter_brightness": 41.8,
+      "last_quarter_brightness": 121.4,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.522,
+      "light_mode_pct": 0.333,
+      "annotation_frames": 89,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 1.0,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.011,
+      "cool_frame_pct": 0.511,
+      "first_frame": {
+        "brightness": 61.480251736111114,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 476.44018147920207
+      },
+      "last_frame": {
+        "timestamp": 267.0,
+        "brightness": 62.58586805555556,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 65.2,
+      "frames_analyzed": 90
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 6,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 3,
+      "features_per_min": 0.7,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 106.5,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 3,
+      "benefit_ratio": 0.25,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 4.94,
+      "emotional_arc": "positive_escalation",
+      "question_count": 2,
+      "has_questions": true,
+      "acronym_count": 5,
+      "acronym_density": 0.005,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 9,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 1082
+    }
+  },
+  "mega": {
+    "video_id": "7LacewMs1VY",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 268.1,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.216,
+      "energy_trend": 0.001223,
+      "peak_timestamp_sec": 233.2,
+      "peak_position_pct": 0.87,
+      "dynamic_range_db": 46.4,
+      "onset_density": 4.2,
+      "intro_silence_sec": 0.5,
+      "outro_silence_sec": 0.3,
+      "avg_spectral_centroid": 1983.0,
+      "avg_spectral_bandwidth": 1972.0,
+      "avg_zcr": 0.1063
+    },
+    "deep_visual": {
+      "has_scroll": true,
+      "scroll_frame_count": 11,
+      "avg_scroll_speed": 8.45,
+      "color_palette_size": 20,
+      "color_consistency": 81.3,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.933,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 0.367,
+      "modal_pct": 0.122,
+      "table_pct": 0.922,
+      "chat_pct": 0.489,
+      "code_pct": 0.433,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.044,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.93,
+      "avg_thirds_score": 0.715,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.111,
+      "repetition_count": 79,
+      "has_bookend": true,
+      "longest_scene_sec": 81.0,
+      "frames_analyzed": 90
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 128722,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-03-11T11:56:31.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 107.7,
+      "detected_key": "G#",
+      "key_confidence": 0.112,
+      "mfcc_mean": [
+        -266.213,
+        93.909,
+        17.677,
+        41.751,
+        12.007,
+        12.756,
+        5.305,
+        -5.38,
+        0.49,
+        0.122,
+        -5.085,
+        1.125,
+        -3.66
+      ],
+      "mfcc_std": [
+        114.918,
+        74.542,
+        27.701,
+        27.565,
+        22.431,
+        17.989,
+        13.323,
+        14.906,
+        10.504,
+        10.199,
+        11.531,
+        9.526,
+        7.778
+      ],
+      "avg_spectral_contrast": 17.17,
+      "avg_tonnetz": [
+        -0.0027,
+        0.0023,
+        -0.0065,
+        0.0249,
+        -0.0029,
+        -0.0007
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -15.1,
+          "centroid": 1785.0,
+          "bandwidth": 2014.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -13.5,
+          "centroid": 1958.0,
+          "bandwidth": 1997.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 2151.0,
+          "bandwidth": 2191.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 2274.0,
+          "bandwidth": 2486.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -17.2,
+          "centroid": 1844.0,
+          "bandwidth": 2144.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -15.4,
+          "centroid": 1851.0,
+          "bandwidth": 1760.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 1510.0,
+          "bandwidth": 1734.0
+        },
+        {
+          "timestamp": 21,
+          "type": "ambient",
+          "rms_db": -15.3,
+          "centroid": 2053.0,
+          "bandwidth": 2080.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -15.2,
+          "centroid": 1891.0,
+          "bandwidth": 2069.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -16.1,
+          "centroid": 1578.0,
+          "bandwidth": 1844.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -16.8,
+          "centroid": 2151.0,
+          "bandwidth": 2106.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 1716.0,
+          "bandwidth": 1935.0
+        },
+        {
+          "timestamp": 36,
+          "type": "ambient",
+          "rms_db": -17.6,
+          "centroid": 2763.0,
+          "bandwidth": 2170.0
+        },
+        {
+          "timestamp": 39,
+          "type": "ambient",
+          "rms_db": -17.2,
+          "centroid": 2274.0,
+          "bandwidth": 2197.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -15.4,
+          "centroid": 1265.0,
+          "bandwidth": 1527.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 1821.0,
+          "bandwidth": 1820.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -15.0,
+          "centroid": 2167.0,
+          "bandwidth": 2241.0
+        },
+        {
+          "timestamp": 51,
+          "type": "ambient",
+          "rms_db": -15.4,
+          "centroid": 2549.0,
+          "bandwidth": 2397.0
+        },
+        {
+          "timestamp": 54,
+          "type": "ambient",
+          "rms_db": -16.6,
+          "centroid": 2363.0,
+          "bandwidth": 2031.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -14.7,
+          "centroid": 1482.0,
+          "bandwidth": 1863.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -15.3,
+          "centroid": 1657.0,
+          "bandwidth": 1788.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 1995.0,
+          "bandwidth": 2167.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -13.8,
+          "centroid": 1657.0,
+          "bandwidth": 1903.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 1483.0,
+          "bandwidth": 1777.0
+        },
+        {
+          "timestamp": 72,
+          "type": "ambient",
+          "rms_db": -17.9,
+          "centroid": 2241.0,
+          "bandwidth": 2101.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1925.0,
+          "bandwidth": 2090.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -14.9,
+          "centroid": 2064.0,
+          "bandwidth": 1906.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1840.0,
+          "bandwidth": 1862.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -15.9,
+          "centroid": 1541.0,
+          "bandwidth": 1793.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1960.0,
+          "bandwidth": 2031.0
+        },
+        {
+          "timestamp": 90,
+          "type": "ambient",
+          "rms_db": -17.2,
+          "centroid": 2724.0,
+          "bandwidth": 2232.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -14.4,
+          "centroid": 1829.0,
+          "bandwidth": 1769.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 1866.0,
+          "bandwidth": 1874.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1970.0,
+          "bandwidth": 2037.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 2102.0,
+          "bandwidth": 2018.0
+        },
+        {
+          "timestamp": 105,
+          "type": "ambient",
+          "rms_db": -18.5,
+          "centroid": 2244.0,
+          "bandwidth": 2034.0
+        },
+        {
+          "timestamp": 108,
+          "type": "sfx_low",
+          "rms_db": -16.6,
+          "centroid": 2217.0,
+          "bandwidth": 1983.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 1648.0,
+          "bandwidth": 1931.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -14.4,
+          "centroid": 2086.0,
+          "bandwidth": 1903.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -13.9,
+          "centroid": 1598.0,
+          "bandwidth": 1766.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -19.4,
+          "centroid": 2224.0,
+          "bandwidth": 2277.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -16.9,
+          "centroid": 1662.0,
+          "bandwidth": 1826.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -17.6,
+          "centroid": 2008.0,
+          "bandwidth": 2037.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -17.9,
+          "centroid": 1696.0,
+          "bandwidth": 1718.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -15.6,
+          "centroid": 1315.0,
+          "bandwidth": 1610.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -15.9,
+          "centroid": 2001.0,
+          "bandwidth": 2011.0
+        },
+        {
+          "timestamp": 138,
+          "type": "ambient",
+          "rms_db": -20.8,
+          "centroid": 2375.0,
+          "bandwidth": 2143.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1723.0,
+          "bandwidth": 1899.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -15.6,
+          "centroid": 1884.0,
+          "bandwidth": 2081.0
+        },
+        {
+          "timestamp": 147,
+          "type": "speech",
+          "rms_db": -16.2,
+          "centroid": 1973.0,
+          "bandwidth": 1925.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -15.5,
+          "centroid": 1741.0,
+          "bandwidth": 1877.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 2107.0,
+          "bandwidth": 2094.0
+        },
+        {
+          "timestamp": 156,
+          "type": "speech",
+          "rms_db": -15.2,
+          "centroid": 1969.0,
+          "bandwidth": 1983.0
+        },
+        {
+          "timestamp": 159,
+          "type": "ambient",
+          "rms_db": -17.9,
+          "centroid": 2199.0,
+          "bandwidth": 2011.0
+        },
+        {
+          "timestamp": 162,
+          "type": "ambient",
+          "rms_db": -16.7,
+          "centroid": 2357.0,
+          "bandwidth": 2102.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -15.4,
+          "centroid": 1782.0,
+          "bandwidth": 1829.0
+        },
+        {
+          "timestamp": 168,
+          "type": "ambient",
+          "rms_db": -14.5,
+          "centroid": 2424.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 171,
+          "type": "ambient",
+          "rms_db": -17.6,
+          "centroid": 2519.0,
+          "bandwidth": 2180.0
+        },
+        {
+          "timestamp": 174,
+          "type": "speech",
+          "rms_db": -15.0,
+          "centroid": 1720.0,
+          "bandwidth": 1829.0
+        },
+        {
+          "timestamp": 177,
+          "type": "speech",
+          "rms_db": -16.1,
+          "centroid": 1575.0,
+          "bandwidth": 1898.0
+        },
+        {
+          "timestamp": 180,
+          "type": "speech",
+          "rms_db": -17.6,
+          "centroid": 1415.0,
+          "bandwidth": 1797.0
+        },
+        {
+          "timestamp": 183,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1687.0,
+          "bandwidth": 1798.0
+        },
+        {
+          "timestamp": 186,
+          "type": "ambient",
+          "rms_db": -18.6,
+          "centroid": 2400.0,
+          "bandwidth": 2130.0
+        },
+        {
+          "timestamp": 189,
+          "type": "ambient",
+          "rms_db": -16.4,
+          "centroid": 2441.0,
+          "bandwidth": 2195.0
+        },
+        {
+          "timestamp": 192,
+          "type": "speech",
+          "rms_db": -16.8,
+          "centroid": 2029.0,
+          "bandwidth": 1951.0
+        },
+        {
+          "timestamp": 195,
+          "type": "ambient",
+          "rms_db": -18.3,
+          "centroid": 2432.0,
+          "bandwidth": 2073.0
+        },
+        {
+          "timestamp": 198,
+          "type": "speech",
+          "rms_db": -17.8,
+          "centroid": 2102.0,
+          "bandwidth": 2005.0
+        },
+        {
+          "timestamp": 201,
+          "type": "ambient",
+          "rms_db": -17.2,
+          "centroid": 2383.0,
+          "bandwidth": 2206.0
+        },
+        {
+          "timestamp": 204,
+          "type": "ambient",
+          "rms_db": -18.9,
+          "centroid": 2789.0,
+          "bandwidth": 2121.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 1972.0,
+          "bandwidth": 1992.0
+        },
+        {
+          "timestamp": 210,
+          "type": "ambient",
+          "rms_db": -16.9,
+          "centroid": 2253.0,
+          "bandwidth": 2022.0
+        },
+        {
+          "timestamp": 213,
+          "type": "speech",
+          "rms_db": -14.3,
+          "centroid": 1690.0,
+          "bandwidth": 1915.0
+        },
+        {
+          "timestamp": 216,
+          "type": "speech",
+          "rms_db": -16.8,
+          "centroid": 1936.0,
+          "bandwidth": 1901.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 2183.0,
+          "bandwidth": 1999.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 1775.0,
+          "bandwidth": 1793.0
+        },
+        {
+          "timestamp": 225,
+          "type": "speech",
+          "rms_db": -15.7,
+          "centroid": 1944.0,
+          "bandwidth": 1880.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 1867.0,
+          "bandwidth": 1849.0
+        },
+        {
+          "timestamp": 231,
+          "type": "sfx_low",
+          "rms_db": -15.1,
+          "centroid": 2259.0,
+          "bandwidth": 1964.0
+        },
+        {
+          "timestamp": 234,
+          "type": "speech",
+          "rms_db": -15.6,
+          "centroid": 1637.0,
+          "bandwidth": 1841.0
+        },
+        {
+          "timestamp": 237,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1653.0,
+          "bandwidth": 1806.0
+        },
+        {
+          "timestamp": 240,
+          "type": "ambient",
+          "rms_db": -17.9,
+          "centroid": 2881.0,
+          "bandwidth": 2235.0
+        },
+        {
+          "timestamp": 243,
+          "type": "speech",
+          "rms_db": -15.0,
+          "centroid": 1572.0,
+          "bandwidth": 1749.0
+        },
+        {
+          "timestamp": 246,
+          "type": "ambient",
+          "rms_db": -17.3,
+          "centroid": 2388.0,
+          "bandwidth": 2116.0
+        },
+        {
+          "timestamp": 249,
+          "type": "speech",
+          "rms_db": -15.6,
+          "centroid": 1914.0,
+          "bandwidth": 1978.0
+        },
+        {
+          "timestamp": 252,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1869.0,
+          "bandwidth": 1852.0
+        },
+        {
+          "timestamp": 255,
+          "type": "ambient",
+          "rms_db": -19.6,
+          "centroid": 2741.0,
+          "bandwidth": 2331.0
+        },
+        {
+          "timestamp": 258,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 1816.0,
+          "bandwidth": 1864.0
+        },
+        {
+          "timestamp": 261,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1595.0,
+          "bandwidth": 1857.0
+        },
+        {
+          "timestamp": 264,
+          "type": "speech",
+          "rms_db": -17.6,
+          "centroid": 1765.0,
+          "bandwidth": 1773.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.73,
+        "ambient": 0.247,
+        "sfx_low": 0.022
+      },
+      "speech_pct": 0.73,
+      "music_pct": 0.0,
+      "sfx_pct": 0.022,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "valley",
+      "strong_sfx_count": 710,
+      "strong_sfx_timestamps": [
+        0.51,
+        0.98,
+        1.16,
+        1.95,
+        2.32,
+        2.48,
+        2.6,
+        2.74,
+        3.13,
+        3.67,
+        4.13,
+        4.53,
+        4.64,
+        4.85,
+        5.25,
+        5.43,
+        5.6,
+        5.99,
+        6.22,
+        6.36
+      ],
+      "n_segments": 89
+    }
+  }
+}

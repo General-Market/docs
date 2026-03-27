@@ -1,0 +1,641 @@
+{
+  "video_id": "r0NGof0gYgM",
+  "status": "ok",
+  "duration_sec": 45.4,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 16,
+  "transition_count": 6,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.11,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.001,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "correlation": 0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "correlation": 0.177,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "correlation": 0.135,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "correlation": 0.056,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 9,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "Activity Battery Cooper Pressure Sage Site Vessel errs ies potent project"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Activity Cooper Hom Pressure Specs Technica Vessel analyzing cop for forwarded generate new pat pressure project revises spec supp"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "Activity Cooper Drawing Pressure Rev Technical Vessel analyzing errors files project rev sea tor"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Engineer. Mechanical"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "650 Full Shell Thickness Vacuum for psig"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "650 Full Insufficient Shell Thickness Vacuum for psig"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Animation Circumferential Stress"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "Aerospace"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "macadamialabs.com"
+    }
+  ],
+  "pseudo_transcript": "Activity Battery Cooper Pressure Sage Site Vessel errs ies potent project | Activity Cooper Hom Pressure Specs Technica Vessel analyzing cop for forwarded generate new pat pressure project revises spec supp | Activity Cooper Drawing Pressure Rev Technical Vessel analyzing errors files project rev sea tor | Engineer. Mechanical | 650 Full Shell Thickness Vacuum for psig | 650 Full Insufficient Shell Thickness Vacuum for psig | Animation Circumferential Stress | Aerospace | macadamialabs.com",
+  "frame_type_distribution": {
+    "simple_visual": 0.56,
+    "text_with_visual": 0.25,
+    "white_screen": 0.12,
+    "text_heavy": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          61,
+          86,
+          19
+        ],
+        [
+          61,
+          86,
+          19
+        ],
+        [
+          61,
+          86,
+          19
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          61,
+          84,
+          22
+        ],
+        [
+          156,
+          157,
+          153
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          242,
+          247,
+          245
+        ],
+        [
+          59,
+          83,
+          23
+        ],
+        [
+          147,
+          165,
+          125
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          248,
+          247
+        ],
+        [
+          54,
+          73,
+          21
+        ],
+        [
+          163,
+          163,
+          164
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 18.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          60,
+          85,
+          19
+        ],
+        [
+          247,
+          250,
+          242
+        ],
+        [
+          121,
+          141,
+          89
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 21.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          53,
+          72,
+          22
+        ],
+        [
+          174,
+          174,
+          174
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          187,
+          193,
+          194
+        ],
+        [
+          124,
+          108,
+          94
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          61,
+          85,
+          19
+        ],
+        [
+          243,
+          247,
+          237
+        ],
+        [
+          120,
+          139,
+          88
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          61,
+          85,
+          19
+        ],
+        [
+          250,
+          251,
+          247
+        ],
+        [
+          166,
+          179,
+          144
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "r0NGof0gYgM",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.13,
+      "bitrate_kbps": 208.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 874.5,
+      "blur_variance": 666.8,
+      "avg_motion": 57.47,
+      "max_motion": 160.79,
+      "motion_variance": 54.29,
+      "avg_brightness": 157.8,
+      "brightness_trend": -114.8,
+      "first_quarter_brightness": 182.6,
+      "last_quarter_brightness": 67.8,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.375,
+      "light_mode_pct": 0.562,
+      "annotation_frames": 14,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 0.4,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.5,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 63.0,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 0.0
+      },
+      "last_frame": {
+        "timestamp": 45.0,
+        "brightness": 68.10201388888889,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 90.5,
+      "frames_analyzed": 16
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 38.2,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 1,
+      "tagline_match": false,
+      "avg_reading_comfort": 7.6,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 0,
+      "acronym_density": 0.0,
+      "has_url_shown": true,
+      "urls_found": [
+        "macadamialabs.com"
+      ],
+      "distinct_scenes": 7,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 65
+    }
+  },
+  "mega": {
+    "video_id": "r0NGof0gYgM",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 45.5,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.017,
+      "energy_trend": 0.102412,
+      "peak_timestamp_sec": 10.0,
+      "peak_position_pct": 0.22,
+      "dynamic_range_db": 21.1,
+      "onset_density": 2.49,
+      "intro_silence_sec": 0.8,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 2262.0,
+      "avg_spectral_bandwidth": 2225.0,
+      "avg_zcr": 0.1117
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 69.4,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.062,
+      "navbar_pct": 0.375,
+      "sidebar_pct": 0.375,
+      "modal_pct": 0.312,
+      "table_pct": 0.688,
+      "chat_pct": 0.062,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.062,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.93,
+      "avg_thirds_score": 0.981,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.361,
+      "repetition_count": 9,
+      "has_bookend": true,
+      "longest_scene_sec": 15.0,
+      "frames_analyzed": 16
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 157059,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-02-27T00:17:17.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 83.4,
+      "detected_key": "A",
+      "key_confidence": 0.122,
+      "mfcc_mean": [
+        -109.014,
+        94.257,
+        -19.09,
+        23.3,
+        6.516,
+        13.666,
+        -6.423,
+        1.698,
+        -6.319,
+        8.992,
+        -8.067,
+        3.207,
+        3.346
+      ],
+      "mfcc_std": [
+        95.21,
+        37.029,
+        20.686,
+        15.601,
+        12.067,
+        10.605,
+        12.825,
+        9.717,
+        10.638,
+        8.373,
+        7.69,
+        7.892,
+        8.734
+      ],
+      "avg_spectral_contrast": 19.53,
+      "avg_tonnetz": [
+        0.0803,
+        0.1041,
+        -0.1459,
+        0.0809,
+        -0.0112,
+        0.0403
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -20.4,
+          "centroid": 2494.0,
+          "bandwidth": 2155.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -18.6,
+          "centroid": 1879.0,
+          "bandwidth": 1940.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -14.9,
+          "centroid": 1838.0,
+          "bandwidth": 1889.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 1757.0,
+          "bandwidth": 1988.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -20.6,
+          "centroid": 2007.0,
+          "bandwidth": 2112.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -17.3,
+          "centroid": 2200.0,
+          "bandwidth": 2288.0
+        },
+        {
+          "timestamp": 18,
+          "type": "ambient",
+          "rms_db": -16.7,
+          "centroid": 2672.0,
+          "bandwidth": 2443.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -17.0,
+          "centroid": 2300.0,
+          "bandwidth": 2289.0
+        },
+        {
+          "timestamp": 24,
+          "type": "ambient",
+          "rms_db": -17.7,
+          "centroid": 2657.0,
+          "bandwidth": 2452.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 2194.0,
+          "bandwidth": 2225.0
+        },
+        {
+          "timestamp": 30,
+          "type": "music_warm",
+          "rms_db": -17.1,
+          "centroid": 2808.0,
+          "bandwidth": 2521.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -17.2,
+          "centroid": 3143.0,
+          "bandwidth": 2664.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -13.1,
+          "centroid": 2000.0,
+          "bandwidth": 2201.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -13.7,
+          "centroid": 2099.0,
+          "bandwidth": 2115.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -12.0,
+          "centroid": 1977.0,
+          "bandwidth": 2177.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.733,
+        "ambient": 0.2,
+        "music_warm": 0.067
+      },
+      "speech_pct": 0.733,
+      "music_pct": 0.067,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "back_heavy",
+      "strong_sfx_count": 73,
+      "strong_sfx_timestamps": [
+        0.84,
+        2.32,
+        2.58,
+        2.9,
+        3.53,
+        3.81,
+        4.23,
+        4.39,
+        4.78,
+        5.69,
+        6.29,
+        6.57,
+        7.2,
+        7.43,
+        7.52,
+        7.73,
+        8.13,
+        8.41,
+        8.87,
+        9.68
+      ],
+      "n_segments": 15
+    }
+  }
+}

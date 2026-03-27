@@ -15,10 +15,12 @@
 #   ./testnet.sh setup-be       # First-time VPS 1 setup (PostgreSQL, clone, build)
 #   ./testnet.sh setup-chain    # First-time VPS 2 setup (clone, build AP)
 #   ./testnet.sh deploy         # Deploy contracts from Mac to L3
+#   ./testnet.sh deploy --seed  # Deploy + start services + seed ITP positions & borrows
 #   ./testnet.sh start          # Start all services on VPSes
 #   ./testnet.sh stop           # Stop all services on VPSes
 #   ./testnet.sh status         # Check what's running
 #   ./testnet.sh update         # git pull + rebuild + restart on both VPSes
+#   ./testnet.sh seed-orders    # Buy all ITPs + seed Morpho borrows (alias: seed)
 #   ./testnet.sh logs [service] # Tail logs (data-node, oracle-1..3, ap)
 
 set -e
@@ -165,6 +167,8 @@ _sync_docker_files() {
 _sync_config_files() {
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    # AP on VPS 2 also needs symbol-map for FillConfirmed decomposition
+    rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/data/symbol-map.json" 2>/dev/null || true
     # Sync deployment JSONs to VPSes — file watcher on services detects changes automatically
     for f in active-deployment.json morpho-e2e.json vision-batches.json; do
         if [ -f "$SCRIPT_DIR/deployments/$f" ]; then
@@ -406,8 +410,100 @@ cmd_setup_chain() {
     echo -e "  ${GREEN}VPS 2 setup complete${NC}"
 }
 
+# ── reset-chain: Wipe L3 chain state on VPS 2 ────────────────
+# Stops the chain, deletes sequencer + blockscout volumes, restarts.
+# After this, deployer nonce is 0 and all old contract state is gone.
+cmd_reset_chain() {
+    echo -e "${CYAN}Resetting L3 chain on VPS 2...${NC}"
+
+    echo -e "${BLUE}[1/3] Stopping chain containers...${NC}"
+    vps_chain_ssh "cd /home/max/orbit-l3-testnet && docker compose down -v 2>&1 | tail -3"
+    echo -e "  ${GREEN}Chain stopped + volumes removed${NC}"
+
+    echo -e "${BLUE}[2/3] Restarting chain...${NC}"
+    vps_chain_ssh "cd /home/max/orbit-l3-testnet && docker compose up -d 2>&1 | tail -5"
+
+    echo -e "${BLUE}[3/3] Waiting for chain to be ready...${NC}"
+    local ATTEMPTS=0
+    while [ $ATTEMPTS -lt 60 ]; do
+        CHAIN_READY=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+        if [ "$CHAIN_READY" = "$CHAIN_ID" ]; then
+            BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
+            echo -e "  ${GREEN}L3 ready — chain $CHAIN_ID, block $BLOCK${NC}"
+
+            # Fund deployer with gas (new genesis = empty accounts)
+            echo -e "  Funding deployer from genesis..."
+            # The chain genesis pre-funds the sequencer address. Transfer gas from there.
+            local SEQ_KEY=$(vps_chain_ssh "python3 -c \"import json; print(json.load(open('/home/max/orbit-l3-testnet/config/sequencer_config.json')).get('node',{}).get('staker',{}).get('dangerous',{}).get('without-block-validator',''))\"" 2>/dev/null || echo "")
+            if [ -z "$SEQ_KEY" ]; then
+                # Try reading the genesis dev key from chain config
+                local DEV_KEY=$(vps_chain_ssh "cat /home/max/orbit-l3-testnet/config/dev-key.txt 2>/dev/null" 2>/dev/null || echo "")
+                if [ -n "$DEV_KEY" ]; then
+                    cast send --rpc-url "$RPC_URL" --private-key "$DEV_KEY" --value "$(cast to-wei 1000000 ether)" "$DEPLOYER_ADDRESS" --gas-price "$GAS_PRICE" > /dev/null 2>&1 || true
+                fi
+            fi
+            echo -e "  ${GREEN}Chain reset complete${NC}"
+            return 0
+        fi
+        ATTEMPTS=$((ATTEMPTS + 1))
+        sleep 2
+    done
+
+    echo -e "  ${RED}Chain did not come back after 120s${NC}"
+    return 1
+}
+
 # ── deploy: Deploy contracts from Mac to L3 ──────────────────
 cmd_deploy() {
+    # Parse flags
+    local RESET_CHAIN=false
+    local AUTO_SEED=false
+    for arg in "$@"; do
+        case "$arg" in
+            --reset-chain) RESET_CHAIN=true ;;
+            --seed) AUTO_SEED=true ;;
+        esac
+    done
+
+    if [ "$RESET_CHAIN" = true ]; then
+        cmd_reset_chain || exit 1
+        # Also wipe ALL broadcast dirs — fresh chain = fresh nonce = no resume
+        echo -e "${BLUE}Wiping all broadcast dirs (fresh chain)...${NC}"
+        rm -rf contracts/broadcast/*/
+        echo -e "  ${GREEN}All broadcasts wiped${NC}"
+    fi
+
+    # Wipe deployment-specific Postgres tables (preserves raw market data)
+    # These tables contain state tied to contract addresses that change on redeploy.
+    echo -e "${BLUE}Wiping stale deployment data from Postgres...${NC}"
+    vps_be_ssh "psql -U max -d index_prices -c \"
+        TRUNCATE
+            vision_round_players,
+            vision_batch_lifecycle,
+            vision_settlement_proofs,
+            vision_batches,
+            vision_positions,
+            vision_bitmaps,
+            vision_kv_store,
+            vision_reference_prices,
+            itp_snapshots,
+            itp_meta,
+            trades,
+            user_shares,
+            points_ledger,
+            points_totals,
+            issuer_health_snapshots,
+            oracle_health_snapshots,
+            collector_cursors,
+            batch_configs,
+            batch_settlements,
+            signed_batch_configs,
+            liquidity_snapshots
+        CASCADE;
+    \" 2>&1" \
+        && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
+        || echo -e "  ${YELLOW}Postgres wipe failed — tables may have stale data${NC}"
+
     echo -e "${CYAN}Deploying contracts to L3 (chain $CHAIN_ID)...${NC}"
 
     # Prerequisites
@@ -983,17 +1079,28 @@ for name, b in vb.get('batches', {}).items():
     done
     echo -e "  ${GREEN}Funded 4 accounts with 0.5 S each on Sonic${NC}"
 
-    # Fund swarm bot wallets with gas (if addresses.json exists)
+    # Fund swarm bot wallets with gas + Vision USDC (if addresses.json exists)
     if [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
-        echo -e "  Funding swarm bot wallets with gas..."
+        echo -e "  Funding swarm bot wallets with gas + Vision USDC..."
+        # Vision contract uses its own USDC (may differ from L3_WUSDC)
+        local VISION_CONTRACT=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
+        local SWARM_USDC=""
+        if [ -n "$VISION_CONTRACT" ]; then
+            SWARM_USDC=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
+        fi
+        [ -z "$SWARM_USDC" ] && SWARM_USDC=$(read_deployment_addr "L3_WUSDC")
+        local SWARM_FUND="10000000000000000000000"  # 10k USDC
         while IFS= read -r addr; do
             addr=$(echo "$addr" | tr -d '", ')
             [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
             [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
             cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
                 "$addr" --value 1ether > /dev/null 2>&1 || true
+            cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                "$SWARM_USDC" "mint(address,uint256)" "$addr" "$SWARM_FUND" \
+                > /dev/null 2>&1 || true
         done < "docker/testnet/vision-swarm/addresses.json"
-        echo -e "  ${GREEN}Funded swarm bot wallets with 1 GM each${NC}"
+        echo -e "  ${GREEN}Funded swarm bot wallets with 1 GM + 10K USDC each${NC}"
     fi
 
     # Verify funded accounts have non-zero balances
@@ -1521,16 +1628,50 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         echo -e "  ${YELLOW}vercel CLI not found — deploy manually: cd frontend && vercel --prod${NC}"
     fi
 
-    echo ""
-    echo -e "${GREEN}All contracts deployed. Next steps:${NC}"
-    echo -e "  ${CYAN}1. Start services: ./testnet.sh start${NC}"
-    echo -e "  ${CYAN}2. (Optional) Push: git add deployments/ envs/testnet/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
+    # ── Step 14.5: Auto-seed ITP positions + borrows ────────────
+    if [ "$AUTO_SEED" = true ]; then
+        echo ""
+        echo -e "${BLUE}[14.5/14] Auto-seeding ITP positions + Morpho borrows...${NC}"
+        echo -e "  Starting services first (oracles needed for order processing)..."
+        cmd_start
+        cmd_seed_orders
+    else
+        echo ""
+        echo -e "${GREEN}All contracts deployed. Next steps:${NC}"
+        echo -e "  ${CYAN}1. Start services: ./testnet.sh start${NC}"
+        echo -e "  ${CYAN}2. Seed positions: ./testnet.sh seed-orders${NC}"
+        echo -e "  ${CYAN}   Or in one shot next time: ./testnet.sh deploy --seed${NC}"
+        echo -e "  ${CYAN}3. (Optional) Push: git add deployments/ envs/testnet/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
+    fi
 }
 
 # ── start: Start all services on VPSes ───────────────────────
 cmd_start() {
     _STARTED_SERVICES=true
     echo -e "${CYAN}Starting all services on VPSes...${NC}"
+
+    # Ensure PostgreSQL is running on VPS 1 (oracles need it for Vision API)
+    echo -e "${BLUE}[0/8] Checking PostgreSQL on VPS 1...${NC}"
+    PG_READY=$(vps_be_ssh "pg_isready -q 2>/dev/null" && echo "ok" || echo "down")
+    if [ "$PG_READY" != "ok" ]; then
+        echo -e "  ${YELLOW}PostgreSQL is down — starting via ans sudo...${NC}"
+        # sudo is via user 'ans' (password in vps.md). su to ans, then sudo.
+        local ANS_PASS
+        ANS_PASS=$(grep -A2 'VPS 1.*prod-be' "$SCRIPT_DIR/vps.md" 2>/dev/null | grep '|' | tail -1 | sed 's/.*`\(.*\)`.*/\1/' || echo "")
+        if [ -n "$ANS_PASS" ]; then
+            ssh -tt "$VPS_BE_HOST" "echo '$ANS_PASS' | su -c 'echo $ANS_PASS | sudo -S pg_ctlcluster 17 main start 2>&1' ans 2>&1" < /dev/null 2>/dev/null \
+                && { sleep 2; echo -e "  ${GREEN}PostgreSQL started${NC}"; } \
+                || { echo -e "  ${RED}Failed to start PostgreSQL via ans sudo${NC}"; exit 1; }
+        else
+            echo -e "  ${RED}FATAL: PostgreSQL is down and cannot find ans password in vps.md${NC}"
+            echo -e "  ${YELLOW}Start manually: ssh index-maker/prod/be → sudo pg_ctlcluster 17 main start${NC}"
+            exit 1
+        fi
+        # Verify
+        PG_READY=$(vps_be_ssh "pg_isready -q 2>/dev/null" && echo "ok" || echo "down")
+        [ "$PG_READY" = "ok" ] || { echo -e "  ${RED}PostgreSQL still not responding after start${NC}"; exit 1; }
+    fi
+    echo -e "  ${GREEN}PostgreSQL OK${NC}"
 
     # Check L3
     echo -e "${BLUE}[1/8] Checking L3 chain...${NC}"
@@ -1730,9 +1871,13 @@ cmd_start() {
         vps_be_ssh "cd $VPS_BE_DIR && docker compose -f docker/testnet/vision-swarm/docker-compose.yml build" \
             || { echo -e "  ${YELLOW}Swarm build failed — skipping${NC}"; }
 
-        # Fund bot wallets with gas + USDC
-        USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
-        FUND_AMOUNT="100000000000000000000000"  # 100k USDC, 18 decimals
+        # Fund bot wallets with gas + Vision USDC (Vision contract uses its own USDC, NOT L3_WUSDC)
+        VISION_CONTRACT=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
+        if [ -n "$VISION_CONTRACT" ]; then
+            USDC_ADDR=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
+        fi
+        [ -z "$USDC_ADDR" ] && USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
+        FUND_AMOUNT="10000000000000000000000"  # 10k USDC, 18 decimals
         FUND_FAILURES=0
         if [ -n "$USDC_ADDR" ] && [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
             while IFS= read -r addr; do
@@ -2164,6 +2309,7 @@ services:
       AP_PRIVATE_KEY_PATH: /tmp/ap-key.txt
     volumes:
       - /tmp/ap-key.txt:/tmp/ap-key.txt:ro
+      - $VPS_CHAIN_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
     command:
       - "--port"
       - "9100"
@@ -2458,16 +2604,219 @@ print(len(configs))
     echo -e "${GREEN}Vision batches refreshed (version $BATCH_VERSION)${NC}"
 }
 
+# ── seed-orders: Buy all ITPs + seed Morpho borrows ─────────
+cmd_seed_orders() {
+    echo -e "${CYAN}Seeding ITP orders + Morpho borrows...${NC}"
+
+    # Dedicated seeder key (Anvil account 8) — avoids nonce conflicts with oracles/deployer
+    local SEEDER_KEY="0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+    local SEEDER_ADDRESS="0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+
+    # Prerequisites
+    for cmd in forge cast python3; do
+        command -v $cmd &>/dev/null || { echo -e "${RED}$cmd not found${NC}"; exit 1; }
+    done
+    mkdir -p logs
+
+    # Check L3 reachable
+    local VPS_CHAIN_ID
+    VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    [ "$VPS_CHAIN_ID" = "$CHAIN_ID" ] || { echo -e "${RED}L3 not reachable (got $VPS_CHAIN_ID, expected $CHAIN_ID)${NC}"; exit 1; }
+
+    # Read addresses from deployment JSONs
+    local INDEX_ADDR USDC_ADDR MORPHO_ADDR VAULT_ADDR
+    INDEX_ADDR=$(read_deployment_addr "Index")
+    USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
+    MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
+    VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
+
+    [ -n "$INDEX_ADDR" ] || { echo -e "${RED}Index address not found in $DEPLOYMENT_FILE${NC}"; exit 1; }
+    [ -n "$USDC_ADDR" ] || { echo -e "${RED}L3_WUSDC address not found in $DEPLOYMENT_FILE${NC}"; exit 1; }
+    [ -n "$MORPHO_ADDR" ] || { echo -e "${RED}MORPHO address not found in deployments/morpho-e2e.json${NC}"; exit 1; }
+    [ -n "$VAULT_ADDR" ] || { echo -e "${RED}METAMORPHO_VAULT address not found in deployments/morpho-e2e.json${NC}"; exit 1; }
+
+    echo -e "  Index:  $INDEX_ADDR"
+    echo -e "  USDC:   $USDC_ADDR"
+    echo -e "  Morpho: $MORPHO_ADDR"
+    echo -e "  Vault:  $VAULT_ADDR"
+    echo -e "  Seeder: $SEEDER_ADDRESS"
+
+    # ── Step 1: Fund seeder account ──────────────────────────
+    echo -e "${BLUE}[1/6] Funding seeder account...${NC}"
+
+    # Gas (GM) — send 1 GM from deployer
+    local SEEDER_BALANCE
+    SEEDER_BALANCE=$(cast balance --rpc-url "$RPC_URL" "$SEEDER_ADDRESS" 2>/dev/null || echo "0")
+    if [ "$SEEDER_BALANCE" = "0" ] || python3 -c "exit(0 if int('$SEEDER_BALANCE') < 10**17 else 1)" 2>/dev/null; then
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE \
+            --value 1000000000000000000 "$SEEDER_ADDRESS" \
+            > /dev/null 2>&1 || echo -e "  ${YELLOW}Gas funding failed (may already have balance)${NC}"
+        echo -e "  ${GREEN}Sent 1 GM for gas${NC}"
+    else
+        echo -e "  ${GREEN}Seeder already has gas${NC}"
+    fi
+
+    # Mint 200k USDC to seeder (enough for 77 ITPs * up to $1000 each)
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$USDC_ADDR" "mint(address,uint256)" "$SEEDER_ADDRESS" 200000000000000000000000 \
+        > /dev/null 2>&1 || { echo -e "${RED}USDC mint to seeder failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Minted 200k USDC to seeder${NC}"
+
+    # ── Step 2: Stop oracles ─────────────────────────────────
+    echo -e "${BLUE}[2/6] Stopping oracles...${NC}"
+    for i in 1 2 3; do
+        vps1_compose oracle stop oracle-$i 2>/dev/null || true
+    done
+    sleep 3
+    echo -e "  ${GREEN}Oracles stopped${NC}"
+
+    # ── Step 3: Submit buy orders for all ITPs ───────────────
+    echo -e "${BLUE}[3/6] Submitting buy orders for all ITPs...${NC}"
+    local ORDER_ID_BEFORE
+    ORDER_ID_BEFORE=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "nextOrderId()(uint256)" 2>/dev/null || echo "0")
+    echo -e "  nextOrderId before: $ORDER_ID_BEFORE"
+
+    rm -rf contracts/broadcast/SubmitBuyOrders.s.sol/$CHAIN_ID/
+    (cd contracts && DEPLOYER_KEY="$SEEDER_KEY" \
+    INDEX_ADDRESS="$INDEX_ADDR" USDC_ADDRESS="$USDC_ADDR" \
+    forge script script/SubmitBuyOrders.s.sol:SubmitBuyOrders \
+        --rpc-url "$RPC_URL" \
+        --private-key "$SEEDER_KEY" \
+        --broadcast --slow \
+        --chain-id $CHAIN_ID \
+        --legacy --with-gas-price $GAS_PRICE) \
+        > logs/seed-buy-orders.log 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo -e "  ${RED}Buy orders failed:${NC}"
+        tail -20 logs/seed-buy-orders.log 2>/dev/null || true
+        # Restart oracles before bailing
+        echo -e "  ${YELLOW}Restarting oracles despite failure...${NC}"
+        for i in 1 2 3; do
+            vps1_compose oracle start oracle-$i 2>/dev/null || true
+            [ $i -lt 3 ] && sleep 5
+        done
+        exit 1
+    fi
+
+    local ORDER_ID_AFTER
+    ORDER_ID_AFTER=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "nextOrderId()(uint256)" 2>/dev/null || echo "0")
+    local ORDERS_PLACED=$((ORDER_ID_AFTER - ORDER_ID_BEFORE))
+    echo -e "  ${GREEN}Submitted $ORDERS_PLACED buy orders (nextOrderId: $ORDER_ID_BEFORE → $ORDER_ID_AFTER)${NC}"
+
+    # ── Step 4: Restart oracles to process orders ────────────
+    echo -e "${BLUE}[4/6] Restarting oracles...${NC}"
+    for i in 1 2 3; do
+        vps1_compose oracle start oracle-$i 2>/dev/null || true
+        [ $i -lt 3 ] && sleep 5
+    done
+    sleep 10
+    # Verify oracles are up
+    local all_ok=true
+    for i in 1 2 3; do
+        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i"; then
+            echo -e "  ${RED}oracle-$i not running${NC}"
+            all_ok=false
+        fi
+    done
+    [ "$all_ok" = true ] || { echo -e "${RED}Oracles failed to restart — cannot process orders${NC}"; exit 1; }
+    echo -e "  ${GREEN}Oracles running${NC}"
+
+    # ── Step 5: Wait for orders to be filled ─────────────────
+    echo -e "${BLUE}[5/6] Waiting for oracles to fill orders...${NC}"
+    # Poll order status: check if the first submitted order has been processed.
+    # Orders are filled when totalSupply of the ITP goes from 0 to >0.
+    # We poll the first ITP's totalSupply as a proxy for "oracles have processed at least one round."
+    local MAX_WAIT=180  # 3 minutes
+    local POLL_INTERVAL=10
+    local ELAPSED=0
+    local FIRST_ORDER_ID=$ORDER_ID_BEFORE
+
+    while [ $ELAPSED -lt $MAX_WAIT ]; do
+        # Check if ITP 1 has supply (meaning at least one buy order was filled)
+        local ITP1_SUPPLY
+        ITP1_SUPPLY=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" \
+            "getITPState(bytes32)((address,uint256,uint256,address[],uint256[],uint256[]))" \
+            "0x0000000000000000000000000000000000000000000000000000000000000001" 2>/dev/null \
+            | python3 -c "import sys; line=sys.stdin.read(); parts=line.strip().split(','); print(parts[1].strip())" 2>/dev/null \
+            || echo "0")
+
+        if [ "$ITP1_SUPPLY" != "0" ] && [ -n "$ITP1_SUPPLY" ]; then
+            echo -e "  ${GREEN}Orders being filled (ITP 1 totalSupply: $ITP1_SUPPLY)${NC}"
+            # Give oracles more time to process remaining orders
+            echo -e "  Waiting 30s for remaining orders..."
+            sleep 30
+            break
+        fi
+
+        ELAPSED=$((ELAPSED + POLL_INTERVAL))
+        echo -e "  Waiting... ($ELAPSED/${MAX_WAIT}s)"
+        sleep $POLL_INTERVAL
+    done
+
+    if [ $ELAPSED -ge $MAX_WAIT ]; then
+        echo -e "  ${YELLOW}Timed out waiting for fills after ${MAX_WAIT}s — continuing anyway${NC}"
+        echo -e "  ${YELLOW}Orders may still be processing. Check: cast call --rpc-url $RPC_URL $INDEX_ADDR 'nextOrderId()(uint256)'${NC}"
+    fi
+
+    # ── Step 6: Reallocate vault + seed borrows ──────────────
+    echo -e "${BLUE}[6/6] Reallocating vault + seeding borrows...${NC}"
+
+    # Reallocate vault first (spread USDC across all markets so borrows have liquidity)
+    rm -rf contracts/broadcast/ReallocateVault.s.sol/$CHAIN_ID/
+    (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
+    MORPHO="$MORPHO_ADDR" METAMORPHO_VAULT="$VAULT_ADDR" SPREAD=true \
+    forge script script/ReallocateVault.s.sol:ReallocateVault \
+        --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --broadcast --slow \
+        --chain-id $CHAIN_ID \
+        --legacy --with-gas-price $GAS_PRICE) \
+        > logs/seed-reallocate.log 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo -e "  ${YELLOW}Vault reallocation failed (borrows may still work if markets have supply):${NC}"
+        tail -10 logs/seed-reallocate.log 2>/dev/null || true
+    else
+        echo -e "  ${GREEN}Vault reallocated${NC}"
+    fi
+
+    # Seed borrows with buyer (seeder) key
+    rm -rf contracts/broadcast/SeedBorrows.s.sol/$CHAIN_ID/
+    (cd contracts && BUYER_KEY="$SEEDER_KEY" \
+    MORPHO="$MORPHO_ADDR" METAMORPHO_VAULT="$VAULT_ADDR" \
+    forge script script/SeedBorrows.s.sol:SeedBorrows \
+        --rpc-url "$RPC_URL" \
+        --private-key "$SEEDER_KEY" \
+        --broadcast --slow \
+        --chain-id $CHAIN_ID \
+        --legacy --with-gas-price $GAS_PRICE) \
+        > logs/seed-borrows.log 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo -e "  ${YELLOW}Seed borrows had errors:${NC}"
+        tail -10 logs/seed-borrows.log 2>/dev/null || true
+    else
+        echo -e "  ${GREEN}Borrows seeded${NC}"
+    fi
+
+    echo -e "${GREEN}Seeding complete. ITPs have supply, Morpho has borrows.${NC}"
+}
+
 # ── Main dispatcher ──────────────────────────────────────────
 case "${1:-help}" in
     setup-be)    cmd_setup_be ;;
     setup-chain) cmd_setup_chain ;;
-    deploy)      cmd_deploy ;;
+    deploy)      shift; cmd_deploy "$@" ;;
+    reset-chain) cmd_reset_chain ;;
     start)       cmd_start ;;
     stop)        cmd_stop ;;
     status)      cmd_status ;;
     update)      cmd_update ;;
     refresh-batches) cmd_refresh_batches ;;
+    seed-orders|seed) cmd_seed_orders ;;
     sync-deployment) ./sync-deployment.sh testnet $CHAIN_ID ;;
     logs)        cmd_logs "$2" ;;
     help|--help|-h)
@@ -2476,12 +2825,14 @@ case "${1:-help}" in
         echo "Commands:"
         echo "  setup-be          First-time VPS 1 setup (PostgreSQL, clone, build)"
         echo "  setup-chain       First-time VPS 2 setup (clone, build AP)"
-        echo "  deploy            Deploy contracts from Mac to L3"
+        echo "  deploy [--reset-chain] [--seed]  Deploy contracts (--seed auto-starts services + seeds positions)"
+        echo "  reset-chain       Wipe L3 chain state (sequencer + blockscout volumes)"
         echo "  start             Start all services on VPSes"
         echo "  stop              Stop all services on VPSes"
         echo "  status            Check what's running"
         echo "  update            git pull + rebuild + restart on both VPSes"
         echo "  refresh-batches   Redeploy Vision batches with fresh version"
+        echo "  seed-orders|seed  Buy all 77 ITPs + seed Morpho borrows (stops/restarts oracles)"
         echo "  sync-deployment   Patch deployment JSON from latest forge broadcasts"
         echo "  logs [svc]        Tail logs (sonic-proxy, data-node, oracle-1..3, curator, ap, all)"
         echo ""

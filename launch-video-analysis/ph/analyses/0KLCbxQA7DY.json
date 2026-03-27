@@ -1,0 +1,380 @@
+{
+  "video_id": "0KLCbxQA7DY",
+  "status": "ok",
+  "duration_sec": 19.5,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 7,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 7,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Charlie Good evening,"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "5.4 5.5? Charlie Claude! Good Hey and any app between breaking changes dependency. errors evening, get provide the there trying type update version web when working you"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "5.4 5.5 I'd TypeScript Typescript about between breaking changes compared for guides happy help information issues. migration upgrade with your"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "5.4 5.5 Announcing I'd TypeScript TypeScript. Typescript Typeseript about between breaking changes compared for four from guides happy help information issues. migration project upgrade with your"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "5.5, 5.5? Are Hey Sta Typescript about app between breaking can changesand dependency errors for happs how information lok migration my-esearc project seach teen the there tnd tohelpwth trying type version when working your"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "5.4 5.5, 5.5? Are Recommendations TypeSeript Upgrading and app between breaking chonges dependency errors for the there tryin type version when working your"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "5.4 5.5, 5.5? Are Documentation: For TypeSeript and app between breaking can chonges dependency errors mor provide repo the there tryin type version when working"
+    }
+  ],
+  "pseudo_transcript": "Charlie Good evening, | 5.4 5.5? Charlie Claude! Good Hey and any app between breaking changes dependency. errors evening, get provide the there trying type update version web when working you | 5.4 5.5 I'd TypeScript Typescript about between breaking changes compared for guides happy help information issues. migration upgrade with your | 5.4 5.5 Announcing I'd TypeScript TypeScript. Typescript Typeseript about between breaking changes compared for four from guides happy help information issues. migration project upgrade with your | 5.5, 5.5? Are Hey Sta Typescript about app between breaking can changesand dependency errors for happs how information lok migration my-esearc project seach teen the there tnd tohelpwth trying type version when working your | 5.4 5.5, 5.5? Are Recommendations TypeSeript Upgrading and app between breaking chonges dependency errors for the there tryin type version when working your | 5.4 5.5, 5.5? Are Documentation: For TypeSeript and app between breaking can chonges dependency errors mor provide repo the there tryin type version when working",
+  "frame_type_distribution": {
+    "text_heavy": 0.57,
+    "white_screen": 0.29,
+    "simple_visual": 0.14
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          226,
+          235,
+          236
+        ],
+        [
+          90,
+          111,
+          200
+        ],
+        [
+          243,
+          247,
+          248
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          228,
+          236,
+          236
+        ],
+        [
+          95,
+          116,
+          199
+        ],
+        [
+          75,
+          81,
+          82
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "0KLCbxQA7DY",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.04,
+      "bitrate_kbps": 449.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 2851.2,
+      "blur_variance": 1245.8,
+      "avg_motion": 16.89,
+      "max_motion": 35.44,
+      "motion_variance": 11.47,
+      "avg_brightness": 221.0,
+      "brightness_trend": -6.5,
+      "first_quarter_brightness": 220.5,
+      "last_quarter_brightness": 214.1,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 1.0,
+      "annotation_frames": 6,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 1.5,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.857,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 220.53446614583333,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 479.6109114583333
+      },
+      "last_frame": {
+        "timestamp": 18.0,
+        "brightness": 214.0826128472222,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 24.2,
+      "frames_analyzed": 7
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 59.1,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 0.98,
+      "emotional_arc": "flat",
+      "question_count": 4,
+      "has_questions": true,
+      "acronym_count": 0,
+      "acronym_density": 0.0,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 147
+    }
+  },
+  "mega": {
+    "video_id": "0KLCbxQA7DY",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 19.5,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.033,
+      "energy_trend": 0.056481,
+      "peak_timestamp_sec": 14.3,
+      "peak_position_pct": 0.73,
+      "dynamic_range_db": 20.6,
+      "onset_density": 2.51,
+      "intro_silence_sec": 0.5,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 1612.0,
+      "avg_spectral_bandwidth": 1788.0,
+      "avg_zcr": 0.0692
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 50.0,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 0.714,
+      "sidebar_pct": 0.0,
+      "modal_pct": 0.0,
+      "table_pct": 0.857,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.964,
+      "avg_thirds_score": 0.949,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.078,
+      "repetition_count": 3,
+      "has_bookend": true,
+      "longest_scene_sec": 21.0,
+      "frames_analyzed": 7
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 317088,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-03-20T19:56:41.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 89.1,
+      "detected_key": "A",
+      "key_confidence": 0.17,
+      "mfcc_mean": [
+        -151.037,
+        128.018,
+        -11.55,
+        11.245,
+        -13.023,
+        -5.412,
+        -9.542,
+        -8.185,
+        -14.203,
+        -6.592,
+        -12.199,
+        -6.523,
+        -7.895
+      ],
+      "mfcc_std": [
+        96.907,
+        50.703,
+        34.18,
+        22.717,
+        19.287,
+        20.616,
+        16.439,
+        13.617,
+        11.255,
+        10.487,
+        9.19,
+        11.262,
+        9.857
+      ],
+      "avg_spectral_contrast": 22.18,
+      "avg_tonnetz": [
+        0.1991,
+        -0.1619,
+        -0.2951,
+        -0.0146,
+        0.0222,
+        0.0109
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -15.2,
+          "centroid": 1193.0,
+          "bandwidth": 1347.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -15.4,
+          "centroid": 1068.0,
+          "bandwidth": 1241.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -14.6,
+          "centroid": 1033.0,
+          "bandwidth": 1238.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -13.6,
+          "centroid": 1954.0,
+          "bandwidth": 2087.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -10.8,
+          "centroid": 2171.0,
+          "bandwidth": 2303.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -10.8,
+          "centroid": 2159.0,
+          "bandwidth": 2405.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "back_heavy",
+      "strong_sfx_count": 41,
+      "strong_sfx_timestamps": [
+        0.74,
+        1.42,
+        2.76,
+        3.46,
+        4.09,
+        5.43,
+        6.15,
+        6.76,
+        8.1,
+        9.43,
+        9.94,
+        11.42,
+        12.1,
+        12.26,
+        12.33,
+        12.45,
+        12.75,
+        13.07,
+        13.21,
+        13.42
+      ],
+      "n_segments": 6
+    }
+  }
+}

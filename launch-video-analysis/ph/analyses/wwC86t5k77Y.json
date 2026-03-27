@@ -1,0 +1,3017 @@
+{
+  "video_id": "wwC86t5k77Y",
+  "status": "ok",
+  "duration_sec": 942.7,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 315,
+  "transition_count": 11,
+  "transitions": [
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.294,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "correlation": 0.052,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "correlation": 0.16,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "correlation": 0.366,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "correlation": 0.319,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 444.0,
+      "correlation": 0.313,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 477.0,
+      "correlation": 0.292,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 483.0,
+      "correlation": 0.374,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 489.0,
+      "correlation": 0.302,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 492.0,
+      "correlation": 0.35,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 501.0,
+      "correlation": 0.296,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 90,
+  "text_extractions": [
+    {
+      "timestamp_sec": 24.0,
+      "text": "Coding bet bon model ‘Gade"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "—__,"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "met"
+    },
+    {
+      "timestamp_sec": 162.0,
+      "text": "Sen"
+    },
+    {
+      "timestamp_sec": 180.0,
+      "text": "Directory for listing"
+    },
+    {
+      "timestamp_sec": 183.0,
+      "text": "Demo OpenAl Realtime Voice"
+    },
+    {
+      "timestamp_sec": 198.0,
+      "text": "APL Demo Open OpenAl Realtime Voice ena"
+    },
+    {
+      "timestamp_sec": 219.0,
+      "text": "APL Demo Ky: Open OpenAl Raaine Realtime Voice"
+    },
+    {
+      "timestamp_sec": 222.0,
+      "text": "APL Demo Ky: Open OpenAl Realtime Voice simple"
+    },
+    {
+      "timestamp_sec": 237.0,
+      "text": "APL Demo Open Realtime Voice pena"
+    },
+    {
+      "timestamp_sec": 255.0,
+      "text": "\"GET (IsdpResponse.ok) (base) /rt_voice.html 10:50:35] 10:50:40] 200 600 8000 API APT Animation, Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Terminal ait avait await conection connection const content dak feo green. lack maybe minimalist new nostalgic pc.setRenotedescription({ port python responded rest some that very want wel whe wit with worked ‘Add ‘throw “GET"
+    },
+    {
+      "timestamp_sec": 258.0,
+      "text": "\"GET (IsdpResponse.ok) (hase) /rt_voice.html 10:50:35] 16:50:40] 200 800 8000 API APT Error(\"Realtine HTTP HTTP/1.1\" Mate Now Serving [19/Dec/2024 avait await black conection connection const content ema established!\"); new port python responded rest sme that very want well wht, wit with witha ‘Add ‘throw “GET"
+    },
+    {
+      "timestamp_sec": 261.0,
+      "text": "\"GET (base) /rt_voice.html 10:50:35] 10:50:40] 200 600 8000 API Animation, Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Super Terminal [19/Dec/2024 answerSdp avait await black conection connection const context dak dp: established!\"); green. new port python reat responded sme that throw want well wht, wit with witha worked! ‘Add ‘throw “GET"
+    },
+    {
+      "timestamp_sec": 264.0,
+      "text": "\"GET (base) 10:50:35] 10:50:40] 200 600 8000 API Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Terminal and answerSdp avait await black conection connection const context dp: established!\"); maybe new non nostalgic port python reat responded that the throw very well wht, wit with worked ‘Add ‘throw “GET"
+    },
+    {
+      "timestamp_sec": 282.0,
+      "text": "orry"
+    },
+    {
+      "timestamp_sec": 297.0,
+      "text": "ome"
+    },
+    {
+      "timestamp_sec": 300.0,
+      "text": "Bree"
+    },
+    {
+      "timestamp_sec": 318.0,
+      "text": "wri"
+    },
+    {
+      "timestamp_sec": 369.0,
+      "text": "Ome Sar"
+    },
+    {
+      "timestamp_sec": 372.0,
+      "text": "Ser Set"
+    },
+    {
+      "timestamp_sec": 378.0,
+      "text": "Bee"
+    },
+    {
+      "timestamp_sec": 411.0,
+      "text": "RRS rat"
+    },
+    {
+      "timestamp_sec": 414.0,
+      "text": "ons"
+    },
+    {
+      "timestamp_sec": 423.0,
+      "text": "Bree Ser"
+    },
+    {
+      "timestamp_sec": 426.0,
+      "text": "Soon"
+    },
+    {
+      "timestamp_sec": 429.0,
+      "text": "alte fae"
+    },
+    {
+      "timestamp_sec": 450.0,
+      "text": "al)"
+    },
+    {
+      "timestamp_sec": 453.0,
+      "text": "ess"
+    },
+    {
+      "timestamp_sec": 471.0,
+      "text": "Introduction"
+    },
+    {
+      "timestamp_sec": 483.0,
+      "text": "1g)"
+    },
+    {
+      "timestamp_sec": 492.0,
+      "text": "46:"
+    },
+    {
+      "timestamp_sec": 501.0,
+      "text": "Ome page"
+    },
+    {
+      "timestamp_sec": 504.0,
+      "text": "Soe"
+    },
+    {
+      "timestamp_sec": 507.0,
+      "text": "srt"
+    },
+    {
+      "timestamp_sec": 510.0,
+      "text": "Ben"
+    },
+    {
+      "timestamp_sec": 540.0,
+      "text": "@openaimd API APL Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Terminal The Thidruns User View When and between build can code conversation conversation, conversation. data datajson datapoints docs extraced extracts file follows: for format. from gpt4-o has have implement mp3 must need next openaimd our project project. recorded run saved some textin the this tint transcribe transcribt use user want whisper will work write {APL ‘and"
+    },
+    {
+      "timestamp_sec": 543.0,
+      "text": "@openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts file follows: for format. from have implement into need next openaimd our project. recorded run runs saved some step textin the this tint transcribe transcribt use want wd, whisper will work write ‘AP"
+    },
+    {
+      "timestamp_sec": 552.0,
+      "text": "@rtvoice.html API Any Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can conversation conversation, conversation. cwd, data datajson datapoints docs env extraced extract extracts file follows: for format. from gpt4-o has have implement int into must need ofthis our project project. recorded run runs saved some the this transcribe transcribt twill use user want whisper work write {APL ‘code"
+    },
+    {
+      "timestamp_sec": 555.0,
+      "text": "@openaimd API Any BUG Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Terminal The This User View When and api between build can conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts fie follows: for from has have into must need next ofthis our project project. run runs saved some step the this tint transcribe transcribt twill use want wd, whisper work write {APL ‘and ‘code"
+    },
+    {
+      "timestamp_sec": 558.0,
+      "text": "@openaimd API Any BUG Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Strctured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts fle follows: for format. from has have implement int into must need next ofthis openaimd our project project. recorded run runs saved some step the this transcribe transcribt twill use want work write {APL ‘and"
+    },
+    {
+      "timestamp_sec": 561.0,
+      "text": "@openaimd AP! API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation. data datajson datapoints docs env extraced extracts fie follows: for format from gpt4-o has have implement into mp3 must need next ofthis opensimd our project project. recorded run runs saved some step the this transcribe transcribt use user want whisper will work write {AP"
+    },
+    {
+      "timestamp_sec": 564.0,
+      "text": "@openaimd @rtvoice.html API APL Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and apj between build can code conversation conversation, conversation. data datajson datapoints docs extraced extracts file follows: for format format. from gpt4-o has have implement int into mp3 must need next openaimd our project. recorded run runs saved some textin the this tis transcribe transcribt use want whisper will work ‘APL ‘and"
+    },
+    {
+      "timestamp_sec": 567.0,
+      "text": "@openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson docs extraced extract extracts file follows: for format. from gpt4-o has have implement int into intola mp3 must need next our points project project. recorded run runs saved some step textin the this tis transcribe transcribt use user want whisper will work write {APL ‘and ‘to"
+    },
+    {
+      "timestamp_sec": 570.0,
+      "text": "@openaimd API Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson docs extraced extract extracts file follows: for format. from gpt4-o has have ill implement int into mp3 must need next opensimd our points project project. recorded run runs saved some step the this tis transcribe transcribt use want whisper work write {AP ‘and ‘to"
+    },
+    {
+      "timestamp_sec": 573.0,
+      "text": "@rtvoice.html API Any COMPOSER Conversations Data Dates Edit File Help JSON Look Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When [APL and api between build can code conversation conversation, conversation. cwd. data datajson docs exraced extract extracts for format. from has have implement into mp3 must need next ofthis openaimd our points project. recorded runs saved some step the this transcribe use user want whisper will write ‘and ‘ranscribt"
+    },
+    {
+      "timestamp_sec": 576.0,
+      "text": "@openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Sentiment, Terminal The This Topic User View When and between build can code conversation conversation, data datapoints docs exrackd extract extracts file follows: for format from gpt4-o has have implement into mp3 must need next openaimd project. recorded run runs saved some step textin the this tint transcribe transcribt want whisper will work write {APL ‘and ‘conversation."
+    },
+    {
+      "timestamp_sec": 579.0,
+      "text": "@openaimd @rtvoice.html AP! API Any BUG Conversations Dates Edit FINDER File Help JSON Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts file follows: for format format. from has have implement int into mp3 must need next our project. recorded run runs saved some temp textin the this transcribe transcribt use user want whisper will work ‘APL"
+    },
+    {
+      "timestamp_sec": 636.0,
+      "text": "‘Sie"
+    },
+    {
+      "timestamp_sec": 657.0,
+      "text": "SSS status"
+    },
+    {
+      "timestamp_sec": 660.0,
+      "text": "In| Sata conection connecting ooo simple the"
+    },
+    {
+      "timestamp_sec": 663.0,
+      "text": "coe hos"
+    },
+    {
+      "timestamp_sec": 666.0,
+      "text": "connecting coo simple the"
+    },
+    {
+      "timestamp_sec": 669.0,
+      "text": "eee"
+    },
+    {
+      "timestamp_sec": 672.0,
+      "text": "Key Tia voice"
+    },
+    {
+      "timestamp_sec": 675.0,
+      "text": "APY STS"
+    },
+    {
+      "timestamp_sec": 678.0,
+      "text": "SSS eee"
+    },
+    {
+      "timestamp_sec": 681.0,
+      "text": "Key Status see tot"
+    },
+    {
+      "timestamp_sec": 684.0,
+      "text": "nes voice"
+    },
+    {
+      "timestamp_sec": 687.0,
+      "text": "ALS Key Opn"
+    },
+    {
+      "timestamp_sec": 690.0,
+      "text": "SSS “z="
+    },
+    {
+      "timestamp_sec": 693.0,
+      "text": "APL"
+    },
+    {
+      "timestamp_sec": 750.0,
+      "text": "Fama:"
+    },
+    {
+      "timestamp_sec": 852.0,
+      "text": "19th” CONSOLE DEBUG Dee Edit File OPrv OUTPUT Selection TERMINAL View “December"
+    },
+    {
+      "timestamp_sec": 855.0,
+      "text": "Bee Eve Selection View and baying buying cone date docs output: tat"
+    },
+    {
+      "timestamp_sec": 858.0,
+      "text": "Bow Eve Fie OPP, Selection View and buying come, data ead econ extracted made node presents”,"
+    },
+    {
+      "timestamp_sec": 861.0,
+      "text": "\"Decenber 19th Dee Eve Fie Opry Selection View and buying cone cs: pee public vine"
+    },
+    {
+      "timestamp_sec": 864.0,
+      "text": "BODO."
+    },
+    {
+      "timestamp_sec": 870.0,
+      "text": "Ses and bing ie)"
+    },
+    {
+      "timestamp_sec": 873.0,
+      "text": "Sess sot"
+    },
+    {
+      "timestamp_sec": 876.0,
+      "text": "View bing tga:"
+    },
+    {
+      "timestamp_sec": 879.0,
+      "text": "Gan"
+    },
+    {
+      "timestamp_sec": 882.0,
+      "text": "SON View"
+    },
+    {
+      "timestamp_sec": 885.0,
+      "text": "Pua bring resent sein"
+    },
+    {
+      "timestamp_sec": 888.0,
+      "text": "Pra View roe"
+    },
+    {
+      "timestamp_sec": 891.0,
+      "text": "Sooo data data. extracted json"
+    },
+    {
+      "timestamp_sec": 894.0,
+      "text": "View data extracted wrote"
+    },
+    {
+      "timestamp_sec": 897.0,
+      "text": "ars ete"
+    },
+    {
+      "timestamp_sec": 900.0,
+      "text": "Eve and cut: presents"
+    },
+    {
+      "timestamp_sec": 903.0,
+      "text": "ate erated ref rote tig"
+    },
+    {
+      "timestamp_sec": 906.0,
+      "text": "Sens View"
+    },
+    {
+      "timestamp_sec": 909.0,
+      "text": "Pua bring"
+    },
+    {
+      "timestamp_sec": 912.0,
+      "text": "data extracted"
+    },
+    {
+      "timestamp_sec": 915.0,
+      "text": "ema rei wont"
+    },
+    {
+      "timestamp_sec": 918.0,
+      "text": "Bese ats"
+    },
+    {
+      "timestamp_sec": 921.0,
+      "text": "Gee View ants bring mma our sete"
+    },
+    {
+      "timestamp_sec": 927.0,
+      "text": "Cz. OPP View nor"
+    },
+    {
+      "timestamp_sec": 930.0,
+      "text": "Pua View"
+    },
+    {
+      "timestamp_sec": 933.0,
+      "text": "Eve and buying output: presents raw"
+    },
+    {
+      "timestamp_sec": 936.0,
+      "text": "Eve and resents"
+    },
+    {
+      "timestamp_sec": 942.0,
+      "text": "Eve Pua and loa output: presents raw"
+    }
+  ],
+  "pseudo_transcript": "Coding bet bon model ‘Gade | —__, | met | Sen | Directory for listing | Demo OpenAl Realtime Voice | APL Demo Open OpenAl Realtime Voice ena | APL Demo Ky: Open OpenAl Raaine Realtime Voice | APL Demo Ky: Open OpenAl Realtime Voice simple | APL Demo Open Realtime Voice pena | \"GET (IsdpResponse.ok) (base) /rt_voice.html 10:50:35] 10:50:40] 200 600 8000 API APT Animation, Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Terminal ait avait await conection connection const content dak feo green. lack maybe minimalist new nostalgic pc.setRenotedescription({ port python responded rest some that very want wel whe wit with worked ‘Add ‘throw “GET | \"GET (IsdpResponse.ok) (hase) /rt_voice.html 10:50:35] 16:50:40] 200 800 8000 API APT Error(\"Realtine HTTP HTTP/1.1\" Mate Now Serving [19/Dec/2024 avait await black conection connection const content ema established!\"); new port python responded rest sme that very want well wht, wit with witha ‘Add ‘throw “GET | \"GET (base) /rt_voice.html 10:50:35] 10:50:40] 200 600 8000 API Animation, Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Super Terminal [19/Dec/2024 answerSdp avait await black conection connection const context dak dp: established!\"); green. new port python reat responded sme that throw want well wht, wit with witha worked! ‘Add ‘throw “GET | \"GET (base) 10:50:35] 10:50:40] 200 600 8000 API Error(\"Realtine HTTP HTTP/1.1\" Make Now Serving Terminal and answerSdp avait await black conection connection const context dp: established!\"); maybe new non nostalgic port python reat responded that the throw very well wht, wit with worked ‘Add ‘throw “GET | orry | ome | Bree | wri | Ome Sar | Ser Set | Bee | RRS rat | ons | Bree Ser | Soon | alte fae | al) | ess | Introduction | 1g) | 46: | Ome page | Soe | srt | Ben | @openaimd API APL Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Terminal The Thidruns User View When and between build can code conversation conversation, conversation. data datajson datapoints docs extraced extracts file follows: for format. from gpt4-o has have implement mp3 must need next openaimd our project project. recorded run saved some textin the this tint transcribe transcribt use user want whisper will work write {APL ‘and | @openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts file follows: for format. from have implement into need next openaimd our project. recorded run runs saved some step textin the this tint transcribe transcribt use want wd, whisper will work write ‘AP | @rtvoice.html API Any Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can conversation conversation, conversation. cwd, data datajson datapoints docs env extraced extract extracts file follows: for format. from gpt4-o has have implement int into must need ofthis our project project. recorded run runs saved some the this transcribe transcribt twill use user want whisper work write {APL ‘code | @openaimd API Any BUG Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Terminal The This User View When and api between build can conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts fie follows: for from has have into must need next ofthis our project project. run runs saved some step the this tint transcribe transcribt twill use want wd, whisper work write {APL ‘and ‘code | @openaimd API Any BUG Conversations Edit FINDER File Help JSON Look Outputs Realtime Run Selection Strctured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts fle follows: for format. from has have implement int into must need next ofthis openaimd our project project. recorded run runs saved some step the this transcribe transcribt twill use want work write {APL ‘and | @openaimd AP! API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation. data datajson datapoints docs env extraced extracts fie follows: for format from gpt4-o has have implement into mp3 must need next ofthis opensimd our project project. recorded run runs saved some step the this transcribe transcribt use user want whisper will work write {AP | @openaimd @rtvoice.html API APL Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and apj between build can code conversation conversation, conversation. data datajson datapoints docs extraced extracts file follows: for format format. from gpt4-o has have implement int into mp3 must need next openaimd our project. recorded run runs saved some textin the this tis transcribe transcribt use want whisper will work ‘APL ‘and | @openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson docs extraced extract extracts file follows: for format. from gpt4-o has have implement int into intola mp3 must need next our points project project. recorded run runs saved some step textin the this tis transcribe transcribt use user want whisper will work write {APL ‘and ‘to | @openaimd API Any BUG Conversations Data Dates Edit FINDER File Help JSON Look Outputs Realtime Run Selection Structured Terminal The This User View When and api between build can code conversation conversation, conversation. data datajson docs extraced extract extracts file follows: for format. from gpt4-o has have ill implement int into mp3 must need next opensimd our points project project. recorded run runs saved some step the this tis transcribe transcribt use want whisper work write {AP ‘and ‘to | @rtvoice.html API Any COMPOSER Conversations Data Dates Edit File Help JSON Look Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When [APL and api between build can code conversation conversation, conversation. cwd. data datajson docs exraced extract extracts for format. from has have implement into mp3 must need next ofthis openaimd our points project. recorded runs saved some step the this transcribe use user want whisper will write ‘and ‘ranscribt | @openaimd @rtvoice.html API Any BUG Conversations Data Dates Edit FINDER File Help ISON JSON Look Outputs Realtime Run Selection Sentiment, Terminal The This Topic User View When and between build can code conversation conversation, data datapoints docs exrackd extract extracts file follows: for format from gpt4-o has have implement into mp3 must need next openaimd project. recorded run runs saved some step textin the this tint transcribe transcribt want whisper will work write {APL ‘and ‘conversation. | @openaimd @rtvoice.html AP! API Any BUG Conversations Dates Edit FINDER File Help JSON Outputs Realtime Run Selection Sentiment, Structured Terminal The This Topic User View When and api between build can code conversation conversation, conversation. data datajson datapoints docs env extraced extract extracts file follows: for format format. from has have implement int into mp3 must need next our project. recorded run runs saved some temp textin the this transcribe transcribt use user want whisper will work ‘APL | ‘Sie | SSS status | In| Sata conection connecting ooo simple the | coe hos | connecting coo simple the | eee | Key Tia voice | APY STS | SSS eee | Key Status see tot | nes voice | ALS Key Opn | SSS “z= | APL | Fama: | 19th” CONSOLE DEBUG Dee Edit File OPrv OUTPUT Selection TERMINAL View “December | Bee Eve Selection View and baying buying cone date docs output: tat | Bow Eve Fie OPP, Selection View and buying come, data ead econ extracted made node presents”, | \"Decenber 19th Dee Eve Fie Opry Selection View and buying cone cs: pee public vine | BODO. | Ses and bing ie) | Sess sot | View bing tga: | Gan | SON View | Pua bring resent sein | Pra View roe | Sooo data data. extracted json | View data extracted wrote | ars ete | Eve and cut: presents | ate erated ref rote tig | Sens View | Pua bring | data extracted | ema rei wont | Bese ats | Gee View ants bring mma our sete | Cz. OPP View nor | Pua View | Eve and buying output: presents raw | Eve and resents | Eve Pua and loa output: presents raw",
+  "frame_type_distribution": {
+    "dark_screen": 0.97,
+    "detailed_visual": 0.02,
+    "simple_visual": 0.01
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          8,
+          8,
+          9
+        ],
+        [
+          89,
+          96,
+          120
+        ],
+        [
+          212,
+          211,
+          211
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          33,
+          33,
+          31
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          108,
+          112,
+          132
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          34,
+          33,
+          31
+        ],
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          99,
+          110,
+          139
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 24.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          18,
+          18,
+          13
+        ],
+        [
+          88,
+          94,
+          108
+        ],
+        [
+          235,
+          234,
+          233
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 27.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          247
+        ],
+        [
+          36,
+          37,
+          37
+        ],
+        [
+          146,
+          148,
+          158
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          247,
+          247
+        ],
+        [
+          35,
+          35,
+          35
+        ],
+        [
+          144,
+          146,
+          156
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          9,
+          9,
+          9
+        ],
+        [
+          96,
+          103,
+          123
+        ],
+        [
+          214,
+          214,
+          214
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 48.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          27,
+          26,
+          25
+        ],
+        [
+          111,
+          115,
+          126
+        ],
+        [
+          240,
+          238,
+          235
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          32,
+          31,
+          29
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          102,
+          106,
+          120
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 63.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          108,
+          112,
+          136
+        ],
+        [
+          61,
+          59,
+          72
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          41,
+          46,
+          63
+        ],
+        [
+          83,
+          97,
+          144
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          44,
+          47,
+          65
+        ],
+        [
+          85,
+          94,
+          147
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          23
+        ],
+        [
+          85,
+          60,
+          42
+        ],
+        [
+          168,
+          155,
+          145
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          93,
+          104,
+          144
+        ],
+        [
+          55,
+          58,
+          68
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          24
+        ],
+        [
+          50,
+          52,
+          70
+        ],
+        [
+          95,
+          103,
+          143
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 150.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          46,
+          55,
+          52
+        ],
+        [
+          100,
+          105,
+          135
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 165.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          24
+        ],
+        [
+          59,
+          55,
+          71
+        ],
+        [
+          103,
+          100,
+          138
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 180.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          33,
+          34,
+          33
+        ],
+        [
+          106,
+          119,
+          141
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 195.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          79,
+          90,
+          129
+        ],
+        [
+          184,
+          184,
+          183
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 210.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          25
+        ],
+        [
+          80,
+          92,
+          128
+        ],
+        [
+          187,
+          186,
+          185
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 225.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          58,
+          61,
+          73
+        ],
+        [
+          142,
+          145,
+          174
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 240.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          58,
+          61,
+          71
+        ],
+        [
+          141,
+          148,
+          175
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 255.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          23
+        ],
+        [
+          83,
+          72,
+          72
+        ],
+        [
+          160,
+          147,
+          151
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 270.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          106,
+          107,
+          132
+        ],
+        [
+          61,
+          59,
+          69
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 285.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          64,
+          62,
+          73
+        ],
+        [
+          108,
+          110,
+          135
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 300.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          26
+        ],
+        [
+          35,
+          66,
+          36
+        ],
+        [
+          102,
+          104,
+          127
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 315.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          61,
+          61,
+          70
+        ],
+        [
+          112,
+          114,
+          134
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 330.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          33,
+          41,
+          36
+        ],
+        [
+          80,
+          105,
+          134
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 345.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          35,
+          37,
+          38
+        ],
+        [
+          190,
+          195,
+          210
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 360.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          37,
+          38,
+          40
+        ],
+        [
+          208,
+          210,
+          218
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 375.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          61,
+          62,
+          70
+        ],
+        [
+          106,
+          112,
+          137
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 390.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          109,
+          107,
+          137
+        ],
+        [
+          63,
+          60,
+          71
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 405.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          111,
+          110,
+          132
+        ],
+        [
+          61,
+          59,
+          70
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 420.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          63,
+          60,
+          71
+        ],
+        [
+          110,
+          109,
+          135
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 435.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          60,
+          58,
+          67
+        ],
+        [
+          110,
+          110,
+          133
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 444.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          34,
+          33,
+          31
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          112,
+          116,
+          131
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 450.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          34,
+          33,
+          31
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          117,
+          121,
+          131
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 465.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          34,
+          33,
+          31
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          113,
+          116,
+          131
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 477.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          24
+        ],
+        [
+          58,
+          57,
+          68
+        ],
+        [
+          109,
+          113,
+          136
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 480.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          23
+        ],
+        [
+          61,
+          62,
+          68
+        ],
+        [
+          114,
+          116,
+          130
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 483.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          31,
+          30,
+          29
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          106,
+          109,
+          126
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 489.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          64,
+          64,
+          71
+        ],
+        [
+          115,
+          117,
+          134
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 492.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          33,
+          32,
+          31
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          110,
+          114,
+          131
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 495.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          32,
+          32,
+          30
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          112,
+          116,
+          125
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 501.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          66,
+          65,
+          75
+        ],
+        [
+          118,
+          119,
+          137
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 510.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          115,
+          119,
+          135
+        ],
+        [
+          63,
+          62,
+          66
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 525.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          109,
+          113,
+          138
+        ],
+        [
+          64,
+          60,
+          67
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 540.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          25,
+          25,
+          25
+        ],
+        [
+          88,
+          85,
+          85
+        ],
+        [
+          164,
+          162,
+          160
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 555.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          25,
+          24,
+          24
+        ],
+        [
+          83,
+          64,
+          51
+        ],
+        [
+          163,
+          155,
+          150
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 570.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          25,
+          24,
+          24
+        ],
+        [
+          81,
+          63,
+          52
+        ],
+        [
+          159,
+          154,
+          151
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 585.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          105,
+          112,
+          132
+        ],
+        [
+          56,
+          57,
+          64
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 600.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          58,
+          58,
+          67
+        ],
+        [
+          109,
+          111,
+          133
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 615.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          23,
+          28
+        ],
+        [
+          39,
+          65,
+          42
+        ],
+        [
+          105,
+          107,
+          125
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 630.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          58,
+          58,
+          64
+        ],
+        [
+          108,
+          113,
+          128
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 645.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          33,
+          33,
+          33
+        ],
+        [
+          101,
+          115,
+          140
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 660.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          40,
+          40,
+          41
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          107,
+          111,
+          119
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 675.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          40,
+          40,
+          41
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          110,
+          113,
+          117
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 690.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          40,
+          40,
+          41
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          108,
+          110,
+          118
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 705.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          60,
+          59,
+          67
+        ],
+        [
+          112,
+          115,
+          135
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 720.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          61,
+          61,
+          68
+        ],
+        [
+          114,
+          116,
+          132
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 735.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          64,
+          61,
+          71
+        ],
+        [
+          117,
+          119,
+          140
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 750.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          60,
+          60,
+          65
+        ],
+        [
+          115,
+          119,
+          135
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 765.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          32,
+          33,
+          34
+        ],
+        [
+          106,
+          120,
+          145
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 780.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          32,
+          34,
+          34
+        ],
+        [
+          108,
+          124,
+          145
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 795.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          33,
+          33,
+          34
+        ],
+        [
+          117,
+          128,
+          148
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 810.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          33,
+          34,
+          34
+        ],
+        [
+          110,
+          123,
+          144
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 825.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          32,
+          33,
+          34
+        ],
+        [
+          112,
+          123,
+          143
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 840.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          80,
+          79,
+          85
+        ],
+        [
+          131,
+          133,
+          146
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 855.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          129,
+          126,
+          142
+        ],
+        [
+          59,
+          61,
+          72
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 870.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          24,
+          24
+        ],
+        [
+          58,
+          60,
+          71
+        ],
+        [
+          120,
+          124,
+          142
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 885.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          24
+        ],
+        [
+          58,
+          60,
+          68
+        ],
+        [
+          121,
+          124,
+          143
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 900.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          24,
+          24,
+          24
+        ],
+        [
+          63,
+          65,
+          74
+        ],
+        [
+          120,
+          124,
+          144
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 915.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          24
+        ],
+        [
+          61,
+          62,
+          73
+        ],
+        [
+          121,
+          123,
+          141
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 930.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          24
+        ],
+        [
+          59,
+          61,
+          72
+        ],
+        [
+          123,
+          128,
+          145
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "wwC86t5k77Y",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.889,
+      "avg_face_count": 0.89,
+      "max_face_count": 1,
+      "avg_face_size_pct": 1.6,
+      "has_multiple_people": 0,
+      "file_size_mb": 26.75,
+      "bitrate_kbps": 238.0,
+      "pip_frames": 160,
+      "has_pip": true,
+      "avg_blur_score": 1472.3,
+      "blur_variance": 838.7,
+      "avg_motion": 6.8,
+      "max_motion": 195.91,
+      "motion_variance": 22.2,
+      "avg_brightness": 32.0,
+      "brightness_trend": -11.9,
+      "first_quarter_brightness": 39.7,
+      "last_quarter_brightness": 27.8,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.987,
+      "light_mode_pct": 0.013,
+      "annotation_frames": 315,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 27.0,
+      "end_card_duration_sec": 318.7,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.902,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 23.3851171875,
+        "has_face": true,
+        "face_count": 1,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 4221.282938566967
+      },
+      "last_frame": {
+        "timestamp": 942.0,
+        "brightness": 30.38685329861111,
+        "has_face": true,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 15.9,
+      "frames_analyzed": 315
+    },
+    "marketing": {
+      "value_prop_timestamp": 24.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": true,
+      "negative_sentiment_timestamps": 4,
+      "positive_sentiment_timestamps": 3,
+      "social_proof_count": 4,
+      "has_social_proof": true,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 172.7,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 3,
+      "jargon_density": 0.002,
+      "jargon_words": [
+        "http",
+        "api",
+        "json"
+      ],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 27.22,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 108,
+      "acronym_density": 0.08,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 12,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 1354
+    }
+  },
+  "mega": {
+    "video_id": "wwC86t5k77Y",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 300.0,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.227,
+      "energy_trend": 0.000714,
+      "peak_timestamp_sec": 0.8,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 46.7,
+      "onset_density": 4.06,
+      "intro_silence_sec": 0.4,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 2250.0,
+      "avg_spectral_bandwidth": 1901.0,
+      "avg_zcr": 0.1282
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 45.0,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.095,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 0.013,
+      "modal_pct": 0.013,
+      "table_pct": 0.543,
+      "chat_pct": 0.0,
+      "code_pct": 0.879,
+      "terminal_pct": 0.457,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.941,
+      "avg_thirds_score": 0.807,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.026,
+      "repetition_count": 308,
+      "has_bookend": true,
+      "longest_scene_sec": 444.0,
+      "frames_analyzed": 315
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 139525,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 103.4,
+      "detected_key": "B",
+      "key_confidence": 0.099,
+      "mfcc_mean": [
+        -309.862,
+        81.333,
+        0.42,
+        27.736,
+        14.663,
+        1.096,
+        -2.503,
+        -5.344,
+        -16.897,
+        11.14,
+        -3.155,
+        9.122,
+        3.529
+      ],
+      "mfcc_std": [
+        131.986,
+        74.372,
+        47.283,
+        30.664,
+        27.54,
+        27.183,
+        19.276,
+        16.681,
+        19.145,
+        13.544,
+        15.521,
+        11.578,
+        11.151
+      ],
+      "avg_spectral_contrast": 20.9,
+      "avg_tonnetz": [
+        -0.0011,
+        -0.0152,
+        0.032,
+        0.037,
+        -0.0116,
+        -0.0032
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1883.0,
+          "bandwidth": 1775.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 2136.0,
+          "bandwidth": 1900.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1773.0,
+          "bandwidth": 1779.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 2028.0,
+          "bandwidth": 1886.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 1811.0,
+          "bandwidth": 1775.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 1954.0,
+          "bandwidth": 1687.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1565.0,
+          "bandwidth": 1531.0
+        },
+        {
+          "timestamp": 21,
+          "type": "ambient",
+          "rms_db": -22.1,
+          "centroid": 2417.0,
+          "bandwidth": 1839.0
+        },
+        {
+          "timestamp": 24,
+          "type": "ambient",
+          "rms_db": -22.9,
+          "centroid": 2290.0,
+          "bandwidth": 1904.0
+        },
+        {
+          "timestamp": 27,
+          "type": "ambient",
+          "rms_db": -26.1,
+          "centroid": 2319.0,
+          "bandwidth": 1822.0
+        },
+        {
+          "timestamp": 30,
+          "type": "ambient",
+          "rms_db": -23.2,
+          "centroid": 2479.0,
+          "bandwidth": 1873.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -24.2,
+          "centroid": 2894.0,
+          "bandwidth": 2043.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 2127.0,
+          "bandwidth": 1785.0
+        },
+        {
+          "timestamp": 39,
+          "type": "ambient",
+          "rms_db": -22.1,
+          "centroid": 2356.0,
+          "bandwidth": 1906.0
+        },
+        {
+          "timestamp": 42,
+          "type": "ambient",
+          "rms_db": -24.5,
+          "centroid": 2849.0,
+          "bandwidth": 1892.0
+        },
+        {
+          "timestamp": 45,
+          "type": "ambient",
+          "rms_db": -21.9,
+          "centroid": 2570.0,
+          "bandwidth": 1929.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -23.7,
+          "centroid": 2024.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 2164.0,
+          "bandwidth": 1860.0
+        },
+        {
+          "timestamp": 54,
+          "type": "ambient",
+          "rms_db": -25.0,
+          "centroid": 2295.0,
+          "bandwidth": 1894.0
+        },
+        {
+          "timestamp": 57,
+          "type": "ambient",
+          "rms_db": -27.3,
+          "centroid": 2295.0,
+          "bandwidth": 2041.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -27.9,
+          "centroid": 2201.0,
+          "bandwidth": 2216.0
+        },
+        {
+          "timestamp": 63,
+          "type": "ambient",
+          "rms_db": -25.2,
+          "centroid": 2265.0,
+          "bandwidth": 1989.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 1705.0,
+          "bandwidth": 1769.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -28.3,
+          "centroid": 2110.0,
+          "bandwidth": 2096.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -24.5,
+          "centroid": 1852.0,
+          "bandwidth": 1744.0
+        },
+        {
+          "timestamp": 75,
+          "type": "ambient",
+          "rms_db": -24.2,
+          "centroid": 2343.0,
+          "bandwidth": 2025.0
+        },
+        {
+          "timestamp": 78,
+          "type": "ambient",
+          "rms_db": -23.0,
+          "centroid": 2744.0,
+          "bandwidth": 1910.0
+        },
+        {
+          "timestamp": 81,
+          "type": "ambient",
+          "rms_db": -27.1,
+          "centroid": 2216.0,
+          "bandwidth": 1980.0
+        },
+        {
+          "timestamp": 84,
+          "type": "ambient",
+          "rms_db": -24.7,
+          "centroid": 2262.0,
+          "bandwidth": 1840.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -23.8,
+          "centroid": 1840.0,
+          "bandwidth": 1648.0
+        },
+        {
+          "timestamp": 90,
+          "type": "ambient",
+          "rms_db": -26.4,
+          "centroid": 2497.0,
+          "bandwidth": 1800.0
+        },
+        {
+          "timestamp": 93,
+          "type": "ambient",
+          "rms_db": -25.8,
+          "centroid": 2142.0,
+          "bandwidth": 1759.0
+        },
+        {
+          "timestamp": 96,
+          "type": "ambient",
+          "rms_db": -20.3,
+          "centroid": 2569.0,
+          "bandwidth": 1991.0
+        },
+        {
+          "timestamp": 99,
+          "type": "ambient",
+          "rms_db": -22.4,
+          "centroid": 2265.0,
+          "bandwidth": 1798.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2030.0,
+          "bandwidth": 1739.0
+        },
+        {
+          "timestamp": 105,
+          "type": "ambient",
+          "rms_db": -24.9,
+          "centroid": 2559.0,
+          "bandwidth": 1879.0
+        },
+        {
+          "timestamp": 108,
+          "type": "ambient",
+          "rms_db": -21.6,
+          "centroid": 2535.0,
+          "bandwidth": 1887.0
+        },
+        {
+          "timestamp": 111,
+          "type": "ambient",
+          "rms_db": -25.4,
+          "centroid": 2330.0,
+          "bandwidth": 1794.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 1829.0,
+          "bandwidth": 1571.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 1920.0,
+          "bandwidth": 1893.0
+        },
+        {
+          "timestamp": 120,
+          "type": "ambient",
+          "rms_db": -22.5,
+          "centroid": 2813.0,
+          "bandwidth": 1934.0
+        },
+        {
+          "timestamp": 123,
+          "type": "ambient",
+          "rms_db": -22.7,
+          "centroid": 2424.0,
+          "bandwidth": 1888.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 2082.0,
+          "bandwidth": 1653.0
+        },
+        {
+          "timestamp": 129,
+          "type": "ambient",
+          "rms_db": -24.5,
+          "centroid": 2556.0,
+          "bandwidth": 1795.0
+        },
+        {
+          "timestamp": 132,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2415.0,
+          "bandwidth": 1855.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -26.0,
+          "centroid": 1566.0,
+          "bandwidth": 1859.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 2003.0,
+          "bandwidth": 1863.0
+        },
+        {
+          "timestamp": 141,
+          "type": "ambient",
+          "rms_db": -24.6,
+          "centroid": 2759.0,
+          "bandwidth": 1867.0
+        },
+        {
+          "timestamp": 144,
+          "type": "ambient",
+          "rms_db": -24.6,
+          "centroid": 2917.0,
+          "bandwidth": 1969.0
+        },
+        {
+          "timestamp": 147,
+          "type": "ambient",
+          "rms_db": -25.3,
+          "centroid": 2500.0,
+          "bandwidth": 1829.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -28.2,
+          "centroid": 2239.0,
+          "bandwidth": 2050.0
+        },
+        {
+          "timestamp": 153,
+          "type": "noise",
+          "rms_db": -23.5,
+          "centroid": 3185.0,
+          "bandwidth": 1993.0
+        },
+        {
+          "timestamp": 156,
+          "type": "speech",
+          "rms_db": -29.3,
+          "centroid": 1556.0,
+          "bandwidth": 1680.0
+        },
+        {
+          "timestamp": 159,
+          "type": "noise",
+          "rms_db": -23.9,
+          "centroid": 3054.0,
+          "bandwidth": 1852.0
+        },
+        {
+          "timestamp": 162,
+          "type": "ambient",
+          "rms_db": -27.2,
+          "centroid": 2114.0,
+          "bandwidth": 1714.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -33.2,
+          "centroid": 1303.0,
+          "bandwidth": 1521.0
+        },
+        {
+          "timestamp": 168,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2665.0,
+          "bandwidth": 1929.0
+        },
+        {
+          "timestamp": 171,
+          "type": "ambient",
+          "rms_db": -30.0,
+          "centroid": 2260.0,
+          "bandwidth": 1872.0
+        },
+        {
+          "timestamp": 174,
+          "type": "ambient",
+          "rms_db": -29.5,
+          "centroid": 2483.0,
+          "bandwidth": 1690.0
+        },
+        {
+          "timestamp": 177,
+          "type": "speech",
+          "rms_db": -25.5,
+          "centroid": 1854.0,
+          "bandwidth": 1771.0
+        },
+        {
+          "timestamp": 180,
+          "type": "ambient",
+          "rms_db": -26.2,
+          "centroid": 2186.0,
+          "bandwidth": 1996.0
+        },
+        {
+          "timestamp": 183,
+          "type": "ambient",
+          "rms_db": -23.8,
+          "centroid": 2679.0,
+          "bandwidth": 1921.0
+        },
+        {
+          "timestamp": 186,
+          "type": "ambient",
+          "rms_db": -24.5,
+          "centroid": 2148.0,
+          "bandwidth": 1872.0
+        },
+        {
+          "timestamp": 189,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2950.0,
+          "bandwidth": 1823.0
+        },
+        {
+          "timestamp": 192,
+          "type": "ambient",
+          "rms_db": -25.1,
+          "centroid": 3171.0,
+          "bandwidth": 2124.0
+        },
+        {
+          "timestamp": 195,
+          "type": "speech",
+          "rms_db": -27.9,
+          "centroid": 1907.0,
+          "bandwidth": 2006.0
+        },
+        {
+          "timestamp": 198,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 1561.0,
+          "bandwidth": 2211.0
+        },
+        {
+          "timestamp": 201,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 1792.0,
+          "bandwidth": 2361.0
+        },
+        {
+          "timestamp": 204,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 2378.0,
+          "bandwidth": 2417.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 1951.0,
+          "bandwidth": 2002.0
+        },
+        {
+          "timestamp": 210,
+          "type": "speech",
+          "rms_db": -25.3,
+          "centroid": 2419.0,
+          "bandwidth": 2506.0
+        },
+        {
+          "timestamp": 213,
+          "type": "ambient",
+          "rms_db": -25.2,
+          "centroid": 3024.0,
+          "bandwidth": 2187.0
+        },
+        {
+          "timestamp": 216,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 1798.0,
+          "bandwidth": 2248.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -24.7,
+          "centroid": 2058.0,
+          "bandwidth": 2655.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 1424.0,
+          "bandwidth": 1950.0
+        },
+        {
+          "timestamp": 225,
+          "type": "ambient",
+          "rms_db": -29.4,
+          "centroid": 2492.0,
+          "bandwidth": 2418.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -21.2,
+          "centroid": 2118.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 231,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 2136.0,
+          "bandwidth": 1908.0
+        },
+        {
+          "timestamp": 234,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 2167.0,
+          "bandwidth": 1964.0
+        },
+        {
+          "timestamp": 237,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2841.0,
+          "bandwidth": 1914.0
+        },
+        {
+          "timestamp": 240,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 1823.0,
+          "bandwidth": 1744.0
+        },
+        {
+          "timestamp": 243,
+          "type": "speech",
+          "rms_db": -21.2,
+          "centroid": 1962.0,
+          "bandwidth": 1833.0
+        },
+        {
+          "timestamp": 246,
+          "type": "ambient",
+          "rms_db": -21.0,
+          "centroid": 2673.0,
+          "bandwidth": 2001.0
+        },
+        {
+          "timestamp": 249,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2496.0,
+          "bandwidth": 1966.0
+        },
+        {
+          "timestamp": 252,
+          "type": "sfx_low",
+          "rms_db": -18.3,
+          "centroid": 2511.0,
+          "bandwidth": 1905.0
+        },
+        {
+          "timestamp": 255,
+          "type": "ambient",
+          "rms_db": -20.6,
+          "centroid": 2294.0,
+          "bandwidth": 1909.0
+        },
+        {
+          "timestamp": 258,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2329.0,
+          "bandwidth": 1884.0
+        },
+        {
+          "timestamp": 261,
+          "type": "ambient",
+          "rms_db": -22.7,
+          "centroid": 2516.0,
+          "bandwidth": 1721.0
+        },
+        {
+          "timestamp": 264,
+          "type": "ambient",
+          "rms_db": -22.8,
+          "centroid": 2613.0,
+          "bandwidth": 1958.0
+        },
+        {
+          "timestamp": 267,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1404.0,
+          "bandwidth": 1478.0
+        },
+        {
+          "timestamp": 270,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 1982.0,
+          "bandwidth": 1893.0
+        },
+        {
+          "timestamp": 273,
+          "type": "speech",
+          "rms_db": -23.6,
+          "centroid": 2090.0,
+          "bandwidth": 1849.0
+        },
+        {
+          "timestamp": 276,
+          "type": "ambient",
+          "rms_db": -25.1,
+          "centroid": 2312.0,
+          "bandwidth": 1854.0
+        },
+        {
+          "timestamp": 279,
+          "type": "ambient",
+          "rms_db": -24.4,
+          "centroid": 2590.0,
+          "bandwidth": 1910.0
+        },
+        {
+          "timestamp": 282,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 1862.0,
+          "bandwidth": 1889.0
+        },
+        {
+          "timestamp": 285,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 1485.0,
+          "bandwidth": 1673.0
+        },
+        {
+          "timestamp": 288,
+          "type": "ambient",
+          "rms_db": -24.8,
+          "centroid": 2964.0,
+          "bandwidth": 1960.0
+        },
+        {
+          "timestamp": 291,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1661.0,
+          "bandwidth": 1725.0
+        },
+        {
+          "timestamp": 294,
+          "type": "ambient",
+          "rms_db": -28.2,
+          "centroid": 2106.0,
+          "bandwidth": 1881.0
+        },
+        {
+          "timestamp": 297,
+          "type": "noise",
+          "rms_db": -25.0,
+          "centroid": 3189.0,
+          "bandwidth": 1817.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.45,
+        "ambient": 0.51,
+        "noise": 0.03,
+        "sfx_low": 0.01
+      },
+      "speech_pct": 0.45,
+      "music_pct": 0.0,
+      "sfx_pct": 0.01,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "valley",
+      "strong_sfx_count": 763,
+      "strong_sfx_timestamps": [
+        0.09,
+        0.42,
+        0.58,
+        0.63,
+        1.04,
+        1.58,
+        1.93,
+        3.09,
+        3.74,
+        4.34,
+        4.48,
+        5.11,
+        5.48,
+        5.67,
+        5.85,
+        5.99,
+        6.46,
+        6.69,
+        7.24,
+        7.45
+      ],
+      "n_segments": 100
+    }
+  }
+}

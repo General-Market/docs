@@ -5,7 +5,7 @@
 //! negative scores; well-behaved peers slowly accrue positive score.
 //!
 //! A background tick (5 s) applies heartbeat penalties for missing peers,
-//! bans peers below -50.0, and suspends bans when >33% of peers are
+//! bans peers below -50.0, and suspends bans when >50% of peers are
 //! unhealthy (partition heuristic).
 
 use dashmap::DashMap;
@@ -121,24 +121,35 @@ impl PeerScorer {
 
     /// Periodic maintenance.  Returns the list of peers that were just banned.
     ///
-    /// 1. Applies a -5.0 heartbeat penalty for every tracked peer that is
-    ///    **not** in `connected_peers`.
-    /// 2. If >33 % of tracked peers are unhealthy (score < 0), assumes a
-    ///    network partition and suspends bans entirely.
+    /// 1. Applies a heartbeat penalty for every tracked peer that is **not**
+    ///    in `connected_peers`: -1.0 during the first 90 s (startup grace),
+    ///    -5.0 after.  The grace period tolerates rolling restarts where peers
+    ///    take 30-60 s to reconnect.
+    /// 2. If >50 % of tracked peers are unhealthy (score < 0), assumes a
+    ///    network partition and suspends bans entirely.  The old 33 % threshold
+    ///    was unusable for 3-node clusters: integer division made `2/3 = 0`,
+    ///    so a single negative-score peer triggered the alarm.
     /// 3. Otherwise, bans every peer whose score fell below -50.0 with an
     ///    exponentially increasing ban duration (60 s, 120 s, 240 s, ...,
     ///    capped at ~17 h).
     pub fn tick(&self, connected_peers: &[PeerId]) -> Vec<PeerId> {
         let mut to_ban = Vec::new();
+        let in_startup_grace = self.startup_time.elapsed().as_secs() < 90;
 
         // 1. Heartbeat penalty for peers NOT in connected list
+        //    Reduced during startup grace to prevent false partitions from
+        //    rolling restarts (peers reconnecting on localhost).
+        let penalty = if in_startup_grace { 100 } else { 500 }; // -1.0 vs -5.0
         for entry in self.scores.iter() {
             if !connected_peers.contains(entry.key()) {
-                entry.value().score.fetch_sub(500, Ordering::Relaxed); // -5.0
+                entry.value().score.fetch_sub(penalty, Ordering::Relaxed);
             }
         }
 
-        // 2. Partition heuristic: >33% peers unhealthy -> suspend bans
+        // 2. Partition heuristic: >50% peers unhealthy -> suspend bans
+        //    For a 3-node cluster (2 peers), this requires BOTH peers to be
+        //    unhealthy before triggering.  The old >33% threshold with integer
+        //    division (2/3=0) meant ANY single negative peer triggered it.
         let total = self.scores.len();
         let unhealthy = self
             .scores
@@ -146,12 +157,12 @@ impl PeerScorer {
             .filter(|e| e.value().score.load(Ordering::Relaxed) < 0)
             .count();
 
-        if total >= 2 && unhealthy > total / 3 {
+        if total >= 2 && unhealthy * 2 > total {
             tracing::error!(
                 code = "INFRA-023",
                 unhealthy,
                 total,
-                "POSSIBLE NETWORK PARTITION - >33% peers unhealthy, suspending bans"
+                "POSSIBLE NETWORK PARTITION - >50% peers unhealthy, suspending bans"
             );
             return to_ban; // empty — no bans during partition
         }
@@ -289,7 +300,7 @@ mod tests {
         let scorer = PeerScorer::new();
         let peers: Vec<PeerId> = (1..=3).map(test_peer).collect();
 
-        // Make all 3 peers very unhealthy (>33% threshold)
+        // Make all 3 peers very unhealthy (>50% threshold requires majority)
         for p in &peers {
             for _ in 0..6 {
                 scorer.record_invalid_message(p);
@@ -302,16 +313,53 @@ mod tests {
     }
 
     #[test]
+    fn partition_heuristic_does_not_trigger_for_single_unhealthy_peer() {
+        // After startup grace so penalties are full-strength
+        let scorer = PeerScorer::with_startup_time(
+            Instant::now() - std::time::Duration::from_secs(120),
+        );
+        let peer_a = test_peer(1);
+        let peer_b = test_peer(2);
+
+        // Make only peer_a deeply unhealthy: 6 * -10.0 = -60.0
+        for _ in 0..6 {
+            scorer.record_invalid_message(&peer_a);
+        }
+        // peer_b is fine
+        scorer.record_good_message(&peer_b);
+
+        // With 2 total peers, 1 unhealthy = 50% — not > 50%, so no partition
+        let banned = scorer.tick(&[peer_a, peer_b]);
+        // peer_a should be banned normally (score < -50), not saved by partition heuristic
+        assert!(banned.contains(&peer_a));
+    }
+
+    #[test]
     fn not_banned_by_default() {
         let scorer = PeerScorer::new();
         assert!(!scorer.is_banned(&test_peer(99)));
     }
 
     #[test]
-    fn heartbeat_penalty_for_missing_peer() {
+    fn heartbeat_penalty_for_missing_peer_during_startup() {
+        // During startup grace (first 90s), heartbeat penalty is -1.0
         let scorer = PeerScorer::new();
         let peer = test_peer(5);
-        scorer.record_good_message(&peer); // create the entry
+        scorer.record_good_message(&peer); // create the entry (+0.1)
+
+        // Tick with empty connected list -> peer gets -1.0 heartbeat penalty (grace)
+        let _ = scorer.tick(&[]);
+        assert!((scorer.score_of(&peer) - (-0.9)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn heartbeat_penalty_for_missing_peer_after_startup() {
+        // After startup grace, heartbeat penalty is -5.0
+        let scorer = PeerScorer::with_startup_time(
+            Instant::now() - std::time::Duration::from_secs(120),
+        );
+        let peer = test_peer(5);
+        scorer.record_good_message(&peer); // create the entry (+0.1)
 
         // Tick with empty connected list -> peer gets -5.0 heartbeat penalty
         let _ = scorer.tick(&[]);

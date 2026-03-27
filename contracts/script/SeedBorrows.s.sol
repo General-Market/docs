@@ -2,31 +2,31 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {IMorpho, MarketParams, Id} from "@morpho-blue/interfaces/IMorpho.sol";
+import {IMorpho, MarketParams, Id, Market} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title SeedBorrows — Supply collateral + borrow random amounts for all batch markets
+/// @title SeedBorrows — Supply collateral + borrow from all batch markets
 /// @notice For each market in the vault's withdraw queue:
 ///         1. Reads the ITP vault token (collateral)
-///         2. If the user has a balance, approves Morpho and supplies as collateral
-///         3. Borrows a random amount (1-100 USDC) from the market
+///         2. If the buyer has a balance, approves Morpho and supplies 50% as collateral
+///         3. Borrows 50% of collateral value in USDC
 ///
 /// Prerequisites:
-///   - User must hold ITP vault tokens for the ITPs
+///   - Buyer must hold ITP vault tokens (run SubmitBuyOrders + wait for oracle fills)
 ///   - Markets must have supply (run ReallocateVault first)
-///   - ITP vault tokens must exist (user must have bought ITPs)
 ///
 /// Environment:
-///   DEPLOYER_KEY, MORPHO, METAMORPHO_VAULT
+///   BUYER_KEY, MORPHO, METAMORPHO_VAULT
 contract SeedBorrows is Script {
     using MarketParamsLib for MarketParams;
 
     function run() external {
-        uint256 key = vm.envOr("DEPLOYER_KEY", uint256(0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537));
-        address morphoAddr = vm.envOr("MORPHO", address(0x668a7c99Db8425CE74F5826622652958c6946E74));
-        address vaultAddr = vm.envOr("METAMORPHO_VAULT", address(0xd8A9e892c69113e2576C3c066922c46a9121DA6F));
+        // Buyer = Anvil account 9 (0xa0Ee7A142d267C1f36714E4a8F75612F20a79720)
+        uint256 key = vm.envOr("BUYER_KEY", uint256(0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6));
+        address morphoAddr = vm.envOr("MORPHO", address(0xb1a301C89cB313084Bb4367f8D30a21AD7c3D449));
+        address vaultAddr = vm.envOr("METAMORPHO_VAULT", address(0xE67Eee49D5032D5618d7549F5dE866FF442F1Eee));
 
         address user = vm.addr(key);
         IMorpho morpho = IMorpho(morphoAddr);
@@ -45,26 +45,34 @@ contract SeedBorrows is Script {
             Id marketId = vault.withdrawQueue(i);
             MarketParams memory mp = morpho.idToMarketParams(marketId);
 
+            // Skip markets where collateral token has no code (stale/dummy markets)
+            if (mp.collateralToken.code.length == 0) continue;
+
             // Check user's balance of the collateral token
             uint256 bal = IERC20(mp.collateralToken).balanceOf(user);
             if (bal == 0) continue;
 
             // Check market has supply (liquidity to borrow)
-            (uint128 totalSupply,,,,, ) = morpho.market(marketId);
+            Market memory m = morpho.market(marketId);
+            uint128 totalSupply = m.totalSupplyAssets;
             if (totalSupply == 0) continue;
+
+            // Supply 50% of balance as collateral (keep 50% liquid)
+            uint256 collateralAmount = bal / 2;
+            if (collateralAmount == 0) continue;
 
             // Approve collateral to Morpho
             IERC20(mp.collateralToken).approve(morphoAddr, type(uint256).max);
 
-            // Supply all balance as collateral
-            morpho.supplyCollateral(mp, bal, user, "");
+            morpho.supplyCollateral(mp, collateralAmount, user, "");
             supplied++;
 
-            // Borrow a random amount between 1 and 100 USDC (18 decimals on L3)
-            uint256 pseudoRandom = uint256(keccak256(abi.encode(block.timestamp, i))) % 100 + 1;
-            uint256 borrowAmount = pseudoRandom * 1e18; // 1-100 USDC
+            // Borrow 50% of collateral value in USDC
+            // Collateral value ≈ collateralAmount (ITP shares are ~$1 each at 18 dec)
+            // With LLTV 77%, borrowing 50% of collateral value is safe
+            uint256 borrowAmount = collateralAmount / 2;
 
-            // Cap borrow at what's available (totalSupply) and what health allows
+            // Cap at available liquidity
             if (borrowAmount > uint256(totalSupply) / 2) {
                 borrowAmount = uint256(totalSupply) / 2;
             }
@@ -73,7 +81,7 @@ contract SeedBorrows is Script {
             morpho.borrow(mp, borrowAmount, 0, user, user);
             borrowed++;
 
-            console.log("Market", i, "- supplied collateral, borrowed", borrowAmount / 1e18, "USDC");
+            console.log("Market %d - supplied collateral, borrowed %d USDC", i, borrowAmount / 1e18);
         }
 
         vm.stopBroadcast();

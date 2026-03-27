@@ -1,0 +1,785 @@
+{
+  "video_id": "grLNNjM99BU",
+  "status": "ok",
+  "duration_sec": 84.4,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 29,
+  "transition_count": 4,
+  "transitions": [
+    {
+      "timestamp_sec": 6.0,
+      "correlation": -0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "correlation": 0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "correlation": 0.337,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "correlation": -0.003,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 17,
+  "text_extractions": [
+    {
+      "timestamp_sec": 9.0,
+      "text": "2024 BabbleRoo Baby Backpack Backpack: Bag Bags Cool DERJUNSTAR Diaper Essentials Forma, Guide Hop Moms NAN New Skip The Ultimate Unisex for"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Baby Bags Diaper Even One Stylish Want Will Your"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "Baby Bags Diaper Even One Picks Stylish Top Want Will Your"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Backpack Bag Cons: Diaper Hop People Pros Say Skip What and"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "$0.00 $58.99 Add Amazon Buy Cart Conditions Details Khaki Now Pay Payment Refund Reward: Rewards Ships Sold annual apply. fee. from instantly: on.ca order thi transaction ‘our"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "About Amazon AppSumo Audience Data Interests Pick Source Tell Your"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "About Audience Cancel Interests Share Tell Who Your age, aiming are buffs), details enthusiasts, excites fitness gender, know let like location, or! personally. reach? what you"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "(e.g About Audience Interests Share Your age, aiming buffs), details excites fitness gender, know let like location, niche personally. reach? sts, what you"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "Choose English Format Head Language Product Ranker Single"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "Add Products Roundup Your"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "-\"Birch Baby Backpack Bag Bag\" Case Changing Cream D-Ring Diaper Essentials Essentials, Khaki, Large Maternity Multifunction Pacifier Pad Pad, Parker Rating: Straps Stroller Unisex Waterproof and ile stroller with"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Baby Bags Diaper Even Stylish Your one"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "$34.39 $89.95 0060 BabbleRoo Baby Backp Backpack Bag Bags Best Diaper Essentials Most One Our Overall: Parenting Parker Picks. RUVALINO Stylish Stylish: Top Unisex Value: Want Will and are bag bags can chaos, diaper diving endless even filled into journey joy, make more paby-wil ride stylish stylish, tad that the this wild with world yor"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "Cexy Cons Dec Denise Large Pros Pros: Shef The about absolutely allowing and anywhere avoid baby bathrooms. bought can capacity change changer, changing cleanliness. compartments design due durable feels for game grandson gross it's lifesaver. mater multiple nice. practical. public really room station super the this those who with without wo!"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "$29.99 (total: 279+) 4.3 Backpack Bag Benefits Current Diaper Its Mancro Price: Rating: Situational Whether accessible. adapts ample and diape diapers easily embarking ensures everything family for from have heading needs. organized park playdate snacks storage the this vacation, you you're your"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "B1G Big Creator DAYS DEAL Days. Deal Let’srewind PRIME Prime Take and back from share took top"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "Published Recently"
+    }
+  ],
+  "pseudo_transcript": "2024 BabbleRoo Baby Backpack Backpack: Bag Bags Cool DERJUNSTAR Diaper Essentials Forma, Guide Hop Moms NAN New Skip The Ultimate Unisex for | Baby Bags Diaper Even One Stylish Want Will Your | Baby Bags Diaper Even One Picks Stylish Top Want Will Your | Backpack Bag Cons: Diaper Hop People Pros Say Skip What and | $0.00 $58.99 Add Amazon Buy Cart Conditions Details Khaki Now Pay Payment Refund Reward: Rewards Ships Sold annual apply. fee. from instantly: on.ca order thi transaction ‘our | About Amazon AppSumo Audience Data Interests Pick Source Tell Your | About Audience Cancel Interests Share Tell Who Your age, aiming are buffs), details enthusiasts, excites fitness gender, know let like location, or! personally. reach? what you | (e.g About Audience Interests Share Your age, aiming buffs), details excites fitness gender, know let like location, niche personally. reach? sts, what you | Choose English Format Head Language Product Ranker Single | Add Products Roundup Your | -\"Birch Baby Backpack Bag Bag\" Case Changing Cream D-Ring Diaper Essentials Essentials, Khaki, Large Maternity Multifunction Pacifier Pad Pad, Parker Rating: Straps Stroller Unisex Waterproof and ile stroller with | Baby Bags Diaper Even Stylish Your one | $34.39 $89.95 0060 BabbleRoo Baby Backp Backpack Bag Bags Best Diaper Essentials Most One Our Overall: Parenting Parker Picks. RUVALINO Stylish Stylish: Top Unisex Value: Want Will and are bag bags can chaos, diaper diving endless even filled into journey joy, make more paby-wil ride stylish stylish, tad that the this wild with world yor | Cexy Cons Dec Denise Large Pros Pros: Shef The about absolutely allowing and anywhere avoid baby bathrooms. bought can capacity change changer, changing cleanliness. compartments design due durable feels for game grandson gross it's lifesaver. mater multiple nice. practical. public really room station super the this those who with without wo! | $29.99 (total: 279+) 4.3 Backpack Bag Benefits Current Diaper Its Mancro Price: Rating: Situational Whether accessible. adapts ample and diape diapers easily embarking ensures everything family for from have heading needs. organized park playdate snacks storage the this vacation, you you're your | B1G Big Creator DAYS DEAL Days. Deal Let’srewind PRIME Prime Take and back from share took top | Published Recently",
+  "frame_type_distribution": {
+    "white_screen": 0.48,
+    "simple_visual": 0.21,
+    "text_heavy": 0.17,
+    "text_with_visual": 0.07,
+    "detailed_visual": 0.07
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          191,
+          181,
+          167
+        ],
+        [
+          54,
+          50,
+          45
+        ],
+        [
+          124,
+          126,
+          115
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 6.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          89,
+          230
+        ],
+        [
+          248,
+          250,
+          251
+        ],
+        [
+          136,
+          159,
+          226
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 9.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          247,
+          247,
+          245
+        ],
+        [
+          136,
+          146,
+          130
+        ],
+        [
+          59,
+          71,
+          73
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          249,
+          248
+        ],
+        [
+          158,
+          145,
+          139
+        ],
+        [
+          55,
+          51,
+          48
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          252,
+          251
+        ],
+        [
+          149,
+          125,
+          106
+        ],
+        [
+          217,
+          213,
+          209
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          227,
+          228,
+          226
+        ],
+        [
+          109,
+          136,
+          141
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          248
+        ],
+        [
+          141,
+          143,
+          163
+        ],
+        [
+          65,
+          57,
+          49
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          206,
+          207,
+          205
+        ],
+        [
+          245,
+          247,
+          246
+        ],
+        [
+          102,
+          128,
+          141
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 78.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          237,
+          231,
+          225
+        ],
+        [
+          79,
+          81,
+          82
+        ],
+        [
+          140,
+          146,
+          144
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 81.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          89,
+          230
+        ],
+        [
+          244,
+          248,
+          251
+        ],
+        [
+          145,
+          167,
+          232
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "grLNNjM99BU",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 5.27,
+      "bitrate_kbps": 524.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1500.1,
+      "blur_variance": 1145.3,
+      "avg_motion": 36.44,
+      "max_motion": 91.56,
+      "motion_variance": 24.32,
+      "avg_brightness": 211.2,
+      "brightness_trend": -3.1,
+      "first_quarter_brightness": 184.2,
+      "last_quarter_brightness": 181.1,
+      "browser_chrome_frames": 7,
+      "browser_chrome_pct": 0.241,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.793,
+      "annotation_frames": 29,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 0.4,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.552,
+      "cool_frame_pct": 0.069,
+      "first_frame": {
+        "brightness": 123.81489149305555,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 91.27689982631354
+      },
+      "last_frame": {
+        "timestamp": 84.0,
+        "brightness": 128.0443185763889,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 35.4,
+      "frames_analyzed": 29
+    },
+    "marketing": {
+      "value_prop_timestamp": 9.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 1,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 5,
+      "metrics_found": [
+        "$0.00",
+        "$58.99",
+        "$34.39",
+        "$89.95",
+        "$29.99"
+      ],
+      "metric_placement": "middle",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": true,
+      "pricing_texts": [
+        "$0.00",
+        "$58.99",
+        "$34.39"
+      ],
+      "text_length_variance": 105.2,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 2.48,
+      "emotional_arc": "flat",
+      "question_count": 2,
+      "has_questions": true,
+      "acronym_count": 6,
+      "acronym_density": 0.017,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 5,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 353
+    }
+  },
+  "mega": {
+    "video_id": "grLNNjM99BU",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 84.4,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.06,
+      "energy_trend": 0.006065,
+      "peak_timestamp_sec": 70.4,
+      "peak_position_pct": 0.83,
+      "dynamic_range_db": 30.7,
+      "onset_density": 5.7,
+      "intro_silence_sec": 0.1,
+      "outro_silence_sec": 0.5,
+      "avg_spectral_centroid": 2418.0,
+      "avg_spectral_bandwidth": 2514.0,
+      "avg_zcr": 0.1134
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 2.24,
+      "color_palette_size": 20,
+      "color_consistency": 63.8,
+      "gradient_frame_pct": 0.103,
+      "high_contrast_frame_pct": 0.069,
+      "navbar_pct": 0.552,
+      "sidebar_pct": 0.103,
+      "modal_pct": 0.0,
+      "table_pct": 0.552,
+      "chat_pct": 0.069,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.034,
+      "desktop_chrome_pct": 0.448,
+      "avg_symmetry": 0.916,
+      "avg_thirds_score": 1.007,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.168,
+      "repetition_count": 20,
+      "has_bookend": false,
+      "longest_scene_sec": 69.0,
+      "frames_analyzed": 29
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 392662,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-12-25T03:24:11.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 83.4,
+      "detected_key": "E",
+      "key_confidence": 0.101,
+      "mfcc_mean": [
+        -219.901,
+        89.674,
+        13.72,
+        12.371,
+        8.496,
+        7.786,
+        -3.745,
+        3.827,
+        -4.729,
+        4.42,
+        -4.732,
+        3.405,
+        -3.198
+      ],
+      "mfcc_std": [
+        78.913,
+        48.618,
+        26.194,
+        22.263,
+        16.808,
+        16.366,
+        11.738,
+        13.201,
+        11.415,
+        9.054,
+        9.431,
+        8.184,
+        8.28
+      ],
+      "avg_spectral_contrast": 17.93,
+      "avg_tonnetz": [
+        0.0181,
+        -0.0612,
+        -0.0121,
+        0.0657,
+        0.0159,
+        -0.0095
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -18.6,
+          "centroid": 1910.0,
+          "bandwidth": 2196.0
+        },
+        {
+          "timestamp": 3,
+          "type": "ambient",
+          "rms_db": -22.8,
+          "centroid": 2856.0,
+          "bandwidth": 2499.0
+        },
+        {
+          "timestamp": 6,
+          "type": "ambient",
+          "rms_db": -20.9,
+          "centroid": 2481.0,
+          "bandwidth": 2340.0
+        },
+        {
+          "timestamp": 9,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2586.0,
+          "bandwidth": 2449.0
+        },
+        {
+          "timestamp": 12,
+          "type": "music_warm",
+          "rms_db": -26.2,
+          "centroid": 2979.0,
+          "bandwidth": 2734.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -17.9,
+          "centroid": 2091.0,
+          "bandwidth": 2332.0
+        },
+        {
+          "timestamp": 18,
+          "type": "music_warm",
+          "rms_db": -23.8,
+          "centroid": 2565.0,
+          "bandwidth": 2584.0
+        },
+        {
+          "timestamp": 21,
+          "type": "music_warm",
+          "rms_db": -21.0,
+          "centroid": 2777.0,
+          "bandwidth": 2596.0
+        },
+        {
+          "timestamp": 24,
+          "type": "ambient",
+          "rms_db": -23.2,
+          "centroid": 3061.0,
+          "bandwidth": 2829.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -19.9,
+          "centroid": 2213.0,
+          "bandwidth": 2560.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -20.1,
+          "centroid": 2344.0,
+          "bandwidth": 2454.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 2552.0,
+          "bandwidth": 2616.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -19.6,
+          "centroid": 2292.0,
+          "bandwidth": 2568.0
+        },
+        {
+          "timestamp": 39,
+          "type": "music_warm",
+          "rms_db": -22.4,
+          "centroid": 2578.0,
+          "bandwidth": 2580.0
+        },
+        {
+          "timestamp": 42,
+          "type": "music_warm",
+          "rms_db": -22.8,
+          "centroid": 2569.0,
+          "bandwidth": 2585.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -20.9,
+          "centroid": 2319.0,
+          "bandwidth": 2635.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -21.2,
+          "centroid": 2521.0,
+          "bandwidth": 2657.0
+        },
+        {
+          "timestamp": 51,
+          "type": "music_warm",
+          "rms_db": -21.7,
+          "centroid": 2803.0,
+          "bandwidth": 2699.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -20.9,
+          "centroid": 1993.0,
+          "bandwidth": 2290.0
+        },
+        {
+          "timestamp": 57,
+          "type": "ambient",
+          "rms_db": -21.6,
+          "centroid": 2336.0,
+          "bandwidth": 2388.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1684.0,
+          "bandwidth": 2226.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -20.7,
+          "centroid": 2037.0,
+          "bandwidth": 2359.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 2113.0,
+          "bandwidth": 2440.0
+        },
+        {
+          "timestamp": 69,
+          "type": "music_warm",
+          "rms_db": -18.6,
+          "centroid": 2543.0,
+          "bandwidth": 2502.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 2288.0,
+          "bandwidth": 2461.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2210.0,
+          "bandwidth": 2563.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 2342.0,
+          "bandwidth": 2446.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 2575.0,
+          "bandwidth": 2773.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.571,
+        "ambient": 0.179,
+        "music_warm": 0.25
+      },
+      "speech_pct": 0.571,
+      "music_pct": 0.25,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 185,
+      "strong_sfx_timestamps": [
+        0.09,
+        0.44,
+        1.11,
+        1.46,
+        2.11,
+        2.62,
+        2.88,
+        3.32,
+        4.02,
+        4.06,
+        4.78,
+        5.04,
+        5.36,
+        5.53,
+        6.01,
+        6.22,
+        6.43,
+        6.85,
+        6.94,
+        7.34
+      ],
+      "n_segments": 28
+    }
+  }
+}

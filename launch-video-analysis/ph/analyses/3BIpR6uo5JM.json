@@ -1,0 +1,972 @@
+{
+  "video_id": "3BIpR6uo5JM",
+  "status": "ok",
+  "duration_sec": 153.2,
+  "resolution": "640x360",
+  "fps": 15.5,
+  "frames_analyzed": 52,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 23,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "DATA EVER NEED ONLY PLATFORM STARTUP THE WILL YOUR"
+    },
+    {
+      "timestamp_sec": 5.9,
+      "text": "Get HubSpot, Snowflake, Stripe, The Zendesk afew analytics and any clean clicks. data from huge mets multiple ready, source"
+    },
+    {
+      "timestamp_sec": 8.9,
+      "text": "Get Hubspot, Snowflake, Stripe, The Zendesk analytics and any clean clicks. data fow from pipelines ready, source"
+    },
+    {
+      "timestamp_sec": 11.9,
+      "text": "Asana Cao Fray, Funnel Pipetine any ats can chars, contin dashboards from insights one shared source, with"
+    },
+    {
+      "timestamp_sec": 14.8,
+      "text": "Acquisition Ads, Facebook Finally, Funnel Pipeline Powerful added any anywhere, can charts, combine context, dashboards embedded from insights seamlessly, shared source. with"
+    },
+    {
+      "timestamp_sec": 17.8,
+      "text": "10, Ads Customer Google Hubspat, Push activate and anyone data everyting. for growth ike insights more one-stop tools via"
+    },
+    {
+      "timestamp_sec": 20.8,
+      "text": "Acquisition Acquistion Despite Funnel Pipeline but elective hat have rates recenty"
+    },
+    {
+      "timestamp_sec": 23.7,
+      "text": "12.35% Acquisition Funnel Pipeline Tratfic rey"
+    },
+    {
+      "timestamp_sec": 26.7,
+      "text": "$2507% Funnel"
+    },
+    {
+      "timestamp_sec": 29.7,
+      "text": "120k 512k 780 Funnel Lead Referral"
+    },
+    {
+      "timestamp_sec": 32.6,
+      "text": "180"
+    },
+    {
+      "timestamp_sec": 35.6,
+      "text": "093 Acquisition Revenue"
+    },
+    {
+      "timestamp_sec": 44.5,
+      "text": "753 797 Performance Sales Smith Taylor Team"
+    },
+    {
+      "timestamp_sec": 47.5,
+      "text": "228 909k Activity Metrics Product"
+    },
+    {
+      "timestamp_sec": 50.4,
+      "text": "13.77% 225 9.09 Activity Metrics Product"
+    },
+    {
+      "timestamp_sec": 56.4,
+      "text": "$40 12.35% Acquisition Funnel Leads Monthly Pipeline Top Traffic Trond Website"
+    },
+    {
+      "timestamp_sec": 59.3,
+      "text": "Acquisition Funnel Leads Monthly Pipeline Top Traffic Trond Website"
+    },
+    {
+      "timestamp_sec": 62.3,
+      "text": "$40 Acquisition Funnel Leads Monthly Pipeline Top Traffic Trend Website"
+    },
+    {
+      "timestamp_sec": 65.3,
+      "text": "Monthly Traffic Trend Website"
+    },
+    {
+      "timestamp_sec": 94.9,
+      "text": "Activatea Highly New Not engaged for ready upsell users"
+    },
+    {
+      "timestamp_sec": 97.9,
+      "text": "Highly engaged for ready upsell users"
+    },
+    {
+      "timestamp_sec": 100.9,
+      "text": "New incomplete praia profiles prove users with"
+    },
+    {
+      "timestamp_sec": 103.8,
+      "text": "Users"
+    }
+  ],
+  "pseudo_transcript": "DATA EVER NEED ONLY PLATFORM STARTUP THE WILL YOUR | Get HubSpot, Snowflake, Stripe, The Zendesk afew analytics and any clean clicks. data from huge mets multiple ready, source | Get Hubspot, Snowflake, Stripe, The Zendesk analytics and any clean clicks. data fow from pipelines ready, source | Asana Cao Fray, Funnel Pipetine any ats can chars, contin dashboards from insights one shared source, with | Acquisition Ads, Facebook Finally, Funnel Pipeline Powerful added any anywhere, can charts, combine context, dashboards embedded from insights seamlessly, shared source. with | 10, Ads Customer Google Hubspat, Push activate and anyone data everyting. for growth ike insights more one-stop tools via | Acquisition Acquistion Despite Funnel Pipeline but elective hat have rates recenty | 12.35% Acquisition Funnel Pipeline Tratfic rey | $2507% Funnel | 120k 512k 780 Funnel Lead Referral | 180 | 093 Acquisition Revenue | 753 797 Performance Sales Smith Taylor Team | 228 909k Activity Metrics Product | 13.77% 225 9.09 Activity Metrics Product | $40 12.35% Acquisition Funnel Leads Monthly Pipeline Top Traffic Trond Website | Acquisition Funnel Leads Monthly Pipeline Top Traffic Trond Website | $40 Acquisition Funnel Leads Monthly Pipeline Top Traffic Trend Website | Monthly Traffic Trend Website | Activatea Highly New Not engaged for ready upsell users | Highly engaged for ready upsell users | New incomplete praia profiles prove users with | Users",
+  "frame_type_distribution": {
+    "white_screen": 0.67,
+    "text_heavy": 0.1,
+    "simple_visual": 0.1,
+    "dark_screen": 0.08,
+    "text_with_visual": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          243,
+          243,
+          242
+        ],
+        [
+          32,
+          29,
+          27
+        ],
+        [
+          150,
+          155,
+          134
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 29.7,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          247
+        ],
+        [
+          119,
+          161,
+          191
+        ],
+        [
+          65,
+          70,
+          76
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 44.5,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          250,
+          250
+        ],
+        [
+          143,
+          180,
+          207
+        ],
+        [
+          67,
+          71,
+          78
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 59.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          149,
+          152,
+          154
+        ],
+        [
+          39,
+          40,
+          43
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 74.2,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          250
+        ],
+        [
+          164,
+          167,
+          166
+        ],
+        [
+          80,
+          86,
+          93
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 89.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          89,
+          156,
+          205
+        ],
+        [
+          185,
+          186,
+          187
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 103.8,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          250
+        ],
+        [
+          168,
+          169,
+          169
+        ],
+        [
+          80,
+          86,
+          91
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 118.7,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          246
+        ],
+        [
+          180,
+          170,
+          156
+        ],
+        [
+          105,
+          109,
+          115
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 133.5,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          165,
+          160,
+          160
+        ],
+        [
+          73,
+          67,
+          75
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 148.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          166,
+          167,
+          165
+        ],
+        [
+          83,
+          82,
+          89
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "3BIpR6uo5JM",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.981,
+      "avg_face_count": 0.98,
+      "max_face_count": 1,
+      "avg_face_size_pct": 1.1,
+      "has_multiple_people": 0,
+      "file_size_mb": 5.82,
+      "bitrate_kbps": 319.0,
+      "pip_frames": 50,
+      "has_pip": true,
+      "avg_blur_score": 1644.9,
+      "blur_variance": 1079.2,
+      "avg_motion": 45.81,
+      "max_motion": 243.17,
+      "motion_variance": 73.9,
+      "avg_brightness": 211.5,
+      "brightness_trend": 47.1,
+      "first_quarter_brightness": 179.1,
+      "last_quarter_brightness": 226.2,
+      "browser_chrome_frames": 2,
+      "browser_chrome_pct": 0.038,
+      "dark_mode_pct": 0.077,
+      "light_mode_pct": 0.885,
+      "annotation_frames": 51,
+      "has_annotations": true,
+      "letterbox_frames": 3,
+      "has_letterbox": true,
+      "intro_duration_sec": 3.0,
+      "end_card_duration_sec": 58.3,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.865,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 0.0,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 0.0
+      },
+      "last_frame": {
+        "timestamp": 151.3,
+        "brightness": 245.39213975694443,
+        "has_face": true,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 8.9,
+      "frames_analyzed": 52
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 1,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 9,
+      "metrics_found": [
+        "35%",
+        "$2507",
+        "120k",
+        "512k",
+        "909k"
+      ],
+      "metric_placement": "early",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 1,
+      "features_per_min": 0.4,
+      "has_pricing": true,
+      "pricing_texts": [
+        "$2507",
+        "$40",
+        "$40"
+      ],
+      "text_length_variance": 42.0,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 1,
+      "jargon_count": 1,
+      "jargon_density": 0.005,
+      "jargon_words": [
+        "pipeline"
+      ],
+      "benefit_count": 5,
+      "feature_word_count": 1,
+      "benefit_ratio": 0.83,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 12.31,
+      "emotional_arc": "declining",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 9,
+      "acronym_density": 0.047,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 193
+    }
+  },
+  "mega": {
+    "video_id": "3BIpR6uo5JM",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 153.2,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.379,
+      "energy_trend": 0.000591,
+      "peak_timestamp_sec": 117.0,
+      "peak_position_pct": 0.76,
+      "dynamic_range_db": 64.3,
+      "onset_density": 3.97,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.8,
+      "avg_spectral_centroid": 1775.0,
+      "avg_spectral_bandwidth": 1792.0,
+      "avg_zcr": 0.0796
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 2.31,
+      "color_palette_size": 20,
+      "color_consistency": 69.9,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.115,
+      "navbar_pct": 0.808,
+      "sidebar_pct": 0.096,
+      "modal_pct": 0.019,
+      "table_pct": 0.558,
+      "chat_pct": 0.077,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.462,
+      "avg_symmetry": 0.902,
+      "avg_thirds_score": 0.844,
+      "avg_content_aspect": 1.749,
+      "scene_diversity": 0.022,
+      "repetition_count": 48,
+      "has_bookend": true,
+      "longest_scene_sec": 141.0,
+      "frames_analyzed": 52
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "34179/2204",
+      "r_frame_rate": "34179/2204",
+      "bit_rate_stream": 188200,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-02-19T17:58:15.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 152.0,
+      "detected_key": "D",
+      "key_confidence": 0.114,
+      "mfcc_mean": [
+        -403.495,
+        82.449,
+        -16.454,
+        18.836,
+        6.128,
+        -6.316,
+        -0.746,
+        -10.642,
+        -7.468,
+        0.46,
+        -9.423,
+        -1.747,
+        -2.117
+      ],
+      "mfcc_std": [
+        157.343,
+        77.151,
+        35.576,
+        24.498,
+        21.752,
+        19.97,
+        13.517,
+        15.01,
+        12.211,
+        11.101,
+        13.683,
+        8.288,
+        7.901
+      ],
+      "avg_spectral_contrast": 18.4,
+      "avg_tonnetz": [
+        0.0006,
+        0.0034,
+        0.0121,
+        -0.0096,
+        -0.0065,
+        0.0016
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -26.7,
+          "centroid": 1804.0,
+          "bandwidth": 1778.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1837.0,
+          "bandwidth": 1624.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -30.0,
+          "centroid": 1978.0,
+          "bandwidth": 1798.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -27.8,
+          "centroid": 2017.0,
+          "bandwidth": 1949.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -28.2,
+          "centroid": 1422.0,
+          "bandwidth": 1658.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -30.3,
+          "centroid": 1619.0,
+          "bandwidth": 1559.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -31.6,
+          "centroid": 1521.0,
+          "bandwidth": 1458.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -27.7,
+          "centroid": 1497.0,
+          "bandwidth": 1856.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -30.2,
+          "centroid": 1680.0,
+          "bandwidth": 1806.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -29.2,
+          "centroid": 1665.0,
+          "bandwidth": 1672.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -26.8,
+          "centroid": 2023.0,
+          "bandwidth": 2190.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -30.4,
+          "centroid": 2182.0,
+          "bandwidth": 1702.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -28.8,
+          "centroid": 1770.0,
+          "bandwidth": 1927.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -29.5,
+          "centroid": 2025.0,
+          "bandwidth": 1922.0
+        },
+        {
+          "timestamp": 42,
+          "type": "ambient",
+          "rms_db": -29.5,
+          "centroid": 2313.0,
+          "bandwidth": 1843.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -28.6,
+          "centroid": 1843.0,
+          "bandwidth": 1733.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -31.6,
+          "centroid": 1747.0,
+          "bandwidth": 1609.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -27.0,
+          "centroid": 1579.0,
+          "bandwidth": 1720.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 1698.0,
+          "bandwidth": 1817.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -27.4,
+          "centroid": 1558.0,
+          "bandwidth": 1646.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 1575.0,
+          "bandwidth": 1330.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -29.4,
+          "centroid": 1954.0,
+          "bandwidth": 1766.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -28.1,
+          "centroid": 2070.0,
+          "bandwidth": 1858.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -23.7,
+          "centroid": 1551.0,
+          "bandwidth": 1659.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -27.8,
+          "centroid": 1725.0,
+          "bandwidth": 1725.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -34.0,
+          "centroid": 1348.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 78,
+          "type": "ambient",
+          "rms_db": -26.1,
+          "centroid": 2254.0,
+          "bandwidth": 1905.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1588.0,
+          "bandwidth": 1940.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -29.5,
+          "centroid": 2096.0,
+          "bandwidth": 1870.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -32.7,
+          "centroid": 1950.0,
+          "bandwidth": 1873.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -28.4,
+          "centroid": 1473.0,
+          "bandwidth": 2188.0
+        },
+        {
+          "timestamp": 93,
+          "type": "ambient",
+          "rms_db": -28.1,
+          "centroid": 2388.0,
+          "bandwidth": 1890.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -30.6,
+          "centroid": 1739.0,
+          "bandwidth": 1762.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -30.7,
+          "centroid": 1868.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -25.7,
+          "centroid": 1410.0,
+          "bandwidth": 1395.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -28.3,
+          "centroid": 1595.0,
+          "bandwidth": 1937.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1185.0,
+          "bandwidth": 1538.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1970.0,
+          "bandwidth": 1743.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -26.3,
+          "centroid": 1570.0,
+          "bandwidth": 1864.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -28.1,
+          "centroid": 1449.0,
+          "bandwidth": 1920.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -28.3,
+          "centroid": 1814.0,
+          "bandwidth": 1837.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -28.3,
+          "centroid": 1526.0,
+          "bandwidth": 1865.0
+        },
+        {
+          "timestamp": 126,
+          "type": "ambient",
+          "rms_db": -26.4,
+          "centroid": 2298.0,
+          "bandwidth": 1893.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -30.7,
+          "centroid": 1995.0,
+          "bandwidth": 1808.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -27.6,
+          "centroid": 1476.0,
+          "bandwidth": 1754.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -32.1,
+          "centroid": 2090.0,
+          "bandwidth": 1917.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -27.4,
+          "centroid": 1187.0,
+          "bandwidth": 1840.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -26.1,
+          "centroid": 1788.0,
+          "bandwidth": 1752.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -26.7,
+          "centroid": 2096.0,
+          "bandwidth": 1963.0
+        },
+        {
+          "timestamp": 147,
+          "type": "speech",
+          "rms_db": -29.1,
+          "centroid": 2000.0,
+          "bandwidth": 1744.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -31.4,
+          "centroid": 1984.0,
+          "bandwidth": 2053.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.902,
+        "ambient": 0.098
+      },
+      "speech_pct": 0.902,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 396,
+      "strong_sfx_timestamps": [
+        0.09,
+        0.28,
+        0.74,
+        0.88,
+        1.21,
+        1.7,
+        1.88,
+        2.09,
+        2.53,
+        3.11,
+        3.23,
+        3.69,
+        4.46,
+        5.69,
+        6.18,
+        6.62,
+        7.01,
+        7.13,
+        7.52,
+        7.69
+      ],
+      "n_segments": 51
+    }
+  }
+}

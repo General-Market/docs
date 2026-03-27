@@ -1,0 +1,640 @@
+{
+  "video_id": "0lGolBMT80I",
+  "status": "ok",
+  "duration_sec": 86.6,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 29,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 15,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Build agent mode. with"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "Al, All Claude Commands Copilot Files Review Show Sonnet and are attach before commands, context errors. iterate mistakes open ortype output possible, powered stm terminal use. ‘Agent ‘run"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Al, All Claude Commands.) Content. Find Lust Review Settings Show Sonnet and are attach before carefully chat commands, context errors. iterate mistakes open output possible. powered terminal use. with ‘Agent ‘run"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "==="
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "cHaT"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "sooo"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Files Find Issue Open Project Project: Settings Show Slug: Sonnet Stash This Vuetify appears application. chat cover deprecated detaled fix? focused frontend function function. functionality get have help ike implementing instructions. methods more newer one open related replacing stash switching task the theme toggle updating with work you your ‘You ‘oF"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "Description: Great! Issue Let Now Original Replace Solve Sumary: Switching Vuetity Wetsty about and deprecated description infersation: information its looking new our relevant. should that the thene these toggle toggling update use using we're with"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "LightThene’ Output Requirenents This UPGRADED aligned and best compatibility deprecated, following future instead. keeps latest new practices. syntax the triggers use value warning: with"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "Description: Implement Light Output ST-147: Stash This accessibility alongside and built-in come currently dark developers. existing feasible for impacts implenentation introduce lacks making node not only preference require support supports teh the thene thene. thening thening, tssves user using which will"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "1-66 77.98% Code Fites Lines Output Sinitar URL: frontend"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "117-174 36-73 68.52% 73.80% <v-List Lines Navbar.vue Similarity: URL: Vetur components flat frontend heigh’ nav out p-bar"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "SSS"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "text": "0178 165 175 <v-List-item Agen Excellent! Let Now Provide UparadeDialog UpgradeDiatog VNavbarwe but charge) code current development, fhe from fron ines othe preps shows sue, test the theme works: ‘@/services/uts"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "105 120 165 175 <y-List-iten Claude Let Navbarwe Navbarwue Now Perfect! Provide Read Support: also and ceed changes development from fron function has ines instructions. let's nents: prep: run serverto setup the verity works:"
+    }
+  ],
+  "pseudo_transcript": "Build agent mode. with | Al, All Claude Commands Copilot Files Review Show Sonnet and are attach before commands, context errors. iterate mistakes open ortype output possible, powered stm terminal use. ‘Agent ‘run | Al, All Claude Commands.) Content. Find Lust Review Settings Show Sonnet and are attach before carefully chat commands, context errors. iterate mistakes open output possible. powered terminal use. with ‘Agent ‘run | === | cHaT | sooo | Files Find Issue Open Project Project: Settings Show Slug: Sonnet Stash This Vuetify appears application. chat cover deprecated detaled fix? focused frontend function function. functionality get have help ike implementing instructions. methods more newer one open related replacing stash switching task the theme toggle updating with work you your ‘You ‘oF | Description: Great! Issue Let Now Original Replace Solve Sumary: Switching Vuetity Wetsty about and deprecated description infersation: information its looking new our relevant. should that the thene these toggle toggling update use using we're with | LightThene’ Output Requirenents This UPGRADED aligned and best compatibility deprecated, following future instead. keeps latest new practices. syntax the triggers use value warning: with | Description: Implement Light Output ST-147: Stash This accessibility alongside and built-in come currently dark developers. existing feasible for impacts implenentation introduce lacks making node not only preference require support supports teh the thene thene. thening thening, tssves user using which will | 1-66 77.98% Code Fites Lines Output Sinitar URL: frontend | 117-174 36-73 68.52% 73.80% <v-List Lines Navbar.vue Similarity: URL: Vetur components flat frontend heigh’ nav out p-bar | SSS | 0178 165 175 <v-List-item Agen Excellent! Let Now Provide UparadeDialog UpgradeDiatog VNavbarwe but charge) code current development, fhe from fron ines othe preps shows sue, test the theme works: ‘@/services/uts | 105 120 165 175 <y-List-iten Claude Let Navbarwe Navbarwue Now Perfect! Provide Read Support: also and ceed changes development from fron function has ines instructions. let's nents: prep: run serverto setup the verity works:",
+  "frame_type_distribution": {
+    "detailed_visual": 0.34,
+    "simple_visual": 0.31,
+    "dark_screen": 0.24,
+    "text_heavy": 0.1
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          27,
+          29,
+          28
+        ],
+        [
+          127,
+          85,
+          45
+        ],
+        [
+          177,
+          149,
+          96
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          27,
+          29,
+          28
+        ],
+        [
+          126,
+          85,
+          46
+        ],
+        [
+          177,
+          148,
+          94
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          27,
+          29,
+          28
+        ],
+        [
+          126,
+          85,
+          46
+        ],
+        [
+          176,
+          147,
+          94
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          20,
+          22,
+          21
+        ],
+        [
+          57,
+          60,
+          58
+        ],
+        [
+          149,
+          124,
+          85
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          31,
+          30
+        ],
+        [
+          122,
+          86,
+          50
+        ],
+        [
+          177,
+          149,
+          96
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          29,
+          31,
+          29
+        ],
+        [
+          123,
+          86,
+          49
+        ],
+        [
+          176,
+          147,
+          95
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "0lGolBMT80I",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 2.87,
+      "bitrate_kbps": 278.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1220.7,
+      "blur_variance": 657.7,
+      "avg_motion": 12.44,
+      "max_motion": 33.48,
+      "motion_variance": 11.86,
+      "avg_brightness": 49.2,
+      "brightness_trend": 8.3,
+      "first_quarter_brightness": 45.4,
+      "last_quarter_brightness": 53.7,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 1.0,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 29,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 2.6,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.0,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 53.85217881944445,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 652.1536717474854
+      },
+      "last_frame": {
+        "timestamp": 84.0,
+        "brightness": 44.08365451388889,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 57.8,
+      "frames_analyzed": 29
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 3,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 3,
+      "metrics_found": [
+        "98%",
+        "52%",
+        "80%"
+      ],
+      "metric_placement": "middle",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 2,
+      "features_per_min": 1.4,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 116.7,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.003,
+      "jargon_words": [
+        "frontend"
+      ],
+      "benefit_count": 0,
+      "feature_word_count": 2,
+      "benefit_ratio": 0.0,
+      "urgency_count": 2,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 10.26,
+      "emotional_arc": "mixed",
+      "question_count": 1,
+      "has_questions": true,
+      "acronym_count": 5,
+      "acronym_density": 0.016,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 305
+    }
+  },
+  "mega": {
+    "video_id": "0lGolBMT80I",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 86.8,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 42.7,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.69,
+      "navbar_pct": 0.966,
+      "sidebar_pct": 0.0,
+      "modal_pct": 0.0,
+      "table_pct": 0.724,
+      "chat_pct": 0.0,
+      "code_pct": 1.0,
+      "terminal_pct": 0.552,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.902,
+      "avg_thirds_score": 1.045,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.03,
+      "repetition_count": 22,
+      "has_bookend": true,
+      "longest_scene_sec": 87.0,
+      "frames_analyzed": 29
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 227472,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-09-11T09:20:33.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 51,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 54,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 57,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 60,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 63,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 66,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 69,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 72,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 75,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 78,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 81,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 28
+    }
+  }
+}

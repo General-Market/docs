@@ -175,8 +175,66 @@ test.describe('Create ITP', () => {
       } catch {
         console.log(`BridgedITP deployment timed out — L3 ITP verified, Settlement BLS consensus may be slow`);
       }
+
+      // 15. Verify created ITP appears in the /index listing
+      await page.goto(`${FRONTEND_URL}/index`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45_000,
+      });
+
+      // Wait for ITP table to populate (SSE or REST fallback)
+      await page.waitForFunction(
+        () => document.querySelectorAll('table tbody tr').length > 0,
+        { timeout: 30_000 }
+      ).catch(() => {});
+
+      // The newly created ITP should appear — search by its symbol
+      const itpRow = page.locator(`text=E2ET`).first();
+      const appeared = await itpRow.isVisible({ timeout: 15_000 }).catch(() => false);
+      if (appeared) {
+        console.log('Created ITP "E2ET" visible in /index listing');
+      } else {
+        // May not appear immediately if SSE/REST hasn't picked it up yet
+        console.log('Created ITP "E2ET" not yet visible in listing — data propagation may be slow');
+      }
     } finally {
       stopMiner?.();
+    }
+  });
+
+  // Verify the Unofficial tab appears when non-deployer ITPs exist
+  test('unofficial tab shows community-created ITPs', async ({ walletPage: page }) => {
+    test.setTimeout(120_000);
+
+    await page.goto(`${FRONTEND_URL}/index`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 45_000,
+    });
+
+    // Wait for ITP table to populate
+    await page.waitForFunction(
+      () => document.querySelectorAll('table tbody tr').length > 0,
+      { timeout: 30_000 }
+    ).catch(() => {});
+
+    // Check if the Unofficial tab exists (only renders when unofficialCount > 0)
+    const unofficialTab = page.getByRole('button', { name: /Unofficial/i });
+    const tabVisible = await unofficialTab.isVisible({ timeout: 10_000 }).catch(() => false);
+
+    if (tabVisible) {
+      // Click the Unofficial tab and verify it filters the table
+      await unofficialTab.click();
+      // After clicking, the tab should be active (border-black)
+      await expect(unofficialTab).toHaveClass(/border-black/, { timeout: 5_000 });
+
+      // Community badge should appear on at least one row
+      const communityBadge = page.locator('text=Community').first();
+      await expect(communityBadge).toBeVisible({ timeout: 10_000 });
+      console.log('Unofficial tab active — community-created ITPs visible');
+    } else {
+      // No unofficial ITPs exist yet — this is expected on fresh deploys
+      // where only the protocol deployer has created ITPs
+      console.log('Unofficial tab not visible — no community-created ITPs exist');
     }
   });
 });

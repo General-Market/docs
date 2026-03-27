@@ -1,0 +1,560 @@
+{
+  "video_id": "HiP563Q9Sws",
+  "status": "ok",
+  "duration_sec": 53.3,
+  "resolution": "640x400",
+  "fps": 24.0,
+  "frames_analyzed": 18,
+  "transition_count": 2,
+  "transitions": [
+    {
+      "timestamp_sec": 6.0,
+      "correlation": 0.021,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "correlation": 0.011,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 12,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Auto Mutable.ai Turn Wiki Wikipedia-style articles codebase into your"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Auto Wiki"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "react"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "Auto Understand Wiki any articles, breaks complex down easy-to-understand into organized react repo. repos section."
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Auto Component Model Understand Wiki any articles, breaks complex down easy-to-understand into organized repo. repos section."
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "APL Component"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Checking, Error ‘Type"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "\"key\" Error Fragment Handling React React€lementValidator The This When allo also and are being calling cases catch checked checking checks child components. created, creation definition. early element elements elements. ens ensure ensuring errors expected. first fragments. from function functions handle have helps includes invalid keys, mat only optypes passed perform pertorms prevents prop props provides recursi several specifically summary, the they thorough type types. unique using valid validates validating validation validations, validator which"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "\"key\" Auto Error Fragment Quickly React ReactElementValidator This When Wiki and are being calling cases catch checked checks child citations clickable code, components. created, creates creation early element elements ensure errors find first fragments. from func function functions have helps includes invalid keys, line number. only passed perform prevents prop props provides several source. specific specifically summary, the they thorough type types types, types. unique using valid validates validating validation validations. validator which your"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "\"key\" Auto Error Fragment Quickly React ReactElementValidator The This When Wiki also and are being calling cases catch checked checking checks child citations clickable code, components. created, creates creation definition. early element elements elements. ensure ensut errors find first fragments. from func function functions handle have helps includes invalid keys, line number. only packages/react/src/ReactElem passed perform performs prevents prop props proptypes provides several source. specific specifically summary, the they thorough type types types, types. unique using valid validates validating validation validations. validator valivateFragnentProps which your"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Checking Error ‘Type"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "Available Now! wiki.mutable.ai"
+    }
+  ],
+  "pseudo_transcript": "Auto Mutable.ai Turn Wiki Wikipedia-style articles codebase into your | Auto Wiki | react | Auto Understand Wiki any articles, breaks complex down easy-to-understand into organized react repo. repos section. | Auto Component Model Understand Wiki any articles, breaks complex down easy-to-understand into organized repo. repos section. | APL Component | Checking, Error ‘Type | \"key\" Error Fragment Handling React React€lementValidator The This When allo also and are being calling cases catch checked checking checks child components. created, creation definition. early element elements elements. ens ensure ensuring errors expected. first fragments. from function functions handle have helps includes invalid keys, mat only optypes passed perform pertorms prevents prop props provides recursi several specifically summary, the they thorough type types. unique using valid validates validating validation validations, validator which | \"key\" Auto Error Fragment Quickly React ReactElementValidator This When Wiki and are being calling cases catch checked checks child citations clickable code, components. created, creates creation early element elements ensure errors find first fragments. from func function functions have helps includes invalid keys, line number. only passed perform prevents prop props provides several source. specific specifically summary, the they thorough type types types, types. unique using valid validates validating validation validations. validator which your | \"key\" Auto Error Fragment Quickly React ReactElementValidator The This When Wiki also and are being calling cases catch checked checking checks child citations clickable code, components. created, creates creation definition. early element elements elements. ensure ensut errors find first fragments. from func function functions handle have helps includes invalid keys, line number. only packages/react/src/ReactElem passed perform performs prevents prop props proptypes provides several source. specific specifically summary, the they thorough type types types, types. unique using valid validates validating validation validations. validator valivateFragnentProps which your | Checking Error ‘Type | Available Now! wiki.mutable.ai",
+  "frame_type_distribution": {
+    "white_screen": 0.33,
+    "detailed_visual": 0.28,
+    "text_with_visual": 0.17,
+    "text_heavy": 0.17,
+    "dark_screen": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          238,
+          221
+        ],
+        [
+          20,
+          15,
+          11
+        ],
+        [
+          177,
+          143,
+          111
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 6.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          251,
+          251
+        ],
+        [
+          151,
+          151,
+          152
+        ],
+        [
+          24,
+          23,
+          23
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          246,
+          244
+        ],
+        [
+          151,
+          141,
+          135
+        ],
+        [
+          30,
+          27,
+          25
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          249
+        ],
+        [
+          167,
+          157,
+          155
+        ],
+        [
+          59,
+          59,
+          59
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          249,
+          249
+        ],
+        [
+          153,
+          145,
+          142
+        ],
+        [
+          21,
+          21,
+          20
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 51.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          238,
+          221
+        ],
+        [
+          15,
+          12,
+          9
+        ],
+        [
+          163,
+          126,
+          96
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "HiP563Q9Sws",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 3.92,
+      "bitrate_kbps": 617.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 3672.9,
+      "blur_variance": 2507.8,
+      "avg_motion": 45.49,
+      "max_motion": 234.73,
+      "motion_variance": 67.76,
+      "avg_brightness": 216.5,
+      "brightness_trend": 0.7,
+      "first_quarter_brightness": 232.2,
+      "last_quarter_brightness": 232.9,
+      "browser_chrome_frames": 8,
+      "browser_chrome_pct": 0.444,
+      "dark_mode_pct": 0.056,
+      "light_mode_pct": 0.944,
+      "annotation_frames": 17,
+      "has_annotations": true,
+      "letterbox_frames": 1,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 8.3,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.778,
+      "cool_frame_pct": 0.167,
+      "first_frame": {
+        "brightness": 228.68530078125,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 856.4178906176147
+      },
+      "last_frame": {
+        "timestamp": 51.0,
+        "brightness": 230.99382421875,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 9.7,
+      "frames_analyzed": 18
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 5,
+      "positive_sentiment_timestamps": 2,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 2,
+      "features_per_min": 2.3,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 243.2,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 2,
+      "benefit_ratio": 0.0,
+      "urgency_count": 3,
+      "has_urgency": true,
+      "brand_mentions": 2,
+      "tagline_match": false,
+      "avg_reading_comfort": 4.31,
+      "emotional_arc": "declining",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 1,
+      "acronym_density": 0.003,
+      "has_url_shown": true,
+      "urls_found": [
+        "Mutable.ai",
+        "mutable.ai"
+      ],
+      "distinct_scenes": 3,
+      "has_text_animation": true,
+      "has_before_after": false,
+      "has_data_viz": false,
+      "total_ocr_words": 298
+    }
+  },
+  "mega": {
+    "video_id": "HiP563Q9Sws",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 53.4,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 2.57,
+      "color_palette_size": 20,
+      "color_consistency": 62.5,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 0.833,
+      "sidebar_pct": 0.0,
+      "modal_pct": 0.0,
+      "table_pct": 0.889,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.056,
+      "desktop_chrome_pct": 0.778,
+      "avg_symmetry": 0.929,
+      "avg_thirds_score": 1.782,
+      "avg_content_aspect": 1.602,
+      "scene_diversity": 0.118,
+      "repetition_count": 14,
+      "has_bookend": true,
+      "longest_scene_sec": 45.0,
+      "frames_analyzed": 18
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Constrained Baseline",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "24/1",
+      "r_frame_rate": "24/1",
+      "bit_rate_stream": 423961,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 17
+    }
+  }
+}

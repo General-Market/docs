@@ -1,0 +1,2898 @@
+{
+  "video_id": "FhIOB7r5RBo",
+  "status": "ok",
+  "duration_sec": 634.4,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 212,
+  "transition_count": 12,
+  "transitions": [
+    {
+      "timestamp_sec": 24.0,
+      "correlation": 0.318,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 150.0,
+      "correlation": 0.138,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 180.0,
+      "correlation": 0.214,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 192.0,
+      "correlation": 0.128,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 195.0,
+      "correlation": 0.106,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 207.0,
+      "correlation": 0.19,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 228.0,
+      "correlation": 0.152,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 297.0,
+      "correlation": 0.157,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 306.0,
+      "correlation": 0.286,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 312.0,
+      "correlation": 0.288,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 321.0,
+      "correlation": 0.256,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 357.0,
+      "correlation": 0.423,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 180,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "Boruah Manab Manab. fay name pa,"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "I'm Kommunicate. Manager Marketing Product here"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "Kommunicate email inbox. integrate the with your"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Queries and automate can queries repetitive then you"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "back can get more support team time your"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Can Complex Queries can complex focus more queries. reams they"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Kemmunicate accoun begin dis isa it. ith need oto what with"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "You can sign toa"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "There's begin days ere’s free ith. trial with."
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "Kommunicate You can dashboard. screen see the"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "What bot. create need you"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "bot. create going"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "bot integration. see will you"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "I'm Under bot create going integration, new"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "I'm Kompese and bol bot for going purpose this use with"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "Kompose, NLP bot. our own powered which"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "Bot Email I'm and going name sot"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Finish I'm and bed bot going hit proceed save setuy"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "demonstration. for going oing skip this"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "Now bot needs something. the trained"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "Kommunicate bot can the train you"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "URLs base. knowledge your"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "text": "Salesforce You Zendesk can integrate"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "bot the them. trains"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "text": "For, are demonstration for going this train"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "bot kommunicate.io our own website which"
+    },
+    {
+      "timestamp_sec": 90.0,
+      "text": "Now around bot somewhere take the will"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "text": "itself. seconds train"
+    },
+    {
+      "timestamp_sec": 96.0,
+      "text": "The bigger larger the website,"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "more take, the time. website will"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "text": "102 for it's just pages"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "text": "are going meantime, since the what"
+    },
+    {
+      "timestamp_sec": 108.0,
+      "text": "bot getting getting, our the trained"
+    },
+    {
+      "timestamp_sec": 111.0,
+      "text": "can our, website, what"
+    },
+    {
+      "timestamp_sec": 117.0,
+      "text": "Integrations. hand left panel the"
+    },
+    {
+      "timestamp_sec": 120.0,
+      "text": "Email Mailbox. and oan see tickets would you"
+    },
+    {
+      "timestamp_sec": 126.0,
+      "text": "bot create, integrate to. want your"
+    },
+    {
+      "timestamp_sec": 129.0,
+      "text": "I'm again demonstration for going this use"
+    },
+    {
+      "timestamp_sec": 132.0,
+      "text": "Kommunicate Manab email id, which work"
+    },
+    {
+      "timestamp_sec": 138.0,
+      "text": "I'm Save. and boruah going hel hit"
+    },
+    {
+      "timestamp_sec": 141.0,
+      "text": "Just below code, see that there's you"
+    },
+    {
+      "timestamp_sec": 144.0,
+      "text": "address email get. identifier that there's unique"
+    },
+    {
+      "timestamp_sec": 147.0,
+      "text": "I'm Ineed and copying nee next sol thing"
+    },
+    {
+      "timestamp_sec": 150.0,
+      "text": "ame back email into settings."
+    },
+    {
+      "timestamp_sec": 153.0,
+      "text": "Now Remember, Zendesk ame could this your"
+    },
+    {
+      "timestamp_sec": 156.0,
+      "text": "FreshDesk Mom bh, email system. ticketing your"
+    },
+    {
+      "timestamp_sec": 159.0,
+      "text": "But Gme I'm Mom for own personal. since using"
+    },
+    {
+      "timestamp_sec": 162.0,
+      "text": "I'm Mom Settings. and click going"
+    },
+    {
+      "timestamp_sec": 165.0,
+      "text": "I'm Settings Under all click going oc+= see"
+    },
+    {
+      "timestamp_sec": 168.0,
+      "text": "Mom O62) and forwarding pop see settings there things you"
+    },
+    {
+      "timestamp_sec": 171.0,
+      "text": "I'm Mom O62) add address and forwarding going going,"
+    },
+    {
+      "timestamp_sec": 174.0,
+      "text": "address back copied have paste that the there"
+    },
+    {
+      "timestamp_sec": 177.0,
+      "text": "Eme I'm and dashboard from going hit next. the"
+    },
+    {
+      "timestamp_sec": 180.0,
+      "text": "Now confirm system that the this try will you."
+    },
+    {
+      "timestamp_sec": 186.0,
+      "text": "Verify authentication for it's kind some there would you"
+    },
+    {
+      "timestamp_sec": 189.0,
+      "text": "Verify asking case it's this trying, you"
+    },
+    {
+      "timestamp_sec": 192.0,
+      "text": "and confirm me. need that this"
+    },
+    {
+      "timestamp_sec": 195.0,
+      "text": "could organizations some this"
+    },
+    {
+      "timestamp_sec": 198.0,
+      "text": "address addresses. confirmation email"
+    },
+    {
+      "timestamp_sec": 201.0,
+      "text": "are email forwarding this you your"
+    },
+    {
+      "timestamp_sec": 204.0,
+      "text": "Kommunicate address into the which"
+    },
+    {
+      "timestamp_sec": 210.0,
+      "text": "And Moret are done. think"
+    },
+    {
+      "timestamp_sec": 213.0,
+      "text": "Moret The click need next thing"
+    },
+    {
+      "timestamp_sec": 216.0,
+      "text": "O62) added and changes. have hit just save"
+    },
+    {
+      "timestamp_sec": 219.0,
+      "text": "Now ame and bot created did was what"
+    },
+    {
+      "timestamp_sec": 222.0,
+      "text": "Gme Kommunicate Mom address. email integrated our then with"
+    },
+    {
+      "timestamp_sec": 225.0,
+      "text": "Now and back bot need oc+= our ready. see"
+    },
+    {
+      "timestamp_sec": 228.0,
+      "text": "again are bot going integrations into"
+    },
+    {
+      "timestamp_sec": 231.0,
+      "text": "and bot click have into that the"
+    },
+    {
+      "timestamp_sec": 234.0,
+      "text": "Email and bed bot check. created which"
+    },
+    {
+      "timestamp_sec": 237.0,
+      "text": "Okay, URL bed bot can has see the under you"
+    },
+    {
+      "timestamp_sec": 240.0,
+      "text": "102 active, been have it's pages trained, trained."
+    },
+    {
+      "timestamp_sec": 243.0,
+      "text": "final last that the thing thir"
+    },
+    {
+      "timestamp_sec": 246.0,
+      "text": "again, back into need settings"
+    },
+    {
+      "timestamp_sec": 249.0,
+      "text": "and bottom, final settings the the,"
+    },
+    {
+      "timestamp_sec": 252.0,
+      "text": "Conversations. and click corner left per"
+    },
+    {
+      "timestamp_sec": 255.0,
+      "text": "Conversations Under called rules. something there's"
+    },
+    {
+      "timestamp_sec": 258.0,
+      "text": "I'm Rules Under and down for going look"
+    },
+    {
+      "timestamp_sec": 261.0,
+      "text": "assign based called channels. conversations segment"
+    },
+    {
+      "timestamp_sec": 264.0,
+      "text": "Now means there what"
+    },
+    {
+      "timestamp_sec": 267.0,
+      "text": "Kommunicate can integrate you"
+    },
+    {
+      "timestamp_sec": 270.0,
+      "text": "Facebook Instagram, WhatsApp, with your"
+    },
+    {
+      "timestamp_sec": 273.0,
+      "text": "Chatbot. messenger, website your"
+    },
+    {
+      "timestamp_sec": 276.0,
+      "text": "address email have just that"
+    },
+    {
+      "timestamp_sec": 279.0,
+      "text": "I'm assign bo. going integrated, the"
+    },
+    {
+      "timestamp_sec": 282.0,
+      "text": "Now and are bot bots that the there two"
+    },
+    {
+      "timestamp_sec": 285.0,
+      "text": "Email bot going have integrate just which"
+    },
+    {
+      "timestamp_sec": 288.0,
+      "text": "all and are done. our trained website"
+    },
+    {
+      "timestamp_sec": 291.0,
+      "text": "all takes this"
+    },
+    {
+      "timestamp_sec": 294.0,
+      "text": "Gmail. integrate least your"
+    },
+    {
+      "timestamp_sec": 297.0,
+      "text": "Freshdesk Zendesk. and cnet for integration with your"
+    },
+    {
+      "timestamp_sec": 300.0,
+      "text": "And Experience Generative are going next now that the thing"
+    },
+    {
+      "timestamp_sec": 303.0,
+      "text": "Chatbot Doe. Experience Generative I've John account ame called created dummy"
+    },
+    {
+      "timestamp_sec": 306.0,
+      "text": "Doe. I've John account called created dummy"
+    },
+    {
+      "timestamp_sec": 309.0,
+      "text": "account dummy have that the this"
+    },
+    {
+      "timestamp_sec": 312.0,
+      "text": "Chatbot Experience Generative I'm ame going test."
+    },
+    {
+      "timestamp_sec": 315.0,
+      "text": "Chatbot Experience Generative Okay, ame oc+= oof other sorry, the this way."
+    },
+    {
+      "timestamp_sec": 318.0,
+      "text": "Chatbot Doe Experience Generative John ame bad. email from here. oc+= send"
+    },
+    {
+      "timestamp_sec": 321.0,
+      "text": "are dois going we're what"
+    },
+    {
+      "timestamp_sec": 324.0,
+      "text": "email going per send the"
+    },
+    {
+      "timestamp_sec": 327.0,
+      "text": "I'm about and ask bot going"
+    },
+    {
+      "timestamp_sec": 333.0,
+      "text": "Kommunicate's asking team, what"
+    },
+    {
+      "timestamp_sec": 336.0,
+      "text": "Kommunicate's asking pricing? team, what"
+    },
+    {
+      "timestamp_sec": 345.0,
+      "text": "And John, best he's regards saying since this"
+    },
+    {
+      "timestamp_sec": 348.0,
+      "text": "and email. going send this"
+    },
+    {
+      "timestamp_sec": 351.0,
+      "text": "Now how once really sends someone works"
+    },
+    {
+      "timestamp_sec": 354.0,
+      "text": "address email email, goes the which"
+    },
+    {
+      "timestamp_sec": 357.0,
+      "text": "208 You're address. almost email oc+= one own personal there! work"
+    },
+    {
+      "timestamp_sec": 360.0,
+      "text": "O62) You're almost here land should there!"
+    },
+    {
+      "timestamp_sec": 363.0,
+      "text": "You're almost and email few same seconds that the there!"
+    },
+    {
+      "timestamp_sec": 366.0,
+      "text": "email has inbox. landed oc+= see the the, you"
+    },
+    {
+      "timestamp_sec": 369.0,
+      "text": "Mom O62) email has inbox. landed see techn the the, you"
+    },
+    {
+      "timestamp_sec": 372.0,
+      "text": "Mom freshest oc+= one system ticketing your"
+    },
+    {
+      "timestamp_sec": 375.0,
+      "text": "Kommunicate dashboard. forwarded our"
+    },
+    {
+      "timestamp_sec": 378.0,
+      "text": "Dashboard Kommunicate Under bot see the you"
+    },
+    {
+      "timestamp_sec": 384.0,
+      "text": "Dashboard. Kommunicate already has responded within"
+    },
+    {
+      "timestamp_sec": 387.0,
+      "text": "Doe, John seeing should"
+    },
+    {
+      "timestamp_sec": 396.0,
+      "text": "Okay, created per saw what you"
+    },
+    {
+      "timestamp_sec": 399.0,
+      "text": "and bot, the trained website"
+    },
+    {
+      "timestamp_sec": 405.0,
+      "text": "You back bot instantly it. responding started"
+    },
+    {
+      "timestamp_sec": 408.0,
+      "text": "Kommunicate also and granular offers pricing"
+    },
+    {
+      "timestamp_sec": 411.0,
+      "text": "alink from picked source the where"
+    },
+    {
+      "timestamp_sec": 414.0,
+      "text": "answer can that the user you"
+    },
+    {
+      "timestamp_sec": 417.0,
+      "text": "can correct. information that the verify"
+    },
+    {
+      "timestamp_sec": 420.0,
+      "text": "Now continue happens the what you"
+    },
+    {
+      "timestamp_sec": 423.0,
+      "text": "I'm for going information. say thank that you"
+    },
+    {
+      "timestamp_sec": 432.0,
+      "text": "Does Kommunicate SDK have iOS integration?"
+    },
+    {
+      "timestamp_sec": 441.0,
+      "text": "gauge here trying we're what"
+    },
+    {
+      "timestamp_sec": 444.0,
+      "text": "bot can same that the this understand"
+    },
+    {
+      "timestamp_sec": 447.0,
+      "text": "and can from handle multiple same the threats"
+    },
+    {
+      "timestamp_sec": 453.0,
+      "text": "come conversation fashion, first inbox our should the"
+    },
+    {
+      "timestamp_sec": 456.0,
+      "text": "ame come conversation fashion, first inbox oc+= our should soe the"
+    },
+    {
+      "timestamp_sec": 459.0,
+      "text": "Mom ame can come, has here. see which you"
+    },
+    {
+      "timestamp_sec": 462.0,
+      "text": "OGD Thank for information. the you"
+    },
+    {
+      "timestamp_sec": 465.0,
+      "text": "Mom Now ame email into oc+= same the would"
+    },
+    {
+      "timestamp_sec": 468.0,
+      "text": "Kommunicate dashboard here. should which ‘our"
+    },
+    {
+      "timestamp_sec": 471.0,
+      "text": "Okay, here. it's"
+    },
+    {
+      "timestamp_sec": 474.0,
+      "text": "Does Kommunicate SDK have integration?"
+    },
+    {
+      "timestamp_sec": 477.0,
+      "text": "You also back bot can has replied say the"
+    },
+    {
+      "timestamp_sec": 480.0,
+      "text": "bed follow question, question. that that,"
+    },
+    {
+      "timestamp_sec": 483.0,
+      "text": "Now check end how let's the"
+    },
+    {
+      "timestamp_sec": 486.0,
+      "text": "John’ Now check end how let's the"
+    },
+    {
+      "timestamp_sec": 489.0,
+      "text": "High Kommunicate's pricing. team the was"
+    },
+    {
+      "timestamp_sec": 492.0,
+      "text": "The back board pricing responded the with"
+    },
+    {
+      "timestamp_sec": 495.0,
+      "text": "Again John and another asked link question then"
+    },
+    {
+      "timestamp_sec": 498.0,
+      "text": "and continued conversation email same the thread."
+    },
+    {
+      "timestamp_sec": 504.0,
+      "text": "SDK available. iOS integration"
+    },
+    {
+      "timestamp_sec": 507.0,
+      "text": "You application can easily integrate with your"
+    },
+    {
+      "timestamp_sec": 510.0,
+      "text": "Connect now. with"
+    },
+    {
+      "timestamp_sec": 513.0,
+      "text": "What conversation from happens over take the want you"
+    },
+    {
+      "timestamp_sec": 516.0,
+      "text": "agent? and bot hand human over support the toahi"
+    },
+    {
+      "timestamp_sec": 522.0,
+      "text": "I'm and bot, click going here now. which }ot,"
+    },
+    {
+      "timestamp_sec": 525.0,
+      "text": "The assigned been conversation has me."
+    },
+    {
+      "timestamp_sec": 528.0,
+      "text": "Now can could multiple people that the there you"
+    },
+    {
+      "timestamp_sec": 531.0,
+      "text": "Now, account, it's just me. since this"
+    },
+    {
+      "timestamp_sec": 534.0,
+      "text": "Imagine agents. are five pport six support there"
+    },
+    {
+      "timestamp_sec": 537.0,
+      "text": "You and assign can either one them"
+    },
+    {
+      "timestamp_sec": 540.0,
+      "text": "John, Manab can here. say, this you"
+    },
+    {
+      "timestamp_sec": 543.0,
+      "text": "Manab can here. hiJohn, say, this you"
+    },
+    {
+      "timestamp_sec": 552.0,
+      "text": "Are Kommunicate? looking purchase you"
+    },
+    {
+      "timestamp_sec": 558.0,
+      "text": "fa)"
+    },
+    {
+      "timestamp_sec": 561.0,
+      "text": "Ican SDK help iOS integration. the with"
+    },
+    {
+      "timestamp_sec": 573.0,
+      "text": "doing hat how we're wh, what you"
+    },
+    {
+      "timestamp_sec": 576.0,
+      "text": "doing hat how we're what you"
+    },
+    {
+      "timestamp_sec": 579.0,
+      "text": "80. agent before can go. information necessary takes the"
+    },
+    {
+      "timestamp_sec": 582.0,
+      "text": "And could for lead qualifier this you."
+    },
+    {
+      "timestamp_sec": 585.0,
+      "text": "And are peopl people ple queries rep repetitive simple sometimes that there"
+    },
+    {
+      "timestamp_sec": 588.0,
+      "text": "asking automate can keep those. you"
+    },
+    {
+      "timestamp_sec": 591.0,
+      "text": "agent, always dah dal human need you"
+    },
+    {
+      "timestamp_sec": 594.0,
+      "text": "John's Let's end. happening per see what's"
+    },
+    {
+      "timestamp_sec": 597.0,
+      "text": "Okay, conversation every previously saw was what you"
+    },
+    {
+      "timestamp_sec": 603.0,
+      "text": "bot created. given reply that the was"
+    },
+    {
+      "timestamp_sec": 606.0,
+      "text": "But has here human over over. per taken"
+    },
+    {
+      "timestamp_sec": 612.0,
+      "text": "Currently happening now pes right that's the"
+    },
+    {
+      "timestamp_sec": 615.0,
+      "text": "and are industry queries repetitive there where"
+    },
+    {
+      "timestamp_sec": 618.0,
+      "text": "agents answering are manually. them"
+    },
+    {
+      "timestamp_sec": 624.0,
+      "text": "agent. fan handled needs support"
+    },
+    {
+      "timestamp_sec": 627.0,
+      "text": "and can come that's where you"
+    },
+    {
+      "timestamp_sec": 630.0,
+      "text": "always and days feel free have pes trial {d2"
+    },
+    {
+      "timestamp_sec": 633.0,
+      "text": "DENG LAS and forward happy look really with. work"
+    }
+  ],
+  "pseudo_transcript": "Boruah Manab Manab. fay name pa, | I'm Kommunicate. Manager Marketing Product here | Kommunicate email inbox. integrate the with your | Queries and automate can queries repetitive then you | back can get more support team time your | Can Complex Queries can complex focus more queries. reams they | Kemmunicate accoun begin dis isa it. ith need oto what with | You can sign toa | There's begin days ere’s free ith. trial with. | Kommunicate You can dashboard. screen see the | What bot. create need you | bot. create going | bot integration. see will you | I'm Under bot create going integration, new | I'm Kompese and bol bot for going purpose this use with | Kompose, NLP bot. our own powered which | Bot Email I'm and going name sot | Finish I'm and bed bot going hit proceed save setuy | demonstration. for going oing skip this | Now bot needs something. the trained | Kommunicate bot can the train you | URLs base. knowledge your | Salesforce You Zendesk can integrate | bot the them. trains | For, are demonstration for going this train | bot kommunicate.io our own website which | Now around bot somewhere take the will | itself. seconds train | The bigger larger the website, | more take, the time. website will | 102 for it's just pages | are going meantime, since the what | bot getting getting, our the trained | can our, website, what | Integrations. hand left panel the | Email Mailbox. and oan see tickets would you | bot create, integrate to. want your | I'm again demonstration for going this use | Kommunicate Manab email id, which work | I'm Save. and boruah going hel hit | Just below code, see that there's you | address email get. identifier that there's unique | I'm Ineed and copying nee next sol thing | ame back email into settings. | Now Remember, Zendesk ame could this your | FreshDesk Mom bh, email system. ticketing your | But Gme I'm Mom for own personal. since using | I'm Mom Settings. and click going | I'm Settings Under all click going oc+= see | Mom O62) and forwarding pop see settings there things you | I'm Mom O62) add address and forwarding going going, | address back copied have paste that the there | Eme I'm and dashboard from going hit next. the | Now confirm system that the this try will you. | Verify authentication for it's kind some there would you | Verify asking case it's this trying, you | and confirm me. need that this | could organizations some this | address addresses. confirmation email | are email forwarding this you your | Kommunicate address into the which | And Moret are done. think | Moret The click need next thing | O62) added and changes. have hit just save | Now ame and bot created did was what | Gme Kommunicate Mom address. email integrated our then with | Now and back bot need oc+= our ready. see | again are bot going integrations into | and bot click have into that the | Email and bed bot check. created which | Okay, URL bed bot can has see the under you | 102 active, been have it's pages trained, trained. | final last that the thing thir | again, back into need settings | and bottom, final settings the the, | Conversations. and click corner left per | Conversations Under called rules. something there's | I'm Rules Under and down for going look | assign based called channels. conversations segment | Now means there what | Kommunicate can integrate you | Facebook Instagram, WhatsApp, with your | Chatbot. messenger, website your | address email have just that | I'm assign bo. going integrated, the | Now and are bot bots that the there two | Email bot going have integrate just which | all and are done. our trained website | all takes this | Gmail. integrate least your | Freshdesk Zendesk. and cnet for integration with your | And Experience Generative are going next now that the thing | Chatbot Doe. Experience Generative I've John account ame called created dummy | Doe. I've John account called created dummy | account dummy have that the this | Chatbot Experience Generative I'm ame going test. | Chatbot Experience Generative Okay, ame oc+= oof other sorry, the this way. | Chatbot Doe Experience Generative John ame bad. email from here. oc+= send | are dois going we're what | email going per send the | I'm about and ask bot going | Kommunicate's asking team, what | Kommunicate's asking pricing? team, what | And John, best he's regards saying since this | and email. going send this | Now how once really sends someone works | address email email, goes the which | 208 You're address. almost email oc+= one own personal there! work | O62) You're almost here land should there! | You're almost and email few same seconds that the there! | email has inbox. landed oc+= see the the, you | Mom O62) email has inbox. landed see techn the the, you | Mom freshest oc+= one system ticketing your | Kommunicate dashboard. forwarded our | Dashboard Kommunicate Under bot see the you | Dashboard. Kommunicate already has responded within | Doe, John seeing should | Okay, created per saw what you | and bot, the trained website | You back bot instantly it. responding started | Kommunicate also and granular offers pricing | alink from picked source the where | answer can that the user you | can correct. information that the verify | Now continue happens the what you | I'm for going information. say thank that you | Does Kommunicate SDK have iOS integration? | gauge here trying we're what | bot can same that the this understand | and can from handle multiple same the threats | come conversation fashion, first inbox our should the | ame come conversation fashion, first inbox oc+= our should soe the | Mom ame can come, has here. see which you | OGD Thank for information. the you | Mom Now ame email into oc+= same the would | Kommunicate dashboard here. should which ‘our | Okay, here. it's | Does Kommunicate SDK have integration? | You also back bot can has replied say the | bed follow question, question. that that, | Now check end how let's the | John’ Now check end how let's the | High Kommunicate's pricing. team the was | The back board pricing responded the with | Again John and another asked link question then | and continued conversation email same the thread. | SDK available. iOS integration | You application can easily integrate with your | Connect now. with | What conversation from happens over take the want you | agent? and bot hand human over support the toahi | I'm and bot, click going here now. which }ot, | The assigned been conversation has me. | Now can could multiple people that the there you | Now, account, it's just me. since this | Imagine agents. are five pport six support there | You and assign can either one them | John, Manab can here. say, this you | Manab can here. hiJohn, say, this you | Are Kommunicate? looking purchase you | fa) | Ican SDK help iOS integration. the with | doing hat how we're wh, what you | doing hat how we're what you | 80. agent before can go. information necessary takes the | And could for lead qualifier this you. | And are peopl people ple queries rep repetitive simple sometimes that there | asking automate can keep those. you | agent, always dah dal human need you | John's Let's end. happening per see what's | Okay, conversation every previously saw was what you | bot created. given reply that the was | But has here human over over. per taken | Currently happening now pes right that's the | and are industry queries repetitive there where | agents answering are manually. them | agent. fan handled needs support | and can come that's where you | always and days feel free have pes trial {d2 | DENG LAS and forward happy look really with. work",
+  "frame_type_distribution": {
+    "text_with_visual": 0.67,
+    "simple_visual": 0.23,
+    "white_screen": 0.08,
+    "detailed_visual": 0.02
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          51,
+          42,
+          29
+        ],
+        [
+          122,
+          129,
+          121
+        ],
+        [
+          227,
+          204,
+          207
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          194,
+          110,
+          98
+        ],
+        [
+          64,
+          51,
+          32
+        ],
+        [
+          244,
+          216,
+          217
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 24.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          251,
+          249
+        ],
+        [
+          232,
+          203,
+          197
+        ],
+        [
+          111,
+          70,
+          75
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          252,
+          249
+        ],
+        [
+          231,
+          203,
+          195
+        ],
+        [
+          101,
+          66,
+          66
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          236,
+          235
+        ],
+        [
+          190,
+          105,
+          114
+        ],
+        [
+          47,
+          42,
+          39
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          250
+        ],
+        [
+          239,
+          200,
+          202
+        ],
+        [
+          103,
+          64,
+          68
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          248
+        ],
+        [
+          237,
+          201,
+          202
+        ],
+        [
+          110,
+          71,
+          75
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          58,
+          56,
+          56
+        ],
+        [
+          247,
+          250,
+          247
+        ],
+        [
+          232,
+          198,
+          199
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          248
+        ],
+        [
+          231,
+          199,
+          200
+        ],
+        [
+          99,
+          66,
+          68
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          251,
+          248
+        ],
+        [
+          237,
+          200,
+          201
+        ],
+        [
+          102,
+          63,
+          65
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          250
+        ],
+        [
+          236,
+          203,
+          202
+        ],
+        [
+          107,
+          66,
+          68
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 150.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          37,
+          36,
+          36
+        ],
+        [
+          244,
+          218,
+          217
+        ],
+        [
+          122,
+          123,
+          130
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 165.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          243,
+          231,
+          230
+        ],
+        [
+          31,
+          29,
+          28
+        ],
+        [
+          146,
+          144,
+          149
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 180.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          253,
+          251
+        ],
+        [
+          238,
+          201,
+          201
+        ],
+        [
+          57,
+          54,
+          56
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 192.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          247,
+          247
+        ],
+        [
+          236,
+          200,
+          201
+        ],
+        [
+          52,
+          48,
+          50
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 195.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          253,
+          250
+        ],
+        [
+          236,
+          200,
+          202
+        ],
+        [
+          61,
+          54,
+          59
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 207.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          159,
+          158,
+          159
+        ],
+        [
+          246,
+          223,
+          222
+        ],
+        [
+          24,
+          23,
+          23
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 210.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          242,
+          230,
+          229
+        ],
+        [
+          28,
+          27,
+          26
+        ],
+        [
+          134,
+          134,
+          138
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 225.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          46,
+          46
+        ],
+        [
+          238,
+          214,
+          214
+        ],
+        [
+          12,
+          12,
+          11
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 228.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          234,
+          202,
+          201
+        ],
+        [
+          97,
+          64,
+          66
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 240.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          248
+        ],
+        [
+          229,
+          199,
+          200
+        ],
+        [
+          104,
+          69,
+          72
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 255.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          248,
+          245
+        ],
+        [
+          233,
+          200,
+          200
+        ],
+        [
+          101,
+          62,
+          64
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 270.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          248
+        ],
+        [
+          235,
+          201,
+          200
+        ],
+        [
+          106,
+          66,
+          69
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 285.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          247
+        ],
+        [
+          232,
+          200,
+          201
+        ],
+        [
+          108,
+          68,
+          74
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 297.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          36,
+          36,
+          35
+        ],
+        [
+          244,
+          218,
+          218
+        ],
+        [
+          124,
+          121,
+          128
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 300.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          33,
+          33
+        ],
+        [
+          244,
+          227,
+          226
+        ],
+        [
+          128,
+          125,
+          133
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 306.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          249,
+          246
+        ],
+        [
+          233,
+          203,
+          201
+        ],
+        [
+          63,
+          55,
+          45
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 312.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          34,
+          33
+        ],
+        [
+          244,
+          227,
+          226
+        ],
+        [
+          146,
+          143,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 315.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          34,
+          33
+        ],
+        [
+          243,
+          227,
+          226
+        ],
+        [
+          138,
+          134,
+          139
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 321.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          232,
+          205,
+          204
+        ],
+        [
+          66,
+          62,
+          60
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 330.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          251,
+          248
+        ],
+        [
+          231,
+          205,
+          202
+        ],
+        [
+          74,
+          57,
+          54
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 345.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          253,
+          250
+        ],
+        [
+          107,
+          105,
+          102
+        ],
+        [
+          234,
+          205,
+          203
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 357.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          230,
+          230
+        ],
+        [
+          30,
+          28,
+          27
+        ],
+        [
+          129,
+          122,
+          131
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 360.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          244,
+          229,
+          228
+        ],
+        [
+          27,
+          25,
+          24
+        ],
+        [
+          108,
+          100,
+          104
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 375.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          250,
+          248
+        ],
+        [
+          235,
+          200,
+          200
+        ],
+        [
+          108,
+          68,
+          72
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 390.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          234,
+          205,
+          204
+        ],
+        [
+          57,
+          52,
+          47
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 405.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          251,
+          248
+        ],
+        [
+          229,
+          201,
+          199
+        ],
+        [
+          63,
+          56,
+          51
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 420.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          251,
+          248
+        ],
+        [
+          230,
+          201,
+          198
+        ],
+        [
+          62,
+          55,
+          50
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 435.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          229,
+          204,
+          200
+        ],
+        [
+          70,
+          57,
+          48
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 450.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          248
+        ],
+        [
+          228,
+          203,
+          200
+        ],
+        [
+          69,
+          58,
+          51
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 465.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          231,
+          230
+        ],
+        [
+          29,
+          28,
+          27
+        ],
+        [
+          131,
+          129,
+          135
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 480.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          238,
+          236
+        ],
+        [
+          164,
+          120,
+          121
+        ],
+        [
+          42,
+          41,
+          37
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 495.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          228,
+          204,
+          201
+        ],
+        [
+          61,
+          55,
+          53
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 510.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          249
+        ],
+        [
+          230,
+          204,
+          202
+        ],
+        [
+          77,
+          75,
+          81
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 525.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          248,
+          246
+        ],
+        [
+          235,
+          199,
+          201
+        ],
+        [
+          112,
+          77,
+          83
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 540.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          250,
+          248
+        ],
+        [
+          234,
+          200,
+          200
+        ],
+        [
+          99,
+          64,
+          64
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 555.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          249,
+          247
+        ],
+        [
+          233,
+          199,
+          200
+        ],
+        [
+          103,
+          67,
+          67
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 570.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          249,
+          247
+        ],
+        [
+          234,
+          199,
+          200
+        ],
+        [
+          101,
+          69,
+          68
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 585.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          245
+        ],
+        [
+          239,
+          207,
+          198
+        ],
+        [
+          112,
+          75,
+          75
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 600.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          248
+        ],
+        [
+          228,
+          203,
+          201
+        ],
+        [
+          62,
+          56,
+          52
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 615.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          252,
+          248
+        ],
+        [
+          228,
+          204,
+          202
+        ],
+        [
+          73,
+          62,
+          62
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 630.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          250,
+          247
+        ],
+        [
+          232,
+          197,
+          195
+        ],
+        [
+          86,
+          62,
+          60
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "FhIOB7r5RBo",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.995,
+      "avg_face_count": 1.0,
+      "max_face_count": 1,
+      "avg_face_size_pct": 1.3,
+      "has_multiple_people": 0,
+      "file_size_mb": 21.8,
+      "bitrate_kbps": 288.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1199.2,
+      "blur_variance": 327.5,
+      "avg_motion": 14.87,
+      "max_motion": 133.12,
+      "motion_variance": 26.87,
+      "avg_brightness": 205.1,
+      "brightness_trend": 30.4,
+      "first_quarter_brightness": 195.0,
+      "last_quarter_brightness": 225.5,
+      "browser_chrome_frames": 147,
+      "browser_chrome_pct": 0.693,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.788,
+      "annotation_frames": 212,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 1.4,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.0,
+      "cool_frame_pct": 0.024,
+      "first_frame": {
+        "brightness": 100.06960503472222,
+        "has_face": true,
+        "face_count": 1,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 652.4468532970851
+      },
+      "last_frame": {
+        "timestamp": 633.0,
+        "brightness": 227.05969618055556,
+        "has_face": true,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 22.7,
+      "frames_analyzed": 212
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 2,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 3,
+      "features_per_min": 0.3,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 11.5,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 1,
+      "jargon_count": 1,
+      "jargon_density": 0.001,
+      "jargon_words": [
+        "sdk"
+      ],
+      "benefit_count": 5,
+      "feature_word_count": 3,
+      "benefit_ratio": 0.62,
+      "urgency_count": 4,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 2.31,
+      "emotional_arc": "flat",
+      "question_count": 5,
+      "has_questions": true,
+      "acronym_count": 9,
+      "acronym_density": 0.007,
+      "has_url_shown": true,
+      "urls_found": [
+        "kommunicate.io"
+      ],
+      "distinct_scenes": 13,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 1268
+    }
+  },
+  "mega": {
+    "video_id": "FhIOB7r5RBo",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 300.0,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.202,
+      "energy_trend": 0.004384,
+      "peak_timestamp_sec": 34.0,
+      "peak_position_pct": 0.11,
+      "dynamic_range_db": 42.5,
+      "onset_density": 4.66,
+      "intro_silence_sec": 0.6,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 2240.0,
+      "avg_spectral_bandwidth": 2084.0,
+      "avg_zcr": 0.1159
+    },
+    "deep_visual": {
+      "has_scroll": true,
+      "scroll_frame_count": 5,
+      "avg_scroll_speed": 2.73,
+      "color_palette_size": 20,
+      "color_consistency": 65.0,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.222,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 0.509,
+      "modal_pct": 0.066,
+      "table_pct": 0.986,
+      "chat_pct": 0.113,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.862,
+      "avg_thirds_score": 0.91,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.078,
+      "repetition_count": 195,
+      "has_bookend": false,
+      "longest_scene_sec": 168.0,
+      "frames_analyzed": 212
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 157111,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-03-07T14:50:53.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 123.0,
+      "detected_key": "A#",
+      "key_confidence": 0.154,
+      "mfcc_mean": [
+        -335.44,
+        79.792,
+        10.888,
+        36.951,
+        16.089,
+        -8.982,
+        -4.2,
+        -13.867,
+        -15.057,
+        -7.79,
+        -15.46,
+        -0.131,
+        -5.917
+      ],
+      "mfcc_std": [
+        125.094,
+        74.403,
+        38.606,
+        35.209,
+        32.984,
+        24.614,
+        20.386,
+        22.294,
+        17.454,
+        15.98,
+        17.193,
+        14.087,
+        11.874
+      ],
+      "avg_spectral_contrast": 21.36,
+      "avg_tonnetz": [
+        -0.0032,
+        -0.0008,
+        -0.0396,
+        -0.1102,
+        0.0156,
+        -0.0218
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 2184.0,
+          "bandwidth": 2051.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 1745.0,
+          "bandwidth": 1951.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -23.6,
+          "centroid": 2156.0,
+          "bandwidth": 2138.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 1708.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -22.7,
+          "centroid": 2239.0,
+          "bandwidth": 2011.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -23.5,
+          "centroid": 2057.0,
+          "bandwidth": 2115.0
+        },
+        {
+          "timestamp": 18,
+          "type": "ambient",
+          "rms_db": -21.8,
+          "centroid": 2608.0,
+          "bandwidth": 2235.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 2455.0,
+          "bandwidth": 2294.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 2090.0,
+          "bandwidth": 2041.0
+        },
+        {
+          "timestamp": 27,
+          "type": "ambient",
+          "rms_db": -23.2,
+          "centroid": 2694.0,
+          "bandwidth": 2276.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1872.0,
+          "bandwidth": 1951.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -21.4,
+          "centroid": 2410.0,
+          "bandwidth": 2029.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1712.0,
+          "bandwidth": 1801.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 1849.0,
+          "bandwidth": 1719.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1672.0,
+          "bandwidth": 1805.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 2174.0,
+          "bandwidth": 2105.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 1865.0,
+          "bandwidth": 1983.0
+        },
+        {
+          "timestamp": 51,
+          "type": "ambient",
+          "rms_db": -26.8,
+          "centroid": 3290.0,
+          "bandwidth": 2403.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2164.0,
+          "bandwidth": 2114.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -21.9,
+          "centroid": 1768.0,
+          "bandwidth": 2002.0
+        },
+        {
+          "timestamp": 60,
+          "type": "ambient",
+          "rms_db": -29.4,
+          "centroid": 3321.0,
+          "bandwidth": 2548.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 2049.0,
+          "bandwidth": 1825.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -21.9,
+          "centroid": 1847.0,
+          "bandwidth": 2032.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1741.0,
+          "bandwidth": 1863.0
+        },
+        {
+          "timestamp": 72,
+          "type": "ambient",
+          "rms_db": -23.7,
+          "centroid": 2851.0,
+          "bandwidth": 2228.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1957.0,
+          "bandwidth": 1891.0
+        },
+        {
+          "timestamp": 78,
+          "type": "ambient",
+          "rms_db": -23.4,
+          "centroid": 2337.0,
+          "bandwidth": 2036.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1681.0,
+          "bandwidth": 1836.0
+        },
+        {
+          "timestamp": 84,
+          "type": "ambient",
+          "rms_db": -26.7,
+          "centroid": 2749.0,
+          "bandwidth": 2273.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -28.8,
+          "centroid": 2934.0,
+          "bandwidth": 2235.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1995.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 93,
+          "type": "ambient",
+          "rms_db": -22.2,
+          "centroid": 2531.0,
+          "bandwidth": 2267.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1903.0,
+          "bandwidth": 1929.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 1685.0,
+          "bandwidth": 1804.0
+        },
+        {
+          "timestamp": 102,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2431.0,
+          "bandwidth": 2215.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1781.0,
+          "bandwidth": 2006.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 1867.0,
+          "bandwidth": 1880.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 1811.0,
+          "bandwidth": 2000.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 1532.0,
+          "bandwidth": 1876.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1953.0,
+          "bandwidth": 2163.0
+        },
+        {
+          "timestamp": 120,
+          "type": "ambient",
+          "rms_db": -24.4,
+          "centroid": 3472.0,
+          "bandwidth": 2350.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 2162.0,
+          "bandwidth": 2230.0
+        },
+        {
+          "timestamp": 126,
+          "type": "ambient",
+          "rms_db": -22.7,
+          "centroid": 2222.0,
+          "bandwidth": 2093.0
+        },
+        {
+          "timestamp": 129,
+          "type": "ambient",
+          "rms_db": -22.4,
+          "centroid": 2489.0,
+          "bandwidth": 2181.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -24.8,
+          "centroid": 2300.0,
+          "bandwidth": 2392.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1389.0,
+          "bandwidth": 1758.0
+        },
+        {
+          "timestamp": 138,
+          "type": "noise",
+          "rms_db": -25.2,
+          "centroid": 3730.0,
+          "bandwidth": 2543.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -21.9,
+          "centroid": 1938.0,
+          "bandwidth": 2119.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -24.4,
+          "centroid": 2047.0,
+          "bandwidth": 2097.0
+        },
+        {
+          "timestamp": 147,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 2031.0,
+          "bandwidth": 2091.0
+        },
+        {
+          "timestamp": 150,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2538.0,
+          "bandwidth": 2125.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1996.0,
+          "bandwidth": 1998.0
+        },
+        {
+          "timestamp": 156,
+          "type": "ambient",
+          "rms_db": -22.3,
+          "centroid": 2647.0,
+          "bandwidth": 2228.0
+        },
+        {
+          "timestamp": 159,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1863.0,
+          "bandwidth": 1837.0
+        },
+        {
+          "timestamp": 162,
+          "type": "ambient",
+          "rms_db": -22.8,
+          "centroid": 2637.0,
+          "bandwidth": 2146.0
+        },
+        {
+          "timestamp": 165,
+          "type": "ambient",
+          "rms_db": -21.9,
+          "centroid": 2705.0,
+          "bandwidth": 2124.0
+        },
+        {
+          "timestamp": 168,
+          "type": "ambient",
+          "rms_db": -23.6,
+          "centroid": 2373.0,
+          "bandwidth": 2010.0
+        },
+        {
+          "timestamp": 171,
+          "type": "ambient",
+          "rms_db": -23.4,
+          "centroid": 2342.0,
+          "bandwidth": 2108.0
+        },
+        {
+          "timestamp": 174,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 2184.0,
+          "bandwidth": 2236.0
+        },
+        {
+          "timestamp": 177,
+          "type": "ambient",
+          "rms_db": -23.4,
+          "centroid": 2335.0,
+          "bandwidth": 1987.0
+        },
+        {
+          "timestamp": 180,
+          "type": "ambient",
+          "rms_db": -21.2,
+          "centroid": 2473.0,
+          "bandwidth": 2081.0
+        },
+        {
+          "timestamp": 183,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1863.0,
+          "bandwidth": 1956.0
+        },
+        {
+          "timestamp": 186,
+          "type": "ambient",
+          "rms_db": -24.2,
+          "centroid": 2881.0,
+          "bandwidth": 2190.0
+        },
+        {
+          "timestamp": 189,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 2480.0,
+          "bandwidth": 2194.0
+        },
+        {
+          "timestamp": 192,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1872.0,
+          "bandwidth": 2045.0
+        },
+        {
+          "timestamp": 195,
+          "type": "ambient",
+          "rms_db": -23.4,
+          "centroid": 2965.0,
+          "bandwidth": 2439.0
+        },
+        {
+          "timestamp": 198,
+          "type": "ambient",
+          "rms_db": -23.3,
+          "centroid": 2597.0,
+          "bandwidth": 2076.0
+        },
+        {
+          "timestamp": 201,
+          "type": "speech",
+          "rms_db": -22.7,
+          "centroid": 1942.0,
+          "bandwidth": 2003.0
+        },
+        {
+          "timestamp": 204,
+          "type": "ambient",
+          "rms_db": -25.1,
+          "centroid": 3045.0,
+          "bandwidth": 2403.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 2513.0,
+          "bandwidth": 2469.0
+        },
+        {
+          "timestamp": 210,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 2080.0,
+          "bandwidth": 2078.0
+        },
+        {
+          "timestamp": 213,
+          "type": "ambient",
+          "rms_db": -22.7,
+          "centroid": 2494.0,
+          "bandwidth": 2282.0
+        },
+        {
+          "timestamp": 216,
+          "type": "noise",
+          "rms_db": -25.3,
+          "centroid": 3173.0,
+          "bandwidth": 2376.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1986.0,
+          "bandwidth": 2026.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1511.0,
+          "bandwidth": 1885.0
+        },
+        {
+          "timestamp": 225,
+          "type": "ambient",
+          "rms_db": -24.6,
+          "centroid": 2399.0,
+          "bandwidth": 1990.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -21.1,
+          "centroid": 1668.0,
+          "bandwidth": 1903.0
+        },
+        {
+          "timestamp": 231,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 2260.0,
+          "bandwidth": 2100.0
+        },
+        {
+          "timestamp": 234,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 2108.0,
+          "bandwidth": 1681.0
+        },
+        {
+          "timestamp": 237,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 2029.0,
+          "bandwidth": 2296.0
+        },
+        {
+          "timestamp": 240,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 2239.0,
+          "bandwidth": 2106.0
+        },
+        {
+          "timestamp": 243,
+          "type": "ambient",
+          "rms_db": -21.4,
+          "centroid": 2524.0,
+          "bandwidth": 2162.0
+        },
+        {
+          "timestamp": 246,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2689.0,
+          "bandwidth": 2463.0
+        },
+        {
+          "timestamp": 249,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2024.0,
+          "bandwidth": 2026.0
+        },
+        {
+          "timestamp": 252,
+          "type": "ambient",
+          "rms_db": -21.7,
+          "centroid": 2551.0,
+          "bandwidth": 2360.0
+        },
+        {
+          "timestamp": 255,
+          "type": "ambient",
+          "rms_db": -22.8,
+          "centroid": 2328.0,
+          "bandwidth": 2083.0
+        },
+        {
+          "timestamp": 258,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2541.0,
+          "bandwidth": 2221.0
+        },
+        {
+          "timestamp": 261,
+          "type": "ambient",
+          "rms_db": -23.1,
+          "centroid": 2846.0,
+          "bandwidth": 2135.0
+        },
+        {
+          "timestamp": 264,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 2120.0,
+          "bandwidth": 2119.0
+        },
+        {
+          "timestamp": 267,
+          "type": "speech",
+          "rms_db": -23.8,
+          "centroid": 1833.0,
+          "bandwidth": 1883.0
+        },
+        {
+          "timestamp": 270,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1976.0,
+          "bandwidth": 1901.0
+        },
+        {
+          "timestamp": 273,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 2082.0,
+          "bandwidth": 1969.0
+        },
+        {
+          "timestamp": 276,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1976.0,
+          "bandwidth": 1855.0
+        },
+        {
+          "timestamp": 279,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1612.0,
+          "bandwidth": 1721.0
+        },
+        {
+          "timestamp": 282,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 1919.0,
+          "bandwidth": 1934.0
+        },
+        {
+          "timestamp": 285,
+          "type": "ambient",
+          "rms_db": -26.6,
+          "centroid": 3263.0,
+          "bandwidth": 2325.0
+        },
+        {
+          "timestamp": 288,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1866.0,
+          "bandwidth": 2066.0
+        },
+        {
+          "timestamp": 291,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 2233.0,
+          "bandwidth": 2180.0
+        },
+        {
+          "timestamp": 294,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 2124.0,
+          "bandwidth": 2043.0
+        },
+        {
+          "timestamp": 297,
+          "type": "ambient",
+          "rms_db": -23.0,
+          "centroid": 2274.0,
+          "bandwidth": 2116.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.63,
+        "ambient": 0.35,
+        "noise": 0.02
+      },
+      "speech_pct": 0.63,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 684,
+      "strong_sfx_timestamps": [
+        0.63,
+        0.67,
+        1.42,
+        1.53,
+        1.65,
+        2.76,
+        3.18,
+        3.9,
+        4.16,
+        4.44,
+        4.78,
+        5.48,
+        5.71,
+        6.64,
+        7.15,
+        7.29,
+        8.15,
+        8.31,
+        8.43,
+        8.57
+      ],
+      "n_segments": 100
+    }
+  }
+}

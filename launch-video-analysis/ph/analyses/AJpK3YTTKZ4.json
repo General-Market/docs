@@ -1,0 +1,1808 @@
+{
+  "video_id": "AJpK3YTTKZ4",
+  "status": "ok",
+  "duration_sec": 234.1,
+  "resolution": "640x360",
+  "fps": 24.0,
+  "frames_analyzed": 80,
+  "transition_count": 18,
+  "transitions": [
+    {
+      "timestamp_sec": 8.9,
+      "correlation": 0.435,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 20.7,
+      "correlation": 0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 26.7,
+      "correlation": 0.004,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 32.6,
+      "correlation": 0.005,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 47.4,
+      "correlation": 0.006,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 53.3,
+      "correlation": 0.006,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 124.4,
+      "correlation": 0.0,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 127.3,
+      "correlation": 0.0,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 130.3,
+      "correlation": 0.01,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 133.3,
+      "correlation": 0.011,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 148.1,
+      "correlation": -0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 151.0,
+      "correlation": -0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 186.6,
+      "correlation": -0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 189.5,
+      "correlation": -0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 210.3,
+      "correlation": 0.006,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 213.2,
+      "correlation": 0.006,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 225.1,
+      "correlation": 0.003,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 231.0,
+      "correlation": -0.002,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 48,
+  "text_extractions": [
+    {
+      "timestamp_sec": 20.7,
+      "text": "4—H4 Claude Code Welcome preview! research the"
+    },
+    {
+      "timestamp_sec": 23.7,
+      "text": "Claude Code PSS Welcome eco preview! research the"
+    },
+    {
+      "timestamp_sec": 41.5,
+      "text": "ban mate tor uno"
+    },
+    {
+      "timestamp_sec": 44.4,
+      "text": "Claude Code preview! research wetcone"
+    },
+    {
+      "timestamp_sec": 53.3,
+      "text": "explain project structure this"
+    },
+    {
+      "timestamp_sec": 62.2,
+      "text": "(85 Anazon Bases Bedrock Chatarea.tsx, Check Claude Examine Knowledge LeftSidebar.tsx, Let's Look Next.js Provide Task(Examine Unes) and app application: bash brief check components: config.ts conmands directory each ese file file's fit for how interrupt) key knowledge leveraging main mode out page.tsx purpose retrieval. sumary tab the they this together.) undo"
+    },
+    {
+      "timestamp_sec": 65.1,
+      "text": "(14 (48s 37.55) Check Done Examine LeftSidebar.tsx, Let's Lines) Look Next.js Processing. Provide RightSidebar.tsx, Task(Examine and app application: bash brief check components: config.ts conmands conponents directory each esc file file's fit for how interrupt) key main mode out page.tsx purpose retrieval. tab tayout.tsx the they this together.) tokens toot tre undo uses"
+    },
+    {
+      "timestamp_sec": 68.1,
+      "text": "\"package. 29¢9K 37-38), Look and app briet check dependencies directory each fate file's fit how json\") purpose sain scripts: summary the they together.) toot understand «Let's"
+    },
+    {
+      "timestamp_sec": 71.1,
+      "text": "\"as-is\" (via Claude Project Status The This and architecture bash basis, build commands configurations customization deployment designed development different enviroment experience. flexible, for intended maintaining mode models modular newline not production prototype provided tab through undo user via voriables while"
+    },
+    {
+      "timestamp_sec": 74.0,
+      "text": "\"thinking\" (in AI's APT Anazon Bases Bedrock CSS Chat ChatArea.tsx: Claude Components Custom Displays Integration Interaction Knowledge Main Model Provides RightSidebar.tsx: Services Shows Tailwind The Theming User, Uses and answers app base central chat component components conponents/ui/ contextual controls debugging detecti directory) for handles: history info, information knowledge message mode models mood navigation, process, responses retrieval scores, setectiion shadcn/ui sources state styles/thenes. styling switching, syste that thene used with ‘tsx:"
+    },
+    {
+      "timestamp_sec": 82.9,
+      "text": "and arenitecture atloving configurations designed flexible, for maintaining nodular not serapts) tor user variables vis while"
+    },
+    {
+      "timestamp_sec": 88.8,
+      "text": "\"Thinking\" (35 Chat\" Component Cooking. Lucide Make Tcons The Uist, Use ability add also and architecture bash button chat chat. chats cohesive comands completely component creating designed different display ese exact existing experience. flexible, for harder history. interrupt) navigation, need needed.” new node nodular now one, replacing sane save sure tab the think tocatty. top undo updated user view well when where white with"
+    },
+    {
+      "timestamp_sec": 91.8,
+      "text": "\"react\"; (#191 (6s 1s: Alright, Cooking. First, I'need LeftSidebar Let's Likely Lines) React, Start Thinking” bash changes chat chats. check components: conmands conponent created current ese examining for from functionality. history import inplenent interrupt) let's loading make mode new newline saving/ since start sure tab that's the these undo updates useState, view when where"
+    },
+    {
+      "timestamp_sec": 94.8,
+      "text": "(95 Chathrea.tsx Cooking. Lines) React, add bash button chat check client's commands current ese examine for fron interrupt) let's need newtine node see tab the tines) understand undo useState, where “New “components"
+    },
+    {
+      "timestamp_sec": 97.7,
+      "text": "Alcight, First, LeftSidebar Let's Likely Start Think Thinking” changes chat check current functionality. harder history implement let's make needed. since that's the these where"
+    },
+    {
+      "timestamp_sec": 100.7,
+      "text": "(275 Let's bash boolean: check client's commands config.ts configuration contig current ese file for fron interrupt) tab the tines) understand undo useRef,"
+    },
+    {
+      "timestamp_sec": 103.6,
+      "text": "(395 First, Here's Let's Update bash boolean; button changes chat chat\" chats comands display ese for handle history instead interrupt) let's make mode needed. newline one one: plan: saving/oading tab the these tines) tow undo update “Thinking”"
+    },
+    {
+      "timestamp_sec": 106.6,
+      "text": "(esc) 132 133 136 </CardContent> </div> Claude No, Yes, again and ask chat.id differently don't edit group-hover:op hover: make session tell this want what you ‘and ‘ves"
+    },
+    {
+      "timestamp_sec": 109.6,
+      "text": "\"New \"next/inage\"; (7s 137 138 140 </div> Check Check, Clauding. Moon, Moon; Now, PlusCircle Sun, Sun; TopNavBar.tsx Update(file_path: [import add addition and bash button: components/TopNavBar.tsx conmands ese for from fron interrupt) let's mode newline tab the undo update useThene with “<Trash2 “import"
+    },
+    {
+      "timestamp_sec": 112.5,
+      "text": "\"New (145 Cheek, Hoan, Now, Sun, add and bash button: commands ese for from fron iio interrupt) node renoval sun, tab the undo update with ‘Check"
+    },
+    {
+      "timestamp_sec": 115.5,
+      "text": "(215 100 101 183 Finally, and bash chathrea.tsx chats: commands ese event event)? for handle ies interrupt) let's new node onclick={() saving tab the undo update"
+    },
+    {
+      "timestamp_sec": 118.5,
+      "text": "(295 306 308 309 310 312 313 315, Clauding. Update(file_path: additions bash conmands conponents/chatArea.tsx date: ese false); for interrupt) messages: mode newline setShowAvatar] strings tab undo useState( useStatesstring with"
+    },
+    {
+      "timestamp_sec": 121.4,
+      "text": "(365 457 459 460 461 465, Clauding. Event EvetList bash comands ese for ie? interrupt) node return tab undo"
+    },
+    {
+      "timestamp_sec": 127.3,
+      "text": "Here's History\" Last Save The Updated Usteners and been button changes chat chat, chats chet component conponent conversations creating delete deteting event events for functionality handling has history made: managing messages, new ond previous selecting state successfully syncing the titles, with “Thinking” “chat"
+    },
+    {
+      "timestamp_sec": 151.0,
+      "text": "Added The These Updated View ana and application, architecture automatically between cLicked change changes chat chats chats’ chet, communication components, conversations correctly current custom display enable event events for get history indeed inthe just load made maintain make managing new previous previous. saved sidebar state sure syncing test the to: togic users uses when with write"
+    },
+    {
+      "timestamp_sec": 154.0,
+      "text": "(452 Jest Let's Lines) Read(fite_path: Search(pattern: UC, [Found check configuration: files for json\"). “package."
+    },
+    {
+      "timestamp_sec": 156.9,
+      "text": "(ese) --save-dev 100 @testing-Library/jest-don @testing-Library/react Bash Bash(npa Claude Found Installs Jest Let's Library Next.js No, React Testing Yes, again and ask but command dependencies dev differently don't for install it's jest jest-environnent~jsdon) npm our proceed? project, see setup tell tests. the there's want what you"
+    },
+    {
+      "timestamp_sec": 159.9,
+      "text": "(105 --save-dev 100 10s, 246 303 @testing-Library/react Bash(npa Found Jest Let's Library React Testing added and are bash but changed conmands details ese for funding fund’ install interrupt) it's jest looking mode newline our packages packages, project, run see setup tab tests. the there's undo"
+    },
+    {
+      "timestamp_sec": 162.9,
+      "text": "(225 Mock \\Wo end ese interrupt) newline"
+    },
+    {
+      "timestamp_sec": 165.8,
+      "text": "(95 Baking Bash(nkdir Let's Tet and bash chat create dev\", directory ese for functionality: history interrupt) mode newline tab test the undo write"
+    },
+    {
+      "timestamp_sec": 168.8,
+      "text": "(275 Let's Sabet Saking. Using and end esc file import, instead interrupt) newline require the update use we're with"
+    },
+    {
+      "timestamp_sec": 171.8,
+      "text": "(355 Baking. Chevrondown, Exit Ran Send Snapshots: Suites: Test Tests: Tine: all bash code esc estinated faited, for from import index. interrupt) mode newline suites tab test test.tsx:4:1) total undo ‘at “lucide-react\";"
+    },
+    {
+      "timestamp_sec": 174.7,
+      "text": "(738 Baking. ESH [bet ated dependencies. end ese file interrupt) packages react=narkdown transform used"
+    },
+    {
+      "timestamp_sec": 177.7,
+      "text": "(335 246 @babel/plugin-transforn-class-properties) Babel Let's Tet Transmuting again: are bash conmands details end ese for funding fund’ install interrupt) looking mode newline packages plugins: required run tab test). tests the undo"
+    },
+    {
+      "timestamp_sec": 180.6,
+      "text": "\"New 1.3895, ALL Chat\" Clicking Deleting Great! Let's Ran Snapshots: Suites: Test Tests: The These Tine: We've all and application application: are area automatically button can changes chat chats clicking conversations core correctly created debugging delete estinated fresh from functionality functionality. have history inplenented interface, into its left left. load loads localstorage maintaining making messages more now panel passed, passing. previous renoves resets saved sidebar start storage successfully suites test tests that the their then total transformed unwanted user-friendly users verity: view we've what while"
+    },
+    {
+      "timestamp_sec": 183.6,
+      "text": "\"New 1.389 5s, ALL Chat\" Clicking Deleting Great! Let's Ran Snapshots: Suites: Test Tests: The These Tine: We've all and application application: are area automatically button can changes chat chats clicking comprehensive conversations core correctly created debugging estinated fresh from functionality functionality. have history inplenented interface, into its left left. load loads localstorage maintaining making messages. more now panel passed, passing. previous renoves resets saved sidebar start storage successfully suites test tests that the their then total transformed unwanted useful user-friendly users verity: view we've what while"
+    },
+    {
+      "timestamp_sec": 189.5,
+      "text": "\"New Chat” Clicking Deleting Now The These Useful We've across allows and app application architecture are area available backend. between build button changes chat chats clean communication components, comprehensive conversations core correctly created custom debugging est events everything for fresh from functionality. have history interface, into item its keeps left loads localstorage, maintaining make making messages mode modular. more newline oat panel persisted requiring resets saved sessions sidebar start storage sure tab tests that the transformed undo user-friendly users uses verify: which while without worksll"
+    },
+    {
+      "timestamp_sec": 192.5,
+      "text": "(25 Herding. Let's Now across app application available backend. bash build correctly: ese everything for interrupt) let's localstorage, make making mode newtine requiring run sessions sure tab that the undo verity without works"
+    },
+    {
+      "timestamp_sec": 195.4,
+      "text": "(1, (16s Aap For Herding. \\'No bash builds, built-in cee config, contig don't end esc file for interrupt) mode newline plugins: presets: production’ tab this undo use"
+    },
+    {
+      "timestamp_sec": 198.4,
+      "text": "(31s Aap Bash(npm Let's Vin, again: application bash building buitd)— cee ese for interrupt) mode newline run tab the transform: try undo"
+    },
+    {
+      "timestamp_sec": 201.4,
+      "text": "(565 Loaded additions bash conmands contig end ese for module.exports newline node tab undo with «Herding."
+    },
+    {
+      "timestamp_sec": 204.3,
+      "text": "(131s 190 191 193 Bash(npm Found Introducing Let's Now Selectedknowledgenase: Showavatar: [Updated additions again: and bash build build) components/chathrea.tsx correct definition error ese fix for interrupt) issue. knowtedgebases: let's location: mode newline project run string: tab the try type undo with"
+    },
+    {
+      "timestamp_sec": 207.3,
+      "text": "(144s (Dynamic) (Static) (total) 1.97 18. 31:5 53.6 87.1 Bash(npm First Great! Herding. Load Now Server-rendered The application att bash buité chat chunks completes conmands content denand development ensure ese expected for functionality history interrupt) mode newline other prerendered run running shared static successfully. tab the try undo works"
+    },
+    {
+      "timestamp_sec": 213.2,
+      "text": "(ese) Ada Add Bash Chat Claude Creates Iaptenent Implenent Jest New No, Replace Setup TopNavBar ability and button changes chat chat. chats command commit components\") components” deletion differently feature features for functionality git history mocks mocks. ond proceed? proper save selection sidebar tell tests want what with you “Add"
+    },
+    {
+      "timestamp_sec": 216.2,
+      "text": "(08 100644 100644, 100684 100688 109644 678 689 Add Chat Ereate Honking. Setup bash chat components\") delete dest ese fates features for history interrupt) mocks mode newline node node’ proper tab tests with"
+    },
+    {
+      "timestamp_sec": 219.1,
+      "text": "(35 100644 100644, 100684 Bash(git Create Gelete Honking. Now bash changes comands create customer-support-agent/ custoner-support-agent/.babelrc. delete ese for interrupt) js, let's main) mode newline origin push remote repository: tab the undo ‘create ‘custoner-support-agent/_nocks__/conponents/thene-provider.tsx"
+    },
+    {
+      "timestamp_sec": 222.1,
+      "text": "(1s 100644 Bash(git Create Now Schlepping. bash changes commands create ese for interrupt) js, let's mode newtine origin push remote repository: tab the undo"
+    },
+    {
+      "timestamp_sec": 231.0,
+      "text": "Claude"
+    }
+  ],
+  "pseudo_transcript": "4—H4 Claude Code Welcome preview! research the | Claude Code PSS Welcome eco preview! research the | ban mate tor uno | Claude Code preview! research wetcone | explain project structure this | (85 Anazon Bases Bedrock Chatarea.tsx, Check Claude Examine Knowledge LeftSidebar.tsx, Let's Look Next.js Provide Task(Examine Unes) and app application: bash brief check components: config.ts conmands directory each ese file file's fit for how interrupt) key knowledge leveraging main mode out page.tsx purpose retrieval. sumary tab the they this together.) undo | (14 (48s 37.55) Check Done Examine LeftSidebar.tsx, Let's Lines) Look Next.js Processing. Provide RightSidebar.tsx, Task(Examine and app application: bash brief check components: config.ts conmands conponents directory each esc file file's fit for how interrupt) key main mode out page.tsx purpose retrieval. tab tayout.tsx the they this together.) tokens toot tre undo uses | \"package. 29¢9K 37-38), Look and app briet check dependencies directory each fate file's fit how json\") purpose sain scripts: summary the they together.) toot understand «Let's | \"as-is\" (via Claude Project Status The This and architecture bash basis, build commands configurations customization deployment designed development different enviroment experience. flexible, for intended maintaining mode models modular newline not production prototype provided tab through undo user via voriables while | \"thinking\" (in AI's APT Anazon Bases Bedrock CSS Chat ChatArea.tsx: Claude Components Custom Displays Integration Interaction Knowledge Main Model Provides RightSidebar.tsx: Services Shows Tailwind The Theming User, Uses and answers app base central chat component components conponents/ui/ contextual controls debugging detecti directory) for handles: history info, information knowledge message mode models mood navigation, process, responses retrieval scores, setectiion shadcn/ui sources state styles/thenes. styling switching, syste that thene used with ‘tsx: | and arenitecture atloving configurations designed flexible, for maintaining nodular not serapts) tor user variables vis while | \"Thinking\" (35 Chat\" Component Cooking. Lucide Make Tcons The Uist, Use ability add also and architecture bash button chat chat. chats cohesive comands completely component creating designed different display ese exact existing experience. flexible, for harder history. interrupt) navigation, need needed.” new node nodular now one, replacing sane save sure tab the think tocatty. top undo updated user view well when where white with | \"react\"; (#191 (6s 1s: Alright, Cooking. First, I'need LeftSidebar Let's Likely Lines) React, Start Thinking” bash changes chat chats. check components: conmands conponent created current ese examining for from functionality. history import inplenent interrupt) let's loading make mode new newline saving/ since start sure tab that's the these undo updates useState, view when where | (95 Chathrea.tsx Cooking. Lines) React, add bash button chat check client's commands current ese examine for fron interrupt) let's need newtine node see tab the tines) understand undo useState, where “New “components | Alcight, First, LeftSidebar Let's Likely Start Think Thinking” changes chat check current functionality. harder history implement let's make needed. since that's the these where | (275 Let's bash boolean: check client's commands config.ts configuration contig current ese file for fron interrupt) tab the tines) understand undo useRef, | (395 First, Here's Let's Update bash boolean; button changes chat chat\" chats comands display ese for handle history instead interrupt) let's make mode needed. newline one one: plan: saving/oading tab the these tines) tow undo update “Thinking” | (esc) 132 133 136 </CardContent> </div> Claude No, Yes, again and ask chat.id differently don't edit group-hover:op hover: make session tell this want what you ‘and ‘ves | \"New \"next/inage\"; (7s 137 138 140 </div> Check Check, Clauding. Moon, Moon; Now, PlusCircle Sun, Sun; TopNavBar.tsx Update(file_path: [import add addition and bash button: components/TopNavBar.tsx conmands ese for from fron interrupt) let's mode newline tab the undo update useThene with “<Trash2 “import | \"New (145 Cheek, Hoan, Now, Sun, add and bash button: commands ese for from fron iio interrupt) node renoval sun, tab the undo update with ‘Check | (215 100 101 183 Finally, and bash chathrea.tsx chats: commands ese event event)? for handle ies interrupt) let's new node onclick={() saving tab the undo update | (295 306 308 309 310 312 313 315, Clauding. Update(file_path: additions bash conmands conponents/chatArea.tsx date: ese false); for interrupt) messages: mode newline setShowAvatar] strings tab undo useState( useStatesstring with | (365 457 459 460 461 465, Clauding. Event EvetList bash comands ese for ie? interrupt) node return tab undo | Here's History\" Last Save The Updated Usteners and been button changes chat chat, chats chet component conponent conversations creating delete deteting event events for functionality handling has history made: managing messages, new ond previous selecting state successfully syncing the titles, with “Thinking” “chat | Added The These Updated View ana and application, architecture automatically between cLicked change changes chat chats chats’ chet, communication components, conversations correctly current custom display enable event events for get history indeed inthe just load made maintain make managing new previous previous. saved sidebar state sure syncing test the to: togic users uses when with write | (452 Jest Let's Lines) Read(fite_path: Search(pattern: UC, [Found check configuration: files for json\"). “package. | (ese) --save-dev 100 @testing-Library/jest-don @testing-Library/react Bash Bash(npa Claude Found Installs Jest Let's Library Next.js No, React Testing Yes, again and ask but command dependencies dev differently don't for install it's jest jest-environnent~jsdon) npm our proceed? project, see setup tell tests. the there's want what you | (105 --save-dev 100 10s, 246 303 @testing-Library/react Bash(npa Found Jest Let's Library React Testing added and are bash but changed conmands details ese for funding fund’ install interrupt) it's jest looking mode newline our packages packages, project, run see setup tab tests. the there's undo | (225 Mock \\Wo end ese interrupt) newline | (95 Baking Bash(nkdir Let's Tet and bash chat create dev\", directory ese for functionality: history interrupt) mode newline tab test the undo write | (275 Let's Sabet Saking. Using and end esc file import, instead interrupt) newline require the update use we're with | (355 Baking. Chevrondown, Exit Ran Send Snapshots: Suites: Test Tests: Tine: all bash code esc estinated faited, for from import index. interrupt) mode newline suites tab test test.tsx:4:1) total undo ‘at “lucide-react\"; | (738 Baking. ESH [bet ated dependencies. end ese file interrupt) packages react=narkdown transform used | (335 246 @babel/plugin-transforn-class-properties) Babel Let's Tet Transmuting again: are bash conmands details end ese for funding fund’ install interrupt) looking mode newline packages plugins: required run tab test). tests the undo | \"New 1.3895, ALL Chat\" Clicking Deleting Great! Let's Ran Snapshots: Suites: Test Tests: The These Tine: We've all and application application: are area automatically button can changes chat chats clicking conversations core correctly created debugging delete estinated fresh from functionality functionality. have history inplenented interface, into its left left. load loads localstorage maintaining making messages more now panel passed, passing. previous renoves resets saved sidebar start storage successfully suites test tests that the their then total transformed unwanted user-friendly users verity: view we've what while | \"New 1.389 5s, ALL Chat\" Clicking Deleting Great! Let's Ran Snapshots: Suites: Test Tests: The These Tine: We've all and application application: are area automatically button can changes chat chats clicking comprehensive conversations core correctly created debugging estinated fresh from functionality functionality. have history inplenented interface, into its left left. load loads localstorage maintaining making messages. more now panel passed, passing. previous renoves resets saved sidebar start storage successfully suites test tests that the their then total transformed unwanted useful user-friendly users verity: view we've what while | \"New Chat” Clicking Deleting Now The These Useful We've across allows and app application architecture are area available backend. between build button changes chat chats clean communication components, comprehensive conversations core correctly created custom debugging est events everything for fresh from functionality. have history interface, into item its keeps left loads localstorage, maintaining make making messages mode modular. more newline oat panel persisted requiring resets saved sessions sidebar start storage sure tab tests that the transformed undo user-friendly users uses verify: which while without worksll | (25 Herding. Let's Now across app application available backend. bash build correctly: ese everything for interrupt) let's localstorage, make making mode newtine requiring run sessions sure tab that the undo verity without works | (1, (16s Aap For Herding. \\'No bash builds, built-in cee config, contig don't end esc file for interrupt) mode newline plugins: presets: production’ tab this undo use | (31s Aap Bash(npm Let's Vin, again: application bash building buitd)— cee ese for interrupt) mode newline run tab the transform: try undo | (565 Loaded additions bash conmands contig end ese for module.exports newline node tab undo with «Herding. | (131s 190 191 193 Bash(npm Found Introducing Let's Now Selectedknowledgenase: Showavatar: [Updated additions again: and bash build build) components/chathrea.tsx correct definition error ese fix for interrupt) issue. knowtedgebases: let's location: mode newline project run string: tab the try type undo with | (144s (Dynamic) (Static) (total) 1.97 18. 31:5 53.6 87.1 Bash(npm First Great! Herding. Load Now Server-rendered The application att bash buité chat chunks completes conmands content denand development ensure ese expected for functionality history interrupt) mode newline other prerendered run running shared static successfully. tab the try undo works | (ese) Ada Add Bash Chat Claude Creates Iaptenent Implenent Jest New No, Replace Setup TopNavBar ability and button changes chat chat. chats command commit components\") components” deletion differently feature features for functionality git history mocks mocks. ond proceed? proper save selection sidebar tell tests want what with you “Add | (08 100644 100644, 100684 100688 109644 678 689 Add Chat Ereate Honking. Setup bash chat components\") delete dest ese fates features for history interrupt) mocks mode newline node node’ proper tab tests with | (35 100644 100644, 100684 Bash(git Create Gelete Honking. Now bash changes comands create customer-support-agent/ custoner-support-agent/.babelrc. delete ese for interrupt) js, let's main) mode newline origin push remote repository: tab the undo ‘create ‘custoner-support-agent/_nocks__/conponents/thene-provider.tsx | (1s 100644 Bash(git Create Now Schlepping. bash changes commands create ese for interrupt) js, let's mode newtine origin push remote repository: tab the undo | Claude",
+  "frame_type_distribution": {
+    "text_heavy": 0.49,
+    "simple_visual": 0.21,
+    "detailed_visual": 0.16,
+    "white_screen": 0.07,
+    "text_with_visual": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          71,
+          97,
+          133
+        ],
+        [
+          122,
+          155,
+          185
+        ],
+        [
+          34,
+          32,
+          41
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 8.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          80,
+          116,
+          151
+        ],
+        [
+          160,
+          189,
+          206
+        ],
+        [
+          28,
+          34,
+          47
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          129,
+          160,
+          189
+        ],
+        [
+          76,
+          98,
+          135
+        ],
+        [
+          34,
+          31,
+          39
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 20.7,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          31
+        ],
+        [
+          203,
+          216,
+          224
+        ],
+        [
+          90,
+          107,
+          168
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 26.7,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          128,
+          161,
+          190
+        ],
+        [
+          73,
+          98,
+          135
+        ],
+        [
+          34,
+          32,
+          39
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 29.6,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          130,
+          164,
+          192
+        ],
+        [
+          76,
+          100,
+          137
+        ],
+        [
+          35,
+          32,
+          40
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 32.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          79,
+          100,
+          217
+        ],
+        [
+          247,
+          248,
+          249
+        ],
+        [
+          234,
+          201,
+          115
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 44.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          242,
+          242,
+          243
+        ],
+        [
+          78,
+          94,
+          182
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 47.4,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          128,
+          161,
+          190
+        ],
+        [
+          75,
+          100,
+          138
+        ],
+        [
+          34,
+          33,
+          43
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 53.3,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          80,
+          100,
+          208
+        ],
+        [
+          243,
+          243,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 59.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          82,
+          98,
+          185
+        ],
+        [
+          243,
+          243,
+          244
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 74.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          86,
+          100,
+          183
+        ],
+        [
+          242,
+          243,
+          243
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 88.8,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          3
+        ],
+        [
+          81,
+          98,
+          189
+        ],
+        [
+          244,
+          244,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 103.6,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          82,
+          99,
+          191
+        ],
+        [
+          245,
+          245,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 118.5,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          4,
+          10,
+          3
+        ],
+        [
+          82,
+          102,
+          191
+        ],
+        [
+          243,
+          244,
+          243
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 124.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          118,
+          155,
+          189
+        ],
+        [
+          84,
+          117,
+          155
+        ],
+        [
+          37,
+          31,
+          35
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 127.3,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          3,
+          3,
+          3
+        ],
+        [
+          83,
+          102,
+          202
+        ],
+        [
+          243,
+          244,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 130.3,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          138,
+          172,
+          195
+        ],
+        [
+          79,
+          105,
+          139
+        ],
+        [
+          37,
+          36,
+          45
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 133.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          154,
+          154,
+          154
+        ],
+        [
+          25,
+          24,
+          24
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 148.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          72,
+          108,
+          142
+        ],
+        [
+          135,
+          167,
+          190
+        ],
+        [
+          24,
+          30,
+          42
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 151.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          3,
+          3,
+          3
+        ],
+        [
+          85,
+          101,
+          191
+        ],
+        [
+          243,
+          243,
+          244
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 162.9,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          5,
+          11,
+          3
+        ],
+        [
+          81,
+          102,
+          192
+        ],
+        [
+          243,
+          244,
+          243
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 177.7,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          82,
+          99,
+          193
+        ],
+        [
+          243,
+          243,
+          244
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 186.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          72,
+          108,
+          142
+        ],
+        [
+          128,
+          163,
+          187
+        ],
+        [
+          24,
+          30,
+          43
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 189.5,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          3,
+          3
+        ],
+        [
+          84,
+          101,
+          191
+        ],
+        [
+          243,
+          243,
+          243
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 192.5,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          80,
+          98,
+          195
+        ],
+        [
+          245,
+          245,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 207.3,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          3
+        ],
+        [
+          82,
+          100,
+          195
+        ],
+        [
+          243,
+          243,
+          244
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 210.3,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          125,
+          158,
+          188
+        ],
+        [
+          73,
+          98,
+          135
+        ],
+        [
+          33,
+          33,
+          43
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 213.2,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          2
+        ],
+        [
+          83,
+          100,
+          189
+        ],
+        [
+          244,
+          244,
+          244
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 222.1,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          1,
+          1,
+          2
+        ],
+        [
+          81,
+          99,
+          197
+        ],
+        [
+          244,
+          244,
+          245
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 225.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          116,
+          152,
+          187
+        ],
+        [
+          83,
+          117,
+          154
+        ],
+        [
+          36,
+          29,
+          35
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 231.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          203,
+          216,
+          224
+        ],
+        [
+          17,
+          20,
+          24
+        ],
+        [
+          110,
+          124,
+          188
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "AJpK3YTTKZ4",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.2,
+      "avg_face_count": 0.36,
+      "max_face_count": 3,
+      "avg_face_size_pct": 2.4,
+      "has_multiple_people": 1,
+      "file_size_mb": 8.11,
+      "bitrate_kbps": 291.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 2053.3,
+      "blur_variance": 1689.5,
+      "avg_motion": 38.68,
+      "max_motion": 149.39,
+      "motion_variance": 42.3,
+      "avg_brightness": 107.5,
+      "brightness_trend": -6.7,
+      "first_quarter_brightness": 107.8,
+      "last_quarter_brightness": 101.1,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.362,
+      "light_mode_pct": 0.125,
+      "annotation_frames": 71,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 0.2,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.912,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 107.25695746527778,
+        "has_face": true,
+        "face_count": 2,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 270.27015187958136
+      },
+      "last_frame": {
+        "timestamp": 233.9,
+        "brightness": 214.0695920138889,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 56.5,
+      "frames_analyzed": 80
+    },
+    "marketing": {
+      "value_prop_timestamp": 20.7,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 1,
+      "metrics_found": [
+        "9K"
+      ],
+      "metric_placement": "early",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 6,
+      "features_per_min": 1.5,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 159.4,
+      "has_testimonial": true,
+      "has_step_structure": true,
+      "step_count": 7,
+      "jargon_count": 2,
+      "jargon_density": 0.001,
+      "jargon_words": [
+        "backend",
+        "json"
+      ],
+      "benefit_count": 2,
+      "feature_word_count": 6,
+      "benefit_ratio": 0.25,
+      "urgency_count": 6,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 1.35,
+      "emotional_arc": "flat",
+      "question_count": 4,
+      "has_questions": true,
+      "acronym_count": 8,
+      "acronym_density": 0.005,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 19,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 1663
+    }
+  },
+  "mega": {
+    "video_id": "AJpK3YTTKZ4",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 234.2,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.024,
+      "energy_trend": -0.029799,
+      "peak_timestamp_sec": 5.2,
+      "peak_position_pct": 0.02,
+      "dynamic_range_db": 24.4,
+      "onset_density": 4.84,
+      "intro_silence_sec": 0.1,
+      "outro_silence_sec": 0.9,
+      "avg_spectral_centroid": 1838.0,
+      "avg_spectral_bandwidth": 1957.0,
+      "avg_zcr": 0.0895
+    },
+    "deep_visual": {
+      "has_scroll": true,
+      "scroll_frame_count": 5,
+      "avg_scroll_speed": 3.34,
+      "color_palette_size": 20,
+      "color_consistency": 77.2,
+      "gradient_frame_pct": 0.188,
+      "high_contrast_frame_pct": 0.25,
+      "navbar_pct": 0.75,
+      "sidebar_pct": 0.762,
+      "modal_pct": 0.0,
+      "table_pct": 0.725,
+      "chat_pct": 0.025,
+      "code_pct": 0.013,
+      "terminal_pct": 0.013,
+      "mobile_frame_pct": 0.025,
+      "desktop_chrome_pct": 0.075,
+      "avg_symmetry": 0.742,
+      "avg_thirds_score": 1.259,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.241,
+      "repetition_count": 69,
+      "has_bookend": false,
+      "longest_scene_sec": 72.0,
+      "frames_analyzed": 80
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "24000/1001",
+      "r_frame_rate": "24000/1001",
+      "bit_rate_stream": 192317,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 80.7,
+      "detected_key": "G",
+      "key_confidence": 0.101,
+      "mfcc_mean": [
+        -223.564,
+        116.668,
+        0.644,
+        19.218,
+        -0.262,
+        6.947,
+        -4.519,
+        4.958,
+        -4.815,
+        -0.391,
+        -6.129,
+        -3.016,
+        -5.501
+      ],
+      "mfcc_std": [
+        93.439,
+        48.287,
+        40.802,
+        25.452,
+        20.839,
+        17.44,
+        15.622,
+        14.179,
+        13.091,
+        11.984,
+        11.968,
+        10.87,
+        10.807
+      ],
+      "avg_spectral_contrast": 19.19,
+      "avg_tonnetz": [
+        0.0671,
+        0.0821,
+        -0.0002,
+        -0.0073,
+        -0.0014,
+        -0.0013
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -19.4,
+          "centroid": 1302.0,
+          "bandwidth": 1569.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -16.0,
+          "centroid": 1755.0,
+          "bandwidth": 1838.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1683.0,
+          "bandwidth": 1663.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -17.9,
+          "centroid": 1547.0,
+          "bandwidth": 1686.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -19.1,
+          "centroid": 1298.0,
+          "bandwidth": 1650.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -17.2,
+          "centroid": 1653.0,
+          "bandwidth": 1781.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 1364.0,
+          "bandwidth": 1760.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -19.3,
+          "centroid": 1273.0,
+          "bandwidth": 1897.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -17.7,
+          "centroid": 1453.0,
+          "bandwidth": 1830.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -18.2,
+          "centroid": 1359.0,
+          "bandwidth": 1749.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -17.8,
+          "centroid": 1825.0,
+          "bandwidth": 1931.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 2027.0,
+          "bandwidth": 2081.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -19.9,
+          "centroid": 1754.0,
+          "bandwidth": 1973.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -19.5,
+          "centroid": 1332.0,
+          "bandwidth": 1840.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 2207.0,
+          "bandwidth": 2106.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -18.8,
+          "centroid": 2151.0,
+          "bandwidth": 1988.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 2089.0,
+          "bandwidth": 1940.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -19.1,
+          "centroid": 2213.0,
+          "bandwidth": 2139.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -21.0,
+          "centroid": 1546.0,
+          "bandwidth": 1943.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -18.0,
+          "centroid": 1865.0,
+          "bandwidth": 1889.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -18.8,
+          "centroid": 1737.0,
+          "bandwidth": 1933.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 1587.0,
+          "bandwidth": 1937.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -19.9,
+          "centroid": 1227.0,
+          "bandwidth": 1724.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -18.8,
+          "centroid": 1822.0,
+          "bandwidth": 1841.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -20.8,
+          "centroid": 1600.0,
+          "bandwidth": 1961.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -17.7,
+          "centroid": 2074.0,
+          "bandwidth": 1932.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 2095.0,
+          "bandwidth": 1947.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -19.3,
+          "centroid": 1498.0,
+          "bandwidth": 1740.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1843.0,
+          "bandwidth": 2218.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 2131.0,
+          "bandwidth": 2110.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -18.2,
+          "centroid": 1692.0,
+          "bandwidth": 1830.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -18.6,
+          "centroid": 1840.0,
+          "bandwidth": 1971.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 1963.0,
+          "bandwidth": 1966.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1747.0,
+          "bandwidth": 2144.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1903.0,
+          "bandwidth": 2210.0
+        },
+        {
+          "timestamp": 105,
+          "type": "sfx_low",
+          "rms_db": -19.9,
+          "centroid": 2069.0,
+          "bandwidth": 1904.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -17.6,
+          "centroid": 1522.0,
+          "bandwidth": 1733.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1930.0,
+          "bandwidth": 2229.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 2038.0,
+          "bandwidth": 2229.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1971.0,
+          "bandwidth": 1805.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -23.1,
+          "centroid": 1635.0,
+          "bandwidth": 2117.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -19.9,
+          "centroid": 1894.0,
+          "bandwidth": 2024.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1760.0,
+          "bandwidth": 2049.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 1891.0,
+          "bandwidth": 1889.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1926.0,
+          "bandwidth": 1906.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -18.2,
+          "centroid": 1933.0,
+          "bandwidth": 1920.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -21.1,
+          "centroid": 1880.0,
+          "bandwidth": 2128.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1474.0,
+          "bandwidth": 1831.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1675.0,
+          "bandwidth": 2096.0
+        },
+        {
+          "timestamp": 147,
+          "type": "ambient",
+          "rms_db": -18.0,
+          "centroid": 2523.0,
+          "bandwidth": 2150.0
+        },
+        {
+          "timestamp": 150,
+          "type": "ambient",
+          "rms_db": -19.2,
+          "centroid": 2249.0,
+          "bandwidth": 2035.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 1920.0,
+          "bandwidth": 2051.0
+        },
+        {
+          "timestamp": 156,
+          "type": "ambient",
+          "rms_db": -21.5,
+          "centroid": 2349.0,
+          "bandwidth": 2150.0
+        },
+        {
+          "timestamp": 159,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1749.0,
+          "bandwidth": 2152.0
+        },
+        {
+          "timestamp": 162,
+          "type": "ambient",
+          "rms_db": -19.1,
+          "centroid": 2742.0,
+          "bandwidth": 2283.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1578.0,
+          "bandwidth": 1990.0
+        },
+        {
+          "timestamp": 168,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 1958.0,
+          "bandwidth": 2110.0
+        },
+        {
+          "timestamp": 171,
+          "type": "ambient",
+          "rms_db": -18.9,
+          "centroid": 2725.0,
+          "bandwidth": 2181.0
+        },
+        {
+          "timestamp": 174,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 1235.0,
+          "bandwidth": 1745.0
+        },
+        {
+          "timestamp": 177,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 2006.0,
+          "bandwidth": 1826.0
+        },
+        {
+          "timestamp": 180,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 1242.0,
+          "bandwidth": 1713.0
+        },
+        {
+          "timestamp": 183,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 1393.0,
+          "bandwidth": 1872.0
+        },
+        {
+          "timestamp": 186,
+          "type": "sfx_low",
+          "rms_db": -18.1,
+          "centroid": 2062.0,
+          "bandwidth": 1701.0
+        },
+        {
+          "timestamp": 189,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 2133.0,
+          "bandwidth": 1903.0
+        },
+        {
+          "timestamp": 192,
+          "type": "ambient",
+          "rms_db": -20.0,
+          "centroid": 2278.0,
+          "bandwidth": 2185.0
+        },
+        {
+          "timestamp": 195,
+          "type": "ambient",
+          "rms_db": -20.8,
+          "centroid": 2280.0,
+          "bandwidth": 2118.0
+        },
+        {
+          "timestamp": 198,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 2229.0,
+          "bandwidth": 2152.0
+        },
+        {
+          "timestamp": 201,
+          "type": "ambient",
+          "rms_db": -20.9,
+          "centroid": 2331.0,
+          "bandwidth": 2166.0
+        },
+        {
+          "timestamp": 204,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 2194.0,
+          "bandwidth": 2179.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -17.7,
+          "centroid": 1920.0,
+          "bandwidth": 2088.0
+        },
+        {
+          "timestamp": 210,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 2201.0,
+          "bandwidth": 2093.0
+        },
+        {
+          "timestamp": 213,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 2127.0,
+          "bandwidth": 2044.0
+        },
+        {
+          "timestamp": 216,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1502.0,
+          "bandwidth": 2069.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 1857.0,
+          "bandwidth": 2035.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1876.0,
+          "bandwidth": 2158.0
+        },
+        {
+          "timestamp": 225,
+          "type": "speech",
+          "rms_db": -17.5,
+          "centroid": 1781.0,
+          "bandwidth": 1990.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 1580.0,
+          "bandwidth": 1824.0
+        },
+        {
+          "timestamp": 231,
+          "type": "speech",
+          "rms_db": -32.0,
+          "centroid": 1524.0,
+          "bandwidth": 1493.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.872,
+        "sfx_low": 0.026,
+        "ambient": 0.103
+      },
+      "speech_pct": 0.872,
+      "music_pct": 0.0,
+      "sfx_pct": 0.026,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "front_heavy",
+      "strong_sfx_count": 577,
+      "strong_sfx_timestamps": [
+        0.26,
+        0.56,
+        0.63,
+        0.81,
+        1.02,
+        1.16,
+        1.3,
+        2.48,
+        2.6,
+        3.58,
+        3.95,
+        4.34,
+        4.6,
+        6.55,
+        6.62,
+        7.04,
+        7.5,
+        7.78,
+        8.27,
+        8.82
+      ],
+      "n_segments": 78
+    }
+  }
+}

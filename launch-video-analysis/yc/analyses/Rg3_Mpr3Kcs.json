@@ -1,0 +1,609 @@
+{
+  "video_id": "Rg3_Mpr3Kcs",
+  "status": "ok",
+  "duration_sec": 80.2,
+  "resolution": "638x360",
+  "fps": 30.0,
+  "frames_analyzed": 27,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 12,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "&/mo Apps Layer Memory Qstars The for memO ‘our"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Memory Without delivery mynameis ode status"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Memory Without aus checking delivery mynameis ode tam the"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "Fin Letme Memory Without agers aus back bette? checking delivery the ‘gh"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Argh It's Memory User Without agent. better? checking delivery itto ode previous tam the told"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "API Adapts Context Every Interaction LLM Management Mem0O: Optimizes Personalization Preferences Reduces User User, Works any costs for with"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "How Preferences Remembers Your about adding cheese extra flavor? for some."
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "How Memories Preferences Remembers Your about adding cheese extra flavor? for some"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "Details Important Memories Saves"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Details How Important Memories Saves about coffee? grabbing"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "Action Personalized Suggestions"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "Action Beretta How Marinara Personalized Suggestions about highly pizza rated. trying"
+    }
+  ],
+  "pseudo_transcript": "&/mo Apps Layer Memory Qstars The for memO ‘our | Memory Without delivery mynameis ode status | Memory Without aus checking delivery mynameis ode tam the | Fin Letme Memory Without agers aus back bette? checking delivery the ‘gh | Argh It's Memory User Without agent. better? checking delivery itto ode previous tam the told | API Adapts Context Every Interaction LLM Management Mem0O: Optimizes Personalization Preferences Reduces User User, Works any costs for with | How Preferences Remembers Your about adding cheese extra flavor? for some. | How Memories Preferences Remembers Your about adding cheese extra flavor? for some | Details Important Memories Saves | Details How Important Memories Saves about coffee? grabbing | Action Personalized Suggestions | Action Beretta How Marinara Personalized Suggestions about highly pizza rated. trying",
+  "frame_type_distribution": {
+    "white_screen": 0.96,
+    "text_with_visual": 0.04
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          192,
+          171,
+          145
+        ],
+        [
+          77,
+          68,
+          58
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          55,
+          55,
+          55
+        ],
+        [
+          158,
+          157,
+          163
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          249
+        ],
+        [
+          235,
+          157,
+          69
+        ],
+        [
+          77,
+          76,
+          82
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          229,
+          151,
+          65
+        ],
+        [
+          47,
+          47,
+          47
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          232,
+          151,
+          61
+        ],
+        [
+          50,
+          50,
+          50
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          106,
+          106,
+          106
+        ],
+        [
+          18,
+          18,
+          18
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "Rg3_Mpr3Kcs",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.7,
+      "bitrate_kbps": 178.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1989.3,
+      "blur_variance": 532.7,
+      "avg_motion": 6.12,
+      "max_motion": 46.71,
+      "motion_variance": 9.4,
+      "avg_brightness": 242.1,
+      "brightness_trend": 4.1,
+      "first_quarter_brightness": 239.6,
+      "last_quarter_brightness": 243.8,
+      "browser_chrome_frames": 3,
+      "browser_chrome_pct": 0.111,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 1.0,
+      "annotation_frames": 23,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 80.2,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.963,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 207.1986241727621,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 2592.9348957175857
+      },
+      "last_frame": {
+        "timestamp": 78.0,
+        "brightness": 248.38171368861023,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 7.1,
+      "frames_analyzed": 27
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 29.3,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 2,
+      "jargon_density": 0.017,
+      "jargon_words": [
+        "llm",
+        "api"
+      ],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 1,
+      "tagline_match": false,
+      "avg_reading_comfort": 3.0,
+      "emotional_arc": "flat",
+      "question_count": 5,
+      "has_questions": true,
+      "acronym_count": 2,
+      "acronym_density": 0.017,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 121
+    }
+  },
+  "mega": {
+    "video_id": "Rg3_Mpr3Kcs",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 80.2,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 71.6,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 0.037,
+      "modal_pct": 0.0,
+      "table_pct": 0.63,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 1.0,
+      "avg_symmetry": 0.95,
+      "avg_thirds_score": 0.902,
+      "avg_content_aspect": 1.774,
+      "scene_diversity": 0.001,
+      "repetition_count": 24,
+      "has_bookend": true,
+      "longest_scene_sec": 81.0,
+      "frames_analyzed": 27
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 46752,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-09-10T04:50:39.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 51,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 54,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 57,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 60,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 63,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 66,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 69,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 72,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 75,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 26
+    }
+  }
+}

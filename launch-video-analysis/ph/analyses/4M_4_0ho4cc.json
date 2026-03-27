@@ -1,0 +1,838 @@
+{
+  "video_id": "4M_4_0ho4cc",
+  "status": "ok",
+  "duration_sec": 95.4,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 32,
+  "transition_count": 5,
+  "transitions": [
+    {
+      "timestamp_sec": 36.0,
+      "correlation": -0.001,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "correlation": -0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "correlation": 0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "correlation": 0.07,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "correlation": 0.104,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 16,
+  "text_extractions": [
+    {
+      "timestamp_sec": 6.0,
+      "text": "They"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "What nean"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "friend!"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "Voc.Adapt"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Asia Camella Ces China East Tea _water and ate cured eas ely fresh isu leaves most nats nny ong over pan pre puta shub sinensis, water, wien {he"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "16th 17th Cae Carta During Est Europe Portuguese Tan Tea The aed also ana and butrarely coment during een enn esi, fou have introduced leaves mace, mail merchants nce ober ong pan part priests rom ser spend sweet ter text the wae wien wre ‘naa,"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Asn Chia, East Etymology People Pope Second Some Tara Tea Teas They Tis Tus abt and ane as. ber. bts ekg eves. fea gon gow hot ies ink inks inte made makes mos mst named nda. nie not owes, pat people pope resi, ru, sess sis stl tastes tea tent thd the wich woe wot wth ‘hing"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "CH) GIZMODO INTERVIEW"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "GIZMODO"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "CzeSé Pols Put Raa Safin Save Sst This Wheter ame cho language languages. oer qa. reddit renee ring tenes the week's you"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "Forbes: dedicate exert"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "(41 (oday 1,435 1890 80-1898) Aer Beri: English Marin Marke).The Masch. Oto Piac Platz Reymer Rynel/Ring S880 Stary afew and businessmen consists day dedicate double dye endeavor equa exceptions exert from fst gauge historia horse kilometres lengthened main mi) next one ook operating operation passengers pee rom route route, served soon standard station sytem the they tne tran ul. vam was ‘The ‘about ‘am"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "(61 (currently (oday 1438 1600 1880 3866 English: Marin Markel), Masch. Old Operator(s) Otto Patz Poznan Poznat Rataczaka, Reymer Rynek Stary Su. The With and began bring concessions day dedicate double endeavor equa es, exceptions exert few fruition gauge hate ight ine ine, main mar mi) name next one operate operation oust passengers rae, receiving rom rst runing secre standara staton tack the they town tracks trai ul. van) veces wanspored ‘Overview, ‘ama"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "dedicate endeavor"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "dedicate endeavor fruition mont"
+    },
+    {
+      "timestamp_sec": 87.0,
+      "text": "bring dedicate exert fruition ‘endeavor"
+    }
+  ],
+  "pseudo_transcript": "They | What nean | friend! | Voc.Adapt | Asia Camella Ces China East Tea _water and ate cured eas ely fresh isu leaves most nats nny ong over pan pre puta shub sinensis, water, wien {he | 16th 17th Cae Carta During Est Europe Portuguese Tan Tea The aed also ana and butrarely coment during een enn esi, fou have introduced leaves mace, mail merchants nce ober ong pan part priests rom ser spend sweet ter text the wae wien wre ‘naa, | Asn Chia, East Etymology People Pope Second Some Tara Tea Teas They Tis Tus abt and ane as. ber. bts ekg eves. fea gon gow hot ies ink inks inte made makes mos mst named nda. nie not owes, pat people pope resi, ru, sess sis stl tastes tea tent thd the wich woe wot wth ‘hing | CH) GIZMODO INTERVIEW | GIZMODO | CzeSé Pols Put Raa Safin Save Sst This Wheter ame cho language languages. oer qa. reddit renee ring tenes the week's you | Forbes: dedicate exert | (41 (oday 1,435 1890 80-1898) Aer Beri: English Marin Marke).The Masch. Oto Piac Platz Reymer Rynel/Ring S880 Stary afew and businessmen consists day dedicate double dye endeavor equa exceptions exert from fst gauge historia horse kilometres lengthened main mi) next one ook operating operation passengers pee rom route route, served soon standard station sytem the they tne tran ul. vam was ‘The ‘about ‘am | (61 (currently (oday 1438 1600 1880 3866 English: Marin Markel), Masch. Old Operator(s) Otto Patz Poznan Poznat Rataczaka, Reymer Rynek Stary Su. The With and began bring concessions day dedicate double endeavor equa es, exceptions exert few fruition gauge hate ight ine ine, main mar mi) name next one operate operation oust passengers rae, receiving rom rst runing secre standara staton tack the they town tracks trai ul. van) veces wanspored ‘Overview, ‘ama | dedicate endeavor | dedicate endeavor fruition mont | bring dedicate exert fruition ‘endeavor",
+  "frame_type_distribution": {
+    "simple_visual": 0.53,
+    "dark_screen": 0.38,
+    "text_heavy": 0.09
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          8,
+          12,
+          16
+        ],
+        [
+          53,
+          64,
+          82
+        ],
+        [
+          150,
+          163,
+          173
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          8,
+          9,
+          12
+        ],
+        [
+          60,
+          73,
+          89
+        ],
+        [
+          187,
+          198,
+          202
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          8,
+          12,
+          16
+        ],
+        [
+          47,
+          67,
+          87
+        ],
+        [
+          157,
+          173,
+          184
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          27,
+          33,
+          15
+        ],
+        [
+          64,
+          78,
+          27
+        ],
+        [
+          224,
+          226,
+          221
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 39.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          25,
+          23,
+          18
+        ],
+        [
+          145,
+          21,
+          41
+        ],
+        [
+          192,
+          135,
+          144
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          24,
+          22,
+          15
+        ],
+        [
+          78,
+          84,
+          31
+        ],
+        [
+          159,
+          165,
+          127
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 48.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          51,
+          51,
+          30
+        ],
+        [
+          164,
+          159,
+          141
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 54.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          33,
+          24
+        ],
+        [
+          93,
+          111,
+          109
+        ],
+        [
+          163,
+          168,
+          167
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          29,
+          25
+        ],
+        [
+          93,
+          90,
+          75
+        ],
+        [
+          162,
+          161,
+          153
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 72.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          28,
+          33,
+          16
+        ],
+        [
+          89,
+          94,
+          65
+        ],
+        [
+          176,
+          176,
+          170
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          29,
+          35,
+          16
+        ],
+        [
+          97,
+          100,
+          72
+        ],
+        [
+          201,
+          204,
+          197
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          28,
+          34,
+          13
+        ],
+        [
+          66,
+          81,
+          28
+        ],
+        [
+          234,
+          236,
+          229
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "4M_4_0ho4cc",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.094,
+      "avg_face_count": 0.09,
+      "max_face_count": 1,
+      "avg_face_size_pct": 2.8,
+      "has_multiple_people": 0,
+      "file_size_mb": 3.67,
+      "bitrate_kbps": 323.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1187.4,
+      "blur_variance": 1089.6,
+      "avg_motion": 22.59,
+      "max_motion": 56.43,
+      "motion_variance": 15.14,
+      "avg_brightness": 42.5,
+      "brightness_trend": -1.1,
+      "first_quarter_brightness": 47.0,
+      "last_quarter_brightness": 45.9,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 1.0,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 29,
+      "has_annotations": true,
+      "letterbox_frames": 14,
+      "has_letterbox": true,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 8.4,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.031,
+      "cool_frame_pct": 0.219,
+      "first_frame": {
+        "brightness": 49.10793836805556,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 226.12640671107914
+      },
+      "last_frame": {
+        "timestamp": 93.0,
+        "brightness": 33.7108203125,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 95.8,
+      "frames_analyzed": 32
+    },
+    "marketing": {
+      "value_prop_timestamp": 6.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 146.9,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 10.62,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 4,
+      "acronym_density": 0.013,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 6,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 308
+    }
+  },
+  "mega": {
+    "video_id": "4M_4_0ho4cc",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 95.4,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.166,
+      "energy_trend": 0.019583,
+      "peak_timestamp_sec": 73.4,
+      "peak_position_pct": 0.77,
+      "dynamic_range_db": 31.8,
+      "onset_density": 4.35,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.4,
+      "avg_spectral_centroid": 1723.0,
+      "avg_spectral_bandwidth": 1871.0,
+      "avg_zcr": 0.0866
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 65.9,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.25,
+      "navbar_pct": 0.344,
+      "sidebar_pct": 0.188,
+      "modal_pct": 0.344,
+      "table_pct": 0.625,
+      "chat_pct": 0.0,
+      "code_pct": 0.875,
+      "terminal_pct": 0.469,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.892,
+      "avg_thirds_score": 1.215,
+      "avg_content_aspect": 1.899,
+      "scene_diversity": 0.193,
+      "repetition_count": 16,
+      "has_bookend": false,
+      "longest_scene_sec": 36.0,
+      "frames_analyzed": 32
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 191304,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-12-23T17:39:51.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 117.5,
+      "detected_key": "A",
+      "key_confidence": 0.103,
+      "mfcc_mean": [
+        -328.727,
+        117.481,
+        16.869,
+        20.062,
+        -4.302,
+        -8.329,
+        -7.245,
+        -9.655,
+        -18.371,
+        -0.432,
+        -8.071,
+        -4.598,
+        -3.436
+      ],
+      "mfcc_std": [
+        98.697,
+        61.482,
+        51.074,
+        26.649,
+        26.429,
+        19.536,
+        16.48,
+        13.308,
+        14.133,
+        13.074,
+        11.315,
+        11.036,
+        9.196
+      ],
+      "avg_spectral_contrast": 18.61,
+      "avg_tonnetz": [
+        0.0592,
+        0.032,
+        -0.0014,
+        0.0028,
+        -0.0063,
+        -0.0029
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -24.4,
+          "centroid": 2224.0,
+          "bandwidth": 2156.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -26.8,
+          "centroid": 1831.0,
+          "bandwidth": 1733.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -27.8,
+          "centroid": 1771.0,
+          "bandwidth": 1716.0
+        },
+        {
+          "timestamp": 9,
+          "type": "ambient",
+          "rms_db": -29.2,
+          "centroid": 2074.0,
+          "bandwidth": 1819.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -29.6,
+          "centroid": 1455.0,
+          "bandwidth": 1511.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -28.8,
+          "centroid": 2045.0,
+          "bandwidth": 2074.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 2136.0,
+          "bandwidth": 2150.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 1962.0,
+          "bandwidth": 1785.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -22.4,
+          "centroid": 1834.0,
+          "bandwidth": 1537.0
+        },
+        {
+          "timestamp": 27,
+          "type": "ambient",
+          "rms_db": -26.8,
+          "centroid": 2345.0,
+          "bandwidth": 1812.0
+        },
+        {
+          "timestamp": 30,
+          "type": "ambient",
+          "rms_db": -23.5,
+          "centroid": 2257.0,
+          "bandwidth": 1514.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -28.5,
+          "centroid": 1182.0,
+          "bandwidth": 1530.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 2021.0,
+          "bandwidth": 2105.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 1788.0,
+          "bandwidth": 1959.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -27.4,
+          "centroid": 1828.0,
+          "bandwidth": 2012.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -27.5,
+          "centroid": 1485.0,
+          "bandwidth": 1963.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1542.0,
+          "bandwidth": 1856.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -27.0,
+          "centroid": 1227.0,
+          "bandwidth": 1851.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -30.4,
+          "centroid": 1805.0,
+          "bandwidth": 2234.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -25.3,
+          "centroid": 1424.0,
+          "bandwidth": 1979.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -24.5,
+          "centroid": 2083.0,
+          "bandwidth": 2176.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -27.7,
+          "centroid": 2128.0,
+          "bandwidth": 2263.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1825.0,
+          "bandwidth": 2229.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -29.1,
+          "centroid": 1072.0,
+          "bandwidth": 1611.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -20.1,
+          "centroid": 1036.0,
+          "bandwidth": 1522.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -20.1,
+          "centroid": 1292.0,
+          "bandwidth": 1580.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -21.1,
+          "centroid": 1058.0,
+          "bandwidth": 1384.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -19.9,
+          "centroid": 1371.0,
+          "bandwidth": 1360.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -22.6,
+          "centroid": 1926.0,
+          "bandwidth": 1931.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1390.0,
+          "bandwidth": 1980.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -29.8,
+          "centroid": 1672.0,
+          "bandwidth": 2199.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.903,
+        "ambient": 0.097
+      },
+      "speech_pct": 0.903,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "back_heavy",
+      "strong_sfx_count": 217,
+      "strong_sfx_timestamps": [
+        0.09,
+        0.46,
+        0.91,
+        2.23,
+        2.74,
+        3.27,
+        3.78,
+        4.04,
+        4.55,
+        6.25,
+        7.15,
+        7.8,
+        7.89,
+        8.01,
+        8.34,
+        8.92,
+        9.47,
+        9.64,
+        9.87,
+        10.03
+      ],
+      "n_segments": 31
+    }
+  }
+}

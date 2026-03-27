@@ -1,0 +1,2116 @@
+{
+  "video_id": "agqQG0dcVbA",
+  "status": "ok",
+  "duration_sec": 600.1,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 203,
+  "transition_count": 6,
+  "transitions": [
+    {
+      "timestamp_sec": 118.8,
+      "correlation": 0.004,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 121.8,
+      "correlation": 0.002,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 154.4,
+      "correlation": 0.006,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 157.4,
+      "correlation": 0.004,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 501.9,
+      "correlation": 0.005,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 504.8,
+      "correlation": 0.0,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 37,
+  "text_extractions": [
+    {
+      "timestamp_sec": 8.9,
+      "text": "HOWTO INST: XTENSION"
+    },
+    {
+      "timestamp_sec": 11.9,
+      "text": "EXTENSION? HOW THE"
+    },
+    {
+      "timestamp_sec": 14.8,
+      "text": "EXTENSION? HOW INST/ THE ao:"
+    },
+    {
+      "timestamp_sec": 17.8,
+      "text": "EXTENSION? Featured HOW INST/ THE partner"
+    },
+    {
+      "timestamp_sec": 20.8,
+      "text": "HOW XTENSION"
+    },
+    {
+      "timestamp_sec": 23.8,
+      "text": "Builder Foodee HOW INSTALL Menu THE]EXTENSION"
+    },
+    {
+      "timestamp_sec": 50.5,
+      "text": "Builder Foodee Menu"
+    },
+    {
+      "timestamp_sec": 68.3,
+      "text": "CREATE NEW NSION PAGE USING"
+    },
+    {
+      "timestamp_sec": 77.2,
+      "text": "CREATE NEW PAGE USING"
+    },
+    {
+      "timestamp_sec": 112.8,
+      "text": "CREATE NEW PAGE XTENSION mee"
+    },
+    {
+      "timestamp_sec": 124.7,
+      "text": "CREATE EXTENSION NEW PAGE THE USING"
+    },
+    {
+      "timestamp_sec": 157.4,
+      "text": "CREATE EXTENSION NEW THE USING ®AGE"
+    },
+    {
+      "timestamp_sec": 160.4,
+      "text": "EXTENSION NEW PAGE THE USING"
+    },
+    {
+      "timestamp_sec": 163.3,
+      "text": "CREATE NEW PAGE US!NG XTENSION"
+    },
+    {
+      "timestamp_sec": 181.1,
+      "text": "AGE CONTEN HO'"
+    },
+    {
+      "timestamp_sec": 210.8,
+      "text": "CONTENT, CUSTOMIZE HOW PAGE"
+    },
+    {
+      "timestamp_sec": 249.4,
+      "text": "ADD NEW PRODUC"
+    },
+    {
+      "timestamp_sec": 294.0,
+      "text": "\\DD"
+    },
+    {
+      "timestamp_sec": 299.9,
+      "text": "\"<a"
+    },
+    {
+      "timestamp_sec": 302.9,
+      "text": "ADD ANEW"
+    },
+    {
+      "timestamp_sec": 305.9,
+      "text": "ADD NEW"
+    },
+    {
+      "timestamp_sec": 392.0,
+      "text": "was)"
+    },
+    {
+      "timestamp_sec": 415.7,
+      "text": "STORE"
+    },
+    {
+      "timestamp_sec": 430.6,
+      "text": "ADO."
+    },
+    {
+      "timestamp_sec": 442.5,
+      "text": "ETC ION"
+    },
+    {
+      "timestamp_sec": 484.1,
+      "text": "PREMIUM UPGRADE"
+    },
+    {
+      "timestamp_sec": 495.9,
+      "text": "PREMIUM. UPGRADE"
+    },
+    {
+      "timestamp_sec": 525.6,
+      "text": "JPGRADE PREMIUN"
+    },
+    {
+      "timestamp_sec": 528.6,
+      "text": "ADE PREN"
+    },
+    {
+      "timestamp_sec": 540.5,
+      "text": "EM. KEY RECIEVE"
+    },
+    {
+      "timestamp_sec": 543.4,
+      "text": "EMA KEY LICENSE RECIEVE WILL YOU"
+    },
+    {
+      "timestamp_sec": 546.4,
+      "text": "ALSO. EMAIL KEY LICENSE RECIEVE"
+    },
+    {
+      "timestamp_sec": 549.4,
+      "text": "Geet"
+    },
+    {
+      "timestamp_sec": 552.4,
+      "text": "cet"
+    },
+    {
+      "timestamp_sec": 558.3,
+      "text": "RECIEVE WILL YOU"
+    },
+    {
+      "timestamp_sec": 561.3,
+      "text": "GED RECIEVE WILL YOU"
+    },
+    {
+      "timestamp_sec": 567.2,
+      "text": "EMA LICENSE RECIEVE REYIN WILL YOU"
+    }
+  ],
+  "pseudo_transcript": "HOWTO INST: XTENSION | EXTENSION? HOW THE | EXTENSION? HOW INST/ THE ao: | EXTENSION? Featured HOW INST/ THE partner | HOW XTENSION | Builder Foodee HOW INSTALL Menu THE]EXTENSION | Builder Foodee Menu | CREATE NEW NSION PAGE USING | CREATE NEW PAGE USING | CREATE NEW PAGE XTENSION mee | CREATE EXTENSION NEW PAGE THE USING | CREATE EXTENSION NEW THE USING ®AGE | EXTENSION NEW PAGE THE USING | CREATE NEW PAGE US!NG XTENSION | AGE CONTEN HO' | CONTENT, CUSTOMIZE HOW PAGE | ADD NEW PRODUC | \\DD | \"<a | ADD ANEW | ADD NEW | was) | STORE | ADO. | ETC ION | PREMIUM UPGRADE | PREMIUM. UPGRADE | JPGRADE PREMIUN | ADE PREN | EM. KEY RECIEVE | EMA KEY LICENSE RECIEVE WILL YOU | ALSO. EMAIL KEY LICENSE RECIEVE | Geet | cet | RECIEVE WILL YOU | GED RECIEVE WILL YOU | EMA LICENSE RECIEVE REYIN WILL YOU",
+  "frame_type_distribution": {
+    "simple_visual": 0.52,
+    "white_screen": 0.4,
+    "text_with_visual": 0.04,
+    "dark_screen": 0.02,
+    "detailed_visual": 0.01
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          248
+        ],
+        [
+          47,
+          30,
+          37
+        ],
+        [
+          164,
+          159,
+          158
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          164,
+          149,
+          144
+        ],
+        [
+          249,
+          244,
+          241
+        ],
+        [
+          52,
+          32,
+          40
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 29.7,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          11,
+          10,
+          11
+        ],
+        [
+          43,
+          30,
+          48
+        ],
+        [
+          110,
+          98,
+          102
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 44.5,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          94,
+          91,
+          94
+        ],
+        [
+          156,
+          156,
+          155
+        ],
+        [
+          250,
+          250,
+          250
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 59.4,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          49,
+          32,
+          39
+        ],
+        [
+          170,
+          164,
+          176
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 74.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          150,
+          154,
+          157
+        ],
+        [
+          245,
+          246,
+          246
+        ],
+        [
+          48,
+          33,
+          40
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 89.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          151,
+          154,
+          156
+        ],
+        [
+          246,
+          247,
+          246
+        ],
+        [
+          48,
+          31,
+          41
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 103.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          154,
+          154,
+          154
+        ],
+        [
+          244,
+          245,
+          245
+        ],
+        [
+          51,
+          34,
+          45
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 118.8,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          58,
+          39,
+          48
+        ],
+        [
+          39,
+          21,
+          30
+        ],
+        [
+          36,
+          10,
+          138
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 121.8,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          154,
+          153,
+          153
+        ],
+        [
+          246,
+          245,
+          244
+        ],
+        [
+          47,
+          30,
+          40
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 133.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          83,
+          82,
+          83
+        ],
+        [
+          245,
+          245,
+          244
+        ],
+        [
+          46,
+          31,
+          38
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 148.5,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          155,
+          154,
+          154
+        ],
+        [
+          245,
+          245,
+          245
+        ],
+        [
+          51,
+          36,
+          45
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 154.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          57,
+          38,
+          48
+        ],
+        [
+          38,
+          19,
+          29
+        ],
+        [
+          43,
+          18,
+          137
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 157.4,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          250
+        ],
+        [
+          81,
+          81,
+          83
+        ],
+        [
+          46,
+          27,
+          36
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 163.3,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          154,
+          153,
+          153
+        ],
+        [
+          245,
+          245,
+          245
+        ],
+        [
+          46,
+          35,
+          39
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 178.2,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          50,
+          33,
+          40
+        ],
+        [
+          185,
+          174,
+          174
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 193.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          47,
+          29,
+          38
+        ],
+        [
+          162,
+          158,
+          171
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 207.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          37,
+          25,
+          23
+        ],
+        [
+          128,
+          136,
+          150
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 222.7,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          38,
+          37,
+          39
+        ],
+        [
+          127,
+          140,
+          163
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 237.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          38,
+          37,
+          40
+        ],
+        [
+          131,
+          145,
+          170
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 252.4,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          50,
+          33,
+          40
+        ],
+        [
+          171,
+          166,
+          170
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 267.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          48,
+          30,
+          38
+        ],
+        [
+          161,
+          157,
+          170
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 282.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          245,
+          243
+        ],
+        [
+          43,
+          29,
+          51
+        ],
+        [
+          177,
+          169,
+          182
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 297.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          245,
+          242
+        ],
+        [
+          44,
+          33,
+          46
+        ],
+        [
+          169,
+          170,
+          177
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 311.8,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          48,
+          30,
+          39
+        ],
+        [
+          172,
+          167,
+          178
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 326.7,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          50,
+          32,
+          41
+        ],
+        [
+          167,
+          160,
+          170
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 341.5,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          43,
+          34,
+          34
+        ],
+        [
+          131,
+          149,
+          172
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 356.4,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          49,
+          32,
+          40
+        ],
+        [
+          178,
+          172,
+          169
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 371.2,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          247
+        ],
+        [
+          49,
+          32,
+          41
+        ],
+        [
+          165,
+          154,
+          173
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 386.1,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          247
+        ],
+        [
+          49,
+          32,
+          40
+        ],
+        [
+          176,
+          167,
+          178
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 400.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          40,
+          39,
+          41
+        ],
+        [
+          126,
+          146,
+          176
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 415.7,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          247
+        ],
+        [
+          50,
+          31,
+          41
+        ],
+        [
+          166,
+          155,
+          171
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 430.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          39,
+          37,
+          40
+        ],
+        [
+          128,
+          146,
+          177
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 445.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          37,
+          33,
+          42
+        ],
+        [
+          121,
+          141,
+          172
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 460.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          50,
+          32,
+          42
+        ],
+        [
+          175,
+          165,
+          176
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 475.1,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          248
+        ],
+        [
+          49,
+          32,
+          40
+        ],
+        [
+          177,
+          169,
+          173
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 490.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          155,
+          155,
+          154
+        ],
+        [
+          249,
+          250,
+          248
+        ],
+        [
+          59,
+          75,
+          54
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 501.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          57,
+          38,
+          47
+        ],
+        [
+          36,
+          11,
+          134
+        ],
+        [
+          134,
+          114,
+          118
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 504.8,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          246,
+          246,
+          246
+        ],
+        [
+          50,
+          32,
+          41
+        ],
+        [
+          105,
+          80,
+          205
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 519.7,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          246,
+          246,
+          246
+        ],
+        [
+          48,
+          33,
+          45
+        ],
+        [
+          115,
+          94,
+          209
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 534.5,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          246,
+          246,
+          246
+        ],
+        [
+          52,
+          30,
+          67
+        ],
+        [
+          192,
+          154,
+          187
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 549.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          242,
+          242,
+          242
+        ],
+        [
+          20,
+          17,
+          20
+        ],
+        [
+          155,
+          104,
+          128
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 564.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          157,
+          157,
+          157
+        ],
+        [
+          249,
+          249,
+          249
+        ],
+        [
+          58,
+          61,
+          56
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 579.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          42,
+          38,
+          46
+        ],
+        [
+          133,
+          151,
+          170
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 593.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          43,
+          31,
+          27
+        ],
+        [
+          131,
+          161,
+          178
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "agqQG0dcVbA",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 12.91,
+      "bitrate_kbps": 180.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 651.9,
+      "blur_variance": 205.8,
+      "avg_motion": 28.97,
+      "max_motion": 186.87,
+      "motion_variance": 42.88,
+      "avg_brightness": 192.6,
+      "brightness_trend": 39.3,
+      "first_quarter_brightness": 158.4,
+      "last_quarter_brightness": 197.7,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.049,
+      "light_mode_pct": 0.67,
+      "annotation_frames": 177,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 0.2,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.463,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 235.74700954861112,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": true,
+        "blur_score": 394.22019652295523
+      },
+      "last_frame": {
+        "timestamp": 599.9,
+        "brightness": 171.3715625,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 15.9,
+      "frames_analyzed": 203
+    },
+    "marketing": {
+      "value_prop_timestamp": 8.9,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 11.7,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 26.42,
+      "emotional_arc": "flat",
+      "question_count": 3,
+      "has_questions": true,
+      "acronym_count": 110,
+      "acronym_density": 0.887,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 7,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 124
+    }
+  },
+  "mega": {
+    "video_id": "agqQG0dcVbA",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 300.0,
+      "has_speech": false,
+      "has_music": false,
+      "has_sound_effects": false,
+      "silence_pct": 1.0,
+      "energy_trend": 0.0,
+      "peak_timestamp_sec": 0.0,
+      "peak_position_pct": 0.0,
+      "dynamic_range_db": 0.0,
+      "onset_density": 0.0,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 0.0,
+      "avg_spectral_bandwidth": 0.0,
+      "avg_zcr": 0.0
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 6.09,
+      "color_palette_size": 20,
+      "color_consistency": 65.4,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.645,
+      "navbar_pct": 0.99,
+      "sidebar_pct": 0.232,
+      "modal_pct": 0.429,
+      "table_pct": 0.709,
+      "chat_pct": 0.246,
+      "code_pct": 0.015,
+      "terminal_pct": 0.015,
+      "mobile_frame_pct": 0.015,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.954,
+      "avg_thirds_score": 0.715,
+      "avg_content_aspect": 1.782,
+      "scene_diversity": 0.047,
+      "repetition_count": 191,
+      "has_bookend": true,
+      "longest_scene_sec": 180.0,
+      "frames_analyzed": 203
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30000/1001",
+      "r_frame_rate": "30000/1001",
+      "bit_rate_stream": 81272,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 0.0,
+      "detected_key": "C",
+      "key_confidence": 0.0,
+      "mfcc_mean": [
+        -1131.371,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mfcc_std": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avg_spectral_contrast": 0.0,
+      "avg_tonnetz": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 3,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 6,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 9,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 12,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 15,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 18,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 21,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 24,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 27,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 30,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 33,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 36,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 39,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 42,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 45,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 48,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 51,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 54,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 57,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 60,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 63,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 66,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 69,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 72,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 75,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 78,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 81,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 84,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 87,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 90,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 93,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 96,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 99,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 102,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 105,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 108,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 111,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 114,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 117,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 120,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 123,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 126,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 129,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 132,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 135,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 138,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 141,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 144,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 147,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 150,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 153,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 156,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 159,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 162,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 165,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 168,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 171,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 174,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 177,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 180,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 183,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 186,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 189,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 192,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 195,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 198,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 201,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 204,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 207,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 210,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 213,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 216,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 219,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 222,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 225,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 228,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 231,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 234,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 237,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 240,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 243,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 246,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 249,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 252,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 255,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 258,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 261,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 264,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 267,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 270,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 273,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 276,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 279,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 282,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 285,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 288,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 291,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 294,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        },
+        {
+          "timestamp": 297,
+          "type": "silence",
+          "rms_db": -200.0,
+          "centroid": 0.0,
+          "bandwidth": 0.0
+        }
+      ],
+      "segment_distribution": {
+        "silence": 1.0
+      },
+      "speech_pct": 0.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 1.0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 0,
+      "strong_sfx_timestamps": [],
+      "n_segments": 100
+    }
+  }
+}

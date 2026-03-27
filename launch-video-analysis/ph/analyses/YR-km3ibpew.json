@@ -1,0 +1,2724 @@
+{
+  "video_id": "YR-km3ibpew",
+  "status": "ok",
+  "duration_sec": 526.1,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 178,
+  "transition_count": 25,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.083,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 5.9,
+      "correlation": 0.076,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 47.5,
+      "correlation": 0.105,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 50.5,
+      "correlation": 0.02,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 53.5,
+      "correlation": 0.077,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 71.3,
+      "correlation": 0.021,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 77.2,
+      "correlation": 0.105,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 80.2,
+      "correlation": 0.016,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 133.6,
+      "correlation": 0.008,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 139.6,
+      "correlation": 0.009,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 142.5,
+      "correlation": 0.007,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 148.5,
+      "correlation": 0.014,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 243.5,
+      "correlation": 0.019,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 249.4,
+      "correlation": 0.013,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 258.4,
+      "correlation": 0.03,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 267.3,
+      "correlation": 0.033,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 320.7,
+      "correlation": 0.025,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 329.6,
+      "correlation": 0.025,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 397.9,
+      "correlation": 0.016,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 400.9,
+      "correlation": -0.004,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 406.8,
+      "correlation": 0.024,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 409.8,
+      "correlation": 0.105,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 481.1,
+      "correlation": 0.065,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 484.1,
+      "correlation": 0.088,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 487.0,
+      "correlation": 0.174,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 119,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Boards Filters Today Work ‘Spaces ‘Team"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "Here's plan the"
+    },
+    {
+      "timestamp_sec": 5.9,
+      "text": "Dean Kanban Project Today cae ers"
+    },
+    {
+      "timestamp_sec": 20.8,
+      "text": "goals"
+    },
+    {
+      "timestamp_sec": 23.8,
+      "text": "Spaces Today goat? mts sia ‘Search “|?"
+    },
+    {
+      "timestamp_sec": 26.7,
+      "text": "BEG: Eves Inbox Project Today cones goat? ont"
+    },
+    {
+      "timestamp_sec": 29.7,
+      "text": "Eves Inbox Project Today Wok cine cones"
+    },
+    {
+      "timestamp_sec": 38.6,
+      "text": "Dividers: Eves Inbox Jews Project Today"
+    },
+    {
+      "timestamp_sec": 41.6,
+      "text": "Month Today Week Work: oa? ure “Team"
+    },
+    {
+      "timestamp_sec": 44.5,
+      "text": "App Boards Insights. Mobile Month Pen Ready Today XMVP ‘Week"
+    },
+    {
+      "timestamp_sec": 47.5,
+      "text": "-Timestripeis Simple Today Week amazing. and flexible."
+    },
+    {
+      "timestamp_sec": 50.5,
+      "text": "Simple Timestripeis amazing. and flexible."
+    },
+    {
+      "timestamp_sec": 53.5,
+      "text": "Boards Deck Month Ready Today Week XMVP cas"
+    },
+    {
+      "timestamp_sec": 56.4,
+      "text": "App Boards Deck Mobile Month Today Week XMvP cranes oa? seach"
+    },
+    {
+      "timestamp_sec": 59.4,
+      "text": "Mobile Month Week oa? one spaces"
+    },
+    {
+      "timestamp_sec": 62.4,
+      "text": "Ewes Month Team Today Week oa? ore"
+    },
+    {
+      "timestamp_sec": 68.3,
+      "text": "Month Tine Today Week canes"
+    },
+    {
+      "timestamp_sec": 71.3,
+      "text": "Keeps any faster moving other than tool used."
+    },
+    {
+      "timestamp_sec": 74.2,
+      "text": "Keeps any faster othér than tool used."
+    },
+    {
+      "timestamp_sec": 77.2,
+      "text": "Max Sich any faster moving other than tool used."
+    },
+    {
+      "timestamp_sec": 83.1,
+      "text": "Today ‘Mobile"
+    },
+    {
+      "timestamp_sec": 86.1,
+      "text": "2024 Horizon Mach Timestripel Today What ang boosting calendar eye fe, focus for fot goal? man ofthe planer plans quite sep you your"
+    },
+    {
+      "timestamp_sec": 95.0,
+      "text": "See The Today You achieve also and app. boosting designs easy entke ety fact fcus fee for future, get his main nice organise planer plans see simple, step strange tags tasks, the this use whole with year. you your youre. yout “Te"
+    },
+    {
+      "timestamp_sec": 98.0,
+      "text": "You add also and anyone app can day folow got simple, started tasks, the tis use whe wth your ‘The ‘organise"
+    },
+    {
+      "timestamp_sec": 103.9,
+      "text": "You ada, and can design nce sop wth ‘The"
+    },
+    {
+      "timestamp_sec": 106.9,
+      "text": "“Good"
+    },
+    {
+      "timestamp_sec": 109.9,
+      "text": "\"Good (hour <8) const evening”: greeting: hour new ‘greeting"
+    },
+    {
+      "timestamp_sec": 112.8,
+      "text": "evening “Good “end"
+    },
+    {
+      "timestamp_sec": 115.8,
+      "text": "«so"
+    },
+    {
+      "timestamp_sec": 118.8,
+      "text": "App Today ome ‘Mobile"
+    },
+    {
+      "timestamp_sec": 127.7,
+      "text": "Spaces Today Years goat?"
+    },
+    {
+      "timestamp_sec": 130.7,
+      "text": "Insights Project Tod Viste cones hop search"
+    },
+    {
+      "timestamp_sec": 133.6,
+      "text": "Absolutely From Fronk Kunanon This Timestripe! Today Week day game-changer. has it's life loving organization. planning, powerful tool transformed year"
+    },
+    {
+      "timestamp_sec": 139.6,
+      "text": "App Dividers Today seach"
+    },
+    {
+      "timestamp_sec": 142.5,
+      "text": "(and Today Week and app every feel for for) like literally me. one only out paid sticks that the there, this tried"
+    },
+    {
+      "timestamp_sec": 148.5,
+      "text": "canoe goat? ings over ‘What ‘Years ‘ero"
+    },
+    {
+      "timestamp_sec": 151.5,
+      "text": "Dividers Today goat? ‘What"
+    },
+    {
+      "timestamp_sec": 157.4,
+      "text": "Days: Mobile Today"
+    },
+    {
+      "timestamp_sec": 169.3,
+      "text": "Boome Dividers Horizons: Mobile Repeat Space Today Work change ewe ‘Team"
+    },
+    {
+      "timestamp_sec": 172.2,
+      "text": "Dividers Horizons Mobile Repeat Space Today Work change “Team"
+    },
+    {
+      "timestamp_sec": 175.2,
+      "text": "2024 Assign Boome Bowe Days Dividers Horizons Kanban Mobile Today cams ‘Spaces “Team"
+    },
+    {
+      "timestamp_sec": 178.2,
+      "text": "Dividers Today nom one recone"
+    },
+    {
+      "timestamp_sec": 181.1,
+      "text": "202 Dividers Horizons. Repeat Today"
+    },
+    {
+      "timestamp_sec": 184.1,
+      "text": "(om) Dividers Quick now vey"
+    },
+    {
+      "timestamp_sec": 187.1,
+      "text": "(29) 29} Today goer vnat"
+    },
+    {
+      "timestamp_sec": 190.1,
+      "text": "(00 Horizons Today space ‘Search"
+    },
+    {
+      "timestamp_sec": 193.0,
+      "text": "ABD Today now space ‘Search"
+    },
+    {
+      "timestamp_sec": 196.0,
+      "text": "Today “Team"
+    },
+    {
+      "timestamp_sec": 199.0,
+      "text": "Boards: Horizons: Kanban Months: Team Today Work."
+    },
+    {
+      "timestamp_sec": 201.9,
+      "text": "Frere Kanban Team Today Work"
+    },
+    {
+      "timestamp_sec": 204.9,
+      "text": "Horizons: Wor owes"
+    },
+    {
+      "timestamp_sec": 207.9,
+      "text": "Boards: Kanban Months: Team Today Work."
+    },
+    {
+      "timestamp_sec": 210.8,
+      "text": "1800 March Monday Saturday Sunday our owe"
+    },
+    {
+      "timestamp_sec": 213.8,
+      "text": "1220 1940, Call Dally March Monday Sunday Te) Tuesday with"
+    },
+    {
+      "timestamp_sec": 216.8,
+      "text": "1400 220 Catt Com March Mareh Monday Months Sunday Tuesday Weeks: evo staat ‘100"
+    },
+    {
+      "timestamp_sec": 219.8,
+      "text": "1000 12, March Mareh Monday Rect Sunday Tuesday ewes"
+    },
+    {
+      "timestamp_sec": 222.7,
+      "text": "1100 1200 1582 160 March Monday Tuesday ais eco sunday ‘Months"
+    },
+    {
+      "timestamp_sec": 225.7,
+      "text": "1000 March Mareh Monday Sunday Te) Tuesday coz"
+    },
+    {
+      "timestamp_sec": 231.6,
+      "text": "March Monday Project Sunday Te) Time ‘Tuesday"
+    },
+    {
+      "timestamp_sec": 237.6,
+      "text": "1620 3:20 Call Erte March Monday Sunday Te) our with ‘Tuesday"
+    },
+    {
+      "timestamp_sec": 243.5,
+      "text": "@sheoshao Timestripe Treally all and app became consistently first regularly tasks.-. the-~ track where"
+    },
+    {
+      "timestamp_sec": 246.5,
+      "text": "@sheoshao Timestripe all and app became consistently first regularly the track where"
+    },
+    {
+      "timestamp_sec": 249.4,
+      "text": "1000 1800 March Mareh Monday Sunday Tuesday cot cow rey vim ‘00"
+    },
+    {
+      "timestamp_sec": 252.4,
+      "text": "1200 1600 March Monday Project Sunday ‘Tuesday"
+    },
+    {
+      "timestamp_sec": 258.4,
+      "text": "@willy_picard Picard Timestripe Willy across already and been best consistently days, for itis” months. planning= still the tool two using weeks, work years your"
+    },
+    {
+      "timestamp_sec": 261.3,
+      "text": "@willy_picard Picard Timestripe Willy across already and been best consistently days, for is” months. planning«« still the tool two using weeks, work years your"
+    },
+    {
+      "timestamp_sec": 264.3,
+      "text": "Picard Timestripe Willy across already and been best consistently days, for months. still the tool two using weeks, work years your"
+    },
+    {
+      "timestamp_sec": 270.2,
+      "text": "Kanban March Monday Moons Sunday Team bi] ice ‘Saturday"
+    },
+    {
+      "timestamp_sec": 273.2,
+      "text": "Kanban March Monday Propet Sunday Team ice seen ‘Saturday"
+    },
+    {
+      "timestamp_sec": 276.2,
+      "text": "Kanban March Monday Sync Team Tee ‘Saturday ‘Sunday"
+    },
+    {
+      "timestamp_sec": 279.1,
+      "text": "Kanban March Monday Saturday Team wien ‘Sunday"
+    },
+    {
+      "timestamp_sec": 282.1,
+      "text": "Kanban March Monday Sync Team ‘Saturday ‘Sunday"
+    },
+    {
+      "timestamp_sec": 288.1,
+      "text": "Horizons Today ‘Boards: ‘Spaces"
+    },
+    {
+      "timestamp_sec": 291.0,
+      "text": "Horizons Today ‘Spaces"
+    },
+    {
+      "timestamp_sec": 302.9,
+      "text": "Inbox Notes Search Use find keep ots, pots, tak what you “te"
+    },
+    {
+      "timestamp_sec": 305.9,
+      "text": "Inbox Notes Now Search Use fies. nk, photos, task what you"
+    },
+    {
+      "timestamp_sec": 311.8,
+      "text": "Board Business, Management Strategy Team templates"
+    },
+    {
+      "timestamp_sec": 314.8,
+      "text": "CRM Inbox Knowledge Projects Roading Simple Template University Walt- eo."
+    },
+    {
+      "timestamp_sec": 317.8,
+      "text": "Board rey templates"
+    },
+    {
+      "timestamp_sec": 320.7,
+      "text": "Inbox Notes Nothing better changed for game market, the"
+    },
+    {
+      "timestamp_sec": 326.7,
+      "text": "Nothing better changed for game market, the"
+    },
+    {
+      "timestamp_sec": 329.6,
+      "text": "Inbox Notes Search Use find hs. kinds ns, ots, ren tsk what you “te"
+    },
+    {
+      "timestamp_sec": 332.6,
+      "text": "Inbox Information: Mer Notes Search Use change find inks, keep kinds notes, photos, space, task what you “Wo,"
+    },
+    {
+      "timestamp_sec": 335.6,
+      "text": "Inbox Notes Use [F] box done eed fles. nk, notes, pal photos, rey task ‘documents,"
+    },
+    {
+      "timestamp_sec": 338.5,
+      "text": "Inbox Information: Notes Search Use canoe chy find inks, keep knds notes, photos, task what you “te"
+    },
+    {
+      "timestamp_sec": 341.5,
+      "text": "Inbox Information: Mer Notes Search Use canoe inks, keep knds notes, photos, task what you “te"
+    },
+    {
+      "timestamp_sec": 344.5,
+      "text": "Inbox Information: Notes Use canoe chy eed find inks, keep knds notes, photos, run senate task what you “te"
+    },
+    {
+      "timestamp_sec": 347.4,
+      "text": "Boards Community Dive shaped the with"
+    },
+    {
+      "timestamp_sec": 350.4,
+      "text": "GTD Inbox Meet Set Weekly choose first key objective results your ‘Choose ‘Why"
+    },
+    {
+      "timestamp_sec": 359.3,
+      "text": "Product Target Vision group"
+    },
+    {
+      "timestamp_sec": 362.3,
+      "text": "Assumptions Make RAIDLog Risks ato"
+    },
+    {
+      "timestamp_sec": 368.2,
+      "text": "Today comes wry"
+    },
+    {
+      "timestamp_sec": 374.2,
+      "text": "Horizons. Kanban Today Weeks: ‘My “Team"
+    },
+    {
+      "timestamp_sec": 377.1,
+      "text": "Horizons. Kanban Today Weeks: Work ‘My “Team"
+    },
+    {
+      "timestamp_sec": 383.1,
+      "text": "10,2028 March Sunday, Team"
+    },
+    {
+      "timestamp_sec": 386.1,
+      "text": "10,2024 March Team Work sunday,"
+    },
+    {
+      "timestamp_sec": 389.0,
+      "text": "Team Work|"
+    },
+    {
+      "timestamp_sec": 392.0,
+      "text": "4-10 Est Mar Team Wore search"
+    },
+    {
+      "timestamp_sec": 395.0,
+      "text": "Dev Kanban Mar Months Quick Work ott ‘Spaces ‘Team"
+    },
+    {
+      "timestamp_sec": 397.9,
+      "text": "Timestripe Tony Wahbeh. all app! brings under"
+    },
+    {
+      "timestamp_sec": 400.9,
+      "text": "Gilroy I've It’s Mark all and best elegant fo) once planning/apps powerful* seen. the tried under"
+    },
+    {
+      "timestamp_sec": 403.9,
+      "text": "@thatmarkgilroy Gilroy I've It’s Mark Week all and best elegant once planning/apps seen. the this.is tried under"
+    },
+    {
+      "timestamp_sec": 406.8,
+      "text": "I’ve Week afd all and best elegant it’s ottte planningZapps seen the tried under"
+    },
+    {
+      "timestamp_sec": 412.8,
+      "text": "4-10 Edit Kanban Mar Months Quick Team Week Work sere ‘Spaces"
+    },
+    {
+      "timestamp_sec": 421.7,
+      "text": "Space tape"
+    },
+    {
+      "timestamp_sec": 433.6,
+      "text": "Assignee Blue Boara Color Green Horizon Orange Purple Red Status"
+    },
+    {
+      "timestamp_sec": 436.5,
+      "text": "Montn"
+    },
+    {
+      "timestamp_sec": 439.5,
+      "text": "(©) 2024 Add Comments Feb-3 GRAND MOBILE Mar Progress Templates Timeblocking UPDATE. able add are art backend center configure create desktop editable eta events goals gos item make mobile) moda mode not ony own serch ton updated vow win ‘must"
+    },
+    {
+      "timestamp_sec": 442.5,
+      "text": "2024 Feb-3 Mar Privo Tie ate cnr mes own pet stings ton view"
+    },
+    {
+      "timestamp_sec": 445.4,
+      "text": "2024 Creat Feb-3 Hors Mar March W10,2024 ans ate eae eats ero prob sos tao tsa wo,"
+    },
+    {
+      "timestamp_sec": 448.4,
+      "text": "08.02.2024 29.02.2024 87% Longest active bag days streak: this year"
+    },
+    {
+      "timestamp_sec": 451.4,
+      "text": "+338% +67% 08.02.2024 2080 234 29.02.2024 540 87% Longest active created days done last streak: this updated year"
+    },
+    {
+      "timestamp_sec": 454.4,
+      "text": "2023 2024 ote"
+    },
+    {
+      "timestamp_sec": 457.3,
+      "text": "ots war wit wove"
+    },
+    {
+      "timestamp_sec": 460.3,
+      "text": "Week ven"
+    },
+    {
+      "timestamp_sec": 481.1,
+      "text": "Best Feels Month Week investments like one this year."
+    },
+    {
+      "timestamp_sec": 484.1,
+      "text": "Month Week"
+    },
+    {
+      "timestamp_sec": 498.9,
+      "text": "... 10:15 10:30 10:40 12:00 12:30 2:00 3:30 9:15 Ask Interview Josh Mark Post Review Write ask designers ely first flow for job new onboarding prototype reference review the version video with"
+    },
+    {
+      "timestamp_sec": 507.8,
+      "text": "23-29 Josh Mest Mont Oct October Post Today app ask banking cies ect for ive job reference speech the website wit ‘Write"
+    }
+  ],
+  "pseudo_transcript": "Boards Filters Today Work ‘Spaces ‘Team | Here's plan the | Dean Kanban Project Today cae ers | goals | Spaces Today goat? mts sia ‘Search “|? | BEG: Eves Inbox Project Today cones goat? ont | Eves Inbox Project Today Wok cine cones | Dividers: Eves Inbox Jews Project Today | Month Today Week Work: oa? ure “Team | App Boards Insights. Mobile Month Pen Ready Today XMVP ‘Week | -Timestripeis Simple Today Week amazing. and flexible. | Simple Timestripeis amazing. and flexible. | Boards Deck Month Ready Today Week XMVP cas | App Boards Deck Mobile Month Today Week XMvP cranes oa? seach | Mobile Month Week oa? one spaces | Ewes Month Team Today Week oa? ore | Month Tine Today Week canes | Keeps any faster moving other than tool used. | Keeps any faster othér than tool used. | Max Sich any faster moving other than tool used. | Today ‘Mobile | 2024 Horizon Mach Timestripel Today What ang boosting calendar eye fe, focus for fot goal? man ofthe planer plans quite sep you your | See The Today You achieve also and app. boosting designs easy entke ety fact fcus fee for future, get his main nice organise planer plans see simple, step strange tags tasks, the this use whole with year. you your youre. yout “Te | You add also and anyone app can day folow got simple, started tasks, the tis use whe wth your ‘The ‘organise | You ada, and can design nce sop wth ‘The | “Good | \"Good (hour <8) const evening”: greeting: hour new ‘greeting | evening “Good “end | «so | App Today ome ‘Mobile | Spaces Today Years goat? | Insights Project Tod Viste cones hop search | Absolutely From Fronk Kunanon This Timestripe! Today Week day game-changer. has it's life loving organization. planning, powerful tool transformed year | App Dividers Today seach | (and Today Week and app every feel for for) like literally me. one only out paid sticks that the there, this tried | canoe goat? ings over ‘What ‘Years ‘ero | Dividers Today goat? ‘What | Days: Mobile Today | Boome Dividers Horizons: Mobile Repeat Space Today Work change ewe ‘Team | Dividers Horizons Mobile Repeat Space Today Work change “Team | 2024 Assign Boome Bowe Days Dividers Horizons Kanban Mobile Today cams ‘Spaces “Team | Dividers Today nom one recone | 202 Dividers Horizons. Repeat Today | (om) Dividers Quick now vey | (29) 29} Today goer vnat | (00 Horizons Today space ‘Search | ABD Today now space ‘Search | Today “Team | Boards: Horizons: Kanban Months: Team Today Work. | Frere Kanban Team Today Work | Horizons: Wor owes | Boards: Kanban Months: Team Today Work. | 1800 March Monday Saturday Sunday our owe | 1220 1940, Call Dally March Monday Sunday Te) Tuesday with | 1400 220 Catt Com March Mareh Monday Months Sunday Tuesday Weeks: evo staat ‘100 | 1000 12, March Mareh Monday Rect Sunday Tuesday ewes | 1100 1200 1582 160 March Monday Tuesday ais eco sunday ‘Months | 1000 March Mareh Monday Sunday Te) Tuesday coz | March Monday Project Sunday Te) Time ‘Tuesday | 1620 3:20 Call Erte March Monday Sunday Te) our with ‘Tuesday | @sheoshao Timestripe Treally all and app became consistently first regularly tasks.-. the-~ track where | @sheoshao Timestripe all and app became consistently first regularly the track where | 1000 1800 March Mareh Monday Sunday Tuesday cot cow rey vim ‘00 | 1200 1600 March Monday Project Sunday ‘Tuesday | @willy_picard Picard Timestripe Willy across already and been best consistently days, for itis” months. planning= still the tool two using weeks, work years your | @willy_picard Picard Timestripe Willy across already and been best consistently days, for is” months. planning«« still the tool two using weeks, work years your | Picard Timestripe Willy across already and been best consistently days, for months. still the tool two using weeks, work years your | Kanban March Monday Moons Sunday Team bi] ice ‘Saturday | Kanban March Monday Propet Sunday Team ice seen ‘Saturday | Kanban March Monday Sync Team Tee ‘Saturday ‘Sunday | Kanban March Monday Saturday Team wien ‘Sunday | Kanban March Monday Sync Team ‘Saturday ‘Sunday | Horizons Today ‘Boards: ‘Spaces | Horizons Today ‘Spaces | Inbox Notes Search Use find keep ots, pots, tak what you “te | Inbox Notes Now Search Use fies. nk, photos, task what you | Board Business, Management Strategy Team templates | CRM Inbox Knowledge Projects Roading Simple Template University Walt- eo. | Board rey templates | Inbox Notes Nothing better changed for game market, the | Nothing better changed for game market, the | Inbox Notes Search Use find hs. kinds ns, ots, ren tsk what you “te | Inbox Information: Mer Notes Search Use change find inks, keep kinds notes, photos, space, task what you “Wo, | Inbox Notes Use [F] box done eed fles. nk, notes, pal photos, rey task ‘documents, | Inbox Information: Notes Search Use canoe chy find inks, keep knds notes, photos, task what you “te | Inbox Information: Mer Notes Search Use canoe inks, keep knds notes, photos, task what you “te | Inbox Information: Notes Use canoe chy eed find inks, keep knds notes, photos, run senate task what you “te | Boards Community Dive shaped the with | GTD Inbox Meet Set Weekly choose first key objective results your ‘Choose ‘Why | Product Target Vision group | Assumptions Make RAIDLog Risks ato | Today comes wry | Horizons. Kanban Today Weeks: ‘My “Team | Horizons. Kanban Today Weeks: Work ‘My “Team | 10,2028 March Sunday, Team | 10,2024 March Team Work sunday, | Team Work| | 4-10 Est Mar Team Wore search | Dev Kanban Mar Months Quick Work ott ‘Spaces ‘Team | Timestripe Tony Wahbeh. all app! brings under | Gilroy I've It’s Mark all and best elegant fo) once planning/apps powerful* seen. the tried under | @thatmarkgilroy Gilroy I've It’s Mark Week all and best elegant once planning/apps seen. the this.is tried under | I’ve Week afd all and best elegant it’s ottte planningZapps seen the tried under | 4-10 Edit Kanban Mar Months Quick Team Week Work sere ‘Spaces | Space tape | Assignee Blue Boara Color Green Horizon Orange Purple Red Status | Montn | (©) 2024 Add Comments Feb-3 GRAND MOBILE Mar Progress Templates Timeblocking UPDATE. able add are art backend center configure create desktop editable eta events goals gos item make mobile) moda mode not ony own serch ton updated vow win ‘must | 2024 Feb-3 Mar Privo Tie ate cnr mes own pet stings ton view | 2024 Creat Feb-3 Hors Mar March W10,2024 ans ate eae eats ero prob sos tao tsa wo, | 08.02.2024 29.02.2024 87% Longest active bag days streak: this year | +338% +67% 08.02.2024 2080 234 29.02.2024 540 87% Longest active created days done last streak: this updated year | 2023 2024 ote | ots war wit wove | Week ven | Best Feels Month Week investments like one this year. | Month Week | ... 10:15 10:30 10:40 12:00 12:30 2:00 3:30 9:15 Ask Interview Josh Mark Post Review Write ask designers ely first flow for job new onboarding prototype reference review the version video with | 23-29 Josh Mest Mont Oct October Post Today app ask banking cies ect for ive job reference speech the website wit ‘Write",
+  "frame_type_distribution": {
+    "text_with_visual": 0.35,
+    "simple_visual": 0.25,
+    "dark_screen": 0.16,
+    "white_screen": 0.13,
+    "text_heavy": 0.1,
+    "detailed_visual": 0.02
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          29,
+          31
+        ],
+        [
+          129,
+          49,
+          127
+        ],
+        [
+          191,
+          199,
+          210
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          76,
+          65,
+          19
+        ],
+        [
+          109,
+          55,
+          92
+        ],
+        [
+          229,
+          228,
+          227
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 5.9,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          32,
+          28,
+          29
+        ],
+        [
+          129,
+          50,
+          126
+        ],
+        [
+          185,
+          190,
+          203
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          140,
+          140,
+          140
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 29.7,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          28,
+          30
+        ],
+        [
+          125,
+          52,
+          118
+        ],
+        [
+          191,
+          195,
+          203
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 44.5,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          30
+        ],
+        [
+          94,
+          97,
+          121
+        ],
+        [
+          191,
+          196,
+          201
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 47.5,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          59,
+          21,
+          20
+        ],
+        [
+          56,
+          48,
+          34
+        ],
+        [
+          174,
+          170,
+          171
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 50.5,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          78,
+          15,
+          11
+        ],
+        [
+          67,
+          58,
+          32
+        ],
+        [
+          216,
+          214,
+          212
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 53.5,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          30
+        ],
+        [
+          98,
+          102,
+          121
+        ],
+        [
+          193,
+          197,
+          202
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 59.4,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          30
+        ],
+        [
+          103,
+          94,
+          103
+        ],
+        [
+          189,
+          193,
+          198
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 71.3,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          17,
+          7,
+          103
+        ],
+        [
+          35,
+          22,
+          48
+        ],
+        [
+          203,
+          205,
+          217
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 74.2,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          16,
+          5,
+          103
+        ],
+        [
+          34,
+          22,
+          52
+        ],
+        [
+          202,
+          203,
+          218
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 77.2,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          23,
+          13,
+          92
+        ],
+        [
+          32,
+          23,
+          48
+        ],
+        [
+          176,
+          179,
+          191
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 80.2,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          11,
+          11,
+          11
+        ],
+        [
+          143,
+          143,
+          143
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 89.1,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          7,
+          7,
+          7
+        ],
+        [
+          136,
+          136,
+          136
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 103.9,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          23,
+          19,
+          21
+        ],
+        [
+          174,
+          167,
+          176
+        ],
+        [
+          123,
+          97,
+          103
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 118.8,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          28,
+          29
+        ],
+        [
+          130,
+          49,
+          126
+        ],
+        [
+          186,
+          185,
+          198
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 133.6,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          60,
+          59,
+          19
+        ],
+        [
+          112,
+          78,
+          108
+        ],
+        [
+          216,
+          216,
+          207
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 139.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          29,
+          29
+        ],
+        [
+          123,
+          54,
+          124
+        ],
+        [
+          185,
+          185,
+          195
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 142.5,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          125,
+          10,
+          104
+        ],
+        [
+          108,
+          16,
+          48
+        ],
+        [
+          223,
+          204,
+          218
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 148.5,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          29,
+          30
+        ],
+        [
+          124,
+          54,
+          125
+        ],
+        [
+          184,
+          185,
+          195
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 163.3,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          29,
+          30
+        ],
+        [
+          130,
+          50,
+          128
+        ],
+        [
+          215,
+          213,
+          221
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 178.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          27,
+          28
+        ],
+        [
+          128,
+          55,
+          119
+        ],
+        [
+          206,
+          208,
+          214
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 193.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          28,
+          28
+        ],
+        [
+          116,
+          62,
+          97
+        ],
+        [
+          207,
+          209,
+          215
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 207.9,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          32,
+          28,
+          29
+        ],
+        [
+          129,
+          51,
+          126
+        ],
+        [
+          212,
+          213,
+          222
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 222.7,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          35,
+          36,
+          37
+        ],
+        [
+          121,
+          62,
+          128
+        ],
+        [
+          204,
+          207,
+          216
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 237.6,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          36,
+          36
+        ],
+        [
+          123,
+          60,
+          129
+        ],
+        [
+          205,
+          208,
+          216
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 243.5,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          98,
+          127,
+          23
+        ],
+        [
+          92,
+          65,
+          60
+        ],
+        [
+          223,
+          225,
+          216
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 249.4,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          36,
+          36
+        ],
+        [
+          123,
+          61,
+          132
+        ],
+        [
+          209,
+          213,
+          219
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 252.4,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          36,
+          37
+        ],
+        [
+          125,
+          59,
+          131
+        ],
+        [
+          205,
+          207,
+          215
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 258.4,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          72,
+          13,
+          39
+        ],
+        [
+          118,
+          59,
+          109
+        ],
+        [
+          224,
+          217,
+          222
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 267.3,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          7,
+          7,
+          7
+        ],
+        [
+          146,
+          146,
+          146
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 282.1,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          29,
+          30
+        ],
+        [
+          120,
+          65,
+          127
+        ],
+        [
+          209,
+          212,
+          219
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 297.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          31,
+          28,
+          29
+        ],
+        [
+          129,
+          51,
+          124
+        ],
+        [
+          204,
+          205,
+          216
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 311.8,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          30
+        ],
+        [
+          206,
+          209,
+          213
+        ],
+        [
+          99,
+          102,
+          119
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 320.7,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          56,
+          18,
+          28
+        ],
+        [
+          222,
+          219,
+          220
+        ],
+        [
+          121,
+          106,
+          121
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 326.7,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          46,
+          28,
+          40
+        ],
+        [
+          71,
+          12,
+          17
+        ],
+        [
+          212,
+          208,
+          212
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 329.6,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          29,
+          29,
+          29
+        ],
+        [
+          60,
+          60,
+          61
+        ],
+        [
+          197,
+          200,
+          209
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 341.5,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          29,
+          28,
+          28
+        ],
+        [
+          60,
+          60,
+          62
+        ],
+        [
+          193,
+          197,
+          203
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 356.4,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          6,
+          6,
+          6
+        ],
+        [
+          113,
+          113,
+          113
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 371.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          32,
+          28,
+          29
+        ],
+        [
+          130,
+          51,
+          126
+        ],
+        [
+          212,
+          211,
+          216
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 386.1,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          28,
+          27,
+          32
+        ],
+        [
+          89,
+          103,
+          117
+        ],
+        [
+          186,
+          191,
+          194
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 397.9,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          56,
+          7,
+          74
+        ],
+        [
+          105,
+          43,
+          122
+        ],
+        [
+          220,
+          214,
+          224
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 400.9,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          69,
+          60,
+          22
+        ],
+        [
+          116,
+          61,
+          98
+        ],
+        [
+          225,
+          221,
+          213
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 406.8,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          38,
+          34,
+          30
+        ],
+        [
+          113,
+          60,
+          110
+        ],
+        [
+          204,
+          202,
+          207
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 409.8,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          4,
+          4,
+          4
+        ],
+        [
+          133,
+          133,
+          133
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 415.7,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          13,
+          12,
+          12
+        ],
+        [
+          33,
+          25,
+          32
+        ],
+        [
+          147,
+          124,
+          114
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 430.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          249,
+          249
+        ],
+        [
+          85,
+          85,
+          85
+        ],
+        [
+          38,
+          14,
+          29
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 445.4,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          27,
+          27,
+          28
+        ],
+        [
+          111,
+          99,
+          105
+        ],
+        [
+          165,
+          143,
+          166
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 460.3,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          248
+        ],
+        [
+          170,
+          158,
+          185
+        ],
+        [
+          105,
+          86,
+          99
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 475.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          248
+        ],
+        [
+          169,
+          156,
+          183
+        ],
+        [
+          100,
+          84,
+          97
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 481.1,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          185,
+          69,
+          57
+        ],
+        [
+          173,
+          122,
+          128
+        ],
+        [
+          225,
+          215,
+          212
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 484.1,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          217,
+          177,
+          174
+        ],
+        [
+          157,
+          113,
+          132
+        ],
+        [
+          234,
+          229,
+          227
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 487.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          248,
+          248,
+          248
+        ],
+        [
+          170,
+          158,
+          183
+        ],
+        [
+          102,
+          83,
+          96
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 490.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          20,
+          20,
+          20
+        ],
+        [
+          88,
+          88,
+          88
+        ],
+        [
+          249,
+          249,
+          249
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 504.8,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          15,
+          15,
+          15
+        ],
+        [
+          247,
+          247,
+          247
+        ],
+        [
+          132,
+          132,
+          132
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 519.7,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          15,
+          15,
+          15
+        ],
+        [
+          247,
+          247,
+          247
+        ],
+        [
+          121,
+          121,
+          121
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "mega": {
+    "video_id": "YR-km3ibpew",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 300.0,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.082,
+      "energy_trend": 0.008341,
+      "peak_timestamp_sec": 109.2,
+      "peak_position_pct": 0.36,
+      "dynamic_range_db": 30.7,
+      "onset_density": 4.24,
+      "intro_silence_sec": 0.7,
+      "outro_silence_sec": 0.0,
+      "avg_spectral_centroid": 1683.0,
+      "avg_spectral_bandwidth": 1903.0,
+      "avg_zcr": 0.0833
+    },
+    "deep_visual": {
+      "has_scroll": true,
+      "scroll_frame_count": 11,
+      "avg_scroll_speed": 5.8,
+      "color_palette_size": 20,
+      "color_consistency": 68.9,
+      "gradient_frame_pct": 0.006,
+      "high_contrast_frame_pct": 0.348,
+      "navbar_pct": 0.281,
+      "sidebar_pct": 0.073,
+      "modal_pct": 0.022,
+      "table_pct": 0.118,
+      "chat_pct": 0.017,
+      "code_pct": 0.511,
+      "terminal_pct": 0.438,
+      "mobile_frame_pct": 0.146,
+      "desktop_chrome_pct": 0.051,
+      "avg_symmetry": 0.886,
+      "avg_thirds_score": 1.081,
+      "avg_content_aspect": 1.863,
+      "scene_diversity": 0.15,
+      "repetition_count": 151,
+      "has_bookend": true,
+      "longest_scene_sec": 96.0,
+      "frames_analyzed": 178
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30000/1001",
+      "r_frame_rate": "30000/1001",
+      "bit_rate_stream": 164711,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "mp42",
+      "creation_time": "2024-03-19T21:20:14.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 103.4,
+      "detected_key": "C#",
+      "key_confidence": 0.105,
+      "mfcc_mean": [
+        -273.596,
+        115.519,
+        27.915,
+        33.058,
+        4.832,
+        -5.365,
+        -2.766,
+        6.206,
+        3.585,
+        -0.195,
+        -16.461,
+        -0.192,
+        -4.339
+      ],
+      "mfcc_std": [
+        88.681,
+        59.488,
+        34.881,
+        26.19,
+        21.238,
+        20.878,
+        12.955,
+        12.377,
+        12.13,
+        10.63,
+        14.735,
+        9.983,
+        8.95
+      ],
+      "avg_spectral_contrast": 19.01,
+      "avg_tonnetz": [
+        0.0574,
+        -0.113,
+        -0.0719,
+        -0.0505,
+        0.0248,
+        0.0243
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -17.9,
+          "centroid": 1450.0,
+          "bandwidth": 1767.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 1342.0,
+          "bandwidth": 1587.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 2009.0,
+          "bandwidth": 2112.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -18.8,
+          "centroid": 1633.0,
+          "bandwidth": 1935.0
+        },
+        {
+          "timestamp": 12,
+          "type": "ambient",
+          "rms_db": -22.5,
+          "centroid": 2183.0,
+          "bandwidth": 2048.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 2004.0,
+          "bandwidth": 1934.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -21.2,
+          "centroid": 2033.0,
+          "bandwidth": 1976.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1686.0,
+          "bandwidth": 1883.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -21.6,
+          "centroid": 1595.0,
+          "bandwidth": 1833.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 2104.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1927.0,
+          "bandwidth": 1906.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -20.6,
+          "centroid": 1742.0,
+          "bandwidth": 1892.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -21.0,
+          "centroid": 1611.0,
+          "bandwidth": 1914.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1790.0,
+          "bandwidth": 1888.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -23.6,
+          "centroid": 1905.0,
+          "bandwidth": 2060.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -19.6,
+          "centroid": 1554.0,
+          "bandwidth": 1762.0
+        },
+        {
+          "timestamp": 48,
+          "type": "ambient",
+          "rms_db": -20.3,
+          "centroid": 2213.0,
+          "bandwidth": 1984.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 1467.0,
+          "bandwidth": 1793.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 1907.0,
+          "bandwidth": 1924.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -23.0,
+          "centroid": 1278.0,
+          "bandwidth": 1822.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1867.0,
+          "bandwidth": 2099.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -19.4,
+          "centroid": 1536.0,
+          "bandwidth": 1841.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -20.8,
+          "centroid": 1648.0,
+          "bandwidth": 1853.0
+        },
+        {
+          "timestamp": 69,
+          "type": "ambient",
+          "rms_db": -20.3,
+          "centroid": 2255.0,
+          "bandwidth": 2061.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -20.8,
+          "centroid": 1833.0,
+          "bandwidth": 1863.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -20.3,
+          "centroid": 1889.0,
+          "bandwidth": 1954.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -20.9,
+          "centroid": 2036.0,
+          "bandwidth": 1948.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -20.9,
+          "centroid": 1872.0,
+          "bandwidth": 1994.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 1851.0,
+          "bandwidth": 2096.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1281.0,
+          "bandwidth": 1747.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1659.0,
+          "bandwidth": 1919.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1996.0,
+          "bandwidth": 1925.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 1622.0,
+          "bandwidth": 1817.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1655.0,
+          "bandwidth": 1847.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 1784.0,
+          "bandwidth": 1881.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -20.4,
+          "centroid": 1594.0,
+          "bandwidth": 1901.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -18.0,
+          "centroid": 1672.0,
+          "bandwidth": 2217.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -19.4,
+          "centroid": 1271.0,
+          "bandwidth": 1765.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 1729.0,
+          "bandwidth": 1855.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1726.0,
+          "bandwidth": 1865.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -19.5,
+          "centroid": 1194.0,
+          "bandwidth": 1776.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -22.0,
+          "centroid": 2167.0,
+          "bandwidth": 2138.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 1713.0,
+          "bandwidth": 1985.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -21.0,
+          "centroid": 1471.0,
+          "bandwidth": 1977.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1080.0,
+          "bandwidth": 1518.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1522.0,
+          "bandwidth": 1699.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 1461.0,
+          "bandwidth": 1890.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1971.0,
+          "bandwidth": 1902.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1857.0,
+          "bandwidth": 2227.0
+        },
+        {
+          "timestamp": 147,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 1971.0,
+          "bandwidth": 2085.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 1719.0,
+          "bandwidth": 1788.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -21.6,
+          "centroid": 1820.0,
+          "bandwidth": 2063.0
+        },
+        {
+          "timestamp": 156,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1931.0,
+          "bandwidth": 1958.0
+        },
+        {
+          "timestamp": 159,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1709.0,
+          "bandwidth": 1978.0
+        },
+        {
+          "timestamp": 162,
+          "type": "speech",
+          "rms_db": -21.6,
+          "centroid": 1380.0,
+          "bandwidth": 1678.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -20.1,
+          "centroid": 1664.0,
+          "bandwidth": 1883.0
+        },
+        {
+          "timestamp": 168,
+          "type": "ambient",
+          "rms_db": -18.9,
+          "centroid": 2256.0,
+          "bandwidth": 2188.0
+        },
+        {
+          "timestamp": 171,
+          "type": "speech",
+          "rms_db": -17.2,
+          "centroid": 1691.0,
+          "bandwidth": 1868.0
+        },
+        {
+          "timestamp": 174,
+          "type": "ambient",
+          "rms_db": -19.7,
+          "centroid": 2245.0,
+          "bandwidth": 2071.0
+        },
+        {
+          "timestamp": 177,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1748.0,
+          "bandwidth": 1932.0
+        },
+        {
+          "timestamp": 180,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 1284.0,
+          "bandwidth": 1839.0
+        },
+        {
+          "timestamp": 183,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1529.0,
+          "bandwidth": 1915.0
+        },
+        {
+          "timestamp": 186,
+          "type": "speech",
+          "rms_db": -18.1,
+          "centroid": 1592.0,
+          "bandwidth": 1768.0
+        },
+        {
+          "timestamp": 189,
+          "type": "speech",
+          "rms_db": -19.1,
+          "centroid": 1954.0,
+          "bandwidth": 1983.0
+        },
+        {
+          "timestamp": 192,
+          "type": "speech",
+          "rms_db": -19.2,
+          "centroid": 1521.0,
+          "bandwidth": 1770.0
+        },
+        {
+          "timestamp": 195,
+          "type": "speech",
+          "rms_db": -18.9,
+          "centroid": 1677.0,
+          "bandwidth": 1834.0
+        },
+        {
+          "timestamp": 198,
+          "type": "speech",
+          "rms_db": -19.3,
+          "centroid": 1607.0,
+          "bandwidth": 1810.0
+        },
+        {
+          "timestamp": 201,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 2105.0,
+          "bandwidth": 2164.0
+        },
+        {
+          "timestamp": 204,
+          "type": "speech",
+          "rms_db": -17.4,
+          "centroid": 1206.0,
+          "bandwidth": 1653.0
+        },
+        {
+          "timestamp": 207,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1236.0,
+          "bandwidth": 1836.0
+        },
+        {
+          "timestamp": 210,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1725.0,
+          "bandwidth": 1870.0
+        },
+        {
+          "timestamp": 213,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 1438.0,
+          "bandwidth": 1853.0
+        },
+        {
+          "timestamp": 216,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1544.0,
+          "bandwidth": 1887.0
+        },
+        {
+          "timestamp": 219,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 2180.0,
+          "bandwidth": 2249.0
+        },
+        {
+          "timestamp": 222,
+          "type": "speech",
+          "rms_db": -19.0,
+          "centroid": 1580.0,
+          "bandwidth": 1915.0
+        },
+        {
+          "timestamp": 225,
+          "type": "speech",
+          "rms_db": -19.5,
+          "centroid": 1496.0,
+          "bandwidth": 1794.0
+        },
+        {
+          "timestamp": 228,
+          "type": "speech",
+          "rms_db": -22.7,
+          "centroid": 2001.0,
+          "bandwidth": 2109.0
+        },
+        {
+          "timestamp": 231,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 1809.0,
+          "bandwidth": 1927.0
+        },
+        {
+          "timestamp": 234,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 1874.0,
+          "bandwidth": 2085.0
+        },
+        {
+          "timestamp": 237,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1869.0,
+          "bandwidth": 2025.0
+        },
+        {
+          "timestamp": 240,
+          "type": "speech",
+          "rms_db": -19.6,
+          "centroid": 1491.0,
+          "bandwidth": 1949.0
+        },
+        {
+          "timestamp": 243,
+          "type": "speech",
+          "rms_db": -17.4,
+          "centroid": 1695.0,
+          "bandwidth": 1890.0
+        },
+        {
+          "timestamp": 246,
+          "type": "speech",
+          "rms_db": -19.6,
+          "centroid": 1515.0,
+          "bandwidth": 1842.0
+        },
+        {
+          "timestamp": 249,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 1727.0,
+          "bandwidth": 2017.0
+        },
+        {
+          "timestamp": 252,
+          "type": "speech",
+          "rms_db": -22.6,
+          "centroid": 1725.0,
+          "bandwidth": 2132.0
+        },
+        {
+          "timestamp": 255,
+          "type": "speech",
+          "rms_db": -18.6,
+          "centroid": 1338.0,
+          "bandwidth": 1631.0
+        },
+        {
+          "timestamp": 258,
+          "type": "speech",
+          "rms_db": -20.9,
+          "centroid": 1332.0,
+          "bandwidth": 1647.0
+        },
+        {
+          "timestamp": 261,
+          "type": "speech",
+          "rms_db": -17.7,
+          "centroid": 1167.0,
+          "bandwidth": 1720.0
+        },
+        {
+          "timestamp": 264,
+          "type": "speech",
+          "rms_db": -18.4,
+          "centroid": 1712.0,
+          "bandwidth": 1858.0
+        },
+        {
+          "timestamp": 267,
+          "type": "speech",
+          "rms_db": -17.5,
+          "centroid": 1397.0,
+          "bandwidth": 1982.0
+        },
+        {
+          "timestamp": 270,
+          "type": "speech",
+          "rms_db": -18.5,
+          "centroid": 1718.0,
+          "bandwidth": 1787.0
+        },
+        {
+          "timestamp": 273,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 1730.0,
+          "bandwidth": 2032.0
+        },
+        {
+          "timestamp": 276,
+          "type": "speech",
+          "rms_db": -18.7,
+          "centroid": 1518.0,
+          "bandwidth": 1781.0
+        },
+        {
+          "timestamp": 279,
+          "type": "speech",
+          "rms_db": -19.3,
+          "centroid": 1449.0,
+          "bandwidth": 1800.0
+        },
+        {
+          "timestamp": 282,
+          "type": "speech",
+          "rms_db": -18.8,
+          "centroid": 1614.0,
+          "bandwidth": 1874.0
+        },
+        {
+          "timestamp": 285,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 1481.0,
+          "bandwidth": 2033.0
+        },
+        {
+          "timestamp": 288,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1320.0,
+          "bandwidth": 1746.0
+        },
+        {
+          "timestamp": 291,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1110.0,
+          "bandwidth": 1658.0
+        },
+        {
+          "timestamp": 294,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 1974.0,
+          "bandwidth": 2116.0
+        },
+        {
+          "timestamp": 297,
+          "type": "speech",
+          "rms_db": -21.3,
+          "centroid": 1466.0,
+          "bandwidth": 1799.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.95,
+        "ambient": 0.05
+      },
+      "speech_pct": 0.95,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 672,
+      "strong_sfx_timestamps": [
+        0.72,
+        1.04,
+        1.67,
+        2.11,
+        2.41,
+        2.9,
+        3.16,
+        3.46,
+        4.13,
+        4.32,
+        5.04,
+        5.15,
+        5.8,
+        6.06,
+        6.25,
+        7.43,
+        7.64,
+        7.96,
+        9.06,
+        9.98
+      ],
+      "n_segments": 100
+    }
+  }
+}

@@ -339,14 +339,19 @@ def main():
         if not bt or not bt.get("current_holdings"):
             print(f"SKIP {m['ticker']}: 0 holdings")
             continue
+        original_count = len(bt["current_holdings"])
         filtered_holdings = [
             hld for hld in bt["current_holdings"]
             if hld.get("symbol") in valid_bitget_symbols
         ]
-        removed = len(bt["current_holdings"]) - len(filtered_holdings)
+        removed = original_count - len(filtered_holdings)
         if removed:
             dropped = [hld["symbol"] for hld in bt["current_holdings"] if hld.get("symbol") not in valid_bitget_symbols]
             print(f"  {m['ticker']}: dropped {removed} non-Bitget symbols: {dropped}")
+        # Skip ITPs that have fewer than 2 assets after filtering
+        if len(filtered_holdings) < 2:
+            print(f"SKIP {m['ticker']}: only {len(filtered_holdings)} assets after Bitget filter (need >=2)")
+            continue
         h = normalize_weights(filtered_holdings, prices)
         if not h:
             print(f"SKIP {m['ticker']}: empty after filter")

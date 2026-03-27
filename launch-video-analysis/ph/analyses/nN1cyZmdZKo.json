@@ -1,0 +1,567 @@
+{
+  "video_id": "nN1cyZmdZKo",
+  "status": "ok",
+  "duration_sec": 32.8,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 11,
+  "transition_count": 5,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.275,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "correlation": 0.231,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "correlation": 0.422,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "correlation": 0.42,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "correlation": 0.116,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 6,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "Alex Here's what wrote"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "INDUSTRIES LUMON"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "/static/lumons.png ACCESSIBILITY ATTEMPT Compatibility Dear FETCH Linter Macrodata Missing Refineme Spam The Valued Your according alt bee broken have https://lumon.com/employee-han image link numbers quarterly text the their"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "1.28 200 404 HTTP L190 Member, Your commendable. diligence grouping sed."
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "/static/lumons.png /static/mdr.jpeg ACCESSIBILITY ATTEMPT Compatibility Dear FETCH Linter Macrodata Mer Missing Refinement Spam Team The Valued Your according alt been broken com have image link numbers processed. qualities quarterly text the their"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "10/10 Dear Macrodata Member, Refinement Spam Team Valued Your abuse according been clean commendable diligenc email have indicators. numbers patibility processed. qualities quarterly the their"
+    }
+  ],
+  "pseudo_transcript": "Alex Here's what wrote | INDUSTRIES LUMON | /static/lumons.png ACCESSIBILITY ATTEMPT Compatibility Dear FETCH Linter Macrodata Missing Refineme Spam The Valued Your according alt bee broken have https://lumon.com/employee-han image link numbers quarterly text the their | 1.28 200 404 HTTP L190 Member, Your commendable. diligence grouping sed. | /static/lumons.png /static/mdr.jpeg ACCESSIBILITY ATTEMPT Compatibility Dear FETCH Linter Macrodata Mer Missing Refinement Spam Team The Valued Your according alt been broken com have image link numbers processed. qualities quarterly text the their | 10/10 Dear Macrodata Member, Refinement Spam Team Valued Your abuse according been clean commendable diligenc email have indicators. numbers patibility processed. qualities quarterly the their",
+  "frame_type_distribution": {
+    "simple_visual": 0.55,
+    "text_heavy": 0.27,
+    "dark_screen": 0.09,
+    "text_with_visual": 0.09
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          32,
+          24
+        ],
+        [
+          230,
+          225,
+          218
+        ],
+        [
+          162,
+          157,
+          150
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          238,
+          238,
+          235
+        ],
+        [
+          8,
+          9,
+          8
+        ],
+        [
+          119,
+          110,
+          180
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 9.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          229,
+          226,
+          221
+        ],
+        [
+          30,
+          32,
+          24
+        ],
+        [
+          163,
+          157,
+          151
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 12.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          236,
+          235,
+          231
+        ],
+        [
+          12,
+          15,
+          11
+        ],
+        [
+          128,
+          141,
+          124
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_heavy",
+      "dominant_colors_bgr": [
+        [
+          11,
+          12,
+          10
+        ],
+        [
+          236,
+          234,
+          231
+        ],
+        [
+          99,
+          100,
+          105
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 18.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          11,
+          14,
+          9
+        ],
+        [
+          224,
+          222,
+          217
+        ],
+        [
+          249,
+          250,
+          248
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 27.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          226,
+          222,
+          220
+        ],
+        [
+          25,
+          28,
+          23
+        ],
+        [
+          155,
+          150,
+          149
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          226,
+          223,
+          221
+        ],
+        [
+          27,
+          30,
+          24
+        ],
+        [
+          158,
+          155,
+          154
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "nN1cyZmdZKo",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.273,
+      "avg_face_count": 0.27,
+      "max_face_count": 1,
+      "avg_face_size_pct": 4.9,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.55,
+      "bitrate_kbps": 397.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 975.6,
+      "blur_variance": 607.0,
+      "avg_motion": 76.04,
+      "max_motion": 164.46,
+      "motion_variance": 53.39,
+      "avg_brightness": 120.5,
+      "brightness_trend": -21.0,
+      "first_quarter_brightness": 156.2,
+      "last_quarter_brightness": 135.1,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.091,
+      "light_mode_pct": 0.182,
+      "annotation_frames": 11,
+      "has_annotations": true,
+      "letterbox_frames": 1,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 2.8,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.091,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 133.00190538194445,
+        "has_face": true,
+        "face_count": 1,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 337.5167345648684
+      },
+      "last_frame": {
+        "timestamp": 30.0,
+        "brightness": 137.17188802083334,
+        "has_face": true,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 45.3,
+      "frames_analyzed": 11
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 2,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 95.6,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.009,
+      "jargon_words": [
+        "http"
+      ],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 3.05,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 9,
+      "acronym_density": 0.083,
+      "has_url_shown": true,
+      "urls_found": [
+        "lumon.com"
+      ],
+      "distinct_scenes": 6,
+      "has_text_animation": true,
+      "has_before_after": false,
+      "has_data_viz": false,
+      "total_ocr_words": 108
+    }
+  },
+  "mega": {
+    "video_id": "nN1cyZmdZKo",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 32.8,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.052,
+      "energy_trend": -0.004041,
+      "peak_timestamp_sec": 24.3,
+      "peak_position_pct": 0.74,
+      "dynamic_range_db": 20.3,
+      "onset_density": 5.67,
+      "intro_silence_sec": 0.1,
+      "outro_silence_sec": 0.7,
+      "avg_spectral_centroid": 1988.0,
+      "avg_spectral_bandwidth": 2009.0,
+      "avg_zcr": 0.0902
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 94.3,
+      "gradient_frame_pct": 0.364,
+      "high_contrast_frame_pct": 0.818,
+      "navbar_pct": 0.273,
+      "sidebar_pct": 0.545,
+      "modal_pct": 0.091,
+      "table_pct": 0.545,
+      "chat_pct": 0.364,
+      "code_pct": 0.091,
+      "terminal_pct": 0.091,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.182,
+      "avg_symmetry": 0.853,
+      "avg_thirds_score": 1.531,
+      "avg_content_aspect": 1.745,
+      "scene_diversity": 0.376,
+      "repetition_count": 0,
+      "has_bookend": false,
+      "longest_scene_sec": 9.0,
+      "frames_analyzed": 11
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 265640,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-03-28T13:16:48.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 107.7,
+      "detected_key": "G#",
+      "key_confidence": 0.098,
+      "mfcc_mean": [
+        -197.351,
+        108.728,
+        -11.052,
+        29.845,
+        1.761,
+        -3.153,
+        1.71,
+        -6.35,
+        -12.468,
+        5.286,
+        -15.323,
+        5.0,
+        -9.319
+      ],
+      "mfcc_std": [
+        95.095,
+        53.944,
+        30.948,
+        30.756,
+        22.679,
+        20.174,
+        15.618,
+        14.16,
+        13.3,
+        15.006,
+        14.703,
+        13.546,
+        10.235
+      ],
+      "avg_spectral_contrast": 19.49,
+      "avg_tonnetz": [
+        -0.0006,
+        -0.1006,
+        -0.0067,
+        0.0162,
+        -0.0075,
+        -0.0074
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -19.5,
+          "centroid": 1791.0,
+          "bandwidth": 1907.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 2113.0,
+          "bandwidth": 2025.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 2109.0,
+          "bandwidth": 2067.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -20.3,
+          "centroid": 2114.0,
+          "bandwidth": 2103.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -19.5,
+          "centroid": 2298.0,
+          "bandwidth": 2224.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -20.3,
+          "centroid": 1984.0,
+          "bandwidth": 1837.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -19.6,
+          "centroid": 1794.0,
+          "bandwidth": 1736.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -19.8,
+          "centroid": 2350.0,
+          "bandwidth": 2158.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -19.1,
+          "centroid": 1778.0,
+          "bandwidth": 2077.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -20.4,
+          "centroid": 1799.0,
+          "bandwidth": 2059.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 62,
+      "strong_sfx_timestamps": [
+        0.12,
+        0.23,
+        0.56,
+        1.72,
+        2.3,
+        2.69,
+        2.83,
+        3.09,
+        3.85,
+        3.97,
+        4.34,
+        4.48,
+        4.6,
+        4.9,
+        6.29,
+        6.41,
+        7.17,
+        7.22,
+        7.92,
+        8.36
+      ],
+      "n_segments": 10
+    }
+  }
+}

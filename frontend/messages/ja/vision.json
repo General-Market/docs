@@ -546,6 +546,7 @@
     "player": "Player",
     "batches": "Batches",
     "volume": "Volume",
+    "roi": "ROI",
     "profitable": "Profitable",
     "pnl": "P&L",
     "loading": "Loading leaderboard...",

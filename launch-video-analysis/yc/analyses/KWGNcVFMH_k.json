@@ -1,0 +1,870 @@
+{
+  "video_id": "KWGNcVFMH_k",
+  "status": "ok",
+  "duration_sec": 110.8,
+  "resolution": "640x360",
+  "fps": 24.0,
+  "frames_analyzed": 38,
+  "transition_count": 4,
+  "transitions": [
+    {
+      "timestamp_sec": 5.9,
+      "correlation": 0.108,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 8.9,
+      "correlation": 0.108,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 100.7,
+      "correlation": 0.071,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 106.6,
+      "correlation": 0.125,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 15,
+  "text_extractions": [
+    {
+      "timestamp_sec": 8.9,
+      "text": "The engine for recruiters search"
+    },
+    {
+      "timestamp_sec": 11.8,
+      "text": "Account Engineers Executives Founding Key Serra Software ath"
+    },
+    {
+      "timestamp_sec": 14.8,
+      "text": "Account C-Sute Candidates Engineers Execut Executives Fing Founding Key SDRs SaaS Should Software We're acquisition analyst channels engneer expand experience extensive for founding have high-value key leacersnip looking managing marketing rote should soRs startup startups. tech ves with within years «deal “oles"
+    },
+    {
+      "timestamp_sec": 17.8,
+      "text": "Account C-Sute Candidates Engineers Execut Executives Fin Find Fing Founding Key NY, SDRs SaaS Should Software US, business channels clent deal engneer experience extensive for founding from have high-value managing must role roles school should startup startups. tech the they top ves with within years"
+    },
+    {
+      "timestamp_sec": 20.7,
+      "text": "Account C-Sute Candidates Engineers Execut Executives Find Fing Founding Key SDRs SaaS Should Software analytics ave clent data deal engneer experience extensive for founding growth have high-value managing marketing, role roles should skils startup startups. strong tech ves with within years"
+    },
+    {
+      "timestamp_sec": 23.7,
+      "text": "Account C-Sute Candidates Engineers Execut Executives Fing Founding Google Iytics Key SDRs SQL, SaaS Should Software ability and clent deal engneer experience extensive for founding have high-value looker, manage| managing roles rote sheets, should skills startup startups. tech the ves with within years"
+    },
+    {
+      "timestamp_sec": 26.7,
+      "text": "Account C-Sute Candidates Engineers Execut Executives Fing Founding Key SDRs SaaS Should Software and clent deal engneer experience extensive external for founding have high-value lity manage managing multiple relationships roles rote should soRs startup startups. streams tech ves with within work years"
+    },
+    {
+      "timestamp_sec": 29.6,
+      "text": "boolean complex for stings:"
+    },
+    {
+      "timestamp_sec": 38.5,
+      "text": "(Booth), Analyies Analyst, Berkeley Chicago Columbia Degree Feld Funding Marketing Michigan Nice, Stage University Unversity, Yale"
+    },
+    {
+      "timestamp_sec": 50.3,
+      "text": "Blatt Pujani Rainaan Rob Ruderman and witiam"
+    },
+    {
+      "timestamp_sec": 53.3,
+      "text": "Google Pujani Rainaan Rob Ruderman Rudetman Sheets accounts and has lite prtoman vas with witiam ‘Wim ‘skills"
+    },
+    {
+      "timestamp_sec": 62.2,
+      "text": "Campaign Create Email contact crea let you"
+    },
+    {
+      "timestamp_sec": 80.0,
+      "text": "Hardware Manager, Product"
+    },
+    {
+      "timestamp_sec": 82.9,
+      "text": "Manager, Product"
+    },
+    {
+      "timestamp_sec": 106.6,
+      "text": "serra.io"
+    }
+  ],
+  "pseudo_transcript": "The engine for recruiters search | Account Engineers Executives Founding Key Serra Software ath | Account C-Sute Candidates Engineers Execut Executives Fing Founding Key SDRs SaaS Should Software We're acquisition analyst channels engneer expand experience extensive for founding have high-value key leacersnip looking managing marketing rote should soRs startup startups. tech ves with within years «deal “oles | Account C-Sute Candidates Engineers Execut Executives Fin Find Fing Founding Key NY, SDRs SaaS Should Software US, business channels clent deal engneer experience extensive for founding from have high-value managing must role roles school should startup startups. tech the they top ves with within years | Account C-Sute Candidates Engineers Execut Executives Find Fing Founding Key SDRs SaaS Should Software analytics ave clent data deal engneer experience extensive for founding growth have high-value managing marketing, role roles should skils startup startups. strong tech ves with within years | Account C-Sute Candidates Engineers Execut Executives Fing Founding Google Iytics Key SDRs SQL, SaaS Should Software ability and clent deal engneer experience extensive for founding have high-value looker, manage| managing roles rote sheets, should skills startup startups. tech the ves with within years | Account C-Sute Candidates Engineers Execut Executives Fing Founding Key SDRs SaaS Should Software and clent deal engneer experience extensive external for founding have high-value lity manage managing multiple relationships roles rote should soRs startup startups. streams tech ves with within work years | boolean complex for stings: | (Booth), Analyies Analyst, Berkeley Chicago Columbia Degree Feld Funding Marketing Michigan Nice, Stage University Unversity, Yale | Blatt Pujani Rainaan Rob Ruderman and witiam | Google Pujani Rainaan Rob Ruderman Rudetman Sheets accounts and has lite prtoman vas with witiam ‘Wim ‘skills | Campaign Create Email contact crea let you | Hardware Manager, Product | Manager, Product | serra.io",
+  "frame_type_distribution": {
+    "simple_visual": 0.55,
+    "white_screen": 0.34,
+    "dark_screen": 0.05,
+    "text_heavy": 0.03,
+    "text_with_visual": 0.03
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 5.9,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          177,
+          181,
+          186
+        ],
+        [
+          94,
+          110,
+          132
+        ],
+        [
+          39,
+          40,
+          49
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 8.9,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          237,
+          237,
+          237
+        ],
+        [
+          144,
+          144,
+          144
+        ],
+        [
+          51,
+          51,
+          51
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 14.8,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          250,
+          250
+        ],
+        [
+          175,
+          162,
+          138
+        ],
+        [
+          75,
+          73,
+          73
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 29.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          48,
+          47,
+          47
+        ],
+        [
+          235,
+          235,
+          235
+        ],
+        [
+          173,
+          173,
+          173
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 44.4,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          245,
+          245,
+          244
+        ],
+        [
+          180,
+          179,
+          178
+        ],
+        [
+          48,
+          48,
+          48
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 59.2,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          246,
+          245
+        ],
+        [
+          178,
+          175,
+          168
+        ],
+        [
+          53,
+          51,
+          51
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 74.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          247,
+          246,
+          246
+        ],
+        [
+          179,
+          179,
+          178
+        ],
+        [
+          50,
+          50,
+          50
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 88.8,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          251,
+          251
+        ],
+        [
+          42,
+          42,
+          41
+        ],
+        [
+          169,
+          164,
+          151
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 100.7,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          175,
+          180,
+          185
+        ],
+        [
+          90,
+          109,
+          132
+        ],
+        [
+          36,
+          37,
+          44
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 103.6,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          90,
+          109,
+          132
+        ],
+        [
+          175,
+          180,
+          185
+        ],
+        [
+          37,
+          39,
+          46
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 106.6,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          237,
+          237,
+          237
+        ],
+        [
+          208,
+          153,
+          60
+        ],
+        [
+          109,
+          109,
+          109
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "KWGNcVFMH_k",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.079,
+      "avg_face_count": 0.08,
+      "max_face_count": 1,
+      "avg_face_size_pct": 2.4,
+      "has_multiple_people": 0,
+      "file_size_mb": 4.69,
+      "bitrate_kbps": 355.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 2127.9,
+      "blur_variance": 1648.4,
+      "avg_motion": 54.54,
+      "max_motion": 238.0,
+      "motion_variance": 63.29,
+      "avg_brightness": 195.0,
+      "brightness_trend": -24.6,
+      "first_quarter_brightness": 200.5,
+      "last_quarter_brightness": 175.9,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.053,
+      "light_mode_pct": 0.763,
+      "annotation_frames": 32,
+      "has_annotations": true,
+      "letterbox_frames": 2,
+      "has_letterbox": false,
+      "intro_duration_sec": 3.0,
+      "end_card_duration_sec": 7.1,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.868,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 0.0,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 0.0
+      },
+      "last_frame": {
+        "timestamp": 109.6,
+        "brightness": 0.0,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 7.9,
+      "frames_analyzed": 38
+    },
+    "marketing": {
+      "value_prop_timestamp": 8.9,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 3,
+      "features_per_min": 1.6,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 123.8,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.003,
+      "jargon_words": [
+        "saas"
+      ],
+      "benefit_count": 1,
+      "feature_word_count": 3,
+      "benefit_ratio": 0.25,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 2,
+      "tagline_match": false,
+      "avg_reading_comfort": 6.61,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 3,
+      "acronym_density": 0.01,
+      "has_url_shown": true,
+      "urls_found": [
+        "serra.io"
+      ],
+      "distinct_scenes": 5,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 295
+    }
+  },
+  "mega": {
+    "video_id": "KWGNcVFMH_k",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 110.8,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.068,
+      "energy_trend": -0.013883,
+      "peak_timestamp_sec": 98.2,
+      "peak_position_pct": 0.89,
+      "dynamic_range_db": 25.6,
+      "onset_density": 5.09,
+      "intro_silence_sec": 0.2,
+      "outro_silence_sec": 0.6,
+      "avg_spectral_centroid": 1969.0,
+      "avg_spectral_bandwidth": 1939.0,
+      "avg_zcr": 0.0897
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 73.8,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.605,
+      "navbar_pct": 0.605,
+      "sidebar_pct": 0.132,
+      "modal_pct": 0.316,
+      "table_pct": 0.632,
+      "chat_pct": 0.132,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.105,
+      "desktop_chrome_pct": 0.263,
+      "avg_symmetry": 0.942,
+      "avg_thirds_score": 0.893,
+      "avg_content_aspect": 1.733,
+      "scene_diversity": 0.104,
+      "repetition_count": 34,
+      "has_bookend": true,
+      "longest_scene_sec": 93.0,
+      "frames_analyzed": 38
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "24000/1001",
+      "r_frame_rate": "24000/1001",
+      "bit_rate_stream": 256496,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": ""
+    },
+    "audio_deep": {
+      "tempo_bpm": 143.6,
+      "detected_key": "F",
+      "key_confidence": 0.116,
+      "mfcc_mean": [
+        -265.225,
+        107.318,
+        3.764,
+        36.474,
+        7.792,
+        3.486,
+        4.889,
+        1.508,
+        -1.022,
+        5.302,
+        -1.692,
+        2.256,
+        1.689
+      ],
+      "mfcc_std": [
+        102.706,
+        58.292,
+        40.718,
+        27.979,
+        20.602,
+        24.123,
+        16.123,
+        14.266,
+        12.692,
+        10.484,
+        11.205,
+        8.629,
+        8.324
+      ],
+      "avg_spectral_contrast": 17.42,
+      "avg_tonnetz": [
+        0.0302,
+        0.0619,
+        -0.0866,
+        0.0288,
+        -0.0302,
+        -0.0379
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -17.3,
+          "centroid": 1134.0,
+          "bandwidth": 1627.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -20.0,
+          "centroid": 1370.0,
+          "bandwidth": 1567.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -23.5,
+          "centroid": 2038.0,
+          "bandwidth": 1873.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -24.6,
+          "centroid": 1740.0,
+          "bandwidth": 1874.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 2184.0,
+          "bandwidth": 1937.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -24.2,
+          "centroid": 1851.0,
+          "bandwidth": 1910.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 2149.0,
+          "bandwidth": 2144.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -24.5,
+          "centroid": 2231.0,
+          "bandwidth": 2075.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -29.0,
+          "centroid": 2000.0,
+          "bandwidth": 2161.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 2383.0,
+          "bandwidth": 2128.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -24.7,
+          "centroid": 2244.0,
+          "bandwidth": 2035.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -27.7,
+          "centroid": 2625.0,
+          "bandwidth": 2238.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -24.0,
+          "centroid": 1956.0,
+          "bandwidth": 1897.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 1471.0,
+          "bandwidth": 1456.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -27.5,
+          "centroid": 2244.0,
+          "bandwidth": 2129.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -26.1,
+          "centroid": 1909.0,
+          "bandwidth": 2106.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -29.1,
+          "centroid": 2122.0,
+          "bandwidth": 2048.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 2204.0,
+          "bandwidth": 2057.0
+        },
+        {
+          "timestamp": 54,
+          "type": "ambient",
+          "rms_db": -28.3,
+          "centroid": 2491.0,
+          "bandwidth": 2197.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 2194.0,
+          "bandwidth": 1954.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 2041.0,
+          "bandwidth": 2042.0
+        },
+        {
+          "timestamp": 63,
+          "type": "ambient",
+          "rms_db": -24.7,
+          "centroid": 2435.0,
+          "bandwidth": 2015.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -27.7,
+          "centroid": 1973.0,
+          "bandwidth": 2016.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -25.5,
+          "centroid": 1308.0,
+          "bandwidth": 1689.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 1968.0,
+          "bandwidth": 2006.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -24.2,
+          "centroid": 2285.0,
+          "bandwidth": 2078.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -21.1,
+          "centroid": 2167.0,
+          "bandwidth": 1997.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1851.0,
+          "bandwidth": 1862.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -23.2,
+          "centroid": 2142.0,
+          "bandwidth": 1916.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -25.8,
+          "centroid": 1952.0,
+          "bandwidth": 1989.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -26.0,
+          "centroid": 2249.0,
+          "bandwidth": 1922.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1631.0,
+          "bandwidth": 1883.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -20.6,
+          "centroid": 1481.0,
+          "bandwidth": 1764.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -21.9,
+          "centroid": 1972.0,
+          "bandwidth": 1920.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1745.0,
+          "bandwidth": 1748.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -25.8,
+          "centroid": 1826.0,
+          "bandwidth": 1884.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.917,
+        "ambient": 0.083
+      },
+      "speech_pct": 0.917,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "valley",
+      "strong_sfx_count": 247,
+      "strong_sfx_timestamps": [
+        0.23,
+        0.65,
+        1.51,
+        1.93,
+        2.35,
+        2.76,
+        3.85,
+        4.37,
+        5.32,
+        5.71,
+        6.01,
+        6.11,
+        6.83,
+        7.38,
+        7.48,
+        8.94,
+        9.38,
+        10.31,
+        10.57,
+        12.33
+      ],
+      "n_segments": 36
+    }
+  }
+}

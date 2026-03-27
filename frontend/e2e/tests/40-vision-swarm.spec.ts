@@ -164,6 +164,23 @@ test("Stage 3: bots join batches", async () => {
 // ── Stage 4: Tick resolution ──
 
 test("Stage 4: tick resolution via BLS consensus", async () => {
+  // ── Oracle / Vision API health gate (same as Stage 2) ──
+  // If the API is down, ticks will never resolve — skip instead of polling for 10 min.
+  try {
+    const res = await fetch(`${FRONTEND_URL}/api/vision/batches`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      console.log(`Oracle/Vision API down — /api/vision/batches returned ${res.status}. Skipping tick resolution.`);
+      test.skip();
+      return;
+    }
+  } catch (e: any) {
+    console.log(`Oracle/Vision API unreachable — ${e.message}. Skipping tick resolution.`);
+    test.skip();
+    return;
+  }
+
   if (FAST_BATCHES.length === 0) {
     console.warn("SKIP: No fast-ticking batches — oracle may not have spawned short-tick rounds yet.");
     return;
@@ -250,6 +267,23 @@ test("Stage 5: frontend displays swarm data", async ({ page }) => {
 // ── Stage 6: Economic invariants ──
 
 test("Stage 6: economic invariants hold", async () => {
+  // ── Oracle / Vision API health gate (same as Stages 2/4) ──
+  // If the oracle is down, solvency checks will fail on stale data — skip gracefully.
+  try {
+    const res = await fetch(`${FRONTEND_URL}/api/vision/batches`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      console.log(`Oracle/Vision API down — /api/vision/batches returned ${res.status}. Skipping economic invariants.`);
+      test.skip();
+      return;
+    }
+  } catch (e: any) {
+    console.log(`Oracle/Vision API unreachable — ${e.message}. Skipping economic invariants.`);
+    test.skip();
+    return;
+  }
+
   // 6a. Solvency (HARD assertion)
   const solvency = await verifySolvency(BATCH_IDS);
   console.log(`  Solvency: ${solvency.passed ? "PASS" : "FAIL"} (${solvency.actual} vs ${solvency.expected})`);

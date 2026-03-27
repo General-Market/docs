@@ -1,0 +1,747 @@
+{
+  "video_id": "vAVrv51AULw",
+  "status": "ok",
+  "duration_sec": 75.4,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 26,
+  "transition_count": 3,
+  "transitions": [
+    {
+      "timestamp_sec": 6.0,
+      "correlation": 0.189,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "correlation": 0.323,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "correlation": 0.288,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 21,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Aiternoon, Al-Powered Creativity Efficiency Immersive Infinite Nate! Writing"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "You one's ther"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Your companion ultimate writing"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Good morning,"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "1000 Get Start countless little things topics with"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Immersive Writing"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Clean, Discover Efe Kickstart Moet Your ane buttons, just now reed sant? simple space words wren writing yeu you your"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "And Effie So.a8a ably and ane born entrepreneur, ery later manager own project similarly: sofnware tailor-made that the turn use value was words,"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "2022 Hope Nate The Who and been best coding, cur development eight for grow has helps ideu letter make nave over rest ron same seeks seen steady. summer, team, ter the this trust wall who working years your yours"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "2022 Review cheer for summer, writing your"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "1000 Aneditor But Clean, Discover Effie: Kickstart Meet Suda: Without Writing Your and bultons, companion how just perfect promote reed simple space start? things when wores write writing you your"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "Areader But Clean, Creatvity Discover Effie: Kickstart Wating Without Write Your companion editor feed howto perfect promote simple space start? und when witrout writing you your"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Busey But Clean, Discover Distractions Effie: Kickstart Meet Wahout Wete Your companion countless how othe perfect should space spark start? tng ware when writing you your"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "1000 Aguide Aneditor Areader Buddy: But Clean, Creativity Discover Distractions Effie Effie: Kickstart Meet Without Writing Your about and buttons, companion how just need perfect promote simple space start? things when words work write writing you your"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "1000 But Clean, Discover Distractions Effie: Kickstart Meet Without Write Your about ane buttons, companion conters feedback generate guide help how need perfect promote simple spece start? step things when words wore writing you you\""
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "JEUNG LEE evening,"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Follow Generate content efficiently steps,"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "$100 $65 $70 (C60 (November (usually 12th) Accomodation Activities Additional Airport Breakfast Budget: Check Day Dress French Information: Last-minute Learn Local Meuls airport). airport. amare and appreciated ard areas attractions basic before budget: but considerations: culture departure dining especially for from good hotel hotel, light lume meal obligatory out permits phrases pickpockets politeness service shopping smartly, souvenir taxi tourist transfer when ‘Snot"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "1090 Areader Buddy: Clean, Cleatly Creativity Discover Distractions Kickstart Meet See Thoughts Without Write Your about and buttons, companion editor feedback generate help just need perfect promote simple space step things when words work write writing you your"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "effie"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "text": "Start adventure today! writing your"
+    }
+  ],
+  "pseudo_transcript": "Aiternoon, Al-Powered Creativity Efficiency Immersive Infinite Nate! Writing | You one's ther | Your companion ultimate writing | Good morning, | 1000 Get Start countless little things topics with | Immersive Writing | Clean, Discover Efe Kickstart Moet Your ane buttons, just now reed sant? simple space words wren writing yeu you your | And Effie So.a8a ably and ane born entrepreneur, ery later manager own project similarly: sofnware tailor-made that the turn use value was words, | 2022 Hope Nate The Who and been best coding, cur development eight for grow has helps ideu letter make nave over rest ron same seeks seen steady. summer, team, ter the this trust wall who working years your yours | 2022 Review cheer for summer, writing your | 1000 Aneditor But Clean, Discover Effie: Kickstart Meet Suda: Without Writing Your and bultons, companion how just perfect promote reed simple space start? things when wores write writing you your | Areader But Clean, Creatvity Discover Effie: Kickstart Wating Without Write Your companion editor feed howto perfect promote simple space start? und when witrout writing you your | Busey But Clean, Discover Distractions Effie: Kickstart Meet Wahout Wete Your companion countless how othe perfect should space spark start? tng ware when writing you your | 1000 Aguide Aneditor Areader Buddy: But Clean, Creativity Discover Distractions Effie Effie: Kickstart Meet Without Writing Your about and buttons, companion how just need perfect promote simple space start? things when words work write writing you your | 1000 But Clean, Discover Distractions Effie: Kickstart Meet Without Write Your about ane buttons, companion conters feedback generate guide help how need perfect promote simple spece start? step things when words wore writing you you\" | JEUNG LEE evening, | Follow Generate content efficiently steps, | $100 $65 $70 (C60 (November (usually 12th) Accomodation Activities Additional Airport Breakfast Budget: Check Day Dress French Information: Last-minute Learn Local Meuls airport). airport. amare and appreciated ard areas attractions basic before budget: but considerations: culture departure dining especially for from good hotel hotel, light lume meal obligatory out permits phrases pickpockets politeness service shopping smartly, souvenir taxi tourist transfer when ‘Snot | 1090 Areader Buddy: Clean, Cleatly Creativity Discover Distractions Kickstart Meet See Thoughts Without Write Your about and buttons, companion editor feedback generate help just need perfect promote simple space step things when words work write writing you your | effie | Start adventure today! writing your",
+  "frame_type_distribution": {
+    "white_screen": 0.92,
+    "text_with_visual": 0.04,
+    "simple_visual": 0.04
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          234,
+          234,
+          234
+        ],
+        [
+          33,
+          33,
+          33
+        ],
+        [
+          94,
+          94,
+          94
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 6.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          248,
+          246,
+          238
+        ],
+        [
+          8,
+          8,
+          6
+        ],
+        [
+          132,
+          131,
+          125
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 9.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          246,
+          246,
+          241
+        ],
+        [
+          216,
+          219,
+          221
+        ],
+        [
+          182,
+          183,
+          179
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          240,
+          244,
+          247
+        ],
+        [
+          227,
+          228,
+          228
+        ],
+        [
+          94,
+          97,
+          100
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          249,
+          248,
+          247
+        ],
+        [
+          209,
+          214,
+          215
+        ],
+        [
+          126,
+          113,
+          105
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          250,
+          249,
+          249
+        ],
+        [
+          213,
+          215,
+          221
+        ],
+        [
+          129,
+          121,
+          129
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          218,
+          218,
+          219
+        ],
+        [
+          245,
+          245,
+          239
+        ],
+        [
+          116,
+          118,
+          106
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 72.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          245,
+          245,
+          243
+        ],
+        [
+          252,
+          244,
+          227
+        ],
+        [
+          8,
+          8,
+          7
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          243,
+          245,
+          243
+        ],
+        [
+          6,
+          6,
+          5
+        ],
+        [
+          111,
+          110,
+          109
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "vAVrv51AULw",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 3.51,
+      "bitrate_kbps": 390.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1413.5,
+      "blur_variance": 1081.6,
+      "avg_motion": 19.04,
+      "max_motion": 107.85,
+      "motion_variance": 18.95,
+      "avg_brightness": 232.6,
+      "brightness_trend": 14.9,
+      "first_quarter_brightness": 220.7,
+      "last_quarter_brightness": 235.6,
+      "browser_chrome_frames": 2,
+      "browser_chrome_pct": 0.077,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.962,
+      "annotation_frames": 22,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 15.4,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.577,
+      "cool_frame_pct": 0.0,
+      "first_frame": {
+        "brightness": 140.11148871527777,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 1652.0231859198489
+      },
+      "last_frame": {
+        "timestamp": 75.0,
+        "brightness": 237.84862413194443,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": true
+      },
+      "avg_saturation": 6.9,
+      "frames_analyzed": 26
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 8,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 3,
+      "metrics_found": [
+        "$100",
+        "$65",
+        "$70"
+      ],
+      "metric_placement": "late",
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": true,
+      "pricing_texts": [
+        "$100",
+        "$65",
+        "$70"
+      ],
+      "text_length_variance": 117.1,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 3,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 2.94,
+      "emotional_arc": "positive_escalation",
+      "question_count": 6,
+      "has_questions": true,
+      "acronym_count": 2,
+      "acronym_density": 0.005,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 4,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 380
+    }
+  },
+  "mega": {
+    "video_id": "vAVrv51AULw",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 75.4,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.011,
+      "energy_trend": -0.022708,
+      "peak_timestamp_sec": 18.1,
+      "peak_position_pct": 0.24,
+      "dynamic_range_db": 13.4,
+      "onset_density": 5.61,
+      "intro_silence_sec": 0.1,
+      "outro_silence_sec": 0.8,
+      "avg_spectral_centroid": 1641.0,
+      "avg_spectral_bandwidth": 2119.0,
+      "avg_zcr": 0.055
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 2,
+      "avg_scroll_speed": 3.37,
+      "color_palette_size": 20,
+      "color_consistency": 64.6,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.038,
+      "navbar_pct": 0.231,
+      "sidebar_pct": 0.038,
+      "modal_pct": 0.0,
+      "table_pct": 0.5,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.115,
+      "desktop_chrome_pct": 0.231,
+      "avg_symmetry": 0.931,
+      "avg_thirds_score": 1.112,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.168,
+      "repetition_count": 19,
+      "has_bookend": false,
+      "longest_scene_sec": 51.0,
+      "frames_analyzed": 26
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 258594,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-09-09T17:10:36.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 83.4,
+      "detected_key": "A",
+      "key_confidence": 0.121,
+      "mfcc_mean": [
+        -94.255,
+        124.021,
+        12.848,
+        24.487,
+        8.978,
+        6.588,
+        0.028,
+        9.051,
+        -2.675,
+        2.042,
+        -0.404,
+        2.52,
+        -1.256
+      ],
+      "mfcc_std": [
+        68.901,
+        39.429,
+        19.519,
+        15.931,
+        10.876,
+        13.468,
+        9.945,
+        8.945,
+        9.097,
+        8.431,
+        7.712,
+        8.561,
+        8.127
+      ],
+      "avg_spectral_contrast": 18.15,
+      "avg_tonnetz": [
+        0.1186,
+        0.0406,
+        -0.0582,
+        0.0477,
+        0.0138,
+        0.0222
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -10.8,
+          "centroid": 1842.0,
+          "bandwidth": 2202.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -11.2,
+          "centroid": 1623.0,
+          "bandwidth": 2170.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -9.8,
+          "centroid": 2033.0,
+          "bandwidth": 2499.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -10.7,
+          "centroid": 2221.0,
+          "bandwidth": 2482.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -12.0,
+          "centroid": 1590.0,
+          "bandwidth": 2084.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -11.1,
+          "centroid": 1499.0,
+          "bandwidth": 2172.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -10.9,
+          "centroid": 2075.0,
+          "bandwidth": 2410.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -10.9,
+          "centroid": 2128.0,
+          "bandwidth": 2513.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -10.6,
+          "centroid": 1714.0,
+          "bandwidth": 2269.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -11.6,
+          "centroid": 2114.0,
+          "bandwidth": 2305.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -12.2,
+          "centroid": 1237.0,
+          "bandwidth": 1803.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -11.6,
+          "centroid": 1193.0,
+          "bandwidth": 1754.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -11.4,
+          "centroid": 1484.0,
+          "bandwidth": 2007.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -12.2,
+          "centroid": 1313.0,
+          "bandwidth": 1899.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -12.0,
+          "centroid": 1285.0,
+          "bandwidth": 1842.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -11.2,
+          "centroid": 1237.0,
+          "bandwidth": 1800.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -11.4,
+          "centroid": 1529.0,
+          "bandwidth": 2066.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -11.7,
+          "centroid": 1265.0,
+          "bandwidth": 1839.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -12.8,
+          "centroid": 1592.0,
+          "bandwidth": 2123.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -12.9,
+          "centroid": 1677.0,
+          "bandwidth": 2172.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -11.8,
+          "centroid": 1475.0,
+          "bandwidth": 1999.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -11.1,
+          "centroid": 1451.0,
+          "bandwidth": 2052.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -10.6,
+          "centroid": 2032.0,
+          "bandwidth": 2346.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -11.1,
+          "centroid": 1485.0,
+          "bandwidth": 2069.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -12.3,
+          "centroid": 1783.0,
+          "bandwidth": 2134.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 222,
+      "strong_sfx_timestamps": [
+        0.16,
+        0.58,
+        0.88,
+        1.18,
+        1.28,
+        1.56,
+        1.6,
+        1.74,
+        1.81,
+        1.9,
+        2.21,
+        2.6,
+        2.74,
+        3.09,
+        3.25,
+        3.46,
+        3.69,
+        4.2,
+        4.74,
+        4.81
+      ],
+      "n_segments": 25
+    }
+  }
+}

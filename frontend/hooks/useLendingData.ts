@@ -93,6 +93,9 @@ export function useLendingData(): LendingData {
       const nav = navBySettlement.get(collateralToken.toLowerCase())
       if (!nav) continue
 
+      // Skip ITPs with zero NAV — no price feed resolved, broken or empty
+      if (nav.nav_per_share <= 0) continue
+
       const market = getMorphoMarketForItp(collateralToken)
       if (!market) continue
 
@@ -163,7 +166,7 @@ export function useLendingData(): LendingData {
       if (bal === 0n) continue
 
       const nav = navById.get(itpId.toLowerCase())
-      if (!nav?.settlement_address) continue
+      if (!nav?.settlement_address || nav.nav_per_share <= 0) continue
 
       const market = getMorphoMarketForItp(nav.settlement_address)
       if (!market) continue

@@ -22,19 +22,20 @@ interface IERC20 {
     function approve(address, uint256) external returns (bool);
 }
 
-/// @title SubmitBuyOrders — Submit buy orders for multiple ITPs to seed vault token balances
-/// @notice Submits buy orders for up to MAX_ORDERS ITPs that have vault tokens (batch markets).
-///         The oracles will process these orders and mint ITP vault tokens to the buyer.
+/// @title SubmitBuyOrders — Submit buy orders for ALL ITPs with random amounts
+/// @notice Submits buy orders for every ITP (1..itpCount) with random $1-$1000 each.
+///         The oracles will process these orders and mint ITP shares to the buyer.
 ///
 ///     After oracles process, run SeedBorrows.s.sol to supply collateral + borrow.
 contract SubmitBuyOrders is Script {
-    uint256 constant MAX_ORDERS = 20;
-    uint256 constant BUY_AMOUNT = 500e18; // 500 USDC per ITP
     uint8 constant SIDE_BUY = 0;
+    uint256 constant MIN_AMOUNT = 1e18;    // $1 (18 decimals)
+    uint256 constant MAX_AMOUNT = 1000e18; // $1000
 
     function run() external {
         uint256 key = vm.envOr("DEPLOYER_KEY", uint256(0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537));
-        address indexAddr = vm.envOr("INDEX_ADDRESS", address(0x61988A72e2c898702bf634D5D2A0278694CC731C));
+        address indexAddr = vm.envAddress("INDEX_ADDRESS");
+        address usdcAddr = vm.envAddress("USDC_ADDRESS");
 
         IIndex idx = IIndex(indexAddr);
         address user = vm.addr(key);
@@ -43,37 +44,41 @@ contract SubmitBuyOrders is Script {
         console.log("Total ITPs:", itpCount);
         console.log("User:", user);
 
-        uint256 submitted = 0;
-
+        // Approve USDC to Index (enough for worst case: 77 * 1000 = 77K)
         vm.startBroadcast(key);
+        IERC20(usdcAddr).approve(indexAddr, type(uint256).max);
 
-        for (uint256 i = 1; i <= itpCount && submitted < MAX_ORDERS; i++) {
+        uint256 submitted = 0;
+        uint256 totalUsdc = 0;
+
+        for (uint256 i = 1; i <= itpCount; i++) {
             bytes32 itpId = bytes32(i);
 
-            // Only buy ITPs that have vault tokens (used as Morpho collateral)
-            address vault = idx.itpVaults(itpId);
-            if (vault == address(0)) continue;
+            // Get NAV — skip if no assets
+            (address creator,,,,,) = idx.getITPState(itpId);
+            if (creator == address(0)) continue;
 
-            // Get NAV for fill price
-            (, , uint256 nav, , , ) = idx.getITPState(itpId);
-            if (nav == 0) nav = 1e18; // default $1
+            // Random amount: hash(block.timestamp, i) → $1-$1000
+            uint256 pseudoRandom = uint256(keccak256(abi.encode(block.timestamp, i, "buy")));
+            uint256 amount = MIN_AMOUNT + (pseudoRandom % (MAX_AMOUNT - MIN_AMOUNT));
 
-            // Submit buy order: BUY_AMOUNT USDC worth at current NAV
             uint256 orderId = idx.submitOrder(
                 itpId,
                 SIDE_BUY,
-                BUY_AMOUNT,
-                nav,
+                amount,
+                0, // market price (oracle fills at current NAV)
                 1, // minFillPct = 1%
                 block.timestamp + 86400 // 24h expiry
             );
 
-            console.log("Order", orderId, "ITP", i);
+            console.log("Order %d ITP %d amount %d", orderId, i, amount / 1e18);
             submitted++;
+            totalUsdc += amount;
         }
 
         vm.stopBroadcast();
 
-        console.log("Submitted", submitted, "buy orders. Wait for oracle processing, then run SeedBorrows.");
+        console.log("Submitted", submitted, "buy orders, total USDC:", totalUsdc / 1e18);
+        console.log("Wait for oracle consensus, then run SeedBorrows.");
     }
 }

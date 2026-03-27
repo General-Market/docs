@@ -1,0 +1,462 @@
+{
+  "video_id": "IIeoPoZ_wVc",
+  "status": "ok",
+  "duration_sec": 40.3,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 14,
+  "transition_count": 0,
+  "transitions": [],
+  "unique_text_segments": 10,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Ancillary Cross-sell Products"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Ancillary Cross-sell Products Sam, This the virtual"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "Ancillary Cross-sell Products have second talk? you"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "Ancillary Auton Cross-sell Products col know let that wanted you ‘ural"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Ancillary Cross-sell Encurage Financial Network, Products since with you're"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Ancillary Cross-sell It's Products case finances great safeguard way your"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Ancillary Commui Cross-sell Products death, disability enefits events job like loss. lucts rele’ unexpected"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "Ancillary Cross-sell Just Products all have idle information, our the you"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "Ancillary Cross-sell Products actually and can debt idle intel ob; peace program protection provide"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Ancillary Cross-sell Products and for intel low mind"
+    }
+  ],
+  "pseudo_transcript": "Ancillary Cross-sell Products | Ancillary Cross-sell Products Sam, This the virtual | Ancillary Cross-sell Products have second talk? you | Ancillary Auton Cross-sell Products col know let that wanted you ‘ural | Ancillary Cross-sell Encurage Financial Network, Products since with you're | Ancillary Cross-sell It's Products case finances great safeguard way your | Ancillary Commui Cross-sell Products death, disability enefits events job like loss. lucts rele’ unexpected | Ancillary Cross-sell Just Products all have idle information, our the you | Ancillary Cross-sell Products actually and can debt idle intel ob; peace program protection provide | Ancillary Cross-sell Products and for intel low mind",
+  "frame_type_distribution": {
+    "text_with_visual": 0.64,
+    "simple_visual": 0.36
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          101,
+          60,
+          6
+        ],
+        [
+          117,
+          138,
+          125
+        ],
+        [
+          228,
+          222,
+          218
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          101,
+          58,
+          4
+        ],
+        [
+          111,
+          121,
+          102
+        ],
+        [
+          227,
+          224,
+          220
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          103,
+          60,
+          6
+        ],
+        [
+          114,
+          128,
+          113
+        ],
+        [
+          226,
+          222,
+          222
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "IIeoPoZ_wVc",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.73,
+      "bitrate_kbps": 361.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 726.5,
+      "blur_variance": 192.4,
+      "avg_motion": 8.95,
+      "max_motion": 15.54,
+      "motion_variance": 3.81,
+      "avg_brightness": 81.4,
+      "brightness_trend": 1.1,
+      "first_quarter_brightness": 80.8,
+      "last_quarter_brightness": 82.0,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.143,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 14,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 1.3,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.0,
+      "cool_frame_pct": 1.0,
+      "first_frame": {
+        "brightness": 78.41614149305556,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 551.8770926572258
+      },
+      "last_frame": {
+        "timestamp": 39.0,
+        "brightness": 80.93514322916667,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 176.8,
+      "frames_analyzed": 14
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 22.2,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 2.28,
+      "emotional_arc": "flat",
+      "question_count": 1,
+      "has_questions": true,
+      "acronym_count": 0,
+      "acronym_density": 0.0,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 1,
+      "has_text_animation": false,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 106
+    }
+  },
+  "mega": {
+    "video_id": "IIeoPoZ_wVc",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 40.3,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.384,
+      "energy_trend": 0.005543,
+      "peak_timestamp_sec": 27.5,
+      "peak_position_pct": 0.68,
+      "dynamic_range_db": 39.0,
+      "onset_density": 5.31,
+      "intro_silence_sec": 2.0,
+      "outro_silence_sec": 0.8,
+      "avg_spectral_centroid": 1677.0,
+      "avg_spectral_bandwidth": 1847.0,
+      "avg_zcr": 0.0748
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 66.0,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 1.0,
+      "navbar_pct": 0.0,
+      "sidebar_pct": 1.0,
+      "modal_pct": 0.0,
+      "table_pct": 0.357,
+      "chat_pct": 0.0,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.708,
+      "avg_thirds_score": 1.316,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.005,
+      "repetition_count": 11,
+      "has_bookend": true,
+      "longest_scene_sec": 42.0,
+      "frames_analyzed": 14
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 229290,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-08-01T20:00:15.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 92.3,
+      "detected_key": "B",
+      "key_confidence": 0.129,
+      "mfcc_mean": [
+        -359.444,
+        111.388,
+        -3.714,
+        -6.941,
+        -4.704,
+        -8.663,
+        -14.46,
+        -4.476,
+        -0.169,
+        3.813,
+        1.506,
+        3.085,
+        3.231
+      ],
+      "mfcc_std": [
+        71.296,
+        42.448,
+        27.839,
+        31.268,
+        17.783,
+        20.696,
+        20.515,
+        15.098,
+        11.943,
+        10.023,
+        10.045,
+        9.396,
+        9.745
+      ],
+      "avg_spectral_contrast": 18.65,
+      "avg_tonnetz": [
+        -0.0035,
+        -0.13,
+        0.074,
+        -0.0309,
+        -0.0437,
+        -0.0042
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -33.0,
+          "centroid": 2416.0,
+          "bandwidth": 2536.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1967.0,
+          "bandwidth": 2171.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -27.5,
+          "centroid": 1496.0,
+          "bandwidth": 1748.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -27.8,
+          "centroid": 1898.0,
+          "bandwidth": 2168.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -25.5,
+          "centroid": 1806.0,
+          "bandwidth": 2003.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1728.0,
+          "bandwidth": 2136.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -24.9,
+          "centroid": 1508.0,
+          "bandwidth": 1917.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -29.2,
+          "centroid": 1681.0,
+          "bandwidth": 2117.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 2148.0,
+          "bandwidth": 2286.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 2183.0,
+          "bandwidth": 2179.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -27.6,
+          "centroid": 1382.0,
+          "bandwidth": 1456.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 972.0,
+          "bandwidth": 872.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -27.5,
+          "centroid": 973.0,
+          "bandwidth": 784.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "peak_middle",
+      "strong_sfx_count": 79,
+      "strong_sfx_timestamps": [
+        0.91,
+        2.04,
+        3.48,
+        4.34,
+        4.78,
+        6.08,
+        6.27,
+        6.48,
+        6.71,
+        6.92,
+        7.13,
+        7.22,
+        7.55,
+        8.01,
+        9.06,
+        9.36,
+        9.8,
+        10.01,
+        10.33,
+        10.59
+      ],
+      "n_segments": 13
+    }
+  }
+}

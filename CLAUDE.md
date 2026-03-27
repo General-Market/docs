@@ -1,3 +1,17 @@
+## Investigation Method — Parallel Consensus Agents
+
+When debugging complex issues spanning multiple systems, dispatch 5 sub-agents in parallel. Each agent investigates the FULL problem independently (not just one slice). After all complete, compare findings — agreements become the fix, disagreements get investigated further.
+
+**When to use:** UI shows stale/missing data, multiple systems misbehaving, root cause unclear.
+
+**How:**
+1. Each agent gets the same problem statement + all context (screenshots, API responses, logs)
+2. Each agent reads ALL relevant files (frontend components, API routes, hooks, backend services)
+3. Each agent proposes a complete diagnosis + fix
+4. Consolidate: fixes that 3+ agents agree on get applied. Contradictions get a tiebreaker agent.
+
+This finds root causes that sequential debugging misses — one agent finds the API issue, another finds the component bug, a third finds the data pipeline gap.
+
 ## Git
 
 Commit after each completed task/feature to enable rollback. Use descriptive commit messages. NEVER add "Co-Authored-By" trailers to commit messages.
@@ -14,7 +28,7 @@ Commit after each completed task/feature to enable rollback. Use descriptive com
 
 ## Parallelism
 
-Max 6 agents running at the same time.
+Max 20 agents running at the same time.
 
 ## Environment Switching
 

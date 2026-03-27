@@ -1,0 +1,597 @@
+{
+  "video_id": "pn07_bo6rfs",
+  "status": "ok",
+  "duration_sec": 50.0,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 17,
+  "transition_count": 3,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.062,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "correlation": 0.063,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "correlation": 0.118,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 12,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "the usual"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "Calendar boring last place same sess tena time? too"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "Calendar Maya Sofia alfi, arriving boring early food's good image make only the too way"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Create Reminders"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Reminders"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "Create frst one the"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Bistro Hae Heng Jan Los? Meeting\" Thai"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "Angele Friday, JAN Jan Los Meeting” before dinner everyone i'll remind “Annual"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "Create edit images together"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "2026 Group's Plans Your chat, four group wrapped ‘Wrapped"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Customize"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "Bringing chai every group"
+    }
+  ],
+  "pseudo_transcript": "the usual | Calendar boring last place same sess tena time? too | Calendar Maya Sofia alfi, arriving boring early food's good image make only the too way | Create Reminders | Reminders | Create frst one the | Bistro Hae Heng Jan Los? Meeting\" Thai | Angele Friday, JAN Jan Los Meeting” before dinner everyone i'll remind “Annual | Create edit images together | 2026 Group's Plans Your chat, four group wrapped ‘Wrapped | Customize | Bringing chai every group",
+  "frame_type_distribution": {
+    "white_screen": 0.47,
+    "simple_visual": 0.41,
+    "detailed_visual": 0.06,
+    "text_with_visual": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          237,
+          237,
+          237
+        ],
+        [
+          237,
+          239,
+          238
+        ],
+        [
+          229,
+          234,
+          232
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          168,
+          179,
+          187
+        ],
+        [
+          108,
+          123,
+          137
+        ],
+        [
+          43,
+          47,
+          54
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 6.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          242,
+          242,
+          242
+        ],
+        [
+          177,
+          164,
+          150
+        ],
+        [
+          19,
+          19,
+          19
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          220,
+          220,
+          220
+        ],
+        [
+          249,
+          249,
+          249
+        ],
+        [
+          29,
+          28,
+          53
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          245,
+          245,
+          245
+        ],
+        [
+          174,
+          146,
+          119
+        ],
+        [
+          24,
+          23,
+          23
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          242,
+          242,
+          242
+        ],
+        [
+          33,
+          31,
+          31
+        ],
+        [
+          158,
+          164,
+          166
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 48.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          243,
+          208,
+          176
+        ],
+        [
+          250,
+          241,
+          232
+        ],
+        [
+          23,
+          19,
+          15
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "pn07_bo6rfs",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.176,
+      "avg_face_count": 0.18,
+      "max_face_count": 1,
+      "avg_face_size_pct": 1.2,
+      "has_multiple_people": 0,
+      "file_size_mb": 2.22,
+      "bitrate_kbps": 373.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 709.2,
+      "blur_variance": 488.0,
+      "avg_motion": 51.28,
+      "max_motion": 110.92,
+      "motion_variance": 30.86,
+      "avg_brightness": 216.4,
+      "brightness_trend": 12.3,
+      "first_quarter_brightness": 210.5,
+      "last_quarter_brightness": 222.8,
+      "browser_chrome_frames": 1,
+      "browser_chrome_pct": 0.059,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.882,
+      "annotation_frames": 16,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 2.0,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.765,
+      "cool_frame_pct": 0.059,
+      "first_frame": {
+        "brightness": 237.9990451388889,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": false,
+        "is_white": true,
+        "blur_score": 0.0020052083333333332
+      },
+      "last_frame": {
+        "timestamp": 48.0,
+        "brightness": 197.7293576388889,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 19.9,
+      "frames_analyzed": 17
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 26.0,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 1,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 5.0,
+      "emotional_arc": "flat",
+      "question_count": 2,
+      "has_questions": true,
+      "acronym_count": 1,
+      "acronym_density": 0.014,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 4,
+      "has_text_animation": false,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 72
+    }
+  },
+  "mega": {
+    "video_id": "pn07_bo6rfs",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 50.1,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.114,
+      "energy_trend": -0.022892,
+      "peak_timestamp_sec": 28.1,
+      "peak_position_pct": 0.56,
+      "dynamic_range_db": 23.8,
+      "onset_density": 4.33,
+      "intro_silence_sec": 0.4,
+      "outro_silence_sec": 0.5,
+      "avg_spectral_centroid": 1590.0,
+      "avg_spectral_bandwidth": 2076.0,
+      "avg_zcr": 0.0494
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 2,
+      "avg_scroll_speed": 2.73,
+      "color_palette_size": 20,
+      "color_consistency": 96.2,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.294,
+      "navbar_pct": 0.294,
+      "sidebar_pct": 0.235,
+      "modal_pct": 0.0,
+      "table_pct": 0.235,
+      "chat_pct": 0.059,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.235,
+      "desktop_chrome_pct": 0.176,
+      "avg_symmetry": 0.9,
+      "avg_thirds_score": 1.001,
+      "avg_content_aspect": 1.779,
+      "scene_diversity": 0.206,
+      "repetition_count": 11,
+      "has_bookend": false,
+      "longest_scene_sec": 42.0,
+      "frames_analyzed": 17
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 321824,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2026-01-26T05:09:34.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 123.0,
+      "detected_key": "E",
+      "key_confidence": 0.107,
+      "mfcc_mean": [
+        -300.608,
+        107.784,
+        31.593,
+        16.723,
+        0.853,
+        11.093,
+        -1.744,
+        4.77,
+        -5.133,
+        -1.111,
+        -4.485,
+        6.128,
+        2.564
+      ],
+      "mfcc_std": [
+        120.47,
+        40.112,
+        31.35,
+        23.779,
+        17.936,
+        19.175,
+        12.797,
+        15.4,
+        13.258,
+        12.824,
+        9.652,
+        10.133,
+        9.204
+      ],
+      "avg_spectral_contrast": 19.99,
+      "avg_tonnetz": [
+        0.1175,
+        0.0725,
+        -0.0273,
+        0.0824,
+        0.0002,
+        0.0134
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -38.0,
+          "centroid": 1114.0,
+          "bandwidth": 1156.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 2196.0,
+          "bandwidth": 2146.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1930.0,
+          "bandwidth": 2613.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -22.2,
+          "centroid": 1821.0,
+          "bandwidth": 2514.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -22.3,
+          "centroid": 1909.0,
+          "bandwidth": 2564.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1836.0,
+          "bandwidth": 2533.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1910.0,
+          "bandwidth": 2532.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1978.0,
+          "bandwidth": 2648.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -21.9,
+          "centroid": 1765.0,
+          "bandwidth": 2473.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1800.0,
+          "bandwidth": 2493.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 1900.0,
+          "bandwidth": 2563.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -21.8,
+          "centroid": 1765.0,
+          "bandwidth": 2478.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 1018.0,
+          "bandwidth": 1278.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -27.3,
+          "centroid": 559.0,
+          "bandwidth": 672.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -28.0,
+          "centroid": 697.0,
+          "bandwidth": 898.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -33.1,
+          "centroid": 1795.0,
+          "bandwidth": 2313.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "front_heavy",
+      "strong_sfx_count": 141,
+      "strong_sfx_timestamps": [
+        0.44,
+        1.04,
+        1.56,
+        2.02,
+        3.02,
+        3.51,
+        3.99,
+        4.37,
+        4.5,
+        4.88,
+        5.97,
+        6.22,
+        6.46,
+        6.94,
+        7.2,
+        7.43,
+        7.94,
+        8.43,
+        8.68,
+        8.92
+      ],
+      "n_segments": 16
+    }
+  }
+}

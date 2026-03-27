@@ -1,0 +1,1339 @@
+{
+  "video_id": "A6VqAZ2IhW0",
+  "status": "ok",
+  "duration_sec": 176.6,
+  "resolution": "640x360",
+  "fps": 25.0,
+  "frames_analyzed": 59,
+  "transition_count": 14,
+  "transitions": [
+    {
+      "timestamp_sec": 6.0,
+      "correlation": 0.07,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "correlation": 0.067,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "correlation": 0.13,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "correlation": 0.034,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "correlation": 0.389,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "correlation": 0.406,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 87.0,
+      "correlation": 0.375,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 96.0,
+      "correlation": 0.211,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "correlation": 0.058,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "correlation": 0.036,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 111.0,
+      "correlation": 0.153,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 114.0,
+      "correlation": 0.354,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 162.0,
+      "correlation": 0.162,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 165.0,
+      "correlation": 0.239,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 17,
+  "text_extractions": [
+    {
+      "timestamp_sec": 12.0,
+      "text": "Progress: Repo Wiki cod document. entire"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "miming onVersation"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Pair,"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "Pair Programming:"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "Palr"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "Deliver Pair eas"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "text": "emery i=. “ol"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "Deliver Pair Programming: not"
+    },
+    {
+      "timestamp_sec": 87.0,
+      "text": "Deliver NACOS. Pair Programming:"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "Collaborative Mode: Quest Spec Writing"
+    },
+    {
+      "timestamp_sec": 114.0,
+      "text": "Moder Spec ‘Quest"
+    },
+    {
+      "timestamp_sec": 123.0,
+      "text": "Collaborative Mode Spec ‘quest"
+    },
+    {
+      "timestamp_sec": 135.0,
+      "text": "Autonomous Design Execution Flow Mode: Report Task ——— ‘Quest"
+    },
+    {
+      "timestamp_sec": 141.0,
+      "text": "Mode: Quest"
+    },
+    {
+      "timestamp_sec": 144.0,
+      "text": "Mode: Quest mous"
+    },
+    {
+      "timestamp_sec": 147.0,
+      "text": "(Quest Aetion Autonomous Execution Mode: Plan Redux Update and project reducer"
+    },
+    {
+      "timestamp_sec": 162.0,
+      "text": "Autonomous Execution Mode: Quest"
+    }
+  ],
+  "pseudo_transcript": "Progress: Repo Wiki cod document. entire | miming onVersation | Pair, | Pair Programming: | Palr | Deliver Pair eas | emery i=. “ol | Deliver Pair Programming: not | Deliver NACOS. Pair Programming: | Collaborative Mode: Quest Spec Writing | Moder Spec ‘Quest | Collaborative Mode Spec ‘quest | Autonomous Design Execution Flow Mode: Report Task ——— ‘Quest | Mode: Quest | Mode: Quest mous | (Quest Aetion Autonomous Execution Mode: Plan Redux Update and project reducer | Autonomous Execution Mode: Quest",
+  "frame_type_distribution": {
+    "dark_screen": 0.85,
+    "simple_visual": 0.14,
+    "detailed_visual": 0.02
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          8,
+          5,
+          5
+        ],
+        [
+          8,
+          5,
+          5
+        ],
+        [
+          8,
+          5,
+          5
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 6.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          114,
+          205,
+          90
+        ],
+        [
+          242,
+          247,
+          240
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 9.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          21,
+          25,
+          17
+        ],
+        [
+          52,
+          94,
+          37
+        ],
+        [
+          137,
+          211,
+          111
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          9,
+          9,
+          6
+        ],
+        [
+          35,
+          34,
+          32
+        ],
+        [
+          101,
+          100,
+          100
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 21.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          68,
+          172,
+          41
+        ],
+        [
+          3,
+          4,
+          3
+        ],
+        [
+          59,
+          145,
+          37
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 24.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          10,
+          14,
+          5
+        ],
+        [
+          47,
+          59,
+          40
+        ],
+        [
+          156,
+          172,
+          151
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          27,
+          26,
+          23
+        ],
+        [
+          9,
+          9,
+          5
+        ],
+        [
+          152,
+          150,
+          150
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          27,
+          31,
+          23
+        ],
+        [
+          69,
+          91,
+          68
+        ],
+        [
+          157,
+          186,
+          151
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          11,
+          18,
+          6
+        ],
+        [
+          41,
+          40,
+          38
+        ],
+        [
+          72,
+          100,
+          82
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 66.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          26,
+          29,
+          22
+        ],
+        [
+          47,
+          60,
+          53
+        ],
+        [
+          135,
+          138,
+          135
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          11,
+          18,
+          6
+        ],
+        [
+          32,
+          43,
+          26
+        ],
+        [
+          74,
+          90,
+          77
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 87.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          23,
+          48,
+          13
+        ],
+        [
+          248,
+          248,
+          248
+        ],
+        [
+          169,
+          173,
+          138
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          12,
+          19,
+          7
+        ],
+        [
+          244,
+          244,
+          243
+        ],
+        [
+          34,
+          69,
+          20
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 96.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          5,
+          7,
+          3
+        ],
+        [
+          17,
+          48,
+          7
+        ],
+        [
+          125,
+          185,
+          104
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 99.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          27,
+          27,
+          25
+        ],
+        [
+          67,
+          98,
+          55
+        ],
+        [
+          175,
+          199,
+          167
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 102.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          32,
+          29,
+          28
+        ],
+        [
+          6,
+          7,
+          4
+        ],
+        [
+          30,
+          71,
+          14
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          33,
+          39,
+          26
+        ],
+        [
+          7,
+          8,
+          4
+        ],
+        [
+          137,
+          149,
+          129
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 111.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          7,
+          11,
+          5
+        ],
+        [
+          43,
+          64,
+          50
+        ],
+        [
+          122,
+          141,
+          124
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 114.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          34,
+          39,
+          34
+        ],
+        [
+          9,
+          18,
+          4
+        ],
+        [
+          119,
+          129,
+          118
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          33,
+          39,
+          30
+        ],
+        [
+          6,
+          9,
+          3
+        ],
+        [
+          99,
+          115,
+          96
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          30,
+          30,
+          27
+        ],
+        [
+          64,
+          95,
+          50
+        ],
+        [
+          185,
+          195,
+          180
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 150.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          7,
+          11,
+          4
+        ],
+        [
+          32,
+          31,
+          29
+        ],
+        [
+          83,
+          95,
+          75
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 162.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          17,
+          14,
+          14
+        ],
+        [
+          45,
+          53,
+          40
+        ],
+        [
+          123,
+          215,
+          96
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 165.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          37,
+          37,
+          35
+        ],
+        [
+          6,
+          7,
+          4
+        ],
+        [
+          70,
+          102,
+          82
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "A6VqAZ2IhW0",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 5.08,
+      "bitrate_kbps": 241.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 503.8,
+      "blur_variance": 299.0,
+      "avg_motion": 29.14,
+      "max_motion": 115.51,
+      "motion_variance": 28.42,
+      "avg_brightness": 35.5,
+      "brightness_trend": 4.4,
+      "first_quarter_brightness": 27.5,
+      "last_quarter_brightness": 31.9,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.915,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 53,
+      "has_annotations": true,
+      "letterbox_frames": 32,
+      "has_letterbox": true,
+      "intro_duration_sec": 21.0,
+      "end_card_duration_sec": 8.6,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.034,
+      "cool_frame_pct": 0.61,
+      "first_frame": {
+        "brightness": 5.0,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 0.0
+      },
+      "last_frame": {
+        "timestamp": 174.0,
+        "brightness": 5.359752604166666,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 80.3,
+      "frames_analyzed": 59
+    },
+    "marketing": {
+      "value_prop_timestamp": 12.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 18.9,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 13.4,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 1,
+      "acronym_density": 0.015,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 15,
+      "has_text_animation": true,
+      "has_before_after": false,
+      "has_data_viz": true,
+      "total_ocr_words": 66
+    }
+  },
+  "mega": {
+    "video_id": "A6VqAZ2IhW0",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 176.7,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.012,
+      "energy_trend": -0.001191,
+      "peak_timestamp_sec": 2.7,
+      "peak_position_pct": 0.02,
+      "dynamic_range_db": 18.0,
+      "onset_density": 5.13,
+      "intro_silence_sec": 1.5,
+      "outro_silence_sec": 0.6,
+      "avg_spectral_centroid": 1442.0,
+      "avg_spectral_bandwidth": 1852.0,
+      "avg_zcr": 0.0571
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 62.6,
+      "gradient_frame_pct": 0.017,
+      "high_contrast_frame_pct": 0.898,
+      "navbar_pct": 0.169,
+      "sidebar_pct": 0.085,
+      "modal_pct": 0.068,
+      "table_pct": 0.237,
+      "chat_pct": 0.017,
+      "code_pct": 0.508,
+      "terminal_pct": 0.305,
+      "mobile_frame_pct": 0.051,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.911,
+      "avg_thirds_score": 1.352,
+      "avg_content_aspect": 1.77,
+      "scene_diversity": 0.316,
+      "repetition_count": 25,
+      "has_bookend": false,
+      "longest_scene_sec": 24.0,
+      "frames_analyzed": 59
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "25/1",
+      "r_frame_rate": "25/1",
+      "bit_rate_stream": 109827,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-11-27T01:07:11.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 123.0,
+      "detected_key": "D",
+      "key_confidence": 0.119,
+      "mfcc_mean": [
+        -161.187,
+        134.822,
+        -1.1,
+        12.654,
+        -4.481,
+        -0.301,
+        -4.835,
+        1.913,
+        -4.978,
+        0.001,
+        -4.703,
+        2.586,
+        0.762
+      ],
+      "mfcc_std": [
+        77.814,
+        33.136,
+        20.306,
+        19.725,
+        13.59,
+        16.413,
+        12.299,
+        12.642,
+        10.744,
+        12.483,
+        9.675,
+        9.796,
+        7.186
+      ],
+      "avg_spectral_contrast": 18.51,
+      "avg_tonnetz": [
+        0.1577,
+        -0.0352,
+        0.129,
+        -0.1482,
+        -0.048,
+        -0.0298
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -18.6,
+          "centroid": 851.0,
+          "bandwidth": 964.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -26.7,
+          "centroid": 934.0,
+          "bandwidth": 1090.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1559.0,
+          "bandwidth": 1865.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -16.8,
+          "centroid": 1228.0,
+          "bandwidth": 1802.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -16.9,
+          "centroid": 1113.0,
+          "bandwidth": 1577.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -17.0,
+          "centroid": 1183.0,
+          "bandwidth": 1644.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1354.0,
+          "bandwidth": 2001.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1778.0,
+          "bandwidth": 2300.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 1641.0,
+          "bandwidth": 2227.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -16.8,
+          "centroid": 1500.0,
+          "bandwidth": 2122.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -17.7,
+          "centroid": 1604.0,
+          "bandwidth": 2144.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1548.0,
+          "bandwidth": 2114.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -16.3,
+          "centroid": 1495.0,
+          "bandwidth": 2092.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1588.0,
+          "bandwidth": 2154.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -16.9,
+          "centroid": 1475.0,
+          "bandwidth": 2053.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1651.0,
+          "bandwidth": 2149.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -17.0,
+          "centroid": 1815.0,
+          "bandwidth": 2257.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -16.4,
+          "centroid": 1435.0,
+          "bandwidth": 2040.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -21.4,
+          "centroid": 1644.0,
+          "bandwidth": 1968.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -23.4,
+          "centroid": 1101.0,
+          "bandwidth": 1100.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 864.0,
+          "bandwidth": 850.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 921.0,
+          "bandwidth": 1146.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -24.1,
+          "centroid": 819.0,
+          "bandwidth": 870.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -24.6,
+          "centroid": 914.0,
+          "bandwidth": 918.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1166.0,
+          "bandwidth": 1256.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1033.0,
+          "bandwidth": 1277.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -23.9,
+          "centroid": 1081.0,
+          "bandwidth": 1245.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -22.9,
+          "centroid": 1238.0,
+          "bandwidth": 1465.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -20.2,
+          "centroid": 1323.0,
+          "bandwidth": 1540.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -22.5,
+          "centroid": 1125.0,
+          "bandwidth": 1311.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -21.5,
+          "centroid": 909.0,
+          "bandwidth": 1080.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -21.7,
+          "centroid": 1360.0,
+          "bandwidth": 1412.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -19.7,
+          "centroid": 1699.0,
+          "bandwidth": 1994.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -17.3,
+          "centroid": 2310.0,
+          "bandwidth": 2591.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -17.0,
+          "centroid": 1690.0,
+          "bandwidth": 2265.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -16.9,
+          "centroid": 1633.0,
+          "bandwidth": 2192.0
+        },
+        {
+          "timestamp": 108,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1656.0,
+          "bandwidth": 2259.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 1778.0,
+          "bandwidth": 2390.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -16.0,
+          "centroid": 2107.0,
+          "bandwidth": 2619.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1577.0,
+          "bandwidth": 2135.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -15.5,
+          "centroid": 1474.0,
+          "bandwidth": 2117.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1555.0,
+          "bandwidth": 2081.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 1577.0,
+          "bandwidth": 2116.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -18.3,
+          "centroid": 1738.0,
+          "bandwidth": 2180.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -24.2,
+          "centroid": 1594.0,
+          "bandwidth": 1718.0
+        },
+        {
+          "timestamp": 135,
+          "type": "speech",
+          "rms_db": -20.5,
+          "centroid": 1213.0,
+          "bandwidth": 1629.0
+        },
+        {
+          "timestamp": 138,
+          "type": "speech",
+          "rms_db": -23.3,
+          "centroid": 1238.0,
+          "bandwidth": 1513.0
+        },
+        {
+          "timestamp": 141,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 1424.0,
+          "bandwidth": 1675.0
+        },
+        {
+          "timestamp": 144,
+          "type": "speech",
+          "rms_db": -17.1,
+          "centroid": 1785.0,
+          "bandwidth": 2286.0
+        },
+        {
+          "timestamp": 147,
+          "type": "speech",
+          "rms_db": -17.2,
+          "centroid": 1668.0,
+          "bandwidth": 2181.0
+        },
+        {
+          "timestamp": 150,
+          "type": "speech",
+          "rms_db": -16.6,
+          "centroid": 1576.0,
+          "bandwidth": 2147.0
+        },
+        {
+          "timestamp": 153,
+          "type": "speech",
+          "rms_db": -15.9,
+          "centroid": 1672.0,
+          "bandwidth": 2292.0
+        },
+        {
+          "timestamp": 156,
+          "type": "speech",
+          "rms_db": -15.7,
+          "centroid": 1557.0,
+          "bandwidth": 2191.0
+        },
+        {
+          "timestamp": 159,
+          "type": "speech",
+          "rms_db": -15.8,
+          "centroid": 1750.0,
+          "bandwidth": 2345.0
+        },
+        {
+          "timestamp": 162,
+          "type": "speech",
+          "rms_db": -15.9,
+          "centroid": 1530.0,
+          "bandwidth": 2174.0
+        },
+        {
+          "timestamp": 165,
+          "type": "speech",
+          "rms_db": -15.5,
+          "centroid": 1419.0,
+          "bandwidth": 2064.0
+        },
+        {
+          "timestamp": 168,
+          "type": "speech",
+          "rms_db": -16.7,
+          "centroid": 1488.0,
+          "bandwidth": 2059.0
+        },
+        {
+          "timestamp": 171,
+          "type": "speech",
+          "rms_db": -16.5,
+          "centroid": 1609.0,
+          "bandwidth": 2157.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 1.0
+      },
+      "speech_pct": 1.0,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 385,
+      "strong_sfx_timestamps": [
+        6.32,
+        9.36,
+        10.29,
+        10.57,
+        11.24,
+        12.19,
+        12.47,
+        13.14,
+        14.09,
+        14.37,
+        14.61,
+        15.05,
+        16.0,
+        16.28,
+        16.51,
+        16.74,
+        16.95,
+        17.9,
+        18.18,
+        18.41
+      ],
+      "n_segments": 58
+    }
+  }
+}

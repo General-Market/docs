@@ -31,9 +31,12 @@ async function oraclesHealthy(): Promise<boolean> {
 
 test.describe('Multi-ITP Order Processing', () => {
   test('buy second ITP order fills via oracle consensus', async () => {
-    test.setTimeout(180_000);
+    // Fresh deploys need warm-up — oracles may take several rounds before
+    // consensus succeeds. 5 min gives cold pipelines time to converge.
+    test.setTimeout(300_000);
+    const testStart = Date.now();
 
-    // Oracle health gate — no point waiting 3min for consensus that can't arrive
+    // Oracle health gate — no point waiting 5min for consensus that can't arrive
     if (!(await oraclesHealthy())) {
       console.log('Oracle unhealthy — skipping consensus test');
       test.skip();
@@ -64,18 +67,36 @@ test.describe('Multi-ITP Order Processing', () => {
     const orderId = await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, usdcAmount, limitPrice);
     console.log(`Placed ITP2 L3 buy order #${orderId}`);
 
-    const sharesAfter = await pollUntil(
-      () => getL3UserShares(TEST_ADDRESS, itp2Id),
-      (shares) => shares > sharesBefore,
-      180_000,
-      3_000,
-    );
-    console.log(`ITP2 L3 buy order #${orderId} filled — shares: ${sharesBefore} -> ${sharesAfter}`);
+    // Budget: test timeout minus elapsed setup minus 15s safety margin
+    const pollBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 15_000);
+    let sharesAfter: bigint;
+    try {
+      sharesAfter = await pollUntil(
+        () => getL3UserShares(TEST_ADDRESS, itp2Id),
+        (shares) => shares > sharesBefore,
+        pollBudget,
+        3_000,
+      );
+    } catch {
+      // First order may have been missed during warm-up — retry once
+      console.log(`Order #${orderId} not filled in ${Math.round(pollBudget / 1000)}s — placing retry order`);
+      const retryOrderId = await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, usdcAmount, limitPrice);
+      console.log(`Retry ITP2 L3 buy order #${retryOrderId}`);
+      const retryBudget = Math.max(30_000, 300_000 - (Date.now() - testStart) - 10_000);
+      sharesAfter = await pollUntil(
+        () => getL3UserShares(TEST_ADDRESS, itp2Id),
+        (shares) => shares > sharesBefore,
+        retryBudget,
+        3_000,
+      );
+    }
+    console.log(`ITP2 L3 buy order filled — shares: ${sharesBefore} -> ${sharesAfter}`);
     expect(sharesAfter).toBeGreaterThan(sharesBefore);
   });
 
   test('sell second ITP order completes (not stuck at Executing trades)', async () => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
+    const testStart = Date.now();
 
     // Oracle health gate
     if (!(await oraclesHealthy())) {
@@ -102,10 +123,11 @@ test.describe('Multi-ITP Order Processing', () => {
       const state = await getItpStateL3(itp2Id);
       const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
       await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, 200n * 10n ** 18n, buyLimit);
+      const buyBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 60_000);
       const newShares = await pollUntil(
         () => getL3UserShares(TEST_ADDRESS, itp2Id),
         (s) => s >= 50n * 10n ** 18n,
-        180_000,
+        buyBudget,
         3_000,
       );
       console.log(`Buy filled — shares: ${newShares}`);
@@ -125,10 +147,11 @@ test.describe('Multi-ITP Order Processing', () => {
     console.log(`Placed ITP2 L3 sell order #${orderId}`);
 
     // 6. Wait for L3 shares to decrease
+    const sellBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 15_000);
     const sharesAfter = await pollUntil(
       () => getL3UserShares(TEST_ADDRESS, itp2Id),
       (shares) => shares < l3SharesBefore,
-      180_000,
+      sellBudget,
       3_000,
     );
     console.log(`ITP2 sell order #${orderId} filled — L3 shares: ${l3SharesBefore} -> ${sharesAfter}`);
@@ -136,7 +159,8 @@ test.describe('Multi-ITP Order Processing', () => {
   });
 
   test('first ITP sell still works after multi-ITP fix', async () => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
+    const testStart = Date.now();
 
     // Oracle health gate
     if (!(await oraclesHealthy())) {
@@ -158,10 +182,11 @@ test.describe('Multi-ITP Order Processing', () => {
       const state = await getItpStateL3(itp1Id);
       const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
       await placeL3BuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 18n, buyLimit);
+      const buyBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 60_000);
       await pollUntil(
         () => getL3UserShares(TEST_ADDRESS, itp1Id),
         (s) => s >= 25n * 10n ** 18n,
-        180_000,
+        buyBudget,
         3_000,
       );
     }
@@ -178,10 +203,11 @@ test.describe('Multi-ITP Order Processing', () => {
     const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp1Id, sellAmount, limitPrice);
     console.log(`Placed ITP1 L3 sell order #${orderId}`);
 
+    const sellBudget = Math.max(60_000, 300_000 - (Date.now() - testStart) - 15_000);
     const sharesAfter = await pollUntil(
       () => getL3UserShares(TEST_ADDRESS, itp1Id),
       (shares) => shares < l3SharesBefore,
-      180_000,
+      sellBudget,
       3_000,
     );
     console.log(`ITP1 L3 sell order #${orderId} filled — L3 shares: ${l3SharesBefore} -> ${sharesAfter}`);

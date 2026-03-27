@@ -1,0 +1,667 @@
+{
+  "video_id": "T_UEbjuGTSw",
+  "status": "ok",
+  "duration_sec": 81.2,
+  "resolution": "576x360",
+  "fps": 30.0,
+  "frames_analyzed": 28,
+  "transition_count": 1,
+  "transitions": [
+    {
+      "timestamp_sec": 81.0,
+      "correlation": 0.135,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 12,
+  "text_extractions": [
+    {
+      "timestamp_sec": 6.0,
+      "text": "Agent Bula Own Sales Your"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Adobe Apple Calfornia, California, Company Developer Digital Eve Francisco, Frontend Full Graham IBM Joseph Lawrence Location Name Ohap Pouya Rai Rakesh Rob San Schmist Senior Snow Tite Travis Ueda United Unites Wong Workday immerse ‘San “Senior"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "Adobe Andras Apple Calforia, California, Chnstopher Developer Dhap Ene Francisco, Francisco. Frontend Full Graham IBM Immerse Instabase Job Joseph Lawrence Location Name Nemesési Pouya Rai Rakesh San Schmidt Senior Snow Tile Travis Ueda United Winston Wong Workday Ziacks ‘Company ‘San ‘Senior “Senior"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "\"Company \"Linkedin \"Linkedin, \"Web (sie 006) 134 CB, California, Calling Composio, Developer Developer! Developer’, Experience’), Francisco, Frontend Funct Land Maye, Output Ruby THis URL, United User WATE You and are ber can cng contents finds for frontend function hope how hs, ing isan ith ont oom our sheet: short some states’, tana, tha the this tram tte’ val veh well, with write you ‘Sin"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "\"Hi \"Mi \"is (INFO) (response_data': (‘response 35,4671 36,982} 42,653) 44/171] CREATE Com Compasio. Conpasio, Conposio, Dan Dan, Development, Digitat, Executing Experience, Finds GHATL_CREATE Got HTML I'm Javascript, Joseph LinkedIn None) None} Oan Rakesh, React. True, Upcoming User [INFO] \\n\\nComposio across across’ act always and are args: attention.\\n\\nat background came can caught collaborate data': data’: discuss doing eager excited expertise explore finds fit for forward from great have haw hope how keen lookout message name perfect prof recently regards, represent responsé={'successtull': skills some talented the this truly ue, viewed wark watch well, well. welt. what with work you you're your yoy ‘body's ‘data’: ‘message’: “subje “travis."
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "\"subject\": 'r-8751093507267380275', 'r6626907784498283835', CSS, California, CoLlabor Composio, Composio. DRAFT Dan Dan, Design, Developer, Developer’, Dhap Digital.\\n\\nConposio Francisco, Frontend GHATL_CREATE_EMAIL HTML JavaScript, Joseph, Like LinkedIn LinkedIn. None} Opportunities Software States', True, Uni United Upcoming Web Wwe Zadrafiei', ['Pouya across’ action=Action. action=Action.GHAIL_CREATE_EMATL_DRAFT always and and. are args: attention.\\n\\nAt brief call cam... can cane caught chat com/in/rob-snow-58064a11', con/ data’: doing enior false). finds fit for forward from great have hope individuals ing interested ise keen like lookout match message name nse={'successfull': open our par... para... partnering perfect perience, profile quick recently regards, represent response.\\n\\nBest seem skilled sone talented the this together.\\n\\nLooking viewed well. what with work you you're your {\"recipient_enail\": {“recipient_enail\": ‘California, ‘Graphic ‘Imerse', ‘Linkedin. ‘Python, ‘San ‘error’: ‘threadId': “Exciting “Exploring"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "(nds Ara Because CSS. Developer Exciting HIML, Looking Name Opportunty Poston) Reacts Senior You\" acheve and ang background can ell for fora geal massage mptessive oul ove quick reaching same seamless user wih work you your youset"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "13| Action. Agent BATCH_GET Edt GOOGLESHEETS Initialize Lead Load Outreach Uns WEBTOOL_SCRAPE_WEBSITE_CONTENT, Your about and are content=( dotenv draft email environment equipped expert first for from fron great ideal info inport input job modet perfect resear research sose task that the then tools toolset variables whatever with writer. you “and “given"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "GET GOOGLESMEETS_ Initialize Language Lead Load PEE. SED and are dotenv expert from impart import tools toolset variables ‘Action, ‘Action."
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "Action.GOOGLESHEETS_BATCH_GET Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT, Chat ChatMessage Initialize Load OpenAI \\lama_index.core.\\lms and dotenv from import language load_dotenv load_dotenv() model prefix_messages role=\"system\", tools toolset.get_tools(actions=[ variables ‘Um"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "(constant) (toolset Action Chat ChatMessage ChatMessage( GOOGLESHEETS_BATCH_GET HUBSPOT_LIST_CONTACTS_PAGE, HUBSPOT_LIST_CONTACTS_PAGE: Initialize Load and dotenv environment from import language load_dotenv model role=\"systen\", too tools variables ‘Action. ‘Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "Google"
+    }
+  ],
+  "pseudo_transcript": "Agent Bula Own Sales Your | Adobe Apple Calfornia, California, Company Developer Digital Eve Francisco, Frontend Full Graham IBM Joseph Lawrence Location Name Ohap Pouya Rai Rakesh Rob San Schmist Senior Snow Tite Travis Ueda United Unites Wong Workday immerse ‘San “Senior | Adobe Andras Apple Calforia, California, Chnstopher Developer Dhap Ene Francisco, Francisco. Frontend Full Graham IBM Immerse Instabase Job Joseph Lawrence Location Name Nemesési Pouya Rai Rakesh San Schmidt Senior Snow Tile Travis Ueda United Winston Wong Workday Ziacks ‘Company ‘San ‘Senior “Senior | \"Company \"Linkedin \"Linkedin, \"Web (sie 006) 134 CB, California, Calling Composio, Developer Developer! Developer’, Experience’), Francisco, Frontend Funct Land Maye, Output Ruby THis URL, United User WATE You and are ber can cng contents finds for frontend function hope how hs, ing isan ith ont oom our sheet: short some states’, tana, tha the this tram tte’ val veh well, with write you ‘Sin | \"Hi \"Mi \"is (INFO) (response_data': (‘response 35,4671 36,982} 42,653) 44/171] CREATE Com Compasio. Conpasio, Conposio, Dan Dan, Development, Digitat, Executing Experience, Finds GHATL_CREATE Got HTML I'm Javascript, Joseph LinkedIn None) None} Oan Rakesh, React. True, Upcoming User [INFO] \\n\\nComposio across across’ act always and are args: attention.\\n\\nat background came can caught collaborate data': data’: discuss doing eager excited expertise explore finds fit for forward from great have haw hope how keen lookout message name perfect prof recently regards, represent responsé={'successtull': skills some talented the this truly ue, viewed wark watch well, well. welt. what with work you you're your yoy ‘body's ‘data’: ‘message’: “subje “travis. | \"subject\": 'r-8751093507267380275', 'r6626907784498283835', CSS, California, CoLlabor Composio, Composio. DRAFT Dan Dan, Design, Developer, Developer’, Dhap Digital.\\n\\nConposio Francisco, Frontend GHATL_CREATE_EMAIL HTML JavaScript, Joseph, Like LinkedIn LinkedIn. None} Opportunities Software States', True, Uni United Upcoming Web Wwe Zadrafiei', ['Pouya across’ action=Action. action=Action.GHAIL_CREATE_EMATL_DRAFT always and and. are args: attention.\\n\\nAt brief call cam... can cane caught chat com/in/rob-snow-58064a11', con/ data’: doing enior false). finds fit for forward from great have hope individuals ing interested ise keen like lookout match message name nse={'successfull': open our par... para... partnering perfect perience, profile quick recently regards, represent response.\\n\\nBest seem skilled sone talented the this together.\\n\\nLooking viewed well. what with work you you're your {\"recipient_enail\": {“recipient_enail\": ‘California, ‘Graphic ‘Imerse', ‘Linkedin. ‘Python, ‘San ‘error’: ‘threadId': “Exciting “Exploring | (nds Ara Because CSS. Developer Exciting HIML, Looking Name Opportunty Poston) Reacts Senior You\" acheve and ang background can ell for fora geal massage mptessive oul ove quick reaching same seamless user wih work you your youset | 13| Action. Agent BATCH_GET Edt GOOGLESHEETS Initialize Lead Load Outreach Uns WEBTOOL_SCRAPE_WEBSITE_CONTENT, Your about and are content=( dotenv draft email environment equipped expert first for from fron great ideal info inport input job modet perfect resear research sose task that the then tools toolset variables whatever with writer. you “and “given | GET GOOGLESMEETS_ Initialize Language Lead Load PEE. SED and are dotenv expert from impart import tools toolset variables ‘Action, ‘Action. | Action.GOOGLESHEETS_BATCH_GET Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT, Chat ChatMessage Initialize Load OpenAI \\lama_index.core.\\lms and dotenv from import language load_dotenv load_dotenv() model prefix_messages role=\"system\", tools toolset.get_tools(actions=[ variables ‘Um | (constant) (toolset Action Chat ChatMessage ChatMessage( GOOGLESHEETS_BATCH_GET HUBSPOT_LIST_CONTACTS_PAGE, HUBSPOT_LIST_CONTACTS_PAGE: Initialize Load and dotenv environment from import language load_dotenv model role=\"systen\", too tools variables ‘Action. ‘Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT, | Google",
+  "frame_type_distribution": {
+    "dark_screen": 0.64,
+    "text_heavy": 0.14,
+    "simple_visual": 0.14,
+    "white_screen": 0.07
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          15,
+          13,
+          14
+        ],
+        [
+          66,
+          20,
+          41
+        ],
+        [
+          121,
+          51,
+          85
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          14,
+          13,
+          13
+        ],
+        [
+          54,
+          26,
+          38
+        ],
+        [
+          237,
+          237,
+          237
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          23,
+          23,
+          23
+        ],
+        [
+          72,
+          72,
+          72
+        ],
+        [
+          124,
+          123,
+          123
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          251,
+          250,
+          250
+        ],
+        [
+          125,
+          122,
+          119
+        ],
+        [
+          42,
+          42,
+          41
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          22,
+          22,
+          22
+        ],
+        [
+          69,
+          62,
+          65
+        ],
+        [
+          119,
+          115,
+          115
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          21,
+          21,
+          21
+        ],
+        [
+          61,
+          61,
+          61
+        ],
+        [
+          172,
+          141,
+          152
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 81.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          18,
+          13,
+          9
+        ],
+        [
+          46,
+          43,
+          38
+        ],
+        [
+          120,
+          117,
+          106
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "T_UEbjuGTSw",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 4.66,
+      "bitrate_kbps": 481.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 2434.1,
+      "blur_variance": 2775.0,
+      "avg_motion": 47.17,
+      "max_motion": 215.43,
+      "motion_variance": 63.49,
+      "avg_brightness": 65.6,
+      "brightness_trend": -13.3,
+      "first_quarter_brightness": 52.7,
+      "last_quarter_brightness": 39.4,
+      "browser_chrome_frames": 2,
+      "browser_chrome_pct": 0.071,
+      "dark_mode_pct": 0.821,
+      "light_mode_pct": 0.179,
+      "annotation_frames": 24,
+      "has_annotations": true,
+      "letterbox_frames": 1,
+      "has_letterbox": false,
+      "intro_duration_sec": 18.0,
+      "end_card_duration_sec": 3.2,
+      "dominant_color_temp": "warm",
+      "warm_frame_pct": 0.714,
+      "cool_frame_pct": 0.036,
+      "first_frame": {
+        "brightness": 18.591271219135802,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 2.4646008801035113
+      },
+      "last_frame": {
+        "timestamp": 81.0,
+        "brightness": 24.157431520061728,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 16.3,
+      "frames_analyzed": 28
+    },
+    "marketing": {
+      "value_prop_timestamp": 6.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": true,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 4,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 2,
+      "features_per_min": 1.5,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 281.7,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 1,
+      "jargon_density": 0.002,
+      "jargon_words": [
+        "frontend"
+      ],
+      "benefit_count": 1,
+      "feature_word_count": 2,
+      "benefit_ratio": 0.33,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 5.27,
+      "emotional_arc": "positive_escalation",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 18,
+      "acronym_density": 0.031,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 2,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": true,
+      "total_ocr_words": 588
+    }
+  },
+  "mega": {
+    "video_id": "T_UEbjuGTSw",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 81.2,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.1,
+      "energy_trend": 0.004684,
+      "peak_timestamp_sec": 55.2,
+      "peak_position_pct": 0.68,
+      "dynamic_range_db": 20.8,
+      "onset_density": 5.94,
+      "intro_silence_sec": 0.1,
+      "outro_silence_sec": 1.5,
+      "avg_spectral_centroid": 1920.0,
+      "avg_spectral_bandwidth": 1907.0,
+      "avg_zcr": 0.0802
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 1,
+      "avg_scroll_speed": 3.26,
+      "color_palette_size": 20,
+      "color_consistency": 67.0,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.429,
+      "navbar_pct": 0.821,
+      "sidebar_pct": 0.107,
+      "modal_pct": 0.071,
+      "table_pct": 0.714,
+      "chat_pct": 0.0,
+      "code_pct": 0.464,
+      "terminal_pct": 0.214,
+      "mobile_frame_pct": 0.071,
+      "desktop_chrome_pct": 0.071,
+      "avg_symmetry": 0.94,
+      "avg_thirds_score": 0.924,
+      "avg_content_aspect": 1.54,
+      "scene_diversity": 0.036,
+      "repetition_count": 24,
+      "has_bookend": false,
+      "longest_scene_sec": 81.0,
+      "frames_analyzed": 28
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 349505,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-01-10T10:46:18.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 123.0,
+      "detected_key": "G",
+      "key_confidence": 0.115,
+      "mfcc_mean": [
+        -302.392,
+        116.614,
+        -4.431,
+        36.778,
+        15.915,
+        6.736,
+        0.601,
+        6.678,
+        -4.103,
+        2.971,
+        5.698,
+        1.116,
+        2.135
+      ],
+      "mfcc_std": [
+        97.766,
+        61.418,
+        35.797,
+        25.673,
+        21.586,
+        19.414,
+        14.086,
+        14.267,
+        15.09,
+        11.657,
+        11.155,
+        12.467,
+        10.281
+      ],
+      "avg_spectral_contrast": 17.99,
+      "avg_tonnetz": [
+        0.0385,
+        0.0802,
+        -0.0597,
+        0.0427,
+        -0.0075,
+        -0.0122
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -26.9,
+          "centroid": 1797.0,
+          "bandwidth": 1726.0
+        },
+        {
+          "timestamp": 3,
+          "type": "ambient",
+          "rms_db": -27.4,
+          "centroid": 2400.0,
+          "bandwidth": 1951.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -28.9,
+          "centroid": 1608.0,
+          "bandwidth": 1574.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -26.8,
+          "centroid": 1783.0,
+          "bandwidth": 1662.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -29.5,
+          "centroid": 2161.0,
+          "bandwidth": 1880.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -28.3,
+          "centroid": 2362.0,
+          "bandwidth": 2320.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -27.5,
+          "centroid": 1697.0,
+          "bandwidth": 1681.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -32.0,
+          "centroid": 1636.0,
+          "bandwidth": 1639.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -28.4,
+          "centroid": 1304.0,
+          "bandwidth": 1489.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -28.6,
+          "centroid": 1928.0,
+          "bandwidth": 1767.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 2208.0,
+          "bandwidth": 2146.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1430.0,
+          "bandwidth": 1603.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -31.6,
+          "centroid": 1008.0,
+          "bandwidth": 1497.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -27.6,
+          "centroid": 1652.0,
+          "bandwidth": 1700.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -29.4,
+          "centroid": 1901.0,
+          "bandwidth": 1804.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 2231.0,
+          "bandwidth": 2292.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -27.2,
+          "centroid": 1771.0,
+          "bandwidth": 1884.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -28.1,
+          "centroid": 2071.0,
+          "bandwidth": 2026.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 2319.0,
+          "bandwidth": 2052.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -27.3,
+          "centroid": 2090.0,
+          "bandwidth": 1958.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -26.9,
+          "centroid": 2212.0,
+          "bandwidth": 2296.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -29.3,
+          "centroid": 2199.0,
+          "bandwidth": 2432.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -27.1,
+          "centroid": 2053.0,
+          "bandwidth": 2239.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -24.2,
+          "centroid": 1982.0,
+          "bandwidth": 2165.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 2281.0,
+          "bandwidth": 2255.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 2284.0,
+          "bandwidth": 2281.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -30.4,
+          "centroid": 1633.0,
+          "bandwidth": 1474.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.963,
+        "ambient": 0.037
+      },
+      "speech_pct": 0.963,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "valley",
+      "strong_sfx_count": 199,
+      "strong_sfx_timestamps": [
+        0.14,
+        0.81,
+        1.25,
+        1.44,
+        1.74,
+        1.83,
+        2.72,
+        3.58,
+        3.67,
+        3.92,
+        4.06,
+        4.9,
+        5.25,
+        5.34,
+        5.64,
+        6.76,
+        7.43,
+        7.64,
+        7.87,
+        7.99
+      ],
+      "n_segments": 27
+    }
+  }
+}

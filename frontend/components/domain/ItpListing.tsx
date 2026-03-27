@@ -341,7 +341,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       <div className="px-6 lg:px-12 pt-8 pb-3">
         <div className="max-w-site mx-auto">
           <div className="flex items-end justify-between gap-4 flex-wrap border-b border-[#e0e0e0]">
-            <div className="flex items-stretch gap-0 -mb-px">
+            <div className="flex items-stretch gap-0 -mb-px overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveCategory(null)}
                 className={`px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors whitespace-nowrap ${

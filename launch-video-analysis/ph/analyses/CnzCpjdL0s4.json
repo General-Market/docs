@@ -1,0 +1,572 @@
+{
+  "video_id": "CnzCpjdL0s4",
+  "status": "ok",
+  "duration_sec": 50.2,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 17,
+  "transition_count": 2,
+  "transitions": [
+    {
+      "timestamp_sec": 3.0,
+      "correlation": 0.008,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "correlation": -0.0,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 12,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "Official Surgeflow https://surgeflow.ai website"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "Zer"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "gle"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "Multi-tab automa"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "10-50X FASTER Multi-tab THAN automation"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "Intelligent content understanding"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "text": "|=:"
+    },
+    {
+      "timestamp_sec": 33.0,
+      "text": "For: Perfect"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "30+ For: Perfect Researchers across applying comparing multiple organizing papers platforms positions prices seekers “Job"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "-Content 30+ For: Job Perfect across applying chaos collecting comparing competitor creators data multiple organizing papers platforms positions posting prices seekers tab tired “Anyone"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "Automate"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "Automate Speed Surge"
+    }
+  ],
+  "pseudo_transcript": "Official Surgeflow https://surgeflow.ai website | Zer | gle | Multi-tab automa | 10-50X FASTER Multi-tab THAN automation | Intelligent content understanding | |=: | For: Perfect | 30+ For: Perfect Researchers across applying comparing multiple organizing papers platforms positions prices seekers “Job | -Content 30+ For: Job Perfect across applying chaos collecting comparing competitor creators data multiple organizing papers platforms positions posting prices seekers tab tired “Anyone | Automate | Automate Speed Surge",
+  "frame_type_distribution": {
+    "white_screen": 0.76,
+    "simple_visual": 0.18,
+    "dark_screen": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 3.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          240,
+          230
+        ],
+        [
+          69,
+          60,
+          52
+        ],
+        [
+          182,
+          160,
+          138
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          238,
+          229
+        ],
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          172,
+          166,
+          163
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          249,
+          238,
+          229
+        ],
+        [
+          4,
+          3,
+          3
+        ],
+        [
+          131,
+          127,
+          127
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "white_screen",
+      "dominant_colors_bgr": [
+        [
+          251,
+          240,
+          230
+        ],
+        [
+          224,
+          146,
+          96
+        ],
+        [
+          78,
+          67,
+          56
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 48.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          52,
+          47,
+          47
+        ],
+        [
+          52,
+          49,
+          44
+        ],
+        [
+          52,
+          48,
+          46
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "CnzCpjdL0s4",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.0,
+      "avg_face_count": 0.0,
+      "max_face_count": 0,
+      "avg_face_size_pct": 0,
+      "has_multiple_people": 0,
+      "file_size_mb": 1.56,
+      "bitrate_kbps": 260.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 483.9,
+      "blur_variance": 680.1,
+      "avg_motion": 44.49,
+      "max_motion": 235.25,
+      "motion_variance": 69.05,
+      "avg_brightness": 204.5,
+      "brightness_trend": 9.1,
+      "first_quarter_brightness": 178.8,
+      "last_quarter_brightness": 187.9,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.118,
+      "light_mode_pct": 0.824,
+      "annotation_frames": 8,
+      "has_annotations": true,
+      "letterbox_frames": 1,
+      "has_letterbox": false,
+      "intro_duration_sec": 3.0,
+      "end_card_duration_sec": 2.2,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.059,
+      "cool_frame_pct": 0.529,
+      "first_frame": {
+        "brightness": 0.0001388888888888889,
+        "has_face": false,
+        "face_count": 0,
+        "is_dark": true,
+        "is_white": false,
+        "blur_score": 0.00013020833333333333
+      },
+      "last_frame": {
+        "timestamp": 48.0,
+        "brightness": 48.0,
+        "has_face": false,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 20.1,
+      "frames_analyzed": 17
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 1,
+      "positive_sentiment_timestamps": 4,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 1,
+      "features_per_min": 1.2,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 53.7,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 2,
+      "feature_word_count": 1,
+      "benefit_ratio": 0.67,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 8.67,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 2,
+      "acronym_density": 0.032,
+      "has_url_shown": true,
+      "urls_found": [
+        "surgeflow.ai"
+      ],
+      "distinct_scenes": 3,
+      "has_text_animation": false,
+      "has_before_after": false,
+      "has_data_viz": false,
+      "total_ocr_words": 63
+    }
+  },
+  "mega": {
+    "video_id": "CnzCpjdL0s4",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 50.2,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.123,
+      "energy_trend": -0.002888,
+      "peak_timestamp_sec": 43.3,
+      "peak_position_pct": 0.86,
+      "dynamic_range_db": 31.8,
+      "onset_density": 5.16,
+      "intro_silence_sec": 0.0,
+      "outro_silence_sec": 1.1,
+      "avg_spectral_centroid": 1443.0,
+      "avg_spectral_bandwidth": 1604.0,
+      "avg_zcr": 0.061
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 62.7,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 0.0,
+      "navbar_pct": 0.0,
+      "sidebar_pct": 0.118,
+      "modal_pct": 0.0,
+      "table_pct": 0.235,
+      "chat_pct": 0.059,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.956,
+      "avg_thirds_score": 1.063,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.188,
+      "repetition_count": 11,
+      "has_bookend": false,
+      "longest_scene_sec": 36.0,
+      "frames_analyzed": 17
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 129047,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-12-02T06:06:09.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 95.7,
+      "detected_key": "G",
+      "key_confidence": 0.115,
+      "mfcc_mean": [
+        -333.146,
+        103.901,
+        0.341,
+        25.269,
+        16.389,
+        9.652,
+        14.869,
+        7.066,
+        5.854,
+        5.901,
+        0.861,
+        8.165,
+        10.735
+      ],
+      "mfcc_std": [
+        72.545,
+        35.321,
+        28.126,
+        16.084,
+        14.692,
+        11.748,
+        11.157,
+        9.445,
+        9.532,
+        9.135,
+        8.821,
+        8.601,
+        9.05
+      ],
+      "avg_spectral_contrast": 20.96,
+      "avg_tonnetz": [
+        0.0729,
+        0.0804,
+        -0.0568,
+        0.1211,
+        0.0101,
+        0.0189
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -28.2,
+          "centroid": 1194.0,
+          "bandwidth": 1226.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1060.0,
+          "bandwidth": 1324.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -29.5,
+          "centroid": 1145.0,
+          "bandwidth": 1338.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -29.2,
+          "centroid": 1574.0,
+          "bandwidth": 1673.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -29.4,
+          "centroid": 1348.0,
+          "bandwidth": 1476.0
+        },
+        {
+          "timestamp": 15,
+          "type": "ambient",
+          "rms_db": -26.4,
+          "centroid": 3916.0,
+          "bandwidth": 3096.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -29.4,
+          "centroid": 1411.0,
+          "bandwidth": 1834.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -28.9,
+          "centroid": 1004.0,
+          "bandwidth": 1343.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -28.5,
+          "centroid": 1132.0,
+          "bandwidth": 1368.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -27.0,
+          "centroid": 1121.0,
+          "bandwidth": 1441.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -22.8,
+          "centroid": 1490.0,
+          "bandwidth": 1547.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -20.7,
+          "centroid": 1106.0,
+          "bandwidth": 1391.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -24.6,
+          "centroid": 1081.0,
+          "bandwidth": 1316.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -29.7,
+          "centroid": 1655.0,
+          "bandwidth": 2028.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -22.1,
+          "centroid": 1609.0,
+          "bandwidth": 1737.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -33.1,
+          "centroid": 1360.0,
+          "bandwidth": 1645.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.938,
+        "ambient": 0.062
+      },
+      "speech_pct": 0.938,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 172,
+      "strong_sfx_timestamps": [
+        0.07,
+        0.37,
+        1.32,
+        1.53,
+        1.63,
+        1.93,
+        2.04,
+        2.28,
+        2.35,
+        2.48,
+        2.67,
+        2.9,
+        3.18,
+        3.32,
+        3.53,
+        3.85,
+        4.18,
+        4.48,
+        4.81,
+        4.97
+      ],
+      "n_segments": 16
+    }
+  }
+}

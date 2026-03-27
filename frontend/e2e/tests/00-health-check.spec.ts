@@ -60,17 +60,28 @@ test.describe('Health Check', () => {
     }
   });
 
-  test('ITP listing appears with at least one ITP', async ({ page }) => {
+  test('ITP listing table appears with at least one index', async ({ page }) => {
     test.setTimeout(120_000);
-    // After itp-data setup, ITP cards may take time to appear (SSE + data-node indexing)
-    const itpCards = page.locator('[id^="itp-card-"]');
-    let itpVisible = false;
+    // The /index page renders a table of indexes (not cards).
+    // Data arrives via SSE or REST polling — may take time after deploy.
+    let tableVisible = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      itpVisible = await itpCards.first().isVisible({ timeout: 60_000 }).catch(() => false);
-      if (itpVisible) break;
-      console.warn(`[itp-listing] attempt ${attempt}/3 — no ITP cards yet, retrying...`);
+      // Wait for the product table to render with at least one row
+      const tableRow = page.locator('table tbody tr').first();
+      try {
+        await expect(tableRow).toBeVisible({ timeout: 60_000 });
+        tableVisible = true;
+      } catch {
+        tableVisible = false;
+      }
+      if (tableVisible) break;
+      console.warn(`[itp-listing] attempt ${attempt}/3 — no table rows yet, retrying...`);
     }
-    expect(itpVisible).toBe(true);
+    expect(tableVisible, '/index table did not render any index rows').toBe(true);
+
+    // Verify category tabs are present (the tab bar is the primary navigation)
+    const allTab = page.locator('button').filter({ hasText: /^All/ });
+    await expect(allTab.first()).toBeVisible({ timeout: 5_000 });
   });
 });

@@ -1,0 +1,715 @@
+{
+  "video_id": "ZUDRuywhQ80",
+  "status": "ok",
+  "duration_sec": 99.1,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 34,
+  "transition_count": 1,
+  "transitions": [
+    {
+      "timestamp_sec": 78.0,
+      "correlation": 0.444,
+      "type": "transition"
+    }
+  ],
+  "unique_text_segments": 9,
+  "text_extractions": [
+    {
+      "timestamp_sec": 0.0,
+      "text": "Roamr eRoamr"
+    },
+    {
+      "timestamp_sec": 3.0,
+      "text": "For Friends, Get Paid Roamr Stay Travelling When With Work peu"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "For Friends, Get Paid Roamr Roa} Stay Travelling When With Work"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "(ay For Friends, Get Paid Roamr Roa} Stay Travelling When With Work peat"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "For Friends, Get Paid Roamr Ro} Stay Travelling When With Work peat"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "For Friends, Fronds! Get Paid Roamr Roomy Stay Travelling When With Work"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "Roamr"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "Roamr pO."
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "For Friends, Get Paid Roamr Stay Travelling When With Work deel eRoamr mer peu ‘Oyster"
+    }
+  ],
+  "pseudo_transcript": "Roamr eRoamr | For Friends, Get Paid Roamr Stay Travelling When With Work peu | For Friends, Get Paid Roamr Roa} Stay Travelling When With Work | (ay For Friends, Get Paid Roamr Roa} Stay Travelling When With Work peat | For Friends, Get Paid Roamr Ro} Stay Travelling When With Work peat | For Friends, Fronds! Get Paid Roamr Roomy Stay Travelling When With Work | Roamr | Roamr pO. | For Friends, Get Paid Roamr Stay Travelling When With Work deel eRoamr mer peu ‘Oyster",
+  "frame_type_distribution": {
+    "text_with_visual": 0.74,
+    "simple_visual": 0.26
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          59,
+          32,
+          26
+        ],
+        [
+          252,
+          252,
+          252
+        ],
+        [
+          146,
+          156,
+          164
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          233,
+          235,
+          233
+        ],
+        [
+          57,
+          31,
+          24
+        ],
+        [
+          138,
+          134,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          58,
+          30,
+          23
+        ],
+        [
+          232,
+          234,
+          232
+        ],
+        [
+          140,
+          135,
+          149
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          232,
+          234,
+          233
+        ],
+        [
+          58,
+          30,
+          24
+        ],
+        [
+          138,
+          134,
+          147
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          253,
+          250
+        ],
+        [
+          61,
+          27,
+          21
+        ],
+        [
+          165,
+          153,
+          163
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          250,
+          253,
+          250
+        ],
+        [
+          61,
+          27,
+          20
+        ],
+        [
+          159,
+          149,
+          158
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 78.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          122,
+          125,
+          123
+        ],
+        [
+          60,
+          26,
+          20
+        ],
+        [
+          228,
+          232,
+          231
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          59,
+          31,
+          25
+        ],
+        [
+          234,
+          236,
+          234
+        ],
+        [
+          142,
+          140,
+          154
+        ]
+      ],
+      "has_text": true
+    }
+  ],
+  "extended": {
+    "video_id": "ZUDRuywhQ80",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 1.0,
+      "avg_face_count": 1.0,
+      "max_face_count": 1,
+      "avg_face_size_pct": 3.6,
+      "has_multiple_people": 0,
+      "file_size_mb": 3.11,
+      "bitrate_kbps": 263.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1176.2,
+      "blur_variance": 369.8,
+      "avg_motion": 7.88,
+      "max_motion": 64.9,
+      "motion_variance": 15.15,
+      "avg_brightness": 137.9,
+      "brightness_trend": -8.9,
+      "first_quarter_brightness": 135.2,
+      "last_quarter_brightness": 126.3,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.0,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 34,
+      "has_annotations": true,
+      "letterbox_frames": 0,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 0.1,
+      "dominant_color_temp": "neutral",
+      "warm_frame_pct": 0.0,
+      "cool_frame_pct": 0.059,
+      "first_frame": {
+        "brightness": 143.10209635416666,
+        "has_face": true,
+        "face_count": 1,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 406.06848090277776
+      },
+      "last_frame": {
+        "timestamp": 99.0,
+        "brightness": 135.89841145833333,
+        "has_face": true,
+        "is_dark": false,
+        "is_white": false
+      },
+      "avg_saturation": 76.5,
+      "frames_analyzed": 34
+    },
+    "marketing": {
+      "value_prop_timestamp": 0.0,
+      "value_prop_placement": "late",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 0,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 29.8,
+      "has_testimonial": false,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 0,
+      "feature_word_count": 0,
+      "benefit_ratio": 0.5,
+      "urgency_count": 0,
+      "has_urgency": false,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 14.21,
+      "emotional_arc": "flat",
+      "question_count": 0,
+      "has_questions": false,
+      "acronym_count": 0,
+      "acronym_density": 0.0,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 2,
+      "has_text_animation": true,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 79
+    }
+  },
+  "mega": {
+    "video_id": "ZUDRuywhQ80",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 99.1,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.297,
+      "energy_trend": -0.005879,
+      "peak_timestamp_sec": 71.2,
+      "peak_position_pct": 0.72,
+      "dynamic_range_db": 54.6,
+      "onset_density": 3.63,
+      "intro_silence_sec": 0.6,
+      "outro_silence_sec": 1.5,
+      "avg_spectral_centroid": 2142.0,
+      "avg_spectral_bandwidth": 1832.0,
+      "avg_zcr": 0.1389
+    },
+    "deep_visual": {
+      "has_scroll": false,
+      "scroll_frame_count": 0,
+      "avg_scroll_speed": 0,
+      "color_palette_size": 20,
+      "color_consistency": 80.6,
+      "gradient_frame_pct": 0.0,
+      "high_contrast_frame_pct": 1.0,
+      "navbar_pct": 1.0,
+      "sidebar_pct": 1.0,
+      "modal_pct": 1.0,
+      "table_pct": 0.412,
+      "chat_pct": 0.235,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.76,
+      "avg_thirds_score": 0.877,
+      "avg_content_aspect": 1.78,
+      "scene_diversity": 0.026,
+      "repetition_count": 27,
+      "has_bookend": false,
+      "longest_scene_sec": 99.0,
+      "frames_analyzed": 34
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 131801,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2025-02-10T22:01:22.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 99.4,
+      "detected_key": "G",
+      "key_confidence": 0.103,
+      "mfcc_mean": [
+        -320.877,
+        97.47,
+        -32.261,
+        20.25,
+        3.915,
+        -5.1,
+        -8.407,
+        -10.909,
+        -15.995,
+        3.802,
+        -16.464,
+        -8.261,
+        0.826
+      ],
+      "mfcc_std": [
+        133.698,
+        60.261,
+        34.61,
+        28.173,
+        19.704,
+        20.387,
+        14.76,
+        15.022,
+        17.227,
+        11.175,
+        14.905,
+        10.867,
+        8.833
+      ],
+      "avg_spectral_contrast": 20.29,
+      "avg_tonnetz": [
+        -0.0024,
+        0.0399,
+        0.0533,
+        -0.0456,
+        0.0315,
+        -0.0002
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "ambient",
+          "rms_db": -25.8,
+          "centroid": 2510.0,
+          "bandwidth": 2128.0
+        },
+        {
+          "timestamp": 3,
+          "type": "ambient",
+          "rms_db": -25.3,
+          "centroid": 2141.0,
+          "bandwidth": 1797.0
+        },
+        {
+          "timestamp": 6,
+          "type": "ambient",
+          "rms_db": -25.6,
+          "centroid": 2156.0,
+          "bandwidth": 1783.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 1892.0,
+          "bandwidth": 1676.0
+        },
+        {
+          "timestamp": 12,
+          "type": "ambient",
+          "rms_db": -25.7,
+          "centroid": 2213.0,
+          "bandwidth": 1869.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -24.8,
+          "centroid": 1946.0,
+          "bandwidth": 1827.0
+        },
+        {
+          "timestamp": 18,
+          "type": "ambient",
+          "rms_db": -26.1,
+          "centroid": 2192.0,
+          "bandwidth": 1773.0
+        },
+        {
+          "timestamp": 21,
+          "type": "ambient",
+          "rms_db": -29.4,
+          "centroid": 2373.0,
+          "bandwidth": 2035.0
+        },
+        {
+          "timestamp": 24,
+          "type": "ambient",
+          "rms_db": -24.9,
+          "centroid": 2047.0,
+          "bandwidth": 1807.0
+        },
+        {
+          "timestamp": 27,
+          "type": "ambient",
+          "rms_db": -26.7,
+          "centroid": 2076.0,
+          "bandwidth": 1792.0
+        },
+        {
+          "timestamp": 30,
+          "type": "ambient",
+          "rms_db": -24.7,
+          "centroid": 2271.0,
+          "bandwidth": 1778.0
+        },
+        {
+          "timestamp": 33,
+          "type": "ambient",
+          "rms_db": -28.2,
+          "centroid": 1989.0,
+          "bandwidth": 1756.0
+        },
+        {
+          "timestamp": 36,
+          "type": "ambient",
+          "rms_db": -27.3,
+          "centroid": 2210.0,
+          "bandwidth": 1907.0
+        },
+        {
+          "timestamp": 39,
+          "type": "ambient",
+          "rms_db": -23.9,
+          "centroid": 2020.0,
+          "bandwidth": 1727.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 1837.0,
+          "bandwidth": 1617.0
+        },
+        {
+          "timestamp": 45,
+          "type": "ambient",
+          "rms_db": -26.5,
+          "centroid": 2251.0,
+          "bandwidth": 1972.0
+        },
+        {
+          "timestamp": 48,
+          "type": "ambient",
+          "rms_db": -28.7,
+          "centroid": 2649.0,
+          "bandwidth": 2107.0
+        },
+        {
+          "timestamp": 51,
+          "type": "ambient",
+          "rms_db": -28.5,
+          "centroid": 2261.0,
+          "bandwidth": 1944.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -25.3,
+          "centroid": 1695.0,
+          "bandwidth": 1601.0
+        },
+        {
+          "timestamp": 57,
+          "type": "ambient",
+          "rms_db": -29.6,
+          "centroid": 2326.0,
+          "bandwidth": 1768.0
+        },
+        {
+          "timestamp": 60,
+          "type": "ambient",
+          "rms_db": -26.3,
+          "centroid": 2210.0,
+          "bandwidth": 1874.0
+        },
+        {
+          "timestamp": 63,
+          "type": "ambient",
+          "rms_db": -24.8,
+          "centroid": 2053.0,
+          "bandwidth": 1818.0
+        },
+        {
+          "timestamp": 66,
+          "type": "ambient",
+          "rms_db": -25.6,
+          "centroid": 2188.0,
+          "bandwidth": 1869.0
+        },
+        {
+          "timestamp": 69,
+          "type": "ambient",
+          "rms_db": -27.1,
+          "centroid": 2169.0,
+          "bandwidth": 1862.0
+        },
+        {
+          "timestamp": 72,
+          "type": "ambient",
+          "rms_db": -28.8,
+          "centroid": 2330.0,
+          "bandwidth": 1826.0
+        },
+        {
+          "timestamp": 75,
+          "type": "ambient",
+          "rms_db": -24.4,
+          "centroid": 2185.0,
+          "bandwidth": 1778.0
+        },
+        {
+          "timestamp": 78,
+          "type": "ambient",
+          "rms_db": -27.1,
+          "centroid": 1894.0,
+          "bandwidth": 1621.0
+        },
+        {
+          "timestamp": 81,
+          "type": "ambient",
+          "rms_db": -28.1,
+          "centroid": 2146.0,
+          "bandwidth": 1933.0
+        },
+        {
+          "timestamp": 84,
+          "type": "ambient",
+          "rms_db": -26.7,
+          "centroid": 2128.0,
+          "bandwidth": 1860.0
+        },
+        {
+          "timestamp": 87,
+          "type": "ambient",
+          "rms_db": -25.0,
+          "centroid": 2303.0,
+          "bandwidth": 1901.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -29.0,
+          "centroid": 1542.0,
+          "bandwidth": 1471.0
+        },
+        {
+          "timestamp": 93,
+          "type": "ambient",
+          "rms_db": -26.5,
+          "centroid": 2205.0,
+          "bandwidth": 1971.0
+        },
+        {
+          "timestamp": 96,
+          "type": "ambient",
+          "rms_db": -27.3,
+          "centroid": 2303.0,
+          "bandwidth": 2052.0
+        }
+      ],
+      "segment_distribution": {
+        "ambient": 0.848,
+        "speech": 0.152
+      },
+      "speech_pct": 0.152,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 214,
+      "strong_sfx_timestamps": [
+        0.6,
+        1.11,
+        1.74,
+        2.28,
+        2.39,
+        2.9,
+        3.02,
+        3.27,
+        3.85,
+        4.04,
+        4.46,
+        4.83,
+        5.09,
+        5.18,
+        5.64,
+        6.94,
+        7.76,
+        7.89,
+        8.31,
+        8.36
+      ],
+      "n_segments": 33
+    }
+  }
+}

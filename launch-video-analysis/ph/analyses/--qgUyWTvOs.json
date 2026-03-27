@@ -1,0 +1,1294 @@
+{
+  "video_id": "--qgUyWTvOs",
+  "status": "ok",
+  "duration_sec": 139.3,
+  "resolution": "640x360",
+  "fps": 30.0,
+  "frames_analyzed": 47,
+  "transition_count": 16,
+  "transitions": [
+    {
+      "timestamp_sec": 9.0,
+      "correlation": 0.115,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "correlation": 0.105,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "correlation": 0.145,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "correlation": 0.177,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 30.0,
+      "correlation": 0.12,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "correlation": 0.152,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "correlation": 0.074,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "correlation": 0.116,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "correlation": 0.182,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "correlation": 0.222,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "correlation": 0.388,
+      "type": "transition"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "correlation": 0.165,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "correlation": 0.115,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 111.0,
+      "correlation": 0.186,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 126.0,
+      "correlation": 0.126,
+      "type": "hard_cut"
+    },
+    {
+      "timestamp_sec": 135.0,
+      "correlation": 0.141,
+      "type": "hard_cut"
+    }
+  ],
+  "unique_text_segments": 40,
+  "text_extractions": [
+    {
+      "timestamp_sec": 3.0,
+      "text": "AND EFFORT LIKE MAX MINIMAL NSS OPPORTUNITIES SOUNDS WIN?"
+    },
+    {
+      "timestamp_sec": 6.0,
+      "text": "AI-POWERED LET Pras REACHY, YOUR"
+    },
+    {
+      "timestamp_sec": 9.0,
+      "text": "ASSISTANT,"
+    },
+    {
+      "timestamp_sec": 12.0,
+      "text": "AND CAN. YOU"
+    },
+    {
+      "timestamp_sec": 15.0,
+      "text": "BUSINESS SKYROCKETS WATCH YOUR"
+    },
+    {
+      "timestamp_sec": 18.0,
+      "text": "CAN FIND IONS, MOMENT, RIGHT SMOOTHLY THE YOU"
+    },
+    {
+      "timestamp_sec": 21.0,
+      "text": "FOCUS IMPACTFUL RELATIONSHIPS SHIFT YOUR"
+    },
+    {
+      "timestamp_sec": 24.0,
+      "text": "EFFECTIVELY EFFORTLESSLY FASTER, MORE"
+    },
+    {
+      "timestamp_sec": 27.0,
+      "text": "COULDN'T GETTING STARTED"
+    },
+    {
+      "timestamp_sec": 36.0,
+      "text": "DESIGNED POWERFUL REACHY WE'VE"
+    },
+    {
+      "timestamp_sec": 39.0,
+      "text": "FOR MARKETERS, PERFECT PROFESSIONALS, RECRUITERS, SALES"
+    },
+    {
+      "timestamp_sec": 42.0,
+      "text": "AGENGIES AND FOUNDERS, FREELANCERS LOOKING Marketers: Professio Sales"
+    },
+    {
+      "timestamp_sec": 45.0,
+      "text": "AND GROW LINKEDIN NETWORKS PROSPECTING"
+    },
+    {
+      "timestamp_sec": 48.0,
+      "text": "HEIGHTS? READY TAKE"
+    },
+    {
+      "timestamp_sec": 51.0,
+      "text": "AND AROUND EXPLORE HOW NOT, REACHY STICK"
+    },
+    {
+      "timestamp_sec": 54.0,
+      "text": "BRING CAN GAME\\TO HEIGHTS KING NETWORKING NEW YOUR"
+    },
+    {
+      "timestamp_sec": 57.0,
+      "text": "AND CAMPAIGNS) HEAD"
+    },
+    {
+      "timestamp_sec": 60.0,
+      "text": "EES THIS WHERE}"
+    },
+    {
+      "timestamp_sec": 63.0,
+      "text": "WHEREYOU"
+    },
+    {
+      "timestamp_sec": 66.0,
+      "text": "ENDLESS PER"
+    },
+    {
+      "timestamp_sec": 69.0,
+      "text": "AUTOMATICALLY WITH"
+    },
+    {
+      "timestamp_sec": 72.0,
+      "text": "REQUESTS,"
+    },
+    {
+      "timestamp_sec": 75.0,
+      "text": "EVERYTHING Ge: TIMING"
+    },
+    {
+      "timestamp_sec": 78.0,
+      "text": "ELPS IDENTIFYING MOMENT OUT PROSPECTS' REACH RIGHT SIGNALS THE YOU"
+    },
+    {
+      "timestamp_sec": 81.0,
+      "text": "COMPANY JOB NOT ONLY SIZE THEIR TITLE"
+    },
+    {
+      "timestamp_sec": 84.0,
+      "text": "ALSO BUT CURRENTLY, FOR LOOKING THEY'RE WHEN “Gs"
+    },
+    {
+      "timestamp_sec": 87.0,
+      "text": "ARE KIND OFFER READY, SERVICE THE TO: YOU"
+    },
+    {
+      "timestamp_sec": 90.0,
+      "text": "BEFORE EVEN OUT)... REACH YOU"
+    },
+    {
+      "timestamp_sec": 93.0,
+      "text": "(fl ALINKEDIN AN, ATTENDING ENA EVENT, GROUP, HAVE THEY VISITED."
+    },
+    {
+      "timestamp_sec": 96.0,
+      "text": "AND PRODUCT STARTED USING WEBSITE YOUR"
+    },
+    {
+      "timestamp_sec": 99.0,
+      "text": "ABLE REFINE THEN WILL YOU"
+    },
+    {
+      "timestamp_sec": 102.0,
+      "text": "ONLY"
+    },
+    {
+      "timestamp_sec": 105.0,
+      "text": "COOL, DATA EXTRACTED LINKEDIN. POINTS RICH RIGHT?"
+    },
+    {
+      "timestamp_sec": 108.0,
+      "text": "AND BEST CRAFTING ICE IMPRESSION MAKE THE Vag"
+    },
+    {
+      "timestamp_sec": 111.0,
+      "text": "AND ICE"
+    },
+    {
+      "timestamp_sec": 114.0,
+      "text": "MESSAGES MODEL"
+    },
+    {
+      "timestamp_sec": 117.0,
+      "text": "ENGAGING RATE RESPONSE ini"
+    },
+    {
+      "timestamp_sec": 120.0,
+      "text": "INBOXES"
+    },
+    {
+      "timestamp_sec": 126.0,
+      "text": "JOIN PROFESSIONALS THOUSANDS TRANSFORMING"
+    },
+    {
+      "timestamp_sec": 129.0,
+      "text": "LINKEDIN STRATEGY THEIR WITH"
+    }
+  ],
+  "pseudo_transcript": "AND EFFORT LIKE MAX MINIMAL NSS OPPORTUNITIES SOUNDS WIN? | AI-POWERED LET Pras REACHY, YOUR | ASSISTANT, | AND CAN. YOU | BUSINESS SKYROCKETS WATCH YOUR | CAN FIND IONS, MOMENT, RIGHT SMOOTHLY THE YOU | FOCUS IMPACTFUL RELATIONSHIPS SHIFT YOUR | EFFECTIVELY EFFORTLESSLY FASTER, MORE | COULDN'T GETTING STARTED | DESIGNED POWERFUL REACHY WE'VE | FOR MARKETERS, PERFECT PROFESSIONALS, RECRUITERS, SALES | AGENGIES AND FOUNDERS, FREELANCERS LOOKING Marketers: Professio Sales | AND GROW LINKEDIN NETWORKS PROSPECTING | HEIGHTS? READY TAKE | AND AROUND EXPLORE HOW NOT, REACHY STICK | BRING CAN GAME\\TO HEIGHTS KING NETWORKING NEW YOUR | AND CAMPAIGNS) HEAD | EES THIS WHERE} | WHEREYOU | ENDLESS PER | AUTOMATICALLY WITH | REQUESTS, | EVERYTHING Ge: TIMING | ELPS IDENTIFYING MOMENT OUT PROSPECTS' REACH RIGHT SIGNALS THE YOU | COMPANY JOB NOT ONLY SIZE THEIR TITLE | ALSO BUT CURRENTLY, FOR LOOKING THEY'RE WHEN “Gs | ARE KIND OFFER READY, SERVICE THE TO: YOU | BEFORE EVEN OUT)... REACH YOU | (fl ALINKEDIN AN, ATTENDING ENA EVENT, GROUP, HAVE THEY VISITED. | AND PRODUCT STARTED USING WEBSITE YOUR | ABLE REFINE THEN WILL YOU | ONLY | COOL, DATA EXTRACTED LINKEDIN. POINTS RICH RIGHT? | AND BEST CRAFTING ICE IMPRESSION MAKE THE Vag | AND ICE | MESSAGES MODEL | ENGAGING RATE RESPONSE ini | INBOXES | JOIN PROFESSIONALS THOUSANDS TRANSFORMING | LINKEDIN STRATEGY THEIR WITH",
+  "frame_type_distribution": {
+    "simple_visual": 0.55,
+    "text_with_visual": 0.28,
+    "detailed_visual": 0.11,
+    "dark_screen": 0.06
+  },
+  "scene_snapshots": [
+    {
+      "timestamp_sec": 0.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          30,
+          32,
+          35
+        ],
+        [
+          147,
+          97,
+          165
+        ],
+        [
+          89,
+          54,
+          98
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 9.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          32,
+          10,
+          29
+        ],
+        [
+          100,
+          66,
+          122
+        ],
+        [
+          242,
+          237,
+          241
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 15.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          26,
+          28,
+          31
+        ],
+        [
+          154,
+          101,
+          171
+        ],
+        [
+          89,
+          57,
+          101
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 18.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          6,
+          34
+        ],
+        [
+          83,
+          50,
+          108
+        ],
+        [
+          170,
+          225,
+          238
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 21.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          88,
+          55,
+          98
+        ],
+        [
+          155,
+          107,
+          170
+        ],
+        [
+          23,
+          25,
+          28
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 30.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          32,
+          7,
+          30
+        ],
+        [
+          242,
+          236,
+          241
+        ],
+        [
+          98,
+          64,
+          122
+        ]
+      ],
+      "has_text": false
+    },
+    {
+      "timestamp_sec": 36.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          156,
+          110,
+          172
+        ],
+        [
+          89,
+          55,
+          99
+        ],
+        [
+          23,
+          25,
+          28
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 45.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          96,
+          56,
+          107
+        ],
+        [
+          25,
+          27,
+          30
+        ],
+        [
+          161,
+          118,
+          177
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 57.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          36,
+          14,
+          36
+        ],
+        [
+          93,
+          60,
+          117
+        ],
+        [
+          242,
+          236,
+          241
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 60.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          10,
+          30
+        ],
+        [
+          102,
+          69,
+          124
+        ],
+        [
+          242,
+          237,
+          242
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 75.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          26,
+          28,
+          31
+        ],
+        [
+          150,
+          101,
+          168
+        ],
+        [
+          87,
+          54,
+          96
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 78.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          33,
+          5,
+          34
+        ],
+        [
+          71,
+          40,
+          90
+        ],
+        [
+          129,
+          209,
+          233
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 81.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          154,
+          106,
+          170
+        ],
+        [
+          24,
+          25,
+          29
+        ],
+        [
+          89,
+          53,
+          98
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 90.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          27,
+          29,
+          33
+        ],
+        [
+          150,
+          101,
+          169
+        ],
+        [
+          89,
+          56,
+          101
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 93.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          34,
+          30,
+          39
+        ],
+        [
+          248,
+          247,
+          248
+        ],
+        [
+          128,
+          89,
+          149
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 102.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          11,
+          30
+        ],
+        [
+          98,
+          64,
+          120
+        ],
+        [
+          239,
+          235,
+          238
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 105.0,
+      "frame_type": "text_with_visual",
+      "dominant_colors_bgr": [
+        [
+          155,
+          106,
+          174
+        ],
+        [
+          92,
+          58,
+          105
+        ],
+        [
+          27,
+          28,
+          33
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 111.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          33,
+          10,
+          30
+        ],
+        [
+          100,
+          67,
+          123
+        ],
+        [
+          240,
+          236,
+          239
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 120.0,
+      "frame_type": "simple_visual",
+      "dominant_colors_bgr": [
+        [
+          246,
+          243,
+          246
+        ],
+        [
+          37,
+          17,
+          34
+        ],
+        [
+          121,
+          92,
+          141
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 126.0,
+      "frame_type": "detailed_visual",
+      "dominant_colors_bgr": [
+        [
+          87,
+          54,
+          97
+        ],
+        [
+          152,
+          108,
+          171
+        ],
+        [
+          23,
+          25,
+          29
+        ]
+      ],
+      "has_text": true
+    },
+    {
+      "timestamp_sec": 135.0,
+      "frame_type": "dark_screen",
+      "dominant_colors_bgr": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          36,
+          2,
+          40
+        ],
+        [
+          154,
+          99,
+          161
+        ]
+      ],
+      "has_text": false
+    }
+  ],
+  "extended": {
+    "video_id": "--qgUyWTvOs",
+    "status": "ok",
+    "visual": {
+      "face_presence_pct": 0.574,
+      "avg_face_count": 0.57,
+      "max_face_count": 1,
+      "avg_face_size_pct": 7.0,
+      "has_multiple_people": 0,
+      "file_size_mb": 7.29,
+      "bitrate_kbps": 439.0,
+      "pip_frames": 0,
+      "has_pip": false,
+      "avg_blur_score": 1227.5,
+      "blur_variance": 480.1,
+      "avg_motion": 39.19,
+      "max_motion": 121.34,
+      "motion_variance": 30.76,
+      "avg_brightness": 80.8,
+      "brightness_trend": 3.6,
+      "first_quarter_brightness": 77.1,
+      "last_quarter_brightness": 80.7,
+      "browser_chrome_frames": 0,
+      "browser_chrome_pct": 0.0,
+      "dark_mode_pct": 0.596,
+      "light_mode_pct": 0.0,
+      "annotation_frames": 47,
+      "has_annotations": true,
+      "letterbox_frames": 2,
+      "has_letterbox": false,
+      "intro_duration_sec": 0.0,
+      "end_card_duration_sec": 7.3,
+      "dominant_color_temp": "cool",
+      "warm_frame_pct": 0.064,
+      "cool_frame_pct": 0.617,
+      "first_frame": {
+        "brightness": 74.42754340277777,
+        "has_face": true,
+        "face_count": 1,
+        "is_dark": false,
+        "is_white": false,
+        "blur_score": 486.3743094470364
+      },
+      "last_frame": {
+        "timestamp": 138.0,
+        "brightness": 0.8108550347222222,
+        "has_face": false,
+        "is_dark": true,
+        "is_white": false
+      },
+      "avg_saturation": 107.9,
+      "frames_analyzed": 47
+    },
+    "marketing": {
+      "value_prop_timestamp": 3.0,
+      "value_prop_placement": "early",
+      "has_problem_solution_arc": false,
+      "negative_sentiment_timestamps": 0,
+      "positive_sentiment_timestamps": 3,
+      "social_proof_count": 0,
+      "has_social_proof": false,
+      "metric_count": 0,
+      "metrics_found": [],
+      "metric_placement": null,
+      "cta_count": 0,
+      "cta_types": [],
+      "cta_timing": null,
+      "has_cta": false,
+      "competitor_mentions": 0,
+      "feature_count": 0,
+      "features_per_min": 0.0,
+      "has_pricing": false,
+      "pricing_texts": [],
+      "text_length_variance": 17.5,
+      "has_testimonial": true,
+      "has_step_structure": false,
+      "step_count": 0,
+      "jargon_count": 0,
+      "jargon_density": 0.0,
+      "jargon_words": [],
+      "benefit_count": 3,
+      "feature_word_count": 0,
+      "benefit_ratio": 1.0,
+      "urgency_count": 1,
+      "has_urgency": true,
+      "brand_mentions": 0,
+      "tagline_match": false,
+      "avg_reading_comfort": 4.68,
+      "emotional_arc": "declining",
+      "question_count": 3,
+      "has_questions": true,
+      "acronym_count": 185,
+      "acronym_density": 0.949,
+      "has_url_shown": false,
+      "urls_found": [],
+      "distinct_scenes": 17,
+      "has_text_animation": false,
+      "has_before_after": true,
+      "has_data_viz": false,
+      "total_ocr_words": 195
+    }
+  },
+  "mega": {
+    "video_id": "--qgUyWTvOs",
+    "status": "ok",
+    "audio": {
+      "has_audio": true,
+      "audio_duration": 139.3,
+      "has_speech": true,
+      "has_music": false,
+      "has_sound_effects": true,
+      "silence_pct": 0.124,
+      "energy_trend": -0.003995,
+      "peak_timestamp_sec": 49.2,
+      "peak_position_pct": 0.35,
+      "dynamic_range_db": 25.4,
+      "onset_density": 5.34,
+      "intro_silence_sec": 0.2,
+      "outro_silence_sec": 0.7,
+      "avg_spectral_centroid": 2022.0,
+      "avg_spectral_bandwidth": 2065.0,
+      "avg_zcr": 0.0922
+    },
+    "deep_visual": {
+      "has_scroll": true,
+      "scroll_frame_count": 9,
+      "avg_scroll_speed": 3.23,
+      "color_palette_size": 20,
+      "color_consistency": 80.9,
+      "gradient_frame_pct": 0.043,
+      "high_contrast_frame_pct": 0.957,
+      "navbar_pct": 0.426,
+      "sidebar_pct": 0.66,
+      "modal_pct": 0.319,
+      "table_pct": 0.681,
+      "chat_pct": 0.085,
+      "code_pct": 0.0,
+      "terminal_pct": 0.0,
+      "mobile_frame_pct": 0.0,
+      "desktop_chrome_pct": 0.0,
+      "avg_symmetry": 0.793,
+      "avg_thirds_score": 0.947,
+      "avg_content_aspect": 1.731,
+      "scene_diversity": 0.34,
+      "repetition_count": 35,
+      "has_bookend": false,
+      "longest_scene_sec": 21.0,
+      "frames_analyzed": 47
+    },
+    "metadata": {
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio_track": true,
+      "video_profile": "Main",
+      "pix_fmt": "yuv420p",
+      "avg_frame_rate": "30/1",
+      "r_frame_rate": "30/1",
+      "bit_rate_stream": 307914,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "encoder": "Google",
+      "creation_time": "2024-12-26T10:40:20.000000Z"
+    },
+    "audio_deep": {
+      "tempo_bpm": 95.7,
+      "detected_key": "F#",
+      "key_confidence": 0.105,
+      "mfcc_mean": [
+        -287.982,
+        107.235,
+        -2.723,
+        29.017,
+        9.596,
+        3.474,
+        0.02,
+        -0.95,
+        -8.931,
+        4.905,
+        -8.759,
+        -0.484,
+        1.606
+      ],
+      "mfcc_std": [
+        72.095,
+        50.344,
+        35.646,
+        24.546,
+        22.298,
+        20.506,
+        14.743,
+        13.12,
+        14.129,
+        11.362,
+        11.776,
+        9.678,
+        9.2
+      ],
+      "avg_spectral_contrast": 19.34,
+      "avg_tonnetz": [
+        0.0789,
+        -0.0319,
+        0.0372,
+        -0.0713,
+        -0.0153,
+        -0.0034
+      ],
+      "segment_types": [
+        {
+          "timestamp": 0,
+          "type": "speech",
+          "rms_db": -24.7,
+          "centroid": 1527.0,
+          "bandwidth": 1924.0
+        },
+        {
+          "timestamp": 3,
+          "type": "speech",
+          "rms_db": -26.6,
+          "centroid": 1980.0,
+          "bandwidth": 1943.0
+        },
+        {
+          "timestamp": 6,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 1978.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 9,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 2156.0,
+          "bandwidth": 1901.0
+        },
+        {
+          "timestamp": 12,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 2255.0,
+          "bandwidth": 2029.0
+        },
+        {
+          "timestamp": 15,
+          "type": "speech",
+          "rms_db": -24.9,
+          "centroid": 2304.0,
+          "bandwidth": 2234.0
+        },
+        {
+          "timestamp": 18,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 2019.0,
+          "bandwidth": 1963.0
+        },
+        {
+          "timestamp": 21,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 1951.0,
+          "bandwidth": 1938.0
+        },
+        {
+          "timestamp": 24,
+          "type": "speech",
+          "rms_db": -25.3,
+          "centroid": 1722.0,
+          "bandwidth": 1910.0
+        },
+        {
+          "timestamp": 27,
+          "type": "speech",
+          "rms_db": -26.9,
+          "centroid": 1914.0,
+          "bandwidth": 1982.0
+        },
+        {
+          "timestamp": 30,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 2204.0,
+          "bandwidth": 2203.0
+        },
+        {
+          "timestamp": 33,
+          "type": "speech",
+          "rms_db": -25.7,
+          "centroid": 2102.0,
+          "bandwidth": 2247.0
+        },
+        {
+          "timestamp": 36,
+          "type": "speech",
+          "rms_db": -27.0,
+          "centroid": 2036.0,
+          "bandwidth": 2134.0
+        },
+        {
+          "timestamp": 39,
+          "type": "speech",
+          "rms_db": -24.6,
+          "centroid": 2029.0,
+          "bandwidth": 2100.0
+        },
+        {
+          "timestamp": 42,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 1995.0,
+          "bandwidth": 2117.0
+        },
+        {
+          "timestamp": 45,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 2231.0,
+          "bandwidth": 2338.0
+        },
+        {
+          "timestamp": 48,
+          "type": "speech",
+          "rms_db": -25.2,
+          "centroid": 2311.0,
+          "bandwidth": 2127.0
+        },
+        {
+          "timestamp": 51,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 1736.0,
+          "bandwidth": 1890.0
+        },
+        {
+          "timestamp": 54,
+          "type": "speech",
+          "rms_db": -24.9,
+          "centroid": 2063.0,
+          "bandwidth": 2107.0
+        },
+        {
+          "timestamp": 57,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 2212.0,
+          "bandwidth": 2183.0
+        },
+        {
+          "timestamp": 60,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 2152.0,
+          "bandwidth": 2201.0
+        },
+        {
+          "timestamp": 63,
+          "type": "speech",
+          "rms_db": -26.7,
+          "centroid": 2135.0,
+          "bandwidth": 2140.0
+        },
+        {
+          "timestamp": 66,
+          "type": "speech",
+          "rms_db": -25.0,
+          "centroid": 1766.0,
+          "bandwidth": 2027.0
+        },
+        {
+          "timestamp": 69,
+          "type": "speech",
+          "rms_db": -25.4,
+          "centroid": 2021.0,
+          "bandwidth": 2077.0
+        },
+        {
+          "timestamp": 72,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 1827.0,
+          "bandwidth": 2077.0
+        },
+        {
+          "timestamp": 75,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 2009.0,
+          "bandwidth": 2121.0
+        },
+        {
+          "timestamp": 78,
+          "type": "speech",
+          "rms_db": -25.5,
+          "centroid": 1961.0,
+          "bandwidth": 1936.0
+        },
+        {
+          "timestamp": 81,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 1714.0,
+          "bandwidth": 1788.0
+        },
+        {
+          "timestamp": 84,
+          "type": "speech",
+          "rms_db": -25.9,
+          "centroid": 1625.0,
+          "bandwidth": 1779.0
+        },
+        {
+          "timestamp": 87,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 1680.0,
+          "bandwidth": 1831.0
+        },
+        {
+          "timestamp": 90,
+          "type": "speech",
+          "rms_db": -25.8,
+          "centroid": 1935.0,
+          "bandwidth": 2016.0
+        },
+        {
+          "timestamp": 93,
+          "type": "speech",
+          "rms_db": -24.7,
+          "centroid": 1995.0,
+          "bandwidth": 2060.0
+        },
+        {
+          "timestamp": 96,
+          "type": "speech",
+          "rms_db": -25.6,
+          "centroid": 1992.0,
+          "bandwidth": 1999.0
+        },
+        {
+          "timestamp": 99,
+          "type": "speech",
+          "rms_db": -25.7,
+          "centroid": 1941.0,
+          "bandwidth": 1844.0
+        },
+        {
+          "timestamp": 102,
+          "type": "speech",
+          "rms_db": -25.8,
+          "centroid": 2205.0,
+          "bandwidth": 2004.0
+        },
+        {
+          "timestamp": 105,
+          "type": "speech",
+          "rms_db": -24.6,
+          "centroid": 2032.0,
+          "bandwidth": 1820.0
+        },
+        {
+          "timestamp": 108,
+          "type": "ambient",
+          "rms_db": -26.4,
+          "centroid": 2444.0,
+          "bandwidth": 2294.0
+        },
+        {
+          "timestamp": 111,
+          "type": "speech",
+          "rms_db": -24.3,
+          "centroid": 2197.0,
+          "bandwidth": 2132.0
+        },
+        {
+          "timestamp": 114,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 2035.0,
+          "bandwidth": 2070.0
+        },
+        {
+          "timestamp": 117,
+          "type": "speech",
+          "rms_db": -25.1,
+          "centroid": 2190.0,
+          "bandwidth": 2136.0
+        },
+        {
+          "timestamp": 120,
+          "type": "speech",
+          "rms_db": -26.5,
+          "centroid": 2315.0,
+          "bandwidth": 2237.0
+        },
+        {
+          "timestamp": 123,
+          "type": "speech",
+          "rms_db": -24.4,
+          "centroid": 1848.0,
+          "bandwidth": 2059.0
+        },
+        {
+          "timestamp": 126,
+          "type": "speech",
+          "rms_db": -25.3,
+          "centroid": 2096.0,
+          "bandwidth": 2127.0
+        },
+        {
+          "timestamp": 129,
+          "type": "speech",
+          "rms_db": -26.2,
+          "centroid": 2101.0,
+          "bandwidth": 2189.0
+        },
+        {
+          "timestamp": 132,
+          "type": "speech",
+          "rms_db": -28.1,
+          "centroid": 1861.0,
+          "bandwidth": 2146.0
+        },
+        {
+          "timestamp": 135,
+          "type": "silence",
+          "rms_db": -41.6,
+          "centroid": 1897.0,
+          "bandwidth": 2357.0
+        }
+      ],
+      "segment_distribution": {
+        "speech": 0.957,
+        "ambient": 0.022,
+        "silence": 0.022
+      },
+      "speech_pct": 0.957,
+      "music_pct": 0.0,
+      "sfx_pct": 0.0,
+      "silence_pct": 0.022,
+      "starts_with_music": false,
+      "ends_with_music": false,
+      "has_music_intro": false,
+      "has_music_outro": false,
+      "energy_shape": "flat",
+      "strong_sfx_count": 267,
+      "strong_sfx_timestamps": [
+        0.21,
+        0.44,
+        0.72,
+        1.83,
+        2.81,
+        3.16,
+        3.39,
+        3.58,
+        3.83,
+        4.09,
+        4.16,
+        4.3,
+        4.97,
+        5.41,
+        5.6,
+        6.22,
+        6.64,
+        7.11,
+        7.5,
+        8.1
+      ],
+      "n_segments": 46
+    }
+  }
+}
