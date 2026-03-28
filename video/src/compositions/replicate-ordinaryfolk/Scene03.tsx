@@ -943,7 +943,7 @@ export const Scene03: React.FC = () => {
     {start:416,dur:62,Comp:SegStartingWith},
     {start:476,dur:84,Comp:SegPhoneMockup},
     {start:555,dur:85,Comp:SegSupercharge},
-    {start:560,dur:185,Comp:SegPhoneGoodMorning},
+    {start:635,dur:110,Comp:SegPhoneGoodMorning},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
