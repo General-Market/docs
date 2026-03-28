@@ -973,27 +973,61 @@ export const Scene02: React.FC = () => {
               transform: `scale(${sc})`,
             }}
           >
-            <div
-              style={{
-                fontSize: 185,
-                fontWeight: 700,
-                fontFamily: F.h,
-                letterSpacing: -6,
-                lineHeight: 1,
-                color: "transparent",
-                WebkitTextStroke: "2.5px rgba(180,170,220,0.5)",
-                background: `linear-gradient(${135 + shimmer}deg,
-                  rgba(220,210,245,0.3) 0%,
-                  rgba(200,190,235,0.15) 30%,
-                  rgba(180,170,220,0.1) 50%,
-                  rgba(210,200,240,0.25) 70%,
-                  rgba(190,180,230,0.2) 100%)`,
-                WebkitBackgroundClip: "text",
-                textShadow: "0 0 60px rgba(180,170,220,0.15)",
-                filter: "drop-shadow(0 4px 16px rgba(160,150,200,0.12))",
-              }}
-            >
-              One
+            <div style={{ position: "relative" }}>
+              {/* Glass fill layer */}
+              <div
+                style={{
+                  fontSize: 195,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -6,
+                  lineHeight: 1,
+                  color: "transparent",
+                  background: `linear-gradient(${140 + shimmer}deg,
+                    rgba(210,200,240,0.35) 0%,
+                    rgba(190,180,230,0.2) 25%,
+                    rgba(220,210,245,0.15) 45%,
+                    rgba(180,170,220,0.25) 65%,
+                    rgba(200,190,235,0.3) 100%)`,
+                  WebkitBackgroundClip: "text",
+                  filter: "drop-shadow(0 6px 20px rgba(160,150,200,0.15))",
+                }}
+              >
+                One
+              </div>
+              {/* Stroke overlay for glass edge */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  fontSize: 195,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -6,
+                  lineHeight: 1,
+                  color: "transparent",
+                  WebkitTextStroke: "3px rgba(190,180,225,0.55)",
+                }}
+              >
+                One
+              </div>
+              {/* Inner highlight */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  fontSize: 195,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -6,
+                  lineHeight: 1,
+                  color: "transparent",
+                  WebkitTextStroke: "1px rgba(255,255,255,0.3)",
+                  transform: "translate(-1px, -1px)",
+                }}
+              >
+                One
+              </div>
             </div>
             <div
               style={{
