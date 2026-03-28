@@ -72,8 +72,9 @@ function generateBardFragments(): BardFragment[] {
       const r = (n: number) => seededRandom(seed + n * 137);
       const letterWidth = letter === "B" ? 30 : letter === "a" ? 26 : letter === "r" ? 18 : 26;
       const letterHeight = 44;
-      const baseAngle = -Math.PI * 0.55 + (letterIdx - 1.5) * 0.15;
-      const angleSpread = r(0) * Math.PI * 0.5 - Math.PI * 0.25;
+      // Ref frame_011: particles stream upward-left from Bard letters
+      const baseAngle = -Math.PI * 0.65 + (letterIdx - 1.5) * 0.12;
+      const angleSpread = r(0) * Math.PI * 0.45 - Math.PI * 0.22;
 
       fragments.push({
         letter, letterIdx, fragIdx,
@@ -104,7 +105,7 @@ const TYPING_START = 62;
 /** Frame-driven typing — renders characters one per frame */
 const TypingText: React.FC<{ frame: number }> = ({ frame }) => {
   const elapsed = Math.max(0, frame - TYPING_START);
-  const charsVisible = Math.min(CHAPTER_TEXT.length, Math.floor(elapsed));
+  const charsVisible = Math.min(CHAPTER_TEXT.length, Math.floor(elapsed * 1.6));
   const typingDone = charsVisible >= CHAPTER_TEXT.length;
   const cursorOpacity = !typingDone
     ? (Math.sin(frame * 0.5) > -0.3 ? 0.7 : 0)
@@ -169,6 +170,8 @@ export const Scene02: React.FC = () => {
         s(wordStarts[i])
       );
     });
+
+    // "And" color handled in JSX via frame-driven interpolation (React rerenders override GSAP color tweens)
 
     // Phase A exit
     const phaseA = el.querySelector<HTMLElement>(".phase-a-row");
@@ -320,32 +323,35 @@ export const Scene02: React.FC = () => {
   }, [frame, fragments]);
 
   // ── Page turn geometry (frame-driven for clipPath) ──
-  // Reference: page wipes right-to-left with slight diagonal (top leads bottom)
+  // Reference frame_008: page lifts from top-right corner. The fold line
+  // sweeps diagonally from the top-right corner toward bottom-left.
+  // At the midpoint (~frame 108), about 25% of the frame is dark (top-right triangle).
+  // The white page surface tilts in 3D as it peels.
   const TURN_START = 100;
-  const TURN_END = 118;
+  const TURN_END = 122;
   const turnRaw = Math.max(0, Math.min(1, (frame - TURN_START) / (TURN_END - TURN_START)));
-  const turnProgress = gsap.parseEase("power2.inOut")(turnRaw);
+  const turnProgress = gsap.parseEase("power3.inOut")(turnRaw);
 
-  // Fold line: from (topX, 0%) to (botX, 100%)
-  // Top edge leads slightly (peels from upper-right faster)
-  const foldTopX = 110 - turnProgress * 135;
-  const foldBotX = 110 - turnProgress * 120;
-  const topX = Math.max(-15, Math.min(110, foldTopX));
-  const botX = Math.max(-15, Math.min(110, foldBotX));
+  // Corner peel: fold line is a diagonal that starts at the top-right corner
+  // and sweeps toward bottom-left. Parameterized as two intercept points:
+  //   - Where the fold line crosses the top edge (y=0): topX%
+  //   - Where the fold line crosses the right edge (x=100): rightY%
+  //
+  // At progress 0: both intercepts at the corner (100%, 0%) — no dark visible
+  // At progress 0.4 (ref frame_008 moment): topX ~ 55%, rightY ~ 45%
+  // At progress 1: fold has swept fully past, entire frame is dark
+  const topX = 100 - turnProgress * 140;      // fold's X on top edge
+  const rightY = turnProgress * 130 - 10;     // fold's Y on right edge
 
-  // Fold line direction for shadow angle
-  const dxFold = botX - topX;
-  const dyFold = 100;
-  const foldLineAngle = Math.atan2(dyFold, dxFold) * (180 / Math.PI);
-  const foldLen = Math.sqrt(dxFold * dxFold + dyFold * dyFold) || 1;
-  const shadowW = 5;
-  const nxShadow = (-dyFold / foldLen) * shadowW;
-  const nyShadow = (dxFold / foldLen) * shadowW;
+  // Clamp for polygon construction
+  const cTopX = Math.max(-10, Math.min(110, topX));
+  const cRightY = Math.max(-10, Math.min(110, rightY));
 
-  const pageOpacity = turnProgress > 0.85 ? Math.max(0, (1 - turnProgress) / 0.15) * 0.9 : 1;
-  const pageTiltX = 0;
-  const pageTiltY = Math.min(turnProgress / 0.4, 1) * 6;
-  const foldAngle = turnProgress * 60;
+  // 3D tilt of the white page surface — subtle, grows with progress
+  const pageRotateZ = turnProgress * 10;
+  const pageRotateX = turnProgress * 6;
+  const pageOpacity = turnProgress > 0.88 ? Math.max(0, (1 - turnProgress) / 0.12) : 1;
+  const foldAngle = turnProgress * 40;
 
   // Warm accent drift
   const accentRight = -100 + Math.sin(frame * 0.015) * 40;
@@ -400,25 +406,33 @@ export const Scene02: React.FC = () => {
             alignItems: "baseline",
           }}
         >
-          {["And", "now", "it\u2019s", "time", "for"].map((word, i) => (
-            <span
-              key={word}
-              className="word-reveal"
-              style={{
-                display: "inline-block",
-                fontSize: 42,
-                fontWeight: i === 0 ? 300 : i === 1 ? 400 : 300,
-                fontFamily,
-                color: i === 0 ? TEXT_GRAY : TEXT_DARK,
-                marginRight: 11,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.2,
-                opacity: 0,
-              }}
-            >
-              {word}
-            </span>
-          ))}
+          {["And", "now", "it\u2019s", "time", "for"].map((word, i) => {
+            // "And" starts gray and transitions to dark as "now" appears (frame 10–16)
+            const wordColor = i === 0
+              ? (frame < 10 ? TEXT_GRAY : frame < 16
+                ? `rgb(${Math.round(interpolate(frame, [10, 16], [168, 29], C))}, ${Math.round(interpolate(frame, [10, 16], [168, 29], C))}, ${Math.round(interpolate(frame, [10, 16], [176, 31], C))})`
+                : TEXT_DARK)
+              : TEXT_DARK;
+            return (
+              <span
+                key={word}
+                className="word-reveal"
+                style={{
+                  display: "inline-block",
+                  fontSize: 42,
+                  fontWeight: i === 0 ? 300 : i === 1 ? 400 : 300,
+                  fontFamily,
+                  color: wordColor,
+                  marginRight: 11,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.2,
+                  opacity: 0,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
         </div>
 
         {/* ════ PHASE B-C: "the next chapter" ════ */}
@@ -438,15 +452,15 @@ export const Scene02: React.FC = () => {
         </div>
 
         {/* ════ PAGE TURN ════ */}
-        {frame >= TURN_START - 2 && frame <= TURN_END + 4 && (
+        {frame >= TURN_START - 2 && frame <= TURN_END + 6 && (
           <>
-            {/* White page clipped to un-peeled region */}
+            {/* White page — clips to the un-peeled region (below/left of fold line) */}
             <div
               style={{
                 position: "absolute",
                 inset: 0,
                 perspective: 1400,
-                perspectiveOrigin: "30% 70%",
+                perspectiveOrigin: "25% 75%",
                 zIndex: 1,
               }}
             >
@@ -454,12 +468,18 @@ export const Scene02: React.FC = () => {
                 style={{
                   backgroundColor: "#ffffff",
                   opacity: pageOpacity,
-                  clipPath:
-                    topX > -5 || botX > -5
-                      ? `polygon(0% 0%, ${topX}% 0%, ${botX}% 100%, 0% 100%)`
-                      : "polygon(0% 0%, 0% 0%, 0% 0%)",
-                  transform: `rotateX(${pageTiltX}deg) rotateY(${pageTiltY}deg)`,
-                  transformOrigin: "0% 50%",
+                  clipPath: turnProgress < 0.01
+                    ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
+                    : cRightY >= 100
+                      // Fold line has passed below the right edge — clip is a triangle
+                      ? `polygon(0% 0%, ${cTopX}% 0%, 0% ${Math.min(100, (100 * (100 - cTopX)) / (100 - cTopX + 0.01))}%)`
+                      : cTopX <= 0
+                        // Fold line has passed left of top edge — shrinking bottom-left triangle
+                        ? `polygon(0% 0%, 0% ${100 - cRightY}%, 0% 100%)`
+                        // Normal: quadrilateral — fold intersects top edge and right edge
+                        : `polygon(0% 0%, ${cTopX}% 0%, 100% ${cRightY}%, 100% 100%, 0% 100%)`,
+                  transform: `rotateZ(${pageRotateZ}deg) rotateX(${pageRotateX}deg)`,
+                  transformOrigin: "0% 100%",
                 }}
               >
                 {/* Text ON the turning page */}
@@ -471,7 +491,7 @@ export const Scene02: React.FC = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "baseline",
-                    opacity: turnProgress < 0.65 ? 1 - turnProgress / 0.65 : 0,
+                    opacity: turnProgress < 0.5 ? 1 : Math.max(0, 1 - (turnProgress - 0.5) / 0.3),
                   }}
                 >
                   <span
@@ -489,27 +509,27 @@ export const Scene02: React.FC = () => {
               </AbsoluteFill>
             </div>
 
-            {/* Fold shadow */}
-            {turnProgress > 0.04 && (() => {
-              const shadowClip = `polygon(
-                ${topX - shadowW}% 0%,
-                ${topX + shadowW}% 0%,
-                ${botX + shadowW}% 100%,
-                ${botX - shadowW}% 100%
-              )`;
-              const shadowOpacity = interpolate(turnProgress, [0.04, 0.15, 0.6, 1], [0, 0.18, 0.08, 0], C);
+            {/* Fold shadow — along the diagonal fold line */}
+            {turnProgress > 0.06 && turnProgress < 0.92 && (() => {
+              const sw = 5;
+              const shadowOpacity = interpolate(turnProgress, [0.06, 0.2, 0.6, 0.92], [0, 0.18, 0.1, 0], C);
+              // Shadow band runs parallel to fold line: from (topX, 0) to (100, rightY)
+              const foldDeg = Math.atan2(cRightY, 100 - cTopX) * (180 / Math.PI);
 
               return (
                 <div
                   style={{
                     position: "absolute",
                     inset: 0,
-                    clipPath: shadowClip,
+                    clipPath: `polygon(
+                      ${cTopX - sw}% 0%, ${cTopX + sw}% 0%,
+                      ${100 + sw}% ${cRightY}%, ${100 - sw}% ${cRightY}%
+                    )`,
                     background: `linear-gradient(
-                      ${foldLineAngle + 90}deg,
+                      ${foldDeg + 90}deg,
                       transparent 10%,
                       rgba(0,0,0,${shadowOpacity}) 45%,
-                      rgba(0,0,0,${shadowOpacity * 0.4}) 55%,
+                      rgba(0,0,0,${shadowOpacity * 0.3}) 55%,
                       transparent 90%
                     )`,
                     pointerEvents: "none",
@@ -519,13 +539,12 @@ export const Scene02: React.FC = () => {
               );
             })()}
 
-            {/* Peeled flap — paper underside hint */}
-            {turnProgress > 0.04 && turnProgress < 0.85 && (
+            {/* Peeled flap — paper underside along fold line */}
+            {turnProgress > 0.06 && turnProgress < 0.85 && (
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
-                  perspective: 1200,
                   zIndex: 3,
                   pointerEvents: "none",
                   overflow: "hidden",
@@ -536,15 +555,16 @@ export const Scene02: React.FC = () => {
                     position: "absolute",
                     width: "100%",
                     height: "100%",
-                    clipPath: `polygon(${topX}% 0%, ${Math.min(topX + 20, 110)}% 0%, ${Math.min(botX + 20, 110)}% 100%, ${botX}% 100%)`,
-                    transformOrigin: `${(topX + botX) / 2}% 50%`,
-                    transform: `rotateY(${foldAngle}deg)`,
-                    opacity: interpolate(turnProgress, [0.04, 0.12, 0.6, 0.85], [0, 0.35, 0.2, 0], C),
+                    clipPath: `polygon(
+                      ${cTopX}% 0%, ${Math.min(cTopX + 15, 105)}% 0%,
+                      ${Math.min(100 + 15, 115)}% ${cRightY}%, 100% ${cRightY}%
+                    )`,
+                    opacity: interpolate(turnProgress, [0.06, 0.15, 0.5, 0.85], [0, 0.3, 0.18, 0], C),
                     background: `linear-gradient(
-                      ${foldLineAngle + 180}deg,
-                      rgba(210,208,225,0.6) 0%,
-                      rgba(235,233,245,0.35) 60%,
-                      rgba(190,188,210,0.15) 100%
+                      135deg,
+                      rgba(220,218,235,0.45) 0%,
+                      rgba(240,238,250,0.25) 60%,
+                      rgba(200,198,220,0.1) 100%
                     )`,
                   }}
                 />
