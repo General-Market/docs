@@ -211,7 +211,7 @@ const SometimesSegment: React.FC = () => {
               key={word}
               style={{
                 fontFamily,
-                fontSize: word === "investing" ? 58 : 50,
+                fontSize: word === "investing" ? 62 : 54,
                 fontWeight: word === "investing" ? 700 : 400,
                 color: WHITE,
                 opacity: wordOpacity,

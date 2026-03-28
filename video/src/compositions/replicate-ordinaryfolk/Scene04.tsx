@@ -189,13 +189,15 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { introOpacity: 1, duration: sec(6), ease: "power2.out" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introScale: 1.0, duration: sec(20), ease: "elastic.out(1, 0.6)" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introClipRight: 0, duration: sec(21), ease: "expo.out" }, sec(PHASE.INTRODUCING.start));
-    /* Intro fades out fully BEFORE Gemini appears — no overlap */
-    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.INTRODUCING.start + 30));
+    /* Intro holds, then crossfades WITH Gemini rising — reference shows overlap */
+    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 4));
 
     /* ═══ Gemini Desktop Browser UI ═══ */
+    /* Browser starts rising 5 frames early to overlap with fading "Introducing" */
     const gemStart = sec(PHASE.GEMINI_UI.start);
-    t.to(s, { geminiOpacity: 1, duration: sec(8), ease: "power2.out" }, gemStart);
-    t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemStart);
+    const gemRise = sec(PHASE.GEMINI_UI.start - 5);
+    t.to(s, { geminiOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
+    t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
     /* Start at full view, then zoom toward top-left corner for dropdown focus */
     t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);
     t.to(s, { geminiPanX: -200, duration: sec(46), ease: "power1.inOut" }, gemStart);

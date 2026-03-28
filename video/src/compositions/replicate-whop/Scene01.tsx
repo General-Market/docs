@@ -317,8 +317,8 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
               >
                 <defs>
                   <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={BLUE} stopOpacity="0.18" />
-                    <stop offset="100%" stopColor={BLUE} stopOpacity="0.01" />
+                    <stop offset="0%" stopColor={BLUE} stopOpacity="0.28" />
+                    <stop offset="100%" stopColor={BLUE} stopOpacity="0.02" />
                   </linearGradient>
                   <clipPath id="revClip">
                     <rect x="0" y="0" width={240 * chartDraw} height="100" />
@@ -702,15 +702,13 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
   void _cardR;
   const walletFrame = frame - WALLET_START;
 
-  // Progressive zoom into the buttons/bar area (ref zooms in frames 168-200)
+  // Progressive zoom into buttons/bar area
   const zoomStart = 168;
   const zoomEnd = 200;
   const zoomProgress = easeInOut(clamp01((frame - zoomStart) / (zoomEnd - zoomStart)));
-  // Zoom to show buttons + balance bar + $ amounts (ref f200 ~ 2x zoom)
   const zoomScale = 1 + zoomProgress * 0.85; // zoom from 1x to 1.85x
-  // No translate — origin handles the zoom centering
-  const panX = 0;
-  const panY = 0;
+  const panX = Math.round(zoomProgress * 180);
+  const panY = Math.round(zoomProgress * -250);
 
   // Cursor animation: appears at frame 162, moves toward "Move" button
   const cursorStart = 162;
@@ -800,7 +798,7 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
           display: "flex",
           flexDirection: "column",
           transform: `translateY(${Math.round((1 - e) * 400)}px) scale(${zoomScale}) translate(${panX}px, ${panY}px)`,
-          transformOrigin: `${50 + zoomProgress * 22}% ${25 - zoomProgress * 12}%`,
+          transformOrigin: "center 25%",
           gap: 40,
           overflow: "hidden",
         }}
