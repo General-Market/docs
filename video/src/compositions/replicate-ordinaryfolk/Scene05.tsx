@@ -1082,24 +1082,42 @@ export const Scene05: React.FC = () => {
         opacity: 0,
         rotateX: 22,
         rotateY: 50,
-        scale: 1.3,
-        y: 80,
+        scale: 1.6,
+        y: 100,
       }, 0);
       // Fade in
       t.to(interfaceWrapRef.current, {
         opacity: 1,
-        duration: f(12),
+        duration: f(8),
         ease: "power2.out",
       }, f(30));
-      // Spring-like settle (using elastic ease)
+      // Phase 1: dramatic tilt — hold with slow initial drift (30-60)
+      t.to(interfaceWrapRef.current, {
+        rotateX: 15,
+        rotateY: 35,
+        scale: 1.4,
+        y: 60,
+        duration: f(30),
+        ease: "power1.out",
+      }, f(30));
+      // Phase 2: gradually straighten (60-110)
+      t.to(interfaceWrapRef.current, {
+        rotateX: 2,
+        rotateY: 5,
+        scale: 1.0,
+        y: 10,
+        duration: f(50),
+        ease: "power2.inOut",
+      }, f(60));
+      // Phase 3: final settle to flat (110-130)
       t.to(interfaceWrapRef.current, {
         rotateX: 0,
         rotateY: 0,
         scale: 0.95,
         y: 0,
-        duration: f(60),
-        ease: "elastic.out(1, 0.4)",
-      }, f(30));
+        duration: f(20),
+        ease: "power1.out",
+      }, f(110));
       // Fade out
       t.to(interfaceWrapRef.current, {
         opacity: 0,
@@ -2088,18 +2106,17 @@ export const Scene05: React.FC = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 180,
-            height: 180,
+            width: 220,
+            height: 220,
             borderRadius: "50%",
             background: `radial-gradient(circle,
-              rgba(66,133,244,${0.12 * gFinalGlow}),
-              rgba(234,67,53,${0.06 * gFinalGlow}) 40%,
-              rgba(251,188,5,${0.04 * gFinalGlow}) 60%,
-              transparent 80%)`,
+              rgba(80,60,120,${0.06 * gFinalGlow}),
+              rgba(60,50,100,${0.03 * gFinalGlow}) 50%,
+              transparent 75%)`,
             pointerEvents: "none",
           }}
         />
-        <GoogleG size={60} glowIntensity={gFinalGlow * 1.2} frame={frame} />
+        <GoogleG size={80} glowIntensity={gFinalGlow * 0.35} frame={frame} />
       </div>
 
       {/* Bottom disclaimer during interface */}
