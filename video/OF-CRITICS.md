@@ -140,6 +140,45 @@ P8      207 (6.9s)       215 (7.17s)       Line 1117: P8_FROM = 215
 - [ ] **CRITICAL: Spiral is wrong.** Reference = text on a sweeping bezier ribbon. Ours = scattered chars on separate motionPaths. Fundamentally different.
 - [ ] No background noise particles during G reveal.
 
+## 3D MOVEMENTS — Master Audit (affects S03, S04, S05)
+
+The reference video has 17 distinct 3D elements. Each needs:
+- Correct rotation axis (X, Y, Z) and angle range
+- Correct perspective depth (600-1200px)
+- Visible edge geometry when rotated past 45°
+- `transformStyle: preserve-3d` on parent
+- `backfaceVisibility: hidden` where cards flip
+
+### S03 3D elements:
+| Timestamp | Element | Reference 3D | Our current state | Fix |
+|-----------|---------|-------------|-------------------|-----|
+| 0:14 | Gemini particles | 3D swirl convergence | Flat 2D scatter | Need spiral path with Z-depth |
+| 0:18 | Desktop browser | Tilted 5-8° rotateX | Has perspective but angle may be wrong | Verify rotateX angle |
+| 0:35-0:38 | Phone mockups x3 | Each tilted differently, staggered depths | CSS perspective only | **Use Phone3D component** |
+| 0:38 | Camera viewfinder phone | ~10° Y-tilt | Simple CSS div | **Use Phone3D component** |
+
+### S04 3D elements:
+| Timestamp | Element | Reference 3D | Our current state | Fix |
+|-----------|---------|-------------|-------------------|-----|
+| 0:39 | Phone entrance | Arc from below-right, -18° Y-tilt | Has GSAP arc + tilt | Verify angle matches |
+| 0:45 | Phone exit | -50° edge-on Y rotation | Has dramatic exit | Verify edge visibility |
+| 0:50 | Desktop Gemini | Zoomed corner, slight 3D tilt | Has browser frame | Verify perspective depth |
+
+### S05 3D elements — MOST BROKEN:
+| Timestamp | Element | Reference 3D | Our current state | Fix |
+|-----------|---------|-------------|-------------------|-----|
+| 0:50 | Gemini dropdown | Desktop with gradient border, 3D tilt | Has zoom but may lack tilt | Add rotateX(3°) rotateY(-2°) |
+| 0:53 | Suggestion cards | Each card has slight tilt | Flat cards | Add per-card `perspective(600px) rotateX(2°)` |
+| 0:57 | Code card | **Rotates 360° on own Y-axis** | Has rotation but may be whole scene | Verify card rotates INDEPENDENTLY |
+| 1:00 | Multiple cards | **Each card rotates on OWN axis** (tropic) | Added in last pass | Verify front/back faces, edge geometry |
+| 1:04 | Text arc | **Elliptical arc in 3D space** | Wrong — we do scattered implosion | **REWRITE: text on bezier ribbon with perspective** |
+| 1:07 | Orbital ring | **Words on 3D ring with rotateX tilt** | Added `rotateY(angle) translateZ(220px)` | Verify foreshortening correct |
+| 1:09 | Ultra orb | **3D sphere appearance** | Flat dark orb | Add radial gradient + inner glow for depth |
+| 1:11 | Device duo | **Phone + laptop in 3D space** | Broken | **REWRITE with Phone3D + laptop model** |
+| 1:13 | G logo | **Depth/luminosity** | Flat segmented SVG | Need continuous rainbow gradient G |
+
+**Phone3D component** at `video/src/lib/Phone3D.tsx` is built and ready. Scenes S03 and S04 need to import it to replace CSS phone divs.
+
 ## COMPLETED (for reference)
 
 - [x] OF S01 SSIM: 0.983
