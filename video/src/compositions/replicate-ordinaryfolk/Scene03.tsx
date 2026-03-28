@@ -2329,6 +2329,41 @@ const SegPhoneGoodMorning: React.FC = () => {
   );
 };
 
+/* ─── Background Wash Layer — slow-drifting lavender/pink/blue blobs ─── */
+const BackgroundWash: React.FC = () => {
+  const frame = useCurrentFrame();
+  const blobs = [
+    { cx: 30, cy: 25, r: 320, color: "rgba(196,181,253,0.12)", sx: 0.003, sy: 0.002 },
+    { cx: 75, cy: 60, r: 280, color: "rgba(232,69,139,0.06)",  sx: -0.002, sy: 0.003 },
+    { cx: 50, cy: 80, r: 350, color: "rgba(66,133,244,0.07)",  sx: 0.004, sy: -0.001 },
+    { cx: 20, cy: 55, r: 240, color: "rgba(242,139,130,0.05)", sx: -0.003, sy: -0.002 },
+  ];
+  return (
+    <>
+      {blobs.map((b, i) => {
+        const dx = noise2D("bw" + i, frame * b.sx, 0) * 40;
+        const dy = noise2D("bw" + i, 0, frame * b.sy) * 30;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `${b.cx}%`,
+              top: `${b.cy}%`,
+              width: b.r * 2,
+              height: b.r * 2,
+              borderRadius: "50%",
+              background: `radial-gradient(circle, ${b.color} 0%, transparent 70%)`,
+              transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`,
+              pointerEvents: "none" as const,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
+
 /* ═══════════════════════════════════════════════════════════
    MAIN SCENE 03 — Sequences all sub-segments
    ═══════════════════════════════════════════════════════════ */
@@ -2350,6 +2385,7 @@ export const Scene03: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
+      <BackgroundWash />
       {segments.map(({ start, dur, Comp }, i) => (
         <Sequence key={i} from={start} durationInFrames={dur} name={`seg-${i}`}>
           <Comp />
