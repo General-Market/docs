@@ -15,7 +15,7 @@ const BUTTON_BLUE = "#4A7DFF";
 const GREEN = "#70AD47";
 const CASH_GREEN = "#4ADE80";
 const GREEN_BADGE = "#22C55E";
-const BG = "#f5f5f7";
+const BG = "#f8f8fa";
 const CARD_BG = "#FFFFFF";
 const TEXT_PRIMARY = "#111111";
 const TEXT_SECONDARY = "#6B7280";
@@ -25,19 +25,18 @@ const AAVE_PURPLE = "#7C3AED";
 
 /* ─── data: 30 bars, year 1..30 ─── */
 const BAR_COUNT = 30;
-const DEPOSIT_PER_YEAR = 36800;
+const DEPOSIT_PER_YEAR = 28262;
 const FINAL_TOTAL = 1224907;
-const FINAL_DEPOSIT = BAR_COUNT * DEPOSIT_PER_YEAR; // 1,104,000
-const FINAL_INTEREST = FINAL_TOTAL - FINAL_DEPOSIT; // 120,907
+const FINAL_DEPOSIT = BAR_COUNT * DEPOSIT_PER_YEAR; // ~847,860
+const FINAL_INTEREST = FINAL_TOTAL - FINAL_DEPOSIT; // ~377,047
 
 function generateBarData() {
   const bars: { year: number; deposit: number; interest: number }[] = [];
   for (let i = 1; i <= BAR_COUNT; i++) {
     const deposit = DEPOSIT_PER_YEAR * i;
-    // Scale interest so it reaches FINAL_INTEREST at year 30
-    // Use quadratic growth to match visual curve
+    // Compound interest — reference shows green visible from ~year 8 onward
     const t = i / BAR_COUNT;
-    const interest = FINAL_INTEREST * t * t;
+    const interest = FINAL_INTEREST * Math.pow(t, 1.8);
     bars.push({ year: i, deposit, interest });
   }
   return bars;
@@ -581,9 +580,9 @@ const GrowthChartSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 150 frames total for this segment
-  const segDur = 150;
-  const zoomStart = segDur - fps * 1.2; // zoom in during last 1.2s
+  // 90 frames total for this segment
+  const segDur = 90;
+  const zoomStart = fps * 1.2; // start zooming at 1.2s (frame 30)
 
   const entryScale = spring({
     fps,
@@ -592,17 +591,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into bar area at end
+  // Zoom into chart area — gentler zoom matching v4's best SSIM
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.6],
+    [1, 1.5],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -300],
+    [0, -200],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const zoomX = interpolate(
+    frame,
+    [zoomStart, segDur],
+    [0, -60],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
@@ -618,24 +623,24 @@ const GrowthChartSegment: React.FC = () => {
 
   const counterVal = interpolate(
     frame,
-    [fps * 0.4, fps * 5],
+    [fps * 0.2, fps * 1.5],
     [0, 1224907],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
   const interestVal = interpolate(
     frame,
-    [fps * 1.5, fps * 4.5],
+    [fps * 0.6, fps * 1.8],
     [0, FINAL_INTEREST],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  const annotationOp = interpolate(frame, [fps * 2.5, fps * 3], [0, 1], {
+  const annotationOp = interpolate(frame, [fps * 1.0, fps * 1.4], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Chart area — fill the card generously
+  // Chart area — match reference proportions: ~75% bar, ~25% gap
   const CARD_W = 3200;
   const CARD_H = 1800;
   const PAD_X = 140;
@@ -643,8 +648,9 @@ const GrowthChartSegment: React.FC = () => {
   const PAD_BOTTOM = 100; // space for x-axis labels
   const chartWidth = CARD_W - PAD_X * 2;
   const chartHeight = CARD_H - PAD_TOP - PAD_BOTTOM;
-  const barGap = 10;
-  const barWidth = (chartWidth - barGap * (BAR_COUNT - 1)) / BAR_COUNT;
+  const barSlot = chartWidth / BAR_COUNT;
+  const barWidth = barSlot * 0.78;
+  const barGap = barSlot - barWidth;
 
   return (
     <AbsoluteFill
@@ -663,7 +669,7 @@ const GrowthChartSegment: React.FC = () => {
           borderRadius: 48,
           boxShadow: "0 8px 60px rgba(0,0,0,0.06)",
           opacity: cardOp,
-          transform: `scale(${cardScale}) translateY(${zoomY}px)`,
+          transform: `scale(${cardScale}) translate(${zoomX}px, ${zoomY}px)`,
           position: "relative",
           fontFamily: FONT,
           overflow: "hidden",
@@ -798,7 +804,7 @@ const GrowthChartSegment: React.FC = () => {
             const depositH = (bar.deposit / MAX_TOTAL) * maxH;
             const interestH = fullH - depositH;
 
-            const delayFrames = fps * 0.4 + i * 1.2;
+            const delayFrames = fps * 0.2 + i * 0.6;
             const growProgress = spring({
               fps,
               frame: frame - delayFrames,
@@ -811,22 +817,28 @@ const GrowthChartSegment: React.FC = () => {
 
             return (
               <g key={i}>
+                {/* Deposit bar — flat top when interest sits above, rounded when alone */}
                 <rect
                   x={x}
                   y={chartHeight - currentDepositH}
                   width={barWidth}
                   height={Math.max(0, currentDepositH)}
                   fill={BLUE}
-                  rx={barWidth > 20 ? 6 : 3}
+                  rx={currentInterestH < 1 ? 5 : 0}
+                  ry={currentInterestH < 1 ? 5 : 0}
                 />
-                <rect
-                  x={x}
-                  y={chartHeight - currentDepositH - currentInterestH}
-                  width={barWidth}
-                  height={Math.max(0, currentInterestH)}
-                  fill={GREEN}
-                  rx={barWidth > 20 ? 6 : 3}
-                />
+                {/* Interest bar — always rounded top */}
+                {currentInterestH > 0.5 && (
+                  <rect
+                    x={x}
+                    y={chartHeight - currentDepositH - currentInterestH}
+                    width={barWidth}
+                    height={Math.max(0, currentInterestH)}
+                    fill={GREEN}
+                    rx={5}
+                    ry={5}
+                  />
+                )}
               </g>
             );
           })}
@@ -1095,14 +1107,35 @@ const DepositSegment: React.FC = () => {
 /* ════════════════════════════════════════════════════════
    TRANSITION — Red Whop coin rain (frames 335–350)
    ════════════════════════════════════════════════════════ */
-const COIN_COUNT = 18;
-const coinSeeds = Array.from({ length: COIN_COUNT }, (_, i) => ({
-  x: ((i * 211 + 47) % 3400) + 200, // spread across 4K with margin
-  delay: ((i * 23) % 6) * 0.06, // staggered start
-  speed: 2200 + ((i * 131) % 1200), // fall speed
-  size: 250 + ((i * 97) % 350), // coin size 250-600 (much bigger)
-  rotSpeed: 120 + ((i * 67) % 200), // slower rotation for 3D effect
-  rotStart: ((i * 73) % 360), // random start rotation
+const COIN_COUNT = 26;
+const coinSeeds = Array.from({ length: COIN_COUNT }, (_, i) => {
+  // Layer system: 5 huge foreground, 10 medium midground, 11 small background
+  const layer = i < 5 ? 0 : i < 15 ? 1 : 2;
+  const sizes = [700, 450, 260];
+  const sizeVariance = [200, 150, 80];
+  const blurLevels = [0, 0, 2.5]; // background coins get depth-of-field blur
+  const shadowLevels = ["0 8px 30px rgba(0,0,0,0.35)", "0 4px 16px rgba(0,0,0,0.2)", "none"];
+  return {
+    x: ((i * 193 + 37) % 3500) + 170,
+    delay: ((i * 19) % 12) * 0.04, // wider stagger — more cascading
+    speed: [1400, 1800, 2400][layer] + ((i * 131) % 600),
+    size: sizes[layer] + ((i * 97) % sizeVariance[layer]),
+    rotSpeed: 60 + ((i * 41) % 100),
+    rotStart: ((i * 73) % 360),
+    rotX: 5 + ((i * 31) % 15),
+    blur: blurLevels[layer],
+    shadow: shadowLevels[layer],
+    layer,
+  };
+});
+
+/* Sparkle glints during coin rain */
+const SPARKLE_COUNT = 16;
+const sparkleSeeds = Array.from({ length: SPARKLE_COUNT }, (_, i) => ({
+  x: ((i * 257 + 83) % 3600) + 120,
+  y: ((i * 173 + 41) % 1800) + 180,
+  startFrame: Math.floor(((i * 37) % 40) + 3), // staggered appearance
+  size: 16 + ((i * 29) % 24),
 }));
 
 const CoinRainTransition: React.FC = () => {
@@ -1110,9 +1143,23 @@ const CoinRainTransition: React.FC = () => {
   const { fps } = useVideoConfig();
   const t = frame / fps; // seconds
 
+  // Red background wash builds as coins accumulate
+  const bgOp = interpolate(
+    frame,
+    [0, fps * 0.3, fps * 1.0],
+    [0, 0.15, 0.4],
+    { extrapolateRight: "clamp" }
+  );
+
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Falling coins — transparent background so deposit modal shows through */}
+      {/* Red wash behind coins */}
+      <AbsoluteFill
+        style={{
+          background: `radial-gradient(ellipse at 50% 40%, rgba(232,57,28,${bgOp}) 0%, rgba(180,30,10,${bgOp * 0.6}) 60%, rgba(120,20,5,${bgOp * 0.3}) 100%)`,
+        }}
+      />
+      {/* Falling coins */}
       {coinSeeds.map((coin, i) => {
         const elapsed = Math.max(0, t - coin.delay);
         const y = -coin.size + elapsed * coin.speed;
@@ -1123,6 +1170,9 @@ const CoinRainTransition: React.FC = () => {
           [0, 1, 1],
           { extrapolateRight: "clamp" }
         );
+        // Motion blur: faster coins get more vertical blur
+        const motionBlur = coin.speed > 2000 ? 1.5 : coin.speed > 1600 ? 0.8 : 0;
+        const totalBlur = coin.blur + motionBlur;
 
         return (
           <div
@@ -1134,8 +1184,11 @@ const CoinRainTransition: React.FC = () => {
               width: coin.size,
               height: coin.size,
               opacity,
-              transform: `rotateY(${rotation}deg) rotateX(15deg)`,
+              transform: `rotateY(${rotation}deg) rotateX(${coin.rotX}deg)`,
               transformStyle: "preserve-3d",
+              filter: totalBlur > 0 ? `blur(${totalBlur}px)` : undefined,
+              boxShadow: coin.shadow !== "none" ? coin.shadow : undefined,
+              borderRadius: "50%",
             }}
           >
             <svg
@@ -1144,65 +1197,128 @@ const CoinRainTransition: React.FC = () => {
               viewBox="0 0 100 100"
             >
               <defs>
-                <radialGradient id={`coinGrad${i}`} cx="40%" cy="35%" r="60%">
-                  <stop offset="0%" stopColor="#FF6B4A" />
-                  <stop offset="50%" stopColor={WHOP_RED} />
-                  <stop offset="100%" stopColor="#B82D15" />
+                {/* 3D sphere gradient — off-center highlight for metallic look */}
+                <radialGradient id={`coinGrad${i}`} cx="38%" cy="32%" r="65%" fx="35%" fy="28%">
+                  <stop offset="0%" stopColor="#FF8A6A" />
+                  <stop offset="30%" stopColor="#F04A2A" />
+                  <stop offset="65%" stopColor={WHOP_RED} />
+                  <stop offset="90%" stopColor="#A52210" />
+                  <stop offset="100%" stopColor="#7A1A0C" />
+                </radialGradient>
+                {/* Specular highlight — hot white dot */}
+                <radialGradient id={`coinSpec${i}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+                  <stop offset="40%" stopColor="rgba(255,255,255,0.3)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                </radialGradient>
+                {/* Rim light gradient */}
+                <radialGradient id={`coinRim${i}`} cx="50%" cy="50%" r="50%">
+                  <stop offset="85%" stopColor="rgba(255,255,255,0)" />
+                  <stop offset="95%" stopColor="rgba(255,255,255,0.12)" />
+                  <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
                 </radialGradient>
               </defs>
+              {/* Shadow beneath coin */}
+              <ellipse
+                cx="52"
+                cy="88"
+                rx="32"
+                ry="6"
+                fill="rgba(0,0,0,0.12)"
+              />
+              {/* Main coin body */}
               <circle
                 cx="50"
                 cy="50"
                 r="46"
                 fill={`url(#coinGrad${i})`}
-                stroke="#B82D15"
-                strokeWidth="2"
+              />
+              {/* Outer rim — darker edge */}
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="#8A1D0A"
+                strokeWidth="2.5"
+              />
+              {/* Inner rim ring for depth */}
+              <circle
+                cx="50"
+                cy="50"
+                r="42"
+                fill="none"
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+              />
+              {/* Rim light overlay */}
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill={`url(#coinRim${i})`}
+              />
+              {/* Specular highlight — bright dot offset upper-left */}
+              <circle
+                cx="36"
+                cy="34"
+                r="12"
+                fill={`url(#coinSpec${i})`}
               />
               {/* Glossy highlight band — diagonal white stripe */}
               <ellipse
                 cx="42"
                 cy="40"
-                rx="28"
-                ry="10"
-                fill="rgba(255,255,255,0.30)"
+                rx="26"
+                ry="9"
+                fill="rgba(255,255,255,0.22)"
                 transform="rotate(-35 42 40)"
               />
-              <ellipse
-                cx="38"
-                cy="36"
-                rx="16"
-                ry="5"
-                fill="rgba(255,255,255,0.20)"
-                transform="rotate(-35 38 36)"
-              />
-              {/* W mark — two swoosh strokes */}
+              {/* W mark — filled Whop double-swoosh */}
               <path
-                d="M28 48 C32 50, 38 56, 42 57 C46 58, 54 50, 68 40"
-                stroke="#fff"
-                strokeWidth="4.5"
-                strokeLinecap="round"
-                fill="none"
-                opacity={0.85}
+                d="M30 44 C36 50, 42 54, 48 56 C54 54, 62 48, 70 38
+                   L72 42 C64 52, 56 58, 48 60 C40 58, 34 52, 28 46 Z"
+                fill="rgba(255,255,255,0.92)"
               />
               <path
-                d="M24 60 C28 56, 32 56, 36 58 C42 62, 48 68, 52 69 C56 70, 62 64, 72 54"
-                stroke="#fff"
-                strokeWidth="4.5"
-                strokeLinecap="round"
-                fill="none"
-                opacity={0.7}
-              />
-              {/* Rim highlight */}
-              <circle
-                cx="50"
-                cy="50"
-                r="44"
-                fill="none"
-                stroke="rgba(255,255,255,0.15)"
-                strokeWidth="2"
+                d="M22 56 C26 52, 30 52, 34 56 C40 62, 46 66, 52 66 C58 66, 64 60, 72 50
+                   L74 54 C66 64, 58 70, 52 70 C46 70, 40 66, 34 60 C30 56, 26 56, 22 60 Z"
+                fill="rgba(255,255,255,0.88)"
               />
             </svg>
           </div>
+        );
+      })}
+      {/* Sparkle glints — 4-point stars that flash repeatedly */}
+      {sparkleSeeds.map((sp, si) => {
+        const life = 8; // frames each sparkle lives
+        const cycle = life + 6; // gap between flashes
+        const localFrame = ((frame - sp.startFrame) % cycle + cycle) % cycle;
+        const active = frame >= sp.startFrame && localFrame < life;
+        const sparkleOp = active
+          ? Math.sin((localFrame / life) * Math.PI)
+          : 0;
+        if (sparkleOp <= 0) return null;
+        const s = sp.size * (0.6 + sparkleOp * 0.4);
+        return (
+          <svg
+            key={`sp${si}`}
+            style={{
+              position: "absolute",
+              left: sp.x - s / 2,
+              top: sp.y - s / 2,
+              opacity: sparkleOp * 0.9,
+              pointerEvents: "none",
+            }}
+            width={s}
+            height={s}
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"
+              fill="#fff"
+            />
+          </svg>
         );
       })}
     </AbsoluteFill>
@@ -1255,25 +1371,21 @@ const LogoRevealSegment: React.FC = () => {
           marginBottom: 200,
         }}
       >
-        {/* Whop W mark — two bold swoosh strokes */}
+        {/* Whop W mark — filled swoosh pair matching official logo */}
         <svg width="380" height="280" viewBox="0 0 200 140" fill="none">
-          {/* Top swoosh — thick stroke, check shape: down then up-right */}
+          {/* Upper swoosh — starts thin left, dips to valley, rises thick right */}
           <path
-            d="M42 50 Q56 66, 66 70 Q78 74, 100 54 Q120 36, 155 16"
-            stroke={WHOP_RED}
-            strokeWidth="22"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
+            d="M38 48 C46 56, 54 62, 64 66 C74 70, 86 66, 100 56 C114 46, 130 32, 152 16
+               L156 22
+               C134 38, 116 52, 102 62 C88 72, 76 76, 64 72 C52 68, 44 60, 36 52 Z"
+            fill={WHOP_RED}
           />
-          {/* Bottom swoosh — thick stroke, left tail curls then up-right */}
+          {/* Lower swoosh — wider arc, deeper dip */}
           <path
-            d="M12 86 Q20 78, 30 80 Q44 84, 62 104 Q74 116, 84 118 Q96 118, 116 98 Q136 78, 164 54"
-            stroke={WHOP_RED}
-            strokeWidth="22"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
+            d="M8 78 C14 72, 22 72, 30 78 C42 90, 56 106, 72 114 C84 118, 98 112, 114 98 C130 84, 148 64, 164 46
+               L168 52
+               C152 70, 132 88, 116 102 C100 116, 86 122, 72 118 C56 112, 42 96, 30 84 C22 76, 14 76, 8 82 Z"
+            fill={WHOP_RED}
           />
         </svg>
         <span
@@ -1318,30 +1430,22 @@ const LogoRevealSegment: React.FC = () => {
               {/* Partner icon */}
               {p.name === "Plasma" && (
                 <svg width="96" height="96" viewBox="0 0 96 96">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke={p.color}
-                    strokeWidth="3"
-                    fill="none"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="28"
-                    stroke={p.color}
-                    strokeWidth="3"
-                    fill="none"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="14"
-                    stroke={p.color}
-                    strokeWidth="3"
-                    fill="none"
-                  />
+                  {/* Starburst/sun pattern — lines radiating from center */}
+                  {Array.from({ length: 18 }, (_, j) => {
+                    const angle = (j * 20 * Math.PI) / 180;
+                    return (
+                      <line
+                        key={j}
+                        x1={48 + Math.cos(angle) * 14}
+                        y1={48 + Math.sin(angle) * 14}
+                        x2={48 + Math.cos(angle) * 40}
+                        y2={48 + Math.sin(angle) * 40}
+                        stroke={p.color}
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
                 </svg>
               )}
               {p.name === "tether" && (
@@ -1364,24 +1468,21 @@ const LogoRevealSegment: React.FC = () => {
               )}
               {p.name === "aave" && (
                 <svg width="96" height="96" viewBox="0 0 96 96">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="42"
-                    stroke={AAVE_PURPLE}
-                    strokeWidth="3"
-                    fill="none"
-                  />
-                  {/* Aave ghost: arch with small peak at top */}
+                  {/* Aave arch/rainbow logo */}
                   <path
-                    d="M30 66 C30 40 38 26 48 20 C58 26 66 40 66 66"
+                    d="M20 62 C20 32 34 16 48 16 C62 16 76 32 76 62"
+                    stroke={AAVE_PURPLE}
+                    strokeWidth="6"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M32 62 C32 42 40 30 48 30 C56 30 64 42 64 62"
                     stroke={AAVE_PURPLE}
                     strokeWidth="5"
                     fill="none"
                     strokeLinecap="round"
                   />
-                  {/* Small dot at peak */}
-                  <circle cx="48" cy="18" r="3" fill={AAVE_PURPLE} />
                 </svg>
               )}
               <span
@@ -1407,19 +1508,19 @@ const LogoRevealSegment: React.FC = () => {
 export const Scene04: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
-      <Sequence from={0} durationInFrames={125} name="Dashboard">
+      <Sequence from={0} durationInFrames={105} name="Dashboard">
         <DashboardSegment />
       </Sequence>
-      <Sequence from={125} durationInFrames={150} name="GrowthChart">
+      <Sequence from={105} durationInFrames={90} name="GrowthChart">
         <GrowthChartSegment />
       </Sequence>
-      <Sequence from={275} durationInFrames={60} name="DepositMethods">
+      <Sequence from={190} durationInFrames={100} name="DepositMethods">
         <DepositSegment />
       </Sequence>
-      <Sequence from={310} durationInFrames={45} name="CoinRain">
+      <Sequence from={275} durationInFrames={55} name="CoinRain">
         <CoinRainTransition />
       </Sequence>
-      <Sequence from={355} durationInFrames={88} name="LogoReveal">
+      <Sequence from={320} durationInFrames={123} name="LogoReveal">
         <LogoRevealSegment />
       </Sequence>
     </AbsoluteFill>
