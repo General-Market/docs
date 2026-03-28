@@ -19,27 +19,27 @@
   },
   {
     "frame": 8,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.35,
-    "durationFrames": 18
-  },
-  {
-    "frame": 8,
     "file": "sfx/synth/chord-resolve.wav",
     "volume": 0.1,
     "durationFrames": 30
   },
   {
-    "frame": 20,
-    "file": "sfx/synth/converge.wav",
-    "volume": 0.25,
-    "durationFrames": 18
+    "frame": 8,
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.3,
+    "durationFrames": 20
   },
   {
     "frame": 20,
     "file": "sfx/freesound/click-soft.mp3",
     "volume": 0.2,
     "durationFrames": 10
+  },
+  {
+    "frame": 20,
+    "file": "sfx/synth/converge-crystal.wav",
+    "volume": 0.2,
+    "durationFrames": 20
   },
   {
     "frame": 28,
@@ -64,12 +64,6 @@
     "file": "sfx/synth/fm-bell-crystal.wav",
     "volume": 0.2,
     "durationFrames": 38
-  },
-  {
-    "frame": 72,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.1,
-    "durationFrames": 32
   },
   {
     "frame": 72,
@@ -121,12 +115,6 @@
   },
   {
     "frame": 150,
-    "file": "sfx/synth/whoosh-snap.wav",
-    "volume": 0.3,
-    "durationFrames": 10
-  },
-  {
-    "frame": 150,
     "file": "sfx/freesound/sparkle-bell.mp3",
     "volume": 0.2,
     "durationFrames": 15
@@ -151,33 +139,21 @@
   },
   {
     "frame": 185,
-    "file": "sfx/synth/whoosh-bright.wav",
-    "volume": 0.5,
-    "durationFrames": 14
-  },
-  {
-    "frame": 185,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.35,
-    "durationFrames": 18
-  },
-  {
-    "frame": 185,
     "file": "sfx/freesound/shimmer-magic.mp3",
     "volume": 0.15,
     "durationFrames": 25
   },
   {
-    "frame": 210,
-    "file": "sfx/synth/whoosh-reverse.wav",
-    "volume": 0.45,
+    "frame": 185,
+    "file": "sfx/synth/swoosh-tonal-up.wav",
+    "volume": 0.4,
     "durationFrames": 18
   },
   {
-    "frame": 210,
-    "file": "sfx/synth/converge.wav",
-    "volume": 0.35,
-    "durationFrames": 18
+    "frame": 185,
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.3,
+    "durationFrames": 20
   },
   {
     "frame": 210,
@@ -187,21 +163,21 @@
   },
   {
     "frame": 210,
-    "file": "sfx/freesound/impact-thud.mp3",
-    "volume": 0.2,
-    "durationFrames": 12
+    "file": "sfx/synth/swoosh-tonal-down.wav",
+    "volume": 0.4,
+    "durationFrames": 18
+  },
+  {
+    "frame": 210,
+    "file": "sfx/synth/converge-crystal.wav",
+    "volume": 0.3,
+    "durationFrames": 20
   },
   {
     "frame": 240,
     "file": "sfx/google-material/notification_decorative-02.wav",
     "volume": 0.3,
     "durationFrames": 56
-  },
-  {
-    "frame": 240,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.2,
-    "durationFrames": 18
   },
   {
     "frame": 240,
@@ -216,16 +192,22 @@
     "durationFrames": 50
   },
   {
-    "frame": 250,
-    "file": "sfx/synth/converge.wav",
-    "volume": 0.35,
-    "durationFrames": 18
+    "frame": 240,
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.2,
+    "durationFrames": 20
   },
   {
     "frame": 250,
-    "file": "sfx/synth/whoosh-deep.wav",
+    "file": "sfx/synth/converge-crystal.wav",
+    "volume": 0.3,
+    "durationFrames": 20
+  },
+  {
+    "frame": 250,
+    "file": "sfx/synth/swoosh-tonal-down.wav",
     "volume": 0.2,
-    "durationFrames": 22
+    "durationFrames": 18
   },
   {
     "frame": 258,
@@ -235,33 +217,27 @@
   },
   {
     "frame": 268,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.25,
-    "durationFrames": 14
+    "file": "sfx/synth/fm-bell-warm.wav",
+    "volume": 0.15,
+    "durationFrames": 6
   },
   {
     "frame": 268,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.25,
+    "durationFrames": 8
+  },
+  {
+    "frame": 280,
     "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.15,
+    "volume": 0.17,
     "durationFrames": 6
   },
   {
     "frame": 280,
-    "file": "sfx/freesound/device-slide.mp3",
+    "file": "sfx/synth/slide-tonal.wav",
     "volume": 0.27,
-    "durationFrames": 14
-  },
-  {
-    "frame": 280,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.17,
-    "durationFrames": 6
-  },
-  {
-    "frame": 290,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.29,
-    "durationFrames": 14
+    "durationFrames": 8
   },
   {
     "frame": 290,
@@ -270,16 +246,22 @@
     "durationFrames": 6
   },
   {
-    "frame": 300,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.31,
-    "durationFrames": 14
+    "frame": 290,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.29,
+    "durationFrames": 8
   },
   {
     "frame": 300,
     "file": "sfx/synth/fm-ping.wav",
     "volume": 0.17,
     "durationFrames": 6
+  },
+  {
+    "frame": 300,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.31,
+    "durationFrames": 8
   },
   {
     "frame": 320,
@@ -391,12 +373,6 @@
   },
   {
     "frame": 358,
-    "file": "sfx/freesound/transition-cinematic.mp3",
-    "volume": 0.3,
-    "durationFrames": 35
-  },
-  {
-    "frame": 358,
     "file": "sfx/synth/sub-pulse.wav",
     "volume": 0.3,
     "durationFrames": 18
@@ -415,9 +391,15 @@
   },
   {
     "frame": 358,
-    "file": "sfx/freesound/descend-pitch.mp3",
-    "volume": 0.08,
-    "durationFrames": 30
+    "file": "sfx/synth/swoosh-tonal-wide.wav",
+    "volume": 0.45,
+    "durationFrames": 28
+  },
+  {
+    "frame": 358,
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.2,
+    "durationFrames": 32
   },
   {
     "frame": 360,
@@ -462,39 +444,9 @@
     "durationFrames": 30
   },
   {
-    "frame": 397,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.2,
-    "durationFrames": 14
-  },
-  {
-    "frame": 400,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.2,
-    "durationFrames": 14
-  },
-  {
-    "frame": 406,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.5,
-    "durationFrames": 18
-  },
-  {
-    "frame": 406,
-    "file": "sfx/synth/whoosh-bright.wav",
-    "volume": 0.4,
-    "durationFrames": 14
-  },
-  {
     "frame": 406,
     "file": "sfx/freesound/shimmer-magic.mp3",
     "volume": 0.2,
-    "durationFrames": 25
-  },
-  {
-    "frame": 406,
-    "file": "sfx/freesound/rise-building.mp3",
-    "volume": 0.15,
     "durationFrames": 25
   },
   {
@@ -505,21 +457,15 @@
   },
   {
     "frame": 406,
-    "file": "sfx/freesound/morph-sound.mp3",
-    "volume": 0.15,
-    "durationFrames": 30
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.45,
+    "durationFrames": 20
   },
   {
-    "frame": 432,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.5,
+    "frame": 406,
+    "file": "sfx/synth/swoosh-tonal-up.wav",
+    "volume": 0.3,
     "durationFrames": 18
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/whoosh-deep.wav",
-    "volume": 0.4,
-    "durationFrames": 24
   },
   {
     "frame": 432,
@@ -552,16 +498,22 @@
     "durationFrames": 25
   },
   {
+    "frame": 432,
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.45,
+    "durationFrames": 20
+  },
+  {
+    "frame": 432,
+    "file": "sfx/synth/swoosh-tonal-wide.wav",
+    "volume": 0.3,
+    "durationFrames": 28
+  },
+  {
     "frame": 477,
     "file": "sfx/google-material/hero_simple-celebration-02.wav",
     "volume": 0.4,
     "durationFrames": 52
-  },
-  {
-    "frame": 477,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.2,
-    "durationFrames": 32
   },
   {
     "frame": 477,
@@ -600,6 +552,18 @@
     "durationFrames": 14
   },
   {
+    "frame": 522,
+    "file": "sfx/synth/swoosh-tonal-down.wav",
+    "volume": 0.45,
+    "durationFrames": 18
+  },
+  {
+    "frame": 522,
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.2,
+    "durationFrames": 32
+  },
+  {
     "frame": 547,
     "file": "sfx/freesound/sparkle-bell.mp3",
     "volume": 0.3,
@@ -631,15 +595,9 @@
   },
   {
     "frame": 617,
-    "file": "sfx/synth/whoosh-snap.wav",
+    "file": "sfx/synth/swoosh-tonal-snap.wav",
     "volume": 0.35,
     "durationFrames": 10
-  },
-  {
-    "frame": 617,
-    "file": "sfx/freesound/impact-thud.mp3",
-    "volume": 0.25,
-    "durationFrames": 12
   },
   {
     "frame": 640,
@@ -654,16 +612,16 @@
     "durationFrames": 97
   },
   {
-    "frame": 640,
-    "file": "sfx/freesound/tone-soft.mp3",
-    "volume": 0.06,
-    "durationFrames": 60
-  },
-  {
     "frame": 650,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.15,
     "durationFrames": 18
+  },
+  {
+    "frame": 650,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.15,
+    "durationFrames": 8
   },
   {
     "frame": 655,
@@ -672,10 +630,22 @@
     "durationFrames": 18
   },
   {
+    "frame": 655,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.13,
+    "durationFrames": 8
+  },
+  {
     "frame": 660,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.15,
     "durationFrames": 18
+  },
+  {
+    "frame": 660,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.15,
+    "durationFrames": 8
   },
   {
     "frame": 665,
@@ -684,16 +654,34 @@
     "durationFrames": 18
   },
   {
+    "frame": 665,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.13,
+    "durationFrames": 8
+  },
+  {
     "frame": 670,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.15,
     "durationFrames": 18
   },
   {
+    "frame": 670,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.15,
+    "durationFrames": 8
+  },
+  {
     "frame": 675,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.13,
     "durationFrames": 18
+  },
+  {
+    "frame": 675,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.13,
+    "durationFrames": 8
   },
   {
     "frame": 687,
@@ -780,12 +768,6 @@
     "durationFrames": 15
   },
   {
-    "frame": 797,
-    "file": "sfx/freesound/pop-digital.mp3",
-    "volume": 0.15,
-    "durationFrames": 15
-  },
-  {
     "frame": 848,
     "file": "sfx/freesound/whoosh-subtle.mp3",
     "volume": 0.35,
@@ -793,27 +775,9 @@
   },
   {
     "frame": 848,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.2,
-    "durationFrames": 32
-  },
-  {
-    "frame": 848,
     "file": "sfx/synth/fm-bell-crystal.wav",
     "volume": 0.1,
     "durationFrames": 38
-  },
-  {
-    "frame": 908,
-    "file": "sfx/synth/whoosh-deep.wav",
-    "volume": 0.45,
-    "durationFrames": 24
-  },
-  {
-    "frame": 908,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.3,
-    "durationFrames": 14
   },
   {
     "frame": 908,
@@ -828,6 +792,12 @@
     "durationFrames": 24
   },
   {
+    "frame": 908,
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.4,
+    "durationFrames": 21
+  },
+  {
     "frame": 923,
     "file": "sfx/google-material/state-change_confirm-up.wav",
     "volume": 0.3,
@@ -835,7 +805,7 @@
   },
   {
     "frame": 923,
-    "file": "sfx/synth/whoosh-snap.wav",
+    "file": "sfx/synth/swoosh-tonal-snap.wav",
     "volume": 0.25,
     "durationFrames": 10
   },
@@ -844,12 +814,6 @@
     "file": "sfx/freesound/card-flip.mp3",
     "volume": 0.5,
     "durationFrames": 12
-  },
-  {
-    "frame": 932,
-    "file": "sfx/synth/whoosh-mid.wav",
-    "volume": 0.35,
-    "durationFrames": 18
   },
   {
     "frame": 932,
@@ -865,9 +829,9 @@
   },
   {
     "frame": 932,
-    "file": "sfx/freesound/whoosh-heavy.mp3",
-    "volume": 0.2,
-    "durationFrames": 20
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.45,
+    "durationFrames": 21
   },
   {
     "frame": 955,
@@ -877,33 +841,15 @@
   },
   {
     "frame": 960,
-    "file": "sfx/freesound/spark-electric.mp3",
-    "volume": 0.3,
-    "durationFrames": 25
-  },
-  {
-    "frame": 960,
     "file": "sfx/freesound/shimmer-magic.mp3",
     "volume": 0.15,
     "durationFrames": 25
-  },
-  {
-    "frame": 960,
-    "file": "sfx/freesound/sweep-synth.mp3",
-    "volume": 0.12,
-    "durationFrames": 20
   },
   {
     "frame": 997,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.4,
     "durationFrames": 18
-  },
-  {
-    "frame": 997,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.3,
-    "durationFrames": 14
   },
   {
     "frame": 997,
@@ -916,6 +862,12 @@
     "file": "sfx/google-material/navigation_transition-right.wav",
     "volume": 0.15,
     "durationFrames": 24
+  },
+  {
+    "frame": 997,
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.35,
+    "durationFrames": 21
   },
   {
     "frame": 1020,
@@ -973,12 +925,6 @@
   },
   {
     "frame": 1062,
-    "file": "sfx/freesound/impact-thud.mp3",
-    "volume": 0.2,
-    "durationFrames": 12
-  },
-  {
-    "frame": 1062,
     "file": "sfx/freesound/snap-clean.mp3",
     "volume": 0.2,
     "durationFrames": 10
@@ -1003,15 +949,15 @@
   },
   {
     "frame": 1142,
-    "file": "sfx/synth/whoosh-swell.wav",
-    "volume": 0.35,
+    "file": "sfx/freesound/zoom-lens.mp3",
+    "volume": 0.25,
     "durationFrames": 21
   },
   {
     "frame": 1142,
-    "file": "sfx/freesound/zoom-lens.mp3",
-    "volume": 0.25,
-    "durationFrames": 21
+    "file": "sfx/synth/swoosh-tonal-up.wav",
+    "volume": 0.3,
+    "durationFrames": 18
   },
   {
     "frame": 1172,
@@ -1129,21 +1075,15 @@
   },
   {
     "frame": 1260,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.2,
-    "durationFrames": 14
-  },
-  {
-    "frame": 1260,
     "file": "sfx/synth/slide-tick.wav",
     "volume": 0.15,
     "durationFrames": 6
   },
   {
-    "frame": 1264,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.22,
-    "durationFrames": 14
+    "frame": 1260,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.2,
+    "durationFrames": 8
   },
   {
     "frame": 1264,
@@ -1152,16 +1092,22 @@
     "durationFrames": 6
   },
   {
-    "frame": 1268,
-    "file": "sfx/freesound/device-slide.mp3",
+    "frame": 1264,
+    "file": "sfx/synth/slide-tonal.wav",
     "volume": 0.22,
-    "durationFrames": 14
+    "durationFrames": 8
+  },
+  {
+    "frame": 1268,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.22,
+    "durationFrames": 8
   },
   {
     "frame": 1272,
-    "file": "sfx/freesound/device-slide.mp3",
+    "file": "sfx/synth/slide-tonal.wav",
     "volume": 0.24,
-    "durationFrames": 14
+    "durationFrames": 8
   },
   {
     "frame": 1317,
@@ -1174,12 +1120,6 @@
     "file": "sfx/freesound/whoosh-subtle.mp3",
     "volume": 0.4,
     "durationFrames": 28
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.25,
-    "durationFrames": 32
   },
   {
     "frame": 1317,
@@ -1207,9 +1147,15 @@
   },
   {
     "frame": 1317,
-    "file": "sfx/freesound/reveal-dramatic.mp3",
-    "volume": 0.12,
-    "durationFrames": 40
+    "file": "sfx/synth/swoosh-tonal-wide.wav",
+    "volume": 0.4,
+    "durationFrames": 28
+  },
+  {
+    "frame": 1317,
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.2,
+    "durationFrames": 32
   },
   {
     "frame": 1355,
@@ -1219,15 +1165,15 @@
   },
   {
     "frame": 1355,
-    "file": "sfx/synth/whoosh-snap.wav",
-    "volume": 0.25,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1355,
     "file": "sfx/google-material/ui_lock.wav",
     "volume": 0.15,
     "durationFrames": 8
+  },
+  {
+    "frame": 1355,
+    "file": "sfx/synth/swoosh-tonal-snap.wav",
+    "volume": 0.25,
+    "durationFrames": 10
   },
   {
     "frame": 1363,
@@ -1279,21 +1225,15 @@
   },
   {
     "frame": 1452,
-    "file": "sfx/freesound/transition-cinematic.mp3",
-    "volume": 0.2,
-    "durationFrames": 35
-  },
-  {
-    "frame": 1452,
     "file": "sfx/synth/chord-suspend.wav",
     "volume": 0.1,
     "durationFrames": 55
   },
   {
-    "frame": 1482,
-    "file": "sfx/synth/whoosh-deep.wav",
-    "volume": 0.4,
-    "durationFrames": 24
+    "frame": 1452,
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.15,
+    "durationFrames": 32
   },
   {
     "frame": 1482,
@@ -1314,16 +1254,16 @@
     "durationFrames": 21
   },
   {
+    "frame": 1482,
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.35,
+    "durationFrames": 21
+  },
+  {
     "frame": 1510,
     "file": "sfx/google-material/notification_decorative-01.wav",
     "volume": 0.25,
     "durationFrames": 50
-  },
-  {
-    "frame": 1510,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.15,
-    "durationFrames": 32
   },
   {
     "frame": 1510,
@@ -1410,16 +1350,34 @@
     "durationFrames": 6
   },
   {
+    "frame": 1582,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.15,
+    "durationFrames": 8
+  },
+  {
     "frame": 1586,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.13,
     "durationFrames": 18
   },
   {
+    "frame": 1586,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.13,
+    "durationFrames": 8
+  },
+  {
     "frame": 1590,
     "file": "sfx/synth/whoosh-tonal.wav",
     "volume": 0.15,
     "durationFrames": 18
+  },
+  {
+    "frame": 1590,
+    "file": "sfx/synth/slide-tonal.wav",
+    "volume": 0.15,
+    "durationFrames": 8
   },
   {
     "frame": 1597,
@@ -1435,21 +1393,15 @@
   },
   {
     "frame": 1632,
-    "file": "sfx/synth/whoosh-bright.wav",
-    "volume": 0.35,
-    "durationFrames": 14
-  },
-  {
-    "frame": 1632,
     "file": "sfx/synth/sub-pulse.wav",
     "volume": 0.2,
     "durationFrames": 18
   },
   {
     "frame": 1632,
-    "file": "sfx/freesound/impact-thud.mp3",
-    "volume": 0.15,
-    "durationFrames": 12
+    "file": "sfx/synth/swoosh-tonal-snap.wav",
+    "volume": 0.3,
+    "durationFrames": 10
   },
   {
     "frame": 1672,
@@ -1465,12 +1417,6 @@
   },
   {
     "frame": 1712,
-    "file": "sfx/synth/whoosh-swell.wav",
-    "volume": 0.4,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1712,
     "file": "sfx/freesound/zoom-lens.mp3",
     "volume": 0.3,
     "durationFrames": 21
@@ -1482,10 +1428,10 @@
     "durationFrames": 14
   },
   {
-    "frame": 1730,
-    "file": "sfx/freesound/device-slide.mp3",
-    "volume": 0.2,
-    "durationFrames": 14
+    "frame": 1712,
+    "file": "sfx/synth/swoosh-tonal-up.wav",
+    "volume": 0.35,
+    "durationFrames": 18
   },
   {
     "frame": 1762,
@@ -1525,15 +1471,15 @@
   },
   {
     "frame": 1802,
-    "file": "sfx/synth/whoosh-mid.wav",
-    "volume": 0.35,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1802,
     "file": "sfx/freesound/whoosh-subtle.mp3",
     "volume": 0.15,
     "durationFrames": 28
+  },
+  {
+    "frame": 1802,
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.3,
+    "durationFrames": 21
   },
   {
     "frame": 1852,
@@ -1548,34 +1494,22 @@
     "durationFrames": 15
   },
   {
-    "frame": 1852,
-    "file": "sfx/freesound/pop-digital.mp3",
-    "volume": 0.12,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1882,
-    "file": "sfx/synth/whoosh-mid.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
     "frame": 1882,
     "file": "sfx/freesound/whoosh-subtle.mp3",
     "volume": 0.15,
     "durationFrames": 28
   },
   {
+    "frame": 1882,
+    "file": "sfx/synth/swoosh-tonal-arc.wav",
+    "volume": 0.25,
+    "durationFrames": 21
+  },
+  {
     "frame": 1917,
     "file": "sfx/google-material/hero_decorative-celebration-03.wav",
     "volume": 0.35,
     "durationFrames": 60
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.3,
-    "durationFrames": 32
   },
   {
     "frame": 1917,
@@ -1594,6 +1528,18 @@
     "file": "sfx/synth/fm-bell-crystal.wav",
     "volume": 0.12,
     "durationFrames": 38
+  },
+  {
+    "frame": 1917,
+    "file": "sfx/synth/swoosh-tonal-wide.wav",
+    "volume": 0.3,
+    "durationFrames": 28
+  },
+  {
+    "frame": 1917,
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.2,
+    "durationFrames": 32
   },
   {
     "frame": 1942,
@@ -1620,22 +1566,10 @@
     "durationFrames": 75
   },
   {
-    "frame": 1942,
-    "file": "sfx/freesound/glow-hum.mp3",
-    "volume": 0.1,
-    "durationFrames": 60
-  },
-  {
     "frame": 1962,
     "file": "sfx/google-material/hero_simple-celebration-01.wav",
     "volume": 0.45,
     "durationFrames": 48
-  },
-  {
-    "frame": 1962,
-    "file": "sfx/freesound/impact-thud.mp3",
-    "volume": 0.3,
-    "durationFrames": 12
   },
   {
     "frame": 1962,
@@ -1656,28 +1590,16 @@
     "durationFrames": 60
   },
   {
-    "frame": 1962,
-    "file": "sfx/freesound/impact-bass.mp3",
-    "volume": 0.15,
-    "durationFrames": 20
-  },
-  {
-    "frame": 1992,
-    "file": "sfx/synth/whoosh-swell.wav",
-    "volume": 0.35,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1992,
-    "file": "sfx/freesound/rise-building.mp3",
-    "volume": 0.25,
-    "durationFrames": 25
-  },
-  {
     "frame": 1992,
     "file": "sfx/synth/sub-hit.wav",
     "volume": 0.12,
     "durationFrames": 14
+  },
+  {
+    "frame": 1992,
+    "file": "sfx/synth/swoosh-tonal-up.wav",
+    "volume": 0.3,
+    "durationFrames": 18
   },
   {
     "frame": 2007,
@@ -1704,16 +1626,16 @@
     "durationFrames": 25
   },
   {
+    "frame": 2007,
+    "file": "sfx/synth/swoosh-tonal-wide.wav",
+    "volume": 0.2,
+    "durationFrames": 28
+  },
+  {
     "frame": 2027,
     "file": "sfx/google-material/ui_tap-variant-01.wav",
     "volume": 0.2,
     "durationFrames": 8
-  },
-  {
-    "frame": 2052,
-    "file": "sfx/synth/converge.wav",
-    "volume": 0.25,
-    "durationFrames": 18
   },
   {
     "frame": 2052,
@@ -1722,16 +1644,16 @@
     "durationFrames": 10
   },
   {
+    "frame": 2052,
+    "file": "sfx/synth/swoosh-tonal-down.wav",
+    "volume": 0.2,
+    "durationFrames": 18
+  },
+  {
     "frame": 2092,
     "file": "sfx/google-material/notification_decorative-02.wav",
     "volume": 0.3,
     "durationFrames": 56
-  },
-  {
-    "frame": 2092,
-    "file": "sfx/synth/scatter.wav",
-    "volume": 0.2,
-    "durationFrames": 18
   },
   {
     "frame": 2092,
@@ -1746,6 +1668,12 @@
     "durationFrames": 30
   },
   {
+    "frame": 2092,
+    "file": "sfx/synth/scatter-crystal.wav",
+    "volume": 0.2,
+    "durationFrames": 20
+  },
+  {
     "frame": 2120,
     "file": "sfx/google-material/hero_simple-celebration-02.wav",
     "volume": 0.5,
@@ -1756,12 +1684,6 @@
     "file": "sfx/google-material/hero_decorative-celebration-02.wav",
     "volume": 0.25,
     "durationFrames": 75
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/freesound/transition-rise.mp3",
-    "volume": 0.2,
-    "durationFrames": 32
   },
   {
     "frame": 2120,
@@ -1795,9 +1717,9 @@
   },
   {
     "frame": 2120,
-    "file": "sfx/freesound/logo-corporate.mp3",
-    "volume": 0.08,
-    "durationFrames": 40
+    "file": "sfx/synth/transition-tonal-rise.wav",
+    "volume": 0.15,
+    "durationFrames": 32
   },
   {
     "frame": 2170,
@@ -1810,11 +1732,5 @@
     "file": "sfx/synth/texture-granular.wav",
     "volume": 0.06,
     "durationFrames": 90
-  },
-  {
-    "frame": 2170,
-    "file": "sfx/freesound/reverb-tail.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
   }
 ]

@@ -113,10 +113,10 @@ const PastelBackground: React.FC = () => {
   );
 };
 
-// Font sizes: reference at 960 uses ~45px body text, ~90px for "Bard"
-// At 1280 that scales to ~60px body, ~120px for "Bard"
-const BODY_FONT = Math.round(45 * S); // 60
-const BARD_FONT = Math.round(90 * S); // 120
+// Font sizes: reference at 960 uses ~50px body text, ~105px for "Bard"
+// At 1280 that scales to ~67px body, ~140px for "Bard"
+const BODY_FONT = Math.round(50 * S); // 67
+const BARD_FONT = Math.round(105 * S); // 140
 
 // ===========================================================================
 // Phase 1: "You've"  (frames 0-8)
@@ -432,27 +432,27 @@ const PhaseTypewriter: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Type "to " — fast (reference shows "to" at 3.0s = ~0.27s into this phase)
-      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.08); // t
-      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.18); // o
-      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.28); // space
-      // Small pause, then type "Write"
-      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.45); // W
-      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.58); // r
-      tl.to(p[`c5`], { visible: 1, duration: 0.001 }, 0.68); // i
-      tl.to(p[`c6`], { visible: 1, duration: 0.001 }, 0.76); // t
-      tl.to(p[`c7`], { visible: 1, duration: 0.001 }, 0.84); // e
-      // "to" fades out after Write is typed
+      // Type "to " — reference shows "to|" at 3.0s (0.27s into phase)
+      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.06); // t
+      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.15); // o
+      // "to" starts fading as soon as Write begins
       tl.to(
         p.toFade,
-        { opacity: 0, duration: 0.2, ease: "power1.out" },
-        1.0,
+        { opacity: 0, duration: 0.15, ease: "power1.out" },
+        0.50,
       );
-      // Cursor persists
+      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.30); // space
+      // Type "Write" — slower. Reference: "W" at 3.5s (0.77s), "Write" at 4.0s (1.27s)
+      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.55); // W
+      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.72); // r
+      tl.to(p[`c5`], { visible: 1, duration: 0.001 }, 0.86); // i
+      tl.to(p[`c6`], { visible: 1, duration: 0.001 }, 0.98); // t
+      tl.to(p[`c7`], { visible: 1, duration: 0.001 }, 1.08); // e
+      // Cursor persists briefly
       tl.to(
         p.cursor,
         { opacity: 0, duration: 0.1, ease: "power2.out" },
-        1.2,
+        1.22,
       );
     },
     proxyInit,
@@ -613,40 +613,45 @@ const PhaseWriteEmails: React.FC = () => {
       >
         Write
       </span>
-      {/* Gradient pill */}
-      <span
-        style={{
-          display: "inline-block",
-          opacity: s.pill.opacity,
-          transform: `translate(${s.pill.x}px, ${s.pill.y}px) scale(${s.pill.scale})`,
-        }}
-      >
+      {/* emails — pill and dark text stacked */}
+      <span style={{ position: "relative", display: "inline-block" }}>
+        {/* Gradient pill version */}
         <span
           style={{
             display: "inline-block",
-            background: pillGrad,
-            padding: `${Math.round(6 * S)}px ${Math.round(14 * S)}px`,
-            borderRadius: Math.round(5 * S),
-            color: "#FFFFFF",
+            opacity: s.pill.opacity,
+            transform: `translate(${s.pill.x}px, ${s.pill.y}px) scale(${s.pill.scale})`,
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              background: pillGrad,
+              padding: `${Math.round(6 * S)}px ${Math.round(14 * S)}px`,
+              borderRadius: Math.round(5 * S),
+              color: "#FFFFFF",
+              fontSize: BODY_FONT,
+              fontWeight: 400,
+              lineHeight: 1.2,
+            }}
+          >
+            emails
+          </span>
+        </span>
+        {/* Dark text version — overlaps pill position */}
+        <span
+          style={{
+            position: "absolute",
+            left: Math.round(14 * S),
+            top: "50%",
+            transform: "translateY(-50%)",
             fontSize: BODY_FONT,
-            fontWeight: 400,
-            lineHeight: 1.2,
+            opacity: s.emailsDark.opacity,
+            color: TEXT_DARK,
           }}
         >
           emails
         </span>
-      </span>
-      {/* Dark text (fades in as pill fades) */}
-      <span
-        style={{
-          fontSize: BODY_FONT,
-          opacity: s.emailsDark.opacity,
-          position: s.pill.opacity > 0.01 ? "absolute" : "relative",
-          left: s.pill.opacity > 0.01 ? "auto" : undefined,
-          visibility: s.emailsDark.opacity > 0.01 ? "visible" : "hidden",
-        }}
-      >
-        emails
       </span>
     </div>
   );
@@ -828,7 +833,7 @@ const PhaseSolveProblems: React.FC = () => {
         x: sc.x || SOLVE_FINAL_X[i],
         y: sc.y || SOLVE_FINAL_Y,
         size: sc.size,
-        opacity: 0,
+        opacity: 1, // VISIBLE from frame 0 — no fade-in
       };
     }
     return init;
@@ -838,23 +843,18 @@ const PhaseSolveProblems: React.FC = () => {
     (tl, p) => {
       SOLVE_LETTERS.forEach((ch, i) => {
         if (ch === "\u00A0") return;
-        // Fade in immediately at scattered positions
-        tl.to(
-          p[`l${i}`],
-          { opacity: 1, duration: 0.1, ease: "power1.out" },
-          i * 0.008,
-        );
-        // Converge to centered line — starts at 0.4s, takes 0.45s
+        // Converge to centered line — starts at 0.25s, takes 0.35s
+        // Reference: scattered at 6.0s, settled by 6.5s = 0.5s total
         tl.to(
           p[`l${i}`],
           {
             x: SOLVE_FINAL_X[i],
             y: SOLVE_FINAL_Y,
             size: SOLVE_FINAL_SIZE,
-            duration: 0.45,
+            duration: 0.35,
             ease: "power2.out",
           },
-          0.4 + i * 0.01,
+          0.25 + i * 0.008,
         );
       });
     },
@@ -909,32 +909,33 @@ const FLOATERS: Array<{
   delay: number;
   blur: number;
 }> = [
-  // 4 prominent copies at corners — LARGE
-  { word: "Brainstorm", x: -300, y: -120, color: "#7B6BD0", size: Math.round(62 * S), weight: 500, delay: 0, blur: 4 },
-  { word: "ideas", x: 280, y: -100, color: "#9B9BB8", size: Math.round(44 * S), weight: 400, delay: 0.02, blur: 6 },
-  { word: "ideas", x: -340, y: 110, color: "#5B6FD7", size: Math.round(58 * S), weight: 500, delay: 0.01, blur: 1 },
-  { word: "Brainstorm", x: 320, y: 130, color: "#C86090", size: Math.round(56 * S), weight: 500, delay: 0.03, blur: 2 },
-  // Secondary depth copies
-  { word: "Brainstorm", x: -110, y: -190, color: "#A878C8", size: Math.round(36 * S), weight: 400, delay: 0.04, blur: 8 },
-  { word: "ideas", x: 170, y: 180, color: "#6878E0", size: Math.round(34 * S), weight: 400, delay: 0.05, blur: 10 },
-  // Far depth — heavily blurred
-  { word: "ideas", x: -480, y: -30, color: "#8888B0", size: Math.round(30 * S), weight: 400, delay: 0.03, blur: 13 },
-  { word: "Brainstorm", x: 460, y: -50, color: "#B070A0", size: Math.round(32 * S), weight: 400, delay: 0.06, blur: 14 },
-  { word: "brainstorm", x: 90, y: -170, color: "#9B6FBF", size: Math.round(28 * S), weight: 400, delay: 0.05, blur: 12 },
-  { word: "ideas", x: -200, y: 210, color: "#7080D0", size: Math.round(38 * S), weight: 400, delay: 0.04, blur: 9 },
+  // 4 prominent copies — LARGE, extending past viewport edges
+  // Reference: "Brainstorm" bottom-left is partially OFF-SCREEN (very large, blue)
+  { word: "Brainstorm", x: -420, y: 200, color: "#4B6FD7", size: Math.round(90 * S), weight: 500, delay: 0, blur: 2 },
+  { word: "ideas", x: -380, y: -60, color: "#5B6FD7", size: Math.round(65 * S), weight: 500, delay: 0.01, blur: 1 },
+  { word: "Brainstorm", x: 340, y: 140, color: "#C86090", size: Math.round(60 * S), weight: 500, delay: 0.02, blur: 2 },
+  { word: "ideas", x: 300, y: -100, color: "#9B9BB8", size: Math.round(48 * S), weight: 400, delay: 0.01, blur: 5 },
+  // Mid-field copies
+  { word: "Brainstorm", x: -60, y: -150, color: "#7B6BD0", size: Math.round(42 * S), weight: 400, delay: 0.02, blur: 6 },
+  { word: "ideas", x: 120, y: 170, color: "#6878E0", size: Math.round(50 * S), weight: 500, delay: 0.02, blur: 3 },
+  // Far depth — blurred, smaller
+  { word: "ideas", x: -540, y: -30, color: "#8888B0", size: Math.round(34 * S), weight: 400, delay: 0.02, blur: 12 },
+  { word: "Brainstorm", x: 500, y: -60, color: "#B070A0", size: Math.round(36 * S), weight: 400, delay: 0.03, blur: 13 },
+  { word: "brainstorm", x: 100, y: -200, color: "#9B6FBF", size: Math.round(32 * S), weight: 400, delay: 0.03, blur: 10 },
+  { word: "ideas", x: -220, y: 250, color: "#7080D0", size: Math.round(42 * S), weight: 400, delay: 0.02, blur: 8 },
 ];
 
 const PhaseBrainstormIdeas: React.FC = () => {
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
       final: { opacity: 0, scale: 0.96 },
-      blob: { opacity: 0 },
+      blob: { opacity: 0.55 }, // INSTANT — visible from frame 0
     };
     for (let i = 0; i < FLOATERS.length; i++) {
       init[`g${i}`] = {
         x: FLOATERS[i].x,
         y: FLOATERS[i].y,
-        opacity: 0,
+        opacity: i < 4 ? 0.9 : 0.65, // INSTANT — visible from frame 0
       };
     }
     return init;
@@ -942,49 +943,31 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Dark center blob
-      tl.to(
-        p.blob,
-        { opacity: 0.55, duration: 0.15, ease: "power1.out" },
-        0,
-      );
-      // Floaters fade in fast
+      // Floaters drift inward and fade — convergence over ~1.0s
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
           {
-            opacity: i < 4 ? 0.9 : 0.6,
-            duration: 0.12,
-            ease: "power1.out",
-          },
-          f.delay,
-        );
-      });
-      // Floaters drift inward and fade — slow convergence
-      FLOATERS.forEach((f, i) => {
-        tl.to(
-          p[`g${i}`],
-          {
-            x: f.x * 0.1,
-            y: f.y * 0.1,
+            x: f.x * 0.08,
+            y: f.y * 0.08,
             opacity: 0,
             duration: 1.0,
             ease: "power1.inOut",
           },
-          0.3 + f.delay * 0.2,
+          0.15 + f.delay,
         );
       });
       // Blob fades
       tl.to(
         p.blob,
         { opacity: 0, duration: 0.5, ease: "power1.inOut" },
-        0.45,
+        0.3,
       );
-      // Final centered text
+      // Final centered text — appears during convergence
       tl.to(
         p.final,
-        { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
-        0.4,
+        { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" },
+        0.3,
       );
     },
     proxyInit,
@@ -1084,8 +1067,8 @@ export const Scene01: React.FC = () => {
         <PhaseBard />
       </Sequence>
 
-      {/* P4: Typewriter "to Write" */}
-      <Sequence from={P4_FROM} durationInFrames={P5_FROM - P4_FROM}>
+      {/* P4: Typewriter "to Write" — extends 3 frames into P5 for overlap */}
+      <Sequence from={P4_FROM} durationInFrames={P5_FROM - P4_FROM + 3}>
         <PhaseTypewriter />
       </Sequence>
 

@@ -2844,5 +2844,5 @@ export const scene05Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 780,
+  durationInFrames: 720,
 };

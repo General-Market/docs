@@ -42,7 +42,7 @@ const S01_DUR = 259;
 const S02_DUR = 175;
 const S03_DUR = 630;
 const S04_DUR = 390;
-const S05_DUR = 780;
+const S05_DUR = 720;
 
 /* Calculate absolute start positions */
 const S01_START = 0;
