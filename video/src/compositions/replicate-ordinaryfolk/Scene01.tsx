@@ -37,8 +37,8 @@ const H = 720;
 // --- Palette ---------------------------------------------------------------
 const BG_BASE = "#EDEEF4";
 const TEXT_DARK = "#1A1A2E";
-const TEXT_SIZE = 34;
-const BARD_SIZE = 58;
+const TEXT_SIZE = 44;
+const BARD_SIZE = 72;
 const FONT_WEIGHT = 400;
 const CENTER_Y = "53%";
 
@@ -184,11 +184,11 @@ const PhaseExperimenting: React.FC = () => {
         tl.to(
           p[`l${i}`],
           { x: 0, y: 0, opacity: 1, purple: 0, duration: 0.48, ease: "power2.out" },
-          0.21 + i * 0.04,
+          0.16 + i * 0.018,
         );
       }
 
-      tl.to(p.with_, { scale: 1, opacity: 1, duration: 0.19, ease: "power1.out" }, 0.55);
+      tl.to(p.with_, { scale: 1, opacity: 1, duration: 0.19, ease: "power1.out" }, 0.48);
     },
     proxyInit,
   );
@@ -305,7 +305,8 @@ const PhaseTypewriter: React.FC = () => {
       for (let i = 0; i < WRITE_CHARS.length; i++) {
         tl.to(p[`c${i}`], { visible: 1, duration: 0.001, ease: "none" }, 0.07 + i * 0.1);
       }
-      tl.to(p.cursor, { opacity: 0, duration: 0.15, ease: "power1.out" }, 0.6);
+      // Cursor fades right when typing ends
+      tl.to(p.cursor, { opacity: 0, duration: 0.1, ease: "power2.out" }, 0.48);
     },
     proxyInit,
   );
@@ -343,10 +344,10 @@ const PhaseTypewriter: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          width: 2,
-          height: TEXT_SIZE * 0.82,
+          width: 1.5,
+          height: TEXT_SIZE * 0.72,
           backgroundColor: TEXT_DARK,
-          marginLeft: 2,
+          marginLeft: 3,
           opacity: cursorOpacity,
         }}
       />
