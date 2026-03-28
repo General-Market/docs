@@ -6,9 +6,8 @@
  * typewriter "Write" -> "emails" (gradient pill) -> letter scatter ->
  * "Solve problems" (assemble) -> "Brainstorm ideas" (floating words converge)
  *
- * GSAP REWRITE: Animation values computed by GSAP timelines on proxy objects,
- * then applied as React inline styles. GSAP is a computation engine here,
- * not a DOM manipulator — guarantees deterministic frame output in Remotion.
+ * GSAP REWRITE v3: Pure proxy-object animation. GSAP computes values,
+ * React renders them as inline styles. Deterministic per-frame output.
  *
  * Easings from tracking data: power1.out, power2.out, expo.out, back.out(1.7).
  *
@@ -61,9 +60,7 @@ function useGsapProxy(
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Build timeline once, memoized
   const { tl, proxies } = useMemo(() => {
-    // Deep-clone initial values so GSAP can mutate them
     const p: Record<string, ProxyState> = {};
     for (const [k, v] of Object.entries(proxyKeys)) {
       p[k] = { ...v };
@@ -73,10 +70,8 @@ function useGsapProxy(
     return { tl: timeline, proxies: p };
   }, []);
 
-  // Seek to current time — mutates proxies in place
   tl.seek(frame / fps);
 
-  // Return a snapshot (shallow copy so React sees changes)
   const snapshot: Record<string, ProxyState> = {};
   for (const [k, v] of Object.entries(proxies)) {
     snapshot[k] = { ...v };
@@ -133,9 +128,9 @@ const P1_FROM = 0;
 const PhaseYouve: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      tl.from(p.main, { x: 31, opacity: 0, duration: 0.19, ease: "power1.out" });
+      tl.fromTo(p.main, { x: 31, opacity: 0 }, { x: 0, opacity: 1, duration: 0.19, ease: "power1.out" });
     },
-    { main: { x: 0, opacity: 1 } },
+    { main: { x: 31, opacity: 0 } },
   );
 
   return (
@@ -153,9 +148,8 @@ const PhaseYouve: React.FC = () => {
 
 // ===========================================================================
 // Phase 2: "You've been experimenting with"
-// "You've" + "been": x slide, opacity
-// "experimenting": per-letter settle with purple tint
-// "with": scale entrance
+// Words slide in. "experimenting" has per-letter settle from slight displacement.
+// Purple tint fades to dark as letters land.
 // ===========================================================================
 const P2_FROM = 15;
 
@@ -164,42 +158,37 @@ const EXP_SETTLE_Y = [-12, 8, -10, 14, -8, 11, -15, 9, -11, 13, -9, 10, -13];
 const EXP_SETTLE_X = [1, -2, 0, 1, -1, 2, -1, 0, 1, -2, 0, 1, -1];
 
 const PhaseExperimenting: React.FC = () => {
-  // Build proxy keys for words + individual letters
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
-      youve: { x: 0, opacity: 1 },
-      been: { x: 0, opacity: 1 },
-      with_: { scale: 1, opacity: 1 },
+      youve: { x: 40, opacity: 0 },
+      been: { x: 60, opacity: 0 },
+      with_: { scale: 0.81, opacity: 0 },
     };
     for (let i = 0; i < EXP_LETTERS.length; i++) {
-      init[`l${i}`] = { x: 0, y: 0, opacity: 1, purple: 0 };
+      init[`l${i}`] = {
+        x: EXP_SETTLE_X[i] || 0,
+        y: EXP_SETTLE_Y[i] || 0,
+        opacity: 0,
+        purple: 0.7,
+      };
     }
     return init;
   }, []);
 
   const s = useGsapProxy(
     (tl, p) => {
-      // "You've" slides in
-      tl.from(p.youve, { x: 40, opacity: 0, duration: 0.41, ease: "power1.out" }, 0);
-      // "been" slides in
-      tl.from(p.been, { x: 60, opacity: 0, duration: 0.41, ease: "power1.out" }, 0.1);
-      // "experimenting" — per-letter settle
+      tl.to(p.youve, { x: 0, opacity: 1, duration: 0.41, ease: "power1.out" }, 0);
+      tl.to(p.been, { x: 0, opacity: 1, duration: 0.41, ease: "power1.out" }, 0.1);
+
       for (let i = 0; i < EXP_LETTERS.length; i++) {
-        tl.from(
+        tl.to(
           p[`l${i}`],
-          {
-            y: EXP_SETTLE_Y[i] || 0,
-            x: EXP_SETTLE_X[i] || 0,
-            opacity: 0,
-            purple: 0.7,
-            duration: 0.48,
-            ease: "power2.out",
-          },
+          { x: 0, y: 0, opacity: 1, purple: 0, duration: 0.48, ease: "power2.out" },
           0.21 + i * 0.04,
         );
       }
-      // "with" scales in
-      tl.from(p.with_, { scale: 0.81, opacity: 0, duration: 0.19, ease: "power1.out" }, 0.55);
+
+      tl.to(p.with_, { scale: 1, opacity: 1, duration: 0.19, ease: "power1.out" }, 0.55);
     },
     proxyInit,
   );
@@ -215,11 +204,11 @@ const PhaseExperimenting: React.FC = () => {
       <span style={{ display: "inline-flex" }}>
         {EXP_LETTERS.map((ch, i) => {
           const l = s[`l${i}`];
-          const purpleMix = l.purple;
-          const color =
-            purpleMix > 0.01
-              ? `rgba(91, 79, 208, ${purpleMix})`
-              : TEXT_DARK;
+          // Blend from purple (#5B4FD0) to dark (#1A1A2E) based on purple value
+          const pr = Math.max(0, Math.min(1, l.purple));
+          const r = Math.round(0x5b * pr + 0x1a * (1 - pr));
+          const g = Math.round(0x4f * pr + 0x1a * (1 - pr));
+          const b = Math.round(0xd0 * pr + 0x2e * (1 - pr));
           return (
             <span
               key={i}
@@ -227,7 +216,7 @@ const PhaseExperimenting: React.FC = () => {
                 display: "inline-block",
                 opacity: l.opacity,
                 transform: `translate(${l.x}px, ${l.y}px)`,
-                color,
+                color: `rgb(${r}, ${g}, ${b})`,
               }}
             >
               {ch}
@@ -250,8 +239,7 @@ const PhaseExperimenting: React.FC = () => {
 
 // ===========================================================================
 // Phase 3: "Bard" with gradient text
-// Tracking: x:8->0, opacity:0->1, dur 0.19s, ease power1.out
-// Plus scale 0.88->1 for premium feel
+// Tracking: x:8->0, opacity:0->1, scale 0.88->1, dur 0.48s, power2.out
 // ===========================================================================
 const P3_FROM = 51;
 const PhaseBardFull: React.FC = () => {
@@ -259,15 +247,13 @@ const PhaseBardFull: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      tl.from(p.main, {
-        x: 8,
-        opacity: 0,
-        scale: 0.88,
-        duration: 0.48,
-        ease: "power2.out",
-      });
+      tl.fromTo(
+        p.main,
+        { x: 8, opacity: 0, scale: 0.88 },
+        { x: 0, opacity: 1, scale: 1, duration: 0.48, ease: "power2.out" },
+      );
     },
-    { main: { x: 0, opacity: 1, scale: 1 } },
+    { main: { x: 8, opacity: 0, scale: 0.88 } },
   );
 
   const baseAngle = interpolate(frame, [0, 29], [100, 210], clamp);
@@ -296,7 +282,7 @@ const PhaseBardFull: React.FC = () => {
 
 // ===========================================================================
 // Phase 4: Typewriter "Write" + cursor
-// Letters appear one by one. Cursor blinks then vanishes.
+// Letters revealed sequentially. Cursor blinks then fades.
 // ===========================================================================
 const P4_FROM = 86;
 const WRITE_CHARS = "Write".split("");
@@ -309,18 +295,16 @@ const PhaseTypewriter: React.FC = () => {
       cursor: { opacity: 1 },
     };
     for (let i = 0; i < WRITE_CHARS.length; i++) {
-      init[`c${i}`] = { opacity: 1 };
+      init[`c${i}`] = { visible: 0 };
     }
     return init;
   }, []);
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Each letter appears sequentially
       for (let i = 0; i < WRITE_CHARS.length; i++) {
-        tl.from(p[`c${i}`], { opacity: 0, duration: 0.001, ease: "none" }, 0.07 + i * 0.1);
+        tl.to(p[`c${i}`], { visible: 1, duration: 0.001, ease: "none" }, 0.07 + i * 0.1);
       }
-      // Cursor fades after typing
       tl.to(p.cursor, { opacity: 0, duration: 0.15, ease: "power1.out" }, 0.6);
     },
     proxyInit,
@@ -329,25 +313,33 @@ const PhaseTypewriter: React.FC = () => {
   const gradAngle = interpolate(frame, [0, 36], [140, 240], clamp);
   const typeGrad = `linear-gradient(${gradAngle}deg, #7048C0, #A04090, #C84070)`;
 
-  // Cursor blink before typing starts
-  const cursorBlink = frame < 2 ? (Math.floor(frame / 5) % 2 === 0 ? 1 : 0) : s.cursor.opacity;
+  // Count visible chars
+  let visibleCount = 0;
+  for (let i = 0; i < WRITE_CHARS.length; i++) {
+    if (s[`c${i}`].visible > 0.5) visibleCount = i + 1;
+  }
+  const partial = "Write".slice(0, visibleCount);
+
+  // Cursor: blinks before typing, solid during, fades after
+  const isTyping = visibleCount > 0 && visibleCount < WRITE_CHARS.length;
+  const isDone = visibleCount >= WRITE_CHARS.length;
+  const blinkOn = Math.floor(frame / 5) % 2 === 0;
+  const cursorOpacity = isDone ? s.cursor.opacity : isTyping ? 1 : blinkOn ? 1 : 0;
 
   return (
     <div style={{ ...centerStyle, display: "flex", alignItems: "center" }}>
-      <span
-        style={{
-          background: typeGrad,
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-        }}
-      >
-        {WRITE_CHARS.map((ch, i) => (
-          <span key={i} style={{ display: "inline-block", opacity: s[`c${i}`].opacity }}>
-            {ch}
-          </span>
-        ))}
-      </span>
+      {partial.length > 0 && (
+        <span
+          style={{
+            background: typeGrad,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          {partial}
+        </span>
+      )}
       <span
         style={{
           display: "inline-block",
@@ -355,7 +347,7 @@ const PhaseTypewriter: React.FC = () => {
           height: TEXT_SIZE * 0.82,
           backgroundColor: TEXT_DARK,
           marginLeft: 2,
-          opacity: cursorBlink,
+          opacity: cursorOpacity,
         }}
       />
     </div>
@@ -364,32 +356,28 @@ const PhaseTypewriter: React.FC = () => {
 
 // ===========================================================================
 // Phase 5: "Write emails" with gradient pill
-// "Write" fades in, "emails" slides in with pill from angle 44.2deg
+// "Write" fades in, "emails" pill slides in from angle 44.2deg with back.out
 // ===========================================================================
 const P5_FROM = 123;
 const PhaseWriteEmails: React.FC = () => {
   const frame = useCurrentFrame();
   const pillRad = (44.2 * Math.PI) / 180;
+  const pillStartX = Math.cos(pillRad) * 40;
+  const pillStartY = Math.sin(pillRad) * 12;
 
   const s = useGsapProxy(
     (tl, p) => {
-      tl.from(p.write, { y: 8, opacity: 0, duration: 0.34, ease: "power2.out" }, 0);
-      tl.from(
+      tl.fromTo(p.write, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.34, ease: "power2.out" }, 0);
+      tl.fromTo(
         p.pill,
-        {
-          x: Math.cos(pillRad) * 40,
-          y: Math.sin(pillRad) * 12,
-          scale: 0.85,
-          opacity: 0,
-          duration: 0.41,
-          ease: "back.out(1.7)",
-        },
+        { x: pillStartX, y: pillStartY, scale: 0.85, opacity: 0 },
+        { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.41, ease: "back.out(1.7)" },
         0.14,
       );
     },
     {
-      write: { y: 0, opacity: 1 },
-      pill: { x: 0, y: 0, scale: 1, opacity: 1 },
+      write: { y: 8, opacity: 0 },
+      pill: { x: pillStartX, y: pillStartY, scale: 0.85, opacity: 0 },
     },
   );
 
@@ -436,12 +424,26 @@ const PhaseWriteEmails: React.FC = () => {
 
 // ===========================================================================
 // Phase 6: Letter scatter (exit transition)
-// Each letter of "Write emails" explodes outward with rotation + scale decay
+// Letters of "Write emails" start at their inline positions and explode outward.
+// Approximate character widths for initial x offsets.
 // ===========================================================================
 const SCATTER_ANGLES = [86.6, 44.2, 64.5, 23.5];
+const SCATTER_CHAR_WIDTHS: Record<string, number> = {
+  W: 26, r: 12, i: 8, t: 10, e: 16, "\u00A0": 10, m: 24, a: 16, l: 8, s: 14,
+};
 
 const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
   const letters = text.replace(/ /g, "\u00A0").split("");
+
+  // Calculate starting x offsets (centered)
+  const charWidths = letters.map((ch) => SCATTER_CHAR_WIDTHS[ch] || 14);
+  const totalWidth = charWidths.reduce((a, b) => a + b, 0);
+  const startXOffsets: number[] = [];
+  let runX = -totalWidth / 2;
+  for (let i = 0; i < letters.length; i++) {
+    startXOffsets.push(runX + charWidths[i] / 2);
+    runX += charWidths[i];
+  }
 
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {};
@@ -488,7 +490,7 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
               position: "absolute",
               top: CENTER_Y,
               left: "50%",
-              transform: `translate(calc(-50% + ${l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
+              transform: `translate(calc(-50% + ${startXOffsets[i] + l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
               fontFamily,
               fontSize: TEXT_SIZE,
               fontWeight: FONT_WEIGHT,
@@ -506,34 +508,53 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
 
 // ===========================================================================
 // Phase 7: "Solve problems" — letters assemble from scattered positions
-// Each char starts scattered (different sizes/positions), converges to final inline
+// Each char starts at a random scattered position and converges to its final
+// inline position. Character widths approximate a proper layout.
 // ===========================================================================
 const SOLVE_SCATTER = [
-  { x: -350, y: -120, size: 96 },
-  { x: -140, y: -40, size: 48 },
-  { x: -420, y: 100, size: 36 },
-  { x: 120, y: -100, size: 44 },
-  { x: -80, y: -30, size: 42 },
-  { x: 0, y: 0, size: 48 },
-  { x: -60, y: 60, size: 56 },
-  { x: -160, y: -20, size: 40 },
-  { x: 80, y: 40, size: 52 },
-  { x: 250, y: -80, size: 60 },
-  { x: 180, y: -30, size: 38 },
-  { x: 300, y: -40, size: 50 },
-  { x: 280, y: 80, size: 48 },
-  { x: 420, y: 20, size: 40 },
+  { x: -350, y: -120, size: 96 },  // S
+  { x: -140, y: -40, size: 48 },   // o
+  { x: -420, y: 100, size: 36 },   // l
+  { x: 120, y: -100, size: 44 },   // v
+  { x: -80, y: -30, size: 42 },    // e
+  { x: 0, y: 0, size: 48 },        // (space)
+  { x: -60, y: 60, size: 56 },     // p
+  { x: -160, y: -20, size: 40 },   // r
+  { x: 80, y: 40, size: 52 },      // o
+  { x: 250, y: -80, size: 60 },    // b
+  { x: 180, y: -30, size: 38 },    // l
+  { x: 300, y: -40, size: 50 },    // e
+  { x: 280, y: 80, size: 48 },     // m
+  { x: 420, y: 20, size: 40 },     // s
 ];
 
 const SOLVE_TEXT = "Solve\u00A0problems";
 const SOLVE_LETTERS = SOLVE_TEXT.split("");
+const SOLVE_CHAR_W = [20, 18, 9, 18, 16, 10, 18, 11, 18, 18, 9, 16, 24, 12];
+const SOLVE_TOTAL_W = SOLVE_CHAR_W.reduce((a, b) => a + b, 0);
+
+// Compute final x positions (centered)
+const SOLVE_FINAL_X: number[] = [];
+{
+  let rx = -SOLVE_TOTAL_W / 2;
+  for (let i = 0; i < SOLVE_LETTERS.length; i++) {
+    SOLVE_FINAL_X.push(rx + SOLVE_CHAR_W[i] / 2);
+    rx += SOLVE_CHAR_W[i];
+  }
+}
 
 const P7_FROM = 171;
 const PhaseSolveProblems: React.FC = () => {
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {};
     for (let i = 0; i < SOLVE_LETTERS.length; i++) {
-      init[`l${i}`] = { x: 0, y: 0, scale: 1, opacity: 1 };
+      const scatter = SOLVE_SCATTER[i] || { x: 0, y: 0, size: 48 };
+      init[`l${i}`] = {
+        x: scatter.x,
+        y: scatter.y,
+        scale: scatter.size / TEXT_SIZE,
+        opacity: 0,
+      };
     }
     return init;
   }, []);
@@ -541,16 +562,15 @@ const PhaseSolveProblems: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
       SOLVE_LETTERS.forEach((_, i) => {
-        const scatter = SOLVE_SCATTER[i] || { x: 0, y: 0, size: 48 };
-        const sizeRatio = scatter.size / TEXT_SIZE;
-
-        tl.from(
+        // Fade in while scattered
+        tl.to(p[`l${i}`], { opacity: 1, duration: 0.14, ease: "power1.out" }, i * 0.01);
+        // Converge to final position
+        tl.to(
           p[`l${i}`],
           {
-            x: scatter.x,
-            y: scatter.y,
-            scale: sizeRatio,
-            opacity: 0,
+            x: SOLVE_FINAL_X[i],
+            y: 0,
+            scale: 1,
             duration: 0.62,
             ease: i === 0 ? "expo.out" : "power2.out",
           },
@@ -619,18 +639,14 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Ghost words: fade in at positions, then converge and fade
       FLOATERS.forEach((f, i) => {
-        // Fade in
         tl.to(p[`g${i}`], { opacity: 0.85, duration: 0.28, ease: "power1.out" }, f.delay);
-        // Converge to center + fade
         tl.to(
           p[`g${i}`],
           { x: 0, y: 0, opacity: 0, duration: 0.69, ease: "power2.out" },
           0.48,
         );
       });
-      // Final text
       tl.to(p.final, { opacity: 1, scale: 1, duration: 0.69, ease: "power2.out" }, 0.48);
     },
     proxyInit,
@@ -638,7 +654,6 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Ghost word field */}
       {FLOATERS.map((f, i) => {
         const g = s[`g${i}`];
         return (
@@ -662,7 +677,6 @@ const PhaseBrainstormIdeas: React.FC = () => {
         );
       })}
 
-      {/* Final converged text */}
       <div
         style={{
           ...centerStyle,
