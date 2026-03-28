@@ -118,6 +118,7 @@ abigen!(
     ]"#
 );
 
+
 abigen!(
     SettlementCustodyReader,
     r#"[
@@ -1206,6 +1207,58 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
                     let mut cache = state.chain_cache.pending_creations.write().await;
                     *cache = pending;
                     state.chain_cache.pending_creations_gen.bump();
+
+                    // ── Build itp_id → requester map from completed bridge creations ──
+                    // For each completed nonce, get admin from Settlement + itp_id from L3.
+                    // Uses raw calldata for _bridgeNonceToItpId because leading-underscore
+                    // Solidity names are not reliably handled by ethers abigen.
+                    if let Ok(index_addr) = crate::api::deployment_addr(&state.deployment, "Index") {
+                        // selector = keccak256("_bridgeNonceToItpId(uint256)")[..4]
+                        let selector = &ethers::utils::keccak256(b"_bridgeNonceToItpId(uint256)")[..4];
+                        let mut requesters: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+
+                        for nonce in 0..next_nonce {
+                            match bridge.get_pending_creation(U256::from(nonce)).call().await {
+                                Ok((admin, _name, _symbol, _weights, _assets, _prices, _created_at, completed)) => {
+                                    if !completed || admin.is_zero() {
+                                        continue;
+                                    }
+                                    // Completed: look up which itp_id was created for this nonce
+                                    let mut calldata = selector.to_vec();
+                                    let mut nonce_bytes = [0u8; 32];
+                                    U256::from(nonce).to_big_endian(&mut nonce_bytes);
+                                    calldata.extend_from_slice(&nonce_bytes);
+                                    let call_tx = ethers::types::transaction::eip2718::TypedTransaction::Legacy(
+                                        ethers::types::TransactionRequest::new()
+                                            .to(index_addr)
+                                            .data(calldata),
+                                    );
+                                    match state.l3_provider.call(&call_tx, None).await {
+                                        Ok(result) if result.len() >= 32 => {
+                                            let itp_id_bytes: [u8; 32] = result[..32].try_into().unwrap_or([0u8; 32]);
+                                            if itp_id_bytes != [0u8; 32] {
+                                                let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
+                                                let admin_hex = format!("{:?}", admin).to_lowercase();
+                                                requesters.insert(itp_id_hex, admin_hex);
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // nonce completed but itp_id not yet written (race) — skip
+                                        }
+                                        Err(e) => {
+                                            warn!(nonce, %e, "Failed to read _bridgeNonceToItpId");
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(nonce, %e, "Failed to read completed creation for requester map");
+                                }
+                            }
+                        }
+
+                        let mut req_cache = state.chain_cache.itp_requesters.write().await;
+                        *req_cache = requesters;
+                    }
                 }
                 Err(e) => {
                     warn!(%e, "BridgeProxy.nextCreationNonce() failed (contract may not be deployed)");

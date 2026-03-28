@@ -1,5 +1,13 @@
 # Design Decision Backlog
 
+## Session: 20260328-2130-itpf (ITP creation pipeline fix)
+
+- [DECISION] Data-node settlement poller: `"BridgeProxy"` → `"SettlementBridgeProxy"` in chain_pollers.rs:1162 and chain_event_scanner.rs:118. The old key resolved to L3 address 0xe351... which doesn't exist on Sonic. nextCreationNonce() returned nothing, pending_creations stayed empty forever.
+- [DECISION] Oracle signature threshold: 3 → 2 in docker-compose.override.yml. With 3/3 required, a single unhealthy peer (from P2P score degradation during stalled consensus) makes ALL consensus impossible. 2/3 provides Byzantine fault tolerance while surviving one bad peer.
+- [DECISION] Oracle L3 key: deployer key instead of Anvil test seed. Investment.createITP requires msg.sender == governance.admin(). The oracle's test key (0x7099...) wasn't the admin. Long-term fix: add oracleRegistry.isActiveOracle check to createITP — but Investment.sol is at EIP-170 size limit (24559/24576 bytes), no room for the extra check.
+- [FAILED] Contract upgrade to allow active oracles to call createITP — Investment.sol at 25162 bytes exceeds EIP-170 limit (24576). Orbit L3 enforces the limit. Need to split the contract or optimize existing code before BLS-verified ITP creation is possible.
+- [DECISION] Oracle failure counter: track L3 write failures per nonce in first_seen map (Instant, u32). Skip nonces after CREATION_FAIL_THRESHOLD (3) consecutive failures. Prevents permanently-failing nonces from blocking the queue.
+
 ## Session: 20260328-2330-p2p2 (P2P connection lifecycle hardening)
 
 - [DECISION] Add TCP_NODELAY + TCP keepalive (socket2) to all P2P connections. No socket options were set previously. Keepalive starts probing at 15s idle, 5s interval — detects half-open connections at kernel level before the 45s application timeout.

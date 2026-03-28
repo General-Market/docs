@@ -541,6 +541,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/chain/settlement/next-nonce", get(chain_settlement_next_nonce))
         .route("/chain/settlement/cross-chain-orders", get(chain_settlement_cross_chain_orders))
         .route("/chain/settlement/cross-chain-sell-orders", get(chain_settlement_cross_chain_sell_orders))
+        .route("/chain/itp-requesters", get(chain_itp_requesters))
         .layer(CompressionLayer::new())
         .layer(cors)
         .with_state(state)
@@ -7285,6 +7286,18 @@ async fn chain_settlement_cross_chain_sell_orders(
         .cloned()
         .collect();
     Json(filtered)
+}
+
+// ---- /chain/itp-requesters ----
+// Returns a JSON object mapping itp_id → original requester address.
+// For bridge-created ITPs: the Settlement request's admin field (the actual user).
+// For ITPs not in the map: caller should fall back to the on-chain creator field.
+async fn chain_itp_requesters(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let requesters = state.chain_cache.itp_requesters.read().await;
+    let map: std::collections::HashMap<&String, &String> = requesters.iter().collect();
+    Json(serde_json::to_value(map).unwrap_or(serde_json::Value::Object(Default::default())))
 }
 
 // ---- /sources/registry ----

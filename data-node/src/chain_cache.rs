@@ -271,6 +271,10 @@ pub struct ChainCache {
     pub aum_ranking_json: RwLock<String>,
     pub aum_ranking_gen: Generation,
 
+    // ITP requester map: itp_id hex → original requester address (Settlement admin field)
+    // For bridge-created ITPs only; non-bridge ITPs are absent (use on-chain creator).
+    pub itp_requesters: RwLock<HashMap<String, String>>,
+
     // Morpho market state (polled every 30s)
     pub morpho_markets: RwLock<Vec<CachedMorphoMarket>>,
     pub morpho_markets_gen: Generation,
@@ -323,6 +327,8 @@ impl ChainCache {
 
             aum_ranking_json: RwLock::new(String::new()),
             aum_ranking_gen: Generation::default(),
+
+            itp_requesters: RwLock::new(HashMap::new()),
 
             morpho_markets: RwLock::new(Vec::new()),
             morpho_markets_gen: Generation::default(),

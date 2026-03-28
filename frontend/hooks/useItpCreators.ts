@@ -1,53 +1,61 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useReadContracts } from 'wagmi'
-import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
-import { activeChainId } from '@/lib/wagmi'
+import { useState, useEffect, useRef } from 'react'
 
 /**
- * Batch-read ITP creators via multicall on getITPState.
- * Returns a Map<itpId, creatorAddress> for all provided ITP IDs.
+ * Fetch ITP original requesters from the data-node.
+ *
+ * For bridge-created ITPs the data-node returns the Settlement request's `admin`
+ * field — the actual user who called `requestCreateItp()` on Settlement.
+ * For ITPs absent from the map the caller falls back to the on-chain `creator`
+ * (which is always the deployer for non-bridge ITPs, so also correct).
+ *
+ * Returns a Map<itpId (lowercase), requesterAddress (lowercase)>.
  */
-export function useItpCreators(itpIds: string[]): {
+export function useItpCreators(_itpIds: string[]): {
   creators: Map<string, string>
   isLoading: boolean
 } {
-  const contracts = useMemo(
-    () =>
-      itpIds.map((id) => ({
-        address: INDEX_PROTOCOL.index,
-        abi: INDEX_ABI,
-        functionName: 'getITPState' as const,
-        args: [id as `0x${string}`],
-        chainId: activeChainId,
-      })),
-    [itpIds],
-  )
+  const [creators, setCreators] = useState<Map<string, string>>(new Map())
+  const [isLoading, setIsLoading] = useState(true)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const { data, isLoading } = useReadContracts({
-    contracts,
-    query: {
-      enabled: itpIds.length > 0,
-      refetchInterval: 60_000, // creators don't change — refresh infrequently
-      staleTime: 120_000,
-    },
-  })
+  useEffect(() => {
+    let cancelled = false
 
-  const creators = useMemo(() => {
-    const map = new Map<string, string>()
-    if (!data) return map
-    for (let i = 0; i < itpIds.length; i++) {
-      const result = data[i]
-      if (result?.status === 'success' && Array.isArray(result.result)) {
-        // getITPState returns: [creator, totalSupply, nav, assets[], weights[], inventory[]]
-        const creator = result.result[0] as string
-        if (creator) map.set(itpIds[i], creator.toLowerCase())
+    const fetchRequesters = async () => {
+      try {
+        const res = await fetch('/api/dn/chain/itp-requesters', {
+          signal: AbortSignal.timeout(10_000),
+        })
+        if (cancelled) return
+        if (!res.ok) {
+          setIsLoading(false)
+          return
+        }
+        const data: Record<string, string> = await res.json()
+        if (cancelled) return
+        const map = new Map<string, string>()
+        for (const [itpId, requester] of Object.entries(data)) {
+          map.set(itpId.toLowerCase(), requester.toLowerCase())
+        }
+        setCreators(map)
+      } catch {
+        // Non-fatal: fall back to treating all ITPs as official.
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
-    return map
-  }, [data, itpIds])
+
+    fetchRequesters()
+    // Requester addresses don't change — poll infrequently.
+    intervalRef.current = setInterval(fetchRequesters, 120_000)
+
+    return () => {
+      cancelled = true
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
 
   return { creators, isLoading }
 }
