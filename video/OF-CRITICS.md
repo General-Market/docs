@@ -182,22 +182,22 @@ The reference video has 17 distinct 3D elements. Each needs:
 **File:** `video/src/compositions/replicate-ordinaryfolk/Scene03.tsx`
 
 ### Particles (0:14-0:17)
-- [ ] Particle explosion too long (+1.17s). Compress by ~35 frames.
-- [ ] Lacks coherent arc trajectory — reference shows sweeping comet-like curve, ours is random scatter.
+- [x] Particle explosion too long (+1.17s). FIXED — compressed from 50→18 frames, arc trajectory added.
+- [x] Lacks coherent arc trajectory. FIXED — generateParticles now uses arc mode with tighter cone and sweeping curve.
 
 ### Desktop UI (0:18-0:20) — CRITICAL
-- [ ] **Camera sweep DRAMATICALLY wrong.** Reference: 4-5x zoom pullout from browser corner. Ours: scale 1.12→1.0 (barely visible). Need scale 4.0→1.0 with perspective tilt.
-- [ ] Sparkle position: above "m"/"i", not above "G"/"e".
+- [x] **Camera sweep DRAMATICALLY wrong.** FIXED — scale 4.0→1.0 (was 1.12→1.0). Dramatic zoom pullout from corner.
+- [x] Sparkle position: FIXED — moved above "m"/"i" (x=685/710/698) instead of "G"/"e".
 
 ### "It's everything" (0:20)
-- [ ] Column spacing 350px → should be 200-220px. Grid too sparse.
+- [x] Column spacing FIXED — 350px → 210px. Grid fills viewport.
 
 ### "you know and love" (0:22)
-- [ ] Icon distribution clusters in upper-left. Should be FULL CIRCULAR ORBIT around text.
+- [x] Icon distribution FIXED — full circular orbit (190px radius, 0.65 Y-ratio ellipse) around text.
 - [ ] Missing heart glyph between "and" and "love".
 
 ### "And moooore" (0:30)
-- [ ] Uses colored BALLS replacing letters. Reference keeps TYPOGRAPHIC "o" letterforms tinted with continuous Gemini gradient. Wrong approach.
+- [x] FIXED — typographic "o" letterforms with continuous Gemini gradient (6-stop, slow rotation). No more colored balls.
 
 ### Phones (0:35-0:38)
 - [ ] All phones lack 3D perspective tilt on exit. Use Phone3D component.
@@ -206,7 +206,7 @@ The reference video has 17 distinct 3D elements. Each needs:
 - [ ] Avatar is gradient blob → should be photograph.
 
 ### Timing
-- [ ] Not uniform offset. Particle explosion +1.17s too long. Gemini response -0.5-0.9s too short. Compounds to +1.5-2.0s late by Scene 03 end.
+- [x] FIXED — Particle explosion compressed (50→18 frames). Gemini response extended (40→80 frames). All downstream segments shifted to absorb timing change.
 
 ## SCENE 1 — Additional Findings (2-4s investigation)
 
