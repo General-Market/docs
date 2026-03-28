@@ -333,7 +333,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           <div>Status</div>
           <div className="text-right">Players</div>
           <div className="text-right">Pool</div>
-          <div className="text-right">Winner</div>
+          <div className="text-right">Result</div>
           <div className="text-right">Time</div>
         </div>
 
@@ -465,19 +465,21 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
             }
           }
 
-          // Winner column: participated → "You: +$X.XX", else "0x029...abc +$0.71"
+          // Result column: "You won $X" / "0x029...abc won $X" / "Tie"
           const userEntry = participatedBatches.get(batch.batchId)
           const userPnl = userEntry?.pnl
           let winnerText: string | null = null
           let winnerPnl = topPnl
           if (participated && userPnl !== undefined) {
-            const uSign = userPnl > 0 ? '+' : ''
-            winnerText = `You: ${uSign}$${Math.abs(userPnl).toFixed(2)}`
+            const uSign = userPnl >= 0 ? '+' : '-'
+            winnerText = `You ${uSign}$${Math.abs(userPnl).toFixed(2)}`
             winnerPnl = userPnl
-          } else if (topPnl !== 0 && topAddr) {
+          } else if (topAddr && topPnl > 0) {
+            winnerText = `${truncAddr(topAddr)} won $${topPnl.toFixed(2)}`
+          } else if (topAddr && topPnl !== 0) {
             winnerText = `${truncAddr(topAddr)} ${topSign}$${Math.abs(topPnl).toFixed(2)}`
-          } else if (topPnl !== 0) {
-            winnerText = `${topSign}$${Math.abs(topPnl).toFixed(2)}`
+          } else if (batch.playerCount > 0) {
+            winnerText = 'Tie'
           }
 
           return (
