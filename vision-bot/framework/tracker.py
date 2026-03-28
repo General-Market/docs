@@ -105,13 +105,13 @@ class Tracker:
             # Deduplicate: only the LATEST batch per source (highest ID = most recent round)
             by_source = {}
             for b in all_batches:
-                if b.get("paused") or b.get("market_count", 0) == 0:
+                if b.get("paused"):
                     continue
                 src = b.get("source_id", "")
                 if src not in by_source or b.get("id", 0) > by_source[src].get("id", 0):
                     by_source[src] = b
             active = list(by_source.values())
-            max_per_cycle = 5  # Don't flood with joins — 5 per cycle max
+            max_per_cycle = 100  # Join all sources in one cycle
             joined = 0
             for batch in active:
                 bid = batch.get("id", -1)

@@ -47,11 +47,12 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             tracker._usdc_approved = True
         tracker.check_rounds(strategy=strategy)
 
-        # Re-submit bitmaps for all active positions to ALL oracles.
-        # Survives oracle restarts and P2P gossip failures — if oracle-2 or
-        # oracle-3 resolved the round without the bitmap, the player gets
-        # voided (refunded instead of winning/losing). Belt and suspenders.
-        for bid in list(tracker.active_ids):
+        # Re-submit bitmaps only for RECENT positions (joined in last 10 min).
+        # Old positions already have their bitmaps accepted by oracles.
+        cutoff = time.time() - 600
+        recent_ids = [bid for bid in tracker.active_ids
+                      if tracker.positions.get(bid, {}).get("joined_at", 0) > cutoff]
+        for bid in recent_ids:
             pos = tracker.positions.get(bid)
             if not pos or not pos.get("bitmap") or pos.get("poisoned"):
                 continue
