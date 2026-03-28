@@ -21,9 +21,7 @@
 import React, { useMemo, useRef, Suspense } from "react";
 import {
   AbsoluteFill,
-  useCurrentFrame,
   useVideoConfig,
-  interpolate,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
@@ -294,18 +292,19 @@ export interface Phone3DProps {
   /** Overall opacity. Default 1. */
   opacity?: number;
   /**
-   * Screen overlay positioning — percentage offsets from container center.
+   * Screen overlay positioning — percentage offsets within the container.
    * Tune these if your rotation makes the overlay misalign.
-   * Defaults are calibrated for near-frontal views (rotateY < 0.3 rad).
+   * Defaults are calibrated for near-frontal views (rotateY < 0.3 rad)
+   * on a 16:9 canvas with the default camera (z=5, fov=35).
    */
   screenOverlay?: {
-    /** Top offset as % of container height. Default 8.5 */
+    /** Top offset as % of container height. Default 5 */
     top?: number;
-    /** Left offset as % of container width. Default 17 */
+    /** Left offset as % of container width. Default 37.5 */
     left?: number;
-    /** Width as % of container width. Default 66 */
+    /** Width as % of container width. Default 25 */
     width?: number;
-    /** Height as % of container height. Default 80 */
+    /** Height as % of container height. Default 88 */
     height?: number;
   };
   /** Style overrides for the outer container */
@@ -327,12 +326,14 @@ export const Phone3D: React.FC<Phone3DProps> = ({
 }) => {
   const { width, height } = useVideoConfig();
 
-  /* Screen overlay defaults — calibrated for head-on view */
+  /* Screen overlay defaults — calibrated for head-on view on 16:9 canvas,
+     camera at z=5, fov=35. Phone body is 1.5x3.0 units.
+     Screen inset by BEZEL on each side. */
   const overlay = {
-    top: screenOverlay?.top ?? 8.5,
-    left: screenOverlay?.left ?? 17,
-    width: screenOverlay?.width ?? 66,
-    height: screenOverlay?.height ?? 80,
+    top: screenOverlay?.top ?? 5.5,
+    left: screenOverlay?.left ?? 38,
+    width: screenOverlay?.width ?? 24,
+    height: screenOverlay?.height ?? 86,
   };
 
   return (
