@@ -15,12 +15,12 @@ const ZOOM_OUT_END = 47;      // text zooms/fades out (ref: blank at f45)
 const EARN_VISIBLE = 48;      // "Earn up to X%" begins (ref: visible f50)
 const PERCENT_ROLL_END = 68;  // percentage stops at 6% — shortened by 10
 const APY_APPEAR = 60;        // "APY" label + pill — shifted earlier
-const HOLD_EARN_END = 92;     // hold the earn text — shortened by 10
-const DASHBOARD_START = 95;   // dashboard slides in — earlier by 10
-const DASHBOARD_FULL = 138;   // dashboard fully visible — earlier by 10
-const WALLET_START = 146;     // wallet page begins replacing dashboard — earlier by 10
-const WALLET_FULL = 154;      // wallet page fully visible — earlier by 10
-// Total duration: 217 frames (227 - 10 from shortened earn phase)
+const HOLD_EARN_END = 100;    // hold the earn text — ref holds until ~f105
+const DASHBOARD_START = 105;  // dashboard slides in — ref: ~f108
+const DASHBOARD_FULL = 138;   // dashboard fully visible
+const WALLET_START = 150;     // wallet page begins replacing dashboard
+const WALLET_FULL = 158;      // wallet page fully visible
+// Total duration: 217 frames
 
 /* ─── colors ─── */
 const RED = "#E8391C";
@@ -193,17 +193,19 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
   const dashFrame = frame - DASHBOARD_START;
   const chartDraw = clamp01(dashFrame / 30);
 
-  // Animate the gross revenue number counting up — slower to match ref counter values
+  // Animate the gross revenue number counting up — match ref counter curve
+  // Ref: f110=$2431, f115=$2896, f120=$3167, f140=$3562, target=$3570
   const grossBase = 2431.30;
   const grossTarget = 3570.61;
-  const grossProgress = clamp01(dashFrame / 40);
-  const grossValue = grossBase + (grossTarget - grossBase) * easeInOut(grossProgress);
+  const grossProgress = clamp01(dashFrame / 50);
+  const grossValue = grossBase + (grossTarget - grossBase) * easeOut(grossProgress);
 
-  // Animate total balance counting up — slower to match ref counter values
+  // Animate total balance counting up — match ref counter curve
+  // Ref: f110=$34609, f115=$37660, f120=$39498, f140=$42510, target=$42740
   const balBase = 34609.07;
   const balTarget = 42740.24;
-  const balProgress = clamp01(dashFrame / 40);
-  const balValue = balBase + (balTarget - balBase) * easeInOut(balProgress);
+  const balProgress = clamp01(dashFrame / 50);
+  const balValue = balBase + (balTarget - balBase) * easeOut(balProgress);
 
   const fmt = (v: number) =>
     "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

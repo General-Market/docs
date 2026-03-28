@@ -1227,15 +1227,15 @@ const OnePlaceSegment: React.FC = () => {
                   </feMerge>
                 </filter>
                 <linearGradient id="glassIridescent" x1="0%" y1="0%" x2="100%" y2="100%"
-                  gradientTransform={`rotate(${(frame * 0.4) % 360})`}>
-                  <stop offset="0%" stopColor="rgba(200,130,240,0.7)" />
-                  <stop offset="14%" stopColor="rgba(140,180,255,0.4)" />
-                  <stop offset="28%" stopColor="rgba(255,150,200,0.65)" />
-                  <stop offset="42%" stopColor="rgba(100,170,255,0.35)" />
-                  <stop offset="56%" stopColor="rgba(230,170,255,0.55)" />
-                  <stop offset="70%" stopColor="rgba(130,210,250,0.45)" />
-                  <stop offset="84%" stopColor="rgba(255,140,190,0.6)" />
-                  <stop offset="100%" stopColor="rgba(180,140,255,0.5)" />
+                  gradientTransform={`rotate(${(frame * 0.5) % 360})`}>
+                  <stop offset="0%" stopColor="rgba(190,110,240,0.85)" />
+                  <stop offset="14%" stopColor="rgba(120,170,255,0.55)" />
+                  <stop offset="28%" stopColor="rgba(255,130,190,0.8)" />
+                  <stop offset="42%" stopColor="rgba(80,160,255,0.5)" />
+                  <stop offset="56%" stopColor="rgba(220,150,255,0.7)" />
+                  <stop offset="70%" stopColor="rgba(110,200,250,0.6)" />
+                  <stop offset="84%" stopColor="rgba(255,120,180,0.75)" />
+                  <stop offset="100%" stopColor="rgba(170,120,255,0.65)" />
                 </linearGradient>
                 <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="100%"
                   gradientTransform={`rotate(${(frame * 0.25 + 15) % 360})`}>
@@ -1250,10 +1250,10 @@ const OnePlaceSegment: React.FC = () => {
                   <stop offset="100%" stopColor="transparent" />
                 </linearGradient>
                 <linearGradient id="glassFill" x1="0%" y1="20%" x2="100%" y2="80%">
-                  <stop offset="0%" stopColor="rgba(195,190,225,0.38)" />
-                  <stop offset="35%" stopColor="rgba(205,200,230,0.28)" />
-                  <stop offset="65%" stopColor="rgba(190,195,235,0.32)" />
-                  <stop offset="100%" stopColor="rgba(200,195,225,0.35)" />
+                  <stop offset="0%" stopColor="rgba(185,180,220,0.45)" />
+                  <stop offset="35%" stopColor="rgba(195,190,225,0.35)" />
+                  <stop offset="65%" stopColor="rgba(180,185,230,0.4)" />
+                  <stop offset="100%" stopColor="rgba(190,185,220,0.42)" />
                 </linearGradient>
               </defs>
               <text x="4" y="210" fontFamily={fontFamily} fontSize="260" fontWeight="200"
@@ -1281,7 +1281,7 @@ const OnePlaceSegment: React.FC = () => {
                 One
               </text>
               <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
-                letterSpacing="-10" fill="none" stroke="rgba(170,165,210,0.55)" strokeWidth="1.8">
+                letterSpacing="-10" fill="none" stroke="rgba(160,155,210,0.65)" strokeWidth="2.2">
                 One
               </text>
             </svg>

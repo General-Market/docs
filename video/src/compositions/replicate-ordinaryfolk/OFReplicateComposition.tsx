@@ -1,54 +1,110 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
-import { TransitionSeries, linearTiming } from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
-import { Scene01, scene01Meta } from "./Scene01";
-import { Scene02, scene02Meta } from "./Scene02";
+import { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";
+import { Scene01 } from "./Scene01";
+import { Scene02 } from "./Scene02";
 import { Scene03, scene03Meta } from "./Scene03";
 import { Scene04, scene04Meta } from "./Scene04";
 import { Scene05, scene05Meta } from "./Scene05";
+import { scene01Meta } from "./Scene01";
+import { scene02Meta } from "./Scene02";
 
 /**
- * Crossfade duration at each scene boundary (in frames).
- * 12 frames @ 30fps = 0.4s — enough to erase the hard cut,
- * short enough to preserve the rhythm.
+ * Standard crossfade duration at most scene boundaries (in frames).
+ * 12 frames @ 30fps = 0.4s.
  */
 const XFADE = 12;
 
-const scenes = [
-  { key: "scene-1", name: "Scene 01", duration: 259, Component: Scene01 },
-  { key: "scene-2", name: "Scene 02", duration: 175, Component: Scene02 },
-  { key: "scene-3", name: "Scene 03", duration: 745, Component: Scene03 },
-  { key: "scene-4", name: "Scene 04", duration: 339, Component: Scene04 },
-  { key: "scene-5", name: "Scene 05", duration: 695, Component: Scene05 },
-] as const;
+/**
+ * S03→S04 overlap: 30 frames where both scenes render.
+ * S04 draws on top. S03's phone fades out, S04's phone is already visible.
+ * No crossfade opacity — each scene handles its own fade internally.
+ */
+const S03_S04_OVERLAP = 30;
 
-/** Total frames: sum of scene durations minus overlap at each of the 4 boundaries */
-const TOTAL_FRAMES =
-  scenes.reduce((sum, s) => sum + s.duration, 0) -
-  XFADE * (scenes.length - 1);
+/* Scene durations */
+const S01_DUR = 259;
+const S02_DUR = 175;
+const S03_DUR = 745;
+const S04_DUR = 339;
+const S05_DUR = 695;
+
+/* Calculate absolute start positions */
+const S01_START = 0;
+const S02_START = S01_START + S01_DUR - XFADE;      // 247
+const S03_START = S02_START + S02_DUR - XFADE;      // 410
+const S04_START = S03_START + S03_DUR - S03_S04_OVERLAP; // 1125 (overlap, not crossfade)
+const S05_START = S04_START + S04_DUR - XFADE;      // 1452
+
+const TOTAL_FRAMES = S05_START + S05_DUR;            // 2147
+
+/**
+ * FadeWrapper — simple opacity crossfade for standard transitions.
+ * fadeIn: frame range where opacity goes 0→1 (relative to sequence start)
+ * fadeOut: frame range where opacity goes 1→0 (relative to sequence start)
+ */
+const FadeWrapper: React.FC<{
+  children: React.ReactNode;
+  duration: number;
+  fadeInFrames?: number;
+  fadeOutFrames?: number;
+}> = ({ children, duration, fadeInFrames = 0, fadeOutFrames = 0 }) => {
+  const frame = useCurrentFrame();
+  const fadeIn = fadeInFrames > 0
+    ? interpolate(frame, [0, fadeInFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    : 1;
+  const fadeOut = fadeOutFrames > 0
+    ? interpolate(frame, [duration - fadeOutFrames, duration], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+    : 1;
+  return (
+    <AbsoluteFill style={{ opacity: fadeIn * fadeOut }}>
+      {children}
+    </AbsoluteFill>
+  );
+};
 
 export const OFReplicateComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
-      <TransitionSeries>
-        {scenes.map((scene, i) => (
-          <React.Fragment key={scene.key}>
-            <TransitionSeries.Sequence
-              durationInFrames={scene.duration}
-              name={scene.name}
-            >
-              <scene.Component />
-            </TransitionSeries.Sequence>
-            {i < scenes.length - 1 && (
-              <TransitionSeries.Transition
-                presentation={fade()}
-                timing={linearTiming({ durationInFrames: XFADE })}
-              />
-            )}
-          </React.Fragment>
-        ))}
-      </TransitionSeries>
+      {/* ── Scene 01 ── */}
+      <Sequence from={S01_START} durationInFrames={S01_DUR} name="Scene 01">
+        <FadeWrapper duration={S01_DUR} fadeOutFrames={XFADE}>
+          <Scene01 />
+        </FadeWrapper>
+      </Sequence>
+
+      {/* ── Scene 02 ── */}
+      <Sequence from={S02_START} durationInFrames={S02_DUR} name="Scene 02">
+        <FadeWrapper duration={S02_DUR} fadeInFrames={XFADE} fadeOutFrames={XFADE}>
+          <Scene02 />
+        </FadeWrapper>
+      </Sequence>
+
+      {/* ── Scene 03 ──
+           Fades in from S02. No fade out — S04 renders on top during overlap.
+           S03's SegPhoneGoodMorning handles its own phone fade internally. */}
+      <Sequence from={S03_START} durationInFrames={S03_DUR} name="Scene 03">
+        <FadeWrapper duration={S03_DUR} fadeInFrames={XFADE}>
+          <Scene03 />
+        </FadeWrapper>
+      </Sequence>
+
+      {/* ── Scene 04 ──
+           Starts S03_S04_OVERLAP frames before S03 ends.
+           Draws ON TOP of S03 (later in DOM = higher z-index).
+           No fade-in — S04 manages its own phone visibility.
+           Standard fade-out into S05. */}
+      <Sequence from={S04_START} durationInFrames={S04_DUR} name="Scene 04">
+        <FadeWrapper duration={S04_DUR} fadeOutFrames={XFADE}>
+          <Scene04 />
+        </FadeWrapper>
+      </Sequence>
+
+      {/* ── Scene 05 ── */}
+      <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
+        <FadeWrapper duration={S05_DUR} fadeInFrames={XFADE}>
+          <Scene05 />
+        </FadeWrapper>
+      </Sequence>
     </AbsoluteFill>
   );
 };

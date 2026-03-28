@@ -110,7 +110,7 @@ function createDefaultState(): AnimState {
     phoneX: 200, phoneY: 120, phoneRotation: 6, phoneOpacity: 1, phoneScale: 0.88,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
-    geminiOpacity: 0, geminiY: 120, geminiScale: 1.3, geminiPanX: -120, geminiPanY: 100,
+    geminiOpacity: 0, geminiY: 300, geminiScale: 1.0, geminiPanX: 0, geminiPanY: 0,
     geminiDropdownOpen: 0, geminiRow1: 0, geminiRow2: 0, geminiCheckmark: 0, geminiGlowAngle: 0,
     fadeToBlack: 0, darkShrink: 1,
     wordOpacities: [0, 0, 0], wordYs: [30, 30, 30], wordXs: [20, 20, 20],
@@ -195,15 +195,16 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { introOpacity: 1, duration: sec(6), ease: "power2.out" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introScale: 1.0, duration: sec(20), ease: "elastic.out(1, 0.6)" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introClipRight: 0, duration: sec(21), ease: "expo.out" }, sec(PHASE.INTRODUCING.start));
-    /* Intro fades out exactly as Gemini fades in — no dead gap */
-    t.to(s, { introOpacity: 0, duration: sec(5), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 3));
+    /* Intro fades out as Gemini rises — overlap transition like reference */
+    t.to(s, { introOpacity: 0, duration: sec(10), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 8));
 
     /* ═══ Gemini Desktop Browser UI ═══ */
+    /* Browser starts rising from bottom DURING Introducing — visible overlap */
+    const gemRiseStart = sec(PHASE.GEMINI_UI.start - 10);
     const gemStart = sec(PHASE.GEMINI_UI.start);
-    t.to(s, { geminiOpacity: 1, duration: sec(5), ease: "power2.out" }, gemStart);
-    t.to(s, { geminiY: 0, duration: sec(12), ease: "expo.out" }, gemStart);
-    /* Zoom in to top-left corner over time */
-    /* Slow zoom + pan toward top-left corner of the panel to focus on dropdown */
+    t.to(s, { geminiOpacity: 1, duration: sec(8), ease: "power2.out" }, gemRiseStart);
+    t.to(s, { geminiY: 0, duration: sec(22), ease: "expo.out" }, gemRiseStart);
+    /* Start at full view, then zoom toward top-left corner for dropdown focus */
     t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);
     t.to(s, { geminiPanX: -200, duration: sec(46), ease: "power1.inOut" }, gemStart);
     t.to(s, { geminiPanY: 180, duration: sec(46), ease: "power1.inOut" }, gemStart);
@@ -213,7 +214,7 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { geminiRow2: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 18));
     t.to(s, { geminiCheckmark: 1, duration: sec(6), ease: "back.out(2)" }, sec(PHASE.GEMINI_UI.start + 16));
     /* Glow rotation */
-    t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
+    t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemRiseStart);
 
     /* ═══ Dark ending ═══ */
     t.to(s, { fadeToBlack: 0.97, duration: sec(13), ease: "power3.in" }, sec(326));
@@ -900,10 +901,10 @@ export const Scene04: React.FC = () => {
   const showChat = frame >= PHASE.DOG_PHOTO.end && frame < PHASE.PHOTO_EXPAND.start;
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
   const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
-  const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
+  const showGeminiUI = frame >= PHASE.GEMINI_UI.start - 10;
   const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
   const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
-  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 5;
+  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 10;
 
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -928,7 +929,7 @@ export const Scene04: React.FC = () => {
   const bgY2 = 60 + noise2D("bg2Y", frame * 0.004, 3) * 6;
 
   /* Gemini local frame */
-  const geminiLocalFrame = Math.max(0, frame - PHASE.GEMINI_UI.start);
+  const geminiLocalFrame = Math.max(0, frame - (PHASE.GEMINI_UI.start - 10));
 
   /* Introducing glow effects */
   const introLocal = frame - PHASE.INTRODUCING.start;
@@ -1086,9 +1087,11 @@ export const Scene04: React.FC = () => {
         {showIntro && (
           <div style={{
             position: "absolute", inset: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            paddingTop: 230,
             opacity: s.introOpacity,
             transform: `scale(${s.introScale}) translate(${introWobX}px, ${introWobY}px)`,
+            zIndex: 10,
           }}>
             <div style={{
               position: "absolute", width: 600, height: 240,
