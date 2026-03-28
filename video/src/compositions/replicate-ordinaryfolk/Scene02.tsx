@@ -66,7 +66,7 @@ function generateBardFragments(): BardFragment[] {
   const fragments: BardFragment[] = [];
 
   letters.forEach((letter, letterIdx) => {
-    const count = letter === "B" ? 22 : letter === "d" ? 20 : letter === "a" ? 18 : 16;
+    const count = letter === "B" ? 36 : letter === "d" ? 32 : letter === "a" ? 28 : 24;
     for (let fragIdx = 0; fragIdx < count; fragIdx++) {
       const seed = letterIdx * 1000 + fragIdx;
       const r = (n: number) => seededRandom(seed + n * 137);
@@ -80,12 +80,12 @@ function generateBardFragments(): BardFragment[] {
         offsetX: (r(1) - 0.5) * letterWidth,
         offsetY: (r(2) - 0.5) * letterHeight,
         angle: baseAngle + angleSpread,
-        distance: 120 + r(3) * 350,
-        curveStrength: (r(4) - 0.5) * 150,
+        distance: 160 + r(3) * 450,
+        curveStrength: (r(4) - 0.5) * 200,
         rotationSpeed: (r(5) - 0.5) * 12,
-        width: 1.5 + r(6) * 8,
-        height: 1.5 + r(7) * 10,
-        delay: letterIdx * 1.2 + r(8) * 4,
+        width: 2 + r(6) * 10,
+        height: 2 + r(7) * 12,
+        delay: letterIdx * 1.0 + r(8) * 3,
         hueShift: r(9) < 0.5 ? (r(9) - 0.25) * 40 : 40 + r(9) * 60,
         saturation: 65 + r(10) * 30,
         lightness: 50 + r(11) * 25,
@@ -97,6 +97,51 @@ function generateBardFragments(): BardFragment[] {
 
 const FPS = 30;
 const s = (f: number) => f / FPS;
+
+const CHAPTER_TEXT = "the next chapter";
+const TYPING_START = 62;
+
+/** Frame-driven typing — renders characters one per frame */
+const TypingText: React.FC<{ frame: number }> = ({ frame }) => {
+  const elapsed = Math.max(0, frame - TYPING_START);
+  const charsVisible = Math.min(CHAPTER_TEXT.length, Math.floor(elapsed));
+  const typingDone = charsVisible >= CHAPTER_TEXT.length;
+  const cursorOpacity = !typingDone
+    ? (Math.sin(frame * 0.5) > -0.3 ? 0.7 : 0)
+    : Math.max(0, 0.7 - Math.max(0, frame - (TYPING_START + CHAPTER_TEXT.length)) / 5 * 0.7);
+
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <span
+        className="chapter-text"
+        style={{
+          fontSize: 42,
+          fontWeight: 300,
+          fontFamily,
+          color: BLUE_TINT,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.2,
+        }}
+      >
+        {CHAPTER_TEXT.slice(0, charsVisible)}
+      </span>
+      {charsVisible > 0 && (
+        <span
+          style={{
+            display: "inline-block",
+            width: 2,
+            height: 42 * 0.65,
+            backgroundColor: BLUE_TINT,
+            opacity: cursorOpacity,
+            marginLeft: 1,
+            verticalAlign: "baseline",
+            transform: "translateY(2px)",
+          }}
+        />
+      )}
+    </span>
+  );
+};
 
 export const Scene02: React.FC = () => {
   const { tl, containerRef, frame, fps } = useGsapTimeline();
@@ -137,60 +182,45 @@ export const Scene02: React.FC = () => {
       t.fromTo(phaseB, { opacity: 0 }, { opacity: 1, duration: s(4) }, s(58));
     }
 
-    // Typing: reveal chars via clipPath on .chapter-text
+    // Typing color transition: blue → dark (text content is frame-driven in JSX)
     const chapterText = el.querySelector<HTMLElement>(".chapter-text");
     if (chapterText) {
-      const totalChars = 16; // "the next chapter"
-      for (let c = 0; c <= totalChars; c++) {
-        t.set(chapterText, {
-          clipPath: `inset(0 ${((totalChars - c) / totalChars) * 100}% 0 0)`,
-        }, s(62 + c));
-      }
-      // Color settle: blue → dark
       t.to(chapterText, { color: TEXT_DARK, duration: s(8), ease: "none" }, s(72));
-    }
-
-    // Cursor
-    const cursor = el.querySelector<HTMLElement>(".chapter-cursor");
-    if (cursor) {
-      t.set(cursor, { opacity: 0.7 }, s(62));
-      t.to(cursor, { opacity: 0, duration: s(5) }, s(78));
     }
 
     // Phase B-C exit (chapter fades for page turn)
     if (phaseB) {
-      t.to(phaseB, { opacity: 0, duration: s(8), ease: "none" }, s(102));
+      t.to(phaseB, { opacity: 0, duration: s(6), ease: "none" }, s(100));
     }
 
-    // Phase D: dark bg appears
+    // Phase D: dark bg appears — behind the page, visible as page peels
     const darkBg = el.querySelector<HTMLElement>(".dark-bg");
     if (darkBg) {
       t.set(darkBg, { opacity: 1 }, s(100));
     }
 
-    // Phase E: dark phase text container fades in
+    // Phase E: dark phase text container fades in — starts during page turn
     const darkPhase = el.querySelector<HTMLElement>(".dark-phase-text");
     if (darkPhase) {
-      t.fromTo(darkPhase, { opacity: 0 }, { opacity: 1, duration: s(10) }, s(121));
+      t.fromTo(darkPhase, { opacity: 0 }, { opacity: 1, duration: s(8) }, s(108));
     }
 
-    // "Today" gradient
+    // "Today" gradient — appears as page finishes turning
     const todayGrad = el.querySelector<HTMLElement>(".today-gradient");
     const todayGlow = el.querySelector<HTMLElement>(".today-glow");
     if (todayGrad) {
-      t.fromTo(todayGrad, { opacity: 0, x: 14 }, { opacity: 1, x: 0, duration: s(8), ease: "power3.out" }, s(121));
+      t.fromTo(todayGrad, { opacity: 0, x: 14 }, { opacity: 1, x: 0, duration: s(8), ease: "power3.out" }, s(108));
       t.to(todayGrad, { opacity: 0, duration: s(3) }, s(135));
     }
     if (todayGlow) {
-      t.fromTo(todayGlow, { opacity: 0 }, { opacity: 0.5, duration: s(8) }, s(121));
+      t.fromTo(todayGlow, { opacity: 0 }, { opacity: 0.5, duration: s(8) }, s(108));
       t.to(todayGlow, { opacity: 0, duration: s(5) }, s(135));
     }
 
     // "Today," white version crossfade
     const todayWhite = el.querySelector<HTMLElement>(".today-white");
     if (todayWhite) {
-      t.set(todayWhite, { opacity: 0 });
-      t.to(todayWhite, { opacity: 1, duration: s(3) }, s(135));
+      t.fromTo(todayWhite, { opacity: 0 }, { opacity: 1, duration: s(3) }, s(135));
     }
 
     // "Bard" pink text
@@ -221,15 +251,15 @@ export const Scene02: React.FC = () => {
       t.set(fragContainer, { opacity: 1 }, s(148));
     }
 
-    // Phase H: dissolve out
+    // Phase H: dissolve out — later start, so fragments stay visible
     if (darkPhase) {
-      t.to(darkPhase, { opacity: 0, duration: s(12) }, s(162));
+      t.to(darkPhase, { opacity: 0, duration: s(8) }, s(166));
     }
 
     // Background glow
     const bgGlow = el.querySelector<HTMLElement>(".bg-glow");
     if (bgGlow) {
-      t.fromTo(bgGlow, { opacity: 0 }, { opacity: 1, duration: s(12) }, s(121));
+      t.fromTo(bgGlow, { opacity: 0 }, { opacity: 1, duration: s(12) }, s(108));
       t.to(bgGlow, { opacity: 0, duration: s(12) }, s(162));
     }
 
@@ -244,7 +274,7 @@ export const Scene02: React.FC = () => {
 
     return fragments.map((frag, i) => {
       const fragStart = BARD_DISINTEGRATE + frag.delay;
-      const fragDuration = 22;
+      const fragDuration = 28;
       const rawProgress = Math.max(0, Math.min(1, (frame - fragStart) / fragDuration));
       if (rawProgress <= 0) return null;
 
@@ -262,7 +292,7 @@ export const Scene02: React.FC = () => {
       const y = originY + travelY + perpY + gravityY;
       const rotation = frag.rotationSpeed * eased * 360;
 
-      const fragOpacity = interpolate(rawProgress, [0, 0.05, 0.5, 0.85, 1], [0, 1, 0.9, 0.5, 0], C);
+      const fragOpacity = interpolate(rawProgress, [0, 0.05, 0.4, 0.75, 1], [0, 1, 1, 0.65, 0], C);
       const scale = interpolate(rawProgress, [0, 0.2, 1], [1.1, 1, 0.3], C);
 
       const hue = frag.hueShift < 20 ? 340 + frag.hueShift : 260 + frag.hueShift;
@@ -281,7 +311,7 @@ export const Scene02: React.FC = () => {
             backgroundColor: color,
             opacity: fragOpacity,
             transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
-            boxShadow: `0 0 ${Math.max(frag.width, frag.height) * 2.5}px ${color}`,
+            boxShadow: `0 0 ${Math.max(frag.width, frag.height) * 3.5}px ${color}`,
             pointerEvents: "none",
           }}
         />
@@ -290,28 +320,32 @@ export const Scene02: React.FC = () => {
   }, [frame, fragments]);
 
   // ── Page turn geometry (frame-driven for clipPath) ──
-  const TURN_START = 102;
-  const TURN_END = 126;
+  // Reference: page wipes right-to-left with slight diagonal (top leads bottom)
+  const TURN_START = 100;
+  const TURN_END = 118;
   const turnRaw = Math.max(0, Math.min(1, (frame - TURN_START) / (TURN_END - TURN_START)));
-  // Eased progress
   const turnProgress = gsap.parseEase("power2.inOut")(turnRaw);
 
-  const foldTX = 100 - 150 * turnProgress;
-  const foldRY = 150 * turnProgress;
-  const tx = Math.max(-5, Math.min(105, foldTX));
-  const ry = Math.max(-5, Math.min(105, foldRY));
-  const dxFold = 100 - tx;
-  const dyFold = ry;
+  // Fold line: from (topX, 0%) to (botX, 100%)
+  // Top edge leads slightly (peels from upper-right faster)
+  const foldTopX = 110 - turnProgress * 135;
+  const foldBotX = 110 - turnProgress * 120;
+  const topX = Math.max(-15, Math.min(110, foldTopX));
+  const botX = Math.max(-15, Math.min(110, foldBotX));
+
+  // Fold line direction for shadow angle
+  const dxFold = botX - topX;
+  const dyFold = 100;
   const foldLineAngle = Math.atan2(dyFold, dxFold) * (180 / Math.PI);
   const foldLen = Math.sqrt(dxFold * dxFold + dyFold * dyFold) || 1;
-  const shadowW = 4;
+  const shadowW = 5;
   const nxShadow = (-dyFold / foldLen) * shadowW;
   const nyShadow = (dxFold / foldLen) * shadowW;
 
   const pageOpacity = turnProgress > 0.85 ? Math.max(0, (1 - turnProgress) / 0.15) * 0.9 : 1;
-  const pageTiltX = Math.min(turnProgress / 0.6, 1) * 8;
-  const pageTiltY = Math.min(turnProgress / 0.6, 1) * -6;
-  const foldAngle = turnProgress * 80;
+  const pageTiltX = 0;
+  const pageTiltY = Math.min(turnProgress / 0.4, 1) * 6;
+  const foldAngle = turnProgress * 60;
 
   // Warm accent drift
   const accentRight = -100 + Math.sin(frame * 0.015) * 40;
@@ -400,35 +434,7 @@ export const Scene02: React.FC = () => {
             opacity: 0,
           }}
         >
-          <span style={{ position: "relative", display: "inline-block" }}>
-            <span
-              className="chapter-text"
-              style={{
-                fontSize: 42,
-                fontWeight: 300,
-                fontFamily,
-                color: BLUE_TINT,
-                letterSpacing: "-0.02em",
-                lineHeight: 1.2,
-                clipPath: "inset(0 100% 0 0)",
-              }}
-            >
-              the next chapter
-            </span>
-            <span
-              className="chapter-cursor"
-              style={{
-                display: "inline-block",
-                width: 2,
-                height: 42 * 0.65,
-                backgroundColor: BLUE_TINT,
-                opacity: 0,
-                marginLeft: 1,
-                verticalAlign: "baseline",
-                transform: "translateY(2px)",
-              }}
-            />
-          </span>
+          <TypingText frame={frame} />
         </div>
 
         {/* ════ PAGE TURN ════ */}
@@ -449,11 +455,11 @@ export const Scene02: React.FC = () => {
                   backgroundColor: "#ffffff",
                   opacity: pageOpacity,
                   clipPath:
-                    tx <= 100 && ry <= 100
-                      ? `polygon(0% 0%, ${tx}% 0%, 100% ${ry}%, 100% 100%, 0% 100%)`
+                    topX > -5 || botX > -5
+                      ? `polygon(0% 0%, ${topX}% 0%, ${botX}% 100%, 0% 100%)`
                       : "polygon(0% 0%, 0% 0%, 0% 0%)",
                   transform: `rotateX(${pageTiltX}deg) rotateY(${pageTiltY}deg)`,
-                  transformOrigin: "0% 100%",
+                  transformOrigin: "0% 50%",
                 }}
               >
                 {/* Text ON the turning page */}
@@ -486,10 +492,10 @@ export const Scene02: React.FC = () => {
             {/* Fold shadow */}
             {turnProgress > 0.04 && (() => {
               const shadowClip = `polygon(
-                ${tx - nxShadow}% ${0 - nyShadow}%,
-                ${100 - nxShadow}% ${ry - nyShadow}%,
-                ${100 + nxShadow}% ${ry + nyShadow}%,
-                ${tx + nxShadow}% ${0 + nyShadow}%
+                ${topX - shadowW}% 0%,
+                ${topX + shadowW}% 0%,
+                ${botX + shadowW}% 100%,
+                ${botX - shadowW}% 100%
               )`;
               const shadowOpacity = interpolate(turnProgress, [0.04, 0.15, 0.6, 1], [0, 0.18, 0.08, 0], C);
 
@@ -530,9 +536,9 @@ export const Scene02: React.FC = () => {
                     position: "absolute",
                     width: "100%",
                     height: "100%",
-                    clipPath: `polygon(${tx}% 0%, 100% 0%, 100% ${ry}%)`,
-                    transformOrigin: `${(tx + 100) / 2}% ${ry / 2}%`,
-                    transform: `rotate3d(${dyFold}, ${-dxFold}, 0, ${foldAngle * 0.5}deg)`,
+                    clipPath: `polygon(${topX}% 0%, ${Math.min(topX + 20, 110)}% 0%, ${Math.min(botX + 20, 110)}% 100%, ${botX}% 100%)`,
+                    transformOrigin: `${(topX + botX) / 2}% 50%`,
+                    transform: `rotateY(${foldAngle}deg)`,
                     opacity: interpolate(turnProgress, [0.04, 0.12, 0.6, 0.85], [0, 0.35, 0.2, 0], C),
                     background: `linear-gradient(
                       ${foldLineAngle + 180}deg,
