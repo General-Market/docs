@@ -297,50 +297,75 @@ const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progr
       <directionalLight position={[5, 5, 5]} intensity={2.2} color="#e0e8ff" />
       <directionalLight position={[-3, 2, 4]} intensity={0.8} color="#ffd4b8" />
       <pointLight position={[1, 1, 3]} intensity={0.6} color="#ffd0e0" />
-      {/* Large BTC coin */}
-      <mesh
+      {/* Large BTC coin — layered for depth */}
+      <group
         position={[0, wobble1, 0]}
         rotation={[0.3 + rot * 0.2, rot, 0]}
         scale={progress * 1.4}
       >
-        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
-        <meshPhysicalMaterial
-          {...GLASS_MAT_PROPS}
-          color="#b8a8d8"
-          emissive="#8070b0"
-          specularColor={new THREE.Color("#ffe0d0")}
-        />
-      </mesh>
+        {/* Inner color disc */}
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.38, 0.38, 0.06, 32]} />
+          <meshStandardMaterial color="#c084fc" transparent opacity={0.5} emissive="#8b5cf6" emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[0.12, 0, 0.01]}>
+          <cylinderGeometry args={[0.25, 0.25, 0.06, 32]} />
+          <meshStandardMaterial color="#67e8f9" transparent opacity={0.4} emissive="#22d3ee" emissiveIntensity={0.3} />
+        </mesh>
+        {/* Outer glass */}
+        <mesh>
+          <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+          <meshPhysicalMaterial
+            {...GLASS_MAT_PROPS}
+            opacity={0.4}
+            color="#d0c8e8"
+            emissive="#8878b8"
+            specularColor={new THREE.Color("#ffe0d0")}
+          />
+        </mesh>
+      </group>
       {/* ETH coin */}
-      <mesh
+      <group
         position={[-0.6, -0.5 + wobble2, 0.3]}
         rotation={[0.2, rot * 0.8 + 1, 0.1]}
         scale={progress * 0.95}
       >
-        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
-        <meshPhysicalMaterial
-          {...GLASS_MAT_PROPS}
-          opacity={0.7}
-          color="#a8a0c8"
-          emissive="#6868a0"
-          specularColor={new THREE.Color("#d0e0ff")}
-        />
-      </mesh>
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.35, 0.35, 0.06, 32]} />
+          <meshStandardMaterial color="#a78bfa" transparent opacity={0.45} emissive="#7c3aed" emissiveIntensity={0.35} />
+        </mesh>
+        <mesh>
+          <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+          <meshPhysicalMaterial
+            {...GLASS_MAT_PROPS}
+            opacity={0.35}
+            color="#c8c0e0"
+            emissive="#7868a0"
+            specularColor={new THREE.Color("#d0e0ff")}
+          />
+        </mesh>
+      </group>
       {/* SOL coin */}
-      <mesh
+      <group
         position={[0.5, -0.3, -0.2]}
         rotation={[-0.2, rot * 1.2, 0.3]}
         scale={progress * 0.7}
       >
-        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
-        <meshPhysicalMaterial
-          {...GLASS_MAT_PROPS}
-          opacity={0.65}
-          color="#b0a8d0"
-          emissive="#7868a8"
-          specularColor={new THREE.Color("#e0d0ff")}
-        />
-      </mesh>
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.32, 0.32, 0.06, 32]} />
+          <meshStandardMaterial color="#fda4af" transparent opacity={0.4} emissive="#fb7185" emissiveIntensity={0.3} />
+        </mesh>
+        <mesh>
+          <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+          <meshPhysicalMaterial
+            {...GLASS_MAT_PROPS}
+            opacity={0.35}
+            color="#c8c0e0"
+            emissive="#8070a8"
+            specularColor={new THREE.Color("#e0d0ff")}
+          />
+        </mesh>
+      </group>
     </>
   );
 };
