@@ -166,12 +166,13 @@ const PhaseYouve: React.FC = () => {
 const EXP_LETTERS = "experimenting".split("");
 
 // Ascending diagonal: first letter lower-left, last upper-right.
-// Reference at 1.0s shows letters scattered with significant vertical spread.
+// Reference at 1.0s shows DRAMATIC vertical spread — letters scattered
+// from well below baseline to well above.
 const EXP_SCATTER_Y = [
-  38, 30, 20, 12, 4, -4, -12, -20, -28, -34, -40, -45, -50,
+  55, 42, 28, 16, 5, -6, -18, -30, -42, -52, -60, -68, -76,
 ];
 const EXP_SCATTER_X = [
-  -20, -15, -10, -5, 0, 5, 9, 13, 16, 19, 21, 23, 25,
+  -28, -20, -14, -7, 0, 6, 12, 17, 22, 26, 29, 32, 35,
 ];
 
 // Wave amplitude for settled letters — dramatic roller-coaster displacement
