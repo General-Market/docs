@@ -15,11 +15,11 @@ import { scene02Meta } from "./Scene02";
 const XFADE = 12;
 
 /**
- * S03→S04 overlap: 30 frames where both scenes render.
- * S04 draws on top. S03's phone fades out, S04's phone is already visible.
- * No crossfade opacity — each scene handles its own fade internally.
+ * S03→S04: hard cut, zero overlap.
+ * The same phone persists across the boundary — any overlap
+ * or crossfade ghosts two phones. Clean cut preserves continuity.
  */
-const S03_S04_OVERLAP = 30;
+const S03_S04_OVERLAP = 0;
 
 /* Scene durations */
 const S01_DUR = 259;

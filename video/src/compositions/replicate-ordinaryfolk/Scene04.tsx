@@ -107,7 +107,9 @@ interface AnimState {
 
 function createDefaultState(): AnimState {
   return {
-    phoneX: 200, phoneY: 120, phoneRotation: 6, phoneOpacity: 1, phoneScale: 0.88,
+    /* Phone starts centered and still — matching Scene03's resting phone.
+       Hard cut: screen content changes, phone frame stays put. */
+    phoneX: 0, phoneY: 0, phoneRotation: 0, phoneOpacity: 1, phoneScale: 0.82,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
     geminiOpacity: 0, geminiY: 300, geminiScale: 1.0, geminiPanX: 0, geminiPanY: 0,
@@ -129,20 +131,11 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const sec = (f: number) => f / fps;
     const t = gsap.timeline({ paused: true });
 
-    /* ═══ Phase 1: Phone entrance — hard cut (opacity already 1), curved arc ═══ */
-    const phoneEntryTween = gsap.to({ t: 0 }, {
-      t: 1, duration: sec(20), ease: "expo.out", paused: true,
-      onUpdate() {
-        const progress = this.progress();
-        s.phoneX = quadBezier(progress, 200, 40, 0);
-        s.phoneY = quadBezier(progress, 120, -30, 0);
-      },
-    });
-    t.add(phoneEntryTween, 0);
-    t.to(s, { phoneRotation: 0, duration: sec(20), ease: "expo.out" }, 0);
+    /* ═══ Phase 1: Phone already centered (hard cut from Scene03).
+       No entrance arc — just gentle scale breathing. ═══ */
 
-    /* Phone scale — breathing + zoom during photo expand */
-    t.to(s, { phoneScale: 0.96, duration: sec(40), ease: "sine.inOut" }, 0);
+    /* Phone scale — breathing from 0.82 up, then zoom during photo expand */
+    t.to(s, { phoneScale: 0.88, duration: sec(40), ease: "sine.inOut" }, 0);
     t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
     /* Camera push during photo expand — zoom in */
     t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
@@ -195,15 +188,13 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { introOpacity: 1, duration: sec(6), ease: "power2.out" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introScale: 1.0, duration: sec(20), ease: "elastic.out(1, 0.6)" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introClipRight: 0, duration: sec(21), ease: "expo.out" }, sec(PHASE.INTRODUCING.start));
-    /* Intro fades out as Gemini rises — overlap transition like reference */
-    t.to(s, { introOpacity: 0, duration: sec(10), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 8));
+    /* Intro fades out fully BEFORE Gemini appears — no overlap */
+    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.INTRODUCING.start + 30));
 
     /* ═══ Gemini Desktop Browser UI ═══ */
-    /* Browser starts rising from bottom DURING Introducing — visible overlap */
-    const gemRiseStart = sec(PHASE.GEMINI_UI.start - 10);
     const gemStart = sec(PHASE.GEMINI_UI.start);
-    t.to(s, { geminiOpacity: 1, duration: sec(8), ease: "power2.out" }, gemRiseStart);
-    t.to(s, { geminiY: 0, duration: sec(22), ease: "expo.out" }, gemRiseStart);
+    t.to(s, { geminiOpacity: 1, duration: sec(8), ease: "power2.out" }, gemStart);
+    t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemStart);
     /* Start at full view, then zoom toward top-left corner for dropdown focus */
     t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);
     t.to(s, { geminiPanX: -200, duration: sec(46), ease: "power1.inOut" }, gemStart);
@@ -214,7 +205,7 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { geminiRow2: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 18));
     t.to(s, { geminiCheckmark: 1, duration: sec(6), ease: "back.out(2)" }, sec(PHASE.GEMINI_UI.start + 16));
     /* Glow rotation */
-    t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemRiseStart);
+    t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
 
     /* ═══ Dark ending ═══ */
     t.to(s, { fadeToBlack: 0.97, duration: sec(13), ease: "power3.in" }, sec(326));
@@ -901,10 +892,10 @@ export const Scene04: React.FC = () => {
   const showChat = frame >= PHASE.DOG_PHOTO.end && frame < PHASE.PHOTO_EXPAND.start;
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
   const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
-  const showGeminiUI = frame >= PHASE.GEMINI_UI.start - 10;
+  const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
   const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
   const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
-  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 10;
+  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start;
 
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });

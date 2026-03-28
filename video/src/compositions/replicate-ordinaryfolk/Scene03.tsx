@@ -556,7 +556,8 @@ const SegPhoneGoodMorning: React.FC = () => {
   const {fps, durationInFrames} = useVideoConfig();
   const pW = organicWobble("ph12", frame, 2, 1.5, 0.018);
   const camT = frame>durationInFrames*0.5 ? interpolate(frame, [durationInFrames*0.5,durationInFrames*0.6], [0,1], {extrapolateRight:"clamp"}) : 0;
-  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* No fade-out: hard cut to Scene04 preserves phone continuity */
+  const exitOp = 1;
   const eP = interpolate(frame, [0,fps], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
   const pX = cubicBez(eP, 250, 200, 50, 0);
   const pY = cubicBez(eP, 400, 280, 30, 0);

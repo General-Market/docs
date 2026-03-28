@@ -254,7 +254,7 @@ const GlassDonutScene: React.FC<{ progress: number; frame: number }> = ({ progre
       <directionalLight position={[4, 4, 5]} intensity={2.2} color="#e0e8ff" />
       <directionalLight position={[-3, 1, 3]} intensity={0.8} color="#c4b8ff" />
       <pointLight position={[0, 0, 3]} intensity={0.6} color="#ffd0e0" />
-      <group rotation={[0.4, rot, 0.1]} scale={progress * 1.0}>
+      <group rotation={[0.4, rot, 0.1]} scale={progress * 1.25}>
         {segments.map((seg, i) => (
           <mesh
             key={i}
@@ -264,9 +264,9 @@ const GlassDonutScene: React.FC<{ progress: number; frame: number }> = ({ progre
           >
             <meshPhysicalMaterial
               {...GLASS_MAT_PROPS}
-              opacity={0.52}
+              opacity={0.7}
               color={colors[i]}
-              emissive="#8878b0"
+              emissive="#7868a0"
               specularColor={new THREE.Color("#e0d0ff")}
             />
           </mesh>
@@ -292,13 +292,13 @@ const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progr
       <mesh
         position={[0, wobble1, 0]}
         rotation={[0.3 + rot * 0.2, rot, 0]}
-        scale={progress * 1.1}
+        scale={progress * 1.4}
       >
         <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          color="#d0c8e8"
-          emissive="#9080c0"
+          color="#b8a8d8"
+          emissive="#8070b0"
           specularColor={new THREE.Color("#ffe0d0")}
         />
       </mesh>
@@ -306,14 +306,14 @@ const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progr
       <mesh
         position={[-0.6, -0.5 + wobble2, 0.3]}
         rotation={[0.2, rot * 0.8 + 1, 0.1]}
-        scale={progress * 0.7}
+        scale={progress * 0.95}
       >
         <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          opacity={0.48}
-          color="#b8b0d8"
-          emissive="#7070a0"
+          opacity={0.7}
+          color="#a8a0c8"
+          emissive="#6868a0"
           specularColor={new THREE.Color("#d0e0ff")}
         />
       </mesh>
@@ -321,14 +321,14 @@ const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progr
       <mesh
         position={[0.5, -0.3, -0.2]}
         rotation={[-0.2, rot * 1.2, 0.3]}
-        scale={progress * 0.5}
+        scale={progress * 0.7}
       >
         <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          opacity={0.45}
-          color="#c0b8e0"
-          emissive="#8070b0"
+          opacity={0.65}
+          color="#b0a8d0"
+          emissive="#7868a8"
           specularColor={new THREE.Color("#e0d0ff")}
         />
       </mesh>
@@ -515,9 +515,9 @@ const GlassOneTextScene: React.FC<{ progress: number; frame: number }> = ({ prog
   const glassTextMat = (
     <meshPhysicalMaterial
       {...GLASS_MAT_PROPS}
-      opacity={0.5}
-      color="#c8c0e8"
-      emissive="#9088c0"
+      opacity={0.75}
+      color="#b0a8d0"
+      emissive="#8078b0"
       specularColor={new THREE.Color("#ffd0f0")}
     />
   );
@@ -529,7 +529,7 @@ const GlassOneTextScene: React.FC<{ progress: number; frame: number }> = ({ prog
       <directionalLight position={[5, 5, 5]} intensity={2.5} color="#e0e8ff" />
       <directionalLight position={[-4, 3, 4]} intensity={1.0} color="#d4b8ff" />
       <pointLight position={[0, 0, 3]} intensity={0.8} color="#ffd0e0" />
-      <group scale={progress * 1.05} rotation={[0, rot, 0]}>
+      <group scale={progress * 1.25} rotation={[0, rot, 0]}>
         <mesh geometry={oGeo} position={[-1.6, 0.15, 0]}>
           {glassTextMat}
         </mesh>

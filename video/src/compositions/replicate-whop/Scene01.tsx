@@ -702,19 +702,19 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
   void _cardR;
   const walletFrame = frame - WALLET_START;
 
-  // Progressive zoom into the buttons/bar area (ref zooms in frames 165-205, shifted -10)
-  const zoomStart = 165;
-  const zoomEnd = 205;
+  // Progressive zoom into the buttons/bar area (ref zooms in frames 168-200)
+  const zoomStart = 168;
+  const zoomEnd = 200;
   const zoomProgress = easeInOut(clamp01((frame - zoomStart) / (zoomEnd - zoomStart)));
-  // Zoom to show buttons + balance bar + $ amounts (ref f200)
-  // Reference shows buttons centered, balance bar below, $ values visible
-  const zoomScale = 1 + zoomProgress * 0.85; // zoom from 1x to 1.85x — ref shows buttons+bar
-  // Pan to center on buttons area (right side of card, upper third)
-  const panX = Math.round(zoomProgress * 180);
-  const panY = Math.round(zoomProgress * -250);
+  // Zoom to show buttons + balance bar + $ amounts (ref f200 ~ 2x zoom)
+  const zoomScale = 1 + zoomProgress * 0.95; // zoom from 1x to 1.95x
+  // transformOrigin is "center 25%". Buttons are at x~2400 in card space.
+  // translate happens in scaled space: need to center viewport on buttons+bar area
+  const panX = Math.round(zoomProgress * -200); // shift to center buttons
+  const panY = Math.round(zoomProgress * 30);   // slight down to show bar below buttons
 
-  // Cursor animation: appears at frame 158, moves toward "Move" button (shifted -10)
-  const cursorStart = 158;
+  // Cursor animation: appears at frame 162, moves toward "Move" button
+  const cursorStart = 162;
   const cursorEnd = 195;
   const cursorProgress = easeInOut(clamp01((frame - cursorStart) / (cursorEnd - cursorStart)));
   const cursorOpacity = interpolate(frame, [cursorStart, cursorStart + 6, 210, 217], [0, 1, 1, 0], {
@@ -722,11 +722,11 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
     extrapolateRight: "clamp",
   });
   // Cursor moves from lower-right toward the "Move" button
-  // Reference f200: cursor sitting right on Move button, upper-right area
-  const cursorX = Math.round(interpolate(cursorProgress, [0, 1], [3000, 2580], {
+  // At 4K, Move button is at roughly x=2400, y=180 (in card coords + padding)
+  const cursorX = Math.round(interpolate(cursorProgress, [0, 1], [2800, 2460], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   }));
-  const cursorY = Math.round(interpolate(cursorProgress, [0, 1], [1500, 620], {
+  const cursorY = Math.round(interpolate(cursorProgress, [0, 1], [1200, 350], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   }));
 
