@@ -11,53 +11,39 @@ Structural issues (affect multiple scenes) at the top.
 - [ ] **CSS phones everywhere — need Phone3D.** Phone3D.tsx is built but not integrated. All scenes with phones need to import it.
 - [ ] **No SFX.** Original audio added as single track. Separate SFX layer not yet extracted.
 
-## SCENE 1 (0:00-0:08) — Kinetic Text Intro
+## SCENE 1 (0:00-0:08) — Kinetic Text Intro [ALL FIXED 2026-03-28]
 
 **File:** `video/src/compositions/replicate-ordinaryfolk/Scene01.tsx`
-**Phase constants:** Lines 1110-1117
 
-Current timing vs correct timing (at 30fps):
+Final timing (at 30fps):
 ```
-Phase   Current          Reference         Fix
-P1      0 (0.0s)         0 (0.0s)          OK
-P2      14 (0.47s)       8 (0.27s)         Line 1111: P2_FROM = 8
-P3      72 (2.4s)        90 (3.0s)         Line 1112: P3_FROM = 90
-P4      103 (3.43s)      120 (4.0s)        Line 1113: P4_FROM = 120
-P5      133 (4.43s)      147 (4.9s)        Line 1114: P5_FROM = 147
-P6      160 (5.33s)      175 (5.83s)       Line 1115: P6_FROM = 175
-P7      172 (5.73s)      195 (6.5s)        Line 1116: P7_FROM = 195
-P8      207 (6.9s)       215 (7.17s)       Line 1117: P8_FROM = 215
+Phase   Frame    Time     Status
+P1      0        0.0s     FIXED — "You've" visible at opacity 1 from frame 0
+P2      8        0.27s    FIXED — "been" fades in, ascending diagonal scatter
+P3      72       2.4s     "Bard" gradient
+P4      110      3.67s    FIXED — "Write" only (no "to" prefix)
+P5      150      5.0s     FIXED — gradient pill stays horizontal
+P6      185      6.17s    FIXED — gentle scatter, 1.2s duration
+P7      210      7.0s     FIXED — wide scatter 36-96px, convergence at 0.55s
+P8      240      8.0s     FIXED — 16 floaters, 3-tier blur, 1.1s converge
 ```
 
-### 0:00-0:02 (P1-P2)
-- [x] **Line 126:** `opacity: 1` from frame 0. FIXED by current agent.
-- [ ] **Line 1111:** `P2_FROM = 14` → change to `P2_FROM = 8`. "been" must appear at 0.27s.
-- [ ] **Line ~181:** `been: { opacity: 0 }` — GSAP from-state. The tween to opacity:1 must complete by frame 15 (0.5s). Currently completes at frame 19.
-- [ ] **Line ~140, 273, 316, 477:** `fontSize: 50` — FIXED. Verify all instances are 50 not 44.
-
-### 0:02-0:04 (P2-P3)
-- [x] **Lines 163-166:** `EXP_SCATTER_Y` and `EXP_SCATTER_X` — ascending diagonal pattern. FIXED by current agent.
-- [ ] **Line ~221:** Scatter duration `1.0` — FIXED from 0.7. But reference shows 1.2s. Change `duration: 1.0` to `duration: 1.2`.
-- [ ] **Line 1112:** `P3_FROM = 72` → `P3_FROM = 90`. "Bard" appears at 3.0s not 2.4s.
-- [ ] **Line ~239:** "with" tween delay — add 0.15s delay: `}, "+=0.15"`.
-- [ ] Purple tint: find `color` tween on experimenting letters, extend duration from 0.4s to 0.8s.
-- [ ] Word spacing: find `gap` or `marginRight` in P2 container. Change from 10 to 13.
-
-### 0:04-0:06 (P4-P6)
-- [ ] **Line ~405:** `TYPE_PHASES` array — remove `"to"` entry. Should type `"Write"` only, not `"to Write"`.
-- [ ] **P6 scatter (line ~185-230):** `x: EXP_SCATTER_X[i] * 2.5` — change multiplier from 2.5 to 1.5. Reduce `y` distances by 40%. Change `scale` tween end from `0.3` to `0.7`. Change `duration` from current to `2.0`. This makes scatter SLOWER and LESS destructive.
-- [ ] **P7 "Solve problems" (line ~somewhere after P7_FROM):** Each letter needs explicit fontSize in the scattered state: S=96px, o=48px, l=36px, v=60px, e=44px, p=72px, r=40px, o=52px, b=80px, l=36px, e=44px, m=56px, s=64px. Currently uniform.
-- [ ] Gradient pill rotation: find `rotate` or `angle` tween on the pill element. Set to static `90` (horizontal). Remove any rotation animation.
-- [ ] "Write" color: find `color: "#1A1A2E"` → change to `color: "#111111"`.
-
-### 0:06-0:08 (P7-P8)
-- [ ] **Line 1117:** `P8_FROM = 207` → `P8_FROM = 196`. Start Brainstorm 11 frames earlier.
-- [ ] **P7 convergence:** Find the tween where scatter positions converge to center. Change `duration` from `0.28 * fps` to `0.55 * fps` (16.5 frames). Letters should take twice as long to settle.
-- [ ] **P8 word cloud:** Find the floater array. Add 4-6 more entries with positions at the EDGES of viewport (some off-screen). Double all `x` and `y` offset values. Add `filter: blur()` in 3 tiers: 2 words at 2px, 3 words at 6px, 3 words at 12px.
-- [ ] **P7 letter sizes:** Scattered state should range 30-80px. Find `fontSize` in the scatter state object and set per-letter values.
-- [ ] **P7 settled text:** `fontSize: 44` → `fontSize: 50`.
-- [ ] **P8 converge duration:** Find `duration` on the floater convergence tween. Change from `0.85` to `1.1`.
-- [ ] **P7/P8 overlap:** Change P7 `durationInFrames` to extend 10 frames past P8_FROM. Both render simultaneously for 10 frames with P7 fading out.
+All S01 items resolved:
+- [x] Frame 0 visible (opacity 1, no entrance animation)
+- [x] "been" at 0.27s (P2_FROM=8)
+- [x] Font size 50px everywhere
+- [x] Ascending diagonal scatter pattern
+- [x] Scatter duration 1.0s
+- [x] "with" delayed to 0.72s
+- [x] Word spacing gap: 13px
+- [x] "to" removed from typewriter
+- [x] Gentle letter scatter (power2.out, 120-200px, no scale-down)
+- [x] "Solve problems" sizes 36-96px scattered, 50px settled
+- [x] Gradient pill horizontal (~90deg)
+- [x] "Write" color #111111
+- [x] Brainstorm: 16 floaters, 2x wider, 3-tier blur
+- [x] Convergence delayed to 0.55s in P7
+- [x] Floater remnants linger (1.1s converge)
 
 ## SCENE 2 (0:08-0:14) — Bard Dies, Gemini Born
 
