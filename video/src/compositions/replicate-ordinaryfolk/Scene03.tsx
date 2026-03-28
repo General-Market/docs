@@ -531,8 +531,8 @@ const SegAndMoreInner: React.FC = () => {
   const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*0.8], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
   const oCount = Math.floor(interpolate(stretch, [0,0.7], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
   const ballProgress = stretch > 0.1 ? interpolate(stretch, [0.1,0.4], [0,1], {extrapolateRight:"clamp"}) : 0;
-  /* Edge-to-edge scroll — chain extends past viewport, some o's off-screen */
-  const scrollX = interpolate(stretch, [0.05,1], [0,-480], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
+  /* Edge-to-edge scroll — gentle drift left so m stays visible longer */
+  const scrollX = interpolate(stretch, [0.05,1], [0,-300], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
@@ -571,7 +571,7 @@ const SegAndMoreInner: React.FC = () => {
     <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:"radial-gradient(ellipse at 55% 40%, rgba(232,69,139,0.035) 0%, rgba(196,181,253,0.025) 35%, transparent 60%)"}} />
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
-        <span style={{color:DARK,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>And</span>
+        <span style={{color:DARK,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>And</span>
         {stretch<=0.02 ? <span style={{color:BLUE,fontSize:44,opacity:mOp}}>more</span> : <>
           <span style={{color:BLUE,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
           {renderBalls()}

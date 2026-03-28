@@ -859,45 +859,18 @@ const PhaseSolveProblems: React.FC = () => {
     (tl, p) => {
       SOLVE_LETTERS.forEach((ch, i) => {
         if (ch === "\u00A0") return;
-        const endX = SOLVE_FINAL_X[i];
-        const endY = SOLVE_FINAL_Y;
-
-        // Snake movement: axis-locked segments (X→pause→Y→pause→X)
-        // Stagger: ~3-frame offset per letter (0.1s / FPS)
-        const stagger = i * 0.012;
-
-        // Segment 1: Move X only (horizontal swoosh)
+        // All letters converge simultaneously with tiny stagger
+        // Total time: 0.15s delay + 0.30s duration = settles by 0.45s
         tl.to(
           p[`l${i}`],
           {
-            x: endX,
-            duration: 0.15,
-            ease: "power2.out",
-          },
-          stagger,
-        );
-
-        // Segment 2: Move Y only (vertical swoosh) + size converge
-        tl.to(
-          p[`l${i}`],
-          {
-            y: endY,
+            x: SOLVE_FINAL_X[i],
+            y: SOLVE_FINAL_Y,
             size: SOLVE_FINAL_SIZE,
-            duration: 0.15,
+            duration: 0.30,
             ease: "power2.out",
           },
-          stagger + 0.21,
-        );
-
-        // Segment 3: Fine X snap to exact final position
-        tl.to(
-          p[`l${i}`],
-          {
-            x: endX,
-            duration: 0.08,
-            ease: "power1.out",
-          },
-          stagger + 0.40,
+          0.15 + i * 0.005,
         );
       });
     },
