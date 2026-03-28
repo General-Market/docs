@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Multi-bot runner — hosts N vision bots in a single process using threads.
+Multi-bot runner — hosts N vision bots in separate processes.
 
-Replaces 10 separate Docker containers with 1 container running 10 threads.
-Each thread runs its own bot with a unique private key, strategy, and PNL file.
+Replaces 10 separate Docker containers with 1 container running 10 processes.
+Each process runs its own bot with a unique private key, strategy, and PNL file.
+Processes share nothing — no GIL, no shared web3 instances, no logging deadlocks.
 
 Environment:
   BOT_COUNT          — number of bots to run (default: 10)
@@ -17,27 +18,39 @@ Falls back to SWARM_BOT_{i}_KEY env vars if BOT_KEYS is not set.
 """
 
 import logging
+import multiprocessing
 import os
 import sys
-import threading
 import time
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [%(threadName)s] %(message)s",
+    format="%(asctime)s [%(levelname)s] [swarm-main] %(message)s",
     datefmt="%H:%M:%S",
 )
 
 
-def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, pnl_file: str):
-    """Run a single bot in this thread. Imports are done here to avoid shared state."""
-    log = logging.getLogger(f"swarm-{bot_id}")
-    log = logging.LoggerAdapter(log, {"bot_id": str(bot_id)})
-
-    # Thread-safe: set BOT_PRIVATE_KEY BEFORE any import that reads it (strategy seeding).
-    # os.environ is process-global, but the 3s stagger + immediate strategy init makes
-    # this safe in practice. We set it here so RandomStrategy/Biased can seed per-bot.
+def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, pnl_file: str, base_env: dict):
+    """Run a single bot in its own process. Each process gets its own Python
+    interpreter, web3 instance, HTTP pool, and WebSocket connection."""
+    # With 'spawn' start method the child is a fresh interpreter.
+    # Populate its environment from the parent snapshot + per-bot key.
+    os.environ.clear()
+    os.environ.update(base_env)
     os.environ["BOT_PRIVATE_KEY"] = private_key
+
+    # Reconfigure logging for this child process.
+    logging.basicConfig(
+        level=logging.INFO,
+        format=f"%(asctime)s [%(levelname)s] [bot-{bot_id}] %(message)s",
+        datefmt="%H:%M:%S",
+        force=True,
+    )
+    log = logging.getLogger(f"swarm-{bot_id}")
+
+    # print() bypasses logging buffers — guaranteed visible in docker logs
+    # even if the process dies before logging flushes.
+    print(f"[bot-{bot_id}] process started (pid={os.getpid()})", flush=True)
 
     try:
         from framework.core import RiskCheck, encode_bitmap, hash_bitmap, load_config, load_strategy
@@ -45,12 +58,12 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
         from framework.feed import VisionFeed
         from framework.tracker import Tracker
 
+        print(f"[bot-{bot_id}] imports done", flush=True)
+
         cfg = load_config()
         cfg["strategy"] = strategy
         cfg["stake"] = stake
 
-        # Strategy must be loaded IMMEDIATELY after setting BOT_PRIVATE_KEY
-        # (before next thread overwrites it). The 3s stagger makes this safe.
         strat = load_strategy(strategy)
 
         deploy = load_deployment()
@@ -79,7 +92,7 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
             http_url=cfg["data_node"],
         )
 
-        log.info("Started: strategy=%s, stake=%.2f, addr=%s", strategy, stake, executor.bot_addr)
+        log.info("Running: strategy=%s, stake=%.2f, addr=%s", strategy, stake, executor.bot_addr)
 
         try:
             executor.register_bot()
@@ -87,6 +100,7 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
             log.warning("Registration failed: %s", e)
 
         from bot import run_cycle
+        print(f"[bot-{bot_id}] entering main loop", flush=True)
         while True:
             try:
                 run_cycle(cfg, executor, tracker, strat, risk, oracle_urls_fn, feed)
@@ -95,9 +109,23 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
             time.sleep(cfg["poll_interval"])
 
     except Exception as e:
+        print(f"[bot-{bot_id}] FATAL: {e}", flush=True)
         log.error("Bot %d fatal: %s", bot_id, e, exc_info=True)
     except BaseException as e:
+        print(f"[bot-{bot_id}] BASE_EXCEPTION: {e}", flush=True)
         log.error("Bot %d BaseException: %s", bot_id, e, exc_info=True)
+
+
+def _spawn(bot_id, key, strategy, stake, pnl_file, base_env):
+    """Create and start a Process for one bot."""
+    p = multiprocessing.Process(
+        target=run_single_bot,
+        args=(bot_id, key, strategy, stake, pnl_file, base_env),
+        daemon=False,
+        name=f"bot-{bot_id}",
+    )
+    p.start()
+    return p
 
 
 def main():
@@ -128,46 +156,68 @@ def main():
 
     os.makedirs(pnl_dir, exist_ok=True)
 
-    logging.getLogger().info("Starting %d bots in single process", bot_count)
+    # Snapshot environment BEFORE spawning — each child gets a clean copy.
+    # Remove BOT_PRIVATE_KEY so children don't inherit a stale value.
+    base_env = dict(os.environ)
+    base_env.pop("BOT_PRIVATE_KEY", None)
 
-    threads = []
+    log = logging.getLogger("swarm")
+    log.info("Starting %d bots as separate processes", bot_count)
+
+    # Each entry: (bot_id, key, strategy, stake, pnl_file, process)
+    children = []
     for i in range(bot_count):
         if not keys[i]:
-            logging.getLogger().warning("No key for bot %d, skipping", i)
+            log.warning("No key for bot %d, skipping", i)
             continue
 
         pnl_file = os.path.join(pnl_dir, f"pnl-{i}.json")
-        t = threading.Thread(
-            target=run_single_bot,
-            args=(i, keys[i], strategies[i], stakes[i], pnl_file),
-            daemon=False,
-            name=f"bot-{i}",
-        )
-        threads.append(t)
-        t.start()
-        logging.getLogger().info("Bot %d started (strategy=%s)", i, strategies[i])
+        p = _spawn(i, keys[i], strategies[i], stakes[i], pnl_file, base_env)
+        children.append((i, keys[i], strategies[i], stakes[i], pnl_file, p))
+        log.info("Bot %d started (pid=%d, strategy=%s)", i, p.pid, strategies[i])
 
         if i < bot_count - 1:
             time.sleep(stagger)
 
-    logging.getLogger().info("All %d bots running", len(threads))
+    log.info("All %d bots launched", len(children))
     sys.stdout.flush()
     sys.stderr.flush()
 
-    # Wait forever (threads are daemons, so main exit kills them)
+    # Monitor loop: restart dead children.
     try:
         while True:
-            alive = sum(1 for t in threads if t.is_alive())
-            logging.getLogger().info("Alive check: %d/%d threads", alive, len(threads))
-            sys.stdout.flush()
-            if alive == 0:
-                logging.getLogger().error("All bots died — exiting")
-                sys.stdout.flush()
-                sys.exit(1)
             time.sleep(30)
+            alive = 0
+            for idx, (bot_id, key, strategy, stake, pnl_file, proc) in enumerate(children):
+                if proc.is_alive():
+                    alive += 1
+                else:
+                    exit_code = proc.exitcode
+                    log.warning("Bot %d (pid=%d) died with exit code %s — restarting", bot_id, proc.pid, exit_code)
+                    new_proc = _spawn(bot_id, key, strategy, stake, pnl_file, base_env)
+                    children[idx] = (bot_id, key, strategy, stake, pnl_file, new_proc)
+                    log.info("Bot %d restarted (new pid=%d)", bot_id, new_proc.pid)
+                    alive += 1
+
+            log.info("Alive check: %d/%d processes", alive, len(children))
+            sys.stdout.flush()
+
+            if len(children) == 0:
+                log.error("No bots configured — exiting")
+                sys.exit(1)
     except KeyboardInterrupt:
-        logging.getLogger().info("Shutting down...")
+        log.info("Shutting down — terminating children")
+        for _, _, _, _, _, proc in children:
+            if proc.is_alive():
+                proc.terminate()
+        for _, _, _, _, _, proc in children:
+            proc.join(timeout=5)
+        log.info("All children stopped")
 
 
 if __name__ == "__main__":
+    # 'spawn' creates a fresh Python interpreter per child.
+    # 'fork' inherits file descriptors, locks, and urllib3 connection pools —
+    # exactly the shared state that caused the silent threading deadlock.
+    multiprocessing.set_start_method("spawn")
     main()
