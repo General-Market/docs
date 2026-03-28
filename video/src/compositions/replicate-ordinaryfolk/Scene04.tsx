@@ -146,13 +146,15 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.add(phoneEntryTween, 0);
     t.to(s, { phoneRotation: 0, duration: sec(20), ease: "expo.out" }, 0);
 
-    /* Phone scale breathing */
-    t.to(s, { phoneScale: 0.95, duration: sec(40), ease: "sine.inOut" }, 0);
-    t.to(s, { phoneScale: 1.12, duration: sec(30), ease: "power2.inOut" }, sec(40));
-    t.to(s, { phoneScale: 0.92, duration: sec(30), ease: "sine.inOut" }, sec(80));
-
-    /* Emoji burst: shrink phone scale */
-    t.to(s, { phoneScale: 0.88, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
+    /* Phone scale — breathing + zoom during photo expand */
+    t.to(s, { phoneScale: 0.96, duration: sec(40), ease: "sine.inOut" }, 0);
+    t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
+    /* Camera push during photo expand — zoom in */
+    t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
+    /* Pull back for AI response */
+    t.to(s, { phoneScale: 0.98, duration: sec(30), ease: "power2.inOut" }, sec(PHASE.AI_RESPONSE.start));
+    /* Emoji burst: slight shrink from energy release */
+    t.to(s, { phoneScale: 0.90, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
     const exitStart = sec(PHASE.TRANSITION_TEXT.start);

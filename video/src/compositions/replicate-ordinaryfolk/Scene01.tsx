@@ -135,7 +135,7 @@ const PhaseYouve: React.FC = () => {
         left: `${0.52 * W}px`,
         transform: `translate(calc(-50% + ${s.main.x}px), -50%)`,
         fontFamily,
-        fontSize: 30,
+        fontSize: 44,
         fontWeight: 400,
         color: TEXT_DARK,
         whiteSpace: "nowrap",
@@ -233,7 +233,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 44,
           opacity: s.youve.opacity,
           transform: `translateX(${s.youve.x}px)`,
         }}
@@ -243,7 +243,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 44,
           opacity: s.been.opacity,
           transform: `translateX(${s.been.x}px)`,
         }}
@@ -275,7 +275,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 44,
           opacity: s.with_.opacity,
           transform: `scale(${s.with_.scale})`,
         }}
@@ -291,7 +291,19 @@ const PhaseExperimenting: React.FC = () => {
 // Tracking: cx=51%, cy=50%, font ~58px
 // Gradient coral->purple, rotating angle
 // x:8->0, opacity:0->1, scale 0.88->1, dur 0.48s, power2.out
+//
+// NOTE: WebkitBackgroundClip:"text" fails in Remotion headless — renders as
+// a solid gradient rectangle. Per-letter color interpolation instead.
 // ===========================================================================
+const BARD_CHARS = "Bard".split("");
+// Gradient stops: coral -> magenta -> purple -> blue (4 letters, 4 stops)
+const BARD_GRAD: Array<[number, number, number]> = [
+  [0xe0, 0x48, 0x68], // B — coral
+  [0xd0, 0x46, 0xa0], // a — magenta
+  [0x8b, 0x5c, 0xf6], // r — purple
+  [0x5b, 0x78, 0xe8], // d — blue
+];
+
 const PhaseBard: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -306,10 +318,8 @@ const PhaseBard: React.FC = () => {
     { main: { x: 8, opacity: 0, scale: 0.88 } },
   );
 
-  const baseAngle = interpolate(frame, [0, 30], [100, 210], clamp);
-  const noiseAngle = noise2D("bard-angle", frame * 0.015, 0) * 8;
-  const gradAngle = baseAngle + noiseAngle;
-  const gradient = `linear-gradient(${gradAngle}deg, #E04868, #D046A0, #8B5CF6, #5B78E8)`;
+  // Slow hue rotation over time
+  const shift = interpolate(frame, [0, 30], [0, 0.25], clamp);
 
   return (
     <div
@@ -319,18 +329,27 @@ const PhaseBard: React.FC = () => {
         left: `${0.51 * W}px`,
         transform: `translate(calc(-50% + ${s.main.x}px), -50%) scale(${s.main.scale})`,
         fontFamily,
-        fontSize: 58,
+        fontSize: 72,
         fontWeight: 400,
         letterSpacing: "-0.5px",
         opacity: s.main.opacity,
-        background: gradient,
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
         whiteSpace: "nowrap",
+        display: "inline-flex",
       }}
     >
-      Bard
+      {BARD_CHARS.map((ch, i) => {
+        // Shift each letter's color toward its next-neighbour stop
+        const cur = BARD_GRAD[i];
+        const next = BARD_GRAD[Math.min(i + 1, BARD_GRAD.length - 1)];
+        const r = Math.round(cur[0] + (next[0] - cur[0]) * shift);
+        const g = Math.round(cur[1] + (next[1] - cur[1]) * shift);
+        const b = Math.round(cur[2] + (next[2] - cur[2]) * shift);
+        return (
+          <span key={i} style={{ color: `rgb(${r}, ${g}, ${b})` }}>
+            {ch}
+          </span>
+        );
+      })}
     </div>
   );
 };
@@ -339,8 +358,18 @@ const PhaseBard: React.FC = () => {
 // Phase 4: Typewriter "Write" + cursor
 // Tracking: cx=49%, cy=49%, font ~41px
 // Letters revealed one-by-one. Gradient purple text. Cursor blinks then fades.
+//
+// NOTE: background-clip:text fails in headless — use per-letter color.
 // ===========================================================================
 const WRITE_CHARS = "Write".split("");
+// Gradient: purple -> magenta -> coral across 5 letters
+const WRITE_GRAD: Array<[number, number, number]> = [
+  [0x70, 0x48, 0xc0], // W — deep purple
+  [0x88, 0x44, 0xb0], // r — purple-magenta
+  [0xa0, 0x40, 0x90], // i — magenta
+  [0xb8, 0x44, 0x80], // t — magenta-coral
+  [0xc8, 0x40, 0x70], // e — coral
+];
 
 const PhaseTypewriter: React.FC = () => {
   const frame = useCurrentFrame();
@@ -373,14 +402,10 @@ const PhaseTypewriter: React.FC = () => {
     proxyInit,
   );
 
-  const gradAngle = interpolate(frame, [0, 36], [140, 240], clamp);
-  const typeGrad = `linear-gradient(${gradAngle}deg, #7048C0, #A04090, #C84070)`;
-
   let visibleCount = 0;
   for (let i = 0; i < WRITE_CHARS.length; i++) {
     if (s[`c${i}`].visible > 0.5) visibleCount = i + 1;
   }
-  const partial = "Write".slice(0, visibleCount);
 
   const isTyping = visibleCount > 0 && visibleCount < WRITE_CHARS.length;
   const isDone = visibleCount >= WRITE_CHARS.length;
@@ -401,7 +426,7 @@ const PhaseTypewriter: React.FC = () => {
         left: `${0.49 * W}px`,
         transform: "translate(-50%, -50%)",
         fontFamily,
-        fontSize: 41,
+        fontSize: 44,
         fontWeight: 400,
         color: TEXT_DARK,
         whiteSpace: "nowrap",
@@ -409,23 +434,19 @@ const PhaseTypewriter: React.FC = () => {
         alignItems: "center",
       }}
     >
-      {partial.length > 0 && (
-        <span
-          style={{
-            background: typeGrad,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          {partial}
-        </span>
-      )}
+      {WRITE_CHARS.slice(0, visibleCount).map((ch, i) => {
+        const c = WRITE_GRAD[i];
+        return (
+          <span key={i} style={{ color: `rgb(${c[0]}, ${c[1]}, ${c[2]})` }}>
+            {ch}
+          </span>
+        );
+      })}
       <span
         style={{
           display: "inline-block",
           width: 2.5,
-          height: 41 * 0.88,
+          height: 44 * 0.88,
           backgroundColor: TEXT_DARK,
           marginLeft: 2,
           opacity: cursorOpacity,
@@ -497,7 +518,7 @@ const PhaseWriteEmails: React.FC = () => {
     >
       <span
         style={{
-          fontSize: 41,
+          fontSize: 44,
           opacity: s.write.opacity,
           transform: `translateY(${s.write.y}px)`,
         }}
@@ -518,7 +539,7 @@ const PhaseWriteEmails: React.FC = () => {
             padding: "8px 14px",
             borderRadius: 3,
             color: "#FFFFFF",
-            fontSize: 43,
+            fontSize: 44,
             fontWeight: 400,
             lineHeight: 1.15,
           }}
@@ -609,7 +630,7 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
               left: "50%",
               transform: `translate(calc(-50% + ${startXOffsets[i] + l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
               fontFamily,
-              fontSize: 41,
+              fontSize: 44,
               fontWeight: 400,
               color: TEXT_DARK,
               opacity: l.opacity,
@@ -861,23 +882,23 @@ const PhaseBrainstormIdeas: React.FC = () => {
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
-          { opacity: 0.85, duration: 0.28, ease: "power1.out" },
+          { opacity: 0.85, duration: 0.22, ease: "power1.out" },
           f.delay,
         );
       });
-      // Converge to center and fade out
-      FLOATERS.forEach((_, i) => {
+      // Converge to center and fade out — start earlier, finish faster
+      FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
-          { x: 0, y: 0, opacity: 0, duration: 0.69, ease: "power2.out" },
-          0.48,
+          { x: 0, y: 0, opacity: 0, duration: 0.52, ease: "power2.inOut" },
+          0.32 + f.delay * 0.3,
         );
       });
-      // Final centered text fades in
+      // Final centered text fades in earlier
       tl.to(
         p.final,
-        { opacity: 1, scale: 1, duration: 0.69, ease: "power2.out" },
-        0.48,
+        { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" },
+        0.38,
       );
     },
     proxyInit,
@@ -915,7 +936,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
           left: "50%",
           transform: `translate(-50%, -50%) scale(${s.final.scale})`,
           fontFamily,
-          fontSize: 40,
+          fontSize: 44,
           fontWeight: 400,
           color: TEXT_DARK,
           whiteSpace: "nowrap",

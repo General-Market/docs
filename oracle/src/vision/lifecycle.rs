@@ -562,9 +562,9 @@ impl BatchLifecycleManager {
             .and_then(|s| s.as_array())
             .ok_or("missing 'snapshots' array in data-node response")?;
 
-        // Load start prices saved at round creation
+        // Load start prices saved at round creation (keyed by on-chain batch ID)
         let start_prices_json: Option<serde_json::Value> = sqlx::query_scalar(
-            "SELECT start_prices FROM vision_batch_lifecycle WHERE batch_id = $1"
+            "SELECT start_prices FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
         )
         .bind(batch_id as i64)
         .fetch_optional(&self.pool)
@@ -1307,10 +1307,10 @@ impl BatchLifecycleManager {
         &self,
         settlement: &RoundSettlement,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // Update lifecycle state
+        // Update lifecycle state (keyed by on-chain batch ID)
         sqlx::query(
             "UPDATE vision_batch_lifecycle SET settled_at = NOW()
-             WHERE batch_id = $1",
+             WHERE on_chain_batch_id = $1",
         )
         .bind(settlement.batch_id as i64)
         .execute(&self.pool)

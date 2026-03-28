@@ -2860,7 +2860,7 @@ async fn tie_rate_history(
             GROUP BY batch_id
             HAVING COUNT(DISTINCT player) > 1
         ) sub
-        JOIN vision_batch_lifecycle vbl ON sub.batch_id = vbl.batch_id
+        JOIN vision_batch_lifecycle vbl ON sub.batch_id = vbl.on_chain_batch_id
         GROUP BY 1, 2
         ORDER BY 1
         LIMIT 5000

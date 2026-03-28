@@ -818,7 +818,7 @@ const UltraOrb: React.FC<{
 }> = ({ frame, fps, className, style }) => {
   const rotation = (frame / (fps * 10)) * 360;
   const pulseScale = 1 + 0.015 * Math.sin((frame / fps) * Math.PI * 2);
-  const orbSize = 420;
+  const orbSize = 480;
 
   return (
     <div
@@ -1148,18 +1148,61 @@ export const Scene05: React.FC = () => {
       }, f(160));
     }
 
-    // Interface backdrop (faint behind card zooms)
+    // Interface backdrop (visible behind 3D rotating cards)
     if (interfaceBackdropRef.current) {
-      t.set(interfaceBackdropRef.current, { opacity: 0 }, 0);
-      // G segment backdrop
-      t.to(interfaceBackdropRef.current, { opacity: 0.12, duration: f(10), ease: "power1.inOut" }, f(255));
-      t.to(interfaceBackdropRef.current, { opacity: 0, duration: f(10), ease: "power1.inOut" }, f(300));
-      // I segment backdrop
-      t.to(interfaceBackdropRef.current, { opacity: 0.10, duration: f(10), ease: "power1.inOut" }, f(345));
-      t.to(interfaceBackdropRef.current, { opacity: 0, duration: f(10), ease: "power1.inOut" }, f(390));
-      // K segment backdrop
-      t.to(interfaceBackdropRef.current, { opacity: 0.10, duration: f(10), ease: "power1.inOut" }, f(425));
-      t.to(interfaceBackdropRef.current, { opacity: 0, duration: f(10), ease: "power1.inOut" }, f(470));
+      t.set(interfaceBackdropRef.current, { opacity: 0, rotateX: 12, rotateY: -8 }, 0);
+      // G segment — interface tilted in 3D behind rotating card
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0.35,
+        rotateX: 8,
+        rotateY: -5,
+        duration: f(12),
+        ease: "power1.inOut",
+      }, f(255));
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0,
+        duration: f(10),
+        ease: "power1.inOut",
+      }, f(302));
+      // H segment — faint behind typewriter
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0.15,
+        rotateX: 5,
+        rotateY: 3,
+        duration: f(8),
+        ease: "power1.inOut",
+      }, f(310));
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0,
+        duration: f(8),
+        ease: "power1.inOut",
+      }, f(340));
+      // I segment — interface behind code card
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0.3,
+        rotateX: 6,
+        rotateY: 6,
+        duration: f(10),
+        ease: "power1.inOut",
+      }, f(348));
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0,
+        duration: f(10),
+        ease: "power1.inOut",
+      }, f(393));
+      // K segment — behind carousel pan
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0.25,
+        rotateX: 10,
+        rotateY: -4,
+        duration: f(10),
+        ease: "power1.inOut",
+      }, f(428));
+      t.to(interfaceBackdropRef.current, {
+        opacity: 0,
+        duration: f(8),
+        ease: "power1.inOut",
+      }, f(472));
     }
 
     // ═══ E: "Our most capable AI" (180-220) ═══
@@ -1377,6 +1420,43 @@ export const Scene05: React.FC = () => {
         duration: f(dur),
         ease: "power3.in",
       }, f(staggerFrame));
+    });
+
+    // Spiral words — appear at outer ring, converge INWARD to center
+    spiralWordsRef.current.forEach((el, i) => {
+      if (!el) return;
+      const angle = (i / SPIRAL_WORDS.length) * Math.PI * 2 - Math.PI / 2;
+      const outerR = 260;
+      const startX = Math.cos(angle) * outerR;
+      const startY = Math.sin(angle) * outerR;
+
+      t.set(el, { opacity: 0, x: startX, y: startY, scale: 1.2, rotation: (i % 2 === 0 ? -15 : 15) }, 0);
+
+      // Fade in at outer position
+      t.to(el, {
+        opacity: 1,
+        duration: f(8),
+        ease: "power1.out",
+      }, f(495 + i * 2));
+
+      // Spiral INWARD — converge to center along curved path
+      const midAngle = angle + Math.PI * 0.4;
+      const midR = outerR * 0.45;
+      t.to(el, {
+        motionPath: {
+          path: [
+            { x: startX, y: startY },
+            { x: Math.cos(midAngle) * midR, y: Math.sin(midAngle) * midR },
+            { x: 0, y: 0 },
+          ],
+          curviness: 1.8,
+        },
+        scale: 0.2,
+        rotation: 0,
+        opacity: 0,
+        duration: f(25),
+        ease: "power2.in",
+      }, f(500 + i * 2));
     });
 
     // Spiral center glow
@@ -1722,20 +1802,26 @@ export const Scene05: React.FC = () => {
         />
       </div>
 
-      {/* Interface backdrop for card zoom segments */}
+      {/* Interface backdrop — 3D perspective behind rotating cards */}
       <div
-        ref={interfaceBackdropRef}
         style={{
           position: "absolute",
-          top: "-15%",
+          top: "50%",
           left: "50%",
-          transform: "translate(-50%, 0) scale(1.1)",
-          opacity: 0,
-          filter: "blur(1px)",
+          transform: "translate(-50%, -50%)",
+          perspective: 1000,
           pointerEvents: "none",
         }}
       >
-        <GeminiInterface frame={90} fps={fps} />
+        <div
+          ref={interfaceBackdropRef}
+          style={{
+            transformStyle: "preserve-3d",
+            opacity: 0,
+          }}
+        >
+          <GeminiInterface frame={90} fps={fps} />
+        </div>
       </div>
 
       {/* E: "Our most capable AI" + decorations */}
@@ -1981,7 +2067,7 @@ export const Scene05: React.FC = () => {
         </div>
       </div>
 
-      {/* L: Capability words spiral inward */}
+      {/* L: "With access to" — readable text, then chars peel inward to orb */}
       <div
         ref={spiralContainerRef}
         style={{
@@ -2014,16 +2100,68 @@ export const Scene05: React.FC = () => {
           }}
         />
 
-        {/* Individual capability words — spiral inward */}
+        {/* Readable text — appears first, then hidden when chars take over */}
+        <div
+          ref={spiralTextRef}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            transform: "translate(-50%, -50%)",
+            fontSize: 52,
+            fontFamily: FONT,
+            fontWeight: 300,
+            color: "#fff",
+            whiteSpace: "nowrap",
+            opacity: 0,
+          }}
+        >
+          With{" "}
+          <GradientText gradient={`linear-gradient(90deg, ${PURPLE}, ${BLUE})`}>
+            access
+          </GradientText>{" "}
+          to
+        </div>
+
+        {/* Individual characters — peel inward from text positions to center */}
+        {SPIRAL_CHARS.map((ch, i) => {
+          const isAccent = i >= 5 && i <= 10;
+          return (
+            <div
+              key={`spiral-char-${i}`}
+              ref={(el) => { spiralCharsRef.current[i] = el; }}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                transform: "translate(-50%, -50%)",
+                fontSize: 52,
+                fontFamily: FONT,
+                fontWeight: 300,
+                color: isAccent ? undefined : "#fff",
+                ...(isAccent ? {
+                  background: `linear-gradient(90deg, ${PURPLE}, ${BLUE})`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text" as const,
+                } : {}),
+                whiteSpace: "nowrap",
+                opacity: 0,
+              }}
+            >
+              {ch === " " ? "\u00A0" : ch}
+            </div>
+          );
+        })}
+
+        {/* Capability words that spiral inward around the convergence */}
         {SPIRAL_WORDS.map((word, i) => {
-          // Alternate gradient directions for visual variety
           const gradients = [
             `linear-gradient(90deg, ${PURPLE}, ${PINK})`,
             `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
             `linear-gradient(90deg, ${PINK}, ${BLUE})`,
           ];
           const gradient = gradients[i % gradients.length];
-
           return (
             <div
               key={`spiral-word-${i}`}
@@ -2033,7 +2171,7 @@ export const Scene05: React.FC = () => {
                 top: 0,
                 left: 0,
                 transform: "translate(-50%, -50%)",
-                fontSize: 28 - (i % 3) * 2, // slight size variation
+                fontSize: 28 - (i % 3) * 2,
                 fontFamily: FONT,
                 fontWeight: 400,
                 background: gradient,

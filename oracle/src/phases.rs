@@ -912,163 +912,40 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             if cbo_confirmed_orders.is_empty() {
                 warn!(cycle = current_cycle, "No orders had completeBuyOrder confirmed — skipping fills to prevent unbacked ITP");
             } else {
-            match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
-                Ok(fills_result) => {
-                    info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed");
+            // Retry loop: on per-order revert, remove the offending order and re-run
+            // BLS consensus with the remaining fills. Max 3 retries to bound the cost
+            // of pathological batches where multiple orders are independently broken.
+            const MAX_FILL_RETRIES: usize = 3;
+            let mut remaining_fills = fills.clone();
+            let mut retry_count = 0usize;
 
-                    // Mint BridgedITP shares on Settlement (using each order's actual itp_id)
-                    {
-                        let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
-                        for fill in &fills {
-                            // Look up original user from order mapping (using Settlement ID)
-                            let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
-                            let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
-                                .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                            let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
-                                .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
-                            if let Some(mapping) = mapping {
-                                // shares = fill_amount * 1e18 / fill_price
-                                let shares = if fill.fill_price > ethers::types::U256::zero() {
-                                    (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
-                                } else {
-                                    fill.fill_amount
-                                };
-
-                                match protocol.run_mint_bridged_shares_phase(
-                                    current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
-                                ).await {
-                                    Ok(mint_result) => {
-                                        info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
-                                        // Only LEADER marks SharesBridged after confirmed receipt
-                                        if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                            match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
-                                                Ok(tx_hash) => {
-                                                    info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted, waiting for receipt");
-                                                    const RECEIPT_TIMEOUT_SECS: u64 = 60;
-                                                    match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
-                                                        Ok(receipt) => {
-                                                            let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
-                                                            if success {
-                                                                info!(?tx_hash, "mintBridgedShares CONFIRMED");
-                                                                let orch = orchestrator.write().await;
-                                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
-                                                            } else {
-                                                                warn!(?tx_hash, "mintBridgedShares REVERTED — order stays Batched for retry");
-                                                            }
-                                                        }
-                                                        Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout — stays Batched for retry"),
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    let err_str = format!("{}", e);
-                                                    if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
-                                                        info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
-                                                        let orch = orchestrator.write().await;
-                                                        orch.mark_orders_shares_bridged(&[settlement_id]).await;
-                                                    } else {
-                                                        warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares failed — stays Batched");
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        // Followers do NOT mark SharesBridged — they cannot know if
-                                        // the leader's on-chain tx succeeded. Marking terminal would
-                                        // prevent BLS participation in retry if leader's tx reverts.
-                                        // Memory cleanup happens on watchdog stale reset or process restart.
-                                    }
-                                    Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
-                                }
-                            } else {
-                                warn!(order_id = %fill.order_id, "No order mapping found — cannot bridge shares");
-                            }
-                        }
-                    }
-
-                    // Emit asset trades with a 15s timeout — not fire-and-forget but won't block
-                    // the buy pipeline indefinitely if BLS consensus stalls.
-                    {
-                        let p = protocol.clone();
-                        let cr = chain_reader.clone();
-                        let qt = quote_tokens.clone();
-                        let at = asset_trade_orders.clone();
-                        match tokio::time::timeout(
-                            std::time::Duration::from_secs(15),
-                            p.run_asset_trades_phase(current_cycle, &at, &cr, batch_am_leader, qt.as_ref()),
-                        ).await {
-                            Ok(Ok(at_result)) => info!(cycle = current_cycle, signer_count = at_result.signature_count, "Asset trades emitted"),
-                            Ok(Err(e)) => warn!(cycle = current_cycle, error = %e, "Asset trades emission failed"),
-                            Err(_) => warn!(cycle = current_cycle, "Asset trades emission timed out after 15s"),
-                        }
-                    }
+            loop {
+                if remaining_fills.is_empty() {
+                    warn!(cycle = current_cycle, "No fills left after evictions — nothing to confirm");
+                    break;
                 }
-                Err(e) => {
-                    let fills_err = format!("{}", e);
-                    // Determine if we should proceed to mint:
-                    // 1. Chain revert (already filled): 0x6e6e29cb / "already" / "reverted on-chain"
-                    // 2. BLS timeout: fills loop likely filled the order concurrently
-                    let is_already_filled = fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain");
-                    let is_timeout = fills_err.contains("signing timeout");
-                    let is_fill_exceeds = fills_err.contains("a1f4d58b") || fills_err.contains("FillExceedsOrder") || fills_err.contains("E023");
-                    let is_already_batched = fills_err.contains("7a5425d1") || fills_err.contains("OrderAlreadyBatched") || fills_err.contains("E021");
 
-                    if is_fill_exceeds || is_already_batched {
-                        let order_ids: Vec<String> = fills.iter().map(|f| f.order_id.to_string()).collect();
-                        warn!(
+                match protocol.run_fills_confirm_phase(current_cycle, remaining_fills.clone(), batch_am_leader).await {
+                    Ok(fills_result) => {
+                        info!(
                             cycle = current_cycle,
-                            orders = ?order_ids,
-                            fill_exceeds = is_fill_exceeds,
-                            already_batched = is_already_batched,
-                            "Terminal fill error — marking orders failed and skipping: {}",
-                            fills_err
+                            signer_count = fills_result.signature_count,
+                            retries = retry_count,
+                            fill_count = remaining_fills.len(),
+                            "Fills confirmed"
                         );
-                        // Mark these orders as terminal so they are not retried
-                        let orch = orchestrator.write().await;
-                        let terminal_ids: Vec<ethers::types::U256> = fills.iter().map(|f| f.order_id).collect();
-                        orch.mark_orders_failed(&terminal_ids).await;
-                        // Continue processing remaining orders — do not retry these
-                    } else if is_already_filled || is_timeout {
-                        let should_mint = if is_timeout {
-                            // BLS timeout: fills loop may have confirmed. Wait briefly, then
-                            // verify on-chain before proceeding to mint.
-                            info!(cycle = current_cycle, "Fills BLS timeout — waiting for fills loop to confirm on-chain");
-                            let mut filled_on_chain = false;
-                            for attempt in 0..10u32 {
-                                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                                // Check if orders are now FILLED on L3 (no longer in batched set)
-                                match chain_reader.get_batched_orders().await {
-                                    Ok(batched) => {
-                                        let batched_ids: std::collections::HashSet<ethers::types::U256> =
-                                            batched.iter().map(|o| o.id).collect();
-                                        let all_filled = fills.iter().all(|f| !batched_ids.contains(&f.order_id));
-                                        if all_filled {
-                                            info!(cycle = current_cycle, attempt, "Orders confirmed FILLED on L3 by fills loop");
-                                            filled_on_chain = true;
-                                            break;
-                                        }
-                                    }
-                                    Err(e) => debug!(error = %e, "Failed to check batched orders"),
-                                }
-                            }
-                            if !filled_on_chain {
-                                warn!(cycle = current_cycle, "Orders still not filled after 10s wait — skipping mint");
-                            }
-                            filled_on_chain
-                        } else {
-                            info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
-                            true
-                        };
-
-                        // Mint BridgedITP shares (post-fills path)
-                        if should_mint
+                        // Mint BridgedITP shares on Settlement (using each order's actual itp_id)
                         {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
-                            for fill in &fills {
+                            for fill in &remaining_fills {
+                                // Look up original user from order mapping (using Settlement ID)
                                 let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                 let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                     .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
                                 let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
                                     .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
                                 if let Some(mapping) = mapping {
+                                    // shares = fill_amount * 1e18 / fill_price
                                     let shares = if fill.fill_price > ethers::types::U256::zero() {
                                         (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
                                     } else {
@@ -1079,23 +956,25 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
                                     ).await {
                                         Ok(mint_result) => {
+                                            info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
+                                            // Only LEADER marks SharesBridged after confirmed receipt
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                 match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
-                                                        info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (post-fills), waiting for receipt");
+                                                        info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted, waiting for receipt");
                                                         const RECEIPT_TIMEOUT_SECS: u64 = 60;
                                                         match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
                                                             Ok(receipt) => {
                                                                 let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
                                                                 if success {
-                                                                    info!(?tx_hash, "mintBridgedShares CONFIRMED (post-fills)");
+                                                                    info!(?tx_hash, "mintBridgedShares CONFIRMED");
                                                                     let orch = orchestrator.write().await;
                                                                     orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                                                 } else {
-                                                                    warn!(?tx_hash, "mintBridgedShares REVERTED (post-fills) — stays Batched");
+                                                                    warn!(?tx_hash, "mintBridgedShares REVERTED — order stays Batched for retry");
                                                                 }
                                                             }
-                                                            Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (post-fills) — stays Batched"),
+                                                            Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout — stays Batched for retry"),
                                                         }
                                                     }
                                                     Err(e) => {
@@ -1105,24 +984,246 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                             let orch = orchestrator.write().await;
                                                             orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                                         } else {
-                                                            warn!(error = %e, "mintBridgedShares failed (post-fills) — stays Batched");
+                                                            warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares failed — stays Batched");
                                                         }
                                                     }
                                                 }
                                             }
+                                            // Followers do NOT mark SharesBridged — they cannot know if
+                                            // the leader's on-chain tx succeeded. Marking terminal would
+                                            // prevent BLS participation in retry if leader's tx reverts.
+                                            // Memory cleanup happens on watchdog stale reset or process restart.
                                         }
-                                        Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (post-fills path)"),
+                                        Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
                                 } else {
-                                    warn!(order_id = %fill.order_id, "No order mapping found (post-fills path)");
+                                    warn!(order_id = %fill.order_id, "No order mapping found — cannot bridge shares");
                                 }
                             }
                         }
-                    } else {
-                        warn!(cycle = current_cycle, error = %e, "Fills confirmation failed");
+
+                        // Emit asset trades with a 15s timeout — not fire-and-forget but won't block
+                        // the buy pipeline indefinitely if BLS consensus stalls.
+                        {
+                            let p = protocol.clone();
+                            let cr = chain_reader.clone();
+                            let qt = quote_tokens.clone();
+                            let at = asset_trade_orders.clone();
+                            match tokio::time::timeout(
+                                std::time::Duration::from_secs(15),
+                                p.run_asset_trades_phase(current_cycle, &at, &cr, batch_am_leader, qt.as_ref()),
+                            ).await {
+                                Ok(Ok(at_result)) => info!(cycle = current_cycle, signer_count = at_result.signature_count, "Asset trades emitted"),
+                                Ok(Err(e)) => warn!(cycle = current_cycle, error = %e, "Asset trades emission failed"),
+                                Err(_) => warn!(cycle = current_cycle, "Asset trades emission timed out after 15s"),
+                            }
+                        }
+
+                        break; // success — exit retry loop
+                    }
+                    Err(e) => {
+                        let fills_err = format!("{}", e);
+                        // Determine if we should proceed to mint:
+                        // 1. Chain revert (already filled): 0x6e6e29cb / "already" / "reverted on-chain"
+                        // 2. BLS timeout: fills loop likely filled the order concurrently
+                        let is_already_filled = fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain");
+                        let is_timeout = fills_err.contains("signing timeout");
+                        let is_fill_exceeds = fills_err.contains("a1f4d58b") || fills_err.contains("FillExceedsOrder") || fills_err.contains("E023");
+                        let is_already_batched = fills_err.contains("7a5425d1") || fills_err.contains("OrderAlreadyBatched") || fills_err.contains("E021");
+
+                        // Per-order fill error: extract the offending orderId from revert data,
+                        // evict it, mark it failed, and retry confirmFills with the survivors.
+                        // This catches E022 (not found), E024 (wrong status), E036 (cycle mismatch),
+                        // E126 (price violates limit), as well as E023/E021 when we can isolate
+                        // which order triggered it.
+                        let is_fill_error = FILL_ERROR_SELECTORS.iter().any(|sel| fills_err.contains(sel))
+                            || fills_err.contains("E022") || fills_err.contains("E024")
+                            || fills_err.contains("E036") || fills_err.contains("E126")
+                            || fills_err.contains("OrderNotFound") || fills_err.contains("InvalidOrderStatus")
+                            || fills_err.contains("FillCycleMismatch") || fills_err.contains("FillPriceViolatesLimit");
+
+                        if is_fill_error && retry_count < MAX_FILL_RETRIES {
+                            // Try to identify the specific bad order from revert data
+                            let bad_order_id = extract_order_id_from_fill_revert(&fills_err);
+
+                            if let Some(bad_id) = bad_order_id {
+                                let prev_count = remaining_fills.len();
+                                remaining_fills.retain(|f| f.order_id != bad_id);
+                                let evicted = prev_count - remaining_fills.len();
+
+                                if evicted == 0 {
+                                    // Parsed orderId doesn't match any fill in the batch.
+                                    // Treat as unparseable — mark all failed to avoid infinite loop.
+                                    warn!(
+                                        cycle = current_cycle,
+                                        bad_order = %bad_id,
+                                        "Extracted orderId not in fills batch — marking all failed: {}",
+                                        fills_err
+                                    );
+                                    let orch = orchestrator.write().await;
+                                    let all_ids: Vec<ethers::types::U256> = remaining_fills.iter().map(|f| f.order_id).collect();
+                                    orch.mark_orders_failed(&all_ids).await;
+                                    break;
+                                }
+
+                                warn!(
+                                    cycle = current_cycle,
+                                    bad_order = %bad_id,
+                                    retry = retry_count,
+                                    evicted = evicted,
+                                    remaining = remaining_fills.len(),
+                                    "Per-order fill revert — evicting bad order and retrying: {}",
+                                    fills_err
+                                );
+
+                                // Mark the bad order as failed so it won't be retried in future cycles
+                                let orch = orchestrator.write().await;
+                                orch.mark_orders_failed(&[bad_id]).await;
+                                drop(orch);
+                            } else {
+                                // Revert matched a fill error selector but we couldn't parse the orderId.
+                                // Fall through to terminal handling — mark all and stop.
+                                warn!(
+                                    cycle = current_cycle,
+                                    retry = retry_count,
+                                    "Fill revert detected but orderId not parseable — marking all failed: {}",
+                                    fills_err
+                                );
+                                let orch = orchestrator.write().await;
+                                let all_ids: Vec<ethers::types::U256> = remaining_fills.iter().map(|f| f.order_id).collect();
+                                orch.mark_orders_failed(&all_ids).await;
+                                break;
+                            }
+
+                            retry_count += 1;
+                            continue; // retry with reduced fills
+                        } else if is_fill_exceeds || is_already_batched {
+                            let order_ids: Vec<String> = remaining_fills.iter().map(|f| f.order_id.to_string()).collect();
+                            warn!(
+                                cycle = current_cycle,
+                                orders = ?order_ids,
+                                fill_exceeds = is_fill_exceeds,
+                                already_batched = is_already_batched,
+                                "Terminal fill error — marking orders failed and skipping: {}",
+                                fills_err
+                            );
+                            // Mark these orders as terminal so they are not retried
+                            let orch = orchestrator.write().await;
+                            let terminal_ids: Vec<ethers::types::U256> = remaining_fills.iter().map(|f| f.order_id).collect();
+                            orch.mark_orders_failed(&terminal_ids).await;
+                            // Continue processing remaining orders — do not retry these
+                        } else if is_already_filled || is_timeout {
+                            let should_mint = if is_timeout {
+                                // BLS timeout: fills loop may have confirmed. Wait briefly, then
+                                // verify on-chain before proceeding to mint.
+                                info!(cycle = current_cycle, "Fills BLS timeout — waiting for fills loop to confirm on-chain");
+                                let mut filled_on_chain = false;
+                                for attempt in 0..10u32 {
+                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                    // Check if orders are now FILLED on L3 (no longer in batched set)
+                                    match chain_reader.get_batched_orders().await {
+                                        Ok(batched) => {
+                                            let batched_ids: std::collections::HashSet<ethers::types::U256> =
+                                                batched.iter().map(|o| o.id).collect();
+                                            let all_filled = remaining_fills.iter().all(|f| !batched_ids.contains(&f.order_id));
+                                            if all_filled {
+                                                info!(cycle = current_cycle, attempt, "Orders confirmed FILLED on L3 by fills loop");
+                                                filled_on_chain = true;
+                                                break;
+                                            }
+                                        }
+                                        Err(e) => debug!(error = %e, "Failed to check batched orders"),
+                                    }
+                                }
+                                if !filled_on_chain {
+                                    warn!(cycle = current_cycle, "Orders still not filled after 10s wait — skipping mint");
+                                }
+                                filled_on_chain
+                            } else {
+                                info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
+                                true
+                            };
+
+                            // Mint BridgedITP shares (post-fills path)
+                            if should_mint
+                            {
+                                let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
+                                for fill in &remaining_fills {
+                                    let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                    let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
+                                        .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
+                                    let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
+                                        .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
+                                    if let Some(mapping) = mapping {
+                                        let shares = if fill.fill_price > ethers::types::U256::zero() {
+                                            (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
+                                        } else {
+                                            fill.fill_amount
+                                        };
+
+                                        match protocol.run_mint_bridged_shares_phase(
+                                            current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
+                                        ).await {
+                                            Ok(mint_result) => {
+                                                if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
+                                                    match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
+                                                        Ok(tx_hash) => {
+                                                            info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (post-fills), waiting for receipt");
+                                                            const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                            match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                                Ok(receipt) => {
+                                                                    let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                                    if success {
+                                                                        info!(?tx_hash, "mintBridgedShares CONFIRMED (post-fills)");
+                                                                        let orch = orchestrator.write().await;
+                                                                        orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                                    } else {
+                                                                        warn!(?tx_hash, "mintBridgedShares REVERTED (post-fills) — stays Batched");
+                                                                    }
+                                                                }
+                                                                Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (post-fills) — stays Batched"),
+                                                            }
+                                                        }
+                                                        Err(e) => {
+                                                            let err_str = format!("{}", e);
+                                                            if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
+                                                                info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
+                                                                let orch = orchestrator.write().await;
+                                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                            } else {
+                                                                warn!(error = %e, "mintBridgedShares failed (post-fills) — stays Batched");
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (post-fills path)"),
+                                        }
+                                    } else {
+                                        warn!(order_id = %fill.order_id, "No order mapping found (post-fills path)");
+                                    }
+                                }
+                            }
+                        } else if is_fill_error && retry_count >= MAX_FILL_RETRIES {
+                            // Exhausted retries — mark all remaining as failed
+                            warn!(
+                                cycle = current_cycle,
+                                retries = retry_count,
+                                remaining = remaining_fills.len(),
+                                "Fill retry limit reached — marking all remaining orders failed: {}",
+                                fills_err
+                            );
+                            let orch = orchestrator.write().await;
+                            let all_ids: Vec<ethers::types::U256> = remaining_fills.iter().map(|f| f.order_id).collect();
+                            orch.mark_orders_failed(&all_ids).await;
+                        } else {
+                            warn!(cycle = current_cycle, error = %e, "Fills confirmation failed");
+                        }
+
+                        break; // non-retryable error — exit loop
                     }
                 }
-            }
+            } // end fills retry loop
             } // end cbo_confirmed_orders guard
         }
     }
