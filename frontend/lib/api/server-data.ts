@@ -77,34 +77,14 @@ export async function getItpDetail(itpId: string): Promise<{
     }
     const priceData = await priceRes.json()
 
-    let holdings: { symbol: string; weight: number; price: number }[] = []
-    try {
-      const snapshotRes = await fetch(`${dnUrl}/snapshot?itp_id=${encodeURIComponent(itpId)}`, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10_000),
-      })
-      if (snapshotRes.ok) {
-        const snapshot = await snapshotRes.json()
-        if (Array.isArray(snapshot.assets)) {
-          holdings = snapshot.assets.map((a: any) => ({
-            symbol: a.symbol || '',
-            weight: a.weight || 0,
-            price: a.price || 0,
-          }))
-        }
-      }
-    } catch {
-      // snapshot is optional
-    }
-
     return {
       itpId,
       name: priceData.name || getItpName(itpId, parseItpNumber(itpId)),
       symbol: priceData.symbol || getItpSymbol(itpId, parseItpNumber(itpId)),
       nav: parseFloat(priceData.nav_display) || priceData.nav_per_share || 0,
       aum: priceData.aum_usd || 0,
-      assetCount: priceData.assets_total || holdings.length,
-      holdings,
+      assetCount: priceData.assets_total || 0,
+      holdings: [], // Holdings resolved by enrichment pipeline via /chain/l3/itp-state
     }
   } catch (e) {
     console.error(`[getItpDetail] error: ${e} url=${dnUrl}/itp-price`)

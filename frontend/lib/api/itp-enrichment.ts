@@ -14,6 +14,7 @@ import type {
 // ─── Process-level caches (survive across requests within same lambda) ───
 let coinMapCache: Record<string, CoinMapEntry> | null = null
 let symbolMapCache: Record<string, { pair: string; source: string }> | null = null
+let deployedAssetMapCache: Record<string, string> | null = null
 let foundersLookupCache: Record<string, { age?: number; gender: string; nationality: string; university?: string }[]> | null = null
 
 // DeFiLlama + CoinGecko caches with TTL (5 min)
@@ -34,6 +35,18 @@ async function loadSymbolMap(): Promise<Record<string, { pair: string; source: s
   const raw = await fs.readFile(path.join(process.cwd(), 'data/symbol-map.json'), 'utf-8')
   symbolMapCache = JSON.parse(raw)
   return symbolMapCache!
+}
+
+/** Maps deployed contract addresses → symbols from public/deployed-assets.json (current deployment) */
+async function loadDeployedAssetMap(): Promise<Record<string, string>> {
+  if (deployedAssetMapCache) return deployedAssetMapCache
+  const raw = await fs.readFile(path.join(process.cwd(), 'public/deployed-assets.json'), 'utf-8')
+  const assets: { address: string; symbol: string }[] = JSON.parse(raw)
+  deployedAssetMapCache = {}
+  for (const a of assets) {
+    deployedAssetMapCache[a.address.toLowerCase()] = a.symbol
+  }
+  return deployedAssetMapCache
 }
 
 async function loadFoundersLookup(): Promise<typeof foundersLookupCache> {
@@ -290,8 +303,7 @@ async function fetchFundingData(
 }
 
 /** Core enrichment logic — usable from both the API route and server components.
- *  When called from the page, pass serverHoldings from getItpDetail() (real weights from /snapshot).
- *  The API route calls without holdings — falls back to itp-state → deployed-assets.json. */
+ *  Priority chain: serverHoldings (if provided) → /chain/l3/itp-state + deployed-assets.json → static fallback. */
 export async function computeEnrichment(
   itpId: string,
   serverHoldings?: { symbol: string; weight: number; price: number }[],
@@ -308,7 +320,7 @@ export async function computeEnrichment(
     }))
   }
 
-  // Priority 2: Resolve holdings via /chain/l3/itp-state → symbol-map → coin symbols
+  // Priority 2: Resolve holdings via /chain/l3/itp-state → deployed-assets address map
   if (rawHoldings.length === 0) try {
     const stateRes = await fetch(
       `${getAaDataNodeUrl()}/chain/l3/itp-state?itp_id=${encodeURIComponent(itpId)}`,
@@ -317,13 +329,12 @@ export async function computeEnrichment(
     if (stateRes.ok) {
       const state = await stateRes.json()
       const addresses: string[] = state.assets || []
-      const symbolMap = await loadSymbolMap()
+      // Use deployed-assets.json (current deployment addresses) — NOT symbol-map.json (stale deployment)
+      const deployedMap = await loadDeployedAssetMap()
 
       const equalWeight = addresses.length > 0 ? 1 / addresses.length : 0
       rawHoldings = addresses.map((addr) => {
-        const entry = symbolMap[addr.toLowerCase()]
-        // Strip quote currency suffix (USDT/USDC) from trading pair
-        const symbol = entry?.pair?.replace(/USD[TC]$/i, '') || ''
+        const symbol = deployedMap[addr.toLowerCase()] || ''
         return {
           symbol: symbol.toUpperCase(),
           weight: equalWeight,
