@@ -402,7 +402,15 @@ export const Scene02: React.FC = () => {
   const DARK_TEXT_START = TURN_END - 5; // 121
 
   // ═══ Background ═══
-  const darkOverlay = interpolate(frame, [TURN_START, TURN_START + 14], [0, 1], C);
+  // Dark bg is ALWAYS present beneath the white page.
+  // Before the fold starts, the white page covers it entirely.
+  // During the fold, the white page clips away, revealing dark bg.
+  // The darkBgOpacity just controls the smooth transition for the non-fold layers.
+  // Dark bg lives beneath the white page at all times during the fold.
+  // At turnProgress=0, the white page covers it entirely. As the fold
+  // progresses, the clip-path reveals it. We start it 1 frame early to
+  // ensure no flicker.
+  const darkBgVisible = frame >= TURN_START ? 1 : 0;
 
   // ═══ Light phase text ═══
   const lightExit = 50;
@@ -425,7 +433,7 @@ export const Scene02: React.FC = () => {
   // enlarging the dark triangle in the top-right.
   const turnProgress = interpolate(frame, [TURN_START, TURN_END], [0, 1], {
     ...C,
-    easing: Easing.inOut(Easing.cubic),
+    easing: Easing.bezier(0.4, 0.5, 0.5, 1), // gentle front-load
   });
 
   // Fold line: starts at top-right corner (100%, 0%), sweeps toward bottom-left.
@@ -485,8 +493,10 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* Dark overlay */}
-      <AbsoluteFill style={{ backgroundColor: BG_DARK, opacity: darkOverlay }} />
+      {/* Dark background — always present, revealed as white page peels away */}
+      {darkBgVisible > 0 && (
+        <AbsoluteFill style={{ backgroundColor: BG_DARK }} />
+      )}
 
       {/* ════ LIGHT PHASE ════ */}
 
@@ -572,7 +582,7 @@ export const Scene02: React.FC = () => {
                   transformOrigin: "0% 100%", // anchor at bottom-left
                 }}
               >
-                <TextRow opacity={interpolate(turnProgress, [0, 0.4], [1, 0], C)}>
+                <TextRow opacity={interpolate(turnProgress, [0, 0.55], [1, 0], C)}>
                   <span
                     style={{
                       fontSize: 42,
@@ -588,29 +598,38 @@ export const Scene02: React.FC = () => {
               </AbsoluteFill>
             </div>
 
-            {/* Fold shadow — narrow band along the fold edge only */}
+            {/* Fold shadow — clipped to a narrow band along fold line */}
             {turnProgress > 0.04 && (() => {
-              // Create a clip path that's a thin strip along the fold line
-              // Expand the dark triangle clip slightly to include the shadow zone
-              const shadowExpand = 5; // % expansion
-              const stx = Math.max(-10, tx - shadowExpand);
-              const sry = Math.min(115, ry + shadowExpand);
-              const shadowClip = `polygon(${stx}% 0%, 100% 0%, 100% ${sry}%, ${tx}% 0%)`.replace(
-                `${tx}% 0%)`,
-                `${Math.max(-10, tx - shadowExpand * 2)}% ${shadowExpand}%)`
-              );
+              // Build a thin parallelogram clip along the fold line
+              // Offset the fold line by ~3% on each side perpendicular to it
+              const shadowW = 4; // % width of shadow band
+              // Normal vector perpendicular to fold line (pointing into white page)
+              const len = Math.sqrt(dx * dx + dy * dy) || 1;
+              const nx = -dy / len * shadowW;
+              const ny = dx / len * shadowW;
+
+              // 4 corners of the shadow strip: fold line ± offset
+              const shadowClip = `polygon(
+                ${tx - nx}% ${0 - ny}%,
+                ${100 - nx}% ${ry - ny}%,
+                ${100 + nx}% ${ry + ny}%,
+                ${tx + nx}% ${0 + ny}%
+              )`;
+
+              const shadowOpacity = interpolate(turnProgress, [0.04, 0.15, 0.6, 1], [0, 0.18, 0.08, 0], C);
 
               return (
                 <div
                   style={{
                     position: "absolute",
                     inset: 0,
+                    clipPath: shadowClip,
                     background: `linear-gradient(
                       ${foldLineAngle + 90}deg,
-                      transparent 44%,
-                      rgba(0,0,0,${interpolate(turnProgress, [0, 0.12, 0.5, 1], [0, 0.12, 0.06, 0], C)}) 49%,
-                      rgba(0,0,0,${interpolate(turnProgress, [0, 0.12, 0.5, 1], [0, 0.05, 0.02, 0], C)}) 51%,
-                      transparent 56%
+                      transparent 10%,
+                      rgba(0,0,0,${shadowOpacity}) 45%,
+                      rgba(0,0,0,${shadowOpacity * 0.4}) 55%,
+                      transparent 90%
                     )`,
                     pointerEvents: "none",
                     zIndex: 4,
