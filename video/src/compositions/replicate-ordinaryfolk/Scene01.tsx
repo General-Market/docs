@@ -154,8 +154,8 @@ const PhaseYouve: React.FC = () => {
 const P2_FROM = 15;
 
 const EXP_LETTERS = "experimenting".split("");
-const EXP_SETTLE_Y = [-12, 8, -10, 14, -8, 11, -15, 9, -11, 13, -9, 10, -13];
-const EXP_SETTLE_X = [1, -2, 0, 1, -1, 2, -1, 0, 1, -2, 0, 1, -1];
+const EXP_SETTLE_Y = [-18, 14, -16, 22, -12, 18, -24, 15, -17, 20, -14, 16, -20];
+const EXP_SETTLE_X = [3, -4, 2, 3, -2, 4, -3, 1, 3, -5, 2, 3, -2];
 
 const PhaseExperimenting: React.FC = () => {
   const proxyInit = useMemo(() => {
@@ -183,8 +183,8 @@ const PhaseExperimenting: React.FC = () => {
       for (let i = 0; i < EXP_LETTERS.length; i++) {
         tl.to(
           p[`l${i}`],
-          { x: 0, y: 0, opacity: 1, purple: 0, duration: 0.48, ease: "power2.out" },
-          0.16 + i * 0.018,
+          { x: 0, y: 0, opacity: 1, purple: 0, duration: 0.55, ease: "power2.out" },
+          0.12 + i * 0.035,
         );
       }
 
@@ -429,8 +429,9 @@ const PhaseWriteEmails: React.FC = () => {
 // Approximate character widths for initial x offsets.
 // ===========================================================================
 const SCATTER_ANGLES = [86.6, 44.2, 64.5, 23.5];
+// Char widths scaled for TEXT_SIZE=44
 const SCATTER_CHAR_WIDTHS: Record<string, number> = {
-  W: 26, r: 12, i: 8, t: 10, e: 16, "\u00A0": 10, m: 24, a: 16, l: 8, s: 14,
+  W: 34, r: 15, i: 10, t: 13, e: 20, "\u00A0": 14, m: 30, a: 20, l: 10, s: 18,
 };
 
 const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
@@ -468,10 +469,10 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
             x: Math.cos(rad) * dist,
             y: Math.sin(rad) * (dist * 0.5) + gravityBias,
             rotation: (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 10),
-            scale: 0.3,
+            scale: 0.4,
             opacity: 0,
             duration: 0.55,
-            ease: "expo.out",
+            ease: "power2.out",
           },
           i * 0.012,
         );
@@ -531,7 +532,8 @@ const SOLVE_SCATTER = [
 
 const SOLVE_TEXT = "Solve\u00A0problems";
 const SOLVE_LETTERS = SOLVE_TEXT.split("");
-const SOLVE_CHAR_W = [20, 18, 9, 18, 16, 10, 18, 11, 18, 18, 9, 16, 24, 12];
+// Char widths for "Solve problems" at TEXT_SIZE=44 (S,o,l,v,e,NBSP,p,r,o,b,l,e,m,s)
+const SOLVE_CHAR_W = [26, 23, 11, 23, 20, 16, 23, 14, 23, 23, 11, 20, 30, 16];
 const SOLVE_TOTAL_W = SOLVE_CHAR_W.reduce((a, b) => a + b, 0);
 
 // Compute final x positions (centered)
