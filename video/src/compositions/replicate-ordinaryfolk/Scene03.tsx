@@ -1959,11 +1959,11 @@ const SegSupercharge: React.FC = () => {
   const { tl, containerRef } = useGsapTimeline();
 
   const wordCfg = [
-    { text: "Designed", accent: false, delay: 0,    fontSize: 36 },
-    { text: "to",       accent: false, delay: 0.17, fontSize: 36 },
-    { text: "supercharge", accent: true, delay: 0.33, fontSize: 42 },
-    { text: "your",     accent: false, delay: 0.6,  fontSize: 36 },
-    { text: "ideas",    accent: false, delay: 0.77, fontSize: 38 },
+    { text: "Designed", accent: false, delay: 0,    fontSize: 36, yOff: 0,   italic: false },
+    { text: "to",       accent: false, delay: 0.17, fontSize: 36, yOff: 2,   italic: false },
+    { text: "supercharge", accent: true, delay: 0.33, fontSize: 42, yOff: -4, italic: true },
+    { text: "your",     accent: false, delay: 0.6,  fontSize: 34, yOff: -10, italic: true },
+    { text: "ideas",    accent: false, delay: 0.77, fontSize: 38, yOff: -6,  italic: true },
   ];
 
   useEffect(() => {
@@ -2024,7 +2024,8 @@ const SegSupercharge: React.FC = () => {
             fontSize: w.fontSize,
             fontFamily: "'Google Sans', sans-serif",
             fontWeight: w.accent ? 500 : 400,
-            transform: `translate(${scWob.x}px, ${scWob.y}px)`,
+            fontStyle: w.italic ? "italic" : "normal",
+            transform: `translate(${scWob.x}px, ${scWob.y + w.yOff}px)`,
             willChange: "transform, opacity",
           };
 
