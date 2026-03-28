@@ -25,12 +25,12 @@ import {
    H  310-350  "coding" typewriter
    I  350-400  Pan to card: "Help me write HTML, CSS, and JS"
    J  400-430  "and more"
-   K  430-480  Pan across cards 3 & 4: images + roleplay
-   L  480-520  "With access to" — letters spiral inward
-   M  520-570  "Ultra 1.0" inside gradient orb
-   N  570-610  "Experience Gemini" + URL + devices rise
-   O  610-660  Phone + desktop side by side
-   P  660-694  Gemini sparkle -> Google G logo -> fade
+   K  430-465  Pan across cards 3 & 4 (compressed -15f)
+   L  465-490  "With access to" spiral (compressed -15f)
+   M  490-540  "Ultra 1.0" inside gradient orb
+   N  540-600  "Experience Gemini" + URL + devices rise
+   O  600-640  Phone + desktop side by side
+   P  610-694  Gemini sparkle -> Google G logo -> fade
   ═══════════════════════════════════════════════════════════════ */
 
 const BG = "#0A0A0A";

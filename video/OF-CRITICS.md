@@ -21,7 +21,7 @@ Phase   Frame    Time     Status
 P1      0        0.0s     FIXED — "You've" visible at opacity 1 from frame 0
 P2      8        0.27s    FIXED — "been" fades in, ascending diagonal scatter
 P3      72       2.4s     "Bard" gradient
-P4      110      3.67s    FIXED — "Write" only (no "to" prefix)
+P4      110      3.67s    FIXED — "to" dark → "Write" gradient → "to" fades
 P5      150      5.0s     FIXED — gradient pill stays horizontal
 P6      185      6.17s    FIXED — gentle scatter, 1.2s duration
 P7      210      7.0s     FIXED — wide scatter 36-96px, convergence at 0.55s
@@ -36,7 +36,7 @@ All S01 items resolved:
 - [x] Scatter duration 1.0s
 - [x] "with" delayed to 0.72s
 - [x] Word spacing gap: 13px
-- [x] "to" removed from typewriter
+- [x] "to" restored to typewriter (dark text, fades after "Write")
 - [x] Gentle letter scatter (power2.out, 120-200px, no scale-down)
 - [x] "Solve problems" sizes 36-96px scattered, 50px settled
 - [x] Gradient pill horizontal (~90deg)
@@ -210,10 +210,10 @@ The reference video has 17 distinct 3D elements. Each needs:
 
 ## SCENE 1 — Additional Findings (2-4s investigation)
 
-- [ ] **"to" was CORRECT.** We WRONGLY removed it. Restore "to" to typewriter. Reference: "to" typed first in dark → "Write" in gradient → "to" fades. Line ~402 TYPE_PHASES needs "to" back.
+- [x] **"to" was CORRECT.** RESTORED — "to" typed first in dark → "Write" in gradient → "to" fades out at 0.85s.
 - [ ] **Bard persists 0.5s too long.** P3 should end at frame ~85 (2.83s), not 102 (3.4s). Line 1112: P3_FROM=90 but P3 duration should be ~20 frames not 31.
-- [ ] **Bard fade-in too slow.** 0.35s → should be 0.08-0.12s. Find Bard opacity tween duration.
-- [ ] **"experimenting" should be LARGER** than surrounding words. ~45-50px while "You've/been/with" are ~30px. Currently all 50px uniform.
+- [x] **Bard fade-in too slow.** FIXED — 0.35s → 0.08s. Near-instant appearance.
+- [x] **"experimenting" should be LARGER** than surrounding words. FIXED — 48px vs 30px for You've/been/with.
 
 ## SCENE 5 — Critics Update (0:50-1:04 investigation)
 
