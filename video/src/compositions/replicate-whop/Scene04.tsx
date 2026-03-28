@@ -1032,23 +1032,21 @@ const DepositSegment: React.FC = () => {
               <div
                 style={{ display: "flex", alignItems: "center", gap: 28 }}
               >
-                {/* Icon */}
+                {/* Gray icon box */}
                 <div style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6", borderRadius: 18, flexShrink: 0 }}>
                   {opt.iconType === "card" && (
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {/* Mini card brand logos */}
-                      <div style={{ width: 28, height: 18, borderRadius: 3, backgroundColor: "#1A1F71", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 800 }}>V</span>
-                      </div>
-                      <div style={{ width: 28, height: 18, borderRadius: 3, background: "linear-gradient(135deg, #EB001B 50%, #F79E1B 50%)" }} />
-                    </div>
+                    <svg width="36" height="28" viewBox="0 0 36 28">
+                      <rect width="36" height="28" rx="4" fill="#D1D5DB" />
+                      <rect x="0" y="7" width="36" height="5" fill="#9CA3AF" />
+                      <rect x="4" y="17" width="14" height="3" rx="1" fill="#B8BCC2" />
+                    </svg>
                   )}
                   {opt.iconType === "crypto" && (
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {["#F7931A", "#627EEA", "#26A17B", "#E8391C"].map((c, ci) => (
-                        <div key={ci} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c }} />
-                      ))}
-                    </div>
+                    <svg width="36" height="36" viewBox="0 0 36 36">
+                      <circle cx="14" cy="14" r="10" fill="#F7931A" opacity={0.8} />
+                      <circle cx="24" cy="14" r="10" fill="#627EEA" opacity={0.8} />
+                      <circle cx="18" cy="24" r="10" fill="#26A17B" opacity={0.8} />
+                    </svg>
                   )}
                   {opt.iconType === "bank" && (
                     <svg width="36" height="36" viewBox="0 0 36 36">
@@ -1061,8 +1059,22 @@ const DepositSegment: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, color: TEXT_PRIMARY }}>
+                  <div style={{ fontWeight: 600, color: TEXT_PRIMARY, display: "flex", alignItems: "center", gap: 12 }}>
                     {opt.label}
+                    {/* Inline brand icons */}
+                    {opt.iconType === "card" && (
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <div style={{ width: 30, height: 20, borderRadius: 3, backgroundColor: "#1A1F71" }} />
+                        <div style={{ width: 30, height: 20, borderRadius: 3, background: "linear-gradient(135deg, #EB001B 50%, #F79E1B 50%)" }} />
+                      </div>
+                    )}
+                    {opt.iconType === "crypto" && (
+                      <div style={{ display: "flex", gap: 3 }}>
+                        {["#26A17B", "#627EEA", "#F7931A", "#E8391C"].map((c, ci) => (
+                          <div key={ci} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c }} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontSize: 34, color: TEXT_SECONDARY }}>
                     {opt.sub}
@@ -1099,31 +1111,8 @@ const CoinRainTransition: React.FC = () => {
   const t = frame / fps; // seconds
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
-      {/* "Instantly deposit cash or crypto" text behind the coins, fading out */}
-      <div
-        style={{
-          position: "absolute",
-          top: 440,
-          width: "100%",
-          textAlign: "center",
-          fontSize: 140,
-          fontWeight: 700,
-          letterSpacing: -3,
-          fontFamily: FONT,
-          opacity: interpolate(frame, [0, fps * 0.3], [1, 0.4], {
-            extrapolateRight: "clamp",
-          }),
-        }}
-      >
-        <span style={{ color: TEXT_PRIMARY }}>Instantly </span>
-        <span style={{ color: TEXT_PRIMARY }}>deposit </span>
-        <span style={{ color: WHOP_RED }}>cash </span>
-        <span style={{ color: TEXT_PRIMARY }}>or </span>
-        <span style={{ color: WHOP_RED }}>crypto</span>
-      </div>
-
-      {/* Falling coins */}
+    <AbsoluteFill style={{ pointerEvents: "none" }}>
+      {/* Falling coins — transparent background so deposit modal shows through */}
       {coinSeeds.map((coin, i) => {
         const elapsed = Math.max(0, t - coin.delay);
         const y = -coin.size + elapsed * coin.speed;
