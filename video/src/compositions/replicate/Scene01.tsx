@@ -21,21 +21,28 @@ const WHITE = "#FFFFFF";
 // Audio beats for sync (first 10s): 0.55, 0.7, 1.1, 1.35, 1.5, 1.7, 1.75, 1.85, 2.5, 2.6
 // At 29fps: frames 16, 20, 32, 39, 44, 49, 51, 54, 73, 75
 
-// Film grain overlay — subtle noise texture
-const FilmGrain: React.FC<{ opacity?: number }> = ({ opacity = 0.04 }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      pointerEvents: "none",
-      zIndex: 999,
-      opacity,
-      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-      backgroundSize: "256px 256px",
-      mixBlendMode: "overlay",
-    }}
-  />
-);
+// Film grain overlay — animated noise that shifts each frame
+const FilmGrain: React.FC<{ opacity?: number }> = ({ opacity = 0.04 }) => {
+  const frame = useCurrentFrame();
+  // Shift grain position each frame for organic crawl
+  const offsetX = (frame * 37) % 256;
+  const offsetY = (frame * 53) % 256;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 999,
+        opacity,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        backgroundSize: "256px 256px",
+        backgroundPosition: `${offsetX}px ${offsetY}px`,
+        mixBlendMode: "overlay",
+      }}
+    />
+  );
+};
 
 // Stock ticker data — single column, right-aligned as in reference
 const TICKERS = [
@@ -68,8 +75,8 @@ const SometimesSegment: React.FC = () => {
   // "investing" at 0.7s (f20), "can" at 1.1s (f32), "feel" at 1.35s (f39)
   const wordStartFrames = [0, Math.round(fps * 0.4), Math.round(fps * 0.85), Math.round(fps * 1.15)];
 
-  // Overall fade out — dissolve transition at 2.336s
-  const segmentOpacity = interpolate(frame, [fps * 1.7, fps * 2.1], [1, 0], {
+  // Dissolve transition — starts at ~2.0s, completes by ~2.34s (storyboard scene_transition)
+  const segmentOpacity = interpolate(frame, [fps * 1.9, fps * 2.3], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -86,27 +93,37 @@ const SometimesSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
+  // Beat-synced opacity pulse — tickers briefly brighten on audio beats
+  const beatFrames = [16, 20, 32, 39, 44, 49, 51, 54];
+  const beatPulse = beatFrames.reduce((acc, bf) => {
+    const dist = Math.abs(frame - bf);
+    return dist < 4 ? Math.max(acc, 1 - dist / 4) : acc;
+  }, 0);
+  const tickerPulseOpacity = tickerOpacity + beatPulse * 0.12;
+
   return (
     <AbsoluteFill style={{ opacity: segmentOpacity }}>
       <FilmGrain opacity={0.035} />
 
-      {/* Stock tickers — single column, right side, matching reference layout */}
+      {/* Stock tickers — centered behind text, spread vertically as in reference */}
       <div
         style={{
           position: "absolute",
-          top: 40,
-          right: 260,
-          opacity: tickerOpacity,
-          transform: `translateY(${tickerScrollY}px)`,
+          top: "50%",
+          left: "50%",
+          transform: `translate(-50%, -50%) translateY(${tickerScrollY}px)`,
+          opacity: tickerPulseOpacity,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          alignItems: "center",
+          gap: 3,
+          width: "60%",
         }}
       >
         {TICKERS.map((t, i) => {
           const stagger = interpolate(
             frame,
-            [fps * 0.3 + i * 1.5, fps * 0.5 + i * 1.5],
+            [fps * 0.3 + i * 1.2, fps * 0.45 + i * 1.2],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
           );
@@ -117,11 +134,14 @@ const SometimesSegment: React.FC = () => {
                 fontFamily,
                 fontSize: 15,
                 fontWeight: 300,
-                color: "rgba(255,255,255,0.5)",
+                color: "rgba(255,255,255,0.45)",
                 whiteSpace: "nowrap",
-                letterSpacing: 1.2,
+                letterSpacing: 1.4,
                 opacity: stagger,
                 textAlign: "right",
+                alignSelf: i % 2 === 0 ? "flex-end" : "flex-start",
+                paddingLeft: i % 2 === 1 ? `${10 + (i % 4) * 3}%` : 0,
+                paddingRight: i % 2 === 0 ? `${5 + (i % 3) * 4}%` : 0,
               }}
             >
               {t.price}&nbsp;&nbsp;{t.dir === "up" ? "↑" : "↓"}&nbsp;{t.pct}
@@ -173,7 +193,7 @@ const SometimesSegment: React.FC = () => {
                 color: WHITE,
                 opacity: wordOpacity,
                 transform: `translateY(${wordY}px)`,
-                letterSpacing: -0.5,
+                letterSpacing: word === "Sometimes" ? 0.5 : -0.3,
               }}
             >
               {word}
@@ -184,8 +204,8 @@ const SometimesSegment: React.FC = () => {
         <span
           style={{
             fontFamily,
-            fontSize: 42,
-            fontWeight: 300,
+            fontSize: 46,
+            fontWeight: 400,
             color: WHITE,
             opacity: interpolate(
               frame,
@@ -196,7 +216,7 @@ const SometimesSegment: React.FC = () => {
             transform: `translateX(${interpolate(
               frame,
               [wordStartFrames[3] + Math.round(fps * 0.15), wordStartFrames[3] + Math.round(fps * 0.35)],
-              [-8, 0],
+              [-14, 0],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             )}px)`,
           }}
@@ -213,7 +233,7 @@ const SometimesSegment: React.FC = () => {
  * The reference shows a glossy 3D tube with loops and self-crossings.
  * We approximate with layered SVG strokes + gradients + blur for depth.
  */
-const TangledRibbon: React.FC<{ progress: number }> = ({ progress }) => {
+const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progress, breathe = 0 }) => {
   // Complex interlocking loop paths inspired by the reference
   const paths = [
     // Main figure-8 with tight self-crossing loops (like reference pretzel)
@@ -236,6 +256,7 @@ const TangledRibbon: React.FC<{ progress: number }> = ({ progress }) => {
         inset: -40,
         width: "calc(100% + 80px)",
         height: "calc(100% + 80px)",
+        transform: breathe > 0 ? `scale(${1 + breathe * 0.008}) translateY(${breathe * 1.5}px)` : undefined,
       }}
       preserveAspectRatio="xMidYMid slice"
     >
@@ -346,7 +367,8 @@ const AllOverSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const exitOpacity = interpolate(frame, [fps * 1.1, fps * 1.4], [1, 0], {
+  // Exit dissolve — the ribbon and text fade out as phone enters (crossfade)
+  const exitOpacity = interpolate(frame, [fps * 1.0, fps * 1.35], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -361,19 +383,29 @@ const AllOverSegment: React.FC = () => {
 
   const wordDelays = [0, Math.round(fps * 0.06), Math.round(fps * 0.12), Math.round(fps * 0.18)];
 
-  // Ribbon draws on quickly
-  const ribbonProgress = interpolate(frame, [0, fps * 0.5], [0, 1], {
+  // Ribbon draws on quickly with segmented feel
+  const ribbonProgress = interpolate(frame, [0, fps * 0.45], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
+
+  // Post-draw breathing — subtle oscillation after ribbon is fully drawn
+  const breathe = ribbonProgress >= 0.95
+    ? Math.sin((frame - fps * 0.45) * 0.15) * interpolate(
+        frame,
+        [fps * 0.45, fps * 0.7],
+        [0, 1],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+      )
+    : 0;
 
   return (
     <AbsoluteFill style={{ opacity: exitOpacity }}>
       <FilmGrain opacity={0.03} />
 
       {/* Tangled ribbon behind text */}
-      <TangledRibbon progress={ribbonProgress} />
+      <TangledRibbon progress={ribbonProgress} breathe={breathe} />
 
       {/* Dashes connecting "all" to "over" — horizontal row at top */}
       <div
@@ -448,12 +480,26 @@ const PhoneSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Phone slides up with spring
+  // Phone slides up with spring — slight overshoot for settle/rock feel
   const entrySpring = spring({
     frame,
     fps,
-    config: { damping: 14, mass: 1.0, stiffness: 80 },
+    config: { damping: 10, mass: 1.1, stiffness: 90 },
   });
+
+  // Fade in for crossfade overlap with previous segment
+  const entryOpacity = interpolate(frame, [0, Math.round(fps * 0.25)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Subtle rock/settle — a small rotational wobble during entry
+  const settleRock = frame < Math.round(fps * 0.8)
+    ? Math.sin(frame * 0.4) * interpolate(frame, [0, Math.round(fps * 0.6)], [2.5, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 0;
 
   // Phone tilts after settling (~0.8s in)
   const tiltStart = Math.round(fps * 0.6);
@@ -472,17 +518,17 @@ const PhoneSegment: React.FC = () => {
     easing: Easing.inOut(Easing.cubic),
   });
 
-  // Exit — hold the isometric view longer before fading
-  const exitOpacity = interpolate(frame, [fps * 2.8, fps * 3.1], [1, 0], {
+  // Exit — hold the isometric view, then fade for crossfade with next segment
+  const exitOpacity = interpolate(frame, [fps * 2.9, fps * 3.3], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
   const phoneY = interpolate(entrySpring, [0, 1], [600, 0]);
 
-  // Tilt transforms — perspective-correct 3D rotation
-  const tiltRotateY = interpolate(tiltProgress, [0, 1], [0, -18]);
-  const tiltRotateX = interpolate(tiltProgress, [0, 1], [0, 5]);
+  // Tilt transforms — subtle perspective rotation matching reference (~12-14°)
+  const tiltRotateY = interpolate(tiltProgress, [0, 1], [0, -13]);
+  const tiltRotateX = interpolate(tiltProgress, [0, 1], [0, 4]);
 
   // Isometric transforms
   const phoneScale = interpolate(isoProgress, [0, 1], [1, 0.55]);
@@ -510,7 +556,7 @@ const PhoneSegment: React.FC = () => {
   ];
 
   return (
-    <AbsoluteFill style={{ opacity: exitOpacity }}>
+    <AbsoluteFill style={{ opacity: exitOpacity * entryOpacity }}>
       <FilmGrain opacity={0.03} />
 
       {/* Background app screen cards (isometric grid) */}
@@ -530,11 +576,22 @@ const PhoneSegment: React.FC = () => {
         >
           {isoCards.map((card, i) => {
             const isCenter = i === 7;
-            const cardDelay = i * 0.02;
+            // Radial stagger: cards closer to center appear first
+            const row = Math.floor(i / 5);
+            const col = i % 5;
+            const distFromCenter = Math.sqrt(Math.pow(row - 1, 2) + Math.pow(col - 2, 2));
+            const cardDelay = distFromCenter * 0.06;
             const cardOpacity = interpolate(
               isoProgress,
-              [cardDelay, cardDelay + 0.3],
+              [cardDelay, cardDelay + 0.25],
               [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            );
+            // Cards slide up from below as they appear
+            const cardSlideY = interpolate(
+              isoProgress,
+              [cardDelay, cardDelay + 0.3],
+              [40, 0],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             );
             return (
@@ -545,6 +602,7 @@ const PhoneSegment: React.FC = () => {
                     ? "linear-gradient(145deg, #ffffff, #f6f8ff)"
                     : "linear-gradient(145deg, #fafbff, #eef1ff)",
                   borderRadius: 18,
+                  transform: `translateY(${cardSlideY}px)`,
                   border: isCenter
                     ? "2px solid rgba(80,140,255,0.3)"
                     : `1.5px solid rgba(${120 + (i * 17) % 60},${150 + (i * 23) % 50},${220 + (i * 11) % 35},0.2)`,
@@ -653,7 +711,7 @@ const PhoneSegment: React.FC = () => {
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(-50%, calc(-50% + ${phoneY}px)) perspective(1000px) rotateY(${isoRotateY}deg) rotateX(${isoRotateX}deg) rotateZ(${isoRotateZ}deg) scale(${phoneScale})`,
+          transform: `translate(-50%, calc(-50% + ${phoneY}px)) perspective(1000px) rotateY(${isoRotateY}deg) rotateX(${isoRotateX}deg) rotateZ(${isoRotateZ + settleRock}deg) scale(${phoneScale})`,
           transformStyle: "preserve-3d",
           width: 300,
           height: 600,
@@ -822,8 +880,8 @@ const OnePlaceSegment: React.FC = () => {
   });
   const slideX = slideProgress * -1300;
 
-  // "invest in" text
-  const investOpacity = interpolate(frame, [slideStart + Math.round(fps * 0.1), slideStart + Math.round(fps * 0.35)], [0, 1], {
+  // "invest in" text — appears as panel begins sliding, visible through the gap
+  const investOpacity = interpolate(frame, [slideStart + Math.round(fps * 0.05), slideStart + Math.round(fps * 0.25)], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -841,8 +899,8 @@ const OnePlaceSegment: React.FC = () => {
         <div
           style={{
             position: "absolute",
-            top: "50%",
-            left: "55%",
+            top: "46%",
+            left: "52%",
             transform: "translate(-50%, -50%)",
             opacity: investOpacity,
           }}
@@ -853,7 +911,7 @@ const OnePlaceSegment: React.FC = () => {
               fontSize: 52,
               fontWeight: 400,
               color: WHITE,
-              letterSpacing: -0.5,
+              letterSpacing: -0.3,
             }}
           >
             invest in
@@ -985,18 +1043,28 @@ const EverythingSegment: React.FC = () => {
   const centerRow = Math.floor(ROWS / 2);
   const centerCol = Math.floor(COLS / 2);
 
-  // Slight scroll for motion
-  const scrollY = interpolate(frame, [0, fps * 1.8], [12, -12], {
+  // Horizontal scroll — reference shows words drifting left
+  const scrollX = interpolate(frame, [0, fps * 1.8], [20, -30], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Center word scale pulse
-  const centerScale = interpolate(frame, [fps * 0.3, fps * 0.5], [0.9, 1], {
+  // Center word scale pulse with ongoing subtle breathe
+  const centerScaleBase = interpolate(frame, [fps * 0.3, fps * 0.5], [0.9, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.back(1.4)),
   });
+  // Subtle ongoing pulse — micro-animation glow
+  const centerBreathe = frame > fps * 0.5
+    ? Math.sin((frame - fps * 0.5) * 0.18) * 0.02
+    : 0;
+  const centerScale = centerScaleBase + centerBreathe;
+
+  // Glow intensity pulse for center word
+  const glowIntensity = frame > fps * 0.5
+    ? 0.15 + Math.sin((frame - fps * 0.5) * 0.22) * 0.08
+    : 0.15;
 
   return (
     <AbsoluteFill
@@ -1020,7 +1088,7 @@ const EverythingSegment: React.FC = () => {
           alignItems: "center",
           justifyItems: "center",
           opacity: entrySpring,
-          transform: `translateY(${scrollY}px)`,
+          transform: `translateX(${scrollX}px)`,
         }}
       >
         {Array.from({ length: ROWS * COLS }).map((_, i) => {
@@ -1032,6 +1100,9 @@ const EverythingSegment: React.FC = () => {
             Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
           );
           const dimFactor = Math.max(0.1, 1 - dist * 0.18);
+
+          // Row-based horizontal offset for typographic texture (reference shows staggered rows)
+          const rowOffset = isCenter ? 0 : ((row % 3) - 1) * 18;
 
           return (
             <span
@@ -1045,8 +1116,10 @@ const EverythingSegment: React.FC = () => {
                   : `rgba(80,120,255,${0.3 * dimFactor})`,
                 letterSpacing: isCenter ? -1 : -0.3,
                 whiteSpace: "nowrap",
-                transform: isCenter ? `scale(${centerScale})` : undefined,
-                textShadow: isCenter ? "0 0 20px rgba(255,255,255,0.15)" : undefined,
+                transform: isCenter
+                  ? `scale(${centerScale})`
+                  : `translateX(${rowOffset}px)`,
+                textShadow: isCenter ? `0 0 ${20 + glowIntensity * 40}px rgba(255,255,255,${glowIntensity})` : undefined,
               }}
             >
               everything
@@ -1079,12 +1152,12 @@ export const Scene01: React.FC = () => {
       </Sequence>
 
       {/* Segment 2: "all over the place" */}
-      <Sequence from={64} durationInFrames={50}>
+      <Sequence from={64} durationInFrames={55}>
         <AllOverSegment />
       </Sequence>
 
-      {/* Segment 3: Phone mockup → tilt → isometric */}
-      <Sequence from={108} durationInFrames={105}>
+      {/* Segment 3: Phone mockup → tilt → isometric (overlaps end of segment 2 for crossfade) */}
+      <Sequence from={100} durationInFrames={113}>
         <PhoneSegment />
       </Sequence>
 
