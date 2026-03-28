@@ -49,13 +49,21 @@ const TOTAL_FRAMES = S05_START + S05_DUR;            // 2177
  * FadeWrapper — simple opacity crossfade for standard transitions.
  * fadeIn: frame range where opacity goes 0→1 (relative to sequence start)
  * fadeOut: frame range where opacity goes 1→0 (relative to sequence start)
+ *
+ * Deep zoom variant (scaleOut / scaleIn): instead of plain opacity,
+ * the outgoing scene scales UP while fading, the incoming scene scales
+ * up FROM a smaller size — "diving into the screen" effect.
  */
 const FadeWrapper: React.FC<{
   children: React.ReactNode;
   duration: number;
   fadeInFrames?: number;
   fadeOutFrames?: number;
-}> = ({ children, duration, fadeInFrames = 0, fadeOutFrames = 0 }) => {
+  /** Scale from 1→scaleOut during fadeOut (deep zoom out) */
+  scaleOut?: number;
+  /** Scale from scaleIn→1 during fadeIn (deep zoom in) */
+  scaleIn?: number;
+}> = ({ children, duration, fadeInFrames = 0, fadeOutFrames = 0, scaleOut, scaleIn }) => {
   const frame = useCurrentFrame();
   const fadeIn = fadeInFrames > 0
     ? interpolate(frame, [0, fadeInFrames], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
@@ -63,8 +71,17 @@ const FadeWrapper: React.FC<{
   const fadeOut = fadeOutFrames > 0
     ? interpolate(frame, [duration - fadeOutFrames, duration], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
     : 1;
+
+  let scale = 1;
+  if (scaleOut && fadeOutFrames > 0) {
+    scale *= interpolate(frame, [duration - fadeOutFrames, duration], [1, scaleOut], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  }
+  if (scaleIn && fadeInFrames > 0) {
+    scale *= interpolate(frame, [0, fadeInFrames], [scaleIn, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  }
+
   return (
-    <AbsoluteFill style={{ opacity: fadeIn * fadeOut }}>
+    <AbsoluteFill style={{ opacity: fadeIn * fadeOut, transform: scale !== 1 ? `scale(${scale})` : undefined }}>
       {children}
     </AbsoluteFill>
   );
@@ -103,16 +120,18 @@ export const OFReplicateComposition: React.FC = () => {
            Starts S03_S04_OVERLAP frames before S03 ends.
            Draws ON TOP of S03 (later in DOM = higher z-index).
            No fade-in — S04 manages its own phone visibility.
-           Standard fade-out into S05. */}
+           Deep zoom out: white scene scales to 3x while fading. */}
       <Sequence from={S04_START} durationInFrames={S04_DUR} name="Scene 04">
-        <FadeWrapper duration={S04_DUR} fadeOutFrames={XFADE}>
+        <FadeWrapper duration={S04_DUR} fadeOutFrames={XFADE} scaleOut={3}>
           <Scene04 />
         </FadeWrapper>
       </Sequence>
 
-      {/* ── Scene 05 ── */}
+      {/* ── Scene 05 ──
+           Deep zoom in: dark scene starts at 0.5x, grows to 1x.
+           "Diving into screen" effect at the white→dark boundary. */}
       <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
-        <FadeWrapper duration={S05_DUR} fadeInFrames={XFADE}>
+        <FadeWrapper duration={S05_DUR} fadeInFrames={XFADE} scaleIn={0.5}>
           <Scene05 />
         </FadeWrapper>
       </Sequence>

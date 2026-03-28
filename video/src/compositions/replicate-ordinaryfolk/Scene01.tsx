@@ -755,22 +755,26 @@ const PhaseLetterScatter: React.FC = () => {
 const SOLVE_TEXT = "Solve\u00A0problems";
 const SOLVE_LETTERS = SOLVE_TEXT.split("");
 
-// Scatter positions — WIDE spread, covering ~130-850px horizontal, 160-400px vertical
+// Scatter positions — from reference: every letter at a UNIQUE (x,y).
+// No two letters share an X or Y coordinate. Layout:
+//   "S" top-left, "o v e" spread across mid, "r o e s" right,
+//   "l p l" bottom, "b" above center, "m" below-right.
+// Coordinates are absolute pixel positions on the 1280x720 canvas.
 const SOLVE_SCATTER: Array<{ x: number; y: number; size: number }> = [
-  { x: 180, y: 200, size: 96 }, // S — very large, far left
-  { x: 300, y: 260, size: 48 }, // o — medium
-  { x: 130, y: 400, size: 36 }, // l — small, far left, down
-  { x: 360, y: 160, size: 44 }, // v — up
-  { x: 340, y: 290, size: 42 }, // e — center
-  { x: 0, y: 0, size: 50 }, // (space)
-  { x: 400, y: 380, size: 56 }, // p — lower center
-  { x: 320, y: 270, size: 40 }, // r — small, near center
-  { x: 530, y: 310, size: 52 }, // o — right of center
-  { x: 580, y: 180, size: 60 }, // b — large, upper-right
-  { x: 500, y: 340, size: 38 }, // l — small
-  { x: 650, y: 260, size: 50 }, // e — right
-  { x: 700, y: 380, size: 48 }, // m — far right, down
-  { x: 850, y: 270, size: 42 }, // s — far right
+  { x: 250, y: 248, size: 86 },  // S — large, left of center, mid-upper
+  { x: 410, y: 274, size: 44 },  // o — medium, center-left
+  { x: 340, y: 420, size: 32 },  // l — small, below-left
+  { x: 510, y: 236, size: 46 },  // v — center, slightly higher than "o"
+  { x: 620, y: 264, size: 42 },  // e — right of center
+  { x: 0, y: 0, size: 50 },      // (space)
+  { x: 470, y: 400, size: 34 },  // p — below center
+  { x: 670, y: 242, size: 40 },  // r — right, slightly higher
+  { x: 760, y: 270, size: 48 },  // o — right side
+  { x: 550, y: 178, size: 56 },  // b — above center (floating high)
+  { x: 440, y: 440, size: 30 },  // l — bottom, left of "p"
+  { x: 810, y: 256, size: 44 },  // e — far right
+  { x: 870, y: 388, size: 42 },  // m — far right, low
+  { x: 920, y: 296, size: 38 },  // s — furthest right
 ];
 
 // Final settled: centered at ~50%, cy=49%, uniform 50px
@@ -865,6 +869,15 @@ const PhaseSolveProblems: React.FC = () => {
 // FIXED: 2x wider offsets, 16 entries (was 10), 3-tier blur (sharp/medium/heavy),
 // faster fade-in, longer converge (1.1s), floater remnants linger.
 // ===========================================================================
+// Reference: large blurred copies at VARYING sizes (30-70px), VARYING colors
+// (purple/blue/pink/faded), VARYING blur (0-15px). 10 copies creating depth.
+// Center has dark blur blob as convergence point.
+// Layout from reference screenshot:
+//   "Brainstorm" top-left (large, purple, slightly blurred)
+//   "ideas" top-right (medium, faded/grey)
+//   dark blob center
+//   "ideas" bottom-left (sharp, blue, large)
+//   "Brainstorm" bottom-right (pink, large)
 const FLOATERS: Array<{
   word: string;
   x: number;
@@ -875,31 +888,26 @@ const FLOATERS: Array<{
   delay: number;
   blur: number;
 }> = [
-  // TIER 1: Sharp center (blur 0-1px) — the focal words
-  { word: "Ideas", x: 0, y: 20, color: "#5B6FD7", size: 52, weight: 700, delay: 0, blur: 0 },
-  { word: "Brainstorm", x: 320, y: 40, color: "#D44E7A", size: 46, weight: 500, delay: 0.02, blur: 1 },
-  // TIER 2: Medium blur (3-5px) — mid-distance
-  { word: "ideas", x: -500, y: -120, color: "#5B6FD7", size: 48, weight: 700, delay: 0.01, blur: 3 },
-  { word: "Brainstorm", x: 80, y: -180, color: "#9B6FBF", size: 40, weight: 500, delay: 0.03, blur: 4 },
-  { word: "ideas", x: 400, y: -140, color: "#6878E0", size: 34, weight: 500, delay: 0.04, blur: 3 },
-  { word: "brainstorm", x: -300, y: -40, color: "#D44E7A", size: 32, weight: 400, delay: 0.05, blur: 5 },
-  { word: "Ideas", x: -160, y: 80, color: "#5B6FD7", size: 36, weight: 700, delay: 0.03, blur: 4 },
-  { word: "Brainstorm", x: 500, y: 100, color: "#D44E7A", size: 38, weight: 500, delay: 0.06, blur: 3 },
-  // TIER 3: Heavy blur (8-15px) — far depth, edges of frame
-  { word: "ideas", x: -550, y: 180, color: "#6878E0", size: 44, weight: 400, delay: 0.02, blur: 10 },
-  { word: "Brainstorm", x: -480, y: -200, color: "#B86CC8", size: 50, weight: 500, delay: 0.04, blur: 12 },
-  { word: "ideas", x: 550, y: -180, color: "#5B6FD7", size: 40, weight: 400, delay: 0.05, blur: 8 },
-  { word: "brainstorm", x: 480, y: 200, color: "#D44E7A", size: 46, weight: 400, delay: 0.06, blur: 14 },
-  { word: "Ideas", x: -400, y: 260, color: "#5B6FD7", size: 36, weight: 700, delay: 0.03, blur: 10 },
-  { word: "Brainstorm", x: -580, y: 60, color: "#B86CC8", size: 28, weight: 400, delay: 0.07, blur: 12 },
-  { word: "ideas", x: 350, y: 240, color: "#6878E0", size: 30, weight: 400, delay: 0.08, blur: 9 },
-  { word: "brainstorm", x: -200, y: -260, color: "#D44E7A", size: 42, weight: 400, delay: 0.05, blur: 11 },
+  // From reference — 4 prominent copies at the corners/edges
+  { word: "Brainstorm", x: -280, y: -110, color: "#7B6BD0", size: 62, weight: 500, delay: 0, blur: 4 },
+  { word: "ideas", x: 260, y: -90, color: "#9B9BB8", size: 42, weight: 400, delay: 0.02, blur: 6 },
+  { word: "ideas", x: -320, y: 100, color: "#5B6FD7", size: 58, weight: 500, delay: 0.01, blur: 1 },
+  { word: "Brainstorm", x: 300, y: 120, color: "#C86090", size: 56, weight: 500, delay: 0.03, blur: 2 },
+  // Secondary depth copies — mid-field
+  { word: "Brainstorm", x: -100, y: -180, color: "#A878C8", size: 36, weight: 400, delay: 0.04, blur: 8 },
+  { word: "ideas", x: 160, y: 170, color: "#6878E0", size: 34, weight: 400, delay: 0.05, blur: 10 },
+  // Far depth — heavily blurred, edges
+  { word: "ideas", x: -460, y: -30, color: "#8888B0", size: 30, weight: 400, delay: 0.03, blur: 13 },
+  { word: "Brainstorm", x: 440, y: -50, color: "#B070A0", size: 32, weight: 400, delay: 0.06, blur: 14 },
+  { word: "brainstorm", x: 80, y: -160, color: "#9B6FBF", size: 28, weight: 400, delay: 0.05, blur: 12 },
+  { word: "ideas", x: -180, y: 200, color: "#7080D0", size: 38, weight: 400, delay: 0.04, blur: 9 },
 ];
 
 const PhaseBrainstormIdeas: React.FC = () => {
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
       final: { opacity: 0, scale: 0.96 },
+      blob: { opacity: 0 },
     };
     for (let i = 0; i < FLOATERS.length; i++) {
       init[`g${i}`] = {
@@ -913,12 +921,18 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
+      // Dark center blob fades in immediately
+      tl.to(
+        p.blob,
+        { opacity: 0.55, duration: 0.2, ease: "power1.out" },
+        0,
+      );
       // Floaters fade in FAST (0.15s) — cloud should be visible almost immediately
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
           {
-            opacity: i < 8 ? 0.85 : 0.5,
+            opacity: i < 4 ? 0.9 : 0.6,
             duration: 0.15,
             ease: "power1.out",
           },
@@ -930,8 +944,8 @@ const PhaseBrainstormIdeas: React.FC = () => {
         tl.to(
           p[`g${i}`],
           {
-            x: f.x * 0.15,
-            y: f.y * 0.15,
+            x: f.x * 0.12,
+            y: f.y * 0.12,
             opacity: 0,
             duration: 1.1,
             ease: "power1.inOut",
@@ -939,6 +953,12 @@ const PhaseBrainstormIdeas: React.FC = () => {
           0.35 + f.delay * 0.2,
         );
       });
+      // Blob fades with floaters
+      tl.to(
+        p.blob,
+        { opacity: 0, duration: 0.6, ease: "power1.inOut" },
+        0.5,
+      );
       // Final centered text appears earlier
       tl.to(
         p.final,
@@ -951,6 +971,22 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   return (
     <AbsoluteFill>
+      {/* Dark convergence blob at center — reference shows a dark smudge */}
+      <div
+        style={{
+          position: "absolute",
+          top: `${0.49 * H}px`,
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 180,
+          height: 60,
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(30,25,50,0.7) 0%, rgba(30,25,50,0.3) 40%, transparent 70%)",
+          filter: "blur(18px)",
+          opacity: s.blob.opacity,
+        }}
+      />
+
       {FLOATERS.map((f, i) => {
         const g = s[`g${i}`];
         return (

@@ -205,11 +205,12 @@ const SegDesktopUI: React.FC = () => {
   const howText = "How can I help you today?";
   const helloChars = Math.floor(interpolate(frame, [fps*0.3,fps*0.8], [0,helloText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
   const howChars = Math.floor(interpolate(frame, [fps*0.9,fps*1.8], [0,howText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
-  const bs = spring({frame, fps, delay:0, config:{damping:14,stiffness:80,mass:1.0}});
-  const bY = interpolate(bs, [0,1], [55,0]);
-  const bSc = interpolate(bs, [0,1], [1.12,1]);
-  const bRx = interpolate(bs, [0,1], [8,0]);
-  const bOp = interpolate(bs, [0,0.3], [0,1], {extrapolateRight:"clamp"});
+  /* 3D entrance: perspective + rotateY(-25deg) + rotateX(10deg) + scale(2.5) → identity over 1.5s */
+  const enterT = interpolate(frame, [0, fps*1.5], [0, 1], {extrapolateRight:"clamp", easing: EASE_OUT_EXPO});
+  const bRotY = interpolate(enterT, [0,1], [-25, 0]);
+  const bRotX = interpolate(enterT, [0,1], [10, 0]);
+  const bScale = interpolate(enterT, [0,1], [2.5, 1]);
+  const bOp = interpolate(enterT, [0,0.08], [0,1], {extrapolateRight:"clamp"});
   const cSpr = [0,1,2,3].map(i => spring({frame, fps, delay: Math.floor(fps*1.5)+i*3, config:{damping:12,stiffness:100,mass:0.8}}));
   const inputOp = interpolate(frame, [fps*2.0,fps*2.5], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const discOp = interpolate(frame, [fps*1.5,fps*2.0], [0,0.6], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
@@ -218,7 +219,7 @@ const SegDesktopUI: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:`linear-gradient(135deg, rgba(196,181,253,0.15) 0%, rgba(232,69,139,0.08) 50%, rgba(66,133,244,0.1) 100%)`}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,transform:`translate(-50%,-50%) translateY(${bY}px) scale(${bSc}) perspective(1200px) rotateX(${bRx}deg)`,opacity:bOp,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,transformStyle:"preserve-3d",transform:`translate(-50%,-50%) perspective(800px) rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,opacity:bOp,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
         <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",position:"relative"}}>
           <div style={{height:48,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:16}}>
             <div style={{fontSize:18,color:"#666"}}>&#9776;</div>
@@ -264,29 +265,33 @@ const SegItsEverything: React.FC = () => {
   const centerSpr = spring({frame, fps, delay:3, config:{damping:10,stiffness:100,mass:0.6}});
   const scrollY = interpolate(frame, [0,durationInFrames], [0,-40], {extrapolateRight:"clamp",easing:Easing.inOut(Easing.sin)})+wob.y;
   const scrollX = interpolate(frame, [0,durationInFrames], [0,-15], {extrapolateRight:"clamp"})+wob.x;
-  /* Reference: ~5 rows x 3 cols, large text, center has gradient, nearby have subtle tints */
-  const gridRows = 5;
-  const gridCols = 3;
-  const rowSpacing = 70;
-  const colSpacing = 350;
+  /* Reference: large grid that EXTENDS PAST viewport edges. Center word huge (~60px bold).
+     Surrounding copies overflow visible. Some copies have purple/pink gradient tint. */
+  const gridRows = 7;
+  const gridCols = 5;
+  const rowSpacing = 80;
+  const colSpacing = 360;
   return (
-    <AbsoluteFill style={{backgroundColor:BG}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translate(${scrollX}px,${scrollY}px) rotate(${wob.rot*0.2}deg)`,opacity:containerOp}}>
+    <AbsoluteFill style={{backgroundColor:BG, overflow:"visible"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translate(${scrollX}px,${scrollY}px) rotate(${wob.rot*0.2}deg)`,opacity:containerOp,overflow:"visible"}}>
         {Array.from({length:gridRows}, (_,row) => Array.from({length:gridCols}, (_,col) => {
           const cR = Math.floor(gridRows/2);
           const cC = Math.floor(gridCols/2);
           const isCenter = row===cR&&col===cC;
           const dist = Math.sqrt(Math.pow(row-cR,2)+Math.pow(col-cC,2));
-          const op = isCenter?1:interpolate(dist,[0,1,2.5],[0.5,0.25,0.08],{extrapolateRight:"clamp"});
+          const op = isCenter?1:interpolate(dist,[0,1,2,3.5],[0.45,0.3,0.18,0.07],{extrapolateRight:"clamp"});
           const cW = organicWobble(`ie${row}${col}`, frame, 1+dist*0.4, 0.8+dist*0.3, 0.015);
-          const cSpr = spring({frame, fps, delay: Math.floor(dist*2)+3, config:{damping:15,stiffness:120,mass:0.5}});
-          const cY = isCenter?0:interpolate(cSpr,[0,1],[20,0]);
-          const cOp = isCenter?1:interpolate(cSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"});
+          const cSpr2 = spring({frame, fps, delay: Math.floor(dist*2)+3, config:{damping:15,stiffness:120,mass:0.5}});
+          const cY = isCenter?0:interpolate(cSpr2,[0,1],[20,0]);
+          const cOp = isCenter?1:interpolate(cSpr2,[0,0.3],[0,1],{extrapolateRight:"clamp"});
           const cSc = isCenter?interpolate(centerSpr,[0,1],[0,1]):1;
-          const hasGradient = isCenter || (dist <= 1.5 && (row+col)%2===0);
-          const base: React.CSSProperties = {position:"absolute",left:(col-cC)*colSpacing+cW.x,top:(row-cR)*rowSpacing+cW.y+cY,fontSize:isCenter?48:30,fontWeight:isCenter?600:400,fontFamily:"'Google Sans',sans-serif",opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`};
+          /* Gradient tint on some nearby copies — purple, pink */
+          const hasGradient = isCenter || (dist <= 2 && (row+col)%2===0);
+          const hasPurpleTint = !isCenter && !hasGradient && dist <= 2.5 && row%2===0;
+          const base: React.CSSProperties = {position:"absolute",left:(col-cC)*colSpacing+cW.x,top:(row-cR)*rowSpacing+cW.y+cY,fontSize:isCenter?60:32,fontWeight:isCenter?700:400,fontFamily:"'Google Sans',sans-serif",opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`};
           if (isCenter) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}, ${PURPLE}, ${BLUE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
-          if (hasGradient) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}66, ${PURPLE}44, ${BLUE}66)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
+          if (hasGradient) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}88, ${PURPLE}66)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
+          if (hasPurpleTint) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PURPLE}55, ${LAVENDER}44)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
           return <div key={`${row}-${col}`} style={{...base,color:"#9090A0"}}>{"It\u2019s everything"}</div>;
         }))}
       </div>
@@ -295,35 +300,54 @@ const SegItsEverything: React.FC = () => {
 };
 
 /* --- SEGMENT 5: Google App Icons + "you know and love" --- */
+const ORBIT_ICONS: {icon:string;name:string}[] = [
+  {icon:"grid",name:"Sheets"},{icon:"doc",name:"Docs"},{icon:"pin",name:"Maps"},
+  {icon:"mail",name:"Gmail"},{icon:"triangle",name:"Drive"},{icon:"play",name:"YouTube"},
+  {icon:"plane",name:"Travel"},
+];
+
+const AppIcon: React.FC<{icon:string}> = ({icon}) => {
+  if (icon==="pin") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/><circle cx="12" cy="9" r="2.5" fill="#B31412"/><path d="M12 2C8.13 2 5 5.13 5 9c0 1.74.5 3.37 1.41 4.84L12 9V2z" fill="#34A853"/></svg>;
+  if (icon==="mail") return <svg width="28" height="20" viewBox="0 0 28 20"><rect x="0" y="0" width="28" height="20" rx="2" fill="white" stroke="#D5D5D5" strokeWidth="0.5"/><path d="M0 2L14 12L28 2" stroke="#EA4335" strokeWidth="2.5" fill="none"/><path d="M0 2L14 12" stroke="#34A853" strokeWidth="2.5" fill="none" opacity="0.7"/><path d="M28 2L14 12" stroke="#FBBC04" strokeWidth="2.5" fill="none" opacity="0.7"/></svg>;
+  if (icon==="plane") return <svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" fill="#4285F4"/></svg>;
+  if (icon==="doc") return <svg width="24" height="30" viewBox="0 0 24 30"><rect x="0" y="0" width="24" height="30" rx="2" fill="#4285F4"/><rect x="5" y="8" width="14" height="2" rx="1" fill="white"/><rect x="5" y="13" width="14" height="2" rx="1" fill="white"/><rect x="5" y="18" width="10" height="2" rx="1" fill="white"/></svg>;
+  if (icon==="play") return <div style={{width:36,height:26,borderRadius:6,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"10px solid white",borderTop:"6px solid transparent",borderBottom:"6px solid transparent"}} /></div>;
+  if (icon==="grid") return <svg width="28" height="28" viewBox="0 0 28 28"><rect x="0" y="0" width="28" height="28" rx="4" fill="#34A853"/><rect x="6" y="6" width="6" height="6" rx="1" fill="white"/><rect x="16" y="6" width="6" height="6" rx="1" fill="white"/><rect x="6" y="16" width="6" height="6" rx="1" fill="white"/><rect x="16" y="16" width="6" height="6" rx="1" fill="white"/></svg>;
+  if (icon==="triangle") return <svg width="30" height="26" viewBox="0 0 30 26"><path d="M15 0L30 26H0Z" fill="#FBBC04"/><path d="M15 0L0 26H15Z" fill="#34A853"/><path d="M15 0L30 26H15Z" fill="#4285F4"/></svg>;
+  return null;
+};
+
 const SegAppsFloat: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const apps = [{name:"Sheets",x:240,y:170,icon:"grid"},{name:"Docs",x:370,y:140,icon:"doc"},{name:"Maps",x:540,y:155,icon:"pin"},{name:"Gmail",x:680,y:140,icon:"mail"},{name:"Drive",x:200,y:420,icon:"triangle"},{name:"YouTube",x:290,y:510,icon:"play"},{name:"Travel",x:700,y:350,icon:"plane"}];
   const tYK = spring({frame, fps, delay:0, config:{damping:14,stiffness:100,mass:0.7}});
   const tAL = spring({frame, fps, delay: Math.floor(fps*0.5), config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-10,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* Icons orbit in a circle around the text. Full revolution ~3s (90 frames at 30fps). */
+  const orbitRadius = 170;
+  const orbitCX = 640;
+  const orbitCY = 360;
+  const revFrames = fps * 3;
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      {apps.map((app, i) => {
+      {ORBIT_ICONS.map((app, i) => {
         const iSpr = spring({frame, fps, delay: i*2+1, config:{damping:10,stiffness:100,mass:0.6}});
-        const fY = noise2D("app"+i, frame/35, 0)*14;
-        const fX = noise2D("appx"+i, 0, frame/45)*10;
-        const aW = organicWobble("afw"+i, frame, 3, 2.5, 0.02);
-        return <div key={i} style={{position:"absolute",left:app.x+fX+aW.x,top:app.y+fY+aW.y,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`rotate(${aW.rot*0.4}deg) scale(${interpolate(iSpr,[0,1],[0,1])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden"}}>
-          {app.icon==="pin"&&<svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/><circle cx="12" cy="9" r="2.5" fill="#B31412"/><path d="M12 2C8.13 2 5 5.13 5 9c0 1.74.5 3.37 1.41 4.84L12 9V2z" fill="#34A853"/></svg>}
-          {app.icon==="mail"&&<svg width="28" height="20" viewBox="0 0 28 20"><rect x="0" y="0" width="28" height="20" rx="2" fill="white" stroke="#D5D5D5" strokeWidth="0.5"/><path d="M0 2L14 12L28 2" stroke="#EA4335" strokeWidth="2.5" fill="none"/><path d="M0 2L14 12" stroke="#34A853" strokeWidth="2.5" fill="none" opacity="0.7"/><path d="M28 2L14 12" stroke="#FBBC04" strokeWidth="2.5" fill="none" opacity="0.7"/></svg>}
-          {app.icon==="plane"&&<svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" fill="#4285F4"/></svg>}
-          {app.icon==="doc"&&<svg width="24" height="30" viewBox="0 0 24 30"><rect x="0" y="0" width="24" height="30" rx="2" fill="#4285F4"/><rect x="5" y="8" width="14" height="2" rx="1" fill="white"/><rect x="5" y="13" width="14" height="2" rx="1" fill="white"/><rect x="5" y="18" width="10" height="2" rx="1" fill="white"/></svg>}
-          {app.icon==="play"&&<div style={{width:36,height:26,borderRadius:6,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"10px solid white",borderTop:"6px solid transparent",borderBottom:"6px solid transparent"}} /></div>}
-          {app.icon==="grid"&&<svg width="28" height="28" viewBox="0 0 28 28"><rect x="0" y="0" width="28" height="28" rx="4" fill="#34A853"/><rect x="6" y="6" width="6" height="6" rx="1" fill="white"/><rect x="16" y="6" width="6" height="6" rx="1" fill="white"/><rect x="6" y="16" width="6" height="6" rx="1" fill="white"/><rect x="16" y="16" width="6" height="6" rx="1" fill="white"/></svg>}
-          {app.icon==="triangle"&&<svg width="30" height="26" viewBox="0 0 30 26"><path d="M15 0L30 26H0Z" fill="#FBBC04"/><path d="M15 0L0 26H15Z" fill="#34A853"/><path d="M15 0L30 26H15Z" fill="#4285F4"/></svg>}
+        const baseAngle = (i / ORBIT_ICONS.length) * Math.PI * 2;
+        const orbitAngle = baseAngle + (frame / revFrames) * Math.PI * 2;
+        const ox = orbitCX + Math.cos(orbitAngle) * orbitRadius;
+        const oy = orbitCY + Math.sin(orbitAngle) * orbitRadius;
+        const aW = organicWobble("afw"+i, frame, 2, 1.5, 0.015);
+        return <div key={i} style={{position:"absolute",left:ox+aW.x-26,top:oy+aW.y-26,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`scale(${interpolate(iSpr,[0,1],[0,1])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden"}}>
+          <AppIcon icon={app.icon} />
         </div>;
       })}
       {(() => {
         const tw = organicWobble("ykl", frame, 1.5, 1, 0.018);
-        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:12,fontSize:30,fontFamily:"'Google Sans',sans-serif",fontWeight:400,color:DARK}}>
-          <span style={{display:"inline-block",transform:`translateY(${interpolate(tYK,[0,1],[18,0])}px)`,opacity:interpolate(tYK,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>you know</span>
-          <span style={{display:"inline-block",transform:`translateY(${interpolate(tAL,[0,1],[18,0])}px)`,opacity:interpolate(tAL,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>and love</span>
+        const heartSpr = spring({frame, fps, delay: Math.floor(fps*0.35), config:{damping:8,stiffness:120,mass:0.5}});
+        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:10,alignItems:"center",fontSize:30,fontFamily:"'Google Sans',sans-serif",fontWeight:400,color:DARK}}>
+          <span style={{display:"inline-block",transform:`translateY(${interpolate(tYK,[0,1],[18,0])}px)`,opacity:interpolate(tYK,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>you know and</span>
+          <span style={{display:"inline-block",color:PINK,fontSize:18,transform:`translateY(${interpolate(heartSpr,[0,1],[12,0])}px) scale(${interpolate(heartSpr,[0,1],[0,1])})`,opacity:interpolate(heartSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>{"\u2665"}</span>
+          <span style={{display:"inline-block",transform:`translateY(${interpolate(tAL,[0,1],[18,0])}px)`,opacity:interpolate(tAL,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>love</span>
         </div>;
       })()}
     </AbsoluteFill>
@@ -339,9 +363,12 @@ const SegTypingPrompt: React.FC = () => {
   const charCount = Math.floor(interpolate(frame, [0,durationInFrames*0.85], [0,fullText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
   const bs = spring({frame, fps, delay:0, config:{damping:12,stiffness:100,mass:0.8}});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* Box starts CENTERED, slides LEFT as text is typed. Typing progress drives the slide. */
+  const typingProgress = charCount / fullText.length;
+  const slideX = interpolate(typingProgress, [0, 1], [0, -180], {extrapolateRight:"clamp", easing: EASE_OUT_QUART});
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateY(${interpolate(bs,[0,1],[25,0])+wob.y}px) scale(${interpolate(bs,[0,1],[0.96,1])}) rotate(${wob.rot*0.1}deg)`,width:780,opacity:interpolate(bs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(calc(-50% + ${slideX}px),-50%) translateY(${interpolate(bs,[0,1],[25,0])+wob.y}px) scale(${interpolate(bs,[0,1],[0.96,1])}) rotate(${wob.rot*0.1}deg)`,width:780,opacity:interpolate(bs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
         <div style={{backgroundColor:"#EDECF2",borderRadius:28,padding:"22px 32px",fontSize:26,fontFamily:"'Google Sans',sans-serif",fontWeight:400,color:"#444",minHeight:36,lineHeight:1.4}}>
           {fullText.slice(0, charCount)}
           {charCount < fullText.length && <span style={{display:"inline-block",width:2,height:28,backgroundColor:"#666",marginLeft:1,opacity:frame%20<12?1:0,verticalAlign:"text-bottom"}} />}
@@ -359,22 +386,31 @@ const SegGeminiResponse: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const wob = organicWobble("gresp", frame, 1.2, 0.8, 0.012);
-  const resp = "You have two recent emails from Harper Elementary.\n\nThe first email is the Harper Elementary School Newsletter for October 2025. It includes information\nabout upcoming events, such as Crazy Hat Day on October 8th and the Fall Festival on October 23rd.\nit also mentions a teacher appreciation event.\n\nThe second email is a call for parent volunteers. It asks parents to sign up by October 15th if they are\ninterested in volunteering...";
-  const respChars = Math.floor(interpolate(frame, [fps*0.2,durationInFrames*0.85], [0,resp.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
+  const resp = "You have two recent emails from Harper Elementary.\n\nThe first email is the Harper Elementary School Newsletter for October 2025. It includes information\nabout upcoming events, such as Crazy Hat Day on October 8th and the Fall Festival on October 23rd.\nIt also mentions a new after-school program and the upcoming book fair.\n\nThe second email is a call for parent volunteers. It asks parents to sign up by October 15th if they are\ninterested in volunteering in the classroom on Fridays.";
+  /* FIX 2: Left-to-right wipe via clip-path instead of char-by-char typing */
+  const revealProg = interpolate(frame, [fps*0.2,durationInFrames*0.85], [0,100], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
   const cs = spring({frame, fps, delay:0, config:{damping:14,stiffness:80,mass:1.0}});
   const chSpr = spring({frame, fps, delay: Math.floor(fps*0.3), config:{damping:12,stiffness:120,mass:0.6}});
   const ecSpr = [0,1].map(i => spring({frame, fps, delay: Math.floor(durationInFrames*0.7)+i*3, config:{damping:14,stiffness:100,mass:0.7}}));
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* FIX 1: 3D tilt + zoom */
+  const tiltY = interpolate(cs, [0,1], [0,-8]);
+  const zoomScale = interpolate(cs, [0,1], [0.92,1.4]);
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) scale(${interpolate(cs,[0,1],[0.92,1])})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),perspective:1200,width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
         <div style={{width:4,backgroundColor:PURPLE,flexShrink:0}} />
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{height:44,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:12}}>
             <div style={{fontSize:16,color:"#666"}}>&#9776;</div>
             <div style={{fontSize:14,fontFamily:"'Google Sans',sans-serif",color:"#444",fontWeight:500}}>Gemini <span style={{fontSize:10,color:"#999"}}>&#9660;</span></div>
             <div style={{flex:1}} />
-            <div style={{fontSize:12,fontFamily:"'Google Sans',sans-serif",color:"#888",opacity:interpolate(frame,[fps*2,fps*3],[0,0.6],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>Drafts</div>
+            {/* FIX 1: Drafts button */}
+            <div style={{fontSize:12,fontFamily:"'Google Sans',sans-serif",color:"#666",fontWeight:500,padding:"4px 12px",borderRadius:8,backgroundColor:"#F2F2F6",opacity:interpolate(frame,[fps*0.5,fps],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>Drafts</div>
+            {/* FIX 1: Speaker icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" style={{opacity:interpolate(frame,[fps*0.5,fps],[0,0.7],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),color:"#666",flexShrink:0}}>
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="currentColor"/>
+            </svg>
             <div style={{width:28,height:28,borderRadius:"50%",backgroundColor:"#E8E8EC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#666"}}>+</div>
           </div>
           <div style={{flex:1,padding:"20px 28px",overflow:"hidden"}}>
@@ -386,7 +422,8 @@ const SegGeminiResponse: React.FC = () => {
               <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0L9 5L14 7L9 9L7 14L5 9L0 7L5 5Z" fill={BLUE}/></svg>
               <div style={{padding:"5px 12px",borderRadius:16,border:"1px solid #E0E0E4",fontSize:12,fontFamily:"'Google Sans',sans-serif",fontWeight:500,color:"#444",display:"flex",alignItems:"center",gap:5}}>Google Workspace <span style={{fontSize:9,color:"#999"}}>&#9660;</span></div>
             </div>
-            <div style={{fontSize:13,fontFamily:"'Google Sans',sans-serif",color:"#333",lineHeight:1.7,whiteSpace:"pre-wrap",marginLeft:38}}>{resp.slice(0, respChars)}</div>
+            {/* FIX 2: Left-to-right wipe reveal using clip-path */}
+            <div style={{fontSize:13,fontFamily:"'Google Sans',sans-serif",color:"#333",lineHeight:1.7,whiteSpace:"pre-wrap",marginLeft:38,clipPath:`inset(0 ${100-revealProg}% 0 0)`}}>{resp}</div>
             <div style={{display:"flex",gap:12,marginTop:20,marginLeft:38}}>
               {[{title:"Harper Elementary Newsletter",sub:"Harper Elementary",color:BLUE},{title:"Calling for Parent Volunteers",sub:"Harper Elementary",color:PINK}].map((card, ci) => {
                 const e = ecSpr[ci];
@@ -460,6 +497,7 @@ const SegAndMore: React.FC = () => {
 };
 
 /* --- SEGMENT 9: Starting with the new Gemini app --- */
+const STARTING_ROTATIONS = [-5, 8, 0, -10, 3, 0]; /* FIX 3: per-word rotation angles from reference */
 const SegStartingWith: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
@@ -469,25 +507,41 @@ const SegStartingWith: React.FC = () => {
   const scatterPhase = frame > durationInFrames - fps*0.5;
   const scatterProg = scatterPhase ? interpolate(frame, [durationInFrames-fps*0.5,durationInFrames], [0,1], {extrapolateRight:"clamp",easing:EASE_IN_QUART}) : 0;
   const exitOp = interpolate(frame, [durationInFrames-5,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* FIX 3: light ray streaks behind text */
+  const rayOp = interpolate(frame, [fps*0.3,fps*0.8,durationInFrames-fps*0.6,durationInFrames-fps*0.3], [0,0.35,0.35,0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
+      {/* FIX 3: Light ray streaks */}
+      {[{x:480,y:340,w:380,rot:-3,h:2},{x:520,y:370,w:320,rot:5,h:1.5},{x:440,y:355,w:420,rot:-1,h:2.5}].map((ray,ri) => (
+        <div key={ri} style={{position:"absolute",left:ray.x,top:ray.y,width:ray.w,height:ray.h,background:`linear-gradient(90deg, transparent 0%, ${LAVENDER}88 30%, ${PINK}44 70%, transparent 100%)`,transform:`rotate(${ray.rot}deg)`,opacity:rayOp,filter:"blur(1px)"}} />
+      ))}
       <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",gap:14,fontSize:40,fontFamily:"'Google Sans',sans-serif",fontWeight:400}}>
         {words.map((word, i) => {
           const wW = organicWobble(`sw${i}`, frame, 2, 1.5, 0.02);
           const wSpr = spring({frame, fps, delay: i*4, config:{damping:12,stiffness:100,mass:0.8}});
           const sv = scatterVectors[i];
-          return <span key={i} style={{display:"inline-block",color:DARK,transform:`translate(${wW.x+scatterProg*sv.x}px,${interpolate(wSpr,[0,1],[30,0])+wW.y+scatterProg*sv.y}px) rotate(${scatterProg*sv.rot}deg) scale(${interpolate(scatterProg,[0,1],[1,0.6])})`,opacity:interpolate(wSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(scatterProg,[0,0.8],[1,0]),fontWeight:400}}>{word}</span>;
+          /* FIX 3: each word gets its own rotation angle */
+          const baseRot = STARTING_ROTATIONS[i];
+          const rotIn = interpolate(wSpr, [0,1], [baseRot*2, baseRot]);
+          const finalRot = rotIn + scatterProg*sv.rot;
+          /* FIX 3: "new" gets pink tint */
+          const isNew = word === "new";
+          const wordColor = isNew ? PINK : DARK;
+          return <span key={i} style={{display:"inline-block",color:wordColor,transform:`translate(${wW.x+scatterProg*sv.x}px,${interpolate(wSpr,[0,1],[30,0])+wW.y+scatterProg*sv.y}px) rotate(${finalRot}deg) scale(${interpolate(scatterProg,[0,1],[1,0.6])})`,opacity:interpolate(wSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(scatterProg,[0,0.8],[1,0]),fontWeight:400}}>{word}</span>;
         })}
       </div>
     </AbsoluteFill>
   );
 };
 
-/* --- SEGMENT 10: Phone Mockup --- */
+/* --- SEGMENT 10: Phone Mockup (3D tilted) --- */
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const pW = organicWobble("ph10", frame, 2.5, 2, 0.018);
+  /* FIX 3: continuous 3D tilt with noise micro-motion — never flat */
+  const tiltY = 14 + noise2D("ph10ty", frame * 0.012, 0) * 3.5;
+  const tiltX = -3 + noise2D("ph10tx", 0, frame * 0.015) * 2;
   /* Phone enters from below-right, moderate speed */
   const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
   const pX = cubicBez(eP, 150, 120, 30, 0);
@@ -502,28 +556,30 @@ const SegPhoneMockup: React.FC = () => {
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translate(${pX+pW.x}px,${pY+sB+pW.y}px) rotate(${pR}deg) scale(${pS})`,opacity:pOp,width:320,height:620,backgroundColor:"#FFFFFF",borderRadius:40,border:"3px solid #1A1A2E",overflow:"hidden",boxShadow:"0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)"}}>
-        <div style={{height:44,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 20px 0",fontSize:13,fontWeight:600,color:"#333"}}>
-          <span>9:30</span>
-          <div style={{width:80,height:24,borderRadius:12,backgroundColor:"#000"}} />
-          <div style={{display:"flex",alignItems:"center",gap:4}}>
-            <span style={{fontSize:13,fontWeight:700}}>5G</span>
-            <div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:12}}>{[5,7,9,12].map((h,j)=><div key={j} style={{width:3,height:h,backgroundColor:"#333",borderRadius:1}} />)}</div>
-            <div style={{width:20,height:10,border:"1.5px solid #333",borderRadius:2,position:"relative",marginLeft:2}}><div style={{position:"absolute",inset:1.5,backgroundColor:"#333",borderRadius:0.5}} /><div style={{position:"absolute",right:-4,top:2,width:3,height:6,backgroundColor:"#333",borderRadius:"0 1px 1px 0"}} /></div>
+      <div style={{position:"absolute",left:"50%",top:"50%",perspective:800,transformStyle:"preserve-3d"}}>
+        <div style={{transform:`translate(-50%,-50%) translate(${pX+pW.x}px,${pY+sB+pW.y}px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) rotate(${pR}deg) scale(${pS})`,opacity:pOp,width:320,height:620,backgroundColor:"#FFFFFF",borderRadius:40,border:"3px solid #1A1A2E",overflow:"hidden",boxShadow:`12px 20px 60px rgba(0,0,0,0.22), 4px 8px 20px rgba(0,0,0,0.12)`}}>
+          <div style={{height:44,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 20px 0",fontSize:13,fontWeight:600,color:"#333"}}>
+            <span>9:30</span>
+            <div style={{width:80,height:24,borderRadius:12,backgroundColor:"#000"}} />
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:13,fontWeight:700}}>5G</span>
+              <div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:12}}>{[5,7,9,12].map((h,j)=><div key={j} style={{width:3,height:h,backgroundColor:"#333",borderRadius:1}} />)}</div>
+              <div style={{width:20,height:10,border:"1.5px solid #333",borderRadius:2,position:"relative",marginLeft:2}}><div style={{position:"absolute",inset:1.5,backgroundColor:"#333",borderRadius:0.5}} /><div style={{position:"absolute",right:-4,top:2,width:3,height:6,backgroundColor:"#333",borderRadius:"0 1px 1px 0"}} /></div>
+            </div>
           </div>
+          <div style={{padding:"30px 24px"}}>
+            <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:PURPLE}}>Hi</span>{" "}
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK}}>{"I'm "}</span>
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
+            </div>
+            <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+              <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
+              <div style={{marginTop:24,fontSize:16,fontFamily:"'Google Sans',sans-serif",color:"#666",lineHeight:1.5}}>I can help you write, plan, learn, and more.</div>
+            </div>
+          </div>
+          <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
         </div>
-        <div style={{padding:"30px 24px"}}>
-          <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-            <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:PURPLE}}>Hi</span>{" "}
-            <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK}}>{"I'm "}</span>
-            <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
-          </div>
-          <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-            <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
-            <div style={{marginTop:24,fontSize:16,fontFamily:"'Google Sans',sans-serif",color:"#666",lineHeight:1.5}}>I can help you write, plan, learn, and more.</div>
-          </div>
-        </div>
-        <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
       </div>
       <div style={{position:"absolute",bottom:20,left:30,fontSize:11,fontFamily:"'Google Sans',sans-serif",color:"#B0B0B8",opacity:interpolate(frame,[fps,fps*1.5],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>The Gemini mobile app is available for select devices, languages and locations.</div>
     </AbsoluteFill>

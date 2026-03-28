@@ -1003,6 +1003,7 @@ export const Scene05: React.FC = () => {
   const gLogoRef = useRef<HTMLDivElement>(null);
   const phoneARef = useRef<HTMLDivElement>(null);
   const interfaceWrapRef = useRef<HTMLDivElement>(null);
+  const interfaceGlowRef = useRef<HTMLDivElement>(null);
   const kineticERefs = useRef<(HTMLSpanElement | null)[]>([]);
   const kineticFRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const cardZoomGRef = useRef<HTMLDivElement>(null);
@@ -1152,53 +1153,68 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ B+C+D: Gemini Interface (30-180) ═══
+    // Starts zoomed scale(2.5) rotateY(-20deg) — only "Gemini Advanced" title
+    // visible with rainbow border glow. Animates to scale(1) rotateY(0)
+    // revealing full dark interface with "Hello, Lisa." and suggestion cards.
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
-        rotateX: 22,
-        rotateY: 50,
-        scale: 2.8,
-        y: 100,
+        rotateX: 0,
+        rotateY: -20,
+        scale: 2.5,
+        y: 40,
       }, 0);
-      // Fade in
+      // Fade in — title screen phase
       t.to(interfaceWrapRef.current, {
         opacity: 1,
         duration: f(8),
         ease: "power2.out",
       }, f(30));
-      // Phase 1: dramatic tilt — hold with slow initial drift (30-60)
+      // Phase 1: hold zoomed title view, slow drift (30-65)
       t.to(interfaceWrapRef.current, {
-        rotateX: 15,
-        rotateY: 35,
-        scale: 2.0,
-        y: 60,
-        duration: f(30),
+        rotateY: -14,
+        scale: 2.2,
+        y: 30,
+        duration: f(35),
         ease: "power1.out",
       }, f(30));
-      // Phase 2: gradually straighten (60-110)
-      t.to(interfaceWrapRef.current, {
-        rotateX: 2,
-        rotateY: 5,
-        scale: 1.0,
-        y: 10,
-        duration: f(50),
-        ease: "power2.inOut",
-      }, f(60));
-      // Phase 3: final settle to flat (110-130)
+      // Phase 2: pull back to reveal full interface (65-115)
       t.to(interfaceWrapRef.current, {
         rotateX: 0,
         rotateY: 0,
-        scale: 0.95,
+        scale: 1.0,
         y: 0,
-        duration: f(20),
+        duration: f(50),
+        ease: "power2.inOut",
+      }, f(65));
+      // Phase 3: final settle (115-130)
+      t.to(interfaceWrapRef.current, {
+        scale: 0.95,
+        duration: f(15),
         ease: "power1.out",
-      }, f(110));
+      }, f(115));
       // Fade out
       t.to(interfaceWrapRef.current, {
         opacity: 0,
         duration: f(15),
         ease: "power2.in",
       }, f(165));
+    }
+
+    // Rainbow border glow — bright during zoomed title, fades as interface settles
+    if (interfaceGlowRef.current) {
+      t.set(interfaceGlowRef.current, { opacity: 0 }, 0);
+      t.to(interfaceGlowRef.current, {
+        opacity: 1,
+        duration: f(10),
+        ease: "power2.out",
+      }, f(30));
+      // Hold glow during title phase, then fade as we pull back
+      t.to(interfaceGlowRef.current, {
+        opacity: 0,
+        duration: f(30),
+        ease: "power2.inOut",
+      }, f(75));
     }
 
     // Disclaimer
@@ -1890,6 +1906,24 @@ export const Scene05: React.FC = () => {
           perspective: 1200,
         }}
       >
+        {/* Rainbow border glow — visible during zoomed title phase */}
+        <div
+          ref={interfaceGlowRef}
+          style={{
+            position: "absolute",
+            inset: -4,
+            borderRadius: 16,
+            opacity: 0,
+            pointerEvents: "none",
+            boxShadow: [
+              `0 0 30px ${BLUE}`,
+              `0 0 60px ${PURPLE}88`,
+              `0 0 90px ${PINK}55`,
+              `0 0 120px ${BLUE}33`,
+            ].join(", "),
+            zIndex: 20,
+          }}
+        />
         <GeminiInterface
           frame={interfaceLocalFrame}
           fps={fps}
@@ -2458,16 +2492,16 @@ export const Scene05: React.FC = () => {
           }}
         >
           <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
-            <PhoneMockup style={{ transform: "scale(0.85) rotateY(8deg)" }} />
+            <PhoneMockup style={{ transform: "scale(0.85) rotateY(30deg)" }} />
           </div>
-          <div ref={expDesktopRef} style={{ opacity: 0 }}>
+          <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
             <div
               style={{
-                transform: "scale(0.58)",
-                transformOrigin: "top left",
+                transform: "scale(0.58) rotateY(-30deg)",
+                transformOrigin: "center center",
               }}
             >
-              <GeminiInterface frame={90} fps={fps} style={{ perspective: "800px", transform: "rotateY(-3deg)" }} />
+              <GeminiInterface frame={90} fps={fps} />
             </div>
           </div>
         </div>
