@@ -994,9 +994,9 @@ const OnePlaceSegment: React.FC = () => {
                   key={i}
                   style={{
                     fontFamily,
-                    fontSize: isCenter ? 42 : 26,
+                    fontSize: isCenter ? 44 : 28,
                     fontWeight: isCenter ? 800 : 400,
-                    color: isCenter ? WHITE : `rgba(80,120,255,${0.3 * dimFactor})`,
+                    color: isCenter ? WHITE : `rgba(100,140,255,${0.45 * dimFactor})`,
                     letterSpacing: isCenter ? -1 : -0.3,
                     whiteSpace: "nowrap",
                     transform: isCenter
