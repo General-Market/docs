@@ -168,9 +168,9 @@ const EXP_SCATTER_X = [
   -12, -9, -6, -3, 0, 3, 5, 7, 9, 11, 12, 13, 14,
 ];
 
-// Letter sizes: start larger, settle to 50px
+// Letter sizes: start larger, settle to 48px ("experimenting" is LARGER than surrounding 30px words)
 const EXP_START_SIZE = 64;
-const EXP_END_SIZE = 50;
+const EXP_END_SIZE = 48;
 
 const PhaseExperimenting: React.FC = () => {
   const frame = useCurrentFrame();
@@ -271,7 +271,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: 30,
           opacity: s.youve.opacity,
         }}
       >
@@ -280,7 +280,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: 30,
           opacity: s.been.opacity,
         }}
       >
@@ -314,7 +314,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: 30,
           opacity: s.with_.opacity,
         }}
       >
@@ -343,7 +343,7 @@ const PhaseBard: React.FC = () => {
       tl.fromTo(
         p.main,
         { x: 6, opacity: 0, scale: 0.94 },
-        { x: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
+        { x: 0, opacity: 1, scale: 1, duration: 0.08, ease: "power2.out" },
       );
     },
     { main: { x: 6, opacity: 0, scale: 0.94 } },

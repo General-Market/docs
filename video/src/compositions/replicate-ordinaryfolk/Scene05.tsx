@@ -958,41 +958,17 @@ const UltraOrb: React.FC<{
           `,
         }}
       />
-      {/* Specular highlight — top left */}
-      <div
-        style={{
-          position: "absolute",
-          top: 35,
-          left: 65,
-          width: 100,
-          height: 60,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(ellipse, rgba(200,200,240,0.09) 0%, transparent 70%)",
-          transform: "rotate(-20deg)",
-        }}
-      />
-      {/* Inner purple atmosphere */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 40,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle at 42% 38%, rgba(139,92,246,0.16), transparent 60%)",
-        }}
-      />
-      {/* Text */}
+      {/* Text — 80px, dominates the orb interior */}
       <div
         style={{
           position: "relative",
-          fontSize: 54,
+          fontSize: 80,
           fontFamily: FONT,
           fontWeight: 400,
           color: "#fff",
           textShadow: "0 0 30px rgba(139,92,246,0.25)",
           zIndex: 1,
-          letterSpacing: 1,
+          letterSpacing: 2,
         }}
       >
         Ultra 1.0
@@ -1433,27 +1409,27 @@ export const Scene05: React.FC = () => {
       }, f(390));
     }
 
-    // ═══ K: Cards pan 2+3 (430-480) — each card rotates on its OWN Y-axis ═══
+    // ═══ K: Cards pan 2+3 (430-465) — compressed from 50→35 frames ═══
     if (cardsPanRef.current) {
       t.set(cardsPanRef.current, { opacity: 0, x: 200 }, 0);
       // Sweep container in
       t.to(cardsPanRef.current, {
         opacity: 1,
         x: 0,
-        duration: f(16),
+        duration: f(12),
         ease: "power2.out",
       }, f(430));
       // Pan container left
       t.to(cardsPanRef.current, {
         x: -180,
-        duration: f(45),
+        duration: f(30),
         ease: "power1.inOut",
       }, f(430));
       t.to(cardsPanRef.current, {
         opacity: 0,
-        duration: f(8),
+        duration: f(6),
         ease: "power1.in",
-      }, f(470));
+      }, f(458));
     }
     // Each card in K rocks gently on its own Y-axis (NOT 360° spin)
     cardPanItemRefs.current.forEach((el, i) => {
@@ -1472,20 +1448,20 @@ export const Scene05: React.FC = () => {
       }, f(454));
     });
 
-    // ═══ L: "With access to" — readable, then chars peel inward (480-520) ═══
+    // ═══ L: "With access to" — compressed from 40→25 frames (465-490) ═══
     // Phase 1: readable text appears
     if (spiralTextRef.current) {
       t.set(spiralTextRef.current, { opacity: 0 }, 0);
       t.to(spiralTextRef.current, {
         opacity: 1,
-        duration: f(10),
+        duration: f(8),
         ease: "power2.out",
-      }, f(480));
+      }, f(465));
       // Hide readable text when chars start peeling
       t.to(spiralTextRef.current, {
         opacity: 0,
         duration: f(1),
-      }, f(497));
+      }, f(478));
     }
 
     // Phase 2: chars peel from right side, curving inward to center
@@ -1497,11 +1473,11 @@ export const Scene05: React.FC = () => {
       // Start invisible at text position
       t.set(el, { opacity: 0, x: params.startX, y: 0, rotation: 0, scale: 1 }, 0);
       // Make visible when readable text hides
-      t.set(el, { opacity: 1 }, f(497));
+      t.set(el, { opacity: 1 }, f(478));
 
       // Later chars (end of text) move first — "to" peels before "With"
       const reverseIdx = totalChars - 1 - i;
-      const staggerFrame = 497 + reverseIdx * 0.8;
+      const staggerFrame = 478 + reverseIdx * 0.5;
 
       // Each char curves through a control point before converging to center
       const arcDirX = params.startX > 0 ? 1 : -1;
@@ -1515,7 +1491,7 @@ export const Scene05: React.FC = () => {
         { x: 0, y: 0 },
       ];
 
-      const dur = 24 + reverseIdx * 0.4;
+      const dur = 16 + reverseIdx * 0.3;
 
       t.to(el, {
         motionPath: {
@@ -1530,30 +1506,26 @@ export const Scene05: React.FC = () => {
       }, f(staggerFrame));
     });
 
-    // Spiral words — 3D orbital ring: words orbit on a tilted ellipse
-    // The ring container tilts in 3D, words are positioned on the ring
+    // Spiral words — 3D orbital ring
     if (spiralRingRef.current) {
       t.set(spiralRingRef.current, { opacity: 0, rotateX: 60, rotateZ: -15, scale: 0.6 }, 0);
-      // Fade in with 3D tilt
       t.to(spiralRingRef.current, {
         opacity: 1,
         scale: 1,
-        duration: f(12),
+        duration: f(10),
         ease: "power2.out",
-      }, f(492));
-      // Slow orbit rotation while visible
+      }, f(474));
       t.to(spiralRingRef.current, {
         rotateZ: 15,
-        duration: f(35),
+        duration: f(22),
         ease: "none",
-      }, f(492));
-      // Converge inward and fade
+      }, f(474));
       t.to(spiralRingRef.current, {
         scale: 0.15,
         opacity: 0,
-        duration: f(12),
+        duration: f(8),
         ease: "power2.in",
-      }, f(520));
+      }, f(488));
     }
     // Individual words fade in with stagger
     spiralWordsRef.current.forEach((el, i) => {
@@ -1562,14 +1534,14 @@ export const Scene05: React.FC = () => {
       t.to(el, {
         opacity: 1,
         scale: 1,
-        duration: f(8),
+        duration: f(6),
         ease: "power1.out",
-      }, f(494 + i * 2));
+      }, f(475 + i * 1.5));
       t.to(el, {
         opacity: 0,
-        duration: f(6),
+        duration: f(4),
         ease: "power1.in",
-      }, f(522 + i * 1));
+      }, f(489 + i * 0.5));
     });
 
     // Spiral center glow
@@ -1577,22 +1549,22 @@ export const Scene05: React.FC = () => {
       t.set(spiralGlowRef.current, { opacity: 0 }, 0);
       t.to(spiralGlowRef.current, {
         opacity: 0.6,
-        duration: f(20),
+        duration: f(14),
         ease: "power1.in",
-      }, f(500));
+      }, f(476));
       t.to(spiralGlowRef.current, {
         opacity: 1,
-        duration: f(10),
+        duration: f(6),
         ease: "power1.in",
-      }, f(515));
+      }, f(486));
       t.to(spiralGlowRef.current, {
         opacity: 0,
-        duration: f(5),
+        duration: f(4),
         ease: "power1.out",
-      }, f(525));
+      }, f(492));
     }
 
-    // ═══ M: Ultra 1.0 orb (520-570) ═══
+    // ═══ M: Ultra 1.0 orb (490-540) — shifted earlier by 30 frames ═══
     if (orbWrapRef.current) {
       t.set(orbWrapRef.current, { opacity: 0, scale: 0.4 }, 0);
       // Spring entrance
@@ -1601,17 +1573,17 @@ export const Scene05: React.FC = () => {
         scale: 1,
         duration: f(18),
         ease: "elastic.out(1, 0.45)",
-      }, f(520));
+      }, f(490));
       // Exit
       t.to(orbWrapRef.current, {
         opacity: 0,
         scale: 0.8,
         duration: f(14),
         ease: "power2.in",
-      }, f(560));
+      }, f(530));
     }
 
-    // ═══ N: Experience Gemini + devices (570-640) ═══
+    // ═══ N: Experience Gemini + devices (540-610) — shifted 30 frames earlier ═══
     if (expTitleRef.current) {
       t.set(expTitleRef.current, { opacity: 0, y: 16 }, 0);
       t.to(expTitleRef.current, {
@@ -1619,7 +1591,7 @@ export const Scene05: React.FC = () => {
         y: 0,
         duration: f(12),
         ease: "power2.out",
-      }, f(570));
+      }, f(540));
     }
     if (expUrlRef.current) {
       t.set(expUrlRef.current, { opacity: 0 }, 0);
@@ -1627,7 +1599,7 @@ export const Scene05: React.FC = () => {
         opacity: 1,
         duration: f(12),
         ease: "power2.out",
-      }, f(580));
+      }, f(550));
     }
     // Phone arc sweep from bottom-left
     if (expPhoneRef.current) {
@@ -1639,7 +1611,7 @@ export const Scene05: React.FC = () => {
         rotation: 0,
         duration: f(23),
         ease: "power2.out",
-      }, f(585));
+      }, f(555));
     }
     // Desktop arc sweep from right
     if (expDesktopRef.current) {
@@ -1650,7 +1622,7 @@ export const Scene05: React.FC = () => {
         rotation: 0,
         duration: f(22),
         ease: "power2.out",
-      }, f(590));
+      }, f(560));
     }
     // Devices container scale
     if (expDevicesRef.current) {
@@ -1659,7 +1631,7 @@ export const Scene05: React.FC = () => {
         scale: 0.85,
         duration: f(27),
         ease: "power1.inOut",
-      }, f(585));
+      }, f(555));
     }
 
     // Experience section fade overlay
@@ -1669,10 +1641,10 @@ export const Scene05: React.FC = () => {
         opacity: 1,
         duration: f(15),
         ease: "power1.inOut",
-      }, f(630));
+      }, f(600));
     }
 
-    // ═══ O+P: Sparkle → Google G morph (640-694) ═══
+    // ═══ O+P: Sparkle → Google G morph (610-694) — shifted 30 frames earlier ═══
     // Single continuous container: sparkle appears, morphs into G, then fades
     if (sparkleWrapRef.current) {
       t.set(sparkleWrapRef.current, { opacity: 0, scale: 0.15 }, 0);
@@ -1682,13 +1654,13 @@ export const Scene05: React.FC = () => {
         scale: 1,
         duration: f(12),
         ease: "elastic.out(1, 0.5)",
-      }, f(640));
+      }, f(610));
       // Scale up slightly during morph for dramatic effect
       t.to(sparkleWrapRef.current, {
         scale: 1.3,
         duration: f(18),
         ease: "power1.inOut",
-      }, f(652));
+      }, f(622));
       // Final fade out
       t.to(sparkleWrapRef.current, {
         opacity: 0,
@@ -1709,7 +1681,7 @@ export const Scene05: React.FC = () => {
         fill: "#4285F4", // transition fill from white to Google blue
         duration: f(18),
         ease: "power2.inOut",
-      }, f(652));
+      }, f(622));
     }
 
     // Google G full-color overlay fades in over the morph result
@@ -1721,14 +1693,14 @@ export const Scene05: React.FC = () => {
         scale: 1.3,
         duration: f(8),
         ease: "power1.out",
-      }, f(665));
+      }, f(635));
       // Match the parent scale-down
       t.to(gFinalWrapRef.current, {
         scale: 1.0,
         duration: f(12),
         ease: "power1.inOut",
-      }, f(670));
-      // Final fade out together
+      }, f(640));
+      // Final fade out together — holds longer now
       t.to(gFinalWrapRef.current, {
         opacity: 0,
         duration: f(8),
@@ -1762,17 +1734,17 @@ export const Scene05: React.FC = () => {
   const bgGlow3X = 30 + organicOffset(frame, "bg3X", 0.006, 8);
   const bgGlow3Y = 70 + organicOffset(frame, "bg3Y", 0.007, 6);
 
-  // G final glow computation — extends through the morph
-  const gFinalLocal = Math.max(0, frame - 665);
+  // G final glow computation — extends through the morph (shifted -30)
+  const gFinalLocal = Math.max(0, frame - 635);
   const gFinalGlow =
-    frame >= 665
+    frame >= 635
       ? Math.min(1, gFinalLocal / 10) * (gFinalLocal > 25 ? 0.5 : 1)
       : 0;
 
-  // Sparkle/morph glow — continuous from sparkle through G morph
-  const sparkleLocal = Math.max(0, frame - 640);
+  // Sparkle/morph glow — continuous from sparkle through G morph (shifted -30)
+  const sparkleLocal = Math.max(0, frame - 610);
   const sparkleGlow =
-    frame >= 640 && frame < 694
+    frame >= 610 && frame < 694
       ? sparkleLocal < 8
         ? sparkleLocal / 8 // ramp up
         : sparkleLocal < 35
@@ -1780,16 +1752,16 @@ export const Scene05: React.FC = () => {
           : Math.max(0, 1 - (sparkleLocal - 35) / 15) // slow fade
       : 0;
 
-  // Morph progress for color interpolation on glow
+  // Morph progress for color interpolation on glow (shifted -30)
   const morphProgress =
-    frame >= 652 && frame < 670
-      ? Math.min(1, (frame - 652) / 18)
-      : frame >= 670
+    frame >= 622 && frame < 640
+      ? Math.min(1, (frame - 622) / 18)
+      : frame >= 640
         ? 1
         : 0;
 
-  // Orb local frame for internal animation
-  const orbLocalFrame = Math.max(0, frame - 520);
+  // Orb local frame for internal animation (shifted -30)
+  const orbLocalFrame = Math.max(0, frame - 490);
 
   // Helper to build kinetic word elements
   const buildKineticWords = (
@@ -1938,22 +1910,34 @@ export const Scene05: React.FC = () => {
         </div>
       </div>
 
-      {/* E: "Our most capable AI" + decorations */}
+      {/* E: "Our most capable AI" + FULL-FRAME 4-point star outline */}
       <div
         ref={sparkleDecoRef}
         style={{
           position: "absolute",
-          top: "calc(50% + 30px)",
+          top: "50%",
           left: "50%",
-          transform: "translateX(-50%)",
+          transform: "translate(-50%, -50%)",
           opacity: 0,
+          pointerEvents: "none",
         }}
       >
-        <GeminiSparkle
-          size={35}
-          opacity={1}
-          color="rgba(139,92,246,0.6)"
-        />
+        <svg width={600} height={600} viewBox="0 0 600 600">
+          <path
+            d="M300 20 C300 165, 165 300, 20 300 C165 300, 300 435, 300 580 C300 435, 435 300, 580 300 C435 300, 300 165, 300 20Z"
+            fill="none"
+            stroke="url(#sparkle-grad)"
+            strokeWidth={2.5}
+            opacity={0.7}
+          />
+          <defs>
+            <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={PURPLE} />
+              <stop offset="50%" stopColor={PINK} />
+              <stop offset="100%" stopColor={BLUE} />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
       <svg
         ref={sparkleDecoCurvesRef}
@@ -1990,13 +1974,50 @@ export const Scene05: React.FC = () => {
         "rgba(236,72,153,0.6)"
       )}
 
-      {/* F: "for reasoning" */}
-      {buildKineticWords(
-        kineticF,
-        kineticFRefs,
-        `linear-gradient(90deg, ${PURPLE}, ${BLUE})`,
-        "rgba(139,92,246,0.5)"
-      )}
+      {/* F: "for reasoning" — lavender, not gradient */}
+      {(() => {
+        const words = kineticF.text.split(" ");
+        const accentWords = new Set(kineticF.accent.split(" "));
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              fontSize: 52,
+              fontFamily: FONT,
+              fontWeight: 300,
+              color: "#fff",
+              whiteSpace: "nowrap",
+              display: "flex",
+              gap: "0.3em",
+            }}
+          >
+            {words.map((word, i) => {
+              const isAccent = accentWords.has(word);
+              return (
+                <span
+                  key={i}
+                  ref={(el) => { kineticFRefs.current[i] = el; }}
+                  style={{
+                    display: "inline-block",
+                    opacity: 0,
+                    ...(isAccent
+                      ? {
+                          color: "#C4B5FD",
+                          filter: "drop-shadow(0 0 8px rgba(196,181,253,0.3))",
+                        }
+                      : {}),
+                  }}
+                >
+                  {word}
+                </span>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* G: Card zoom 0 — 3D rotating card */}
       <div
@@ -2375,7 +2396,7 @@ export const Scene05: React.FC = () => {
         <UltraOrb frame={orbLocalFrame} fps={fps} />
       </div>
 
-      {/* N: Experience Gemini + devices */}
+      {/* N: Experience Gemini + devices — title at 35% from top */}
       <div
         style={{
           position: "absolute",
@@ -2384,14 +2405,14 @@ export const Scene05: React.FC = () => {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingTop: 60,
+          paddingTop: "35%",
           pointerEvents: "none",
         }}
       >
         <div
           ref={expTitleRef}
           style={{
-            fontSize: 36,
+            fontSize: 46,
             fontFamily: FONT,
             fontWeight: 400,
             color: "#fff",
@@ -2463,7 +2484,7 @@ export const Scene05: React.FC = () => {
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(-50%, -50%) rotate(${frame >= 640 ? organicOffset(frame, "spkRot", 0.04, 8) : 0}deg)`,
+          transform: `translate(-50%, -50%) rotate(${frame >= 610 ? organicOffset(frame, "spkRot", 0.04, 8) : 0}deg)`,
           opacity: 0,
         }}
       >
@@ -2509,7 +2530,7 @@ export const Scene05: React.FC = () => {
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(calc(-50% + ${frame >= 665 ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0}px), calc(-50% + ${frame >= 665 ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0}px))`,
+          transform: `translate(calc(-50% + ${frame >= 635 ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0}px), calc(-50% + ${frame >= 635 ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0}px))`,
           opacity: 0,
         }}
       >

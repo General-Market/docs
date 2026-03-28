@@ -70,24 +70,30 @@ interface Particle {
   shape: "circle"|"diamond"|"star";
 }
 
-function generateParticles(count: number, seed: number): Particle[] {
+function generateParticles(count: number, seed: number, arc = false): Particle[] {
   const rng = seededRandom(seed);
   const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, "#A78BFA", "#F472B6", "#60A5FA"];
   const shapes: Particle["shape"][] = ["circle","circle","circle","diamond","star"];
   return Array.from({length: count}, (_, i) => {
-    const angle = (rng() - 0.3) * Math.PI * 0.8;
-    const dist = 80 + rng() * 280;
+    /* Arc mode: comet-like sweeping curve from left to right-up */
+    const angle = arc
+      ? -0.6 + rng() * 1.4  /* tighter cone: ~-35deg to +45deg, sweeping rightward-up */
+      : (rng() - 0.3) * Math.PI * 0.8;
+    const dist = arc ? 120 + rng() * 350 : 80 + rng() * 280;
     const perpAngle = angle + (rng() > 0.5 ? Math.PI/2 : -Math.PI/2);
-    const cpDist = 40 + rng() * 120;
+    const cpDist = arc ? 80 + rng() * 180 : 40 + rng() * 120;
     return {
-      id: i, x: 500 + rng()*280, y: 300 + (rng()-0.5)*120,
-      cpOffX: Math.cos(perpAngle)*cpDist + Math.cos(angle)*dist*0.5,
-      cpOffY: Math.sin(perpAngle)*cpDist + Math.sin(angle)*dist*0.5,
-      endX: Math.cos(angle)*dist, endY: Math.sin(angle)*dist,
+      id: i,
+      x: arc ? 400 + rng()*160 : 500 + rng()*280,
+      y: arc ? 340 + (rng()-0.5)*80 : 300 + (rng()-0.5)*120,
+      cpOffX: Math.cos(perpAngle)*cpDist + Math.cos(angle)*dist*0.5 + (arc ? 60 : 0),
+      cpOffY: Math.sin(perpAngle)*cpDist + Math.sin(angle)*dist*0.5 + (arc ? -40 : 0),
+      endX: Math.cos(angle)*dist, endY: Math.sin(angle)*dist - (arc ? 60 : 0),
       size: 2 + rng()*10, color: colors[Math.floor(rng()*colors.length)],
       speed: 0.5 + rng()*3, angle,
       noiseOffsetX: rng()*1000, noiseOffsetY: rng()*1000,
-      delay: rng()*15, shape: shapes[Math.floor(rng()*shapes.length)],
+      delay: arc ? rng()*8 : rng()*15,  /* tighter delay spread for compressed version */
+      shape: shapes[Math.floor(rng()*shapes.length)],
     };
   });
 }
@@ -141,14 +147,15 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
   </>
 );
 
-/* --- SEGMENT 1: Particle Explosion --- */
+/* --- SEGMENT 1: Particle Explosion (compressed ~35 frames, arc trajectory) --- */
 const SegParticleExplosion: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const particles = useMemo(() => generateParticles(120, 42), []);
+  const particles = useMemo(() => generateParticles(120, 42, true), []);
   const wob = organicWobble("pexp", frame, 4, 3, 0.025);
-  const glowOp = interpolate(frame, [0,9,11,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
-  const phase: "explode"|"swirl" = frame < fps*0.8 ? "explode" : "swirl";
+  const glowOp = interpolate(frame, [0,5,7,fps*0.6], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
+  /* Faster phase transition for compressed timing */
+  const phase: "explode"|"swirl" = frame < fps*0.4 ? "explode" : "swirl";
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>
       <div style={{position:"absolute",left:"50%",top:"50%",width:400,height:400,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)",opacity:glowOp}} />
@@ -621,18 +628,18 @@ const SegPhoneGoodMorning: React.FC = () => {
 /* === MAIN SCENE 03 === */
 export const Scene03: React.FC = () => {
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
-    {start:0,dur:50,Comp:SegParticleExplosion},
-    {start:45,dur:50,Comp:SegGeminiReveal},
-    {start:90,dur:95,Comp:SegDesktopUI},
-    {start:185,dur:30,Comp:SegItsEverything},
-    {start:208,dur:55,Comp:SegAppsFloat},
-    {start:255,dur:80,Comp:SegTypingPrompt},
-    {start:330,dur:40,Comp:SegGeminiResponse},
-    {start:365,dur:55,Comp:SegAndMore},
-    {start:416,dur:62,Comp:SegStartingWith},
-    {start:476,dur:84,Comp:SegPhoneMockup},
-    {start:555,dur:85,Comp:SegSupercharge},
-    {start:635,dur:110,Comp:SegPhoneGoodMorning},
+    {start:0,dur:18,Comp:SegParticleExplosion},       /* compressed from 50 → 18 (~35 frames shorter) */
+    {start:14,dur:50,Comp:SegGeminiReveal},            /* starts earlier, overlap with particle tail */
+    {start:59,dur:95,Comp:SegDesktopUI},
+    {start:154,dur:30,Comp:SegItsEverything},
+    {start:177,dur:55,Comp:SegAppsFloat},
+    {start:224,dur:80,Comp:SegTypingPrompt},
+    {start:299,dur:80,Comp:SegGeminiResponse},         /* extended from 40 → 80 frames */
+    {start:374,dur:55,Comp:SegAndMore},
+    {start:425,dur:62,Comp:SegStartingWith},
+    {start:485,dur:84,Comp:SegPhoneMockup},
+    {start:564,dur:85,Comp:SegSupercharge},
+    {start:644,dur:110,Comp:SegPhoneGoodMorning},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
@@ -649,5 +656,5 @@ export const scene03Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 745,
+  durationInFrames: 754,
 };
