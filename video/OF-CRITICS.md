@@ -61,10 +61,29 @@ P8      207 (6.9s)       215 (7.17s)       Line 1117: P8_FROM = 215
 
 ## SCENE 2 (0:08-0:14) — Bard Dies, Gemini Born
 
-- [ ] Page turn corner-peel: verify it matches bottom-right → top-left diagonal
-- [ ] Bard disintegration: particles should break from letterforms, not scatter randomly
-- [ ] Particle density at peak (frame 170) too low vs reference
-- [ ] Timeline offset: check if 0.5s compression affects Scene 2 too
+**File:** `video/src/compositions/replicate-ordinaryfolk/Scene02.tsx`
+
+### Light phase (frames 0-100)
+- [ ] Mixed font weights 300/400 → should be uniform 400. Find all `fontWeight: 300` and change to 400.
+- [ ] Text vertical position 50% → should be ~45%. Find `top: "50%"` or `cy` and shift up.
+
+### Page turn (frames 100-122) — P0 CRITICAL
+- [ ] **Dark bg color** `#1A1A2E` (navy) → `#0D0D10` (near-black). Find the dark background div color.
+- [ ] **Fold geometry overshoots** — dark leaks on both sides of top edge. Should be clean top-right triangle sweep only. Fix the clip-path polygon calculation.
+- [ ] **White page color** — pure white `#FFFFFF` → off-white `#F5F5F8`. Find the page surface background.
+- [ ] **Fold shadow opacity** — current is half what it should be. Double the shadow opacity value.
+- [ ] **Perspective origin** — bottom-left vs reference left-center. Find `transformOrigin` and change to `"left center"`.
+
+### "Today" gradient (frames 121-137)
+- [ ] **Text too small** — 46px → 56-58px. Find `fontSize` for "Today" text.
+- [ ] **Glow halo too tight/dim** — increase spread radius 2x, increase opacity 1.5x.
+- [ ] **Remove center blob** — there's a luminous center glow element that doesn't exist in reference. Delete it.
+
+### Bard disintegration (frames 148-174) — P0 CRITICAL
+- [ ] **Particle direction wrong** — scatter omnidirectional → should stream UPWARD-LEFT in a tight cone (~30° arc). Change random angle range from `[0, 2*PI]` to `[PI*0.6, PI*0.9]` (upper-left quadrant).
+- [ ] **Color palette wrong** — predominantly hot pink → should be 60% blue-purple. Shift particle color distribution: `["#6366f1", "#7c3aed", "#8b5cf6", "#a78bfa", "#c084fc", "#d946ef"]` (purple-heavy, not pink-heavy).
+- [ ] **Particles 2-3x too large** — reduce particle size by 60%. Change `size` values from current to `current * 0.4`.
+- [ ] **Structural ceiling:** No per-element directional motion blur possible in CSS. Would need canvas/WebGL for the streaked particles visible in reference frame_012.
 
 ## SCENE 3 (0:14-0:39) — Gemini Product Showcase
 
