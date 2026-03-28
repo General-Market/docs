@@ -10,8 +10,10 @@ import {
 
 /* ─── colour tokens ─── */
 const WHOP_RED = "#E8391C";
-const BLUE = "#4A7DFF";
-const GREEN = "#4ADE80";
+const BLUE = "#4472C4";
+const BUTTON_BLUE = "#4A7DFF";
+const GREEN = "#70AD47";
+const CASH_GREEN = "#4ADE80";
 const GREEN_BADGE = "#22C55E";
 const BG = "#f5f5f7";
 const CARD_BG = "#FFFFFF";
@@ -24,16 +26,19 @@ const AAVE_PURPLE = "#7C3AED";
 /* ─── data: 30 bars, year 1..30 ─── */
 const BAR_COUNT = 30;
 const DEPOSIT_PER_YEAR = 36800;
-const APY = 0.06;
+const FINAL_TOTAL = 1224907;
+const FINAL_DEPOSIT = BAR_COUNT * DEPOSIT_PER_YEAR; // 1,104,000
+const FINAL_INTEREST = FINAL_TOTAL - FINAL_DEPOSIT; // 120,907
 
 function generateBarData() {
   const bars: { year: number; deposit: number; interest: number }[] = [];
-  let totalDeposit = 0;
-  let totalInterest = 0;
   for (let i = 1; i <= BAR_COUNT; i++) {
-    totalDeposit += DEPOSIT_PER_YEAR;
-    totalInterest += (totalDeposit + totalInterest) * APY;
-    bars.push({ year: i, deposit: totalDeposit, interest: totalInterest });
+    const deposit = DEPOSIT_PER_YEAR * i;
+    // Scale interest so it reaches FINAL_INTEREST at year 30
+    // Use quadratic growth to match visual curve
+    const t = i / BAR_COUNT;
+    const interest = FINAL_INTEREST * t * t;
+    bars.push({ year: i, deposit, interest });
   }
   return bars;
 }
@@ -176,7 +181,7 @@ const DashboardSegment: React.FC = () => {
                   border: `2px solid ${BORDER}`,
                   fontSize: 36,
                   color: i === 0 ? "#fff" : TEXT_PRIMARY,
-                  backgroundColor: i === 0 ? BLUE : "transparent",
+                  backgroundColor: i === 0 ? BUTTON_BLUE : "transparent",
                   fontWeight: 500,
                 }}
               >
@@ -202,7 +207,7 @@ const DashboardSegment: React.FC = () => {
             style={{
               width: `${treasuryPct * 100}%`,
               height: "100%",
-              backgroundColor: BLUE,
+              backgroundColor: BUTTON_BLUE,
               borderRadius: 14,
             }}
           />
@@ -210,7 +215,7 @@ const DashboardSegment: React.FC = () => {
             style={{
               width: `${cashPct * 100}%`,
               height: "100%",
-              backgroundColor: GREEN,
+              backgroundColor: CASH_GREEN,
             }}
           />
         </div>
@@ -231,7 +236,7 @@ const DashboardSegment: React.FC = () => {
                   width: 20,
                   height: 20,
                   borderRadius: 4,
-                  backgroundColor: BLUE,
+                  backgroundColor: BUTTON_BLUE,
                 }}
               />
               <span style={{ color: TEXT_SECONDARY }}>Treasury</span>
@@ -242,7 +247,7 @@ const DashboardSegment: React.FC = () => {
                   width: 20,
                   height: 20,
                   borderRadius: 4,
-                  backgroundColor: GREEN,
+                  backgroundColor: CASH_GREEN,
                 }}
               />
               <span style={{ color: TEXT_SECONDARY }}>Available cash</span>
@@ -364,7 +369,7 @@ const DashboardSegment: React.FC = () => {
               <span
                 style={{
                   fontSize: 32,
-                  color: BLUE,
+                  color: BUTTON_BLUE,
                   fontWeight: 500,
                 }}
               >
@@ -432,7 +437,7 @@ const DashboardSegment: React.FC = () => {
               <span
                 style={{
                   fontSize: 32,
-                  color: BLUE,
+                  color: BUTTON_BLUE,
                   fontWeight: 500,
                 }}
               >
@@ -499,7 +504,7 @@ const DashboardSegment: React.FC = () => {
                 {formatDollar(usdVal)}
               </div>
               <span
-                style={{ fontSize: 32, color: BLUE, fontWeight: 500 }}
+                style={{ fontSize: 32, color: BUTTON_BLUE, fontWeight: 500 }}
               >
                 Convert
               </span>
@@ -557,7 +562,7 @@ const DashboardSegment: React.FC = () => {
                 </div>
               </div>
               <span
-                style={{ fontSize: 32, color: BLUE, fontWeight: 500 }}
+                style={{ fontSize: 32, color: BUTTON_BLUE, fontWeight: 500 }}
               >
                 Convert
               </span>
@@ -621,7 +626,7 @@ const GrowthChartSegment: React.FC = () => {
   const interestVal = interpolate(
     frame,
     [fps * 1.5, fps * 4.5],
-    [0, 118686],
+    [0, FINAL_INTEREST],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -767,7 +772,7 @@ const GrowthChartSegment: React.FC = () => {
             gap: 10,
           }}
         >
-          <span style={{ color: GREEN_BADGE, fontWeight: 700 }}>
+          <span style={{ color: GREEN, fontWeight: 700 }}>
             {formatDollar(interestVal)}
           </span>
           <span style={{ color: TEXT_SECONDARY, fontWeight: 500 }}>
@@ -793,7 +798,7 @@ const GrowthChartSegment: React.FC = () => {
             const depositH = (bar.deposit / MAX_TOTAL) * maxH;
             const interestH = fullH - depositH;
 
-            const delayFrames = fps * 0.6 + i * 2.5;
+            const delayFrames = fps * 0.4 + i * 1.2;
             const growProgress = spring({
               fps,
               frame: frame - delayFrames,
@@ -988,19 +993,19 @@ const DepositSegment: React.FC = () => {
 
         {[
           {
-            icon: "💳",
             label: "Pay with card",
             sub: "$50,000 limit · 2 min",
+            iconType: "card" as const,
           },
           {
-            icon: "🔗",
             label: "Deposit crypto",
             sub: "No limit · Instant",
+            iconType: "crypto" as const,
           },
           {
-            icon: "🏦",
             label: "Deposit cash balance",
             sub: "No limit · Instant",
+            iconType: "bank" as const,
           },
         ].map((opt, i) => {
           const rowOp = interpolate(
@@ -1027,7 +1032,34 @@ const DepositSegment: React.FC = () => {
               <div
                 style={{ display: "flex", alignItems: "center", gap: 28 }}
               >
-                <span style={{ fontSize: 52 }}>{opt.icon}</span>
+                {/* Icon */}
+                <div style={{ width: 80, height: 80, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#F3F4F6", borderRadius: 18, flexShrink: 0 }}>
+                  {opt.iconType === "card" && (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {/* Mini card brand logos */}
+                      <div style={{ width: 28, height: 18, borderRadius: 3, backgroundColor: "#1A1F71", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 800 }}>V</span>
+                      </div>
+                      <div style={{ width: 28, height: 18, borderRadius: 3, background: "linear-gradient(135deg, #EB001B 50%, #F79E1B 50%)" }} />
+                    </div>
+                  )}
+                  {opt.iconType === "crypto" && (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {["#F7931A", "#627EEA", "#26A17B", "#E8391C"].map((c, ci) => (
+                        <div key={ci} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: c }} />
+                      ))}
+                    </div>
+                  )}
+                  {opt.iconType === "bank" && (
+                    <svg width="36" height="36" viewBox="0 0 36 36">
+                      <path d="M18 4L4 14H32L18 4Z" fill="#9CA3AF" />
+                      <rect x="7" y="15" width="4" height="12" fill="#9CA3AF" />
+                      <rect x="16" y="15" width="4" height="12" fill="#9CA3AF" />
+                      <rect x="25" y="15" width="4" height="12" fill="#9CA3AF" />
+                      <rect x="3" y="28" width="30" height="4" rx="1" fill="#9CA3AF" />
+                    </svg>
+                  )}
+                </div>
                 <div>
                   <div style={{ fontWeight: 600, color: TEXT_PRIMARY }}>
                     {opt.label}
@@ -1051,13 +1083,14 @@ const DepositSegment: React.FC = () => {
 /* ════════════════════════════════════════════════════════
    TRANSITION — Red Whop coin rain (frames 335–350)
    ════════════════════════════════════════════════════════ */
-const COIN_COUNT = 24;
+const COIN_COUNT = 18;
 const coinSeeds = Array.from({ length: COIN_COUNT }, (_, i) => ({
-  x: ((i * 163 + 47) % 3600) + 120, // spread across 4K with margin
-  delay: ((i * 29) % 8) * 0.04, // staggered start (0-0.32s range, tighter)
-  speed: 3500 + ((i * 131) % 1800), // faster fall
-  size: 140 + ((i * 67) % 200), // coin size 140-340
-  rotSpeed: 220 + ((i * 89) % 400), // rotation speed deg/s
+  x: ((i * 211 + 47) % 3400) + 200, // spread across 4K with margin
+  delay: ((i * 23) % 6) * 0.06, // staggered start
+  speed: 2200 + ((i * 131) % 1200), // fall speed
+  size: 250 + ((i * 97) % 350), // coin size 250-600 (much bigger)
+  rotSpeed: 120 + ((i * 67) % 200), // slower rotation for 3D effect
+  rotStart: ((i * 73) % 360), // random start rotation
 }));
 
 const CoinRainTransition: React.FC = () => {
@@ -1094,7 +1127,7 @@ const CoinRainTransition: React.FC = () => {
       {coinSeeds.map((coin, i) => {
         const elapsed = Math.max(0, t - coin.delay);
         const y = -coin.size + elapsed * coin.speed;
-        const rotation = elapsed * coin.rotSpeed;
+        const rotation = coin.rotStart + elapsed * coin.rotSpeed;
         const opacity = interpolate(
           frame,
           [0, fps * 0.1, fps * 0.5],
@@ -1121,39 +1154,63 @@ const CoinRainTransition: React.FC = () => {
               height={coin.size}
               viewBox="0 0 100 100"
             >
+              <defs>
+                <radialGradient id={`coinGrad${i}`} cx="40%" cy="35%" r="60%">
+                  <stop offset="0%" stopColor="#FF6B4A" />
+                  <stop offset="50%" stopColor={WHOP_RED} />
+                  <stop offset="100%" stopColor="#B82D15" />
+                </radialGradient>
+              </defs>
               <circle
                 cx="50"
                 cy="50"
                 r="46"
-                fill={WHOP_RED}
-                stroke="#D4331A"
-                strokeWidth="3"
+                fill={`url(#coinGrad${i})`}
+                stroke="#B82D15"
+                strokeWidth="2"
               />
-              {/* Highlight streak */}
+              {/* Glossy highlight band — diagonal white stripe */}
+              <ellipse
+                cx="42"
+                cy="40"
+                rx="28"
+                ry="10"
+                fill="rgba(255,255,255,0.30)"
+                transform="rotate(-35 42 40)"
+              />
               <ellipse
                 cx="38"
-                cy="38"
-                rx="18"
-                ry="12"
-                fill="rgba(255,255,255,0.25)"
-                transform="rotate(-30 38 38)"
+                cy="36"
+                rx="16"
+                ry="5"
+                fill="rgba(255,255,255,0.20)"
+                transform="rotate(-35 38 36)"
               />
-              {/* W mark on coin */}
+              {/* W mark — two swoosh strokes */}
               <path
-                d="M30 55 Q38 60, 45 50 Q52 42, 65 38"
+                d="M28 48 C32 50, 38 56, 42 57 C46 58, 54 50, 68 40"
                 stroke="#fff"
-                strokeWidth="5"
+                strokeWidth="4.5"
+                strokeLinecap="round"
+                fill="none"
+                opacity={0.85}
+              />
+              <path
+                d="M24 60 C28 56, 32 56, 36 58 C42 62, 48 68, 52 69 C56 70, 62 64, 72 54"
+                stroke="#fff"
+                strokeWidth="4.5"
                 strokeLinecap="round"
                 fill="none"
                 opacity={0.7}
               />
-              <path
-                d="M30 65 Q38 70, 45 60 Q52 52, 65 48"
-                stroke="#fff"
-                strokeWidth="5"
-                strokeLinecap="round"
+              {/* Rim highlight */}
+              <circle
+                cx="50"
+                cy="50"
+                r="44"
                 fill="none"
-                opacity={0.5}
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth="2"
               />
             </svg>
           </div>
@@ -1209,22 +1266,24 @@ const LogoRevealSegment: React.FC = () => {
           marginBottom: 200,
         }}
       >
-        {/* Whop W mark — two stacked swooshes like check marks flying up-right */}
-        <svg width="400" height="320" viewBox="0 0 120 96" fill="none">
-          {/* Upper swoosh */}
+        {/* Whop W mark — two bold swoosh strokes */}
+        <svg width="380" height="280" viewBox="0 0 200 140" fill="none">
+          {/* Top swoosh — thick stroke, check shape: down then up-right */}
           <path
-            d="M10 50 Q25 58, 40 45 Q55 32, 70 22 Q85 14, 105 8"
+            d="M42 50 Q56 66, 66 70 Q78 74, 100 54 Q120 36, 155 16"
             stroke={WHOP_RED}
-            strokeWidth="16"
+            strokeWidth="22"
             strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
-          {/* Lower swoosh */}
+          {/* Bottom swoosh — thick stroke, left tail curls then up-right */}
           <path
-            d="M10 76 Q25 84, 40 71 Q55 58, 70 48 Q85 40, 105 34"
+            d="M12 86 Q20 78, 30 80 Q44 84, 62 104 Q74 116, 84 118 Q96 118, 116 98 Q136 78, 164 54"
             stroke={WHOP_RED}
-            strokeWidth="16"
+            strokeWidth="22"
             strokeLinecap="round"
+            strokeLinejoin="round"
             fill="none"
           />
         </svg>
@@ -1324,13 +1383,16 @@ const LogoRevealSegment: React.FC = () => {
                     strokeWidth="3"
                     fill="none"
                   />
+                  {/* Aave ghost: arch with small peak at top */}
                   <path
-                    d="M28 64 C28 38 38 22 48 22 C58 22 68 38 68 64"
+                    d="M30 66 C30 40 38 26 48 20 C58 26 66 40 66 66"
                     stroke={AAVE_PURPLE}
                     strokeWidth="5"
                     fill="none"
                     strokeLinecap="round"
                   />
+                  {/* Small dot at peak */}
+                  <circle cx="48" cy="18" r="3" fill={AAVE_PURPLE} />
                 </svg>
               )}
               <span
@@ -1365,10 +1427,10 @@ export const Scene04: React.FC = () => {
       <Sequence from={275} durationInFrames={60} name="DepositMethods">
         <DepositSegment />
       </Sequence>
-      <Sequence from={335} durationInFrames={15} name="CoinRain">
+      <Sequence from={310} durationInFrames={45} name="CoinRain">
         <CoinRainTransition />
       </Sequence>
-      <Sequence from={350} durationInFrames={93} name="LogoReveal">
+      <Sequence from={355} durationInFrames={88} name="LogoReveal">
         <LogoRevealSegment />
       </Sequence>
     </AbsoluteFill>
