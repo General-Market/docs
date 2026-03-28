@@ -1230,14 +1230,51 @@ export const Scene02: React.FC = () => {
                       {phoneLabels[i]}
                     </div>
                   </div>
-                  {/* Photo area */}
+                  {/* Photo area — textured to approximate photographic content */}
                   <div
                     style={{
                       width: "100%",
                       height: 140,
                       background: headerBgs[i],
+                      position: "relative",
+                      overflow: "hidden",
                     }}
-                  />
+                  >
+                    {/* Noise texture overlay for photo feel */}
+                    <div style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: `
+                        radial-gradient(circle at 30% 40%, rgba(255,255,255,0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 60%, rgba(0,0,0,0.1) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 20%, rgba(255,255,255,0.1) 0%, transparent 30%)
+                      `,
+                    }} />
+                    {/* Geometric shapes to suggest photo content */}
+                    {i === 0 && (
+                      <>
+                        {/* Building shapes */}
+                        <div style={{ position: "absolute", left: 20, bottom: 0, width: 40, height: 90, background: "rgba(30,80,130,0.4)", borderRadius: "4px 4px 0 0" }} />
+                        <div style={{ position: "absolute", left: 70, bottom: 0, width: 50, height: 110, background: "rgba(40,90,140,0.3)", borderRadius: "4px 4px 0 0" }} />
+                        <div style={{ position: "absolute", right: 30, bottom: 0, width: 35, height: 70, background: "rgba(50,100,150,0.35)", borderRadius: "4px 4px 0 0" }} />
+                      </>
+                    )}
+                    {i === 1 && (
+                      <>
+                        {/* Sneaker shapes */}
+                        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%) rotate(-10deg)", width: 90, height: 40, background: "rgba(200,60,80,0.35)", borderRadius: "20px 30px 8px 15px" }} />
+                        <div style={{ position: "absolute", left: "45%", top: "55%", transform: "translate(-50%,-50%)", width: 50, height: 12, background: "rgba(255,255,255,0.25)", borderRadius: 6 }} />
+                      </>
+                    )}
+                    {i === 2 && (
+                      <>
+                        {/* Vinyl record shapes */}
+                        <div style={{ position: "absolute", left: "40%", top: "50%", transform: "translate(-50%,-50%)", width: 70, height: 70, borderRadius: "50%", background: "rgba(0,0,0,0.3)", boxShadow: "inset 0 0 15px rgba(0,0,0,0.2)" }} />
+                        <div style={{ position: "absolute", left: "40%", top: "50%", transform: "translate(-50%,-50%)", width: 20, height: 20, borderRadius: "50%", background: "rgba(180,60,60,0.5)" }} />
+                        <div style={{ position: "absolute", right: 15, top: 20, width: 55, height: 55, borderRadius: "50%", background: "rgba(0,0,0,0.25)" }} />
+                      </>
+                    )}
+                  </div>
                   {/* Chart + price */}
                   <div style={{ padding: "10px 14px" }}>
                     <div style={{ fontSize: 9, color: "#999", fontFamily: F.b, marginBottom: 2 }}>Asset value</div>
