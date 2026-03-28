@@ -8,9 +8,18 @@ import {
   Sequence,
   Easing,
 } from "remotion";
+import { noise2D } from "@remotion/noise";
 import { loadFont } from "@remotion/google-fonts/Inter";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
+
+// Quadratic bezier helper: (1-t)^2*P0 + 2(1-t)*t*P1 + t^2*P2
+const bezier2 = (t: number, p0: number, p1: number, p2: number) =>
+  (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+
+// Velocity-proportional motion blur filter
+const motionBlurFilter = (vel: number) =>
+  vel > 0.5 ? `blur(${Math.min(vel * 0.15, 5)}px)` : "none";
 
 const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
@@ -107,24 +116,30 @@ const SometimesSegment: React.FC = () => {
     <AbsoluteFill style={{ opacity: segmentOpacity }}>
       <FilmGrain opacity={0.035} />
 
-      {/* Stock tickers — single centered column as in reference, right-aligned values */}
+      {/* Stock tickers — dense lines filling entire viewport vertically, as in reference */}
       <div
         style={{
           position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(-30%, -50%) translateY(${tickerScrollY}px)`,
-          opacity: tickerPulseOpacity,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           display: "flex",
           flexDirection: "column",
+          justifyContent: "center",
           alignItems: "flex-end",
-          gap: 2,
+          paddingRight: "8%",
+          paddingTop: "3%",
+          paddingBottom: "3%",
+          transform: `translateY(${tickerScrollY}px)`,
+          opacity: tickerPulseOpacity,
+          gap: 0,
         }}
       >
         {TICKERS.map((t, i) => {
           const stagger = interpolate(
             frame,
-            [fps * 0.3 + i * 1.2, fps * 0.45 + i * 1.2],
+            [fps * 0.3 + i * 0.8, fps * 0.45 + i * 0.8],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
           );
@@ -133,16 +148,17 @@ const SometimesSegment: React.FC = () => {
               key={i}
               style={{
                 fontFamily,
-                fontSize: 15,
+                fontSize: 42,
                 fontWeight: 300,
-                color: "rgba(255,255,255,0.4)",
+                color: "rgba(255,255,255,0.35)",
                 whiteSpace: "nowrap",
-                letterSpacing: 1.4,
+                letterSpacing: 2,
                 opacity: stagger,
                 textAlign: "right",
+                lineHeight: 1.35,
               }}
             >
-              {t.price}&nbsp;&nbsp;{t.dir === "up" ? "↑" : "↓"}&nbsp;{t.pct}
+              {t.price}&nbsp;&nbsp;{t.dir === "up" ? "\u2191" : "\u2193"}&nbsp;{t.pct}
             </div>
           );
         })}
@@ -163,15 +179,11 @@ const SometimesSegment: React.FC = () => {
         }}
       >
         {words.map((word, i) => {
-          // Use spring with overshoot (ease_out_back_overshoot detected)
+          const localFrame = Math.max(0, frame - wordStartFrames[i]);
           const wordSpring = spring({
-            frame: Math.max(0, frame - wordStartFrames[i]),
+            frame: localFrame,
             fps,
-            config: {
-              damping: 12,
-              mass: 0.8,
-              stiffness: 120,
-            },
+            config: { damping: 12, mass: 0.8, stiffness: 120 },
           });
           const wordOpacity = interpolate(
             frame,
@@ -179,8 +191,18 @@ const SometimesSegment: React.FC = () => {
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
           );
-          // Slight upward motion
-          const wordY = (1 - wordSpring) * 18;
+          // Bezier curved entrance — diagonal arc, not linear slide
+          const t = Math.min(1, wordSpring);
+          const wordX = bezier2(t, 25, -8, 0);   // overshoot left then settle
+          const wordY = bezier2(t, 30, -5, 0);    // arc upward past target
+          // Noise wobble — organic drift after landing
+          const wobX = noise2D("swx" + i, frame * 0.04, i * 7.3) * 3.5;
+          const wobY = noise2D("swy" + i, frame * 0.04, i * 3.1) * 3;
+          // Motion blur proportional to velocity
+          const prevT = Math.min(1, spring({ frame: Math.max(0, localFrame - 1), fps, config: { damping: 12, mass: 0.8, stiffness: 120 } }));
+          const prevX = bezier2(prevT, 25, -8, 0);
+          const prevY = bezier2(prevT, 30, -5, 0);
+          const vel = Math.abs(wordX - prevX) + Math.abs(wordY - prevY);
           return (
             <span
               key={word}
@@ -190,8 +212,9 @@ const SometimesSegment: React.FC = () => {
                 fontWeight: word === "investing" ? 700 : 400,
                 color: WHITE,
                 opacity: wordOpacity,
-                transform: `translateY(${wordY}px)`,
+                transform: `translate(${wordX + wobX}px, ${wordY + wobY}px)`,
                 letterSpacing: word === "Sometimes" ? 0.5 : -0.3,
+                filter: motionBlurFilter(vel),
               }}
             >
               {word}
@@ -199,28 +222,39 @@ const SometimesSegment: React.FC = () => {
           );
         })}
         {/* Arrow after "feel" */}
-        <span
-          style={{
-            fontFamily,
-            fontSize: 46,
-            fontWeight: 400,
-            color: WHITE,
-            opacity: interpolate(
-              frame,
-              [wordStartFrames[3] + Math.round(fps * 0.15), wordStartFrames[3] + Math.round(fps * 0.25)],
-              [0, 1],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-            ),
-            transform: `translateX(${interpolate(
-              frame,
-              [wordStartFrames[3] + Math.round(fps * 0.15), wordStartFrames[3] + Math.round(fps * 0.35)],
-              [-14, 0],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-            )}px)`,
-          }}
-        >
-          →
-        </span>
+        {(() => {
+          const arrowStart = wordStartFrames[3] + Math.round(fps * 0.15);
+          const arrowEnd = wordStartFrames[3] + Math.round(fps * 0.35);
+          const arrowT = interpolate(frame, [arrowStart, arrowEnd], [0, 1], {
+            extrapolateLeft: "clamp", extrapolateRight: "clamp",
+          });
+          const arrowX = bezier2(arrowT, -20, -5, 0);
+          const arrowY = bezier2(arrowT, 12, -4, 0);
+          const arrowWobX = noise2D("arwx", frame * 0.04, 0) * 2.5;
+          const arrowWobY = noise2D("arwy", frame * 0.04, 0) * 2;
+          const arrowPrevT = interpolate(frame - 1, [arrowStart, arrowEnd], [0, 1], {
+            extrapolateLeft: "clamp", extrapolateRight: "clamp",
+          });
+          const arrowPrevX = bezier2(arrowPrevT, -20, -5, 0);
+          const arrowVel = Math.abs(arrowX - arrowPrevX);
+          return (
+            <span
+              style={{
+                fontFamily,
+                fontSize: 46,
+                fontWeight: 400,
+                color: WHITE,
+                opacity: interpolate(frame, [arrowStart, arrowStart + Math.round(fps * 0.1)], [0, 1], {
+                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
+                }),
+                transform: `translate(${arrowX + arrowWobX}px, ${arrowY + arrowWobY}px)`,
+                filter: motionBlurFilter(arrowVel),
+              }}
+            >
+              →
+            </span>
+          );
+        })()}
       </div>
     </AbsoluteFill>
   );
@@ -258,7 +292,7 @@ const RibbonTube: React.FC<{
     const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
     const segments = 96;
     const visibleSegments = Math.max(1, Math.floor(segments * progress));
-    const geo = new THREE.TubeGeometry(curve, visibleSegments, radius, 12, false);
+    const geo = new THREE.TubeGeometry(curve, visibleSegments, radius, 24, false);
     return geo;
   }, [points, radius, progress]);
 
@@ -267,40 +301,38 @@ const RibbonTube: React.FC<{
       <meshPhysicalMaterial
         color={color}
         transparent
-        opacity={opacity}
-        transmission={0.65}
-        roughness={0.03}
-        metalness={0.08}
+        opacity={opacity * 0.5}
+        roughness={0.05}
+        metalness={0.15}
         clearcoat={1.0}
-        clearcoatRoughness={0.01}
-        ior={1.5}
-        thickness={0.2}
+        clearcoatRoughness={0.02}
         side={THREE.DoubleSide}
         envMapIntensity={2.0}
-        emissive="#6080c0"
-        emissiveIntensity={0.18}
-        specularIntensity={1.0}
-        specularColor={new THREE.Color("#d0e0ff")}
+        emissive="#9080c0"
+        emissiveIntensity={0.15}
+        specularIntensity={2.0}
+        specularColor={new THREE.Color("#ffd0f0")}
       />
     </mesh>
   );
 };
 
 const RibbonScene: React.FC<{ progress: number; breathe: number }> = ({ progress, breathe }) => {
-  const colors = ["#b8c8e8", "#c0d0f0", "#a8b8e0", "#bcc8e8", "#b0c0e0"];
-  const radii = [0.19, 0.17, 0.15, 0.21, 0.16];
-  const opacities = [0.68, 0.58, 0.63, 0.52, 0.60];
+  // Glass tubes with pink/purple iridescent tones matching reference
+  const colors = ["#a090d8", "#8898e0", "#b088c8", "#7890d8", "#9880c0"];
+  const radii = [0.10, 0.09, 0.08, 0.11, 0.085];
+  const opacities = [0.55, 0.48, 0.52, 0.45, 0.50];
 
   return (
     <>
-      <ambientLight intensity={1.0} />
-      <pointLight position={[5, 5, 5]} intensity={1.8} color="#d0e0ff" />
-      <pointLight position={[-4, -2, 4]} intensity={0.8} color="#a0b0e0" />
-      <pointLight position={[0, 4, 2]} intensity={0.6} color="#e0e8ff" />
-      <directionalLight position={[0, 3, 5]} intensity={1.2} color="#ffffff" />
+      <ambientLight intensity={1.4} />
+      <pointLight position={[5, 5, 5]} intensity={2.2} color="#d0e0ff" />
+      <pointLight position={[-4, -2, 4]} intensity={1.0} color="#a0b0e0" />
+      <pointLight position={[0, 4, 2]} intensity={0.8} color="#e0e8ff" />
+      <directionalLight position={[0, 3, 5]} intensity={1.5} color="#ffffff" />
       <group
         rotation={[breathe * 0.01, breathe * 0.025, breathe * 0.005]}
-        position={[0, breathe * 0.05, 0]}
+        position={[0.3, breathe * 0.05, 0]}
       >
         {RIBBON_CURVES.map((pts, i) => {
           const staggerDelay = i * 0.06;
@@ -329,7 +361,7 @@ const TangledRibbon3D: React.FC<{ progress: number; breathe?: number }> = ({ pro
         width={1280}
         height={720}
         style={{ position: "absolute", inset: 0 }}
-        camera={{ position: [0.3, 0.1, 7], fov: 50 }}
+        camera={{ position: [0.4, 0.1, 3.4], fov: 55 }}
       >
         <Suspense fallback={null}>
           <RibbonScene progress={progress} breathe={breathe} />
@@ -356,11 +388,12 @@ const AllOverSegment: React.FC = () => {
   });
 
   // Words: "all" top-left, "over" top-right, "the" bottom-left, "place" bottom-right
+  // Reference shows enormous text filling the viewport edge-to-edge
   const words = [
-    { text: "all", top: "2%", left: "4%", textAlign: "left" as const },
-    { text: "over", top: "2%", right: "4%", textAlign: "right" as const },
-    { text: "the", bottom: "8%", left: "4%", textAlign: "left" as const },
-    { text: "place", bottom: "8%", right: "4%", textAlign: "right" as const },
+    { text: "all", top: "-4%", left: "2%", textAlign: "left" as const },
+    { text: "over", top: "-4%", right: "2%", textAlign: "right" as const },
+    { text: "the", bottom: "0%", left: "2%", textAlign: "left" as const },
+    { text: "place", bottom: "0%", right: "2%", textAlign: "right" as const },
   ];
 
   const wordDelays = [0, Math.round(fps * 0.06), Math.round(fps * 0.12), Math.round(fps * 0.18)];
@@ -389,18 +422,18 @@ const AllOverSegment: React.FC = () => {
       {/* Tangled ribbon behind text — Three.js 3D tubes */}
       <TangledRibbon3D progress={ribbonProgress} breathe={breathe} />
 
-      {/* Dashes connecting "all" to "over" — horizontal row at top */}
+      {/* Dashed line connecting "all" to "over" — thick dashes as in reference */}
       <div
         style={{
           position: "absolute",
-          top: "16%",
-          left: "18%",
-          width: "64%",
+          top: "18%",
+          left: "10%",
+          width: "80%",
           display: "flex",
-          gap: 14,
+          gap: 12,
           alignItems: "center",
           justifyContent: "center",
-          opacity: interpolate(frame, [Math.round(fps * 0.08), Math.round(fps * 0.2)], [0, 0.7], {
+          opacity: interpolate(frame, [Math.round(fps * 0.08), Math.round(fps * 0.2)], [0, 0.9], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           }),
@@ -410,23 +443,42 @@ const AllOverSegment: React.FC = () => {
           <div
             key={i}
             style={{
-              width: 42,
-              height: 4,
-              background: "rgba(255,255,255,0.55)",
-              borderRadius: 2,
+              width: 60,
+              height: 6,
+              background: "rgba(255,255,255,0.95)",
+              borderRadius: 3,
             }}
           />
         ))}
       </div>
 
-      {/* Big text: "all over the place" */}
+      {/* Big text: "all over the place" — bezier arc entrances, non-axis-aligned */}
       {words.map((w, i) => {
         const delay = wordDelays[i];
+        const localF = Math.max(0, frame - delay);
         const wordSpring = spring({
-          frame: Math.max(0, frame - delay),
+          frame: localF,
           fps,
           config: { damping: 12, mass: 0.7, stiffness: 100 },
         });
+        // Each word enters from a different diagonal angle
+        const angles = [
+          { sx: -40, sy: 45, cx: -15, cy: -10 },   // all: from bottom-left arc
+          { sx: 35, sy: 40, cx: 10, cy: -8 },       // over: from bottom-right arc
+          { sx: -30, sy: -40, cx: -12, cy: 8 },     // the: from top-left arc
+          { sx: 40, sy: -35, cx: 15, cy: 10 },      // place: from top-right arc
+        ];
+        const a = angles[i];
+        const t = Math.min(1, wordSpring);
+        const bx = bezier2(t, a.sx, a.cx, 0);
+        const by = bezier2(t, a.sy, a.cy, 0);
+        const wobX = noise2D("aox" + i, frame * 0.035, i * 5.7) * 4;
+        const wobY = noise2D("aoy" + i, frame * 0.035, i * 2.9) * 3.5;
+        // Velocity for motion blur
+        const prevT = Math.min(1, spring({ frame: Math.max(0, localF - 1), fps, config: { damping: 12, mass: 0.7, stiffness: 100 } }));
+        const prevBx = bezier2(prevT, a.sx, a.cx, 0);
+        const prevBy = bezier2(prevT, a.sy, a.cy, 0);
+        const vel = Math.abs(bx - prevBx) + Math.abs(by - prevBy);
         const posStyle: React.CSSProperties = {
           position: "absolute",
           ...(w.top ? { top: w.top } : {}),
@@ -434,14 +486,15 @@ const AllOverSegment: React.FC = () => {
           ...(w.left ? { left: w.left } : {}),
           ...(w.right ? { right: w.right } : {}),
           fontFamily,
-          fontSize: 150,
+          fontSize: 175,
           fontWeight: 700,
           color: WHITE,
           opacity: wordSpring,
-          transform: `translateY(${(1 - wordSpring) * 35}px)`,
-          lineHeight: 1.0,
-          letterSpacing: -3,
+          transform: `translate(${bx + wobX}px, ${by + wobY}px)`,
+          lineHeight: 0.9,
+          letterSpacing: -4,
           textShadow: "0 4px 20px rgba(0,0,0,0.15)",
+          filter: motionBlurFilter(vel),
         };
         return (
           <div key={w.text} style={posStyle}>
@@ -628,11 +681,11 @@ const PhoneSegment: React.FC = () => {
                 <div
                   style={{
                     fontFamily,
-                    fontSize: isCenter ? 14 : 18,
+                    fontSize: isCenter ? 18 : 26,
                     fontWeight: 700,
-                    color: "rgba(0,20,80,0.75)",
-                    marginBottom: 4,
-                    letterSpacing: -0.2,
+                    color: "rgba(0,20,80,0.82)",
+                    marginBottom: 6,
+                    letterSpacing: -0.3,
                   }}
                 >
                   {card.label}
@@ -894,13 +947,35 @@ const OnePlaceSegment: React.FC = () => {
     fps,
     config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
+  // Bezier curved entrance for "One" — diagonal from lower-left
+  const oneT = Math.min(1, oneSpring);
+  const oneX = bezier2(oneT, -45, 12, 0);
+  const oneY = bezier2(oneT, 60, -15, 0);
+  const oneWobX = noise2D("onex", frame * 0.03, 0) * 4;
+  const oneWobY = noise2D("oney", frame * 0.03, 0) * 3;
+  // Motion blur for "One"
+  const onePrevT = Math.min(1, spring({ frame: Math.max(0, frame - 1), fps, config: { damping: 14, mass: 0.5, stiffness: 180 } }));
+  const onePrevX = bezier2(onePrevT, -45, 12, 0);
+  const onePrevY = bezier2(onePrevT, 60, -15, 0);
+  const oneVel = Math.abs(oneX - onePrevX) + Math.abs(oneY - onePrevY);
 
   // "place" appears slightly after — also snappy
+  const placeFrame = Math.max(0, frame - Math.round(fps * 0.08));
   const placeSpring = spring({
-    frame: Math.max(0, frame - Math.round(fps * 0.08)),
+    frame: placeFrame,
     fps,
     config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
+  // Bezier curved entrance for "place" — diagonal from lower-right
+  const placeT = Math.min(1, placeSpring);
+  const placeX = bezier2(placeT, 30, -8, 0);
+  const placeY = bezier2(placeT, 35, -10, 0);
+  const placeWobX = noise2D("plcx", frame * 0.03, 0) * 3.5;
+  const placeWobY = noise2D("plcy", frame * 0.03, 0) * 3;
+  const placePrevT = Math.min(1, spring({ frame: Math.max(0, placeFrame - 1), fps, config: { damping: 14, mass: 0.5, stiffness: 180 } }));
+  const placePrevX = bezier2(placePrevT, 30, -8, 0);
+  const placePrevY = bezier2(placePrevT, 35, -10, 0);
+  const placeVel = Math.abs(placeX - placePrevX) + Math.abs(placeY - placePrevY);
 
   // Blue arrow box
   const arrowSpring = spring({
@@ -908,6 +983,11 @@ const OnePlaceSegment: React.FC = () => {
     fps,
     config: { damping: 10, mass: 0.5, stiffness: 120 },
   });
+  const arrowBoxT = Math.min(1, arrowSpring);
+  const arrowBoxX = bezier2(arrowBoxT, 40, -10, 0);
+  const arrowBoxY = bezier2(arrowBoxT, -30, 8, 0);
+  const arrowBoxWobX = noise2D("abx", frame * 0.025, 0) * 3;
+  const arrowBoxWobY = noise2D("aby", frame * 0.025, 0) * 2.5;
 
   // Slide the whole white panel left
   const slideStart = Math.round(fps * 1.2);
@@ -923,6 +1003,9 @@ const OnePlaceSegment: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  // "invest in" noise wobble
+  const investWobX = noise2D("invx", frame * 0.03, 0) * 3;
+  const investWobY = noise2D("invy", frame * 0.03, 0) * 2.5;
 
   // Exit
   const exitOpacity = interpolate(frame, [fps * 2.2, fps * 2.5], [1, 0], {
@@ -939,7 +1022,7 @@ const OnePlaceSegment: React.FC = () => {
             position: "absolute",
             top: "46%",
             left: "52%",
-            transform: "translate(-50%, -50%)",
+            transform: `translate(calc(-50% + ${investWobX}px), calc(-50% + ${investWobY}px))`,
             opacity: investOpacity,
           }}
         >
@@ -980,13 +1063,13 @@ const OnePlaceSegment: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* "One" — glass/crystal 3D iridescent text matching reference */}
+          {/* "One" — glass/crystal 3D iridescent text, bezier arc entrance */}
           <div
             style={{
               position: "relative",
               opacity: oneSpring,
-              transform: `translateY(${(1 - oneSpring) * 60}px)`,
-              filter: "drop-shadow(0 6px 22px rgba(140,120,200,0.12))",
+              transform: `translate(${oneX + oneWobX}px, ${oneY + oneWobY}px)`,
+              filter: `drop-shadow(0 6px 22px rgba(140,120,200,0.12)) ${oneVel > 0.5 ? `blur(${Math.min(oneVel * 0.15, 5)}px)` : ""}`.trim(),
             }}
           >
             {/* SVG-based glass text — proper clipping, no rectangular artifacts */}
@@ -1073,7 +1156,7 @@ const OnePlaceSegment: React.FC = () => {
             </svg>
           </div>
 
-          {/* "place" — bold blue, overlapping the glass text slightly */}
+          {/* "place" — bold blue, bezier arc entrance from lower-right */}
           <div
             style={{
               fontFamily,
@@ -1081,18 +1164,19 @@ const OnePlaceSegment: React.FC = () => {
               fontWeight: 800,
               lineHeight: 0.85,
               opacity: placeSpring,
-              transform: `translateY(${(1 - placeSpring) * 35}px)`,
+              transform: `translate(${placeX + placeWobX}px, ${placeY + placeWobY}px)`,
               color: BLUE,
               marginTop: -40,
               letterSpacing: -5,
               textShadow: "0 2px 15px rgba(4,47,243,0.15)",
+              filter: motionBlurFilter(placeVel),
             }}
           >
             place
           </div>
         </div>
 
-        {/* Blue arrow box — positioned to the right */}
+        {/* Blue arrow box — bezier arc from top-right */}
         <div
           style={{
             width: 110,
@@ -1103,7 +1187,7 @@ const OnePlaceSegment: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             opacity: arrowSpring,
-            transform: `scale(${arrowSpring}) translateY(50px)`,
+            transform: `scale(${arrowSpring}) translate(${arrowBoxX + arrowBoxWobX}px, ${50 + arrowBoxY + arrowBoxWobY}px)`,
             boxShadow: "0 10px 35px rgba(4,47,243,0.3)",
           }}
         >
@@ -1187,14 +1271,15 @@ const EverythingSegment: React.FC = () => {
           const row = Math.floor(i / COLS);
           const col = i % COLS;
           const isCenter = row === centerRow && col === centerCol;
-          // Distance from center for radial dimming
           const dist = Math.sqrt(
             Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
           );
           const dimFactor = Math.max(0.1, 1 - dist * 0.18);
 
-          // Row-based horizontal offset for typographic texture (reference shows staggered rows)
           const rowOffset = isCenter ? 0 : ((row % 3) - 1) * 18;
+          // Noise wobble per word — organic sea of text
+          const wobX = noise2D("ewx" + i, frame * 0.025, i * 0.7) * 4;
+          const wobY = noise2D("ewy" + i, frame * 0.025, i * 1.3) * 3;
 
           return (
             <span
@@ -1209,8 +1294,8 @@ const EverythingSegment: React.FC = () => {
                 letterSpacing: isCenter ? -1 : -0.3,
                 whiteSpace: "nowrap",
                 transform: isCenter
-                  ? `scale(${centerScale})`
-                  : `translateX(${rowOffset}px)`,
+                  ? `scale(${centerScale}) translate(${wobX}px, ${wobY}px)`
+                  : `translate(${rowOffset + wobX}px, ${wobY}px)`,
                 textShadow: isCenter ? `0 0 ${20 + glowIntensity * 40}px rgba(255,255,255,${glowIntensity})` : undefined,
               }}
             >

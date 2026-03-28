@@ -926,6 +926,14 @@ const KineticText: React.FC<{
         const wordY = wordLocal >= 0
           ? interpolate(wordSpring, [0, 1], [8, 0])
           : 8;
+        // Motion blur during word entrance + noise wobble
+        const prevWordSpring = wordLocal > 0
+          ? spring({ frame: wordLocal - 1, fps, config: { damping: 10, stiffness: 200, mass: 0.4 } })
+          : 0;
+        const prevWordY = wordLocal > 0 ? interpolate(prevWordSpring, [0, 1], [8, 0]) : 8;
+        const wordBlur = Math.min(Math.abs(wordY - prevWordY) * 0.3, 4);
+        const wNx = organicOffset(frame, `kt${i}x`, 0.02, 2);
+        const wNy = organicOffset(frame, `kt${i}y`, 0.025, 1.5);
 
         return (
           <span
@@ -933,15 +941,17 @@ const KineticText: React.FC<{
             style={{
               display: "inline-block",
               opacity: wordOp,
-              transform: `scale(${wordScale}) translateY(${wordY}px)`,
+              transform: `scale(${wordScale}) translate(${wNx}px, ${wordY + wNy}px)`,
               ...(isAccent ? {
                 background: accentGradient,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text" as const,
                 textShadow: "none",
-                filter: `drop-shadow(0 0 ${12 * glowIntensity}px ${glowColor})`,
-              } : {}),
+                filter: `drop-shadow(0 0 ${12 * glowIntensity}px ${glowColor})${wordBlur > 0.3 ? ` blur(${wordBlur.toFixed(1)}px)` : ""}`,
+              } : {
+                filter: wordBlur > 0.3 ? `blur(${wordBlur.toFixed(1)}px)` : undefined,
+              }),
             }}
           >
             {word}
@@ -998,13 +1008,16 @@ const TypewriterText: React.FC<{
   // Subtle entry Y shift
   const entryY = interpolate(localFrame, [0, 12], [14, 0], { ...clamp(), easing: Easing.out(Easing.cubic) });
 
+  const twWobX = organicOffset(frame, "twx", 0.02, 2);
+  const twWobY = organicOffset(frame, "twy", 0.025, 1.5);
+
   return (
     <div
       style={{
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: `translate(-50%, -50%) translateY(${entryY}px)`,
+        transform: `translate(calc(-50% + ${twWobX}px), calc(-50% + ${entryY + twWobY}px))`,
         fontSize: 42,
         fontFamily: FONT,
         fontWeight: 300,
@@ -1050,23 +1063,35 @@ const CardZoom: React.FC<{
   });
   const entryScale = 0.6 + 0.4 * entrySpring;
 
-  const entryOpacity = interpolate(localFrame, [0, 8], [0, 1], clamp());
-  const exitOpacity = interpolate(localFrame, [holdFrames, holdFrames + 10], [1, 0], clamp());
+  // Smoothstep entry opacity
+  const entryRaw = interpolate(localFrame, [0, 10], [0, 1], clamp());
+  const entryOpacity = entryRaw * entryRaw * (3 - 2 * entryRaw);
+  // Smoothstep exit opacity
+  const exitRaw = interpolate(localFrame, [holdFrames, holdFrames + 12], [0, 1], clamp());
+  const exitOpacity = 1 - exitRaw * exitRaw * (3 - 2 * exitRaw);
   const op = Math.min(entryOpacity, exitOpacity);
 
   // Arc entrance: card sweeps in on a curved path (parabolic Y)
   const entryProgress = interpolate(localFrame, [0, 18], [0, 1], clamp());
   const smoothEntry = entryProgress * entryProgress * (3 - 2 * entryProgress); // smoothstep
-  const arcY = -40 * Math.sin(smoothEntry * Math.PI); // parabolic arc
-  const arcX = interpolate(localFrame, [0, 18], [80, 0], clamp());
+  const arcY = -45 * Math.sin(smoothEntry * Math.PI); // parabolic arc
+  const arcX = interpolate(smoothEntry, [0, 1], [90, 0]); // smoothstep the X too
+
+  // Exit arc sweep — card drifts upward and right as it fades
+  const exitProgress = interpolate(localFrame, [holdFrames, holdFrames + 12], [0, 1], clamp());
+  const exitSS = exitProgress * exitProgress * (3 - 2 * exitProgress);
+  const exitArcY = -30 * exitSS;
+  const exitArcX = 40 * exitSS;
 
   // Noise-based micro-drift during hold
   const noiseX = organicOffset(frame, `czX${cardIndex}`, 0.018, 1.5);
   const noiseY = organicOffset(frame, `czY${cardIndex}`, 0.02, 1.0);
   const noiseRot = organicOffset(frame, `czR${cardIndex}`, 0.015, 0.4);
 
-  // Motion blur proportional to velocity (stronger during entry)
-  const velocity = localFrame < 18 ? interpolate(localFrame, [0, 8, 18], [4, 2, 0], clamp()) : 0;
+  // Motion blur — entry AND exit phases
+  const entryBlur = localFrame < 18 ? interpolate(localFrame, [0, 8, 18], [4, 2, 0], clamp()) : 0;
+  const exitBlur = exitProgress > 0 ? interpolate(exitProgress, [0, 0.5, 1], [0, 2, 3], clamp()) : 0;
+  const blurTotal = Math.max(entryBlur, exitBlur);
 
   return (
     <div
@@ -1074,9 +1099,9 @@ const CardZoom: React.FC<{
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: `translate(-50%, -50%) perspective(800px) rotateY(${rotateY + noiseRot}deg) scale(${entryScale * 1.8}) translateX(${offsetX + arcX + noiseX}px) translateY(${arcY + noiseY}px)`,
+        transform: `translate(-50%, -50%) perspective(800px) rotateY(${rotateY + noiseRot}deg) scale(${entryScale * 1.8}) translateX(${offsetX + arcX + exitArcX + noiseX}px) translateY(${arcY + exitArcY + noiseY}px)`,
         opacity: op,
-        filter: velocity > 0.1 ? `blur(${velocity}px)` : "none",
+        filter: blurTotal > 0.1 ? `blur(${blurTotal}px)` : "none",
       }}
     >
       <PromptCard card={CARDS[cardIndex]} width={220} />
@@ -1101,17 +1126,21 @@ const CardsPan: React.FC<{
   const panSmooth = panRaw * panRaw * (3 - 2 * panRaw);
   const panX = interpolate(panSmooth, [0, 1], [120, -120]);
 
-  const entryOpacity = interpolate(localFrame, [0, 10], [0, 1], clamp());
-  const exitOpacity = interpolate(localFrame, [holdFrames - 5, holdFrames + 5], [1, 0], clamp());
+  // Smoothstep entry/exit opacity
+  const entryRaw = interpolate(localFrame, [0, 12], [0, 1], clamp());
+  const entryOpacity = entryRaw * entryRaw * (3 - 2 * entryRaw);
+  const exitRaw = interpolate(localFrame, [holdFrames - 5, holdFrames + 8], [0, 1], clamp());
+  const exitOpacity = 1 - exitRaw * exitRaw * (3 - 2 * exitRaw);
   const op = Math.min(entryOpacity, exitOpacity);
 
   // Noise-based ambient sway for the whole group
   const groupNoiseX = organicOffset(frame, "panGX", 0.012, 2);
   const groupNoiseY = organicOffset(frame, "panGY", 0.015, 1.2);
 
-  // Motion blur during fast pan phases
+  // Motion blur during fast pan phases + exit
   const panVelocity = Math.abs(panRaw - interpolate(localFrame - 1, [0, holdFrames], [0, 1], clamp())) * 200;
-  const blurAmt = Math.min(panVelocity * 3, 3);
+  const exitBlur = exitRaw > 0 ? interpolate(exitRaw, [0, 0.5, 1], [0, 1.5, 2.5], clamp()) : 0;
+  const blurAmt = Math.max(Math.min(panVelocity * 3, 3), exitBlur);
 
   return (
     <div
@@ -1164,15 +1193,12 @@ const ScatterText: React.FC<{
 
   // Each letter gets its own scatter trajectory
   const allChars = "With access to".split("");
-  const entryOpacity = interpolate(localFrame, [0, 8], [0, 1], clamp());
-  const scatterStart = holdFrames - 12;
 
-  // Map character indices to word membership
-  const wordBounds = [
-    { start: 0, end: 4, word: "With" },       // With
-    { start: 5, end: 11, word: "access" },     // access
-    { start: 12, end: 14, word: "to" },        // to
-  ];
+  // Smoothstep entry instead of linear
+  const entryRaw = interpolate(localFrame, [0, 10], [0, 1], clamp());
+  const entryOpacity = entryRaw * entryRaw * (3 - 2 * entryRaw);
+  const entryY = 18 * (1 - entryOpacity);
+  const scatterStart = holdFrames - 12;
 
   const isAccentChar = (idx: number) => idx >= 5 && idx <= 10;
 
@@ -1182,7 +1208,7 @@ const ScatterText: React.FC<{
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) translateY(${entryY}px)`,
         display: "flex",
         fontSize: 42,
         fontFamily: FONT,
@@ -1190,12 +1216,15 @@ const ScatterText: React.FC<{
       }}
     >
       {allChars.map((ch, i) => {
-        const scatterProgress = interpolate(
+        const scatterRaw = interpolate(
           localFrame,
           [scatterStart, holdFrames + 10],
           [0, 1],
           clamp()
         );
+        // Smoothstep the scatter for organic deceleration at start
+        const scatterProgress = scatterRaw * scatterRaw * (3 - 2 * scatterRaw);
+
         // Each character scatters in its own direction using seeded angle
         const seed = (i * 137.5) % 360; // golden angle spread
         const dist = (60 + (i % 3) * 40) * scatterProgress;
@@ -1207,6 +1236,11 @@ const ScatterText: React.FC<{
         const accent = isAccentChar(i);
         const glowAmt = interpolate(localFrame, [4, 12], [0, 1], clamp());
 
+        // Motion blur per character proportional to scatter velocity
+        const charBlur = scatterProgress > 0.02 && scatterProgress < 0.8
+          ? interpolate(scatterProgress, [0, 0.3, 0.8], [0, 2.5, 0], clamp())
+          : 0;
+
         return (
           <span
             key={i}
@@ -1216,7 +1250,9 @@ const ScatterText: React.FC<{
               background: accent ? `linear-gradient(90deg, ${PURPLE}, ${PINK})` : undefined,
               WebkitBackgroundClip: accent ? "text" : undefined,
               WebkitTextFillColor: accent ? "transparent" : undefined,
-              filter: accent ? `drop-shadow(0 0 ${12 * glowAmt}px ${PURPLE})` : undefined,
+              filter: accent
+                ? `drop-shadow(0 0 ${12 * glowAmt}px ${PURPLE})${charBlur > 0.1 ? ` blur(${charBlur}px)` : ""}`
+                : charBlur > 0.1 ? `blur(${charBlur}px)` : undefined,
               transform: scatterProgress > 0
                 ? `translate(${dx}px, ${dy}px) rotate(${rot}deg)`
                 : "none",
@@ -1242,15 +1278,52 @@ const ExperienceGemini: React.FC<{
   const localFrame = frame - enterFrame;
   if (localFrame < 0) return null;
 
-  const titleOp = fadeIn(localFrame, 0, 12);
-  const urlOp = fadeIn(localFrame, 10, 10);
-  const phoneY = interpolate(localFrame, [15, 35], [200, 0], { ...clamp(), easing: Easing.out(Easing.cubic) });
-  const phoneOp = fadeIn(localFrame, 15, 10);
-  const desktopX = interpolate(localFrame, [20, 40], [300, 0], { ...clamp(), easing: Easing.out(Easing.cubic) });
-  const desktopOp = fadeIn(localFrame, 20, 10);
+  // --- Title: smoothstep word-burst ---
+  const titleRaw = interpolate(localFrame, [0, 12], [0, 1], clamp());
+  const titleSmooth = titleRaw * titleRaw * (3 - 2 * titleRaw);
+  const titleOp = titleSmooth;
+  const titleY = 16 * (1 - titleSmooth);
 
-  // Shrink everything as devices arrive
-  const contentScale = interpolate(localFrame, [15, 40], [1, 0.85], clamp());
+  // --- URL: smoothstep delayed ---
+  const urlRaw = interpolate(localFrame, [10, 22], [0, 1], clamp());
+  const urlSmooth = urlRaw * urlRaw * (3 - 2 * urlRaw);
+  const urlOp = urlSmooth;
+
+  // --- Phone: ARC SWEEP entrance (rises on curved path from bottom-left) ---
+  const phoneEntryRaw = interpolate(localFrame, [15, 38], [0, 1], clamp());
+  const phoneSS = phoneEntryRaw * phoneEntryRaw * (3 - 2 * phoneEntryRaw); // smoothstep
+  const phoneArcY = interpolate(phoneSS, [0, 1], [220, 0]);
+  const phoneArcX = interpolate(phoneSS, [0, 1], [-60, 0]);
+  // Parabolic arc overshoot — rises above target then settles
+  const phoneArcBounce = -35 * Math.sin(phoneSS * Math.PI);
+  const phoneRotZ = interpolate(phoneSS, [0, 1], [8, 0]); // slight tilt during sweep
+  const phoneOp = interpolate(localFrame, [15, 22], [0, 1], clamp());
+  // Organic drift during hold
+  const phoneDriftX = organicOffset(frame, "expPhX", 0.012, 1.5);
+  const phoneDriftY = organicOffset(frame, "expPhY", 0.015, 1.0);
+
+  // --- Desktop: ARC SWEEP entrance (slides in on curved path from right) ---
+  const desktopEntryRaw = interpolate(localFrame, [20, 42], [0, 1], clamp());
+  const desktopSS = desktopEntryRaw * desktopEntryRaw * (3 - 2 * desktopEntryRaw);
+  const desktopArcX = interpolate(desktopSS, [0, 1], [280, 0]);
+  const desktopArcY = -25 * Math.sin(desktopSS * Math.PI); // arc upward
+  const desktopRotZ = interpolate(desktopSS, [0, 1], [-4, 0]);
+  const desktopOp = interpolate(localFrame, [20, 28], [0, 1], clamp());
+  const desktopDriftX = organicOffset(frame, "expDkX", 0.01, 1.2);
+  const desktopDriftY = organicOffset(frame, "expDkY", 0.013, 0.8);
+
+  // Shrink as devices arrive — smoothstep
+  const scaleRaw = interpolate(localFrame, [15, 42], [0, 1], clamp());
+  const scaleSS = scaleRaw * scaleRaw * (3 - 2 * scaleRaw);
+  const contentScale = 1 - 0.15 * scaleSS;
+
+  // Motion blur during entrance phase — proportional to velocity
+  const phoneBlur = phoneEntryRaw < 1
+    ? interpolate(localFrame, [15, 22, 38], [3, 2, 0], clamp())
+    : 0;
+  const desktopBlur = desktopEntryRaw < 1
+    ? interpolate(localFrame, [20, 28, 42], [2.5, 1.5, 0], clamp())
+    : 0;
 
   return (
     <div
@@ -1264,7 +1337,7 @@ const ExperienceGemini: React.FC<{
         paddingTop: 60,
       }}
     >
-      {/* Title */}
+      {/* Title — smoothstep Y entry */}
       <div
         style={{
           fontSize: 36,
@@ -1272,6 +1345,7 @@ const ExperienceGemini: React.FC<{
           fontWeight: 400,
           color: "#fff",
           opacity: titleOp,
+          transform: `translateY(${titleY}px)`,
           marginBottom: 8,
         }}
       >
@@ -1304,20 +1378,22 @@ const ExperienceGemini: React.FC<{
           marginTop: 10,
         }}
       >
-        {/* Phone */}
+        {/* Phone — arc sweep from bottom-left */}
         <div
           style={{
-            transform: `translateY(${phoneY}px)`,
+            transform: `translateX(${phoneArcX + phoneDriftX}px) translateY(${phoneArcY + phoneArcBounce + phoneDriftY}px) rotate(${phoneRotZ}deg)`,
             opacity: phoneOp,
+            filter: phoneBlur > 0.1 ? `blur(${phoneBlur}px)` : "none",
           }}
         >
           <PhoneMockup scale={0.85} rotateY={6} />
         </div>
-        {/* Desktop miniature */}
+        {/* Desktop — arc sweep from right */}
         <div
           style={{
-            transform: `translateX(${desktopX}px)`,
+            transform: `translateX(${desktopArcX + desktopDriftX}px) translateY(${desktopArcY + desktopDriftY}px) rotate(${desktopRotZ}deg)`,
             opacity: desktopOp,
+            filter: desktopBlur > 0.1 ? `blur(${desktopBlur}px)` : "none",
           }}
         >
           <div style={{ transform: "scale(0.58)", transformOrigin: "top left" }}>
@@ -1400,32 +1476,40 @@ export const Scene05: React.FC = () => {
   // ─── D: Hold on full interface ───
   // (same as C, just holding)
 
-  // ─── O: Gemini sparkle ───
+  // ─── O: Gemini sparkle — smoothstep + spring scale ───
   const sparklePhase = frame >= 640 && frame < 670;
-  const sparkleOp = sparklePhase
-    ? fadeInOut(frame, 640, 8, 660, 10)
+  const sparkleLocal = frame - 640;
+  const sparkleEntryRaw = sparklePhase ? interpolate(sparkleLocal, [0, 10], [0, 1], clamp()) : 0;
+  const sparkleEntrySS = sparkleEntryRaw * sparkleEntryRaw * (3 - 2 * sparkleEntryRaw);
+  const sparkleExitRaw = sparklePhase ? interpolate(sparkleLocal, [20, 30], [0, 1], clamp()) : 0;
+  const sparkleExitSS = 1 - sparkleExitRaw * sparkleExitRaw * (3 - 2 * sparkleExitRaw);
+  const sparkleOp = Math.min(sparkleEntrySS, sparkleExitSS);
+  const sparkleScaleSpring = sparklePhase
+    ? spring({ frame: sparkleLocal, fps, config: { damping: 8, stiffness: 120, mass: 0.5 } })
     : 0;
-  const sparkleScale = sparklePhase
-    ? interpolate(frame, [640, 650, 665], [0.2, 1, 0.6], clamp())
-    : 0;
+  const sparkleScale = 0.15 + 0.85 * sparkleScaleSpring;
   const sparkleGlow = sparklePhase
-    ? interpolate(frame, [640, 648, 665], [0, 1, 0.3], clamp())
+    ? interpolate(sparkleLocal, [0, 8, 25], [0, 1, 0.3], clamp())
     : 0;
+  const sparkleRotation = sparklePhase ? organicOffset(frame, "spkRot", 0.04, 15) : 0;
 
-  // ─── P: Google G finale ───
+  // ─── P: Google G finale — smoothstep + spring + organic drift ───
   const gFinalPhase = frame >= 660;
-  const gFinalOp = gFinalPhase
-    ? Math.min(
-        fadeIn(frame, 660, 10),
-        fadeOut(frame, 688, 6)
-      )
-    : 0;
+  const gFinalLocal = frame - 660;
+  const gEntryRaw = gFinalPhase ? interpolate(gFinalLocal, [0, 12], [0, 1], clamp()) : 0;
+  const gEntrySS = gEntryRaw * gEntryRaw * (3 - 2 * gEntryRaw);
+  const gExitRaw = gFinalPhase ? interpolate(gFinalLocal, [28, 34], [0, 1], clamp()) : 0;
+  const gExitSS = 1 - gExitRaw * gExitRaw * (3 - 2 * gExitRaw);
+  const gFinalOp = Math.min(gEntrySS, gExitSS);
   const gFinalGlow = gFinalPhase
-    ? interpolate(frame, [660, 675, 690], [0, 1, 0.5], clamp())
+    ? interpolate(gFinalLocal, [0, 15, 30], [0, 1, 0.5], clamp())
     : 0;
-  const gFinalScale = gFinalPhase
-    ? interpolate(frame, [660, 675], [0.6, 1], { ...clamp(), easing: Easing.out(Easing.cubic) })
+  const gFinalScaleSpring = gFinalPhase
+    ? spring({ frame: gFinalLocal, fps, config: { damping: 10, stiffness: 100, mass: 0.6 } })
     : 0;
+  const gFinalScale = 0.5 + 0.5 * gFinalScaleSpring;
+  const gDriftX = gFinalPhase ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0;
+  const gDriftY = gFinalPhase ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0;
 
   // ─── Bottom disclaimer (visible during interface phases) ───
   const disclaimerOp = interfacePhase
@@ -1515,8 +1599,33 @@ export const Scene05: React.FC = () => {
         </>
       )}
 
-      {/* B+C+D: Gemini interface — curved arc + spring settle + noise drift */}
-      {interfacePhase && (
+      {/* B+C+D: Gemini interface — motion blur during fast tilt, clean after */}
+      {interfacePhase && frame < 65 && (
+        <CameraMotionBlur samples={6} shutterAngle={120}>
+          <AbsoluteFill>
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <GeminiInterface
+                frame={interfaceLocalFrame}
+                fps={fps}
+                perspectiveX={interfacePerspectiveX}
+                perspectiveY={interfacePerspectiveY}
+                scale={interfaceScale}
+                opacity={interfaceOpacity}
+                translateX={ifaceDriftX}
+                translateY={interfaceTranslateY + ifaceDriftY}
+              />
+            </div>
+          </AbsoluteFill>
+        </CameraMotionBlur>
+      )}
+      {interfacePhase && frame >= 65 && (
         <div
           style={{
             position: "absolute",
@@ -1711,24 +1820,45 @@ export const Scene05: React.FC = () => {
         holdFrames={35}
       />
 
-      {/* M: Ultra 1.0 orb */}
-      {frame >= 520 && frame < 575 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <UltraOrb
-            frame={frame - 520}
-            fps={fps}
-            opacity={fadeInOut(frame, 520, 10, 560, 12)}
-            scale={interpolate(frame, [520, 535], [0.5, 1], { ...clamp(), easing: Easing.out(Easing.cubic) })}
-          />
-        </div>
-      )}
+      {/* M: Ultra 1.0 orb — smoothstep entry/exit + motion blur */}
+      {frame >= 520 && frame < 575 && (() => {
+        const orbLocal = frame - 520;
+        // Smoothstep entry
+        const orbEntryRaw = interpolate(orbLocal, [0, 12], [0, 1], clamp());
+        const orbEntrySS = orbEntryRaw * orbEntryRaw * (3 - 2 * orbEntryRaw);
+        // Smoothstep exit
+        const orbExitRaw = interpolate(orbLocal, [40, 54], [0, 1], clamp());
+        const orbExitSS = 1 - orbExitRaw * orbExitRaw * (3 - 2 * orbExitRaw);
+        const orbOp = Math.min(orbEntrySS, orbExitSS);
+        // Scale with spring overshoot
+        const orbScaleSpring = spring({
+          frame: orbLocal,
+          fps,
+          config: { damping: 9, stiffness: 80, mass: 0.8 },
+        });
+        const orbScale = 0.4 + 0.6 * orbScaleSpring;
+        // Motion blur during scale-up phase
+        const orbBlur = orbLocal < 15 ? interpolate(orbLocal, [0, 6, 15], [3, 1.5, 0], clamp()) : 0;
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: `translate(calc(-50% + ${organicOffset(frame, "orbX", 0.015, 3)}px), calc(-50% + ${organicOffset(frame, "orbY", 0.018, 2)}px)) scale(${orbScale})`,
+              opacity: orbOp,
+              filter: orbBlur > 0.1 ? `blur(${orbBlur}px)` : "none",
+            }}
+          >
+            <UltraOrb
+              frame={orbLocal}
+              fps={fps}
+              opacity={1}
+              scale={1}
+            />
+          </div>
+        );
+      })()}
 
       {/* N: "Experience Gemini" + devices */}
       {frame >= 570 && frame < 645 && (
@@ -1747,14 +1877,14 @@ export const Scene05: React.FC = () => {
         />
       )}
 
-      {/* O: Gemini sparkle */}
+      {/* O: Gemini sparkle — organic rotation + smoothstep */}
       {sparklePhase && (
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) scale(${sparkleScale})`,
+            transform: `translate(calc(-50% + ${organicOffset(frame, "spkX", 0.03, 3)}px), calc(-50% + ${organicOffset(frame, "spkY", 0.035, 2)}px)) scale(${sparkleScale}) rotate(${sparkleRotation}deg)`,
           }}
         >
           <Glow color={PURPLE} spread={60 * sparkleGlow}>
@@ -1777,14 +1907,14 @@ export const Scene05: React.FC = () => {
         </div>
       )}
 
-      {/* P: Google G finale */}
+      {/* P: Google G finale — spring scale + organic drift */}
       {gFinalPhase && (
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) scale(${gFinalScale})`,
+            transform: `translate(calc(-50% + ${gDriftX}px), calc(-50% + ${gDriftY}px)) scale(${gFinalScale})`,
             opacity: gFinalOp,
           }}
         >

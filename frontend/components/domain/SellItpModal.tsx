@@ -141,7 +141,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
   // Read BridgedITP address directly from BridgedItpFactory on Settlement chain
   const { data: bridgedItpAddrRaw } = useReadContract({
-    address: INDEX_PROTOCOL.bridgedItpFactory,
+    address: INDEX_PROTOCOL.settlementBridgedItpFactory,
     abi: BridgedItpFactoryABI,
     functionName: 'deployedItps',
     args: [itpId as `0x${string}`],

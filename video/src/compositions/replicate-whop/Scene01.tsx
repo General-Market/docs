@@ -6,19 +6,21 @@ import {
   interpolate,
 } from "remotion";
 
-/* ─── timing (25 fps) ─── */
+/* ─── timing (25 fps) — tuned against reference ─── */
 const INTRO_START = 0;        // "Introducing" appears
 const WHOP_START = 6;         // "Whop" appears
 const TREASURY_START = 12;    // "Treasury" appears
-const HOLD_END = 55;          // text holds fully visible
-const ZOOM_OUT_END = 75;      // text zooms/fades into "Earn up to..."
-const EARN_VISIBLE = 76;      // "Earn up to X%" begins
-const PERCENT_ROLL_END = 130; // percentage stops at 6%
-const APY_APPEAR = 115;       // "APY" label + pill
-const HOLD_EARN_END = 145;    // hold the earn text
-const DASHBOARD_START = 146;  // dashboard slides in
-const DASHBOARD_FULL = 190;   // dashboard fully visible
-// Total duration: 227 frames (216 original + 11 merged from Scene02)
+const HOLD_END = 38;          // text holds fully visible (ref: fading at f40)
+const ZOOM_OUT_END = 47;      // text zooms/fades out (ref: blank at f45)
+const EARN_VISIBLE = 48;      // "Earn up to X%" begins (ref: visible f50)
+const PERCENT_ROLL_END = 68;  // percentage stops at 6% — shortened by 10
+const APY_APPEAR = 60;        // "APY" label + pill — shifted earlier
+const HOLD_EARN_END = 92;     // hold the earn text — shortened by 10
+const DASHBOARD_START = 95;   // dashboard slides in — earlier by 10
+const DASHBOARD_FULL = 138;   // dashboard fully visible — earlier by 10
+const WALLET_START = 146;     // wallet page begins replacing dashboard — earlier by 10
+const WALLET_FULL = 154;      // wallet page fully visible — earlier by 10
+// Total duration: 217 frames (227 - 10 from shortened earn phase)
 
 /* ─── colors ─── */
 const RED = "#E8391C";
@@ -190,16 +192,16 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
   const dashFrame = frame - DASHBOARD_START;
   const chartDraw = clamp01(dashFrame / 30);
 
-  // Animate the gross revenue number counting up
-  const grossBase = 3090.39;
-  const grossTarget = 3570.28;
-  const grossProgress = clamp01(dashFrame / 40);
+  // Animate the gross revenue number counting up — reach target faster to match ref
+  const grossBase = 2431.30;
+  const grossTarget = 3570.61;
+  const grossProgress = clamp01(dashFrame / 25);
   const grossValue = grossBase + (grossTarget - grossBase) * easeInOut(grossProgress);
 
-  // Animate total balance counting up
-  const balBase = 38968.99;
-  const balTarget = 42650.72;
-  const balProgress = clamp01(dashFrame / 40);
+  // Animate total balance counting up — reach target faster to match ref
+  const balBase = 34609.07;
+  const balTarget = 42740.24;
+  const balProgress = clamp01(dashFrame / 25);
   const balValue = balBase + (balTarget - balBase) * easeInOut(balProgress);
 
   const fmt = (v: number) =>
@@ -242,7 +244,7 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
           flexDirection: "column",
           gap: 40,
           overflow: "hidden",
-          transform: `translateY(${(1 - e) * 600}px) rotateX(${tiltX}deg)`,
+          transform: `translateY(${Math.round((1 - e) * 600)}px) rotateX(${tiltX}deg)`,
           transformOrigin: "center bottom",
         }}
       >
@@ -657,6 +659,405 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
 };
 
 /* ───────────────────────────────────────────────────── */
+/*  Mouse Cursor                                       */
+/* ───────────────────────────────────────────────────── */
+const MouseCursor: React.FC<{ x: number; y: number; opacity: number }> = ({ x, y, opacity }) => (
+  <div
+    style={{
+      position: "absolute",
+      left: Math.round(x),
+      top: Math.round(y),
+      width: 60,
+      height: 72,
+      opacity,
+      zIndex: 9999,
+      pointerEvents: "none",
+      filter: "drop-shadow(2px 3px 4px rgba(0,0,0,0.25))",
+    }}
+  >
+    <svg width="60" height="72" viewBox="0 0 24 28" fill="none">
+      <path
+        d="M5.65 2.15L5.65 22.85L10.35 18.15L14.15 26.35L17.35 24.85L13.55 16.85L19.85 16.85L5.65 2.15Z"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </div>
+);
+
+/* ───────────────────────────────────────────────────── */
+/*  Wallet / Treasury Page                             */
+/* ───────────────────────────────────────────────────── */
+const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
+  frame,
+  entryProgress,
+}) => {
+  const e = easeOut(entryProgress);
+  const _cardR = 16;
+  void _cardR;
+  const walletFrame = frame - WALLET_START;
+
+  // Progressive zoom into the buttons/bar area (ref zooms in frames 165-205, shifted -10)
+  const zoomStart = 165;
+  const zoomEnd = 205;
+  const zoomProgress = easeInOut(clamp01((frame - zoomStart) / (zoomEnd - zoomStart)));
+  // Zoom to show buttons + balance bar + $ amounts (ref f200)
+  // Reference shows buttons centered, balance bar below, $ values visible
+  const zoomScale = 1 + zoomProgress * 0.85; // zoom from 1x to 1.85x — ref shows buttons+bar
+  // Pan to center on buttons area (right side of card, upper third)
+  const panX = Math.round(zoomProgress * 180);
+  const panY = Math.round(zoomProgress * -250);
+
+  // Cursor animation: appears at frame 158, moves toward "Move" button (shifted -10)
+  const cursorStart = 158;
+  const cursorEnd = 195;
+  const cursorProgress = easeInOut(clamp01((frame - cursorStart) / (cursorEnd - cursorStart)));
+  const cursorOpacity = interpolate(frame, [cursorStart, cursorStart + 6, 210, 217], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  // Cursor moves from lower-right toward the "Move" button
+  // Reference f200: cursor sitting right on Move button, upper-right area
+  const cursorX = Math.round(interpolate(cursorProgress, [0, 1], [3000, 2580], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  }));
+  const cursorY = Math.round(interpolate(cursorProgress, [0, 1], [1500, 620], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+  }));
+
+  // Move button hover state — activates when cursor reaches button area
+  const moveHovered = frame >= cursorStart + 18;
+
+  // Animated total balance — reach target in ~15 frames to match ref
+  const balBase = 39242.48;
+  const balTarget = 42740.24;
+  const balProgress = clamp01(walletFrame / 15);
+  const balValue = balBase + (balTarget - balBase) * easeInOut(balProgress);
+  const fmt = (v: number) =>
+    "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Balance bar proportions
+  const cashPct = 96.6; // 42740.24 / (42740.24 + 1478)
+  const treasuryPct = 3.4;
+
+  const CurrencyRow: React.FC<{
+    flag: string;
+    code: string;
+    amount: string;
+    sub?: string;
+    showChevron?: boolean;
+  }> = ({ flag, code, amount, sub, showChevron }) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "28px 0",
+        borderBottom: `1px solid ${BORDER}`,
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <span style={{ fontSize: 36, marginRight: 20 }}>{flag}</span>
+      <span style={{ fontSize: 28, fontWeight: 500, color: TEXT_PRIMARY, flex: 1 }}>{code}</span>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontSize: 28, fontWeight: 600, color: TEXT_PRIMARY }}>{amount}</div>
+        {sub && <div style={{ fontSize: 22, color: TEXT_SECONDARY, marginTop: 2 }}>{sub}</div>}
+      </div>
+      {showChevron && (
+        <span style={{ fontSize: 24, color: TEXT_SECONDARY, marginLeft: 16 }}>&#x203A;</span>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: e,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: 3200,
+          height: 1800,
+          background: "#fff",
+          borderRadius: 40,
+          border: `2px solid ${BORDER}`,
+          boxShadow:
+            "0 60px 160px rgba(0,0,0,0.12), 0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.03)",
+          padding: 80,
+          display: "flex",
+          flexDirection: "column",
+          transform: `translateY(${Math.round((1 - e) * 400)}px) scale(${zoomScale}) translate(${panX}px, ${panY}px)`,
+          transformOrigin: "center 25%",
+          gap: 40,
+          overflow: "hidden",
+        }}
+      >
+        {/* Header: Total balance + action buttons */}
+        <div>
+          <span
+            style={{
+              fontSize: 24,
+              color: TEXT_SECONDARY,
+              fontFamily: "Inter, sans-serif",
+              display: "block",
+              marginBottom: 8,
+            }}
+          >
+            Total balance
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
+            <span
+              style={{
+                fontSize: 80,
+                fontWeight: 700,
+                color: TEXT_PRIMARY,
+                fontFamily: "Inter, sans-serif",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {fmt(balValue)} <span style={{ fontWeight: 400, fontSize: 48, color: TEXT_SECONDARY }}>USD</span>
+            </span>
+            <div style={{ flex: 1 }} />
+            {/* Action buttons */}
+            {[
+              { label: "+ Deposit", primary: true },
+              { label: "\u21A5 Withdraw", primary: false },
+              { label: "\u21C4 Move", primary: false },
+            ].map((btn, i) => {
+              const isMove = i === 2;
+              const isHovered = isMove && moveHovered;
+              return (
+              <div
+                key={i}
+                style={{
+                  padding: "16px 36px",
+                  borderRadius: 12,
+                  fontSize: 26,
+                  fontWeight: 500,
+                  fontFamily: "Inter, sans-serif",
+                  background: btn.primary ? BLUE : isHovered ? "#E5E7EB" : "#fff",
+                  color: btn.primary ? "#fff" : BLUE,
+                  border: btn.primary ? "none" : `1.5px solid ${isHovered ? "#D1D5DB" : BORDER}`,
+                }}
+              >
+                {btn.label}
+              </div>
+              );
+            })}
+            {/* Three dots menu */}
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                border: `1.5px solid ${BORDER}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 28,
+                color: TEXT_SECONDARY,
+              }}
+            >
+              &#8942;
+            </div>
+          </div>
+        </div>
+
+        {/* Balance bar */}
+        <div>
+          <div
+            style={{
+              height: 28,
+              borderRadius: 14,
+              overflow: "hidden",
+              display: "flex",
+              background: "#E5E7EB",
+            }}
+          >
+            <div
+              style={{
+                width: `${cashPct}%`,
+                background: BLUE,
+                borderRadius: "14px 0 0 14px",
+                transition: "width 0.3s",
+              }}
+            />
+            <div
+              style={{
+                width: `${treasuryPct}%`,
+                background: GREEN,
+                borderRadius: "0 14px 14px 0",
+              }}
+            />
+          </div>
+          {/* Bar legend */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 12,
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: BLUE }} />
+              <span style={{ fontSize: 22, color: TEXT_SECONDARY }}>Available cash</span>
+              <span style={{ fontSize: 22, fontWeight: 600, color: TEXT_PRIMARY, marginLeft: 12 }}>
+                $42,740.24
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: GREEN }} />
+              <span style={{ fontSize: 22, color: TEXT_SECONDARY }}>Treasury</span>
+              <span style={{ fontSize: 22, fontWeight: 600, color: TEXT_PRIMARY, marginLeft: 12 }}>
+                $1,478.00
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 40,
+            borderBottom: `1.5px solid ${BORDER}`,
+            paddingBottom: 16,
+            fontFamily: "Inter, sans-serif",
+            fontSize: 26,
+          }}
+        >
+          {["Balances", "All activity", "Withdrawals", "Top ups"].map((tab, i) => (
+            <span
+              key={i}
+              style={{
+                color: i === 0 ? TEXT_PRIMARY : TEXT_SECONDARY,
+                fontWeight: i === 0 ? 600 : 400,
+                paddingBottom: 16,
+                borderBottom: i === 0 ? `2px solid ${TEXT_PRIMARY}` : "none",
+              }}
+            >
+              {tab}
+            </span>
+          ))}
+        </div>
+
+        {/* Treasury section */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 32,
+                fontWeight: 600,
+                color: TEXT_PRIMARY,
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              Treasury
+            </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 24px",
+                borderRadius: 10,
+                border: `1.5px solid ${BORDER}`,
+                fontSize: 24,
+                fontFamily: "Inter, sans-serif",
+                color: BLUE,
+                fontWeight: 500,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>&#x21C4;</span> Convert
+            </div>
+          </div>
+
+          <CurrencyRow
+            flag="&#x1F4B2;"
+            code="USDT"
+            amount="&#x20B2; $0.00"
+            sub="USDT 0.00"
+            showChevron
+          />
+          <CurrencyRow
+            flag="&#x1F947;"
+            code="Gold"
+            amount="$1,478.43"
+            sub="XAU 0.5208/8"
+            showChevron
+          />
+
+          {/* Cash section */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 32,
+              marginBottom: 8,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 32,
+                fontWeight: 600,
+                color: TEXT_PRIMARY,
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              Cash
+            </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 24px",
+                borderRadius: 10,
+                border: `1.5px solid ${BORDER}`,
+                fontSize: 24,
+                fontFamily: "Inter, sans-serif",
+                color: BLUE,
+                fontWeight: 500,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>&#x21C4;</span> Convert
+            </div>
+          </div>
+
+          <CurrencyRow flag={"🇺🇸"} code="USD" amount="$39,790.92" />
+          <CurrencyRow flag={"🇪🇺"} code="EUR" amount="$847.32" sub="EUR 478.64" />
+          <CurrencyRow flag={"🇨🇦"} code="CAD" amount="$623.57" sub="CAD 841.19" />
+        </div>
+      </div>
+      {/* Animated cursor */}
+      {cursorOpacity > 0 && (
+        <MouseCursor x={cursorX} y={cursorY} opacity={cursorOpacity} />
+      )}
+    </div>
+  );
+};
+
+/* ───────────────────────────────────────────────────── */
 /*  Main Scene                                         */
 /* ───────────────────────────────────────────────────── */
 export const Scene01: React.FC = () => {
@@ -740,7 +1141,7 @@ export const Scene01: React.FC = () => {
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) scale(${earnScale}) translateY(${earnY}px)`,
+            transform: `translate(-50%, -50%) scale(${earnScale}) translateY(${Math.round(earnY)}px)`,
             opacity: earnOpacity,
             display: "flex",
             flexDirection: "column",
@@ -781,11 +1182,11 @@ export const Scene01: React.FC = () => {
                 color: TEXT_PRIMARY,
                 fontFamily: "'Inter', sans-serif",
                 letterSpacing: "-0.03em",
-                opacity: interpolate(frame, [EARN_VISIBLE + 6, EARN_VISIBLE + 14], [0, 1], {
+                opacity: interpolate(frame, [EARN_VISIBLE + 10, EARN_VISIBLE + 18], [0, 1], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 }),
-                transform: `translateY(${interpolate(frame, [EARN_VISIBLE + 6, EARN_VISIBLE + 14], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`,
+                transform: `translateY(${interpolate(frame, [EARN_VISIBLE + 10, EARN_VISIBLE + 18], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}px)`,
               }}
             >
               on your balance
@@ -830,10 +1231,106 @@ export const Scene01: React.FC = () => {
         </div>
       )}
 
-      {/* Phase 3: Dashboard */}
-      {frame >= DASHBOARD_START && (
-        <Dashboard frame={frame} fps={fps} entryProgress={dashEntry} />
+      {/* Phase 3: Dashboard (analytics) — fades out when wallet arrives */}
+      {frame >= DASHBOARD_START && frame < WALLET_START + 8 && (
+        <div
+          style={{
+            opacity: interpolate(
+              frame,
+              [WALLET_START - 2, WALLET_START + 4],
+              [1, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            ),
+          }}
+        >
+          <Dashboard frame={frame} fps={fps} entryProgress={dashEntry} />
+        </div>
       )}
+
+      {/* Phase 4: Wallet / Treasury page */}
+      {frame >= WALLET_START && (
+        <WalletPage
+          frame={frame}
+          entryProgress={clamp01((frame - WALLET_START) / (WALLET_FULL - WALLET_START))}
+        />
+      )}
+
+      {/* Phase 5: Transfer modal overlay (last ~10 frames, matching Scene02 merge) */}
+      {frame >= 208 && (() => {
+        const modalProgress = clamp01((frame - 208) / 6);
+        const modalE = easeOut(modalProgress);
+        return (
+          <>
+            {/* Dark overlay */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0, left: 0, width: "100%", height: "100%",
+                background: `rgba(0,0,0,${modalE * 0.35})`,
+              }}
+            />
+            {/* Modal card */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) scale(${0.9 + modalE * 0.1})`,
+                opacity: modalE,
+                width: 600,
+                background: "#fff",
+                borderRadius: 20,
+                padding: 48,
+                boxShadow: "0 30px 80px rgba(0,0,0,0.2)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 28,
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 32, fontWeight: 600, color: TEXT_PRIMARY }}>Transfer</span>
+                <span style={{ fontSize: 28, color: TEXT_SECONDARY, cursor: "pointer" }}>&#x2715;</span>
+              </div>
+              {/* Amount input */}
+              <div style={{ fontSize: 48, fontWeight: 700, color: TEXT_PRIMARY, borderBottom: `2px solid ${BORDER}`, paddingBottom: 16 }}>
+                $<span style={{ borderRight: `2px solid ${TEXT_PRIMARY}`, paddingRight: 2 }}></span>
+              </div>
+              {/* USD row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 0" }}>
+                <span style={{ fontSize: 28 }}>🇺🇸</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 24, fontWeight: 500, color: TEXT_PRIMARY }}>USD</div>
+                  <div style={{ fontSize: 20, color: TEXT_SECONDARY }}>$39,790.92 USD available</div>
+                </div>
+                <span style={{ fontSize: 22, color: TEXT_SECONDARY }}>&#x203A;</span>
+              </div>
+              {/* USDT row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 0" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 18, background: "#26A17B", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>&#x20AE;</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 24, fontWeight: 500, color: TEXT_PRIMARY }}>USDT</span>
+                    <span style={{ fontSize: 18, color: TEXT_SECONDARY }}>&#9432;</span>
+                  </div>
+                  <div style={{ fontSize: 20, color: GREEN }}>Earns up to 6%</div>
+                </div>
+              </div>
+              {/* Review button */}
+              <div style={{ padding: "16px 0", textAlign: "center", fontSize: 24, color: TEXT_SECONDARY }}>
+                Review
+              </div>
+              {/* Cancel */}
+              <div style={{ textAlign: "center", fontSize: 22, color: BLUE }}>
+                Cancel
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </AbsoluteFill>
   );
 };
@@ -844,5 +1341,5 @@ export const scene01Meta = {
   width: 3840,
   height: 2160,
   fps: 25,
-  durationInFrames: 227, // 216 + 11 (merged Scene02)
+  durationInFrames: 217, // 227 - 10 (shortened earn phase)
 };

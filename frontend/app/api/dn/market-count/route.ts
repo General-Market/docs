@@ -1,4 +1,4 @@
-import { getDataNodeUrl } from '@/lib/config'
+import { getAaDataNodeUrl as getDataNodeUrl } from '@/lib/config'
 
 export async function GET() {
   try {

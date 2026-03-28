@@ -9,6 +9,9 @@ import { short04Meta } from "./shorts/short-04/Short04Composition";
 import { visionVCMeta } from "./compositions/vision-vc/VisionVCComposition";
 import { visionVC2Meta } from "./compositions/vision-vc2/VisionVC2Composition";
 import { visionVC3Meta } from "./compositions/vision-vc3/VisionVC3Composition";
+import { replicateMeta, sceneMetas } from "./compositions/replicate/ReplicateComposition";
+import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicate-ordinaryfolk/OFReplicateComposition";
+import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop/WhopReplicateComposition";
 
 // remotion-scenes showcases
 import {
@@ -88,6 +91,76 @@ export const RemotionRoot: React.FC = () => {
         width={visionVC3Meta.width}
         height={visionVC3Meta.height}
       />
+
+      {/* ═══ REPLICATE — autoresearch animation matching ═══ */}
+      <Composition
+        id={replicateMeta.id}
+        component={replicateMeta.component}
+        durationInFrames={replicateMeta.durationInFrames}
+        fps={replicateMeta.fps}
+        width={replicateMeta.width}
+        height={replicateMeta.height}
+      />
+      {/* Per-scene compositions for parallel autoresearch */}
+      <Folder name="Replicate-Scenes">
+        {sceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ ORDINARY FOLK — replicate ═══ */}
+      <Composition
+        id={ofReplicateMeta.id}
+        component={ofReplicateMeta.component}
+        durationInFrames={ofReplicateMeta.durationInFrames}
+        fps={ofReplicateMeta.fps}
+        width={ofReplicateMeta.width}
+        height={ofReplicateMeta.height}
+      />
+      <Folder name="OF-Scenes">
+        {ofSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ WHOP — replicate ═══ */}
+      <Composition
+        id={whopReplicateMeta.id}
+        component={whopReplicateMeta.component}
+        durationInFrames={whopReplicateMeta.durationInFrames}
+        fps={whopReplicateMeta.fps}
+        width={whopReplicateMeta.width}
+        height={whopReplicateMeta.height}
+      />
+      <Folder name="Whop-Scenes">
+        {whopSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
 
       {/* ═══ Other shorts ═══ */}
       <Folder name="Other">

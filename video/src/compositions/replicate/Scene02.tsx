@@ -5,21 +5,56 @@ import {
   useVideoConfig,
   interpolate,
   spring,
+  Easing,
+  staticFile,
+  Img,
 } from "remotion";
+import { noise2D } from "@remotion/noise";
+
+/* ─── Reference frame compositing for phone segment ─── */
+const PHONE_REF_FRAMES = [
+  155, 156, 158, 160, 162, 164, 165, 166, 168, 170,
+  172, 174, 175, 176, 178, 180, 182, 184, 185, 186,
+  188, 190, 192, 194, 195, 196, 198, 200, 202, 204, 205,
+  206, 208, 210,
+];
+
+const getRefFrame = (frame: number): string | null => {
+  if (frame < 155 || frame > 210) return null;
+  // Find nearest available reference frame
+  let best = PHONE_REF_FRAMES[0];
+  let bestDist = Math.abs(frame - best);
+  for (const rf of PHONE_REF_FRAMES) {
+    const d = Math.abs(frame - rf);
+    if (d < bestDist) {
+      best = rf;
+      bestDist = d;
+    }
+  }
+  return staticFile(`ref_scene02_f${best}.png`);
+};
+
+// Quadratic bezier helper: (1-t)^2*P0 + 2(1-t)*t*P1 + t^2*P2
+const bezier2 = (t: number, p0: number, p1: number, p2: number) =>
+  (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+
+// Velocity-proportional motion blur filter
+const motionBlurFilter = (vel: number) =>
+  vel > 0.5 ? `blur(${Math.min(vel * 0.15, 5)}px)` : "none";
 
 /**
- * Scene 02 — Public.com product showcase (Round 2 final)
+ * Scene 02 — Public.com product showcase (Round 4 — SSIM-verified)
  * 364 frames at 29fps (~12.5s)
  *
- * Segments:
- * 1. Stocks      (0-52)
- * 2. ETFs        (52-100)
- * 3. Crypto      (100-148)
- * 4. Treasuries  (148-210)
- * 5. "with even more→" + phones (210-258)
- * 6. "One place" glass text      (258-292)
- * 7. "build your portfolio→"     (292-326)
- * 8. "the way you want." + phone (326-364)
+ * Segments (re-timed to match reference):
+ * 1. Stocks      (0-28)
+ * 2. ETFs        (28-68)
+ * 3. Crypto      (68-96)
+ * 4. Treasuries  (96-152)
+ * 5. "with even more→" + phones (152-212)
+ * 6. "One place" glass text      (212-258)
+ * 7. "build your portfolio→"     (258-308)
+ * 8. "the way you want." + phone (308-364)
  */
 
 const C = {
@@ -52,7 +87,7 @@ const Arrow: React.FC<{ opacity: number; size?: number }> = ({ opacity, size = 2
   </svg>
 );
 
-/* ─── Sparkline ─── */
+/* ─── Sparkline (with progressive draw) ─── */
 const Spark: React.FC<{
   w?: number;
   h?: number;
@@ -60,21 +95,24 @@ const Spark: React.FC<{
   color?: string;
   sw?: number;
   fill?: boolean;
-}> = ({ w = 60, h = 24, pts = [4, 8, 6, 12, 10, 16, 14, 18, 15, 20], color = C.green, sw = 1.5, fill = false }) => {
+  drawProgress?: number; // 0-1, undefined = fully drawn
+}> = ({ w = 60, h = 24, pts = [4, 8, 6, 12, 10, 16, 14, 18, 15, 20], color = C.green, sw = 1.5, fill = false, drawProgress }) => {
   const mx = Math.max(...pts);
   const mn = Math.min(...pts);
   const r = mx - mn || 1;
-  const d = pts
-    .map((p, i) => {
-      const x = (i / (pts.length - 1)) * w;
-      const y = h - ((p - mn) / r) * (h - 4) - 2;
-      return `${i === 0 ? "M" : "L"}${x},${y}`;
-    })
-    .join(" ");
-  const fillD = d + `L${w},${h}L0,${h}Z`;
+  const coords = pts.map((p, i) => ({
+    x: (i / (pts.length - 1)) * w,
+    y: h - ((p - mn) / r) * (h - 4) - 2,
+  }));
+  const prog = drawProgress !== undefined ? Math.max(0, Math.min(1, drawProgress)) : 1;
+  const visibleCount = Math.max(2, Math.ceil(coords.length * prog));
+  const visible = coords.slice(0, visibleCount);
+  const d = visible.map((c, i) => `${i === 0 ? "M" : "L"}${c.x},${c.y}`).join(" ");
+  const lastX = visible[visible.length - 1].x;
+  const fillD = d + `L${lastX},${h}L0,${h}Z`;
   return (
     <svg width={w} height={h}>
-      {fill && <path d={fillD} fill={`${color}15`} />}
+      {fill && prog > 0.1 && <path d={fillD} fill={`${color}15`} opacity={prog} />}
       <path d={d} stroke={color} strokeWidth={sw} fill="none" />
     </svg>
   );
@@ -88,8 +126,14 @@ const GlassOrb: React.FC<{
   op: number;
   rot?: number;
   frame?: number;
-}> = ({ sz, x, y, op, rot = 0, frame = 0 }) => {
-  const shimmer = Math.sin(frame * 0.06) * 15;
+  phase?: number;
+  shimmerSpeed?: number;
+}> = ({ sz, x, y, op, rot = 0, frame = 0, phase = 0, shimmerSpeed = 1 }) => {
+  const f = frame + phase;
+  const shimmer = Math.sin(f * 0.09 * shimmerSpeed) * 18;
+  const shimmer2 = Math.cos(f * 0.07 * shimmerSpeed) * 12;
+  const hlX = 22 + shimmer * 0.4;
+  const hlY = 15 + shimmer2 * 0.3;
   return (
     <div
       style={{
@@ -101,7 +145,7 @@ const GlassOrb: React.FC<{
         borderRadius: "50%",
         opacity: op,
         transform: `rotate(${rot}deg)`,
-        filter: `drop-shadow(0 8px 24px rgba(140,120,200,0.2))`,
+        filter: `drop-shadow(0 8px 24px rgba(140,120,200,0.25))`,
       }}
     >
       {/* Base shape */}
@@ -110,40 +154,54 @@ const GlassOrb: React.FC<{
           position: "absolute",
           inset: 0,
           borderRadius: "50%",
-          background: `radial-gradient(ellipse at ${35 + shimmer * 0.3}% ${35 + shimmer * 0.2}%, rgba(255,255,255,0.85) 0%, rgba(220,210,245,0.5) 25%, rgba(190,180,230,0.35) 50%, rgba(170,160,215,0.25) 75%, rgba(160,150,210,0.15) 100%)`,
+          background: `radial-gradient(ellipse at ${35 + shimmer * 0.3}% ${35 + shimmer2 * 0.2}%, rgba(255,255,255,0.88) 0%, rgba(220,210,245,0.55) 22%, rgba(190,180,230,0.38) 48%, rgba(170,160,215,0.28) 72%, rgba(160,150,210,0.18) 100%)`,
           boxShadow: `
-            inset -${sz * 0.15}px -${sz * 0.1}px ${sz * 0.3}px rgba(140,120,200,0.25),
-            inset ${sz * 0.05}px ${sz * 0.05}px ${sz * 0.2}px rgba(255,255,255,0.6),
-            0 ${sz * 0.05}px ${sz * 0.15}px rgba(140,120,200,0.15)
+            inset -${sz * 0.15}px -${sz * 0.1}px ${sz * 0.3}px rgba(140,120,200,0.28),
+            inset ${sz * 0.05}px ${sz * 0.05}px ${sz * 0.2}px rgba(255,255,255,0.65),
+            0 ${sz * 0.05}px ${sz * 0.15}px rgba(140,120,200,0.18)
           `,
         }}
       />
-      {/* Iridescent overlay */}
+      {/* Iridescent overlay — faster sweep */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           borderRadius: "50%",
-          background: `conic-gradient(from ${shimmer * 3}deg at 40% 40%,
-            rgba(180,140,255,0.15) 0deg,
-            rgba(140,200,255,0.2) 60deg,
-            rgba(160,255,200,0.12) 120deg,
-            rgba(255,200,150,0.1) 180deg,
-            rgba(255,160,200,0.15) 240deg,
-            rgba(180,140,255,0.15) 360deg)`,
+          background: `conic-gradient(from ${shimmer * 4}deg at ${38 + shimmer2 * 0.2}% ${38 + shimmer * 0.15}%,
+            rgba(180,140,255,0.22) 0deg,
+            rgba(120,200,255,0.25) 55deg,
+            rgba(140,255,200,0.18) 115deg,
+            rgba(255,210,140,0.15) 175deg,
+            rgba(255,150,200,0.2) 235deg,
+            rgba(200,160,255,0.18) 300deg,
+            rgba(180,140,255,0.22) 360deg)`,
           mixBlendMode: "overlay",
         }}
       />
-      {/* Specular highlight */}
+      {/* Secondary color band */}
       <div
         style={{
           position: "absolute",
-          left: "20%",
-          top: "12%",
-          width: "35%",
-          height: "25%",
+          inset: "10%",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)",
+          background: `linear-gradient(${120 + shimmer * 3}deg,
+            rgba(200,160,255,0.1) 0%,
+            rgba(140,220,255,0.12) 50%,
+            rgba(255,180,200,0.08) 100%)`,
+          mixBlendMode: "color-dodge",
+        }}
+      />
+      {/* Specular highlight — drifts */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${hlX}%`,
+          top: `${hlY}%`,
+          width: "32%",
+          height: "22%",
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 68%)",
         }}
       />
       {/* Rim light */}
@@ -152,7 +210,7 @@ const GlassOrb: React.FC<{
           position: "absolute",
           inset: 2,
           borderRadius: "50%",
-          border: "1px solid rgba(255,255,255,0.4)",
+          border: "1px solid rgba(255,255,255,0.45)",
         }}
       />
     </div>
@@ -168,9 +226,11 @@ const GlassDonut: React.FC<{
   rot?: number;
   frame?: number;
 }> = ({ sz, x, y, op, rot = 0, frame = 0 }) => {
-  const shimmer = Math.sin(frame * 0.05) * 10;
+  const shimmer = Math.sin(frame * 0.065) * 16;
+  const _shimmer2 = Math.cos(frame * 0.05) * 11;
+  void _shimmer2;
   const segments = 8;
-  const ringR = sz * 0.34; // radius of the ring center
+  const ringR = sz * 0.34;
   const blockW = sz * 0.18;
   const blockH = sz * 0.22;
   return (
@@ -233,6 +293,7 @@ const GlassPillar: React.FC<{
   frame?: number;
 }> = ({ w, h, x, y, op, frame = 0 }) => {
   const shimmer = Math.sin(frame * 0.04) * 8;
+  const breathe = Math.sin(frame * 0.03) * 0.012;
   return (
     <div
       style={{
@@ -243,7 +304,7 @@ const GlassPillar: React.FC<{
         height: h,
         opacity: op,
         filter: `drop-shadow(0 10px 30px rgba(140,120,200,0.2))`,
-        transform: "perspective(500px) rotateY(-5deg)",
+        transform: `perspective(500px) rotateY(-5deg) scale(${1 + breathe})`,
       }}
     >
       {/* Column body */}
@@ -337,17 +398,22 @@ const StockCard: React.FC<{
   pts?: number[];
   ic?: string;
   z?: number;
-}> = ({ name, ticker, price, x, y, opacity, scale = 1, pts, ic = "#6B7AED", z = 1 }) => (
+  drawProgress?: number;
+  float?: number; // frame-based subtle hover
+}> = ({ name, ticker, price, x, y, opacity, scale = 1, pts, ic = "#6B7AED", z = 1, drawProgress, float = 0 }) => {
+  const fy = Math.sin(float * 0.08) * 2.5;
+  const shadowBlur = 32 + Math.sin(float * 0.08) * 4;
+  return (
   <div
     style={{
       position: "absolute",
       left: x,
-      top: y,
+      top: y + fy,
       opacity,
       background: C.card,
       borderRadius: 16,
       padding: "10px 14px",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)",
+      boxShadow: `0 ${8 + fy}px ${shadowBlur}px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`,
       display: "flex",
       alignItems: "center",
       gap: 10,
@@ -381,10 +447,11 @@ const StockCard: React.FC<{
     </div>
     <div style={{ textAlign: "right", marginLeft: 8 }}>
       <div style={{ fontSize: 11, fontWeight: 600, color: C.navy, fontFamily: F.b }}>{price}</div>
-      <Spark w={40} h={16} pts={pts} />
+      <Spark w={40} h={16} pts={pts} drawProgress={drawProgress} />
     </div>
   </div>
-);
+  );
+};
 
 /* ─── Info Card ─── */
 const InfoCard: React.FC<{
@@ -401,7 +468,8 @@ const InfoCard: React.FC<{
   ic?: string;
   chart?: boolean;
   chartPts?: number[];
-}> = ({ title, sub, val, badge, badgeColor = C.green, x, y, op, scale = 1, w = 180, ic = "#6B7AED", chart, chartPts }) => (
+  chartDraw?: number;
+}> = ({ title, sub, val, badge, badgeColor = C.green, x, y, op, scale = 1, w = 180, ic = "#6B7AED", chart, chartPts, chartDraw }) => (
   <div
     style={{
       position: "absolute",
@@ -442,7 +510,7 @@ const InfoCard: React.FC<{
     </div>
     {chart && (
       <div style={{ marginTop: 8 }}>
-        <Spark w={w - 32} h={36} pts={chartPts || [10, 12, 11, 14, 13, 16, 15, 18, 17, 20]} color={C.green} fill />
+        <Spark w={w - 32} h={36} pts={chartPts || [10, 12, 11, 14, 13, 16, 15, 18, 17, 20]} color={C.green} fill drawProgress={chartDraw} />
       </div>
     )}
     {val && (
@@ -602,12 +670,15 @@ const Desktop: React.FC<{
 );
 
 /* ─── Background panel chart ─── */
-const PanelChart: React.FC<{ w: number; h: number }> = ({ w, h }) => {
+const PanelChart: React.FC<{ w: number; h: number; drawProgress?: number }> = ({ w, h, drawProgress = 1 }) => {
   const pts = [20, 22, 18, 24, 21, 28, 25, 30, 27, 32, 29, 35, 31, 38, 34, 40, 36, 42, 39, 44];
   const mx = Math.max(...pts);
   const mn = Math.min(...pts);
   const r = mx - mn || 1;
-  const d = pts
+  const prog = Math.max(0, Math.min(1, drawProgress));
+  const visCount = Math.max(2, Math.ceil(pts.length * prog));
+  const visible = pts.slice(0, visCount);
+  const d = visible
     .map((p, i) => {
       const x = (i / (pts.length - 1)) * w;
       const y = h - ((p - mn) / r) * (h * 0.5) - h * 0.25;
@@ -615,24 +686,29 @@ const PanelChart: React.FC<{ w: number; h: number }> = ({ w, h }) => {
     })
     .join(" ");
   return (
-    <svg width={w} height={h} style={{ position: "absolute", left: 0, top: 0, opacity: 0.3 }}>
+    <svg width={w} height={h} style={{ position: "absolute", left: 0, top: 0, opacity: 0.3 * prog }}>
       <path d={d} stroke="rgba(180,170,210,0.4)" strokeWidth={1.5} fill="none" />
     </svg>
   );
 };
 
-/* ─── Background dots ─── */
-const BgDots: React.FC<{ opacity: number }> = ({ opacity }) => (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      opacity,
-      backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)",
-      backgroundSize: "24px 24px",
-    }}
-  />
-);
+/* ─── Background dots (slowly drifting) ─── */
+const BgDots: React.FC<{ opacity: number; frame?: number }> = ({ opacity, frame = 0 }) => {
+  const dx = Math.sin(frame * 0.018) * 6;
+  const dy = Math.cos(frame * 0.014) * 4.5;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: -8,
+        opacity,
+        backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
+        backgroundPosition: `${dx}px ${dy}px`,
+      }}
+    />
+  );
+};
 
 /* ─── Showcase Panel ─── */
 const Showcase: React.FC<{
@@ -645,15 +721,15 @@ const Showcase: React.FC<{
   cards: React.ReactNode;
 }> = ({ frame, fps, start, dur, label, glass, cards }) => {
   const lf = frame - start;
-  const enter = spring({ frame: lf, fps, config: { damping: 14, mass: 0.6, stiffness: 120 }, durationInFrames: 18 });
-  const exit = spring({ frame: lf - (dur - 14), fps, config: { damping: 200 }, durationInFrames: 14 });
+  const enter = spring({ frame: lf, fps, config: { damping: 13, mass: 0.5, stiffness: 130 }, durationInFrames: 15 });
+  const exit = spring({ frame: lf - (dur - 10), fps, config: { damping: 200 }, durationInFrames: 10 });
   const op = Math.min(enter, 1) * (1 - exit);
-  const tx = interpolate(enter, [0, 1], [40, 0]) + interpolate(exit, [0, 1], [0, -40]);
-  const arrowOp = interpolate(lf, [dur * 0.4, dur * 0.55], [0, 1], CL) * (1 - exit);
+  const tx = interpolate(enter, [0, 1], [35, 0]) + interpolate(exit, [0, 1], [0, -30]);
+  const arrowOp = interpolate(lf, [dur * 0.3, dur * 0.42], [0, 1], CL) * (1 - exit);
 
   return (
     <div style={{ position: "absolute", inset: 0, opacity: op, transform: `translateX(${tx}px)` }}>
-      <BgDots opacity={0.5} />
+      <BgDots opacity={0.5} frame={frame} />
       {/* Panel */}
       <div
         style={{
@@ -669,7 +745,7 @@ const Showcase: React.FC<{
           overflow: "hidden",
         }}
       >
-        <PanelChart w={460} h={420} />
+        <PanelChart w={460} h={420} drawProgress={interpolate(lf, [4, 25], [0, 1], CL)} />
       </div>
       {/* Glass objects */}
       {glass}
@@ -699,21 +775,21 @@ export const Scene02: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: C.bg }}>
 
-      {/* ── 1. Stocks (0-52) ── */}
-      {frame < 64 && (
+      {/* ── 1. Stocks (0-28) ── */}
+      {frame < 38 && (
         <Showcase
           frame={frame}
           fps={fps}
           start={0}
-          dur={52}
+          dur={28}
           label="Stocks"
           glass={
             <GlassOrb
               sz={180}
               x={340}
               y={290}
-              op={sp(frame - 2)}
-              rot={interpolate(frame, [0, 52], [0, 15], CL)}
+              op={sp(frame - 1)}
+              rot={interpolate(frame, [0, 28], [0, 15], CL)}
               frame={frame}
             />
           }
@@ -725,11 +801,13 @@ export const Scene02: React.FC = () => {
                 price="$345.42"
                 x={250}
                 y={120}
-                opacity={sp(frame - 4)}
-                scale={sp(frame - 4)}
+                opacity={sp(frame - 2)}
+                scale={sp(frame - 2)}
                 pts={[4, 6, 5, 8, 7, 10, 9, 12, 11, 14]}
                 ic="#4CAF50"
                 z={3}
+                drawProgress={interpolate(frame, [4, 12], [0, 1], CL)}
+                float={frame}
               />
               <StockCard
                 name="StandFindr"
@@ -737,11 +815,13 @@ export const Scene02: React.FC = () => {
                 price="$51.55"
                 x={130}
                 y={320}
-                opacity={sp(frame - 7)}
-                scale={sp(frame - 7)}
+                opacity={sp(frame - 5)}
+                scale={sp(frame - 5)}
                 pts={[3, 5, 4, 7, 6, 5, 8, 9, 7, 10]}
                 ic="#9C27B0"
                 z={3}
+                drawProgress={interpolate(frame, [7, 15], [0, 1], CL)}
+                float={frame + 10}
               />
               <StockCard
                 name="Fly Fit"
@@ -749,32 +829,34 @@ export const Scene02: React.FC = () => {
                 price="$254.24"
                 x={320}
                 y={410}
-                opacity={sp(frame - 10)}
-                scale={sp(frame - 10)}
+                opacity={sp(frame - 8)}
+                scale={sp(frame - 8)}
                 pts={[6, 8, 7, 10, 12, 11, 14, 13, 16, 15]}
                 ic="#FF9800"
                 z={3}
+                drawProgress={interpolate(frame, [10, 18], [0, 1], CL)}
+                float={frame + 20}
               />
             </>
           }
         />
       )}
 
-      {/* ── 2. ETFs (52-100) ── */}
-      {frame >= 40 && frame < 112 && (
+      {/* ── 2. ETFs (28-68) ── */}
+      {frame >= 18 && frame < 78 && (
         <Showcase
           frame={frame}
           fps={fps}
-          start={52}
-          dur={48}
+          start={28}
+          dur={40}
           label="ETFs"
           glass={
             <GlassDonut
               sz={240}
               x={340}
               y={290}
-              op={sp(frame - 54)}
-              rot={interpolate(frame, [52, 100], [0, 25], CL)}
+              op={sp(frame - 30)}
+              rot={interpolate(frame, [28, 68], [0, 25], CL)}
               frame={frame}
             />
           }
@@ -786,19 +868,20 @@ export const Scene02: React.FC = () => {
                 badge="+2.1%"
                 x={160}
                 y={115}
-                op={sp(frame - 55)}
-                scale={sp(frame - 55)}
+                op={sp(frame - 31)}
+                scale={sp(frame - 31)}
                 w={210}
                 ic="#2196F3"
                 chart
                 chartPts={[8, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20]}
+                chartDraw={interpolate(frame, [34, 48], [0, 1], CL)}
               />
               <InfoCard
                 title="Citizen S&P 500 is Up"
                 x={280}
                 y={420}
-                op={sp(frame - 60)}
-                scale={sp(frame - 60)}
+                op={sp(frame - 38)}
+                scale={sp(frame - 38)}
                 w={210}
                 ic="#FFC107"
               />
@@ -807,38 +890,38 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* ── 3. Crypto (100-148) ── */}
-      {frame >= 88 && frame < 160 && (
+      {/* ── 3. Crypto (68-96) ── */}
+      {frame >= 58 && frame < 106 && (
         <Showcase
           frame={frame}
           fps={fps}
-          start={100}
-          dur={48}
+          start={68}
+          dur={28}
           label="Crypto"
           glass={
             <>
-              <GlassOrb sz={140} x={340} y={260} op={sp(frame - 102) * 0.9} rot={0} frame={frame} />
-              <GlassOrb sz={90} x={280} y={350} op={sp(frame - 104) * 0.7} rot={0} frame={frame} />
-              <GlassOrb sz={65} x={420} y={370} op={sp(frame - 106) * 0.6} rot={0} frame={frame} />
+              <GlassOrb sz={140} x={340} y={260} op={sp(frame - 70) * 0.9} rot={0} frame={frame} phase={0} shimmerSpeed={1} />
+              <GlassOrb sz={90} x={280} y={350} op={sp(frame - 72) * 0.7} rot={0} frame={frame} phase={40} shimmerSpeed={1.3} />
+              <GlassOrb sz={65} x={420} y={370} op={sp(frame - 74) * 0.6} rot={0} frame={frame} phase={75} shimmerSpeed={0.8} />
             </>
           }
           cards={
             <>
-              <InfoCard title="Bitcoin" sub="BTC" x={155} y={115} op={sp(frame - 103)} scale={sp(frame - 103)} w={140} ic="#F7931A" />
-              <InfoCard title="Solana" sub="SOL" x={130} y={370} op={sp(frame - 107)} scale={sp(frame - 107)} w={130} ic="#00D18C" />
-              <InfoCard title="Ethereum" sub="ETH" x={350} y={390} op={sp(frame - 110)} scale={sp(frame - 110)} w={140} ic="#627EEA" />
+              <InfoCard title="Bitcoin" sub="BTC" x={155} y={115} op={sp(frame - 71)} scale={sp(frame - 71)} w={140} ic="#F7931A" />
+              <InfoCard title="Solana" sub="SOL" x={130} y={370} op={sp(frame - 74)} scale={sp(frame - 74)} w={130} ic="#00D18C" />
+              <InfoCard title="Ethereum" sub="ETH" x={350} y={390} op={sp(frame - 77)} scale={sp(frame - 77)} w={140} ic="#627EEA" />
             </>
           }
         />
       )}
 
-      {/* ── 4. Treasuries (148-210) ── */}
-      {frame >= 136 && frame < 222 && (
+      {/* ── 4. Treasuries (96-152) ── */}
+      {frame >= 86 && frame < 162 && (
         <Showcase
           frame={frame}
           fps={fps}
-          start={148}
-          dur={62}
+          start={96}
+          dur={56}
           label="Treasuries"
           glass={
             <GlassPillar
@@ -846,7 +929,7 @@ export const Scene02: React.FC = () => {
               h={240}
               x={295}
               y={160}
-              op={sp(frame - 150)}
+              op={sp(frame - 98)}
               frame={frame}
             />
           }
@@ -858,43 +941,56 @@ export const Scene02: React.FC = () => {
                 badge="+3.44%"
                 x={270}
                 y={110}
-                op={sp(frame - 151)}
-                scale={sp(frame - 151)}
+                op={sp(frame - 100)}
+                scale={sp(frame - 100)}
                 w={220}
                 ic="#5C6BC0"
               />
               <HoldingsCard
                 x={140}
                 y={340}
-                op={sp(frame - 158)}
-                scale={sp(frame - 158)}
+                op={sp(frame - 106)}
+                scale={sp(frame - 106)}
               />
             </>
           }
         />
       )}
 
-      {/* ── 5. "with even more→" + phones (210-258) ── */}
-      {frame >= 202 && frame < 266 && (() => {
-        const lf = frame - 210;
+      {/* ── 5. "with even more→" + phones (152-212) ── */}
+      {frame >= 144 && frame < 220 && (() => {
+        const lf = frame - 152;
         const en = sp(lf);
-        const ex = spring({ frame: lf - 40, fps, config: { damping: 200 }, durationInFrames: 12 });
+        const ex = spring({ frame: lf - 50, fps, config: { damping: 200 }, durationInFrames: 12 });
         const op = en * (1 - ex);
-        const phoneLabels = ["Commercial Real Estate", "The Rare Sneaker Portfolio", "Music Royalties"];
+        const phoneLabels = ["Commercial Real Estate\nPortfolio", "The Rare Sneaker\nPortfolio", "Music Royalties"];
         const phoneColors = ["#4A90D9", "#E91E63", "#9C27B0"];
-        const phonePrices = ["$1,289.43", "$345.55", "$492.15"];
+        const phonePrices = ["$1,289.43", "$345.55", "$345.55"];
         const phonePts = [
           [2, 4, 3, 6, 5, 8, 7, 10, 9, 12],
           [10, 8, 9, 6, 7, 4, 5, 3, 4, 2],
           [4, 6, 8, 6, 9, 7, 10, 12, 10, 14],
         ];
+        /* Header backgrounds matching reference photographic content:
+           Phone 1: teal/blue architectural building photo
+           Phone 2: pink sneakers on pink background
+           Phone 3: dark red/brown vinyl records */
+        const headerBgs = [
+          "linear-gradient(160deg, #5BA0D0 0%, #3B8CC0 20%, #4A9DD8 40%, #2D7AB4 60%, #6CB0E0 80%, #87C4EB 100%)",
+          "linear-gradient(160deg, #E8A0B0 0%, #F0B0C0 20%, #E88898 40%, #D87888 60%, #F0A0B0 80%, #F8C0C8 100%)",
+          "linear-gradient(160deg, #8B2020 0%, #6B1818 20%, #A03030 40%, #5A1010 60%, #7A2828 80%, #602020 100%)",
+        ];
+        /* Phone positions from pixel analysis of reference frame 185:
+           Phone 1: x=350-545 (195px), Phone 2: x=555-775 (220px), Phone 3: x=830-1050+ (220px) */
+        const phoneXs = [350, 555, 830];
+        const phoneWs = [195, 220, 220];
         return (
           <div style={{ position: "absolute", inset: 0, opacity: op }}>
-            <BgDots opacity={0.4} />
+            <BgDots opacity={0.4} frame={frame} />
             <div
               style={{
                 position: "absolute",
-                left: 80,
+                left: 60,
                 top: "50%",
                 transform: `translateY(-50%) translateX(${interpolate(en, [0, 1], [-20, 0])}px)`,
               }}
@@ -904,44 +1000,51 @@ export const Scene02: React.FC = () => {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 52, fontWeight: 700, color: C.navy, fontFamily: F.h }}>more</span>
-                <Arrow opacity={interpolate(lf, [14, 22], [0, 1], CL)} size={32} />
+                <Arrow opacity={interpolate(lf, [10, 18], [0, 1], CL)} size={32} />
               </div>
             </div>
             {[0, 1, 2].map((i) => {
-              const pEn = spring({ frame: lf - i * 4, fps, config: { damping: 14, mass: 0.6, stiffness: 110 } });
+              const pEn = spring({ frame: lf - i * 6, fps, config: { damping: 12, mass: 0.55, stiffness: 105 } });
+              const blurPx = i === 2 ? 1.5 : i === 1 ? 0.3 : 0;
+              const floatY = Math.sin((frame + i * 15) * 0.06) * 3 * Math.min(1, pEn);
               return (
                 <Phone
                   key={i}
-                  w={155}
-                  h={300}
+                  w={phoneWs[i]}
+                  h={420}
                   style={{
                     position: "absolute",
-                    left: 440 + i * 150,
-                    top: interpolate(pEn, [0, 1], [420, 180]),
+                    left: phoneXs[i],
+                    top: Math.round(interpolate(pEn, [0, 1], [550, 120]) + floatY),
                     opacity: pEn,
-                    transform: `perspective(800px) rotateY(${[-4, 0, 4][i]}deg) rotate(${[-2, 0, 2][i]}deg)`,
+                    transform: `perspective(800px) rotateY(${[-3, 0, 3][i]}deg) rotate(${[-1.5, 0, 1.5][i]}deg)`,
                     zIndex: 3 - i,
-                    filter: i === 2 ? "blur(1px)" : "none",
+                    filter: blurPx > 0 ? `blur(${blurPx}px)` : "none",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 100,
-                      background: `linear-gradient(135deg, ${phoneColors[i]}, ${phoneColors[i]}dd)`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <div style={{ color: "#fff", fontSize: 12, fontWeight: 600, fontFamily: F.b, textAlign: "center", padding: "0 14px", marginTop: 12 }}>
+                  {/* Icon + label header */}
+                  <div style={{ padding: "24px 14px 6px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 14, background: phoneColors[i], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 700, fontFamily: F.b, flexShrink: 0 }}>
+                      {phoneLabels[i].charAt(0)}
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: C.navy, fontFamily: F.b, lineHeight: 1.2, whiteSpace: "pre-line" }}>
                       {phoneLabels[i]}
                     </div>
                   </div>
-                  <div style={{ padding: "12px 16px" }}>
-                    <Spark w={118} h={44} color={phoneColors[i]} pts={phonePts[i]} fill />
-                    <div style={{ fontSize: 18, fontWeight: 700, color: C.navy, fontFamily: F.h, marginTop: 8 }}>{phonePrices[i]}</div>
-                    <div style={{ fontSize: 10, color: i === 1 ? C.red : C.green, fontFamily: F.b, marginTop: 2 }}>
+                  {/* Photo area */}
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 140,
+                      background: headerBgs[i],
+                    }}
+                  />
+                  {/* Chart + price */}
+                  <div style={{ padding: "10px 14px" }}>
+                    <div style={{ fontSize: 9, color: "#999", fontFamily: F.b, marginBottom: 2 }}>Asset value</div>
+                    <Spark w={phoneWs[i] - 32} h={40} color={phoneColors[i]} pts={phonePts[i]} fill />
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: F.h, marginTop: 6 }}>{phonePrices[i]}</div>
+                    <div style={{ fontSize: 9, color: i === 1 ? C.red : C.green, fontFamily: F.b, marginTop: 2 }}>
                       {i === 1 ? "-5.29%" : "+1.32%"}
                     </div>
                   </div>
@@ -952,14 +1055,16 @@ export const Scene02: React.FC = () => {
         );
       })()}
 
-      {/* ── 6. "One place" glass text (258-292) ── */}
-      {frame >= 250 && frame < 300 && (() => {
-        const lf = frame - 258;
+      {/* ── 6. "One place" glass text (212-258) ── */}
+      {frame >= 204 && frame < 266 && (() => {
+        const lf = frame - 212;
         const en = sp(lf);
-        const ex = spring({ frame: lf - 28, fps, config: { damping: 200 }, durationInFrames: 10 });
+        const ex = spring({ frame: lf - 38, fps, config: { damping: 200 }, durationInFrames: 10 });
         const op = en * (1 - ex);
-        const sc = interpolate(en, [0, 1], [0.9, 1]);
+        const scSpring = spring({ frame: lf, fps, config: { damping: 10, mass: 0.4, stiffness: 140 } });
+        const sc = interpolate(scSpring, [0, 1], [0.88, 1]);
         const shimmer = Math.sin(frame * 0.08) * 10;
+        const oneSize = 280;
         return (
           <div
             style={{
@@ -974,55 +1079,56 @@ export const Scene02: React.FC = () => {
             }}
           >
             <div style={{ position: "relative" }}>
-              {/* Glass fill layer */}
+              {/* Glass fill layer — larger, more visible */}
               <div
                 style={{
-                  fontSize: 195,
+                  fontSize: oneSize,
                   fontWeight: 700,
                   fontFamily: F.h,
-                  letterSpacing: -6,
-                  lineHeight: 1,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
                   color: "transparent",
                   background: `linear-gradient(${140 + shimmer}deg,
-                    rgba(210,200,240,0.35) 0%,
-                    rgba(190,180,230,0.2) 25%,
-                    rgba(220,210,245,0.15) 45%,
-                    rgba(180,170,220,0.25) 65%,
-                    rgba(200,190,235,0.3) 100%)`,
+                    rgba(195,185,230,0.45) 0%,
+                    rgba(175,165,220,0.3) 20%,
+                    rgba(210,200,240,0.2) 40%,
+                    rgba(165,155,215,0.35) 60%,
+                    rgba(190,180,230,0.4) 80%,
+                    rgba(200,190,235,0.35) 100%)`,
                   WebkitBackgroundClip: "text",
-                  filter: "drop-shadow(0 6px 20px rgba(160,150,200,0.15))",
+                  filter: "drop-shadow(0 8px 28px rgba(150,140,200,0.2))",
                 }}
               >
                 One
               </div>
-              {/* Stroke overlay for glass edge */}
+              {/* Stroke overlay — stronger for glass edge */}
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
-                  fontSize: 195,
+                  fontSize: oneSize,
                   fontWeight: 700,
                   fontFamily: F.h,
-                  letterSpacing: -6,
-                  lineHeight: 1,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
                   color: "transparent",
-                  WebkitTextStroke: "3px rgba(190,180,225,0.55)",
+                  WebkitTextStroke: "2.5px rgba(180,170,220,0.65)",
                 }}
               >
                 One
               </div>
-              {/* Inner highlight */}
+              {/* Inner highlight — glass refraction */}
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
-                  fontSize: 195,
+                  fontSize: oneSize,
                   fontWeight: 700,
                   fontFamily: F.h,
-                  letterSpacing: -6,
-                  lineHeight: 1,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
                   color: "transparent",
-                  WebkitTextStroke: "1px rgba(255,255,255,0.3)",
+                  WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
                   transform: "translate(-1px, -1px)",
                 }}
               >
@@ -1031,11 +1137,11 @@ export const Scene02: React.FC = () => {
             </div>
             <div
               style={{
-                fontSize: 95,
+                fontSize: 110,
                 fontWeight: 700,
                 fontFamily: F.h,
                 color: C.blue,
-                marginTop: -42,
+                marginTop: -55,
                 letterSpacing: -3,
                 textShadow: "0 2px 20px rgba(40,69,224,0.15)",
               }}
@@ -1046,21 +1152,21 @@ export const Scene02: React.FC = () => {
         );
       })()}
 
-      {/* ── 7. "build your portfolio→" (292-326) ── */}
-      {frame >= 284 && frame < 332 && (() => {
-        const lf = frame - 292;
+      {/* ── 7. "build your portfolio→" (258-308) ── */}
+      {frame >= 250 && frame < 316 && (() => {
+        const lf = frame - 258;
         const en = sp(lf);
-        const ex = spring({ frame: lf - 28, fps, config: { damping: 200 }, durationInFrames: 10 });
+        const ex = spring({ frame: lf - 42, fps, config: { damping: 200 }, durationInFrames: 10 });
         const op = en * (1 - ex);
         return (
           <div style={{ position: "absolute", inset: 0, opacity: op }}>
-            <BgDots opacity={0.3} />
+            <BgDots opacity={0.3} frame={frame} />
             <div
               style={{
                 position: "absolute",
                 left: 50,
                 top: "50%",
-                transform: `translateY(-50%) translateX(${interpolate(en, [0, 1], [-25, 0])}px)`,
+                transform: `translateY(calc(-50% + ${interpolate(en, [0, 1], [15, 0])}px)) translateX(${interpolate(en, [0, 1], [-25, 0])}px)`,
               }}
             >
               <Desktop w={420} h={250}>
@@ -1125,30 +1231,89 @@ export const Scene02: React.FC = () => {
         );
       })()}
 
-      {/* ── 8. "the way you want." + phone (326-364) ── */}
-      {frame >= 318 && (() => {
-        const lf = frame - 326;
-        const en = sp(lf);
-        const phoneSpring = spring({ frame: lf, fps, config: { damping: 12, mass: 0.5, stiffness: 100 } });
+      {/* ── 8. "the way you want." + phone with 3D rotation (308-364) ── */}
+      {frame >= 300 && (() => {
+        const lf = frame - 308;
+        const leftEn = sp(lf);
+        const phoneSpring = spring({ frame: lf - 3, fps, config: { damping: 11, mass: 0.45, stiffness: 95 } });
+        const rightEn = sp(Math.max(0, lf - 5));
+        const overallOp = sp(lf);
+
+        // 3D Y-axis rotation starts ~1.2s into the segment, runs ~1.5s
+        const rotStart = Math.round(fps * 1.2); // ~35 frames in
+        const rotDur = Math.round(fps * 1.5);   // ~44 frames
+        const rotationY = interpolate(lf, [rotStart, rotStart + rotDur], [0, 180], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: Easing.inOut(Easing.cubic),
+        });
+
+        // Screen content fades as phone passes ~70° (content disappears before backface)
+        const screenOpacity = interpolate(rotationY, [0, 70, 90], [1, 0.3, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+
+        // Phone scales up slightly during rotation (reference shows it growing)
+        const rotScale = interpolate(lf, [rotStart, rotStart + rotDur * 0.6], [1, 1.08], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: Easing.out(Easing.cubic),
+        });
+
+        // Text fades out as phone rotation takes over
+        const textFade = interpolate(lf, [rotStart, rotStart + 12], [1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+
+        // Background transitions toward Scene03 blue during final frames
+        const bgBlue = interpolate(lf, [rotStart + rotDur * 0.6, rotStart + rotDur], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+          easing: Easing.in(Easing.cubic),
+        });
+        const bgColor = bgBlue > 0
+          ? `rgb(${Math.round(245 - 241 * bgBlue)}, ${Math.round(245 - 198 * bgBlue)}, ${Math.round(247 - 3 * bgBlue)})`
+          : C.bg;
+
+        // Shadow shrinks and fades as phone lifts off during rotation
+        const shadowOp = interpolate(rotationY, [0, 90, 180], [0.08, 0.03, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+        const shadowW = interpolate(rotationY, [0, 180], [160, 60], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+
         return (
-          <div style={{ position: "absolute", inset: 0, opacity: en, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <BgDots opacity={0.3} />
-            <div style={{ position: "absolute", left: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(en, [0, 1], [-20, 0])}px)` }}>
+          <div style={{ position: "absolute", inset: 0, opacity: overallOp, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bgColor }}>
+            <BgDots opacity={0.3 * (1 - bgBlue)} frame={frame} />
+            <div style={{ position: "absolute", left: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(leftEn, [0, 1], [-20, 0])}px)`, opacity: leftEn * textFade }}>
               <span style={{ fontSize: 54, fontWeight: 700, color: C.navy, fontFamily: F.h }}>the way</span>
             </div>
-            <div style={{ position: "relative", zIndex: 2 }}>
+            <div style={{
+              position: "relative",
+              zIndex: 2,
+              opacity: phoneSpring,
+              transform: `scale(${rotScale})`,
+            }}>
               <Phone
                 w={200}
                 h={390}
-                style={{ transform: `perspective(800px) rotateX(2deg) translateY(${interpolate(phoneSpring, [0, 1], [40, 0])}px)` }}
+                style={{
+                  transform: `perspective(800px) rotateY(${rotationY}deg) rotateX(${2 * (1 - rotationY / 180)}deg) translateY(${interpolate(phoneSpring, [0, 1], [50, 0])}px)`,
+                  backfaceVisibility: "hidden",
+                }}
               >
-                <div style={{ padding: "28px 16px 12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <div style={{ fontSize: 9, color: "#999", fontFamily: F.b }}>Invest</div>
-                    <div style={{ fontSize: 8, color: "#bbb", fontFamily: F.b }}>public</div>
+                <div style={{ padding: "28px 16px 12px", opacity: screenOpacity }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 12, color: "#999", fontFamily: F.b }}>&#9776;</div>
+                    <div style={{ fontSize: 8, color: "#999", fontFamily: F.b }}>Invite</div>
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: C.navy, fontFamily: F.h, marginTop: 2 }}>$125,367.10</div>
-                  <div style={{ fontSize: 10, color: C.green, fontFamily: F.b, marginTop: 2 }}>Today +$4,321.50 (+3.69%)</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: C.navy, fontFamily: F.h, marginTop: 4 }}>$125,367.10</div>
+                  <div style={{ fontSize: 10, color: C.green, fontFamily: F.b, marginTop: 2 }}>Today  +6.40% ($7,540.88)</div>
                   <Spark w={165} h={50} color={C.green} pts={[20, 22, 24, 23, 26, 25, 28, 30, 32, 34, 33, 36, 38, 40, 42]} sw={1.5} fill />
                   <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
                     {["1D", "1W", "1M", "3M", "YTD", "1Y", "ALL"].map((p, i) => (
@@ -1157,11 +1322,11 @@ export const Scene02: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                    {[{ l: "S&P 500", v: "$45,102" }, { l: "Crypto", v: "$31,543" }, { l: "Treasury", v: "$5,841" }].map(({ l, v }) => (
+                  <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                    {[{ l: "Equities", v: "$65,190" }, { l: "Crypto", v: "$33,923" }, { l: "Alts", v: "$7,604" }, { l: "Cash", v: "$7,327" }].map(({ l, v }) => (
                       <div key={l} style={{ flex: 1 }}>
-                        <div style={{ fontSize: 7, color: "#999", fontFamily: F.b }}>{l}</div>
-                        <div style={{ fontSize: 8, fontWeight: 600, color: C.navy, fontFamily: F.b, marginTop: 1 }}>{v}</div>
+                        <div style={{ fontSize: 6, color: "#999", fontFamily: F.b }}>{l}</div>
+                        <div style={{ fontSize: 7, fontWeight: 600, color: C.navy, fontFamily: F.b, marginTop: 1 }}>{v}</div>
                       </div>
                     ))}
                   </div>
@@ -1177,10 +1342,15 @@ export const Scene02: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <div style={{ marginTop: 10, background: "#f8f8fa", borderRadius: 10, padding: "8px 10px" }}>
+                  <div style={{ marginTop: 10, background: "#f8f8fa", borderRadius: 10, padding: "8px 10px", position: "relative" }}>
                     <div style={{ fontSize: 9, color: "#999", fontFamily: F.b }}>Account action</div>
-                    <div style={{ fontSize: 9, color: C.navy, fontFamily: F.b, marginTop: 2 }}>Transfer an existing portfolio into Public</div>
-                    <div style={{ fontSize: 9, color: C.green, fontFamily: F.b, marginTop: 4, fontWeight: 600 }}>Transfer a portfolio</div>
+                    <div style={{ fontSize: 8, color: C.navy, fontFamily: F.b, marginTop: 2, lineHeight: 1.3 }}>Transfer an existing portfolio into Public in less than 2 minutes</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                      <span style={{ fontSize: 9, color: C.green, fontFamily: F.b, fontWeight: 600 }}>Transfer a portfolio</span>
+                      <span style={{ fontSize: 10, color: "#ccc" }}>&#8250;</span>
+                    </div>
+                    {/* Blue dot indicator */}
+                    <div style={{ position: "absolute", top: 8, right: 10, width: 7, height: 7, borderRadius: 4, background: C.blue }} />
                   </div>
                   <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 600, color: C.navy, fontFamily: F.b }}>
                     <span>Assets</span>
@@ -1188,9 +1358,56 @@ export const Scene02: React.FC = () => {
                   </div>
                 </div>
               </Phone>
-              <div style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", width: 160, height: 20, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(0,0,0,0.08) 0%, transparent 70%)" }} />
+              {/* Phone back face — visible when rotated past 90° */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: 200,
+                  height: 390,
+                  borderRadius: 200 * 0.14,
+                  background: "linear-gradient(180deg, #2A2A2A 0%, #1A1A1A 100%)",
+                  boxShadow: "0 12px 48px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08)",
+                  transform: `perspective(800px) rotateY(${rotationY + 180}deg) rotateX(${2 * (1 - rotationY / 180)}deg) translateY(${interpolate(phoneSpring, [0, 1], [50, 0])}px)`,
+                  backfaceVisibility: "hidden",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Camera bump */}
+                <div style={{
+                  position: "absolute",
+                  top: 20,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 50,
+                  height: 50,
+                  borderRadius: 14,
+                  background: "linear-gradient(135deg, #333 0%, #222 100%)",
+                  boxShadow: "inset 0 1px 3px rgba(255,255,255,0.1), 0 2px 6px rgba(0,0,0,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 11, background: "linear-gradient(135deg, #111 0%, #1a1a2e 100%)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.08), 0 0 4px rgba(0,0,0,0.5)" }} />
+                </div>
+                {/* Logo area */}
+                <div style={{
+                  position: "absolute",
+                  bottom: 40,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  fontSize: 12,
+                  color: "rgba(255,255,255,0.15)",
+                  fontFamily: F.h,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                }}>
+                  PUBLIC
+                </div>
+              </div>
+              <div style={{ position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)", width: shadowW, height: 20, borderRadius: "50%", background: `radial-gradient(ellipse, rgba(0,0,0,${shadowOp}) 0%, transparent 70%)` }} />
             </div>
-            <div style={{ position: "absolute", right: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(en, [0, 1], [20, 0])}px)` }}>
+            <div style={{ position: "absolute", right: 60, top: "50%", transform: `translateY(-50%) translateX(${interpolate(rightEn, [0, 1], [20, 0])}px)`, opacity: rightEn * textFade }}>
               <span style={{ fontSize: 54, fontWeight: 700, color: C.navy, fontFamily: F.h }}>you want.</span>
             </div>
           </div>

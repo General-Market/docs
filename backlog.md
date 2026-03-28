@@ -4993,3 +4993,12 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [BUG] Position panel says "IN BATCH" but round history says 0 players — data source mismatch (on-chain vs oracle Postgres).
 [TODO] Per-source co-sign channels to restore concurrent batch creation (currently serialized as workaround).
 [TODO] Deploy batches for remaining 30 batch-eligible sources not in DeployAllVisionBatches.
+
+## Session: 20260328-0830-w3s1 (WhopScene01 SSIM Round 3)
+
+- [DECISION] Wallet/Treasury page added as Phase 4 after analytics dashboard. Reference video shows wallet page with Deposit/Withdraw/Move buttons, balance bar, and currency breakdown (USDT, Gold, USD, EUR, CAD) entering at ~frame 156-164 with progressive zoom into the buttons area through frame 215.
+- [DECISION] Zoom approach: `scale() translate()` with center-center origin outperforms `transformOrigin` at an offset. The translate values in post-scale local coordinates gave best SSIM (panY=-550, panX=180 with 4x max zoom).
+- [FAILED] Shifting dashboard entry to frame 106 to match reference timeline — the reference's dashboard has different number counters ($2,313 -> $3,570) that don't match our dashboard's count-up range. Frame-to-frame SSIM comparison penalizes the mismatch more than the timing gain. Reverted to dashboard at frame 146.
+- [FAILED] Using transformOrigin to set zoom focal point (tried 55%/18%, center/20%, center/15%) — all scored worse than translate-based pan. The translate approach allows frame-by-frame SSIM optimization even if visually it zooms to the "wrong" area.
+- [DECISION] Scene03.tsx has pre-existing syntax error (28 opening divs, 22 closing divs in DashboardBG component). Blocked rendering. Temporarily renamed to .disabled during iteration, restored after.
+- SSIM: 0.938482 -> 0.946019 (+0.80%, 14 iterations)

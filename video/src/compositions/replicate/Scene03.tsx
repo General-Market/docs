@@ -11,21 +11,21 @@ import { loadFont } from "@remotion/google-fonts/Inter";
 /**
  * Scene 03 — 22.42s to 27.56s (5.14s, ~149 frames @ 29fps)
  *
- * Three text phases on solid blue (#042EF4):
+ * Three text phases on solid blue (#042FF4):
  *   Phase 1 (f0–31):   "All of your investing."  — dark underline under "your"
- *   Phase 2 (f38–70):  "All in one place."       — dark underline under "one place"
- *   Phase 3 (f78–end): "Get up to $10,000 when you / transfer an account."
+ *   Phase 2 (f41–72):  "All in one place."       — dark underline under "one place"
+ *   Phase 3 (f81–end): "Get up to $10,000 when you / transfer an account."
  *                        — dark underline under "$10,000"
  *
- * Timing from deep analysis text_elements:
- *   "All" first_seen=22.422, last_seen=23.357 → Phase 1: 0–27 frames, fade by 35
- *   "Allin" first_seen=23.824, last_seen=24.758 → Phase 2: 41–68 frames, fade by 75
- *   "Get" first_seen=25.225 → Phase 3 starts frame 81
- *   "transfer" first_seen=25.692 → Line 2 starts frame 95
+ * Timing (recalculated from deep analysis @ 29fps):
+ *   "All" first_seen=22.422, last_seen=23.357 → Phase 1: f0–f27, fade f27–f31
+ *   "Allin" first_seen=23.824, last_seen=24.758 → Phase 2: f41–f68, fade f68–f72
+ *   "Get" first_seen=25.225 → Phase 3 starts f81
+ *   "transfer" first_seen=25.692 → Line 2 enters f95 (14-frame delay)
  *
- * Underlines: dark navy ~2px, draw left-to-right, ease-out-cubic.
- * Entry: spring slide-up with subtle overshoot + 2-frame opacity snap.
- * Exit: 4-frame opacity fade. Phase 1 starts at full opacity (no fade-in).
+ * Underlines: dark navy (#061230) 2px, draw left-to-right over 5 frames, ease-out-cubic.
+ * Entry: spring slide-up (8px travel, damping 18) + 2-frame opacity snap.
+ * Exit: 4-frame linear opacity fade + 4px upward lift. Phase 1 starts at full opacity.
  */
 
 const FPS = 29;
@@ -35,23 +35,30 @@ const { fontFamily } = loadFont("normal", {
   weights: ["400"],
 });
 
-const BG = "#042EF4";
+const BG = "#042FF4";
 const TEXT_COLOR = "#FFFFFF";
-const UNDERLINE_COLOR = "#081440";
+const UNDERLINE_COLOR = "#061230";
 const FONT = `${fontFamily}, 'Helvetica Neue', 'Arial', sans-serif`;
-const FONT_SIZE = 58;
+const FONT_SIZE = 62;
 const FONT_WEIGHT = 400;
 const LETTER_SPACING = "-0.02em";
 
-/* ── Phase boundaries (scene-local frames at 29fps) ── */
+/* Text sits above true center in reference (~48% from top for single-line phases).
+ * Phase 1/2 (single line): center at 48.06% → need -14px from true center
+ * Phase 3 (two lines): center at 48.70% → need -9px from true center
+ * Using per-phase Y offset via transform, not global padding. */
+const PHASE12_Y_OFFSET = -19; // px shift for single-line phases
+const PHASE3_Y_OFFSET = -5; // px shift for two-line phase (original best-scoring position)
+
+/* ── Phase boundaries (scene-local frames, recalibrated from reference) ── */
 const PHASE1_START = 0;
-const PHASE1_HOLD = 27;
+const PHASE1_HOLD = 42; // reference holds full opacity through frame 42
 
-const PHASE2_START = 38;
-const PHASE2_HOLD = 66;
+const PHASE2_START = 46; // cross-fades in very fast, ~4 frame overlap with phase 1 exit
+const PHASE2_HOLD = 83; // exits just before Phase 3 enters at 86
 
-const PHASE3_START = 78;
-const PHASE3_LINE2_DELAY = 13; // line 2 enters 13 frames after line 1
+const PHASE3_START = 86; // line 1 appears ~frame 87 (1 frame earlier to match ref)
+const PHASE3_LINE2_DELAY = 3; // line 2 follows very quickly (~3 frames — ref shows both at f91)
 
 /* ── Utility: clamp-interpolate shorthand ── */
 const clampInterp = (
@@ -66,59 +73,83 @@ const clampInterp = (
     easing,
   });
 
+/* ── Circle wipe exit transition ── */
+const CIRCLE_WIPE_START = 139; // circle begins shrinking (visible at f140 in reference)
+const EXIT_BG = "#EBEBEB"; // very light gray background behind circle
+
 export const Scene03: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Phase 1: appears instantly at frame 0, fades out quickly before Phase 2
+  // Phase 1: appears instantly at frame 0, fast fade out (~4 frames)
   const phase1Opacity = (() => {
     if (frame > PHASE1_HOLD + 5) return 0;
     const fadeOut = clampInterp(frame, [PHASE1_HOLD, PHASE1_HOLD + 4], [1, 0]);
     return fadeOut;
   })();
 
-  // Phase 2: snaps in with 2-frame fade, fades out before Phase 3
+  // Phase 2: fast fade in (~3 frames), holds, fast fade out before Phase 3
   const phase2Opacity = (() => {
     if (frame < PHASE2_START || frame > PHASE2_HOLD + 5) return 0;
-    const fadeIn = clampInterp(frame, [PHASE2_START, PHASE2_START + 2], [0, 1]);
-    const fadeOut = clampInterp(frame, [PHASE2_HOLD, PHASE2_HOLD + 4], [1, 0]);
+    const fadeIn = clampInterp(frame, [PHASE2_START, PHASE2_START + 3], [0, 1]);
+    const fadeOut = clampInterp(frame, [PHASE2_HOLD, PHASE2_HOLD + 3], [1, 0]);
     return fadeIn * fadeOut;
   })();
 
-  // Phase 3: snaps in with 2-frame fade, holds until end
+  // Phase 3: very fast fade in (~2 frames — reference is nearly full by frame 89)
   const phase3Opacity = (() => {
     if (frame < PHASE3_START) return 0;
     return clampInterp(frame, [PHASE3_START, PHASE3_START + 2], [0, 1]);
   })();
 
+  // Circle wipe: reference shows circle shrinking rapidly from ~f140.
+  // Frame-by-frame analysis against Motionimo reference:
+  //   f139=full, f140=corners clipped (~95%), f142=~65%, f144=~35%, f146=~12%, f148=tiny (~5%)
+  const wipeFrame = frame - CIRCLE_WIPE_START;
+  const showWipe = wipeFrame > 0;
+  const maxRadius = Math.sqrt(1280 * 1280 + 720 * 720) / 2;
+  const circleRadius = showWipe
+    ? interpolate(
+        wipeFrame,
+        [0, 1,   3,   5,   7,    9,    11,   13,   14],
+        [maxRadius, maxRadius * 0.95, maxRadius * 0.75, maxRadius * 0.50, maxRadius * 0.30, maxRadius * 0.12, maxRadius * 0.05, 0, 0],
+        { extrapolateRight: "clamp", extrapolateLeft: "clamp" }
+      )
+    : maxRadius;
+
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: BG,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      {phase1Opacity > 0 && (
-        <PhaseText
-          frame={frame - PHASE1_START}
-          opacity={phase1Opacity}
-          before="All of "
-          underlined="your"
-          after=" investing."
-        />
-      )}
-      {phase2Opacity > 0 && (
-        <PhaseText
-          frame={frame - PHASE2_START}
-          opacity={phase2Opacity}
-          before="All in "
-          underlined="one place"
-          after="."
-        />
-      )}
-      {phase3Opacity > 0 && (
-        <Phase3Text frame={frame - PHASE3_START} opacity={phase3Opacity} />
-      )}
+    <AbsoluteFill style={{ backgroundColor: EXIT_BG }}>
+      <AbsoluteFill
+        style={{
+          backgroundColor: BG,
+          justifyContent: "center",
+          alignItems: "center",
+          ...(showWipe
+            ? {
+                clipPath: `circle(${circleRadius}px at 50% 50%)`,
+                WebkitClipPath: `circle(${circleRadius}px at 50% 50%)`,
+              }
+            : {}),
+        }}
+      >
+        {phase1Opacity > 0 && (
+          <PhaseText
+            frame={frame - PHASE1_START}
+            opacity={phase1Opacity}
+            before="All of "
+            underlined="your"
+            after=" investing."
+          />
+        )}
+        {phase2Opacity > 0 && (
+          <Phase2Text
+            frame={frame - PHASE2_START}
+            opacity={phase2Opacity}
+          />
+        )}
+        {phase3Opacity > 0 && (
+          <Phase3Text frame={frame - PHASE3_START} opacity={phase3Opacity} />
+        )}
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -130,12 +161,12 @@ const AnimatedUnderline: React.FC<{ widthPercent: number }> = ({
   <div
     style={{
       position: "absolute",
-      bottom: -1,
-      left: 0,
-      width: `${widthPercent}%`,
+      bottom: -2,
+      left: -3,
+      width: `calc(${widthPercent}% + 6px)`,
       height: 2,
       backgroundColor: UNDERLINE_COLOR,
-      opacity: 0.9,
+      opacity: 1,
     }}
   />
 );
@@ -149,6 +180,8 @@ const baseStyle: React.CSSProperties = {
   letterSpacing: LETTER_SPACING,
   lineHeight: 1.3,
   whiteSpace: "pre",
+  textRendering: "optimizeLegibility",
+  WebkitFontSmoothing: "antialiased",
 };
 
 /* ── Spring slide-up with subtle overshoot ── */
@@ -157,13 +190,13 @@ const useSlideY = (frame: number, delay = 0): number => {
     frame: frame - delay,
     fps: FPS,
     config: {
-      damping: 16,
-      stiffness: 200,
-      mass: 0.7,
+      damping: 18,
+      stiffness: 220,
+      mass: 0.6,
       overshootClamping: false,
     },
   });
-  return interpolate(s, [0, 1], [10, 0]);
+  return interpolate(s, [0, 1], [8, 0]);
 };
 
 /* ── Phases 1 & 2: single-line text with underline ── */
@@ -178,17 +211,21 @@ const PhaseText: React.FC<{
 
   const underlineW = clampInterp(
     frame,
-    [1, 8],
+    [1, 5],
     [0, 100],
     Easing.out(Easing.cubic)
   );
+
+  // Subtle exit lift: text drifts up ~4px as it fades out (reference shows upward motion)
+  // PhaseText receives frame relative to phase start, so we use the hold duration directly
+  const exitLift = clampInterp(frame, [38, 42], [0, -4]);
 
   return (
     <div
       style={{
         ...baseStyle,
         opacity,
-        transform: `translateY(${slideY}px)`,
+        transform: `translateY(${PHASE12_Y_OFFSET + slideY + exitLift}px)`,
       }}
     >
       {before}
@@ -197,6 +234,61 @@ const PhaseText: React.FC<{
         <AnimatedUnderline widthPercent={underlineW} />
       </span>
       {after}
+    </div>
+  );
+};
+
+/* ── Phase 2: "All in one place." with per-letter spring on "one" ── */
+const Phase2Text: React.FC<{ frame: number; opacity: number }> = ({
+  frame,
+  opacity,
+}) => {
+  const slideY = useSlideY(frame);
+
+  const underlineW = clampInterp(
+    frame,
+    [1, 5],
+    [0, 100],
+    Easing.out(Easing.cubic)
+  );
+
+  const exitLift = clampInterp(frame, [38, 42], [0, -4]);
+
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        opacity,
+        transform: `translateY(${PHASE12_Y_OFFSET + slideY + exitLift}px)`,
+      }}
+    >
+      {"All in "}
+      <span style={{ position: "relative", display: "inline-block" }}>
+        <span style={{ display: "inline-flex" }}>
+          {"one".split("").map((char, i) => {
+            const charSpring = spring({
+              frame: Math.max(0, frame - i * 2),
+              fps: FPS,
+              config: { damping: 12, stiffness: 180, mass: 0.7 },
+            });
+            return (
+              <span
+                key={i}
+                style={{
+                  display: "inline-block",
+                  transform: `translateY(${(1 - charSpring) * 20}px)`,
+                  opacity: charSpring,
+                }}
+              >
+                {char}
+              </span>
+            );
+          })}
+        </span>
+        {" place"}
+        <AnimatedUnderline widthPercent={underlineW} />
+      </span>
+      {"."}
     </div>
   );
 };
@@ -210,7 +302,7 @@ const Phase3Text: React.FC<{ frame: number; opacity: number }> = ({
 
   const underlineW = clampInterp(
     frame,
-    [1, 8],
+    [1, 5],
     [0, 100],
     Easing.out(Easing.cubic)
   );
@@ -227,6 +319,7 @@ const Phase3Text: React.FC<{ frame: number; opacity: number }> = ({
         flexDirection: "column",
         alignItems: "center",
         gap: 4,
+        transform: `translateY(${PHASE3_Y_OFFSET}px)`,
       }}
     >
       {/* Line 1: "Get up to $10,000 when you" */}
@@ -239,23 +332,45 @@ const Phase3Text: React.FC<{ frame: number; opacity: number }> = ({
       >
         {"Get up to "}
         <span style={{ position: "relative", display: "inline-block" }}>
-          {"$10,000"}
+          <span style={{ display: "inline-flex" }}>
+            {"$10,000".split("").map((char, i) => {
+              const charSpring = spring({
+                frame: Math.max(0, frame - i * 2),
+                fps: FPS,
+                config: { damping: 12, stiffness: 180, mass: 0.7 },
+              });
+              return (
+                <span
+                  key={i}
+                  style={{
+                    display: "inline-block",
+                    transform: `translateY(${(1 - charSpring) * 20}px)`,
+                    opacity: charSpring,
+                  }}
+                >
+                  {char}
+                </span>
+              );
+            })}
+          </span>
           <AnimatedUnderline widthPercent={underlineW} />
         </span>
         {" when you"}
       </div>
 
-      {/* Line 2: "transfer an account." — always rendered for layout stability */}
-      <div
-        style={{
-          ...baseStyle,
-          opacity: opacity * line2Opacity,
-          transform: `translateY(${line2SlideY}px)`,
-          textAlign: "center",
-        }}
-      >
-        {"transfer an account."}
-      </div>
+      {/* Line 2: "transfer an account." — only rendered once it starts entering */}
+      {line2Opacity > 0 && (
+        <div
+          style={{
+            ...baseStyle,
+            opacity: opacity * line2Opacity,
+            transform: `translateY(${line2SlideY}px)`,
+            textAlign: "center",
+          }}
+        >
+          {"transfer an account."}
+        </div>
+      )}
     </div>
   );
 };

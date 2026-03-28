@@ -346,9 +346,47 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           )}
         </div>
       </ExplorerChartCard>
+
+      {/* Tie Rate Chart */}
+      <TieRateChart />
     </div>
   )
 }
+
+function TieRateChart() {
+  const [tieData, setTieData] = useState<{ source: string; pct: number; total: number }[]>([])
+
+  useEffect(() => {
+    fetch('/api/vision/explorer/tie-rates')
+      .then(r => r.json())
+      .then(d => setTieData((d.tieRates ?? []).map((r: any) => ({ source: r.source, pct: r.pct, total: r.total }))))
+      .catch(() => {})
+  }, [])
+
+  if (tieData.length === 0) return null
+
+  return (
+    <ExplorerChartCard title="Tie Rate by Source" subtitle="% of rounds where all players had equal PnL">
+      <div className="p-4 space-y-1">
+        {tieData.map(d => (
+          <div key={d.source} className="grid grid-cols-[110px_1fr_42px_42px] gap-2 items-center">
+            <div className="text-[10px] font-mono text-text-secondary truncate">{d.source}</div>
+            <div className="h-4 bg-black/[0.04] rounded-sm overflow-hidden">
+              <div
+                className={`h-full rounded-sm ${d.pct > 25 ? 'bg-amber-400' : d.pct > 15 ? 'bg-amber-300' : 'bg-emerald-400'}`}
+                style={{ width: `${(d.pct / 40) * 100}%` }}
+              />
+            </div>
+            <div className="text-[10px] font-mono tabular-nums text-right font-semibold">{d.pct.toFixed(1)}%</div>
+            <div className="text-[10px] font-mono tabular-nums text-right text-text-muted">{d.total}r</div>
+          </div>
+        ))}
+      </div>
+    </ExplorerChartCard>
+  )
+}
+
+// _end_of_vision_section_ (marker removed below)
 
 // --- Helper components ---
 

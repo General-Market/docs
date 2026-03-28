@@ -9,6 +9,54 @@ import {
   Easing,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
+import { CameraMotionBlur } from "@remotion/motion-blur";
+
+/* ─── bezier / motion helpers ─── */
+/** quadratic bezier — 3-point arc for particle trajectories */
+function quadBezier(t: number, p0: number, p1: number, p2: number): number {
+  const u = 1 - t;
+  return u * u * p0 + 2 * u * t * p1 + t * t * p2;
+}
+
+/** cubic bezier — 4-point curve for complex trajectories */
+function cubicBezier(t: number, p0: number, p1: number, p2: number, p3: number): number {
+  const u = 1 - t;
+  return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+}
+
+/** deceleration curve: fast start, asymptotic settle */
+function decel(t: number, rate = 3.0): number {
+  return 1 - Math.exp(-t * rate);
+}
+
+/** velocity-proportional blur — 0.2 scale, 6px cap per spec */
+function motionBlurAmount(
+  currX: number,
+  currY: number,
+  prevX: number,
+  prevY: number,
+  scale = 0.2,
+  max = 6,
+): number {
+  const dx = currX - prevX;
+  const dy = currY - prevY;
+  return Math.min(Math.sqrt(dx * dx + dy * dy) * scale, max);
+}
+
+/** organic micro-wobble for any positioned element */
+function organicWobble(
+  seed: string,
+  frame: number,
+  amplitudeX = 3,
+  amplitudeY = 2,
+  speed = 0.02,
+): { x: number; y: number; rot: number } {
+  return {
+    x: noise2D(seed + "wx", frame * speed, 0) * amplitudeX,
+    y: noise2D(seed + "wy", 0, frame * speed) * amplitudeY,
+    rot: noise2D(seed + "wr", frame * speed * 0.7, 0.5) * 1.5,
+  };
+}
 
 /* ─── palette ─── */
 const PINK = "#E8458B";
@@ -33,8 +81,16 @@ function seededRandom(seed: number) {
 /* ─── particle type ─── */
 interface Particle {
   id: number;
+  /** origin x */
   x: number;
+  /** origin y */
   y: number;
+  /** bezier control point offset (perpendicular to travel direction) */
+  cpOffX: number;
+  cpOffY: number;
+  /** end point offset from origin */
+  endX: number;
+  endY: number;
   size: number;
   color: string;
   speed: number;
@@ -49,19 +105,30 @@ function generateParticles(count: number, seed: number): Particle[] {
   const rng = seededRandom(seed);
   const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, "#A78BFA", "#F472B6", "#60A5FA"];
   const shapes: Particle["shape"][] = ["circle", "circle", "circle", "diamond", "star"];
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: 500 + rng() * 280,
-    y: 300 + (rng() - 0.5) * 120,
-    size: 2 + rng() * 10,
-    color: colors[Math.floor(rng() * colors.length)],
-    speed: 0.5 + rng() * 3,
-    angle: (rng() - 0.3) * Math.PI * 0.8, // bias rightward for sweep
-    noiseOffsetX: rng() * 1000,
-    noiseOffsetY: rng() * 1000,
-    delay: rng() * 15,
-    shape: shapes[Math.floor(rng() * shapes.length)],
-  }));
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (rng() - 0.3) * Math.PI * 0.8;
+    const dist = 80 + rng() * 280;
+    // control point perpendicular to travel direction for arc curvature
+    const perpAngle = angle + (rng() > 0.5 ? Math.PI / 2 : -Math.PI / 2);
+    const cpDist = 40 + rng() * 120;
+    return {
+      id: i,
+      x: 500 + rng() * 280,
+      y: 300 + (rng() - 0.5) * 120,
+      cpOffX: Math.cos(perpAngle) * cpDist + Math.cos(angle) * dist * 0.5,
+      cpOffY: Math.sin(perpAngle) * cpDist + Math.sin(angle) * dist * 0.5,
+      endX: Math.cos(angle) * dist,
+      endY: Math.sin(angle) * dist,
+      size: 2 + rng() * 10,
+      color: colors[Math.floor(rng() * colors.length)],
+      speed: 0.5 + rng() * 3,
+      angle,
+      noiseOffsetX: rng() * 1000,
+      noiseOffsetY: rng() * 1000,
+      delay: rng() * 15,
+      shape: shapes[Math.floor(rng() * shapes.length)],
+    };
+  });
 }
 
 /* ─── Sparkle Star SVG ─── */
@@ -92,7 +159,7 @@ const Sparkle: React.FC<{
   </svg>
 );
 
-/* ─── Particle Field ─── */
+/* ─── Particle Field — quadratic bezier arcs + deceleration + motion blur ─── */
 const ParticleField: React.FC<{
   frame: number;
   fps: number;
@@ -102,62 +169,83 @@ const ParticleField: React.FC<{
   return (
     <>
       {particles.map((p) => {
-        const t = Math.max(0, frame - p.delay) / fps;
-        const noiseX = noise2D("px" + p.id, t * 0.8 + p.noiseOffsetX, 0) * 60;
-        const noiseY = noise2D("py" + p.id, 0, t * 0.8 + p.noiseOffsetY) * 60;
+        const rawT = Math.max(0, frame - p.delay) / fps;
+        const noiseX = noise2D("px" + p.id, rawT * 0.8 + p.noiseOffsetX, 0) * 40;
+        const noiseY = noise2D("py" + p.id, 0, rawT * 0.8 + p.noiseOffsetY) * 40;
+        const wob = organicWobble("p" + p.id, frame, 2.5, 2, 0.025);
 
         let px: number, py: number, opacity: number, scale: number;
+        // previous-frame position for velocity blur
+        let prevPx: number, prevPy: number;
 
         if (phase === "explode") {
-          // Deceleration: distance grows fast then tapers (1 - e^-kt)
-          const rawDist = p.speed * 120;
-          const decel = 1 - Math.exp(-t * 2.5); // fast start, slow finish
-          const dist = rawDist * decel;
-          // Sweeping arc: particles curve slightly as they travel
-          const curveAngle = p.angle + t * 0.4 * (p.id % 2 === 0 ? 1 : -1);
-          px = p.x + Math.cos(curveAngle) * dist + noiseX;
-          py = p.y + Math.sin(curveAngle) * dist + noiseY;
-          opacity = interpolate(t, [0, 0.05, 0.6, 1.0], [0, 1, 0.8, 0], {
+          // Decelerated progress along quadratic bezier arc
+          const tNorm = Math.min(rawT / 1.2, 1); // normalize to ~1.2s lifespan
+          const d = decel(tNorm * 3, 2.8); // fast start, asymptotic settle
+          // Bezier arc: origin → control → end
+          px = quadBezier(d, p.x, p.x + p.cpOffX, p.x + p.endX) + noiseX + wob.x;
+          py = quadBezier(d, p.y, p.y + p.cpOffY, p.y + p.endY) + noiseY + wob.y;
+          // Prev frame for blur
+          const dPrev = decel(Math.max(0, tNorm - 0.04) * 3, 2.8);
+          prevPx = quadBezier(dPrev, p.x, p.x + p.cpOffX, p.x + p.endX) + noiseX;
+          prevPy = quadBezier(dPrev, p.y, p.y + p.cpOffY, p.y + p.endY) + noiseY;
+          opacity = interpolate(tNorm, [0, 0.04, 0.5, 0.85, 1], [0, 1, 0.9, 0.4, 0], {
             extrapolateRight: "clamp",
           });
-          scale = interpolate(t, [0, 0.15, 0.8], [0.2, 1, 0.3], {
+          scale = interpolate(tNorm, [0, 0.1, 0.6, 1], [0.15, 1.1, 0.7, 0.15], {
             extrapolateRight: "clamp",
           });
         } else if (phase === "swirl") {
-          const swirlAngle = p.angle + t * 2;
-          const dist = 50 + p.speed * t * 40;
-          px = 640 + Math.cos(swirlAngle) * dist + noiseX * 0.5;
-          py = 360 + Math.sin(swirlAngle) * dist + noiseY * 0.5;
-          opacity = interpolate(t, [0, 0.3, 2, 2.5], [1, 0.8, 0.6, 0], {
+          const swirlAngle = p.angle + rawT * 2;
+          const dist = 50 + p.speed * rawT * 40;
+          px = 640 + Math.cos(swirlAngle) * dist + noiseX * 0.5 + wob.x;
+          py = 360 + Math.sin(swirlAngle) * dist + noiseY * 0.5 + wob.y;
+          const prevAngle = p.angle + (rawT - 0.033) * 2;
+          prevPx = 640 + Math.cos(prevAngle) * (dist - 1.3);
+          prevPy = 360 + Math.sin(prevAngle) * (dist - 1.3);
+          opacity = interpolate(rawT, [0, 0.3, 2, 2.5], [1, 0.8, 0.6, 0], {
             extrapolateRight: "clamp",
           });
-          scale = 0.7 + Math.sin(t * 3) * 0.3;
+          scale = 0.7 + Math.sin(rawT * 3) * 0.3;
         } else if (phase === "converge") {
           const targetX = 640;
           const targetY = 360;
           const startX = p.x + Math.cos(p.angle) * 300 + noiseX;
           const startY = p.y + Math.sin(p.angle) * 200 + noiseY;
-          const prog = interpolate(t, [0, 1.5], [0, 1], {
+          const prog = interpolate(rawT, [0, 1.5], [0, 1], {
             extrapolateRight: "clamp",
             easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           });
-          px = startX + (targetX - startX) * prog;
-          py = startY + (targetY - startY) * prog;
-          opacity = interpolate(t, [0, 0.2, 1.2, 1.5], [0, 1, 1, 0], {
+          // Arc via bezier control point offset from midpoint
+          const midX = (startX + targetX) / 2 + p.cpOffX * 0.5;
+          const midY = (startY + targetY) / 2 + p.cpOffY * 0.5;
+          px = quadBezier(prog, startX, midX, targetX) + wob.x;
+          py = quadBezier(prog, startY, midY, targetY) + wob.y;
+          const progPrev = Math.max(0, prog - 0.03);
+          prevPx = quadBezier(progPrev, startX, midX, targetX);
+          prevPy = quadBezier(progPrev, startY, midY, targetY);
+          opacity = interpolate(rawT, [0, 0.2, 1.2, 1.5], [0, 1, 1, 0], {
             extrapolateRight: "clamp",
           });
           scale = interpolate(prog, [0, 0.5, 1], [1, 0.8, 0.2], {
             extrapolateRight: "clamp",
           });
         } else {
-          // scatter
-          const dist = p.speed * t * 200;
-          px = p.x + Math.cos(p.angle) * dist + noiseX * 2;
-          py = p.y + Math.sin(p.angle) * dist + noiseY * 2;
-          opacity = interpolate(t, [0, 0.1, 0.5, 1], [1, 0.8, 0.4, 0], {
+          // scatter — bezier arcs outward
+          const tNorm = Math.min(rawT / 0.8, 1);
+          const d = decel(tNorm * 2.5, 2.0);
+          const dist = p.speed * 200;
+          const ex = p.x + Math.cos(p.angle) * dist;
+          const ey = p.y + Math.sin(p.angle) * dist;
+          px = quadBezier(d, p.x, p.x + p.cpOffX * 0.7, ex) + noiseX * 2 + wob.x;
+          py = quadBezier(d, p.y, p.y + p.cpOffY * 0.7, ey) + noiseY * 2 + wob.y;
+          const dPrev = decel(Math.max(0, tNorm - 0.04) * 2.5, 2.0);
+          prevPx = quadBezier(dPrev, p.x, p.x + p.cpOffX * 0.7, ex);
+          prevPy = quadBezier(dPrev, p.y, p.y + p.cpOffY * 0.7, ey);
+          opacity = interpolate(rawT, [0, 0.1, 0.5, 1], [1, 0.8, 0.4, 0], {
             extrapolateRight: "clamp",
           });
-          scale = interpolate(t, [0, 0.5], [1, 0], {
+          scale = interpolate(rawT, [0, 0.5], [1, 0], {
             extrapolateRight: "clamp",
           });
         }
@@ -165,6 +253,9 @@ const ParticleField: React.FC<{
         if (opacity <= 0) return null;
 
         const s = p.size * scale;
+        const blur = motionBlurAmount(px, py, prevPx, prevPy);
+        const sizeBlur = s > 5 ? (s - 5) * 0.12 : 0;
+        const totalBlur = Math.max(blur, sizeBlur);
         const style: React.CSSProperties = {
           position: "absolute",
           left: px - s / 2,
@@ -176,11 +267,11 @@ const ParticleField: React.FC<{
           backgroundColor: p.color,
           transform:
             p.shape === "diamond"
-              ? `rotate(45deg)`
+              ? `rotate(${45 + wob.rot}deg)`
               : p.shape === "star"
-                ? `rotate(${t * 60}deg)`
-                : undefined,
-          filter: s > 5 ? `blur(${(s - 5) * 0.15}px)` : undefined,
+                ? `rotate(${rawT * 60 + wob.rot}deg)`
+                : `rotate(${wob.rot}deg)`,
+          filter: totalBlur > 0.3 ? `blur(${totalBlur.toFixed(1)}px)` : undefined,
         };
 
         return <div key={p.id} style={style} />;
@@ -194,13 +285,14 @@ const SegParticleExplosion: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const particles = useMemo(() => generateParticles(120, 42), []);
+  const wob = organicWobble("pexp", frame, 4, 3, 0.025);
 
   // Particles explode outward from center in a swirl
   const phase: "explode" | "swirl" = frame < fps * 0.8 ? "explode" : "swirl";
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
-      {/* Soft radial glow at center */}
+      {/* Soft radial glow at center — wobbles with particle field */}
       <div
         style={{
           position: "absolute",
@@ -208,7 +300,7 @@ const SegParticleExplosion: React.FC = () => {
           top: "50%",
           width: 400,
           height: 400,
-          transform: "translate(-50%, -50%)",
+          transform: `translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,
           background: `radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)`,
           opacity: interpolate(frame, [0, 10, fps * 1.5], [0, 0.8, 0], {
             extrapolateRight: "clamp",
@@ -220,18 +312,16 @@ const SegParticleExplosion: React.FC = () => {
   );
 };
 
-/* ─── Segment 2: Gemini Text Materializes ─── */
+/* ─── Segment 2: Gemini Text Materializes — per-letter arc entrances ─── */
+const GEMINI_LETTERS = "Gemini".split("");
+/** Per-letter arc entrance angles (radians) — varied for organic feel */
+const LETTER_ARC_ANGLES = [-0.9, -0.4, 0.3, -0.6, 0.7, -0.2];
+const LETTER_ARC_DIST = [60, 45, 55, 50, 65, 40];
+
 const SegGeminiReveal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const particles = useMemo(() => generateParticles(60, 99), []);
-
-  const textSpring = spring({ frame, fps, config: { damping: 12, stiffness: 120 } });
-  const textOpacity = interpolate(textSpring, [0, 1], [0, 1]);
-  const textScale = interpolate(textSpring, [0, 1], [0.9, 1]);
-
-  // Gemini text uses a blue→purple→pink gradient like the reference
-  // The gradient shifts slowly over time for a living feel
 
   // Sparkle animations
   const sparkle1Op = interpolate(
@@ -256,24 +346,58 @@ const SegGeminiReveal: React.FC = () => {
         <ParticleField frame={frame} fps={fps} particles={particles} phase="scatter" />
       </div>
 
-      {/* Gemini text */}
+      {/* Gemini text — per-letter arc entrance */}
       <div
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) scale(${textScale})`,
-          opacity: textOpacity,
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          alignItems: "baseline",
           fontSize: 72,
           fontFamily: "'Google Sans', 'Product Sans', sans-serif",
           fontWeight: 400,
-          background: `linear-gradient(90deg, ${BLUE} 0%, ${PURPLE} 45%, ${PINK} 100%)`,
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
           letterSpacing: -1,
         }}
       >
-        Gemini
+        {GEMINI_LETTERS.map((letter, i) => {
+          const delay = i * 3; // stagger: 3 frames per letter
+          const letterSpring = spring({
+            frame: frame - delay,
+            fps,
+            config: { damping: 14, stiffness: 130, mass: 0.7 },
+          });
+          const wob = organicWobble("gl" + i, frame, 1.5, 1, 0.018);
+          // Arc entrance: each letter arrives from its own angle
+          const arcAngle = LETTER_ARC_ANGLES[i];
+          const arcDist = LETTER_ARC_DIST[i];
+          const prog = interpolate(letterSpring, [0, 1], [0, 1]);
+          const arcX = Math.cos(arcAngle) * arcDist * (1 - prog);
+          const arcY = Math.sin(arcAngle) * arcDist * (1 - prog);
+          // Velocity blur on entrance
+          const prevProg = Math.max(0, prog - 0.06);
+          const prevArcX = Math.cos(arcAngle) * arcDist * (1 - prevProg);
+          const prevArcY = Math.sin(arcAngle) * arcDist * (1 - prevProg);
+          const blur = motionBlurAmount(arcX, arcY, prevArcX, prevArcY);
+
+          return (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                background: `linear-gradient(90deg, ${BLUE} 0%, ${PURPLE} 45%, ${PINK} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                opacity: interpolate(letterSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" }),
+                transform: `translate(${arcX + wob.x}px, ${arcY + wob.y}px) scale(${interpolate(letterSpring, [0, 1], [0.7, 1])}) rotate(${wob.rot * 0.5}deg)`,
+                filter: blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : undefined,
+              }}
+            >
+              {letter}
+            </span>
+          );
+        })}
       </div>
 
       {/* Sparkles — main one above the 'i' dot, smaller ones flanking */}
@@ -293,17 +417,23 @@ const SegGeminiReveal: React.FC = () => {
   );
 };
 
-/* ─── Segment 3: Desktop UI Mockup ─── */
+/* ─── Segment 3: Desktop UI Mockup — perspective tilt w/ spring settle ─── */
 const SegDesktopUI: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // UI slides in with perspective tilt
-  const enterSpring = spring({ frame, fps, config: { damping: 20, stiffness: 100 } });
-  const uiScale = interpolate(enterSpring, [0, 1], [1.08, 1]);
-  const uiY = interpolate(enterSpring, [0, 1], [40, 0]);
-  const uiRotX = interpolate(enterSpring, [0, 1], [6, 2.5]);
-  const uiOpacity = interpolate(enterSpring, [0, 1], [0, 1]);
+  // Spring settle: overshoots then settles — lower damping for visible bounce
+  const enterSpring = spring({ frame, fps, config: { damping: 11, stiffness: 90, mass: 1.2 } });
+  const wob = organicWobble("dui", frame, 1.2, 0.8, 0.015);
+  const uiScale = interpolate(enterSpring, [0, 1], [1.12, 1]);
+  const uiY = interpolate(enterSpring, [0, 1], [55, 0]) + wob.y;
+  // Perspective tilt: enters tilted, settles to subtle rest tilt
+  const uiRotX = interpolate(enterSpring, [0, 1], [8, 2]) + wob.rot * 0.3;
+  const uiRotY = wob.x * 0.15; // subtle lateral wobble
+  const uiOpacity = interpolate(enterSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
+  // Velocity blur on entrance (first ~15 frames)
+  const prevY = interpolate(Math.max(0, enterSpring - 0.05), [0, 1], [55, 0]);
+  const entranceBlur = motionBlurAmount(0, uiY, 0, prevY);
 
   // "Hello, Lisa." text typing
   const helloText = "Hello, Lisa.";
@@ -353,8 +483,9 @@ const SegDesktopUI: React.FC = () => {
           top: "50%",
           width: 904,
           height: 524,
-          transform: `translate(-50%, -50%) translateY(${uiY}px) perspective(1200px) rotateX(${uiRotX}deg) scale(${uiScale})`,
+          transform: `translate(-50%, -50%) translateY(${uiY}px) perspective(1200px) rotateX(${uiRotX}deg) rotateY(${uiRotY}deg) scale(${uiScale})`,
           opacity: uiOpacity,
+          filter: entranceBlur > 0.3 ? `blur(${entranceBlur.toFixed(1)}px)` : undefined,
           borderRadius: 18,
           background: `linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,
           padding: 2,
@@ -585,6 +716,7 @@ const SegDesktopUI: React.FC = () => {
 const SegItsEverything: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const wob = organicWobble("itsev", frame, 2, 1.5, 0.02);
 
   const enterOp = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
   const exitOp = interpolate(frame, [durationInFrames - 10, durationInFrames], [1, 0], {
@@ -592,14 +724,14 @@ const SegItsEverything: React.FC = () => {
     extrapolateLeft: "clamp",
   });
 
-  // Scroll the text wall
+  // Scroll the text wall + organic wobble
   const scrollY = interpolate(frame, [0, durationInFrames], [0, -80], {
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.sin),
-  });
+  }) + wob.y;
   const scrollX = interpolate(frame, [0, durationInFrames], [0, -30], {
     extrapolateRight: "clamp",
-  });
+  }) + wob.x;
 
   // The center text is bolder
   const centerScale = spring({
@@ -620,7 +752,7 @@ const SegItsEverything: React.FC = () => {
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translate(${scrollX}px, ${scrollY}px)`,
+          transform: `translate(-50%, -50%) translate(${scrollX}px, ${scrollY}px) rotate(${wob.rot * 0.2}deg)`,
         }}
       >
         {Array.from({ length: rows }, (_, row) =>
@@ -637,21 +769,23 @@ const SegItsEverything: React.FC = () => {
             const fontSize = isCenter ? 42 : 26;
             const fontWeight = isCenter ? 600 : 400;
             const color = isCenter ? DARK : "#9090A0";
+            // Per-cell micro wobble — amplitude scales with distance from center
+            const cellWob = organicWobble(`ie${row}${col}`, frame, 1 + dist * 0.4, 0.8 + dist * 0.3, 0.015);
 
             return (
               <div
                 key={`${row}-${col}`}
                 style={{
                   position: "absolute",
-                  left: (col - 2) * 260,
-                  top: (row - 4) * 48,
+                  left: (col - 2) * 260 + cellWob.x,
+                  top: (row - 4) * 48 + cellWob.y,
                   fontSize,
                   fontWeight,
                   fontFamily: "'Google Sans', sans-serif",
                   color,
                   opacity,
                   whiteSpace: "nowrap",
-                  transform: isCenter ? `scale(${centerScale})` : undefined,
+                  transform: isCenter ? `scale(${centerScale})` : `rotate(${cellWob.rot * 0.3}deg)`,
                 }}
               >
                 It's everything
@@ -699,7 +833,7 @@ const SegAppsFloat: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG, opacity: exitOp }}>
-      {/* Floating app icons */}
+      {/* Floating app icons — wobble + motion blur */}
       {apps.map((app, i) => {
         const delay = i * 3;
         const appSpring = spring({
@@ -707,9 +841,13 @@ const SegAppsFloat: React.FC = () => {
           fps,
           config: { damping: 12, stiffness: 80 },
         });
-        const floatY = noise2D("app" + i, frame / 35, 0) * 14;
-        const floatX = noise2D("appx" + i, 0, frame / 45) * 10;
+        const appWob = organicWobble("afw" + i, frame, 3, 2.5, 0.02);
+        const floatY = noise2D("app" + i, frame / 35, 0) * 14 + appWob.y;
+        const floatX = noise2D("appx" + i, 0, frame / 45) * 10 + appWob.x;
         const iconScale = interpolate(appSpring, [0, 1], [0, 1]);
+        // Entrance blur
+        const prevScale = interpolate(Math.max(0, appSpring - 0.07), [0, 1], [0, 1]);
+        const entBlur = motionBlurAmount(0, iconScale * 52, 0, prevScale * 52);
 
         return (
           <div
@@ -722,13 +860,14 @@ const SegAppsFloat: React.FC = () => {
               height: 52,
               borderRadius: app.icon === "plane" ? "50%" : 12,
               backgroundColor: app.icon === "plane" ? "#E8F0FE" : "white",
-              transform: `scale(${iconScale})`,
+              transform: `scale(${iconScale}) rotate(${appWob.rot * 0.4}deg)`,
               opacity: interpolate(appSpring, [0, 1], [0, 1]),
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
               overflow: "hidden",
+              filter: entBlur > 0.3 ? `blur(${entBlur.toFixed(1)}px)` : undefined,
             }}
           >
             {app.icon === "pin" && (
@@ -786,30 +925,43 @@ const SegAppsFloat: React.FC = () => {
       })}
 
       {/* "you know and love" text */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          display: "flex",
-          gap: 12,
-          fontSize: 30,
-          fontFamily: "'Google Sans', sans-serif",
-          fontWeight: 400,
-          color: DARK,
-        }}
-      >
-        <span style={{ opacity: text1Op }}>you know</span>
-        <span
-          style={{
-            opacity: text2Op,
-            color: BLUE,
-          }}
-        >
-          and love
-        </span>
-      </div>
+      {(() => {
+        const txtWob = organicWobble("ykl", frame, 1.5, 1, 0.018);
+        const txt1Y = interpolate(text1Spring, [0, 1], [18, 0]);
+        const txt2Y = interpolate(text2Spring, [0, 1], [18, 0]);
+        return (
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: `translate(-50%, -50%) rotate(${txtWob.rot * 0.15}deg)`,
+              display: "flex",
+              gap: 12,
+              fontSize: 30,
+              fontFamily: "'Google Sans', sans-serif",
+              fontWeight: 400,
+              color: DARK,
+            }}
+          >
+            <span style={{
+              opacity: text1Op,
+              transform: `translateY(${txt1Y + txtWob.y}px)`,
+              display: "inline-block",
+            }}>you know</span>
+            <span
+              style={{
+                opacity: text2Op,
+                color: BLUE,
+                transform: `translateY(${txt2Y + txtWob.y * 0.7}px)`,
+                display: "inline-block",
+              }}
+            >
+              and love
+            </span>
+          </div>
+        );
+      })()}
     </AbsoluteFill>
   );
 };
@@ -817,9 +969,9 @@ const SegAppsFloat: React.FC = () => {
 /* ─── Segment 6: Typing prompt — "Summarize my recent emails..." ─── */
 const SegTypingPrompt: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
+  const wob = organicWobble("typr", frame, 1.5, 1, 0.015);
 
-  const { durationInFrames } = useVideoConfig();
   const fullText = "Summarize my recent emails from Harper Elementary School";
   const charCount = Math.floor(
     interpolate(frame, [0, durationInFrames * 0.85], [0, fullText.length], {
@@ -829,13 +981,16 @@ const SegTypingPrompt: React.FC = () => {
   );
   const displayed = fullText.slice(0, charCount);
 
-  const barOpacity = interpolate(frame, [0, 10], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const barSpring = spring({ frame, fps, config: { damping: 14, stiffness: 100 } });
+  const barOpacity = interpolate(barSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
+  const barY = interpolate(barSpring, [0, 1], [25, 0]);
+  const barScale = interpolate(barSpring, [0, 1], [0.96, 1]);
   const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
     extrapolateRight: "clamp",
     extrapolateLeft: "clamp",
   });
+  const prevBarY = interpolate(Math.max(0, barSpring - 0.05), [0, 1], [25, 0]);
+  const barBlur = motionBlurAmount(0, barY, 0, prevBarY);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#FAFAFA", opacity: exitOp }}>
@@ -845,9 +1000,10 @@ const SegTypingPrompt: React.FC = () => {
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: "translate(-50%, -50%)",
+          transform: `translate(-50%, -50%) translateY(${barY + wob.y}px) scale(${barScale}) rotate(${wob.rot * 0.1}deg)`,
           width: 780,
           opacity: barOpacity,
+          filter: barBlur > 0.3 ? `blur(${barBlur.toFixed(1)}px)` : undefined,
         }}
       >
         <div
@@ -904,7 +1060,8 @@ const SegTypingPrompt: React.FC = () => {
 /* ─── Segment 7: Gemini Response Streaming ─── */
 const SegGeminiResponse: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
+  const wob = organicWobble("gresp", frame, 1.2, 0.8, 0.012);
 
   // Workspace chip appears
   const chipSpring = spring({
@@ -923,7 +1080,6 @@ const SegGeminiResponse: React.FC = () => {
     "The second email is a call for parent volunteers. It asks parents to sign up by October 15th if they are",
     "interested in volunteering...",
   ];
-  const { durationInFrames } = useVideoConfig();
   const fullResponse = responseLines.join("\n");
   const respChars = Math.floor(
     interpolate(frame, [fps * 0.6, durationInFrames * 0.9], [0, fullResponse.length], {
@@ -938,10 +1094,13 @@ const SegGeminiResponse: React.FC = () => {
     extrapolateLeft: "clamp",
   });
 
-  // Browser container zoom — reference shows this in a browser-like window
-  const containerSpring = spring({ frame, fps, config: { damping: 20, stiffness: 100 } });
+  // Browser container — spring settle + perspective + wobble + blur
+  const containerSpring = spring({ frame, fps, config: { damping: 12, stiffness: 90, mass: 1.1 } });
   const containerScale = interpolate(containerSpring, [0, 1], [0.92, 0.88]);
-  const containerY = interpolate(containerSpring, [0, 1], [30, 0]);
+  const containerY = interpolate(containerSpring, [0, 1], [35, 0]) + wob.y;
+  const containerRotX = interpolate(containerSpring, [0, 1], [4, 0.5]) + wob.rot * 0.2;
+  const prevContainerY = interpolate(Math.max(0, containerSpring - 0.05), [0, 1], [35, 0]);
+  const cBlur = motionBlurAmount(0, containerY, 0, prevContainerY);
 
   // Email cards appear at the bottom after response streams
   const emailCardsSpring = spring({
@@ -958,7 +1117,7 @@ const SegGeminiResponse: React.FC = () => {
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translateY(${containerY}px) scale(${containerScale})`,
+          transform: `translate(-50%, -50%) translateY(${containerY}px) perspective(1200px) rotateX(${containerRotX}deg) scale(${containerScale})`,
           width: 960,
           height: 580,
           backgroundColor: "#FFFFFF",
@@ -966,6 +1125,7 @@ const SegGeminiResponse: React.FC = () => {
           boxShadow: "0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",
           overflow: "hidden",
           display: "flex",
+          filter: cBlur > 0.3 ? `blur(${cBlur.toFixed(1)}px)` : undefined,
         }}
       >
         {/* Left sidebar — purple accent strip */}
@@ -1175,60 +1335,144 @@ const SegGeminiResponse: React.FC = () => {
   );
 };
 
-/* ─── Segment 8: "And more" → "And moooore" with colorful balls ─── */
+/* ─── Segment 8: "And moooooore" — o's stretch into colored Gemini balls ─── */
+const GEMINI_BALLS = ["#4285F4", "#EA4335", "#FBBC04", "#34A853", "#7B61FF"];
+const MAX_BALLS = 18;
+
 const SegAndMore: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
 
-  // Phase 1: "And" appears
-  const andSpring = spring({ frame, fps, config: { damping: 20, stiffness: 120 } });
-
-  // Phase 2: "more" appears in blue
+  /* ── Phase 1: "And" + "more" appear — softer spring for organic feel ── */
+  const andSpring = spring({ frame, fps, config: { damping: 14, stiffness: 90 } });
   const moreSpring = spring({
-    frame: frame - fps * 0.6,
+    frame: frame - fps * 0.5,
     fps,
-    config: { damping: 15 },
+    config: { damping: 12, stiffness: 100 },
   });
 
-  const { durationInFrames } = useVideoConfig();
-
-  // Phase 3: "more" stretches — o's multiply and become colorful circles
-  // Reference frame_027 shows ~5 o's, frame_028 shows ~15+ colorful circles scrolling left
-  const stretchStart = fps * 1.0;
-  const stretchFrame = frame - stretchStart;
-  const stretch = stretchFrame > 0
-    ? interpolate(stretchFrame, [0, fps * 1.2], [0, 1], {
+  /* ── Phase 2: stretch — o's multiply ── */
+  const stretchStart = fps * 1.0; // ~frame 30 within segment
+  const stretchRaw = frame - stretchStart;
+  const stretch = stretchRaw > 0
+    ? interpolate(stretchRaw, [0, fps * 2.0], [0, 1], {
         extrapolateRight: "clamp",
-        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        easing: Easing.bezier(0.22, 0.1, 0.25, 1),
       })
     : 0;
 
-  // O count grows from 1 to 18 during stretch
-  const oCount = Math.floor(interpolate(stretch, [0, 1], [1, 18]));
+  // O count ramps up during stretch
+  const oCount = Math.floor(interpolate(stretch, [0, 0.8], [1, MAX_BALLS], { extrapolateRight: "clamp" }));
 
-  // Phase 3b: colorful balls phase — each 'o' becomes a colored circle
-  const ballPhase = stretch > 0.3;
-  const ballProgress = ballPhase
-    ? interpolate(stretch, [0.3, 0.6], [0, 1], { extrapolateRight: "clamp" })
+  /* ── Phase 3: letters → colored balls ── */
+  const ballStart = 0.15; // balls start appearing early
+  const ballProgress = stretch > ballStart
+    ? interpolate(stretch, [ballStart, 0.5], [0, 1], { extrapolateRight: "clamp" })
     : 0;
 
-  // Horizontal scroll — text slides left as it grows (reference shows it going off-screen)
-  const scrollX = interpolate(stretch, [0.15, 1], [0, -500], {
+  /* ── Scroll left as chain grows ── */
+  const scrollX = interpolate(stretch, [0.1, 1], [0, -420], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.bezier(0.2, 0.0, 0.3, 1),
   });
 
-  // Ball colors cycle through Gemini palette
-  const ballColors = [BLUE, PURPLE, PINK, BLUE, "#A78BFA", PINK, PURPLE, BLUE, PINK, PURPLE, BLUE, "#A78BFA", PINK, BLUE, PURPLE, PINK, BLUE, PURPLE];
-
+  /* ── Exit ── */
   const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
     extrapolateRight: "clamp",
     extrapolateLeft: "clamp",
   });
 
-  return (
+  /* ── Ball rendering — varied spring params + sine-wave bounce ── */
+  const renderBalls = () =>
+    Array.from({ length: oCount }, (_, i) => {
+      const ballDelay = stretchStart + i * 2.2;
+      // Varied spring per ball — irregular overshoot creates organic ripple
+      const damping = 6 + (i % 5) * 1.4;
+      const stiffness = 120 + (i % 3) * 30;
+      const mass = 0.4 + (i % 4) * 0.15;
+      const ballSpring = spring({
+        frame: frame - ballDelay,
+        fps,
+        config: { damping, stiffness, mass },
+      });
+
+      const baseSize = 28;
+      const size = baseSize * ballSpring;
+
+      const ballOpacity = interpolate(ballSpring, [0, 0.4], [0, 1], { extrapolateRight: "clamp" });
+      const letterOp = interpolate(ballProgress, [0, 0.6], [1, 0], { extrapolateRight: "clamp" });
+
+      // Sine wave with varied freq + phase — no two balls in lockstep
+      const waveAmp = interpolate(stretch, [0.2, 0.5], [0, 18], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+      const freq = 0.11 + (i % 4) * 0.025;
+      const phase = i * 0.55 + (i % 3) * 0.35;
+      const waveY = Math.sin((frame * freq) + phase) * waveAmp * ballSpring;
+
+      // Noise micro-wobble breaks sine repetition
+      const wobX = noise2D("bx" + i, frame * 0.025, i) * 3 * ballSpring;
+
+      const color = GEMINI_BALLS[i % GEMINI_BALLS.length];
+
+      // Scale overshoot — each ball bounces differently on landing
+      const scaleOvershoot = interpolate(ballSpring, [0, 0.3, 0.6, 1], [0.15, 1.3, 0.9, 1], {
+        extrapolateRight: "clamp",
+      });
+
+      return (
+        <span
+          key={i}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            width: Math.max(size + 2, 14),
+            height: Math.max(size + 2, 30),
+            transform: `translateY(${waveY}px) translateX(${wobX}px)`,
+          }}
+        >
+          {letterOp > 0.01 && (
+            <span
+              style={{
+                position: "absolute",
+                opacity: letterOp * Math.min(ballSpring * 3, 1),
+                color: BLUE,
+                fontSize: 44,
+              }}
+            >
+              o
+            </span>
+          )}
+          {ballSpring > 0.01 && (
+            <div
+              style={{
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                backgroundColor: color,
+                opacity: ballOpacity,
+                transform: `scale(${scaleOvershoot})`,
+                boxShadow: ballSpring > 0.5 ? `0 2px 8px ${color}44` : undefined,
+              }}
+            />
+          )}
+        </span>
+      );
+    });
+
+  const andOp = interpolate(andSpring, [0, 1], [0, 1]);
+  const mOp = interpolate(moreSpring, [0, 1], [0, 1]);
+
+  // Organic wobble on "And" — subtle life
+  const andWob = organicWobble("and8", frame, 2, 2.5, 0.015);
+
+  const stretchContent = (
     <AbsoluteFill style={{ backgroundColor: BG_WARM, opacity: exitOp }}>
+      <div style={{
+        position: "absolute", width: "100%", height: "100%",
+        background: `radial-gradient(ellipse at 55% 40%, rgba(232,69,139,0.035) 0%, rgba(196,181,253,0.025) 35%, transparent 60%)`,
+      }} />
       <div
         style={{
           position: "absolute",
@@ -1237,108 +1481,39 @@ const SegAndMore: React.FC = () => {
           transform: `translate(-50%, -50%) translateX(${scrollX}px)`,
           display: "flex",
           alignItems: "center",
-          gap: ballPhase ? 4 : 12,
+          flexWrap: "nowrap",
+          gap: stretch > 0.1 ? 1 : 12,
           fontSize: 44,
           fontFamily: "'Google Sans', sans-serif",
           fontWeight: 400,
           whiteSpace: "nowrap",
         }}
       >
-        {/* "And" fades out during ball phase */}
         <span
           style={{
             color: DARK,
-            opacity: interpolate(andSpring, [0, 1], [0, 1]) * (1 - ballProgress),
-            transform: `translateY(${interpolate(andSpring, [0, 1], [20, 0])}px)`,
+            opacity: andOp,
+            transform: `translateY(${interpolate(andSpring, [0, 1], [20, 0]) + andWob.y}px) translateX(${andWob.x}px)`,
             display: "inline-block",
+            marginRight: 4,
           }}
         >
           And
         </span>
 
-        {/* "more" — shown as single word before stretch, then split into m + o's + re */}
-        {stretch <= 0.05 ? (
-          // Before stretching: single word
-          <span
-            style={{
-              opacity: interpolate(moreSpring, [0, 1], [0, 1]),
-              display: "inline-block",
-              color: BLUE,
-              fontSize: 44,
-            }}
-          >
+        {stretch <= 0.02 ? (
+          /* Before stretch: show "more" as one word */
+          <span style={{ opacity: mOp, color: BLUE, fontSize: 44 }}>
             more
           </span>
         ) : (
-          // Stretching: decomposed into m + o circles + re
+          /* During stretch: m + [o balls] + re */
           <>
-            {/* "m" letter — fades out as balls take over */}
-            <span
-              style={{
-                opacity: interpolate(moreSpring, [0, 1], [0, 1]) * (1 - ballProgress),
-                display: ballProgress > 0.95 ? "none" : "inline-block",
-                color: BLUE,
-                fontSize: 44,
-              }}
-            >
+            <span style={{ opacity: mOp, color: BLUE, fontSize: 44, display: "inline-block" }}>
               m
             </span>
-
-            {/* O's — transition from letters to colored circles */}
-            {Array.from({ length: oCount }, (_, i) => {
-              const circleSize = interpolate(ballProgress, [0, 1], [0, 28]);
-              const letterOpacity = Math.max(0, 1 - ballProgress * 2);
-              const circleOpacity = interpolate(ballProgress, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
-              const color = ballColors[i % ballColors.length];
-
-              return (
-                <span
-                  key={i}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                    width: ballPhase ? Math.max(circleSize + 2, 18) : undefined,
-                    height: ballPhase ? Math.max(circleSize + 2, 28) : undefined,
-                  }}
-                >
-                  {letterOpacity > 0 && (
-                    <span
-                      style={{
-                        opacity: letterOpacity,
-                        color: BLUE,
-                        fontSize: 44,
-                        position: ballPhase ? "absolute" : undefined,
-                      }}
-                    >
-                      o
-                    </span>
-                  )}
-                  {ballPhase && (
-                    <div
-                      style={{
-                        width: circleSize,
-                        height: circleSize,
-                        borderRadius: "50%",
-                        backgroundColor: color,
-                        opacity: circleOpacity,
-                      }}
-                    />
-                  )}
-                </span>
-              );
-            })}
-
-            {/* "re" — fades out as balls take over */}
-            <span
-              style={{
-                opacity: interpolate(moreSpring, [0, 1], [0, 1]) * (1 - ballProgress),
-                display: ballProgress > 0.95 ? "none" : "inline-block",
-                color: BLUE,
-                fontSize: 44,
-              }}
-            >
+            {renderBalls()}
+            <span style={{ opacity: mOp, color: BLUE, fontSize: 44, display: "inline-block", marginLeft: -6 }}>
               re
             </span>
           </>
@@ -1346,19 +1521,28 @@ const SegAndMore: React.FC = () => {
       </div>
     </AbsoluteFill>
   );
+
+  /* ── Motion blur during active stretch — higher samples for smoothness ── */
+  if (stretch > 0.05 && stretch < 0.95) {
+    return (
+      <CameraMotionBlur samples={8} shutterAngle={130}>
+        {stretchContent}
+      </CameraMotionBlur>
+    );
+  }
+
+  return stretchContent;
 };
 
 /* ─── Segment 9: "Starting with the new Gemini app" ─── */
 const SegStartingWith: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
 
   const words = ["Starting", "with", "the", "new", "Gemini", "app"];
-  const wordDelays = [0, 4, 8, 12, 16, 20]; // frame delays
+  const wordDelays = [0, 4, 8, 12, 16, 20];
 
-  const { durationInFrames } = useVideoConfig();
-
-  // At end, text scatters/distorts before next segment
+  // Scatter: explosive exit — reference frame_032 shows wild disintegration
   const scatterPhase = frame > durationInFrames - fps * 0.5;
   const scatterProgress = scatterPhase
     ? interpolate(frame, [durationInFrames - fps * 0.5, durationInFrames], [0, 1], { extrapolateRight: "clamp" })
@@ -1369,7 +1553,12 @@ const SegStartingWith: React.FC = () => {
     extrapolateLeft: "clamp",
   });
 
-  return (
+  // Color tint during scatter — reference shows pink/purple chromatic shift
+  const scatterTint = scatterProgress > 0.2
+    ? interpolate(scatterProgress, [0.2, 0.8], [0, 1], { extrapolateRight: "clamp" })
+    : 0;
+
+  const content = (
     <AbsoluteFill style={{ backgroundColor: BG, opacity: exitOp }}>
       <div
         style={{
@@ -1390,27 +1579,39 @@ const SegStartingWith: React.FC = () => {
             fps,
             config: { damping: 18 },
           });
-          const isAccent = false; // Reference shows all black text
-          const color = DARK;
 
-          // Scatter effect at end
+          // Scatter — wider explosion radius, more rotation
           const scatterX = scatterPhase
-            ? noise2D("sx" + i, scatterProgress * 3, i) * 200 * scatterProgress
+            ? noise2D("sx" + i, scatterProgress * 3, i) * 300 * scatterProgress
             : 0;
           const scatterY = scatterPhase
-            ? noise2D("sy" + i, i, scatterProgress * 3) * 150 * scatterProgress
+            ? noise2D("sy" + i, i, scatterProgress * 3) * 220 * scatterProgress
             : 0;
-          const scatterRot = scatterProgress * (i - 2.5) * 15;
+          const scatterRot = scatterProgress * (i - 2.5) * 25;
+          const scatterScale = scatterPhase
+            ? interpolate(scatterProgress, [0, 0.3, 1], [1, 1.15, 0.6], { extrapolateRight: "clamp" })
+            : 1;
+
+          const yNow = interpolate(wSpring, [0, 1], [30, 0]) + scatterY;
+          const wordWob = organicWobble(`sw${i}`, frame, 2, 1.5, 0.02);
+
+          // Color shift during scatter — words tint toward pink/purple
+          const wordColor = scatterTint > 0.01
+            ? (i % 2 === 0 ? PINK : PURPLE)
+            : DARK;
+          const colorMix = scatterTint > 0.01
+            ? `color-mix(in srgb, ${DARK} ${Math.round((1 - scatterTint) * 100)}%, ${wordColor} ${Math.round(scatterTint * 100)}%)`
+            : DARK;
 
           return (
             <span
               key={i}
               style={{
                 display: "inline-block",
-                color,
-                opacity: interpolate(wSpring, [0, 1], [0, 1]) * (1 - scatterProgress * 0.5),
-                transform: `translateY(${interpolate(wSpring, [0, 1], [30, 0]) + scatterY}px) translateX(${scatterX}px) rotate(${scatterRot}deg)`,
-                fontWeight: isAccent ? 500 : 400,
+                color: colorMix,
+                opacity: interpolate(wSpring, [0, 1], [0, 1]) * (1 - scatterProgress * 0.6),
+                transform: `translateY(${yNow + wordWob.y}px) translateX(${scatterX + wordWob.x}px) rotate(${scatterRot}deg) scale(${scatterScale})`,
+                fontWeight: 400,
               }}
             >
               {word}
@@ -1420,6 +1621,17 @@ const SegStartingWith: React.FC = () => {
       </div>
     </AbsoluteFill>
   );
+
+  // Wrap scatter phase in CameraMotionBlur for the dramatic exit
+  if (scatterPhase) {
+    return (
+      <CameraMotionBlur samples={8} shutterAngle={140}>
+        {content}
+      </CameraMotionBlur>
+    );
+  }
+
+  return content;
 };
 
 /* ─── Segment 10: Phone Mockup — Gemini Mobile ─── */
@@ -1427,10 +1639,24 @@ const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Phone slides up and tilts
-  const phoneSpring = spring({ frame, fps, config: { damping: 14, stiffness: 80 } });
-  const phoneY = interpolate(phoneSpring, [0, 1], [300, 0]);
-  const phoneScale = interpolate(phoneSpring, [0, 1], [0.7, 1]);
+  // Bezier arc entrance from below-right — reference shows phone sweeping in
+  const entranceT = interpolate(frame, [0, fps * 1.2], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+  });
+  // Arc path: start at (300, 500), control points curve through right, land at (0, 0)
+  const phoneX = cubicBezier(entranceT, 300, 280, 80, 0);
+  const phoneY = cubicBezier(entranceT, 500, 350, 50, 0);
+  const phoneRot = cubicBezier(entranceT, 12, 8, 2, 0);
+  const phoneScale = interpolate(entranceT, [0, 1], [0.65, 1]);
+  const phoneOp = interpolate(entranceT, [0, 0.1], [0, 1], { extrapolateRight: "clamp" });
+
+  // Settle spring — kicks in after the bezier arc completes
+  const settleSpring = spring({ frame: frame - Math.round(fps * 1.2), fps, config: { damping: 12, stiffness: 90 } });
+  const settleY = entranceT >= 1 ? interpolate(settleSpring, [0, 1], [-8, 0]) : 0;
+
+  const phoneWob10 = organicWobble("ph10", frame, 2.5, 2, 0.018);
 
   // Screen content appears
   const textDelay = fps * 0.6;
@@ -1460,7 +1686,7 @@ const SegPhoneMockup: React.FC = () => {
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translateY(${phoneY}px) scale(${phoneScale})`,
+          transform: `translate(-50%, -50%) translate(${phoneX + phoneWob10.x}px, ${phoneY + settleY + phoneWob10.y}px) rotate(${phoneRot}deg) scale(${phoneScale})`,
           width: 320,
           height: 620,
           backgroundColor: "#FFFFFF",
@@ -1468,6 +1694,7 @@ const SegPhoneMockup: React.FC = () => {
           border: "6px solid #1A1A2E",
           overflow: "hidden",
           boxShadow: "0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",
+          opacity: phoneOp,
         }}
       >
         {/* Status bar with Dynamic Island */}
@@ -1630,15 +1857,15 @@ const SegSupercharge: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const words = [
-    { text: "Designed", accent: false },
-    { text: "to", accent: false },
-    { text: "supercharge", accent: true },
-    { text: "your", accent: false },
-    { text: "ideas", accent: false },
+  // Each word: distinct spring personality — reference shows varied landing times
+  const wordCfg: { text: string; accent: boolean; delay: number; damping: number; stiffness: number; mass: number; fontSize: number }[] = [
+    { text: "Designed", accent: false, delay: 0,  damping: 20, stiffness: 100, mass: 1,    fontSize: 36 },
+    { text: "to",       accent: false, delay: 5,  damping: 22, stiffness: 90,  mass: 0.8,  fontSize: 36 },
+    { text: "supercharge", accent: true, delay: 10, damping: 8, stiffness: 130, mass: 0.7, fontSize: 42 },
+    { text: "your",     accent: false, delay: 18, damping: 16, stiffness: 110, mass: 0.9,  fontSize: 36 },
+    { text: "ideas",    accent: false, delay: 23, damping: 14, stiffness: 120, mass: 0.85, fontSize: 38 },
   ];
 
-  // Each word has staggered entry — slightly wider gaps for emphasis
   return (
     <AbsoluteFill style={{ backgroundColor: BG }}>
       <div
@@ -1652,31 +1879,51 @@ const SegSupercharge: React.FC = () => {
           alignItems: "baseline",
         }}
       >
-        {words.map((w, i) => {
-          const wordDelayFrames = [0, 5, 10, 16, 21]; // wider stagger for pacing
+        {wordCfg.map((w, i) => {
           const wSpring = spring({
-            frame: frame - wordDelayFrames[i],
+            frame: frame - w.delay,
             fps,
-            config: { damping: w.accent ? 12 : 18, stiffness: w.accent ? 110 : 100 },
+            config: { damping: w.damping, stiffness: w.stiffness, mass: w.mass },
           });
-          const scale = w.accent
-            ? interpolate(wSpring, [0, 1], [0.85, 1])
-            : 1;
-          const yOff = interpolate(wSpring, [0, 1], [25, 0]);
 
-          // "supercharge" has gradient color
-          const style: React.CSSProperties = {
+          // "supercharge" bounces higher and scales with overshoot
+          const yTravel = w.accent ? 35 : 25;
+          const yOff = interpolate(wSpring, [0, 1], [yTravel, 0]);
+          const scale = w.accent
+            ? interpolate(wSpring, [0, 0.4, 0.7, 1], [0.7, 1.18, 0.95, 1], { extrapolateRight: "clamp" })
+            : interpolate(wSpring, [0, 1], [0.95, 1]);
+
+          const scWob = organicWobble(`sc${i}`, frame, 2, 1.5, 0.02);
+
+          // "supercharge" gets the gradient treatment — reference shows pink→blue
+          const isGradient = w.accent;
+          const baseStyle: React.CSSProperties = {
             display: "inline-block",
-            fontSize: 36,
+            fontSize: w.fontSize,
             fontFamily: "'Google Sans', sans-serif",
-            fontWeight: 400,
-            color: DARK,
+            fontWeight: w.accent ? 500 : 400,
             opacity: interpolate(wSpring, [0, 1], [0, 1]),
-            transform: `translateY(${yOff}px) scale(${scale})`,
+            transform: `translateY(${yOff + scWob.y}px) translateX(${scWob.x}px) scale(${scale})`,
           };
 
+          if (isGradient) {
+            return (
+              <span
+                key={i}
+                style={{
+                  ...baseStyle,
+                  background: `linear-gradient(90deg, ${PINK} 0%, ${PURPLE} 50%, ${BLUE} 100%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {w.text}
+              </span>
+            );
+          }
+
           return (
-            <span key={i} style={style}>
+            <span key={i} style={{ ...baseStyle, color: DARK }}>
               {w.text}
             </span>
           );
@@ -1720,9 +1967,23 @@ const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const phoneSpring = spring({ frame, fps, config: { damping: 14 } });
-  const phoneScale = interpolate(phoneSpring, [0, 1], [0.8, 0.75]);
-  const phoneY = interpolate(phoneSpring, [0, 1], [200, 0]);
+  // Bezier arc from below-right — mirrored from phone 10 but tighter arc
+  const entT12 = interpolate(frame, [0, fps * 1.0], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
+  });
+  const phoneX12 = cubicBezier(entT12, 250, 200, 50, 0);
+  const phoneY = cubicBezier(entT12, 400, 280, 30, 0);
+  const phoneRot12 = cubicBezier(entT12, 10, 6, 1, 0);
+  const phoneScale = interpolate(entT12, [0, 1], [0.6, 0.75]);
+  const phoneOp12 = interpolate(entT12, [0, 0.08], [0, 1], { extrapolateRight: "clamp" });
+
+  // Settle bounce after arc
+  const settle12 = spring({ frame: frame - Math.round(fps * 1.0), fps, config: { damping: 10, stiffness: 100 } });
+  const settleY12 = entT12 >= 1 ? interpolate(settle12, [0, 1], [-6, 0]) : 0;
+
+  const phoneWob12 = organicWobble("ph12", frame, 2, 1.5, 0.018);
 
   const { durationInFrames } = useVideoConfig();
 
@@ -1744,13 +2005,14 @@ const SegPhoneGoodMorning: React.FC = () => {
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translateY(${phoneY}px) scale(${phoneScale})`,
+          transform: `translate(-50%, -50%) translate(${phoneX12 + phoneWob12.x}px, ${phoneY + settleY12 + phoneWob12.y}px) rotate(${phoneRot12}deg) scale(${phoneScale})`,
           width: 320,
           height: 620,
           borderRadius: 40,
           border: "6px solid #1A1A2E",
           overflow: "hidden",
           boxShadow: "0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",
+          opacity: phoneOp12,
         }}
       >
         {/* Good morning screen */}

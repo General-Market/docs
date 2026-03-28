@@ -124,6 +124,30 @@ def fetch_range(coin_id, from_date, to_date, api_key):
         }
     return by_date
 
+def fetch_full_history(coin_id, api_key):
+    """Fetch full daily market chart (days=max)."""
+    data = cg_get(f"{CG_BASE}/coins/{coin_id}/market_chart", {
+        "vs_currency": "usd",
+        "days": "max",
+    }, api_key)
+
+    prices = data.get("prices", [])
+    mcaps = data.get("market_caps", [])
+    volumes = data.get("total_volumes", [])
+
+    n = min(len(prices), len(mcaps), len(volumes))
+    by_date = {}
+    for i in range(n):
+        ts_ms = int(mcaps[i][0])
+        dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+        date_str = dt.strftime("%Y-%m-%d")
+        by_date[date_str] = {
+            "price": prices[i][1],
+            "mcap": mcaps[i][1],
+            "volume": volumes[i][1],
+        }
+    return by_date
+
 def load_progress():
     if PROGRESS_FILE.exists():
         return json.loads(PROGRESS_FILE.read_text())

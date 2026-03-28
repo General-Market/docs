@@ -28,7 +28,7 @@ const BAR_COUNT = 30;
 const DEPOSIT_PER_YEAR = 28262;
 const FINAL_TOTAL = 1224907;
 const FINAL_DEPOSIT = BAR_COUNT * DEPOSIT_PER_YEAR; // ~847,860
-const FINAL_INTEREST = FINAL_TOTAL - FINAL_DEPOSIT; // ~377,047
+const FINAL_INTEREST = 706347; // matches reference "$706,347 earned in 30 years"
 
 function generateBarData() {
   const bars: { year: number; deposit: number; interest: number }[] = [];
@@ -36,7 +36,7 @@ function generateBarData() {
     const deposit = DEPOSIT_PER_YEAR * i;
     // Compound interest — reference shows green visible from ~year 8 onward
     const t = i / BAR_COUNT;
-    const interest = FINAL_INTEREST * Math.pow(t, 1.8);
+    const interest = FINAL_INTEREST * Math.pow(t, 2.5);
     bars.push({ year: i, deposit, interest });
   }
   return bars;
@@ -591,23 +591,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into chart area — gentler zoom matching v4's best SSIM
+  // Zoom into chart — gentle zoom, pan left to crop early bars
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.5],
+    [1, 1.6],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -200],
+    [0, -100],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomX = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -60],
+    [0, -220],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
@@ -902,23 +902,23 @@ const DepositSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Word-by-word reveal
+  // Word-by-word reveal — faster to match reference (all visible by ~0.3s)
   const words = ["Instantly", "deposit", "cash", "or", "crypto"];
   const wordProgress = interpolate(
     frame,
-    [0, fps * 1.0],
+    [0, fps * 0.3],
     [0, words.length],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
   const modalY = spring({
     fps,
-    frame: frame - fps * 0.4,
+    frame: frame - fps * 0.15,
     from: 100,
     to: 0,
     config: { damping: 16, stiffness: 100 },
   });
-  const modalOp = interpolate(frame, [fps * 0.3, fps * 0.7], [0, 1], {
+  const modalOp = interpolate(frame, [fps * 0.1, fps * 0.35], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -1022,7 +1022,7 @@ const DepositSegment: React.FC = () => {
         ].map((opt, i) => {
           const rowOp = interpolate(
             frame,
-            [fps * 0.5 + i * fps * 0.15, fps * 0.8 + i * fps * 0.15],
+            [fps * 0.2 + i * fps * 0.08, fps * 0.4 + i * fps * 0.08],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
           );
@@ -1107,58 +1107,39 @@ const DepositSegment: React.FC = () => {
 /* ════════════════════════════════════════════════════════
    TRANSITION — Red Whop coin rain (frames 335–350)
    ════════════════════════════════════════════════════════ */
-const COIN_COUNT = 26;
+const COIN_COUNT = 24;
 const coinSeeds = Array.from({ length: COIN_COUNT }, (_, i) => {
-  // Layer system: 5 huge foreground, 10 medium midground, 11 small background
-  const layer = i < 5 ? 0 : i < 15 ? 1 : 2;
-  const sizes = [700, 450, 260];
-  const sizeVariance = [200, 150, 80];
-  const blurLevels = [0, 0, 2.5]; // background coins get depth-of-field blur
-  const shadowLevels = ["0 8px 30px rgba(0,0,0,0.35)", "0 4px 16px rgba(0,0,0,0.2)", "none"];
+  const layer = i < 4 ? 0 : i < 13 ? 1 : 2;
+  const sizes = [780, 460, 240];
+  const sizeVariance = [220, 140, 70];
+  const blurLevels = [0, 0, 1.5];
+  const shadowLevels = ["0 8px 30px rgba(0,0,0,0.3)", "0 4px 16px rgba(0,0,0,0.18)", "none"];
+  // Golden-ratio distribution for even horizontal spread
+  const phi = 1.618033988749;
+  const xNorm = ((i * phi) % 1);
   return {
-    x: ((i * 193 + 37) % 3500) + 170,
-    delay: ((i * 19) % 12) * 0.04, // wider stagger — more cascading
-    speed: [1400, 1800, 2400][layer] + ((i * 131) % 600),
+    x: Math.floor(xNorm * 3600) + 120,
+    delay: ((i * 23) % 16) * 0.035,
+    speed: [900, 1300, 1800][layer] + ((i * 131) % 400),
     size: sizes[layer] + ((i * 97) % sizeVariance[layer]),
-    rotSpeed: 60 + ((i * 41) % 100),
+    rotSpeed: 35 + ((i * 41) % 60),
     rotStart: ((i * 73) % 360),
-    rotX: 5 + ((i * 31) % 15),
+    rotX: 20 + ((i * 31) % 40),
     blur: blurLevels[layer],
     shadow: shadowLevels[layer],
     layer,
   };
 });
 
-/* Sparkle glints during coin rain */
-const SPARKLE_COUNT = 16;
-const sparkleSeeds = Array.from({ length: SPARKLE_COUNT }, (_, i) => ({
-  x: ((i * 257 + 83) % 3600) + 120,
-  y: ((i * 173 + 41) % 1800) + 180,
-  startFrame: Math.floor(((i * 37) % 40) + 3), // staggered appearance
-  size: 16 + ((i * 29) % 24),
-}));
+/* Sparkles removed — reference has none */
 
 const CoinRainTransition: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps; // seconds
 
-  // Red background wash builds as coins accumulate
-  const bgOp = interpolate(
-    frame,
-    [0, fps * 0.3, fps * 1.0],
-    [0, 0.15, 0.4],
-    { extrapolateRight: "clamp" }
-  );
-
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Red wash behind coins */}
-      <AbsoluteFill
-        style={{
-          background: `radial-gradient(ellipse at 50% 40%, rgba(232,57,28,${bgOp}) 0%, rgba(180,30,10,${bgOp * 0.6}) 60%, rgba(120,20,5,${bgOp * 0.3}) 100%)`,
-        }}
-      />
       {/* Falling coins */}
       {coinSeeds.map((coin, i) => {
         const elapsed = Math.max(0, t - coin.delay);
@@ -1197,130 +1178,40 @@ const CoinRainTransition: React.FC = () => {
               viewBox="0 0 100 100"
             >
               <defs>
-                {/* 3D sphere gradient — off-center highlight for metallic look */}
-                <radialGradient id={`coinGrad${i}`} cx="38%" cy="32%" r="65%" fx="35%" fy="28%">
-                  <stop offset="0%" stopColor="#FF8A6A" />
-                  <stop offset="30%" stopColor="#F04A2A" />
-                  <stop offset="65%" stopColor={WHOP_RED} />
-                  <stop offset="90%" stopColor="#A52210" />
-                  <stop offset="100%" stopColor="#7A1A0C" />
+                <radialGradient id={`coinGrad${i}`} cx="40%" cy="35%" r="60%">
+                  <stop offset="0%" stopColor="#FF6B4A" />
+                  <stop offset="40%" stopColor="#E8391C" />
+                  <stop offset="80%" stopColor="#C42E15" />
+                  <stop offset="100%" stopColor="#8A1D0C" />
                 </radialGradient>
-                {/* Specular highlight — hot white dot */}
-                <radialGradient id={`coinSpec${i}`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
-                  <stop offset="40%" stopColor="rgba(255,255,255,0.3)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                </radialGradient>
-                {/* Rim light gradient */}
-                <radialGradient id={`coinRim${i}`} cx="50%" cy="50%" r="50%">
-                  <stop offset="85%" stopColor="rgba(255,255,255,0)" />
-                  <stop offset="95%" stopColor="rgba(255,255,255,0.12)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
-                </radialGradient>
+                <clipPath id={`coinClip${i}`}>
+                  <circle cx="50" cy="50" r="46" />
+                </clipPath>
               </defs>
-              {/* Shadow beneath coin */}
-              <ellipse
-                cx="52"
-                cy="88"
-                rx="32"
-                ry="6"
-                fill="rgba(0,0,0,0.12)"
-              />
               {/* Main coin body */}
-              <circle
-                cx="50"
-                cy="50"
-                r="46"
-                fill={`url(#coinGrad${i})`}
-              />
-              {/* Outer rim — darker edge */}
-              <circle
-                cx="50"
-                cy="50"
-                r="46"
-                fill="none"
-                stroke="#8A1D0A"
-                strokeWidth="2.5"
-              />
-              {/* Inner rim ring for depth */}
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth="1"
-              />
-              {/* Rim light overlay */}
-              <circle
-                cx="50"
-                cy="50"
-                r="46"
-                fill={`url(#coinRim${i})`}
-              />
-              {/* Specular highlight — bright dot offset upper-left */}
-              <circle
-                cx="36"
-                cy="34"
-                r="12"
-                fill={`url(#coinSpec${i})`}
-              />
-              {/* Glossy highlight band — diagonal white stripe */}
-              <ellipse
-                cx="42"
-                cy="40"
-                rx="26"
-                ry="9"
-                fill="rgba(255,255,255,0.22)"
-                transform="rotate(-35 42 40)"
-              />
-              {/* W mark — filled Whop double-swoosh */}
-              <path
-                d="M30 44 C36 50, 42 54, 48 56 C54 54, 62 48, 70 38
-                   L72 42 C64 52, 56 58, 48 60 C40 58, 34 52, 28 46 Z"
-                fill="rgba(255,255,255,0.92)"
-              />
-              <path
-                d="M22 56 C26 52, 30 52, 34 56 C40 62, 46 66, 52 66 C58 66, 64 60, 72 50
-                   L74 54 C66 64, 58 70, 52 70 C46 70, 40 66, 34 60 C30 56, 26 56, 22 60 Z"
-                fill="rgba(255,255,255,0.88)"
-              />
+              <circle cx="50" cy="50" r="46" fill={`url(#coinGrad${i})`} />
+              {/* Diagonal stripe — matching reference red/white stripe pattern */}
+              <g clipPath={`url(#coinClip${i})`}>
+                <rect
+                  x="-20" y="30" width="140" height="22"
+                  fill="rgba(255,255,255,0.35)"
+                  transform="rotate(-35 50 50)"
+                />
+                <rect
+                  x="-20" y="55" width="140" height="14"
+                  fill="rgba(255,255,255,0.2)"
+                  transform="rotate(-35 50 50)"
+                />
+              </g>
+              {/* Rim */}
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#8A1D0A" strokeWidth="2" />
+              {/* Specular highlight */}
+              <ellipse cx="38" cy="36" rx="16" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(-20 38 36)" />
             </svg>
           </div>
         );
       })}
-      {/* Sparkle glints — 4-point stars that flash repeatedly */}
-      {sparkleSeeds.map((sp, si) => {
-        const life = 8; // frames each sparkle lives
-        const cycle = life + 6; // gap between flashes
-        const localFrame = ((frame - sp.startFrame) % cycle + cycle) % cycle;
-        const active = frame >= sp.startFrame && localFrame < life;
-        const sparkleOp = active
-          ? Math.sin((localFrame / life) * Math.PI)
-          : 0;
-        if (sparkleOp <= 0) return null;
-        const s = sp.size * (0.6 + sparkleOp * 0.4);
-        return (
-          <svg
-            key={`sp${si}`}
-            style={{
-              position: "absolute",
-              left: sp.x - s / 2,
-              top: sp.y - s / 2,
-              opacity: sparkleOp * 0.9,
-              pointerEvents: "none",
-            }}
-            width={s}
-            height={s}
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"
-              fill="#fff"
-            />
-          </svg>
-        );
-      })}
+      {/* Sparkles removed — reference has none */}
     </AbsoluteFill>
   );
 };
@@ -1514,13 +1405,13 @@ export const Scene04: React.FC = () => {
       <Sequence from={105} durationInFrames={90} name="GrowthChart">
         <GrowthChartSegment />
       </Sequence>
-      <Sequence from={190} durationInFrames={100} name="DepositMethods">
+      <Sequence from={190} durationInFrames={145} name="DepositMethods">
         <DepositSegment />
       </Sequence>
-      <Sequence from={275} durationInFrames={55} name="CoinRain">
+      <Sequence from={270} durationInFrames={60} name="CoinRain">
         <CoinRainTransition />
       </Sequence>
-      <Sequence from={320} durationInFrames={123} name="LogoReveal">
+      <Sequence from={325} durationInFrames={118} name="LogoReveal">
         <LogoRevealSegment />
       </Sequence>
     </AbsoluteFill>

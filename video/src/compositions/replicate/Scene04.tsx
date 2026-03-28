@@ -101,11 +101,11 @@ export const Scene04: React.FC = () => {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-  const comSlideX = interpolate(frame, [26, 32], [8, 0], {
+  const comSlideX = Math.round(interpolate(frame, [26, 32], [8, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
-  });
+  }));
 
   // ── Phase 3: Tagline — appears after .com begins ──
   const taglineSpring = spring({
@@ -130,16 +130,16 @@ export const Scene04: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const singleDotY = interpolate(transition, [0, 0.5], [0, -18], {
+  const singleDotY = Math.round(interpolate(transition, [0, 0.5], [0, -18], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
-  });
-  const singleDotX = interpolate(transition, [0, 0.5], [0, -30], {
+  }));
+  const singleDotX = Math.round(interpolate(transition, [0, 0.5], [0, -30], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
-  });
+  }));
 
   // Logo mark (two circles): comes in slightly after dot fades
   const logoMarkOpacity = interpolate(transition, [0.15, 0.5], [0, 1], {
@@ -153,13 +153,13 @@ export const Scene04: React.FC = () => {
   });
 
   // Content block shifts up slightly to keep visual center
-  const contentShiftY = interpolate(frame, [26, 36], [0, -8], {
+  const contentShiftY = Math.round(interpolate(frame, [26, 36], [0, -8], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-  });
+  }));
 
-  const taglineY = interpolate(taglineProgress, [0, 1], [8, 0]);
-  const badgesY = interpolate(badgesProgress, [0, 1], [10, 0]);
+  const taglineY = Math.round(interpolate(taglineProgress, [0, 1], [8, 0]));
+  const badgesY = Math.round(interpolate(badgesProgress, [0, 1], [10, 0]));
 
   // Badge scale — subtle pop
   const badgesScaleRaw = spring({
@@ -176,7 +176,10 @@ export const Scene04: React.FC = () => {
           "radial-gradient(ellipse at center, #FFFFFF 0%, #FDFDFD 50%, #F6F6F6 100%)",
         justifyContent: "center",
         alignItems: "center",
-      }}
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
+      } as React.CSSProperties}
     >
       <div
         style={{
