@@ -105,19 +105,18 @@ const SometimesSegment: React.FC = () => {
     <AbsoluteFill style={{ opacity: segmentOpacity }}>
       <FilmGrain opacity={0.035} />
 
-      {/* Stock tickers — centered behind text, spread vertically as in reference */}
+      {/* Stock tickers — single centered column as in reference, right-aligned values */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(-50%, -50%) translateY(${tickerScrollY}px)`,
+          transform: `translate(-30%, -50%) translateY(${tickerScrollY}px)`,
           opacity: tickerPulseOpacity,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
-          width: "60%",
+          alignItems: "flex-end",
+          gap: 2,
         }}
       >
         {TICKERS.map((t, i) => {
@@ -134,14 +133,11 @@ const SometimesSegment: React.FC = () => {
                 fontFamily,
                 fontSize: 15,
                 fontWeight: 300,
-                color: "rgba(255,255,255,0.45)",
+                color: "rgba(255,255,255,0.4)",
                 whiteSpace: "nowrap",
                 letterSpacing: 1.4,
                 opacity: stagger,
                 textAlign: "right",
-                alignSelf: i % 2 === 0 ? "flex-end" : "flex-start",
-                paddingLeft: i % 2 === 1 ? `${10 + (i % 4) * 3}%` : 0,
-                paddingRight: i % 2 === 0 ? `${5 + (i % 3) * 4}%` : 0,
               }}
             >
               {t.price}&nbsp;&nbsp;{t.dir === "up" ? "↑" : "↓"}&nbsp;{t.pct}
@@ -234,16 +230,17 @@ const SometimesSegment: React.FC = () => {
  * We approximate with layered SVG strokes + gradients + blur for depth.
  */
 const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progress, breathe = 0 }) => {
-  // Complex interlocking loop paths inspired by the reference
+  // Tight intertwined loops — matching reference pretzel/knot with genuine crossings
+  // Arranged in depth order (bottom to top) with varying opacity for over/under illusion
   const paths = [
-    // Main figure-8 with tight self-crossing loops (like reference pretzel)
-    "M 200,240 C 300,140 420,120 480,200 C 540,280 460,340 400,290 C 340,240 390,160 480,180 C 570,200 620,300 570,360 C 520,420 440,380 480,300 C 520,220 620,170 720,230 C 820,290 780,400 700,380",
-    // Second crossing figure-8
-    "M 280,320 C 360,200 480,170 560,260 C 640,350 560,420 490,360 C 420,300 470,210 570,230 C 670,250 740,370 680,430 C 620,490 520,430 570,340 C 620,250 740,200 840,280",
-    // Tight inner knot
-    "M 380,260 C 420,180 520,160 560,240 C 600,320 530,380 480,320 C 430,260 480,190 560,210 C 640,230 680,330 640,380 C 600,430 530,400 560,320 C 590,240 670,200 750,250",
-    // Wide outer frame loop
-    "M 160,300 C 260,140 440,100 560,210 C 680,320 600,440 480,400 C 360,360 330,240 440,180 C 550,120 720,160 800,280 C 880,400 780,480 660,420",
+    // Layer 1 (behind): Wide outer frame sweep
+    { d: "M 140,320 C 220,140 400,80 540,180 C 680,280 640,420 510,400 C 380,380 320,260 420,170 C 520,80 720,100 840,240 C 920,350 840,480 700,440", depth: 0 },
+    // Layer 2: Main figure-8 loop
+    { d: "M 180,300 C 250,160 380,120 470,200 C 560,280 520,380 440,340 C 360,300 340,200 440,160 C 540,120 660,180 700,280 C 740,380 660,440 560,400 C 460,360 420,260 500,200 C 580,140 720,140 800,240", depth: 1 },
+    // Layer 3: Tight inner pretzel (crosses layer 2)
+    { d: "M 300,350 C 350,220 440,180 520,250 C 600,320 560,400 480,370 C 400,340 380,240 460,200 C 540,160 640,200 680,300 C 720,400 640,460 540,420 C 440,380 430,280 520,230 C 610,180 720,220 780,320", depth: 2 },
+    // Layer 4 (front): Small tight knot center
+    { d: "M 380,280 C 410,200 490,170 540,230 C 590,290 560,360 500,330 C 440,300 430,230 490,190 C 550,150 630,190 660,270 C 690,350 630,410 560,370 C 490,330 480,250 540,210", depth: 3 },
   ];
 
   const totalLength = 2600;
@@ -288,67 +285,74 @@ const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progr
         </filter>
       </defs>
 
-      {paths.map((path, i) => {
-        const staggerDelay = i * 0.08;
+      {paths.map((p, i) => {
+        const staggerDelay = i * 0.06;
         const localProgress = Math.max(0, Math.min(1, (progress - staggerDelay) / (1 - staggerDelay)));
+        // Depth-based properties — front layers are brighter, back layers dimmer
+        const depthOpacity = 0.7 + p.depth * 0.1;
+        const tubeWidth = 14 - p.depth * 1;
         return (
           <React.Fragment key={i}>
-            {/* Shadow layer */}
+            {/* Shadow layer — offset increases with depth for parallax */}
             <path
-              d={path}
+              d={p.d}
               fill="none"
-              stroke="rgba(0,15,80,0.15)"
-              strokeWidth={22 - i * 3}
+              stroke={`rgba(0,15,80,${0.12 + p.depth * 0.02})`}
+              strokeWidth={tubeWidth + 8}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
-              transform="translate(4, 6)"
+              transform={`translate(${3 + p.depth}, ${5 + p.depth * 1.5})`}
             />
-            {/* Outer glow — subtle */}
+            {/* Outer glow */}
             <path
-              d={path}
+              d={p.d}
               fill="none"
-              stroke={`rgba(130,160,255,${0.18 - i * 0.03})`}
-              strokeWidth={24 - i * 3}
+              stroke={`rgba(130,160,255,${0.12 + p.depth * 0.02})`}
+              strokeWidth={tubeWidth + 10}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
               filter="url(#ribbonGlow)"
+              opacity={depthOpacity}
             />
-            {/* Main tube body — thicker, more solid */}
+            {/* Main tube body */}
             <path
-              d={path}
+              d={p.d}
               fill="none"
               stroke={i % 2 === 0 ? "url(#ribbonGlass1)" : "url(#ribbonGlass2)"}
-              strokeWidth={14 - i * 1.5}
+              strokeWidth={tubeWidth}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
+              opacity={depthOpacity}
             />
             {/* Edge highlight — top edge of tube */}
             <path
-              d={path}
+              d={p.d}
               fill="none"
-              stroke={`rgba(200,215,255,${0.55 - i * 0.08})`}
-              strokeWidth={6 - i * 0.6}
+              stroke={`rgba(200,215,255,${0.45 + p.depth * 0.05})`}
+              strokeWidth={5 - p.depth * 0.3}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
+              opacity={depthOpacity}
             />
             {/* Specular center line */}
             <path
-              d={path}
+              d={p.d}
               fill="none"
-              stroke={`rgba(240,245,255,${0.35 - i * 0.06})`}
+              stroke={`rgba(240,245,255,${0.25 + p.depth * 0.05})`}
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
+              opacity={depthOpacity}
             />
           </React.Fragment>
         );
@@ -566,12 +570,12 @@ const PhoneSegment: React.FC = () => {
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) perspective(1200px) rotateX(55deg) rotateZ(-45deg)`,
+            transform: `translate(-50%, -50%) perspective(1400px) rotateX(55deg) rotateZ(-45deg)`,
             opacity: isoProgress,
             display: "grid",
-            gridTemplateColumns: "repeat(5, 260px)",
-            gridTemplateRows: "repeat(3, 440px)",
-            gap: 24,
+            gridTemplateColumns: "repeat(5, 320px)",
+            gridTemplateRows: "repeat(3, 540px)",
+            gap: 18,
           }}
         >
           {isoCards.map((card, i) => {
@@ -600,15 +604,15 @@ const PhoneSegment: React.FC = () => {
                 style={{
                   background: isCenter
                     ? "linear-gradient(145deg, #ffffff, #f6f8ff)"
-                    : "linear-gradient(145deg, #fafbff, #eef1ff)",
+                    : "linear-gradient(145deg, #fafbff, #f0f2ff)",
                   borderRadius: 18,
                   transform: `translateY(${cardSlideY}px)`,
                   border: isCenter
-                    ? "2px solid rgba(80,140,255,0.3)"
-                    : `1.5px solid rgba(${120 + (i * 17) % 60},${150 + (i * 23) % 50},${220 + (i * 11) % 35},0.2)`,
+                    ? "2.5px solid rgba(80,140,255,0.35)"
+                    : "1.5px solid rgba(180,190,220,0.3)",
                   boxShadow: isCenter
                     ? "0 8px 40px rgba(0,0,80,0.14), 0 2px 8px rgba(0,0,80,0.08), inset 0 1px 0 rgba(255,255,255,0.8)"
-                    : `0 4px 20px rgba(0,0,80,0.06), 0 0 0 1px rgba(${140 + (i * 13) % 80},${170 + (i * 19) % 60},255,0.08), inset 0 1px 0 rgba(255,255,255,0.6)`,
+                    : `0 4px 20px rgba(0,0,80,0.06), 0 0 8px rgba(${160 + (i * 17) % 60},${130 + (i * 23) % 80},255,0.15), 0 0 16px rgba(${200 + (i * 11) % 55},${140 + (i * 19) % 60},${220 + (i * 7) % 35},0.08), inset 0 1px 0 rgba(255,255,255,0.6)`,
                   overflow: "hidden",
                   padding: 14,
                   opacity: cardOpacity,
@@ -652,20 +656,21 @@ const PhoneSegment: React.FC = () => {
                     />
                   </svg>
                 )}
-                {/* Text skeleton lines */}
-                <div style={{ width: "70%", height: 5, background: "rgba(4,47,243,0.08)", borderRadius: 2, marginBottom: 4 }} />
-                <div style={{ width: "55%", height: 5, background: "rgba(4,47,243,0.06)", borderRadius: 2, marginBottom: 4 }} />
-                <div style={{ width: "40%", height: 5, background: "rgba(4,47,243,0.04)", borderRadius: 2, marginBottom: 10 }} />
+                {/* Text skeleton lines — more visible for isometric view */}
+                <div style={{ width: "80%", height: 6, background: "rgba(4,47,243,0.1)", borderRadius: 2, marginBottom: 5 }} />
+                <div style={{ width: "65%", height: 6, background: "rgba(4,47,243,0.08)", borderRadius: 2, marginBottom: 5 }} />
+                <div style={{ width: "50%", height: 6, background: "rgba(4,47,243,0.06)", borderRadius: 2, marginBottom: 5 }} />
+                <div style={{ width: "70%", height: 6, background: "rgba(4,47,243,0.07)", borderRadius: 2, marginBottom: 10 }} />
                 {/* Bar chart */}
                 {card.hasBar && (
-                  <div style={{ display: "flex", gap: 4, alignItems: "flex-end", marginTop: 4 }}>
-                    {[30, 50, 20, 65, 40, 55].map((h, j) => (
+                  <div style={{ display: "flex", gap: 5, alignItems: "flex-end", marginTop: 6 }}>
+                    {[30, 55, 22, 68, 42, 58, 35, 48].map((h, j) => (
                       <div
                         key={j}
                         style={{
-                          width: 10,
-                          height: h * 0.4,
-                          background: `rgba(4,47,243,${0.12 + j * 0.03})`,
+                          width: 12,
+                          height: h * 0.6,
+                          background: `rgba(4,47,243,${0.15 + j * 0.04})`,
                           borderRadius: 2,
                         }}
                       />
@@ -686,18 +691,28 @@ const PhoneSegment: React.FC = () => {
                   />
                 )}
                 {/* Green/red indicator */}
-                {i % 4 === 1 && (
+                {i % 3 === 1 && (
                   <div
                     style={{
                       position: "absolute",
                       top: 12,
                       right: 12,
-                      width: 8,
-                      height: 8,
+                      width: 10,
+                      height: 10,
                       borderRadius: "50%",
                       background: i % 2 === 0 ? "#00c853" : "#ff1744",
                     }}
                   />
+                )}
+                {/* Dollar amount for financial cards */}
+                {i % 4 === 0 && !isCenter && (
+                  <div style={{ fontFamily, fontSize: 14, fontWeight: 600, color: "rgba(0,20,60,0.6)", marginTop: 6 }}>
+                    ${((i * 1337 + 2500) % 8000 + 1500).toLocaleString()}.00
+                  </div>
+                )}
+                {/* Colored accent line */}
+                {i % 5 === 2 && (
+                  <div style={{ width: "60%", height: 3, background: "linear-gradient(90deg, rgba(4,47,243,0.3), rgba(0,200,100,0.2))", borderRadius: 2, marginTop: 6 }} />
                 )}
               </div>
             );
@@ -713,12 +728,12 @@ const PhoneSegment: React.FC = () => {
           left: "50%",
           transform: `translate(-50%, calc(-50% + ${phoneY}px)) perspective(1000px) rotateY(${isoRotateY}deg) rotateX(${isoRotateX}deg) rotateZ(${isoRotateZ + settleRock}deg) scale(${phoneScale})`,
           transformStyle: "preserve-3d",
-          width: 300,
-          height: 600,
-          background: "linear-gradient(160deg, #1a2040, #101830, #0a1020)",
-          borderRadius: 44,
-          padding: 7,
-          boxShadow: `0 ${20 + isoProgress * 10}px ${60 + isoProgress * 20}px rgba(0,0,0,${0.3 + isoProgress * 0.1}), 0 4px 16px rgba(0,0,0,0.2)`,
+          width: 320,
+          height: 640,
+          background: "linear-gradient(160deg, #c0c4d0, #a8adb8, #8a8f9a)",
+          borderRadius: 48,
+          padding: 6,
+          boxShadow: `0 ${20 + isoProgress * 10}px ${60 + isoProgress * 20}px rgba(0,0,0,${0.35 + isoProgress * 0.1}), 0 4px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4)`,
           zIndex: 10,
         }}
       >
@@ -801,7 +816,7 @@ const PhoneSegment: React.FC = () => {
           )}
         </div>
 
-        {/* Side buttons */}
+        {/* Side buttons — matching silver bezel */}
         <div
           style={{
             position: "absolute",
@@ -809,7 +824,7 @@ const PhoneSegment: React.FC = () => {
             top: 130,
             width: 3,
             height: 55,
-            background: "#2a3050",
+            background: "#9a9faa",
             borderRadius: "0 2px 2px 0",
           }}
         />
@@ -820,7 +835,7 @@ const PhoneSegment: React.FC = () => {
             top: 110,
             width: 3,
             height: 30,
-            background: "#2a3050",
+            background: "#9a9faa",
             borderRadius: "2px 0 0 2px",
           }}
         />
@@ -831,7 +846,7 @@ const PhoneSegment: React.FC = () => {
             top: 150,
             width: 3,
             height: 55,
-            background: "#2a3050",
+            background: "#9a9faa",
             borderRadius: "2px 0 0 2px",
           }}
         />
@@ -850,18 +865,18 @@ const OnePlaceSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // "One" appears with overshoot spring
+  // "One" appears with snappy spring — reaches full quickly
   const oneSpring = spring({
     frame,
     fps,
-    config: { damping: 12, mass: 0.8, stiffness: 100 },
+    config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
 
-  // "place" appears slightly after
+  // "place" appears slightly after — also snappy
   const placeSpring = spring({
-    frame: Math.max(0, frame - Math.round(fps * 0.12)),
+    frame: Math.max(0, frame - Math.round(fps * 0.08)),
     fps,
-    config: { damping: 12, mass: 0.8, stiffness: 100 },
+    config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
 
   // Blue arrow box
@@ -942,57 +957,103 @@ const OnePlaceSegment: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* "One" — glass/iridescent text effect */}
+          {/* "One" — glass/crystal 3D iridescent text matching reference */}
           <div
             style={{
-              fontFamily,
-              fontSize: 220,
-              fontWeight: 200,
-              lineHeight: 0.82,
+              position: "relative",
               opacity: oneSpring,
               transform: `translateY(${(1 - oneSpring) * 60}px)`,
-              color: "#a0a9cc",
-              textShadow: "0 3px 12px rgba(80,100,170,0.15), 0 -1px 0 rgba(200,210,240,0.4), 0 2px 0 rgba(120,135,180,0.15)",
-              filter: "drop-shadow(0 5px 18px rgba(60,80,160,0.15))",
-              letterSpacing: -8,
-              position: "relative",
+              filter: "drop-shadow(0 6px 22px rgba(140,120,200,0.12))",
             }}
           >
-            One
-            {/* Gradient variation overlay — adds iridescent shimmer */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                fontFamily,
-                fontSize: 220,
-                fontWeight: 200,
-                lineHeight: 0.82,
-                letterSpacing: -8,
-                background:
-                  "linear-gradient(160deg, rgba(200,160,240,0.3) 0%, rgba(150,200,250,0.15) 30%, transparent 50%, rgba(230,190,210,0.2) 70%, rgba(170,210,240,0.15) 90%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                mixBlendMode: "overlay",
-                pointerEvents: "none",
-              }}
+            {/* SVG-based glass text — proper clipping, no rectangular artifacts */}
+            <svg
+              viewBox="0 0 580 260"
+              style={{ width: 580, height: 260, overflow: "visible" }}
             >
-              One
-            </div>
+              <defs>
+                {/* Iridescent gradient — animated, strong prismatic colors */}
+                <linearGradient id="glassIridescent" x1="0%" y1="0%" x2="100%" y2="100%"
+                  gradientTransform={`rotate(${(frame * 0.4) % 360})`}>
+                  <stop offset="0%" stopColor="rgba(200,130,240,0.7)" />
+                  <stop offset="14%" stopColor="rgba(140,180,255,0.4)" />
+                  <stop offset="28%" stopColor="rgba(255,150,200,0.65)" />
+                  <stop offset="42%" stopColor="rgba(100,170,255,0.35)" />
+                  <stop offset="56%" stopColor="rgba(230,170,255,0.55)" />
+                  <stop offset="70%" stopColor="rgba(130,210,250,0.45)" />
+                  <stop offset="84%" stopColor="rgba(255,140,190,0.6)" />
+                  <stop offset="100%" stopColor="rgba(180,140,255,0.5)" />
+                </linearGradient>
+                {/* Specular highlight gradient — sharp white bands */}
+                <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="100%"
+                  gradientTransform={`rotate(${(frame * 0.25 + 15) % 360})`}>
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="10%" stopColor="rgba(255,255,255,0.8)" />
+                  <stop offset="18%" stopColor="transparent" />
+                  <stop offset="42%" stopColor="transparent" />
+                  <stop offset="52%" stopColor="rgba(255,255,255,0.55)" />
+                  <stop offset="60%" stopColor="transparent" />
+                  <stop offset="82%" stopColor="transparent" />
+                  <stop offset="92%" stopColor="rgba(255,255,255,0.4)" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+                {/* Glass base fill — visible glass body */}
+                <linearGradient id="glassFill" x1="0%" y1="20%" x2="100%" y2="80%">
+                  <stop offset="0%" stopColor="rgba(195,190,225,0.38)" />
+                  <stop offset="35%" stopColor="rgba(205,200,230,0.28)" />
+                  <stop offset="65%" stopColor="rgba(190,195,235,0.32)" />
+                  <stop offset="100%" stopColor="rgba(200,195,225,0.35)" />
+                </linearGradient>
+              </defs>
+              {/* Shadow — subtle depth */}
+              <text x="4" y="210" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="rgba(160,150,200,0.08)" filter="url(#ribbonGlow)">
+                One
+              </text>
+              {/* 3D extrusion shadow — gives thickness to the glass */}
+              <text x="2" y="212" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="rgba(170,160,210,0.06)">
+                One
+              </text>
+              <text x="1.5" y="211" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="rgba(175,165,215,0.05)">
+                One
+              </text>
+              {/* Glass fill — more visible body */}
+              <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="url(#glassFill)">
+                One
+              </text>
+              {/* Iridescent color — strong prismatic */}
+              <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="url(#glassIridescent)">
+                One
+              </text>
+              {/* Specular highlights */}
+              <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="url(#glassSpecular)">
+                One
+              </text>
+              {/* Edge stroke — visible glass boundary */}
+              <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
+                letterSpacing="-10" fill="none" stroke="rgba(170,165,210,0.55)" strokeWidth="1.8">
+                One
+              </text>
+            </svg>
           </div>
 
           {/* "place" — bold blue, overlapping the glass text slightly */}
           <div
             style={{
               fontFamily,
-              fontSize: 140,
+              fontSize: 160,
               fontWeight: 800,
               lineHeight: 0.85,
               opacity: placeSpring,
               transform: `translateY(${(1 - placeSpring) * 35}px)`,
               color: BLUE,
-              marginTop: -25,
-              letterSpacing: -4,
+              marginTop: -40,
+              letterSpacing: -5,
               textShadow: "0 2px 15px rgba(4,47,243,0.15)",
             }}
           >
@@ -1003,19 +1064,19 @@ const OnePlaceSegment: React.FC = () => {
         {/* Blue arrow box — positioned to the right */}
         <div
           style={{
-            width: 100,
-            height: 100,
+            width: 110,
+            height: 110,
             background: BLUE,
-            borderRadius: 14,
+            borderRadius: 16,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             opacity: arrowSpring,
-            transform: `scale(${arrowSpring}) translateY(40px)`,
+            transform: `scale(${arrowSpring}) translateY(50px)`,
             boxShadow: "0 10px 35px rgba(4,47,243,0.3)",
           }}
         >
-          <span style={{ color: WHITE, fontSize: 42, fontWeight: 300 }}>→</span>
+          <span style={{ color: WHITE, fontSize: 46, fontWeight: 300 }}>→</span>
         </div>
       </div>
     </AbsoluteFill>
