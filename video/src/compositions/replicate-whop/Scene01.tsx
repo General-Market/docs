@@ -19,7 +19,7 @@ const HOLD_EARN_END = 100;    // hold the earn text — ref holds until ~f105
 const DASHBOARD_START = 108;  // dashboard slides in — ref: ~f108
 const DASHBOARD_FULL = 138;   // dashboard fully visible
 const WALLET_START = 150;     // wallet page begins replacing dashboard
-const WALLET_FULL = 158;      // wallet page fully visible
+const WALLET_FULL = 155;      // wallet page fully visible — faster entry
 // Total duration: 217 frames
 
 /* ─── colors ─── */
@@ -1233,12 +1233,12 @@ export const Scene01: React.FC = () => {
       )}
 
       {/* Phase 3: Dashboard (analytics) — fades out when wallet arrives */}
-      {frame >= DASHBOARD_START && frame < WALLET_START + 8 && (
+      {frame >= DASHBOARD_START && frame < WALLET_START + 4 && (
         <div
           style={{
             opacity: interpolate(
               frame,
-              [WALLET_START - 2, WALLET_START + 4],
+              [WALLET_START - 1, WALLET_START + 2],
               [1, 0],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             ),

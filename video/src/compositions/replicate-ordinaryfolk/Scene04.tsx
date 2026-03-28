@@ -139,23 +139,20 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
     /* Camera push during photo expand — zoom in */
     t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
-    /* AI response: reference shows close-up — camera pushes in so chat
-       content is prominent. Phone nearly straight-on by this point. */
-    t.to(s, { phoneScale: 1.55, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
-    t.to(s, { phoneY: -40, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
-    /* Emoji burst: slight pullback but stay zoomed */
-    t.to(s, { phoneScale: 1.40, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
+    /* Pull back for AI response */
+    t.to(s, { phoneScale: 0.98, duration: sec(30), ease: "power2.inOut" }, sec(PHASE.AI_RESPONSE.start));
+    /* Emoji burst: slight shrink from energy release */
+    t.to(s, { phoneScale: 0.90, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
-    /* Delay exit 8 frames — reference phone stays stable through early transition text */
-    const exitStart = sec(PHASE.TRANSITION_TEXT.start + 8);
+    const exitStart = sec(PHASE.TRANSITION_TEXT.start);
     const phoneExitTween = gsap.to({ t: 0 }, {
       t: 1, duration: sec(16), ease: "power3.in", paused: true,
       onUpdate() {
         const p = this.progress();
-        /* Start from current zoomed-in position and fly far left */
+        /* Start from drift position and fly far left */
         s.phoneX = quadBezier(p, 20, -280, -850);
-        s.phoneY = quadBezier(p, -40, -80, 20);
+        s.phoneY = quadBezier(p, 0, -50, 20);
       },
     });
     t.add(phoneExitTween, exitStart);
@@ -900,7 +897,7 @@ export const Scene04: React.FC = () => {
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
   const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
   const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
-  const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start + 10;
+  const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
   const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
   const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start;
 

@@ -360,7 +360,7 @@ const SegGeminiResponse: React.FC = () => {
   const {fps, durationInFrames} = useVideoConfig();
   const wob = organicWobble("gresp", frame, 1.2, 0.8, 0.012);
   const resp = "You have two recent emails from Harper Elementary.\n\nThe first email is the Harper Elementary School Newsletter for October 2025. It includes information\nabout upcoming events, such as Crazy Hat Day on October 8th and the Fall Festival on October 23rd.\nit also mentions a teacher appreciation event.\n\nThe second email is a call for parent volunteers. It asks parents to sign up by October 15th if they are\ninterested in volunteering...";
-  const respChars = Math.floor(interpolate(frame, [fps*0.6,durationInFrames*0.9], [0,resp.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
+  const respChars = Math.floor(interpolate(frame, [fps*0.2,durationInFrames*0.85], [0,resp.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
   const cs = spring({frame, fps, delay:0, config:{damping:14,stiffness:80,mass:1.0}});
   const chSpr = spring({frame, fps, delay: Math.floor(fps*0.3), config:{damping:12,stiffness:120,mass:0.6}});
   const ecSpr = [0,1].map(i => spring({frame, fps, delay: Math.floor(durationInFrames*0.7)+i*3, config:{damping:14,stiffness:100,mass:0.7}}));
