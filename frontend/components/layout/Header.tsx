@@ -129,7 +129,7 @@ export function Header() {
     { id: 'create', label: t('nav.create') },
     { id: 'lend', label: t('nav.lend') },
     { id: 'backtest', label: t('nav.backtest') },
-    { id: 'system', label: t('nav.system') },
+    { id: 'system', label: t('nav.system'), href: '/explorer' },
   ] : activePage === 'vision' ? [
     { id: 'vision', label: t('nav.vision_nav') },
     { id: 'leaderboard', label: t('nav.leaderboard') },
@@ -283,7 +283,7 @@ export function Header() {
                             {sectionNav.map((link) => (
                               <button
                                 key={link.id}
-                                onClick={() => scrollTo(link.id)}
+                                onClick={() => 'href' in link && link.href ? (router.push(link.href), setMobileMenuOpen(false)) : scrollTo(link.id)}
                                 className={`block w-full text-left px-2 py-2 text-caption rounded transition-colors ${
                                   isDark
                                     ? 'text-zinc-300 hover:text-white hover:bg-white/10'

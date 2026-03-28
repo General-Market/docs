@@ -1,5 +1,21 @@
 # Design Decision Backlog
 
+## Session: 20260328-2330-p2p2 (P2P connection lifecycle hardening)
+
+- [DECISION] Add TCP_NODELAY + TCP keepalive (socket2) to all P2P connections. No socket options were set previously. Keepalive starts probing at 15s idle, 5s interval — detects half-open connections at kernel level before the 45s application timeout.
+- [DECISION] Add 45s read timeout to reader_loop. Previously reader_loop blocked forever on `reader.read()` with no timeout — a half-open or stalled connection would sit as "Connected" zombie indefinitely while heartbeats stopped flowing.
+- [DECISION] Add 10s write timeout to writer_loop. Previously write_all/flush could block forever on TCP backpressure, cascading into the broadcast loop via channel backpressure (outgoing channel was only 100 slots).
+- [DECISION] Increase outgoing message channel from 100 to 500 slots. 62 source proposals + signs + heartbeats + vision messages can burst past 100 during batch creation, causing send() to block and propagating backpressure into the broadcast read-lock holder.
+- [DECISION] Reader_loop now removes dead connections from the map (not just marks Disconnected) and aborts the writer task. Previously dead connections sat as zombies — broadcasts skipped them with warnings but nothing cleaned them up or reconnected.
+- [DECISION] Auto-reconnect on connection drop via ReconnectRequest channel. Previously reconnect_loop was ONLY called on initial connect failure. Once an established connection dropped, it was never re-established. This was the root cause of the 10-15 minute degradation: connections drop, zombies accumulate, consensus fails.
+- [DECISION] Used mpsc channel (ReconnectRequest) to break async type cycle instead of Box::pin. reader_loop sends reconnect requests to a drain task in TcpP2PTransport, which spawns reconnect_loop — cleanly separating the reader from the reconnection logic.
+
+## Session: 20260328-2300-p2p1 (P2P peer scoring infinite re-ban loop)
+
+- [DECISION] Skip heartbeat penalties for already-banned peers in `peer_scoring.rs` tick(). Previously, step 1 applied -5.0 per tick to ALL disconnected peers including banned ones, step 4 re-banned them every 5s, incrementing ban_count infinitely (103+ in production, score -56000). Now banned peers are frozen — no score accumulation, no re-banning — until the ban expires and step 3 resets them to 0.
+- [DECISION] Skip re-banning peers with an active unexpired ban (step 4 guard). The previous code would re-apply the ban every tick, pushing ban_count higher each time and resetting the expiry timer — making it literally impossible for the ban to ever expire. The peer becomes permanently excommunicated.
+- [FAILED] Hypothesis that batch creation bursts cause heartbeat starvation — the actual production failure was oracle-3 crash-looping with `Error: node-id is required`. The ban mechanism has a legitimate design flaw (infinite re-ban loop), but the 10-15 min drops were caused by a misconfigured container, not by message queue pressure.
+
 ## Session: 20260328-2145-q8f3 (WorkDriven feedback loop on tx revert)
 
 - [DECISION] Added freshness gate to `has_in_flight_orders()` — orders whose last status change was >30s ago no longer trigger WorkDriven cycles. The watchdog (5min threshold) handles truly stuck orders on heartbeat. Without this, a single reverted tx triggers 20 WorkDriven cycles/sec indefinitely until the watchdog intervenes — 6,000 wasted cycles that desync oracles.

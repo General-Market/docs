@@ -435,13 +435,26 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     }
   }, [confirmError])
 
+  // Track success for deferred cleanup when modal closes
+  const successRef = useRef(false)
+
   useEffect(() => {
     if (isSuccess) {
+      successRef.current = true
       capture('create_itp_completed', {
         asset_count: selectedAssets.length,
         tx_hash: hash,
       })
       refreshNonce()
+      setStuckWarning(false)
+      refetchDeployerName()
+    }
+  }, [isSuccess, refreshNonce])
+
+  // Reset form when finalize modal closes after a successful deploy
+  useEffect(() => {
+    if (!showFinalizeModal && successRef.current) {
+      successRef.current = false
       setName('')
       setSymbol('')
       setDescription('')
@@ -449,10 +462,11 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       setVideoUrl('')
       setOracleName('')
       setSelectedAssets([])
-      setStuckWarning(false)
-      refetchDeployerName()
+      resetWrite()
+      setItpCountBefore(null)
+      setConsensusReached(false)
     }
-  }, [isSuccess, refreshNonce])
+  }, [showFinalizeModal, resetWrite])
 
   // Detect stuck transactions — warn after 30s of confirming
   useEffect(() => {
@@ -771,6 +785,8 @@ function FinalizeItpModal({
   const t = useTranslations('create-itp')
   const tc = useTranslations('common')
   const isValidForm = name.length > 0 && symbol.length > 0
+  const isDeploying = isPending || isConfirming || isFetchingPrices
+  const formLocked = isDeploying || isSuccess
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -779,6 +795,9 @@ function FinalizeItpModal({
 
       {/* Modal */}
       <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        {/* Deploy progress bar */}
+        {isDeploying && <DeployProgressBar isPending={isPending} isConfirming={isConfirming} isFetchingPrices={isFetchingPrices} />}
+
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
@@ -789,7 +808,7 @@ function FinalizeItpModal({
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-4">
+        <div className={`p-6 space-y-4 transition-opacity duration-300 ${formLocked ? 'opacity-40 pointer-events-none' : ''}`}>
           {/* Name + Symbol */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -798,7 +817,8 @@ function FinalizeItpModal({
                 type="text" value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 32))}
                 placeholder={t('finalize.name_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                disabled={formLocked}
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
               />
             </div>
             <div>
@@ -807,7 +827,8 @@ function FinalizeItpModal({
                 type="text" value={symbol}
                 onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
                 placeholder={t('finalize.symbol_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                disabled={formLocked}
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
               />
             </div>
           </div>
@@ -820,7 +841,8 @@ function FinalizeItpModal({
                 type="text" value={oracleName}
                 onChange={(e) => setOracleName(e.target.value.slice(0, 64))}
                 placeholder={t('finalize.oracle_name_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                disabled={formLocked}
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
               />
             </div>
           )}
@@ -833,7 +855,8 @@ function FinalizeItpModal({
               onChange={(e) => setDescription(e.target.value.slice(0, 280))}
               placeholder={t('finalize.description_placeholder')}
               rows={2}
-              className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
+              disabled={formLocked}
+              className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none disabled:text-text-muted"
             />
             <span className="text-micro text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
           </div>
@@ -846,7 +869,8 @@ function FinalizeItpModal({
                 type="url" value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
                 placeholder={t('finalize.website_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                disabled={formLocked}
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
               />
             </div>
             <div>
@@ -855,12 +879,15 @@ function FinalizeItpModal({
                 type="url" value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
                 placeholder={t('finalize.video_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                disabled={formLocked}
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none disabled:text-text-muted"
               />
             </div>
           </div>
+        </div>
 
-          {/* Status messages */}
+        {/* Status messages — outside the greyed form area */}
+        <div className="px-6 space-y-3">
           {txError && (
             <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">{txError}</div>
           )}
@@ -882,19 +909,50 @@ function FinalizeItpModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border-light flex justify-between items-center">
+        <div className="px-6 py-4 border-t border-border-light flex justify-between items-center mt-3">
           <button onClick={onClose} className="text-sm text-text-muted hover:text-text-secondary transition-colors">
             {tc('actions.back')}
           </button>
-          <WalletActionButton
-            onClick={onSubmit}
-            disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
-            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
-          >
-            {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
-          </WalletActionButton>
+          {isSuccess ? (
+            <button
+              onClick={onClose}
+              className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 transition-colors fluid-press"
+            >
+              {tc('actions.close')}
+            </button>
+          ) : (
+            <WalletActionButton
+              onClick={onSubmit}
+              disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
+              className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
+            >
+              {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
+            </WalletActionButton>
+          )}
         </div>
       </SpringModal>
+    </div>
+  )
+}
+
+/** Animated progress bar showing deploy phase */
+function DeployProgressBar({ isPending, isConfirming, isFetchingPrices }: { isPending: boolean; isConfirming: boolean; isFetchingPrices: boolean }) {
+  const t = useTranslations('create-itp')
+  const phase = isFetchingPrices ? 0 : isPending ? 1 : isConfirming ? 2 : 0
+  const widths = ['33%', '60%', '85%']
+  const labels = [t('finalize.submit_fetching'), t('finalize.submit_pending'), t('finalize.submit_confirming')]
+
+  return (
+    <div className="px-6 pt-4 pb-2">
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="text-xs font-medium text-text-secondary">{labels[phase]}</span>
+      </div>
+      <div className="w-full h-1.5 bg-border-light rounded-full overflow-hidden">
+        <div
+          className="h-full bg-zinc-900 rounded-full transition-all duration-700 ease-out"
+          style={{ width: widths[phase] }}
+        />
+      </div>
     </div>
   )
 }

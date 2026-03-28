@@ -13,6 +13,7 @@ import { RebalanceModal } from '@/components/domain/RebalanceModal'
 import { SystemStatusSection } from '@/components/domain/SystemStatusSection'
 import { VaultTradesFeed } from '@/components/domain/VaultTradesFeed'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useSectionTimeTracker } from '@/hooks/useSectionTimeTracker'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
@@ -86,6 +87,7 @@ export function HomeClient() {
   const t = useTranslations('pages')
   const { capture } = usePostHogTracker()
   const reduced = usePrefersReducedMotion()
+  const router = useRouter()
 
   const NAV_GROUPS: NavGroup[] = useMemo(() => [
     {
@@ -151,6 +153,11 @@ export function HomeClient() {
   }, [])
 
   const switchTo = useCallback((id: string) => {
+    if (id === 'system') {
+      capture('section_navigated', { section_name: id })
+      router.push('/explorer')
+      return
+    }
     if (id === activeSection) return
     const prevIdx = NAV_SECTION_IDS.indexOf(activeSection)
     const nextIdx = NAV_SECTION_IDS.indexOf(id)
@@ -161,7 +168,7 @@ export function HomeClient() {
     window.scrollTo({ top: 0 })
     clearTimeout(exitTimer.current)
     exitTimer.current = setTimeout(() => setExitingSection(null), reduced ? 0 : 650)
-  }, [activeSection, capture, reduced])
+  }, [activeSection, capture, reduced, router])
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)
