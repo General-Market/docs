@@ -106,9 +106,8 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
         const d = decel(tNorm*3, 2.8);
         px = quadBez(d, p.x, p.x+p.cpOffX, p.x+p.endX)+noiseX+wob.x;
         py = quadBez(d, p.y, p.y+p.cpOffY, p.y+p.endY)+noiseY+wob.y;
-        /* Particles visible from frame 0 — reference shows dense wave immediately */
-        opacity = interpolate(tNorm, [0,0.01,0.5,0.85,1], [0.6,1,0.9,0.4,0], {extrapolateRight:"clamp"});
-        scale = interpolate(tNorm, [0,0.05,0.6,1], [0.5,1.2,0.8,0.2], {extrapolateRight:"clamp"});
+        opacity = interpolate(tNorm, [0,0.04,0.5,0.85,1], [0,1,0.9,0.4,0], {extrapolateRight:"clamp"});
+        scale = interpolate(tNorm, [0,0.1,0.6,1], [0.15,1.1,0.7,0.15], {extrapolateRight:"clamp"});
       } else if (phase === "swirl") {
         const sA = p.angle + rawT*2;
         const dist = 50 + p.speed*rawT*40;
@@ -146,14 +145,13 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
 const SegParticleExplosion: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  /* Reference: dense colorful wave of 300+ particles covering viewport from frame 1 */
-  const particles = useMemo(() => generateParticles(300, 42), []);
+  const particles = useMemo(() => generateParticles(120, 42), []);
   const wob = organicWobble("pexp", frame, 4, 3, 0.025);
-  const glowOp = interpolate(frame, [0,2,4,fps*1.5], [0.3,0.8,0.8,0], {extrapolateRight:"clamp"});
+  const glowOp = interpolate(frame, [0,9,11,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
   const phase: "explode"|"swirl" = frame < fps*0.8 ? "explode" : "swirl";
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",width:800,height:600,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(ellipse, rgba(123,97,255,0.25) 0%, rgba(232,69,139,0.12) 40%, transparent 70%)",opacity:glowOp}} />
+      <div style={{position:"absolute",left:"50%",top:"50%",width:400,height:400,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)",opacity:glowOp}} />
       <ParticleField frame={frame} fps={fps} particles={particles} phase={phase} />
     </AbsoluteFill>
   );
