@@ -193,7 +193,7 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
     current_cycle: u64,
     node_index: u8,
     num_oracles: u8,
-    first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>>,
+    first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, (std::time::Instant, u32)>>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -221,14 +221,20 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                         break;
                     }
 
-                    // Track first-seen time for staleness detection
-                    let seen_at = {
+                    // Track first-seen time and failure count for staleness/skip detection
+                    let (seen_at, fail_count) = {
                         let mut fs = first_seen.lock().await;
-                        *fs.entry(request.nonce).or_insert_with(std::time::Instant::now)
+                        let entry = fs.entry(request.nonce).or_insert_with(|| (std::time::Instant::now(), 0));
+                        (entry.0, entry.1)
                     };
                     if seen_at.elapsed() > MAX_REQUEST_AGE {
                         debug!(nonce = %request.nonce, age_secs = seen_at.elapsed().as_secs(),
                                "Skipping stale ITP creation request (>1h old)");
+                        continue;
+                    }
+                    if fail_count >= CREATION_FAIL_THRESHOLD {
+                        debug!(nonce = %request.nonce, fail_count,
+                               "Skipping ITP creation request — exceeded failure threshold");
                         continue;
                     }
 
@@ -261,6 +267,13 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                                         }
                                         Err(e) => {
                                             error!(nonce = %request.nonce, error = %e, "Failed to create ITP on L3");
+                                            // Increment failure count so we skip after threshold
+                                            let mut fs = first_seen.lock().await;
+                                            if let Some(entry) = fs.get_mut(&request.nonce) {
+                                                entry.1 += 1;
+                                                warn!(nonce = %request.nonce, fail_count = entry.1, threshold = CREATION_FAIL_THRESHOLD,
+                                                      "ITP L3 write failure recorded");
+                                            }
                                             None
                                         }
                                     }

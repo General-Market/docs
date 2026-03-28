@@ -268,7 +268,7 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
         let mut state_rx = cycle_state_rx;
         let mut last_cycle: u64 = 0;
         let mut cycle_start_instant = std::time::Instant::now();
-        let itp_first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new()));
+        let itp_first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, (std::time::Instant, u32)>>> = Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new()));
 
         // In-flight guards: prevent duplicate spawns of the same processing phase
         let price_active = Arc::new(AtomicBool::new(false));

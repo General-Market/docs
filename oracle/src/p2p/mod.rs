@@ -29,7 +29,7 @@ mod transport;
 pub mod wal;
 
 pub use codec::{decode, encode, Codec};
-pub use connection::{ConnectionStatus, PeerConnection};
+pub use connection::{ConnectionStatus, PeerConnection, ReconnectRequest};
 pub use discovery::{OnChainPeerDiscovery, PeerDiscovery, PeerDiscoveryRunner, StaticPeerDiscovery};
 pub use metrics::{P2PMetrics, P2PMetricsSnapshot};
 pub use peer_scoring::PeerScorer;
