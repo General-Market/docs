@@ -7,11 +7,11 @@ import {
   spring,
   Easing,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Nunito";
+import { loadFont as loadDM } from "@remotion/google-fonts/DMSans";
 
-const { fontFamily: nunitoFamily } = loadFont("normal", {
+const { fontFamily: dmSansFamily } = loadDM("normal", {
   subsets: ["latin"],
-  weights: ["400", "600", "700", "800"],
+  weights: ["400", "500", "600", "700", "800"],
 });
 
 /**
@@ -19,26 +19,26 @@ const { fontFamily: nunitoFamily } = loadFont("normal", {
  *
  * Public.com end card. Reference analysis (scene 12):
  *
- * Phase 1 (f0-10):  "public" centered, single blue dot bounces in below text
- * Phase 2 (f8-18):  dot fades out, logo mark (two circles) fades in to left of text;
- *                    ".com" slides/fades in; lockup recenters
- * Phase 3 (f16-24): tagline fades + slides up
- * Phase 4 (f22-30): app store badges fade + slide up
- * Phase 5 (f30-81): hold
+ * Phase 1 (f0-7):   "public" centered, single blue dot bounces in below text
+ * Phase 2 (f7-16):  dot fades out, logo mark (two circles) fades in to left of text
+ * Phase 3 (f16-20): ".com" slides/fades in from right
+ * Phase 4 (f20-28): tagline fades + slides up
+ * Phase 5 (f24-32): app store badges fade + slide up
+ * Phase 6 (f35-81): static hold (~1.6s)
  *
  * Timing is compressed and snappy — springs with moderate damping, not slow elegance.
  */
 
 const BLUE = "#042EF4";
-const TEXT_COLOR = "#111111";
+const TEXT_COLOR = "#000000";
 const TAG_COLOR = "#717171";
 
 /* ── Sizes matched to reference ── */
-const LOGO_LARGE = 46;
-const LOGO_SMALL = 14;
+const LOGO_LARGE = 48;
+const LOGO_SMALL = 15;
 const LOGO_GAP = 3;
-const TEXT_SIZE = 92;
-const TAGLINE_SIZE = 27;
+const TEXT_SIZE = 90;
+const TAGLINE_SIZE = 25;
 
 /* ── Apple logo SVG path (simplified) ── */
 const AppleLogo: React.FC<{ size?: number }> = ({ size = 20 }) => (
@@ -95,33 +95,33 @@ export const Scene04: React.FC = () => {
     easing: Easing.bezier(0.22, 0.1, 0.25, 1),
   });
 
-  // ".com" fades in quickly — frames 12-16 (snappy, not slow)
-  const comOpacity = interpolate(frame, [12, 16], [0, 1], {
+  // ".com" fades in — frames 26-32 (after logo mark settles)
+  const comOpacity = interpolate(frame, [26, 32], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-  const comSlideX = interpolate(frame, [12, 16], [10, 0], {
+  const comSlideX = interpolate(frame, [26, 32], [8, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
-  // ── Phase 3: Tagline — appears quickly after logo settles ──
+  // ── Phase 3: Tagline — appears after .com begins ──
   const taglineSpring = spring({
-    frame: Math.max(0, frame - 14),
+    frame: Math.max(0, frame - 28),
     fps,
     config: { damping: 12, mass: 0.3, stiffness: 140 },
   });
-  const taglineProgress = frame < 14 ? 0 : taglineSpring;
+  const taglineProgress = frame < 28 ? 0 : taglineSpring;
 
   // ── Phase 4: Badges — follow tagline closely ──
   const badgesSpring = spring({
-    frame: Math.max(0, frame - 18),
+    frame: Math.max(0, frame - 32),
     fps,
-    config: { damping: 11, mass: 0.35, stiffness: 120 },
+    config: { damping: 10, mass: 0.25, stiffness: 200 },
   });
-  const badgesProgress = frame < 18 ? 0 : badgesSpring;
+  const badgesProgress = frame < 32 ? 0 : badgesSpring;
 
   // ── Derived values ──
 
@@ -153,7 +153,7 @@ export const Scene04: React.FC = () => {
   });
 
   // Content block shifts up slightly to keep visual center
-  const contentShiftY = interpolate(frame, [14, 26], [0, -8], {
+  const contentShiftY = interpolate(frame, [26, 36], [0, -8], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -163,11 +163,11 @@ export const Scene04: React.FC = () => {
 
   // Badge scale — subtle pop
   const badgesScaleRaw = spring({
-    frame: Math.max(0, frame - 18),
+    frame: Math.max(0, frame - 32),
     fps,
     config: { damping: 10, mass: 0.25, stiffness: 180 },
   });
-  const badgesScaleValue = frame < 18 ? 0.97 : 0.97 + 0.03 * badgesScaleRaw;
+  const badgesScaleValue = frame < 32 ? 0.97 : 0.97 + 0.03 * badgesScaleRaw;
 
   return (
     <AbsoluteFill
@@ -183,7 +183,7 @@ export const Scene04: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          transform: `translateY(${contentShiftY - 16}px)`,
+          transform: `translateY(${contentShiftY + 18}px)`,
         }}
       >
         {/* ── Logo lockup: [mark] [public.com] ── */}
@@ -206,6 +206,7 @@ export const Scene04: React.FC = () => {
               flexDirection: "column",
               alignItems: "center",
               gap: LOGO_GAP,
+              marginTop: 10,
             }}
           >
             <div
@@ -231,10 +232,10 @@ export const Scene04: React.FC = () => {
             <span
               style={{
                 fontSize: TEXT_SIZE,
-                fontWeight: 800,
-                fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
+                fontWeight: 700,
+                fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
                 color: TEXT_COLOR,
-                letterSpacing: -1.5,
+                letterSpacing: -1,
                 lineHeight: 1,
               }}
             >
@@ -243,10 +244,10 @@ export const Scene04: React.FC = () => {
             <span
               style={{
                 fontSize: TEXT_SIZE,
-                fontWeight: 800,
-                fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
+                fontWeight: 700,
+                fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
                 color: TEXT_COLOR,
-                letterSpacing: -1.5,
+                letterSpacing: -1,
                 lineHeight: 1,
                 opacity: comOpacity,
                 transform: `translateX(${comSlideX}px)`,
@@ -257,11 +258,11 @@ export const Scene04: React.FC = () => {
             </span>
           </div>
 
-          {/* Single bounce dot — below "public" text, centered under the word */}
+          {/* Single bounce dot — below "public" text, slightly left of center (under "b" area) */}
           <div
             style={{
               position: "absolute",
-              left: "50%",
+              left: "45%",
               bottom: -6,
               transform: `translate(-50%, ${18 + singleDotY}px) translateX(${singleDotX}px) scale(${dotSpring})`,
               opacity: singleDotOpacity,
@@ -290,7 +291,7 @@ export const Scene04: React.FC = () => {
           <span
             style={{
               fontSize: TAGLINE_SIZE,
-              fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
+              fontFamily: `${dmSansFamily}, system-ui, sans-serif`,
               color: TAG_COLOR,
               fontWeight: 400,
               letterSpacing: 0.3,
@@ -304,8 +305,8 @@ export const Scene04: React.FC = () => {
         <div
           style={{
             display: "flex",
-            gap: 20,
-            marginTop: 40,
+            gap: 24,
+            marginTop: 28,
             opacity: badgesProgress,
             transform: `translateY(${badgesY}px) scale(${badgesScaleValue})`,
           }}
@@ -317,8 +318,8 @@ export const Scene04: React.FC = () => {
               alignItems: "center",
               gap: 12,
               border: "1px solid #DDDDDD",
-              borderRadius: 10,
-              padding: "12px 30px",
+              borderRadius: 12,
+              padding: "12px 26px",
               backgroundColor: "#FFFFFF",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}
@@ -333,7 +334,7 @@ export const Scene04: React.FC = () => {
               <span
                 style={{
                   fontSize: 11,
-                  fontFamily: `${nunitoFamily}, system-ui`,
+                  fontFamily: `${dmSansFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.1,
                   fontWeight: 400,
@@ -345,7 +346,7 @@ export const Scene04: React.FC = () => {
                 style={{
                   fontSize: 22,
                   fontWeight: 700,
-                  fontFamily: `${nunitoFamily}, system-ui`,
+                  fontFamily: `${dmSansFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.3,
                 }}
@@ -362,8 +363,8 @@ export const Scene04: React.FC = () => {
               alignItems: "center",
               gap: 12,
               border: "1px solid #DDDDDD",
-              borderRadius: 10,
-              padding: "12px 30px",
+              borderRadius: 12,
+              padding: "12px 26px",
               backgroundColor: "#FFFFFF",
               boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}
@@ -378,7 +379,7 @@ export const Scene04: React.FC = () => {
               <span
                 style={{
                   fontSize: 10,
-                  fontFamily: `${nunitoFamily}, system-ui`,
+                  fontFamily: `${dmSansFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.1,
                   letterSpacing: 1,
@@ -392,7 +393,7 @@ export const Scene04: React.FC = () => {
                 style={{
                   fontSize: 22,
                   fontWeight: 700,
-                  fontFamily: `${nunitoFamily}, system-ui`,
+                  fontFamily: `${dmSansFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.3,
                 }}
