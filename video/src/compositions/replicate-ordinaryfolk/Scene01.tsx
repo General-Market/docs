@@ -410,8 +410,8 @@ const PhaseWriteEmails: React.FC = () => {
           style={{
             display: "inline-block",
             background: pillGrad,
-            padding: "6px 10px",
-            borderRadius: 3,
+            padding: "8px 16px",
+            borderRadius: 4,
             color: "#FFFFFF",
             fontWeight: FONT_WEIGHT,
             lineHeight: 1.15,
@@ -534,7 +534,7 @@ const SOLVE_SCATTER = [
 const SOLVE_TEXT = "Solve\u00A0problems";
 const SOLVE_LETTERS = SOLVE_TEXT.split("");
 // Char widths for "Solve problems" at TEXT_SIZE=44 (S,o,l,v,e,NBSP,p,r,o,b,l,e,m,s)
-const SOLVE_CHAR_W = [26, 23, 11, 23, 20, 16, 23, 14, 23, 23, 11, 20, 30, 16];
+const SOLVE_CHAR_W = [26, 23, 12, 23, 21, 22, 23, 14, 23, 23, 12, 21, 30, 16];
 const SOLVE_TOTAL_W = SOLVE_CHAR_W.reduce((a, b) => a + b, 0);
 
 // Compute final x positions (centered)
