@@ -32,10 +32,10 @@ const S05_DUR = 695;
 const S01_START = 0;
 const S02_START = S01_START + S01_DUR - XFADE;      // 247
 const S03_START = S02_START + S02_DUR - XFADE;      // 410
-const S04_START = S03_START + S03_DUR - S03_S04_OVERLAP; // 1125 (overlap, not crossfade)
-const S05_START = S04_START + S04_DUR - XFADE;      // 1452
+const S04_START = S03_START + S03_DUR - S03_S04_OVERLAP; // 1155 (hard cut)
+const S05_START = S04_START + S04_DUR - XFADE;      // 1482
 
-const TOTAL_FRAMES = S05_START + S05_DUR;            // 2147
+const TOTAL_FRAMES = S05_START + S05_DUR;            // 2177
 
 /**
  * FadeWrapper — simple opacity crossfade for standard transitions.

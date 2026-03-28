@@ -75,19 +75,19 @@ function generateParticles(count: number, seed: number): Particle[] {
   const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, "#A78BFA", "#F472B6", "#60A5FA"];
   const shapes: Particle["shape"][] = ["circle","circle","circle","diamond","star"];
   return Array.from({length: count}, (_, i) => {
-    const angle = (rng() - 0.3) * Math.PI * 0.8;
-    const dist = 80 + rng() * 280;
+    const angle = (rng() - 0.3) * Math.PI * 1.2;
+    const dist = 120 + rng() * 400;
     const perpAngle = angle + (rng() > 0.5 ? Math.PI/2 : -Math.PI/2);
-    const cpDist = 40 + rng() * 120;
+    const cpDist = 60 + rng() * 180;
     return {
-      id: i, x: 500 + rng()*280, y: 300 + (rng()-0.5)*120,
+      id: i, x: 300 + rng()*680, y: 150 + (rng()-0.5)*400,
       cpOffX: Math.cos(perpAngle)*cpDist + Math.cos(angle)*dist*0.5,
       cpOffY: Math.sin(perpAngle)*cpDist + Math.sin(angle)*dist*0.5,
       endX: Math.cos(angle)*dist, endY: Math.sin(angle)*dist,
-      size: 2 + rng()*10, color: colors[Math.floor(rng()*colors.length)],
+      size: 3 + rng()*18, color: colors[Math.floor(rng()*colors.length)],
       speed: 0.5 + rng()*3, angle,
       noiseOffsetX: rng()*1000, noiseOffsetY: rng()*1000,
-      delay: rng()*15, shape: shapes[Math.floor(rng()*shapes.length)],
+      delay: rng()*6, shape: shapes[Math.floor(rng()*shapes.length)],
     };
   });
 }
@@ -106,8 +106,9 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
         const d = decel(tNorm*3, 2.8);
         px = quadBez(d, p.x, p.x+p.cpOffX, p.x+p.endX)+noiseX+wob.x;
         py = quadBez(d, p.y, p.y+p.cpOffY, p.y+p.endY)+noiseY+wob.y;
-        opacity = interpolate(tNorm, [0,0.04,0.5,0.85,1], [0,1,0.9,0.4,0], {extrapolateRight:"clamp"});
-        scale = interpolate(tNorm, [0,0.1,0.6,1], [0.15,1.1,0.7,0.15], {extrapolateRight:"clamp"});
+        /* Particles visible from frame 0 — reference shows dense wave immediately */
+        opacity = interpolate(tNorm, [0,0.01,0.5,0.85,1], [0.6,1,0.9,0.4,0], {extrapolateRight:"clamp"});
+        scale = interpolate(tNorm, [0,0.05,0.6,1], [0.5,1.2,0.8,0.2], {extrapolateRight:"clamp"});
       } else if (phase === "swirl") {
         const sA = p.angle + rawT*2;
         const dist = 50 + p.speed*rawT*40;
@@ -145,13 +146,14 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
 const SegParticleExplosion: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const particles = useMemo(() => generateParticles(120, 42), []);
+  /* Reference: dense colorful wave of 300+ particles covering viewport from frame 1 */
+  const particles = useMemo(() => generateParticles(300, 42), []);
   const wob = organicWobble("pexp", frame, 4, 3, 0.025);
-  const glowOp = interpolate(frame, [0,9,11,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
+  const glowOp = interpolate(frame, [0,2,4,fps*1.5], [0.3,0.8,0.8,0], {extrapolateRight:"clamp"});
   const phase: "explode"|"swirl" = frame < fps*0.8 ? "explode" : "swirl";
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",width:400,height:400,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)",opacity:glowOp}} />
+      <div style={{position:"absolute",left:"50%",top:"50%",width:800,height:600,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(ellipse, rgba(123,97,255,0.25) 0%, rgba(232,69,139,0.12) 40%, transparent 70%)",opacity:glowOp}} />
       <ParticleField frame={frame} fps={fps} particles={particles} phase={phase} />
     </AbsoluteFill>
   );
@@ -260,23 +262,34 @@ const SegItsEverything: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const wob = organicWobble("itsev", frame, 2, 1.5, 0.02);
-  const containerOp = interpolate(frame, [0,8,durationInFrames-10,durationInFrames], [0,1,1,0], {extrapolateRight:"clamp"});
-  const centerSpr = spring({frame, fps, delay:5, config:{damping:10,stiffness:100,mass:0.6}});
-  const scrollY = interpolate(frame, [0,durationInFrames], [0,-80], {extrapolateRight:"clamp",easing:Easing.inOut(Easing.sin)})+wob.y;
-  const scrollX = interpolate(frame, [0,durationInFrames], [0,-30], {extrapolateRight:"clamp"})+wob.x;
+  const containerOp = interpolate(frame, [0,6,durationInFrames-8,durationInFrames], [0,1,1,0], {extrapolateRight:"clamp"});
+  const centerSpr = spring({frame, fps, delay:3, config:{damping:10,stiffness:100,mass:0.6}});
+  const scrollY = interpolate(frame, [0,durationInFrames], [0,-40], {extrapolateRight:"clamp",easing:Easing.inOut(Easing.sin)})+wob.y;
+  const scrollX = interpolate(frame, [0,durationInFrames], [0,-15], {extrapolateRight:"clamp"})+wob.x;
+  /* Reference: ~5 rows x 3 cols, large text, center has gradient, nearby have subtle tints */
+  const gridRows = 5;
+  const gridCols = 3;
+  const rowSpacing = 70;
+  const colSpacing = 350;
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translate(${scrollX}px,${scrollY}px) rotate(${wob.rot*0.2}deg)`,opacity:containerOp}}>
-        {Array.from({length:9}, (_,row) => Array.from({length:5}, (_,col) => {
-          const isCenter = row===4&&col===2;
-          const dist = Math.sqrt(Math.pow(row-4,2)+Math.pow(col-2,2));
-          const op = isCenter?1:interpolate(dist,[0,1,3],[0.7,0.35,0.12],{extrapolateRight:"clamp"});
+        {Array.from({length:gridRows}, (_,row) => Array.from({length:gridCols}, (_,col) => {
+          const cR = Math.floor(gridRows/2);
+          const cC = Math.floor(gridCols/2);
+          const isCenter = row===cR&&col===cC;
+          const dist = Math.sqrt(Math.pow(row-cR,2)+Math.pow(col-cC,2));
+          const op = isCenter?1:interpolate(dist,[0,1,2.5],[0.5,0.25,0.08],{extrapolateRight:"clamp"});
           const cW = organicWobble(`ie${row}${col}`, frame, 1+dist*0.4, 0.8+dist*0.3, 0.015);
           const cSpr = spring({frame, fps, delay: Math.floor(dist*2)+3, config:{damping:15,stiffness:120,mass:0.5}});
           const cY = isCenter?0:interpolate(cSpr,[0,1],[20,0]);
           const cOp = isCenter?1:interpolate(cSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"});
           const cSc = isCenter?interpolate(centerSpr,[0,1],[0,1]):1;
-          return <div key={`${row}-${col}`} style={{position:"absolute",left:(col-2)*260+cW.x,top:(row-4)*48+cW.y+cY,fontSize:isCenter?42:26,fontWeight:isCenter?600:400,fontFamily:"'Google Sans',sans-serif",color:isCenter?DARK:"#9090A0",opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`}}>{"It's everything"}</div>;
+          const hasGradient = isCenter || (dist <= 1.5 && (row+col)%2===0);
+          const base: React.CSSProperties = {position:"absolute",left:(col-cC)*colSpacing+cW.x,top:(row-cR)*rowSpacing+cW.y+cY,fontSize:isCenter?48:30,fontWeight:isCenter?600:400,fontFamily:"'Google Sans',sans-serif",opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`};
+          if (isCenter) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}, ${PURPLE}, ${BLUE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
+          if (hasGradient) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}66, ${PURPLE}44, ${BLUE}66)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"It\u2019s everything"}</div>;
+          return <div key={`${row}-${col}`} style={{...base,color:"#9090A0"}}>{"It\u2019s everything"}</div>;
         }))}
       </div>
     </AbsoluteFill>
@@ -609,15 +622,15 @@ export const Scene03: React.FC = () => {
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
     {start:0,dur:50,Comp:SegParticleExplosion},
     {start:45,dur:50,Comp:SegGeminiReveal},
-    {start:90,dur:95,Comp:SegDesktopUI},
-    {start:180,dur:35,Comp:SegItsEverything},
-    {start:210,dur:50,Comp:SegAppsFloat},
+    {start:90,dur:100,Comp:SegDesktopUI},
+    {start:185,dur:35,Comp:SegItsEverything},
+    {start:208,dur:55,Comp:SegAppsFloat},
     {start:255,dur:80,Comp:SegTypingPrompt},
-    {start:330,dur:95,Comp:SegGeminiResponse},
+    {start:330,dur:100,Comp:SegGeminiResponse},
     {start:420,dur:75,Comp:SegAndMore},
     {start:490,dur:70,Comp:SegStartingWith},
-    {start:555,dur:80,Comp:SegPhoneMockup},
-    {start:630,dur:65,Comp:SegSupercharge},
+    {start:548,dur:90,Comp:SegPhoneMockup},
+    {start:625,dur:70,Comp:SegSupercharge},
     {start:690,dur:55,Comp:SegPhoneGoodMorning},
   ];
   return (

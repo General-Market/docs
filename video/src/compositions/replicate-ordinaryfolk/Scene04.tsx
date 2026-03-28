@@ -1081,45 +1081,32 @@ export const Scene04: React.FC = () => {
         {showIntro && (
           <div style={{
             position: "absolute", inset: 0,
-            display: "flex", alignItems: "flex-start", justifyContent: "center",
-            paddingTop: 230,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            paddingBottom: 80,
             opacity: s.introOpacity,
             transform: `scale(${s.introScale}) translate(${introWobX}px, ${introWobY}px)`,
             zIndex: 10,
           }}>
+            {/* Subtle glow — much less prominent than before */}
             <div style={{
-              position: "absolute", width: 600, height: 240,
-              transform: `translateX(${glowX * 0.6}px)`,
-              background: `radial-gradient(ellipse at 50% 50%, rgba(220,140,200,${glowBreath * 1.2}) 0%, rgba(200,120,220,${glowBreath * 0.6}) 30%, rgba(180,100,240,${glowBreath * 0.3}) 55%, transparent 75%)`,
-              filter: "blur(50px)",
+              position: "absolute", width: 500, height: 160,
+              background: `radial-gradient(ellipse at 50% 50%, rgba(200,190,220,${glowBreath * 0.3}) 0%, transparent 60%)`,
+              filter: "blur(40px)",
             }} />
-            <div style={{
-              position: "absolute", width: 800, height: 200,
-              background: `radial-gradient(ellipse, rgba(210,140,210,${glowBreath2 * 1.3}) 0%, rgba(190,120,220,${glowBreath2 * 0.5}) 35%, transparent 65%)`,
-              filter: "blur(50px)",
-              opacity: 0.7 + Math.sin(Math.max(0, introLocal) * 0.1) * 0.15,
-            }} />
-            {s.introClipRight > 2 && (
-              <div style={{
-                position: "absolute", width: 140, height: 120,
-                transform: `translateX(${sweepEdgeX}px)`,
-                background: "radial-gradient(ellipse, rgba(210,150,240,0.55) 0%, rgba(180,100,220,0.25) 40%, transparent 70%)",
-                filter: "blur(28px)",
-              }} />
-            )}
             <div style={{ position: "relative" }}>
               <div style={{
-                fontSize: 96,
+                fontSize: 56,
                 fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif",
-                fontWeight: 300, letterSpacing: -1, textAlign: "center", whiteSpace: "nowrap",
-                color: DARK_TEXT, opacity: 0.85,
+                fontWeight: 400, letterSpacing: -0.5, textAlign: "center", whiteSpace: "nowrap",
+                color: GREY_TEXT,
               }}>Introducing</div>
+              {/* Gradient reveal — subtle, matching reference's slight color */}
               <div style={{
-                fontSize: 96,
+                fontSize: 56,
                 fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif",
-                fontWeight: 300, letterSpacing: -1, textAlign: "center", whiteSpace: "nowrap",
+                fontWeight: 400, letterSpacing: -0.5, textAlign: "center", whiteSpace: "nowrap",
                 position: "absolute", inset: 0,
-                background: "linear-gradient(90deg, #D93025 0%, #E040A0 18%, #B040C0 36%, #8060E0 54%, #5080E8 72%, #4285F4 88%, #3B78E7 100%)",
+                background: "linear-gradient(90deg, #5F6368 0%, #7986CB 40%, #5C6BC0 60%, #5F6368 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 clipPath: `inset(0 ${s.introClipRight}% 0 0)`,
