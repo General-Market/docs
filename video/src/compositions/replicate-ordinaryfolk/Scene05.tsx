@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
 import {
-  useGsapTimeline,
   gsap,
   MorphSVGPlugin,
   MotionPathPlugin,
@@ -818,8 +817,8 @@ const UltraOrb: React.FC<{
   style?: React.CSSProperties;
 }> = ({ frame, fps, className, style }) => {
   const rotation = (frame / (fps * 10)) * 360;
-  const pulseScale = 1 + 0.02 * Math.sin((frame / fps) * Math.PI * 2);
-  const orbSize = 320;
+  const pulseScale = 1 + 0.015 * Math.sin((frame / fps) * Math.PI * 2);
+  const orbSize = 420;
 
   return (
     <div
@@ -835,12 +834,23 @@ const UltraOrb: React.FC<{
         ...style,
       }}
     >
+      {/* Outer glow halo */}
+      <div
+        style={{
+          position: "absolute",
+          inset: -30,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, rgba(59,130,246,0.06) 30%, rgba(139,92,246,0.03) 50%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      {/* Rotating conic gradient border — thicker */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           borderRadius: "50%",
-          padding: 2,
+          padding: 3,
           background: `conic-gradient(from ${rotation}deg, ${BLUE}, ${PURPLE}, ${PINK}, ${BLUE})`,
           WebkitMask:
             "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
@@ -848,52 +858,57 @@ const UltraOrb: React.FC<{
           maskComposite: "exclude" as any,
         }}
       />
+      {/* 3D sphere surface — stronger shading */}
       <div
         style={{
           position: "absolute",
-          inset: 4,
+          inset: 5,
           borderRadius: "50%",
           background: `
-            radial-gradient(ellipse at 35% 25%, rgba(60,70,120,0.4) 0%, transparent 50%),
-            radial-gradient(ellipse at 65% 75%, rgba(100,50,80,0.2) 0%, transparent 50%),
-            radial-gradient(circle at 50% 50%, #12122A 0%, #0A0A18 100%)
+            radial-gradient(ellipse at 30% 20%, rgba(70,80,140,0.5) 0%, transparent 45%),
+            radial-gradient(ellipse at 70% 80%, rgba(80,40,70,0.25) 0%, transparent 45%),
+            radial-gradient(circle at 50% 50%, #14142E 0%, #0A0A18 100%)
           `,
           boxShadow: `
-            inset 0 -20px 40px rgba(0,0,0,0.5),
-            inset 0 10px 30px rgba(80,80,160,0.08)
+            inset 0 -30px 50px rgba(0,0,0,0.6),
+            inset 0 15px 40px rgba(80,80,180,0.1),
+            inset -10px 0 30px rgba(60,30,90,0.08)
           `,
         }}
       />
+      {/* Specular highlight — top left */}
       <div
         style={{
           position: "absolute",
-          top: 30,
-          left: 60,
-          width: 80,
-          height: 50,
+          top: 35,
+          left: 65,
+          width: 100,
+          height: 60,
           borderRadius: "50%",
           background:
-            "radial-gradient(ellipse, rgba(180,180,220,0.06) 0%, transparent 70%)",
+            "radial-gradient(ellipse, rgba(200,200,240,0.09) 0%, transparent 70%)",
           transform: "rotate(-20deg)",
         }}
       />
+      {/* Inner purple atmosphere */}
       <div
         style={{
           position: "absolute",
-          inset: 30,
+          inset: 40,
           borderRadius: "50%",
           background:
-            "radial-gradient(circle at 45% 40%, rgba(139,92,246,0.12), transparent 65%)",
+            "radial-gradient(circle at 42% 38%, rgba(139,92,246,0.16), transparent 60%)",
         }}
       />
+      {/* Text */}
       <div
         style={{
           position: "relative",
-          fontSize: 48,
+          fontSize: 54,
           fontFamily: FONT,
           fontWeight: 400,
           color: "#fff",
-          textShadow: "0 0 30px rgba(139,92,246,0.2)",
+          textShadow: "0 0 30px rgba(139,92,246,0.25)",
           zIndex: 1,
           letterSpacing: 1,
         }}
@@ -911,7 +926,11 @@ const SPIRAL_CHARS = SPIRAL_TEXT.split("");
 // ═══ MAIN SCENE — GSAP-DRIVEN ═══
 
 export const Scene05: React.FC = () => {
-  const { tl, containerRef, frame, fps } = useGsapTimeline();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const tl = useRef<gsap.core.Timeline>(gsap.timeline({ paused: true }));
+  const containerRef = useRef<HTMLDivElement>(null);
+  const builtRef = useRef(false);
 
   // Refs for GSAP-targeted elements
   const gLogoRef = useRef<HTMLDivElement>(null);
@@ -999,8 +1018,8 @@ export const Scene05: React.FC = () => {
     []
   );
 
-  // ─── Build GSAP timeline ───
-  useEffect(() => {
+  // ─── Build GSAP timeline (useLayoutEffect = synchronous, before paint) ───
+  useLayoutEffect(() => {
     if (!containerRef.current) return;
     const t = tl.current;
     t.clear();
@@ -1275,7 +1294,7 @@ export const Scene05: React.FC = () => {
       }, f(495));
     }
 
-    // Phase 2+3: individual chars spiral inward
+    // Phase 2+3: individual chars spiral inward using keyframed waypoints
     spiralCharsRef.current.forEach((el, i) => {
       if (!el) return;
       const params = spiralParams[i];
@@ -1283,8 +1302,9 @@ export const Scene05: React.FC = () => {
       const goldenAngle = params.goldenAngle;
       const spiralSpeed = params.spiralSpeed;
       const startAngle = (goldenAngle * Math.PI) / 180;
+      const endAngle = startAngle + Math.PI * 2 * spiralSpeed;
 
-      // Start invisible at center
+      // Start invisible
       t.set(el, { opacity: 0, x: 0, y: 0, rotation: 0, scale: 1 }, 0);
 
       // At spiral start: snap to outer position
@@ -1297,33 +1317,29 @@ export const Scene05: React.FC = () => {
         ease: "power2.out",
       }, f(495));
 
-      // Spiral inward: converge to center while rotating
-      const endAngle = startAngle + Math.PI * 2 * spiralSpeed;
+      // Spiral inward using MotionPathPlugin with pre-computed waypoints
+      const STEPS = 12;
+      const waypoints: { x: number; y: number }[] = [];
+      for (let s = 0; s <= STEPS; s++) {
+        const p = s / STEPS;
+        const r = baseRadius * (1 - p);
+        const theta = startAngle + (endAngle - startAngle) * p;
+        waypoints.push({
+          x: r * Math.cos(theta),
+          y: r * Math.sin(theta) * 0.7,
+        });
+      }
+
       t.to(el, {
-        x: 0,
-        y: 0,
+        motionPath: {
+          path: waypoints,
+          curviness: 1.5,
+        },
         scale: 0.1,
         rotation: (i - 7) * 40 + 180,
         opacity: 0,
         duration: f(20),
         ease: "power2.in",
-        // Use a custom modifier to follow logarithmic spiral path
-        modifiers: {
-          x: (x: string) => {
-            const progress = 1 - (parseFloat(x) === 0 ? 1 : Math.abs(parseFloat(x)) / (baseRadius * Math.abs(Math.cos(startAngle)) || 1));
-            const clampedP = Math.max(0, Math.min(1, progress));
-            const r = baseRadius * (1 - clampedP);
-            const theta = startAngle + (endAngle - startAngle) * clampedP;
-            return `${r * Math.cos(theta)}`;
-          },
-          y: (y: string) => {
-            const progress = 1 - (parseFloat(y) === 0 ? 1 : Math.abs(parseFloat(y)) / (baseRadius * 0.7 * Math.abs(Math.sin(startAngle)) || 1));
-            const clampedP = Math.max(0, Math.min(1, progress));
-            const r = baseRadius * (1 - clampedP);
-            const theta = startAngle + (endAngle - startAngle) * clampedP;
-            return `${r * Math.sin(theta) * 0.7}`;
-          },
-        },
       }, f(505));
     });
 
@@ -1473,8 +1489,16 @@ export const Scene05: React.FC = () => {
       }, f(688));
     }
 
+    builtRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Seek timeline to current frame — runs every frame, after build
+  useLayoutEffect(() => {
+    if (builtRef.current) {
+      tl.current.seek(frame / fps);
+    }
+  }, [frame, fps]);
 
   // ─── Organic noise applied per-frame (can't go in GSAP timeline) ───
   const noiseX = organicOffset(frame, "orbX", 0.015, 3);
@@ -1555,7 +1579,7 @@ export const Scene05: React.FC = () => {
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text" as const,
-                      filter: `drop-shadow(0 0 8px ${glowColor})`,
+                      filter: `drop-shadow(0 0 12px ${glowColor}) drop-shadow(0 0 4px ${glowColor})`,
                     }
                   : {}),
               }}
@@ -1700,16 +1724,16 @@ export const Scene05: React.FC = () => {
       {buildKineticWords(
         kineticE,
         kineticERefs,
-        `linear-gradient(90deg, ${PURPLE}cc, ${BLUE}cc)`,
-        "rgba(139,92,246,0.4)"
+        `linear-gradient(90deg, ${PINK}, ${PURPLE})`,
+        "rgba(236,72,153,0.6)"
       )}
 
       {/* F: "for reasoning" */}
       {buildKineticWords(
         kineticF,
         kineticFRefs,
-        `linear-gradient(90deg, ${PURPLE}aa, ${BLUE}aa)`,
-        "rgba(99,102,241,0.3)"
+        `linear-gradient(90deg, ${PURPLE}, ${BLUE})`,
+        "rgba(139,92,246,0.5)"
       )}
 
       {/* G: Card zoom 0 */}
