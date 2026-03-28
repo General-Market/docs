@@ -115,7 +115,7 @@ impl ChainEventScanner {
                 Address::zero()
             }
         };
-        let bridge_proxy_addr = match crate::api::deployment_addr(&self.deployment, "BridgeProxy") {
+        let bridge_proxy_addr = match crate::api::deployment_addr(&self.deployment, "SettlementBridgeProxy") {
             Ok(a) => a,
             Err(e) => {
                 warn!("chain_event_scanner: cannot resolve BridgeProxy address: {e}");

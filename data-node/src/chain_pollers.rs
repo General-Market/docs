@@ -545,35 +545,40 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
             U256::zero()
         };
 
-        // Poll vault token (collateral) balances for all batch markets.
-        // These are the ERC4626 ITP vault tokens used as Morpho collateral.
-        let batch_markets = state.batch_markets.read().await;
+        // Poll ITP shares directly from Index contract (getUserShares).
+        // This bypasses the fragile collateral_token → settlement_address lookup
+        // which fails when settlement_address hasn't been resolved yet.
         let mut itp_shares = std::collections::HashMap::new();
+        let index_addr = crate::api::deployment_addr(&state.deployment, "Index").unwrap_or_default();
+        if !index_addr.is_zero() {
+            let index = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
+            let itp_cache = state.chain_cache.itp_states.read().await;
+            let itp_ids: Vec<String> = itp_cache.states.keys().cloned().collect();
+            drop(itp_cache);
 
-        // Parallel balance reads for all batch market collateral tokens
-        let bal_futs: Vec<_> = batch_markets.iter().map(|bm| {
-            let provider = Arc::clone(&state.l3_provider);
-            let ct = bm.collateral_token.clone();
-            let user_addr = *user;
-            async move {
-                let addr: Address = ct.parse().unwrap_or_default();
-                if addr.is_zero() { return None; }
-                let reader = BalanceReader::new(addr, provider);
-                let bal = reader.balance_of(user_addr).call().await.unwrap_or_default();
-                if bal.is_zero() { return None; }
-                // Resolve itpId from the collateral token
-                let itp_cache = &state.chain_cache.itp_states.read().await;
-                let itp_id = itp_cache.states.iter()
-                    .find(|(_, s)| s.settlement_address.as_ref().map(|a| a.to_lowercase()) == Some(ct.to_lowercase()))
-                    .map(|(id, _)| id.clone());
-                itp_id.map(|id| (id, bal.to_string()))
+            let share_futs: Vec<_> = itp_ids.iter().map(|itp_id_hex| {
+                let index = index.clone();
+                let itp_id_hex = itp_id_hex.clone();
+                let user_addr = *user;
+                async move {
+                    let hex_str = itp_id_hex.strip_prefix("0x").unwrap_or(&itp_id_hex);
+                    let bytes = match hex::decode(hex_str) {
+                        Ok(b) => b,
+                        Err(_) => return None,
+                    };
+                    let mut arr = [0u8; 32];
+                    let len = bytes.len().min(32);
+                    arr[..len].copy_from_slice(&bytes[..len]);
+                    let shares = index.get_user_shares(arr, user_addr).call().await.unwrap_or_default();
+                    if shares.is_zero() { return None; }
+                    Some((itp_id_hex, shares.to_string()))
+                }
+            }).collect();
+            let share_results = futures::future::join_all(share_futs).await;
+            for item in share_results.into_iter().flatten() {
+                let (itp_id, bal) = item;
+                itp_shares.insert(itp_id, bal);
             }
-        }).collect();
-        drop(batch_markets);
-        let bal_results = futures::future::join_all(bal_futs).await;
-        for item in bal_results.into_iter().flatten() {
-            let (itp_id, bal) = item;
-            itp_shares.insert(itp_id, bal);
         }
 
         let mut uc = user_cache.write().await;
@@ -725,6 +730,7 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
 pub async fn poll_user_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let batch_markets = state.batch_markets.read().await;
     if batch_markets.is_empty() {
+        tracing::debug!("positions poller: no batch_markets loaded, skipping");
         return Ok(());
     }
 
@@ -1153,7 +1159,7 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     let confirmed = latest_block.saturating_sub(10);
 
     // Read BridgeProxy on settlement chain (non-fatal: contracts may not be deployed yet)
-    match crate::api::deployment_addr(&state.deployment, "BridgeProxy") {
+    match crate::api::deployment_addr(&state.deployment, "SettlementBridgeProxy") {
         Ok(bridge_addr) => {
             let bridge = BridgeProxySettlementReader::new(bridge_addr, Arc::clone(&state.settlement_provider));
             match bridge.next_creation_nonce().call().await {
