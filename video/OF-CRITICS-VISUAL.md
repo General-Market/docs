@@ -175,3 +175,26 @@ No screen should be a flat CSS div with `perspective()` anymore. All should use 
 - User says "some are better but we need to go much further"
 - Recheck ALL items from previous critics
 - The timing shifts and scatter fixes need more refinement
+
+## LATEST CORRECTIONS
+
+### Device duo angle is REVERSED
+Phone and laptop backs face EACH OTHER (backs together, screens face outward toward viewer).
+- Phone: `rotateY(-30deg)` (screen faces LEFT toward viewer)
+- Laptop: `rotateY(30deg)` (screen faces RIGHT toward viewer)
+- Their BACKS are in the center, SCREENS face outward
+- Transition: devices slide in SMOOTHLY from right to left, not instant appear
+
+### Phone case — get a REAL 3D model from internet
+Don't use ExtrudeGeometry. Download a proper iPhone GLTF/GLB model:
+- Search for free iPhone 15 Pro GLTF model
+- Download to video/public/models/
+- Load with useGLTF from @react-three/drei
+- This will look 10x better than generated geometry
+
+### Gemini Advanced title zoom — needs MORE zoom on TITLE
+The initial zoom at the start of S05 should be:
+- MUCH more zoomed (scale 3.5-4.0, not 2.5)
+- Centered on the "Gemini Advanced" TEXT specifically (not the whole interface)
+- The title should dominate the frame — we should barely see anything else
+- Then pull back slowly to reveal the full interface
