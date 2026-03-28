@@ -140,7 +140,7 @@ def main():
         t = threading.Thread(
             target=run_single_bot,
             args=(i, keys[i], strategies[i], stakes[i], pnl_file),
-            daemon=True,
+            daemon=False,
             name=f"bot-{i}",
         )
         threads.append(t)
