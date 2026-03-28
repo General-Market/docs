@@ -330,7 +330,7 @@ const PhaseBard: React.FC = () => {
         transform: `translate(calc(-50% + ${s.main.x}px), -50%) scale(${s.main.scale})`,
         fontFamily,
         fontSize: 72,
-        fontWeight: 400,
+        fontWeight: 500,
         letterSpacing: "-0.5px",
         opacity: s.main.opacity,
         whiteSpace: "nowrap",
