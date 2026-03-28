@@ -519,7 +519,7 @@ const SegGeminiResponse: React.FC = () => {
 
 /* --- SEGMENT 8: And moooore --- */
 const GEMINI_BALLS = ["#4285F4","#EA4335","#FBBC04","#34A853","#7B61FF","#E8458B","#A78BFA","#60A5FA"];
-const MAX_BALLS = 40;
+const MAX_BALLS = 22;
 
 const SegAndMoreInner: React.FC = () => {
   const frame = useCurrentFrame();
@@ -531,8 +531,8 @@ const SegAndMoreInner: React.FC = () => {
   const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*0.8], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
   const oCount = Math.floor(interpolate(stretch, [0,0.7], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
   const ballProgress = stretch > 0.1 ? interpolate(stretch, [0.1,0.4], [0,1], {extrapolateRight:"clamp"}) : 0;
-  /* Edge-to-edge scroll — gentle drift left so m stays visible longer */
-  const scrollX = interpolate(stretch, [0.05,1], [0,-300], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
+  /* Gentle drift left — keep m near left edge, re near center-right */
+  const scrollX = interpolate(stretch, [0.05,1], [0,-200], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
@@ -560,8 +560,8 @@ const SegAndMoreInner: React.FC = () => {
     const wX = noise2D("bx"+i,frame*0.025,i)*3*Math.min(cS,1);
     const col = GEMINI_BALLS[i%GEMINI_BALLS.length];
     const sO = interpolate(cS,[0,0.3,0.6,1,1.3],[0.15,1.3,0.9,1,1.1],{extrapolateRight:"clamp"});
-    /* Each slot ~32px wide so 40 balls span ~1280px (full viewport width) */
-    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:32,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
+    /* Each slot ~28px wide so 22 balls span ~616px, matching reference density */
+    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
       {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
       {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
     </span>;
