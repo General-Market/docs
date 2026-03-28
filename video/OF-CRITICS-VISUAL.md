@@ -144,3 +144,34 @@ Scenes that need this applied:
 - S05: All interface views, device duo finale
 
 No screen should be a flat CSS div with `perspective()` anymore. All should use either Phone3D (for phones) or tilt3d presets (for browser/desktop views).
+
+## LATEST USER FEEDBACK (priority)
+
+### Phone model at 0:35 (Image 28) — CRITICAL
+- Phone has visible side artifacts — NOT proper 3D. It shows something weird on the edges.
+- Phone back face has WRONG/REVERSED text — backfaceVisibility not working correctly.
+- Phone is NOT FLOATING — should drift continuously with tilt3d `phoneFloat` preset.
+- The reference phone at 0:35 is a REAL 3D phone with metallic frame, proper depth, smooth tilt.
+- **Must use Phone3D.tsx component** — no more CSS phone divs.
+
+### ALL phones and screens need:
+- 3D tilts WITH zoom (scale 1.2-1.5x on important moments)
+- X and Y continuous floating motion (use `tilt3d.ts TILT_PRESETS.phoneFloat`)
+- ALWAYS floating — never static/flat
+- Current implementation is not enough floating
+
+### Big zoom at 0:47 FREEZES
+- The zoom transition at 0:47 freezes and we don't see the tilted next screen at full size.
+- Should be a SMOOTH continuous zoom that reveals the dark mode screen already tilted.
+
+### Cards at 0:56 — almost there
+- Cards look good but need to be more PREMIUM. Add:
+  - Subtle inner shadow
+  - Slightly glossy surface (background gradient)
+  - Thinner, more refined border
+  - Very subtle glow on hover/active card
+
+### First 8 seconds — still needs much more work
+- User says "some are better but we need to go much further"
+- Recheck ALL items from previous critics
+- The timing shifts and scatter fixes need more refinement
