@@ -21,12 +21,20 @@ const XFADE = 12;
  */
 const S03_S04_OVERLAP = 0;
 
-/* Scene durations */
+/* Scene durations
+ * Cut at 0:35 (frame 1050 absolute) — phone scene stays in S03
+ * Cut at 0:48 (frame 1440 absolute) — 3D dark mode all in S05
+ * S01: 0:00-0:08 (259 frames)
+ * S02: 0:08-0:14 (175 frames)
+ * S03: 0:14-0:35 = 21s = 630 frames (was 745, moved phone end to S04)
+ * S04: 0:35-0:48 = 13s = 390 frames (was 339, gained phone start + lost dark mode end)
+ * S05: 0:48-1:14 = 26s = 780 frames (was 695, gained dark mode start)
+ */
 const S01_DUR = 259;
 const S02_DUR = 175;
-const S03_DUR = 745;
-const S04_DUR = 339;
-const S05_DUR = 695;
+const S03_DUR = 630;
+const S04_DUR = 390;
+const S05_DUR = 780;
 
 /* Calculate absolute start positions */
 const S01_START = 0;
