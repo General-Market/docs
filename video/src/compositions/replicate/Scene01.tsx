@@ -518,18 +518,29 @@ const PhoneMockup: React.FC<{
   height?: number;
   showPortfolio?: boolean;
   elevated?: boolean;
-}> = ({ width = 320, height = 640, showPortfolio = false, elevated = false }) => {
+  iridescentHue?: number;
+}> = ({ width = 320, height = 640, showPortfolio = false, elevated = false, iridescentHue = 0 }) => {
+  // Iridescent border colors derived from hue rotation
+  const h1 = (iridescentHue + 200) % 360;
+  const h2 = (iridescentHue + 260) % 360;
+  const h3 = (iridescentHue + 320) % 360;
+  const iridescentBorder = iridescentHue > 0
+    ? `0 0 ${width * 0.08}px hsla(${h1},85%,72%,0.5), 0 0 ${width * 0.04}px hsla(${h2},80%,68%,0.45), 0 0 ${width * 0.15}px hsla(${h3},75%,75%,0.2), inset 0 0 ${width * 0.03}px hsla(${h1},80%,80%,0.3)`
+    : "";
   return (
     <div
       style={{
         width,
         height,
-        background: "linear-gradient(160deg, #2a3050, #1a2040, #0e1530)",
+        background: iridescentHue > 0
+          ? `linear-gradient(160deg, hsl(${h1},35%,30%), hsl(${h2},30%,22%), hsl(${h3},25%,18%))`
+          : "linear-gradient(160deg, #2a3050, #1a2040, #0e1530)",
         borderRadius: width * 0.15,
         padding: width * 0.019,
+        border: iridescentHue > 0 ? `2px solid hsla(${h1},70%,75%,0.4)` : "none",
         boxShadow: elevated
           ? `0 20px 60px rgba(0,0,0,0.45), 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,120,180,0.3)`
-          : `0 8px 30px rgba(0,0,0,0.25), 0 3px 10px rgba(0,0,0,0.15), inset 0 1px 0 rgba(100,120,180,0.2)`,
+          : `0 8px 30px rgba(0,0,0,0.25), 0 3px 10px rgba(0,0,0,0.15), inset 0 1px 0 rgba(100,120,180,0.2)${iridescentBorder ? ", " + iridescentBorder : ""}`,
         position: "relative",
         flexShrink: 0,
       }}
@@ -755,6 +766,7 @@ const PhoneSegment: React.FC = () => {
                   height={gridPhoneH}
                   showPortfolio={isCenter}
                   elevated={isCenter}
+                  iridescentHue={isCenter ? 0 : (i * 47 + 120) % 360}
                 />
               </div>
             );
