@@ -11,6 +11,7 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, RwLock};
+use tokio::time::timeout;
 use tracing::{debug, error, info, warn};
 
 use common::error::Error;
@@ -24,6 +25,16 @@ use super::tls::{P2PStream, TlsConfig};
 const INITIAL_BACKOFF_MS: u64 = 100;
 const MAX_BACKOFF_MS: u64 = 5000;
 const BACKOFF_MULTIPLIER: u64 = 2;
+
+/// Read timeout: if no bytes arrive for 45s, the connection is dead.
+/// Heartbeats are sent every 2s, so 45s tolerates ~22 missed heartbeats
+/// plus GC pauses, large batch processing, etc.
+const READ_TIMEOUT: Duration = Duration::from_secs(45);
+
+/// Write timeout: if a single write_all+flush cannot complete in 10s,
+/// the remote peer's receive buffer is full and the connection is stuck.
+/// On localhost this should complete in microseconds.
+const WRITE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Connection status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +57,15 @@ impl From<u8> for ConnectionStatus {
             _ => ConnectionStatus::Disconnected,
         }
     }
+}
+
+/// Request to reconnect a dropped outgoing connection.
+/// Sent from `reader_loop` when it detects the connection is dead.
+/// A background drain task in TcpP2PTransport handles these.
+#[derive(Debug)]
+pub struct ReconnectRequest {
+    pub peer_id: PeerId,
+    pub addr: SocketAddr,
 }
 
 /// Represents a connection to a peer
@@ -113,6 +133,7 @@ impl PeerConnection {
         our_peer_id: Option<PeerId>,
         rate_limit: f64,
         rate_burst: f64,
+        reconnect_tx: Option<mpsc::Sender<ReconnectRequest>>,
     ) -> Result<PeerConnection, Error> {
         debug!(?peer_id, %addr, "Connecting to peer");
 
@@ -120,7 +141,7 @@ impl PeerConnection {
             .await
             .map_err(|e| Error::P2PConnection(format!("Connection failed: {}", e)))?;
 
-        let conn = Self::setup_connection(peer_id, addr, stream, connections, incoming_tx, tls_config, false, rate_limit, rate_burst)
+        let conn = Self::setup_connection(peer_id, addr, stream, connections, incoming_tx, tls_config, false, rate_limit, rate_burst, reconnect_tx)
             .await?;
 
         // Send heartbeat to identify ourselves to the remote peer
@@ -160,6 +181,8 @@ impl PeerConnection {
         // (avoids collisions when multiple peers connect simultaneously)
         let temp_peer_id = temp_peer_id_from_addr(&addr, 0xFE);
 
+        // Incoming connections don't auto-reconnect (the remote side reconnects to us),
+        // so we pass None for the reconnect channel.
         let conn = Self::setup_connection(
             temp_peer_id,
             addr,
@@ -170,6 +193,7 @@ impl PeerConnection {
             true,
             rate_limit,
             rate_burst,
+            None, // no reconnect for incoming
         )
         .await?;
 
@@ -195,6 +219,10 @@ impl PeerConnection {
     }
 
     /// Set up a connection (shared between connect and accept)
+    ///
+    /// `reconnect_tx`: if Some, the reader_loop will send a ReconnectRequest
+    /// when the connection drops so the transport can auto-reconnect.
+    /// Pass None for incoming connections (the remote peer reconnects to us).
     async fn setup_connection(
         peer_id: PeerId,
         addr: SocketAddr,
@@ -205,7 +233,28 @@ impl PeerConnection {
         is_server: bool,
         rate_limit: f64,
         rate_burst: f64,
+        reconnect_tx: Option<mpsc::Sender<ReconnectRequest>>,
     ) -> Result<PeerConnection, Error> {
+        // ── TCP socket options ──────────────────────────────────────
+        // TCP_NODELAY: disable Nagle's algorithm. Our messages are
+        // length-prefixed and complete — batching them adds 40ms latency
+        // for zero benefit. On localhost this is even more pointless.
+        stream.set_nodelay(true).map_err(|e| {
+            Error::P2PConnection(format!("Failed to set TCP_NODELAY: {}", e))
+        })?;
+
+        // TCP keepalive via socket2: detect half-open connections at the
+        // kernel level. Start probing after 15s idle, probe every 5s.
+        // If the peer is truly gone, the OS closes the socket after ~30s
+        // without waiting for the application-level 45s read timeout.
+        let sock_ref = socket2::SockRef::from(&stream);
+        let keepalive = socket2::TcpKeepalive::new()
+            .with_time(Duration::from_secs(15))
+            .with_interval(Duration::from_secs(5));
+        sock_ref.set_tcp_keepalive(&keepalive).map_err(|e| {
+            Error::P2PConnection(format!("Failed to set TCP keepalive: {}", e))
+        })?;
+
         // Apply TLS if configured, otherwise wrap as plaintext
         let stream: P2PStream = if let Some(config) = tls_config {
             config.wrap_stream(stream, is_server).await?
@@ -215,8 +264,10 @@ impl PeerConnection {
 
         let (read_half, write_half) = tokio::io::split(stream);
 
-        // Create message channel for outgoing messages
-        let (outgoing_tx, outgoing_rx) = mpsc::channel::<P2PMessage>(100);
+        // Create message channel for outgoing messages.
+        // 500 slots: 62 source proposals + signs + heartbeats + vision
+        // messages must fit without blocking the broadcast loop.
+        let (outgoing_tx, outgoing_rx) = mpsc::channel::<P2PMessage>(500);
 
         // Spawn writer task
         let writer_handle = tokio::spawn(Self::writer_loop(write_half, outgoing_rx));
@@ -224,7 +275,8 @@ impl PeerConnection {
         // Create per-connection rate bucket
         let rate_bucket = RateBucket::new(rate_burst, rate_limit);
 
-        // Spawn reader task
+        // Spawn reader task — receives optional reconnect channel so it can
+        // request auto-reconnect when the connection drops.
         let reader_handle = tokio::spawn(Self::reader_loop(
             read_half,
             peer_id,
@@ -232,6 +284,7 @@ impl PeerConnection {
             connections.clone(),
             addr,
             rate_bucket,
+            reconnect_tx,
         ));
 
         Ok(PeerConnection {
@@ -245,6 +298,11 @@ impl PeerConnection {
     }
 
     /// Writer loop - sends outgoing messages
+    ///
+    /// Each write_all + flush is wrapped in a WRITE_TIMEOUT. If the remote
+    /// peer's TCP receive buffer is full (backpressure), we break rather than
+    /// blocking forever — which would cascade into the broadcast loop via
+    /// channel backpressure.
     async fn writer_loop<W: AsyncWriteExt + Unpin>(
         mut writer: W,
         mut outgoing_rx: mpsc::Receiver<P2PMessage>,
@@ -252,13 +310,27 @@ impl PeerConnection {
         while let Some(message) = outgoing_rx.recv().await {
             match codec::encode(&message) {
                 Ok(bytes) => {
-                    if let Err(e) = writer.write_all(&bytes).await {
-                        error!(code = "INFRA-008", error = %e, "Write error");
-                        break;
+                    match timeout(WRITE_TIMEOUT, writer.write_all(&bytes)).await {
+                        Ok(Ok(())) => {}
+                        Ok(Err(e)) => {
+                            error!(code = "INFRA-008", error = %e, "Write error");
+                            break;
+                        }
+                        Err(_) => {
+                            error!(code = "INFRA-008", "Write timed out after {}s — peer unresponsive", WRITE_TIMEOUT.as_secs());
+                            break;
+                        }
                     }
-                    if let Err(e) = writer.flush().await {
-                        error!(code = "INFRA-008", error = %e, "Flush error");
-                        break;
+                    match timeout(WRITE_TIMEOUT, writer.flush()).await {
+                        Ok(Ok(())) => {}
+                        Ok(Err(e)) => {
+                            error!(code = "INFRA-008", error = %e, "Flush error");
+                            break;
+                        }
+                        Err(_) => {
+                            error!(code = "INFRA-008", "Flush timed out after {}s — peer unresponsive", WRITE_TIMEOUT.as_secs());
+                            break;
+                        }
                     }
                 }
                 Err(e) => {
@@ -270,6 +342,14 @@ impl PeerConnection {
     }
 
     /// Reader loop - receives incoming messages
+    ///
+    /// Every read is wrapped in READ_TIMEOUT. If no bytes arrive within
+    /// that window (heartbeats are sent every 2s, so 45s is generous),
+    /// the connection is considered dead and we break to trigger reconnection.
+    ///
+    /// `reconnect_tx`: if Some, sends a ReconnectRequest when the connection
+    /// dies so the transport layer can re-establish it. None for incoming
+    /// connections (the remote side will reconnect to us).
     async fn reader_loop<R: AsyncReadExt + Unpin>(
         mut reader: R,
         peer_id: PeerId,
@@ -277,19 +357,22 @@ impl PeerConnection {
         connections: Arc<RwLock<HashMap<PeerId, PeerConnection>>>,
         addr: SocketAddr,
         mut rate_bucket: RateBucket,
+        reconnect_tx: Option<mpsc::Sender<ReconnectRequest>>,
     ) {
         let mut codec = Codec::new();
         let mut buf = [0u8; 4096];
         let mut actual_peer_id = peer_id;
 
         loop {
-            match reader.read(&mut buf).await {
-                Ok(0) => {
-                    // Connection closed
+            let read_result = timeout(READ_TIMEOUT, reader.read(&mut buf)).await;
+
+            match read_result {
+                Ok(Ok(0)) => {
+                    // Connection closed cleanly
                     info!(?actual_peer_id, "Connection closed by peer");
                     break;
                 }
-                Ok(n) => {
+                Ok(Ok(n)) => {
                     codec.feed(&buf[..n]);
 
                     while let Some(result) = codec.decode_next() {
@@ -342,17 +425,42 @@ impl PeerConnection {
                         }
                     }
                 }
-                Err(e) => {
-                    error!(code = "INFRA-009", error = %e, "Read error");
+                Ok(Err(e)) => {
+                    error!(code = "INFRA-009", ?actual_peer_id, error = %e, "Read error");
+                    break;
+                }
+                Err(_) => {
+                    warn!(code = "INFRA-009", ?actual_peer_id, "Read timed out after {}s — no data from peer, closing", READ_TIMEOUT.as_secs());
                     break;
                 }
             }
         }
 
-        // Mark connection as disconnected
-        let conns = connections.read().await;
-        if let Some(conn) = conns.get(&actual_peer_id) {
-            conn.set_status(ConnectionStatus::Disconnected);
+        // ── Connection is dead — clean up and schedule reconnect ────
+        //
+        // Remove the dead connection from the map entirely (not just mark
+        // Disconnected). This lets reconnect_loop insert a fresh connection
+        // without conflicting with the zombie entry.
+        {
+            let mut conns = connections.write().await;
+            if let Some(old_conn) = conns.remove(&actual_peer_id) {
+                // Abort the writer task — if the reader died, keeping the
+                // writer alive is pointless and wastes resources.
+                if let Some(wh) = old_conn.writer_handle {
+                    wh.abort();
+                }
+            }
+        }
+
+        // Request auto-reconnect for outgoing connections via the channel.
+        // The transport layer drains this channel and calls reconnect_loop,
+        // breaking the async type cycle (reader_loop never calls connect).
+        if let Some(tx) = reconnect_tx {
+            info!(?actual_peer_id, %addr, "Requesting auto-reconnect for dropped connection");
+            let _ = tx.try_send(ReconnectRequest {
+                peer_id: actual_peer_id,
+                addr,
+            });
         }
     }
 
@@ -370,6 +478,7 @@ impl PeerConnection {
         rate_limit: f64,
         rate_burst: f64,
         peer_scorer: Option<Arc<super::peer_scoring::PeerScorer>>,
+        reconnect_tx: Option<mpsc::Sender<ReconnectRequest>>,
     ) {
         let mut backoff_ms = INITIAL_BACKOFF_MS;
 
@@ -407,6 +516,7 @@ impl PeerConnection {
                 our_peer_id,
                 rate_limit,
                 rate_burst,
+                reconnect_tx.clone(),
             )
             .await
             {

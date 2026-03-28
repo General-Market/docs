@@ -145,6 +145,13 @@ pub struct TcpP2PTransport {
     scorer_tick_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
     /// Optional P2P metrics for send counting (set once after construction)
     p2p_metrics: OnceLock<Arc<P2PMetrics>>,
+    /// Channel for reader_loop to request reconnection when a connection drops.
+    /// The drain task (started in start_reconnect_drain) processes these requests.
+    reconnect_tx: mpsc::Sender<super::connection::ReconnectRequest>,
+    /// Receiver for reconnect requests (taken once when drain task starts)
+    reconnect_rx: Arc<RwLock<Option<mpsc::Receiver<super::connection::ReconnectRequest>>>>,
+    /// Handle for the reconnect drain background task
+    reconnect_drain_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
 }
 
 /// Default rate limit: 100 messages per second per peer
@@ -172,6 +179,7 @@ impl TcpP2PTransport {
         rate_burst: f64,
     ) -> Self {
         let (tx, rx) = mpsc::channel(1000);
+        let (reconnect_tx, reconnect_rx) = mpsc::channel(32);
 
         Self {
             peer_id,
@@ -187,6 +195,9 @@ impl TcpP2PTransport {
             peer_scorer: Arc::new(PeerScorer::new()),
             scorer_tick_handle: Arc::new(RwLock::new(None)),
             p2p_metrics: OnceLock::new(),
+            reconnect_tx,
+            reconnect_rx: Arc::new(RwLock::new(Some(reconnect_rx))),
+            reconnect_drain_handle: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -349,6 +360,11 @@ impl TcpP2PTransport {
             handle.abort();
         }
 
+        // Stop reconnect drain
+        if let Some(handle) = self.reconnect_drain_handle.write().await.take() {
+            handle.abort();
+        }
+
         // Stop listener
         self.stop_listener().await;
 
@@ -427,6 +443,64 @@ impl TcpP2PTransport {
         *self.scorer_tick_handle.write().await = Some(handle);
         info!("Peer scorer tick started (5s interval)");
     }
+
+    /// Start the background task that drains reconnect requests from reader_loops.
+    ///
+    /// When a reader_loop detects a dead connection, it sends a `ReconnectRequest`
+    /// through the channel. This task receives those requests and spawns
+    /// `reconnect_loop` for each one, breaking the async type cycle that would
+    /// occur if reader_loop called reconnect_loop directly.
+    pub async fn start_reconnect_drain(&self) {
+        let mut rx_guard = self.reconnect_rx.write().await;
+        let rx = match rx_guard.take() {
+            Some(rx) => rx,
+            None => {
+                warn!("Reconnect drain already started");
+                return;
+            }
+        };
+
+        let connections = self.connections.clone();
+        let incoming_tx = self.incoming_tx.clone();
+        let tls_config = self.tls_config.clone();
+        let peer_id = self.peer_id;
+        let rate_limit = self.rate_limit;
+        let rate_burst = self.rate_burst;
+        let peer_scorer = self.peer_scorer.clone();
+        let reconnect_tx = self.reconnect_tx.clone();
+
+        let handle = tokio::spawn(async move {
+            let mut rx = rx;
+            while let Some(req) = rx.recv().await {
+                info!(?req.peer_id, %req.addr, "Processing reconnect request from reader_loop");
+
+                let connections = connections.clone();
+                let incoming_tx = incoming_tx.clone();
+                let tls_config = tls_config.clone();
+                let peer_scorer = Some(peer_scorer.clone());
+                let reconnect_tx = reconnect_tx.clone();
+
+                tokio::spawn(async move {
+                    PeerConnection::reconnect_loop(
+                        req.peer_id,
+                        req.addr,
+                        connections,
+                        incoming_tx,
+                        tls_config,
+                        Some(peer_id),
+                        rate_limit,
+                        rate_burst,
+                        peer_scorer,
+                        Some(reconnect_tx),
+                    )
+                    .await;
+                });
+            }
+        });
+
+        *self.reconnect_drain_handle.write().await = Some(handle);
+        info!("Reconnect drain task started");
+    }
 }
 
 #[async_trait]
@@ -473,6 +547,7 @@ impl P2PTransport for TcpP2PTransport {
                 Some(self.peer_id),
                 self.rate_limit,
                 self.rate_burst,
+                Some(self.reconnect_tx.clone()),
             )
             .await
             {
@@ -491,6 +566,7 @@ impl P2PTransport for TcpP2PTransport {
                     let rate_limit = self.rate_limit;
                     let rate_burst = self.rate_burst;
                     let peer_scorer = Some(self.peer_scorer.clone());
+                    let reconnect_tx = Some(self.reconnect_tx.clone());
 
                     tokio::spawn(async move {
                         PeerConnection::reconnect_loop(
@@ -503,6 +579,7 @@ impl P2PTransport for TcpP2PTransport {
                             rate_limit,
                             rate_burst,
                             peer_scorer,
+                            reconnect_tx,
                         )
                         .await;
                     });

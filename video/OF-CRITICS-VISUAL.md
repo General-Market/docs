@@ -230,3 +230,47 @@ The interface at 0:24 (Gemini response with "Summarize my recent emails") should
 - ALWAYS floating with continuous wave animation (use tilt3d phoneFloat or desktopTilt preset)
 - Never static during the sequence — constant gentle 3D drift
 **Fix:** Increase rotateY to -18deg. Add translateX(-15%) translateY(-10%) to shift view to top-left. Wrap in useFloat3D with desktopTilt preset for continuous wave motion throughout.
+
+## BATCH — Latest fixes needed
+
+### 0:26 — "And moooore" O animation too short
+Start the O ball animation IMMEDIATELY when "more" appears. Currently waits too long before the O's start stretching. The stretch should begin right away.
+
+### 0:28 — Wrong vs original
+Check reference at 0:28. Current implementation doesn't match. Recheck original video at this timestamp.
+
+### 0:32 — "supercharge" is a colored SQUARE not text
+We only see a block/square of color instead of the word "supercharge". The color cycling should be ON THE TEXT LETTERS, not a solid rectangle. Also needs more electric feel — colors should jitter/flash, not smooth cycle.
+**Fix:** Ensure background-clip: text is working. If not in headless, use per-letter color assignment cycling every 2 frames. Add random 1-2px position jitter on the word for electrical vibration.
+
+### 0:34 — Phone has NO 3D case, then gets horrible case 1 second later
+Phone should have proper 3D case from the START. The ExtrudeGeometry case looks bad.
+Need a REAL 3D phone model (user must download from Sketchfab manually).
+Also phone should be MUCH more zoomed in — filling more of the frame.
+
+### 0:47 — Black square transition BAD
+Should NOT be a black square. Should be a FAST VERTICAL ZOOM into a rounded black band that takes 3/4 of screen width — like zooming into a letter "O" or a rounded rectangle. The transition is a rapid vertical stretch/zoom.
+**Fix:** Replace crossfade with a vertical rounded-rect clip-path that expands from center. Black band with rounded corners (border-radius 40px equivalent) that grows from 0 height to full viewport.
+
+### 0:48 — Zoom on tilted screen top-left
+Right after the transition, we should see the dark interface ZOOMED and TILTED, camera at top-left corner. Same as 0:24 feedback — heavy tilt, top-left framing, always floating.
+
+### 1:02 — Words spin MULTIPLE FAST rounds into circle (Image 29)
+Reference shows "With access to" with service words (Gmail, Search, Maps, YouTube) SPINNING VERY FAST in multiple rotations before settling into a line/circle. Current is too slow and wrong pattern.
+The words should WHIP around several times at high speed, blur from velocity, then decelerate into position.
+**Fix:** Increase rotation speed 5-10x. Words do 3-4 full revolutions before settling. Add heavy motion blur during spin.
+
+### 1:07 — Fast swoosh LEFT
+The transition at 1:07 should be a FAST SWOOSH to the left — everything slides out rapidly to the left with motion blur. Not a fade or gentle transition.
+**Fix:** translateX from 0 to -1400px in 8 frames with expo.out. CameraMotionBlur during the swoosh.
+
+### 0:21 — Icons 3D tilted orbit, MORE zoomed, faster, drifting right
+The icon orbit at 0:21 ("you know and love") needs:
+- Icons in a MORE TILTED 3D plane (rotateX 30-40deg on the orbit container)
+- FASTER rotation (full revolution in 1.5s not 3s)
+- MORE ZOOMED (scale 1.3-1.5 on the whole composition)
+- Slowly drifting to the RIGHT during the sequence
+- Each icon should have 3D depth effect (slight shadows, scale based on orbit position)
+
+### 0:41 — Phone flat 2/3 of screen, "that's not all" on horizon
+The phone at 0:41 should be nearly FLAT (very low rotateX, high perspective), filling 2/3 of the frame height. "But that's not all..." text appears on the HORIZON line of the phone (at the top edge where the phone meets the background). Phone and text are TRACKED together — text follows the phone's position.

@@ -135,14 +135,28 @@ impl PeerScorer {
     pub fn tick(&self, connected_peers: &[PeerId]) -> Vec<PeerId> {
         let mut to_ban = Vec::new();
         let in_startup_grace = self.startup_time.elapsed().as_secs() < 90;
+        let now = Instant::now();
 
         // 1. Heartbeat penalty for peers NOT in connected list
         //    Reduced during startup grace to prevent false partitions from
         //    rolling restarts (peers reconnecting on localhost).
+        //    Skip already-banned peers — punishing the condemned is pointless
+        //    and causes infinite re-ban loops where the score sinks forever,
+        //    ban_count climbs to 100+, and the ban never expires.
         let penalty = if in_startup_grace { 100 } else { 500 }; // -1.0 vs -5.0
         for entry in self.scores.iter() {
             if !connected_peers.contains(entry.key()) {
-                entry.value().score.fetch_sub(penalty, Ordering::Relaxed);
+                // Don't accumulate score against peers with an active ban
+                let is_banned = entry
+                    .value()
+                    .banned_until
+                    .lock()
+                    .ok()
+                    .and_then(|b| *b)
+                    .map_or(false, |until| now < until);
+                if !is_banned {
+                    entry.value().score.fetch_sub(penalty, Ordering::Relaxed);
+                }
             }
         }
 
@@ -171,7 +185,7 @@ impl PeerScorer {
         for entry in self.scores.iter() {
             if let Ok(banned_until) = entry.value().banned_until.lock() {
                 if let Some(until) = *banned_until {
-                    if Instant::now() >= until {
+                    if now >= until {
                         // Ban expired — give peer a clean slate
                         entry.value().score.store(0, Ordering::Relaxed);
                         drop(banned_until);
@@ -184,14 +198,29 @@ impl PeerScorer {
         }
 
         // 4. Ban peers below -50.0 (stored as -5000)
+        //    Skip peers with an active unexpired ban — they're already serving
+        //    their sentence. Re-banning them every 5s was the cause of the
+        //    infinite ban_count escalation (103+ bans in production).
         for entry in self.scores.iter() {
             let score = entry.value().score.load(Ordering::Relaxed);
             if score < -5000 {
+                // Check if peer already has an active ban
+                let already_banned = entry
+                    .value()
+                    .banned_until
+                    .lock()
+                    .ok()
+                    .and_then(|b| *b)
+                    .map_or(false, |until| now < until);
+                if already_banned {
+                    continue;
+                }
+
                 let ban_count = entry.value().ban_count.fetch_add(1, Ordering::Relaxed) + 1;
                 // Exponential ban: 60s * 2^(ban_count-1), capped at 2^10 = ~17 h
                 let ban_secs = 60u64 * 2u64.pow((ban_count - 1).min(10));
                 if let Ok(mut banned) = entry.value().banned_until.lock() {
-                    *banned = Some(Instant::now() + std::time::Duration::from_secs(ban_secs));
+                    *banned = Some(now + std::time::Duration::from_secs(ban_secs));
                 }
                 to_ban.push(*entry.key());
 
@@ -433,5 +462,52 @@ mod tests {
         // Score stays above ban threshold
         let banned = scorer.tick(&[peer]);
         assert!(banned.is_empty());
+    }
+
+    #[test]
+    fn banned_peer_score_does_not_accumulate() {
+        // Regression test: before the fix, heartbeat penalties kept accumulating
+        // against banned peers every 5s tick, driving the score to -56000+ and
+        // ban_count to 100+, making the ban effectively permanent.
+        let scorer = PeerScorer::with_startup_time(
+            Instant::now() - std::time::Duration::from_secs(120),
+        );
+        let peer = test_peer(20);
+
+        // Drive score below ban threshold: 6 * -10.0 = -60.0
+        for _ in 0..6 {
+            scorer.record_invalid_message(&peer);
+        }
+        let banned = scorer.tick(&[]); // peer not connected -> extra -5.0 penalty
+        assert!(banned.contains(&peer));
+        assert!(scorer.is_banned(&peer));
+
+        // Record the score and ban_count right after first ban
+        let score_after_ban = scorer.score_of(&peer);
+        let ban_count_after = scorer.scores.get(&peer).unwrap().ban_count.load(Ordering::Relaxed);
+        assert_eq!(ban_count_after, 1);
+
+        // Tick 10 more times while peer is still banned and disconnected
+        for _ in 0..10 {
+            let re_banned = scorer.tick(&[]);
+            // Should NOT re-ban — peer is already serving a ban
+            assert!(re_banned.is_empty(), "Already-banned peer should not be re-banned");
+        }
+
+        // Score should NOT have changed — heartbeat penalties are skipped for banned peers
+        let score_after_ticks = scorer.score_of(&peer);
+        assert!(
+            (score_after_ticks - score_after_ban).abs() < f64::EPSILON,
+            "Score should not accumulate during active ban: was {}, now {}",
+            score_after_ban,
+            score_after_ticks,
+        );
+
+        // ban_count should still be 1 — not 11
+        let ban_count_after_ticks = scorer.scores.get(&peer).unwrap().ban_count.load(Ordering::Relaxed);
+        assert_eq!(
+            ban_count_after_ticks, 1,
+            "ban_count should not increment during active ban"
+        );
     }
 }

@@ -121,6 +121,9 @@ impl<'a> P2PBuilder<'a> {
         // Start the peer scorer tick (5s interval, auto-bans misbehaving peers)
         transport.start_scorer_tick().await;
 
+        // Start the reconnect drain task (processes reconnect requests from reader_loops)
+        transport.start_reconnect_drain().await;
+
         Ok(Some(Arc::new(transport)))
     }
 
