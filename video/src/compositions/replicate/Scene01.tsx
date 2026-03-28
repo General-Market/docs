@@ -75,7 +75,7 @@ const SometimesSegment: React.FC = () => {
   // "investing" at 0.7s (f20), "can" at 1.1s (f32), "feel" at 1.35s (f39)
   const wordStartFrames = [0, Math.round(fps * 0.4), Math.round(fps * 0.85), Math.round(fps * 1.15)];
 
-  // Dissolve transition — starts at ~2.0s, completes by ~2.34s (storyboard scene_transition)
+  // Dissolve transition — starts at ~2.0s, completes by ~2.34s
   const segmentOpacity = interpolate(frame, [fps * 1.9, fps * 2.3], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -230,20 +230,24 @@ const SometimesSegment: React.FC = () => {
  * We approximate with layered SVG strokes + gradients + blur for depth.
  */
 const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progress, breathe = 0 }) => {
-  // Tight intertwined loops — matching reference pretzel/knot with genuine crossings
-  // Arranged in depth order (bottom to top) with varying opacity for over/under illusion
+  // Reference: tangled knot on left-center + elongated smooth loop extending right
+  // 3-4 semi-transparent silver-gray tubes crossing each other
+  // Knot cluster: x=200-500, y=150-450
+  // Right extension: smooth oval reaching x=900+
   const paths = [
-    // Layer 1 (behind): Wide outer frame sweep
-    { d: "M 140,320 C 220,140 400,80 540,180 C 680,280 640,420 510,400 C 380,380 320,260 420,170 C 520,80 720,100 840,240 C 920,350 840,480 700,440", depth: 0 },
-    // Layer 2: Main figure-8 loop
-    { d: "M 180,300 C 250,160 380,120 470,200 C 560,280 520,380 440,340 C 360,300 340,200 440,160 C 540,120 660,180 700,280 C 740,380 660,440 560,400 C 460,360 420,260 500,200 C 580,140 720,140 800,240", depth: 1 },
-    // Layer 3: Tight inner pretzel (crosses layer 2)
-    { d: "M 300,350 C 350,220 440,180 520,250 C 600,320 560,400 480,370 C 400,340 380,240 460,200 C 540,160 640,200 680,300 C 720,400 640,460 540,420 C 440,380 430,280 520,230 C 610,180 720,220 780,320", depth: 2 },
-    // Layer 4 (front): Small tight knot center
-    { d: "M 380,280 C 410,200 490,170 540,230 C 590,290 560,360 500,330 C 440,300 430,230 490,190 C 550,150 630,190 660,270 C 690,350 630,410 560,370 C 490,330 480,250 540,210", depth: 3 },
+    // Path A: Left knot loop (tight circle) → extends right as elongated oval
+    { d: "M 200,380 C 240,240 340,160 440,200 C 540,240 520,360 420,380 C 320,400 260,320 320,240 C 380,160 540,120 700,140 C 860,160 980,240 980,340 C 980,440 860,460 740,400", depth: 1 },
+    // Path B: Second left knot loop (slightly different angle) → crosses path A going right
+    { d: "M 240,360 C 280,200 380,130 470,210 C 560,290 500,400 400,400 C 300,400 280,280 370,200 C 460,120 620,100 760,140 C 900,180 1000,280 960,380 C 920,480 780,460 660,380", depth: 2 },
+    // Path C: Innermost tight loop in the knot (creates the dense crossing)
+    { d: "M 280,340 C 310,220 400,170 470,230 C 540,290 500,380 430,370 C 360,360 340,270 400,210 C 460,150 560,160 600,240 C 640,320 600,400 520,380", depth: 3 },
+    // Path D: Wide sweep that arcs behind the knot and over the right extension
+    { d: "M 160,300 C 200,160 360,100 500,150 C 640,200 750,140 860,120 C 970,100 1060,200 1020,320 C 980,440 860,440 740,380 C 620,320 540,380 420,400", depth: 0 },
+    // Path E: Extra knot loop — creates additional crossing density in left cluster
+    { d: "M 260,380 C 290,240 380,170 460,240 C 540,310 480,400 390,390 C 300,380 290,290 360,220 C 430,150 540,140 620,200 C 700,260 680,360 600,380", depth: 2 },
   ];
 
-  const totalLength = 2600;
+  const totalLength = 3200;
 
   return (
     <svg
@@ -258,67 +262,66 @@ const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progr
       preserveAspectRatio="xMidYMid slice"
     >
       <defs>
-        {/* Glass-like gradient */}
+        {/* Silver/blue-gray gradient — semi-transparent tube over blue bg */}
         <linearGradient id="ribbonGlass1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(160,180,255,0.9)" />
-          <stop offset="30%" stopColor="rgba(200,210,255,0.4)" />
-          <stop offset="50%" stopColor="rgba(140,170,255,0.8)" />
-          <stop offset="70%" stopColor="rgba(180,200,255,0.3)" />
-          <stop offset="100%" stopColor="rgba(160,190,255,0.85)" />
+          <stop offset="0%" stopColor="rgba(170,185,215,0.9)" />
+          <stop offset="25%" stopColor="rgba(190,200,225,0.55)" />
+          <stop offset="50%" stopColor="rgba(160,175,205,0.8)" />
+          <stop offset="75%" stopColor="rgba(185,195,220,0.5)" />
+          <stop offset="100%" stopColor="rgba(170,185,215,0.85)" />
         </linearGradient>
         <linearGradient id="ribbonGlass2" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(180,195,255,0.7)" />
-          <stop offset="50%" stopColor="rgba(220,230,255,0.3)" />
-          <stop offset="100%" stopColor="rgba(150,175,255,0.8)" />
+          <stop offset="0%" stopColor="rgba(180,192,220,0.8)" />
+          <stop offset="50%" stopColor="rgba(200,210,235,0.45)" />
+          <stop offset="100%" stopColor="rgba(165,180,215,0.85)" />
         </linearGradient>
-        {/* Glow filter */}
+        {/* Subtle glow — less intense than before */}
         <filter id="ribbonGlow">
-          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        {/* Shadow filter for depth */}
         <filter id="ribbonShadow">
-          <feDropShadow dx="3" dy="5" stdDeviation="4" floodColor="rgba(0,20,100,0.3)" />
+          <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="rgba(0,10,60,0.2)" />
         </filter>
       </defs>
 
       {paths.map((p, i) => {
-        const staggerDelay = i * 0.06;
+        const staggerDelay = i * 0.04;
         const localProgress = Math.max(0, Math.min(1, (progress - staggerDelay) / (1 - staggerDelay)));
-        // Depth-based properties — front layers are brighter, back layers dimmer
-        const depthOpacity = 0.7 + p.depth * 0.1;
-        const tubeWidth = 14 - p.depth * 1;
+        const depthOpacity = 0.7 + p.depth * 0.08;
+        // Thicker tubes — reference shows substantial 3D tube, not wire
+        const tubeWidth = 16 - p.depth * 1.5;
         return (
           <React.Fragment key={i}>
-            {/* Shadow layer — offset increases with depth for parallax */}
+            {/* Shadow — subtle depth offset */}
             <path
               d={p.d}
               fill="none"
-              stroke={`rgba(0,15,80,${0.12 + p.depth * 0.02})`}
+              stroke={`rgba(0,10,50,${0.08 + p.depth * 0.015})`}
+              strokeWidth={tubeWidth + 6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={totalLength}
+              strokeDashoffset={totalLength * (1 - localProgress)}
+              transform={`translate(${2 + p.depth * 0.5}, ${3 + p.depth})`}
+            />
+            {/* Outer glow — subtle silver */}
+            <path
+              d={p.d}
+              fill="none"
+              stroke={`rgba(160,170,200,${0.1 + p.depth * 0.02})`}
               strokeWidth={tubeWidth + 8}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
-              transform={`translate(${3 + p.depth}, ${5 + p.depth * 1.5})`}
-            />
-            {/* Outer glow */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={`rgba(130,160,255,${0.12 + p.depth * 0.02})`}
-              strokeWidth={tubeWidth + 10}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
               filter="url(#ribbonGlow)"
-              opacity={depthOpacity}
+              opacity={depthOpacity * 0.6}
             />
-            {/* Main tube body */}
+            {/* Main tube body — silver/gray */}
             <path
               d={p.d}
               fill="none"
@@ -330,24 +333,24 @@ const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progr
               strokeDashoffset={totalLength * (1 - localProgress)}
               opacity={depthOpacity}
             />
-            {/* Edge highlight — top edge of tube */}
+            {/* Edge highlight — bright top edge */}
             <path
               d={p.d}
               fill="none"
-              stroke={`rgba(200,215,255,${0.45 + p.depth * 0.05})`}
-              strokeWidth={5 - p.depth * 0.3}
+              stroke={`rgba(220,225,240,${0.4 + p.depth * 0.06})`}
+              strokeWidth={3.5 - p.depth * 0.3}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
               strokeDashoffset={totalLength * (1 - localProgress)}
               opacity={depthOpacity}
             />
-            {/* Specular center line */}
+            {/* Specular center line — white highlight */}
             <path
               d={p.d}
               fill="none"
-              stroke={`rgba(240,245,255,${0.25 + p.depth * 0.05})`}
-              strokeWidth={2.5}
+              stroke={`rgba(240,242,255,${0.2 + p.depth * 0.04})`}
+              strokeWidth={1.8}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={totalLength}
@@ -522,8 +525,8 @@ const PhoneSegment: React.FC = () => {
     easing: Easing.inOut(Easing.cubic),
   });
 
-  // Exit — hold the isometric view, then fade for crossfade with next segment
-  const exitOpacity = interpolate(frame, [fps * 2.9, fps * 3.3], [1, 0], {
+  // Exit — hold the isometric view longer, then fade for crossfade with next segment
+  const exitOpacity = interpolate(frame, [fps * 3.2, fps * 3.6], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -535,33 +538,51 @@ const PhoneSegment: React.FC = () => {
   const tiltRotateX = interpolate(tiltProgress, [0, 1], [0, 4]);
 
   // Isometric transforms
-  const phoneScale = interpolate(isoProgress, [0, 1], [1, 0.55]);
+  const phoneScale = interpolate(isoProgress, [0, 1], [1, 0.58]);
   const isoRotateX = interpolate(isoProgress, [0, 1], [tiltRotateX, 55]);
   const isoRotateZ = interpolate(isoProgress, [0, 1], [0, -45]);
   const isoRotateY = interpolate(isoProgress, [0, 1], [tiltRotateY, 0]);
 
-  // Isometric card data — mimics various app screens
-  const isoCards = [
-    { label: "Treasury account", amount: "$5,585.00", hasChart: false, hasBar: true },
-    { label: "Holdings", amount: "", hasChart: true, hasBar: false },
-    { label: "About", amount: "", hasChart: false, hasBar: true },
-    { label: "Statements", amount: "", hasChart: false, hasBar: true },
-    { label: "Community", amount: "", hasChart: false, hasBar: false },
-    { label: "Rating", amount: "", hasChart: false, hasBar: true },
-    { label: "Buy", amount: "", hasChart: false, hasBar: true },
-    { label: "$125,367.10", amount: "Today", hasChart: true, hasBar: false },
-    { label: "Research", amount: "", hasChart: true, hasBar: false },
-    { label: "Public Live", amount: "", hasChart: false, hasBar: false },
-    { label: "Top holdings", amount: "13.7%", hasChart: false, hasBar: true },
-    { label: "Watchlist", amount: "", hasChart: true, hasBar: false },
-    { label: "Your position", amount: "", hasChart: false, hasBar: false },
-    { label: "View all", amount: "", hasChart: false, hasBar: false },
-    { label: "Let's Talk", amount: "", hasChart: false, hasBar: false },
+  // Isometric card data — rich content matching reference screenshots
+  type IsoCard = {
+    label: string; amount: string; subtitle?: string;
+    hasChart: boolean; hasBar: boolean; hasProfile?: boolean;
+    greenText?: string; redText?: string; extraLines?: number;
+    buttonText?: string;
+  };
+  const isoCards: IsoCard[] = [
+    { label: "Treasury account", amount: "$5,585.00", subtitle: "$4,400.00 available", hasChart: false, hasBar: true, extraLines: 3 },
+    { label: "Holdings", amount: "", subtitle: "45.0%", hasChart: true, hasBar: false, extraLines: 4, greenText: "+$338.07 (+1.63%)" },
+    { label: "About", amount: "", subtitle: "Company overview", hasChart: false, hasBar: true, extraLines: 5 },
+    { label: "Statements", amount: "", hasChart: false, hasBar: true, extraLines: 4, buttonText: "Download" },
+    { label: "Treasury Bills", amount: "", subtitle: "Current yield", hasChart: false, hasBar: false, extraLines: 3 },
+    { label: "Rating", amount: "", subtitle: "Analyst ratings", hasChart: false, hasBar: true, extraLines: 3 },
+    { label: "Buy", amount: "", hasChart: false, hasBar: true, extraLines: 2, buttonText: "Buy" },
+    { label: "$125,367.10", amount: "Today", subtitle: "+$1,432.50 (+1.15%)", hasChart: true, hasBar: false, greenText: "+$1,432.50" },
+    { label: "Research", amount: "", subtitle: "Expert analysis", hasChart: true, hasBar: false, extraLines: 5 },
+    { label: "Public Live", amount: "", hasChart: false, hasBar: false, hasProfile: true, extraLines: 3 },
+    { label: "Top holdings", amount: "13.7%", subtitle: "3.8% in 10 of 102 holdings", hasChart: false, hasBar: true, extraLines: 2 },
+    { label: "Watchlist", amount: "", hasChart: true, hasBar: false, extraLines: 4, greenText: "$2,771.10" },
+    { label: "Your position", amount: "", subtitle: "Avg cost $142.50", hasChart: false, hasBar: false, extraLines: 3 },
+    { label: "View all", amount: "", hasChart: false, hasBar: false, extraLines: 2, redText: "+$338.07 (+1.63%)" },
+    { label: "Let's Talk", amount: "", hasChart: false, hasBar: false, hasProfile: true, extraLines: 3, buttonText: "Start" },
   ];
 
   return (
     <AbsoluteFill style={{ opacity: exitOpacity * entryOpacity }}>
       <FilmGrain opacity={0.03} />
+
+      {/* Light background that fades in for isometric view */}
+      {isoProgress > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `linear-gradient(135deg, #eef0f5, #e8eaf2, #f0f1f6)`,
+            opacity: isoProgress,
+          }}
+        />
+      )}
 
       {/* Background app screen cards (isometric grid) */}
       {isoProgress > 0 && (
@@ -575,7 +596,7 @@ const PhoneSegment: React.FC = () => {
             display: "grid",
             gridTemplateColumns: "repeat(5, 320px)",
             gridTemplateRows: "repeat(3, 540px)",
-            gap: 18,
+            gap: 14,
           }}
         >
           {isoCards.map((card, i) => {
@@ -603,116 +624,143 @@ const PhoneSegment: React.FC = () => {
                 key={i}
                 style={{
                   background: isCenter
-                    ? "linear-gradient(145deg, #ffffff, #f6f8ff)"
-                    : "linear-gradient(145deg, #fafbff, #f0f2ff)",
-                  borderRadius: 18,
+                    ? "linear-gradient(145deg, #ffffff, #f8f9ff)"
+                    : "linear-gradient(145deg, #fcfcff, #f4f5fb)",
+                  borderRadius: 16,
                   transform: `translateY(${cardSlideY}px)`,
                   border: isCenter
-                    ? "2.5px solid rgba(80,140,255,0.35)"
-                    : "1.5px solid rgba(180,190,220,0.3)",
+                    ? "2px solid rgba(80,140,255,0.35)"
+                    : "1.5px solid rgba(190,200,230,0.4)",
                   boxShadow: isCenter
-                    ? "0 8px 40px rgba(0,0,80,0.14), 0 2px 8px rgba(0,0,80,0.08), inset 0 1px 0 rgba(255,255,255,0.8)"
-                    : `0 4px 20px rgba(0,0,80,0.06), 0 0 8px rgba(${160 + (i * 17) % 60},${130 + (i * 23) % 80},255,0.15), 0 0 16px rgba(${200 + (i * 11) % 55},${140 + (i * 19) % 60},${220 + (i * 7) % 35},0.08), inset 0 1px 0 rgba(255,255,255,0.6)`,
+                    ? "0 12px 50px rgba(0,0,80,0.18), 0 3px 12px rgba(0,0,80,0.1), inset 0 1px 0 rgba(255,255,255,0.9)"
+                    : `0 6px 25px rgba(0,0,60,0.08), 0 2px 8px rgba(0,0,60,0.04), 0 0 0 1px rgba(${180 + (i * 13) % 40},${160 + (i * 19) % 60},255,0.12), inset 0 1px 0 rgba(255,255,255,0.7)`,
                   overflow: "hidden",
-                  padding: 14,
+                  padding: 18,
                   opacity: cardOpacity,
                   position: "relative",
                 }}
               >
+                {/* Iridescent border glow — visible colored edges */}
+                {!isCenter && (
+                  <div style={{
+                    position: "absolute", inset: -2, borderRadius: 18, pointerEvents: "none",
+                    border: `2.5px solid rgba(${140 + (i * 23) % 80},${190 + (i * 17) % 50},${230 + (i * 7) % 25},0.25)`,
+                    boxShadow: `0 0 12px rgba(${100 + (i * 31) % 100},${200 + (i * 13) % 55},${220 + (i * 7) % 35},0.15), 0 0 4px rgba(${220 + (i * 11) % 35},${140 + (i * 19) % 60},${255},0.1)`,
+                    zIndex: 5,
+                  }} />
+                )}
                 {/* Card label */}
                 <div
                   style={{
                     fontFamily,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: "rgba(0,20,80,0.55)",
-                    marginBottom: 8,
-                    letterSpacing: 0.3,
+                    fontSize: isCenter ? 14 : 18,
+                    fontWeight: 700,
+                    color: "rgba(0,20,80,0.75)",
+                    marginBottom: 4,
+                    letterSpacing: -0.2,
                   }}
                 >
                   {card.label}
                 </div>
+                {card.subtitle && (
+                  <div style={{ fontFamily, fontSize: 11, fontWeight: 400, color: "rgba(0,20,60,0.45)", marginBottom: 6 }}>
+                    {card.subtitle}
+                  </div>
+                )}
                 {card.amount && (
                   <div
                     style={{
                       fontFamily,
-                      fontSize: isCenter ? 22 : 16,
-                      fontWeight: 700,
-                      color: "rgba(0,20,80,0.8)",
-                      marginBottom: 10,
+                      fontSize: isCenter ? 26 : 22,
+                      fontWeight: 800,
+                      color: "rgba(0,20,80,0.85)",
+                      marginBottom: 6,
+                      letterSpacing: -0.5,
                     }}
                   >
                     {card.amount}
                   </div>
                 )}
-                {/* Chart line */}
+                {/* Green/red financial text */}
+                {card.greenText && (
+                  <div style={{ fontFamily, fontSize: 12, fontWeight: 600, color: "#00c853", marginBottom: 6 }}>
+                    {card.greenText}
+                  </div>
+                )}
+                {card.redText && (
+                  <div style={{ fontFamily, fontSize: 12, fontWeight: 600, color: "#ff1744", marginBottom: 6 }}>
+                    {card.redText}
+                  </div>
+                )}
+                {/* Chart line — prominent, with area fill */}
                 {card.hasChart && (
-                  <svg viewBox="0 0 100 25" style={{ width: "100%", height: 25, marginBottom: 6 }}>
+                  <svg viewBox="0 0 100 35" style={{ width: "100%", height: 45, marginBottom: 10 }}>
                     <path
-                      d={`M 0,${15 + (i % 5) * 2} C 20,${10 - (i % 3) * 3} 40,${18 + (i % 4)} 60,${8 - (i % 2) * 3} S 80,${16 + (i % 3)} 100,${12 - (i % 5)}`}
+                      d={`M 0,${20 + (i % 5) * 2} C 15,${14 - (i % 3) * 3} 30,${24 + (i % 4)} 50,${10 - (i % 2) * 3} S 75,${20 + (i % 3)} 100,${12 - (i % 5)}`}
                       fill="none"
-                      stroke={`rgba(4,47,243,${0.25 + (i % 3) * 0.08})`}
-                      strokeWidth={1.2}
+                      stroke={`rgba(4,47,243,${0.5 + (i % 3) * 0.1})`}
+                      strokeWidth={2.5}
+                    />
+                    <path
+                      d={`M 0,${20 + (i % 5) * 2} C 15,${14 - (i % 3) * 3} 30,${24 + (i % 4)} 50,${10 - (i % 2) * 3} S 75,${20 + (i % 3)} 100,${12 - (i % 5)} L 100,35 L 0,35 Z`}
+                      fill={`rgba(4,47,243,${0.08 + (i % 3) * 0.03})`}
                     />
                   </svg>
                 )}
-                {/* Text skeleton lines — more visible for isometric view */}
-                <div style={{ width: "80%", height: 6, background: "rgba(4,47,243,0.1)", borderRadius: 2, marginBottom: 5 }} />
-                <div style={{ width: "65%", height: 6, background: "rgba(4,47,243,0.08)", borderRadius: 2, marginBottom: 5 }} />
-                <div style={{ width: "50%", height: 6, background: "rgba(4,47,243,0.06)", borderRadius: 2, marginBottom: 5 }} />
-                <div style={{ width: "70%", height: 6, background: "rgba(4,47,243,0.07)", borderRadius: 2, marginBottom: 10 }} />
+                {/* Text skeleton lines */}
+                {Array.from({ length: card.extraLines || 3 }).map((_, li) => (
+                  <div key={li} style={{
+                    width: `${85 - li * 10 + (i * 7) % 12}%`,
+                    height: 8,
+                    background: `rgba(0,20,80,${0.07 + li * 0.015})`,
+                    borderRadius: 3,
+                    marginBottom: 6,
+                  }} />
+                ))}
                 {/* Bar chart */}
                 {card.hasBar && (
-                  <div style={{ display: "flex", gap: 5, alignItems: "flex-end", marginTop: 6 }}>
-                    {[30, 55, 22, 68, 42, 58, 35, 48].map((h, j) => (
+                  <div style={{ display: "flex", gap: 6, alignItems: "flex-end", marginTop: 8 }}>
+                    {[35, 60, 25, 72, 45, 62, 38, 52].map((h, j) => (
                       <div
                         key={j}
                         style={{
-                          width: 12,
-                          height: h * 0.6,
-                          background: `rgba(4,47,243,${0.15 + j * 0.04})`,
+                          width: 18,
+                          height: h * 0.9,
+                          background: `rgba(4,47,243,${0.2 + j * 0.04})`,
                           borderRadius: 2,
                         }}
                       />
                     ))}
                   </div>
                 )}
-                {/* Blue action button on some cards */}
-                {i % 5 === 0 && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      width: "55%",
-                      height: 24,
-                      background: BLUE,
-                      borderRadius: 6,
-                      opacity: 0.7,
-                    }}
-                  />
+                {/* Profile circle — large, visible */}
+                {card.hasProfile && (
+                  <div style={{
+                    width: 60, height: 60, borderRadius: "50%",
+                    background: "linear-gradient(135deg, rgba(160,170,200,0.5), rgba(140,150,180,0.3))",
+                    margin: "10px auto 6px",
+                    border: "3px solid rgba(0,20,80,0.1)",
+                  }} />
                 )}
-                {/* Green/red indicator */}
-                {i % 3 === 1 && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 12,
-                      right: 12,
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background: i % 2 === 0 ? "#00c853" : "#ff1744",
-                    }}
-                  />
-                )}
-                {/* Dollar amount for financial cards */}
-                {i % 4 === 0 && !isCenter && (
-                  <div style={{ fontFamily, fontSize: 14, fontWeight: 600, color: "rgba(0,20,60,0.6)", marginTop: 6 }}>
-                    ${((i * 1337 + 2500) % 8000 + 1500).toLocaleString()}.00
+                {/* Action button — prominent */}
+                {card.buttonText && (
+                  <div style={{
+                    marginTop: 12, padding: "8px 0", width: "65%",
+                    background: BLUE, borderRadius: 10,
+                    fontFamily, fontSize: 14, fontWeight: 700,
+                    color: WHITE, textAlign: "center",
+                    opacity: 0.9,
+                  }}>
+                    {card.buttonText}
                   </div>
                 )}
-                {/* Colored accent line */}
-                {i % 5 === 2 && (
-                  <div style={{ width: "60%", height: 3, background: "linear-gradient(90deg, rgba(4,47,243,0.3), rgba(0,200,100,0.2))", borderRadius: 2, marginTop: 6 }} />
+                {/* Green/red indicator dot */}
+                {i % 3 === 1 && (
+                  <div style={{
+                    position: "absolute", top: 16, right: 16,
+                    width: 14, height: 14, borderRadius: "50%",
+                    background: i % 2 === 0 ? "#00c853" : "#ff1744",
+                  }} />
                 )}
               </div>
             );
@@ -730,10 +778,10 @@ const PhoneSegment: React.FC = () => {
           transformStyle: "preserve-3d",
           width: 320,
           height: 640,
-          background: "linear-gradient(160deg, #c0c4d0, #a8adb8, #8a8f9a)",
+          background: "linear-gradient(160deg, #2a3050, #1a2040, #0e1530)",
           borderRadius: 48,
           padding: 6,
-          boxShadow: `0 ${20 + isoProgress * 10}px ${60 + isoProgress * 20}px rgba(0,0,0,${0.35 + isoProgress * 0.1}), 0 4px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4)`,
+          boxShadow: `0 ${20 + isoProgress * 10}px ${60 + isoProgress * 20}px rgba(0,0,0,${0.4 + isoProgress * 0.15}), 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,120,180,0.3)`,
           zIndex: 10,
         }}
       >
@@ -824,7 +872,7 @@ const PhoneSegment: React.FC = () => {
             top: 130,
             width: 3,
             height: 55,
-            background: "#9a9faa",
+            background: "#3a4060",
             borderRadius: "0 2px 2px 0",
           }}
         />
@@ -835,7 +883,7 @@ const PhoneSegment: React.FC = () => {
             top: 110,
             width: 3,
             height: 30,
-            background: "#9a9faa",
+            background: "#3a4060",
             borderRadius: "2px 0 0 2px",
           }}
         />
@@ -846,7 +894,7 @@ const PhoneSegment: React.FC = () => {
             top: 150,
             width: 3,
             height: 55,
-            background: "#9a9faa",
+            background: "#3a4060",
             borderRadius: "2px 0 0 2px",
           }}
         />
