@@ -7,6 +7,7 @@ import { Scene04, scene04Meta } from "./Scene04";
 import { Scene05, scene05Meta } from "./Scene05";
 import { scene01Meta } from "./Scene01";
 import { scene02Meta } from "./Scene02";
+import { OFReplicateSFX } from "./OFReplicateSFX";
 
 /**
  * Standard crossfade duration at most scene boundaries (in frames).
@@ -90,8 +91,9 @@ const FadeWrapper: React.FC<{
 export const OFReplicateComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
-      {/* ── Audio — original track (music + SFX) ── */}
-      <Audio src={staticFile("of-audio.wav")} />
+      {/* ── Audio — separated layers ── */}
+      <Audio src={staticFile("of-music-only.wav")} />
+      <OFReplicateSFX />
 
       {/* ── Scene 01 ── */}
       <Sequence from={S01_START} durationInFrames={S01_DUR} name="Scene 01">

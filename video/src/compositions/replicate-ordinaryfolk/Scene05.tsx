@@ -1651,14 +1651,9 @@ export const Scene05: React.FC = () => {
         ease: "power2.out",
       }, f(560));
     }
-    // Devices container scale
+    // Devices container — no shrink, hold at full scale
     if (expDevicesRef.current) {
       t.set(expDevicesRef.current, { scale: 1 }, 0);
-      t.to(expDevicesRef.current, {
-        scale: 0.85,
-        duration: f(27),
-        ease: "power1.inOut",
-      }, f(555));
     }
 
     // Experience section fade overlay
@@ -2441,7 +2436,7 @@ export const Scene05: React.FC = () => {
         <UltraOrb frame={orbLocalFrame} fps={fps} />
       </div>
 
-      {/* N: Experience Gemini + devices — title at 35% from top */}
+      {/* N: Experience Gemini + devices */}
       <div
         style={{
           position: "absolute",
@@ -2450,7 +2445,7 @@ export const Scene05: React.FC = () => {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingTop: "35%",
+          paddingTop: "18%",
           pointerEvents: "none",
         }}
       >
@@ -2462,7 +2457,7 @@ export const Scene05: React.FC = () => {
             fontWeight: 400,
             color: "#fff",
             opacity: 0,
-            marginBottom: 8,
+            marginBottom: 10,
           }}
         >
           Experience{" "}
@@ -2475,11 +2470,12 @@ export const Scene05: React.FC = () => {
         <div
           ref={expUrlRef}
           style={{
-            fontSize: 14,
+            fontSize: 16,
             fontFamily: FONT,
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.45)",
             opacity: 0,
-            marginBottom: 40,
+            marginBottom: 32,
+            letterSpacing: 0.5,
           }}
         >
           gemini.google.com
@@ -2488,19 +2484,21 @@ export const Scene05: React.FC = () => {
           ref={expDevicesRef}
           style={{
             display: "flex",
-            gap: 60,
+            gap: 80,
             alignItems: "center",
             justifyContent: "center",
-            marginTop: 10,
+            marginTop: 0,
           }}
         >
+          {/* Phone LEFT — rotateY(30deg) toward viewer */}
           <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
-            <PhoneMockup style={{ transform: "scale(0.85) rotateY(30deg)" }} />
+            <PhoneMockup style={{ transform: "scale(1.15) rotateY(30deg)" }} />
           </div>
+          {/* Desktop RIGHT — rotateY(-30deg) toward viewer */}
           <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
             <div
               style={{
-                transform: "scale(0.58) rotateY(-30deg)",
+                transform: "scale(0.8) rotateY(-30deg)",
                 transformOrigin: "center center",
               }}
             >
