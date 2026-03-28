@@ -1,18 +1,20 @@
 /**
  * Scene 01 — Ordinary Folk (Google Gemini promo) replication
  *
- * TIMING FIX — shifted all phases ~15 frames later to match reference.
+ * DEEP REFINEMENT — frame-matched to 17-frame reference set at 0.5s intervals.
  *
- * Timeline (corrected, from reference at 0.5s intervals, 30fps):
+ * Timeline (from reference frames, 30fps):
  *   0.0s (f0):    "You've" — visible immediately, opacity 1
- *   0.3s (f8):    "been" starts fading in, "experimenting" scatter begins
- *   2.4s (f72):   "You've been experimenting with" fully settled
- *   2.4s (f72):   "Bard" — big gradient text (purple→blue)
- *   3.67s (f110): "Write" typewriter (no "to" prefix)
- *   5.0s (f150):  "Write emails" — gradient rectangle pill
- *   6.17s (f185): Letter scatter exit (SLOW — 1.2s duration)
- *   7.0s (f210):  "Solve problems" — letters scattered at different sizes
- *   8.0s (f240):  "Brainstorm ideas" — floating word field
+ *   0.27s (f8):   "been" starts, "experimenting" diagonal scatter
+ *   2.4s (f72):   "Bard" — large gradient text, purple→blue, ~10 frames
+ *   2.73s (f82):  Typewriter starts — "to" typed first (dark), then "Write" (gradient)
+ *   4.0s (f120):  "Write emails" — gradient pill
+ *   5.0s (f150):  "Write emails" dark text (pill faded)
+ *   5.33s (f160): Letter scatter exit
+ *   6.0s (f180):  "Solve problems" — letters at varying sizes, scattered
+ *   6.5s (f195):  "Solve problems" settled
+ *   7.0s (f210):  "Brainstorm ideas" — floating word cloud
+ *   8.0s (f240):  "Brainstorm ideas" with remnants
  *   8.6s (f258):  End
  *
  * 1280x720, 30fps, 258 frames (~8.6s)
@@ -38,11 +40,10 @@ const FPS = 30;
 const W = 1280;
 const H = 720;
 
-// Canvas is 1280x720 but reference is 960x540. Scale factor:
-const SCALE = 720 / 540; // 1.333
+// Reference is 960x540. Our canvas is 1280x720. Scale = 1.333
+const S = 1280 / 960; // 1.333
 
 // --- Palette ---------------------------------------------------------------
-const BG_BASE = "#F0EDF5";
 const TEXT_DARK = "#1A1A2E";
 
 const clamp = {
@@ -85,48 +86,52 @@ function useGsapProxy(
 }
 
 // --- Background (soft pastel washes) ----------------------------------------
-// Reference: light blue-lavender wash center-left, warm pink wash right side,
-// subtle lavender top-right. Nearly white overall. Drifts very slowly.
+// Reference: very soft lavender center-left, warm pink right side, nearly white.
+// The blobs are LARGE and SUBTLE — they breathe, they do not announce.
 const PastelBackground: React.FC = () => {
   const frame = useCurrentFrame();
   const hueShift = interpolate(frame, [0, 258], [0, 14], clamp);
 
-  const x1 = 30 + noise2D("bg1x", frame * 0.004, 0) * 10;
-  const y1 = 45 + noise2D("bg1y", 0, frame * 0.003) * 8;
-  const x2 = 82 + noise2D("bg2x", frame * 0.003, 1.5) * 8;
-  const y2 = 28 + noise2D("bg2y", 1.5, frame * 0.004) * 6;
-  const x3 = 68 + noise2D("bg3x", frame * 0.003, 3.0) * 6;
-  const y3 = 22 + noise2D("bg3y", 3.0, frame * 0.002) * 5;
+  const x1 = 30 + noise2D("bg1x", frame * 0.003, 0) * 8;
+  const y1 = 45 + noise2D("bg1y", 0, frame * 0.002) * 6;
+  const x2 = 82 + noise2D("bg2x", frame * 0.002, 1.5) * 6;
+  const y2 = 28 + noise2D("bg2y", 1.5, frame * 0.003) * 5;
+  const x3 = 68 + noise2D("bg3x", frame * 0.002, 3.0) * 5;
+  const y3 = 22 + noise2D("bg3y", 3.0, frame * 0.002) * 4;
 
   return (
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 120% 100% at ${x1}% ${y1}%, hsla(${225 + hueShift}, 45%, 90%, 0.85), transparent 65%),
-          radial-gradient(ellipse 70% 80% at ${x2}% ${y2}%, hsla(${340 + hueShift}, 30%, 92%, 0.6), transparent 60%),
-          radial-gradient(ellipse 60% 50% at ${x3}% ${y3}%, hsla(${275 + hueShift}, 25%, 93%, 0.45), transparent 55%),
-          linear-gradient(135deg, #F0EDF6 0%, #FAFAFA 45%, #F6F2EF 100%)
+          radial-gradient(ellipse 140% 120% at ${x1}% ${y1}%, hsla(${225 + hueShift}, 40%, 91%, 0.7), transparent 60%),
+          radial-gradient(ellipse 90% 100% at ${x2}% ${y2}%, hsla(${340 + hueShift}, 28%, 93%, 0.5), transparent 55%),
+          radial-gradient(ellipse 80% 60% at ${x3}% ${y3}%, hsla(${275 + hueShift}, 22%, 94%, 0.35), transparent 50%),
+          linear-gradient(135deg, #F2EFF7 0%, #FBFBFB 45%, #F7F3F0 100%)
         `,
       }}
     />
   );
 };
 
+// Font sizes: reference at 960 uses ~45px body text, ~90px for "Bard"
+// At 1280 that scales to ~60px body, ~120px for "Bard"
+const BODY_FONT = Math.round(45 * S); // 60
+const BARD_FONT = Math.round(90 * S); // 120
+
 // ===========================================================================
-// Phase 1: "You've"  (frames 0-25)
-// FIXED: visible at opacity 1 from frame 0. Font 50px. Gentle drift left.
+// Phase 1: "You've"  (frames 0-8)
+// Visible at opacity 1 from frame 0. Centered. Gentle drift.
 // ===========================================================================
 const PhaseYouve: React.FC = () => {
   const s = useGsapProxy(
     (tl, p) => {
-      // Starts fully visible, just a gentle slide from slightly right
       tl.fromTo(
         p.main,
-        { x: 20, opacity: 1 },
-        { x: 0, opacity: 1, duration: 0.5, ease: "power1.out" },
+        { x: 15, opacity: 1 },
+        { x: 0, opacity: 1, duration: 0.4, ease: "power1.out" },
       );
     },
-    { main: { x: 20, opacity: 1 } },
+    { main: { x: 15, opacity: 1 } },
   );
 
   return (
@@ -134,15 +139,15 @@ const PhaseYouve: React.FC = () => {
       style={{
         position: "absolute",
         top: `${0.493 * H}px`,
-        left: `${0.50 * W}px`,
+        left: `${0.52 * W}px`,
         transform: `translate(calc(-50% + ${s.main.x}px), -50%)`,
         fontFamily,
-        fontSize: 50,
+        fontSize: BODY_FONT,
         fontWeight: 400,
         color: TEXT_DARK,
         whiteSpace: "nowrap",
         opacity: s.main.opacity,
-        letterSpacing: "-0.3px",
+        letterSpacing: "-0.5px",
       }}
     >
       You{"\u2019"}ve
@@ -151,42 +156,41 @@ const PhaseYouve: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 2: "You've been experimenting with" (frames 8-72, ~2.1s)
+// Phase 2: "You've been experimenting with" (frames 8-72)
 //
-// FIXED: "been" visible from frame 8. Font 50px. Ascending diagonal scatter.
-// Scatter duration 1.0s (was 0.55s). "with" delayed to 0.72s.
-// Gap 13px (was 8px).
+// "been" fades in by frame 15. "experimenting" letters scatter along an
+// ASCENDING DIAGONAL — first letter bottom-left, last letter top-right.
+// Each letter at 50-64px, purple-tinted, settling to dark over ~1.2s.
+// "with" appears at ~0.9s into phase. The whole phrase shifts left as it grows.
 // ===========================================================================
 const EXP_LETTERS = "experimenting".split("");
 
-// Ascending diagonal scatter: first letter starts bottom-left, last upper-right
+// Ascending diagonal: first letter lower-left, last upper-right.
+// Reference at 1.0s shows letters scattered with significant vertical spread.
 const EXP_SCATTER_Y = [
-  -30, -22, -14, -6, 2, 10, 18, 24, 30, 35, 38, 41, 44,
+  38, 30, 20, 12, 4, -4, -12, -20, -28, -34, -40, -45, -50,
 ];
 const EXP_SCATTER_X = [
-  -12, -9, -6, -3, 0, 3, 5, 7, 9, 11, 12, 13, 14,
+  -20, -15, -10, -5, 0, 5, 9, 13, 16, 19, 21, 23, 25,
 ];
 
-// Letter sizes: start larger, settle to 50px
-const EXP_START_SIZE = 64;
-const EXP_END_SIZE = 50;
+const EXP_START_SIZE = Math.round(58 * S); // ~77 scattered
+const EXP_END_SIZE = BODY_FONT; // 60 settled
 
 const PhaseExperimenting: React.FC = () => {
   const frame = useCurrentFrame();
 
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
-      // "You've" starts at its P1 final position, shifts left as phrase grows
       youve: { opacity: 1 },
       been: { opacity: 0 },
       with_: { opacity: 0 },
-      // Overall phrase x offset — the whole phrase shifts left as it grows
       phraseX: { v: 0 },
     };
     for (let i = 0; i < EXP_LETTERS.length; i++) {
       init[`l${i}`] = {
-        x: EXP_SCATTER_X[i] * 2.5,
-        y: EXP_SCATTER_Y[i],
+        x: EXP_SCATTER_X[i] * 3.0,
+        y: EXP_SCATTER_Y[i] * 1.2,
         opacity: 0,
         size: EXP_START_SIZE,
         purple: 1,
@@ -197,28 +201,25 @@ const PhaseExperimenting: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Phase starts at P2_FROM (frame 8). Timeline is relative to Sequence start.
-
-      // "been" fades in immediately (visible by ~0.25s = frame 15 absolute)
+      // "been" fades in at start of phase
       tl.to(
         p.been,
-        { opacity: 1, duration: 0.2, ease: "power1.out" },
+        { opacity: 1, duration: 0.18, ease: "power1.out" },
         0.0,
       );
 
-      // "experimenting" letters scatter-in starting ~0.5s into phase
+      // "experimenting" letters scatter-in starting ~0.4s into phase
       for (let i = 0; i < EXP_LETTERS.length; i++) {
         tl.to(
           p[`l${i}`],
           {
             opacity: 1,
-            duration: 0.15,
+            duration: 0.12,
             ease: "power1.out",
           },
-          0.5 + i * 0.025,
+          0.4 + i * 0.02,
         );
-        // Letters settle: x, y go to 0, size normalizes, purple fades
-        // Duration 1.0s (was 0.7s) — reference shows scatter lingering until ~1.5s
+        // Letters settle: 1.2s duration — scatter LINGERS visibly
         tl.to(
           p[`l${i}`],
           {
@@ -226,25 +227,25 @@ const PhaseExperimenting: React.FC = () => {
             y: 0,
             size: EXP_END_SIZE,
             purple: 0,
-            duration: 1.0,
+            duration: 1.2,
             ease: "power2.out",
           },
-          0.55 + i * 0.03,
+          0.5 + i * 0.025,
         );
       }
 
-      // "with" appears at ~0.72s into phase (delayed from 0.55s)
+      // "with" appears later (~0.9s into phase)
       tl.to(
         p.with_,
         { opacity: 1, duration: 0.2, ease: "power1.out" },
-        0.72,
+        0.9,
       );
 
-      // Whole phrase shifts left as it grows
+      // Phrase shifts left as it expands
       tl.to(
         p.phraseX,
-        { v: -60, duration: 1.2, ease: "power1.out" },
-        0.4,
+        { v: -70, duration: 1.4, ease: "power1.out" },
+        0.3,
       );
     },
     proxyInit,
@@ -263,14 +264,14 @@ const PhaseExperimenting: React.FC = () => {
         whiteSpace: "nowrap",
         display: "flex",
         alignItems: "baseline",
-        gap: 13,
-        letterSpacing: "-0.2px",
+        gap: Math.round(10 * S),
+        letterSpacing: "-0.3px",
       }}
     >
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: BODY_FONT,
           opacity: s.youve.opacity,
         }}
       >
@@ -279,7 +280,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: BODY_FONT,
           opacity: s.been.opacity,
         }}
       >
@@ -313,7 +314,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 50,
+          fontSize: BODY_FONT,
           opacity: s.with_.opacity,
         }}
       >
@@ -324,13 +325,10 @@ const PhaseExperimenting: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 3: "Bard" with gradient text (frames 72-110)
-// Tracking: cx=0.507→0.501, cy=0.50, font_h=58 at 960 = ~77px at 1280
-// Color: purple→blue gradient across letters
-// Reference f_2.5s: "B" is purple, "a" purple-blue, "r" blue, "d" blue
-// Tracked color_bgr at 3.1s: [184, 96, 159] = RGB(159, 96, 184) = purple
-// Tracked color_bgr at 3.7s: [219, 124, 90] = RGB(90, 124, 219) = blue
-// The gradient SHIFTS over time — starts purple, rotates to blue
+// Phase 3: "Bard" with gradient text (frames 72-82)
+//
+// LARGE — 120px at 1280. Deep purple→blue gradient. Near-instant appear.
+// Lasts only ~10 frames (0.33s). Then gone.
 // ===========================================================================
 const BARD_CHARS = "Bard".split("");
 
@@ -341,27 +339,21 @@ const PhaseBard: React.FC = () => {
     (tl, p) => {
       tl.fromTo(
         p.main,
-        { x: 6, opacity: 0, scale: 0.94 },
-        { x: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
+        { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.08, ease: "power2.out" },
       );
     },
-    { main: { x: 6, opacity: 0, scale: 0.94 } },
+    { main: { opacity: 0, scale: 0.96 } },
   );
 
-  // Reference: "B" is deep purple, "a" purple-blue, "r" blue, "d" brighter blue
-  // The gradient is a clear purple→blue left-to-right.
-  // It slowly shifts/cycles but stays in the purple-blue range.
   const t = frame / FPS;
 
-  // 4 letter gradient stops — deep, saturated colors matching reference
-  // Reference at 3.1s: BGR [184, 96, 159] = RGB(159, 96, 184) — purple
-  // Reference at 3.3s: BGR [116, 89, 200] = RGB(200, 89, 116) — but that seems wrong...
-  // Looking at the VISUAL reference: B=purple, a=mid purple-blue, r=blue, d=blue
+  // Deep saturated purple→blue gradient per letter
   const BARD_COLORS: Array<[number, number, number]> = [
-    [140, 80, 190], // B — deep purple
-    [120, 85, 200], // a — purple-blue
-    [95, 100, 210], // r — blue
-    [80, 110, 220], // d — brighter blue
+    [130, 60, 200], // B — vivid purple
+    [110, 70, 210], // a — purple-blue
+    [85, 85, 220],  // r — blue
+    [65, 100, 235], // d — bright blue
   ];
 
   return (
@@ -370,11 +362,11 @@ const PhaseBard: React.FC = () => {
         position: "absolute",
         top: `${0.50 * H}px`,
         left: `${0.50 * W}px`,
-        transform: `translate(calc(-50% + ${s.main.x}px), -50%) scale(${s.main.scale})`,
+        transform: `translate(-50%, -50%) scale(${s.main.scale})`,
         fontFamily,
-        fontSize: 105,
+        fontSize: BARD_FONT,
         fontWeight: 400,
-        letterSpacing: "-1.5px",
+        letterSpacing: "-2px",
         opacity: s.main.opacity,
         whiteSpace: "nowrap",
         display: "inline-flex",
@@ -382,11 +374,10 @@ const PhaseBard: React.FC = () => {
     >
       {BARD_CHARS.map((ch, i) => {
         const base = BARD_COLORS[i];
-        // Subtle slow shift
-        const shift = Math.sin(t * 0.6 + i * 0.4) * 12;
+        const shift = Math.sin(t * 0.8 + i * 0.5) * 10;
         const r = Math.round(Math.max(0, Math.min(255, base[0] + shift)));
-        const g = Math.round(Math.max(0, Math.min(255, base[1] + shift * 0.5)));
-        const b = Math.round(Math.max(0, Math.min(255, base[2] - shift * 0.3)));
+        const g = Math.round(Math.max(0, Math.min(255, base[1] + shift * 0.4)));
+        const b = Math.round(Math.max(0, Math.min(255, base[2] - shift * 0.2)));
         return (
           <span key={i} style={{ color: `rgb(${r}, ${g}, ${b})` }}>
             {ch}
@@ -398,11 +389,17 @@ const PhaseBard: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 4: Typewriter "Write" (frames 110-150)
-// FIXED: removed "to" prefix — reference shows only "Write" with cursor.
-// Cursor persists until end of phase.
+// Phase 4: Typewriter "to Write" (frames 82-120)
+//
+// Reference at 3.0s shows "to" with cursor. At 3.5s shows "W" being typed.
+// At 4.0s shows "Write" complete with cursor.
+// "to" typed FIRST in dark, then "Write" in gradient purple→coral.
+// "to" fades out after Write is complete.
 // ===========================================================================
-const TYPE_PHASES = [
+const TYPE_CHARS = [
+  { char: "t", dark: true },
+  { char: "o", dark: true },
+  { char: " ", dark: true },
   { char: "W", dark: false },
   { char: "r", dark: false },
   { char: "i", dark: false },
@@ -410,7 +407,7 @@ const TYPE_PHASES = [
   { char: "e", dark: false },
 ];
 
-// Gradient for "Write": purple → magenta → coral
+// Gradient for "Write" letters (indices 3-7): purple → magenta → coral
 const WRITE_GRADIENT: Array<[number, number, number]> = [
   [0x7b, 0x5b, 0xd0], // W — purple
   [0x90, 0x50, 0xc0], // r — purple-magenta
@@ -425,8 +422,9 @@ const PhaseTypewriter: React.FC = () => {
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
       cursor: { opacity: 1 },
+      toFade: { opacity: 1 },
     };
-    for (let i = 0; i < TYPE_PHASES.length; i++) {
+    for (let i = 0; i < TYPE_CHARS.length; i++) {
       init[`c${i}`] = { visible: 0 };
     }
     return init;
@@ -434,33 +432,42 @@ const PhaseTypewriter: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Type "Write" — one char at a time with slight acceleration
-      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.15); // W
-      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.30); // r
-      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.42); // i
-      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.52); // t
-      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.62); // e
-      // Cursor persists until late in phase (was 0.88, now 1.2)
+      // Type "to " — fast (reference shows "to" at 3.0s = ~0.27s into this phase)
+      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.08); // t
+      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.18); // o
+      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.28); // space
+      // Small pause, then type "Write"
+      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.45); // W
+      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.58); // r
+      tl.to(p[`c5`], { visible: 1, duration: 0.001 }, 0.68); // i
+      tl.to(p[`c6`], { visible: 1, duration: 0.001 }, 0.76); // t
+      tl.to(p[`c7`], { visible: 1, duration: 0.001 }, 0.84); // e
+      // "to" fades out after Write is typed
+      tl.to(
+        p.toFade,
+        { opacity: 0, duration: 0.2, ease: "power1.out" },
+        1.0,
+      );
+      // Cursor persists
       tl.to(
         p.cursor,
-        { opacity: 0, duration: 0.12, ease: "power2.out" },
-        1.1,
+        { opacity: 0, duration: 0.1, ease: "power2.out" },
+        1.2,
       );
     },
     proxyInit,
   );
 
   let visibleCount = 0;
-  for (let i = 0; i < TYPE_PHASES.length; i++) {
+  for (let i = 0; i < TYPE_CHARS.length; i++) {
     if (s[`c${i}`].visible > 0.5) visibleCount = i + 1;
   }
 
-  const isTyping = visibleCount > 0 && visibleCount < TYPE_PHASES.length;
-  const isDone = visibleCount >= TYPE_PHASES.length;
+  const allTyped = visibleCount >= TYPE_CHARS.length;
   const blinkOn = Math.floor(frame / 5) % 2 === 0;
-  const cursorOpacity = isDone
+  const cursorOpacity = allTyped
     ? s.cursor.opacity
-    : isTyping
+    : visibleCount > 0
       ? 1
       : blinkOn
         ? 1
@@ -474,18 +481,36 @@ const PhaseTypewriter: React.FC = () => {
         left: `${0.50 * W}px`,
         transform: "translate(-50%, -50%)",
         fontFamily,
-        fontSize: 50,
+        fontSize: BODY_FONT,
         fontWeight: 400,
         color: TEXT_DARK,
         whiteSpace: "nowrap",
         display: "flex",
         alignItems: "center",
-        letterSpacing: "-0.2px",
+        letterSpacing: "-0.3px",
       }}
     >
-      {TYPE_PHASES.slice(0, visibleCount).map((phase, i) => {
-        // All letters are gradient "Write" — no dark prefix
-        const c = WRITE_GRADIENT[i] || [0x7b, 0x5b, 0xd0];
+      {TYPE_CHARS.slice(0, visibleCount).map((phase, i) => {
+        if (phase.char === " ") {
+          return <span key={i} style={{ width: 8, opacity: phase.dark ? s.toFade.opacity : 1 }}>&nbsp;</span>;
+        }
+        if (phase.dark) {
+          // "to" letters — dark, fade out after Write complete
+          return (
+            <span
+              key={i}
+              style={{
+                color: TEXT_DARK,
+                opacity: s.toFade.opacity,
+              }}
+            >
+              {phase.char}
+            </span>
+          );
+        }
+        // "Write" letters — gradient
+        const gi = i - 3; // index into WRITE_GRADIENT (0-4)
+        const c = WRITE_GRADIENT[gi] || [0x7b, 0x5b, 0xd0];
         return (
           <span key={i} style={{ color: `rgb(${c[0]}, ${c[1]}, ${c[2]})` }}>
             {phase.char}
@@ -496,7 +521,7 @@ const PhaseTypewriter: React.FC = () => {
         style={{
           display: "inline-block",
           width: 2.5,
-          height: 50 * 0.88,
+          height: BODY_FONT * 0.85,
           backgroundColor: TEXT_DARK,
           marginLeft: 2,
           opacity: cursorOpacity,
@@ -507,58 +532,58 @@ const PhaseTypewriter: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 5: "Write emails" with gradient rectangle pill (frames 150-185)
-// FIXED: font 50px, gradient angle stays horizontal (~90deg), Write is #111.
+// Phase 5: "Write emails" with gradient pill (frames 120-155)
+//
+// Reference at 4.5s: "Write" dark + "emails" in gradient pill (pink→purple→blue).
+// At 5.0s: both dark, pill gone. Large text.
 // ===========================================================================
 const PhaseWriteEmails: React.FC = () => {
   const frame = useCurrentFrame();
 
   const s = useGsapProxy(
     (tl, p) => {
-      // "Write" slides up slightly
+      // "Write" appears
       tl.fromTo(
         p.write,
         { y: 6, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.3, ease: "power2.out" },
+        { y: 0, opacity: 1, duration: 0.25, ease: "power2.out" },
         0,
       );
-      // Pill bounces in from an angle
+      // Pill bounces in
       tl.fromTo(
         p.pill,
-        { x: 30, y: 8, scale: 0.82, opacity: 0 },
+        { x: 25, y: 6, scale: 0.85, opacity: 0 },
         {
           x: 0,
           y: 0,
           scale: 1,
           opacity: 1,
-          duration: 0.45,
+          duration: 0.4,
           ease: "back.out(1.7)",
         },
-        0.12,
+        0.08,
       );
-      // After ~0.8s, pill fades and "emails" becomes dark text
+      // Pill fades → dark text
       tl.to(
         p.pill,
-        { opacity: 0, duration: 0.25, ease: "power1.out" },
-        0.85,
+        { opacity: 0, duration: 0.2, ease: "power1.out" },
+        0.75,
       );
       tl.fromTo(
         p.emailsDark,
         { opacity: 0 },
-        { opacity: 1, duration: 0.25, ease: "power1.out" },
-        0.85,
+        { opacity: 1, duration: 0.2, ease: "power1.out" },
+        0.75,
       );
     },
     {
       write: { y: 6, opacity: 0 },
-      pill: { x: 30, y: 8, scale: 0.82, opacity: 0 },
+      pill: { x: 25, y: 6, scale: 0.85, opacity: 0 },
       emailsDark: { opacity: 0 },
     },
   );
 
-  // Gradient angle stays roughly horizontal (reference shows stable left-to-right)
-  const gradAngle =
-    90 + noise2D("pill-angle", frame * 0.02, 0) * 3;
+  const gradAngle = 90 + noise2D("pill-angle", frame * 0.02, 0) * 3;
   const pillGrad = `linear-gradient(${gradAngle}deg, #D04878, #A858B8, #6878E0)`;
 
   return (
@@ -574,13 +599,13 @@ const PhaseWriteEmails: React.FC = () => {
         whiteSpace: "nowrap",
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        letterSpacing: "-0.2px",
+        gap: Math.round(8 * S),
+        letterSpacing: "-0.3px",
       }}
     >
       <span
         style={{
-          fontSize: 50,
+          fontSize: BODY_FONT,
           color: "#111111",
           opacity: s.write.opacity,
           transform: `translateY(${s.write.y}px)`,
@@ -588,7 +613,7 @@ const PhaseWriteEmails: React.FC = () => {
       >
         Write
       </span>
-      {/* Gradient pill version */}
+      {/* Gradient pill */}
       <span
         style={{
           display: "inline-block",
@@ -600,10 +625,10 @@ const PhaseWriteEmails: React.FC = () => {
           style={{
             display: "inline-block",
             background: pillGrad,
-            padding: "6px 14px",
-            borderRadius: 4,
+            padding: `${Math.round(6 * S)}px ${Math.round(14 * S)}px`,
+            borderRadius: Math.round(5 * S),
             color: "#FFFFFF",
-            fontSize: 50,
+            fontSize: BODY_FONT,
             fontWeight: 400,
             lineHeight: 1.2,
           }}
@@ -611,10 +636,10 @@ const PhaseWriteEmails: React.FC = () => {
           emails
         </span>
       </span>
-      {/* Dark text version (fades in as pill fades out) */}
+      {/* Dark text (fades in as pill fades) */}
       <span
         style={{
-          fontSize: 50,
+          fontSize: BODY_FONT,
           opacity: s.emailsDark.opacity,
           position: s.pill.opacity > 0.01 ? "absolute" : "relative",
           left: s.pill.opacity > 0.01 ? "auto" : undefined,
@@ -628,31 +653,31 @@ const PhaseWriteEmails: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 6: Letter scatter exit (frames 185-210)
-// FIXED: gentle scatter, 1.2s duration, full opacity during visible phase,
-// reduced distances (120-200px), minimal rotation (2-5deg), no scale-down.
-// Reference shows a VISIBLE, gentle scatter — letters stay fully readable.
+// Phase 6: Letter scatter exit (frames 155-180)
+//
+// Reference at 5.5s: letters of "Write emails" scattered visibly — "W" upper-left,
+// "t" lower, "a" upper-right, "s" far right. Letters are LARGE, clearly readable.
+// Gentle scatter, no extreme rotation or scale-down.
 // ===========================================================================
 const SCATTER_TEXT = "Write\u00A0emails";
 const SCATTER_LETTERS = SCATTER_TEXT.split("");
 
-// Char widths scaled for 50px font (from 42px, ratio ~1.19)
 const SCATTER_CHAR_WIDTHS: Record<string, number> = {
-  W: 38,
-  r: 18,
-  i: 11,
-  t: 15,
-  e: 23,
-  "\u00A0": 12,
-  m: 36,
-  a: 23,
-  l: 11,
-  s: 20,
+  W: Math.round(38 * S),
+  r: Math.round(18 * S),
+  i: Math.round(11 * S),
+  t: Math.round(15 * S),
+  e: Math.round(23 * S),
+  "\u00A0": Math.round(12 * S),
+  m: Math.round(36 * S),
+  a: Math.round(23 * S),
+  l: Math.round(11 * S),
+  s: Math.round(20 * S),
 };
 
 const PhaseLetterScatter: React.FC = () => {
   const charWidths = SCATTER_LETTERS.map(
-    (ch) => SCATTER_CHAR_WIDTHS[ch] || 17,
+    (ch) => SCATTER_CHAR_WIDTHS[ch] || Math.round(17 * S),
   );
   const totalWidth = charWidths.reduce((a, b) => a + b, 0);
   const startXOffsets: number[] = [];
@@ -670,27 +695,26 @@ const PhaseLetterScatter: React.FC = () => {
     return init;
   }, []);
 
-  // Scatter trajectories — GENTLE. Reference keeps letters close and readable.
+  // Scatter targets matching reference at 5.5s — visible, spread pattern
   const scatterTargets = [
-    { dx: -140, dy: -60, rot: -3 }, // W — upper-left
-    { dx: -20, dy: 20, rot: 2 }, // r
-    { dx: 10, dy: 15, rot: -1 }, // i
-    { dx: -40, dy: 60, rot: 3 }, // t
-    { dx: 5, dy: 12, rot: -1 }, // e
-    { dx: 0, dy: 0, rot: 0 }, // space
-    { dx: 5, dy: 14, rot: 1 }, // e
-    { dx: 20, dy: 10, rot: -2 }, // m
-    { dx: 40, dy: 15, rot: 2 }, // a
-    { dx: 60, dy: -30, rot: -3 }, // i
-    { dx: 100, dy: 12, rot: 1 }, // l
-    { dx: 140, dy: 8, rot: -2 }, // s
+    { dx: -180, dy: -80, rot: -3 },  // W — upper-left (big move)
+    { dx: -30, dy: 25, rot: 2 },     // r
+    { dx: 15, dy: 18, rot: -1 },     // i
+    { dx: -50, dy: 80, rot: 3 },     // t — drops down
+    { dx: 8, dy: 15, rot: -1 },      // e
+    { dx: 0, dy: 0, rot: 0 },        // space
+    { dx: 8, dy: 18, rot: 1 },       // e
+    { dx: 30, dy: 12, rot: -2 },     // m
+    { dx: 55, dy: -50, rot: 2 },     // a — rises up
+    { dx: 80, dy: 15, rot: -3 },     // i
+    { dx: 120, dy: 15, rot: 1 },     // l
+    { dx: 170, dy: -20, rot: -2 },   // s — far right
   ];
 
   const s = useGsapProxy(
     (tl, p) => {
       SCATTER_LETTERS.forEach((_, i) => {
         const target = scatterTargets[i] || { dx: 0, dy: 0, rot: 0 };
-        // First phase: move to scattered positions, keep full opacity (0.8s)
         tl.to(
           p[`l${i}`],
           {
@@ -699,20 +723,19 @@ const PhaseLetterScatter: React.FC = () => {
             rotation: target.rot,
             scale: 1,
             opacity: 1,
-            duration: 0.8,
+            duration: 0.65,
             ease: "power2.out",
           },
-          i * 0.015,
+          i * 0.012,
         );
-        // Second phase: fade out after hold (0.4s fade, delayed)
         tl.to(
           p[`l${i}`],
           {
             opacity: 0,
-            duration: 0.4,
+            duration: 0.3,
             ease: "power1.out",
           },
-          0.8 + i * 0.01,
+          0.6 + i * 0.008,
         );
       });
     },
@@ -732,11 +755,11 @@ const PhaseLetterScatter: React.FC = () => {
               left: "50%",
               transform: `translate(calc(-50% + ${startXOffsets[i] + l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
               fontFamily,
-              fontSize: 50,
+              fontSize: BODY_FONT,
               fontWeight: 400,
               color: TEXT_DARK,
               opacity: l.opacity,
-              letterSpacing: "-0.2px",
+              letterSpacing: "-0.3px",
             }}
           >
             {ch}
@@ -748,39 +771,42 @@ const PhaseLetterScatter: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 7: "Solve problems" — letters scattered at DIFFERENT SIZES (frames 210-240)
-// FIXED: wider scatter covering ~500x300px, convergence delayed to 0.55s,
-// font 50px final, dramatic size range 30-96px.
+// Phase 7: "Solve problems" — letters at VARYING SIZES, scattered (frames 180-210)
+//
+// Reference at 6.0s: every letter at a unique (x,y) with DIFFERENT SIZE.
+// "S" large upper-left, "o" "v" "e" spread mid, "b" floating high,
+// "p" "l" bottom, "m" lower-right. ALL visible immediately.
+// At 6.5s: all converged to centered "Solve problems" in uniform size.
 // ===========================================================================
 const SOLVE_TEXT = "Solve\u00A0problems";
 const SOLVE_LETTERS = SOLVE_TEXT.split("");
 
-// Scatter positions — from reference: every letter at a UNIQUE (x,y).
-// No two letters share an X or Y coordinate. Layout:
-//   "S" top-left, "o v e" spread across mid, "r o e s" right,
-//   "l p l" bottom, "b" above center, "m" below-right.
-// Coordinates are absolute pixel positions on the 1280x720 canvas.
+// Positions at 1280x720, matching reference proportions
 const SOLVE_SCATTER: Array<{ x: number; y: number; size: number }> = [
-  { x: 250, y: 248, size: 86 },  // S — large, left of center, mid-upper
-  { x: 410, y: 274, size: 44 },  // o — medium, center-left
-  { x: 340, y: 420, size: 32 },  // l — small, below-left
-  { x: 510, y: 236, size: 46 },  // v — center, slightly higher than "o"
-  { x: 620, y: 264, size: 42 },  // e — right of center
-  { x: 0, y: 0, size: 50 },      // (space)
-  { x: 470, y: 400, size: 34 },  // p — below center
-  { x: 670, y: 242, size: 40 },  // r — right, slightly higher
-  { x: 760, y: 270, size: 48 },  // o — right side
-  { x: 550, y: 178, size: 56 },  // b — above center (floating high)
-  { x: 440, y: 440, size: 30 },  // l — bottom, left of "p"
-  { x: 810, y: 256, size: 44 },  // e — far right
-  { x: 870, y: 388, size: 42 },  // m — far right, low
-  { x: 920, y: 296, size: 38 },  // s — furthest right
+  { x: 280, y: 240, size: Math.round(86 * S) },   // S — large, left
+  { x: 440, y: 270, size: Math.round(44 * S) },   // o
+  { x: 360, y: 410, size: Math.round(32 * S) },   // l — bottom-left
+  { x: 540, y: 230, size: Math.round(46 * S) },   // v
+  { x: 660, y: 260, size: Math.round(42 * S) },   // e
+  { x: 0, y: 0, size: BODY_FONT },                 // (space)
+  { x: 500, y: 400, size: Math.round(34 * S) },   // p — below center
+  { x: 720, y: 238, size: Math.round(40 * S) },   // r
+  { x: 800, y: 270, size: Math.round(48 * S) },   // o — right side
+  { x: 580, y: 175, size: Math.round(56 * S) },   // b — floating high
+  { x: 460, y: 440, size: Math.round(30 * S) },   // l — bottom
+  { x: 860, y: 252, size: Math.round(44 * S) },   // e — far right
+  { x: 920, y: 385, size: Math.round(42 * S) },   // m — far right, low
+  { x: 970, y: 290, size: Math.round(38 * S) },   // s — furthest right
 ];
 
-// Final settled: centered at ~50%, cy=49%, uniform 50px
-const SOLVE_FINAL_SIZE = 50;
-// Char widths scaled by 50/42 = 1.19
-const SOLVE_CHAR_WIDTHS = [31, 27, 14, 27, 25, 14, 27, 17, 27, 27, 14, 25, 36, 19];
+const SOLVE_FINAL_SIZE = BODY_FONT;
+const SOLVE_CHAR_WIDTHS = [
+  Math.round(31 * S), Math.round(27 * S), Math.round(14 * S),
+  Math.round(27 * S), Math.round(25 * S), Math.round(14 * S),
+  Math.round(27 * S), Math.round(17 * S), Math.round(27 * S),
+  Math.round(27 * S), Math.round(14 * S), Math.round(25 * S),
+  Math.round(36 * S), Math.round(19 * S),
+];
 const SOLVE_TOTAL_W = SOLVE_CHAR_WIDTHS.reduce((a, b) => a + b, 0);
 
 const SOLVE_FINAL_X: number[] = [];
@@ -812,23 +838,23 @@ const PhaseSolveProblems: React.FC = () => {
     (tl, p) => {
       SOLVE_LETTERS.forEach((ch, i) => {
         if (ch === "\u00A0") return;
-        // Fade in at scattered positions — fast
+        // Fade in immediately at scattered positions
         tl.to(
           p[`l${i}`],
-          { opacity: 1, duration: 0.14, ease: "power1.out" },
-          i * 0.012,
+          { opacity: 1, duration: 0.1, ease: "power1.out" },
+          i * 0.008,
         );
-        // Converge to final centered line — delayed to 0.55s so scatter holds
+        // Converge to centered line — starts at 0.4s, takes 0.45s
         tl.to(
           p[`l${i}`],
           {
             x: SOLVE_FINAL_X[i],
             y: SOLVE_FINAL_Y,
             size: SOLVE_FINAL_SIZE,
-            duration: 0.55,
+            duration: 0.45,
             ease: "power2.out",
           },
-          0.55 + i * 0.012,
+          0.4 + i * 0.01,
         );
       });
     },
@@ -853,7 +879,7 @@ const PhaseSolveProblems: React.FC = () => {
               fontWeight: 400,
               color: TEXT_DARK,
               opacity: l.opacity,
-              letterSpacing: "-0.2px",
+              letterSpacing: "-0.3px",
             }}
           >
             {ch}
@@ -865,19 +891,14 @@ const PhaseSolveProblems: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 8: "Brainstorm ideas" — floating word field (frames 240-258)
-// FIXED: 2x wider offsets, 16 entries (was 10), 3-tier blur (sharp/medium/heavy),
-// faster fade-in, longer converge (1.1s), floater remnants linger.
+// Phase 8: "Brainstorm ideas" — floating word cloud (frames 210-258)
+//
+// Reference at 7.0s: blurred copies of "Brainstorm" and "ideas" at varying
+// sizes, colors (purple/blue/pink), blur levels, creating depth.
+// Center has dark convergence blob.
+// At 7.5s: converging inward. At 8.0s: "Brainstorm ideas" centered with
+// some faded remnants still visible.
 // ===========================================================================
-// Reference: large blurred copies at VARYING sizes (30-70px), VARYING colors
-// (purple/blue/pink/faded), VARYING blur (0-15px). 10 copies creating depth.
-// Center has dark blur blob as convergence point.
-// Layout from reference screenshot:
-//   "Brainstorm" top-left (large, purple, slightly blurred)
-//   "ideas" top-right (medium, faded/grey)
-//   dark blob center
-//   "ideas" bottom-left (sharp, blue, large)
-//   "Brainstorm" bottom-right (pink, large)
 const FLOATERS: Array<{
   word: string;
   x: number;
@@ -888,19 +909,19 @@ const FLOATERS: Array<{
   delay: number;
   blur: number;
 }> = [
-  // From reference — 4 prominent copies at the corners/edges
-  { word: "Brainstorm", x: -280, y: -110, color: "#7B6BD0", size: 62, weight: 500, delay: 0, blur: 4 },
-  { word: "ideas", x: 260, y: -90, color: "#9B9BB8", size: 42, weight: 400, delay: 0.02, blur: 6 },
-  { word: "ideas", x: -320, y: 100, color: "#5B6FD7", size: 58, weight: 500, delay: 0.01, blur: 1 },
-  { word: "Brainstorm", x: 300, y: 120, color: "#C86090", size: 56, weight: 500, delay: 0.03, blur: 2 },
-  // Secondary depth copies — mid-field
-  { word: "Brainstorm", x: -100, y: -180, color: "#A878C8", size: 36, weight: 400, delay: 0.04, blur: 8 },
-  { word: "ideas", x: 160, y: 170, color: "#6878E0", size: 34, weight: 400, delay: 0.05, blur: 10 },
-  // Far depth — heavily blurred, edges
-  { word: "ideas", x: -460, y: -30, color: "#8888B0", size: 30, weight: 400, delay: 0.03, blur: 13 },
-  { word: "Brainstorm", x: 440, y: -50, color: "#B070A0", size: 32, weight: 400, delay: 0.06, blur: 14 },
-  { word: "brainstorm", x: 80, y: -160, color: "#9B6FBF", size: 28, weight: 400, delay: 0.05, blur: 12 },
-  { word: "ideas", x: -180, y: 200, color: "#7080D0", size: 38, weight: 400, delay: 0.04, blur: 9 },
+  // 4 prominent copies at corners — LARGE
+  { word: "Brainstorm", x: -300, y: -120, color: "#7B6BD0", size: Math.round(62 * S), weight: 500, delay: 0, blur: 4 },
+  { word: "ideas", x: 280, y: -100, color: "#9B9BB8", size: Math.round(44 * S), weight: 400, delay: 0.02, blur: 6 },
+  { word: "ideas", x: -340, y: 110, color: "#5B6FD7", size: Math.round(58 * S), weight: 500, delay: 0.01, blur: 1 },
+  { word: "Brainstorm", x: 320, y: 130, color: "#C86090", size: Math.round(56 * S), weight: 500, delay: 0.03, blur: 2 },
+  // Secondary depth copies
+  { word: "Brainstorm", x: -110, y: -190, color: "#A878C8", size: Math.round(36 * S), weight: 400, delay: 0.04, blur: 8 },
+  { word: "ideas", x: 170, y: 180, color: "#6878E0", size: Math.round(34 * S), weight: 400, delay: 0.05, blur: 10 },
+  // Far depth — heavily blurred
+  { word: "ideas", x: -480, y: -30, color: "#8888B0", size: Math.round(30 * S), weight: 400, delay: 0.03, blur: 13 },
+  { word: "Brainstorm", x: 460, y: -50, color: "#B070A0", size: Math.round(32 * S), weight: 400, delay: 0.06, blur: 14 },
+  { word: "brainstorm", x: 90, y: -170, color: "#9B6FBF", size: Math.round(28 * S), weight: 400, delay: 0.05, blur: 12 },
+  { word: "ideas", x: -200, y: 210, color: "#7080D0", size: Math.round(38 * S), weight: 400, delay: 0.04, blur: 9 },
 ];
 
 const PhaseBrainstormIdeas: React.FC = () => {
@@ -921,49 +942,49 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Dark center blob fades in immediately
+      // Dark center blob
       tl.to(
         p.blob,
-        { opacity: 0.55, duration: 0.2, ease: "power1.out" },
+        { opacity: 0.55, duration: 0.15, ease: "power1.out" },
         0,
       );
-      // Floaters fade in FAST (0.15s) — cloud should be visible almost immediately
+      // Floaters fade in fast
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
           {
             opacity: i < 4 ? 0.9 : 0.6,
-            duration: 0.15,
+            duration: 0.12,
             ease: "power1.out",
           },
           f.delay,
         );
       });
-      // Floaters drift inward and fade — SLOW (1.1s), starts late (0.35s)
+      // Floaters drift inward and fade — slow convergence
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
           {
-            x: f.x * 0.12,
-            y: f.y * 0.12,
+            x: f.x * 0.1,
+            y: f.y * 0.1,
             opacity: 0,
-            duration: 1.1,
+            duration: 1.0,
             ease: "power1.inOut",
           },
-          0.35 + f.delay * 0.2,
+          0.3 + f.delay * 0.2,
         );
       });
-      // Blob fades with floaters
+      // Blob fades
       tl.to(
         p.blob,
-        { opacity: 0, duration: 0.6, ease: "power1.inOut" },
-        0.5,
+        { opacity: 0, duration: 0.5, ease: "power1.inOut" },
+        0.45,
       );
-      // Final centered text appears earlier
+      // Final centered text
       tl.to(
         p.final,
-        { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" },
-        0.45,
+        { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
+        0.4,
       );
     },
     proxyInit,
@@ -971,18 +992,18 @@ const PhaseBrainstormIdeas: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Dark convergence blob at center — reference shows a dark smudge */}
+      {/* Dark convergence blob */}
       <div
         style={{
           position: "absolute",
           top: `${0.49 * H}px`,
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 180,
-          height: 60,
+          width: Math.round(180 * S),
+          height: Math.round(60 * S),
           borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(30,25,50,0.7) 0%, rgba(30,25,50,0.3) 40%, transparent 70%)",
-          filter: "blur(18px)",
+          filter: `blur(${Math.round(18 * S)}px)`,
           opacity: s.blob.opacity,
         }}
       />
@@ -1018,12 +1039,12 @@ const PhaseBrainstormIdeas: React.FC = () => {
           left: "50%",
           transform: `translate(-50%, -50%) scale(${s.final.scale})`,
           fontFamily,
-          fontSize: 50,
+          fontSize: BODY_FONT,
           fontWeight: 400,
           color: TEXT_DARK,
           whiteSpace: "nowrap",
           opacity: s.final.opacity,
-          letterSpacing: "-0.2px",
+          letterSpacing: "-0.3px",
         }}
       >
         Brainstorm ideas
@@ -1032,15 +1053,15 @@ const PhaseBrainstormIdeas: React.FC = () => {
   );
 };
 
-// --- Frame Timings (SHIFTED ~15 frames later to match reference) -----------
-const P1_FROM = 0; // 0.0s — "You've" alone, visible immediately
-const P2_FROM = 8; // 0.27s — "been" starts fading in
-const P3_FROM = 72; // 2.4s — "Bard"
-const P4_FROM = 110; // 3.67s — Typewriter "Write" (no "to")
-const P5_FROM = 150; // 5.0s — "Write emails" pill
-const P6_FROM = 185; // 6.17s — Letter scatter (SLOW 1.2s)
-const P7_FROM = 210; // 7.0s — "Solve problems"
-const P8_FROM = 240; // 8.0s — "Brainstorm ideas"
+// --- Frame Timings (CORRECTED to match reference frame-by-frame) -----------
+const P1_FROM = 0;    // 0.0s — "You've"
+const P2_FROM = 8;    // 0.27s — "been" + scatter
+const P3_FROM = 72;   // 2.4s — "Bard" (short: ~10 frames)
+const P4_FROM = 82;   // 2.73s — Typewriter "to Write"
+const P5_FROM = 120;  // 4.0s — "Write emails" pill
+const P6_FROM = 155;  // 5.17s — Letter scatter
+const P7_FROM = 180;  // 6.0s — "Solve problems" scattered
+const P8_FROM = 210;  // 7.0s — "Brainstorm ideas" cloud
 
 // --- Composition -----------------------------------------------------------
 export const Scene01: React.FC = () => {
@@ -1048,36 +1069,42 @@ export const Scene01: React.FC = () => {
     <AbsoluteFill style={{ fontFamily }}>
       <PastelBackground />
 
-      {/* P1: "You've" alone — visible from frame 0, overlaps with P2 start */}
+      {/* P1: "You've" alone — frames 0-11 (overlaps briefly with P2) */}
       <Sequence from={P1_FROM} durationInFrames={P2_FROM + 4}>
         <PhaseYouve />
       </Sequence>
 
-      {/* P2: "You've been experimenting with" — includes its own "You've" */}
+      {/* P2: "You've been experimenting with" */}
       <Sequence from={P2_FROM} durationInFrames={P3_FROM - P2_FROM}>
         <PhaseExperimenting />
       </Sequence>
 
+      {/* P3: "Bard" — short, ~10 frames */}
       <Sequence from={P3_FROM} durationInFrames={P4_FROM - P3_FROM}>
         <PhaseBard />
       </Sequence>
 
+      {/* P4: Typewriter "to Write" */}
       <Sequence from={P4_FROM} durationInFrames={P5_FROM - P4_FROM}>
         <PhaseTypewriter />
       </Sequence>
 
+      {/* P5: "Write emails" pill → dark */}
       <Sequence from={P5_FROM} durationInFrames={P6_FROM - P5_FROM}>
         <PhaseWriteEmails />
       </Sequence>
 
+      {/* P6: Letter scatter exit */}
       <Sequence from={P6_FROM} durationInFrames={P7_FROM - P6_FROM}>
         <PhaseLetterScatter />
       </Sequence>
 
+      {/* P7: "Solve problems" scattered → settled */}
       <Sequence from={P7_FROM} durationInFrames={P8_FROM - P7_FROM}>
         <PhaseSolveProblems />
       </Sequence>
 
+      {/* P8: "Brainstorm ideas" cloud → settled */}
       <Sequence from={P8_FROM} durationInFrames={258 - P8_FROM}>
         <PhaseBrainstormIdeas />
       </Sequence>

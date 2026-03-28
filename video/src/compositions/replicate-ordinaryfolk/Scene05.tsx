@@ -1308,17 +1308,17 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ B+C+D: Gemini Interface (30-180) ═══
-    // Starts zoomed scale(2.5) rotateY(-20deg) — only "Gemini Advanced" title
-    // visible with rainbow border glow. Animates to scale(1) rotateY(0)
+    // Starts HEAVILY zoomed scale(3.8) rotateY(-20deg) — tight on "Gemini Advanced" title
+    // Title dominates the frame. Then pulls back to scale(1) rotateY(0)
     // revealing full dark interface with "Hello, Lisa." and suggestion cards.
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
         rotateX: 0,
         rotateY: -20,
-        scale: 2.5,
-        x: 180,
-        y: 480,
+        scale: 3.8,
+        x: 240,
+        y: 600,
       }, 0);
       // Fade in — title screen phase (zoomed on "Gemini Advanced" header)
       t.to(interfaceWrapRef.current, {
@@ -2662,15 +2662,15 @@ export const Scene05: React.FC = () => {
             marginTop: 0,
           }}
         >
-          {/* Phone LEFT — rotateY(30deg) toward viewer */}
+          {/* Phone LEFT — backs face each other, screen faces outward LEFT */}
           <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
-            <PhoneMockup style={{ transform: "scale(1.15) rotateY(30deg)" }} />
+            <PhoneMockup style={{ transform: "scale(1.15) rotateY(-30deg)" }} />
           </div>
-          {/* Desktop RIGHT — rotateY(-30deg) toward viewer */}
+          {/* Desktop RIGHT — backs face each other, screen faces outward RIGHT */}
           <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
             <div
               style={{
-                transform: "scale(0.8) rotateY(-30deg)",
+                transform: "scale(0.8) rotateY(30deg)",
                 transformOrigin: "center center",
               }}
             >
