@@ -241,3 +241,19 @@ The reference video has 17 distinct 3D elements. Each needs:
 - [ ] **Cards do NOT do 360° spins.** They ROCK gently through 30-40° arc. Change all `rotateY` ranges from `[0, 360]` to `[-20, 20]` or `[-15, 25]`.
 - [ ] The motion is slow and dignified, not carnival.
 - [ ] Each card turns slightly on its own axis during a cinematic pan.
+
+## USER FEEDBACK — Latest Session
+
+### REGRESSIONS (revert needed):
+- [ ] **0:00-0:08 BROKEN** — aggressive rewrite (061c50c0) stomped structural timing fix. REVERTED to 6d5b9c9b.
+- [ ] **0:15 particles BROKEN** — S03 critic fix compressed too much. REVERTED to a5cddb62.
+- [ ] **0:27 "And more" BROKEN** — critic fix changed balls to typographic o's. User liked balls. REVERTED.
+
+### NEW ISSUES:
+- [ ] **1:08 scene BROKEN** — S05 dark mode area. Need investigation.
+- [ ] **0:11 transition needs 3D** — S02 page turn/dark reveal area. The transition should have 3D depth.
+- [ ] **1:05 text is WRONG** — S05 text content or position incorrect at this timestamp.
+
+### SCENE BOUNDARY CHANGES (user requested):
+- [ ] **Cut scene at 0:35** (not 0:39) — phone scene must be entirely in ONE scene (S03 or S04, not split).
+- [ ] **Cut scene at 0:48** (not 0:50) — 3D dark mode showcase must be entirely in ONE scene (S04 or S05, not split). The 3D elements at 0:48-0:50 belong with the rest of the dark mode section.

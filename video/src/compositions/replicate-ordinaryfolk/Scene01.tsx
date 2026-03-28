@@ -42,7 +42,7 @@ const H = 720;
 const SCALE = 720 / 540; // 1.333
 
 // --- Palette ---------------------------------------------------------------
-const BG_BASE = "#EDEEF6";
+const BG_BASE = "#F0EDF5";
 const TEXT_DARK = "#1A1A2E";
 
 const clamp = {
@@ -89,24 +89,23 @@ function useGsapProxy(
 // subtle lavender top-right. Nearly white overall. Drifts very slowly.
 const PastelBackground: React.FC = () => {
   const frame = useCurrentFrame();
-  const hueShift = interpolate(frame, [0, 258], [0, 6], clamp);
+  const hueShift = interpolate(frame, [0, 258], [0, 14], clamp);
 
-  // Drift: halved frequency & amplitude — blobs should barely move
-  const x1 = 35 + noise2D("bg1x", frame * 0.002, 0) * 5;
-  const y1 = 48 + noise2D("bg1y", 0, frame * 0.0015) * 4;
-  const x2 = 78 + noise2D("bg2x", frame * 0.0015, 1.5) * 4;
-  const y2 = 25 + noise2D("bg2y", 1.5, frame * 0.002) * 3;
-  const x3 = 55 + noise2D("bg3x", frame * 0.0015, 3.0) * 3;
-  const y3 = 60 + noise2D("bg3y", 3.0, frame * 0.001) * 3;
+  const x1 = 30 + noise2D("bg1x", frame * 0.004, 0) * 10;
+  const y1 = 45 + noise2D("bg1y", 0, frame * 0.003) * 8;
+  const x2 = 82 + noise2D("bg2x", frame * 0.003, 1.5) * 8;
+  const y2 = 28 + noise2D("bg2y", 1.5, frame * 0.004) * 6;
+  const x3 = 68 + noise2D("bg3x", frame * 0.003, 3.0) * 6;
+  const y3 = 22 + noise2D("bg3y", 3.0, frame * 0.002) * 5;
 
   return (
     <AbsoluteFill
       style={{
         background: `
-          radial-gradient(ellipse 180% 140% at ${x1}% ${y1}%, hsla(${222 + hueShift}, 18%, 94%, 0.50), transparent 65%),
-          radial-gradient(ellipse 150% 120% at ${x2}% ${y2}%, hsla(${330 + hueShift}, 12%, 95%, 0.35), transparent 60%),
-          radial-gradient(ellipse 190% 150% at ${x3}% ${y3}%, hsla(${268 + hueShift}, 10%, 95%, 0.25), transparent 55%),
-          linear-gradient(135deg, #EDEEF6 0%, #F2F2F8 45%, #F0EEF2 100%)
+          radial-gradient(ellipse 120% 100% at ${x1}% ${y1}%, hsla(${225 + hueShift}, 45%, 90%, 0.85), transparent 65%),
+          radial-gradient(ellipse 70% 80% at ${x2}% ${y2}%, hsla(${340 + hueShift}, 30%, 92%, 0.6), transparent 60%),
+          radial-gradient(ellipse 60% 50% at ${x3}% ${y3}%, hsla(${275 + hueShift}, 25%, 93%, 0.45), transparent 55%),
+          linear-gradient(135deg, #F0EDF6 0%, #FAFAFA 45%, #F6F2EF 100%)
         `,
       }}
     />
@@ -168,9 +167,9 @@ const EXP_SCATTER_X = [
   -12, -9, -6, -3, 0, 3, 5, 7, 9, 11, 12, 13, 14,
 ];
 
-// Letter sizes: start larger, settle to 48px ("experimenting" is LARGER than surrounding 30px words)
+// Letter sizes: start larger, settle to 50px
 const EXP_START_SIZE = 64;
-const EXP_END_SIZE = 48;
+const EXP_END_SIZE = 50;
 
 const PhaseExperimenting: React.FC = () => {
   const frame = useCurrentFrame();
@@ -271,7 +270,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 50,
           opacity: s.youve.opacity,
         }}
       >
@@ -280,7 +279,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 50,
           opacity: s.been.opacity,
         }}
       >
@@ -314,7 +313,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 30,
+          fontSize: 50,
           opacity: s.with_.opacity,
         }}
       >
@@ -343,7 +342,7 @@ const PhaseBard: React.FC = () => {
       tl.fromTo(
         p.main,
         { x: 6, opacity: 0, scale: 0.94 },
-        { x: 0, opacity: 1, scale: 1, duration: 0.08, ease: "power2.out" },
+        { x: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
       );
     },
     { main: { x: 6, opacity: 0, scale: 0.94 } },
@@ -399,14 +398,11 @@ const PhaseBard: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 4: Typewriter "to Write" (frames 110-150)
-// RESTORED: "to" typed first in dark text → "Write" in gradient → "to" fades.
+// Phase 4: Typewriter "Write" (frames 110-150)
+// FIXED: removed "to" prefix — reference shows only "Write" with cursor.
 // Cursor persists until end of phase.
 // ===========================================================================
 const TYPE_PHASES = [
-  { char: "t", dark: true },
-  { char: "o", dark: true },
-  { char: " ", dark: true },
   { char: "W", dark: false },
   { char: "r", dark: false },
   { char: "i", dark: false },
@@ -414,7 +410,7 @@ const TYPE_PHASES = [
   { char: "e", dark: false },
 ];
 
-// Gradient for "Write": purple → magenta → coral (applied starting at index 3)
+// Gradient for "Write": purple → magenta → coral
 const WRITE_GRADIENT: Array<[number, number, number]> = [
   [0x7b, 0x5b, 0xd0], // W — purple
   [0x90, 0x50, 0xc0], // r — purple-magenta
@@ -429,7 +425,6 @@ const PhaseTypewriter: React.FC = () => {
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
       cursor: { opacity: 1 },
-      toFade: { opacity: 1 },
     };
     for (let i = 0; i < TYPE_PHASES.length; i++) {
       init[`c${i}`] = { visible: 0 };
@@ -439,22 +434,13 @@ const PhaseTypewriter: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // Type "to " first in dark, then "Write" in gradient
-      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.10); // t
-      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.18); // o
-      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.26); // (space)
-      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.34); // W
-      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.46); // r
-      tl.to(p[`c5`], { visible: 1, duration: 0.001 }, 0.56); // i
-      tl.to(p[`c6`], { visible: 1, duration: 0.001 }, 0.64); // t
-      tl.to(p[`c7`], { visible: 1, duration: 0.001 }, 0.72); // e
-      // "to" fades out after "Write" is complete
-      tl.to(
-        p.toFade,
-        { opacity: 0, duration: 0.25, ease: "power1.out" },
-        0.85,
-      );
-      // Cursor persists until late in phase
+      // Type "Write" — one char at a time with slight acceleration
+      tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.15); // W
+      tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.30); // r
+      tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.42); // i
+      tl.to(p[`c3`], { visible: 1, duration: 0.001 }, 0.52); // t
+      tl.to(p[`c4`], { visible: 1, duration: 0.001 }, 0.62); // e
+      // Cursor persists until late in phase (was 0.88, now 1.2)
       tl.to(
         p.cursor,
         { opacity: 0, duration: 0.12, ease: "power2.out" },
@@ -498,17 +484,8 @@ const PhaseTypewriter: React.FC = () => {
       }}
     >
       {TYPE_PHASES.slice(0, visibleCount).map((phase, i) => {
-        if (phase.dark) {
-          // "to " in dark text — fades out after Write finishes typing
-          return (
-            <span key={i} style={{ color: TEXT_DARK, opacity: s.toFade.opacity }}>
-              {phase.char}
-            </span>
-          );
-        }
-        // "Write" letters in gradient
-        const gradIdx = i - 3; // offset past "to "
-        const c = WRITE_GRADIENT[gradIdx] || [0x7b, 0x5b, 0xd0];
+        // All letters are gradient "Write" — no dark prefix
+        const c = WRITE_GRADIENT[i] || [0x7b, 0x5b, 0xd0];
         return (
           <span key={i} style={{ color: `rgb(${c[0]}, ${c[1]}, ${c[2]})` }}>
             {phase.char}
@@ -582,7 +559,7 @@ const PhaseWriteEmails: React.FC = () => {
   // Gradient angle stays roughly horizontal (reference shows stable left-to-right)
   const gradAngle =
     90 + noise2D("pill-angle", frame * 0.02, 0) * 3;
-  const pillGrad = `linear-gradient(${gradAngle}deg, #C83868, #9848A8, #5868D8)`;
+  const pillGrad = `linear-gradient(${gradAngle}deg, #D04878, #A858B8, #6878E0)`;
 
   return (
     <div
@@ -1019,22 +996,15 @@ const PhaseBrainstormIdeas: React.FC = () => {
   );
 };
 
-// --- Frame Timings -----------------------------------------------------------
-// Matched to reference frames (0.5s intervals at 30fps):
-//   f_0s=frame0, f_0.5s=f15, f_1s=f30, f_1.5s=f45, f_2s=f60
-//   f_2.5s=f75 (Bard), f_3s=f90, f_3.5s=f105 (to|)
-//   f_4s=f120 (Write|), f_4.5s=f135 (emails pill)
-//   f_5s=f150 (Write emails dark), f_5.5s=f165 (scatter)
-//   f_6s=f180 (Solve scattered), f_6.5s=f195 (Solve settled)
-//   f_7s=f210 (Brainstorm cloud), f_8s=f240 (final)
-const P1_FROM = 0; // 0.0s
-const P2_FROM = 12; // 0.4s
-const P3_FROM = 72; // 2.4s
-const P4_FROM = 103; // 3.43s
-const P5_FROM = 130; // 4.33s
-const P6_FROM = 158; // 5.27s
-const P7_FROM = 170; // 5.67s
-const P8_FROM = 205; // 6.83s
+// --- Frame Timings (SHIFTED ~15 frames later to match reference) -----------
+const P1_FROM = 0; // 0.0s — "You've" alone, visible immediately
+const P2_FROM = 8; // 0.27s — "been" starts fading in
+const P3_FROM = 72; // 2.4s — "Bard"
+const P4_FROM = 110; // 3.67s — Typewriter "Write" (no "to")
+const P5_FROM = 150; // 5.0s — "Write emails" pill
+const P6_FROM = 185; // 6.17s — Letter scatter (SLOW 1.2s)
+const P7_FROM = 210; // 7.0s — "Solve problems"
+const P8_FROM = 240; // 8.0s — "Brainstorm ideas"
 
 // --- Composition -----------------------------------------------------------
 export const Scene01: React.FC = () => {
@@ -1042,10 +1012,12 @@ export const Scene01: React.FC = () => {
     <AbsoluteFill style={{ fontFamily }}>
       <PastelBackground />
 
-      <Sequence from={P1_FROM} durationInFrames={P2_FROM}>
+      {/* P1: "You've" alone — visible from frame 0, overlaps with P2 start */}
+      <Sequence from={P1_FROM} durationInFrames={P2_FROM + 4}>
         <PhaseYouve />
       </Sequence>
 
+      {/* P2: "You've been experimenting with" — includes its own "You've" */}
       <Sequence from={P2_FROM} durationInFrames={P3_FROM - P2_FROM}>
         <PhaseExperimenting />
       </Sequence>
@@ -1062,7 +1034,7 @@ export const Scene01: React.FC = () => {
         <PhaseWriteEmails />
       </Sequence>
 
-      <Sequence from={P6_FROM} durationInFrames={P7_FROM - P6_FROM + 6}>
+      <Sequence from={P6_FROM} durationInFrames={P7_FROM - P6_FROM}>
         <PhaseLetterScatter />
       </Sequence>
 
