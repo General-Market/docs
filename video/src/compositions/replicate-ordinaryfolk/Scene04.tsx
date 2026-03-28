@@ -680,10 +680,10 @@ const DesktopBrowserFrame: React.FC<{
       transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
       width: 560, height: 580,
       borderRadius: 14,
-      /* Rainbow gradient border via padding trick */
+      /* Rainbow gradient border via padding trick — thicker + glow */
       background: `linear-gradient(${gradAngle}deg, #E91E63 0%, #E040FB 20%, #9C27B0 35%, #7C4DFF 50%, #536DFE 65%, #448AFF 80%, #40C4FF 100%)`,
-      padding: 2.5,
-      boxShadow: "0 20px 80px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.06)",
+      padding: 3,
+      boxShadow: `0 20px 80px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.06), 0 0 30px rgba(156,39,176,0.12), 0 0 60px rgba(124,77,255,0.08)`,
     }}>
       <div style={{
         width: "100%", height: "100%",
