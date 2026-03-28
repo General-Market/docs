@@ -1312,48 +1312,48 @@ const LogoRevealSegment: React.FC = () => {
         fontFamily: FONT,
       }}
     >
-      {/* Whop Logo — W swoosh + text */}
+      {/* Whop Logo — W swoosh + text — large, matching reference */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 60,
+          gap: 80,
           opacity: logoOp,
           transform: `scale(${logoScale})`,
-          marginBottom: 200,
+          marginBottom: 240,
         }}
       >
-        {/* Whop W mark — filled swoosh pair matching official logo */}
-        <svg width="380" height="280" viewBox="0 0 200 140" fill="none">
-          {/* Upper swoosh — starts thin left, dips to valley, rises thick right */}
+        {/* Whop W mark — solid filled swooshes matching official logo */}
+        <svg width="460" height="340" viewBox="0 0 240 170" fill="none">
+          {/* Upper swoosh — thick filled shape */}
           <path
-            d="M38 48 C46 56, 54 62, 64 66 C74 70, 86 66, 100 56 C114 46, 130 32, 152 16
-               L156 22
-               C134 38, 116 52, 102 62 C88 72, 76 76, 64 72 C52 68, 44 60, 36 52 Z"
+            d="M60 42 C60 42, 68 58, 80 68 C92 78, 108 78, 124 66 C140 54, 156 36, 172 20
+               L180 32
+               C164 48, 146 64, 128 76 C110 88, 92 88, 78 78 C64 68, 56 52, 52 44 Z"
             fill={WHOP_RED}
           />
-          {/* Lower swoosh — wider arc, deeper dip */}
+          {/* Lower swoosh — wider, deeper filled shape */}
           <path
-            d="M8 78 C14 72, 22 72, 30 78 C42 90, 56 106, 72 114 C84 118, 98 112, 114 98 C130 84, 148 64, 164 46
-               L168 52
-               C152 70, 132 88, 116 102 C100 116, 86 122, 72 118 C56 112, 42 96, 30 84 C22 76, 14 76, 8 82 Z"
+            d="M18 90 C18 82, 26 76, 36 82 C50 92, 66 112, 84 122 C100 130, 118 124, 136 110 C154 96, 172 72, 188 52
+               L196 64
+               C180 84, 160 106, 140 120 C120 134, 100 138, 82 130 C64 122, 48 102, 34 90 C26 84, 18 88, 16 94 Z"
             fill={WHOP_RED}
           />
         </svg>
         <span
           style={{
-            fontSize: 260,
+            fontSize: 320,
             fontWeight: 800,
             color: WHOP_RED,
-            letterSpacing: -6,
+            letterSpacing: -8,
           }}
         >
           Whop
         </span>
       </div>
 
-      {/* Partner logos */}
-      <div style={{ display: "flex", gap: 240, alignItems: "center" }}>
+      {/* Partner logos — larger, matching reference */}
+      <div style={{ display: "flex", gap: 300, alignItems: "center" }}>
         {partners.map((p, i) => {
           const pOp = interpolate(
             frame,
@@ -1439,7 +1439,7 @@ const LogoRevealSegment: React.FC = () => {
               )}
               <span
                 style={{
-                  fontSize: 84,
+                  fontSize: 100,
                   fontWeight: 600,
                   color: p.color,
                 }}
