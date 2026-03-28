@@ -672,7 +672,7 @@ const SegPhoneMockup: React.FC = () => {
       <Phone3D
         rotateY={0.24}
         rotateX={-0.05}
-        scale={1.3}
+        scale={1}
         screenContent={phoneScreen}
         screenColor="#FFFFFF"
         opacity={pOp}
@@ -847,8 +847,8 @@ const SegPhoneGoodMorning: React.FC = () => {
   const phoneScale = interpolate(flattenT, [0, 1], [1.2, 1.4]);
   const cssScale = interpolate(flattenT, [0, 1], [1.1, 2.0]);
 
-  /* Phone drifts down so top edge meets a visible horizon line */
-  const phoneY = interpolate(flattenT, [0, 1], [enterY, 140]) + tilt.translateY;
+  /* Phone drifts down so top edge creates a clear horizon line */
+  const phoneY = interpolate(flattenT, [0, 1], [enterY, 200]) + tilt.translateY;
   const phoneX = tilt.translateX;
 
   /* "But that's not all..." appears during flatten */
@@ -856,8 +856,9 @@ const SegPhoneGoodMorning: React.FC = () => {
   const textSpr = spring({frame, fps, delay: textDelay, config:{damping:14, stiffness:100, mass:0.7}});
   const textOp = interpolate(textSpr, [0, 0.3], [0, 1], {extrapolateRight:"clamp"});
   const textYOff = interpolate(textSpr, [0, 1], [12, 0]);
-  /* Horizon Y: phone center shifts down, text sits at top edge */
-  const horizonY = interpolate(flattenT, [0, 1], [300, 175]);
+  /* Horizon Y: text sits right at the top edge of the phone where it meets the background.
+     As the phone flattens and shifts down, the horizon rises in the frame. */
+  const horizonY = interpolate(flattenT, [0, 1], [280, 110]);
 
   /* Screen: Good Morning Gemini content */
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));

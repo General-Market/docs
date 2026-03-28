@@ -7,7 +7,7 @@ import {
   MorphSVGPlugin,
   MotionPathPlugin,
 } from "../../lib/useGsapTimeline";
-import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
+import { useFloat3D } from "../../lib/tilt3d";
 
 /* ═══════════════════════════════════════════════════════════════
    Scene 05 — Gemini Advanced Interface
