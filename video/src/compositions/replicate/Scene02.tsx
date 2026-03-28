@@ -185,26 +185,26 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
       <group position={[0, wobble, 0]} rotation={[rot * 0.3, rot, 0]} scale={sc}>
         {/* Inner colored blobs — visible through translucent shell */}
         <mesh position={[-0.2, 0.15, 0.1]}>
-          <sphereGeometry args={[0.45, 24, 24]} />
-          <meshStandardMaterial color="#c084fc" transparent opacity={0.5} emissive="#8b5cf6" emissiveIntensity={0.4} />
+          <sphereGeometry args={[0.5, 24, 24]} />
+          <meshStandardMaterial color="#c084fc" transparent opacity={0.6} emissive="#8b5cf6" emissiveIntensity={0.5} />
         </mesh>
-        <mesh position={[0.25, -0.1, -0.15]}>
+        <mesh position={[0.3, -0.15, -0.1]}>
+          <sphereGeometry args={[0.4, 24, 24]} />
+          <meshStandardMaterial color="#67e8f9" transparent opacity={0.45} emissive="#22d3ee" emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[0.0, 0.25, 0.3]}>
           <sphereGeometry args={[0.35, 24, 24]} />
-          <meshStandardMaterial color="#7dd3fc" transparent opacity={0.4} emissive="#38bdf8" emissiveIntensity={0.3} />
+          <meshStandardMaterial color="#fda4af" transparent opacity={0.4} emissive="#fb7185" emissiveIntensity={0.35} />
         </mesh>
-        <mesh position={[0.1, 0.2, 0.25]}>
-          <sphereGeometry args={[0.3, 24, 24]} />
-          <meshStandardMaterial color="#f9a8d4" transparent opacity={0.35} emissive="#ec4899" emissiveIntensity={0.25} />
-        </mesh>
-        {/* Outer glass shell */}
+        {/* Outer glass shell — very transparent to show inner colors */}
         <mesh>
           <sphereGeometry args={[0.85, 64, 64]} />
           <meshPhysicalMaterial
             {...GLASS_MAT_PROPS}
-            opacity={0.45}
-            color="#d0c8e8"
-            emissive="#9888c0"
-            specularColor={new THREE.Color("#ffd0f0")}
+            opacity={0.32}
+            color="#e0d8f0"
+            emissive="#a098c8"
+            specularColor={new THREE.Color("#ffffff")}
           />
         </mesh>
       </group>
