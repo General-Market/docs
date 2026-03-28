@@ -515,18 +515,19 @@ const SegAndMoreInner: React.FC = () => {
   const {fps, durationInFrames} = useVideoConfig();
   const stretchStart = fps;
   const stretchRaw = frame - stretchStart;
-  const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*2], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
-  const oCount = Math.floor(interpolate(stretch, [0,0.8], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
-  const ballProgress = stretch > 0.15 ? interpolate(stretch, [0.15,0.5], [0,1], {extrapolateRight:"clamp"}) : 0;
-  /* Wider scroll — chain must extend edge-to-edge, some off-screen */
-  const scrollX = interpolate(stretch, [0.1,1], [0,-720], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
+  /* Faster ramp — all 40 balls spawn within the segment's remaining frames after stretchStart */
+  const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*0.8], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
+  const oCount = Math.floor(interpolate(stretch, [0,0.7], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
+  const ballProgress = stretch > 0.1 ? interpolate(stretch, [0.1,0.4], [0,1], {extrapolateRight:"clamp"}) : 0;
+  /* Edge-to-edge scroll — chain extends past viewport, some o's off-screen */
+  const scrollX = interpolate(stretch, [0.05,1], [0,-480], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.5,fps*0.9], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
   const renderBalls = () => Array.from({length:oCount}, (_,i) => {
-    const bd = stretchStart+i*1.5;
+    const bd = stretchStart+i*0.5;
     const damp = 6+(i%5)*1.4;
     const stiff = 120+(i%3)*30;
     const mass = 0.4+(i%4)*0.15;
