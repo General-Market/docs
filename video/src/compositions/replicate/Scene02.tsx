@@ -92,21 +92,21 @@ const Spark: React.FC<{
 /* ── Iridescent glass material (shared) ── */
 const GLASS_MAT_PROPS = {
   transparent: true,
-  opacity: 0.88,
-  roughness: 0.06,
-  metalness: 0.12,
+  opacity: 0.82,
+  roughness: 0.08,
+  metalness: 0.25,
   clearcoat: 1.0,
   clearcoatRoughness: 0.02,
   side: THREE.DoubleSide as THREE.Side,
-  envMapIntensity: 4.0,
-  emissiveIntensity: 0.4,
-  specularIntensity: 3.5,
+  envMapIntensity: 5.0,
+  emissiveIntensity: 0.3,
+  specularIntensity: 4.0,
   iridescence: 1.0,
   iridescenceIOR: 1.5,
   iridescenceThicknessRange: [100, 400] as [number, number],
-  sheen: 0.5,
-  sheenRoughness: 0.08,
-  sheenColor: new THREE.Color("#c8b0ff"),
+  sheen: 0.6,
+  sheenRoughness: 0.06,
+  sheenColor: new THREE.Color("#b090e0"),
 };
 
 /* ── Procedural environment map for glass reflections ── */
@@ -189,8 +189,8 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
         <sphereGeometry args={[0.85, 64, 64]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          color="#d0c8e8"
-          emissive="#a898d0"
+          color="#b8b0d8"
+          emissive="#8870b8"
           specularColor={new THREE.Color("#ffd0f0")}
         />
       </mesh>
@@ -278,6 +278,7 @@ const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progr
   const wobble2 = Math.cos(frame * 0.04) * 0.08;
   return (
     <>
+      <SceneEnv />
       <ambientLight intensity={1.2} />
       <directionalLight position={[5, 5, 5]} intensity={2.2} color="#e0e8ff" />
       <directionalLight position={[-3, 2, 4]} intensity={0.8} color="#ffd4b8" />
@@ -384,6 +385,7 @@ const GlassPillarScene: React.FC<{ progress: number; frame: number }> = ({ progr
 
   return (
     <>
+      <SceneEnv />
       <ambientLight intensity={1.3} />
       <directionalLight position={[4, 6, 5]} intensity={2.2} color="#e0e8ff" />
       <directionalLight position={[-4, 2, 3]} intensity={0.8} color="#d4b8ff" />
@@ -517,6 +519,7 @@ const GlassOneTextScene: React.FC<{ progress: number; frame: number }> = ({ prog
 
   return (
     <>
+      <SceneEnv />
       <ambientLight intensity={1.4} />
       <directionalLight position={[5, 5, 5]} intensity={2.5} color="#e0e8ff" />
       <directionalLight position={[-4, 3, 4]} intensity={1.0} color="#d4b8ff" />

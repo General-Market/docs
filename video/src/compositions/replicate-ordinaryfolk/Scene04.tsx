@@ -107,7 +107,7 @@ interface AnimState {
 
 function createDefaultState(): AnimState {
   return {
-    phoneX: 0, phoneY: 0, phoneRotation: 0, phoneOpacity: 1, phoneScale: 1.0,
+    phoneX: 200, phoneY: 120, phoneRotation: 6, phoneOpacity: 1, phoneScale: 0.88,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
     geminiOpacity: 0, geminiY: 120, geminiScale: 1.3, geminiPanX: -120, geminiPanY: 100,
@@ -129,27 +129,21 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const sec = (f: number) => f / fps;
     const t = gsap.timeline({ paused: true });
 
-    /* ═══ Phase 1: Dog photo — phone centered, no motion ═══ */
-    /* After dog photo hard cut, phone slides from off-screen right into tilted position */
+    /* ═══ Phase 1: Phone entrance — hard cut (opacity already 1), curved arc ═══ */
     const phoneEntryTween = gsap.to({ t: 0 }, {
-      t: 1, duration: sec(18), ease: "expo.out", paused: true,
+      t: 1, duration: sec(20), ease: "expo.out", paused: true,
       onUpdate() {
         const progress = this.progress();
-        s.phoneX = quadBezier(progress, 300, 80, 30);
-        s.phoneY = quadBezier(progress, 100, -10, 0);
+        s.phoneX = quadBezier(progress, 200, 40, 0);
+        s.phoneY = quadBezier(progress, 120, -30, 0);
       },
     });
-    t.add(phoneEntryTween, sec(PHASE.DOG_PHOTO.end));
-    t.to(s, { phoneRotation: -14, duration: sec(1) }, sec(PHASE.DOG_PHOTO.end));
-    t.to(s, { phoneRotation: -10, duration: sec(18), ease: "expo.out" }, sec(PHASE.DOG_PHOTO.end));
-    t.to(s, { phoneScale: 0.92, duration: sec(1) }, sec(PHASE.DOG_PHOTO.end));
-
-    /* Slow drift toward center after entry settles */
-    t.to(s, { phoneX: 20, phoneY: 0, duration: sec(100), ease: "sine.inOut" }, sec(PHASE.CHAT_IN.start + 18));
+    t.add(phoneEntryTween, 0);
+    t.to(s, { phoneRotation: 0, duration: sec(20), ease: "expo.out" }, 0);
 
     /* Phone scale — breathing + zoom during photo expand */
-    t.to(s, { phoneScale: 0.96, duration: sec(30), ease: "sine.inOut" }, sec(PHASE.CHAT_IN.start + 18));
-    t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(60));
+    t.to(s, { phoneScale: 0.96, duration: sec(40), ease: "sine.inOut" }, 0);
+    t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
     /* Camera push during photo expand — zoom in */
     t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
     /* Pull back for AI response */
@@ -914,16 +908,16 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Phone tilt — flat during dog photo, tilts on chat entrance, reduces over time, ramps during exit */
+  /* Phone tilt — strong entrance tilt, reduces over time, ramps up during exit */
   const phoneTilt = interpolate(frame,
-    [0, PHASE.DOG_PHOTO.end, PHASE.DOG_PHOTO.end + 1, 40, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [0, 0, -16, -14, -10, -6, -4, -4, -45],
+    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [-18, -14, -10, -6, -4, -4, -45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-  /* Phone X rotation — flat during dog photo, subtle lean during chat */
+  /* Phone X rotation — subtle forward lean that reduces over time */
   const phoneXTilt = interpolate(frame,
-    [0, PHASE.DOG_PHOTO.end, PHASE.DOG_PHOTO.end + 1, PHASE.AI_RESPONSE.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [0, 0, 5, 2, 2, 8],
+    [0, PHASE.AI_RESPONSE.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [5, 2, 2, 8],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -986,11 +980,10 @@ export const Scene04: React.FC = () => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
-          /* Perlin noise idle float — suppressed during dog photo hard cut */
-          const noiseMix = frame < PHASE.DOG_PHOTO.end ? 0 : Math.min(1, (frame - PHASE.DOG_PHOTO.end) / 10);
-          const phoneNoiseX = noise2D("phX", frame * 0.012, 0) * 6 * noiseMix;
-          const phoneNoiseY = noise2D("phY", 0, frame * 0.010) * 4 * noiseMix;
-          const phoneNoiseRot = noise2D("phR", frame * 0.008, 5) * 1.2 * noiseMix;
+          /* Perlin noise idle float — phone is never perfectly still */
+          const phoneNoiseX = noise2D("phX", frame * 0.012, 0) * 6;
+          const phoneNoiseY = noise2D("phY", 0, frame * 0.010) * 4;
+          const phoneNoiseRot = noise2D("phR", frame * 0.008, 5) * 1.2;
           const content = (
             <div style={{
               position: "absolute", inset: 0,

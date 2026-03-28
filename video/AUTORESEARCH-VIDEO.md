@@ -248,4 +248,12 @@ cat Scene0*.tsx | wc -l
 npx tsc --noEmit 2>&1 | grep "error TS" | wc -l
 ```
 
-Do these checks between notification bursts. If TS errors appear, fix them from the main chat — unblocks ALL agents simultaneously.
+Do these checks between notification bursts.
+
+### Git push after every batch of completions:
+```bash
+git add video/src/compositions/replicate*/ video/src/lib/ video/scripts/
+git commit -m "autoresearch: <summary of changes>"
+git push mono main
+```
+Push after every 2-3 agent completions. Never let more than 30 minutes of work sit uncommitted. If TS errors appear, fix them from the main chat — unblocks ALL agents simultaneously.

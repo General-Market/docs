@@ -361,8 +361,11 @@ const PhaseBard: React.FC = () => {
 //
 // NOTE: background-clip:text fails in headless — use per-letter color.
 // ===========================================================================
-const WRITE_CHARS = "Write".split("");
-// Gradient: purple -> magenta -> coral across 5 letters
+const TYPE_FULL = "to Write";
+const TYPE_CHARS = TYPE_FULL.split("");
+// First 3 chars "to " use dark text, remaining "Write" use gradient
+const DARK_PREFIX = 3; // "to " length
+// Gradient: purple -> magenta -> coral across the "Write" portion
 const WRITE_GRAD: Array<[number, number, number]> = [
   [0x70, 0x48, 0xc0], // W — deep purple
   [0x88, 0x44, 0xb0], // r — purple-magenta
@@ -378,7 +381,7 @@ const PhaseTypewriter: React.FC = () => {
     const init: Record<string, ProxyState> = {
       cursor: { opacity: 1 },
     };
-    for (let i = 0; i < WRITE_CHARS.length; i++) {
+    for (let i = 0; i < TYPE_CHARS.length; i++) {
       init[`c${i}`] = { visible: 0 };
     }
     return init;
@@ -386,29 +389,29 @@ const PhaseTypewriter: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      for (let i = 0; i < WRITE_CHARS.length; i++) {
+      for (let i = 0; i < TYPE_CHARS.length; i++) {
         tl.to(
           p[`c${i}`],
           { visible: 1, duration: 0.001, ease: "none" },
-          0.07 + i * 0.1,
+          0.07 + i * 0.08,
         );
       }
       tl.to(
         p.cursor,
         { opacity: 0, duration: 0.1, ease: "power2.out" },
-        0.48,
+        0.72,
       );
     },
     proxyInit,
   );
 
   let visibleCount = 0;
-  for (let i = 0; i < WRITE_CHARS.length; i++) {
+  for (let i = 0; i < TYPE_CHARS.length; i++) {
     if (s[`c${i}`].visible > 0.5) visibleCount = i + 1;
   }
 
-  const isTyping = visibleCount > 0 && visibleCount < WRITE_CHARS.length;
-  const isDone = visibleCount >= WRITE_CHARS.length;
+  const isTyping = visibleCount > 0 && visibleCount < TYPE_CHARS.length;
+  const isDone = visibleCount >= TYPE_CHARS.length;
   const blinkOn = Math.floor(frame / 5) % 2 === 0;
   const cursorOpacity = isDone
     ? s.cursor.opacity
@@ -434,8 +437,17 @@ const PhaseTypewriter: React.FC = () => {
         alignItems: "center",
       }}
     >
-      {WRITE_CHARS.slice(0, visibleCount).map((ch, i) => {
-        const c = WRITE_GRAD[i];
+      {TYPE_CHARS.slice(0, visibleCount).map((ch, i) => {
+        if (i < DARK_PREFIX) {
+          // "to " in dark text
+          return (
+            <span key={i} style={{ color: TEXT_DARK }}>
+              {ch}
+            </span>
+          );
+        }
+        const gradIdx = i - DARK_PREFIX;
+        const c = WRITE_GRAD[gradIdx] || [0x1a, 0x1a, 0x2e];
         return (
           <span key={i} style={{ color: `rgb(${c[0]}, ${c[1]}, ${c[2]})` }}>
             {ch}

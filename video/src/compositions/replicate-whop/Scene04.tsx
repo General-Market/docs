@@ -116,6 +116,10 @@ const DashboardSegment: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const row5Op = interpolate(frame, [fps * 1.6, fps * 2.0], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
@@ -570,6 +574,59 @@ const DashboardSegment: React.FC = () => {
               </span>
             </div>
           </div>
+          {/* GBP */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingBottom: 28,
+              marginBottom: 28,
+              borderBottom: `1px solid ${BORDER}`,
+              opacity: row5Op,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 44,
+                  borderRadius: 6,
+                  backgroundColor: "#1D4ED8",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span style={{ fontSize: 26, color: "#fff" }}>🇬🇧</span>
+              </div>
+              <span
+                style={{
+                  fontSize: 40,
+                  fontWeight: 600,
+                  color: TEXT_PRIMARY,
+                }}
+              >
+                GBP
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
+              <div
+                style={{
+                  fontSize: 40,
+                  fontWeight: 600,
+                  color: TEXT_PRIMARY,
+                }}
+              >
+                $623.57
+              </div>
+              <span
+                style={{ fontSize: 32, color: BUTTON_BLUE, fontWeight: 500 }}
+              >
+                Convert
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </AbsoluteFill>
@@ -594,23 +651,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into chart — aggressive zoom focusing on the bar area
+  // Zoom into chart — progressive zoom, matching reference crop at ~1.7x
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.85],
+    [1, 1.7],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -60],
+    [0, -40],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomX = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -280],
+    [0, -200],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
