@@ -132,7 +132,7 @@ const DashboardSegment: React.FC = () => {
     >
       <div
         style={{
-          width: 3000,
+          width: 2800,
           backgroundColor: CARD_BG,
           borderRadius: 48,
           padding: "80px 110px",
@@ -651,23 +651,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into chart — progressive zoom, matching reference crop at ~1.7x
+  // Zoom into chart — moderate zoom, bars stay within visible area
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.7],
+    [1, 1.5],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -40],
+    [0, -20],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomX = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -200],
+    [0, -140],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
@@ -689,10 +689,10 @@ const GrowthChartSegment: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Interest counter animates alongside bars
+  // Interest counter animates slower than main counter — still counting at zoom
   const interestVal = interpolate(
     frame,
-    [fps * 0.4, fps * 1.4],
+    [fps * 0.6, fps * 3.2],
     [0, FINAL_INTEREST],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -828,13 +828,13 @@ const GrowthChartSegment: React.FC = () => {
           />
         ))}
 
-        {/* Annotation: "$118,686 earned in 30 years" */}
+        {/* Annotation: "$xxx earned in 30 years" — positioned near top of tallest bar */}
         <div
           style={{
             position: "absolute",
-            right: PAD_X + 40,
-            top: PAD_TOP - 60,
-            fontSize: 40,
+            right: PAD_X + 60,
+            top: PAD_TOP + 20,
+            fontSize: 38,
             opacity: annotationOp,
             display: "flex",
             gap: 10,
@@ -1325,20 +1325,20 @@ const LogoRevealSegment: React.FC = () => {
           marginBottom: 240,
         }}
       >
-        {/* Whop W mark — solid filled swooshes matching official logo */}
+        {/* Whop W mark — thick solid filled swooshes */}
         <svg width="460" height="340" viewBox="0 0 240 170" fill="none">
-          {/* Upper swoosh — thick filled shape */}
+          {/* Upper swoosh — thick solid band */}
           <path
-            d="M60 42 C60 42, 68 58, 80 68 C92 78, 108 78, 124 66 C140 54, 156 36, 172 20
-               L180 32
-               C164 48, 146 64, 128 76 C110 88, 92 88, 78 78 C64 68, 56 52, 52 44 Z"
+            d="M52 36 C56 46, 66 62, 82 72 C98 82, 116 78, 134 64 C152 50, 168 32, 182 16
+               L192 16
+               C178 34, 160 54, 140 70 C120 86, 100 92, 80 82 C60 72, 50 54, 44 40 Z"
             fill={WHOP_RED}
           />
-          {/* Lower swoosh — wider, deeper filled shape */}
+          {/* Lower swoosh — thick solid band, wider arc */}
           <path
-            d="M18 90 C18 82, 26 76, 36 82 C50 92, 66 112, 84 122 C100 130, 118 124, 136 110 C154 96, 172 72, 188 52
-               L196 64
-               C180 84, 160 106, 140 120 C120 134, 100 138, 82 130 C64 122, 48 102, 34 90 C26 84, 18 88, 16 94 Z"
+            d="M10 94 C14 82, 24 74, 38 80 C56 90, 72 112, 92 126 C110 136, 130 130, 148 116 C166 102, 184 78, 198 56
+               L208 56
+               C194 80, 174 108, 152 124 C130 140, 108 144, 88 134 C68 124, 50 100, 34 86 C22 76, 12 80, 6 92 Z"
             fill={WHOP_RED}
           />
         </svg>
@@ -1471,7 +1471,7 @@ export const Scene04: React.FC = () => {
       <Sequence from={190} durationInFrames={145} name="DepositMethods">
         <DepositSegment />
       </Sequence>
-      <Sequence from={270} durationInFrames={60} name="CoinRain">
+      <Sequence from={290} durationInFrames={50} name="CoinRain">
         <CoinRainTransition />
       </Sequence>
       <Sequence from={325} durationInFrames={118} name="LogoReveal">
