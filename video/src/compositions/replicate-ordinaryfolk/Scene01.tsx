@@ -344,10 +344,10 @@ const PhaseTypewriter: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          width: 1.5,
-          height: TEXT_SIZE * 0.72,
+          width: 2.5,
+          height: TEXT_SIZE * 0.88,
           backgroundColor: TEXT_DARK,
-          marginLeft: 3,
+          marginLeft: 2,
           opacity: cursorOpacity,
         }}
       />
