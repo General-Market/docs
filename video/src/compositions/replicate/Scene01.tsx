@@ -1226,16 +1226,15 @@ const OnePlaceSegment: React.FC = () => {
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
-                <linearGradient id="glassIridescent" x1="0%" y1="0%" x2="100%" y2="100%"
-                  gradientTransform={`rotate(${(frame * 0.5) % 360})`}>
-                  <stop offset="0%" stopColor="rgba(190,110,240,0.85)" />
-                  <stop offset="14%" stopColor="rgba(120,170,255,0.55)" />
-                  <stop offset="28%" stopColor="rgba(255,130,190,0.8)" />
-                  <stop offset="42%" stopColor="rgba(80,160,255,0.5)" />
-                  <stop offset="56%" stopColor="rgba(220,150,255,0.7)" />
-                  <stop offset="70%" stopColor="rgba(110,200,250,0.6)" />
-                  <stop offset="84%" stopColor="rgba(255,120,180,0.75)" />
-                  <stop offset="100%" stopColor="rgba(170,120,255,0.65)" />
+                <linearGradient id="glassIridescent" x1="0%" y1="30%" x2="100%" y2="70%">
+                  {/* O = purple/lilac, n = blue/lavender, e = pink/rose — matching reference */}
+                  <stop offset="0%" stopColor={`rgba(${175 + Math.sin(frame * 0.06) * 15},${100 + Math.sin(frame * 0.08) * 20},${230 + Math.sin(frame * 0.04) * 10},0.85)`} />
+                  <stop offset="15%" stopColor={`rgba(${160 + Math.sin(frame * 0.07) * 10},${130 + Math.sin(frame * 0.05) * 15},${240 + Math.sin(frame * 0.06) * 10},0.75)`} />
+                  <stop offset="35%" stopColor={`rgba(${120 + Math.sin(frame * 0.05) * 10},${160 + Math.sin(frame * 0.07) * 15},${250 + Math.sin(frame * 0.04) * 5},0.6)`} />
+                  <stop offset="50%" stopColor={`rgba(${140 + Math.sin(frame * 0.08) * 15},${180 + Math.sin(frame * 0.06) * 10},${255},0.55)`} />
+                  <stop offset="65%" stopColor={`rgba(${200 + Math.sin(frame * 0.06) * 15},${140 + Math.sin(frame * 0.04) * 15},${230 + Math.sin(frame * 0.07) * 10},0.7)`} />
+                  <stop offset="80%" stopColor={`rgba(${240 + Math.sin(frame * 0.07) * 10},${120 + Math.sin(frame * 0.05) * 15},${190 + Math.sin(frame * 0.06) * 15},0.8)`} />
+                  <stop offset="100%" stopColor={`rgba(${250 + Math.sin(frame * 0.04) * 5},${130 + Math.sin(frame * 0.08) * 10},${200 + Math.sin(frame * 0.05) * 15},0.75)`} />
                 </linearGradient>
                 <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="100%"
                   gradientTransform={`rotate(${(frame * 0.25 + 15) % 360})`}>
