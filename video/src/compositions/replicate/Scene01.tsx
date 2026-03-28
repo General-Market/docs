@@ -513,13 +513,128 @@ const AllOverSegment: React.FC = () => {
  * Single phone mockup — reusable for both the centered phone and the grid.
  * Shows public.com logo with dynamic island, side buttons, and bezel.
  */
+// Screen variant types for grid phones
+type ScreenVariant = "logo" | "treasury" | "holdings" | "chart" | "buy" | "research" | "live" | "about" | "statements";
+
+const PhoneScreenContent: React.FC<{ variant: ScreenVariant; width: number }> = ({ variant, width }) => {
+  const fs = (n: number) => width * n;
+  const shared = { fontFamily, color: "#0a0a2e" as const };
+  switch (variant) {
+    case "treasury":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Treasury account</div>
+          <div style={{ ...shared, fontSize: fs(0.065), fontWeight: 700 }}>$5,585.00</div>
+          <div style={{ ...shared, fontSize: fs(0.025), fontWeight: 400, color: "rgba(0,20,60,0.4)", marginTop: fs(0.01) }}>$4,400.00 available</div>
+          <div style={{ display: "flex", gap: fs(0.015), alignItems: "flex-end", marginTop: fs(0.03) }}>
+            {[35, 60, 25, 72, 45, 62, 38].map((h, j) => (
+              <div key={j} style={{ width: fs(0.04), height: h * fs(0.008), background: `rgba(4,47,243,${0.2 + j * 0.06})`, borderRadius: 2 }} />
+            ))}
+          </div>
+        </div>
+      );
+    case "holdings":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Holdings</div>
+          <div style={{ ...shared, fontSize: fs(0.025), fontWeight: 600, color: "#00c853", marginTop: fs(0.01) }}>+$338.07 (+1.63%)</div>
+          <svg viewBox="0 0 100 35" style={{ width: "100%", height: fs(0.12), marginTop: fs(0.02) }}>
+            <path d="M 0,22 C 15,16 30,24 50,12 S 75,20 100,14" fill="none" stroke="rgba(4,47,243,0.5)" strokeWidth={2} />
+            <path d="M 0,22 C 15,16 30,24 50,12 S 75,20 100,14 L 100,35 L 0,35 Z" fill="rgba(4,47,243,0.08)" />
+          </svg>
+        </div>
+      );
+    case "chart":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.06), fontWeight: 700 }}>$125,367.10</div>
+          <div style={{ ...shared, fontSize: fs(0.025), fontWeight: 500, color: "#00c853" }}>+$1,432.50</div>
+          <svg viewBox="0 0 240 60" style={{ width: "100%", height: fs(0.15), marginTop: fs(0.02) }}>
+            <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10" fill="none" stroke="rgba(4,47,243,0.3)" strokeWidth={1.5} />
+            <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10 L 240,60 L 0,60 Z" fill="rgba(4,47,243,0.05)" />
+          </svg>
+        </div>
+      );
+    case "buy":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px`, display: "flex", flexDirection: "column", gap: fs(0.015) }}>
+          <div style={{ ...shared, fontSize: fs(0.035), fontWeight: 600 }}>Buy AAPL</div>
+          {[85, 65, 50].map((w, j) => (
+            <div key={j} style={{ width: `${w}%`, height: fs(0.02), background: `rgba(0,20,80,0.07)`, borderRadius: 2 }} />
+          ))}
+          <div style={{ marginTop: fs(0.02), padding: `${fs(0.02)}px 0`, width: "70%", background: BLUE, borderRadius: fs(0.025), textAlign: "center" as const }}>
+            <span style={{ fontFamily, fontSize: fs(0.03), fontWeight: 700, color: WHITE }}>Buy</span>
+          </div>
+        </div>
+      );
+    case "research":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Research</div>
+          <div style={{ ...shared, fontSize: fs(0.035), fontWeight: 600, marginTop: fs(0.01) }}>Expert analysis</div>
+          <svg viewBox="0 0 100 35" style={{ width: "100%", height: fs(0.1), marginTop: fs(0.02) }}>
+            <path d="M 0,28 C 20,20 40,30 60,15 S 80,22 100,10" fill="none" stroke="rgba(4,47,243,0.4)" strokeWidth={2} />
+          </svg>
+          {[90, 70, 80, 55].map((w, j) => (
+            <div key={j} style={{ width: `${w}%`, height: fs(0.015), background: `rgba(0,20,80,0.06)`, borderRadius: 2, marginTop: fs(0.01) }} />
+          ))}
+        </div>
+      );
+    case "live":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px`, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ width: fs(0.18), height: fs(0.18), borderRadius: "50%", background: "linear-gradient(135deg, rgba(160,170,200,0.5), rgba(140,150,180,0.3))", border: `3px solid rgba(0,20,80,0.1)` }} />
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 600, marginTop: fs(0.02) }}>Public Live</div>
+          {[75, 60].map((w, j) => (
+            <div key={j} style={{ width: `${w}%`, height: fs(0.015), background: "rgba(0,20,80,0.06)", borderRadius: 2, marginTop: fs(0.01) }} />
+          ))}
+        </div>
+      );
+    case "about":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>About</div>
+          <div style={{ ...shared, fontSize: fs(0.035), fontWeight: 600, marginTop: fs(0.01) }}>Company overview</div>
+          {[90, 85, 70, 80, 65].map((w, j) => (
+            <div key={j} style={{ width: `${w}%`, height: fs(0.015), background: "rgba(0,20,80,0.06)", borderRadius: 2, marginTop: fs(0.012) }} />
+          ))}
+        </div>
+      );
+    case "statements":
+      return (
+        <div style={{ width: "100%", padding: `${fs(0.15)}px ${fs(0.06)}px ${fs(0.06)}px` }}>
+          <div style={{ ...shared, fontSize: fs(0.03), fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Statements</div>
+          {[80, 65, 75, 55].map((w, j) => (
+            <div key={j} style={{ width: `${w}%`, height: fs(0.015), background: "rgba(0,20,80,0.06)", borderRadius: 2, marginTop: fs(0.012) }} />
+          ))}
+          <div style={{ marginTop: fs(0.02), padding: `${fs(0.015)}px ${fs(0.03)}px`, background: BLUE, borderRadius: fs(0.02), display: "inline-block" }}>
+            <span style={{ fontFamily, fontSize: fs(0.025), fontWeight: 600, color: WHITE }}>Download</span>
+          </div>
+        </div>
+      );
+    default: // "logo"
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: width * 0.031 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: width * 0.009 }}>
+            <div style={{ width: width * 0.038, height: width * 0.038, borderRadius: "50%", background: BLUE }} />
+            <div style={{ width: width * 0.022, height: width * 0.022, borderRadius: "50%", background: BLUE }} />
+          </div>
+          <span style={{ fontFamily, fontSize: width * 0.069, fontWeight: 600, color: "#0a0a2e", letterSpacing: -0.5 }}>
+            public.com
+          </span>
+        </div>
+      );
+  }
+};
+
 const PhoneMockup: React.FC<{
   width?: number;
   height?: number;
   showPortfolio?: boolean;
   elevated?: boolean;
   iridescentHue?: number;
-}> = ({ width = 320, height = 640, showPortfolio = false, elevated = false, iridescentHue = 0 }) => {
+  screenVariant?: ScreenVariant;
+}> = ({ width = 320, height = 640, showPortfolio = false, elevated = false, iridescentHue = 0, screenVariant = "logo" }) => {
   // Iridescent border colors derived from hue rotation
   const h1 = (iridescentHue + 200) % 360;
   const h2 = (iridescentHue + 260) % 360;
@@ -603,15 +718,7 @@ const PhoneMockup: React.FC<{
             ))}
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: width * 0.031 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: width * 0.009 }}>
-              <div style={{ width: width * 0.038, height: width * 0.038, borderRadius: "50%", background: BLUE }} />
-              <div style={{ width: width * 0.022, height: width * 0.022, borderRadius: "50%", background: BLUE }} />
-            </div>
-            <span style={{ fontFamily, fontSize: width * 0.069, fontWeight: 600, color: "#0a0a2e", letterSpacing: -0.5 }}>
-              public.com
-            </span>
-          </div>
+          <PhoneScreenContent variant={screenVariant} width={width} />
         )}
       </div>
       {/* Side buttons */}
@@ -767,6 +874,7 @@ const PhoneSegment: React.FC = () => {
                   showPortfolio={isCenter}
                   elevated={isCenter}
                   iridescentHue={isCenter ? 0 : (i * 47 + 120) % 360}
+                  screenVariant={isCenter ? "logo" : (["treasury", "holdings", "about", "statements", "chart", "buy", "research", "live", "holdings", "about", "chart", "research", "treasury", "live", "statements"] as ScreenVariant[])[i % 15]}
                 />
               </div>
             );
