@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, Suspense } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -9,6 +9,8 @@ import {
   Easing,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Inter";
+import { ThreeCanvas } from "@remotion/three";
+import * as THREE from "three";
 
 const { fontFamily } = loadFont("normal", {
   subsets: ["latin"],
@@ -225,142 +227,115 @@ const SometimesSegment: React.FC = () => {
 };
 
 /**
- * Tangled ribbon path — figure-8 / pretzel loops matching reference.
- * The reference shows a glossy 3D tube with loops and self-crossings.
- * We approximate with layered SVG strokes + gradients + blur for depth.
+ * 3D Tangled Ribbon using Three.js TubeGeometry.
+ * Each tube is a CatmullRomCurve3 rendered with meshPhysicalMaterial
+ * for glossy, translucent appearance matching reference.
  */
-const TangledRibbon: React.FC<{ progress: number; breathe?: number }> = ({ progress, breathe = 0 }) => {
-  // Reference: tangled knot on left-center + elongated smooth loop extending right
-  // 3-4 semi-transparent silver-gray tubes crossing each other
-  // Knot cluster: x=200-500, y=150-450
-  // Right extension: smooth oval reaching x=900+
-  const paths = [
-    // Path A: Left knot loop (tight circle) → extends right as elongated oval
-    { d: "M 200,380 C 240,240 340,160 440,200 C 540,240 520,360 420,380 C 320,400 260,320 320,240 C 380,160 540,120 700,140 C 860,160 980,240 980,340 C 980,440 860,460 740,400", depth: 1 },
-    // Path B: Second left knot loop (slightly different angle) → crosses path A going right
-    { d: "M 240,360 C 280,200 380,130 470,210 C 560,290 500,400 400,400 C 300,400 280,280 370,200 C 460,120 620,100 760,140 C 900,180 1000,280 960,380 C 920,480 780,460 660,380", depth: 2 },
-    // Path C: Innermost tight loop in the knot (creates the dense crossing)
-    { d: "M 280,340 C 310,220 400,170 470,230 C 540,290 500,380 430,370 C 360,360 340,270 400,210 C 460,150 560,160 600,240 C 640,320 600,400 520,380", depth: 3 },
-    // Path D: Wide sweep that arcs behind the knot and over the right extension
-    { d: "M 160,300 C 200,160 360,100 500,150 C 640,200 750,140 860,120 C 970,100 1060,200 1020,320 C 980,440 860,440 740,380 C 620,320 540,380 420,400", depth: 0 },
-    // Path E: Extra knot loop — creates additional crossing density in left cluster
-    { d: "M 260,380 C 290,240 380,170 460,240 C 540,310 480,400 390,390 C 300,380 290,290 360,220 C 430,150 540,140 620,200 C 700,260 680,360 600,380", depth: 2 },
-  ];
 
-  const totalLength = 3200;
+// Ribbon curve definitions — 3D points creating tangled loops
+const RIBBON_CURVES = [
+  // Path A: Left knot cluster → smooth extension right (denser tangle in left-center)
+  [[-2.8, 0.6, 0.2], [-2.0, -0.5, 0.6], [-1.0, -1.2, -0.4], [0.0, -0.6, 0.5], [0.5, 0.3, -0.3], [0.2, 1.0, 0.4], [-0.6, 0.8, -0.2], [-1.2, 0.1, 0.6], [-0.4, -0.8, -0.5], [0.8, -1.0, 0.3], [2.0, -0.4, -0.1], [3.2, 0.2, 0.3], [3.8, 0.8, -0.2], [3.2, 1.2, 0.1]],
+  // Path B: Second loop, different Z crossings for true 3D interweave
+  [[-2.5, 0.4, -0.4], [-1.8, -0.7, -0.6], [-0.8, -1.0, 0.5], [0.1, -0.3, -0.4], [0.4, 0.6, 0.6], [0.0, 1.2, -0.3], [-0.7, 0.7, 0.5], [-1.1, -0.1, -0.6], [-0.2, -1.0, 0.4], [1.0, -0.8, -0.3], [2.5, -0.2, 0.4], [3.5, 0.6, -0.3], [3.0, 1.4, 0.2], [2.0, 1.0, -0.1]],
+  // Path C: Tight inner crossing loop
+  [[-1.6, 0.2, 0.5], [-1.0, -0.4, -0.4], [-0.2, -0.6, 0.6], [0.3, 0.0, -0.5], [0.6, 0.6, 0.4], [0.1, 1.0, -0.6], [-0.5, 0.6, 0.3], [-0.8, -0.2, -0.4], [0.0, -0.6, 0.5], [0.8, -0.3, -0.3], [1.5, 0.3, 0.3], [1.2, 0.9, -0.2]],
+  // Path D: Wide background sweep — arcs behind, creates depth
+  [[-3.5, -0.2, -0.7], [-2.0, -1.2, 0.4], [-0.3, -1.5, -0.3], [1.2, -0.8, 0.6], [2.8, -1.2, -0.4], [4.0, -0.3, 0.3], [4.2, 0.6, -0.5], [3.5, 1.3, 0.4], [2.2, 1.0, -0.3], [0.8, 0.4, 0.5], [-0.6, 0.9, -0.4], [-1.8, 0.6, 0.3]],
+  // Path E: Extra knot crossing — adds density in center cluster
+  [[-2.2, 0.5, 0.3], [-1.5, -0.3, -0.5], [-0.5, -0.9, 0.4], [0.2, -0.1, -0.3], [0.5, 0.7, 0.5], [-0.1, 1.1, -0.4], [-0.8, 0.5, 0.3], [-1.3, -0.3, -0.5], [-0.3, -0.9, 0.4], [0.6, -0.5, -0.2], [1.3, 0.2, 0.3], [1.0, 0.8, -0.2]],
+] as const;
+
+const RibbonTube: React.FC<{
+  points: readonly (readonly [number, number, number])[];
+  radius: number;
+  color: string;
+  opacity: number;
+  progress: number;
+}> = ({ points, radius, color, opacity, progress }) => {
+  const geometry = useMemo(() => {
+    const pts = points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
+    const segments = 96;
+    const visibleSegments = Math.max(1, Math.floor(segments * progress));
+    const geo = new THREE.TubeGeometry(curve, visibleSegments, radius, 12, false);
+    return geo;
+  }, [points, radius, progress]);
 
   return (
-    <svg
-      viewBox="0 0 1100 600"
-      style={{
-        position: "absolute",
-        inset: -40,
-        width: "calc(100% + 80px)",
-        height: "calc(100% + 80px)",
-        transform: breathe > 0 ? `scale(${1 + breathe * 0.008}) translateY(${breathe * 1.5}px)` : undefined,
-      }}
-      preserveAspectRatio="xMidYMid slice"
-    >
-      <defs>
-        {/* Silver/blue-gray gradient — semi-transparent tube over blue bg */}
-        <linearGradient id="ribbonGlass1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(170,185,215,0.9)" />
-          <stop offset="25%" stopColor="rgba(190,200,225,0.55)" />
-          <stop offset="50%" stopColor="rgba(160,175,205,0.8)" />
-          <stop offset="75%" stopColor="rgba(185,195,220,0.5)" />
-          <stop offset="100%" stopColor="rgba(170,185,215,0.85)" />
-        </linearGradient>
-        <linearGradient id="ribbonGlass2" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(180,192,220,0.8)" />
-          <stop offset="50%" stopColor="rgba(200,210,235,0.45)" />
-          <stop offset="100%" stopColor="rgba(165,180,215,0.85)" />
-        </linearGradient>
-        {/* Subtle glow — less intense than before */}
-        <filter id="ribbonGlow">
-          <feGaussianBlur stdDeviation="2.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-        <filter id="ribbonShadow">
-          <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="rgba(0,10,60,0.2)" />
-        </filter>
-      </defs>
+    <mesh geometry={geometry}>
+      <meshPhysicalMaterial
+        color={color}
+        transparent
+        opacity={opacity}
+        transmission={0.65}
+        roughness={0.03}
+        metalness={0.08}
+        clearcoat={1.0}
+        clearcoatRoughness={0.01}
+        ior={1.5}
+        thickness={0.2}
+        side={THREE.DoubleSide}
+        envMapIntensity={2.0}
+        emissive="#6080c0"
+        emissiveIntensity={0.18}
+        specularIntensity={1.0}
+        specularColor={new THREE.Color("#d0e0ff")}
+      />
+    </mesh>
+  );
+};
 
-      {paths.map((p, i) => {
-        const staggerDelay = i * 0.04;
-        const localProgress = Math.max(0, Math.min(1, (progress - staggerDelay) / (1 - staggerDelay)));
-        const depthOpacity = 0.7 + p.depth * 0.08;
-        // Thicker tubes — reference shows substantial 3D tube, not wire
-        const tubeWidth = 16 - p.depth * 1.5;
-        return (
-          <React.Fragment key={i}>
-            {/* Shadow — subtle depth offset */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={`rgba(0,10,50,${0.08 + p.depth * 0.015})`}
-              strokeWidth={tubeWidth + 6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
-              transform={`translate(${2 + p.depth * 0.5}, ${3 + p.depth})`}
+const RibbonScene: React.FC<{ progress: number; breathe: number }> = ({ progress, breathe }) => {
+  const colors = ["#b8c8e8", "#c0d0f0", "#a8b8e0", "#bcc8e8", "#b0c0e0"];
+  const radii = [0.19, 0.17, 0.15, 0.21, 0.16];
+  const opacities = [0.68, 0.58, 0.63, 0.52, 0.60];
+
+  return (
+    <>
+      <ambientLight intensity={1.0} />
+      <pointLight position={[5, 5, 5]} intensity={1.8} color="#d0e0ff" />
+      <pointLight position={[-4, -2, 4]} intensity={0.8} color="#a0b0e0" />
+      <pointLight position={[0, 4, 2]} intensity={0.6} color="#e0e8ff" />
+      <directionalLight position={[0, 3, 5]} intensity={1.2} color="#ffffff" />
+      <group
+        rotation={[breathe * 0.01, breathe * 0.025, breathe * 0.005]}
+        position={[0, breathe * 0.05, 0]}
+      >
+        {RIBBON_CURVES.map((pts, i) => {
+          const staggerDelay = i * 0.06;
+          const localProgress = Math.max(0, Math.min(1, (progress - staggerDelay) / (1 - staggerDelay)));
+          if (localProgress <= 0) return null;
+          return (
+            <RibbonTube
+              key={i}
+              points={pts}
+              radius={radii[i]}
+              color={colors[i]}
+              opacity={opacities[i]}
+              progress={localProgress}
             />
-            {/* Outer glow — subtle silver */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={`rgba(160,170,200,${0.1 + p.depth * 0.02})`}
-              strokeWidth={tubeWidth + 8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
-              filter="url(#ribbonGlow)"
-              opacity={depthOpacity * 0.6}
-            />
-            {/* Main tube body — silver/gray */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={i % 2 === 0 ? "url(#ribbonGlass1)" : "url(#ribbonGlass2)"}
-              strokeWidth={tubeWidth}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
-              opacity={depthOpacity}
-            />
-            {/* Edge highlight — bright top edge */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={`rgba(220,225,240,${0.4 + p.depth * 0.06})`}
-              strokeWidth={3.5 - p.depth * 0.3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
-              opacity={depthOpacity}
-            />
-            {/* Specular center line — white highlight */}
-            <path
-              d={p.d}
-              fill="none"
-              stroke={`rgba(240,242,255,${0.2 + p.depth * 0.04})`}
-              strokeWidth={1.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={totalLength}
-              strokeDashoffset={totalLength * (1 - localProgress)}
-              opacity={depthOpacity}
-            />
-          </React.Fragment>
-        );
-      })}
-    </svg>
+          );
+        })}
+      </group>
+    </>
+  );
+};
+
+const TangledRibbon3D: React.FC<{ progress: number; breathe?: number }> = ({ progress, breathe = 0 }) => {
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <ThreeCanvas
+        width={1280}
+        height={720}
+        style={{ position: "absolute", inset: 0 }}
+        camera={{ position: [0.3, 0.1, 7], fov: 50 }}
+      >
+        <Suspense fallback={null}>
+          <RibbonScene progress={progress} breathe={breathe} />
+        </Suspense>
+      </ThreeCanvas>
+    </div>
   );
 };
 
@@ -411,8 +386,8 @@ const AllOverSegment: React.FC = () => {
     <AbsoluteFill style={{ opacity: exitOpacity }}>
       <FilmGrain opacity={0.03} />
 
-      {/* Tangled ribbon behind text */}
-      <TangledRibbon progress={ribbonProgress} breathe={breathe} />
+      {/* Tangled ribbon behind text — Three.js 3D tubes */}
+      <TangledRibbon3D progress={ribbonProgress} breathe={breathe} />
 
       {/* Dashes connecting "all" to "over" — horizontal row at top */}
       <div
@@ -1020,6 +995,14 @@ const OnePlaceSegment: React.FC = () => {
               style={{ width: 580, height: 260, overflow: "visible" }}
             >
               <defs>
+                {/* Glow filter for glass text shadow */}
+                <filter id="ribbonGlow">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
                 {/* Iridescent gradient — animated, strong prismatic colors */}
                 <linearGradient id="glassIridescent" x1="0%" y1="0%" x2="100%" y2="100%"
                   gradientTransform={`rotate(${(frame * 0.4) % 360})`}>
