@@ -171,7 +171,7 @@ const PhaseExperimenting: React.FC = () => {
         x: EXP_SETTLE_X[i] || 0,
         y: EXP_SETTLE_Y[i] || 0,
         opacity: 0,
-        purple: 0.7,
+        purple: 0.85,
       };
     }
     return init;
@@ -957,7 +957,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
           left: "50%",
           transform: `translate(-50%, -50%) scale(${s.final.scale})`,
           fontFamily,
-          fontSize: 32,
+          fontSize: 44,
           fontWeight: 400,
           color: TEXT_DARK,
           whiteSpace: "nowrap",
