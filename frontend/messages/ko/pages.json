@@ -191,7 +191,10 @@
       "processed_per_min": "처리 주문/분",
       "processed_desc": "연속 스냅샷 간 차이",
       "avg_cycle": "평균 사이클 시간",
-      "current_time": "현재: {time}ms"
+      "current_time": "현재: {time}ms",
+      "fill_latency": "체결 지연 분포",
+      "fill_latency_median": "중앙값",
+      "orders": "주문"
     },
     "itp_section": {
       "title": "ITP 지표",
@@ -205,7 +208,14 @@
       "nav": "NAV",
       "aum": "AUM",
       "shares": "지분",
-      "no_data": "ITP 데이터 없음"
+      "no_data": "ITP 데이터 없음",
+      "nav_sparklines": "NAV 추세 (30일)",
+      "nav_sparklines_desc": "AUM 기준 상위 ITP — 일일 종가",
+      "sharpe_frontier": "위험 대비 수익",
+      "simulations_plotted": "시뮬레이션 플롯",
+      "max_drawdown": "최대 낙폭",
+      "annual_return": "연간 수익률",
+      "no_sim_data": "시뮬레이션 데이터 없음"
     },
     "chain_gas_section": {
       "consensus_throughput": "Consensus Throughput",
@@ -328,7 +338,12 @@
       "volume": "Volume",
       "win_pct": "Win%",
       "pnl": "P&L",
-      "no_player_data": "No player data"
+      "no_player_data": "No player data",
+      "settlement_volatility": "정산 변동성",
+      "settlement_in_tie_zone": "타이 구간 내 (±2%)",
+      "settlements": "정산",
+      "no_settlement_data": "정산 데이터 없음",
+      "roi": "ROI"
     }
   },
   "points": {

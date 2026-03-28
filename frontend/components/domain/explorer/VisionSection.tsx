@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import type { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
 import { ExplorerChartCard } from '@/components/domain/explorer'
+import { SettlementVolatilityChart } from './SettlementVolatilityChart'
 
 interface SectionProps {
   snapshots: AggregatedSnapshot[]
@@ -367,6 +368,9 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           )}
         </div>
       </ExplorerChartCard>
+
+      {/* Settlement Volatility Distribution */}
+      <SettlementVolatilityChart />
 
     </div>
   )

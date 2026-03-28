@@ -10,6 +10,8 @@ import { formatUnits } from 'viem'
 import { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
 import { ExplorerChartCard } from '@/components/domain/explorer'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
+import { NavSparklineGrid } from './NavSparklineGrid'
+import { SharpeFrontierChart } from './SharpeFrontierChart'
 
 interface SectionProps {
   snapshots: AggregatedSnapshot[]
@@ -151,6 +153,12 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
             </div>
           </div>
         </ExplorerChartCard>
+        {/* NAV Sparklines — 30d trend per ITP */}
+        <NavSparklineGrid />
+
+        {/* Sharpe Frontier — simulation scatter plot */}
+        <SharpeFrontierChart />
+
       </div>
     </section>
   )

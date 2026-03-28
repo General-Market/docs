@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 import { AggregatedSnapshot, computeDeltas } from '@/hooks/useExplorerHealth'
 import { ExplorerChartCard } from '@/components/domain/explorer'
+import { FillLatencyChart } from './FillLatencyChart'
 
 interface SectionProps {
   snapshots: AggregatedSnapshot[]
@@ -140,6 +141,9 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
             </LineChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
+
+        {/* 4. Fill Latency Distribution */}
+        <FillLatencyChart />
 
       </div>
     </section>

@@ -191,7 +191,10 @@
       "processed_per_min": "処理オーダー/分",
       "processed_desc": "連続スナップショット間の差分",
       "avg_cycle": "平均サイクル時間",
-      "current_time": "現在: {time}ms"
+      "current_time": "現在: {time}ms",
+      "fill_latency": "約定遅延分布",
+      "fill_latency_median": "中央値",
+      "orders": "注文"
     },
     "itp_section": {
       "title": "ITPメトリクス",
@@ -205,7 +208,14 @@
       "nav": "NAV",
       "aum": "AUM",
       "shares": "シェア",
-      "no_data": "ITTデータなし"
+      "no_data": "ITTデータなし",
+      "nav_sparklines": "NAVトレンド (30日)",
+      "nav_sparklines_desc": "AUM上位ITP — 日次終値",
+      "sharpe_frontier": "リスク対リターン",
+      "simulations_plotted": "シミュレーション表示",
+      "max_drawdown": "最大ドローダウン",
+      "annual_return": "年間リターン",
+      "no_sim_data": "シミュレーションデータなし"
     },
     "chain_gas_section": {
       "consensus_throughput": "Consensus Throughput",
@@ -328,7 +338,12 @@
       "volume": "Volume",
       "win_pct": "Win%",
       "pnl": "P&L",
-      "no_player_data": "No player data"
+      "no_player_data": "No player data",
+      "settlement_volatility": "決済ボラティリティ",
+      "settlement_in_tie_zone": "タイゾーン内 (±2%)",
+      "settlements": "決済",
+      "no_settlement_data": "決済データなし",
+      "roi": "ROI"
     }
   },
   "points": {

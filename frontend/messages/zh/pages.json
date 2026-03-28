@@ -191,7 +191,10 @@
       "processed_per_min": "处理订单/分钟",
       "processed_desc": "连续快照之间的差异",
       "avg_cycle": "平均周期时间",
-      "current_time": "当前: {time}ms"
+      "current_time": "当前: {time}ms",
+      "fill_latency": "成交延迟分布",
+      "fill_latency_median": "中位数",
+      "orders": "订单"
     },
     "itp_section": {
       "title": "ITP指标",
@@ -205,7 +208,14 @@
       "nav": "NAV",
       "aum": "AUM",
       "shares": "份额",
-      "no_data": "无ITP数据"
+      "no_data": "无ITP数据",
+      "nav_sparklines": "NAV趋势 (30天)",
+      "nav_sparklines_desc": "按AUM排名的ITP — 日收盘价",
+      "sharpe_frontier": "风险与收益",
+      "simulations_plotted": "模拟已绘制",
+      "max_drawdown": "最大回撤",
+      "annual_return": "年化收益率",
+      "no_sim_data": "无模拟数据"
     },
     "chain_gas_section": {
       "consensus_throughput": "Consensus Throughput",
@@ -328,7 +338,12 @@
       "volume": "Volume",
       "win_pct": "Win%",
       "pnl": "P&L",
-      "no_player_data": "No player data"
+      "no_player_data": "No player data",
+      "settlement_volatility": "结算波动率",
+      "settlement_in_tie_zone": "在平局区间内 (±2%)",
+      "settlements": "结算",
+      "no_settlement_data": "无结算数据",
+      "roi": "ROI"
     }
   },
   "points": {

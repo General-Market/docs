@@ -191,7 +191,10 @@
       "processed_per_min": "Orders Processed/min",
       "processed_desc": "Delta between consecutive snapshots",
       "avg_cycle": "Avg Cycle Duration",
-      "current_time": "Current: {time}ms"
+      "current_time": "Current: {time}ms",
+      "fill_latency": "Fill Latency Distribution",
+      "fill_latency_median": "Median",
+      "orders": "Orders"
     },
     "itp_section": {
       "title": "ITP Metrics",
@@ -205,7 +208,14 @@
       "nav": "NAV",
       "aum": "AUM",
       "shares": "Shares",
-      "no_data": "No ITP data available"
+      "no_data": "No ITP data available",
+      "nav_sparklines": "NAV Trends (30d)",
+      "nav_sparklines_desc": "Top ITPs by AUM — daily close",
+      "sharpe_frontier": "Risk vs Return",
+      "simulations_plotted": "simulations plotted",
+      "max_drawdown": "Max Drawdown",
+      "annual_return": "Annual Return",
+      "no_sim_data": "No simulation data"
     },
     "chain_gas_section": {
       "consensus_throughput": "Consensus Throughput",
@@ -328,7 +338,12 @@
       "volume": "Volume",
       "win_pct": "Win%",
       "pnl": "P&L",
-      "no_player_data": "No player data"
+      "no_player_data": "No player data",
+      "settlement_volatility": "Settlement Volatility",
+      "settlement_in_tie_zone": "within tie zone (±2%)",
+      "settlements": "Settlements",
+      "no_settlement_data": "No settlement data",
+      "roi": "ROI"
     }
   },
   "points": {
