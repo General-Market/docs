@@ -534,84 +534,41 @@ const SegStartingWith: React.FC = () => {
   );
 };
 
-/* --- SEGMENT 10: Phone Sequence (FIX 4) ---
-   Phase A (0-25%): Zoom into bottom of phone home screen (dock icons visible)
-   Phase B (25-45%): Slide up to "Hi I'm Gemini" screen
-   Phase C (45-70%): 180° Y-flip to other content
-   Phase D (70-100%): Tilt 25° toward viewer */
-const PhoneGeminiScreen: React.FC = () => (
-  <div style={{position:"absolute",inset:0,backgroundColor:"#FFFFFF",display:"flex",flexDirection:"column"}}>
-    <PhoneStatusBar />
-    <div style={{padding:"30px 24px",flex:1}}>
-      <div>
-        <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK}}>Hi I'm </span>
-        <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
-      </div>
-      <div style={{marginTop:8}}>
-        <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
-      </div>
-    </div>
-    <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
-  </div>
-);
-
+/* --- SEGMENT 10: Phone Mockup (3D tilted, ref frames 14-15) --- */
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const pW = organicWobble("ph10", frame, 2.5, 2, 0.018);
-
-  /* Phase boundaries */
-  const phaseAEnd = Math.floor(durationInFrames * 0.25);
-  const phaseBEnd = Math.floor(durationInFrames * 0.45);
-  const phaseCEnd = Math.floor(durationInFrames * 0.70);
-
-  /* Entry from below */
-  const entryProg = interpolate(frame, [0, fps*0.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const entryY = interpolate(entryProg, [0,1], [400, 0]);
-  const entryOp = interpolate(entryProg, [0,0.1], [0,1], {extrapolateRight:"clamp"});
-
-  /* Phase A: Zoom into bottom (home screen dock area) */
-  const zoomProg = interpolate(frame, [0, phaseAEnd], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-  const zoomScale = interpolate(zoomProg, [0,1], [0.85, 1.6]);
-  const zoomTransY = interpolate(zoomProg, [0,1], [0, -180]);
-
-  /* Phase B: Slide content up to reveal "Hi I'm Gemini" */
-  const slideProg = interpolate(frame, [phaseAEnd, phaseBEnd], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const contentSlideY = interpolate(slideProg, [0,1], [0, -620]);
-  const scaleB = interpolate(slideProg, [0,1], [1.6, 1.1]);
-
-  /* Phase C: 180° Y-flip */
-  const flipProg = interpolate(frame, [phaseBEnd, phaseCEnd], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-  const flipY = interpolate(flipProg, [0,1], [0, 180]);
-
-  /* Phase D: Tilt 25° toward viewer (rotateX) */
-  const tiltProg = interpolate(frame, [phaseCEnd, durationInFrames-5], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-  const tiltX = interpolate(tiltProg, [0,1], [0, -25]);
-
-  /* Per-phase scale */
-  const currentScale = frame < phaseAEnd ? zoomScale
-    : frame < phaseBEnd ? scaleB
-    : interpolate(frame, [phaseBEnd, phaseCEnd], [1.1, 1.0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-
+  /* FIX 3: continuous 3D tilt with noise micro-motion — never flat */
+  const tiltY = 14 + noise2D("ph10ty", frame * 0.012, 0) * 3.5;
+  const tiltX = -3 + noise2D("ph10tx", 0, frame * 0.015) * 2;
+  /* Phone enters from below-right */
+  const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
+  const pX = cubicBez(eP, 150, 120, 30, 0);
+  const pY = cubicBez(eP, 550, 380, 60, 0);
+  const pR = interpolate(eP, [0,1], [6,0]);
+  const pS = interpolate(eP, [0,1], [0.75,1]);
+  const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
+  const sF = frame - fps*1.5;
+  const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
+  const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
+  const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateY(${entryY + (frame < phaseAEnd ? zoomTransY : 0) + pW.y}px) translateX(${pW.x}px) perspective(800px) rotateY(${flipY}deg) rotateX(${tiltX}deg) scale(${currentScale})`,opacity:entryOp,width:320,height:620,borderRadius:40,border:"3px solid #1A1A2E",overflow:"hidden",boxShadow:"0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",transformStyle:"preserve-3d"}}>
-        {/* Front face: Home screen slides up to Gemini screen */}
-        <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",overflow:"hidden"}}>
-          <div style={{position:"absolute",inset:0,transform:`translateY(${frame >= phaseAEnd ? contentSlideY : 0}px)`}}>
-            <div style={{width:320,height:620,position:"relative"}}><PhoneHomeScreen frame={frame} fps={fps} /></div>
-            <div style={{width:320,height:620,position:"relative",backgroundColor:"#FFFFFF"}}><PhoneGeminiScreen /></div>
-          </div>
-        </div>
-        {/* Back face (visible after 180° flip) */}
-        <div style={{position:"absolute",inset:0,backfaceVisibility:"hidden",transform:"rotateY(180deg)",backgroundColor:"#FFFFFF"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",perspective:800,transformStyle:"preserve-3d"}}>
+        <div style={{transform:`translate(-50%,-50%) translate(${pX+pW.x}px,${pY+sB+pW.y}px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) rotate(${pR}deg) scale(${pS})`,opacity:pOp,width:320,height:620,backgroundColor:"#FFFFFF",borderRadius:40,border:"3px solid #1A1A2E",overflow:"hidden",boxShadow:`12px 20px 60px rgba(0,0,0,0.22), 4px 8px 20px rgba(0,0,0,0.12)`}}>
           <PhoneStatusBar />
           <div style={{padding:"30px 24px"}}>
-            <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>Hi I'm <span style={{background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span></div>
-            <div style={{fontSize:28,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.3,marginTop:8}}>an experimental<br/>AI assistant on<br/>your phone.</div>
-            <div style={{marginTop:20,fontSize:14,fontFamily:"'Google Sans',sans-serif",color:"#666",lineHeight:1.6}}>I can help you write, plan, learn, and more.</div>
+            <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:PURPLE}}>Hi</span>{" "}
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK}}>{"I'm "}</span>
+              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
+            </div>
+            <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+              <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
+              <div style={{marginTop:24,fontSize:16,fontFamily:"'Google Sans',sans-serif",color:"#666",lineHeight:1.5}}>I can help you write, plan, learn, and more.</div>
+            </div>
           </div>
           <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
         </div>
