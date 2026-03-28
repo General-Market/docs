@@ -114,11 +114,12 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
   const wobble = Math.sin(frame * 0.05) * 0.08;
   return (
     <>
-      <ambientLight intensity={1.2} />
-      <directionalLight position={[5, 5, 5]} intensity={2.2} color="#e0e8ff" />
-      <directionalLight position={[-3, 2, 4]} intensity={1.0} color="#d4b8ff" />
-      <pointLight position={[0, -2, 3]} intensity={0.6} color="#b8d4ff" />
-      <pointLight position={[2, 2, 2]} intensity={0.8} color="#ffd0f0" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[3, 4, 5]} intensity={3.0} color="#e8e0ff" />
+      <directionalLight position={[-4, 2, 3]} intensity={1.5} color="#d0b8ff" />
+      <pointLight position={[0, -2, 3]} intensity={1.0} color="#b0c8ff" />
+      <pointLight position={[2, 2, 4]} intensity={1.2} color="#ffc0e8" />
+      <pointLight position={[-2, 1, 2]} intensity={0.8} color="#c0e0ff" />
       <mesh
         position={[0, wobble, 0]}
         rotation={[rot * 0.3, rot, 0]}
@@ -127,8 +128,8 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
         <sphereGeometry args={[0.85, 64, 64]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          color="#c8c0e8"
-          emissive="#9080c0"
+          color="#d0c8e8"
+          emissive="#a898d0"
           specularColor={new THREE.Color("#ffd0f0")}
         />
       </mesh>

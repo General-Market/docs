@@ -1391,7 +1391,7 @@ pub async fn poll_system_snapshot_once(state: &AppState) -> Result<(), Box<dyn s
     Ok(())
 }
 
-/// Precompute AUM ranking every 60s from cache.
+/// Precompute AUM ranking every 10s from cache.
 pub async fn poll_aum_ranking_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let json = crate::api::compute_aum_ranking_json(state).await;
     let mut cache = state.chain_cache.aum_ranking_json.write().await;

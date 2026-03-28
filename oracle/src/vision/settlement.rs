@@ -52,21 +52,6 @@ pub fn compute_settlement(
         }
     }
 
-    // Safety net: any player with zero payout who deposited must get a refund.
-    // This catches edge cases where bitmaps were purged, market was cancelled
-    // after side_inputs were built, or any other path that drops a player's stake.
-    let deposit_map_safety: std::collections::HashMap<Address, U256> =
-        player_deposits.iter().cloned().collect();
-    for (addr, payout) in player_payouts.iter_mut() {
-        if payout.is_zero() {
-            if let Some(deposit) = deposit_map_safety.get(addr) {
-                if !deposit.is_zero() {
-                    *payout = *deposit;
-                }
-            }
-        }
-    }
-
     // Sort by address ascending (contract requires strictly ascending order)
     let mut sorted: Vec<(Address, U256, u32)> = player_payouts
         .into_iter()
@@ -76,6 +61,31 @@ pub fn compute_settlement(
         })
         .collect();
     sorted.sort_by_key(|(addr, _, _)| *addr);
+
+    // Zero-sum invariant: total payouts must equal total deposits.
+    // If this fires, something upstream produced non-conservative results.
+    let total_payouts: U256 = sorted.iter().map(|(_, p, _)| *p).fold(U256::zero(), |a, b| a + b);
+    let total_deposits: U256 = player_deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
+    if total_payouts != total_deposits {
+        tracing::error!(
+            batch_id = tick_result.batch_id,
+            total_payouts = %total_payouts,
+            total_deposits = %total_deposits,
+            delta = %(total_payouts.max(total_deposits) - total_payouts.min(total_deposits)),
+            "CRITICAL: zero-sum invariant violated — clamping payouts to deposits"
+        );
+        // Clamp: scale all payouts proportionally so total == total_deposits.
+        // This prevents insolvency on-chain while preserving relative ordering.
+        if !total_payouts.is_zero() {
+            for item in sorted.iter_mut() {
+                // new_payout = payout * total_deposits / total_payouts
+                item.1 = item.1
+                    .checked_mul(total_deposits)
+                    .and_then(|v| v.checked_div(total_payouts))
+                    .unwrap_or(item.1);
+            }
+        }
+    }
 
     // Build a deposit lookup for the sorted output
     let deposit_map: std::collections::HashMap<Address, U256> =
@@ -155,14 +165,15 @@ mod tests {
 
     #[test]
     fn test_all_same_side_refund() {
-        // Both bet UP, market goes UP. No losers → everyone refunded.
+        // Both bet UP, market goes UP. No losers → refund_all.
+        // refund_all returns: payout = effective_stake, refund = 0.
         let result = TickResult {
             batch_id: 1,
             tick_id: 1,
             market_results: vec![MarketResult {
                 market_id: H256::zero(),
                 asset_id: "test".to_string(),
-                outcome: MarketOutcome::Up,
+                outcome: MarketOutcome::AllSameSide,
                 start_price: 100.0,
                 end_price: 110.0,
                 pct_change_bps: 1000,
@@ -172,16 +183,16 @@ mod tests {
                         side: Side::Up,
                         effective_stake: U256::from(100),
                         matched_stake: U256::zero(),
-                        payout: U256::from(100),
-                        refund: U256::from(100),
+                        payout: U256::from(100), // refund_all: payout = stake
+                        refund: U256::zero(),
                     },
                     PlayerMarketResult {
                         player: addr(2),
                         side: Side::Up,
                         effective_stake: U256::from(100),
                         matched_stake: U256::zero(),
-                        payout: U256::from(100),
-                        refund: U256::from(100),
+                        payout: U256::from(100), // refund_all: payout = stake
+                        refund: U256::zero(),
                     },
                 ],
             }],
@@ -192,20 +203,20 @@ mod tests {
         let deposits = vec![(addr(1), U256::from(100)), (addr(2), U256::from(100))];
         let settlement = compute_settlement(&result, &deposits);
 
-        // Everyone gets refunded — payout = refund = 100
-        assert_eq!(settlement.payouts[0], U256::from(200)); // payout + refund
-        assert_eq!(settlement.payouts[1], U256::from(200));
+        // Everyone gets their deposit back (zero-sum)
+        assert_eq!(settlement.payouts[0], U256::from(100));
+        assert_eq!(settlement.payouts[1], U256::from(100));
     }
 
     #[test]
     fn test_voided_players_get_deposit_back() {
-        // Player 3 has no bitmap → voided → gets deposit back
+        // Both players voided (no bitmaps) → both get deposits back.
         let result = TickResult {
             batch_id: 1,
             tick_id: 1,
             market_results: vec![],
             player_balances: vec![],
-            voided_players: vec![addr(3)],
+            voided_players: vec![addr(1), addr(3)],
         };
 
         let deposits = vec![
@@ -214,8 +225,9 @@ mod tests {
         ];
         let settlement = compute_settlement(&result, &deposits);
 
-        // addr(1) gets 0 (not voided, no markets)
-        // addr(3) gets 50 (voided, full refund)
+        let p1_idx = settlement.players.iter().position(|a| *a == addr(1)).unwrap();
+        assert_eq!(settlement.payouts[p1_idx], U256::from(100));
+
         let p3_idx = settlement.players.iter().position(|a| *a == addr(3)).unwrap();
         assert_eq!(settlement.payouts[p3_idx], U256::from(50));
     }
@@ -347,5 +359,59 @@ mod tests {
 
         // P2 correct_count should be 0 (uncovered market side is opposite of outcome)
         assert_eq!(settlement.correct_counts[p2_idx], 0);
+    }
+
+    /// Regression test: a player who loses in every market (fully matched, zero payout)
+    /// must NOT receive their deposit back. The old safety-net refunded total losers,
+    /// creating money from nothing and violating zero-sum.
+    #[test]
+    fn test_total_loser_gets_zero_not_deposit() {
+        // Player 1 (UP) wins, Player 2 (DOWN) loses — fully matched, zero refund.
+        let result = TickResult {
+            batch_id: 1,
+            tick_id: 1,
+            market_results: vec![MarketResult {
+                market_id: H256::zero(),
+                asset_id: "test".to_string(),
+                outcome: MarketOutcome::Up,
+                start_price: 100.0,
+                end_price: 110.0,
+                pct_change_bps: 1000,
+                player_results: vec![
+                    PlayerMarketResult {
+                        player: addr(1),
+                        side: Side::Up,
+                        effective_stake: U256::from(100),
+                        matched_stake: U256::from(100),
+                        payout: U256::from(200),
+                        refund: U256::zero(),
+                    },
+                    PlayerMarketResult {
+                        player: addr(2),
+                        side: Side::Down,
+                        effective_stake: U256::from(100),
+                        matched_stake: U256::from(100),
+                        payout: U256::zero(),
+                        refund: U256::zero(),
+                    },
+                ],
+            }],
+            player_balances: vec![],
+            voided_players: vec![],
+        };
+
+        let deposits = vec![(addr(1), U256::from(100)), (addr(2), U256::from(100))];
+        let settlement = compute_settlement(&result, &deposits);
+
+        // Winner gets everything, loser gets nothing — zero-sum preserved.
+        let p1_idx = settlement.players.iter().position(|a| *a == addr(1)).unwrap();
+        let p2_idx = settlement.players.iter().position(|a| *a == addr(2)).unwrap();
+
+        assert_eq!(settlement.payouts[p1_idx], U256::from(200));
+        assert_eq!(settlement.payouts[p2_idx], U256::from(0));
+
+        let total_payouts: U256 = settlement.payouts.iter().copied().fold(U256::zero(), |a, b| a + b);
+        let total_deposits: U256 = deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
+        assert_eq!(total_payouts, total_deposits, "zero-sum invariant must hold");
     }
 }

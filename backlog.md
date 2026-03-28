@@ -1,5 +1,11 @@
 # Design Decision Backlog
 
+## Session: 20260328-j9m2 (aum-ranking investigation)
+
+- [FAILED] Suspected data-node /aum-ranking endpoint hang — endpoint responds in <1ms from cache. The cache is populated by a 10s background poller. Cold-start window is ~300ms (server starts → hydration completes). No deadlock, no RPC calls in the hot path.
+- [DECISION] Fix getItpSummaries() in server-data.ts — `Array.isArray(data)` always returned false because endpoint returns `{snapshots: [...]}`, not a bare array. SSR/SEO path was silently dead. Fixed to extract `data.snapshots`.
+- [DECISION] Added `(item.ranked || []).length` for assetCount in getItpSummaries — the response doesn't include `asset_count` as a field, but does include the `ranked` array whose length gives asset count.
+
 ## Session: 20260328-r4k7 (BuyItpModal / SellItpModal Refactor)
 
 - [DECISION] Input validation: Added sanitizedAmount guard — rejects negative, NaN, and truncates excess decimals (>6 for Settlement USDC). Prevents `parseUnits` crash on malformed input.

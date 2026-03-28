@@ -36,15 +36,17 @@ export async function getItpSummaries(): Promise<ItpSummary[]> {
     if (!res.ok) return []
     const data = await res.json()
 
-    if (!Array.isArray(data)) return []
+    // Endpoint returns { snapshots: [...], all_symbols: {...} }
+    const items: any[] = Array.isArray(data) ? data : (data?.snapshots ?? [])
+    if (items.length === 0) return []
 
-    return data.map((item: any) => ({
+    return items.map((item: any) => ({
       itpId: item.itp_id || '',
       name: item.name || getItpName(item.itp_id, parseItpNumber(item.itp_id)),
       symbol: item.symbol || getItpSymbol(item.itp_id, parseItpNumber(item.itp_id)),
       nav: item.nav_per_share || 0,
       aum: item.aum_usd || 0,
-      assetCount: item.asset_count || 0,
+      assetCount: (item.ranked || []).length || item.asset_count || 0,
     }))
   } catch {
     return []

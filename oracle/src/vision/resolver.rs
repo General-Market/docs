@@ -1467,8 +1467,6 @@ mod tests {
             .expect("resolve should succeed");
 
         // Verify per-market stakes are split by num_markets and maintain ordering.
-        // NOTE: exact ratios depend on commitment multiplier (log10 of balance/stake + offset),
-        // which differs per player. We verify ordering and Carol=Dave (same params).
         let market = &result.market_results[0]; // check first market
         let alice_stake = market.player_results.iter().find(|r| r.player == alice).unwrap().effective_stake;
         let bob_stake = market.player_results.iter().find(|r| r.player == bob).unwrap().effective_stake;
@@ -1487,11 +1485,9 @@ mod tests {
             assert_eq!(a, alice_stake, "Alice's stake should be the same across all markets");
         }
 
-        // Per-market stake × num_markets should approximately equal the total effective stake
-        // (integer division may lose up to num_markets-1 wei)
+        // Per-market stake × num_markets should equal deposit (minus rounding dust)
         let alice_total = alice_stake * U256::from(num_markets);
-        // The multiplier is applied, so total_effective >= stake_per_tick
-        assert!(alice_total >= U256::from(1200u64), "alice per-market × 3 should be >= raw stake");
+        assert_eq!(alice_total, U256::from(1200u64), "alice per-market × 3 should equal raw deposit");
 
         // Zero-sum: allow rounding tolerance from integer division in parimutuel matching
         // (at most 1 wei per market due to floor division of matched_stake)
