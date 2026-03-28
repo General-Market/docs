@@ -871,34 +871,53 @@ const PhaseBrainstormIdeas: React.FC = () => {
       final: { opacity: 0, scale: 0.95 },
     };
     for (let i = 0; i < FLOATERS.length; i++) {
-      init[`g${i}`] = { x: FLOATERS[i].x, y: FLOATERS[i].y, opacity: 0 };
+      init[`g${i}`] = {
+        x: FLOATERS[i].x,
+        y: FLOATERS[i].y,
+        opacity: 0,
+        blur: 3 + Math.abs(FLOATERS[i].x) * 0.02,
+      };
     }
     return init;
   }, []);
 
+  // P8 is 51 frames = 1.7s at 30fps
   const s = useGsapProxy(
     (tl, p) => {
-      // Floaters fade in at scattered positions
+      // Floaters fade in at scattered positions with blur
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
-          { opacity: 0.85, duration: 0.22, ease: "power1.out" },
+          {
+            opacity: i < 4 ? 0.75 : 0.45,
+            blur: 2 + Math.abs(f.x) * 0.012,
+            duration: 0.25,
+            ease: "power1.out",
+          },
           f.delay,
         );
       });
-      // Converge to center and fade out — start earlier, finish faster
+      // Slow converge — floaters drift inward with increasing blur
+      // Should still be partially visible at frame ~27 (0.9s) of P8
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
-          { x: 0, y: 0, opacity: 0, duration: 0.52, ease: "power2.inOut" },
-          0.32 + f.delay * 0.3,
+          {
+            x: f.x * 0.15,
+            y: f.y * 0.15,
+            opacity: 0,
+            blur: 10,
+            duration: 0.85,
+            ease: "power1.inOut",
+          },
+          0.45 + f.delay * 0.3,
         );
       });
-      // Final centered text fades in earlier
+      // Final centered text fades in around 0.7s into P8 (~frame 21)
       tl.to(
         p.final,
         { opacity: 1, scale: 1, duration: 0.55, ease: "power2.out" },
-        0.38,
+        0.65,
       );
     },
     proxyInit,
@@ -908,6 +927,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
     <AbsoluteFill>
       {FLOATERS.map((f, i) => {
         const g = s[`g${i}`];
+        const blurVal = Math.max(0, g.blur);
         return (
           <div
             key={i}
@@ -922,6 +942,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
               color: f.color,
               whiteSpace: "nowrap",
               opacity: g.opacity,
+              filter: `blur(${blurVal}px)`,
             }}
           >
             {f.word}
@@ -936,7 +957,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
           left: "50%",
           transform: `translate(-50%, -50%) scale(${s.final.scale})`,
           fontFamily,
-          fontSize: 44,
+          fontSize: 32,
           fontWeight: 400,
           color: TEXT_DARK,
           whiteSpace: "nowrap",
@@ -956,7 +977,7 @@ const P3_FROM = 51;
 const P4_FROM = 86;
 const P5_FROM = 122;
 const P6_FROM = 158;
-const P7_FROM = 171;
+const P7_FROM = 167;
 const P8_FROM = 207;
 
 // --- Composition -----------------------------------------------------------
@@ -989,7 +1010,7 @@ export const Scene01: React.FC = () => {
         <PhaseLetterScatter text="Write emails" />
       </Sequence>
 
-      <Sequence from={P7_FROM} durationInFrames={37}>
+      <Sequence from={P7_FROM} durationInFrames={41}>
         <PhaseSolveProblems />
       </Sequence>
 
