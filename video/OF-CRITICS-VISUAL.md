@@ -130,3 +130,17 @@ Reference: The G is NOT a flat SVG. It's a luminous light source — rainbow col
 **Current: 18 max balls. Reference shows 30+ o's stretching across the full width.**
 The "And m" stays left, "re" stays right, and between them should be a LONG chain of o's (colored circles/letters) that fills the entire horizontal span. The chain should undulate like a sine wave. Each o has a Gemini brand color.
 **Fix:** Increase MAX_BALLS from 18 to 35-40. The chain should extend edge-to-edge, some o's going off-screen. Add sine wave vertical displacement. CameraMotionBlur on the stretch phase.
+
+## STRUCTURAL — Apply 3D stack to ALL screens
+
+Every phone and desktop/laptop mockup in the entire video should use:
+1. **Phone3D.tsx** (`video/src/lib/Phone3D.tsx`) — Three.js ExtrudeGeometry phone with metallic frame, glass front, ContactShadows
+2. **tilt3d.ts** (`video/src/lib/tilt3d.ts`) — `useFloat3D()` for continuous organic 3D drift (sine + noise)
+3. **Presets:** `TILT_PRESETS.phoneFloat` for phones, `TILT_PRESETS.desktopTilt` for browsers/laptops
+
+Scenes that need this applied:
+- S03: SegPhoneMockup, SegPhoneGoodMorning, SegDesktopUI
+- S04: Phone chat entrance/exit, Gemini desktop browser
+- S05: All interface views, device duo finale
+
+No screen should be a flat CSS div with `perspective()` anymore. All should use either Phone3D (for phones) or tilt3d presets (for browser/desktop views).
