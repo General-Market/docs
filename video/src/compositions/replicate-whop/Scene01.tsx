@@ -13,8 +13,8 @@ const TREASURY_START = 4;     // "Treasury" appears — ref: stagger ~2f
 const HOLD_END = 38;          // text holds fully visible (ref: fading at f40)
 const ZOOM_OUT_END = 47;      // text zooms/fades out (ref: blank at f45)
 const EARN_VISIBLE = 48;      // "Earn up to X%" begins (ref: visible f50)
-const PERCENT_ROLL_END = 68;  // percentage stops at 6% — shortened by 10
-const APY_APPEAR = 60;        // "APY" label + pill — shifted earlier
+const PERCENT_ROLL_END = 75;  // percentage stops at 6% — slower to match ref
+const APY_APPEAR = 65;        // "APY" label + pill — ref: visible ~f65
 const HOLD_EARN_END = 100;    // hold the earn text — ref holds until ~f105
 const DASHBOARD_START = 108;  // dashboard slides in — ref: ~f108
 const DASHBOARD_FULL = 138;   // dashboard fully visible
@@ -194,17 +194,17 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
   const chartDraw = clamp01(dashFrame / 30);
 
   // Animate the gross revenue number counting up — match ref counter curve
-  // Ref: f110=$2431, f115=$2896, f120=$3167, f140=$3562, target=$3570
+  // Ref: f110=$2431, f115=$2896, f120=$3167, f139=$3558, f148=$3570
   const grossBase = 2431.30;
   const grossTarget = 3570.61;
-  const grossProgress = clamp01(dashFrame / 50);
+  const grossProgress = clamp01(dashFrame / 40);
   const grossValue = grossBase + (grossTarget - grossBase) * easeOut(grossProgress);
 
   // Animate total balance counting up — match ref counter curve
-  // Ref: f110=$34609, f115=$37660, f120=$39498, f140=$42510, target=$42740
+  // Ref: f110=$34609, f115=$37660, f120=$39498, f139=$42464, f148=$42739
   const balBase = 34609.07;
   const balTarget = 42740.24;
-  const balProgress = clamp01(dashFrame / 50);
+  const balProgress = clamp01(dashFrame / 40);
   const balValue = balBase + (balTarget - balBase) * easeOut(balProgress);
 
   const fmt = (v: number) =>

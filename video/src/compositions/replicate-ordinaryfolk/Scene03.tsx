@@ -488,13 +488,14 @@ const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const pW = organicWobble("ph10", frame, 2.5, 2, 0.018);
-  const eP = interpolate(frame, [0,fps*1.2], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 300, 280, 80, 0);
-  const pY = cubicBez(eP, 500, 350, 50, 0);
-  const pR = interpolate(eP, [0,1], [12,0]);
-  const pS = interpolate(eP, [0,1], [0.65,1]);
-  const pOp = interpolate(eP, [0,0.1], [0,1], {extrapolateRight:"clamp"});
-  const sF = frame - fps*1.2;
+  /* Phone enters from below, slower entry to match reference cropping */
+  const eP = interpolate(frame, [0,fps*1.8], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
+  const pX = cubicBez(eP, 60, 40, 10, 0);
+  const pY = cubicBez(eP, 600, 400, 80, 0);
+  const pR = interpolate(eP, [0,1], [3,0]);
+  const pS = interpolate(eP, [0,1], [0.85,1]);
+  const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
+  const sF = frame - fps*1.8;
   const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
   const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
   const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
@@ -624,10 +625,10 @@ export const Scene03: React.FC = () => {
     {start:185,dur:30,Comp:SegItsEverything},
     {start:208,dur:55,Comp:SegAppsFloat},
     {start:255,dur:80,Comp:SegTypingPrompt},
-    {start:330,dur:65,Comp:SegGeminiResponse},
-    {start:385,dur:40,Comp:SegAndMore},
-    {start:418,dur:60,Comp:SegStartingWith},
-    {start:478,dur:82,Comp:SegPhoneMockup},
+    {start:330,dur:40,Comp:SegGeminiResponse},
+    {start:365,dur:55,Comp:SegAndMore},
+    {start:416,dur:62,Comp:SegStartingWith},
+    {start:476,dur:84,Comp:SegPhoneMockup},
     {start:555,dur:85,Comp:SegSupercharge},
     {start:635,dur:110,Comp:SegPhoneGoodMorning},
   ];
