@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { DATA_NODE_URL } from '@/lib/config'
 
 export interface BatchConfigMarket {
-  asset_id: string
-  resolution_type: string
-  threshold_bps: number
+  assetId: string
+  resolutionType: string
+  thresholdBps: number
 }
 
 export interface BatchConfigResponse {

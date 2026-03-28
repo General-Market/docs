@@ -80,7 +80,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="pending" stroke="#000" fill="#000" fillOpacity={0.08} name={t('explorer.orders_section.pending')} />
+              <Area type="monotone" dataKey="pending" stroke="#60a5fa" fill="#60a5fa" fillOpacity={0.15} name={t('explorer.orders_section.pending')} />
             </AreaChart>
           </ResponsiveContainer>
         </ExplorerChartCard>

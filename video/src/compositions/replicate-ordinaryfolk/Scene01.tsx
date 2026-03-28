@@ -6,24 +6,25 @@
  * typewriter "Write" -> "emails" (gradient pill) -> letter scatter ->
  * "Solve problems" (assemble) -> "Brainstorm ideas" (floating words converge)
  *
- * OVERHAUL: Organic motion from real motion tracking data.
- * All movements use cubic bezier curves, noise2D wobble, velocity-proportional blur.
- * Angles: 86.6, 44.2, 64.5, 23.5 — extracted from reference.
- * Peak blur: up to 362px tracked -> ~18px CSS blur.
- * Easings: ease_out_expo, ease_out_cubic per tracking data.
+ * GSAP REWRITE: Animation values computed by GSAP timelines on proxy objects,
+ * then applied as React inline styles. GSAP is a computation engine here,
+ * not a DOM manipulator — guarantees deterministic frame output in Remotion.
+ *
+ * Easings from tracking data: power1.out, power2.out, expo.out, back.out(1.7).
  *
  * 1280x720, 29fps, 258 frames (~8.9s)
  */
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
   interpolate,
   Sequence,
-  Easing,
+  useVideoConfig,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { loadFont } from "@remotion/google-fonts/GoogleSans";
+import { gsap } from "gsap";
 
 const { fontFamily } = loadFont("normal", {
   weights: ["400", "500", "700"],
@@ -34,66 +35,56 @@ const _FPS = 29;
 const W = 1280;
 const H = 720;
 
-// --- Beat sync (152 BPM, detected via librosa on full audio) ----------------
-const SCENE01_BEATS = [2, 15, 26, 38, 51, 62, 75, 86, 99, 110, 123, 134, 146, 158, 171, 183, 195, 207, 218, 231, 243, 255];
-
-function beatPulse(absFrame: number, beats: number[] = SCENE01_BEATS, decay = 6): number {
-  let max = 0;
-  for (const b of beats) {
-    const d = absFrame - b;
-    if (d >= 0 && d < decay) { const p = 1 - d / decay; if (p > max) max = p; }
-  }
-  return max;
-}
-function beatScale(absFrame: number, beats?: number[]): number {
-  return 1 + 0.02 * beatPulse(absFrame, beats);
-}
-
-// --- Organic angles from tracking data (degrees) ---------------------------
-const ANGLE_A = 86.6;
-const ANGLE_B = 44.2;
-const ANGLE_C = 64.5;
-const ANGLE_D = 23.5;
-
-// --- Bezier easing functions -----------------------------------------------
-const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
-const EASE_OUT_CUBIC = Easing.bezier(0.33, 1, 0.68, 1);
-
-// --- Organic wobble via noise2D --------------------------------------------
-function wobble(
-  seed: string,
-  frame: number,
-  ampX = 2.5,
-  ampY = 1.8,
-  speed = 0.025,
-): { x: number; y: number; rot: number } {
-  return {
-    x: noise2D(seed + "wx", frame * speed, 0) * ampX,
-    y: noise2D(seed + "wy", 0, frame * speed) * ampY,
-    rot: noise2D(seed + "wr", frame * speed * 0.7, 0.5) * 0.3,
-  };
-}
-
-// --- Velocity-proportional motion blur -------------------------------------
-function axisBlur(current: number, prev: number, scale = 0.12, maxBlur = 14): number {
-  return Math.min(Math.abs(current - prev) * scale, maxBlur);
-}
-
 // --- Palette ---------------------------------------------------------------
 const BG_BASE = "#EDEEF4";
 const TEXT_DARK = "#1A1A2E";
+const TEXT_SIZE = 34;
+const BARD_SIZE = 58;
+const FONT_WEIGHT = 400;
+const CENTER_Y = "53%";
 
-// --- Helpers ---------------------------------------------------------------
 const clamp = {
   extrapolateLeft: "clamp" as const,
   extrapolateRight: "clamp" as const,
 };
 
-const TEXT_SIZE = 34;
-const BARD_SIZE = 58;
-const FONT_WEIGHT = 400;
+// ===========================================================================
+// GSAP Proxy Engine
+// Build a timeline that tweens plain objects. Seek to frame time. Read values.
+// ===========================================================================
+type ProxyState = Record<string, number>;
 
-// --- Background ------------------------------------------------------------
+function useGsapProxy(
+  buildTimeline: (tl: gsap.core.Timeline, proxies: Record<string, ProxyState>) => void,
+  proxyKeys: Record<string, ProxyState>,
+): Record<string, ProxyState> {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  // Build timeline once, memoized
+  const { tl, proxies } = useMemo(() => {
+    // Deep-clone initial values so GSAP can mutate them
+    const p: Record<string, ProxyState> = {};
+    for (const [k, v] of Object.entries(proxyKeys)) {
+      p[k] = { ...v };
+    }
+    const timeline = gsap.timeline({ paused: true });
+    buildTimeline(timeline, p);
+    return { tl: timeline, proxies: p };
+  }, []);
+
+  // Seek to current time — mutates proxies in place
+  tl.seek(frame / fps);
+
+  // Return a snapshot (shallow copy so React sees changes)
+  const snapshot: Record<string, ProxyState> = {};
+  for (const [k, v] of Object.entries(proxies)) {
+    snapshot[k] = { ...v };
+  }
+  return snapshot;
+}
+
+// --- Background (CSS-only, no GSAP needed) ---------------------------------
 const PastelBackground: React.FC = () => {
   const frame = useCurrentFrame();
   const hueShift = interpolate(frame, [0, 258], [0, 28], clamp);
@@ -121,211 +112,181 @@ const PastelBackground: React.FC = () => {
   );
 };
 
-// --- Centered text container -----------------------------------------------
-const CENTER_Y = "53%";
+// --- Shared center style ---------------------------------------------------
+const centerStyle: React.CSSProperties = {
+  position: "absolute",
+  top: CENTER_Y,
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  fontFamily,
+  fontSize: TEXT_SIZE,
+  fontWeight: FONT_WEIGHT,
+  color: TEXT_DARK,
+  whiteSpace: "nowrap",
+};
 
-const CenterText: React.FC<{
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}> = ({ children, style }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: CENTER_Y,
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontFamily,
-      fontSize: TEXT_SIZE,
-      fontWeight: FONT_WEIGHT,
-      color: TEXT_DARK,
-      whiteSpace: "nowrap",
-      ...style,
-    }}
-  >
-    {children}
-  </div>
-);
-
-// --- Phase 1: "You've" — Sequence from=0 ------------------------------------
+// ===========================================================================
+// Phase 1: "You've"
+// Tracking: x: 31 -> 0, opacity: 0 -> 1, dur 0.19s, ease power1.out
+// ===========================================================================
 const P1_FROM = 0;
 const PhaseYouve: React.FC = () => {
-  const frame = useCurrentFrame();
-  const abs = frame + P1_FROM;
-  const w = wobble("youve", frame);
-  const bs = beatScale(abs);
-
-  const progress = Math.min(1, frame / 10);
-  const eased = EASE_OUT_EXPO(progress);
-
-  const opacity = eased;
-  const yOffset = (1 - eased) * 22;
-  const xOffset = (1 - eased) * 22 * Math.tan((ANGLE_D * Math.PI) / 180) * -0.3;
-
-  const prevEased = frame > 0 ? EASE_OUT_EXPO(Math.min(1, (frame - 1) / 10)) : 0;
-  const prevY = (1 - prevEased) * 22;
-  const blur = axisBlur(yOffset, prevY, 0.3, 4);
+  const s = useGsapProxy(
+    (tl, p) => {
+      tl.from(p.main, { x: 31, opacity: 0, duration: 0.19, ease: "power1.out" });
+    },
+    { main: { x: 0, opacity: 1 } },
+  );
 
   return (
-    <CenterText
+    <div
       style={{
-        opacity,
-        transform: `translate(calc(-50% + ${xOffset + w.x}px), calc(-50% + ${yOffset + w.y}px)) rotate(${w.rot}deg) scale(${bs})`,
-        top: CENTER_Y,
-        filter: blur > 0.5 ? `blur(${blur}px)` : undefined,
+        ...centerStyle,
+        opacity: s.main.opacity,
+        transform: `translate(calc(-50% + ${s.main.x}px), -50%)`,
       }}
     >
       You{"\u2019"}ve
-    </CenterText>
+    </div>
   );
 };
 
-// --- Phase 2: "You've been experimenting with" — Sequence from=15 ----------
+// ===========================================================================
+// Phase 2: "You've been experimenting with"
+// "You've" + "been": x slide, opacity
+// "experimenting": per-letter settle with purple tint
+// "with": scale entrance
+// ===========================================================================
 const P2_FROM = 15;
-const PhaseExperimenting: React.FC = () => {
-  const frame = useCurrentFrame();
-  const abs = frame + P2_FROM;
-  const bs = beatScale(abs);
 
-  const words = ["You\u2019ve", "been", "experimenting", "with"];
-  const delays = [0, 3, 6, 16];
+const EXP_LETTERS = "experimenting".split("");
+const EXP_SETTLE_Y = [-12, 8, -10, 14, -8, 11, -15, 9, -11, 13, -9, 10, -13];
+const EXP_SETTLE_X = [1, -2, 0, 1, -1, 2, -1, 0, 1, -2, 0, 1, -1];
+
+const PhaseExperimenting: React.FC = () => {
+  // Build proxy keys for words + individual letters
+  const proxyInit = useMemo(() => {
+    const init: Record<string, ProxyState> = {
+      youve: { x: 0, opacity: 1 },
+      been: { x: 0, opacity: 1 },
+      with_: { scale: 1, opacity: 1 },
+    };
+    for (let i = 0; i < EXP_LETTERS.length; i++) {
+      init[`l${i}`] = { x: 0, y: 0, opacity: 1, purple: 0 };
+    }
+    return init;
+  }, []);
+
+  const s = useGsapProxy(
+    (tl, p) => {
+      // "You've" slides in
+      tl.from(p.youve, { x: 40, opacity: 0, duration: 0.41, ease: "power1.out" }, 0);
+      // "been" slides in
+      tl.from(p.been, { x: 60, opacity: 0, duration: 0.41, ease: "power1.out" }, 0.1);
+      // "experimenting" — per-letter settle
+      for (let i = 0; i < EXP_LETTERS.length; i++) {
+        tl.from(
+          p[`l${i}`],
+          {
+            y: EXP_SETTLE_Y[i] || 0,
+            x: EXP_SETTLE_X[i] || 0,
+            opacity: 0,
+            purple: 0.7,
+            duration: 0.48,
+            ease: "power2.out",
+          },
+          0.21 + i * 0.04,
+        );
+      }
+      // "with" scales in
+      tl.from(p.with_, { scale: 0.81, opacity: 0, duration: 0.19, ease: "power1.out" }, 0.55);
+    },
+    proxyInit,
+  );
 
   return (
-    <CenterText style={{ display: "flex", gap: 14, transform: `translate(-50%, -50%) scale(${bs})` }}>
-      {words.map((word, i) => {
-        const w = wobble(`exp-${i}`, frame, 1.5, 1.0);
-
-        if (word === "experimenting") {
-          // Reference: letters settle in from slight vertical displacement (8-15px),
-          // with subtle horizontal drift and purple tint fading to dark.
-          // NOT a dramatic scatter — a gentle arrive-and-land.
-          const settleOffsets = [
-            { dy: -12, dx: 1 },   // e
-            { dy: 8, dx: -2 },    // x
-            { dy: -10, dx: 0 },   // p
-            { dy: 14, dx: 1 },    // e
-            { dy: -8, dx: -1 },   // r
-            { dy: 11, dx: 2 },    // i
-            { dy: -15, dx: -1 },  // m
-            { dy: 9, dx: 0 },     // e
-            { dy: -11, dx: 1 },   // n
-            { dy: 13, dx: -2 },   // t
-            { dy: -9, dx: 0 },    // i
-            { dy: 10, dx: 1 },    // n
-            { dy: -13, dx: -1 },  // g
-          ];
+    <div style={{ ...centerStyle, display: "flex", gap: 14 }}>
+      <span style={{ display: "inline-block", opacity: s.youve.opacity, transform: `translateX(${s.youve.x}px)` }}>
+        You{"\u2019"}ve
+      </span>
+      <span style={{ display: "inline-block", opacity: s.been.opacity, transform: `translateX(${s.been.x}px)` }}>
+        been
+      </span>
+      <span style={{ display: "inline-flex" }}>
+        {EXP_LETTERS.map((ch, i) => {
+          const l = s[`l${i}`];
+          const purpleMix = l.purple;
+          const color =
+            purpleMix > 0.01
+              ? `rgba(91, 79, 208, ${purpleMix})`
+              : TEXT_DARK;
           return (
-            <span key={i} style={{ display: "inline-flex" }}>
-              {word.split("").map((ch, ci) => {
-                const letterDelay = delays[i] + ci * 1.2;
-                const rawProgress = Math.max(0, Math.min(1, (frame - letterDelay) / 14));
-                const lp = EASE_OUT_CUBIC(rawProgress);
-                const lo = interpolate(rawProgress, [0, 0.2], [0, 1], clamp);
-
-                const offset = settleOffsets[ci] || { dy: 0, dx: 0 };
-                // Arc path: use quadratic easing so letters curve slightly as they land
-                const arcT = lp;
-                const arcBulge = Math.sin(arcT * Math.PI) * 3 * (ci % 2 === 0 ? 1 : -1);
-                const ly = (1 - arcT) * offset.dy;
-                const lx = (1 - arcT) * offset.dx + arcBulge;
-
-                const lw = wobble(`ltr-${ci}`, frame, 0.8, 0.5, 0.03);
-
-                const purpleMix = interpolate(rawProgress, [0.0, 0.6], [0.7, 0], clamp);
-                const letterColor =
-                  purpleMix > 0
-                    ? `rgba(${0x5b}, ${0x4f}, ${0xd0}, ${purpleMix})`
-                    : undefined;
-
-                const blur = Math.min(Math.abs(ly) * 0.08, 2);
-
-                return (
-                  <span
-                    key={ci}
-                    style={{
-                      display: "inline-block",
-                      opacity: lo,
-                      transform: `translate(${lx + lw.x}px, ${ly + lw.y}px) rotate(${lw.rot}deg)`,
-                      color: letterColor || TEXT_DARK,
-                      filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
-                    }}
-                  >
-                    {ch}
-                  </span>
-                );
-              })}
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                opacity: l.opacity,
+                transform: `translate(${l.x}px, ${l.y}px)`,
+                color,
+              }}
+            >
+              {ch}
             </span>
           );
-        }
-
-        const rawProg = Math.max(0, Math.min(1, (frame - delays[i]) / 12));
-        const eased = EASE_OUT_EXPO(rawProg);
-        const opacity = interpolate(rawProg, [0, 0.2], [0, 1], clamp);
-        const y = (1 - eased) * 20;
-        const prevEased = EASE_OUT_EXPO(Math.max(0, Math.min(1, (frame - 1 - delays[i]) / 12)));
-        const prevY = (1 - prevEased) * 20;
-        const blur = axisBlur(y, prevY, 0.2, 3);
-
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              opacity,
-              transform: `translateY(${y + w.y}px) translateX(${w.x}px) rotate(${w.rot}deg)`,
-              filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
-            }}
-          >
-            {word}
-          </span>
-        );
-      })}
-    </CenterText>
+        })}
+      </span>
+      <span
+        style={{
+          display: "inline-block",
+          opacity: s.with_.opacity,
+          transform: `scale(${s.with_.scale})`,
+        }}
+      >
+        with
+      </span>
+    </div>
   );
 };
 
-// --- Phase 3: "Bard" with gradient text — Sequence from=51 -----------------
+// ===========================================================================
+// Phase 3: "Bard" with gradient text
+// Tracking: x:8->0, opacity:0->1, dur 0.19s, ease power1.out
+// Plus scale 0.88->1 for premium feel
+// ===========================================================================
 const P3_FROM = 51;
 const PhaseBardFull: React.FC = () => {
   const frame = useCurrentFrame();
-  const abs = frame + P3_FROM;
-  const w = wobble("bard", frame, 2.0, 1.5, 0.02);
 
-  const rawProg = Math.min(1, frame / 14);
-  const eased = EASE_OUT_EXPO(rawProg);
-
-  const opacity = interpolate(rawProg, [0, 0.15], [0, 1], clamp);
-  const scale = 0.88 + eased * 0.12;
+  const s = useGsapProxy(
+    (tl, p) => {
+      tl.from(p.main, {
+        x: 8,
+        opacity: 0,
+        scale: 0.88,
+        duration: 0.48,
+        ease: "power2.out",
+      });
+    },
+    { main: { x: 0, opacity: 1, scale: 1 } },
+  );
 
   const baseAngle = interpolate(frame, [0, 29], [100, 210], clamp);
   const noiseAngle = noise2D("bard-angle", frame * 0.015, 0) * 8;
   const gradAngle = baseAngle + noiseAngle;
   const gradient = `linear-gradient(${gradAngle}deg, #E85070, #D03888, #9538B8, #6248D0)`;
 
-  const entryDist = (1 - eased) * 30;
-  const entryRad = (ANGLE_C * Math.PI) / 180;
-  const entryX = Math.cos(entryRad) * entryDist * 0.4;
-  const entryY = Math.sin(entryRad) * entryDist;
-
-  const blur = Math.min(entryDist * 0.15, 8);
-
   return (
     <div
       style={{
-        position: "absolute",
-        top: CENTER_Y,
-        left: "50%",
-        transform: `translate(calc(-50% + ${entryX + w.x}px), calc(-50% + ${entryY + w.y}px)) scale(${scale * beatScale(abs)}) rotate(${w.rot}deg)`,
-        fontFamily,
+        ...centerStyle,
         fontSize: BARD_SIZE,
-        fontWeight: 400,
-        opacity,
+        opacity: s.main.opacity,
+        transform: `translate(calc(-50% + ${s.main.x}px), -50%) scale(${s.main.scale})`,
         background: gradient,
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
         backgroundClip: "text",
-        whiteSpace: "nowrap",
         letterSpacing: "-0.5px",
-        filter: blur > 0.5 ? `blur(${blur}px)` : undefined,
       }}
     >
       Bard
@@ -333,58 +294,60 @@ const PhaseBardFull: React.FC = () => {
   );
 };
 
-// --- Phase 4: Typewriter "Write" + cursor — Sequence from=86 ----------------
+// ===========================================================================
+// Phase 4: Typewriter "Write" + cursor
+// Letters appear one by one. Cursor blinks then vanishes.
+// ===========================================================================
 const P4_FROM = 86;
+const WRITE_CHARS = "Write".split("");
+
 const PhaseTypewriter: React.FC = () => {
   const frame = useCurrentFrame();
-  const abs = frame + P4_FROM;
-  const bs = beatScale(abs);
-  const text = "Write";
-  const charsVisible = Math.min(
-    text.length,
-    Math.max(0, Math.floor((frame - 2) / 3)),
+
+  const proxyInit = useMemo(() => {
+    const init: Record<string, ProxyState> = {
+      cursor: { opacity: 1 },
+    };
+    for (let i = 0; i < WRITE_CHARS.length; i++) {
+      init[`c${i}`] = { opacity: 1 };
+    }
+    return init;
+  }, []);
+
+  const s = useGsapProxy(
+    (tl, p) => {
+      // Each letter appears sequentially
+      for (let i = 0; i < WRITE_CHARS.length; i++) {
+        tl.from(p[`c${i}`], { opacity: 0, duration: 0.001, ease: "none" }, 0.07 + i * 0.1);
+      }
+      // Cursor fades after typing
+      tl.to(p.cursor, { opacity: 0, duration: 0.15, ease: "power1.out" }, 0.6);
+    },
+    proxyInit,
   );
-  const partial = text.slice(0, charsVisible);
-
-  const isTyping = charsVisible > 0 && charsVisible < text.length;
-  const isDone = charsVisible >= text.length;
-  const blinkPhase = frame % 10;
-  const blinkOn = blinkPhase < 6;
-  const cursorOpacity = isDone ? 0 : isTyping ? 1 : blinkOn ? 1 : 0;
-
-  const hasText = charsVisible > 0;
-  const w = wobble("typewriter", frame, 1.0, 0.8, 0.03);
 
   const gradAngle = interpolate(frame, [0, 36], [140, 240], clamp);
   const typeGrad = `linear-gradient(${gradAngle}deg, #7048C0, #A04090, #C84070)`;
 
+  // Cursor blink before typing starts
+  const cursorBlink = frame < 2 ? (Math.floor(frame / 5) % 2 === 0 ? 1 : 0) : s.cursor.opacity;
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: CENTER_Y,
-        left: "50%",
-        transform: `translate(calc(-50% + ${w.x}px), calc(-50% + ${w.y}px)) rotate(${w.rot}deg) scale(${bs})`,
-        fontFamily,
-        fontSize: TEXT_SIZE,
-        fontWeight: FONT_WEIGHT,
-        display: "flex",
-        alignItems: "center",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {hasText && (
-        <span
-          style={{
-            background: typeGrad,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          {partial}
-        </span>
-      )}
+    <div style={{ ...centerStyle, display: "flex", alignItems: "center" }}>
+      <span
+        style={{
+          background: typeGrad,
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        {WRITE_CHARS.map((ch, i) => (
+          <span key={i} style={{ display: "inline-block", opacity: s[`c${i}`].opacity }}>
+            {ch}
+          </span>
+        ))}
+      </span>
       <span
         style={{
           display: "inline-block",
@@ -392,62 +355,56 @@ const PhaseTypewriter: React.FC = () => {
           height: TEXT_SIZE * 0.82,
           backgroundColor: TEXT_DARK,
           marginLeft: 2,
-          opacity: cursorOpacity,
-          transform: `translateY(${noise2D("cursor-y", frame * 0.08, 0) * 0.5}px)`,
+          opacity: cursorBlink,
         }}
       />
     </div>
   );
 };
 
-// --- Phase 5: "Write emails" with gradient pill — Sequence from=123 --------
+// ===========================================================================
+// Phase 5: "Write emails" with gradient pill
+// "Write" fades in, "emails" slides in with pill from angle 44.2deg
+// ===========================================================================
 const P5_FROM = 123;
 const PhaseWriteEmails: React.FC = () => {
   const frame = useCurrentFrame();
-  const abs = frame + P5_FROM;
-  const bs = beatScale(abs);
-  const w = wobble("write-emails", frame, 1.5, 1.2, 0.025);
+  const pillRad = (44.2 * Math.PI) / 180;
 
-  const writeRaw = Math.min(1, frame / 10);
-  const writeEased = EASE_OUT_EXPO(writeRaw);
-  const writeOpacity = interpolate(writeRaw, [0, 0.2], [0, 1], clamp);
+  const s = useGsapProxy(
+    (tl, p) => {
+      tl.from(p.write, { y: 8, opacity: 0, duration: 0.34, ease: "power2.out" }, 0);
+      tl.from(
+        p.pill,
+        {
+          x: Math.cos(pillRad) * 40,
+          y: Math.sin(pillRad) * 12,
+          scale: 0.85,
+          opacity: 0,
+          duration: 0.41,
+          ease: "back.out(1.7)",
+        },
+        0.14,
+      );
+    },
+    {
+      write: { y: 0, opacity: 1 },
+      pill: { x: 0, y: 0, scale: 1, opacity: 1 },
+    },
+  );
 
-  const emailsRaw = Math.max(0, Math.min(1, (frame - 4) / 12));
-  const emailsEased = EASE_OUT_CUBIC(emailsRaw);
-  const emailsOpacity = interpolate(emailsRaw, [0, 0.15], [0, 1], clamp);
-  const emailsScale = 0.85 + emailsEased * 0.15;
-
-  const pillEntryDist = (1 - emailsEased) * 40;
-  const pillRad = (ANGLE_B * Math.PI) / 180;
-  const pillOffX = Math.cos(pillRad) * pillEntryDist;
-  const pillOffY = Math.sin(pillRad) * pillEntryDist * 0.3;
-
-  const pillBlur = Math.min(pillEntryDist * 0.1, 5);
-
-  const gradAngle = interpolate(frame, [0, 34], [90, 220], clamp) + noise2D("pill-angle", frame * 0.02, 0) * 6;
+  const gradAngle =
+    interpolate(frame, [0, 34], [90, 220], clamp) +
+    noise2D("pill-angle", frame * 0.02, 0) * 6;
   const pillGrad = `linear-gradient(${gradAngle}deg, #D04870, #A858B8, #6878E0)`;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: CENTER_Y,
-        left: "50%",
-        transform: `translate(calc(-50% + ${w.x}px), calc(-50% + ${w.y}px)) rotate(${w.rot}deg) scale(${bs})`,
-        fontFamily,
-        fontSize: TEXT_SIZE,
-        fontWeight: FONT_WEIGHT,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        whiteSpace: "nowrap",
-      }}
-    >
+    <div style={{ ...centerStyle, display: "flex", alignItems: "center", gap: 12 }}>
       <span
         style={{
           color: TEXT_DARK,
-          opacity: writeOpacity,
-          transform: `translateY(${(1 - writeEased) * 8}px)`,
+          opacity: s.write.opacity,
+          transform: `translateY(${s.write.y}px)`,
         }}
       >
         Write
@@ -455,9 +412,8 @@ const PhaseWriteEmails: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          opacity: emailsOpacity,
-          transform: `translate(${pillOffX}px, ${pillOffY}px) scale(${emailsScale})`,
-          filter: pillBlur > 0.4 ? `blur(${pillBlur}px)` : undefined,
+          opacity: s.pill.opacity,
+          transform: `translate(${s.pill.x}px, ${s.pill.y}px) scale(${s.pill.scale})`,
         }}
       >
         <span
@@ -478,59 +434,53 @@ const PhaseWriteEmails: React.FC = () => {
   );
 };
 
-// --- Phase 6: Letter scatter (exit transition) -----------------------------
-const SCATTER_SIZES: Record<string, number> = {
-  S: 96, o: 52, l: 36, v: 48, e: 44, " ": 48,
-  p: 56, r: 40, b: 60, m: 52, s: 38,
-  W: 80, i: 36, t: 42,
-};
+// ===========================================================================
+// Phase 6: Letter scatter (exit transition)
+// Each letter of "Write emails" explodes outward with rotation + scale decay
+// ===========================================================================
+const SCATTER_ANGLES = [86.6, 44.2, 64.5, 23.5];
 
 const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
-  const frame = useCurrentFrame();
   const letters = text.replace(/ /g, "\u00A0").split("");
+
+  const proxyInit = useMemo(() => {
+    const init: Record<string, ProxyState> = {};
+    for (let i = 0; i < letters.length; i++) {
+      init[`l${i}`] = { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 };
+    }
+    return init;
+  }, [text]);
+
+  const s = useGsapProxy(
+    (tl, p) => {
+      letters.forEach((_, i) => {
+        const angle = SCATTER_ANGLES[i % 4] * (i % 2 === 0 ? 1 : -1);
+        const rad = (angle * Math.PI) / 180;
+        const dist = 280 + (i % 5) * 60;
+        const gravityBias = 40 + (i % 4) * 25;
+
+        tl.to(
+          p[`l${i}`],
+          {
+            x: Math.cos(rad) * dist,
+            y: Math.sin(rad) * (dist * 0.5) + gravityBias,
+            rotation: (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 10),
+            scale: 0.3,
+            opacity: 0,
+            duration: 0.55,
+            ease: "expo.out",
+          },
+          i * 0.012,
+        );
+      });
+    },
+    proxyInit,
+  );
 
   return (
     <AbsoluteFill>
       {letters.map((ch, i) => {
-        const angles = [ANGLE_A, ANGLE_B, ANGLE_C, ANGLE_D];
-        const baseAngle = angles[i % 4] * (i % 2 === 0 ? 1 : -1);
-        const scatterRad = (baseAngle * Math.PI) / 180;
-        const scatterDist = 280 + (i % 5) * 60;
-
-        const gravityBias = 40 + (i % 4) * 25;
-        const targetX = Math.cos(scatterRad) * scatterDist;
-        const targetY = Math.sin(scatterRad) * (scatterDist * 0.5) + gravityBias;
-        const targetRot = (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 10);
-
-        const delay = i * 0.35;
-        const rawProg = Math.max(0, Math.min(1, (frame - delay) / 16));
-        const prog = EASE_OUT_EXPO(rawProg);
-
-        const x = prog * targetX;
-        const y = prog * targetY;
-        const rot = prog * targetRot;
-        const opacity = interpolate(prog, [0, 0.65, 1], [1, 0.5, 0], clamp);
-
-        const letterSize = SCATTER_SIZES[ch] || TEXT_SIZE;
-        const sizeScale = interpolate(
-          prog,
-          [0, 0.4, 1],
-          [1, letterSize / TEXT_SIZE, letterSize / TEXT_SIZE],
-          clamp,
-        );
-
-        const w = wobble(`scatter-${i}`, frame, 4, 3, 0.04);
-
-        // Massive velocity blur during fast scatter
-        const prevRawProg = Math.max(0, Math.min(1, (frame - 1 - delay) / 16));
-        const prevProg = EASE_OUT_EXPO(prevRawProg);
-        const prevX = prevProg * targetX;
-        const prevY = prevProg * targetY;
-        const dx = x - prevX;
-        const dy = y - prevY;
-        const vel = Math.sqrt(dx * dx + dy * dy);
-        const blur = Math.min(vel * 0.5, 16);
-
+        const l = s[`l${i}`];
         return (
           <div
             key={i}
@@ -538,13 +488,12 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
               position: "absolute",
               top: CENTER_Y,
               left: "50%",
-              transform: `translate(calc(-50% + ${x + w.x}px), calc(-50% + ${y + w.y}px)) rotate(${rot + w.rot}deg) scale(${sizeScale})`,
+              transform: `translate(calc(-50% + ${l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
               fontFamily,
               fontSize: TEXT_SIZE,
               fontWeight: FONT_WEIGHT,
               color: TEXT_DARK,
-              opacity,
-              filter: blur > 0.5 ? `blur(${blur}px)` : undefined,
+              opacity: l.opacity,
             }}
           >
             {ch}
@@ -555,7 +504,10 @@ const PhaseLetterScatter: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-// --- Phase 7: "Solve problems" assembles from scattered letters ------------
+// ===========================================================================
+// Phase 7: "Solve problems" — letters assemble from scattered positions
+// Each char starts scattered (different sizes/positions), converges to final inline
+// ===========================================================================
 const SOLVE_SCATTER = [
   { x: -350, y: -120, size: 96 },
   { x: -140, y: -40, size: 48 },
@@ -573,47 +525,46 @@ const SOLVE_SCATTER = [
   { x: 420, y: 20, size: 40 },
 ];
 
-const SOLVE_CHAR_WIDTHS = [32, 28, 14, 28, 26, 16, 28, 18, 28, 28, 14, 26, 38, 18];
-const SOLVE_TOTAL_W = SOLVE_CHAR_WIDTHS.reduce((a, b) => a + b, 0);
+const SOLVE_TEXT = "Solve\u00A0problems";
+const SOLVE_LETTERS = SOLVE_TEXT.split("");
 
 const P7_FROM = 171;
 const PhaseSolveProblems: React.FC = () => {
-  const frame = useCurrentFrame();
-  const abs = frame + P7_FROM;
-  const bs = beatScale(abs);
-  const text = "Solve problems";
-  const letters = text.replace(/ /g, "\u00A0").split("");
+  const proxyInit = useMemo(() => {
+    const init: Record<string, ProxyState> = {};
+    for (let i = 0; i < SOLVE_LETTERS.length; i++) {
+      init[`l${i}`] = { x: 0, y: 0, scale: 1, opacity: 1 };
+    }
+    return init;
+  }, []);
 
-  const assembleStart = 8;
+  const s = useGsapProxy(
+    (tl, p) => {
+      SOLVE_LETTERS.forEach((_, i) => {
+        const scatter = SOLVE_SCATTER[i] || { x: 0, y: 0, size: 48 };
+        const sizeRatio = scatter.size / TEXT_SIZE;
 
-  let runningX = -SOLVE_TOTAL_W / 2;
-  const finalX = SOLVE_CHAR_WIDTHS.map((cw) => {
-    const cx = runningX + cw / 2;
-    runningX += cw;
-    return cx;
-  });
+        tl.from(
+          p[`l${i}`],
+          {
+            x: scatter.x,
+            y: scatter.y,
+            scale: sizeRatio,
+            opacity: 0,
+            duration: 0.62,
+            ease: i === 0 ? "expo.out" : "power2.out",
+          },
+          0.28 + i * 0.01,
+        );
+      });
+    },
+    proxyInit,
+  );
 
   return (
     <AbsoluteFill>
-      {letters.map((ch, i) => {
-        const scatter = SOLVE_SCATTER[i] || { x: 0, y: 0, size: 48 };
-        const delay = assembleStart + i * 0.3;
-
-        const rawProg = Math.max(0, Math.min(1, (frame - delay) / 18));
-        const prog = EASE_OUT_CUBIC(rawProg);
-
-        const x = scatter.x + (finalX[i] - scatter.x) * prog;
-        const y = scatter.y + (0 - scatter.y) * prog;
-        const sizeScale = (scatter.size / TEXT_SIZE) + (1 - scatter.size / TEXT_SIZE) * prog;
-
-        const fadeIn = interpolate(frame, [i * 0.3, i * 0.3 + 4], [0, 1], clamp);
-
-        const wobbleAmp = 3 * (1 - prog);
-        const w = wobble(`solve-${i}`, frame, wobbleAmp, wobbleAmp * 0.7, 0.03);
-
-        const remainDist = Math.sqrt((finalX[i] - x) ** 2 + y ** 2);
-        const blur = Math.min(remainDist * 0.02, 6);
-
+      {SOLVE_LETTERS.map((ch, i) => {
+        const l = s[`l${i}`];
         return (
           <div
             key={i}
@@ -621,13 +572,12 @@ const PhaseSolveProblems: React.FC = () => {
               position: "absolute",
               top: CENTER_Y,
               left: "50%",
-              transform: `translate(calc(-50% + ${x + w.x}px), calc(-50% + ${y + w.y}px)) scale(${sizeScale * bs}) rotate(${w.rot}deg)`,
+              transform: `translate(calc(-50% + ${l.x}px), calc(-50% + ${l.y}px)) scale(${l.scale})`,
               fontFamily,
               fontSize: TEXT_SIZE,
               fontWeight: FONT_WEIGHT,
               color: TEXT_DARK,
-              opacity: fadeIn,
-              filter: blur > 0.4 ? `blur(${blur}px)` : undefined,
+              opacity: l.opacity,
             }}
           >
             {ch}
@@ -638,48 +588,59 @@ const PhaseSolveProblems: React.FC = () => {
   );
 };
 
-// --- Phase 8: "Brainstorm ideas" — Sequence from=207 -----------------------
+// ===========================================================================
+// Phase 8: "Brainstorm ideas" — floating word field converges
+// Ghost words appear scattered, converge to center, final text fades in
+// ===========================================================================
+const FLOATERS = [
+  { word: "Brainstorm", x: -260, y: -90, color: "#D44E7A", size: 38, weight: 500, delay: 0 },
+  { word: "ideas", x: 240, y: 70, color: "#5B6FD7", size: 44, weight: 500, delay: 0.07 },
+  { word: "Brainstorm", x: 220, y: -50, color: "#8B5FC0", size: 32, weight: 400, delay: 0.03 },
+  { word: "ideas", x: -190, y: 110, color: "#6070D8", size: 36, weight: 500, delay: 0.1 },
+  { word: "ideas", x: -90, y: -130, color: "#9B5FC880", size: 28, weight: 400, delay: 0.14 },
+  { word: "Brainstorm", x: 110, y: 140, color: "#D44E7A80", size: 26, weight: 400, delay: 0.07 },
+  { word: "Brainstorm", x: -330, y: 35, color: "#D44E7A50", size: 22, weight: 400, delay: 0.17 },
+  { word: "ideas", x: 320, y: -35, color: "#5B6FD750", size: 22, weight: 400, delay: 0.21 },
+  { word: "Brainstorm", x: -150, y: 170, color: "#B86CC840", size: 18, weight: 400, delay: 0.1 },
+  { word: "ideas", x: 160, y: -160, color: "#6878E040", size: 18, weight: 400, delay: 0.17 },
+];
+
 const P8_FROM = 207;
 const PhaseBrainstormIdeas: React.FC = () => {
-  const frame = useCurrentFrame();
-  const abs = frame + P8_FROM;
-  const bs = beatScale(abs);
+  const proxyInit = useMemo(() => {
+    const init: Record<string, ProxyState> = {
+      final: { opacity: 0, scale: 0.95 },
+    };
+    for (let i = 0; i < FLOATERS.length; i++) {
+      init[`g${i}`] = { x: FLOATERS[i].x, y: FLOATERS[i].y, opacity: 0 };
+    }
+    return init;
+  }, []);
 
-  const floaters = [
-    { word: "Brainstorm", x: -260, y: -90, color: "#D44E7A", size: 38, weight: 500, delay: 0 },
-    { word: "ideas", x: 240, y: 70, color: "#5B6FD7", size: 44, weight: 500, delay: 2 },
-    { word: "Brainstorm", x: 220, y: -50, color: "#8B5FC0", size: 32, weight: 400, delay: 1 },
-    { word: "ideas", x: -190, y: 110, color: "#6070D8", size: 36, weight: 500, delay: 3 },
-    { word: "ideas", x: -90, y: -130, color: "#9B5FC880", size: 28, weight: 400, delay: 4 },
-    { word: "Brainstorm", x: 110, y: 140, color: "#D44E7A80", size: 26, weight: 400, delay: 2 },
-    { word: "Brainstorm", x: -330, y: 35, color: "#D44E7A50", size: 22, weight: 400, delay: 5 },
-    { word: "ideas", x: 320, y: -35, color: "#5B6FD750", size: 22, weight: 400, delay: 6 },
-    { word: "Brainstorm", x: -150, y: 170, color: "#B86CC840", size: 18, weight: 400, delay: 3 },
-    { word: "ideas", x: 160, y: -160, color: "#6878E040", size: 18, weight: 400, delay: 5 },
-  ];
-
-  const convergeRaw = Math.max(0, Math.min(1, (frame - 14) / 20));
-  const converge = EASE_OUT_CUBIC(convergeRaw);
-
-  const finalW = wobble("bs-final", frame, 1.2, 0.8);
+  const s = useGsapProxy(
+    (tl, p) => {
+      // Ghost words: fade in at positions, then converge and fade
+      FLOATERS.forEach((f, i) => {
+        // Fade in
+        tl.to(p[`g${i}`], { opacity: 0.85, duration: 0.28, ease: "power1.out" }, f.delay);
+        // Converge to center + fade
+        tl.to(
+          p[`g${i}`],
+          { x: 0, y: 0, opacity: 0, duration: 0.69, ease: "power2.out" },
+          0.48,
+        );
+      });
+      // Final text
+      tl.to(p.final, { opacity: 1, scale: 1, duration: 0.69, ease: "power2.out" }, 0.48);
+    },
+    proxyInit,
+  );
 
   return (
-    <>
-      {floaters.map((f, i) => {
-        const fadeIn = interpolate(frame, [f.delay, f.delay + 8], [0, 0.85], clamp);
-        const fadeOut = interpolate(frame, [16, 30], [1, 0], clamp);
-
-        const floatX = f.x + noise2D(`bsf-${i}x`, frame * 0.03, i * 1.5) * 14;
-        const floatY = f.y + noise2D(`bsf-${i}y`, i * 2.2, frame * 0.025) * 10;
-
-        const cx = floatX + (0 - floatX) * converge;
-        const cy = floatY + (0 - floatY) * converge;
-
-        const w = wobble(`bs-${i}`, frame, 2.5, 1.8, 0.035);
-
-        const speed = Math.sqrt(floatX * floatX + floatY * floatY) * (1 - converge);
-        const blur = Math.min(speed * 0.005, 4);
-
+    <AbsoluteFill>
+      {/* Ghost word field */}
+      {FLOATERS.map((f, i) => {
+        const g = s[`g${i}`];
         return (
           <div
             key={i}
@@ -687,14 +648,13 @@ const PhaseBrainstormIdeas: React.FC = () => {
               position: "absolute",
               top: CENTER_Y,
               left: "50%",
-              transform: `translate(calc(-50% + ${cx + w.x}px), calc(-50% + ${cy + w.y}px)) rotate(${w.rot}deg)`,
+              transform: `translate(calc(-50% + ${g.x}px), calc(-50% + ${g.y}px))`,
               fontFamily,
               fontSize: f.size,
               fontWeight: f.weight,
               color: f.color,
-              opacity: fadeIn * fadeOut,
               whiteSpace: "nowrap",
-              filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
+              opacity: g.opacity,
             }}
           >
             {f.word}
@@ -705,21 +665,14 @@ const PhaseBrainstormIdeas: React.FC = () => {
       {/* Final converged text */}
       <div
         style={{
-          position: "absolute",
-          top: CENTER_Y,
-          left: "50%",
-          transform: `translate(calc(-50% + ${finalW.x}px), calc(-50% + ${finalW.y}px)) scale(${bs})`,
-          fontFamily,
-          fontSize: TEXT_SIZE,
-          fontWeight: FONT_WEIGHT,
-          color: TEXT_DARK,
-          opacity: converge,
-          whiteSpace: "nowrap",
+          ...centerStyle,
+          opacity: s.final.opacity,
+          transform: `translate(-50%, -50%) scale(${s.final.scale})`,
         }}
       >
         Brainstorm ideas
       </div>
-    </>
+    </AbsoluteFill>
   );
 };
 
@@ -729,7 +682,6 @@ export const Scene01: React.FC = () => {
     <AbsoluteFill style={{ fontFamily }}>
       <PastelBackground />
 
-      {/* Beat-synced: phases nudged ±3 frames to nearest audio beat */}
       <Sequence from={P1_FROM} durationInFrames={15}>
         <PhaseYouve />
       </Sequence>

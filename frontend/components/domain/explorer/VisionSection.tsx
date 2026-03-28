@@ -58,18 +58,28 @@ interface LeaderboardEntry {
   portfolioBets: number
 }
 
+interface ActivityBucket {
+  bucket: string
+  rounds_settled: number
+  rounds_created: number
+  total_players: number
+}
+
 export function VisionSection({ snapshots, latest, loading }: SectionProps) {
   const t = useTranslations('pages')
   const [batches, setBatches] = useState<BatchData[]>([])
   const [batchLoading, setBatchLoading] = useState(true)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [activity, setActivity] = useState<ActivityBucket[]>([])
+  const [activityLoading, setActivityLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     async function fetchData() {
-      const [batchRes, lbRes] = await Promise.allSettled([
+      const [batchRes, lbRes, actRes] = await Promise.allSettled([
         fetch('/api/vision/batches').then(r => r.ok ? r.json() : null),
         fetch('/api/dn/vision/leaderboard').then(r => r.ok ? r.json() : null),
+        fetch('/api/vision/activity?range=24h&bucket_mins=15').then(r => r.ok ? r.json() : null),
       ])
       if (cancelled) return
       if (batchRes.status === 'fulfilled' && batchRes.value) {
@@ -78,20 +88,15 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
       if (lbRes.status === 'fulfilled' && lbRes.value) {
         setLeaderboard(lbRes.value.leaderboard ?? [])
       }
+      if (actRes.status === 'fulfilled' && actRes.value) {
+        setActivity(actRes.value.buckets ?? [])
+      }
       setBatchLoading(false)
+      setActivityLoading(false)
     }
     fetchData()
     return () => { cancelled = true }
   }, [])
-
-  const activityData = useMemo(
-    () =>
-      snapshots.map((s) => ({
-        poll_batch_ts: s.poll_batch_ts,
-        orders_processed: s.orders_processed_last_60s,
-      })),
-    [snapshots]
-  )
 
   // --- Card 1: Batch Volume stats ---
   const batchStats = useMemo(() => {
@@ -266,39 +271,55 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
         </div>
       </ExplorerChartCard>
 
-      {/* Derived chart: Network Activity */}
+      {/* Vision Network Activity — rounds settled & created per time bucket */}
       <ExplorerChartCard
         title={t('explorer.vision_section.network_activity')}
         subtitle={t('explorer.vision_section.network_activity_desc')}
-        loading={loading}
+        loading={activityLoading}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={activityData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis
-              dataKey="poll_batch_ts"
-              tickFormatter={(v) =>
-                new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              }
-              tick={{ fontSize: 10 }}
-              stroke="#ccc"
-            />
-            <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
-            <Tooltip
-              labelFormatter={(v) => new Date(v as string).toLocaleString()}
-              contentStyle={{ fontSize: 12, borderRadius: 8 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="orders_processed"
-              name={t('explorer.vision_section.orders_60s')}
-              stroke="#000"
-              fill="#000"
-              fillOpacity={0.08}
-              strokeWidth={1.5}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {activity.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={activity}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis
+                dataKey="bucket"
+                tickFormatter={(v) =>
+                  new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+                tick={{ fontSize: 10 }}
+                stroke="#ccc"
+              />
+              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" allowDecimals={false} />
+              <Tooltip
+                labelFormatter={(v) => new Date(v as string).toLocaleString()}
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="rounds_settled"
+                name={t('explorer.vision_section.rounds_settled')}
+                stroke="#000"
+                fill="#000"
+                fillOpacity={0.08}
+                strokeWidth={1.5}
+              />
+              <Area
+                type="monotone"
+                dataKey="total_players"
+                name={t('explorer.vision_section.players_joined')}
+                stroke="#888"
+                fill="#888"
+                fillOpacity={0.05}
+                strokeWidth={1}
+                strokeDasharray="4 2"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-caption text-text-muted">{t('explorer.vision_section.no_activity_data')}</p>
+          </div>
+        )}
       </ExplorerChartCard>
 
       {/* Top Players — from data-node leaderboard */}

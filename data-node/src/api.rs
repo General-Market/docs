@@ -507,6 +507,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/batches/signed", axum::routing::post(store_signed_batch))
         .route("/batches/replicate", axum::routing::post(replicate_signed_batch))
         .route("/batches/settlement", axum::routing::post(record_batch_settlement))
+        .route("/batches/settlement-distribution", get(get_settlement_distribution))
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
@@ -5515,6 +5516,42 @@ async fn record_batch_settlement(
     }
 
     StatusCode::OK
+}
+
+// ---- Settlement distribution (read-only) ----
+
+#[derive(Deserialize)]
+struct SettlementDistQuery {
+    limit: Option<i64>,
+    source_id: Option<String>,
+}
+
+async fn get_settlement_distribution(
+    Query(q): Query<SettlementDistQuery>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let limit = q.limit.unwrap_or(5000).min(10000);
+    let rows: Vec<(f64,)> = if let Some(ref src) = q.source_id {
+        sqlx::query_as(
+            "SELECT change_pct::float8 FROM batch_settlements WHERE source_id = $1 ORDER BY settled_at DESC LIMIT $2",
+        )
+        .bind(src)
+        .bind(limit)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    } else {
+        sqlx::query_as(
+            "SELECT change_pct::float8 FROM batch_settlements ORDER BY settled_at DESC LIMIT $1",
+        )
+        .bind(limit)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    };
+
+    let values: Vec<f64> = rows.into_iter().map(|r| r.0).collect();
+    Ok(Json(serde_json::json!({ "values": values, "count": values.len() })))
 }
 
 // ---- Admin auth helper ----

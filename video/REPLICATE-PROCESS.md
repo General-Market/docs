@@ -233,30 +233,72 @@ import { noise2D } from "@remotion/noise";
 const wobbleX = noise2D("x", frame * 0.02, 0) * 5;
 ```
 
-### USE INSTALLED LIBRARIES — don't hand-code what's already solved
+### GSAP is the primary animation engine
+
+GSAP 3.14 is installed with ALL plugins (free since 2024). Use it for everything complex.
 
 ```tsx
-// Per-letter/word animation — DON'T manually split().map()
-import { AnimateText } from "remotion-animate-text";
-<AnimateText text="Introducing" animation="fadeInUp" by="characters" stagger={3} />
+// GSAP + Remotion integration (syncs GSAP timeline to Remotion frame clock)
+import { useGsapTimeline, disintegrateText, morphSVG } from "../../lib/useGsapTimeline";
 
-// Declarative animation wrapper — DON'T manual interpolate() for simple moves
-import { Animated, Move, Scale, Fade } from "remotion-animated";
-<Animated animations={[Move({ y: 0, start: 20 }), Fade({ to: 1 })]}>
-  <MyComponent />
-</Animated>
+const { tl, containerRef } = useGsapTimeline();
 
-// Page turn / curl — DON'T CSS clip-path hack. Use GLSL shader:
-// gl-transitions has PageCurl, Swap, and 80+ other shader transitions
-import { TransitionSeries } from "@remotion/transitions";
+useEffect(() => {
+  if (!containerRef.current) return;
 
-// SVG morph (e.g., sparkle → G logo) — DON'T manual point interpolation
-import { interpolatePath, evolvePath } from "@remotion/paths";
-const morphed = interpolatePath(progress, sparklePath, gLogoPath);
+  // Per-letter text animation (SplitText)
+  const split = new SplitText(".my-text", { type: "chars,words" });
+  tl.current.from(split.chars, {
+    opacity: 0, y: 50, rotation: -15, scale: 0.5,
+    stagger: { each: 0.03, from: "center" },
+    ease: "back.out(1.7)", duration: 0.6,
+  });
 
-// Scene transitions — DON'T manual opacity crossfade
-import { fade } from "@remotion/transitions/fade";
-import { slide } from "@remotion/transitions/slide";
+  // SVG morph (MorphSVGPlugin)
+  tl.current.to("#sparkle-path", {
+    morphSVG: "#google-g-path",
+    duration: 1, ease: "power2.inOut",
+  }, "+=0.5");
+
+  // Element follows bezier curve (MotionPathPlugin)
+  tl.current.to(".phone", {
+    motionPath: {
+      path: [{ x: 0, y: 200 }, { x: -100, y: 100 }, { x: 0, y: 0 }],
+      curviness: 1.5, autoRotate: true,
+    },
+    duration: 0.8, ease: "power2.out",
+  }, 1.0);
+
+  // Text disintegration (Bard death)
+  disintegrateText(tl.current, ".bard-text", { delay: 1.5, spread: 200 });
+}, []);
+
+return <div ref={containerRef}>...</div>;
+```
+
+**When to use GSAP vs Remotion primitives:**
+
+| Use GSAP for | Use interpolate()/spring() for |
+|-------------|-------------------------------|
+| Per-letter text animation (SplitText) | Simple opacity fade |
+| SVG morphing (MorphSVGPlugin) | Basic position slide |
+| Bezier motion paths (MotionPathPlugin) | Spring bounce entrance |
+| Complex timeline sequencing | Single-property animation |
+| Text disintegration/particle effects | Color interpolation |
+| Staggered multi-element choreography | Scale/rotation basics |
+
+**Converting tracking data to GSAP:**
+```bash
+python3 scripts/track-to-gsap.py /tmp/VIDEO-tracks-v3
+# Outputs: gsap-timeline.json + gsap-timeline-code.ts
+# Contains: GSAP .from() calls with correct easing, MotionPath arrays
+```
+
+### Also useful
+```tsx
+// Page curl — GLSL shader (gl-transitions/InvertedPageCurl.glsl)
+// SVG path morph — @remotion/paths interpolatePath() (simpler than GSAP for basic morphs)
+// 3D geometry — @remotion/three ThreeCanvas (glass, tubes, metallic)
 ```
 
 ### Three.js for real 3D

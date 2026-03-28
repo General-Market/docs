@@ -1,35 +1,31 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  spring,
   Sequence,
   Easing,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
+import { useGsapTimeline, gsap } from "../../lib/useGsapTimeline";
 
 /* ─── bezier / motion helpers ─── */
-/** quadratic bezier — 3-point arc for particle trajectories */
 function quadBezier(t: number, p0: number, p1: number, p2: number): number {
   const u = 1 - t;
   return u * u * p0 + 2 * u * t * p1 + t * t * p2;
 }
 
-/** cubic bezier — 4-point curve for complex trajectories */
 function cubicBezier(t: number, p0: number, p1: number, p2: number, p3: number): number {
   const u = 1 - t;
   return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
 }
 
-/** deceleration curve: fast start, asymptotic settle */
 function decel(t: number, rate = 3.0): number {
   return 1 - Math.exp(-t * rate);
 }
 
-/** velocity-proportional blur — 0.2 scale, 6px cap per spec */
 function motionBlurAmount(
   currX: number,
   currY: number,
@@ -43,7 +39,6 @@ function motionBlurAmount(
   return Math.min(Math.sqrt(dx * dx + dy * dy) * scale, max);
 }
 
-/** organic micro-wobble for any positioned element */
 function organicWobble(
   seed: string,
   frame: number,
@@ -81,14 +76,10 @@ function seededRandom(seed: number) {
 /* ─── particle type ─── */
 interface Particle {
   id: number;
-  /** origin x */
   x: number;
-  /** origin y */
   y: number;
-  /** bezier control point offset (perpendicular to travel direction) */
   cpOffX: number;
   cpOffY: number;
-  /** end point offset from origin */
   endX: number;
   endY: number;
   size: number;
@@ -108,7 +99,6 @@ function generateParticles(count: number, seed: number): Particle[] {
   return Array.from({ length: count }, (_, i) => {
     const angle = (rng() - 0.3) * Math.PI * 0.8;
     const dist = 80 + rng() * 280;
-    // control point perpendicular to travel direction for arc curvature
     const perpAngle = angle + (rng() > 0.5 ? Math.PI / 2 : -Math.PI / 2);
     const cpDist = 40 + rng() * 120;
     return {
@@ -159,7 +149,7 @@ const Sparkle: React.FC<{
   </svg>
 );
 
-/* ─── Particle Field — quadratic bezier arcs + deceleration + motion blur ─── */
+/* ─── Particle Field — bezier arcs + deceleration (kept procedural — too many elements for GSAP DOM targets) ─── */
 const ParticleField: React.FC<{
   frame: number;
   fps: number;
@@ -175,17 +165,13 @@ const ParticleField: React.FC<{
         const wob = organicWobble("p" + p.id, frame, 2.5, 2, 0.025);
 
         let px: number, py: number, opacity: number, scale: number;
-        // previous-frame position for velocity blur
         let prevPx: number, prevPy: number;
 
         if (phase === "explode") {
-          // Decelerated progress along quadratic bezier arc
-          const tNorm = Math.min(rawT / 1.2, 1); // normalize to ~1.2s lifespan
-          const d = decel(tNorm * 3, 2.8); // fast start, asymptotic settle
-          // Bezier arc: origin → control → end
+          const tNorm = Math.min(rawT / 1.2, 1);
+          const d = decel(tNorm * 3, 2.8);
           px = quadBezier(d, p.x, p.x + p.cpOffX, p.x + p.endX) + noiseX + wob.x;
           py = quadBezier(d, p.y, p.y + p.cpOffY, p.y + p.endY) + noiseY + wob.y;
-          // Prev frame for blur
           const dPrev = decel(Math.max(0, tNorm - 0.04) * 3, 2.8);
           prevPx = quadBezier(dPrev, p.x, p.x + p.cpOffX, p.x + p.endX) + noiseX;
           prevPy = quadBezier(dPrev, p.y, p.y + p.cpOffY, p.y + p.endY) + noiseY;
@@ -216,7 +202,6 @@ const ParticleField: React.FC<{
             extrapolateRight: "clamp",
             easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
           });
-          // Arc via bezier control point offset from midpoint
           const midX = (startX + targetX) / 2 + p.cpOffX * 0.5;
           const midY = (startY + targetY) / 2 + p.cpOffY * 0.5;
           px = quadBezier(prog, startX, midX, targetX) + wob.x;
@@ -231,7 +216,6 @@ const ParticleField: React.FC<{
             extrapolateRight: "clamp",
           });
         } else {
-          // scatter — bezier arcs outward
           const tNorm = Math.min(rawT / 0.8, 1);
           const d = decel(tNorm * 2.5, 2.0);
           const dist = p.speed * 200;
@@ -285,15 +269,31 @@ const SegParticleExplosion: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const particles = useMemo(() => generateParticles(120, 42), []);
+  const { tl, containerRef } = useGsapTimeline();
   const wob = organicWobble("pexp", frame, 4, 3, 0.025);
 
-  // Particles explode outward from center in a swirl
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+    // Radial glow: fade in then out
+    t.fromTo(".radial-glow",
+      { opacity: 0 },
+      { opacity: 0.8, duration: 10 / fps, ease: "power2.out" },
+      0
+    );
+    t.to(".radial-glow",
+      { opacity: 0, duration: (fps * 1.5 - 10) / fps, ease: "power2.in" },
+      10 / fps
+    );
+  }, []);
+
   const phase: "explode" | "swirl" = frame < fps * 0.8 ? "explode" : "swirl";
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
-      {/* Soft radial glow at center — wobbles with particle field */}
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       <div
+        className="radial-glow"
         style={{
           position: "absolute",
           left: "50%",
@@ -302,9 +302,7 @@ const SegParticleExplosion: React.FC = () => {
           height: 400,
           transform: `translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,
           background: `radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)`,
-          opacity: interpolate(frame, [0, 10, fps * 1.5], [0, 0.8, 0], {
-            extrapolateRight: "clamp",
-          }),
+          opacity: 0,
         }}
       />
       <ParticleField frame={frame} fps={fps} particles={particles} phase={phase} />
@@ -312,9 +310,8 @@ const SegParticleExplosion: React.FC = () => {
   );
 };
 
-/* ─── Segment 2: Gemini Text Materializes — per-letter arc entrances ─── */
+/* ─── Segment 2: Gemini Text Materializes — GSAP staggered letter entrance ─── */
 const GEMINI_LETTERS = "Gemini".split("");
-/** Per-letter arc entrance angles (radians) — varied for organic feel */
 const LETTER_ARC_ANGLES = [-0.9, -0.4, 0.3, -0.6, 0.7, -0.2];
 const LETTER_ARC_DIST = [60, 45, 55, 50, 65, 40];
 
@@ -322,31 +319,59 @@ const SegGeminiReveal: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const particles = useMemo(() => generateParticles(60, 99), []);
+  const { tl, containerRef } = useGsapTimeline();
 
-  // Sparkle animations
-  const sparkle1Op = interpolate(
-    frame % (fps * 1.2),
-    [0, fps * 0.3, fps * 0.6, fps * 1.2],
-    [0, 1, 1, 0],
-    { extrapolateRight: "clamp" }
-  );
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Letters stagger in from arc positions
+    const letters = containerRef.current.querySelectorAll(".gemini-letter");
+    letters.forEach((el, i) => {
+      const arcAngle = LETTER_ARC_ANGLES[i];
+      const arcDist = LETTER_ARC_DIST[i];
+      t.from(el, {
+        x: Math.cos(arcAngle) * arcDist,
+        y: Math.sin(arcAngle) * arcDist,
+        opacity: 0,
+        scale: 0.7,
+        duration: 0.5,
+        ease: "back.out(1.7)",
+      }, i * 0.1); // stagger 3 frames = 0.1s
+    });
+
+    // Sparkles — pulsing entrance
+    t.from(".sparkle-main", {
+      opacity: 0, scale: 0, rotation: -180,
+      duration: 0.6, ease: "elastic.out(1, 0.5)",
+    }, 0.3);
+    t.from(".sparkle-secondary", {
+      opacity: 0, scale: 0, rotation: 90,
+      duration: 0.5, ease: "back.out(2)",
+    }, 0.5);
+    t.from(".sparkle-tertiary", {
+      opacity: 0, scale: 0,
+      duration: 0.4, ease: "power2.out",
+    }, 0.6);
+
+    // Fade sparkles out near end
+    t.to(".sparkle-main, .sparkle-secondary, .sparkle-tertiary", {
+      opacity: 0, duration: 0.3, ease: "power2.in",
+    }, 1.2);
+  }, []);
+
+  // Sparkle rotation is continuous — keep frame-driven
   const sparkle1Rot = interpolate(frame, [0, fps * 2], [0, 360]);
 
-  const sparkle2Op = interpolate(
-    (frame + fps * 0.4) % (fps * 1.5),
-    [0, fps * 0.3, fps * 0.8, fps * 1.5],
-    [0, 1, 0.8, 0],
-    { extrapolateRight: "clamp" }
-  );
-
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       {/* Residual particles fading */}
       <div style={{ opacity: interpolate(frame, [0, fps * 2], [0.5, 0], { extrapolateRight: "clamp" }) }}>
         <ParticleField frame={frame} fps={fps} particles={particles} phase="scatter" />
       </div>
 
-      {/* Gemini text — per-letter arc entrance */}
+      {/* Gemini text — GSAP staggered arc entrance */}
       <div
         style={{
           position: "absolute",
@@ -362,36 +387,17 @@ const SegGeminiReveal: React.FC = () => {
         }}
       >
         {GEMINI_LETTERS.map((letter, i) => {
-          const delay = i * 3; // stagger: 3 frames per letter
-          const letterSpring = spring({
-            frame: frame - delay,
-            fps,
-            config: { damping: 14, stiffness: 130, mass: 0.7 },
-          });
           const wob = organicWobble("gl" + i, frame, 1.5, 1, 0.018);
-          // Arc entrance: each letter arrives from its own angle
-          const arcAngle = LETTER_ARC_ANGLES[i];
-          const arcDist = LETTER_ARC_DIST[i];
-          const prog = interpolate(letterSpring, [0, 1], [0, 1]);
-          const arcX = Math.cos(arcAngle) * arcDist * (1 - prog);
-          const arcY = Math.sin(arcAngle) * arcDist * (1 - prog);
-          // Velocity blur on entrance
-          const prevProg = Math.max(0, prog - 0.06);
-          const prevArcX = Math.cos(arcAngle) * arcDist * (1 - prevProg);
-          const prevArcY = Math.sin(arcAngle) * arcDist * (1 - prevProg);
-          const blur = motionBlurAmount(arcX, arcY, prevArcX, prevArcY);
-
           return (
             <span
               key={i}
+              className="gemini-letter"
               style={{
                 display: "inline-block",
                 background: `linear-gradient(90deg, ${BLUE} 0%, ${PURPLE} 45%, ${PINK} 100%)`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                opacity: interpolate(letterSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" }),
-                transform: `translate(${arcX + wob.x}px, ${arcY + wob.y}px) scale(${interpolate(letterSpring, [0, 1], [0.7, 1])}) rotate(${wob.rot * 0.5}deg)`,
-                filter: blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : undefined,
+                willChange: "transform, opacity",
               }}
             >
               {letter}
@@ -400,42 +406,27 @@ const SegGeminiReveal: React.FC = () => {
         })}
       </div>
 
-      {/* Sparkles — main one above the 'i' dot, smaller ones flanking */}
-      <Sparkle x={640} y={300} size={36} color={PURPLE} opacity={sparkle1Op} rotation={sparkle1Rot} />
-      <Sparkle x={700} y={310} size={20} color={BLUE} opacity={sparkle2Op} rotation={-sparkle1Rot * 0.6} />
-      <Sparkle
-        x={720}
-        y={340}
-        size={12}
-        color={PINK}
-        opacity={interpolate(frame, [fps * 0.5, fps * 1, fps * 2, fps * 2.5], [0, 0.8, 0.8, 0], {
-          extrapolateRight: "clamp",
-        })}
-        rotation={sparkle1Rot * 1.2}
-      />
+      {/* Sparkles */}
+      <div className="sparkle-main" style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
+        <Sparkle x={640} y={300} size={36} color={PURPLE} opacity={1} rotation={sparkle1Rot} />
+      </div>
+      <div className="sparkle-secondary" style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
+        <Sparkle x={700} y={310} size={20} color={BLUE} opacity={1} rotation={-sparkle1Rot * 0.6} />
+      </div>
+      <div className="sparkle-tertiary" style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
+        <Sparkle x={720} y={340} size={12} color={PINK} opacity={1} rotation={sparkle1Rot * 1.2} />
+      </div>
     </AbsoluteFill>
   );
 };
 
-/* ─── Segment 3: Desktop UI Mockup — perspective tilt w/ spring settle ─── */
+/* ─── Segment 3: Desktop UI Mockup — GSAP perspective entrance + typing ─── */
 const SegDesktopUI: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
-  // Spring settle: overshoots then settles — lower damping for visible bounce
-  const enterSpring = spring({ frame, fps, config: { damping: 11, stiffness: 90, mass: 1.2 } });
+  const { tl, containerRef } = useGsapTimeline();
   const wob = organicWobble("dui", frame, 1.2, 0.8, 0.015);
-  const uiScale = interpolate(enterSpring, [0, 1], [1.12, 1]);
-  const uiY = interpolate(enterSpring, [0, 1], [55, 0]) + wob.y;
-  // Perspective tilt: enters tilted, settles to subtle rest tilt
-  const uiRotX = interpolate(enterSpring, [0, 1], [8, 2]) + wob.rot * 0.3;
-  const uiRotY = wob.x * 0.15; // subtle lateral wobble
-  const uiOpacity = interpolate(enterSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
-  // Velocity blur on entrance (first ~15 frames)
-  const prevY = interpolate(Math.max(0, enterSpring - 0.05), [0, 1], [55, 0]);
-  const entranceBlur = motionBlurAmount(0, uiY, 0, prevY);
 
-  // "Hello, Lisa." text typing
   const helloText = "Hello, Lisa.";
   const howText = "How can I help you today?";
   const helloChars = Math.floor(
@@ -451,10 +442,45 @@ const SegDesktopUI: React.FC = () => {
     })
   );
 
-  // Cards slide up
-  const cardsSpring = spring({ frame: frame - fps * 1.5, fps, config: { damping: 15 } });
-  const cardsY = interpolate(cardsSpring, [0, 1], [40, 0]);
-  const cardsOp = interpolate(cardsSpring, [0, 1], [0, 1]);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Browser container: spring entrance with perspective tilt
+    t.from(".browser-container", {
+      y: 55,
+      scale: 1.12,
+      rotationX: 8,
+      opacity: 0,
+      duration: 0.8,
+      ease: "elastic.out(1, 0.6)",
+    }, 0);
+
+    // Cards stagger in
+    t.from(".suggestion-card", {
+      y: 40,
+      scale: 0.9,
+      opacity: 0,
+      duration: 0.5,
+      ease: "back.out(1.4)",
+      stagger: 0.1,
+    }, 1.5);
+
+    // Input bar fades in
+    t.from(".input-bar", {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.out",
+    }, 2.0);
+
+    // Disclaimer
+    t.from(".disclaimer-text", {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.out",
+    }, 1.5);
+  }, []);
 
   const cards = [
     { text: "Help me find YouTube videos to care for a plant", icon: "youtube" },
@@ -464,7 +490,7 @@ const SegDesktopUI: React.FC = () => {
   ];
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       {/* Soft gradient backdrop */}
       <div
         style={{
@@ -477,18 +503,19 @@ const SegDesktopUI: React.FC = () => {
 
       {/* Browser-like container with iridescent border */}
       <div
+        className="browser-container"
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
           width: 904,
           height: 524,
-          transform: `translate(-50%, -50%) translateY(${uiY}px) perspective(1200px) rotateX(${uiRotX}deg) rotateY(${uiRotY}deg) scale(${uiScale})`,
-          opacity: uiOpacity,
-          filter: entranceBlur > 0.3 ? `blur(${entranceBlur.toFixed(1)}px)` : undefined,
+          transform: `translate(-50%, -50%)`,
+          perspective: 1200,
           borderRadius: 18,
           background: `linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,
           padding: 2,
+          willChange: "transform, opacity",
         }}
       >
       <div
@@ -526,7 +553,6 @@ const SegDesktopUI: React.FC = () => {
             <span style={{ fontSize: 10, color: "#999" }}>&#9660;</span>
           </div>
           <div style={{ flex: 1 }} />
-          {/* + button */}
           <div
             style={{
               width: 32,
@@ -591,81 +617,70 @@ const SegDesktopUI: React.FC = () => {
             style={{
               display: "flex",
               gap: 14,
-              opacity: cardsOp,
-              transform: `translateY(${cardsY}px)`,
             }}
           >
-            {cards.map((card, i) => {
-              const cardDelay = i * 3;
-              const cardSpring = spring({
-                frame: frame - fps * 1.5 - cardDelay,
-                fps,
-                config: { damping: 18 },
-              });
-              const cScale = interpolate(cardSpring, [0, 1], [0.9, 1]);
-              return (
+            {cards.map((card, i) => (
+              <div
+                key={i}
+                className="suggestion-card"
+                style={{
+                  width: 165,
+                  height: 100,
+                  backgroundColor: "#F6F6FA",
+                  borderRadius: 12,
+                  padding: "14px 12px",
+                  fontSize: 12,
+                  fontFamily: "'Google Sans', sans-serif",
+                  color: "#444",
+                  lineHeight: 1.35,
+                  position: "relative",
+                  willChange: "transform, opacity",
+                }}
+              >
+                {card.text}
                 <div
-                  key={i}
                   style={{
-                    width: 165,
-                    height: 100,
-                    backgroundColor: "#F6F6FA",
-                    borderRadius: 12,
-                    padding: "14px 12px",
-                    fontSize: 12,
-                    fontFamily: "'Google Sans', sans-serif",
-                    color: "#444",
-                    lineHeight: 1.35,
-                    transform: `scale(${cScale})`,
-                    opacity: interpolate(cardSpring, [0, 1], [0, 1]),
-                    position: "relative",
+                    position: "absolute",
+                    bottom: 10,
+                    left: 12,
+                    width: 26,
+                    height: 26,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  {card.text}
-                  {/* Recognizable icon shapes */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 10,
-                      left: 12,
-                      width: 26,
-                      height: 26,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {card.icon === "youtube" && (
-                      <div style={{ width: 26, height: 18, borderRadius: 5, backgroundColor: "#FF0000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 0, height: 0, borderLeft: "8px solid white", borderTop: "5px solid transparent", borderBottom: "5px solid transparent" }} />
+                  {card.icon === "youtube" && (
+                    <div style={{ width: 26, height: 18, borderRadius: 5, backgroundColor: "#FF0000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 0, height: 0, borderLeft: "8px solid white", borderTop: "5px solid transparent", borderBottom: "5px solid transparent" }} />
+                    </div>
+                  )}
+                  {card.icon === "compass" && (
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "#E8E8EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid #666", position: "relative" }}>
+                        <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", width: 2, height: 4, backgroundColor: "#666" }} />
                       </div>
-                    )}
-                    {card.icon === "compass" && (
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "#E8E8EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid #666", position: "relative" }}>
-                          <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", width: 2, height: 4, backgroundColor: "#666" }} />
-                        </div>
-                      </div>
-                    )}
-                    {card.icon === "mic" && (
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: `${PURPLE}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 8, height: 14, borderRadius: 4, backgroundColor: PURPLE }} />
-                      </div>
-                    )}
-                    {card.icon === "pen" && (
-                      <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: `${BLUE}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: 3, height: 14, backgroundColor: BLUE, borderRadius: 1, transform: "rotate(-45deg)" }} />
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {card.icon === "mic" && (
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: `${PURPLE}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 8, height: 14, borderRadius: 4, backgroundColor: PURPLE }} />
+                    </div>
+                  )}
+                  {card.icon === "pen" && (
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: `${BLUE}22`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: 3, height: 14, backgroundColor: BLUE, borderRadius: 1, transform: "rotate(-45deg)" }} />
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Bottom input bar */}
         <div
+          className="input-bar"
           style={{
             position: "absolute",
             bottom: 20,
@@ -680,10 +695,7 @@ const SegDesktopUI: React.FC = () => {
             fontSize: 13,
             color: "#AAA",
             fontFamily: "'Google Sans', sans-serif",
-            opacity: interpolate(frame, [fps * 2, fps * 2.5], [0, 0.7], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            }),
+            opacity: 0,
           }}
         >
           Enter a prompt here
@@ -693,6 +705,7 @@ const SegDesktopUI: React.FC = () => {
 
       {/* Disclaimer text */}
       <div
+        className="disclaimer-text"
         style={{
           position: "absolute",
           bottom: 24,
@@ -700,10 +713,7 @@ const SegDesktopUI: React.FC = () => {
           fontSize: 11,
           fontFamily: "'Google Sans', sans-serif",
           color: "#B0B0B8",
-          opacity: interpolate(frame, [fps * 1.5, fps * 2], [0, 0.6], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          }),
+          opacity: 0,
         }}
       >
         Sequences shortened and simulated.
@@ -712,19 +722,57 @@ const SegDesktopUI: React.FC = () => {
   );
 };
 
-/* ─── Segment 4: "It's everything" repeating text wall ─── */
+/* ─── Segment 4: "It's everything" repeating text wall — GSAP stagger ─── */
 const SegItsEverything: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
   const wob = organicWobble("itsev", frame, 2, 1.5, 0.02);
 
-  const enterOp = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
-  const exitOp = interpolate(frame, [durationInFrames - 10, durationInFrames], [1, 0], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
+  const rows = 9;
+  const cols = 5;
 
-  // Scroll the text wall + organic wobble
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Container: fade in
+    t.from(".itsev-container", {
+      opacity: 0,
+      duration: 8 / fps,
+      ease: "power2.out",
+    }, 0);
+
+    // Center text: spring scale
+    t.from(".itsev-center", {
+      scale: 0,
+      duration: 0.6,
+      ease: "elastic.out(1, 0.5)",
+    }, 5 / fps);
+
+    // All cells stagger from center outward
+    t.from(".itsev-cell", {
+      opacity: 0,
+      y: 20,
+      duration: 0.4,
+      ease: "power2.out",
+      stagger: {
+        each: 0.03,
+        from: "center",
+      },
+    }, 0.1);
+
+    // Fade out at end
+    const dur = durationInFrames / fps;
+    t.to(".itsev-container", {
+      opacity: 0,
+      duration: 10 / fps,
+      ease: "power2.in",
+    }, dur - 10 / fps);
+  }, []);
+
+  // Scroll the text wall + organic wobble (frame-driven for noise)
   const scrollY = interpolate(frame, [0, durationInFrames], [0, -80], {
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.sin),
@@ -733,21 +781,10 @@ const SegItsEverything: React.FC = () => {
     extrapolateRight: "clamp",
   }) + wob.x;
 
-  // The center text is bolder
-  const centerScale = spring({
-    frame: frame - 5,
-    fps,
-    config: { damping: 15, stiffness: 120 },
-  });
-
-  const rows = 9;
-  const cols = 5;
-
   return (
-    <AbsoluteFill
-      style={{ backgroundColor: BG, opacity: Math.min(enterOp, exitOp) }}
-    >
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       <div
+        className="itsev-container"
         style={{
           position: "absolute",
           left: "50%",
@@ -769,12 +806,12 @@ const SegItsEverything: React.FC = () => {
             const fontSize = isCenter ? 42 : 26;
             const fontWeight = isCenter ? 600 : 400;
             const color = isCenter ? DARK : "#9090A0";
-            // Per-cell micro wobble — amplitude scales with distance from center
             const cellWob = organicWobble(`ie${row}${col}`, frame, 1 + dist * 0.4, 0.8 + dist * 0.3, 0.015);
 
             return (
               <div
                 key={`${row}-${col}`}
+                className={isCenter ? "itsev-center" : "itsev-cell"}
                 style={{
                   position: "absolute",
                   left: (col - 2) * 260 + cellWob.x,
@@ -785,7 +822,7 @@ const SegItsEverything: React.FC = () => {
                   color,
                   opacity,
                   whiteSpace: "nowrap",
-                  transform: isCenter ? `scale(${centerScale})` : `rotate(${cellWob.rot * 0.3}deg)`,
+                  transform: isCenter ? undefined : `rotate(${cellWob.rot * 0.3}deg)`,
                 }}
               >
                 It's everything
@@ -798,23 +835,12 @@ const SegItsEverything: React.FC = () => {
   );
 };
 
-/* ─── Segment 5: Google App Icons floating + "you know and love" ─── */
+/* ─── Segment 5: Google App Icons floating + "you know and love" — GSAP float ─── */
 const SegAppsFloat: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
 
-  // Text reveal
-  const text1Spring = spring({ frame, fps, config: { damping: 20 } });
-  const text2Spring = spring({
-    frame: frame - fps * 0.5,
-    fps,
-    config: { damping: 20 },
-  });
-
-  const text1Op = interpolate(text1Spring, [0, 1], [0, 1]);
-  const text2Op = interpolate(text2Spring, [0, 1], [0, 1]);
-
-  // App icons with float animation — positioned around text
   const apps = [
     { name: "Maps", color: "#34A853", x: 250, y: 200, icon: "pin" },
     { name: "Gmail", color: "#EA4335", x: 520, y: 150, icon: "mail" },
@@ -825,49 +851,70 @@ const SegAppsFloat: React.FC = () => {
     { name: "Drive", color: "#FBBC04", x: 680, y: 500, icon: "triangle" },
   ];
 
-  const { durationInFrames } = useVideoConfig();
-  const exitOp = interpolate(frame, [durationInFrames - 10, durationInFrames], [1, 0], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Icons pop in with stagger — elastic bounce
+    t.from(".app-icon", {
+      scale: 0,
+      opacity: 0,
+      duration: 0.6,
+      ease: "elastic.out(1, 0.5)",
+      stagger: { each: 0.1, from: "random" },
+    }, 0);
+
+    // Text reveal: "you know" then "and love"
+    t.from(".text-you-know", {
+      y: 18,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.out",
+    }, 0);
+    t.from(".text-and-love", {
+      y: 18,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.out",
+    }, 0.5);
+
+    // Exit fade
+    const dur = durationInFrames / fps;
+    t.to(".app-icon, .text-you-know, .text-and-love", {
+      opacity: 0,
+      duration: 10 / fps,
+      ease: "power2.in",
+    }, dur - 10 / fps);
+  }, []);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG, opacity: exitOp }}>
-      {/* Floating app icons — wobble + motion blur */}
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
+      {/* Floating app icons — sinusoidal modifiers via frame */}
       {apps.map((app, i) => {
-        const delay = i * 3;
-        const appSpring = spring({
-          frame: frame - delay,
-          fps,
-          config: { damping: 12, stiffness: 80 },
-        });
+        const floatY = noise2D("app" + i, frame / 35, 0) * 14;
+        const floatX = noise2D("appx" + i, 0, frame / 45) * 10;
         const appWob = organicWobble("afw" + i, frame, 3, 2.5, 0.02);
-        const floatY = noise2D("app" + i, frame / 35, 0) * 14 + appWob.y;
-        const floatX = noise2D("appx" + i, 0, frame / 45) * 10 + appWob.x;
-        const iconScale = interpolate(appSpring, [0, 1], [0, 1]);
-        // Entrance blur
-        const prevScale = interpolate(Math.max(0, appSpring - 0.07), [0, 1], [0, 1]);
-        const entBlur = motionBlurAmount(0, iconScale * 52, 0, prevScale * 52);
 
         return (
           <div
             key={i}
+            className="app-icon"
             style={{
               position: "absolute",
-              left: app.x + floatX,
-              top: app.y + floatY,
+              left: app.x + floatX + appWob.x,
+              top: app.y + floatY + appWob.y,
               width: 52,
               height: 52,
               borderRadius: app.icon === "plane" ? "50%" : 12,
               backgroundColor: app.icon === "plane" ? "#E8F0FE" : "white",
-              transform: `scale(${iconScale}) rotate(${appWob.rot * 0.4}deg)`,
-              opacity: interpolate(appSpring, [0, 1], [0, 1]),
+              transform: `rotate(${appWob.rot * 0.4}deg)`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
               overflow: "hidden",
-              filter: entBlur > 0.3 ? `blur(${entBlur.toFixed(1)}px)` : undefined,
+              willChange: "transform, opacity",
             }}
           >
             {app.icon === "pin" && (
@@ -927,8 +974,6 @@ const SegAppsFloat: React.FC = () => {
       {/* "you know and love" text */}
       {(() => {
         const txtWob = organicWobble("ykl", frame, 1.5, 1, 0.018);
-        const txt1Y = interpolate(text1Spring, [0, 1], [18, 0]);
-        const txt2Y = interpolate(text2Spring, [0, 1], [18, 0]);
         return (
           <div
             style={{
@@ -944,17 +989,16 @@ const SegAppsFloat: React.FC = () => {
               color: DARK,
             }}
           >
-            <span style={{
-              opacity: text1Op,
-              transform: `translateY(${txt1Y + txtWob.y}px)`,
+            <span className="text-you-know" style={{
               display: "inline-block",
+              willChange: "transform, opacity",
             }}>you know</span>
             <span
+              className="text-and-love"
               style={{
-                opacity: text2Op,
                 color: BLUE,
-                transform: `translateY(${txt2Y + txtWob.y * 0.7}px)`,
                 display: "inline-block",
+                willChange: "transform, opacity",
               }}
             >
               and love
@@ -966,10 +1010,11 @@ const SegAppsFloat: React.FC = () => {
   );
 };
 
-/* ─── Segment 6: Typing prompt — "Summarize my recent emails..." ─── */
+/* ─── Segment 6: Typing prompt — GSAP entrance + frame-driven typing ─── */
 const SegTypingPrompt: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
   const wob = organicWobble("typr", frame, 1.5, 1, 0.015);
 
   const fullText = "Summarize my recent emails from Harper Elementary School";
@@ -981,29 +1026,48 @@ const SegTypingPrompt: React.FC = () => {
   );
   const displayed = fullText.slice(0, charCount);
 
-  const barSpring = spring({ frame, fps, config: { damping: 14, stiffness: 100 } });
-  const barOpacity = interpolate(barSpring, [0, 0.3], [0, 1], { extrapolateRight: "clamp" });
-  const barY = interpolate(barSpring, [0, 1], [25, 0]);
-  const barScale = interpolate(barSpring, [0, 1], [0.96, 1]);
-  const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
-  const prevBarY = interpolate(Math.max(0, barSpring - 0.05), [0, 1], [25, 0]);
-  const barBlur = motionBlurAmount(0, barY, 0, prevBarY);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Input bar entrance
+    t.from(".typing-bar", {
+      y: 25,
+      scale: 0.96,
+      opacity: 0,
+      duration: 0.6,
+      ease: "back.out(1.4)",
+    }, 0);
+
+    // Disclaimer fade in
+    t.from(".typing-disclaimer", {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.out",
+    }, 0.5);
+
+    // Exit fade
+    const dur = durationInFrames / fps;
+    t.to(".typing-bar, .typing-disclaimer", {
+      opacity: 0,
+      duration: 8 / fps,
+      ease: "power2.in",
+    }, dur - 8 / fps);
+  }, []);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#FAFAFA", opacity: exitOp }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: "#FAFAFA" }}>
       {/* Input bar */}
       <div
+        className="typing-bar"
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translateY(${barY + wob.y}px) scale(${barScale}) rotate(${wob.rot * 0.1}deg)`,
+          transform: `translate(-50%, -50%) translate(0, ${wob.y}px) rotate(${wob.rot * 0.1}deg)`,
           width: 780,
-          opacity: barOpacity,
-          filter: barBlur > 0.3 ? `blur(${barBlur.toFixed(1)}px)` : undefined,
+          willChange: "transform, opacity",
         }}
       >
         <div
@@ -1038,6 +1102,7 @@ const SegTypingPrompt: React.FC = () => {
 
       {/* Disclaimer */}
       <div
+        className="typing-disclaimer"
         style={{
           position: "absolute",
           bottom: 30,
@@ -1046,9 +1111,7 @@ const SegTypingPrompt: React.FC = () => {
           fontSize: 11,
           fontFamily: "'Google Sans', sans-serif",
           color: "#B0B0B0",
-          opacity: interpolate(frame, [fps * 0.5, fps * 1], [0, 0.5], {
-            extrapolateRight: "clamp",
-          }),
+          opacity: 0,
         }}
       >
         Sequences shortened and simulated. With Google Workspace extension enabled. Check the responses for accuracy. Availability varies by country.
@@ -1057,20 +1120,13 @@ const SegTypingPrompt: React.FC = () => {
   );
 };
 
-/* ─── Segment 7: Gemini Response Streaming ─── */
+/* ─── Segment 7: Gemini Response Streaming — GSAP entrance + frame-driven text ─── */
 const SegGeminiResponse: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
   const wob = organicWobble("gresp", frame, 1.2, 0.8, 0.012);
 
-  // Workspace chip appears
-  const chipSpring = spring({
-    frame: frame - fps * 0.3,
-    fps,
-    config: { damping: 18 },
-  });
-
-  // Response text streams in
   const responseLines = [
     "You have two recent emails from Harper Elementary.",
     "",
@@ -1088,36 +1144,65 @@ const SegGeminiResponse: React.FC = () => {
     })
   );
 
-  const enterOp = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
-  const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
 
-  // Browser container — spring settle + perspective + wobble + blur
-  const containerSpring = spring({ frame, fps, config: { damping: 12, stiffness: 90, mass: 1.1 } });
-  const containerScale = interpolate(containerSpring, [0, 1], [0.92, 0.88]);
-  const containerY = interpolate(containerSpring, [0, 1], [35, 0]) + wob.y;
-  const containerRotX = interpolate(containerSpring, [0, 1], [4, 0.5]) + wob.rot * 0.2;
-  const prevContainerY = interpolate(Math.max(0, containerSpring - 0.05), [0, 1], [35, 0]);
-  const cBlur = motionBlurAmount(0, containerY, 0, prevContainerY);
+    // Browser container: spring entrance
+    t.from(".response-container", {
+      y: 35,
+      scale: 0.92,
+      rotationX: 4,
+      opacity: 0,
+      duration: 0.8,
+      ease: "elastic.out(1, 0.6)",
+    }, 0);
 
-  // Email cards appear at the bottom after response streams
-  const emailCardsSpring = spring({
-    frame: frame - durationInFrames * 0.7,
-    fps,
-    config: { damping: 18 },
-  });
+    // Workspace chip
+    t.from(".workspace-chip", {
+      scale: 0.8,
+      opacity: 0,
+      duration: 0.4,
+      ease: "back.out(1.7)",
+    }, 0.3);
+
+    // Email cards appear after response streams
+    t.from(".email-card", {
+      y: 15,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.out",
+      stagger: 0.1,
+    }, durationInFrames * 0.7 / fps);
+
+    // Exit fade
+    const dur = durationInFrames / fps;
+    t.to(".response-container", {
+      opacity: 0,
+      duration: 8 / fps,
+      ease: "power2.in",
+    }, dur - 8 / fps);
+
+    // Disclaimer
+    t.from(".resp-disclaimer", {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.out",
+    }, 0.5);
+  }, []);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#FAFAFA", opacity: Math.min(enterOp, exitOp) }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: "#FAFAFA" }}>
       {/* Browser-like container */}
       <div
+        className="response-container"
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translateY(${containerY}px) perspective(1200px) rotateX(${containerRotX}deg) scale(${containerScale})`,
+          transform: `translate(-50%, -50%) translate(0, ${wob.y}px)`,
+          perspective: 1200,
           width: 960,
           height: 580,
           backgroundColor: "#FFFFFF",
@@ -1125,7 +1210,7 @@ const SegGeminiResponse: React.FC = () => {
           boxShadow: "0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",
           overflow: "hidden",
           display: "flex",
-          filter: cBlur > 0.3 ? `blur(${cBlur.toFixed(1)}px)` : undefined,
+          willChange: "transform, opacity",
         }}
       >
         {/* Left sidebar — purple accent strip */}
@@ -1162,7 +1247,6 @@ const SegGeminiResponse: React.FC = () => {
               Gemini <span style={{ fontSize: 10, color: "#999" }}>&#9660;</span>
             </div>
             <div style={{ flex: 1 }} />
-            {/* "Drafts" label on right side */}
             <div
               style={{
                 fontSize: 12,
@@ -1204,7 +1288,6 @@ const SegGeminiResponse: React.FC = () => {
                 alignItems: "flex-start",
               }}
             >
-              {/* Avatar — gradient like reference */}
               <div
                 style={{
                   width: 28,
@@ -1229,14 +1312,14 @@ const SegGeminiResponse: React.FC = () => {
 
             {/* Google Workspace chip */}
             <div
+              className="workspace-chip"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
                 marginBottom: 14,
                 marginLeft: 38,
-                opacity: interpolate(chipSpring, [0, 1], [0, 1]),
-                transform: `scale(${interpolate(chipSpring, [0, 1], [0.8, 1])})`,
+                willChange: "transform, opacity",
               }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14">
@@ -1275,15 +1358,13 @@ const SegGeminiResponse: React.FC = () => {
               {fullResponse.slice(0, respChars)}
             </div>
 
-            {/* Email preview cards — appear after response */}
+            {/* Email preview cards */}
             <div
               style={{
                 display: "flex",
                 gap: 12,
                 marginTop: 20,
                 marginLeft: 38,
-                opacity: interpolate(emailCardsSpring, [0, 1], [0, 1]),
-                transform: `translateY(${interpolate(emailCardsSpring, [0, 1], [15, 0])}px)`,
               }}
             >
               {[
@@ -1292,6 +1373,7 @@ const SegGeminiResponse: React.FC = () => {
               ].map((card, ci) => (
                 <div
                   key={ci}
+                  className="email-card"
                   style={{
                     flex: 1,
                     height: 65,
@@ -1299,6 +1381,7 @@ const SegGeminiResponse: React.FC = () => {
                     borderRadius: 10,
                     padding: "10px 14px",
                     borderLeft: `3px solid ${card.color}`,
+                    willChange: "transform, opacity",
                   }}
                 >
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#333", fontFamily: "'Google Sans', sans-serif", marginBottom: 4 }}>
@@ -1316,6 +1399,7 @@ const SegGeminiResponse: React.FC = () => {
 
       {/* Disclaimer */}
       <div
+        className="resp-disclaimer"
         style={{
           position: "absolute",
           bottom: 20,
@@ -1324,9 +1408,7 @@ const SegGeminiResponse: React.FC = () => {
           fontSize: 10,
           fontFamily: "'Google Sans', sans-serif",
           color: "#B0B0B0",
-          opacity: interpolate(frame, [fps * 0.5, fps * 1], [0, 0.5], {
-            extrapolateRight: "clamp",
-          }),
+          opacity: 0,
         }}
       >
         Sequences shortened and simulated. With Google Workspace extension enabled. Check the responses for accuracy. Availability varies by country.
@@ -1335,24 +1417,17 @@ const SegGeminiResponse: React.FC = () => {
   );
 };
 
-/* ─── Segment 8: "And moooooore" — o's stretch into colored Gemini balls ─── */
+/* ─── Segment 8: "And moooooore" — GSAP spring-bouncing balls ─── */
 const GEMINI_BALLS = ["#4285F4", "#EA4335", "#FBBC04", "#34A853", "#7B61FF"];
 const MAX_BALLS = 18;
 
 const SegAndMore: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
 
-  /* ── Phase 1: "And" + "more" appear — softer spring for organic feel ── */
-  const andSpring = spring({ frame, fps, config: { damping: 14, stiffness: 90 } });
-  const moreSpring = spring({
-    frame: frame - fps * 0.5,
-    fps,
-    config: { damping: 12, stiffness: 100 },
-  });
-
-  /* ── Phase 2: stretch — o's multiply ── */
-  const stretchStart = fps * 1.0; // ~frame 30 within segment
+  /* ── Phase timing (kept frame-driven for precise ball count + stretch) ── */
+  const stretchStart = fps * 1.0;
   const stretchRaw = frame - stretchStart;
   const stretch = stretchRaw > 0
     ? interpolate(stretchRaw, [0, fps * 2.0], [0, 1], {
@@ -1361,61 +1436,77 @@ const SegAndMore: React.FC = () => {
       })
     : 0;
 
-  // O count ramps up during stretch
   const oCount = Math.floor(interpolate(stretch, [0, 0.8], [1, MAX_BALLS], { extrapolateRight: "clamp" }));
 
-  /* ── Phase 3: letters → colored balls ── */
-  const ballStart = 0.15; // balls start appearing early
+  const ballStart = 0.15;
   const ballProgress = stretch > ballStart
     ? interpolate(stretch, [ballStart, 0.5], [0, 1], { extrapolateRight: "clamp" })
     : 0;
 
-  /* ── Scroll left as chain grows ── */
   const scrollX = interpolate(stretch, [0.1, 1], [0, -420], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.bezier(0.2, 0.0, 0.3, 1),
   });
 
-  /* ── Exit ── */
   const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
     extrapolateRight: "clamp",
     extrapolateLeft: "clamp",
   });
 
-  /* ── Ball rendering — varied spring params + sine-wave bounce ── */
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // "And" entrance
+    t.from(".and-text", {
+      y: 20,
+      opacity: 0,
+      duration: 0.5,
+      ease: "elastic.out(1, 0.6)",
+    }, 0);
+
+    // "more" entrance
+    t.from(".more-text", {
+      opacity: 0,
+      duration: 0.4,
+      ease: "power2.out",
+    }, 0.5);
+  }, []);
+
+  /* ── Ball rendering — sine-wave bounce + noise wobble ── */
   const renderBalls = () =>
     Array.from({ length: oCount }, (_, i) => {
       const ballDelay = stretchStart + i * 2.2;
-      // Varied spring per ball — irregular overshoot creates organic ripple
       const damping = 6 + (i % 5) * 1.4;
       const stiffness = 120 + (i % 3) * 30;
       const mass = 0.4 + (i % 4) * 0.15;
-      const ballSpring = spring({
-        frame: frame - ballDelay,
-        fps,
-        config: { damping, stiffness, mass },
-      });
+      // Use gsap-style spring approximation via frame math (GSAP can't do per-ball spring in a loop efficiently)
+      const ballRaw = Math.max(0, frame - ballDelay);
+      const ballT = Math.min(ballRaw / (fps * 0.5), 1);
+      // Simulated spring with overshoot
+      const omega = Math.sqrt(stiffness / mass);
+      const zeta = damping / (2 * Math.sqrt(stiffness * mass));
+      const ballSpring = ballT <= 0 ? 0 : 1 - Math.exp(-zeta * omega * ballT / fps * 15) * Math.cos(omega * Math.sqrt(1 - zeta * zeta) * ballT / fps * 15);
+      const clampedSpring = Math.max(0, Math.min(1.3, ballSpring));
 
       const baseSize = 28;
-      const size = baseSize * ballSpring;
+      const size = baseSize * Math.min(clampedSpring, 1);
 
-      const ballOpacity = interpolate(ballSpring, [0, 0.4], [0, 1], { extrapolateRight: "clamp" });
+      const ballOpacity = interpolate(clampedSpring, [0, 0.4], [0, 1], { extrapolateRight: "clamp" });
       const letterOp = interpolate(ballProgress, [0, 0.6], [1, 0], { extrapolateRight: "clamp" });
 
-      // Sine wave with varied freq + phase — no two balls in lockstep
       const waveAmp = interpolate(stretch, [0.2, 0.5], [0, 18], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
       const freq = 0.11 + (i % 4) * 0.025;
       const phase = i * 0.55 + (i % 3) * 0.35;
-      const waveY = Math.sin((frame * freq) + phase) * waveAmp * ballSpring;
+      const waveY = Math.sin((frame * freq) + phase) * waveAmp * Math.min(clampedSpring, 1);
 
-      // Noise micro-wobble breaks sine repetition
-      const wobX = noise2D("bx" + i, frame * 0.025, i) * 3 * ballSpring;
+      const wobX = noise2D("bx" + i, frame * 0.025, i) * 3 * Math.min(clampedSpring, 1);
 
       const color = GEMINI_BALLS[i % GEMINI_BALLS.length];
 
-      // Scale overshoot — each ball bounces differently on landing
-      const scaleOvershoot = interpolate(ballSpring, [0, 0.3, 0.6, 1], [0.15, 1.3, 0.9, 1], {
+      const scaleOvershoot = interpolate(clampedSpring, [0, 0.3, 0.6, 1, 1.3], [0.15, 1.3, 0.9, 1, 1.1], {
         extrapolateRight: "clamp",
       });
 
@@ -1436,7 +1527,7 @@ const SegAndMore: React.FC = () => {
             <span
               style={{
                 position: "absolute",
-                opacity: letterOp * Math.min(ballSpring * 3, 1),
+                opacity: letterOp * Math.min(clampedSpring * 3, 1),
                 color: BLUE,
                 fontSize: 44,
               }}
@@ -1444,7 +1535,7 @@ const SegAndMore: React.FC = () => {
               o
             </span>
           )}
-          {ballSpring > 0.01 && (
+          {clampedSpring > 0.01 && (
             <div
               style={{
                 width: size,
@@ -1453,7 +1544,7 @@ const SegAndMore: React.FC = () => {
                 backgroundColor: color,
                 opacity: ballOpacity,
                 transform: `scale(${scaleOvershoot})`,
-                boxShadow: ballSpring > 0.5 ? `0 2px 8px ${color}44` : undefined,
+                boxShadow: clampedSpring > 0.5 ? `0 2px 8px ${color}44` : undefined,
               }}
             />
           )}
@@ -1461,14 +1552,10 @@ const SegAndMore: React.FC = () => {
       );
     });
 
-  const andOp = interpolate(andSpring, [0, 1], [0, 1]);
-  const mOp = interpolate(moreSpring, [0, 1], [0, 1]);
-
-  // Organic wobble on "And" — subtle life
   const andWob = organicWobble("and8", frame, 2, 2.5, 0.015);
 
   const stretchContent = (
-    <AbsoluteFill style={{ backgroundColor: BG_WARM, opacity: exitOp }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG_WARM, opacity: exitOp }}>
       <div style={{
         position: "absolute", width: "100%", height: "100%",
         background: `radial-gradient(ellipse at 55% 40%, rgba(232,69,139,0.035) 0%, rgba(196,181,253,0.025) 35%, transparent 60%)`,
@@ -1490,30 +1577,29 @@ const SegAndMore: React.FC = () => {
         }}
       >
         <span
+          className="and-text"
           style={{
             color: DARK,
-            opacity: andOp,
-            transform: `translateY(${interpolate(andSpring, [0, 1], [20, 0]) + andWob.y}px) translateX(${andWob.x}px)`,
+            transform: `translateY(${andWob.y}px) translateX(${andWob.x}px)`,
             display: "inline-block",
             marginRight: 4,
+            willChange: "transform, opacity",
           }}
         >
           And
         </span>
 
         {stretch <= 0.02 ? (
-          /* Before stretch: show "more" as one word */
-          <span style={{ opacity: mOp, color: BLUE, fontSize: 44 }}>
+          <span className="more-text" style={{ color: BLUE, fontSize: 44, willChange: "opacity" }}>
             more
           </span>
         ) : (
-          /* During stretch: m + [o balls] + re */
           <>
-            <span style={{ opacity: mOp, color: BLUE, fontSize: 44, display: "inline-block" }}>
+            <span className="more-text" style={{ color: BLUE, fontSize: 44, display: "inline-block" }}>
               m
             </span>
             {renderBalls()}
-            <span style={{ opacity: mOp, color: BLUE, fontSize: 44, display: "inline-block", marginLeft: -6 }}>
+            <span style={{ color: BLUE, fontSize: 44, display: "inline-block", marginLeft: -6 }}>
               re
             </span>
           </>
@@ -1522,7 +1608,6 @@ const SegAndMore: React.FC = () => {
     </AbsoluteFill>
   );
 
-  /* ── Motion blur during active stretch — higher samples for smoothness ── */
   if (stretch > 0.05 && stretch < 0.95) {
     return (
       <CameraMotionBlur samples={8} shutterAngle={130}>
@@ -1534,15 +1619,14 @@ const SegAndMore: React.FC = () => {
   return stretchContent;
 };
 
-/* ─── Segment 9: "Starting with the new Gemini app" ─── */
+/* ─── Segment 9: "Starting with the new Gemini app" — GSAP word stagger + scatter exit ─── */
 const SegStartingWith: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
 
   const words = ["Starting", "with", "the", "new", "Gemini", "app"];
-  const wordDelays = [0, 4, 8, 12, 16, 20];
 
-  // Scatter: explosive exit — reference frame_032 shows wild disintegration
   const scatterPhase = frame > durationInFrames - fps * 0.5;
   const scatterProgress = scatterPhase
     ? interpolate(frame, [durationInFrames - fps * 0.5, durationInFrames], [0, 1], { extrapolateRight: "clamp" })
@@ -1553,13 +1637,37 @@ const SegStartingWith: React.FC = () => {
     extrapolateLeft: "clamp",
   });
 
-  // Color tint during scatter — reference shows pink/purple chromatic shift
-  const scatterTint = scatterProgress > 0.2
-    ? interpolate(scatterProgress, [0.2, 0.8], [0, 1], { extrapolateRight: "clamp" })
-    : 0;
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Words stagger entrance
+    t.from(".starting-word", {
+      y: 30,
+      opacity: 0,
+      duration: 0.5,
+      ease: "back.out(1.4)",
+      stagger: { each: 4 / fps },
+    }, 0);
+
+    // Scatter exit — words explode outward with rotation
+    const scatterStart = (durationInFrames - fps * 0.5) / fps;
+    const scatterDur = (fps * 0.5) / fps;
+    t.to(".starting-word", {
+      x: () => (Math.random() - 0.5) * 600,
+      y: () => (Math.random() - 0.5) * 440,
+      rotation: () => (Math.random() - 0.5) * 50,
+      scale: 0.6,
+      opacity: 0,
+      duration: scatterDur,
+      ease: "power2.in",
+      stagger: { each: 0.02, from: "edges" },
+    }, scatterStart);
+  }, []);
 
   const content = (
-    <AbsoluteFill style={{ backgroundColor: BG, opacity: exitOp }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG, opacity: exitOp }}>
       <div
         style={{
           position: "absolute",
@@ -1574,44 +1682,17 @@ const SegStartingWith: React.FC = () => {
         }}
       >
         {words.map((word, i) => {
-          const wSpring = spring({
-            frame: frame - wordDelays[i],
-            fps,
-            config: { damping: 18 },
-          });
-
-          // Scatter — wider explosion radius, more rotation
-          const scatterX = scatterPhase
-            ? noise2D("sx" + i, scatterProgress * 3, i) * 300 * scatterProgress
-            : 0;
-          const scatterY = scatterPhase
-            ? noise2D("sy" + i, i, scatterProgress * 3) * 220 * scatterProgress
-            : 0;
-          const scatterRot = scatterProgress * (i - 2.5) * 25;
-          const scatterScale = scatterPhase
-            ? interpolate(scatterProgress, [0, 0.3, 1], [1, 1.15, 0.6], { extrapolateRight: "clamp" })
-            : 1;
-
-          const yNow = interpolate(wSpring, [0, 1], [30, 0]) + scatterY;
           const wordWob = organicWobble(`sw${i}`, frame, 2, 1.5, 0.02);
-
-          // Color shift during scatter — words tint toward pink/purple
-          const wordColor = scatterTint > 0.01
-            ? (i % 2 === 0 ? PINK : PURPLE)
-            : DARK;
-          const colorMix = scatterTint > 0.01
-            ? `color-mix(in srgb, ${DARK} ${Math.round((1 - scatterTint) * 100)}%, ${wordColor} ${Math.round(scatterTint * 100)}%)`
-            : DARK;
-
           return (
             <span
               key={i}
+              className="starting-word"
               style={{
                 display: "inline-block",
-                color: colorMix,
-                opacity: interpolate(wSpring, [0, 1], [0, 1]) * (1 - scatterProgress * 0.6),
-                transform: `translateY(${yNow + wordWob.y}px) translateX(${scatterX + wordWob.x}px) rotate(${scatterRot}deg) scale(${scatterScale})`,
+                color: DARK,
+                transform: `translate(${wordWob.x}px, ${wordWob.y}px)`,
                 fontWeight: 400,
+                willChange: "transform, opacity",
               }}
             >
               {word}
@@ -1622,7 +1703,6 @@ const SegStartingWith: React.FC = () => {
     </AbsoluteFill>
   );
 
-  // Wrap scatter phase in CameraMotionBlur for the dramatic exit
   if (scatterPhase) {
     return (
       <CameraMotionBlur samples={8} shutterAngle={140}>
@@ -1634,59 +1714,85 @@ const SegStartingWith: React.FC = () => {
   return content;
 };
 
-/* ─── Segment 10: Phone Mockup — Gemini Mobile ─── */
+/* ─── Segment 10: Phone Mockup — GSAP arc entrance ─── */
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  // Bezier arc entrance from below-right — reference shows phone sweeping in
-  const entranceT = interpolate(frame, [0, fps * 1.2], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-  });
-  // Arc path: start at (300, 500), control points curve through right, land at (0, 0)
-  const phoneX = cubicBezier(entranceT, 300, 280, 80, 0);
-  const phoneY = cubicBezier(entranceT, 500, 350, 50, 0);
-  const phoneRot = cubicBezier(entranceT, 12, 8, 2, 0);
-  const phoneScale = interpolate(entranceT, [0, 1], [0.65, 1]);
-  const phoneOp = interpolate(entranceT, [0, 0.1], [0, 1], { extrapolateRight: "clamp" });
-
-  // Settle spring — kicks in after the bezier arc completes
-  const settleSpring = spring({ frame: frame - Math.round(fps * 1.2), fps, config: { damping: 12, stiffness: 90 } });
-  const settleY = entranceT >= 1 ? interpolate(settleSpring, [0, 1], [-8, 0]) : 0;
-
+  const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
   const phoneWob10 = organicWobble("ph10", frame, 2.5, 2, 0.018);
 
-  // Screen content appears
-  const textDelay = fps * 0.6;
-  const hiSpring = spring({
-    frame: frame - textDelay,
-    fps,
-    config: { damping: 20 },
-  });
-  const bodyDelay = fps * 1;
-  const bodySpring = spring({
-    frame: frame - bodyDelay,
-    fps,
-    config: { damping: 20 },
-  });
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
 
-  const { durationInFrames } = useVideoConfig();
-  const exitOp = interpolate(frame, [durationInFrames - 8, durationInFrames], [1, 0], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
+    // Phone arc entrance using MotionPath
+    t.from(".phone-frame", {
+      x: 300,
+      y: 500,
+      rotation: 12,
+      scale: 0.65,
+      opacity: 0,
+      duration: 1.2,
+      ease: "power3.out",
+      motionPath: {
+        path: [
+          { x: 300, y: 500 },
+          { x: 280, y: 350 },
+          { x: 80, y: 50 },
+          { x: 0, y: 0 },
+        ],
+        curviness: 1.5,
+      },
+    }, 0);
+
+    // Settle bounce after arc
+    t.to(".phone-frame", {
+      y: -8,
+      duration: 0.15,
+      ease: "power2.out",
+    }, 1.2);
+    t.to(".phone-frame", {
+      y: 0,
+      duration: 0.3,
+      ease: "elastic.out(1, 0.4)",
+    }, 1.35);
+
+    // Screen content — "Hi I'm" entrance
+    t.from(".phone-hi-text", {
+      y: 20,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.out",
+    }, 0.6);
+
+    // Body text
+    t.from(".phone-body-text", {
+      y: 15,
+      opacity: 0,
+      duration: 0.5,
+      ease: "power3.out",
+    }, 1.0);
+
+    // Exit
+    const dur = durationInFrames / fps;
+    t.to(".phone-frame", {
+      opacity: 0,
+      duration: 8 / fps,
+      ease: "power2.in",
+    }, dur - 8 / fps);
+  }, []);
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG, opacity: exitOp }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       {/* Phone frame */}
       <div
+        className="phone-frame"
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translate(${phoneX + phoneWob10.x}px, ${phoneY + settleY + phoneWob10.y}px) rotate(${phoneRot}deg) scale(${phoneScale})`,
+          transform: `translate(-50%, -50%) translate(${phoneWob10.x}px, ${phoneWob10.y}px)`,
           width: 320,
           height: 620,
           backgroundColor: "#FFFFFF",
@@ -1694,7 +1800,7 @@ const SegPhoneMockup: React.FC = () => {
           border: "3px solid #1A1A2E",
           overflow: "hidden",
           boxShadow: "0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",
-          opacity: phoneOp,
+          willChange: "transform, opacity",
         }}
       >
         {/* Status bar with Dynamic Island */}
@@ -1711,7 +1817,6 @@ const SegPhoneMockup: React.FC = () => {
           }}
         >
           <span>9:30</span>
-          {/* Dynamic Island — pill shape */}
           <div
             style={{
               width: 80,
@@ -1722,13 +1827,11 @@ const SegPhoneMockup: React.FC = () => {
           />
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <span style={{ fontSize: 13, fontWeight: 700 }}>5G</span>
-            {/* Signal bars */}
             <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: 12 }}>
               {[5, 7, 9, 12].map((h, i) => (
                 <div key={i} style={{ width: 3, height: h, backgroundColor: "#333", borderRadius: 1 }} />
               ))}
             </div>
-            {/* Battery */}
             <div style={{ width: 20, height: 10, border: "1.5px solid #333", borderRadius: 2, position: "relative", marginLeft: 2 }}>
               <div style={{ position: "absolute", inset: 1.5, backgroundColor: "#333", borderRadius: 0.5 }} />
               <div style={{ position: "absolute", right: -4, top: 2, width: 3, height: 6, backgroundColor: "#333", borderRadius: "0 1px 1px 0" }} />
@@ -1738,13 +1841,7 @@ const SegPhoneMockup: React.FC = () => {
 
         {/* Content */}
         <div style={{ padding: "30px 24px" }}>
-          {/* "Hi I'm Gemini" */}
-          <div
-            style={{
-              opacity: interpolate(hiSpring, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(hiSpring, [0, 1], [20, 0])}px)`,
-            }}
-          >
+          <div className="phone-hi-text" style={{ willChange: "transform, opacity" }}>
             <span
               style={{
                 fontSize: 36,
@@ -1779,14 +1876,7 @@ const SegPhoneMockup: React.FC = () => {
             </span>
           </div>
 
-          {/* Body text */}
-          <div
-            style={{
-              marginTop: 8,
-              opacity: interpolate(bodySpring, [0, 1], [0, 1]),
-              transform: `translateY(${interpolate(bodySpring, [0, 1], [15, 0])}px)`,
-            }}
-          >
+          <div className="phone-body-text" style={{ marginTop: 8, willChange: "transform, opacity" }}>
             <div
               style={{
                 fontSize: 32,
@@ -1816,7 +1906,7 @@ const SegPhoneMockup: React.FC = () => {
           </div>
         </div>
 
-        {/* Profile avatar with gradient placeholder */}
+        {/* Profile avatar */}
         <div
           style={{
             position: "absolute",
@@ -1852,22 +1942,58 @@ const SegPhoneMockup: React.FC = () => {
   );
 };
 
-/* ─── Segment 11: "Designed to supercharge your ideas" ─── */
+/* ─── Segment 11: "Designed to supercharge your ideas" — GSAP word springs ─── */
 const SegSupercharge: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
 
-  // Each word: distinct spring personality — reference shows varied landing times
-  const wordCfg: { text: string; accent: boolean; delay: number; damping: number; stiffness: number; mass: number; fontSize: number }[] = [
-    { text: "Designed", accent: false, delay: 0,  damping: 20, stiffness: 100, mass: 1,    fontSize: 36 },
-    { text: "to",       accent: false, delay: 5,  damping: 22, stiffness: 90,  mass: 0.8,  fontSize: 36 },
-    { text: "supercharge", accent: true, delay: 10, damping: 8, stiffness: 130, mass: 0.7, fontSize: 42 },
-    { text: "your",     accent: false, delay: 18, damping: 16, stiffness: 110, mass: 0.9,  fontSize: 36 },
-    { text: "ideas",    accent: false, delay: 23, damping: 14, stiffness: 120, mass: 0.85, fontSize: 38 },
+  const wordCfg = [
+    { text: "Designed", accent: false, delay: 0,    fontSize: 36 },
+    { text: "to",       accent: false, delay: 0.17, fontSize: 36 },
+    { text: "supercharge", accent: true, delay: 0.33, fontSize: 42 },
+    { text: "your",     accent: false, delay: 0.6,  fontSize: 36 },
+    { text: "ideas",    accent: false, delay: 0.77, fontSize: 38 },
   ];
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Each word enters with distinct personality
+    wordCfg.forEach((w, i) => {
+      const el = containerRef.current!.querySelector(`.supercharge-word-${i}`);
+      if (!el) return;
+      const yTravel = w.accent ? 35 : 25;
+      t.from(el, {
+        y: yTravel,
+        opacity: 0,
+        scale: w.accent ? 0.7 : 0.95,
+        duration: w.accent ? 0.7 : 0.5,
+        ease: w.accent ? "elastic.out(1.2, 0.4)" : "back.out(1.4)",
+      }, w.delay);
+    });
+
+    // Particle dust
+    t.from(".supercharge-dust", {
+      opacity: 0,
+      scale: 0,
+      duration: 0.3,
+      ease: "power2.out",
+      stagger: { each: 0.04, from: "random" },
+    }, 0.5);
+
+    t.to(".supercharge-dust", {
+      opacity: 0,
+      duration: 0.5,
+      ease: "power2.in",
+      stagger: { each: 0.02 },
+    }, 1.5);
+  }, []);
+
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: BG }}>
       <div
         style={{
           position: "absolute",
@@ -1880,36 +2006,22 @@ const SegSupercharge: React.FC = () => {
         }}
       >
         {wordCfg.map((w, i) => {
-          const wSpring = spring({
-            frame: frame - w.delay,
-            fps,
-            config: { damping: w.damping, stiffness: w.stiffness, mass: w.mass },
-          });
-
-          // "supercharge" bounces higher and scales with overshoot
-          const yTravel = w.accent ? 35 : 25;
-          const yOff = interpolate(wSpring, [0, 1], [yTravel, 0]);
-          const scale = w.accent
-            ? interpolate(wSpring, [0, 0.4, 0.7, 1], [0.7, 1.18, 0.95, 1], { extrapolateRight: "clamp" })
-            : interpolate(wSpring, [0, 1], [0.95, 1]);
-
           const scWob = organicWobble(`sc${i}`, frame, 2, 1.5, 0.02);
-
-          // "supercharge" gets the gradient treatment — reference shows pink→blue
           const isGradient = w.accent;
           const baseStyle: React.CSSProperties = {
             display: "inline-block",
             fontSize: w.fontSize,
             fontFamily: "'Google Sans', sans-serif",
             fontWeight: w.accent ? 500 : 400,
-            opacity: interpolate(wSpring, [0, 1], [0, 1]),
-            transform: `translateY(${yOff + scWob.y}px) translateX(${scWob.x}px) scale(${scale})`,
+            transform: `translate(${scWob.x}px, ${scWob.y}px)`,
+            willChange: "transform, opacity",
           };
 
           if (isGradient) {
             return (
               <span
                 key={i}
+                className={`supercharge-word-${i}`}
                 style={{
                   ...baseStyle,
                   background: `linear-gradient(90deg, ${PINK} 0%, ${PURPLE} 50%, ${BLUE} 100%)`,
@@ -1923,7 +2035,7 @@ const SegSupercharge: React.FC = () => {
           }
 
           return (
-            <span key={i} style={{ ...baseStyle, color: DARK }}>
+            <span key={i} className={`supercharge-word-${i}`} style={{ ...baseStyle, color: DARK }}>
               {w.text}
             </span>
           );
@@ -1934,17 +2046,12 @@ const SegSupercharge: React.FC = () => {
       {Array.from({ length: 20 }, (_, i) => {
         const px = noise2D("sx" + i, frame / 60, i) * 500 + 640;
         const py = noise2D("sy" + i, i, frame / 60) * 300 + 360;
-        const pop = interpolate(
-          frame,
-          [fps * 0.5 + i * 2, fps * 0.8 + i * 2, fps * 2 + i * 2],
-          [0, 0.4, 0],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        );
         const size = 3 + (i % 4) * 1.5;
         const colors = [PINK, PURPLE, BLUE, LAVENDER];
         return (
           <div
             key={i}
+            className="supercharge-dust"
             style={{
               position: "absolute",
               left: px,
@@ -1953,7 +2060,7 @@ const SegSupercharge: React.FC = () => {
               height: size,
               borderRadius: "50%",
               backgroundColor: colors[i % colors.length],
-              opacity: pop,
+              willChange: "opacity",
             }}
           />
         );
@@ -1962,32 +2069,14 @@ const SegSupercharge: React.FC = () => {
   );
 };
 
-/* ─── Segment 12: Phone with "Good morning" + Camera/Dog ─── */
+/* ─── Segment 12: Phone with "Good morning" + Camera/Dog — GSAP arc entrance ─── */
 const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  // Bezier arc from below-right — mirrored from phone 10 but tighter arc
-  const entT12 = interpolate(frame, [0, fps * 1.0], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
-  });
-  const phoneX12 = cubicBezier(entT12, 250, 200, 50, 0);
-  const phoneY = cubicBezier(entT12, 400, 280, 30, 0);
-  const phoneRot12 = cubicBezier(entT12, 10, 6, 1, 0);
-  const phoneScale = interpolate(entT12, [0, 1], [0.6, 0.75]);
-  const phoneOp12 = interpolate(entT12, [0, 0.08], [0, 1], { extrapolateRight: "clamp" });
-
-  // Settle bounce after arc
-  const settle12 = spring({ frame: frame - Math.round(fps * 1.0), fps, config: { damping: 10, stiffness: 100 } });
-  const settleY12 = entT12 >= 1 ? interpolate(settle12, [0, 1], [-6, 0]) : 0;
-
+  const { fps, durationInFrames } = useVideoConfig();
+  const { tl, containerRef } = useGsapTimeline();
   const phoneWob12 = organicWobble("ph12", frame, 2, 1.5, 0.018);
 
-  const { durationInFrames } = useVideoConfig();
-
-  // Phase 2: screen changes to camera view (dark)
+  // Phase 2: camera view (frame-driven crossfade)
   const cameraPhase = frame > durationInFrames * 0.5;
   const camTransition = cameraPhase
     ? interpolate(frame, [durationInFrames * 0.5, durationInFrames * 0.6], [0, 1], { extrapolateRight: "clamp" })
@@ -1998,21 +2087,76 @@ const SegPhoneGoodMorning: React.FC = () => {
     extrapolateLeft: "clamp",
   });
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const t = tl.current;
+    t.clear();
+
+    // Phone arc entrance
+    t.from(".phone-12-frame", {
+      x: 250,
+      y: 400,
+      rotation: 10,
+      scale: 0.6,
+      opacity: 0,
+      duration: 1.0,
+      ease: "power3.out",
+      motionPath: {
+        path: [
+          { x: 250, y: 400 },
+          { x: 200, y: 280 },
+          { x: 50, y: 30 },
+          { x: 0, y: 0 },
+        ],
+        curviness: 1.5,
+      },
+    }, 0);
+
+    // Scale to 0.75 during entrance
+    t.to(".phone-12-frame", {
+      scale: 0.75,
+      duration: 1.0,
+      ease: "power3.out",
+    }, 0);
+
+    // Settle bounce
+    t.to(".phone-12-frame", {
+      y: -6,
+      duration: 0.12,
+      ease: "power2.out",
+    }, 1.0);
+    t.to(".phone-12-frame", {
+      y: 0,
+      duration: 0.25,
+      ease: "elastic.out(1, 0.4)",
+    }, 1.12);
+
+    // Content cards stagger
+    t.from(".good-morning-card", {
+      y: 15,
+      opacity: 0,
+      duration: 0.4,
+      ease: "power3.out",
+      stagger: 0.2,
+    }, 0.3);
+  }, []);
+
   return (
-    <AbsoluteFill style={{ backgroundColor: "#FAFAFA", opacity: exitOp }}>
+    <AbsoluteFill ref={containerRef} style={{ backgroundColor: "#FAFAFA", opacity: exitOp }}>
       <div
+        className="phone-12-frame"
         style={{
           position: "absolute",
           left: "50%",
           top: "50%",
-          transform: `translate(-50%, -50%) translate(${phoneX12 + phoneWob12.x}px, ${phoneY + settleY12 + phoneWob12.y}px) rotate(${phoneRot12}deg) scale(${phoneScale})`,
+          transform: `translate(-50%, -50%) translate(${phoneWob12.x}px, ${phoneWob12.y}px)`,
           width: 320,
           height: 620,
           borderRadius: 40,
           border: "6px solid #1A1A2E",
           overflow: "hidden",
           boxShadow: "0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",
-          opacity: phoneOp12,
+          willChange: "transform, opacity",
         }}
       >
         {/* Good morning screen */}
@@ -2040,34 +2184,27 @@ const SegPhoneGoodMorning: React.FC = () => {
           </div>
 
           {/* Content cards */}
-          {[0, 1, 2].map((ci) => {
-            const cardSpring = spring({
-              frame: frame - fps * 0.3 - ci * 6,
-              fps,
-              config: { damping: 18 },
-            });
-            return (
-              <div
-                key={ci}
-                style={{
-                  height: 60,
-                  backgroundColor: "#F4F4F8",
-                  borderRadius: 12,
-                  marginBottom: 10,
-                  opacity: interpolate(cardSpring, [0, 1], [0, 1]),
-                  transform: `translateY(${interpolate(cardSpring, [0, 1], [15, 0])}px)`,
-                  padding: "12px 16px",
-                  fontSize: 12,
-                  fontFamily: "'Google Sans', sans-serif",
-                  color: "#666",
-                }}
-              >
-                {ci === 0 && "Find videos on how to care for a plant"}
-                {ci === 1 && "Summarize your travel reservations for July"}
-                {ci === 2 && "Create a playlist for a road trip"}
-              </div>
-            );
-          })}
+          {[0, 1, 2].map((ci) => (
+            <div
+              key={ci}
+              className="good-morning-card"
+              style={{
+                height: 60,
+                backgroundColor: "#F4F4F8",
+                borderRadius: 12,
+                marginBottom: 10,
+                padding: "12px 16px",
+                fontSize: 12,
+                fontFamily: "'Google Sans', sans-serif",
+                color: "#666",
+                willChange: "transform, opacity",
+              }}
+            >
+              {ci === 0 && "Find videos on how to care for a plant"}
+              {ci === 1 && "Summarize your travel reservations for July"}
+              {ci === 2 && "Create a playlist for a road trip"}
+            </div>
+          ))}
 
           {/* Bottom bar */}
           <div
@@ -2120,7 +2257,7 @@ const SegPhoneGoodMorning: React.FC = () => {
             justifyContent: "center",
           }}
         >
-          {/* Dog photo area — outdoor green-brown scene */}
+          {/* Dog photo area */}
           <div
             style={{
               width: "100%",
@@ -2132,7 +2269,6 @@ const SegPhoneGoodMorning: React.FC = () => {
               position: "relative",
             }}
           >
-            {/* Dog silhouette placeholder */}
             <div
               style={{
                 width: 120,
@@ -2142,13 +2278,10 @@ const SegPhoneGoodMorning: React.FC = () => {
                 position: "relative",
               }}
             >
-              {/* Dog ears */}
               <div style={{ position: "absolute", top: -12, left: 8, width: 24, height: 20, borderRadius: "50% 50% 0 0", backgroundColor: "#C4956A", transform: "rotate(-15deg)" }} />
               <div style={{ position: "absolute", top: -12, right: 8, width: 24, height: 20, borderRadius: "50% 50% 0 0", backgroundColor: "#C4956A", transform: "rotate(15deg)" }} />
-              {/* Dog eyes */}
               <div style={{ position: "absolute", top: 20, left: 28, width: 8, height: 8, borderRadius: "50%", backgroundColor: "#333" }} />
               <div style={{ position: "absolute", top: 20, right: 28, width: 8, height: 8, borderRadius: "50%", backgroundColor: "#333" }} />
-              {/* Dog nose */}
               <div style={{ position: "absolute", top: 38, left: "50%", transform: "translateX(-50%)", width: 12, height: 8, borderRadius: "50%", backgroundColor: "#333" }} />
             </div>
           </div>
@@ -2163,7 +2296,6 @@ const SegPhoneGoodMorning: React.FC = () => {
               gap: 30,
             }}
           >
-            {/* Shutter button */}
             <div
               style={{
                 width: 54,
@@ -2188,36 +2320,19 @@ const SegPhoneGoodMorning: React.FC = () => {
    MAIN SCENE 03 — Sequences all sub-segments
    ═══════════════════════════════════════════════════════════ */
 export const Scene03: React.FC = () => {
-  /*
-   * 745 frames total (24.8s at 30fps). 12 segments, sequential.
-   * Mapped from 50 reference frames (~15 real frames per sample).
-   *
-   * ref 01-03:   Particle burst → Gemini text    ~frames 0-45
-   * ref 03-06:   Gemini logo with sparkles        ~frames 45-90
-   * ref 07-12:   Desktop UI (Hello Lisa)          ~frames 90-180
-   * ref 13-14:   "It's everything" wall           ~frames 180-210
-   * ref 15-17:   App icons floating               ~frames 210-255
-   * ref 18-20:   Typing prompt                    ~frames 255-330
-   * ref 21-24:   Gemini response stream           ~frames 330-420
-   * ref 25-28:   "And" → "And moooore"            ~frames 420-490
-   * ref 29-32:   "Starting with new Gemini app"   ~frames 490-555
-   * ref 33-37:   Phone mockup (Hi I'm Gemini)     ~frames 555-630
-   * ref 39-43:   "Designed to supercharge"         ~frames 630-690
-   * ref 44-50:   Phone Good Morning + Camera/Dog  ~frames 690-745
-   */
   const segments: { start: number; dur: number; Comp: React.FC }[] = [
-    { start: 0,   dur: 50,  Comp: SegParticleExplosion },    // 0-50
-    { start: 45,  dur: 50,  Comp: SegGeminiReveal },          // 45-95
-    { start: 90,  dur: 95,  Comp: SegDesktopUI },             // 90-185
-    { start: 180, dur: 35,  Comp: SegItsEverything },          // 180-215
-    { start: 210, dur: 50,  Comp: SegAppsFloat },              // 210-260
-    { start: 255, dur: 80,  Comp: SegTypingPrompt },           // 255-335
-    { start: 330, dur: 95,  Comp: SegGeminiResponse },         // 330-425
-    { start: 420, dur: 75,  Comp: SegAndMore },                // 420-495
-    { start: 490, dur: 70,  Comp: SegStartingWith },           // 490-560
-    { start: 555, dur: 80,  Comp: SegPhoneMockup },            // 555-635
-    { start: 630, dur: 65,  Comp: SegSupercharge },            // 630-695
-    { start: 690, dur: 55,  Comp: SegPhoneGoodMorning },       // 690-745
+    { start: 0,   dur: 50,  Comp: SegParticleExplosion },
+    { start: 45,  dur: 50,  Comp: SegGeminiReveal },
+    { start: 90,  dur: 95,  Comp: SegDesktopUI },
+    { start: 180, dur: 35,  Comp: SegItsEverything },
+    { start: 210, dur: 50,  Comp: SegAppsFloat },
+    { start: 255, dur: 80,  Comp: SegTypingPrompt },
+    { start: 330, dur: 95,  Comp: SegGeminiResponse },
+    { start: 420, dur: 75,  Comp: SegAndMore },
+    { start: 490, dur: 70,  Comp: SegStartingWith },
+    { start: 555, dur: 80,  Comp: SegPhoneMockup },
+    { start: 630, dur: 65,  Comp: SegSupercharge },
+    { start: 690, dur: 55,  Comp: SegPhoneGoodMorning },
   ];
 
   return (

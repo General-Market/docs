@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -8,7 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
-import { CameraMotionBlur } from "@remotion/motion-blur";
+import { useGsapTimeline, gsap } from "../../lib/useGsapTimeline";
 
 /* ─── timing (30fps, 339 frames ~ 11.3s) ─── */
 const PHASE = {
@@ -52,44 +52,33 @@ const ARROW_DOWN = String.fromCodePoint(0x25bc);
 const CHECKMARK = String.fromCodePoint(0x2713);
 const PLAY = String.fromCodePoint(0x25b6);
 
-/* ─── quadratic bezier helper ─── */
-function quadBezier(t: number, p0: number, p1: number, p2: number): number {
-  const mt = 1 - t;
-  return mt * mt * p0 + 2 * mt * t * p1 + t * t * p2;
-}
-
-/* ─── floating emoji config — now with launch angle & arc params ─── */
+/* ─── floating emoji config ─── */
 const FLOATING_EMOJIS = [
-  /* left side — party + heart-eyes cluster */
-  { emoji: HEART_EYES, endX: -240, endY: -180, size: 72, seed: 1, angle: 210, arcHeight: 120 },
-  { emoji: PARTY, endX: -200, endY: -80, size: 66, seed: 2, angle: 195, arcHeight: 90 },
-  { emoji: DOG_FACE, endX: -220, endY: 180, size: 44, seed: 3, angle: 240, arcHeight: 60 },
-  /* right side — cascading hearts */
-  { emoji: RED_HEART, endX: 280, endY: 60, size: 64, seed: 4, angle: -20, arcHeight: 140 },
-  { emoji: RED_HEART, endX: 310, endY: 160, size: 56, seed: 5, angle: -35, arcHeight: 100 },
-  { emoji: RED_HEART, endX: 270, endY: 250, size: 48, seed: 6, angle: -50, arcHeight: 80 },
-  { emoji: RED_HEART, endX: 240, endY: -120, size: 42, seed: 7, angle: 10, arcHeight: 160 },
-  /* scattered extras */
-  { emoji: HEART_EYES, endX: 220, endY: -220, size: 50, seed: 8, angle: 25, arcHeight: 130 },
-  { emoji: DOG_FACE, endX: -160, endY: -260, size: 36, seed: 9, angle: 170, arcHeight: 110 },
-  { emoji: PARTY, endX: -280, endY: 60, size: 52, seed: 10, angle: 220, arcHeight: 100 },
+  { emoji: HEART_EYES, endX: -240, endY: -180, size: 72, seed: 1, arcHeight: 120 },
+  { emoji: PARTY, endX: -200, endY: -80, size: 66, seed: 2, arcHeight: 90 },
+  { emoji: DOG_FACE, endX: -220, endY: 180, size: 44, seed: 3, arcHeight: 60 },
+  { emoji: RED_HEART, endX: 280, endY: 60, size: 64, seed: 4, arcHeight: 140 },
+  { emoji: RED_HEART, endX: 310, endY: 160, size: 56, seed: 5, arcHeight: 100 },
+  { emoji: RED_HEART, endX: 270, endY: 250, size: 48, seed: 6, arcHeight: 80 },
+  { emoji: RED_HEART, endX: 240, endY: -120, size: 42, seed: 7, arcHeight: 160 },
+  { emoji: HEART_EYES, endX: 220, endY: -220, size: 50, seed: 8, arcHeight: 130 },
+  { emoji: DOG_FACE, endX: -160, endY: -260, size: 36, seed: 9, arcHeight: 110 },
+  { emoji: PARTY, endX: -280, endY: 60, size: 52, seed: 10, arcHeight: 100 },
 ];
 
 /* ─── Phone Mockup ─── */
 const PhoneMockup: React.FC<{
   children: React.ReactNode;
+  className?: string;
   tilt?: number;
   scale?: number;
-  x?: number;
-  y?: number;
   shadowOpacity?: number;
   glowColor?: string;
 }> = ({
   children,
+  className,
   tilt = -3,
   scale = 1,
-  x = 0,
-  y = 0,
   shadowOpacity = 0.15,
   glowColor,
 }) => {
@@ -100,11 +89,12 @@ const PhoneMockup: React.FC<{
   const shadowShiftY = 28 + Math.abs(tilt ?? 0) * 0.3;
   return (
     <div
+      className={className}
       style={{
         position: "absolute",
         left: "50%",
         top: "50%",
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale}) perspective(1200px) rotateY(${tilt}deg) rotateX(3deg)`,
+        transform: `translate(-50%, -50%) scale(${scale}) perspective(1200px) rotateY(${tilt}deg) rotateX(3deg)`,
         width: 280,
         height: 580,
         borderRadius: 40,
@@ -123,7 +113,6 @@ const PhoneMockup: React.FC<{
           position: "relative",
         }}
       >
-        {/* Status bar with notch */}
         <div
           style={{
             height: 36,
@@ -160,7 +149,7 @@ const PhoneMockup: React.FC<{
   );
 };
 
-/* ─── Chat UI — spring-overshoot bubbles ─── */
+/* ─── Chat UI ─── */
 const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const typingProgress = interpolate(frame, [10, 70], [0, 1], {
     extrapolateLeft: "clamp",
@@ -171,17 +160,14 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const typedText = fullText.slice(0, visibleChars);
   const showCursor = frame % 16 < 10 && frame < 75;
 
-  /* Spring-based slide-up for icon row */
   const iconSpring = spring({ frame: frame - 2, fps, config: { damping: 8, stiffness: 120, mass: 0.5 } });
   const iconY = interpolate(iconSpring, [0, 1], [24, 0]);
   const iconScale = interpolate(iconSpring, [0, 1], [0.85, 1]);
 
-  /* Spring-based slide-up for dog photo thumbnail */
   const photoSpring = spring({ frame: frame - 6, fps, config: { damping: 9, stiffness: 100, mass: 0.6 } });
   const photoY = interpolate(photoSpring, [0, 1], [20, 0]);
   const photoScale = interpolate(photoSpring, [0, 1], [0.9, 1]);
 
-  /* Spring-based slide-up for user bubble */
   const bubbleSpring = spring({ frame: frame - 10, fps, config: { damping: 7, stiffness: 110, mass: 0.5 } });
   const bubbleY = interpolate(bubbleSpring, [0, 1], [30, 0]);
   const bubbleScale = interpolate(bubbleSpring, [0, 1], [0.92, 1]);
@@ -220,7 +206,6 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
           overflowY: "hidden",
         }}
       >
-        {/* Icon row — spring slide-up */}
         <div
           style={{
             display: "flex",
@@ -242,7 +227,6 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             </div>
           </div>
         </div>
-        {/* Dog photo thumbnail — spring slide-up */}
         <div
           style={{
             alignSelf: "flex-start",
@@ -263,7 +247,6 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, background: "linear-gradient(to top, rgba(139,195,74,0.4), transparent)" }} />
           </div>
         </div>
-        {/* User bubble — spring slide-up with scale overshoot */}
         <div
           style={{
             alignSelf: "flex-start",
@@ -285,7 +268,6 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         <div style={{ flex: 1 }} />
         <div style={{ width: 32, height: 32, borderRadius: 16, background: BLUE, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", transform: "rotate(-30deg)" }}>{PLAY}</div>
       </div>
-      {/* Mini keyboard */}
       <div style={{ background: KB_BG, padding: "4px 3px 8px", display: "flex", flexDirection: "column", gap: 3 }}>
         {["qwertyuiop", "asdfghjkl", "zxcvbnm"].map((row, ri) => (
           <div key={ri} style={{ display: "flex", justifyContent: "center", gap: 2 }}>
@@ -306,7 +288,7 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   );
 };
 
-/* ─── AI Response UI — spring-overshoot response bubble ─── */
+/* ─── AI Response UI ─── */
 const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const responseText = "Baxter is the hilltop king! " + CROWN + " Look who's on top of the world! #doglover #majestic #hikingdog";
   const words = responseText.split(/(\s+)/);
@@ -322,7 +304,6 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
     visible += w;
   }
 
-  /* Spring slide-up for the AI bubble with overshoot */
   const responseBubbleSpring = spring({ frame, fps, config: { damping: 7, stiffness: 100, mass: 0.6 } });
   const responseBubbleY = interpolate(responseBubbleSpring, [0, 1], [28, 0]);
   const responseBubbleScale = interpolate(responseBubbleSpring, [0, 1], [0.9, 1]);
@@ -387,32 +368,30 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
   );
 };
 
-/* ─── Browser Frame — desktop browser corner view ─── */
+/* ─── Browser Frame ─── */
 const BrowserFrame: React.FC<{
   children: React.ReactNode;
-  scale?: number;
-  x?: number;
-  y?: number;
+  className?: string;
   glowProgress?: number;
-}> = ({ children, scale = 1, x = 0, y = 0, glowProgress = 0 }) => {
+}> = ({ children, className, glowProgress = 0 }) => {
   const glowOpacity = 0.3 + glowProgress * 0.15;
   return (
     <div
+      className={className}
       style={{
         position: "absolute",
         left: "50%",
         top: "50%",
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+        transform: "translate(-50%, -50%)",
         width: 480,
         height: 520,
         borderRadius: 16,
         background: PHONE_BG,
         overflow: "hidden",
-        boxShadow: `0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)`,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)",
         border: "1px solid rgba(0,0,0,0.06)",
       }}
     >
-      {/* Animated gradient border glow at top — matches reference pink/red edge */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 3,
         background: "linear-gradient(90deg, #E91E63, #E040FB, #7C4DFF, #E91E63)",
@@ -421,7 +400,6 @@ const BrowserFrame: React.FC<{
         opacity: glowOpacity,
         zIndex: 10,
       }} />
-      {/* Subtle gradient glow bleeding from top border */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: 40,
         background: `linear-gradient(to bottom, rgba(233,30,99,${glowOpacity * 0.15}), transparent)`,
@@ -434,19 +412,15 @@ const BrowserFrame: React.FC<{
   );
 };
 
-/* ─── Gemini Dropdown UI — desktop browser corner view ─── */
+/* ─── Gemini Dropdown UI ─── */
 const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  /* Elastic spring: low damping for visible overshoot/bounce */
   const dropdownOpen = spring({ frame: frame - 10, fps, config: { damping: 6, stiffness: 90, mass: 0.8 } });
   const elementsDelay = spring({ frame: frame - 18, fps, config: { damping: 8, stiffness: 70, mass: 0.7 } });
-
-  /* Row items slide in with stagger + bounce */
   const row1Spring = spring({ frame: frame - 14, fps, config: { damping: 7, stiffness: 100, mass: 0.5 } });
   const row2Spring = spring({ frame: frame - 20, fps, config: { damping: 7, stiffness: 100, mass: 0.5 } });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: "system-ui, sans-serif", position: "relative" }}>
-      {/* Browser-style header — hamburger + Gemini dropdown */}
       <div style={{ padding: "18px 24px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ fontSize: 22, color: GREY_TEXT, letterSpacing: 2 }}>{HAMBURGER}</div>
         <div style={{ fontSize: 22, color: DARK_TEXT, fontWeight: 500, letterSpacing: -0.3 }}>
@@ -454,7 +428,6 @@ const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps
           <span style={{ fontSize: 14, color: GREY_TEXT }}>{ARROW_DOWN}</span>
         </div>
       </div>
-      {/* Dropdown panel */}
       <div
         style={{
           margin: "0 24px", background: "#F8F9FA", borderRadius: 16,
@@ -486,9 +459,7 @@ const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps
           <div style={{ background: DARK_TEXT, color: "#fff", fontSize: 12, fontWeight: 600, padding: "5px 14px", borderRadius: 5, whiteSpace: "nowrap" }}>Upgrade</div>
         </div>
       </div>
-      {/* "+" new conversation button */}
       <div style={{ position: "absolute", bottom: 80, left: 28, width: 52, height: 52, borderRadius: 26, background: "#E8E8EC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: GREY_TEXT, opacity: elementsDelay, transform: `translateY(${interpolate(elementsDelay, [0, 1], [10, 0])}px)`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>+</div>
-      {/* Search bar at bottom */}
       <div style={{ position: "absolute", bottom: 20, left: 24, right: 24, background: "#F0F0F4", borderRadius: 28, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, opacity: interpolate(elementsDelay, [0, 1], [0, 0.8]), transform: `translateY(${interpolate(elementsDelay, [0, 1], [8, 0])}px)` }}>
         <div style={{ fontSize: 17, color: BLUE }}>{SPARKLE}</div>
         <div style={{ fontSize: 15, color: "#9AA0A6", flex: 1 }}>Gemini</div>
@@ -497,427 +468,516 @@ const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps
   );
 };
 
-/* ─── Floating Emoji — curved trajectory burst ─── */
-const FloatingEmoji: React.FC<{
-  emoji: string; endX: number; endY: number; size: number;
-  seed: number; frame: number; fps: number; startFrame: number;
-  arcHeight: number;
-}> = ({ emoji, endX, endY, size, seed, frame, fps, startFrame, arcHeight }) => {
-  const localFrame = frame - startFrame;
-  if (localFrame < 0) return null;
-
-  /* Progress along the curved path — fast launch, gentle settle */
-  const pathT = interpolate(localFrame, [0, 22], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
-  });
-
-  /* Quadratic bezier arc: start at phone center (0,0), arc through control point, land at endX/endY */
-  const controlX = endX * 0.3 + (seed % 2 === 0 ? -1 : 1) * arcHeight * 0.4;
-  const controlY = endY * 0.3 - arcHeight;
-  const currentX = quadBezier(pathT, 0, controlX, endX);
-  const currentY = quadBezier(pathT, 0, controlY, endY);
-
-  /* Scale: spring pop at launch, then gentle float */
-  const scaleSpring = spring({ frame: localFrame, fps, config: { damping: 6, stiffness: 120, mass: 0.4 } });
-  const floatScale = 1 + Math.sin(localFrame * 0.08 + seed) * 0.06;
-  const currentScale = scaleSpring * floatScale;
-
-  /* Rotation: spin during flight, settle to gentle wobble */
-  const launchSpin = interpolate(pathT, [0, 1], [0, (seed % 2 === 0 ? 1 : -1) * (15 + seed * 3)], { extrapolateRight: "clamp" });
-  const wobble = Math.sin(localFrame * 0.1 + seed * 2) * 4;
-  const rotation = pathT < 0.95 ? launchSpin : wobble;
-
-  /* Noise drift after settling */
-  const settled = pathT >= 0.99;
-  const noiseX = settled ? noise2D("emojiX" + seed, localFrame * 0.02, seed) * 8 : 0;
-  const noiseY = settled ? noise2D("emojiY" + seed, localFrame * 0.015, seed) * 5 : 0;
-
-  return (
-    <div
-      style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: `translate(${currentX + noiseX}px, ${currentY + noiseY}px) scale(${currentScale}) rotate(${rotation}deg)`,
-        fontSize: size, opacity: Math.min(scaleSpring * 1.5, 1),
-        filter: "drop-shadow(2px 2px 4px rgba(0,0,0,0.1))",
-        pointerEvents: "none",
-      }}
-    >
-      {emoji}
-    </div>
-  );
-};
-
-/* ═══ Main Scene ═══ */
+/* ═══ Main Scene — GSAP orchestration ═══ */
 export const Scene04: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { tl, containerRef, frame, fps } = useGsapTimeline();
+  const timelineBuilt = useRef(false);
 
-  /* ── Phone entry on curved arc ── */
-  const entryT = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
-  });
-  /* Arc path: start from bottom-right, sweep up-left to center */
-  const phoneEntryX = quadBezier(entryT, 120, 30, 0);
-  const phoneEntryY = quadBezier(entryT, 160, -20, 0);
-  const phoneEntryRotation = interpolate(entryT, [0, 1], [8, 0]);
-  const phoneOpacity = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
+  /* Convert frame ranges to seconds for GSAP */
+  const sec = (f: number) => f / fps;
 
-  const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  useEffect(() => {
+    if (!containerRef.current || timelineBuilt.current) return;
+    timelineBuilt.current = true;
 
-  /* Phone exit: curved arc to the left */
-  const exitStart = PHASE.TRANSITION_TEXT.start;
-  const exitT = interpolate(frame, [exitStart, exitStart + 14], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.bezier(0.7, 0, 0.84, 0),
-  });
-  const phoneExitX = quadBezier(exitT, 0, -200, -700);
-  const phoneExitY = quadBezier(exitT, 0, -60, 30);
-  const phoneExitRotation = interpolate(exitT, [0, 1], [0, -12]);
-  const phoneSlideOpacity = interpolate(exitT, [0, 0.5], [1, 0], { extrapolateRight: "clamp" });
+    const t = tl.current;
 
-  const butTextOpacity = interpolate(frame,
-    [PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 12, PHASE.INTRODUCING.start - 8, PHASE.INTRODUCING.start],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+    /* ── Phase 1: Phone entrance — curved arc via motionPath ── */
+    t.set(".phone-container", { opacity: 0, x: 120, y: 160, rotation: 8 });
+    t.to(".phone-container", {
+      opacity: 1,
+      duration: sec(8),
+      ease: "power2.out",
+    }, 0);
+    t.to(".phone-container", {
+      motionPath: {
+        path: [
+          { x: 120, y: 160 },
+          { x: 30, y: -20 },
+          { x: 0, y: 0 },
+        ],
+        curviness: 1.5,
+      },
+      rotation: 0,
+      duration: sec(20),
+      ease: "expo.out",
+    }, 0);
 
-  const introOpacity = interpolate(frame,
-    [PHASE.INTRODUCING.start, PHASE.INTRODUCING.start + 6, PHASE.GEMINI_UI.start - 8, PHASE.GEMINI_UI.start],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+    /* Phone scale breathing during chat phase */
+    t.fromTo(".phone-container", {
+      scale: 0.92,
+    }, {
+      scale: 0.95,
+      duration: sec(40),
+      ease: "sine.inOut",
+    }, 0);
 
-  const geminiEntry = spring({ frame: frame - PHASE.GEMINI_UI.start, fps, config: { damping: 6, stiffness: 50, mass: 1.2 } });
-  const geminiY = interpolate(geminiEntry, [0, 1], [120, 0]);
-  const geminiOpacity = frame >= PHASE.GEMINI_UI.start ? geminiEntry : 0;
+    /* Zoom into photo expand */
+    t.to(".phone-container", {
+      scale: 1.12,
+      duration: sec(30),
+      ease: "power2.inOut",
+    }, sec(40));
 
-  /* Dramatic dark transition — rapid dim + content shrinks like camera pulling back */
-  const fadeToBlack = interpolate(frame, [326, 339], [0, 0.97], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp",
-    easing: Easing.bezier(0.4, 0, 0.9, 0.3),
-  });
-  const darkShrink = interpolate(frame, [326, 339], [1, 0.88], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp",
-    easing: Easing.bezier(0.4, 0, 0.9, 0.3),
-  });
+    /* Scale back for AI response */
+    t.to(".phone-container", {
+      scale: 0.92,
+      duration: sec(30),
+      ease: "sine.inOut",
+    }, sec(80));
 
+    /* Phone tilt evolution: -8 → -4 over chat phases */
+    t.set(".phone-tilt-wrapper", { "--phone-tilt": -8 });
+    t.to(".phone-tilt-wrapper", {
+      "--phone-tilt": -4,
+      duration: sec(PHASE.AI_RESPONSE.start),
+      ease: "none",
+    }, 0);
+
+    /* ── Phase 4: Emoji burst — staggered arc launch ── */
+    const emojiStart = sec(PHASE.EMOJI_BURST.start);
+    t.from(".emoji-item", {
+      scale: 0,
+      opacity: 0,
+      duration: sec(22),
+      ease: "back.out(2.5)",
+      stagger: {
+        each: sec(2),
+        from: "center",
+      },
+    }, emojiStart);
+
+    /* Emojis slightly shrink phone scale to 0.88 */
+    t.to(".phone-container", {
+      scale: 0.88,
+      duration: sec(20),
+      ease: "power1.out",
+    }, emojiStart);
+
+    /* ── Phone exit — curved arc to the left ── */
+    const exitStart = sec(PHASE.TRANSITION_TEXT.start);
+    t.to(".phone-container", {
+      motionPath: {
+        path: [
+          { x: 0, y: 0 },
+          { x: -200, y: -60 },
+          { x: -700, y: 30 },
+        ],
+        curviness: 1.5,
+      },
+      rotation: -12,
+      opacity: 0,
+      duration: sec(14),
+      ease: "power3.in",
+    }, exitStart);
+
+    /* Emoji exit with phone */
+    t.to(".emoji-layer", {
+      opacity: 0,
+      x: -200,
+      duration: sec(10),
+      ease: "power2.in",
+    }, exitStart);
+
+    /* ── Phase 5: "But that's not all..." text ── */
+    const textStart = sec(PHASE.TRANSITION_TEXT.start + 8);
+    t.set(".but-text-container", { opacity: 0 });
+    t.to(".but-text-container", {
+      opacity: 1,
+      duration: sec(12),
+      ease: "power2.out",
+    }, sec(PHASE.TRANSITION_TEXT.start));
+
+    /* Staggered word reveal with arc motion */
+    t.from(".but-word", {
+      opacity: 0,
+      y: 30,
+      x: 20,
+      duration: sec(8),
+      ease: "expo.out",
+      stagger: sec(5),
+    }, textStart);
+
+    /* "all" word — blue treatment, slightly delayed */
+    t.from(".all-word", {
+      opacity: 0,
+      y: 30,
+      x: 20,
+      duration: sec(8),
+      ease: "expo.out",
+    }, sec(PHASE.TRANSITION_TEXT.start + 8 + 15));
+
+    /* Ellipsis dots — spring pop stagger */
+    t.from(".dot-0", {
+      scale: 0, opacity: 0,
+      duration: sec(8),
+      ease: "back.out(4)",
+    }, sec(PHASE.TRANSITION_TEXT.start + 8 + 23));
+    t.from(".dot-1", {
+      scale: 0, opacity: 0,
+      duration: sec(8),
+      ease: "back.out(3.5)",
+    }, sec(PHASE.TRANSITION_TEXT.start + 8 + 28));
+    t.from(".dot-2", {
+      scale: 0, opacity: 0,
+      duration: sec(8),
+      ease: "back.out(3)",
+    }, sec(PHASE.TRANSITION_TEXT.start + 8 + 33));
+
+    /* "But that's not all..." fade-out */
+    t.to(".but-text-container", {
+      opacity: 0,
+      duration: sec(8),
+      ease: "power2.in",
+    }, sec(PHASE.INTRODUCING.start - 8));
+
+    /* ── Phase 6: "Introducing" — gradient sweep ── */
+    t.set(".intro-container", { opacity: 0, scale: 0.88 });
+    t.to(".intro-container", {
+      opacity: 1,
+      scale: 1.0,
+      duration: sec(20),
+      ease: "elastic.out(1, 0.6)",
+    }, sec(PHASE.INTRODUCING.start));
+
+    /* Gradient sweep clip-path: reveal gradient text left->right */
+    t.fromTo(".intro-gradient-text", {
+      clipPath: "inset(0 100% 0 0)",
+    }, {
+      clipPath: "inset(0 0% 0 0)",
+      duration: sec(21),
+      ease: "expo.out",
+    }, sec(PHASE.INTRODUCING.start));
+
+    /* "Introducing" fade-out before Gemini UI */
+    t.to(".intro-container", {
+      opacity: 0,
+      duration: sec(8),
+      ease: "power2.in",
+    }, sec(PHASE.GEMINI_UI.start - 8));
+
+    /* ── Phase 7: Gemini UI — elastic spring entry ── */
+    t.set(".gemini-container", { opacity: 0, y: 120 });
+    t.to(".gemini-container", {
+      opacity: 1,
+      y: 0,
+      duration: sec(30),
+      ease: "elastic.out(1, 0.5)",
+    }, sec(PHASE.GEMINI_UI.start));
+
+    /* Gemini zoom + pan: zoomed into top-left corner showing dropdown */
+    t.fromTo(".gemini-browser", {
+      scale: 1.8,
+      x: -140,
+      y: 200,
+    }, {
+      scale: 2.2,
+      x: -180,
+      y: 230,
+      duration: sec(46),
+      ease: "power1.inOut",
+    }, sec(PHASE.GEMINI_UI.start));
+
+    /* ── Dark fade-to-black ending ── */
+    t.set(".dark-overlay", { opacity: 0 });
+    t.to(".dark-overlay", {
+      opacity: 0.97,
+      duration: sec(13),
+      ease: "power3.in",
+    }, sec(326));
+
+    /* Camera-pull-back shrink */
+    t.to(".scene-wrapper", {
+      scale: 0.88,
+      duration: sec(13),
+      ease: "power3.in",
+    }, sec(326));
+
+  }, []);
+
+  /* ── Phase visibility (frame-driven for content switching) ── */
   const showChat = frame < PHASE.PHOTO_EXPAND.start;
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
   const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
   const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
+  const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
+  const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
+  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 5;
 
-  /* Zoom + tilt with breathing */
-  const zoomIn = interpolate(frame, [0, 40, 70, 80, 110], [0.92, 0.95, 1.12, 1.12, 0.92], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const emojiScale = interpolate(frame, [PHASE.EMOJI_BURST.start, PHASE.EMOJI_BURST.start + 20], [0.92, 0.88], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const phoneScale = frame < PHASE.EMOJI_BURST.start ? zoomIn : emojiScale;
-  const phoneTilt = interpolate(frame, [0, PHASE.AI_RESPONSE.start], [-8, -4], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  /* Photo expand progress (frame-driven for content sizing) */
+  const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Is the phone sliding out fast enough to warrant motion blur? */
-  const phoneIsExiting = exitT > 0.02 && exitT < 0.85;
-  /* Is the emoji burst launching? */
-  const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
+  /* Noise-based background movement */
+  const bgX1 = 40 + noise2D("bgX", frame * 0.005, 0) * 12;
+  const bgY1 = 40 + noise2D("bgY", frame * 0.005, 1) * 10;
+  const bgX2 = 70 + noise2D("bg2X", frame * 0.004, 2) * 8;
+  const bgY2 = 60 + noise2D("bg2Y", frame * 0.004, 3) * 6;
 
-  const phoneContent = (
-    <div style={{
-      position: "absolute", inset: 0,
-      opacity: phoneOpacity * phoneSlideOpacity,
-      transform: `translate(${phoneEntryX + phoneExitX}px, ${phoneEntryY + phoneExitY}px) rotate(${phoneEntryRotation + phoneExitRotation}deg)`,
-    }}>
-      <PhoneMockup tilt={phoneTilt} scale={phoneScale} shadowOpacity={0.18}>
-        {showChat && <ChatUI frame={frame} fps={fps} />}
-        {showPhotoExpand && (
-          <div style={{
-            width: "100%", height: "100%",
-            background: "linear-gradient(145deg, #87CEAB 0%, #6BAF6B 25%, #8FBC8F 40%, #D4A574 55%, #C4956A 70%, #87CEEB 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            opacity: interpolate(photoExpandProgress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" }),
-          }}>
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.08) 80%)" }} />
-            <div style={{
-              fontSize: interpolate(photoExpandProgress, [0, 1], [60, 110]),
-              filter: "drop-shadow(3px 3px 8px rgba(0,0,0,0.25))",
-              transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
-            }}>{DOG_FULL}</div>
-          </div>
-        )}
-        {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
-      </PhoneMockup>
-      {frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start &&
-        FLOATING_EMOJIS.map((item, i) => (
-          <FloatingEmoji
-            key={i}
-            emoji={item.emoji}
-            endX={item.endX}
-            endY={item.endY}
-            size={item.size}
-            seed={item.seed}
-            frame={frame}
-            fps={fps}
-            startFrame={PHASE.EMOJI_BURST.start + i * 2}
-            arcHeight={item.arcHeight}
-          />
-        ))}
-    </div>
-  );
+  /* Gemini border glow cycling */
+  const geminiLocalFrame = frame - PHASE.GEMINI_UI.start;
+  const glowCycle = showGeminiUI ? (geminiLocalFrame % 120) / 120 : 0;
+
+  /* Emoji individual positions — GSAP handles the container burst animation,
+     but individual arc positions are computed per-frame for organic motion */
+  const emojiPositions = FLOATING_EMOJIS.map((item, i) => {
+    const startFrame = PHASE.EMOJI_BURST.start + i * 2;
+    const localFrame = frame - startFrame;
+    if (localFrame < 0) return null;
+
+    const pathT = interpolate(localFrame, [0, 22], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+    });
+
+    const controlX = item.endX * 0.3 + (item.seed % 2 === 0 ? -1 : 1) * item.arcHeight * 0.4;
+    const controlY = item.endY * 0.3 - item.arcHeight;
+    const mt = 1 - pathT;
+    const currentX = mt * mt * 0 + 2 * mt * pathT * controlX + pathT * pathT * item.endX;
+    const currentY = mt * mt * 0 + 2 * mt * pathT * controlY + pathT * pathT * item.endY;
+
+    const scaleSpring = spring({ frame: localFrame, fps, config: { damping: 6, stiffness: 120, mass: 0.4 } });
+    const floatScale = 1 + Math.sin(localFrame * 0.08 + item.seed) * 0.06;
+    const currentScale = scaleSpring * floatScale;
+
+    const launchSpin = interpolate(pathT, [0, 1], [0, (item.seed % 2 === 0 ? 1 : -1) * (15 + item.seed * 3)], { extrapolateRight: "clamp" });
+    const wobble = Math.sin(localFrame * 0.1 + item.seed * 2) * 4;
+    const rotation = pathT < 0.95 ? launchSpin : wobble;
+
+    const settled = pathT >= 0.99;
+    const noiseX = settled ? noise2D("emojiX" + item.seed, localFrame * 0.02, item.seed) * 8 : 0;
+    const noiseY = settled ? noise2D("emojiY" + item.seed, localFrame * 0.015, item.seed) * 5 : 0;
+
+    return {
+      x: currentX + noiseX,
+      y: currentY + noiseY,
+      scale: currentScale,
+      rotation,
+      opacity: Math.min(scaleSpring * 1.5, 1),
+      size: item.size,
+      emoji: item.emoji,
+    };
+  });
+
+  /* Noise wobble for "Introducing" text */
+  const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
+  const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
+
+  /* Noise wobble for Gemini container */
+  const gemWobX = noise2D("gmwx", frame * 0.015, 0) * 3;
+  const gemWobY = noise2D("gmwy", 0, frame * 0.015) * 2;
+
+  /* Introducing glow effects (frame-driven for continuous breathing) */
+  const introLocal = frame - PHASE.INTRODUCING.start;
+  const sweepT = interpolate(introLocal, [0, 21], [0, 1], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+  const glowBreath = 0.4 + Math.sin(introLocal * 0.18) * 0.15;
+  const glowBreath2 = 0.25 + Math.sin(introLocal * 0.14 + 1.5) * 0.1;
+  const glowX = interpolate(sweepT, [0, 1], [-280, 0]);
+  const sweepEdgeX = interpolate(sweepT, [0, 1], [-320, 320]);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-     <div style={{
-       position: "absolute", inset: 0,
-       transform: `scale(${darkShrink})`,
-       transformOrigin: "center center",
-       background: BG,
-     }}>
-      {/* Subtle animated background gradient */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `radial-gradient(ellipse at ${40 + noise2D("bgX", frame * 0.005, 0) * 12}% ${40 + noise2D("bgY", frame * 0.005, 1) * 10}%, rgba(200,210,240,0.22) 0%, transparent 60%)`,
-      }} />
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `radial-gradient(ellipse at ${70 + noise2D("bg2X", frame * 0.004, 2) * 8}% ${60 + noise2D("bg2Y", frame * 0.004, 3) * 6}%, rgba(220,200,230,0.08) 0%, transparent 50%)`,
-      }} />
-
-      {/* Disclaimer text */}
-      {frame >= 40 && frame < PHASE.TRANSITION_TEXT.start && (
-        <div style={{
-          position: "absolute", bottom: 16, left: 20,
-          fontSize: 9, color: "rgba(0,0,0,0.3)",
-          fontFamily: "system-ui, sans-serif",
-          opacity: interpolate(frame, [40, 50], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+      <div ref={containerRef} style={{ position: "absolute", inset: 0 }}>
+        <div className="scene-wrapper" style={{
+          position: "absolute", inset: 0,
+          transformOrigin: "center center",
+          background: BG,
         }}>
-          Sequences shortened and simulated.
-        </div>
-      )}
+          {/* Animated background gradients */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `radial-gradient(ellipse at ${bgX1}% ${bgY1}%, rgba(200,210,240,0.22) 0%, transparent 60%)`,
+          }} />
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `radial-gradient(ellipse at ${bgX2}% ${bgY2}%, rgba(220,200,230,0.08) 0%, transparent 50%)`,
+          }} />
 
-      {/* Phone + emojis — motion blur during fast transitions */}
-      {frame < PHASE.GEMINI_UI.start && (
-        phoneIsExiting || emojiBursting ? (
-          <CameraMotionBlur samples={6} shutterAngle={120}>
-            {phoneContent}
-          </CameraMotionBlur>
-        ) : (
-          phoneContent
-        )
-      )}
-
-      {/* "But that's not all..." text with spring-pop dots */}
-      {frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15 && (() => {
-        const textStart = PHASE.TRANSITION_TEXT.start + 8;
-        const words = ["But", "that\u2019s", "not"];
-        const wordDelay = 5;
-        /* "all" gets its own treatment — blue color like reference */
-        const allStart = textStart + words.length * wordDelay;
-        const dotBase = allStart + 8;
-        const dotDelay = 5; /* 5-frame stagger between dots */
-        const dotSpringConfigs = [
-          { damping: 7, stiffness: 160, mass: 0.4 },
-          { damping: 6, stiffness: 140, mass: 0.45 },
-          { damping: 5, stiffness: 120, mass: 0.5 },
-        ];
-        const dotSprings = dotSpringConfigs.map((cfg, i) =>
-          spring({ frame: frame - (dotBase + dotDelay * i), fps, config: cfg })
-        );
-        return (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: butTextOpacity }}>
-            <div style={{ fontSize: 42, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 400, color: DARK_TEXT, letterSpacing: -0.5, display: "flex", alignItems: "baseline", gap: 10 }}>
-              {words.map((word, wi) => {
-                const wordStart = textStart + wi * wordDelay;
-                const localF = frame - wordStart;
-                const t = interpolate(localF, [0, 8], [0, 1], {
-                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
-                  easing: Easing.bezier(0.22, 1, 0.36, 1),
-                });
-                const arcX = quadBezier(t, 20, 5, 0);
-                const arcY = quadBezier(t, 30, -12, 0);
-                const wordOpacity = interpolate(localF, [0, 5], [0, 1], {
-                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
-                  easing: Easing.out(Easing.quad),
-                });
-                const tPrev = interpolate(Math.max(0, localF - 1), [0, 8], [0, 1], {
-                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
-                  easing: Easing.bezier(0.22, 1, 0.36, 1),
-                });
-                const prevArcX = quadBezier(tPrev, 20, 5, 0);
-                const prevArcY = quadBezier(tPrev, 30, -12, 0);
-                const dist = Math.sqrt((arcX - prevArcX) ** 2 + (arcY - prevArcY) ** 2);
-                const arcBlur = Math.min(dist * 0.2, 6);
-                const wNx = noise2D(`bw${wi}x`, frame * 0.025, 0) * 2;
-                const wNy = noise2D(`bw${wi}y`, 0, frame * 0.025) * 1.5;
-                return (
-                  <span key={wi} style={{
-                    opacity: wordOpacity,
-                    transform: `translate(${arcX + wNx}px, ${arcY + wNy}px)`,
-                    display: "inline-block",
-                    filter: arcBlur > 0.3 ? `blur(${arcBlur.toFixed(1)}px)` : undefined,
-                  }}>{word}</span>
-                );
-              })}
-              {/* "all" in blue — matches reference frame_015 */}
-              {(() => {
-                const localF = frame - allStart;
-                const t = interpolate(localF, [0, 8], [0, 1], {
-                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
-                  easing: Easing.bezier(0.22, 1, 0.36, 1),
-                });
-                const arcX = quadBezier(t, 20, 5, 0);
-                const arcY = quadBezier(t, 30, -12, 0);
-                const wordOpacity = interpolate(localF, [0, 5], [0, 1], {
-                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
-                  easing: Easing.out(Easing.quad),
-                });
-                return (
-                  <span style={{
-                    opacity: wordOpacity,
-                    transform: `translate(${arcX}px, ${arcY}px)`,
-                    display: "inline-block",
-                    color: BLUE,
-                  }}>all</span>
-                );
-              })()}
-              {/* Ellipsis dots — spring pop, gradient-tinted: blue -> purple -> pink */}
-              <span style={{ display: "inline-flex", gap: 2, marginLeft: -2, alignItems: "baseline" }}>
-                {dotSprings.map((d, i) => {
-                  const popScale = interpolate(d, [0, 0.4, 1], [0, 1.45, 1]);
-                  const dotOpacity = Math.min(d * 2.5, 1);
-                  /* Subtle Gemini gradient shift across the three dots */
-                  const dotColor = i === 0 ? "#5C6BC0" : i === 1 ? "#7B1FA2" : "#AD1457";
-                  return (
-                    <span key={i} style={{
-                      color: dotColor,
-                      fontSize: 42,
-                      fontWeight: 700,
-                      opacity: dotOpacity,
-                      transform: `scale(${popScale})`,
-                      display: "inline-block",
-                      transformOrigin: "center bottom",
-                    }}>.</span>
-                  );
-                })}
-              </span>
+          {/* Disclaimer */}
+          {frame >= 40 && frame < PHASE.TRANSITION_TEXT.start && (
+            <div style={{
+              position: "absolute", bottom: 16, left: 20,
+              fontSize: 9, color: "rgba(0,0,0,0.3)",
+              fontFamily: "system-ui, sans-serif",
+              opacity: interpolate(frame, [40, 50], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+            }}>
+              Sequences shortened and simulated.
             </div>
-          </div>
-        );
-      })()}
+          )}
 
-      {/* "Introducing" — two-layer gradient sweep (dark base + gradient overlay) */}
-      {frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 5 && (() => {
-        const introLocal = frame - PHASE.INTRODUCING.start;
-        const introSpringScale = spring({ frame: introLocal, fps, config: { damping: 8, stiffness: 70, mass: 1 } });
-        const scaleVal = interpolate(introSpringScale, [0, 1], [0.88, 1.0]);
+          {/* Phone + emojis layer */}
+          {frame < PHASE.GEMINI_UI.start && (
+            <div style={{ position: "absolute", inset: 0 }}>
+              <div className="phone-container" style={{ position: "absolute", inset: 0 }}>
+                <PhoneMockup
+                  tilt={interpolate(frame, [0, PHASE.AI_RESPONSE.start], [-8, -4], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
+                  scale={1}
+                  shadowOpacity={0.18}
+                >
+                  {showChat && <ChatUI frame={frame} fps={fps} />}
+                  {showPhotoExpand && (
+                    <div style={{
+                      width: "100%", height: "100%",
+                      background: "linear-gradient(145deg, #87CEAB 0%, #6BAF6B 25%, #8FBC8F 40%, #D4A574 55%, #C4956A 70%, #87CEEB 100%)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      opacity: interpolate(photoExpandProgress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" }),
+                    }}>
+                      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.08) 80%)" }} />
+                      <div style={{
+                        fontSize: interpolate(photoExpandProgress, [0, 1], [60, 110]),
+                        filter: "drop-shadow(3px 3px 8px rgba(0,0,0,0.25))",
+                        transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
+                      }}>{DOG_FULL}</div>
+                    </div>
+                  )}
+                  {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
+                </PhoneMockup>
+              </div>
 
-        /* Sweep progress: clip-path reveals gradient text left->right, ~0.7s (21 frames) */
-        const sweepT = interpolate(introLocal, [0, 21], [0, 1], {
-          extrapolateLeft: "clamp", extrapolateRight: "clamp",
-          easing: Easing.bezier(0.16, 1, 0.3, 1), /* fast start, gentle settle */
-        });
-        const clipRight = interpolate(sweepT, [0, 1], [100, 0]);
+              {/* Emoji burst layer */}
+              {showEmojis && (
+                <div className="emoji-layer" style={{ position: "absolute", inset: 0 }}>
+                  {emojiPositions.map((pos, i) => pos && (
+                    <div
+                      key={i}
+                      className="emoji-item"
+                      style={{
+                        position: "absolute", left: "50%", top: "50%",
+                        transform: `translate(${pos.x}px, ${pos.y}px) scale(${pos.scale}) rotate(${pos.rotation}deg)`,
+                        fontSize: pos.size,
+                        opacity: pos.opacity,
+                        filter: "drop-shadow(2px 2px 4px rgba(0,0,0,0.1))",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      {pos.emoji}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-        /* Breathing glow that follows the sweep leading edge */
-        const glowBreath = 0.4 + Math.sin(introLocal * 0.18) * 0.15;
-        const glowBreath2 = 0.25 + Math.sin(introLocal * 0.14 + 1.5) * 0.1;
-        /* Glow X tracks sweep: starts off-left, ends center */
-        const glowX = interpolate(sweepT, [0, 1], [-280, 0]);
-
-        const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
-        const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
-
-        /* Shared text style */
-        const textStyle: React.CSSProperties = {
-          fontSize: 96, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 300,
-          letterSpacing: -1, textAlign: "center" as const, whiteSpace: "nowrap" as const,
-        };
-
-        /* Sweep edge glow — a narrow bright spot that travels with the leading edge */
-        const sweepEdgeX = interpolate(sweepT, [0, 1], [-320, 320]);
-
-        return (
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: introOpacity, transform: `scale(${scaleVal}) translate(${introWobX}px, ${introWobY}px)` }}>
-            {/* Main glow — warm pink haze behind the swept portion */}
-            <div style={{
-              position: "absolute", width: 600, height: 240,
-              transform: `translateX(${glowX * 0.6}px)`,
-              background: `radial-gradient(ellipse at 50% 50%, rgba(220,140,200,${glowBreath * 1.2}) 0%, rgba(200,120,220,${glowBreath * 0.6}) 30%, rgba(180,100,240,${glowBreath * 0.3}) 55%, transparent 75%)`,
-              filter: "blur(50px)",
-            }} />
-            {/* Broader ambient glow — always present once sweep starts */}
-            <div style={{
-              position: "absolute", width: 800, height: 200,
-              background: `radial-gradient(ellipse, rgba(210,140,210,${glowBreath2 * 1.3}) 0%, rgba(190,120,220,${glowBreath2 * 0.5}) 35%, transparent 65%)`,
-              filter: "blur(50px)",
-              opacity: 0.7 + Math.sin(introLocal * 0.1) * 0.15,
-            }} />
-            {/* Sweep edge glow — narrow bright band at leading edge */}
-            {sweepT < 0.98 && (
+          {/* "But that's not all..." text */}
+          {showButText && (
+            <div className="but-text-container" style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
               <div style={{
-                position: "absolute", width: 140, height: 120,
-                transform: `translateX(${sweepEdgeX}px)`,
-                background: "radial-gradient(ellipse, rgba(210,150,240,0.55) 0%, rgba(180,100,220,0.25) 40%, transparent 70%)",
-                filter: "blur(28px)",
+                fontSize: 42,
+                fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif",
+                fontWeight: 400, color: DARK_TEXT, letterSpacing: -0.5,
+                display: "flex", alignItems: "baseline", gap: 10,
+              }}>
+                {["But", "that\u2019s", "not"].map((word, wi) => (
+                  <span
+                    key={wi}
+                    className="but-word"
+                    style={{ display: "inline-block" }}
+                  >{word}</span>
+                ))}
+                <span className="all-word" style={{ display: "inline-block", color: BLUE }}>all</span>
+                <span style={{ display: "inline-flex", gap: 2, marginLeft: -2, alignItems: "baseline" }}>
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className={`dot-${i}`}
+                      style={{
+                        color: i === 0 ? "#5C6BC0" : i === 1 ? "#7B1FA2" : "#AD1457",
+                        fontSize: 42,
+                        fontWeight: 700,
+                        display: "inline-block",
+                        transformOrigin: "center bottom",
+                      }}
+                    >.</span>
+                  ))}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* "Introducing" — gradient sweep */}
+          {showIntro && (
+            <div className="intro-container" style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transform: `translate(${introWobX}px, ${introWobY}px)`,
+            }}>
+              {/* Main glow */}
+              <div style={{
+                position: "absolute", width: 600, height: 240,
+                transform: `translateX(${glowX * 0.6}px)`,
+                background: `radial-gradient(ellipse at 50% 50%, rgba(220,140,200,${glowBreath * 1.2}) 0%, rgba(200,120,220,${glowBreath * 0.6}) 30%, rgba(180,100,240,${glowBreath * 0.3}) 55%, transparent 75%)`,
+                filter: "blur(50px)",
               }} />
-            )}
-            {/* Two-layer text stack */}
-            <div style={{ position: "relative" }}>
-              {/* Bottom layer: dark text (visible where gradient hasn't swept yet) */}
+              {/* Ambient glow */}
               <div style={{
-                ...textStyle,
-                color: DARK_TEXT,
-                opacity: 0.85,
-              }}>
-                Introducing
-              </div>
-              {/* Top layer: gradient text, revealed left-to-right via clip-path */}
-              <div style={{
-                ...textStyle,
-                position: "absolute", inset: 0,
-                background: "linear-gradient(90deg, #D93025 0%, #E040A0 18%, #B040C0 36%, #8060E0 54%, #5080E8 72%, #4285F4 88%, #3B78E7 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                clipPath: `inset(0 ${clipRight}% 0 0)`,
-              }}>
-                Introducing
+                position: "absolute", width: 800, height: 200,
+                background: `radial-gradient(ellipse, rgba(210,140,210,${glowBreath2 * 1.3}) 0%, rgba(190,120,220,${glowBreath2 * 0.5}) 35%, transparent 65%)`,
+                filter: "blur(50px)",
+                opacity: 0.7 + Math.sin(introLocal * 0.1) * 0.15,
+              }} />
+              {/* Sweep edge glow */}
+              {sweepT < 0.98 && (
+                <div style={{
+                  position: "absolute", width: 140, height: 120,
+                  transform: `translateX(${sweepEdgeX}px)`,
+                  background: "radial-gradient(ellipse, rgba(210,150,240,0.55) 0%, rgba(180,100,220,0.25) 40%, transparent 70%)",
+                  filter: "blur(28px)",
+                }} />
+              )}
+              {/* Two-layer text */}
+              <div style={{ position: "relative" }}>
+                <div style={{
+                  fontSize: 96,
+                  fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif",
+                  fontWeight: 300, letterSpacing: -1, textAlign: "center", whiteSpace: "nowrap",
+                  color: DARK_TEXT, opacity: 0.85,
+                }}>
+                  Introducing
+                </div>
+                <div className="intro-gradient-text" style={{
+                  fontSize: 96,
+                  fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif",
+                  fontWeight: 300, letterSpacing: -1, textAlign: "center", whiteSpace: "nowrap",
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(90deg, #D93025 0%, #E040A0 18%, #B040C0 36%, #8060E0 54%, #5080E8 72%, #4285F4 88%, #3B78E7 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}>
+                  Introducing
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          )}
 
-      {/* Gemini UI — desktop browser corner, elastic spring entry */}
-      {showGeminiUI && (() => {
-        const geminiLocalFrame = frame - PHASE.GEMINI_UI.start;
-        const geminiZoom = interpolate(geminiLocalFrame, [0, 46], [1.8, 2.2], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const geminiPanX = interpolate(geminiLocalFrame, [0, 46], [-140, -180], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const geminiPanY = interpolate(geminiLocalFrame, [0, 46], [200, 230], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const gemWobX = noise2D("gmwx", frame * 0.015, 0) * 3;
-        const gemWobY = noise2D("gmwy", 0, frame * 0.015) * 2;
-        const glowCycle = (geminiLocalFrame % 120) / 120; /* border glow animation cycle */
-        const geminiContent = (
-          <div style={{ position: "absolute", inset: 0, opacity: geminiOpacity, transform: `translateY(${geminiY}px) translate(${gemWobX}px, ${gemWobY}px)` }}>
-            <BrowserFrame scale={geminiZoom} x={geminiPanX} y={geminiPanY} glowProgress={glowCycle}>
-              <GeminiDropdownUI frame={geminiLocalFrame} fps={fps} />
-            </BrowserFrame>
-          </div>
-        );
-        /* Motion blur during the initial spring entry */
-        if (geminiLocalFrame > 0 && geminiLocalFrame < 10) {
-          return (
-            <CameraMotionBlur samples={5} shutterAngle={90}>
-              {geminiContent}
-            </CameraMotionBlur>
-          );
-        }
-        return geminiContent;
-      })()}
+          {/* Gemini UI */}
+          {showGeminiUI && (
+            <div className="gemini-container" style={{
+              position: "absolute", inset: 0,
+              transform: `translate(${gemWobX}px, ${gemWobY}px)`,
+            }}>
+              <div className="gemini-browser">
+                <BrowserFrame glowProgress={glowCycle}>
+                  <GeminiDropdownUI frame={geminiLocalFrame} fps={fps} />
+                </BrowserFrame>
+              </div>
+            </div>
+          )}
 
-      {fadeToBlack > 0 && (
-        <div style={{ position: "absolute", inset: 0, backgroundColor: "#000", opacity: fadeToBlack }} />
-      )}
-     </div>{/* end darkShrink wrapper */}
+          {/* Dark fade overlay */}
+          <div className="dark-overlay" style={{
+            position: "absolute", inset: 0,
+            backgroundColor: "#000",
+            opacity: 0,
+            pointerEvents: "none",
+          }} />
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };

@@ -163,7 +163,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const marketIds = useMemo(() => {
     // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
     if (batchConfig?.markets?.length) {
-      return batchConfig.markets.map(m => m.asset_id).filter(Boolean) as string[]
+      return batchConfig.markets.map(m => m.assetId).filter(Boolean) as string[]
     }
     return sourceMarkets.map(p => p.assetId).filter(Boolean) as string[]
   }, [batchConfig?.markets, sourceMarkets])

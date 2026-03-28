@@ -13,6 +13,7 @@ import { CycleSection } from '@/components/domain/explorer/CycleSection'
 import { ITPSection } from '@/components/domain/explorer/ITPSection'
 import { VisionSection } from '@/components/domain/explorer/VisionSection'
 import { TieRateSection } from '@/components/domain/explorer/TieRateSection'
+import { TieRateHistorySection } from '@/components/domain/explorer/TieRateHistorySection'
 import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSection'
 import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 import { SourcesExplorerSection } from '@/components/domain/explorer/SourcesExplorerSection'
@@ -124,7 +125,12 @@ export default function ExplorerPageClient() {
           {activeTab === 'vision' && (
             <>
               <VisionSection snapshots={snapshots} latest={latest} loading={loading} />
-              <TieRateSection />
+              <div className="mt-4">
+                <TieRateHistorySection />
+              </div>
+              <div className="mt-4">
+                <TieRateSection />
+              </div>
             </>
           )}
           {activeTab === 'sources' && <SourcesExplorerSection />}

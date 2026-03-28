@@ -60,7 +60,7 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
                 formatter={(value: number) => [`${value}ms`, t('explorer.cycle_section.duration')]}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Line type="monotone" dataKey="duration" stroke="#000" strokeWidth={1.5} dot={false} name={t('explorer.cycle_section.duration')} />
+              <Line type="monotone" dataKey="duration" stroke="#a78bfa" strokeWidth={1.5} dot={false} name={t('explorer.cycle_section.duration')} />
             </LineChart>
           </ResponsiveContainer>
         </ExplorerChartCard>

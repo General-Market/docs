@@ -110,6 +110,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/player/:address/rounds", get(player_rounds))
         .route("/vision/points", get(vision_points))
         .route("/vision/points/:address", get(vision_points_player))
+        .route("/vision/activity", get(vision_activity))
         .with_state(state)
 }
 
@@ -2730,6 +2731,100 @@ async fn vision_points_player(
         "rank": rank,
         "epochs": epochs,
     })).into_response()
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/activity — time-series Vision activity for explorer charts
+// ---------------------------------------------------------------------------
+
+/// A single time-bucket of Vision activity.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct ActivityBucket {
+    /// Start of the time bucket (ISO 8601).
+    bucket: chrono::DateTime<chrono::Utc>,
+    /// Number of rounds settled in this bucket.
+    rounds_settled: i64,
+    /// Number of rounds created (betting started) in this bucket.
+    rounds_created: i64,
+    /// Total players across rounds settled in this bucket.
+    total_players: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct ActivityQuery {
+    /// Time range: 1h, 6h, 24h, 7d (default 24h).
+    range: Option<String>,
+    /// Bucket size in minutes (default 5, min 1, max 60).
+    bucket_mins: Option<i64>,
+}
+
+/// Vision activity time-series: rounds created, settled, and player participation
+/// bucketed over time. Reads from `vision_batch_lifecycle`.
+async fn vision_activity(
+    State(state): State<Arc<VisionState>>,
+    Query(params): Query<ActivityQuery>,
+) -> impl IntoResponse {
+    let range_secs: f64 = match params.range.as_deref().unwrap_or("24h") {
+        "1h" => 3_600.0,
+        "6h" => 21_600.0,
+        "24h" => 86_400.0,
+        "7d" => 604_800.0,
+        _ => 86_400.0,
+    };
+    let bucket_mins = params.bucket_mins.unwrap_or(5).clamp(1, 60);
+
+    // Two sub-queries: one for rounds settled (settled_at), one for rounds created (created_at).
+    // UNION them into a single time-series with both metrics per bucket.
+    let rows = sqlx::query_as::<_, ActivityBucket>(
+        r#"
+        WITH settled AS (
+            SELECT
+                date_trunc('hour', settled_at)
+                    + make_interval(mins => (EXTRACT(MINUTE FROM settled_at)::INT / $3) * $3) AS bucket,
+                COUNT(*) AS rounds_settled,
+                COALESCE(SUM(player_count), 0) AS total_players
+            FROM vision_batch_lifecycle
+            WHERE settled_at IS NOT NULL
+              AND settled_at > NOW() - make_interval(secs => $1)
+            GROUP BY bucket
+        ),
+        created AS (
+            SELECT
+                date_trunc('hour', created_at)
+                    + make_interval(mins => (EXTRACT(MINUTE FROM created_at)::INT / $3) * $3) AS bucket,
+                COUNT(*) AS rounds_created
+            FROM vision_batch_lifecycle
+            WHERE created_at > NOW() - make_interval(secs => $1)
+            GROUP BY bucket
+        )
+        SELECT
+            COALESCE(s.bucket, c.bucket) AS bucket,
+            COALESCE(s.rounds_settled, 0) AS rounds_settled,
+            COALESCE(c.rounds_created, 0) AS rounds_created,
+            COALESCE(s.total_players, 0) AS total_players
+        FROM settled s
+        FULL OUTER JOIN created c ON s.bucket = c.bucket
+        ORDER BY bucket ASC
+        LIMIT $2
+        "#,
+    )
+    .bind(range_secs)      // $1
+    .bind(2000_i64)        // $2 max rows
+    .bind(bucket_mins)     // $3
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => (StatusCode::OK, Json(serde_json::json!({
+            "buckets": data,
+            "range": params.range.as_deref().unwrap_or("24h"),
+            "bucket_mins": bucket_mins,
+        }))).into_response(),
+        Err(e) => {
+            warn!("Vision activity query failed: {e}");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
+        }
+    }
 }
 
 #[cfg(test)]

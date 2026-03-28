@@ -243,7 +243,7 @@
       "slow_cycle_alerts_desc": "Snapshots where avg cycle > 2000ms",
       "out_of_snapshots": "out of {count} snapshot{count, plural, one {} other {s}}",
       "orders_per_cycle": "Orders per Cycle",
-      "orders_per_cycle_desc": "Approximate (orders_processed_last_60s / 12)",
+      "orders_per_cycle_desc": "每5秒周期平均吞吐量",
       "orders_cycle": "Orders/Cycle"
     },
     "orders_tooltip": {
@@ -317,8 +317,10 @@
       "batches_by_source_desc": "Number of batches per data source",
       "batch_count": "{count} batch{count, plural, one {} other {es}}",
       "network_activity": "Network Activity",
-      "network_activity_desc": "Orders processed per 60s — proxy for Vision order flow",
-      "orders_60s": "Orders / 60s",
+      "network_activity_desc": "Rounds settled and players joined per hour",
+      "rounds_settled": "Rounds Settled",
+      "players_joined": "Players Joined",
+      "no_activity_data": "No activity data",
       "top_players": "Top Players",
       "ranked_players": "{count} ranked players",
       "player_rank": "#",
