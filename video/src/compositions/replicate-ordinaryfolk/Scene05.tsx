@@ -960,8 +960,7 @@ export const Scene05: React.FC = () => {
   const kineticJRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const cardsPanRef = useRef<HTMLDivElement>(null);
   const spiralContainerRef = useRef<HTMLDivElement>(null);
-  const spiralTextRef = useRef<HTMLDivElement>(null);
-  const spiralCharsRef = useRef<(HTMLSpanElement | null)[]>([]);
+  const spiralWordsRef = useRef<(HTMLDivElement | null)[]>([]);
   const spiralGlowRef = useRef<HTMLDivElement>(null);
   const orbWrapRef = useRef<HTMLDivElement>(null);
   const expTitleRef = useRef<HTMLDivElement>(null);
@@ -1020,26 +1019,25 @@ export const Scene05: React.FC = () => {
   const kineticF = { text: "for reasoning", accent: "reasoning" };
   const kineticJ = { text: "and more", accent: "more" };
 
-  // Pre-compute spiral parameters — each char gets a unique curve path from text position to center
-  const spiralParams = useMemo(() => {
-    // Approximate character offsets in the readable text "With access to"
-    // Total text width at ~42px font is roughly 350px, centered, so offsets from center:
-    const charWidths = SPIRAL_CHARS.map(ch => ch === " " ? 12 : ch === "W" ? 30 : ch.toLowerCase() === "m" ? 24 : 18);
-    const totalWidth = charWidths.reduce((a, b) => a + b, 0);
-    let cumX = -totalWidth / 2;
-    return SPIRAL_CHARS.map((ch, i) => {
-      const startX = cumX + charWidths[i] / 2;
-      cumX += charWidths[i];
-      // Each char gets a unique arc angle for its curved path
-      const arcBias = (i - SPIRAL_CHARS.length / 2) * 0.15;
-      const arcStrength = 60 + (i % 3) * 30; // how far the curve bows out
-      return {
-        ch,
-        startX,
-        arcBias,
-        arcStrength,
-        isAccent: i >= 5 && i <= 10,
-      };
+  // Pre-compute logarithmic spiral waypoints for each capability word
+  // Each word spirals INWARD from its starting position to center (0,0)
+  const spiralWaypoints = useMemo(() => {
+    return SPIRAL_WORDS.map((word, i) => {
+      const start = SPIRAL_WORD_STARTS[i];
+      const baseAngle = start.angle;
+      // Generate ~8 waypoints along a logarithmic spiral path
+      const steps = 8;
+      const path: { x: number; y: number }[] = [];
+      for (let s = 0; s <= steps; s++) {
+        const progress = s / steps;
+        // Logarithmic spiral: r decays exponentially, angle advances
+        const r = (1 - progress) * Math.sqrt(start.x * start.x + start.y * start.y);
+        const theta = baseAngle + progress * 4 * Math.PI; // ~2 full rotations inward
+        const x = r * Math.cos(theta);
+        const y = r * Math.sin(theta);
+        path.push({ x, y });
+      }
+      return path;
     });
   }, []);
 
@@ -1321,68 +1319,49 @@ export const Scene05: React.FC = () => {
       }, f(470));
     }
 
-    // ═══ L: Spiral inward text (480-520) ═══
-    // Phase 1: text appears readable
-    if (spiralTextRef.current) {
-      t.set(spiralTextRef.current, { opacity: 0 }, 0);
-      t.to(spiralTextRef.current, {
-        opacity: 1,
-        duration: f(10),
-        ease: "power2.out",
-      }, f(480));
-      // Hide readable text when spiral begins
-      t.to(spiralTextRef.current, {
-        opacity: 0,
-        duration: f(1),
-      }, f(495));
-    }
-
-    // Phase 2+3: chars peel from right side, curving inward to center
-    // Later chars (end of word) move first; "W","i","t","h" barely move until later
-    const totalChars = spiralCharsRef.current.length;
-    spiralCharsRef.current.forEach((el, i) => {
+    // ═══ L: Capability words spiral INWARD (480-520) ═══
+    // Words start scattered at screen edges, spiral inward on logarithmic paths,
+    // shrinking and overlapping to form a compressed cluster that becomes the orb.
+    spiralWordsRef.current.forEach((el, i) => {
       if (!el) return;
-      const params = spiralParams[i];
+      const startPos = SPIRAL_WORD_STARTS[i];
+      const waypoints = spiralWaypoints[i];
 
-      // Start invisible at text position
-      t.set(el, { opacity: 0, x: params.startX, y: 0, rotation: 0, scale: 1 }, 0);
+      // Start at outer position, visible, full size
+      t.set(el, {
+        opacity: 0,
+        x: startPos.x,
+        y: startPos.y,
+        scale: 1,
+        rotation: (startPos.angle * 180) / Math.PI - 90,
+      }, 0);
 
-      // Make visible at text position when readable text hides
-      t.set(el, { opacity: 1 }, f(495));
+      // Stagger fade-in: words appear in quick succession at their outer positions
+      const staggerDelay = i * 1.2;
+      t.to(el, {
+        opacity: 1,
+        duration: f(4),
+        ease: "power1.out",
+      }, f(480 + staggerDelay));
 
-      // Stagger: later chars (higher index) move FIRST (reverse order)
-      // "to" moves at frame 496, "ss" at 498, "acce" at 500-504, "With " at 506-510
-      const reverseIndex = totalChars - 1 - i;
-      const staggerFrame = 496 + reverseIndex * 1.0;
-
-      // Each char curves through a control point before converging to center
-      // Right-side chars arc upward-right; left-side chars arc downward-left
-      const normPos = i / (totalChars - 1); // 0=first char, 1=last
-      const arcDirX = params.startX > 0 ? 1 : -1;
-      const arcDirY = params.startX > 0 ? -1 : 1; // right chars go up, left chars go down
-      const arcMag = 80 + Math.abs(params.startX) * 0.5;
-
-      const waypoints = [
-        { x: params.startX, y: 0 },
-        { x: params.startX * 0.8 + arcDirX * arcMag * 0.4, y: arcDirY * arcMag },
-        { x: params.startX * 0.2 + arcDirX * arcMag * 0.15, y: arcDirY * arcMag * 0.6 },
-        { x: 0, y: 0 },
-      ];
-
-      // Duration varies: chars that move first have more time to travel
-      const dur = 24 + reverseIndex * 0.5;
-
+      // Spiral inward along logarithmic path
       t.to(el, {
         motionPath: {
           path: waypoints,
-          curviness: 2,
+          curviness: 1.8,
         },
-        scale: 0.2,
-        rotation: (i % 2 === 0 ? 1 : -1) * (15 + reverseIndex * 3),
+        scale: 0.12, // shrink dramatically as they converge
+        rotation: `+=${360 + i * 40}`, // continuous rotation during spiral
+        duration: f(35 - i * 0.5),
+        ease: "power2.in",
+      }, f(484 + staggerDelay));
+
+      // Fade to 0 as they reach the center mass
+      t.to(el, {
         opacity: 0,
-        duration: f(dur),
-        ease: "power3.in",
-      }, f(staggerFrame));
+        duration: f(6),
+        ease: "power1.in",
+      }, f(514));
     });
 
     // Spiral center glow
@@ -1486,49 +1465,67 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ O+P: Sparkle → Google G morph (640-694) ═══
+    // Single continuous container: sparkle appears, morphs into G, then fades
     if (sparkleWrapRef.current) {
       t.set(sparkleWrapRef.current, { opacity: 0, scale: 0.15 }, 0);
       // Sparkle enters with spring
       t.to(sparkleWrapRef.current, {
         opacity: 1,
         scale: 1,
-        duration: f(15),
+        duration: f(12),
         ease: "elastic.out(1, 0.5)",
       }, f(640));
-      // Sparkle exits
+      // Scale up slightly during morph for dramatic effect
+      t.to(sparkleWrapRef.current, {
+        scale: 1.3,
+        duration: f(18),
+        ease: "power1.inOut",
+      }, f(652));
+      // Final fade out
       t.to(sparkleWrapRef.current, {
         opacity: 0,
-        scale: 0.5,
-        duration: f(10),
+        scale: 1.0,
+        duration: f(8),
         ease: "power2.in",
-      }, f(660));
+      }, f(686));
     }
 
-    // SVG morph: sparkle path → G path
+    // SVG morph: sparkle path → Google G path (the core transition)
     const sparklePathEl = containerRef.current?.querySelector("#sparkle-morph-path");
     if (sparklePathEl) {
       t.to(sparklePathEl, {
-        morphSVG: GOOGLE_G_PATH,
-        duration: f(15),
+        morphSVG: {
+          shape: GOOGLE_G_PATH,
+          shapeIndex: "auto",
+        },
+        fill: "#4285F4", // transition fill from white to Google blue
+        duration: f(18),
         ease: "power2.inOut",
       }, f(652));
     }
 
-    // Google G finale
+    // Google G full-color overlay fades in over the morph result
     if (gFinalWrapRef.current) {
-      t.set(gFinalWrapRef.current, { opacity: 0, scale: 0.5 }, 0);
+      t.set(gFinalWrapRef.current, { opacity: 0, scale: 1.3 }, 0);
+      // Fade in the multi-color G once morph is ~70% done
       t.to(gFinalWrapRef.current, {
         opacity: 1,
-        scale: 1,
+        scale: 1.3,
+        duration: f(8),
+        ease: "power1.out",
+      }, f(665));
+      // Match the parent scale-down
+      t.to(gFinalWrapRef.current, {
+        scale: 1.0,
         duration: f(12),
-        ease: "elastic.out(1, 0.5)",
-      }, f(660));
-      // Final fade out
+        ease: "power1.inOut",
+      }, f(670));
+      // Final fade out together
       t.to(gFinalWrapRef.current, {
         opacity: 0,
-        duration: f(6),
+        duration: f(8),
         ease: "power2.in",
-      }, f(688));
+      }, f(686));
     }
 
     builtRef.current = true;
@@ -1557,23 +1554,31 @@ export const Scene05: React.FC = () => {
   const bgGlow3X = 30 + organicOffset(frame, "bg3X", 0.006, 8);
   const bgGlow3Y = 70 + organicOffset(frame, "bg3Y", 0.007, 6);
 
-  // G final glow computation
-  const gFinalLocal = Math.max(0, frame - 660);
+  // G final glow computation — extends through the morph
+  const gFinalLocal = Math.max(0, frame - 665);
   const gFinalGlow =
-    frame >= 660
-      ? Math.min(1, gFinalLocal / 15) * (gFinalLocal > 30 ? 0.5 : 1)
+    frame >= 665
+      ? Math.min(1, gFinalLocal / 10) * (gFinalLocal > 25 ? 0.5 : 1)
       : 0;
 
-  // Sparkle glow
+  // Sparkle/morph glow — continuous from sparkle through G morph
   const sparkleLocal = Math.max(0, frame - 640);
   const sparkleGlow =
-    frame >= 640 && frame < 670
+    frame >= 640 && frame < 694
       ? sparkleLocal < 8
-        ? sparkleLocal / 8
-        : sparkleLocal < 25
-          ? 1
-          : Math.max(0, 1 - (sparkleLocal - 25) / 5) * 0.3 + 0.3
+        ? sparkleLocal / 8 // ramp up
+        : sparkleLocal < 35
+          ? 1 // full glow through morph
+          : Math.max(0, 1 - (sparkleLocal - 35) / 15) // slow fade
       : 0;
+
+  // Morph progress for color interpolation on glow
+  const morphProgress =
+    frame >= 652 && frame < 670
+      ? Math.min(1, (frame - 652) / 18)
+      : frame >= 670
+        ? 1
+        : 0;
 
   // Orb local frame for internal animation
   const orbLocalFrame = Math.max(0, frame - 520);
@@ -1597,7 +1602,7 @@ export const Scene05: React.FC = () => {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          fontSize: 42,
+          fontSize: 52,
           fontFamily: FONT,
           fontWeight: 300,
           color: "#fff",
@@ -1803,7 +1808,7 @@ export const Scene05: React.FC = () => {
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          fontSize: 42,
+          fontSize: 52,
           fontFamily: FONT,
           fontWeight: 300,
           color: "#fff",
@@ -1882,7 +1887,7 @@ export const Scene05: React.FC = () => {
         ))}
       </div>
 
-      {/* L: Spiral inward text */}
+      {/* L: Capability words spiral inward */}
       <div
         ref={spiralContainerRef}
         style={{
@@ -1902,85 +1907,54 @@ export const Scene05: React.FC = () => {
             top: 0,
             left: 0,
             transform: "translate(-50%, -50%)",
-            width: 200,
-            height: 200,
+            width: 260,
+            height: 260,
             borderRadius: "50%",
             background: `radial-gradient(circle,
-              rgba(139,92,246,0.3) 0%,
-              rgba(236,72,153,0.15) 30%,
+              rgba(139,92,246,0.4) 0%,
+              rgba(59,130,246,0.2) 25%,
+              rgba(236,72,153,0.12) 45%,
               transparent 70%)`,
             pointerEvents: "none",
             opacity: 0,
           }}
         />
 
-        {/* Readable text (phase 1) */}
-        <div
-          ref={spiralTextRef}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            transform: "translate(-50%, -50%)",
-            display: "flex",
-            fontSize: 42,
-            fontFamily: FONT,
-            fontWeight: 300,
-            whiteSpace: "nowrap",
-            opacity: 0,
-          }}
-        >
-          {spiralParams.map(({ ch, isAccent }, i) => (
-            <span
-              key={i}
+        {/* Individual capability words — spiral inward */}
+        {SPIRAL_WORDS.map((word, i) => {
+          // Alternate gradient directions for visual variety
+          const gradients = [
+            `linear-gradient(90deg, ${PURPLE}, ${PINK})`,
+            `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
+            `linear-gradient(90deg, ${PINK}, ${BLUE})`,
+          ];
+          const gradient = gradients[i % gradients.length];
+
+          return (
+            <div
+              key={`spiral-word-${i}`}
+              ref={(el) => { spiralWordsRef.current[i] = el; }}
               style={{
-                display: "inline-block",
-                color: isAccent ? undefined : "#fff",
-                background: isAccent
-                  ? `linear-gradient(90deg, ${PURPLE}, ${PINK})`
-                  : undefined,
-                WebkitBackgroundClip: isAccent ? "text" : undefined,
-                WebkitTextFillColor: isAccent ? "transparent" : undefined,
-                filter: isAccent
-                  ? `drop-shadow(0 0 8px ${PURPLE})`
-                  : undefined,
-                width: ch === " " ? "0.3em" : undefined,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                transform: "translate(-50%, -50%)",
+                fontSize: 28 - (i % 3) * 2, // slight size variation
+                fontFamily: FONT,
+                fontWeight: 400,
+                background: gradient,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text" as const,
+                filter: `drop-shadow(0 0 10px ${PURPLE})`,
+                whiteSpace: "nowrap",
+                opacity: 0,
               }}
             >
-              {ch}
-            </span>
-          ))}
-        </div>
-
-        {/* Individual spiral chars (phase 2+3) */}
-        {spiralParams.map(({ ch, isAccent }, i) => (
-          <span
-            key={`spiral-${i}`}
-            ref={(el) => { spiralCharsRef.current[i] = el; }}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              display: "inline-block",
-              fontSize: 42,
-              fontFamily: FONT,
-              fontWeight: 300,
-              color: isAccent ? undefined : "#fff",
-              background: isAccent
-                ? `linear-gradient(90deg, ${PURPLE}, ${PINK})`
-                : undefined,
-              WebkitBackgroundClip: isAccent ? "text" : undefined,
-              WebkitTextFillColor: isAccent ? "transparent" : undefined,
-              filter: isAccent
-                ? `drop-shadow(0 0 8px ${PURPLE})`
-                : undefined,
-              whiteSpace: "nowrap",
-              opacity: 0,
-            }}
-          >
-            {ch}
-          </span>
-        ))}
+              {word}
+            </div>
+          );
+        })}
       </div>
 
       {/* M: Ultra 1.0 orb */}
@@ -2078,49 +2052,60 @@ export const Scene05: React.FC = () => {
         }}
       />
 
-      {/* O: Gemini sparkle with MorphSVG */}
+      {/* O+P: Sparkle → Google G morph (continuous container) */}
       <div
         ref={sparkleWrapRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(-50%, -50%) rotate(${frame >= 640 ? organicOffset(frame, "spkRot", 0.04, 15) : 0}deg)`,
+          transform: `translate(-50%, -50%) rotate(${frame >= 640 ? organicOffset(frame, "spkRot", 0.04, 8) : 0}deg)`,
           opacity: 0,
         }}
       >
-        <Glow color={PURPLE} spread={60 * sparkleGlow}>
-          <svg width={50} height={50} viewBox="0 0 24 24">
-            <path
-              id="sparkle-morph-path"
-              d={SPARKLE_PATH}
-              fill="#fff"
-            />
-          </svg>
-        </Glow>
+        {/* Ambient glow that transitions from purple (sparkle) to multi-color (G) */}
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 200,
-            height: 200,
+            width: 280,
+            height: 280,
             borderRadius: "50%",
-            background: `radial-gradient(circle, rgba(139,92,246,${0.15 * sparkleGlow}), transparent 70%)`,
+            background: `radial-gradient(circle,
+              rgba(${Math.round(139 - morphProgress * 73)},${Math.round(92 + morphProgress * 41)},${Math.round(246 - morphProgress * 2)},${0.2 * sparkleGlow}) 0%,
+              rgba(66,133,244,${0.08 * sparkleGlow * morphProgress}) 30%,
+              transparent 70%)`,
             pointerEvents: "none",
           }}
         />
+
+        {/* SVG that morphs from sparkle to G shape */}
+        <svg
+          width={80}
+          height={80}
+          viewBox="0 0 24 24"
+          style={{
+            filter: `drop-shadow(0 0 ${20 * sparkleGlow}px rgba(${Math.round(139 - morphProgress * 73)},${Math.round(92 + morphProgress * 41)},246,0.8)) drop-shadow(0 0 ${40 * sparkleGlow}px rgba(66,133,244,${0.3 * morphProgress}))`,
+          }}
+        >
+          <path
+            id="sparkle-morph-path"
+            d={SPARKLE_PATH}
+            fill="#fff"
+          />
+        </svg>
       </div>
 
-      {/* P: Google G finale */}
+      {/* P: Google G full-color overlay (fades in over morph result) */}
       <div
         ref={gFinalWrapRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(calc(-50% + ${frame >= 660 ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0}px), calc(-50% + ${frame >= 660 ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0}px))`,
+          transform: `translate(calc(-50% + ${frame >= 665 ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0}px), calc(-50% + ${frame >= 665 ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0}px))`,
           opacity: 0,
         }}
       >
@@ -2130,17 +2115,18 @@ export const Scene05: React.FC = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 220,
-            height: 220,
+            width: 240,
+            height: 240,
             borderRadius: "50%",
             background: `radial-gradient(circle,
-              rgba(80,60,120,${0.06 * gFinalGlow}),
-              rgba(60,50,100,${0.03 * gFinalGlow}) 50%,
+              rgba(66,133,244,${0.06 * gFinalGlow}),
+              rgba(234,67,53,${0.03 * gFinalGlow}) 30%,
+              rgba(251,188,5,${0.02 * gFinalGlow}) 50%,
               transparent 75%)`,
             pointerEvents: "none",
           }}
         />
-        <GoogleG size={80} glowIntensity={gFinalGlow * 0.35} frame={frame} />
+        <GoogleG size={80} glowIntensity={gFinalGlow * 0.5} frame={frame} />
       </div>
 
       {/* Bottom disclaimer during interface */}
