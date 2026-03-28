@@ -198,3 +198,27 @@ The initial zoom at the start of S05 should be:
 - Centered on the "Gemini Advanced" TEXT specifically (not the whole interface)
 - The title should dominate the frame — we should barely see anything else
 - Then pull back slowly to reveal the full interface
+
+## LATEST S01 CORRECTIONS (priority)
+
+### 0:07 — Brainstorm "asteroid field" depth approach
+We are MOVING TOWARD "Brainstorm ideas" which is in the Z-axis BEHIND other floating text copies.
+Like flying through an asteroid field of words — blurred text flies PAST the camera, "Brainstorm ideas" gets closer and sharper. The camera is ADVANCING through depth, not converging text to center.
+**Fix:** Instead of text converging, implement a Z-axis camera fly-through. Text at various Z-depths, camera moves forward (scale increases on everything). Near words blur and fly past edges, far words get sharper as we approach.
+
+### 0:06 — Solve letters ASYNC snake movement
+Each letter has its OWN independent animation: swoosh on X → pause → swoosh on Y → pause → swoosh on X.
+Like a snake game — each letter moves in SEGMENTS (horizontal then vertical, never diagonal).
+Letters move at DIFFERENT TIMES (async/staggered), not all at once.
+**Fix:** Per-letter timeline: frame N move X 100px (0.2s), pause 0.1s, move Y -80px (0.2s), pause 0.1s, move X -50px (0.15s). Each letter starts 3-5 frames after the previous. Movement is AXIS-LOCKED (X or Y only per segment, alternating).
+
+### 0:04 — Write/emails typewriter BROKEN
+The typewriter deletes a word that was written, showing a "bad version" being corrected. This is WRONG.
+Reference: types "to" (dark) → types "Write" (gradient) → "to" fades out. Clean progression, no deletion.
+**Fix:** Check TYPE_PHASES — ensure no backspace/deletion step. Text only ADDS characters, never removes.
+
+### 0:01 — "experimenting" letter wave MUCH STRONGER
+The wave tracking on each letter of "experimenting" must be much more dramatic.
+Letters should have LARGE displacement (30-50px Y offset in a sine wave pattern).
+The wave should be VISIBLE and dramatic, not subtle.
+**Fix:** Increase scatter Y amplitudes from current values to 30-50px. The wave pattern should be obvious — like text on a roller coaster track.
