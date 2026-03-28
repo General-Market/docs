@@ -391,28 +391,38 @@ const SegAppsFloat: React.FC = () => {
   const tYK = spring({frame, fps, delay:0, config:{damping:14,stiffness:100,mass:0.7}});
   const tAL = spring({frame, fps, delay: Math.floor(fps*0.5), config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-10,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-  /* Icons orbit in a circle around the text. Full revolution ~3s (90 frames at 30fps). */
+  /* FIX 3: 3D tilted orbit — rotateX 35deg, 1.5s revolution, scale 1.4, slow drift right */
   const orbitRadius = 170;
   const orbitCX = 640;
   const orbitCY = 360;
-  const revFrames = fps * 3;
+  const revFrames = fps * 1.5; /* 1.5s revolution (was 3s) */
+  const orbitScale = 1.4; /* zoomed in */
+  /* Slow rightward drift: 0 → +40px over the segment */
+  const driftX = interpolate(frame, [0, durationInFrames], [0, 40], {extrapolateRight:"clamp"});
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      {ORBIT_ICONS.map((app, i) => {
-        const iSpr = spring({frame, fps, delay: i*2+1, config:{damping:10,stiffness:100,mass:0.6}});
-        const baseAngle = (i / ORBIT_ICONS.length) * Math.PI * 2;
-        const orbitAngle = baseAngle + (frame / revFrames) * Math.PI * 2;
-        const ox = orbitCX + Math.cos(orbitAngle) * orbitRadius;
-        const oy = orbitCY + Math.sin(orbitAngle) * orbitRadius;
-        const aW = organicWobble("afw"+i, frame, 2, 1.5, 0.015);
-        return <div key={i} style={{position:"absolute",left:ox+aW.x-26,top:oy+aW.y-26,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`scale(${interpolate(iSpr,[0,1],[0,1])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden"}}>
-          <AppIcon icon={app.icon} />
-        </div>;
-      })}
+      {/* 3D tilted orbit container */}
+      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",transformStyle:"preserve-3d",perspective:800,transform:`translateX(${driftX}px)`}}>
+        <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",transform:`rotateX(35deg) scale(${orbitScale})`,transformOrigin:"50% 50%"}}>
+          {ORBIT_ICONS.map((app, i) => {
+            const iSpr = spring({frame, fps, delay: i*2+1, config:{damping:10,stiffness:100,mass:0.6}});
+            const baseAngle = (i / ORBIT_ICONS.length) * Math.PI * 2;
+            const orbitAngle = baseAngle + (frame / revFrames) * Math.PI * 2;
+            /* Depth-based scale: icons "closer" (lower sin) are bigger */
+            const depthFactor = 0.7 + 0.3 * (1 + Math.sin(orbitAngle)) / 2;
+            const ox = orbitCX + Math.cos(orbitAngle) * orbitRadius;
+            const oy = orbitCY + Math.sin(orbitAngle) * orbitRadius;
+            const aW = organicWobble("afw"+i, frame, 2, 1.5, 0.015);
+            return <div key={i} style={{position:"absolute",left:ox+aW.x-26,top:oy+aW.y-26,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`scale(${interpolate(iSpr,[0,1],[0,depthFactor])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden",zIndex:Math.round(depthFactor*10)}}>
+              <AppIcon icon={app.icon} />
+            </div>;
+          })}
+        </div>
+      </div>
       {(() => {
         const tw = organicWobble("ykl", frame, 1.5, 1, 0.018);
         const heartSpr = spring({frame, fps, delay: Math.floor(fps*0.35), config:{damping:8,stiffness:120,mass:0.5}});
-        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:10,alignItems:"center",fontSize:30,fontFamily:"'Google Sans',sans-serif",fontWeight:400,color:DARK}}>
+        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(calc(-50% + ${driftX*0.5}px),-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:10,alignItems:"center",fontSize:30,fontFamily:"'Google Sans',sans-serif",fontWeight:400,color:DARK}}>
           <span style={{display:"inline-block",transform:`translateY(${interpolate(tYK,[0,1],[18,0])}px)`,opacity:interpolate(tYK,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>you know and</span>
           <span style={{display:"inline-block",color:PINK,fontSize:18,transform:`translateY(${interpolate(heartSpr,[0,1],[12,0])}px) scale(${interpolate(heartSpr,[0,1],[0,1])})`,opacity:interpolate(heartSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>{"\u2665"}</span>
           <span style={{display:"inline-block",transform:`translateY(${interpolate(tAL,[0,1],[18,0])}px)`,opacity:interpolate(tAL,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>love</span>
@@ -461,12 +471,13 @@ const SegGeminiResponse: React.FC = () => {
   const chSpr = spring({frame, fps, delay: Math.floor(fps*0.3), config:{damping:12,stiffness:120,mass:0.6}});
   const ecSpr = [0,1].map(i => spring({frame, fps, delay: Math.floor(durationInFrames*0.7)+i*3, config:{damping:14,stiffness:100,mass:0.7}}));
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-  /* FIX 1: 3D tilt + zoom */
-  const tiltY = interpolate(cs, [0,1], [0,-8]);
+  /* FIX 1: 3D tilt + zoom — rotateY -18deg, top-left offset, continuous float */
+  const tiltY = interpolate(cs, [0,1], [0,-18]);
   const zoomScale = interpolate(cs, [0,1], [0.92,1.4]);
+  const float3d = useFloat3D(frame, fps, TILT_PRESETS.desktopTilt);
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(-15%) translateY(-10%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY + float3d.rotateY}deg) rotateX(${float3d.rotateX}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
         <div style={{width:4,backgroundColor:PURPLE,flexShrink:0}} />
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{height:44,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:12}}>
@@ -513,7 +524,8 @@ const MAX_BALLS = 40;
 const SegAndMoreInner: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const stretchStart = fps;
+  /* FIX 1: O's stretch starts IMMEDIATELY when "more" appears — no 1s delay */
+  const stretchStart = Math.floor(fps * 0.45);
   const stretchRaw = frame - stretchStart;
   /* Faster ramp — all 40 balls spawn within the segment's remaining frames after stretchStart */
   const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*0.8], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
@@ -523,7 +535,7 @@ const SegAndMoreInner: React.FC = () => {
   const scrollX = interpolate(stretch, [0.05,1], [0,-480], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
-  const mOp = interpolate(frame, [fps*0.5,fps*0.9], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
+  const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
   const renderBalls = () => Array.from({length:oCount}, (_,i) => {
@@ -574,7 +586,7 @@ const SegAndMoreInner: React.FC = () => {
 const SegAndMore: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const stretchActive = frame > fps;
+  const stretchActive = frame > Math.floor(fps * 0.45);
   if (stretchActive) {
     return <CameraMotionBlur samples={6} shutterAngle={100}><SegAndMoreInner /></CameraMotionBlur>;
   }
@@ -629,7 +641,7 @@ const SegPhoneMockup: React.FC = () => {
   const pX = cubicBez(eP, 150, 120, 30, 0);
   const pY = cubicBez(eP, 550, 380, 60, 0);
   const pR = interpolate(eP, [0,1], [6,0]);
-  const pS = interpolate(eP, [0,1], [0.75,1]);
+  const pS = interpolate(eP, [0,1], [1.1,1.6]);
   const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
   const sF = frame - fps*1.5;
   const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
@@ -660,7 +672,7 @@ const SegPhoneMockup: React.FC = () => {
       <Phone3D
         rotateY={0.24}
         rotateX={-0.05}
-        scale={1}
+        scale={1.3}
         screenContent={phoneScreen}
         screenColor="#FFFFFF"
         opacity={pOp}
@@ -671,15 +683,17 @@ const SegPhoneMockup: React.FC = () => {
   );
 };
 
-/* --- SEGMENT 11: Designed to supercharge your ideas (FIX 5: electricity gradient) --- */
+/* --- SEGMENT 11: Designed to supercharge your ideas --- */
+/* FIX 2: Per-letter color assignment for "supercharge" — no background-clip:text,
+   each letter gets an explicit color cycling every 2 frames + 1-2px position jitter */
 const ELEC_COLORS = [PURPLE, PINK, BLUE, "#A78BFA", "#F472B6", "#60A5FA"];
+const SUPERCHARGE_LETTERS = "supercharge".split("");
 const SegSupercharge: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const wCfg = [{text:"Designed",accent:false,delay:0,fontSize:36,italic:false},{text:"to",accent:false,delay:5,fontSize:36,italic:false},{text:"supercharge",accent:true,delay:10,fontSize:42,italic:true},{text:"your",accent:false,delay:18,fontSize:34,italic:true},{text:"ideas",accent:false,delay:23,fontSize:38,italic:true}];
-  /* FIX 5: Rapid color cycling — shifts every 2 frames through purple/pink/blue */
-  const ci = Math.floor(frame / 2) % ELEC_COLORS.length;
-  const electricGrad = `linear-gradient(90deg, ${ELEC_COLORS[ci]} 0%, ${ELEC_COLORS[(ci+1)%ELEC_COLORS.length]} 50%, ${ELEC_COLORS[(ci+2)%ELEC_COLORS.length]} 100%)`;
+  /* Color cycle offset shifts every 2 frames */
+  const colorShift = Math.floor(frame / 2);
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",gap:12,alignItems:"baseline"}}>
@@ -690,7 +704,22 @@ const SegSupercharge: React.FC = () => {
           const wS = w.accent?interpolate(spr,[0,1],[0.7,1]):interpolate(spr,[0,1],[0.95,1]);
           const wOp = interpolate(spr, [0,0.3], [0,1], {extrapolateRight:"clamp"});
           const base: React.CSSProperties = {display:"inline-block",fontSize:w.fontSize,fontFamily:"'Google Sans',sans-serif",fontWeight:w.accent?500:400,fontStyle:w.italic?"italic":"normal",transform:`translate(${sw.x}px,${wY+sw.y}px) scale(${wS})`,opacity:wOp};
-          if (w.accent) return <span key={i} style={{...base,background:electricGrad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{w.text}</span>;
+          if (w.accent) {
+            /* Per-letter colored spans with electrical jitter */
+            return <span key={i} style={{...base, display:"inline-flex"}}>
+              {SUPERCHARGE_LETTERS.map((ch, li) => {
+                const letterColor = ELEC_COLORS[(li + colorShift) % ELEC_COLORS.length];
+                /* 1-2px position jitter for electrical vibration feel */
+                const jX = noise2D("scjx"+li, frame*0.15, li) * 1.5;
+                const jY = noise2D("scjy"+li, li, frame*0.15) * 1.5;
+                return <span key={li} style={{
+                  color: letterColor,
+                  display: "inline-block",
+                  transform: `translate(${jX}px, ${jY}px)`,
+                }}>{ch}</span>;
+              })}
+            </span>;
+          }
           return <span key={i} style={{...base,color:DARK}}>{w.text}</span>;
         })}
       </div>
@@ -789,85 +818,110 @@ const PhoneHomeScreen: React.FC<{frame: number; fps: number}> = ({frame, fps}) =
   );
 };
 
-/* --- SEGMENT 12: Phone Good Morning (3D float + home screen + Gemini screen) --- */
+/* --- SEGMENT 12: Phone Good Morning → Flat horizon with "But that's not all..."
+ *   Phase A (0-45%): Phone enters tilted showing Good Morning screen, floats
+ *   Phase B (45-100%): Phone flattens (nearly head-on), fills 2/3 frame height.
+ *     "But that's not all..." text on the horizon line (top edge of phone).
+ *     Text tracked to phone vertical position.
+ */
 const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
-  /* Phase: home screen (0-30f), transition to Good Morning Gemini (30-50f), Gemini visible (50-80f), camera (80f+) */
-  const homeToGemini = frame > fps*1.0 ? interpolate(frame, [fps*1.0,fps*1.7], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_QUART}) : 0;
-  const camT = frame>durationInFrames*0.75 ? interpolate(frame, [durationInFrames*0.75,durationInFrames*0.87], [0,1], {extrapolateRight:"clamp"}) : 0;
-  /* No fade-out: hard cut to Scene04 preserves phone continuity */
-  const exitOp = 1;
-  const eP = interpolate(frame, [0,fps], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 250, 200, 50, 0);
-  const pY = cubicBez(eP, 400, 280, 30, 0);
-  const pS = interpolate(eP, [0,0.3,1], [0.6,0.72,0.75], {extrapolateRight:"clamp"});
-  const pOp = interpolate(eP, [0,0.1], [0,1], {extrapolateRight:"clamp"});
-  const sF = frame-fps;
-  const sB = sF>0 ? interpolate(sF, [0,3,10], [0,-6,0], {extrapolateRight:"clamp"}) : 0;
-  const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*1.3)+i*5, config:{damping:14,stiffness:100,mass:0.7}}));
-  const inputSpr = spring({frame, fps, delay: Math.floor(fps*2.0), config:{damping:14,stiffness:100,mass:0.7}});
+
+  /* Flatten progress: tilted -> nearly flat */
+  const flattenStart = Math.floor(durationInFrames * 0.45);
+  const flattenEnd = Math.floor(durationInFrames * 0.7);
+  const flattenT = interpolate(frame, [flattenStart, flattenEnd], [0, 1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
+
+  /* Entrance */
+  const eP = interpolate(frame, [0, fps*0.8], [0, 1], {extrapolateRight:"clamp", easing:EASE_OUT_EXPO});
+  const enterOp = interpolate(eP, [0, 0.08], [0, 1], {extrapolateRight:"clamp"});
+  const enterY = interpolate(eP, [0, 1], [120, 0]);
+
+  /* Rotations: tilted -> nearly flat (very low rotateX, minimal rotateY) */
+  const rotY = interpolate(flattenT, [0, 1], [0.22, 0.02]);
+  const rotX = interpolate(flattenT, [0, 1], [-0.06, -0.015]);
+
+  /* Phone3D mesh scale + CSS wrapper scale -> fills 2/3 of frame height when flat */
+  const phoneScale = interpolate(flattenT, [0, 1], [1.2, 1.4]);
+  const cssScale = interpolate(flattenT, [0, 1], [1.1, 2.0]);
+
+  /* Phone drifts down so top edge meets a visible horizon line */
+  const phoneY = interpolate(flattenT, [0, 1], [enterY, 140]) + tilt.translateY;
+  const phoneX = tilt.translateX;
+
+  /* "But that's not all..." appears during flatten */
+  const textDelay = Math.floor(flattenStart + (flattenEnd - flattenStart) * 0.5);
+  const textSpr = spring({frame, fps, delay: textDelay, config:{damping:14, stiffness:100, mass:0.7}});
+  const textOp = interpolate(textSpr, [0, 0.3], [0, 1], {extrapolateRight:"clamp"});
+  const textYOff = interpolate(textSpr, [0, 1], [12, 0]);
+  /* Horizon Y: phone center shifts down, text sits at top edge */
+  const horizonY = interpolate(flattenT, [0, 1], [300, 175]);
+
+  /* Screen: Good Morning Gemini content */
+  const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));
+  const inputSpr = spring({frame, fps, delay: Math.floor(fps*1.2), config:{damping:14,stiffness:100,mass:0.7}});
 
   const phoneScreen = (
-    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden"}}>
-      {/* Home screen layer */}
-      <div style={{position:"absolute",inset:0,opacity:Math.max(0,1-homeToGemini-camT)}}>
-        <PhoneHomeScreen frame={frame} fps={fps} />
-      </div>
-      {/* Good Morning Gemini screen (ref frame 19) */}
-      <div style={{position:"absolute",inset:0,backgroundColor:"#FFFFFF",opacity:homeToGemini*(1-camT),padding:"0"}}>
-        <PhoneStatusBar />
-        <div style={{padding:"16px 24px 24px"}}>
-          <div style={{fontSize:28,fontFamily:"'Google Sans',sans-serif",fontWeight:500,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>Good morning</div>
-          {[
-            {text:"Watch YouTube videos about houseplant care",icon:"youtube",color:"#FF0000"},
-            {text:"Get walking directions to the nearest park",icon:"walk",color:"#34A853"},
-            {text:"Create a playlist for a road trip",icon:"music",color:PURPLE},
-          ].map((card, ci) => {
-            const s = cSpr[ci];
-            return <div key={ci} style={{height:52,backgroundColor:"#F4F4F8",borderRadius:14,marginBottom:8,padding:"10px 14px",fontSize:12.5,fontFamily:"'Google Sans',sans-serif",color:"#555",display:"flex",alignItems:"center",gap:10,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-              <div style={{width:28,height:28,borderRadius:8,backgroundColor:card.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                {card.icon==="youtube"&&<div style={{width:18,height:12,borderRadius:3,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"6px solid white",borderTop:"3.5px solid transparent",borderBottom:"3.5px solid transparent"}} /></div>}
-                {card.icon==="walk"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" fill="#34A853"/></svg>}
-                {card.icon==="music"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill={PURPLE}/></svg>}
-              </div>
-              <span>{card.text}</span>
-            </div>;
-          })}
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:16,marginBottom:10,fontSize:13,fontWeight:500,color:"#888"}}><span>Chats</span><span style={{fontSize:16}}>&#9998;</span></div>
-          <div style={{height:46,backgroundColor:"#EDEDF1",borderRadius:24,display:"flex",alignItems:"center",padding:"0 16px",fontSize:13,color:"#AAA",fontFamily:"'Google Sans',sans-serif",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>Type, talk, or share a photo</div>
-        </div>
-      </div>
-      {/* Camera/dog view */}
-      <div style={{position:"absolute",inset:0,backgroundColor:"#1A1A2E",opacity:camT,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <div style={{width:"100%",height:"75%",background:"linear-gradient(180deg, #87CEEB 0%, #90B86C 30%, #78A55A 50%, #8B7355 70%, #C4A67A 100%)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-          <div style={{width:120,height:100,borderRadius:"40% 40% 20% 20%",backgroundColor:"#D4A574",position:"relative"}}>
-            <div style={{position:"absolute",top:-12,left:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(-15deg)"}} />
-            <div style={{position:"absolute",top:-12,right:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(15deg)"}} />
-            <div style={{position:"absolute",top:20,left:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
-            <div style={{position:"absolute",top:20,right:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
-            <div style={{position:"absolute",top:38,left:"50%",transform:"translateX(-50%)",width:12,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
-          </div>
-        </div>
-        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:30}}>
-          <div style={{width:54,height:54,borderRadius:"50%",border:"3px solid white",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:44,height:44,borderRadius:"50%",backgroundColor:"rgba(255,255,255,0.9)"}} /></div>
-        </div>
+    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden",backgroundColor:"#FFFFFF"}}>
+      <PhoneStatusBar />
+      <div style={{padding:"16px 24px 24px"}}>
+        <div style={{fontSize:28,fontFamily:"'Google Sans',sans-serif",fontWeight:500,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>Good morning</div>
+        {[
+          {text:"Watch YouTube videos about houseplant care",icon:"youtube",color:"#FF0000"},
+          {text:"Get walking directions to the nearest park",icon:"walk",color:"#34A853"},
+          {text:"Create a playlist for a road trip",icon:"music",color:PURPLE},
+        ].map((card, ci) => {
+          const s = cSpr[ci];
+          return <div key={ci} style={{height:52,backgroundColor:"#F4F4F8",borderRadius:14,marginBottom:8,padding:"10px 14px",fontSize:12.5,fontFamily:"'Google Sans',sans-serif",color:"#555",display:"flex",alignItems:"center",gap:10,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+            <div style={{width:28,height:28,borderRadius:8,backgroundColor:card.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {card.icon==="youtube"&&<div style={{width:18,height:12,borderRadius:3,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"6px solid white",borderTop:"3.5px solid transparent",borderBottom:"3.5px solid transparent"}} /></div>}
+              {card.icon==="walk"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" fill="#34A853"/></svg>}
+              {card.icon==="music"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill={PURPLE}/></svg>}
+            </div>
+            <span>{card.text}</span>
+          </div>;
+        })}
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:16,marginBottom:10,fontSize:13,fontWeight:500,color:"#888"}}><span>Chats</span><span style={{fontSize:16}}>&#9998;</span></div>
+        <div style={{height:46,backgroundColor:"#EDEDF1",borderRadius:24,display:"flex",alignItems:"center",padding:"0 16px",fontSize:13,color:"#AAA",fontFamily:"'Google Sans',sans-serif",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>Type, talk, or share a photo</div>
       </div>
     </div>
   );
 
   return (
-    <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
+    <AbsoluteFill style={{backgroundColor:"#FAFAFA"}}>
       <Phone3D
-        rotateY={0.26}
-        rotateX={-0.07}
-        scale={1}
+        rotateY={rotY}
+        rotateX={rotX}
+        scale={phoneScale}
         screenContent={phoneScreen}
         screenColor="#FFFFFF"
-        opacity={pOp}
-        style={{transform:`translate(${pX}px,${pY+sB}px) scale(${pS}) ${tilt.transform}`}}
+        opacity={enterOp}
+        style={{
+          transform: `translate(${phoneX}px, ${phoneY}px) scale(${cssScale})`,
+          transformOrigin: "center center",
+        }}
       />
+      {/* "But that's not all..." tracked to phone horizon (top edge where phone meets background) */}
+      {textOp > 0.01 && (
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          top: horizonY + textYOff,
+          transform: `translateX(-50%) translateX(${phoneX}px)`,
+          opacity: textOp,
+          fontSize: 28,
+          fontFamily: "'Google Sans','Product Sans',sans-serif",
+          fontWeight: 400,
+          color: DARK,
+          whiteSpace: "nowrap",
+          textShadow: "0 2px 12px rgba(255,255,255,0.8)",
+          letterSpacing: 0.5,
+        }}>
+          {`But that\u2019s not all...`}
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
@@ -886,7 +940,7 @@ export const Scene03: React.FC = () => {
     {start:416,dur:62,Comp:SegStartingWith},
     {start:476,dur:84,Comp:SegPhoneMockup},
     {start:555,dur:85,Comp:SegSupercharge},
-    {start:635,dur:110,Comp:SegPhoneGoodMorning},
+    {start:560,dur:185,Comp:SegPhoneGoodMorning},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>

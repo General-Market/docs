@@ -174,11 +174,24 @@ const EXP_SCATTER_X = [
   -20, -15, -10, -5, 0, 5, 9, 13, 16, 19, 21, 23, 25,
 ];
 
+// Wave amplitude for settled letters — dramatic roller-coaster displacement
+const EXP_WAVE_AMP = 40; // 30-50px range, use 40 as strong midpoint
+const EXP_WAVE_SPEED = 0.12; // frames per cycle unit
+const EXP_WAVE_SPREAD = 0.55; // phase offset per letter
+
 const EXP_START_SIZE = Math.round(58 * S); // ~77 scattered
 const EXP_END_SIZE = BODY_FONT; // 60 settled
 
 const PhaseExperimenting: React.FC = () => {
   const frame = useCurrentFrame();
+  // Compute per-letter wave Y offset — dramatic roller-coaster sine wave
+  // Wave grows in strength as letters settle (scatter → settled)
+  const waveYOffsets = useMemo(() => new Array(EXP_LETTERS.length).fill(0), []);
+  for (let i = 0; i < EXP_LETTERS.length; i++) {
+    // Wave phase = time-based + letter-offset
+    const wavePhase = frame * EXP_WAVE_SPEED + i * EXP_WAVE_SPREAD;
+    waveYOffsets[i] = Math.sin(wavePhase) * EXP_WAVE_AMP;
+  }
 
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {
@@ -300,7 +313,7 @@ const PhaseExperimenting: React.FC = () => {
               style={{
                 display: "inline-block",
                 opacity: l.opacity,
-                transform: `translate(${l.x}px, ${l.y}px)`,
+                transform: `translate(${l.x}px, ${l.y + waveYOffsets[i] * (1 - pr)}px)`,
                 color: `rgb(${r}, ${g}, ${b})`,
                 fontSize: l.size,
                 lineHeight: 1,
@@ -435,11 +448,11 @@ const PhaseTypewriter: React.FC = () => {
       // Type "to " — reference shows "to|" at 3.0s (0.27s into phase)
       tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.06); // t
       tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.15); // o
-      // "to" starts fading as soon as Write begins
+      // "to" fades out AFTER Write is well underway (no deletion, clean progression)
       tl.to(
         p.toFade,
-        { opacity: 0, duration: 0.15, ease: "power1.out" },
-        0.50,
+        { opacity: 0, duration: 0.25, ease: "power1.out" },
+        0.80,
       );
       tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.30); // space
       // Type "Write" — slower. Reference: "W" at 3.5s (0.77s), "Write" at 4.0s (1.27s)
@@ -825,6 +838,8 @@ const SOLVE_FINAL_X: number[] = [];
 const SOLVE_FINAL_Y = H * 0.49;
 
 const PhaseSolveProblems: React.FC = () => {
+  // Snake movement: each letter moves in axis-locked segments
+  // X→pause→Y→pause→X, staggered start per letter (3-5 frame offset)
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {};
     for (let i = 0; i < SOLVE_LETTERS.length; i++) {
@@ -843,18 +858,45 @@ const PhaseSolveProblems: React.FC = () => {
     (tl, p) => {
       SOLVE_LETTERS.forEach((ch, i) => {
         if (ch === "\u00A0") return;
-        // Converge to centered line — starts at 0.25s, takes 0.35s
-        // Reference: scattered at 6.0s, settled by 6.5s = 0.5s total
+        const endX = SOLVE_FINAL_X[i];
+        const endY = SOLVE_FINAL_Y;
+
+        // Snake movement: axis-locked segments (X→pause→Y→pause→X)
+        // Stagger: ~3-frame offset per letter (0.1s / FPS)
+        const stagger = i * 0.012;
+
+        // Segment 1: Move X only (horizontal swoosh)
         tl.to(
           p[`l${i}`],
           {
-            x: SOLVE_FINAL_X[i],
-            y: SOLVE_FINAL_Y,
-            size: SOLVE_FINAL_SIZE,
-            duration: 0.35,
+            x: endX,
+            duration: 0.15,
             ease: "power2.out",
           },
-          0.25 + i * 0.008,
+          stagger,
+        );
+
+        // Segment 2: Move Y only (vertical swoosh) + size converge
+        tl.to(
+          p[`l${i}`],
+          {
+            y: endY,
+            size: SOLVE_FINAL_SIZE,
+            duration: 0.15,
+            ease: "power2.out",
+          },
+          stagger + 0.21,
+        );
+
+        // Segment 3: Fine X snap to exact final position
+        tl.to(
+          p[`l${i}`],
+          {
+            x: endX,
+            duration: 0.08,
+            ease: "power1.out",
+          },
+          stagger + 0.40,
         );
       });
     },
@@ -899,83 +941,47 @@ const PhaseSolveProblems: React.FC = () => {
 // At 7.5s: converging inward. At 8.0s: "Brainstorm ideas" centered with
 // some faded remnants still visible.
 // ===========================================================================
+// Asteroid field: each floater has a Z-depth. Camera flies forward through Z.
+// Near words (low Z) blur and fly past edges. Far words (high Z) sharpen as we approach.
 const FLOATERS: Array<{
   word: string;
-  x: number;
+  x: number;  // offset from center in px
   y: number;
+  z: number;  // depth: 0 = camera plane, positive = further away
   color: string;
-  size: number;
+  baseSize: number;
   weight: number;
-  delay: number;
-  blur: number;
 }> = [
-  // 4 prominent copies — LARGE, extending past viewport edges
-  // Reference: "Brainstorm" bottom-left is partially OFF-SCREEN (very large, blue)
-  { word: "Brainstorm", x: -420, y: 200, color: "#4B6FD7", size: Math.round(90 * S), weight: 500, delay: 0, blur: 2 },
-  { word: "ideas", x: -380, y: -60, color: "#5B6FD7", size: Math.round(65 * S), weight: 500, delay: 0.01, blur: 1 },
-  { word: "Brainstorm", x: 340, y: 140, color: "#C86090", size: Math.round(60 * S), weight: 500, delay: 0.02, blur: 2 },
-  { word: "ideas", x: 300, y: -100, color: "#9B9BB8", size: Math.round(48 * S), weight: 400, delay: 0.01, blur: 5 },
-  // Mid-field copies
-  { word: "Brainstorm", x: -60, y: -150, color: "#7B6BD0", size: Math.round(42 * S), weight: 400, delay: 0.02, blur: 6 },
-  { word: "ideas", x: 120, y: 170, color: "#6878E0", size: Math.round(50 * S), weight: 500, delay: 0.02, blur: 3 },
-  // Far depth — blurred, smaller
-  { word: "ideas", x: -540, y: -30, color: "#8888B0", size: Math.round(34 * S), weight: 400, delay: 0.02, blur: 12 },
-  { word: "Brainstorm", x: 500, y: -60, color: "#B070A0", size: Math.round(36 * S), weight: 400, delay: 0.03, blur: 13 },
-  { word: "brainstorm", x: 100, y: -200, color: "#9B6FBF", size: Math.round(32 * S), weight: 400, delay: 0.03, blur: 10 },
-  { word: "ideas", x: -220, y: 250, color: "#7080D0", size: Math.round(42 * S), weight: 400, delay: 0.02, blur: 8 },
+  // Near field — will fly past quickly, blur out
+  { word: "Brainstorm", x: -280, y: 140, z: 0.15, color: "#4B6FD7", baseSize: Math.round(90 * S), weight: 500 },
+  { word: "ideas", x: 320, y: -80, z: 0.2, color: "#C86090", baseSize: Math.round(70 * S), weight: 500 },
+  { word: "ideas", x: -400, y: -40, z: 0.25, color: "#9B9BB8", baseSize: Math.round(55 * S), weight: 400 },
+  // Mid field
+  { word: "Brainstorm", x: 180, y: 100, z: 0.45, color: "#7B6BD0", baseSize: Math.round(50 * S), weight: 400 },
+  { word: "ideas", x: -150, y: -120, z: 0.5, color: "#6878E0", baseSize: Math.round(48 * S), weight: 500 },
+  { word: "brainstorm", x: 80, y: 180, z: 0.55, color: "#B070A0", baseSize: Math.round(44 * S), weight: 400 },
+  // Far field — the destination. "Brainstorm ideas" sharpens as we fly toward it
+  { word: "Brainstorm", x: -40, y: -30, z: 0.8, color: "#5B6FD7", baseSize: Math.round(42 * S), weight: 500 },
+  { word: "ideas", x: 60, y: 20, z: 0.82, color: "#7080D0", baseSize: Math.round(40 * S), weight: 500 },
+  { word: "Brainstorm", x: -200, y: 200, z: 0.35, color: "#8888B0", baseSize: Math.round(36 * S), weight: 400 },
+  { word: "ideas", x: 260, y: -160, z: 0.3, color: "#9B6FBF", baseSize: Math.round(38 * S), weight: 400 },
 ];
 
 const PhaseBrainstormIdeas: React.FC = () => {
-  const proxyInit = useMemo(() => {
-    const init: Record<string, ProxyState> = {
-      final: { opacity: 0, scale: 0.96 },
-      blob: { opacity: 0.55 }, // INSTANT — visible from frame 0
-    };
-    for (let i = 0; i < FLOATERS.length; i++) {
-      init[`g${i}`] = {
-        x: FLOATERS[i].x,
-        y: FLOATERS[i].y,
-        opacity: i < 4 ? 0.9 : 0.65, // INSTANT — visible from frame 0
-      };
-    }
-    return init;
-  }, []);
+  const frame = useCurrentFrame();
+  const totalFrames = 258 - P8_FROM; // 48 frames = 1.6s
+  // Camera Z progress: 0 → 1 over the phase. Eases in for acceleration feel.
+  const zProgress = interpolate(frame, [0, totalFrames], [0, 1], clamp);
+  // Accelerating camera — slow start, fast end
+  const cameraZ = zProgress * zProgress * 1.2;
 
-  const s = useGsapProxy(
-    (tl, p) => {
-      // Floaters drift inward and fade — convergence over ~1.0s
-      FLOATERS.forEach((f, i) => {
-        tl.to(
-          p[`g${i}`],
-          {
-            x: f.x * 0.08,
-            y: f.y * 0.08,
-            opacity: 0,
-            duration: 1.0,
-            ease: "power1.inOut",
-          },
-          0.15 + f.delay,
-        );
-      });
-      // Blob fades
-      tl.to(
-        p.blob,
-        { opacity: 0, duration: 0.5, ease: "power1.inOut" },
-        0.3,
-      );
-      // Final centered text — appears during convergence
-      tl.to(
-        p.final,
-        { opacity: 1, scale: 1, duration: 0.3, ease: "power2.out" },
-        0.3,
-      );
-    },
-    proxyInit,
-  );
+  // Final text fades in during last 30% of the phase
+  const finalOpacity = interpolate(frame, [totalFrames * 0.55, totalFrames * 0.75], [0, 1], clamp);
+  const finalScale = interpolate(frame, [totalFrames * 0.55, totalFrames * 0.75], [0.92, 1], clamp);
 
   return (
-    <AbsoluteFill>
-      {/* Dark convergence blob */}
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      {/* Dark convergence blob — destination point */}
       <div
         style={{
           position: "absolute",
@@ -985,14 +991,44 @@ const PhaseBrainstormIdeas: React.FC = () => {
           width: Math.round(180 * S),
           height: Math.round(60 * S),
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(30,25,50,0.7) 0%, rgba(30,25,50,0.3) 40%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(30,25,50,0.6) 0%, rgba(30,25,50,0.2) 40%, transparent 70%)",
           filter: `blur(${Math.round(18 * S)}px)`,
-          opacity: s.blob.opacity,
+          opacity: interpolate(cameraZ, [0, 0.6], [0.5, 0], clamp),
         }}
       />
 
       {FLOATERS.map((f, i) => {
-        const g = s[`g${i}`];
+        // Apparent depth = f.z - cameraZ. When negative, word is BEHIND camera.
+        const apparentDepth = f.z - cameraZ;
+
+        // If behind camera, don't render
+        if (apparentDepth < -0.05) return null;
+
+        // Perspective projection: closer = larger & more offset from center
+        const depthFactor = apparentDepth <= 0.01 ? 30 : 1 / Math.max(0.02, apparentDepth);
+        const projectedScale = Math.min(depthFactor, 12); // cap to avoid infinity
+
+        // Position flies outward as words pass camera (parallax)
+        const projX = f.x * projectedScale * 0.4;
+        const projY = f.y * projectedScale * 0.4;
+
+        // Blur: near words blur heavily (flew past), far words stay sharp
+        // Words at camera plane (apparentDepth ~0) get max blur
+        const blurAmount = apparentDepth < 0.15
+          ? interpolate(apparentDepth, [-0.05, 0.15], [18, 8], clamp)
+          : apparentDepth > 0.6
+            ? interpolate(apparentDepth, [0.6, 1.0], [0, 2], clamp)
+            : interpolate(apparentDepth, [0.15, 0.6], [8, 0], clamp);
+
+        // Opacity: fade out when very close (flew past), visible in mid-far field
+        const opacity = apparentDepth < 0.08
+          ? interpolate(apparentDepth, [-0.05, 0.08], [0, 0.7], clamp)
+          : apparentDepth < 0.3
+            ? interpolate(apparentDepth, [0.08, 0.3], [0.7, 0.9], clamp)
+            : 0.85;
+
+        const renderedSize = f.baseSize * Math.min(projectedScale * 0.6, 4);
+
         return (
           <div
             key={i}
@@ -1000,14 +1036,14 @@ const PhaseBrainstormIdeas: React.FC = () => {
               position: "absolute",
               top: `${0.49 * H}px`,
               left: "50%",
-              transform: `translate(calc(-50% + ${g.x}px), calc(-50% + ${g.y}px))`,
+              transform: `translate(calc(-50% + ${projX}px), calc(-50% + ${projY}px))`,
               fontFamily,
-              fontSize: f.size,
+              fontSize: renderedSize,
               fontWeight: f.weight,
               color: f.color,
               whiteSpace: "nowrap",
-              opacity: g.opacity,
-              filter: f.blur > 0 ? `blur(${f.blur}px)` : undefined,
+              opacity,
+              filter: blurAmount > 0.5 ? `blur(${Math.round(blurAmount)}px)` : undefined,
             }}
           >
             {f.word}
@@ -1015,18 +1051,19 @@ const PhaseBrainstormIdeas: React.FC = () => {
         );
       })}
 
+      {/* Final centered "Brainstorm ideas" — emerges as camera reaches destination */}
       <div
         style={{
           position: "absolute",
           top: `${0.49 * H}px`,
           left: "50%",
-          transform: `translate(-50%, -50%) scale(${s.final.scale})`,
+          transform: `translate(-50%, -50%) scale(${finalScale})`,
           fontFamily,
           fontSize: BODY_FONT,
           fontWeight: 400,
           color: TEXT_DARK,
           whiteSpace: "nowrap",
-          opacity: s.final.opacity,
+          opacity: finalOpacity,
           letterSpacing: "-0.3px",
         }}
       >

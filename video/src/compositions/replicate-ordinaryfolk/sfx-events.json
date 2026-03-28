@@ -1,1736 +1,213 @@
 [
-  {
-    "frame": 0,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.4,
-    "durationFrames": 8
-  },
-  {
-    "frame": 0,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.15,
-    "durationFrames": 14
-  },
-  {
-    "frame": 8,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 8,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.1,
-    "durationFrames": 30
-  },
-  {
-    "frame": 8,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.3,
-    "durationFrames": 20
-  },
-  {
-    "frame": 20,
-    "file": "sfx/freesound/click-soft.mp3",
-    "volume": 0.2,
-    "durationFrames": 10
-  },
-  {
-    "frame": 20,
-    "file": "sfx/synth/converge-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 20
-  },
-  {
-    "frame": 28,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.35,
-    "durationFrames": 8
-  },
-  {
-    "frame": 28,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 72,
-    "file": "sfx/google-material/notification_decorative-01.wav",
-    "volume": 0.35,
-    "durationFrames": 50
-  },
-  {
-    "frame": 72,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 38
-  },
-  {
-    "frame": 72,
-    "file": "sfx/synth/fm-bell-deep.wav",
-    "volume": 0.1,
-    "durationFrames": 60
-  },
-  {
-    "frame": 110,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.35,
-    "durationFrames": 8
-  },
-  {
-    "frame": 115,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.4,
-    "durationFrames": 6
-  },
-  {
-    "frame": 120,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.38,
-    "durationFrames": 6
-  },
-  {
-    "frame": 127,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.38,
-    "durationFrames": 6
-  },
-  {
-    "frame": 135,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.38,
-    "durationFrames": 6
-  },
-  {
-    "frame": 140,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.4,
-    "durationFrames": 6
-  },
-  {
-    "frame": 150,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.4,
-    "durationFrames": 25
-  },
-  {
-    "frame": 150,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.2,
-    "durationFrames": 15
-  },
-  {
-    "frame": 150,
-    "file": "sfx/freesound/spring-elastic.mp3",
-    "volume": 0.2,
-    "durationFrames": 15
-  },
-  {
-    "frame": 165,
-    "file": "sfx/google-material/navigation_backward-selection-minimal.wav",
-    "volume": 0.25,
-    "durationFrames": 12
-  },
-  {
-    "frame": 165,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.08,
-    "durationFrames": 30
-  },
-  {
-    "frame": 185,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 185,
-    "file": "sfx/synth/swoosh-tonal-up.wav",
-    "volume": 0.4,
-    "durationFrames": 18
-  },
-  {
-    "frame": 185,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.3,
-    "durationFrames": 20
-  },
-  {
-    "frame": 210,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.25,
-    "durationFrames": 18
-  },
-  {
-    "frame": 210,
-    "file": "sfx/synth/swoosh-tonal-down.wav",
-    "volume": 0.4,
-    "durationFrames": 18
-  },
-  {
-    "frame": 210,
-    "file": "sfx/synth/converge-crystal.wav",
-    "volume": 0.3,
-    "durationFrames": 20
-  },
-  {
-    "frame": 240,
-    "file": "sfx/google-material/notification_decorative-02.wav",
-    "volume": 0.3,
-    "durationFrames": 56
-  },
-  {
-    "frame": 240,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.15,
-    "durationFrames": 38
-  },
-  {
-    "frame": 240,
-    "file": "sfx/synth/texture-granular.wav",
-    "volume": 0.06,
-    "durationFrames": 50
-  },
-  {
-    "frame": 240,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 20
-  },
-  {
-    "frame": 250,
-    "file": "sfx/synth/converge-crystal.wav",
-    "volume": 0.3,
-    "durationFrames": 20
-  },
-  {
-    "frame": 250,
-    "file": "sfx/synth/swoosh-tonal-down.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 258,
-    "file": "sfx/synth/slide-tick.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 268,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.15,
-    "durationFrames": 6
-  },
-  {
-    "frame": 268,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.25,
-    "durationFrames": 8
-  },
-  {
-    "frame": 280,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.17,
-    "durationFrames": 6
-  },
-  {
-    "frame": 280,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.27,
-    "durationFrames": 8
-  },
-  {
-    "frame": 290,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.15,
-    "durationFrames": 6
-  },
-  {
-    "frame": 290,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.29,
-    "durationFrames": 8
-  },
-  {
-    "frame": 300,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.17,
-    "durationFrames": 6
-  },
-  {
-    "frame": 300,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.31,
-    "durationFrames": 8
-  },
-  {
-    "frame": 320,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 321,
-    "file": "sfx/freesound/key-press.mp3",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 323,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 326,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 327,
-    "file": "sfx/freesound/key-press.mp3",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 330,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 333,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 334,
-    "file": "sfx/freesound/key-press.mp3",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 336,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 339,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 341,
-    "file": "sfx/freesound/key-press.mp3",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 343,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 346,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 348,
-    "file": "sfx/freesound/key-press.mp3",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 349,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 352,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 355,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 358,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.55,
-    "durationFrames": 28
-  },
-  {
-    "frame": 358,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 358,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.25,
-    "durationFrames": 18
-  },
-  {
-    "frame": 358,
-    "file": "sfx/synth/tone-descent.wav",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 358,
-    "file": "sfx/synth/swoosh-tonal-wide.wav",
-    "volume": 0.45,
-    "durationFrames": 28
-  },
-  {
-    "frame": 358,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.2,
-    "durationFrames": 32
-  },
-  {
-    "frame": 360,
-    "file": "sfx/freesound/page-turn.mp3",
-    "volume": 0.3,
-    "durationFrames": 30
-  },
-  {
-    "frame": 366,
-    "file": "sfx/google-material/hero_simple-celebration-01.wav",
-    "volume": 0.4,
-    "durationFrames": 48
-  },
-  {
-    "frame": 366,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.25,
-    "durationFrames": 38
-  },
-  {
-    "frame": 366,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 366,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.15,
-    "durationFrames": 48
-  },
-  {
-    "frame": 393,
-    "file": "sfx/google-material/notification_decorative-01.wav",
-    "volume": 0.3,
-    "durationFrames": 50
-  },
-  {
-    "frame": 393,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.15,
-    "durationFrames": 30
-  },
-  {
-    "frame": 406,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.2,
-    "durationFrames": 25
-  },
-  {
-    "frame": 406,
-    "file": "sfx/synth/whoosh-granular.wav",
-    "volume": 0.2,
-    "durationFrames": 25
-  },
-  {
-    "frame": 406,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.45,
-    "durationFrames": 20
-  },
-  {
-    "frame": 406,
-    "file": "sfx/synth/swoosh-tonal-up.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 432,
-    "file": "sfx/google-material/hero_decorative-celebration-01.wav",
-    "volume": 0.2,
-    "durationFrames": 63
-  },
-  {
-    "frame": 432,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/whoosh-granular.wav",
-    "volume": 0.25,
-    "durationFrames": 25
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.45,
-    "durationFrames": 20
-  },
-  {
-    "frame": 432,
-    "file": "sfx/synth/swoosh-tonal-wide.wav",
-    "volume": 0.3,
-    "durationFrames": 28
-  },
-  {
-    "frame": 477,
-    "file": "sfx/google-material/hero_simple-celebration-02.wav",
-    "volume": 0.4,
-    "durationFrames": 52
-  },
-  {
-    "frame": 477,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 38
-  },
-  {
-    "frame": 477,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.12,
-    "durationFrames": 20
-  },
-  {
-    "frame": 477,
-    "file": "sfx/freesound/chime-pleasant.mp3",
-    "volume": 0.1,
-    "durationFrames": 25
-  },
-  {
-    "frame": 522,
-    "file": "sfx/synth/descender.wav.wav",
-    "volume": 0.45,
-    "durationFrames": 24
-  },
-  {
-    "frame": 522,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.35,
-    "durationFrames": 28
-  },
-  {
-    "frame": 522,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.2,
-    "durationFrames": 14
-  },
-  {
-    "frame": 522,
-    "file": "sfx/synth/swoosh-tonal-down.wav",
-    "volume": 0.45,
-    "durationFrames": 18
-  },
-  {
-    "frame": 522,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.2,
-    "durationFrames": 32
-  },
-  {
-    "frame": 547,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.3,
-    "durationFrames": 15
-  },
-  {
-    "frame": 547,
-    "file": "sfx/freesound/glass-ring.mp3",
-    "volume": 0.15,
-    "durationFrames": 30
-  },
-  {
-    "frame": 551,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.28,
-    "durationFrames": 15
-  },
-  {
-    "frame": 555,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.32,
-    "durationFrames": 15
-  },
-  {
-    "frame": 617,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.45,
-    "durationFrames": 25
-  },
-  {
-    "frame": 617,
-    "file": "sfx/synth/swoosh-tonal-snap.wav",
-    "volume": 0.35,
-    "durationFrames": 10
-  },
-  {
-    "frame": 640,
-    "file": "sfx/synth/texture-granular.wav",
-    "volume": 0.08,
-    "durationFrames": 90
-  },
-  {
-    "frame": 640,
-    "file": "sfx/google-material/notification_ambient.wav",
-    "volume": 0.06,
-    "durationFrames": 97
-  },
-  {
-    "frame": 650,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 650,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 655,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 18
-  },
-  {
-    "frame": 655,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 660,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 660,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 665,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 18
-  },
-  {
-    "frame": 665,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 670,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 670,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 675,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 18
-  },
-  {
-    "frame": 675,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 687,
-    "file": "sfx/google-material/navigation_hover-tap.wav",
-    "volume": 0.35,
-    "durationFrames": 10
-  },
-  {
-    "frame": 690,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 693,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 696,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 699,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 702,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 705,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 708,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 711,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 714,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 762,
-    "file": "sfx/google-material/ui_loading.wav",
-    "volume": 0.2,
-    "durationFrames": 117
-  },
-  {
-    "frame": 762,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.1,
-    "durationFrames": 30
-  },
-  {
-    "frame": 797,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.3,
-    "durationFrames": 6
-  },
-  {
-    "frame": 797,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.15,
-    "durationFrames": 15
-  },
-  {
-    "frame": 848,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.35,
-    "durationFrames": 28
-  },
-  {
-    "frame": 848,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.1,
-    "durationFrames": 38
-  },
-  {
-    "frame": 908,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.15,
-    "durationFrames": 14
-  },
-  {
-    "frame": 908,
-    "file": "sfx/google-material/navigation_transition-left.wav",
-    "volume": 0.15,
-    "durationFrames": 24
-  },
-  {
-    "frame": 908,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.4,
-    "durationFrames": 21
-  },
-  {
-    "frame": 923,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.3,
-    "durationFrames": 25
-  },
-  {
-    "frame": 923,
-    "file": "sfx/synth/swoosh-tonal-snap.wav",
-    "volume": 0.25,
-    "durationFrames": 10
-  },
-  {
-    "frame": 932,
-    "file": "sfx/freesound/card-flip.mp3",
-    "volume": 0.5,
-    "durationFrames": 12
-  },
-  {
-    "frame": 932,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.15,
-    "durationFrames": 14
-  },
-  {
-    "frame": 932,
-    "file": "sfx/synth/whoosh-doppler.wav",
-    "volume": 0.3,
-    "durationFrames": 21
-  },
-  {
-    "frame": 932,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.45,
-    "durationFrames": 21
-  },
-  {
-    "frame": 955,
-    "file": "sfx/google-material/navigation_forward-selection.wav",
-    "volume": 0.3,
-    "durationFrames": 36
-  },
-  {
-    "frame": 960,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 997,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.4,
-    "durationFrames": 18
-  },
-  {
-    "frame": 997,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.12,
-    "durationFrames": 14
-  },
-  {
-    "frame": 997,
-    "file": "sfx/google-material/navigation_transition-right.wav",
-    "volume": 0.15,
-    "durationFrames": 24
-  },
-  {
-    "frame": 997,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.35,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1020,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.3,
-    "durationFrames": 25
-  },
-  {
-    "frame": 1020,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1020,
-    "file": "sfx/freesound/bell-crystal.mp3",
-    "volume": 0.08,
-    "durationFrames": 30
-  },
-  {
-    "frame": 1026,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.28,
-    "durationFrames": 25
-  },
-  {
-    "frame": 1026,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.22,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1032,
-    "file": "sfx/google-material/state-change_confirm-up.wav",
-    "volume": 0.3,
-    "durationFrames": 25
-  },
-  {
-    "frame": 1032,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1032,
-    "file": "sfx/freesound/bell-crystal.mp3",
-    "volume": 0.08,
-    "durationFrames": 30
-  },
-  {
-    "frame": 1062,
-    "file": "sfx/google-material/ui_camera-shutter.wav",
-    "volume": 0.35,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1062,
-    "file": "sfx/freesound/snap-clean.mp3",
-    "volume": 0.2,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1077,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1100,
-    "file": "sfx/google-material/ui_loading.wav",
-    "volume": 0.15,
-    "durationFrames": 117
-  },
-  {
-    "frame": 1100,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.06,
-    "durationFrames": 30
-  },
-  {
-    "frame": 1142,
-    "file": "sfx/freesound/zoom-lens.mp3",
-    "volume": 0.25,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1142,
-    "file": "sfx/synth/swoosh-tonal-up.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1172,
-    "file": "sfx/google-material/ui_loading.wav",
-    "volume": 0.2,
-    "durationFrames": 117
-  },
-  {
-    "frame": 1172,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.08,
-    "durationFrames": 38
-  },
-  {
-    "frame": 1172,
-    "file": "sfx/google-material/notification_simple-01.wav",
-    "volume": 0.1,
-    "durationFrames": 25
-  },
-  {
-    "frame": 1232,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.3,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1232,
-    "file": "sfx/freesound/ding-bright.mp3",
-    "volume": 0.1,
-    "durationFrames": 20
-  },
-  {
-    "frame": 1233,
-    "file": "sfx/freesound/bubble-pop.mp3",
-    "volume": 0.15,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1234,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.28,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1236,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.32,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1237,
-    "file": "sfx/freesound/bubble-pop.mp3",
-    "volume": 0.13,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1238,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.29,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1240,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.31,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1241,
-    "file": "sfx/freesound/bubble-pop.mp3",
-    "volume": 0.15,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1242,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.27,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1244,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.3,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1245,
-    "file": "sfx/freesound/bubble-pop.mp3",
-    "volume": 0.13,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1246,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.28,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1248,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.32,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1249,
-    "file": "sfx/freesound/bubble-pop.mp3",
-    "volume": 0.15,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1250,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.29,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1260,
-    "file": "sfx/synth/slide-tick.wav",
-    "volume": 0.15,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1260,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.2,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1264,
-    "file": "sfx/synth/slide-tick.wav",
-    "volume": 0.17,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1264,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.22,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1268,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.22,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1272,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.24,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/google-material/hero_decorative-celebration-02.wav",
-    "volume": 0.5,
-    "durationFrames": 75
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.4,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.15,
-    "durationFrames": 38
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.25,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.12,
-    "durationFrames": 48
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/swoosh-tonal-wide.wav",
-    "volume": 0.4,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1317,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.2,
-    "durationFrames": 32
-  },
-  {
-    "frame": 1355,
-    "file": "sfx/google-material/ui_unlock.wav",
-    "volume": 0.35,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1355,
-    "file": "sfx/google-material/ui_lock.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1355,
-    "file": "sfx/synth/swoosh-tonal-snap.wav",
-    "volume": 0.25,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1363,
-    "file": "sfx/google-material/navigation_hover-tap.wav",
-    "volume": 0.35,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1363,
-    "file": "sfx/freesound/click-glass.mp3",
-    "volume": 0.2,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1367,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1371,
-    "file": "sfx/google-material/navigation_selection-complete-celebration.wav",
-    "volume": 0.3,
-    "durationFrames": 36
-  },
-  {
-    "frame": 1371,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.2,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1373,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1452,
-    "file": "sfx/synth/texture-granular.wav",
-    "volume": 0.12,
-    "durationFrames": 90
-  },
-  {
-    "frame": 1452,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1452,
-    "file": "sfx/synth/chord-suspend.wav",
-    "volume": 0.1,
-    "durationFrames": 55
-  },
-  {
-    "frame": 1452,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.15,
-    "durationFrames": 32
-  },
-  {
-    "frame": 1482,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.25,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1482,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.15,
-    "durationFrames": 14
-  },
-  {
-    "frame": 1482,
-    "file": "sfx/synth/whoosh-doppler.wav",
-    "volume": 0.25,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1482,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.35,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1510,
-    "file": "sfx/google-material/notification_decorative-01.wav",
-    "volume": 0.25,
-    "durationFrames": 50
-  },
-  {
-    "frame": 1510,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.1,
-    "durationFrames": 30
-  },
-  {
-    "frame": 1542,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1545,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1548,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1551,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.18,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1554,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1558,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.22,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1562,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.22,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1565,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1568,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1571,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.2,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1574,
-    "file": "sfx/google-material/state-change_confirm-down.wav",
-    "volume": 0.2,
-    "durationFrames": 25
-  },
-  {
-    "frame": 1582,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1582,
-    "file": "sfx/synth/fm-bell-warm.wav",
-    "volume": 0.15,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1582,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1586,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1586,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.13,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1590,
-    "file": "sfx/synth/whoosh-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1590,
-    "file": "sfx/synth/slide-tonal.wav",
-    "volume": 0.15,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1597,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 8
-  },
-  {
-    "frame": 1632,
-    "file": "sfx/google-material/hero_simple-celebration-03.wav",
-    "volume": 0.4,
-    "durationFrames": 46
-  },
-  {
-    "frame": 1632,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1632,
-    "file": "sfx/synth/swoosh-tonal-snap.wav",
-    "volume": 0.3,
-    "durationFrames": 10
-  },
-  {
-    "frame": 1672,
-    "file": "sfx/google-material/notification_decorative-02.wav",
-    "volume": 0.25,
-    "durationFrames": 56
-  },
-  {
-    "frame": 1672,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.12,
-    "durationFrames": 30
-  },
-  {
-    "frame": 1712,
-    "file": "sfx/freesound/zoom-lens.mp3",
-    "volume": 0.3,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1712,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.15,
-    "durationFrames": 14
-  },
-  {
-    "frame": 1712,
-    "file": "sfx/synth/swoosh-tonal-up.wav",
-    "volume": 0.35,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1762,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1765,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.23,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1768,
-    "file": "sfx/google-material/ui_tap-variant-03.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1771,
-    "file": "sfx/google-material/ui_tap-variant-04.wav",
-    "volume": 0.23,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1774,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1777,
-    "file": "sfx/google-material/ui_tap-variant-02.wav",
-    "volume": 0.23,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1802,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.15,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1802,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.3,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1852,
-    "file": "sfx/synth/fm-ping.wav",
-    "volume": 0.25,
-    "durationFrames": 6
-  },
-  {
-    "frame": 1852,
-    "file": "sfx/freesound/sparkle-bell.mp3",
-    "volume": 0.12,
-    "durationFrames": 15
-  },
-  {
-    "frame": 1882,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.15,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1882,
-    "file": "sfx/synth/swoosh-tonal-arc.wav",
-    "volume": 0.25,
-    "durationFrames": 21
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/google-material/hero_decorative-celebration-03.wav",
-    "volume": 0.35,
-    "durationFrames": 60
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.25,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.12,
-    "durationFrames": 38
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/synth/swoosh-tonal-wide.wav",
-    "volume": 0.3,
-    "durationFrames": 28
-  },
-  {
-    "frame": 1917,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.2,
-    "durationFrames": 32
-  },
-  {
-    "frame": 1942,
-    "file": "sfx/synth/texture-breathe.wav",
-    "volume": 0.25,
-    "durationFrames": 60
-  },
-  {
-    "frame": 1942,
-    "file": "sfx/synth/texture-granular.wav",
-    "volume": 0.08,
-    "durationFrames": 90
-  },
-  {
-    "frame": 1942,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.15,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1942,
-    "file": "sfx/synth/texture-breathe.wav",
-    "volume": 0.2,
-    "durationFrames": 75
-  },
-  {
-    "frame": 1962,
-    "file": "sfx/google-material/hero_simple-celebration-01.wav",
-    "volume": 0.45,
-    "durationFrames": 48
-  },
-  {
-    "frame": 1962,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.25,
-    "durationFrames": 18
-  },
-  {
-    "frame": 1962,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 38
-  },
-  {
-    "frame": 1962,
-    "file": "sfx/synth/fm-bell-deep.wav",
-    "volume": 0.15,
-    "durationFrames": 60
-  },
-  {
-    "frame": 1992,
-    "file": "sfx/synth/sub-hit.wav",
-    "volume": 0.12,
-    "durationFrames": 14
-  },
-  {
-    "frame": 1992,
-    "file": "sfx/synth/swoosh-tonal-up.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 2007,
-    "file": "sfx/google-material/hero_decorative-celebration-01.wav",
-    "volume": 0.4,
-    "durationFrames": 63
-  },
-  {
-    "frame": 2007,
-    "file": "sfx/freesound/whoosh-subtle.mp3",
-    "volume": 0.25,
-    "durationFrames": 28
-  },
-  {
-    "frame": 2007,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.15,
-    "durationFrames": 30
-  },
-  {
-    "frame": 2007,
-    "file": "sfx/freesound/chime-pleasant.mp3",
-    "volume": 0.12,
-    "durationFrames": 25
-  },
-  {
-    "frame": 2007,
-    "file": "sfx/synth/swoosh-tonal-wide.wav",
-    "volume": 0.2,
-    "durationFrames": 28
-  },
-  {
-    "frame": 2027,
-    "file": "sfx/google-material/ui_tap-variant-01.wav",
-    "volume": 0.2,
-    "durationFrames": 8
-  },
-  {
-    "frame": 2052,
-    "file": "sfx/freesound/click-soft.mp3",
-    "volume": 0.2,
-    "durationFrames": 10
-  },
-  {
-    "frame": 2052,
-    "file": "sfx/synth/swoosh-tonal-down.wav",
-    "volume": 0.2,
-    "durationFrames": 18
-  },
-  {
-    "frame": 2092,
-    "file": "sfx/google-material/notification_decorative-02.wav",
-    "volume": 0.3,
-    "durationFrames": 56
-  },
-  {
-    "frame": 2092,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.15,
-    "durationFrames": 25
-  },
-  {
-    "frame": 2092,
-    "file": "sfx/freesound/glass-ring.mp3",
-    "volume": 0.12,
-    "durationFrames": 30
-  },
-  {
-    "frame": 2092,
-    "file": "sfx/synth/scatter-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 20
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/google-material/hero_simple-celebration-02.wav",
-    "volume": 0.5,
-    "durationFrames": 52
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/google-material/hero_decorative-celebration-02.wav",
-    "volume": 0.25,
-    "durationFrames": 75
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/synth/sub-pulse.wav",
-    "volume": 0.3,
-    "durationFrames": 18
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 38
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/freesound/shimmer-magic.mp3",
-    "volume": 0.12,
-    "durationFrames": 25
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/synth/fm-bell-crystal.wav",
-    "volume": 0.2,
-    "durationFrames": 48
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/synth/chord-resolve.wav",
-    "volume": 0.15,
-    "durationFrames": 48
-  },
-  {
-    "frame": 2120,
-    "file": "sfx/synth/transition-tonal-rise.wav",
-    "volume": 0.15,
-    "durationFrames": 32
-  },
-  {
-    "frame": 2170,
-    "file": "sfx/google-material/notification_ambient.wav",
-    "volume": 0.1,
-    "durationFrames": 97
-  },
-  {
-    "frame": 2170,
-    "file": "sfx/synth/texture-granular.wav",
-    "volume": 0.06,
-    "durationFrames": 90
-  }
+  {"frame": 0, "file": "sfx/mograph/pop-round.wav", "volume": 0.5, "durationFrames": 8},
+  {"frame": 8, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.45, "durationFrames": 8},
+  {"frame": 8, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.25, "durationFrames": 20},
+  {"frame": 20, "file": "sfx/mograph/pop-round.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 28, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.4, "durationFrames": 6},
+  {"frame": 72, "file": "sfx/mograph/pop-01.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 72, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.15, "durationFrames": 25},
+  {"frame": 110, "file": "sfx/mograph/pop-snap.wav", "volume": 0.4, "durationFrames": 6},
+  {"frame": 115, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.4, "durationFrames": 5},
+  {"frame": 120, "file": "sfx/mograph/pop-snap.wav", "volume": 0.38, "durationFrames": 5},
+  {"frame": 127, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.38, "durationFrames": 5},
+  {"frame": 135, "file": "sfx/mograph/pop-snap.wav", "volume": 0.38, "durationFrames": 5},
+  {"frame": 140, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.4, "durationFrames": 5},
+  {"frame": 150, "file": "sfx/mograph/bounce-spring.wav", "volume": 0.5, "durationFrames": 10},
+  {"frame": 150, "file": "sfx/mograph/pop-01.mp3", "volume": 0.3, "durationFrames": 15},
+  {"frame": 165, "file": "sfx/mograph/slide-down.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 185, "file": "sfx/mograph/whoosh-03.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 185, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 210, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.45, "durationFrames": 18},
+  {"frame": 210, "file": "sfx/mograph/hit-01.mp3", "volume": 0.35, "durationFrames": 12},
+  {"frame": 210, "file": "sfx/mograph/sub-thud.wav", "volume": 0.3, "durationFrames": 12},
+  {"frame": 240, "file": "sfx/mograph/pop-09.mp3", "volume": 0.35, "durationFrames": 10},
+  {"frame": 240, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.15, "durationFrames": 20},
+  {"frame": 250, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.3, "durationFrames": 18},
+  {"frame": 250, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+
+  {"frame": 258, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.3, "durationFrames": 5},
+  {"frame": 268, "file": "sfx/mograph/slide-up.wav", "volume": 0.3, "durationFrames": 6},
+  {"frame": 268, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 280, "file": "sfx/mograph/slide-up.wav", "volume": 0.32, "durationFrames": 6},
+  {"frame": 280, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 290, "file": "sfx/mograph/slide-up.wav", "volume": 0.34, "durationFrames": 6},
+  {"frame": 290, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.22, "durationFrames": 8},
+  {"frame": 300, "file": "sfx/mograph/slide-up.wav", "volume": 0.36, "durationFrames": 6},
+  {"frame": 300, "file": "sfx/mograph/pop-snap.wav", "volume": 0.22, "durationFrames": 5},
+  {"frame": 320, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 323, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 326, "file": "sfx/mograph/type-01.mp3", "volume": 0.28, "durationFrames": 8},
+  {"frame": 330, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 333, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 336, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 339, "file": "sfx/mograph/type-01.mp3", "volume": 0.28, "durationFrames": 8},
+  {"frame": 343, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 346, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 349, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 352, "file": "sfx/mograph/type-01.mp3", "volume": 0.28, "durationFrames": 8},
+  {"frame": 355, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 358, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.55, "durationFrames": 25},
+  {"frame": 358, "file": "sfx/mograph/hit-03.mp3", "volume": 0.3, "durationFrames": 15},
+  {"frame": 358, "file": "sfx/mograph/sub-thud.wav", "volume": 0.25, "durationFrames": 12},
+  {"frame": 366, "file": "sfx/mograph/pop-01.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 366, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.2, "durationFrames": 25},
+  {"frame": 393, "file": "sfx/mograph/pop-round.wav", "volume": 0.35, "durationFrames": 8},
+  {"frame": 397, "file": "sfx/mograph/slide-up.wav", "volume": 0.2, "durationFrames": 6},
+  {"frame": 400, "file": "sfx/mograph/slide-up.wav", "volume": 0.22, "durationFrames": 6},
+  {"frame": 406, "file": "sfx/mograph/whoosh-03.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 406, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.35, "durationFrames": 8},
+  {"frame": 406, "file": "sfx/mograph/hit-02.mp3", "volume": 0.2, "durationFrames": 12},
+
+  {"frame": 432, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.45, "durationFrames": 25},
+  {"frame": 432, "file": "sfx/mograph/pop-01.mp3", "volume": 0.35, "durationFrames": 15},
+  {"frame": 432, "file": "sfx/mograph/sub-thud.wav", "volume": 0.25, "durationFrames": 12},
+  {"frame": 477, "file": "sfx/mograph/pop-01.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 477, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.2, "durationFrames": 25},
+  {"frame": 477, "file": "sfx/mograph/riser-01.mp3", "volume": 0.15, "durationFrames": 30},
+  {"frame": 522, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.5, "durationFrames": 25},
+  {"frame": 522, "file": "sfx/mograph/sub-thud.wav", "volume": 0.2, "durationFrames": 12},
+  {"frame": 547, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.35, "durationFrames": 5},
+  {"frame": 551, "file": "sfx/mograph/pop-snap.wav", "volume": 0.33, "durationFrames": 5},
+  {"frame": 555, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.37, "durationFrames": 5},
+  {"frame": 617, "file": "sfx/mograph/hit-01.mp3", "volume": 0.45, "durationFrames": 12},
+  {"frame": 617, "file": "sfx/mograph/pop-01.mp3", "volume": 0.3, "durationFrames": 15},
+  {"frame": 617, "file": "sfx/mograph/sub-thud.wav", "volume": 0.2, "durationFrames": 12},
+  {"frame": 650, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 655, "file": "sfx/mograph/pop-snap.wav", "volume": 0.18, "durationFrames": 5},
+  {"frame": 660, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 665, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.18, "durationFrames": 8},
+  {"frame": 670, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 675, "file": "sfx/mograph/pop-round.wav", "volume": 0.18, "durationFrames": 8},
+  {"frame": 687, "file": "sfx/mograph/click-01.mp3", "volume": 0.35, "durationFrames": 10},
+  {"frame": 690, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 693, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 696, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 699, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 702, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 705, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 708, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 711, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 714, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 762, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.2, "durationFrames": 20},
+  {"frame": 762, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 797, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.35, "durationFrames": 8},
+  {"frame": 848, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.35, "durationFrames": 18},
+  {"frame": 848, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 908, "file": "sfx/mograph/whoosh-02.mp3", "volume": 0.45, "durationFrames": 20},
+  {"frame": 908, "file": "sfx/mograph/pop-01.mp3", "volume": 0.25, "durationFrames": 15},
+  {"frame": 923, "file": "sfx/mograph/pop-round.wav", "volume": 0.35, "durationFrames": 8},
+  {"frame": 923, "file": "sfx/mograph/bounce-spring.wav", "volume": 0.25, "durationFrames": 10},
+  {"frame": 932, "file": "sfx/mograph/whoosh-03.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 932, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 955, "file": "sfx/mograph/pop-01.mp3", "volume": 0.35, "durationFrames": 15},
+  {"frame": 960, "file": "sfx/mograph/sparkle-01.mp3", "volume": 0.2, "durationFrames": 20},
+  {"frame": 997, "file": "sfx/mograph/whoosh-02.mp3", "volume": 0.4, "durationFrames": 20},
+  {"frame": 997, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1020, "file": "sfx/mograph/bounce-spring.wav", "volume": 0.35, "durationFrames": 10},
+  {"frame": 1020, "file": "sfx/mograph/pop-snap.wav", "volume": 0.3, "durationFrames": 5},
+  {"frame": 1026, "file": "sfx/mograph/bounce-soft.wav", "volume": 0.32, "durationFrames": 12},
+  {"frame": 1026, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.28, "durationFrames": 5},
+  {"frame": 1032, "file": "sfx/mograph/bounce-spring.wav", "volume": 0.35, "durationFrames": 10},
+  {"frame": 1032, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.3, "durationFrames": 8},
+
+  {"frame": 1062, "file": "sfx/mograph/hit-01.mp3", "volume": 0.4, "durationFrames": 12},
+  {"frame": 1062, "file": "sfx/mograph/pop-snap.wav", "volume": 0.3, "durationFrames": 5},
+  {"frame": 1077, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1100, "file": "sfx/mograph/type-02.mp3", "volume": 0.15, "durationFrames": 20},
+  {"frame": 1142, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.35, "durationFrames": 20},
+  {"frame": 1142, "file": "sfx/mograph/pop-01.mp3", "volume": 0.2, "durationFrames": 15},
+  {"frame": 1172, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1172, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.15, "durationFrames": 18},
+  {"frame": 1232, "file": "sfx/mograph/pop-09.mp3", "volume": 0.35, "durationFrames": 10},
+  {"frame": 1234, "file": "sfx/mograph/pop-round.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1236, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.35, "durationFrames": 8},
+  {"frame": 1238, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.3, "durationFrames": 5},
+  {"frame": 1240, "file": "sfx/mograph/pop-snap.wav", "volume": 0.33, "durationFrames": 5},
+  {"frame": 1242, "file": "sfx/mograph/pop-round.wav", "volume": 0.28, "durationFrames": 8},
+  {"frame": 1244, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.32, "durationFrames": 8},
+  {"frame": 1246, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.3, "durationFrames": 5},
+  {"frame": 1248, "file": "sfx/mograph/pop-snap.wav", "volume": 0.35, "durationFrames": 5},
+  {"frame": 1250, "file": "sfx/mograph/pop-round.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1260, "file": "sfx/mograph/slide-up.wav", "volume": 0.25, "durationFrames": 6},
+  {"frame": 1260, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 1264, "file": "sfx/mograph/slide-up.wav", "volume": 0.27, "durationFrames": 6},
+  {"frame": 1264, "file": "sfx/mograph/pop-snap.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 1268, "file": "sfx/mograph/slide-up.wav", "volume": 0.27, "durationFrames": 6},
+  {"frame": 1272, "file": "sfx/mograph/slide-up.wav", "volume": 0.3, "durationFrames": 6},
+  {"frame": 1272, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.22, "durationFrames": 8},
+  {"frame": 1317, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.55, "durationFrames": 25},
+  {"frame": 1317, "file": "sfx/mograph/hit-03.mp3", "volume": 0.4, "durationFrames": 15},
+  {"frame": 1317, "file": "sfx/mograph/sub-thud.wav", "volume": 0.3, "durationFrames": 12},
+  {"frame": 1317, "file": "sfx/mograph/riser-01.mp3", "volume": 0.15, "durationFrames": 30},
+  {"frame": 1355, "file": "sfx/mograph/pop-01.mp3", "volume": 0.35, "durationFrames": 15},
+  {"frame": 1355, "file": "sfx/mograph/whoosh-03.mp3", "volume": 0.2, "durationFrames": 15},
+  {"frame": 1363, "file": "sfx/mograph/click-01.mp3", "volume": 0.35, "durationFrames": 10},
+  {"frame": 1367, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.25, "durationFrames": 5},
+  {"frame": 1373, "file": "sfx/mograph/pop-snap.wav", "volume": 0.25, "durationFrames": 5},
+  {"frame": 1371, "file": "sfx/mograph/ding-01.mp3", "volume": 0.3, "durationFrames": 10},
+
+  {"frame": 1452, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.25, "durationFrames": 25},
+  {"frame": 1452, "file": "sfx/mograph/sub-thud.wav", "volume": 0.2, "durationFrames": 12},
+  {"frame": 1482, "file": "sfx/mograph/whoosh-02.mp3", "volume": 0.4, "durationFrames": 20},
+  {"frame": 1482, "file": "sfx/mograph/pop-round.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1510, "file": "sfx/mograph/pop-01.mp3", "volume": 0.3, "durationFrames": 15},
+  {"frame": 1510, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.12, "durationFrames": 25},
+  {"frame": 1542, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1545, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 1548, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1551, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 1554, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1558, "file": "sfx/mograph/click-02.mp3", "volume": 0.24, "durationFrames": 6},
+  {"frame": 1562, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1565, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 1568, "file": "sfx/mograph/type-01.mp3", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1571, "file": "sfx/mograph/click-02.mp3", "volume": 0.22, "durationFrames": 6},
+  {"frame": 1574, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 1582, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.2, "durationFrames": 5},
+  {"frame": 1582, "file": "sfx/mograph/slide-up.wav", "volume": 0.15, "durationFrames": 6},
+  {"frame": 1586, "file": "sfx/mograph/pop-snap.wav", "volume": 0.18, "durationFrames": 5},
+  {"frame": 1590, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 1597, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 1632, "file": "sfx/mograph/hit-01.mp3", "volume": 0.45, "durationFrames": 12},
+  {"frame": 1632, "file": "sfx/mograph/pop-01.mp3", "volume": 0.35, "durationFrames": 15},
+  {"frame": 1632, "file": "sfx/mograph/sub-thud.wav", "volume": 0.2, "durationFrames": 12},
+  {"frame": 1672, "file": "sfx/mograph/pop-round.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1672, "file": "sfx/mograph/slide-up.wav", "volume": 0.15, "durationFrames": 6},
+  {"frame": 1712, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.4, "durationFrames": 20},
+  {"frame": 1712, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.25, "durationFrames": 8},
+  {"frame": 1762, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1765, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 1768, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1771, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 1774, "file": "sfx/mograph/type-01.mp3", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1777, "file": "sfx/mograph/click-02.mp3", "volume": 0.25, "durationFrames": 6},
+  {"frame": 1802, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.35, "durationFrames": 18},
+  {"frame": 1802, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 1852, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1882, "file": "sfx/mograph/whoosh-01.mp3", "volume": 0.3, "durationFrames": 20},
+  {"frame": 1882, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 1917, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.4, "durationFrames": 25},
+  {"frame": 1917, "file": "sfx/mograph/riser-01.mp3", "volume": 0.2, "durationFrames": 30},
+  {"frame": 1917, "file": "sfx/mograph/pop-01.mp3", "volume": 0.25, "durationFrames": 15},
+  {"frame": 1942, "file": "sfx/mograph/pop-round.wav", "volume": 0.3, "durationFrames": 8},
+  {"frame": 1942, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.15, "durationFrames": 25},
+  {"frame": 1962, "file": "sfx/mograph/hit-03.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 1962, "file": "sfx/mograph/pop-01.mp3", "volume": 0.4, "durationFrames": 15},
+  {"frame": 1962, "file": "sfx/mograph/sub-thud.wav", "volume": 0.3, "durationFrames": 12},
+  {"frame": 1992, "file": "sfx/mograph/whoosh-02.mp3", "volume": 0.35, "durationFrames": 20},
+  {"frame": 1992, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 2007, "file": "sfx/mograph/pop-01.mp3", "volume": 0.45, "durationFrames": 15},
+  {"frame": 2007, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.2, "durationFrames": 25},
+  {"frame": 2007, "file": "sfx/mograph/whoosh-05.mp3", "volume": 0.2, "durationFrames": 18},
+  {"frame": 2027, "file": "sfx/mograph/pop-tiny.wav", "volume": 0.25, "durationFrames": 5},
+  {"frame": 2052, "file": "sfx/mograph/pop-round.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 2052, "file": "sfx/mograph/bounce-soft.wav", "volume": 0.15, "durationFrames": 12},
+  {"frame": 2092, "file": "sfx/mograph/sparkle-01.mp3", "volume": 0.2, "durationFrames": 20},
+  {"frame": 2092, "file": "sfx/mograph/pop-pluck.wav", "volume": 0.2, "durationFrames": 8},
+  {"frame": 2120, "file": "sfx/mograph/hit-03.mp3", "volume": 0.5, "durationFrames": 15},
+  {"frame": 2120, "file": "sfx/mograph/pop-01.mp3", "volume": 0.45, "durationFrames": 15},
+  {"frame": 2120, "file": "sfx/mograph/chime-gentle.wav", "volume": 0.25, "durationFrames": 25},
+  {"frame": 2120, "file": "sfx/mograph/sub-thud.wav", "volume": 0.3, "durationFrames": 12},
+  {"frame": 2120, "file": "sfx/mograph/riser-01.mp3", "volume": 0.1, "durationFrames": 30},
+  {"frame": 2170, "file": "sfx/mograph/whoosh-04.mp3", "volume": 0.1, "durationFrames": 25}
 ]

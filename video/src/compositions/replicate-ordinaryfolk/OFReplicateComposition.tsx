@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";
 import { Scene01 } from "./Scene01";
 import { Scene02 } from "./Scene02";
 import { Scene03, scene03Meta } from "./Scene03";
@@ -95,6 +95,44 @@ const FadeWrapper: React.FC<{
   );
 };
 
+/**
+ * BlackBandReveal — rounded-rect clip-path expanding from center.
+ * Like zooming into the letter "O". A black band with border-radius ~40px
+ * grows from 0 height to full viewport height over `revealFrames`.
+ */
+const BlackBandReveal: React.FC<{
+  children: React.ReactNode;
+  duration: number;
+  revealFrames: number;
+}> = ({ children, duration, revealFrames }) => {
+  const frame = useCurrentFrame();
+
+  // Progress 0→1 over revealFrames
+  const progress = interpolate(frame, [0, revealFrames], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Eased progress — expo out for fast start, decelerating
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  // The band expands vertically from center.
+  // insetY: starts at 50% (invisible), goes to 0% (full height)
+  const insetY = (1 - eased) * 50;
+  // Horizontal: starts at ~12.5% (3/4 width band) and expands to 0%
+  const insetX = (1 - eased) * 12.5;
+  // Border radius: starts large (like an "O"), shrinks to 0
+  const radius = Math.round(40 * (1 - eased));
+
+  const clipPath = `inset(${insetY.toFixed(1)}% ${insetX.toFixed(1)}% ${insetY.toFixed(1)}% ${insetX.toFixed(1)}% round ${radius}px)`;
+
+  return (
+    <AbsoluteFill style={{ clipPath }}>
+      {children}
+    </AbsoluteFill>
+  );
+};
+
 export const OFReplicateComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
@@ -128,21 +166,20 @@ export const OFReplicateComposition: React.FC = () => {
            Starts S03_S04_OVERLAP frames before S03 ends.
            Draws ON TOP of S03 (later in DOM = higher z-index).
            No fade-in — S04 manages its own phone visibility.
-           Deep zoom out: scene scales to 3x over 24 frames while fading,
-           so the zoom is visible while Gemini UI content is still bright. */}
+           Fades out during overlap so the black band reveal can take over. */}
       <Sequence from={S04_START} durationInFrames={S04_DUR} name="Scene 04">
-        <FadeWrapper duration={S04_DUR} fadeOutFrames={S04_S05_OVERLAP} scaleOut={3}>
+        <FadeWrapper duration={S04_DUR} fadeOutFrames={S04_S05_OVERLAP}>
           <Scene04 />
         </FadeWrapper>
       </Sequence>
 
       {/* ── Scene 05 ──
-           Deep zoom in: dark scene starts at 0.3x, grows to 1x over
-           the full 24-frame overlap. "Diving into screen" at boundary. */}
+           Black band reveal: rounded-rect clip-path expands from center
+           like zooming into the letter "O". Fast vertical expansion. */}
       <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
-        <FadeWrapper duration={S05_DUR} fadeInFrames={S04_S05_OVERLAP} scaleIn={0.3}>
+        <BlackBandReveal duration={S05_DUR} revealFrames={S04_S05_OVERLAP}>
           <Scene05 />
-        </FadeWrapper>
+        </BlackBandReveal>
       </Sequence>
     </AbsoluteFill>
   );

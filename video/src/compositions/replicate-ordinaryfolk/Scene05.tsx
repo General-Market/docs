@@ -1,11 +1,13 @@
 import React, { useLayoutEffect, useRef, useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
+import { CameraMotionBlur } from "@remotion/motion-blur";
 import {
   gsap,
   MorphSVGPlugin,
   MotionPathPlugin,
 } from "../../lib/useGsapTimeline";
+import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
 
 /* ═══════════════════════════════════════════════════════════════
    Scene 05 — Gemini Advanced Interface
@@ -1188,6 +1190,16 @@ export const Scene05: React.FC = () => {
   const expFadeRef = useRef<HTMLDivElement>(null);
   const sparkleDecoRef = useRef<HTMLDivElement>(null);
   const sparkleDecoCurvesRef = useRef<SVGSVGElement>(null);
+  const expSectionRef = useRef<HTMLDivElement>(null);
+
+  // Item 2: continuous 3D float for the interface — always drifting, never static
+  const interfaceFloat = useFloat3D(frame, fps, {
+    rotateX: { amplitude: 2.5, frequency: 0.18, noise: 0.25 },
+    rotateY: { amplitude: 3, frequency: 0.14, noise: 0.3 },
+    translateX: { amplitude: 4, frequency: 0.12 },
+    translateY: { amplitude: 3, frequency: 0.15 },
+    perspective: 1200,
+  });
 
   // Compute interface local frame for typing animation
   const interfaceLocalFrame = Math.max(0, frame - 75);
@@ -1308,19 +1320,19 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ B+C+D: Gemini Interface (30-180) ═══
-    // Starts HEAVILY zoomed scale(3.8) rotateY(-20deg) — tight on "Gemini Advanced" title
-    // Title dominates the frame. Then pulls back to scale(1) rotateY(0)
-    // revealing full dark interface with "Hello, Lisa." and suggestion cards.
+    // Starts HEAVILY zoomed scale(4.5) rotateY(-20deg) -- title IS the frame.
+    // Only "Gemini Advanced" visible for first 30 frames. Then pulls back to scale(1)
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
         rotateX: 0,
         rotateY: -20,
-        scale: 3.8,
-        x: 240,
-        y: 600,
+        scale: 4.5,
+        transformOrigin: "15% 7%",
+        x: 0,
+        y: 0,
       }, 0);
-      // Fade in — title screen phase (zoomed on "Gemini Advanced" header)
+      // Fade in — tilted top-left view right after transition
       t.to(interfaceWrapRef.current, {
         opacity: 1,
         duration: f(8),
@@ -1329,9 +1341,9 @@ export const Scene05: React.FC = () => {
       // Phase 1: hold zoomed title view, slow drift (30-65)
       t.to(interfaceWrapRef.current, {
         rotateY: -14,
-        scale: 2.2,
-        x: 120,
-        y: 400,
+        scale: 2.6,
+        x: 0,
+        y: 0,
         duration: f(35),
         ease: "power1.out",
       }, f(30));
@@ -1688,20 +1700,30 @@ export const Scene05: React.FC = () => {
       }, f(staggerFrame));
     });
 
-    // Spiral words — 3D orbital ring
+    // Spiral words — 3D orbital ring: WHIP 3-4 full revolutions then settle
     if (spiralRingRef.current) {
-      t.set(spiralRingRef.current, { opacity: 0, rotateX: 60, rotateZ: -15, scale: 0.6 }, 0);
+      // Start: tilted, spinning fast
+      t.set(spiralRingRef.current, { opacity: 0, rotateX: 60, rotateZ: 0, scale: 0.6 }, 0);
+      // Snap visible
       t.to(spiralRingRef.current, {
         opacity: 1,
         scale: 1,
-        duration: f(10),
+        duration: f(4),
         ease: "power2.out",
-      }, f(474));
+      }, f(465));
+      // FAST SPIN: 3.5 full revolutions (1260 degrees) in 20 frames — whipping
       t.to(spiralRingRef.current, {
-        rotateZ: 15,
-        duration: f(22),
-        ease: "none",
-      }, f(474));
+        rotateZ: 1260,
+        duration: f(20),
+        ease: "expo.out", // fast start, decelerating — whip effect
+      }, f(465));
+      // Settle: tilt eases out as ring slows
+      t.to(spiralRingRef.current, {
+        rotateX: 45,
+        duration: f(18),
+        ease: "power2.out",
+      }, f(470));
+      // Exit
       t.to(spiralRingRef.current, {
         scale: 0.15,
         opacity: 0,
@@ -1709,16 +1731,16 @@ export const Scene05: React.FC = () => {
         ease: "power2.in",
       }, f(488));
     }
-    // Individual words fade in with stagger
+    // Individual words — appear quickly, hold during spin
     spiralWordsRef.current.forEach((el, i) => {
       if (!el) return;
       t.set(el, { opacity: 0, scale: 0.7 }, 0);
       t.to(el, {
         opacity: 1,
         scale: 1,
-        duration: f(6),
+        duration: f(3),
         ease: "power1.out",
-      }, f(475 + i * 1.5));
+      }, f(466 + i * 0.8));
       t.to(el, {
         opacity: 0,
         duration: f(4),
@@ -1828,14 +1850,26 @@ export const Scene05: React.FC = () => {
       t.set(expDevicesRef.current, { scale: 1 }, 0);
     }
 
-    // Experience section fade overlay
+    // Experience section — FAST SWOOSH LEFT at 1:07 (frame 600)
+    // Everything slides out to left rapidly: translateX 0→-1400px in 8 frames
+    if (expSectionRef.current) {
+      t.set(expSectionRef.current, { x: 0, opacity: 1 }, 0);
+      t.to(expSectionRef.current, {
+        x: -1400,
+        duration: f(8),
+        ease: "expo.out",
+      }, f(600));
+      // Snap invisible after swoosh
+      t.set(expSectionRef.current, { opacity: 0 }, f(608));
+    }
+    // Experience fade overlay — still fades in but only as backup
     if (expFadeRef.current) {
       t.set(expFadeRef.current, { opacity: 0 }, 0);
       t.to(expFadeRef.current, {
         opacity: 1,
-        duration: f(15),
+        duration: f(6),
         ease: "power1.inOut",
-      }, f(600));
+      }, f(606));
     }
 
     // ═══ O+P: Sparkle → Google G morph (610-694) — shifted 30 frames earlier ═══
@@ -2064,40 +2098,46 @@ export const Scene05: React.FC = () => {
         <PhoneMockup style={{ transform: "scale(0.6) rotateY(8deg)" }} />
       </div>
 
-      {/* B+C+D: Gemini Interface */}
+      {/* B+C+D: Gemini Interface — float wrapper adds continuous 3D drift */}
       <div
-        ref={interfaceWrapRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -50%)",
-          opacity: 0,
-          perspective: 1200,
+          transform: `translate(-50%, -50%) ${interfaceFloat.transform}`,
+          pointerEvents: "none",
         }}
       >
-        {/* Rainbow border glow — visible during zoomed title phase */}
         <div
-          ref={interfaceGlowRef}
+          ref={interfaceWrapRef}
           style={{
-            position: "absolute",
-            inset: -4,
-            borderRadius: 16,
             opacity: 0,
-            pointerEvents: "none",
-            boxShadow: [
-              `0 0 30px ${BLUE}`,
-              `0 0 60px ${PURPLE}88`,
-              `0 0 90px ${PINK}55`,
-              `0 0 120px ${BLUE}33`,
-            ].join(", "),
-            zIndex: 20,
+            perspective: 1200,
           }}
-        />
-        <GeminiInterface
-          frame={interfaceLocalFrame}
-          fps={fps}
-        />
+        >
+          {/* Rainbow border glow — visible during zoomed title phase */}
+          <div
+            ref={interfaceGlowRef}
+            style={{
+              position: "absolute",
+              inset: -4,
+              borderRadius: 16,
+              opacity: 0,
+              pointerEvents: "none",
+              boxShadow: [
+                `0 0 30px ${BLUE}`,
+                `0 0 60px ${PURPLE}88`,
+                `0 0 90px ${PINK}55`,
+                `0 0 120px ${BLUE}33`,
+              ].join(", "),
+              zIndex: 20,
+            }}
+          />
+          <GeminiInterface
+            frame={interfaceLocalFrame}
+            fps={fps}
+          />
+        </div>
       </div>
 
       {/* Interface backdrop — 3D perspective behind rotating cards */}
@@ -2608,77 +2648,86 @@ export const Scene05: React.FC = () => {
         <UltraOrb frame={orbLocalFrame} fps={fps} />
       </div>
 
-      {/* N: Experience Gemini + devices */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          paddingTop: "18%",
-          pointerEvents: "none",
-        }}
-      >
-        <div
-          ref={expTitleRef}
-          style={{
-            fontSize: 46,
-            fontFamily: FONT,
-            fontWeight: 400,
-            color: "#fff",
-            opacity: 0,
-            marginBottom: 10,
-          }}
-        >
-          Experience{" "}
-          <GradientText
-            gradient={`linear-gradient(90deg, ${BLUE}, ${PURPLE})`}
+      {/* N: Experience Gemini + devices — swooshes LEFT at 1:07 with motion blur */}
+      {(() => {
+        const swooshActive = frame >= 598 && frame <= 610;
+        const expContent = (
+          <div
+            ref={expSectionRef}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              paddingTop: "18%",
+              pointerEvents: "none",
+            }}
           >
-            Gemini
-          </GradientText>
-        </div>
-        <div
-          ref={expUrlRef}
-          style={{
-            fontSize: 16,
-            fontFamily: FONT,
-            color: "rgba(255,255,255,0.45)",
-            opacity: 0,
-            marginBottom: 32,
-            letterSpacing: 0.5,
-          }}
-        >
-          gemini.google.com
-        </div>
-        <div
-          ref={expDevicesRef}
-          style={{
-            display: "flex",
-            gap: 80,
-            alignItems: "center",
-            justifyContent: "center",
-            marginTop: 0,
-          }}
-        >
-          {/* Phone LEFT — backs face each other, screen faces outward LEFT */}
-          <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
-            <PhoneMockup style={{ transform: "scale(1.15) rotateY(-30deg)" }} />
-          </div>
-          {/* Desktop RIGHT — backs face each other, screen faces outward RIGHT */}
-          <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
             <div
+              ref={expTitleRef}
               style={{
-                transform: "scale(0.8) rotateY(30deg)",
-                transformOrigin: "center center",
+                fontSize: 46,
+                fontFamily: FONT,
+                fontWeight: 400,
+                color: "#fff",
+                opacity: 0,
+                marginBottom: 10,
               }}
             >
-              <GeminiInterface frame={90} fps={fps} />
+              Experience{" "}
+              <GradientText
+                gradient={`linear-gradient(90deg, ${BLUE}, ${PURPLE})`}
+              >
+                Gemini
+              </GradientText>
+            </div>
+            <div
+              ref={expUrlRef}
+              style={{
+                fontSize: 16,
+                fontFamily: FONT,
+                color: "rgba(255,255,255,0.45)",
+                opacity: 0,
+                marginBottom: 32,
+                letterSpacing: 0.5,
+              }}
+            >
+              gemini.google.com
+            </div>
+            <div
+              ref={expDevicesRef}
+              style={{
+                display: "flex",
+                gap: 80,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 0,
+              }}
+            >
+              {/* Phone LEFT — backs face each other, screen faces outward LEFT */}
+              <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
+                <PhoneMockup style={{ transform: "scale(1.15) rotateY(-30deg)" }} />
+              </div>
+              {/* Desktop RIGHT — backs face each other, screen faces outward RIGHT */}
+              <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
+                <div
+                  style={{
+                    transform: "scale(0.8) rotateY(30deg)",
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <GeminiInterface frame={90} fps={fps} />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+        return swooshActive ? (
+          <CameraMotionBlur samples={8} shutterAngle={180}>{expContent}</CameraMotionBlur>
+        ) : expContent;
+      })()}
 
       {/* Experience fade overlay */}
       <div
