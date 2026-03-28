@@ -280,7 +280,7 @@ impl BatchLifecycleManager {
                     // edge cases (oracle restart, delayed heartbeats).
                     if let Some(prev_id) = prev_batch_id {
                         let ready_to_settle: bool = sqlx::query_scalar::<_, bool>(
-                            "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE batch_id = $1"
+                            "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
                         .bind(SETTLEMENT_DELAY_SECS as f64)

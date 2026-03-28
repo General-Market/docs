@@ -1798,20 +1798,52 @@ export const Scene05: React.FC = () => {
         "rgba(139,92,246,0.5)"
       )}
 
-      {/* G: Card zoom 0 */}
+      {/* G: Card zoom 0 — 3D rotating card */}
       <div
-        ref={cardZoomGRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          opacity: 0,
           perspective: 800,
         }}
       >
-        <div style={{ transform: "rotateY(-6deg)" }}>
-          <PromptCard card={CARDS[0]} width={220} />
+        <div
+          ref={cardZoomGRef}
+          style={{
+            transformStyle: "preserve-3d",
+            opacity: 0,
+          }}
+        >
+          {/* Front face */}
+          <div style={{ backfaceVisibility: "hidden" }}>
+            <PromptCard card={CARDS[0]} width={240} />
+          </div>
+          {/* Back face */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            <div
+              style={{
+                width: 240,
+                height: "100%",
+                background: `linear-gradient(135deg, ${CARDS[0].thumbColor}, ${CARDS[0].accentColor}44)`,
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 0 30px ${CARDS[0].accentColor}33`,
+              }}
+            >
+              <GeminiSparkle size={40} color={CARDS[0].accentColor} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1843,35 +1875,75 @@ export const Scene05: React.FC = () => {
         </span>
       </div>
 
-      {/* I: Card zoom 1 */}
+      {/* I: Card zoom 1 — 3D rotating code card */}
       <div
-        ref={cardZoomIRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          opacity: 0,
           perspective: 800,
         }}
       >
-        <div style={{ transform: "rotateY(-5deg)" }}>
-          <PromptCard card={CARDS[1]} width={220} />
+        <div
+          ref={cardZoomIRef}
+          style={{
+            transformStyle: "preserve-3d",
+            opacity: 0,
+          }}
+        >
+          {/* Front face */}
+          <div style={{ backfaceVisibility: "hidden" }}>
+            <PromptCard card={CARDS[1]} width={240} />
+          </div>
+          {/* Back face */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+            }}
+          >
+            <div
+              style={{
+                width: 240,
+                height: "100%",
+                background: `linear-gradient(135deg, ${CARDS[1].thumbColor}, ${CARDS[1].accentColor}44)`,
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 0 30px ${CARDS[1].accentColor}33`,
+              }}
+            >
+              <GeminiSparkle size={40} color={CARDS[1].accentColor} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Card 0 peeking from left during I */}
+      {/* Card 0 peeking from left during I — 3D tilted */}
       <div
-        ref={cardPeekRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "8%",
-          transform: "translateY(-50%) perspective(800px) rotateY(8deg) scale(1.2)",
-          opacity: 0,
+          transform: "translateY(-50%)",
+          perspective: 800,
         }}
       >
-        <PromptCard card={CARDS[0]} width={160} />
+        <div
+          ref={cardPeekRef}
+          style={{
+            transformStyle: "preserve-3d",
+            transform: "scale(1.2)",
+            opacity: 0,
+          }}
+        >
+          <PromptCard card={CARDS[0]} width={160} />
+        </div>
       </div>
 
       {/* J: "and more" */}
@@ -1882,24 +1954,31 @@ export const Scene05: React.FC = () => {
         "rgba(139,92,246,0.2)"
       )}
 
-      {/* K: Cards pan 2+3 */}
+      {/* K: Cards pan 2+3 — 3D carousel */}
       <div
-        ref={cardsPanRef}
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -50%) perspective(800px) rotateY(-5deg)",
-          display: "flex",
-          gap: 20,
-          opacity: 0,
+          transform: "translate(-50%, -50%)",
+          perspective: 800,
         }}
       >
-        {[2, 3].map((idx) => (
-          <div key={idx} style={{ transform: "scale(1.35)" }}>
-            <PromptCard card={CARDS[idx]} width={200} />
-          </div>
-        ))}
+        <div
+          ref={cardsPanRef}
+          style={{
+            display: "flex",
+            gap: 24,
+            transformStyle: "preserve-3d",
+            opacity: 0,
+          }}
+        >
+          {[2, 3].map((idx) => (
+            <div key={idx} style={{ transform: "scale(1.35)" }}>
+              <PromptCard card={CARDS[idx]} width={200} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* L: Capability words spiral inward */}
