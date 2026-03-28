@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame, interpolate } from "remotion";
 import { Scene01 } from "./Scene01";
 import { Scene02 } from "./Scene02";
 import { Scene03, scene03Meta } from "./Scene03";
@@ -65,6 +65,9 @@ const FadeWrapper: React.FC<{
 export const OFReplicateComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+      {/* ── Audio — original track (music + SFX) ── */}
+      <Audio src={staticFile("of-audio.wav")} />
+
       {/* ── Scene 01 ── */}
       <Sequence from={S01_START} durationInFrames={S01_DUR} name="Scene 01">
         <FadeWrapper duration={S01_DUR} fadeOutFrames={XFADE}>
