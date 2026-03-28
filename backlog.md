@@ -5060,3 +5060,5 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [BUG] Data-node /aum-ranking endpoint timeout — N-squared DB query loop (snapshots x ITPs x assets). 30s timeout wrapper added but root query needs optimization. (Session 20260311-e2e)
 
 [BUG] E2E test timeouts on testnet: settlement bridge buy (11.1min), rebalance full cycle (8.1min), multi-ITP orders (6.1min). Oracles not processing these operations promptly. (Session 20260311-e2e)
+
+[BUG-CRITICAL] Swarm_runner threading crash loop — all daemon threads die within 30s of startup, process exits. Single-thread test works fine. Root cause: likely Python GIL + web3 HTTPProvider thread safety issue. Fix: switch to multiprocessing, or run 10 separate bot containers instead of 1 threaded container.
