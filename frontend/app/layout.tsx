@@ -4,6 +4,7 @@ import { JetBrains_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { ClientProviders } from "./client-providers";
+import { SequinWaveBackground } from "@/components/ui/SequinWaveBackground";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -55,6 +56,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://us.i.posthog.com" />
       </head>
       <body className="bg-page text-text-primary font-sans antialiased">
+        <SequinWaveBackground />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientProviders>
             {children}

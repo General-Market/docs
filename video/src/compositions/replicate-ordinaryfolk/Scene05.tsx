@@ -9,6 +9,7 @@ import {
 } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
+import { interpolatePath } from "@remotion/paths";
 
 /* ═══════════════════════════════════════════════════════════════
    Scene 05 — Gemini Advanced Interface
@@ -1180,27 +1181,62 @@ const CardsPan: React.FC<{
   );
 };
 
-// ─── Scatter text ("With access to") ───
+// ─── Spiral-inward text ("With access to" → converges to center orb) ───
+// Reference: letters start readable at center, then spiral INWARD along
+// logarithmic spiral paths, shrinking and overlapping as they converge
+// into a glowing point that becomes the Ultra 1.0 orb.
 
-const ScatterText: React.FC<{
+const SPIRAL_CHARS = "With access to".split("");
+// Pre-computed per-character spiral parameters (deterministic, no re-creation)
+const SPIRAL_PARAMS = SPIRAL_CHARS.map((ch, i) => {
+  const goldenAngle = i * 137.508; // degrees — golden angle for even spread
+  const baseRadius = 220 + (i % 3) * 60; // max radius when fully spread
+  const spiralSpeed = 0.6 + (i % 4) * 0.15; // how many extra rotations during convergence
+  const isAccent = i >= 5 && i <= 10; // "access" chars
+  return { ch, goldenAngle, baseRadius, spiralSpeed, isAccent };
+});
+
+const SpiralInwardText: React.FC<{
   frame: number;
   fps: number;
   enterFrame: number;
-  holdFrames: number;
-}> = ({ frame, fps, enterFrame, holdFrames }) => {
+  totalFrames: number; // total frames for this component (text entry + spiral + vanish)
+}> = ({ frame, fps, enterFrame, totalFrames }) => {
   const localFrame = frame - enterFrame;
-  if (localFrame < 0 || localFrame > holdFrames + 15) return null;
+  if (localFrame < 0 || localFrame > totalFrames) return null;
 
-  // Each letter gets its own scatter trajectory
-  const allChars = "With access to".split("");
+  // Phase 1: text appears readable at center (0 → 15 frames)
+  // Phase 2: letters begin spiraling inward from outer positions (15 → 55)
+  // Phase 3: letters compress to a point at center, glow intensifies (55 → totalFrames)
+  const textEntryEnd = 15;
+  const spiralStart = 15;
+  const spiralEnd = 55;
+  const compressionEnd = totalFrames;
 
-  // Smoothstep entry instead of linear
+  // Text entry opacity (smoothstep)
   const entryRaw = interpolate(localFrame, [0, 10], [0, 1], clamp());
   const entryOpacity = entryRaw * entryRaw * (3 - 2 * entryRaw);
-  const entryY = 18 * (1 - entryOpacity);
-  const scatterStart = holdFrames - 12;
 
-  const isAccentChar = (idx: number) => idx >= 5 && idx <= 10;
+  // Spiral progress: 0 = readable text at center, 1 = scattered at outer edge
+  // Then convergence: 1 = scattered, 0 = converged at center
+  // Phase 2: letters FLY OUT to their spiral starting positions
+  const expandRaw = interpolate(localFrame, [spiralStart, spiralStart + 10], [0, 1], clamp());
+  const expandProgress = expandRaw * expandRaw * (3 - 2 * expandRaw);
+
+  // Phase 3: letters SPIRAL INWARD from outer positions to center
+  const convergeRaw = interpolate(localFrame, [spiralStart + 10, spiralEnd], [0, 1], clamp());
+  const convergeProgress = convergeRaw * convergeRaw * (3 - 2 * convergeRaw);
+
+  // Combined: radius multiplier (0=center, 1=full radius)
+  // Goes: 0 → 1 (expand) → 0 (converge)
+  const radiusMult = expandProgress * (1 - convergeProgress);
+
+  // Final compression — everything shrinks to a point
+  const compressRaw = interpolate(localFrame, [spiralEnd, compressionEnd], [0, 1], clamp());
+  const compressProgress = compressRaw * compressRaw * (3 - 2 * compressRaw);
+
+  // Central glow that builds as letters converge
+  const glowIntensity = interpolate(localFrame, [spiralStart + 5, spiralEnd, compressionEnd], [0, 0.6, 1], clamp());
 
   return (
     <div
@@ -1208,62 +1244,122 @@ const ScatterText: React.FC<{
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: `translate(-50%, -50%) translateY(${entryY}px)`,
-        display: "flex",
-        fontSize: 42,
-        fontFamily: FONT,
-        fontWeight: 300,
+        transform: "translate(-50%, -50%)",
+        width: 0,
+        height: 0,
       }}
     >
-      {allChars.map((ch, i) => {
-        const scatterRaw = interpolate(
-          localFrame,
-          [scatterStart, holdFrames + 10],
-          [0, 1],
-          clamp()
-        );
-        // Smoothstep the scatter for organic deceleration at start
-        const scatterProgress = scatterRaw * scatterRaw * (3 - 2 * scatterRaw);
+      {/* Central convergence glow */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "translate(-50%, -50%)",
+          width: 200,
+          height: 200,
+          borderRadius: "50%",
+          background: `radial-gradient(circle,
+            rgba(139,92,246,${0.3 * glowIntensity}) 0%,
+            rgba(236,72,153,${0.15 * glowIntensity}) 30%,
+            transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
 
-        // Each character scatters in its own direction using seeded angle
-        const seed = (i * 137.5) % 360; // golden angle spread
-        const dist = (60 + (i % 3) * 40) * scatterProgress;
-        const dx = Math.sin((seed * Math.PI) / 180) * dist;
-        const dy = Math.cos((seed * Math.PI) / 180) * dist * 0.6;
-        const rot = ((i - 7) * 25) * scatterProgress;
-        const scatterOp = interpolate(scatterProgress, [0.3, 1], [1, 0], clamp());
+      {/* Letters — either inline text or spiraling */}
+      {localFrame < spiralStart ? (
+        // Phase 1: readable text at center
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            transform: "translate(-50%, -50%)",
+            display: "flex",
+            fontSize: 42,
+            fontFamily: FONT,
+            fontWeight: 300,
+            whiteSpace: "nowrap",
+            opacity: entryOpacity,
+          }}
+        >
+          {SPIRAL_PARAMS.map(({ ch, isAccent }, i) => (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                color: isAccent ? undefined : "#fff",
+                background: isAccent ? `linear-gradient(90deg, ${PURPLE}, ${PINK})` : undefined,
+                WebkitBackgroundClip: isAccent ? "text" : undefined,
+                WebkitTextFillColor: isAccent ? "transparent" : undefined,
+                filter: isAccent ? `drop-shadow(0 0 8px ${PURPLE})` : undefined,
+                width: ch === " " ? "0.3em" : undefined,
+              }}
+            >
+              {ch}
+            </span>
+          ))}
+        </div>
+      ) : (
+        // Phase 2+3: letters spiral on logarithmic paths
+        SPIRAL_PARAMS.map(({ ch, goldenAngle, baseRadius, spiralSpeed, isAccent }, i) => {
+          // Logarithmic spiral: r = baseRadius * e^(b * theta)
+          // As convergence increases, radius shrinks toward 0
+          const r = baseRadius * radiusMult * (1 - compressProgress);
 
-        const accent = isAccentChar(i);
-        const glowAmt = interpolate(localFrame, [4, 12], [0, 1], clamp());
+          // Theta increases during convergence — letters rotate around center
+          // Each letter starts at its golden-angle offset and spirals
+          const thetaBase = (goldenAngle * Math.PI) / 180;
+          const thetaSpiral = convergeProgress * Math.PI * 2 * spiralSpeed;
+          const theta = thetaBase + thetaSpiral;
 
-        // Motion blur per character proportional to scatter velocity
-        const charBlur = scatterProgress > 0.02 && scatterProgress < 0.8
-          ? interpolate(scatterProgress, [0, 0.3, 0.8], [0, 2.5, 0], clamp())
-          : 0;
+          const x = r * Math.cos(theta);
+          const y = r * Math.sin(theta) * 0.7; // slight vertical compression for 3D feel
 
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              color: accent ? undefined : "#fff",
-              background: accent ? `linear-gradient(90deg, ${PURPLE}, ${PINK})` : undefined,
-              WebkitBackgroundClip: accent ? "text" : undefined,
-              WebkitTextFillColor: accent ? "transparent" : undefined,
-              filter: accent
-                ? `drop-shadow(0 0 ${12 * glowAmt}px ${PURPLE})${charBlur > 0.1 ? ` blur(${charBlur}px)` : ""}`
-                : charBlur > 0.1 ? `blur(${charBlur}px)` : undefined,
-              transform: scatterProgress > 0
-                ? `translate(${dx}px, ${dy}px) rotate(${rot}deg)`
-                : "none",
-              opacity: Math.min(entryOpacity, scatterOp),
-              width: ch === " " ? "0.3em" : undefined,
-            }}
-          >
-            {ch}
-          </span>
-        );
-      })}
+          // Scale: shrinks as letters converge
+          const charScale = interpolate(radiusMult, [0, 0.3, 1], [0.3, 0.7, 1], clamp())
+            * interpolate(compressProgress, [0, 1], [1, 0.1], clamp());
+
+          // Rotation: letters tilt as they spiral
+          const charRotation = convergeProgress * (i - 7) * 40 + compressProgress * 180;
+
+          // Opacity: fade out as compression completes
+          const charOpacity = interpolate(compressProgress, [0.5, 1], [1, 0], clamp());
+
+          // Motion blur proportional to spiral velocity
+          const velocity = radiusMult > 0.05 ? Math.abs(r) * 0.01 + convergeProgress * 2 : 0;
+          const charBlur = Math.min(velocity, 3) * (1 - compressProgress);
+
+          return (
+            <span
+              key={i}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                display: "inline-block",
+                fontSize: 42,
+                fontFamily: FONT,
+                fontWeight: 300,
+                color: isAccent ? undefined : "#fff",
+                background: isAccent ? `linear-gradient(90deg, ${PURPLE}, ${PINK})` : undefined,
+                WebkitBackgroundClip: isAccent ? "text" : undefined,
+                WebkitTextFillColor: isAccent ? "transparent" : undefined,
+                filter: [
+                  isAccent ? `drop-shadow(0 0 ${8 * glowIntensity}px ${PURPLE})` : "",
+                  charBlur > 0.2 ? `blur(${charBlur.toFixed(1)}px)` : "",
+                ].filter(Boolean).join(" ") || undefined,
+                transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${charRotation}deg) scale(${charScale})`,
+                opacity: charOpacity,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {ch}
+            </span>
+          );
+        })
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -13,17 +13,17 @@ const { fontFamily } = loadFont("normal", {
 });
 
 /**
- * Scene 02 — "the next chapter" kinetic text
+ * Scene 02 — "the next chapter" kinetic text + Bard disintegration
  *
  * Flow (174 frames @ 29fps):
  *   Phase A (0–50):   "And now it's time for" builds word by word
  *   Phase B (55–72):  "the next chapter" types in blue char-by-char
  *   Phase C (72–100): "the next chapter" holds, dark text
- *   Phase D (100–126): page-turn 3D rotation from LEFT edge
+ *   Phase D (100–126): page-turn corner peel from BOTTOM-RIGHT
  *   Phase E (121–137): "Today" with luminous purple-blue gradient
  *   Phase F (137–150): "Today, Bard" — Today white, Bard pink
- *   Phase G (148–166): "Today, Bard is becoming" + sparkles
- *   Phase H (162–174): dissolve out
+ *   Phase G (148–166): "Today, Bard is becoming" + Bard disintegration
+ *   Phase H (162–174): dissolve out — particles stream off
  */
 
 const BG_LIGHT = "#EBEAF4";
@@ -36,6 +36,82 @@ const GRADIENT_PURPLE = "#B08CE8";
 const GRADIENT_BLUE = "#7DADE6";
 
 const C = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
+
+// ── Seeded pseudo-random for deterministic fragments ──
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
+
+// ── Fragment data for "Bard" disintegration ──
+interface BardFragment {
+  letter: string;
+  letterIdx: number;
+  fragIdx: number;
+  // Offset from letter center (where the fragment "lives" within the letter)
+  offsetX: number;
+  offsetY: number;
+  // Explosion vector
+  angle: number;
+  distance: number; // max travel distance
+  curveStrength: number; // perpendicular curve offset
+  rotationSpeed: number; // degrees per frame
+  // Visual
+  width: number;
+  height: number;
+  delay: number; // frames before this fragment starts moving
+  // Color — slight hue variation around pink
+  hueShift: number;
+  saturation: number;
+  lightness: number;
+}
+
+function generateBardFragments(): BardFragment[] {
+  const letters = ["B", "a", "r", "d"];
+  const fragments: BardFragment[] = [];
+
+  letters.forEach((letter, letterIdx) => {
+    // Denser fragment count — the word must visually dissolve
+    const count = letter === "B" ? 22 : letter === "d" ? 20 : letter === "a" ? 18 : 16;
+
+    for (let fragIdx = 0; fragIdx < count; fragIdx++) {
+      const seed = letterIdx * 1000 + fragIdx;
+      const r = (n: number) => seededRandom(seed + n * 137);
+
+      // Letter bounding boxes at 44px font
+      const letterWidth = letter === "B" ? 30 : letter === "a" ? 26 : letter === "r" ? 18 : 26;
+      const letterHeight = 44;
+
+      // Direction: strongly upward-right, like embers rising from a fire
+      // Reference shows particles streaming up and to the right
+      const baseAngle = -Math.PI * 0.55 + (letterIdx - 1.5) * 0.15; // ~-100deg, slight outward spread
+      const angleSpread = r(0) * Math.PI * 0.5 - Math.PI * 0.25; // narrower cone
+
+      fragments.push({
+        letter,
+        letterIdx,
+        fragIdx,
+        offsetX: (r(1) - 0.5) * letterWidth,
+        offsetY: (r(2) - 0.5) * letterHeight,
+        angle: baseAngle + angleSpread,
+        distance: 120 + r(3) * 350, // longer travel
+        curveStrength: (r(4) - 0.5) * 150, // stronger arcs
+        rotationSpeed: (r(5) - 0.5) * 12,
+        width: 1.5 + r(6) * 8, // wider size range: tiny shards to bigger chunks
+        height: 1.5 + r(7) * 10,
+        delay: letterIdx * 1.2 + r(8) * 4, // tighter stagger, edges first
+        // Color: mix of pink, purple, and blue — Gemini gradient
+        hueShift: r(9) < 0.5
+          ? (r(9) - 0.25) * 40    // pink-coral range (330-360)
+          : 40 + r(9) * 60,        // purple-blue range (270-310)
+        saturation: 65 + r(10) * 30,
+        lightness: 50 + r(11) * 25,
+      });
+    }
+  });
+
+  return fragments;
+}
 
 // ── Word reveal with fade + horizontal slide ──
 const WordReveal: React.FC<{
@@ -144,16 +220,13 @@ const TypingReveal: React.FC<{
   const elapsed = Math.max(0, frame - startFrame);
   const charsVisible = Math.min(text.length, Math.floor(elapsed * charsPerFrame));
 
-  // Smooth transition from typing color to settled color
   const settleProgress = interpolate(frame, [settleFrame, settleFrame + 8], [0, 1], C);
 
-  // Cursor blink
   const typingDone = charsVisible >= text.length;
   const cursorOpacity = !typingDone
     ? (Math.sin(frame * 0.5) > -0.3 ? 0.7 : 0)
     : interpolate(frame, [startFrame + text.length / charsPerFrame, startFrame + text.length / charsPerFrame + 5], [0.7, 0], C);
 
-  // Blend color
   const displayColor = settleProgress < 0.01 ? color : settleProgress > 0.99 ? settleColor : color;
 
   return (
@@ -171,7 +244,6 @@ const TypingReveal: React.FC<{
       >
         {text.slice(0, charsVisible)}
       </span>
-      {/* Cursor */}
       {charsVisible > 0 && (
         <span
           style={{
@@ -190,6 +262,135 @@ const TypingReveal: React.FC<{
   );
 };
 
+// ── "Bard" disintegrating text with per-letter fragments ──
+const BardDisintegration: React.FC<{
+  disintegrateStart: number; // frame when disintegration begins
+  bardAppearStart: number; // frame when "Bard" first appears
+  opacity: number;
+  // Position offsets for the "Bard" word relative to its text row
+}> = ({ disintegrateStart, bardAppearStart, opacity }) => {
+  const frame = useCurrentFrame();
+  const fragments = useMemo(() => generateBardFragments(), []);
+
+  // How far into disintegration we are (0 = start, 1 = fully scattered)
+  const disintProgress = interpolate(
+    frame,
+    [disintegrateStart, disintegrateStart + 20],
+    [0, 1],
+    C
+  );
+
+  // Per-letter x offsets (B, a, r, d) — approximate spacing at 44px font
+  // Letters are centered within the "Bard" word block
+  const letterCenters = [-28, -6, 10, 28]; // x offset from "Bard" center
+
+  // The intact text fades as fragments take over
+  const textOpacity = interpolate(
+    frame,
+    [disintegrateStart, disintegrateStart + 8],
+    [1, 0],
+    C
+  );
+
+  // Appear animation for the whole word
+  const appearProgress = interpolate(
+    frame,
+    [bardAppearStart, bardAppearStart + 8],
+    [0, 1],
+    C
+  );
+
+  return (
+    <span
+      style={{
+        position: "relative",
+        display: "inline-block",
+        marginRight: 11,
+        opacity: opacity * appearProgress,
+      }}
+    >
+      {/* Intact "Bard" text — fades out as disintegration starts */}
+      <span
+        style={{
+          fontSize: 44,
+          fontWeight: 500,
+          fontFamily,
+          color: PINK,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.2,
+          opacity: textOpacity,
+        }}
+      >
+        Bard
+      </span>
+
+      {/* Fragment particles — each one is a small colored rectangle */}
+      {disintProgress > 0 && fragments.map((frag, i) => {
+        // Per-fragment progress with individual delay
+        const fragProgress = interpolate(
+          frame,
+          [
+            disintegrateStart + frag.delay,
+            disintegrateStart + frag.delay + 18,
+          ],
+          [0, 1],
+          C
+        );
+
+        if (fragProgress <= 0) return null;
+
+        // Deceleration curve — fast start, slow end
+        const eased = 1 - Math.pow(1 - fragProgress, 2.5);
+
+        // Position: start at letter origin, fly outward on curved path
+        const travelX = Math.cos(frag.angle) * frag.distance * eased;
+        const travelY = Math.sin(frag.angle) * frag.distance * eased;
+
+        // Perpendicular curve (makes trajectories arc, not straight)
+        const perpX = -Math.sin(frag.angle) * frag.curveStrength * eased * (1 - eased);
+        const perpY = Math.cos(frag.angle) * frag.curveStrength * eased * (1 - eased);
+
+        // Origin: letter center + fragment offset within letter
+        const originX = letterCenters[frag.letterIdx] + frag.offsetX;
+        const originY = frag.offsetY;
+
+        const x = originX + travelX + perpX;
+        const y = originY + travelY + perpY;
+        const rotation = frag.rotationSpeed * fragProgress * 360;
+
+        // Fade: visible immediately, fade out toward end of travel
+        const fragOpacity = interpolate(fragProgress, [0, 0.1, 0.7, 1], [0, 1, 0.8, 0], C);
+
+        // Scale: starts at full size, shrinks slightly as it travels
+        const scale = interpolate(fragProgress, [0, 0.3, 1], [1, 1, 0.4], C);
+
+        // Color from pink range with per-fragment variation
+        const hue = 340 + frag.hueShift; // pink-coral range
+        const color = `hsl(${hue}, ${frag.saturation}%, ${frag.lightness}%)`;
+
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: frag.width,
+              height: frag.height,
+              borderRadius: frag.width > 4 ? 1 : 0,
+              backgroundColor: color,
+              opacity: fragOpacity,
+              transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
+              boxShadow: `0 0 ${frag.width * 2}px ${color}`,
+              pointerEvents: "none",
+            }}
+          />
+        );
+      })}
+    </span>
+  );
+};
+
 export const Scene02: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -199,79 +400,50 @@ export const Scene02: React.FC = () => {
   const DARK_TEXT_START = TURN_END - 5; // 121
 
   // ═══ Background ═══
-  // Dark bg appears earlier and faster — by mid-turn it should be almost fully dark
   const darkOverlay = interpolate(frame, [TURN_START, TURN_START + 14], [0, 1], C);
 
   // ═══ Light phase text ═══
-  // "And now it's time for" exits quickly
   const lightExit = 50;
   const lightOpacity = interpolate(frame, [lightExit, lightExit + 6], [1, 0], C);
 
-  // "the next chapter" — typing reveal
+  // "the next chapter"
   const TYPING_START = 62;
-  const TYPING_SETTLE = 72; // blue → dark faster
+  const TYPING_SETTLE = 72;
   const chapterOut = interpolate(frame, [TURN_START, TURN_START + 8], [1, 0], C);
   const chapterIn = interpolate(frame, [TYPING_START, TYPING_START + 4], [0, 1], C);
 
-  // ═══ Page turn — pivots from LEFT edge ═══
+  // ═══ Page turn — corner peel from BOTTOM-RIGHT ═══
+  // The white page lifts from its bottom-right corner, rotating around
+  // a diagonal axis (roughly top-left ↔ bottom-right). Dark bg revealed
+  // from the top-right inward.
   const turnProgress = interpolate(frame, [TURN_START, TURN_END], [0, 1], {
     ...C,
     easing: Easing.inOut(Easing.cubic),
   });
-  const pageRotateY = interpolate(turnProgress, [0, 1], [0, 90]);
-  const pageOpacity = interpolate(turnProgress, [0, 0.6, 0.85], [1, 0.8, 0], C);
+
+  // The peel diagonal: as turnProgress goes 0→1, the fold line
+  // moves from bottom-right corner toward top-left.
+  // We clip the white page to only show the un-peeled portion.
+  // The fold line intersects the right edge at peelY and the bottom edge at peelX.
+  const peelX = interpolate(turnProgress, [0, 1], [100, -30], C); // % from left on bottom
+  const peelY = interpolate(turnProgress, [0, 1], [100, -30], C); // % from top on right
+
+  // The page rotates around the diagonal fold axis.
+  // We approximate this with rotateX + rotateY combined with perspective.
+  const foldAngle = interpolate(turnProgress, [0, 1], [0, 75]); // degrees of fold
+  const pageOpacity = interpolate(turnProgress, [0, 0.7, 1], [1, 0.85, 0], C);
 
   // ═══ Dark phase ═══
   const todayFadeIn = interpolate(frame, [DARK_TEXT_START, DARK_TEXT_START + 10], [0, 1], C);
-  // "Today" shows with gradient first, then transitions to white + "Bard" appears
   const todayGradientPhase = interpolate(frame, [DARK_TEXT_START, DARK_TEXT_START + 14, DARK_TEXT_START + 16], [1, 1, 0], C);
+
+  // "Bard" timing
+  const BARD_APPEAR = DARK_TEXT_START + 14; // 135
+  const BARD_DISINTEGRATE = BARD_APPEAR + 10; // 145 — short hold then shatter
 
   // Exit
   const exitStart = 162;
   const exitFade = interpolate(frame, [exitStart, 174], [1, 0], C);
-
-  // ═══ Sparkle particles near "Bard" (dark phase) ═══
-  const bardStart = DARK_TEXT_START + 14; // 135
-  const sparkleBaseOpacity = interpolate(
-    frame,
-    [bardStart, bardStart + 8, exitStart, 174],
-    [0, 1, 1, 0],
-    C
-  );
-
-  // Sparkles — bright dots floating upward from around "Bard"
-  // Position relative to center of frame since text is centered
-  const sparkles = Array.from({ length: 32 }, (_, i) => {
-    const seed = i * 137.508;
-    // Center the sparkles around "Bard" text position (~570-620 on 1280px canvas)
-    const cx = 570 + Math.sin(seed) * 90 + (i % 7) * 8;
-    const baseY = 320 + Math.cos(seed * 0.7) * 30; // varied vertical origins
-    const delayOffset = (i % 6) * 0.8; // stagger start
-    const drift = Math.max(0, (frame - bardStart - 1 - delayOffset) * (0.7 + (i % 5) * 0.35));
-    const finalY = baseY - drift;
-    const xWobble = Math.sin((frame + i * 17) * 0.12) * 18 + Math.cos(seed * 0.3) * drift * 0.15;
-    const sz = 2.5 + (i % 4) * 1.2;
-    const hue = 270 + (i * 15) % 80; // purple-pink-blue range
-    const individualOpacity = sparkleBaseOpacity * (0.5 + (i % 4) * 0.15);
-    const driftFade = interpolate(drift, [0, 40, 120], [0, 1, 0], C);
-
-    return (
-      <div
-        key={i}
-        style={{
-          position: "absolute",
-          left: cx + xWobble,
-          top: finalY,
-          width: sz,
-          height: sz,
-          borderRadius: "50%",
-          backgroundColor: `hsla(${hue}, 85%, 78%, ${individualOpacity * driftFade})`,
-          boxShadow: `0 0 ${sz * 3}px hsla(${hue}, 85%, 78%, ${individualOpacity * driftFade * 0.6})`,
-          pointerEvents: "none",
-        }}
-      />
-    );
-  });
 
   // ═══ Background glow (dark phase) ═══
   const glowOpacity = interpolate(
@@ -283,13 +455,13 @@ export const Scene02: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* Light background with subtle animated radial gradients */}
+      {/* Light background */}
       <AbsoluteFill
         style={{
           background: `radial-gradient(ellipse at 50% 50%, #f5f3fa 0%, ${BG_LIGHT} 70%, #e4e1ee 100%)`,
         }}
       />
-      {/* Subtle warm accent — drifts slowly */}
+      {/* Warm accent drift */}
       {frame < TURN_START + 10 && (
         <div
           style={{
@@ -307,7 +479,7 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* Dark overlay — builds during page turn */}
+      {/* Dark overlay */}
       <AbsoluteFill style={{ backgroundColor: BG_DARK, opacity: darkOverlay }} />
 
       {/* ════ LIGHT PHASE ════ */}
@@ -331,7 +503,7 @@ export const Scene02: React.FC = () => {
         </TextRow>
       )}
 
-      {/* Phase B-C: "the next chapter" — types in blue, settles dark */}
+      {/* Phase B-C: "the next chapter" */}
       {frame >= TYPING_START && frame < TURN_START + 8 && (
         <TextRow opacity={chapterIn * chapterOut}>
           <TypingReveal
@@ -347,33 +519,101 @@ export const Scene02: React.FC = () => {
         </TextRow>
       )}
 
-      {/* Page turn: white sheet rotating from LEFT edge */}
+      {/* Page turn — corner peel from bottom-right */}
       {frame >= TURN_START && frame <= TURN_END + 2 && (
-        <AbsoluteFill
-          style={{
-            backgroundColor: "#ffffff",
-            opacity: pageOpacity,
-            transform: `perspective(1200px) rotateY(${pageRotateY}deg)`,
-            transformOrigin: "left center",
-            boxShadow: turnProgress < 0.8
-              ? `${turnProgress * 40}px 0 60px rgba(0,0,0,${turnProgress * 0.3})`
-              : "none",
-          }}
-        >
-          <TextRow opacity={interpolate(turnProgress, [0, 0.35], [1, 0], C)}>
-            <span
+        <>
+          {/* Shadow under the fold — a diagonal gradient that follows the peel */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `linear-gradient(
+                ${interpolate(turnProgress, [0, 1], [135, 160])}deg,
+                transparent ${Math.max(0, peelX - 15)}%,
+                rgba(0,0,0,${interpolate(turnProgress, [0, 0.3, 0.8], [0, 0.25, 0.1], C)}) ${peelX}%,
+                transparent ${peelX + 8}%
+              )`,
+              opacity: turnProgress > 0.01 ? 1 : 0,
+              pointerEvents: "none",
+              zIndex: 2,
+            }}
+          />
+
+          {/* White page — clipped to the un-peeled region */}
+          <AbsoluteFill
+            style={{
+              backgroundColor: "#ffffff",
+              opacity: pageOpacity,
+              // Clip: polygon that shows only the "flat" portion of the page.
+              // The fold line moves diagonally from bottom-right to top-left.
+              // Points: top-left, top-right (clamped by peelY on right edge),
+              //         fold intersection, bottom-left
+              clipPath: `polygon(
+                0% 0%,
+                ${Math.min(100, peelX)}% 0%,
+                ${Math.min(100, peelX)}% ${Math.min(100, peelY)}%,
+                0% ${Math.min(100, peelY)}%
+              )`,
+              zIndex: 1,
+            }}
+          >
+            <TextRow opacity={interpolate(turnProgress, [0, 0.4], [1, 0], C)}>
+              <span
+                style={{
+                  fontSize: 42,
+                  fontWeight: 300,
+                  fontFamily,
+                  color: TEXT_DARK,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                the next chapter
+              </span>
+            </TextRow>
+          </AbsoluteFill>
+
+          {/* The peeled corner — the lifted portion of the page with 3D perspective */}
+          {turnProgress > 0.02 && (
+            <div
               style={{
-                fontSize: 42,
-                fontWeight: 300,
-                fontFamily,
-                color: TEXT_DARK,
-                letterSpacing: "-0.02em",
+                position: "absolute",
+                inset: 0,
+                overflow: "hidden",
+                perspective: 1200,
+                zIndex: 3,
+                pointerEvents: "none",
               }}
             >
-              the next chapter
-            </span>
-          </TextRow>
-        </AbsoluteFill>
+              <div
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  backgroundColor: "#f0eef5",
+                  // The folded part clips to the area BEYOND the fold line
+                  clipPath: `polygon(
+                    ${Math.min(100, peelX)}% 0%,
+                    100% 0%,
+                    100% 100%,
+                    0% 100%,
+                    0% ${Math.min(100, peelY)}%,
+                    ${Math.min(100, peelX)}% ${Math.min(100, peelY)}%
+                  )`,
+                  transformOrigin: `${peelX}% ${peelY}%`,
+                  transform: `rotate3d(1, 1, 0, ${foldAngle}deg)`,
+                  opacity: interpolate(turnProgress, [0, 0.05, 0.85, 1], [0, 0.6, 0.4, 0], C),
+                  // Subtle gradient to simulate paper thickness / shadow on fold
+                  background: `linear-gradient(
+                    ${135 + foldAngle * 0.3}deg,
+                    rgba(220,218,228,0.9) 0%,
+                    rgba(240,238,245,0.7) 40%,
+                    rgba(200,198,210,0.5) 100%
+                  )`,
+                }}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* ════ DARK PHASE ════ */}
@@ -396,16 +636,12 @@ export const Scene02: React.FC = () => {
         />
       )}
 
-      {/* Sparkles */}
-      {frame >= bardStart && sparkles}
-
       {/* Dark phase text */}
       {frame >= DARK_TEXT_START && (
         <TextRow opacity={todayFadeIn * exitFade} y="50%">
           {/* "Today" — gradient initially, then white */}
           {todayGradientPhase > 0.01 ? (
             <span style={{ position: "relative", display: "inline-block", marginRight: 11 }}>
-              {/* Glow layer behind — actual colored text for the shadow */}
               <span
                 style={{
                   position: "absolute",
@@ -424,7 +660,6 @@ export const Scene02: React.FC = () => {
               >
                 Today
               </span>
-              {/* Gradient text on top */}
               <WordReveal
                 start={DARK_TEXT_START}
                 size={46}
@@ -444,14 +679,11 @@ export const Scene02: React.FC = () => {
               >
                 Today,
               </WordReveal>
-              <WordReveal
-                start={bardStart}
-                size={44}
-                weight={500}
-                color={PINK}
-              >
-                Bard
-              </WordReveal>
+              <BardDisintegration
+                bardAppearStart={BARD_APPEAR}
+                disintegrateStart={BARD_DISINTEGRATE}
+                opacity={1}
+              />
               <WordReveal
                 start={DARK_TEXT_START + 18}
                 size={44}

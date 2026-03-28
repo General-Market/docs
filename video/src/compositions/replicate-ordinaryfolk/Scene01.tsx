@@ -23,10 +23,10 @@ import {
   Easing,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
-import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
+import { loadFont } from "@remotion/google-fonts/GoogleSans";
 
 const { fontFamily } = loadFont("normal", {
-  weights: ["300", "400", "500", "700"],
+  weights: ["400", "500", "700"],
   subsets: ["latin"],
 });
 
@@ -195,33 +195,48 @@ const PhaseExperimenting: React.FC = () => {
         const w = wobble(`exp-${i}`, frame, 1.5, 1.0);
 
         if (word === "experimenting") {
+          // Reference: letters settle in from slight vertical displacement (8-15px),
+          // with subtle horizontal drift and purple tint fading to dark.
+          // NOT a dramatic scatter — a gentle arrive-and-land.
+          const settleOffsets = [
+            { dy: -12, dx: 1 },   // e
+            { dy: 8, dx: -2 },    // x
+            { dy: -10, dx: 0 },   // p
+            { dy: 14, dx: 1 },    // e
+            { dy: -8, dx: -1 },   // r
+            { dy: 11, dx: 2 },    // i
+            { dy: -15, dx: -1 },  // m
+            { dy: 9, dx: 0 },     // e
+            { dy: -11, dx: 1 },   // n
+            { dy: 13, dx: -2 },   // t
+            { dy: -9, dx: 0 },    // i
+            { dy: 10, dx: 1 },    // n
+            { dy: -13, dx: -1 },  // g
+          ];
           return (
             <span key={i} style={{ display: "inline-flex" }}>
               {word.split("").map((ch, ci) => {
-                const letterDelay = delays[i] + ci * 2.0;
-                const rawProgress = Math.max(0, Math.min(1, (frame - letterDelay) / 18));
+                const letterDelay = delays[i] + ci * 1.2;
+                const rawProgress = Math.max(0, Math.min(1, (frame - letterDelay) / 14));
                 const lp = EASE_OUT_CUBIC(rawProgress);
-                const lo = interpolate(rawProgress, [0, 0.15], [0, 1], clamp);
+                const lo = interpolate(rawProgress, [0, 0.2], [0, 1], clamp);
 
-                const angleIdx = ci % 4;
-                const angles = [ANGLE_A, ANGLE_B, ANGLE_C, ANGLE_D];
-                const scatterAngle = angles[angleIdx] * (ci % 2 === 0 ? 1 : -1);
-                const scatterDist = 45 + (ci % 3) * 30;
-                const scatterRad = (scatterAngle * Math.PI) / 180;
+                const offset = settleOffsets[ci] || { dy: 0, dx: 0 };
+                // Arc path: use quadratic easing so letters curve slightly as they land
+                const arcT = lp;
+                const arcBulge = Math.sin(arcT * Math.PI) * 3 * (ci % 2 === 0 ? 1 : -1);
+                const ly = (1 - arcT) * offset.dy;
+                const lx = (1 - arcT) * offset.dx + arcBulge;
 
-                const ly = (1 - lp) * Math.sin(scatterRad) * scatterDist;
-                const lx = (1 - lp) * Math.cos(scatterRad) * scatterDist * 0.5;
+                const lw = wobble(`ltr-${ci}`, frame, 0.8, 0.5, 0.03);
 
-                const lw = wobble(`ltr-${ci}`, frame, 1.2, 0.8, 0.03);
-
-                const purpleMix = interpolate(rawProgress, [0.1, 0.8], [0.85, 0], clamp);
+                const purpleMix = interpolate(rawProgress, [0.0, 0.6], [0.7, 0], clamp);
                 const letterColor =
                   purpleMix > 0
                     ? `rgba(${0x5b}, ${0x4f}, ${0xd0}, ${purpleMix})`
                     : undefined;
 
-                const currDist = Math.sqrt(lx * lx + ly * ly);
-                const blur = Math.min(currDist * 0.08, 6);
+                const blur = Math.min(Math.abs(ly) * 0.08, 2);
 
                 return (
                   <span
@@ -231,7 +246,7 @@ const PhaseExperimenting: React.FC = () => {
                       opacity: lo,
                       transform: `translate(${lx + lw.x}px, ${ly + lw.y}px) rotate(${lw.rot}deg)`,
                       color: letterColor || TEXT_DARK,
-                      filter: blur > 0.4 ? `blur(${blur}px)` : undefined,
+                      filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
                     }}
                   >
                     {ch}
@@ -302,7 +317,7 @@ const PhaseBardFull: React.FC = () => {
         transform: `translate(calc(-50% + ${entryX + w.x}px), calc(-50% + ${entryY + w.y}px)) scale(${scale * beatScale(abs)}) rotate(${w.rot}deg)`,
         fontFamily,
         fontSize: BARD_SIZE,
-        fontWeight: 300,
+        fontWeight: 400,
         opacity,
         background: gradient,
         WebkitBackgroundClip: "text",
@@ -449,8 +464,8 @@ const PhaseWriteEmails: React.FC = () => {
           style={{
             display: "inline-block",
             background: pillGrad,
-            padding: "8px 20px",
-            borderRadius: 6,
+            padding: "6px 10px",
+            borderRadius: 3,
             color: "#FFFFFF",
             fontWeight: FONT_WEIGHT,
             lineHeight: 1.15,
@@ -637,10 +652,10 @@ const PhaseBrainstormIdeas: React.FC = () => {
     { word: "ideas", x: -190, y: 110, color: "#6070D8", size: 36, weight: 500, delay: 3 },
     { word: "ideas", x: -90, y: -130, color: "#9B5FC880", size: 28, weight: 400, delay: 4 },
     { word: "Brainstorm", x: 110, y: 140, color: "#D44E7A80", size: 26, weight: 400, delay: 2 },
-    { word: "Brainstorm", x: -330, y: 35, color: "#D44E7A50", size: 22, weight: 300, delay: 5 },
-    { word: "ideas", x: 320, y: -35, color: "#5B6FD750", size: 22, weight: 300, delay: 6 },
-    { word: "Brainstorm", x: -150, y: 170, color: "#B86CC840", size: 18, weight: 300, delay: 3 },
-    { word: "ideas", x: 160, y: -160, color: "#6878E040", size: 18, weight: 300, delay: 5 },
+    { word: "Brainstorm", x: -330, y: 35, color: "#D44E7A50", size: 22, weight: 400, delay: 5 },
+    { word: "ideas", x: 320, y: -35, color: "#5B6FD750", size: 22, weight: 400, delay: 6 },
+    { word: "Brainstorm", x: -150, y: 170, color: "#B86CC840", size: 18, weight: 400, delay: 3 },
+    { word: "ideas", x: 160, y: -160, color: "#6878E040", size: 18, weight: 400, delay: 5 },
   ];
 
   const convergeRaw = Math.max(0, Math.min(1, (frame - 14) / 20));

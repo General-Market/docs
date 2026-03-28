@@ -12,6 +12,7 @@ import { P2PSection } from '@/components/domain/explorer/P2PSection'
 import { CycleSection } from '@/components/domain/explorer/CycleSection'
 import { ITPSection } from '@/components/domain/explorer/ITPSection'
 import { VisionSection } from '@/components/domain/explorer/VisionSection'
+import { TieRateSection } from '@/components/domain/explorer/TieRateSection'
 import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSection'
 import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 import { SourcesExplorerSection } from '@/components/domain/explorer/SourcesExplorerSection'
@@ -120,7 +121,12 @@ export default function ExplorerPageClient() {
           {activeTab === 'p2p' && <P2PSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'cycles' && <CycleSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} />}
-          {activeTab === 'vision' && <VisionSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'vision' && (
+            <>
+              <VisionSection snapshots={snapshots} latest={latest} loading={loading} />
+              <TieRateSection />
+            </>
+          )}
           {activeTab === 'sources' && <SourcesExplorerSection />}
           {activeTab === 'system' && <SystemExplorerSection />}
           {activeTab === 'health' && <SystemHealthSection snapshots={snapshots} latest={latest} loading={loading} />}

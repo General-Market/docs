@@ -387,7 +387,54 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
   );
 };
 
-/* ─── Gemini Dropdown UI — elastic spring with double bounce ─── */
+/* ─── Browser Frame — desktop browser corner view ─── */
+const BrowserFrame: React.FC<{
+  children: React.ReactNode;
+  scale?: number;
+  x?: number;
+  y?: number;
+  glowProgress?: number;
+}> = ({ children, scale = 1, x = 0, y = 0, glowProgress = 0 }) => {
+  const glowOpacity = 0.3 + glowProgress * 0.15;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) scale(${scale})`,
+        width: 480,
+        height: 520,
+        borderRadius: 16,
+        background: PHONE_BG,
+        overflow: "hidden",
+        boxShadow: `0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)`,
+        border: "1px solid rgba(0,0,0,0.06)",
+      }}
+    >
+      {/* Animated gradient border glow at top — matches reference pink/red edge */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 3,
+        background: "linear-gradient(90deg, #E91E63, #E040FB, #7C4DFF, #E91E63)",
+        backgroundSize: "200% 100%",
+        backgroundPosition: `${glowProgress * 100}% 0`,
+        opacity: glowOpacity,
+        zIndex: 10,
+      }} />
+      {/* Subtle gradient glow bleeding from top border */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: 40,
+        background: `linear-gradient(to bottom, rgba(233,30,99,${glowOpacity * 0.15}), transparent)`,
+        zIndex: 5,
+      }} />
+      <div style={{ width: "100%", height: "100%", position: "relative" }}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/* ─── Gemini Dropdown UI — desktop browser corner view ─── */
 const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   /* Elastic spring: low damping for visible overshoot/bounce */
   const dropdownOpen = spring({ frame: frame - 10, fps, config: { damping: 6, stiffness: 90, mass: 0.8 } });
@@ -399,48 +446,52 @@ const GeminiDropdownUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: "system-ui, sans-serif", position: "relative" }}>
-      <div style={{ height: 2, background: "linear-gradient(90deg, #E91E63, #E040FB, #7C4DFF)", opacity: 0.7 }} />
-      <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ fontSize: 18, color: GREY_TEXT }}>{HAMBURGER}</div>
-        <div style={{ fontSize: 18, color: DARK_TEXT, fontWeight: 500 }}>
+      {/* Browser-style header — hamburger + Gemini dropdown */}
+      <div style={{ padding: "18px 24px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ fontSize: 22, color: GREY_TEXT, letterSpacing: 2 }}>{HAMBURGER}</div>
+        <div style={{ fontSize: 22, color: DARK_TEXT, fontWeight: 500, letterSpacing: -0.3 }}>
           {"Gemini "}
-          <span style={{ fontSize: 12, color: GREY_TEXT }}>{ARROW_DOWN}</span>
+          <span style={{ fontSize: 14, color: GREY_TEXT }}>{ARROW_DOWN}</span>
         </div>
       </div>
+      {/* Dropdown panel */}
       <div
         style={{
-          margin: "0 16px", background: "#F8F9FA", borderRadius: 16,
-          padding: `${interpolate(dropdownOpen, [0, 1], [0, 12])}px 14px`,
-          maxHeight: interpolate(dropdownOpen, [0, 1], [0, 120]),
+          margin: "0 24px", background: "#F8F9FA", borderRadius: 16,
+          padding: `${interpolate(dropdownOpen, [0, 1], [0, 14])}px 18px`,
+          maxHeight: interpolate(dropdownOpen, [0, 1], [0, 140]),
           overflow: "hidden", opacity: dropdownOpen,
           transform: `scaleY(${interpolate(dropdownOpen, [0, 1], [0.6, 1])})`,
           transformOrigin: "top",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
         }}
       >
         <div style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
+          display: "flex", alignItems: "center", gap: 14, padding: "12px 0",
           opacity: row1Spring,
           transform: `translateX(${interpolate(row1Spring, [0, 1], [-12, 0])}px)`,
         }}>
-          <div style={{ fontSize: 18, color: BLUE }}>{SPARKLE}</div>
-          <div style={{ fontSize: 15, color: DARK_TEXT, fontWeight: 500, flex: 1 }}>Gemini</div>
-          <div style={{ width: 22, height: 22, borderRadius: 11, border: "1.5px solid #9AA0A6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#9AA0A6" }}>{CHECKMARK}</div>
+          <div style={{ fontSize: 20, color: BLUE }}>{SPARKLE}</div>
+          <div style={{ fontSize: 17, color: DARK_TEXT, fontWeight: 500, flex: 1 }}>Gemini</div>
+          <div style={{ width: 24, height: 24, borderRadius: 12, border: "1.5px solid #9AA0A6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#9AA0A6" }}>{CHECKMARK}</div>
         </div>
         <div style={{ height: 1, background: "#E8E8E8", margin: "2px 0" }} />
         <div style={{
-          display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
+          display: "flex", alignItems: "center", gap: 14, padding: "12px 0",
           opacity: row2Spring,
           transform: `translateX(${interpolate(row2Spring, [0, 1], [-12, 0])}px)`,
         }}>
-          <div style={{ fontSize: 18, background: "linear-gradient(135deg, #E040FB, #7C4DFF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{SPARKLE}</div>
-          <div style={{ fontSize: 15, color: DARK_TEXT, fontWeight: 500, flex: 1, whiteSpace: "nowrap" }}>Gemini Advanced</div>
-          <div style={{ background: DARK_TEXT, color: "#fff", fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 4, whiteSpace: "nowrap" }}>Upgrade</div>
+          <div style={{ fontSize: 20, background: "linear-gradient(135deg, #E040FB, #7C4DFF)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{SPARKLE}</div>
+          <div style={{ fontSize: 17, color: DARK_TEXT, fontWeight: 500, flex: 1, whiteSpace: "nowrap" }}>Gemini Advanced</div>
+          <div style={{ background: DARK_TEXT, color: "#fff", fontSize: 12, fontWeight: 600, padding: "5px 14px", borderRadius: 5, whiteSpace: "nowrap" }}>Upgrade</div>
         </div>
       </div>
-      <div style={{ position: "absolute", bottom: 60, left: 20, width: 48, height: 48, borderRadius: 24, background: "#E8E8EC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: GREY_TEXT, opacity: elementsDelay, transform: `translateY(${interpolate(elementsDelay, [0, 1], [10, 0])}px)`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>+</div>
-      <div style={{ position: "absolute", bottom: 16, left: 16, right: 16, background: "#F0F0F4", borderRadius: 28, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10, opacity: interpolate(elementsDelay, [0, 1], [0, 0.8]), transform: `translateY(${interpolate(elementsDelay, [0, 1], [8, 0])}px)` }}>
-        <div style={{ fontSize: 15, color: BLUE }}>{SPARKLE}</div>
-        <div style={{ fontSize: 14, color: "#9AA0A6", flex: 1 }}>Gemini</div>
+      {/* "+" new conversation button */}
+      <div style={{ position: "absolute", bottom: 80, left: 28, width: 52, height: 52, borderRadius: 26, background: "#E8E8EC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: GREY_TEXT, opacity: elementsDelay, transform: `translateY(${interpolate(elementsDelay, [0, 1], [10, 0])}px)`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>+</div>
+      {/* Search bar at bottom */}
+      <div style={{ position: "absolute", bottom: 20, left: 24, right: 24, background: "#F0F0F4", borderRadius: 28, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, opacity: interpolate(elementsDelay, [0, 1], [0, 0.8]), transform: `translateY(${interpolate(elementsDelay, [0, 1], [8, 0])}px)` }}>
+        <div style={{ fontSize: 17, color: BLUE }}>{SPARKLE}</div>
+        <div style={{ fontSize: 15, color: "#9AA0A6", flex: 1 }}>Gemini</div>
       </div>
     </div>
   );
@@ -545,7 +596,15 @@ export const Scene04: React.FC = () => {
   const geminiY = interpolate(geminiEntry, [0, 1], [120, 0]);
   const geminiOpacity = frame >= PHASE.GEMINI_UI.start ? geminiEntry : 0;
 
-  const fadeToBlack = interpolate(frame, [336, 339], [0, 0.15], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  /* Dramatic dark transition — rapid dim + content shrinks like camera pulling back */
+  const fadeToBlack = interpolate(frame, [326, 339], [0, 0.97], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+    easing: Easing.bezier(0.4, 0, 0.9, 0.3),
+  });
+  const darkShrink = interpolate(frame, [326, 339], [1, 0.88], {
+    extrapolateLeft: "clamp", extrapolateRight: "clamp",
+    easing: Easing.bezier(0.4, 0, 0.9, 0.3),
+  });
 
   const showChat = frame < PHASE.PHOTO_EXPAND.start;
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
@@ -607,7 +666,13 @@ export const Scene04: React.FC = () => {
   );
 
   return (
-    <AbsoluteFill style={{ backgroundColor: BG }}>
+    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+     <div style={{
+       position: "absolute", inset: 0,
+       transform: `scale(${darkShrink})`,
+       transformOrigin: "center center",
+       background: BG,
+     }}>
       {/* Subtle animated background gradient */}
       <div style={{
         position: "absolute", inset: 0,
@@ -641,17 +706,19 @@ export const Scene04: React.FC = () => {
         )
       )}
 
-      {/* "But that's not all" text */}
+      {/* "But that's not all..." text with spring-pop dots */}
       {frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15 && (() => {
         const textStart = PHASE.TRANSITION_TEXT.start + 8;
-        const words = ["But", "that\u2019s", "not", "all"];
+        const words = ["But", "that\u2019s", "not"];
         const wordDelay = 5;
-        const dotBase = textStart + words.length * wordDelay + 6;
-        const dotDelay = 5;
+        /* "all" gets its own treatment — blue color like reference */
+        const allStart = textStart + words.length * wordDelay;
+        const dotBase = allStart + 8;
+        const dotDelay = 5; /* 5-frame stagger between dots */
         const dotSpringConfigs = [
-          { damping: 7, stiffness: 140, mass: 0.5 },
-          { damping: 6, stiffness: 120, mass: 0.6 },
-          { damping: 5, stiffness: 100, mass: 0.7 },
+          { damping: 7, stiffness: 160, mass: 0.4 },
+          { damping: 6, stiffness: 140, mass: 0.45 },
+          { damping: 5, stiffness: 120, mass: 0.5 },
         ];
         const dotSprings = dotSpringConfigs.map((cfg, i) =>
           spring({ frame: frame - (dotBase + dotDelay * i), fps, config: cfg })
@@ -672,7 +739,6 @@ export const Scene04: React.FC = () => {
                   extrapolateLeft: "clamp", extrapolateRight: "clamp",
                   easing: Easing.out(Easing.quad),
                 });
-                // Motion blur on arc entrance + noise wobble
                 const tPrev = interpolate(Math.max(0, localF - 1), [0, 8], [0, 1], {
                   extrapolateLeft: "clamp", extrapolateRight: "clamp",
                   easing: Easing.bezier(0.22, 1, 0.36, 1),
@@ -692,19 +758,43 @@ export const Scene04: React.FC = () => {
                   }}>{word}</span>
                 );
               })}
-              <span style={{ display: "inline-flex", gap: 3, marginLeft: -4 }}>
+              {/* "all" in blue — matches reference frame_015 */}
+              {(() => {
+                const localF = frame - allStart;
+                const t = interpolate(localF, [0, 8], [0, 1], {
+                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
+                  easing: Easing.bezier(0.22, 1, 0.36, 1),
+                });
+                const arcX = quadBezier(t, 20, 5, 0);
+                const arcY = quadBezier(t, 30, -12, 0);
+                const wordOpacity = interpolate(localF, [0, 5], [0, 1], {
+                  extrapolateLeft: "clamp", extrapolateRight: "clamp",
+                  easing: Easing.out(Easing.quad),
+                });
+                return (
+                  <span style={{
+                    opacity: wordOpacity,
+                    transform: `translate(${arcX}px, ${arcY}px)`,
+                    display: "inline-block",
+                    color: BLUE,
+                  }}>all</span>
+                );
+              })()}
+              {/* Ellipsis dots — each pops in with spring on 5-frame stagger, all purple */}
+              <span style={{ display: "inline-flex", gap: 2, marginLeft: -2, alignItems: "baseline" }}>
                 {dotSprings.map((d, i) => {
-                  const dotScale = interpolate(d, [0, 1], [0, 1]);
-                  const dotOpacity = Math.min(d * 2, 1);
+                  const popScale = interpolate(d, [0, 0.4, 1], [0, 1.45, 1]);
+                  const dotOpacity = Math.min(d * 2.5, 1);
                   return (
                     <span key={i} style={{
-                      color: i === 0 ? "#7C4DFF" : i === 1 ? "#9C27B0" : "#3B5998",
-                      fontSize: "0.6em",
-                      fontWeight: 800,
+                      color: "#7B1FA2",
+                      fontSize: 42,
+                      fontWeight: 700,
                       opacity: dotOpacity,
-                      transform: `scale(${dotScale})`,
+                      transform: `scale(${popScale})`,
                       display: "inline-block",
-                    }}>{"\u2022"}</span>
+                      transformOrigin: "center bottom",
+                    }}>.</span>
                   );
                 })}
               </span>
@@ -713,48 +803,59 @@ export const Scene04: React.FC = () => {
         );
       })()}
 
-      {/* "Introducing" text — wipe reveal + breathing glow */}
+      {/* "Introducing" — animated gradient sweep from left to right */}
       {frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 5 && (() => {
         const introLocal = frame - PHASE.INTRODUCING.start;
         const introSpringScale = spring({ frame: introLocal, fps, config: { damping: 8, stiffness: 70, mass: 1 } });
         const scaleVal = interpolate(introSpringScale, [0, 1], [0.88, 1.0]);
-        const wipeT = interpolate(introLocal, [0, 18], [0, 1], {
+
+        /* Sweep progress: 0 = gradient hasn't arrived, 1 = fully colored */
+        const sweepT = interpolate(introLocal, [0, fps * 1.0], [0, 1], {
           extrapolateLeft: "clamp", extrapolateRight: "clamp",
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         });
-        const clipRight = interpolate(wipeT, [0, 1], [100, 0]);
-        /* Multi-layered breathing glow — two sine waves, offset phase */
+
+        /* The gradient slides from left to right through the text.
+           We use background-size wider than the text and animate background-position.
+           Left side: red/pink (already swept), right side: fades to dark (not yet swept) */
+        const bgPosPercent = interpolate(sweepT, [0, 1], [-80, 0]);
+
+        /* Breathing glow that follows the sweep edge */
         const glowBreath = 0.3 + Math.sin(introLocal * 0.18) * 0.12;
         const glowBreath2 = 0.18 + Math.sin(introLocal * 0.14 + 1.5) * 0.08;
-        const glowBreath3 = 0.1 + Math.sin(introLocal * 0.22 + 3.0) * 0.05;
+        /* Glow X position tracks the sweep */
+        const glowX = interpolate(sweepT, [0, 1], [-200, 0]);
+
         const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
         const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
+
         return (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: introOpacity, transform: `scale(${scaleVal}) translate(${introWobX}px, ${introWobY}px)` }}>
-            {/* Primary lavender-pink glow */}
+            {/* Radial glow behind text — follows the sweep edge */}
             <div style={{
-              position: "absolute", width: 600, height: 200,
-              background: `radial-gradient(ellipse at 40% 50%, rgba(210,140,220,${glowBreath}) 0%, rgba(180,140,240,${glowBreath * 0.5}) 40%, transparent 75%)`,
+              position: "absolute", width: 500, height: 180,
+              transform: `translateX(${glowX}px)`,
+              background: `radial-gradient(ellipse at 50% 50%, rgba(210,140,220,${glowBreath}) 0%, rgba(180,140,240,${glowBreath * 0.4}) 40%, transparent 70%)`,
               filter: "blur(50px)",
             }} />
-            {/* Secondary warm glow */}
+            {/* Secondary glow — softer, wider */}
             <div style={{
-              position: "absolute", width: 400, height: 120, transform: "translateX(-60px)",
-              background: `radial-gradient(ellipse, rgba(220,120,180,${glowBreath2}) 0%, transparent 70%)`,
-              filter: "blur(35px)",
-            }} />
-            {/* Tertiary cool accent glow */}
-            <div style={{
-              position: "absolute", width: 300, height: 100, transform: "translateX(80px) translateY(-20px)",
-              background: `radial-gradient(ellipse, rgba(100,140,255,${glowBreath3}) 0%, transparent 65%)`,
+              position: "absolute", width: 600, height: 140,
+              background: `radial-gradient(ellipse, rgba(200,120,200,${glowBreath2}) 0%, transparent 65%)`,
               filter: "blur(40px)",
+              opacity: 0.5 + Math.sin(introLocal * 0.1) * 0.2,
             }} />
+            {/* Text with sweeping gradient — background-position animates */}
             <div style={{
-              fontSize: 68, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 300,
-              background: "linear-gradient(90deg, #C62828 0%, #C2185B 20%, #9C27B0 45%, #7B1FA2 60%, #5C6BC0 80%, #4285F4 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontSize: 72, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 300,
+              /* Wide gradient: red -> pink -> purple -> blue -> dark
+                 The dark end creates the "not yet swept" appearance */
+              background: `linear-gradient(90deg, #EA4335 0%, #D946A8 25%, #9C27B0 45%, #7B61FF 65%, #4285F4 80%, ${DARK_TEXT} 95%, ${DARK_TEXT} 100%)`,
+              backgroundSize: "200% 100%",
+              backgroundPosition: `${bgPosPercent}% 0`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
               letterSpacing: -1, position: "relative", textAlign: "center",
-              clipPath: `inset(0 ${clipRight}% 0 0)`,
             }}>
               Introducing
             </div>
@@ -762,19 +863,20 @@ export const Scene04: React.FC = () => {
         );
       })()}
 
-      {/* Gemini UI — elastic spring entry with motion blur */}
+      {/* Gemini UI — desktop browser corner, elastic spring entry */}
       {showGeminiUI && (() => {
         const geminiLocalFrame = frame - PHASE.GEMINI_UI.start;
-        const geminiZoom = interpolate(geminiLocalFrame, [0, 46], [2.5, 3.2], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const geminiPanX = interpolate(geminiLocalFrame, [0, 46], [-200, -260], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        const geminiPanY = interpolate(geminiLocalFrame, [0, 46], [300, 340], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const geminiZoom = interpolate(geminiLocalFrame, [0, 46], [1.8, 2.2], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const geminiPanX = interpolate(geminiLocalFrame, [0, 46], [-140, -180], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const geminiPanY = interpolate(geminiLocalFrame, [0, 46], [200, 230], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
         const gemWobX = noise2D("gmwx", frame * 0.015, 0) * 3;
         const gemWobY = noise2D("gmwy", 0, frame * 0.015) * 2;
+        const glowCycle = (geminiLocalFrame % 120) / 120; /* border glow animation cycle */
         const geminiContent = (
           <div style={{ position: "absolute", inset: 0, opacity: geminiOpacity, transform: `translateY(${geminiY}px) translate(${gemWobX}px, ${gemWobY}px)` }}>
-            <PhoneMockup tilt={-3} scale={geminiZoom} x={geminiPanX} y={geminiPanY} shadowOpacity={0.2} glowColor="rgba(233,30,99,0.3)">
+            <BrowserFrame scale={geminiZoom} x={geminiPanX} y={geminiPanY} glowProgress={glowCycle}>
               <GeminiDropdownUI frame={geminiLocalFrame} fps={fps} />
-            </PhoneMockup>
+            </BrowserFrame>
           </div>
         );
         /* Motion blur during the initial spring entry */
@@ -791,6 +893,7 @@ export const Scene04: React.FC = () => {
       {fadeToBlack > 0 && (
         <div style={{ position: "absolute", inset: 0, backgroundColor: "#000", opacity: fadeToBlack }} />
       )}
+     </div>{/* end darkShrink wrapper */}
     </AbsoluteFill>
   );
 };

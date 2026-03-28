@@ -295,8 +295,16 @@ impl PeerConnection {
                     while let Some(result) = codec.decode_next() {
                         match result {
                             Ok(message) => {
-                                // Rate limit check: drop message if bucket empty
-                                if !rate_bucket.try_consume() {
+                                // Bitmap gossip/request/response are high-volume vision
+                                // messages that must not starve consensus of rate-limit
+                                // budget.  Exempt them from the per-peer token bucket.
+                                let is_bitmap = matches!(
+                                    message,
+                                    P2PMessage::BitmapGossip { .. }
+                                    | P2PMessage::BitmapRequest { .. }
+                                    | P2PMessage::BitmapResponse { .. }
+                                );
+                                if !is_bitmap && !rate_bucket.try_consume() {
                                     warn!(
                                         code = "INFRA-020",
                                         ?actual_peer_id,
