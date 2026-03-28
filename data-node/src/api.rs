@@ -3436,9 +3436,17 @@ async fn sim_reload_cache(
             let date_count = new_cache.all_dates.len();
             let first_date = new_cache.all_dates.first().map(|d| d.to_string());
             let last_date = new_cache.all_dates.last().map(|d| d.to_string());
+
+            // Purge DB-cached sim runs that are behind the new data frontier
+            let purged = if let Some(latest) = new_cache.all_dates.last() {
+                db::sim_purge_stale_runs(&state.pool, *latest).await.unwrap_or(0)
+            } else {
+                0
+            };
+
             let mut cache = state.sim_cache.write().await;
             *cache = new_cache;
-            tracing::info!(categories = cat_count, dl_categories = dl_cats, dates = date_count, "Sim data cache reloaded");
+            tracing::info!(categories = cat_count, dl_categories = dl_cats, dates = date_count, purged_runs = purged, "Sim data cache reloaded");
             Ok(Json(serde_json::json!({
                 "status": "ok",
                 "categories": cat_count,
@@ -3446,6 +3454,7 @@ async fn sim_reload_cache(
                 "dates": date_count,
                 "first_date": first_date,
                 "last_date": last_date,
+                "purged_stale_runs": purged,
             })))
         }
         Err(e) => {
@@ -3557,12 +3566,14 @@ async fn sim_run(
         dominance_regime: build_dominance_regime(&params.dom_mode, params.dom_lookback),
     };
 
-    // Check cache first
+    // Check cache first — pass latest data date so stale runs are skipped
+    let latest_data_date = state.sim_cache.read().await.all_dates.last().copied();
     if !params.force {
         if let Some(cached) = db::sim_get_cached_run(
             &state.pool, &params.category_id, params.top_n,
             &config_for_cache.cache_key_weighting(), params.rebalance_days,
             params.base_fee_pct, params.spread_multiplier,
+            latest_data_date,
         ).await.map_err(|e| db_error(e))? {
             let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
                 .await.map_err(|e| db_error(e))?;
@@ -3654,12 +3665,14 @@ async fn sim_run_stream(
         tmp.cache_key_weighting()
     };
 
-    // Check cache first
+    // Check cache first — pass latest data date so stale runs are skipped
+    let latest_data_date = state.sim_cache.read().await.all_dates.last().copied();
     if !params.force {
         if let Some(cached) = db::sim_get_cached_run(
             &state.pool, &params.category_id, params.top_n,
             &cache_key_w, params.rebalance_days,
             params.base_fee_pct, params.spread_multiplier,
+            latest_data_date,
         ).await.map_err(|e| db_error(e))? {
             let nav_series = db::sim_query_nav_series(&state.pool, cached.id)
                 .await.map_err(|e| db_error(e))?;
@@ -4132,6 +4145,7 @@ async fn sim_sweep_stream(
     let total_variants = variants.len();
     let pool = state.pool.clone();
     let sim_cache = state.sim_cache.read().await.clone();
+    let latest_data_date = sim_cache.all_dates.last().copied();
     let (sse_tx, sse_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     tokio::spawn(async move {
@@ -4166,11 +4180,12 @@ async fn sim_sweep_stream(
                 _ => format!("variant_{}", idx),
             };
 
-            // Check cache
+            // Check cache — skip stale runs whose end_date is behind current data
             if let Ok(Some(cached)) = db::sim_get_cached_run(
                 &pool, &config.category_id, config.top_n,
                 &config.cache_key_weighting(), config.rebalance_days,
                 config.base_fee_pct, config.spread_multiplier,
+                latest_data_date,
             ).await {
                 let nav_series = db::sim_query_nav_series(&pool, cached.id).await.unwrap_or_default();
                 let done_json = serde_json::json!({

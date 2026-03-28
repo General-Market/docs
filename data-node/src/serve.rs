@@ -366,6 +366,16 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                         let date_count = new_cache.all_dates.len();
                         let cat_count = new_cache.categories.len();
                         let latest = new_cache.all_dates.last().copied();
+
+                        // Purge DB-cached sim runs that are behind the new data frontier
+                        if let Some(latest_date) = latest {
+                            match crate::db::sim_purge_stale_runs(&reload_pool, latest_date).await {
+                                Ok(0) => {}
+                                Ok(n) => tracing::info!(purged = n, %latest_date, "Purged stale sim runs"),
+                                Err(e) => tracing::warn!(%e, "Failed to purge stale sim runs"),
+                            }
+                        }
+
                         let mut cache = reload_sim_cache.write().await;
                         *cache = new_cache;
                         tracing::info!(

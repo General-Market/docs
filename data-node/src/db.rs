@@ -1617,8 +1617,11 @@ pub async fn sim_get_cached_run(
     rebalance_days: i32,
     base_fee_pct: f64,
     spread_multiplier: f64,
+    latest_data_date: Option<chrono::NaiveDate>,
 ) -> Result<Option<SimRunRow>, sqlx::Error> {
     use sqlx::Row;
+    // Reject cached runs whose end_date is behind the latest available data.
+    // This prevents serving stale results after new CoinGecko snapshots arrive.
     let row = sqlx::query(
         "SELECT id, category_id, top_n, weighting, rebalance_days, start_date, end_date,
                 total_return_pct, annualized_return, max_drawdown_pct, sharpe_ratio,
@@ -1627,7 +1630,8 @@ pub async fn sim_get_cached_run(
          FROM sim_runs
          WHERE category_id = $1 AND top_n = $2 AND weighting = $3
            AND rebalance_days = $4 AND base_fee_pct = $5 AND spread_multiplier = $6
-           AND computed_at > NOW() - INTERVAL '24 hours'"
+           AND computed_at > NOW() - INTERVAL '24 hours'
+           AND ($7::date IS NULL OR end_date >= $7)"
     )
     .bind(category_id)
     .bind(top_n)
@@ -1635,10 +1639,26 @@ pub async fn sim_get_cached_run(
     .bind(rebalance_days)
     .bind(base_fee_pct)
     .bind(spread_multiplier)
+    .bind(latest_data_date)
     .fetch_optional(pool)
     .await?;
 
     Ok(row.map(|r| sim_row_from_pg(&r)))
+}
+
+/// Delete cached sim runs whose end_date is behind the current data frontier.
+/// Called when the in-memory sim cache reloads and detects newer dates.
+pub async fn sim_purge_stale_runs(
+    pool: &PgPool,
+    latest_data_date: chrono::NaiveDate,
+) -> Result<u64, sqlx::Error> {
+    let result = sqlx::query(
+        "DELETE FROM sim_runs WHERE end_date < $1"
+    )
+    .bind(latest_data_date)
+    .execute(pool)
+    .await?;
+    Ok(result.rows_affected())
 }
 
 fn sim_row_from_pg(r: &sqlx::postgres::PgRow) -> SimRunRow {
