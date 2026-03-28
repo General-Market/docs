@@ -1307,22 +1307,22 @@ const OnePlaceSegment: React.FC = () => {
           </div>
         </div>
 
-        {/* Blue arrow box */}
+        {/* Blue arrow box — positioned to the right, aligned with "place" */}
         <div
           style={{
-            width: 110,
-            height: 110,
+            width: 120,
+            height: 120,
             background: BLUE,
-            borderRadius: 16,
+            borderRadius: 18,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             opacity: arrowSpring,
-            transform: `scale(${arrowSpring}) translate(${arrowBoxX + arrowBoxWobX}px, ${50 + arrowBoxY + arrowBoxWobY}px)`,
-            boxShadow: "0 10px 35px rgba(4,47,243,0.3)",
+            transform: `scale(${arrowSpring}) translate(${arrowBoxX + arrowBoxWobX + 40}px, ${60 + arrowBoxY + arrowBoxWobY}px)`,
+            boxShadow: "0 12px 40px rgba(4,47,243,0.35)",
           }}
         >
-          <span style={{ color: WHITE, fontSize: 46, fontWeight: 300 }}>→</span>
+          <span style={{ color: WHITE, fontSize: 50, fontWeight: 300 }}>→</span>
         </div>
       </div>
     </AbsoluteFill>
