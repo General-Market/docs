@@ -132,11 +132,11 @@ const DashboardSegment: React.FC = () => {
     >
       <div
         style={{
-          width: 2800,
+          width: 3000,
           backgroundColor: CARD_BG,
           borderRadius: 48,
-          padding: "100px 120px",
-          boxShadow: "0 8px 60px rgba(0,0,0,0.06)",
+          padding: "80px 110px",
+          boxShadow: "0 6px 40px rgba(0,0,0,0.05)",
           opacity: cardOpacity,
           transform: `translateY(${cardY}px)`,
           fontFamily: FONT,
@@ -681,16 +681,18 @@ const GrowthChartSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
+  // Counter races ahead of bars — reaches final value by ~1s
   const counterVal = interpolate(
     frame,
-    [fps * 0.2, fps * 1.5],
+    [fps * 0.1, fps * 1.0],
     [0, 1224907],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
+  // Interest counter animates alongside bars
   const interestVal = interpolate(
     frame,
-    [fps * 0.6, fps * 1.8],
+    [fps * 0.4, fps * 1.4],
     [0, FINAL_INTEREST],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -864,12 +866,12 @@ const GrowthChartSegment: React.FC = () => {
             const depositH = (bar.deposit / MAX_TOTAL) * maxH;
             const interestH = fullH - depositH;
 
-            // All bars grow simultaneously — slight stagger for wave effect
-            const delayFrames = fps * 0.15 + i * 0.3;
+            // Bars grow together after counter starts — subtle left-to-right wave
+            const delayFrames = fps * 0.25 + i * 0.25;
             const growProgress = spring({
               fps,
               frame: frame - delayFrames,
-              config: { damping: 14, stiffness: 60, mass: 1.0 },
+              config: { damping: 12, stiffness: 50, mass: 1.2 },
             });
 
             const currentDepositH = depositH * growProgress;

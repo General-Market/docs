@@ -197,12 +197,12 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const gemRise = sec(PHASE.GEMINI_UI.start - 5);
     t.to(s, { geminiOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
     t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
-    /* Start at full view, then zoom toward top-left corner.
-       Reference: full browser visible for ~10 frames, then accelerating zoom
-       into hamburger + Gemini title + dropdown. Use power2.in for accelerating. */
-    t.to(s, { geminiScale: 2.6, duration: sec(46), ease: "power2.in" }, gemStart);
-    t.to(s, { geminiPanX: -300, duration: sec(46), ease: "power2.in" }, gemStart);
-    t.to(s, { geminiPanY: 240, duration: sec(46), ease: "power2.in" }, gemStart);
+    /* Zoom into dropdown area — keep "Gemini" title visible, hide rainbow border.
+       Reference: zoom centers on dropdown card, not on browser edge.
+       panX less extreme to avoid exposing right-side rainbow border. */
+    t.to(s, { geminiScale: 2.4, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { geminiPanX: -180, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { geminiPanY: 160, duration: sec(46), ease: "power2.in" }, gemStart);
     /* Dropdown animation */
     t.to(s, { geminiDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GEMINI_UI.start + 8));
     t.to(s, { geminiRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 12));

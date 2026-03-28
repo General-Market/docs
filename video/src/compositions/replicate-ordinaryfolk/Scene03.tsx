@@ -624,12 +624,12 @@ export const Scene03: React.FC = () => {
     {start:185,dur:30,Comp:SegItsEverything},
     {start:208,dur:55,Comp:SegAppsFloat},
     {start:255,dur:80,Comp:SegTypingPrompt},
-    {start:330,dur:100,Comp:SegGeminiResponse},
-    {start:420,dur:75,Comp:SegAndMore},
-    {start:490,dur:70,Comp:SegStartingWith},
-    {start:555,dur:80,Comp:SegPhoneMockup},
-    {start:630,dur:65,Comp:SegSupercharge},
-    {start:690,dur:55,Comp:SegPhoneGoodMorning},
+    {start:330,dur:65,Comp:SegGeminiResponse},
+    {start:385,dur:40,Comp:SegAndMore},
+    {start:418,dur:60,Comp:SegStartingWith},
+    {start:478,dur:82,Comp:SegPhoneMockup},
+    {start:555,dur:85,Comp:SegSupercharge},
+    {start:635,dur:110,Comp:SegPhoneGoodMorning},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>

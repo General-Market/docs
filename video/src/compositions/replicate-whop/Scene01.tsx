@@ -236,23 +236,23 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
     >
       <div
         style={{
-          width: 3200,
-          height: 1800,
+          width: 3040,
+          height: 1720,
           background: "#fff",
-          borderRadius: 40,
+          borderRadius: 32,
           border: `2px solid ${BORDER}`,
-          boxShadow: "0 60px 160px rgba(0,0,0,0.12), 0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.03)",
+          boxShadow: "0 40px 120px rgba(0,0,0,0.10), 0 16px 48px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.02)",
           padding: pad,
           display: "flex",
           flexDirection: "column",
-          gap: 40,
+          gap: 36,
           overflow: "hidden",
           transform: `translateY(${Math.round((1 - e) * 600)}px) rotateX(${tiltX}deg)`,
           transformOrigin: "center bottom",
         }}
       >
         {/* ── Top row: Revenue chart + Balance/Payouts ── */}
-        <div style={{ display: "flex", gap: 40, flex: "0 0 auto", height: 700 }}>
+        <div style={{ display: "flex", gap: 36, flex: "0 0 auto", height: 640 }}>
           {/* Revenue chart card */}
           <div
             style={{
@@ -787,19 +787,19 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
     >
       <div
         style={{
-          width: 3200,
-          height: 1800,
+          width: 3040,
+          height: 1720,
           background: "#fff",
-          borderRadius: 40,
+          borderRadius: 32,
           border: `2px solid ${BORDER}`,
           boxShadow:
-            "0 60px 160px rgba(0,0,0,0.12), 0 20px 60px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.03)",
-          padding: 80,
+            "0 40px 120px rgba(0,0,0,0.10), 0 16px 48px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.02)",
+          padding: 72,
           display: "flex",
           flexDirection: "column",
           transform: `translateY(${Math.round((1 - e) * 400)}px) scale(${zoomScale}) translate(${panX}px, ${panY}px)`,
           transformOrigin: "center 25%",
-          gap: 40,
+          gap: 36,
           overflow: "hidden",
         }}
       >
@@ -1076,9 +1076,10 @@ export const Scene01: React.FC = () => {
   });
 
   /* ── Phase 2: "Earn up to 6%" ── */
+  // Ref: earn text gone by ~f103, leaving a blank gap before dashboard at f108
   const earnOpacity = interpolate(
     frame,
-    [EARN_VISIBLE, EARN_VISIBLE + 2, HOLD_EARN_END, DASHBOARD_START],
+    [EARN_VISIBLE, EARN_VISIBLE + 2, HOLD_EARN_END, HOLD_EARN_END + 3],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
