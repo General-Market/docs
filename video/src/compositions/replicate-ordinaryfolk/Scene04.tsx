@@ -581,13 +581,13 @@ export const Scene04: React.FC = () => {
   const phoneSlideOpacity = interpolate(exitT, [0, 0.5], [1, 0], { extrapolateRight: "clamp" });
 
   const butTextOpacity = interpolate(frame,
-    [PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 12, PHASE.INTRODUCING.start - 5, PHASE.INTRODUCING.start + 5],
+    [PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 12, PHASE.INTRODUCING.start - 8, PHASE.INTRODUCING.start],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
   const introOpacity = interpolate(frame,
-    [PHASE.INTRODUCING.start, PHASE.INTRODUCING.start + 10, PHASE.GEMINI_UI.start - 8, PHASE.GEMINI_UI.start],
+    [PHASE.INTRODUCING.start, PHASE.INTRODUCING.start + 6, PHASE.GEMINI_UI.start - 8, PHASE.GEMINI_UI.start],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
