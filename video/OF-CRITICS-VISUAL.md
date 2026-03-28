@@ -125,3 +125,8 @@ Reference: The G is NOT a flat SVG. It's a luminous light source — rainbow col
 3. Particles: 30+ tiny dots (1-3px) floating slowly in the upper area
 4. Background wash: warm golden-green tint radiating from G position
 5. The G should feel like a lamp projecting light in a dark room
+
+## S03 — "And moooooore" Needs MORE O's
+**Current: 18 max balls. Reference shows 30+ o's stretching across the full width.**
+The "And m" stays left, "re" stays right, and between them should be a LONG chain of o's (colored circles/letters) that fills the entire horizontal span. The chain should undulate like a sine wave. Each o has a Gemini brand color.
+**Fix:** Increase MAX_BALLS from 18 to 35-40. The chain should extend edge-to-edge, some o's going off-screen. Add sine wave vertical displacement. CameraMotionBlur on the stretch phase.
