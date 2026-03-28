@@ -62,10 +62,10 @@ const DashboardSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const cardOpacity = interpolate(frame, [0, fps * 0.4], [0, 1], {
+  const cardOpacity = interpolate(frame, [0, fps * 0.2], [0, 1], {
     extrapolateRight: "clamp",
   });
-  const cardY = interpolate(frame, [0, fps * 0.5], [60, 0], {
+  const cardY = interpolate(frame, [0, fps * 0.25], [40, 0], {
     extrapolateRight: "clamp",
   });
 
@@ -100,23 +100,23 @@ const DashboardSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  const row1Op = interpolate(frame, [fps * 0.8, fps * 1.2], [0, 1], {
+  const row1Op = interpolate(frame, [fps * 0.3, fps * 0.5], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const row2Op = interpolate(frame, [fps * 1.0, fps * 1.4], [0, 1], {
+  const row2Op = interpolate(frame, [fps * 0.4, fps * 0.6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const row3Op = interpolate(frame, [fps * 1.2, fps * 1.6], [0, 1], {
+  const row3Op = interpolate(frame, [fps * 0.5, fps * 0.7], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const row4Op = interpolate(frame, [fps * 1.4, fps * 1.8], [0, 1], {
+  const row4Op = interpolate(frame, [fps * 0.6, fps * 0.8], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const row5Op = interpolate(frame, [fps * 1.6, fps * 2.0], [0, 1], {
+  const row5Op = interpolate(frame, [fps * 0.7, fps * 0.9], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -984,17 +984,17 @@ const DepositSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Cursor moves between deposit options
+  // Cursor moves between deposit options — adjusted for compact modal
   const cursorX = interpolate(
     frame,
     [fps * 1.0, fps * 1.5, fps * 2.0, fps * 2.5],
-    [2200, 2200, 2180, 2180],
+    [2150, 2150, 2130, 2130],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cursorY = interpolate(
     frame,
     [fps * 1.0, fps * 1.5, fps * 2.0, fps * 2.5],
-    [960, 1090, 1220, 1350],
+    [870, 990, 1100, 1220],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cursorOp = interpolate(frame, [fps * 0.8, fps * 1], [0, 1], {
@@ -1054,8 +1054,8 @@ const DepositSegment: React.FC = () => {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginBottom: 48,
-            fontSize: 48,
+            marginBottom: 36,
+            fontSize: 40,
             fontWeight: 600,
             color: TEXT_PRIMARY,
           }}
@@ -1094,12 +1094,12 @@ const DepositSegment: React.FC = () => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "36px 40px",
-                borderRadius: 24,
+                padding: "28px 36px",
+                borderRadius: 20,
                 border: `2px solid ${BORDER}`,
-                marginBottom: i < 2 ? 24 : 0,
+                marginBottom: i < 2 ? 18 : 0,
                 opacity: rowOp,
-                fontSize: 42,
+                fontSize: 36,
               }}
             >
               <div

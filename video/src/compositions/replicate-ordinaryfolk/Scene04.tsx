@@ -139,12 +139,12 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
     /* Camera push during photo expand — zoom in */
     t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
-    /* AI response: reference shows extreme close-up — camera pushes in hard
-       so the chat content nearly fills the viewport */
-    t.to(s, { phoneScale: 1.85, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
-    t.to(s, { phoneY: -80, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
+    /* AI response: reference shows close-up — camera pushes in so chat
+       content is prominent. Phone nearly straight-on by this point. */
+    t.to(s, { phoneScale: 1.55, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
+    t.to(s, { phoneY: -40, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
     /* Emoji burst: slight pullback but stay zoomed */
-    t.to(s, { phoneScale: 1.65, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
+    t.to(s, { phoneScale: 1.40, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
     /* Delay exit 8 frames — reference phone stays stable through early transition text */
@@ -155,7 +155,7 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
         const p = this.progress();
         /* Start from current zoomed-in position and fly far left */
         s.phoneX = quadBezier(p, 20, -280, -850);
-        s.phoneY = quadBezier(p, -80, -100, 20);
+        s.phoneY = quadBezier(p, -40, -80, 20);
       },
     });
     t.add(phoneExitTween, exitStart);
@@ -200,12 +200,12 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const gemRise = sec(PHASE.GEMINI_UI.start - 5);
     t.to(s, { geminiOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
     t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
-    /* Start at full view, then zoom aggressively toward top-left corner.
-       Reference shows extreme close-up on dropdown by end — scale ~2.8,
-       pan further left and up to crop out right edge of browser frame */
-    t.to(s, { geminiScale: 2.8, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanX: -340, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanY: 260, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    /* Start at full view, then zoom toward top-left corner.
+       Reference: full browser visible for ~10 frames, then accelerating zoom
+       into hamburger + Gemini title + dropdown. Use power2.in for accelerating. */
+    t.to(s, { geminiScale: 2.6, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { geminiPanX: -300, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { geminiPanY: 240, duration: sec(46), ease: "power2.in" }, gemStart);
     /* Dropdown animation */
     t.to(s, { geminiDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GEMINI_UI.start + 8));
     t.to(s, { geminiRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 12));
@@ -907,16 +907,17 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Phone tilt — strong entrance tilt, reduces over time, ramps up during exit */
+  /* Phone tilt — strong entrance tilt, flattens during AI response (nearly head-on),
+     ramps up during exit */
   const phoneTilt = interpolate(frame,
-    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [-18, -14, -10, -6, -4, -4, -45],
+    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.AI_RESPONSE.start + 20, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [-18, -14, -10, -6, -2, -2, -2, -45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-  /* Phone X rotation — subtle forward lean that reduces over time */
+  /* Phone X rotation — subtle forward lean, flattens during AI response */
   const phoneXTilt = interpolate(frame,
-    [0, PHASE.AI_RESPONSE.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [5, 2, 2, 8],
+    [0, PHASE.AI_RESPONSE.start, PHASE.AI_RESPONSE.start + 15, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [5, 2, 0.5, 0.5, 8],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 

@@ -620,8 +620,8 @@ export const Scene03: React.FC = () => {
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
     {start:0,dur:50,Comp:SegParticleExplosion},
     {start:45,dur:50,Comp:SegGeminiReveal},
-    {start:90,dur:100,Comp:SegDesktopUI},
-    {start:185,dur:35,Comp:SegItsEverything},
+    {start:90,dur:95,Comp:SegDesktopUI},
+    {start:185,dur:30,Comp:SegItsEverything},
     {start:208,dur:55,Comp:SegAppsFloat},
     {start:255,dur:80,Comp:SegTypingPrompt},
     {start:330,dur:100,Comp:SegGeminiResponse},
