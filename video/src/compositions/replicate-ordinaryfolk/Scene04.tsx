@@ -137,21 +137,25 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
       ease: "expo.out",
       /* motionPath on a plain object: interpolate x/y through control points */
     }, 0);
-    /* Overwrite the simple linear x/y with a curved path using onUpdate */
+    /* Overwrite the simple linear x/y with a curved path — lands right-of-center */
     const phoneEntryTween = gsap.to({ t: 0 }, {
       t: 1, duration: sec(20), ease: "expo.out", paused: true,
       onUpdate() {
         const progress = this.progress();
-        s.phoneX = quadBezier(progress, 200, 40, 0);
-        s.phoneY = quadBezier(progress, 120, -30, 0);
+        /* Land at (60, -10) — slightly right and above center, matching reference */
+        s.phoneX = quadBezier(progress, 200, 80, 60);
+        s.phoneY = quadBezier(progress, 120, -30, -10);
       },
     });
     t.add(phoneEntryTween, 0);
 
+    /* Slow drift from right-of-center toward center during AI response */
+    t.to(s, { phoneX: 20, phoneY: 5, duration: sec(80), ease: "sine.inOut" }, sec(PHASE.AI_RESPONSE.start));
+
     /* Phone scale breathing */
     t.to(s, { phoneScale: 0.95, duration: sec(40), ease: "sine.inOut" }, 0);
-    t.to(s, { phoneScale: 1.12, duration: sec(30), ease: "power2.inOut" }, sec(40));
-    t.to(s, { phoneScale: 0.92, duration: sec(30), ease: "sine.inOut" }, sec(80));
+    t.to(s, { phoneScale: 1.08, duration: sec(30), ease: "power2.inOut" }, sec(40));
+    t.to(s, { phoneScale: 0.95, duration: sec(30), ease: "sine.inOut" }, sec(80));
 
     /* Emoji burst: shrink phone scale */
     t.to(s, { phoneScale: 0.88, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
