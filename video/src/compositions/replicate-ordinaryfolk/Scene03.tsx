@@ -39,7 +39,7 @@ const PURPLE = "#7B61FF";
 const BLUE = "#4285F4";
 const CORAL = "#F28B82";
 const LAVENDER = "#C4B5FD";
-const BG = "#F0EFF5";
+const BG = "#EFF2F8";
 const BG_WARM = "#F5F0EE";
 const DARK = "#1A1A2E";
 
@@ -218,7 +218,7 @@ const SegDesktopUI: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:`linear-gradient(135deg, rgba(196,181,253,0.15) 0%, rgba(232,69,139,0.08) 50%, rgba(66,133,244,0.1) 100%)`}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",width:904,height:524,transform:`translate(-50%,-50%) translateY(${bY}px) scale(${bSc}) perspective(1200px) rotateX(${bRx}deg)`,opacity:bOp,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,transform:`translate(-50%,-50%) translateY(${bY}px) scale(${bSc}) perspective(1200px) rotateX(${bRx}deg)`,opacity:bOp,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
         <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",position:"relative"}}>
           <div style={{height:48,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:16}}>
             <div style={{fontSize:18,color:"#666"}}>&#9776;</div>
@@ -571,10 +571,10 @@ const SegPhoneGoodMorning: React.FC = () => {
   /* No fade-out: hard cut to Scene04 preserves phone continuity */
   const exitOp = 1;
   const eP = interpolate(frame, [0,fps], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 200, 150, 30, -30);
-  const pY = cubicBez(eP, 350, 250, 30, -20);
-  const pR = interpolate(eP, [0,1], [12,5]);
-  const pS = interpolate(eP, [0,0.3,1], [0.6,0.78,0.85], {extrapolateRight:"clamp"});
+  const pX = cubicBez(eP, 250, 200, 50, 0);
+  const pY = cubicBez(eP, 400, 280, 30, 0);
+  const pR = interpolate(eP, [0,1], [10,0]);
+  const pS = interpolate(eP, [0,0.3,1], [0.6,0.72,0.75], {extrapolateRight:"clamp"});
   const pOp = interpolate(eP, [0,0.1], [0,1], {extrapolateRight:"clamp"});
   const sF = frame-fps;
   const sB = sF>0 ? interpolate(sF, [0,3,10], [0,-6,0], {extrapolateRight:"clamp"}) : 0;
