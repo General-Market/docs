@@ -1031,7 +1031,7 @@ const EverythingSegment: React.FC = () => {
           const dist = Math.sqrt(
             Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
           );
-          const dimFactor = Math.max(0.15, 1 - dist * 0.15);
+          const dimFactor = Math.max(0.1, 1 - dist * 0.18);
 
           return (
             <span
@@ -1089,7 +1089,7 @@ export const Scene01: React.FC = () => {
       </Sequence>
 
       {/* Segment 4: "One place" → "invest in" */}
-      <Sequence from={200} durationInFrames={55}>
+      <Sequence from={195} durationInFrames={60}>
         <OnePlaceSegment />
       </Sequence>
 
