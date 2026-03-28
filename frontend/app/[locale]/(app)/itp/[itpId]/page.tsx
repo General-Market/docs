@@ -54,10 +54,13 @@ export async function generateStaticParams() {
   return itps.map((itp) => ({ itpId: itp.itpId }))
 }
 
-async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
+async function fetchEnrichment(
+  itpId: string,
+  holdings?: { symbol: string; weight: number; price: number }[],
+): Promise<ItpEnrichment | null> {
   try {
     const result = await Promise.race([
-      computeEnrichment(itpId),
+      computeEnrichment(itpId, holdings),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
     ])
     return result
@@ -68,12 +71,12 @@ async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
 
 export default async function ItpPage({ params }: Props) {
   const { locale, itpId } = await params
-  const [itp, t, tBreadcrumbs, enrichment] = await Promise.all([
+  const [itp, t, tBreadcrumbs] = await Promise.all([
     getItpDetail(itpId),
     getTranslations({ locale, namespace: 'seo.pages.itp' }),
     getTranslations({ locale, namespace: 'seo.breadcrumbs' }),
-    fetchEnrichment(itpId),
   ])
+  const enrichment = await fetchEnrichment(itpId, itp?.holdings)
 
   // Fallback when data-node is unreachable — render shell, client hooks fill real data
   const itpNum = parseItpNum(itpId)

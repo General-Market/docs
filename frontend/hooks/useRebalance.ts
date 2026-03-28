@@ -82,7 +82,7 @@ export function useRebalance(): UseRebalanceReturn {
     setStatus('requesting')
 
     writeContract({
-      address: INDEX_PROTOCOL.bridgeProxy,
+      address: INDEX_PROTOCOL.settlementBridgeProxy,
       abi: BRIDGE_PROXY_ABI,
       functionName: 'requestRebalance',
       args: [

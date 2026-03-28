@@ -26,6 +26,9 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { getAddressUrl, getExplorerBaseUrl } from '@/lib/utils/explorer'
+import { BuyItpModal } from './BuyItpModal'
+import { SellItpModal } from './SellItpModal'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 
 const PAGE_SIZE = 10
 
@@ -103,6 +106,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const usdcNum = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : 0
   const usdcFormatted = usdcNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const [activeTab, setActiveTab] = useState<Tab>('positions')
+  const [buyModal, setBuyModal] = useState<string | null>(null)
+  const [sellModal, setSellModal] = useState<string | null>(null)
 
   // --- SSE balances & nav for real-time on-chain positions ---
   const sseBalances = useSSEBalances()
@@ -487,7 +492,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             <>
               <ValueTab history={history} />
               <div className="mt-4" />
-              <PositionsTab summary={mergedSummary} itpNameMap={itpNameMap} />
+              <PositionsTab summary={mergedSummary} itpNameMap={itpNameMap} onBuy={setBuyModal} onSell={setSellModal} />
             </>
           )}
           {activeTab === 'trades' && <TradesTab trades={trades} itpNameMap={itpNameMap} />}
@@ -500,6 +505,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           )}
         </>
       )}
+      {buyModal && <BuyItpModal itpId={buyModal} onClose={() => setBuyModal(null)} />}
+      {sellModal && <SellItpModal itpId={sellModal} onClose={() => setSellModal(null)} />}
     </div>
   )
 }
@@ -574,7 +581,7 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
 }
 
 // --- Positions Tab ---
-function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof usePortfolio>['summary']; itpNameMap: Map<string, string> }) {
+function PositionsTab({ summary, itpNameMap, onBuy, onSell }: { summary: ReturnType<typeof usePortfolio>['summary']; itpNameMap: Map<string, string>; onBuy: (itpId: string) => void; onSell: (itpId: string) => void }) {
   const t = useTranslations('portfolio')
   const [page, setPage] = useState(1)
   const totalPositions = summary?.positions.length || 0
@@ -620,6 +627,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
               <th className="text-right px-4 py-3">{t('positions_table.value')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.pnl')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.pnl_pct')}</th>
+              <th className="text-right px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -655,6 +663,21 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
                   </td>
                   <td className={`px-4 py-3 text-right font-mono text-sm tabular-nums ${pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                     {pnl >= 0 ? '+' : ''}{pos.pnl_pct}%
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <WalletActionButton
+                      onClick={() => onBuy(pos.itp_id)}
+                      className="text-label font-semibold text-brand-dark hover:text-brand transition-colors"
+                    >
+                      Buy
+                    </WalletActionButton>
+                    <span className="mx-1.5 text-[#ddd]">|</span>
+                    <WalletActionButton
+                      onClick={() => onSell(pos.itp_id)}
+                      className="text-label font-semibold text-[#666] hover:text-brand transition-colors"
+                    >
+                      Sell
+                    </WalletActionButton>
                   </td>
                 </motion.tr>
               )

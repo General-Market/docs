@@ -26,7 +26,7 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
   const { address } = useAccount()
   const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
   const entry = useMemo(() => {
-    if (!address || !leaderboard.length) return null
+    if (!address || !leaderboard?.length) return null
     return leaderboard.find(p => p.walletAddress.toLowerCase() === address.toLowerCase()) ?? null
   }, [address, leaderboard])
 
@@ -172,9 +172,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const marketIds = useMemo(() => {
     // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
     if (batchConfig?.markets?.length) {
-      return batchConfig.markets.map(m => m.asset_id)
+      return batchConfig.markets.map(m => m.asset_id).filter(Boolean) as string[]
     }
-    return sourceMarkets.map(p => p.assetId)
+    return sourceMarkets.map(p => p.assetId).filter(Boolean) as string[]
   }, [batchConfig?.markets, sourceMarkets])
   const marketCount = marketIds.length || undefined
 

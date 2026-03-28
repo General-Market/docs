@@ -471,7 +471,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
 
     // Step 1: Submit requestRebalance through MetaMask (on Settlement chain)
     writeContract({
-      address: INDEX_PROTOCOL.bridgeProxy,
+      address: INDEX_PROTOCOL.settlementBridgeProxy,
       abi: BRIDGE_PROXY_ABI,
       functionName: 'requestRebalance',
       args: [

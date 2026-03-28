@@ -22,7 +22,7 @@ export function useItpMetadata(
   itpId: `0x${string}` | undefined
 ): UseItpMetadataReturn {
   const { data, isLoading, error, refetch } = useReadContract({
-    address: INDEX_PROTOCOL.bridgeProxy,
+    address: INDEX_PROTOCOL.settlementBridgeProxy,
     abi: BRIDGE_PROXY_ABI,
     functionName: 'getItpMetadata',
     args: itpId ? [itpId] : undefined,

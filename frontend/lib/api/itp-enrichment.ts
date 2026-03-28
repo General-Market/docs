@@ -289,12 +289,27 @@ async function fetchFundingData(
   }
 }
 
-/** Core enrichment logic — usable from both the API route and server components */
-export async function computeEnrichment(itpId: string): Promise<ItpEnrichment> {
+/** Core enrichment logic — usable from both the API route and server components.
+ *  When called from the page, pass serverHoldings from getItpDetail() (real weights from /snapshot).
+ *  The API route calls without holdings — falls back to itp-state → deployed-assets.json. */
+export async function computeEnrichment(
+  itpId: string,
+  serverHoldings?: { symbol: string; weight: number; price: number }[],
+): Promise<ItpEnrichment> {
   let rawHoldings: { symbol: string; weight: number; price: number; name: string }[] = []
 
-  // Resolve holdings via /chain/l3/itp-state → symbol-map → coin symbols
-  try {
+  // Priority 1: Use server-provided holdings (from /snapshot endpoint, has real weights)
+  if (serverHoldings && serverHoldings.length > 0) {
+    rawHoldings = serverHoldings.map(h => ({
+      symbol: h.symbol,
+      weight: h.weight,
+      price: h.price,
+      name: h.symbol,
+    }))
+  }
+
+  // Priority 2: Resolve holdings via /chain/l3/itp-state → symbol-map → coin symbols
+  if (rawHoldings.length === 0) try {
     const stateRes = await fetch(
       `${getAaDataNodeUrl()}/chain/l3/itp-state?itp_id=${encodeURIComponent(itpId)}`,
       { signal: AbortSignal.timeout(5000) }
@@ -321,7 +336,7 @@ export async function computeEnrichment(itpId: string): Promise<ItpEnrichment> {
     // itp-state endpoint down — fallback below
   }
 
-  // Fallback: load holdings from deployed-assets.json (equal weight ITP #1)
+  // Priority 3: Fallback to deployed-assets.json (equal weight, ITP #1 assets)
   if (rawHoldings.length === 0) {
     try {
       const assetsRaw = await fs.readFile(path.join(process.cwd(), 'public/deployed-assets.json'), 'utf-8')

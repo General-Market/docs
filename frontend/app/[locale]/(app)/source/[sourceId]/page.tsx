@@ -20,7 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const category = getCategoryLabel(source.category)
-  const description = `${source.name} — live market data feed with ${source.prefixes.length} market series. Category: ${category}. Trade predictions on Vision.`
+  const prefixCount = source.prefixes?.length ?? 0
+  const description = `${source.name} — live market data feed with ${prefixCount} market series. Category: ${category}. Trade predictions on Vision.`
   const path = `/source/${sourceId}`
 
   return {
@@ -61,7 +62,7 @@ export default async function SourcePage({ params }: Props) {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
       name: `${source.name} — Vision Market Data`,
-      description: `Live prediction market data feed for ${source.name}. ${source.prefixes.length} market series in the ${category} category. Updated in real-time on Vision (General Market).`,
+      description: `Live prediction market data feed for ${source.name}. ${source.prefixes?.length ?? 0} market series in the ${category} category. Updated in real-time on Vision (General Market).`,
       creator: {
         '@type': 'Organization',
         name: 'General Market',

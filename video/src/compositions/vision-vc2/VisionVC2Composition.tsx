@@ -62,13 +62,6 @@ const FIX_ITEMS: FixItem[] = [
       { src: `${IMG_DIR}/liquidity-2.jpg`, rotation: 3, offsetX: 130, delay: 5 },
     ],
   },
-  {
-    text: "We remove copy trading.",
-    images: [
-      { src: `${IMG_DIR}/copytrading-1.jpg`, rotation: -2, offsetX: -130, delay: 0 },
-      { src: `${IMG_DIR}/copytrading-penguin-test1.jpg`, rotation: 3, offsetX: 130, delay: 5 },
-    ],
-  },
 ];
 
 // ── Market Polaroid rain — 45 sources ───────────────────────────────
@@ -137,41 +130,34 @@ interface MarketPolaroid {
   z: number; // stacking order
 }
 
-// Hand-placed positions — no algorithm can replace taste
-// 45 cards scattered across screen, upper 75%, overlapping deliberately
+// Positions: scatter TOP 2/3 of screen (bottom 300px reserved for title slam)
+// [x, y, rotation] — shuffled order, no spatial pattern, organic chaos
 const POSITIONS: [number, number, number][] = [
-  // [x, y, rotation] — 5 clusters with organic overlap
-  // Cluster: top-left
-  [140, 80, -8], [260, 160, 12], [100, 280, -3], [320, 60, 6], [200, 380, -14],
-  [60, 180, 10], [380, 280, -6], [180, 440, 8], [440, 140, -11],
-  // Cluster: top-center
-  [620, 50, 5], [540, 200, -9], [740, 140, 13], [660, 320, -4], [800, 60, -7],
-  [580, 400, 11], [720, 260, -12], [860, 200, 3], [500, 120, 9],
-  // Cluster: top-right
-  [1020, 100, -10], [1140, 40, 7], [960, 250, 14], [1100, 180, -5], [1200, 300, 8],
-  [1040, 380, -13], [1260, 120, 4], [1160, 420, -8], [1320, 240, 11],
-  // Cluster: far-right
-  [1440, 60, -6], [1560, 180, 9], [1400, 300, -11], [1520, 80, 13], [1640, 260, -4],
-  [1480, 400, 7], [1700, 140, -9], [1580, 360, 5], [1380, 180, 12],
-  // Cluster: mid-band (above the big title)
-  [300, 460, -7], [500, 430, 10], [700, 480, -3], [900, 450, 8], [1100, 470, -12],
-  [1300, 440, 6], [1500, 480, -5], [160, 450, 13], [1660, 430, -8],
+  [960, 320, 5],    [180, 480, -14],  [1620, 100, 9],
+  [420, 80, -7],    [1340, 440, 12],  [60, 230, 11],
+  [1780, 350, -9],  [720, 50, 6],     [1100, 560, -13],
+  [500, 370, 15],   [1420, 180, -5],  [280, 580, 8],
+  [1220, 60, -16],  [860, 470, 10],   [140, 60, -8],
+  [1680, 520, 13],  [620, 260, -11],  [1060, 160, 4],
+  [340, 410, 14],   [1520, 310, -10], [780, 580, 3],
+  [1360, 390, -15], [100, 370, 9],    [1820, 140, -6],
+  [560, 120, 16],   [1160, 290, -8],  [240, 200, 7],
+  [1560, 500, -14], [700, 430, 11],   [920, 100, -9],
+  [440, 540, 13],   [1260, 80, -4],   [40, 450, 10],
+  [1720, 260, -16], [820, 330, 6],    [1020, 510, -12],
+  [180, 120, 15],   [1460, 430, -7],  [660, 200, 5],
+  [1120, 370, -13], [360, 300, 9],    [1620, 470, -6],
+  [520, 520, 14],   [960, 240, -11],  [1320, 600, 8],
 ];
 
-// Bezier-curved stagger: slow start, fast middle, slight deceleration at end
-const bezierDelay = (t: number): number => {
-  // Cubic bezier approximation: ease-in-out (0.25, 0.1, 0.25, 1)
-  const t2 = t * t;
-  const t3 = t2 * t;
-  return 3 * t2 - 2 * t3; // smooth S-curve 0→1
-};
-
-const TOTAL_CASCADE_FRAMES = 50; // all 45 cards land within ~1.7s
+// Bezier stagger: ease-in curve — slow drip → torrential
+const TOTAL_CASCADE = 55;
 
 const MARKET_POLAROIDS: MarketPolaroid[] = MARKET_NAMES.map((m, i) => {
-  const t = i / (MARKET_NAMES.length - 1); // 0→1
-  const delay = Math.round(bezierDelay(t) * TOTAL_CASCADE_FRAMES);
-  const pos = POSITIONS[i % POSITIONS.length];
+  const t = i / (MARKET_NAMES.length - 1);
+  // ease-in cubic: slow start, accelerating
+  const delay = Math.round(t * t * t * TOTAL_CASCADE);
+  const pos = POSITIONS[i];
   return {
     name: m.name,
     src: `${MKT_DIR}/${m.file}`,
@@ -190,20 +176,25 @@ const VC_LOGOS = ["vc-a16z.png", "vc-sequoia.png", "vc-paradigm.png", "vc-polych
 // TIMING
 // ═══════════════════════════════════════════════════════════════════════
 
+// ═══ TIMING — rhythmic, with breaths ═══
+//
+// ★ = breath (empty paper). Costs 0.7s total, gains everything.
+// Breaths create contrast: the silence before a slam is what makes it physical.
+
 // ── Act 1: The Hook ──
-const BEAT1_DUR = 72; // 13 words → needs ~65 readable frames
-const BEAT2_DUR = 60;
+const BEAT1_DUR = 72;          // 2.4s — text visible from frame 1
+const BEAT2_DUR = 54;          // 1.8s — tighter
 const BEAT_GAP = 8;
-const INTRO_DUR = BEAT1_DUR + BEAT2_DUR - BEAT_GAP; // 107
+const INTRO_DUR = BEAT1_DUR + BEAT2_DUR - BEAT_GAP;
 
-const UNLESS_SOLO_DUR = 33; // 1 word — land, register, leave
-const ACT1_END = INTRO_DUR + UNLESS_SOLO_DUR; // 157
+const UNLESS_SOLO_DUR = 45;   // 1.5s — the pivot needs weight, let it breathe
+const ACT1_END = INTRO_DUR + UNLESS_SOLO_DUR;
 
-// ── Act 2: The Fixes (frames relative to Unless section Sequence) ──
-const FIX_LEAD_IN = 20;
-const ITEM_DURS = [55, 48, 42, 38];
-const TEXT_EXIT_AT = [40, 35, 30, 25];
-const EXIT_BUFFER = 15;
+// ── Act 2: The Fixes — ACCELERATING ──
+const FIX_LEAD_IN = 18;
+const ITEM_DURS = [54, 42, 36];   // 1.8s → 1.4s → 1.2s — acceleration
+const TEXT_EXIT_AT = [38, 30, 24];
+const EXIT_BUFFER = 10;
 
 const ITEM_STARTS: number[] = [];
 let acc = FIX_LEAD_IN;
@@ -211,33 +202,42 @@ for (let i = 0; i < ITEM_DURS.length; i++) {
   ITEM_STARTS.push(acc);
   acc += ITEM_DURS[i];
 }
-const UNLESS_SECTION_DUR = acc + EXIT_BUFFER; // 20 + 183 + 15 = 218
-const ACT2_END = ACT1_END + UNLESS_SECTION_DUR; // 375
+const UNLESS_SECTION_DUR = acc + EXIT_BUFFER;
+const ACT2_END = ACT1_END + UNLESS_SECTION_DUR;
+
+// ★ BREATH after fixes (the last fix evaporated, silence before the question)
+const BREATH_1 = 6;
 
 // ── Act 3: The Audacity ──
-const QUESTION_DUR = 70;
-const LOL_DUR = 38; // 1 word — slam, beat, gone
-const ACT3_END = ACT2_END + QUESTION_DUR + LOL_DUR; // 500
+const QUESTION_DUR = 60;      // 2.0s — tighter
+// ★ BREATH before LOL (let the question hang)
+const BREATH_2 = 4;
+const LOL_DUR = 38;            // 1.3s — slam, beat, gone
+// ★ BREATH after LOL (the laugh clears)
+const BREATH_3 = 6;
+const ACT3_END = ACT2_END + BREATH_1 + QUESTION_DUR + BREATH_2 + LOL_DUR + BREATH_3;
 
 // ── Act 4: The Reveal ──
-const PRESENT_DUR = 55;
-const SCATTER_DUR = 110; // fast, overwhelming
-const ACT4_END = ACT3_END + PRESENT_DUR + SCATTER_DUR; // 695
+const PRESENT_DUR = 45;       // 1.5s — snappier
+const SCATTER_WITH_TITLE_DUR = 130; // 4.3s — cards rain + title slams below (ONE scene)
+const ACT4_END = ACT3_END + PRESENT_DUR + SCATTER_WITH_TITLE_DUR;
 
 // ── Act 5: The Mechanism ──
-const DARKPOOL_DUR = 85;
-const ACT5_END = ACT4_END + DARKPOOL_DUR; // 780
+const DARKPOOL_DUR = 75;      // 2.5s — tighter
+const ACT5_END = ACT4_END + DARKPOOL_DUR;
 
 // ── Act 6: The Pitch ──
-const STOP_DUR = 55;
-const SCALE_DUR = 100; // counter is visual, not reading
-const ODDS_DUR = 65; // 11 words across 2 lines
-const ACT6_END = ACT5_END + STOP_DUR + SCALE_DUR + ODDS_DUR; // 1010
+const STOP_DUR = 45;          // 1.5s — declarative, no lingering
+// ★ BREATH before data
+const BREATH_4 = 4;
+const SCALE_DUR = 90;         // 3.0s — counter slightly faster
+const ODDS_DUR = 60;          // 2.0s
+const ACT6_END = ACT5_END + STOP_DUR + BREATH_4 + SCALE_DUR + ODDS_DUR;
 
 // ── Act 7: CTA + Close ──
-const CTA_DUR = 75;
-const CLOSE_DUR = 85; // 9 words + hold — doesn't need 3.7s
-const TOTAL = ACT6_END + CTA_DUR + CLOSE_DUR; // 1195
+const CTA_DUR = 60;           // 2.0s — tighter CTA
+const CLOSE_DUR = 75;         // 2.5s — HOLD (stillness is the point)
+const TOTAL = ACT6_END + CTA_DUR + CLOSE_DUR;
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -270,12 +270,15 @@ const useExit = (
 const OpeningBeat1: React.FC = () => {
   const frame = useCurrentFrame();
 
-  const enterS = spring({ frame, fps: FPS, config: ANIM.springFast });
-  const exit = useExit(frame, BEAT1_DUR - 12, BEAT1_DUR);
+  // No entrance animation — text visible from frame 1
+  // Train departure exit: slide LEFT
+  const exitRaw = interpolate(frame, [BEAT1_DUR - 14, BEAT1_DUR], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.cubic),
+  });
 
-  const opacity = interpolate(enterS, [0, 1], [0, 1]) * exit.opacity;
-  const translateY = interpolate(enterS, [0, 1], [40, 0]) + exit.translateY;
-  const scale = interpolate(enterS, [0, 1], [0.92, 1]);
+  const exitX = exitRaw * -400;
 
   return (
     <AbsoluteFill
@@ -284,8 +287,8 @@ const OpeningBeat1: React.FC = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        opacity,
-        transform: `translateY(${translateY}px) scale(${scale})`,
+        opacity: 1 - exitRaw * 0.5,
+        transform: `translateX(${exitX}px)`,
       }}
     >
       <Img
@@ -318,7 +321,8 @@ const OpeningBeat2: React.FC = () => {
   const exit = useExit(frame, BEAT2_DUR - 15, BEAT2_DUR);
 
   const opacity = interpolate(enterS, [0, 1], [0, 1]) * exit.opacity;
-  const translateY = interpolate(enterS, [0, 1], [30, 0]) + exit.translateY;
+  // Enter from right (arriving train), settle to center
+  const enterX = interpolate(enterS, [0, 1], [300, 0]);
 
   return (
     <AbsoluteFill
@@ -328,7 +332,7 @@ const OpeningBeat2: React.FC = () => {
         alignItems: "center",
         justifyContent: "center",
         opacity,
-        transform: `translateY(${translateY}px)`,
+        transform: `translateX(${enterX}px)`,
       }}
     >
       <div style={{ display: "flex", gap: 60, alignItems: "center", marginBottom: 55 }}>
@@ -368,6 +372,104 @@ const OpeningBeat2: React.FC = () => {
       >
         &ldquo;But the challenge &mdash; this won&rsquo;t be liquid&rdquo;
       </div>
+    </AbsoluteFill>
+  );
+};
+
+// ── Train sweep transition ──────────────────────────────────────────
+// Full-screen SVG cartoon train slides LEFT (departing), facing left
+const TRAIN_TRANSITION_DUR = 24; // slower, cinematic
+const TrainSweep: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  const p = interpolate(frame, [0, TRAIN_TRANSITION_DUR], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.inOut(Easing.cubic),
+  });
+
+  // RIGHT → LEFT, matching Scene 1 departure direction
+  const trainX = interpolate(p, [0, 1], [1920, -1400]);
+  const opacity = interpolate(p, [0, 0.06, 0.9, 1], [0, 1, 1, 0]);
+
+  return (
+    <AbsoluteFill style={{ pointerEvents: "none", zIndex: 50 }}>
+      <svg
+        style={{
+          position: "absolute",
+          left: trainX,
+          top: 0,
+          width: 1400,
+          height: 1080,
+          opacity,
+        }}
+        viewBox="0 0 700 540"
+        fill="none"
+      >
+        {/* Smoke */}
+        <circle cx="80" cy="75" r="40" fill="#d4d4d4" opacity="0.5" />
+        <circle cx="40" cy="50" r="30" fill="#d4d4d4" opacity="0.35" />
+        <circle cx="10" cy="32" r="20" fill="#d4d4d4" opacity="0.2" />
+
+        {/* Smokestack */}
+        <rect x="100" y="130" width="45" height="85" rx="5" fill="#2a2a2a" />
+        <rect x="88" y="118" width="70" height="22" rx="8" fill="#333" />
+
+        {/* Boiler */}
+        <rect x="60" y="215" width="360" height="150" rx="75" fill="#1a1a1a" />
+        {/* Brand-green bands */}
+        <rect x="130" y="215" width="14" height="150" rx="3" fill="#00A36C" opacity="0.85" />
+        <rect x="220" y="215" width="14" height="150" rx="3" fill="#00A36C" opacity="0.85" />
+        <rect x="310" y="215" width="14" height="150" rx="3" fill="#00A36C" opacity="0.85" />
+
+        {/* Cab */}
+        <rect x="380" y="160" width="160" height="205" rx="10" fill="#ec0016" />
+        <rect x="396" y="178" width="128" height="95" rx="5" fill="#1a1a1a" opacity="0.25" />
+        <rect x="408" y="190" width="104" height="70" rx="5" fill="#a8d8ea" opacity="0.7" />
+        <rect x="368" y="148" width="184" height="20" rx="8" fill="#b71c1c" />
+
+        {/* Undercarriage */}
+        <rect x="40" y="365" width="520" height="55" rx="5" fill="#2a2a2a" />
+
+        {/* Cowcatcher — front left */}
+        <polygon points="40,420 0,445 40,445" fill="#555" />
+        <polygon points="40,395 10,420 40,420" fill="#666" />
+
+        {/* Big driving wheels */}
+        <circle cx="160" cy="450" r="60" fill="#444" stroke="#333" strokeWidth="5" />
+        <circle cx="160" cy="450" r="38" fill="#555" />
+        <circle cx="160" cy="450" r="10" fill="#888" />
+        <line x1="160" y1="395" x2="160" y2="505" stroke="#666" strokeWidth="3" />
+        <line x1="105" y1="450" x2="215" y2="450" stroke="#666" strokeWidth="3" />
+
+        <circle cx="340" cy="450" r="60" fill="#444" stroke="#333" strokeWidth="5" />
+        <circle cx="340" cy="450" r="38" fill="#555" />
+        <circle cx="340" cy="450" r="10" fill="#888" />
+        <line x1="340" y1="395" x2="340" y2="505" stroke="#666" strokeWidth="3" />
+        <line x1="285" y1="450" x2="395" y2="450" stroke="#666" strokeWidth="3" />
+
+        {/* Front wheel */}
+        <circle cx="60" cy="450" r="32" fill="#444" stroke="#333" strokeWidth="4" />
+        <circle cx="60" cy="450" r="20" fill="#555" />
+
+        {/* Rear wheel */}
+        <circle cx="490" cy="450" r="40" fill="#444" stroke="#333" strokeWidth="4" />
+        <circle cx="490" cy="450" r="25" fill="#555" />
+
+        {/* Connecting rod */}
+        <rect x="70" y="445" width="310" height="9" rx="4" fill="#c8a000" />
+
+        {/* Headlight */}
+        <circle cx="48" cy="280" r="16" fill="#ffd600" />
+        <circle cx="48" cy="280" r="9" fill="#fff9c4" />
+
+        {/* Rails */}
+        <rect x="0" y="510" width="700" height="7" rx="3" fill="#888" />
+        <rect x="0" y="526" width="700" height="7" rx="3" fill="#888" />
+        {Array.from({ length: 14 }).map((_, i) => (
+          <rect key={i} x={10 + i * 50} y="504" width="32" height="32" rx="2" fill="#8d6e63" opacity="0.45" />
+        ))}
+      </svg>
     </AbsoluteFill>
   );
 };
@@ -818,11 +920,11 @@ const PresentingGM: React.FC = () => {
 
 // ── Scene 10: Market Polaroid rain ──────────────────────────────────
 
-// Polaroid card dimensions — bigger, bolder
-const MKT_W = 200;
-const MKT_H = 140;
-const MKT_BORDER = 6;
-const MKT_BORDER_BOTTOM = 28;
+// Polaroid card dimensions — large, cinematic
+const MKT_W = 260;
+const MKT_H = 180;
+const MKT_BORDER = 7;
+const MKT_BORDER_BOTTOM = 32;
 
 const MarketPolaroidCard: React.FC<{
   name: string;
@@ -902,7 +1004,7 @@ const MarketPolaroidCard: React.FC<{
             alignItems: "center",
             justifyContent: "center",
             fontFamily: FONT.sans,
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 500,
             color: COLOR.textSecondary,
           }}
@@ -915,19 +1017,6 @@ const MarketPolaroidCard: React.FC<{
 };
 
 const MarketScatter: React.FC = () => {
-  const frame = useCurrentFrame();
-
-  // "Everything" text appears MID-cascade — while cards are still falling
-  const everythingDelay = 35; // early, cards still raining
-  const evS = spring({
-    frame: Math.max(0, frame - everythingDelay),
-    fps: FPS,
-    config: ANIM.springMedium,
-  });
-
-  // No compress — cards keep piling, text floats above the chaos
-  const cardsScale = 1;
-  const cardsOpacity = 1;
 
   return (
     <AbsoluteFill>
@@ -935,9 +1024,7 @@ const MarketScatter: React.FC = () => {
         style={{
           position: "absolute",
           inset: 0,
-          transform: `scale(${cardsScale})`,
-          opacity: cardsOpacity,
-          transformOrigin: "center 450px",
+          transformOrigin: "center 350px",
           willChange: "transform, opacity",
         }}
       >
@@ -955,33 +1042,73 @@ const MarketScatter: React.FC = () => {
         ))}
       </div>
 
-      {/* "...Everything Is Now A Market" — big, bottom, commanding */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 60,
-          textAlign: "center",
-          zIndex: 100,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: FONT.sans,
-            fontSize: 80,
-            fontWeight: 800,
-            color: COLOR.textPrimary,
-            letterSpacing: "-0.03em",
-            lineHeight: 1.1,
-            opacity: interpolate(evS, [0, 1], [0, 1]),
-            transform: `translateY(${interpolate(evS, [0, 1], [25, 0])}px)`,
-          }}
-        >
-          ...Everything Is Now A Market
-        </div>
-      </div>
     </AbsoluteFill>
+  );
+};
+
+// ── "Everything Is Now A Market" — slams in BELOW the card pile ──────
+// This runs INSIDE the scatter scene. Cards rain above, title lands below.
+const SLAM_WORDS = ["Everything", "Is", "Now", "A", "Market"];
+const SLAM_INTERVAL = 8;  // frames between each word — fast
+const SLAM_START = 60;    // appears mid-cascade, cards still falling
+
+const EverythingSlam: React.FC = () => {
+  const frame = useCurrentFrame();
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 40,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "baseline",
+        gap: 20,
+        zIndex: 100,
+        pointerEvents: "none",
+      }}
+    >
+      {SLAM_WORDS.map((word, i) => {
+        const wordStart = SLAM_START + i * SLAM_INTERVAL;
+        const localF = frame - wordStart;
+
+        if (localF < 0) return null;
+
+        const s = spring({
+          frame: localF,
+          fps: FPS,
+          config: ANIM.springSlam,
+        });
+
+        const scale = interpolate(s, [0, 0.5, 1], [1.6, 0.96, 1]);
+        const opacity = interpolate(s, [0, 0.1], [0, 1], { extrapolateRight: "clamp" });
+
+        return (
+          <div
+            key={word}
+            style={{
+              fontFamily: FONT.sans,
+              fontSize: word === "Market" ? 90 : 72,
+              fontWeight: 800,
+              color: COLOR.textPrimary,
+              letterSpacing: "-0.03em",
+              opacity,
+              transform: `scale(${scale})`,
+              willChange: "transform, opacity",
+              textShadow: `
+                0 0 30px ${COLOR.page},
+                0 0 50px ${COLOR.page},
+                0 0 70px ${COLOR.page}
+              `,
+            }}
+          >
+            {word}
+          </div>
+        );
+      })}
+    </div>
   );
 };
 
@@ -1513,6 +1640,14 @@ const ClosingScene: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 export const VisionVC2Composition: React.FC = () => {
+  // Precompute breath offsets for Act 3
+  const a3Start = ACT2_END + BREATH_1;
+  const a3LolStart = a3Start + QUESTION_DUR + BREATH_2;
+  const a3RevealStart = a3LolStart + LOL_DUR + BREATH_3;
+
+  // Precompute Act 6 offsets
+  const a6ScaleStart = ACT5_END + STOP_DUR + BREATH_4;
+
   return (
     <AbsoluteFill style={{ backgroundColor: COLOR.page }}>
       {/* ═══ ACT 1: THE HOOK ═══ */}
@@ -1522,17 +1657,22 @@ export const VisionVC2Composition: React.FC = () => {
         <OpeningBeat1 />
       </Sequence>
 
+      {/* Train sweep transition */}
+      <Sequence from={BEAT1_DUR - 12} durationInFrames={TRAIN_TRANSITION_DUR}>
+        <TrainSweep />
+      </Sequence>
+
       {/* Beat 2: VC logos + "won't be liquid" */}
       <Sequence from={BEAT1_DUR - BEAT_GAP} durationInFrames={BEAT2_DUR}>
         <OpeningBeat2 />
       </Sequence>
 
-      {/* Beat 3: "Unless." standalone */}
+      {/* Beat 3: "Unless." — the pivot, given weight */}
       <Sequence from={INTRO_DUR} durationInFrames={UNLESS_SOLO_DUR}>
         <UnlessSolo />
       </Sequence>
 
-      {/* ═══ ACT 2: THE FIXES ═══ */}
+      {/* ═══ ACT 2: THE FIXES — accelerating ═══ */}
       <Sequence from={ACT1_END} durationInFrames={UNLESS_SECTION_DUR}>
         <UnlessAnchor />
         <FixDivider />
@@ -1548,28 +1688,36 @@ export const VisionVC2Composition: React.FC = () => {
         ))}
       </Sequence>
 
+      {/* ★ BREATH — 6 frames of warm paper after fixes evaporate */}
+
       {/* ═══ ACT 3: THE AUDACITY ═══ */}
 
       {/* "The largest challenges... solved by US?" */}
-      <Sequence from={ACT2_END} durationInFrames={QUESTION_DUR}>
+      <Sequence from={a3Start} durationInFrames={QUESTION_DUR}>
         <AudacityQuestion />
       </Sequence>
 
+      {/* ★ BREATH — 4 frames, question hangs in the air */}
+
       {/* "LOL" — green slam + ring pulse */}
-      <Sequence from={ACT2_END + QUESTION_DUR} durationInFrames={LOL_DUR}>
+      <Sequence from={a3LolStart} durationInFrames={LOL_DUR}>
         <LOLSlam />
       </Sequence>
+
+      {/* ★ BREATH — 6 frames, the laugh clears */}
 
       {/* ═══ ACT 4: THE REVEAL ═══ */}
 
       {/* "Anyways — presenting General Market" */}
-      <Sequence from={ACT3_END} durationInFrames={PRESENT_DUR}>
+      <Sequence from={a3RevealStart} durationInFrames={PRESENT_DUR}>
         <PresentingGM />
       </Sequence>
 
-      {/* Market scatter */}
-      <Sequence from={ACT3_END + PRESENT_DUR} durationInFrames={SCATTER_DUR}>
+      {/* Market scatter + "Everything Is Now A Market" — ONE SCENE */}
+      {/* Cards rain top 2/3, title slams below while pile is visible */}
+      <Sequence from={a3RevealStart + PRESENT_DUR} durationInFrames={SCATTER_WITH_TITLE_DUR}>
         <MarketScatter />
+        <EverythingSlam />
       </Sequence>
 
       {/* ═══ ACT 5: THE MECHANISM ═══ */}
@@ -1584,13 +1732,15 @@ export const VisionVC2Composition: React.FC = () => {
         <StopGambling />
       </Sequence>
 
+      {/* ★ BREATH — 4 frames before the data hits */}
+
       {/* Split: 10 vs 1,000,000 */}
-      <Sequence from={ACT5_END + STOP_DUR} durationInFrames={SCALE_DUR}>
+      <Sequence from={a6ScaleStart} durationInFrames={SCALE_DUR}>
         <ScaleContrast />
       </Sequence>
 
       {/* "No one has an edge" */}
-      <Sequence from={ACT5_END + STOP_DUR + SCALE_DUR} durationInFrames={ODDS_DUR}>
+      <Sequence from={a6ScaleStart + SCALE_DUR} durationInFrames={ODDS_DUR}>
         <OddsRedistributed />
       </Sequence>
 
@@ -1601,7 +1751,7 @@ export const VisionVC2Composition: React.FC = () => {
         <CTAJoin />
       </Sequence>
 
-      {/* "Welcome to the new generation of capital markets" */}
+      {/* "Welcome to the new generation of capital markets" — HOLD */}
       <Sequence from={ACT6_END + CTA_DUR} durationInFrames={CLOSE_DUR}>
         <ClosingScene />
       </Sequence>

@@ -263,7 +263,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
   // Only show the LATEST active round (highest batchId that's still betting/settling).
   // Old stale rounds with expired bettingEnd used to leak through — now we pick one.
   const activeRounds = useMemo(() => {
-    const candidates = (rounds ?? []).filter(
+    if (!rounds || rounds.length === 0) return []
+    const candidates = rounds.filter(
       r => r.status === 'betting' || r.status === 'settling'
     )
     if (candidates.length === 0) return []

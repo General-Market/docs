@@ -9,313 +9,233 @@ export const alt = 'Vision Market'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-interface PricePoint {
-  fetchedAt: string
-  value: number
+interface PricePoint { value: number }
+interface Candle { open: number; close: number; high: number; low: number }
+
+function fmtPrice(v: string | number, currency: boolean): string {
+  const n = typeof v === 'number' ? v : parseFloat(v)
+  if (isNaN(n)) return '--'
+  const p = currency ? '$' : ''
+  if (n >= 1e9) return `${p}${(n / 1e9).toFixed(2)}B`
+  if (n >= 1e6) return `${p}${(n / 1e6).toFixed(2)}M`
+  if (n >= 1e3) return `${p}${(n / 1e3).toFixed(2)}K`
+  if (n >= 1) return `${p}${n.toFixed(2)}`
+  return `${p}${n.toFixed(4)}`
 }
 
-interface CurrentMarket {
-  value: string
-  changePct: string | null
-  name: string
-  symbol: string
+function solidColor(bg: string): string {
+  if (bg.startsWith('#')) return bg
+  const m = bg.match(/#[0-9a-fA-F]{3,8}/)
+  return m ? m[0] : '#6366f1'
 }
 
-function formatPrice(value: string, asCurrency: boolean): string {
-  const num = parseFloat(value)
-  if (isNaN(num)) return '--'
-  const prefix = asCurrency ? '$' : ''
-  if (num >= 1_000_000_000) return `${prefix}${(num / 1_000_000_000).toFixed(2)}B`
-  if (num >= 1_000_000) return `${prefix}${(num / 1_000_000).toFixed(2)}M`
-  if (num >= 1_000) return `${prefix}${(num / 1_000).toFixed(2)}K`
-  if (num >= 1) return `${prefix}${num.toFixed(2)}`
-  if (num >= 0.01) return `${prefix}${num.toFixed(4)}`
-  return `${prefix}${num.toFixed(6)}`
-}
-
-function extractSolidColor(brandBg: string): string {
-  if (brandBg.startsWith('#')) return brandBg
-  const match = brandBg.match(/#[0-9a-fA-F]{3,8}/)
-  return match ? match[0] : '#6366f1'
-}
-
-function lighten(hex: string, amount: number): string {
-  const c = hex.replace('#', '')
-  const r = Math.min(255, parseInt(c.substring(0, 2), 16) + amount)
-  const g = Math.min(255, parseInt(c.substring(2, 4), 16) + amount)
-  const b = Math.min(255, parseInt(c.substring(4, 6), 16) + amount)
-  return `rgb(${r}, ${g}, ${b})`
+function ogLogo(logoPath: string): string {
+  const pngPath = logoPath.replace(/\.webp$/, '.png')
+  return pngPath.startsWith('http') ? pngPath : `https://www.generalmarket.io${pngPath}`
 }
 
 function cleanName(name: string, prefixes: string[]): string {
+  const lower = name.toLowerCase()
   for (const p of prefixes) {
-    if (name.toLowerCase().startsWith(p)) {
-      return name.slice(p.length).replace(/_/g, ' ')
-    }
+    if (lower.startsWith(p)) return name.slice(p.length).replace(/_/g, ' ')
   }
   return name.replace(/_/g, ' ')
 }
 
-/** Fetch 7-day price history for a specific asset. */
 async function fetchHistory(sourceId: string, assetId: string): Promise<PricePoint[]> {
   try {
     const now = new Date()
     const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    for (const internalId of allInternalIds(sourceId)) {
-      const url = `${getAaDataNodeUrl()}/market/prices/${encodeURIComponent(internalId)}/${encodeURIComponent(assetId)}/history?from=${from.toISOString()}&to=${now.toISOString()}`
-      const res = await fetch(url, { signal: AbortSignal.timeout(8_000) })
+    for (const iid of allInternalIds(sourceId)) {
+      const url = `${getAaDataNodeUrl()}/market/prices/${encodeURIComponent(iid)}/${encodeURIComponent(assetId)}/history?from=${from.toISOString()}&to=${now.toISOString()}`
+      const res = await fetch(url, { signal: AbortSignal.timeout(12_000) })
       if (!res.ok) continue
       const data = await res.json()
-      const prices: PricePoint[] = (data.prices ?? []).map((p: Record<string, unknown>) => ({
-        fetchedAt: p.fetchedAt as string,
+      const raw: PricePoint[] = (data.prices ?? []).map((p: Record<string, unknown>) => ({
         value: typeof p.value === 'string' ? parseFloat(p.value as string) : (p.value as number),
       }))
-      if (prices.length > 0) return prices
+      // Downsample immediately if huge — we only need ~200 points max for candles
+      if (raw.length > 500) {
+        const step = Math.ceil(raw.length / 500)
+        const sampled = raw.filter((_, i) => i % step === 0 || i === raw.length - 1)
+        if (sampled.length > 0) return sampled
+      }
+      if (raw.length > 0) return raw
     }
-    return []
-  } catch {
-    return []
-  }
+  } catch { /* graceful */ }
+  return []
 }
 
-/** Fetch current snapshot for a specific asset. */
-async function fetchCurrent(sourceId: string, assetId: string): Promise<CurrentMarket | null> {
+async function fetchCurrent(sourceId: string, assetId: string): Promise<{ value: string; changePct: string | null; name: string } | null> {
   try {
-    for (const internalId of allInternalIds(sourceId)) {
+    for (const iid of allInternalIds(sourceId)) {
       const res = await fetch(
-        `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=500`,
-        { signal: AbortSignal.timeout(8_000) },
+        `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(iid)}&limit=500`,
+        { signal: AbortSignal.timeout(6_000) },
       )
       if (!res.ok) continue
       const raw = await res.json()
       const found = (raw.snapshots ?? []).find((s: Record<string, unknown>) => s.assetId === assetId)
-      if (found) {
-        return {
-          value: String(found.value ?? '0'),
-          changePct: found.changePct != null ? String(found.changePct) : null,
-          name: String(found.name ?? ''),
-          symbol: String(found.symbol ?? ''),
-        }
-      }
+      if (found) return { value: String(found.value ?? '0'), changePct: found.changePct != null ? String(found.changePct) : null, name: String(found.name ?? '') }
     }
-    return null
-  } catch {
-    return null
+  } catch { /* graceful */ }
+  return null
+}
+
+function toCandles(points: PricePoint[], n: number): Candle[] {
+  if (points.length < 2) return []
+  const bucketSize = Math.max(1, Math.floor(points.length / n))
+  const candles: Candle[] = []
+  for (let i = 0; i < points.length; i += bucketSize) {
+    const slice = points.slice(i, i + bucketSize)
+    if (slice.length === 0) continue
+    const vals = slice.map(p => p.value)
+    candles.push({ open: vals[0], close: vals[vals.length - 1], high: Math.max(...vals), low: Math.min(...vals) })
   }
+  return candles.slice(0, n)
 }
 
-/** Build an SVG polyline path from price points, scaled to fit a box. */
-function buildSparklinePath(points: PricePoint[], w: number, h: number, padding: number): string {
-  if (points.length < 2) return ''
-  const values = points.map(p => p.value)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
+function candlePaths(candles: Candle[], w: number, h: number, pad: number): { greenBodies: string; redBodies: string; greenWicks: string; redWicks: string; globalMin: number; globalMax: number; minY: number; maxY: number } {
+  const empty = { greenBodies: '', redBodies: '', greenWicks: '', redWicks: '', globalMin: 0, globalMax: 0, minY: 0, maxY: 0 }
+  if (candles.length === 0) return empty
+  const allVals = candles.flatMap(c => [c.high, c.low])
+  const min = Math.min(...allVals)
+  const max = Math.max(...allVals)
   const range = max - min || 1
+  const innerW = w - pad * 2
+  const innerH = h - pad * 2
+  const barW = Math.max(4, (innerW / candles.length) * 0.55)
+  const gap = innerW / candles.length
 
-  const innerW = w - padding * 2
-  const innerH = h - padding * 2
+  let greenBodies = '', redBodies = '', greenWicks = '', redWicks = ''
+  let minY = pad, maxY = pad + innerH
 
-  return points
-    .map((p, i) => {
-      const x = padding + (i / (points.length - 1)) * innerW
-      const y = padding + innerH - ((p.value - min) / range) * innerH
-      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
+  for (let i = 0; i < candles.length; i++) {
+    const c = candles[i]
+    const cx = pad + gap * i + gap / 2
+    const yHigh = pad + innerH - ((c.high - min) / range) * innerH
+    const yLow = pad + innerH - ((c.low - min) / range) * innerH
+    const yOpen = pad + innerH - ((c.open - min) / range) * innerH
+    const yClose = pad + innerH - ((c.close - min) / range) * innerH
+    const up = c.close >= c.open
+    const bodyTop = Math.min(yOpen, yClose)
+    const bodyH = Math.max(2, Math.abs(yOpen - yClose))
+
+    const wick = `M${cx.toFixed(1)},${yHigh.toFixed(1)} L${cx.toFixed(1)},${yLow.toFixed(1)} `
+    const x = cx - barW / 2
+    const body = `M${x.toFixed(1)},${bodyTop.toFixed(1)} h${barW.toFixed(1)} v${bodyH.toFixed(1)} h${(-barW).toFixed(1)} Z `
+
+    if (up) { greenWicks += wick; greenBodies += body }
+    else { redWicks += wick; redBodies += body }
+  }
+
+  // Y positions for min/max labels
+  maxY = pad // max is at top
+  minY = pad + innerH // min is at bottom
+
+  return { greenBodies, redBodies, greenWicks, redWicks, globalMin: min, globalMax: max, minY, maxY }
 }
 
-/** Build a filled area path for the gradient fill under the sparkline. */
-function buildAreaPath(points: PricePoint[], w: number, h: number, padding: number): string {
-  if (points.length < 2) return ''
-  const linePath = buildSparklinePath(points, w, h, padding)
-  const lastX = padding + ((points.length - 1) / (points.length - 1)) * (w - padding * 2)
-  const firstX = padding
-  const bottom = h
-  return `${linePath} L${lastX.toFixed(1)},${bottom} L${firstX.toFixed(1)},${bottom} Z`
-}
-
-export default async function Image({ params }: { params: Promise<{ sourceId: string; assetId: string }> }) {
+export default async function OGImage({ params }: { params: Promise<{ sourceId: string; assetId: string }> }) {
   const { sourceId, assetId } = await params
-  const decodedAssetId = decodeURIComponent(assetId)
+  const decoded = decodeURIComponent(assetId)
   const source = await getSourceDisplayServer(sourceId)
-
   if (!source) {
     return new ImageResponse(
-      (
-        <div style={{ display: 'flex', width: '100%', height: '100%', background: '#09090b', color: '#fff', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontFamily: 'sans-serif' }}>
-          Market not found
-        </div>
-      ),
-      { ...size },
+      <div style={{ display: 'flex', width: 1200, height: 630, background: '#fff', color: '#000', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>Market not found</div>,
+      size,
     )
   }
 
-  const [history, current] = await Promise.all([
-    fetchHistory(sourceId, decodedAssetId),
-    fetchCurrent(sourceId, decodedAssetId),
-  ])
+  const [history, current] = await Promise.all([fetchHistory(sourceId, decoded), fetchCurrent(sourceId, decoded)])
+  const brand = solidColor(source.brandBg)
+  const cat = getCategoryLabel(source.category)
+  const logo = ogLogo(source.logo)
+  const gmLogo = 'https://www.generalmarket.io/logo.svg'
 
-  const brandColor = extractSolidColor(source.brandBg)
-  const brandLight = lighten(brandColor, 80)
-  const logoUrl = source.logo.startsWith('http') ? source.logo : `https://www.generalmarket.io${source.logo}`
-  const category = getCategoryLabel(source.category)
-
-  const marketName = cleanName(current?.name || current?.symbol || decodedAssetId, source.prefixes)
-  const priceStr = current ? formatPrice(current.value, source.isPrice) : '--'
+  const marketName = cleanName(current?.name || decoded, source.prefixes)
+  const priceStr = current ? fmtPrice(current.value, source.isPrice) : '--'
   const changePct = current?.changePct ? parseFloat(current.changePct) : null
   const changeStr = changePct != null ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : '--'
-  const isPositive = changePct == null || changePct >= 0
-  const lineColor = isPositive ? '#4ade80' : '#f87171'
+  const isUp = changePct == null || changePct >= 0
 
-  // Sparkline dimensions
-  const chartW = 1080
-  const chartH = 280
-  const chartPad = 8
-
-  // Downsample for cleaner SVG
-  const displayPoints = history.length > 120
-    ? history.filter((_, i) => i % Math.ceil(history.length / 120) === 0 || i === history.length - 1)
-    : history
-
-  const sparkPath = buildSparklinePath(displayPoints, chartW, chartH, chartPad)
-  const areaPath = buildAreaPath(displayPoints, chartW, chartH, chartPad)
+  const candles = toCandles(history, 28)
+  const chartW = 520
+  const chartH = 300
+  const paths = candlePaths(candles, chartW, chartH, 16)
+  const minLabel = fmtPrice(paths.globalMin, source.isPrice)
+  const maxLabel = fmtPrice(paths.globalMax, source.isPrice)
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          height: '100%',
-          background: '#09090b',
-          fontFamily: 'sans-serif',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Brand accent top edge */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: brandColor }} />
+    <div style={{ display: 'flex', width: 1200, height: 630 }}>
+      {/* LEFT 600px: source brand + large logo */}
+      <div style={{ display: 'flex', width: 600, height: 630, background: brand, alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <img src={logo} width={540} height={540} style={{ objectFit: 'contain' }} />
+      </div>
 
-        {/* Header row: source + market info */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '44px 56px 0' }}>
-          {/* Left: source + market name */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <img src={logoUrl} width={32} height={32} style={{ objectFit: 'contain', borderRadius: 4 }} />
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {source.name}
-              </div>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: brandLight,
-                background: `${brandColor}30`,
-                padding: '2px 8px',
-                borderRadius: 3,
-              }}>
-                {category}
-              </div>
-            </div>
-            <div style={{ fontSize: 42, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.025em', lineHeight: 1.1 }}>
-              {marketName.length > 30 ? marketName.slice(0, 29) + '\u2026' : marketName}
-            </div>
+      {/* RIGHT 600px: white panel — market data + chart */}
+      <div style={{ display: 'flex', flexDirection: 'column', width: 600, height: 630, background: '#ffffff', padding: '28px 32px' }}>
+        {/* Top bar: category + GM logo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', fontSize: 14, fontWeight: 700, color: '#a1a1aa', letterSpacing: 1.5 }}>
+            PREDICTION MARKET
           </div>
-
-          {/* Right: price + change */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <div style={{ fontSize: 44, fontWeight: 800, color: '#ffffff', fontFamily: 'monospace', letterSpacing: '-0.02em' }}>
-              {priceStr}
-            </div>
-            <div style={{
-              fontSize: 22,
-              fontWeight: 800,
-              fontFamily: 'monospace',
-              color: isPositive ? '#4ade80' : '#f87171',
-              background: isPositive ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)',
-              padding: '2px 12px',
-              borderRadius: 6,
-            }}>
-              {changeStr}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <img src={gmLogo} width={24} height={24} />
+            <div style={{ display: 'flex', fontSize: 16, fontWeight: 700, color: '#18181b' }}>General Market</div>
           </div>
         </div>
 
-        {/* Sparkline chart area */}
-        <div style={{ display: 'flex', flex: 1, padding: '12px 56px 0', alignItems: 'flex-end' }}>
-          {displayPoints.length >= 2 ? (
-            <svg
-              width={chartW}
-              height={chartH}
-              viewBox={`0 0 ${chartW} ${chartH}`}
-              style={{ overflow: 'visible' }}
-            >
-              {/* Gradient fill under line */}
-              <defs>
-                <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={lineColor} stopOpacity="0.15" />
-                  <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={areaPath} fill="url(#fill)" />
-              <path d={sparkPath} fill="none" stroke={lineColor} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              {/* End dot */}
-              {displayPoints.length > 0 && (() => {
-                const values = displayPoints.map(p => p.value)
-                const min = Math.min(...values)
-                const max = Math.max(...values)
-                const range = max - min || 1
-                const last = displayPoints[displayPoints.length - 1]
-                const cx = chartPad + ((displayPoints.length - 1) / (displayPoints.length - 1)) * (chartW - chartPad * 2)
-                const cy = chartPad + (chartH - chartPad * 2) - ((last.value - min) / range) * (chartH - chartPad * 2)
-                return <circle cx={cx} cy={cy} r="5" fill={lineColor} />
-              })()}
-            </svg>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: chartH, color: '#3f3f46', fontSize: 16 }}>
-              No price history available
+        {/* Market name — huge */}
+        <div style={{ display: 'flex', fontSize: 44, fontWeight: 800, color: '#09090b', marginTop: 12 }}>
+          {marketName.length > 20 ? marketName.slice(0, 19) + '\u2026' : marketName}
+        </div>
+
+        {/* Chart with min/max labels */}
+        <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 }}>
+          {candles.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              {/* Y-axis labels */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: chartH, width: 70, paddingRight: 8 }}>
+                <div style={{ display: 'flex', fontSize: 15, fontWeight: 800, color: '#16a34a' }}>{maxLabel}</div>
+                <div style={{ display: 'flex', fontSize: 15, fontWeight: 800, color: '#dc2626' }}>{minLabel}</div>
+              </div>
+              {/* Chart */}
+              <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`}>
+                <line x1="16" y1={chartH * 0.25} x2={chartW - 16} y2={chartH * 0.25} stroke="#f4f4f5" strokeWidth="1" />
+                <line x1="16" y1={chartH * 0.5} x2={chartW - 16} y2={chartH * 0.5} stroke="#f4f4f5" strokeWidth="1" />
+                <line x1="16" y1={chartH * 0.75} x2={chartW - 16} y2={chartH * 0.75} stroke="#f4f4f5" strokeWidth="1" />
+                <path d={paths.greenWicks} fill="none" stroke="#16a34a" strokeWidth="1.5" />
+                <path d={paths.redWicks} fill="none" stroke="#dc2626" strokeWidth="1.5" />
+                <path d={paths.greenBodies} fill="#16a34a" />
+                <path d={paths.redBodies} fill="#dc2626" />
+              </svg>
             </div>
+          ) : (
+            <div style={{ display: 'flex', fontSize: 16, color: '#a1a1aa' }}>No history available</div>
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 56px 20px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
-              VISION
-            </div>
-            <div style={{ width: 1, height: 16, background: '#3f3f46' }} />
-            <div style={{ fontSize: 14, color: '#71717a', fontWeight: 500 }}>
-              generalmarket.io
+        {/* Bottom data bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: '#e4e4e7', paddingTop: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', fontSize: 12, fontWeight: 700, color: '#a1a1aa', letterSpacing: 1 }}>CURRENT</div>
+            <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, color: '#09090b' }}>{priceStr}</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ display: 'flex', fontSize: 12, fontWeight: 700, color: '#a1a1aa', letterSpacing: 1 }}>24H</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', width: 8, height: 8, borderRadius: 4, background: isUp ? '#16a34a' : '#dc2626' }} />
+              <div style={{ display: 'flex', fontSize: 26, fontWeight: 800, color: isUp ? '#16a34a' : '#dc2626' }}>{changeStr}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {displayPoints.length >= 2 && (
-              <div style={{ fontSize: 12, color: '#52525b', fontWeight: 600 }}>
-                7-day history
-              </div>
-            )}
-            <div style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: brandLight,
-              background: `${brandColor}20`,
-              padding: '6px 16px',
-              borderRadius: 6,
-            }}>
-              Trade on Vision
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            <div style={{ display: 'flex', fontSize: 12, fontWeight: 700, color: '#a1a1aa', letterSpacing: 1 }}>7D</div>
+            <div style={{ display: 'flex', fontSize: 15, fontWeight: 600, color: '#71717a' }}>{history.length} points</div>
           </div>
         </div>
       </div>
-    ),
-    { ...size },
+    </div>,
+    size,
   )
 }

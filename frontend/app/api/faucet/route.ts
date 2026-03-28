@@ -18,9 +18,10 @@ const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d597
 
 import _deployment from '@/lib/contracts/deployment.json'
 const VISION_ADDRESS = (_deployment.contracts.Vision || '0x0000000000000000000000000000000000000000') as `0x${string}`
-const L3_WUSDC_FALLBACK = (_deployment.contracts.L3_WUSDC || '0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6') as `0x${string}`
+const L3_WUSDC_FALLBACK = (_deployment.contracts.L3_WUSDC || '0x0511c61c551280cd2598d5a7380f8e9658f4b7db') as `0x${string}`
 const L3_CHAIN_ID = _deployment.chainId || 111222333
 const SETTLEMENT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337
+const SETTLEMENT_USDC = (_deployment.contracts.SETTLEMENT_USDC || '0x2775bA795A292A1FfcD91d227d1a1B0889282190') as `0x${string}`
 const MAX_MINT = 10_000 // max 10k USDC per request
 const GAS_DRIP_AMOUNT = '0.5' // 0.5 S per drip
 
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     await l3Public.waitForTransactionReceipt({ hash: mintHash, timeout: 30_000 })
     results.usdc = { hash: mintHash, amount: `${amount} USDC` }
 
-    // 2. Drip Sonic testnet gas (native S token) if requested
+    // 2. Settlement chain: gas drip + settlement USDC mint
     if (wantGas) {
       try {
         const settlementChain = {
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
           transport: http(SETTLEMENT_RPC_URL),
         })
 
-        // Check deployer balance first
+        // Gas drip
         const deployerBalance = await settlementPublic.getBalance({ address: account.address })
         const dripAmount = parseEther(GAS_DRIP_AMOUNT)
 
@@ -131,6 +132,21 @@ export async function POST(req: NextRequest) {
           results.gas = { hash: gasHash, amount: `${GAS_DRIP_AMOUNT} S` }
         } else {
           results.gas = { error: 'Faucet deployer low on S — please try again later' }
+        }
+
+        // Mint settlement USDC (6 decimals) for ITP buying
+        try {
+          const settlementAmount = parseUnits(String(amount), 6)
+          const settlementMintHash = await settlementWallet.writeContract({
+            address: SETTLEMENT_USDC,
+            abi: MINT_ABI,
+            functionName: 'mint',
+            args: [address as `0x${string}`, settlementAmount],
+          })
+          await settlementPublic.waitForTransactionReceipt({ hash: settlementMintHash, timeout: 30_000 })
+          results.settlementUsdc = { hash: settlementMintHash, amount: `${amount} USDC (settlement)` }
+        } catch (e: any) {
+          results.settlementUsdc = { error: e.message }
         }
       } catch (e: any) {
         results.gas = { error: e.message }

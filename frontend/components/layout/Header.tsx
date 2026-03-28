@@ -39,19 +39,21 @@ const COUNTER_EPOCH = 1774600000
 const COUNTER_BASE = 500_000
 const MARKETS_PER_HOUR = 72_000
 
+function computeSettled(): number {
+  const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
+  return Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR)
+}
+
 function TopbarStats() {
-  const [settled, setSettled] = useState(() => {
-    const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
-    return Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR)
-  })
+  // Initialize to 0 on both server and client to avoid hydration mismatch.
+  // The real count is computed in useEffect (client-only).
+  const [settled, setSettled] = useState(0)
   const [activeMarkets, setActiveMarkets] = useState(0)
 
   useEffect(() => {
-    // Tick the settlement counter every 10s
-    const iv = setInterval(() => {
-      const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
-      setSettled(Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR))
-    }, 10_000)
+    // Compute immediately on mount, then tick every 10s
+    setSettled(computeSettled())
+    const iv = setInterval(() => setSettled(computeSettled()), 10_000)
 
     // Fetch active market count from data-node snapshot meta.
     // Falls back to batches API + estimation if meta unavailable.
@@ -77,6 +79,9 @@ function TopbarStats() {
 
     return () => clearInterval(iv)
   }, [])
+
+  // Don't render counts until client-side effect has fired (avoids flash of "0")
+  if (settled === 0) return <span className="tabular-nums">&nbsp;</span>
 
   return (
     <span className="tabular-nums">

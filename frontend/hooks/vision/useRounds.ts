@@ -23,7 +23,8 @@ export function useRounds(sourceId?: string) {
       const res = await fetch(`/api/vision/rounds${params}`)
       if (!res.ok) return []
       const data = await res.json()
-      return (data.rounds ?? [])
+      const raw = Array.isArray(data.rounds) ? data.rounds : Array.isArray(data) ? data : []
+      return raw
         .map((r: any) => ({
           batchId: r.batchId ?? r.batch_id ?? r.id,
           sourceId: r.sourceId ?? r.source_id ?? '',

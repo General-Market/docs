@@ -354,7 +354,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       if (needsOracleName && oracleName.trim()) {
         console.log('[CreateITP] Setting deployer name:', oracleName.trim())
         await writeContractAsync({
-          address: INDEX_PROTOCOL.bridgeProxy,
+          address: INDEX_PROTOCOL.settlementBridgeProxy,
           abi: BRIDGE_PROXY_ABI,
           functionName: 'setDeployerName',
           args: [oracleName.trim()],
@@ -369,7 +369,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
 
       console.log('[CreateITP] Submitting tx:', {
-        bridgeProxy: INDEX_PROTOCOL.bridgeProxy,
+        bridgeProxy: INDEX_PROTOCOL.settlementBridgeProxy,
         name, symbol,
         assetsCount: assets.length,
         weightsSum: weights.reduce((a, b) => a + b, 0n).toString(),
@@ -382,7 +382,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       if (settlementPublicClient) {
         try {
           await settlementPublicClient.simulateContract({
-            address: INDEX_PROTOCOL.bridgeProxy,
+            address: INDEX_PROTOCOL.settlementBridgeProxy,
             abi: BRIDGE_PROXY_ABI,
             functionName: 'requestCreateItp',
             args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
@@ -403,7 +403,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       }
 
       await writeContractAsync({
-        address: INDEX_PROTOCOL.bridgeProxy,
+        address: INDEX_PROTOCOL.settlementBridgeProxy,
         abi: BRIDGE_PROXY_ABI,
         functionName: 'requestCreateItp',
         args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],

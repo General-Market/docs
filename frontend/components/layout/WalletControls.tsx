@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
@@ -30,8 +30,12 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
   const isWrongNetwork = isConnected && chainId !== indexL3.id
 
   const { points } = usePoints(address)
+  const isFaucetEnabled = process.env.NEXT_PUBLIC_FAUCET_ENABLED === 'true'
+  const faucetKey = address ? `faucet_used_${address.toLowerCase()}` : ''
+  const alreadyUsed = typeof window !== 'undefined' && !!faucetKey && !!localStorage.getItem(faucetKey)
+  const [faucetState, setFaucetState] = useState<'idle' | 'loading' | 'done' | 'error'>(alreadyUsed ? 'done' : 'idle')
 
-  const { data: usdcRaw } = useReadContract({
+  const { data: usdcRaw, refetch: refetchUsdc } = useReadContract({
     address: USDC_ADDRESS,
     abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
     functionName: 'balanceOf',
@@ -40,6 +44,24 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
     query: { enabled: !!address, refetchInterval: 15_000 },
   })
   const usdcBalance = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : null
+
+  const handleFaucet = useCallback(async () => {
+    if (!address || faucetState === 'loading' || alreadyUsed) return
+    setFaucetState('loading')
+    try {
+      const res = await fetch('/api/faucet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, amount: '1000', gas: true }),
+      })
+      if (!res.ok) throw new Error()
+      localStorage.setItem(faucetKey, '1')
+      setFaucetState('done')
+    } catch {
+      setFaucetState('error')
+      setTimeout(() => setFaucetState('idle'), 3000)
+    }
+  }, [address, faucetState, alreadyUsed, faucetKey])
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -127,28 +149,54 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
       {/* Wallet state */}
       {mounted && authenticated && address ? (
         <div className="flex items-center gap-1.5">
-          {!showVisionBalance && (
-            usdcBalance !== null && usdcBalance > 0 ? (
-              <span className={`hidden sm:inline text-[12px] font-semibold font-mono tabular-nums tracking-tight ${
-                isDark ? 'text-zinc-300' : 'text-zinc-700'
-              }`}>
-                {usdcBalance < 0.01 ? '<0.01' : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className={`ml-0.5 font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>USDC</span>
-              </span>
-            ) : usdcBalance !== null ? (
-              <a
-                href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=${process.env.NEXT_PUBLIC_ONRAMP_NETWORK || 'sonic'}&walletAddress=${address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
-                  isDark
-                    ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                }`}
-              >
-                {t('wallet.deposit')}
-              </a>
-            ) : null
+          {!showVisionBalance && usdcBalance !== null && (
+            <span
+              className={`group/bal hidden sm:inline-flex items-center text-[12px] font-semibold font-mono tabular-nums tracking-tight ${
+                isFaucetEnabled && usdcBalance === 0 ? 'cursor-pointer' : ''
+              } ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}
+              onClick={isFaucetEnabled && usdcBalance === 0 ? handleFaucet : undefined}
+            >
+              {isFaucetEnabled && usdcBalance === 0 ? (
+                <>
+                  <span className="group-hover/bal:hidden">
+                    {usdcBalance.toFixed(2)}
+                    <span className={`ml-0.5 font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>USDC</span>
+                  </span>
+                  <span className={`hidden group-hover/bal:inline text-[11px] font-semibold ${
+                    faucetState === 'loading' ? 'text-zinc-400'
+                      : faucetState === 'done' ? 'text-emerald-300'
+                      : faucetState === 'error' ? 'text-red-300'
+                      : 'text-emerald-300'
+                  }`}>
+                    {faucetState === 'loading' ? 'Minting...'
+                      : faucetState === 'done' ? '1K USDC + gas sent'
+                      : faucetState === 'error' ? 'Failed — retry'
+                      : 'Get test USDC + gas'}
+                  </span>
+                </>
+              ) : usdcBalance > 0 ? (
+                <>
+                  {usdcBalance < 0.01 ? '<0.01'
+                    : usdcBalance >= 1_000_000 ? `${(usdcBalance / 1_000_000).toFixed(2)}M`
+                    : usdcBalance >= 1_000 ? `${(usdcBalance / 1_000).toFixed(1)}K`
+                    : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className={`ml-0.5 font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>USDC</span>
+                </>
+              ) : (
+                <a
+                  href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=${process.env.NEXT_PUBLIC_ONRAMP_NETWORK || 'sonic'}&walletAddress=${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
+                    isDark
+                      ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  {t('wallet.deposit')}
+                </a>
+              )}
+            </span>
           )}
           <button
             onClick={handleLogout}

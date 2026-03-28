@@ -1,0 +1,2502 @@
+[
+  {
+    "symbol": "0G",
+    "cg_id": "zero-gravity"
+  },
+  {
+    "symbol": "1INCH",
+    "cg_id": "1inch"
+  },
+  {
+    "symbol": "2Z",
+    "cg_id": "doublezero"
+  },
+  {
+    "symbol": "A",
+    "cg_id": "vaulta"
+  },
+  {
+    "symbol": "A47",
+    "cg_id": "agenda-47"
+  },
+  {
+    "symbol": "A8",
+    "cg_id": "ancient8"
+  },
+  {
+    "symbol": "AAVE",
+    "cg_id": "aave"
+  },
+  {
+    "symbol": "AB",
+    "cg_id": "newton-project"
+  },
+  {
+    "symbol": "ACE",
+    "cg_id": "endurance"
+  },
+  {
+    "symbol": "ACH",
+    "cg_id": "alchemy-pay"
+  },
+  {
+    "symbol": "ACM",
+    "cg_id": "ac-milan-fan-token"
+  },
+  {
+    "symbol": "ACT",
+    "cg_id": "act-i-the-ai-prophecy"
+  },
+  {
+    "symbol": "ACX",
+    "cg_id": "across-protocol"
+  },
+  {
+    "symbol": "ADA",
+    "cg_id": "cardano"
+  },
+  {
+    "symbol": "AERGO",
+    "cg_id": "aergo"
+  },
+  {
+    "symbol": "AERO",
+    "cg_id": "aerodrome-finance"
+  },
+  {
+    "symbol": "AEVO",
+    "cg_id": "aevo-exchange"
+  },
+  {
+    "symbol": "AFC",
+    "cg_id": "arsenal-fan-token"
+  },
+  {
+    "symbol": "AGLD",
+    "cg_id": "adventure-gold"
+  },
+  {
+    "symbol": "AI",
+    "cg_id": "sleepless-ai"
+  },
+  {
+    "symbol": "AIA",
+    "cg_id": "aia"
+  },
+  {
+    "symbol": "AIN",
+    "cg_id": "infinity-ground"
+  },
+  {
+    "symbol": "AIO",
+    "cg_id": "olaxbt"
+  },
+  {
+    "symbol": "AITECH",
+    "cg_id": "solidus-aitech"
+  },
+  {
+    "symbol": "AIXBT",
+    "cg_id": "aixbt"
+  },
+  {
+    "symbol": "AL",
+    "cg_id": "alephium"
+  },
+  {
+    "symbol": "ALCH",
+    "cg_id": "alchemist-ai"
+  },
+  {
+    "symbol": "ALGO",
+    "cg_id": "algorand"
+  },
+  {
+    "symbol": "ALICE",
+    "cg_id": "my-neighbor-alice"
+  },
+  {
+    "symbol": "ALLO",
+    "cg_id": "allora"
+  },
+  {
+    "symbol": "ALMANAK",
+    "cg_id": "almanak"
+  },
+  {
+    "symbol": "ALPH",
+    "cg_id": "alephium"
+  },
+  {
+    "symbol": "ALPINE",
+    "cg_id": "alpine-f1-team-fan-token"
+  },
+  {
+    "symbol": "ALT",
+    "cg_id": "altlayer"
+  },
+  {
+    "symbol": "AMP",
+    "cg_id": "amp-token"
+  },
+  {
+    "symbol": "ANIME",
+    "cg_id": "anime"
+  },
+  {
+    "symbol": "ANKR",
+    "cg_id": "ankr"
+  },
+  {
+    "symbol": "APE",
+    "cg_id": "apecoin"
+  },
+  {
+    "symbol": "API3",
+    "cg_id": "api3"
+  },
+  {
+    "symbol": "APR",
+    "cg_id": "apriori"
+  },
+  {
+    "symbol": "APT",
+    "cg_id": "aptos"
+  },
+  {
+    "symbol": "AQT",
+    "cg_id": "alpha-quark-token"
+  },
+  {
+    "symbol": "AR",
+    "cg_id": "arweave"
+  },
+  {
+    "symbol": "ARB",
+    "cg_id": "arbitrum"
+  },
+  {
+    "symbol": "ARG",
+    "cg_id": "argentine-football-association-fan-token"
+  },
+  {
+    "symbol": "ARIA",
+    "cg_id": "aria-ai"
+  },
+  {
+    "symbol": "ARIAIP",
+    "cg_id": "aria-2"
+  },
+  {
+    "symbol": "ARK",
+    "cg_id": "ark"
+  },
+  {
+    "symbol": "ARKM",
+    "cg_id": "arkham"
+  },
+  {
+    "symbol": "ARPA",
+    "cg_id": "arpa"
+  },
+  {
+    "symbol": "ASR",
+    "cg_id": "as-roma-fan-token"
+  },
+  {
+    "symbol": "ASTER",
+    "cg_id": "aster-2"
+  },
+  {
+    "symbol": "ASTR",
+    "cg_id": "astar"
+  },
+  {
+    "symbol": "ATH",
+    "cg_id": "aethir"
+  },
+  {
+    "symbol": "ATM",
+    "cg_id": "atletico-madrid"
+  },
+  {
+    "symbol": "ATOM",
+    "cg_id": "cosmos"
+  },
+  {
+    "symbol": "AUCTION",
+    "cg_id": "auction"
+  },
+  {
+    "symbol": "AUDIO",
+    "cg_id": "audius"
+  },
+  {
+    "symbol": "AVA",
+    "cg_id": "concierge-io"
+  },
+  {
+    "symbol": "AVAX",
+    "cg_id": "avalanche-2"
+  },
+  {
+    "symbol": "AVNT",
+    "cg_id": "avantis"
+  },
+  {
+    "symbol": "AWE",
+    "cg_id": "stp-network"
+  },
+  {
+    "symbol": "AXL",
+    "cg_id": "axelar"
+  },
+  {
+    "symbol": "AXS",
+    "cg_id": "axie-infinity"
+  },
+  {
+    "symbol": "B",
+    "cg_id": "build-on"
+  },
+  {
+    "symbol": "B2",
+    "cg_id": "bsquared-network"
+  },
+  {
+    "symbol": "BABY",
+    "cg_id": "babylon"
+  },
+  {
+    "symbol": "BABYDOGE",
+    "cg_id": "baby-doge-coin"
+  },
+  {
+    "symbol": "BAL",
+    "cg_id": "balancer"
+  },
+  {
+    "symbol": "BAN",
+    "cg_id": "comedian"
+  },
+  {
+    "symbol": "BANANA",
+    "cg_id": "banana-gun"
+  },
+  {
+    "symbol": "BANANAS31",
+    "cg_id": "banana-for-scale-2"
+  },
+  {
+    "symbol": "BAND",
+    "cg_id": "band-protocol"
+  },
+  {
+    "symbol": "BANK",
+    "cg_id": "lorenzo-protocol"
+  },
+  {
+    "symbol": "BAR",
+    "cg_id": "fc-barcelona-fan-token"
+  },
+  {
+    "symbol": "BARD",
+    "cg_id": "lombard-protocol"
+  },
+  {
+    "symbol": "BAT",
+    "cg_id": "basic-attention-token"
+  },
+  {
+    "symbol": "BAY",
+    "cg_id": "marina-protocol"
+  },
+  {
+    "symbol": "BB",
+    "cg_id": "bouncebit"
+  },
+  {
+    "symbol": "BCH",
+    "cg_id": "bitcoin-cash"
+  },
+  {
+    "symbol": "BDXN",
+    "cg_id": "bondex"
+  },
+  {
+    "symbol": "BEAM",
+    "cg_id": "beam-2"
+  },
+  {
+    "symbol": "BERA",
+    "cg_id": "berachain-bera"
+  },
+  {
+    "symbol": "BGB",
+    "cg_id": "bitget-token"
+  },
+  {
+    "symbol": "BGSC",
+    "cg_id": "bugscoin"
+  },
+  {
+    "symbol": "BGSOL",
+    "cg_id": "bitget-staked-sol"
+  },
+  {
+    "symbol": "BICO",
+    "cg_id": "biconomy"
+  },
+  {
+    "symbol": "BIGTIME",
+    "cg_id": "big-time"
+  },
+  {
+    "symbol": "BIO",
+    "cg_id": "bio-protocol"
+  },
+  {
+    "symbol": "BIRB",
+    "cg_id": "moonbirds"
+  },
+  {
+    "symbol": "BLAST",
+    "cg_id": "blast"
+  },
+  {
+    "symbol": "BLESS",
+    "cg_id": "bless-2"
+  },
+  {
+    "symbol": "BLUE",
+    "cg_id": "bluefin"
+  },
+  {
+    "symbol": "BLUM",
+    "cg_id": "blum"
+  },
+  {
+    "symbol": "BLUR",
+    "cg_id": "blur"
+  },
+  {
+    "symbol": "BMT",
+    "cg_id": "bubblemaps"
+  },
+  {
+    "symbol": "BNB",
+    "cg_id": "binancecoin"
+  },
+  {
+    "symbol": "BNT",
+    "cg_id": "bancor"
+  },
+  {
+    "symbol": "BOME",
+    "cg_id": "book-of-meme"
+  },
+  {
+    "symbol": "BONK",
+    "cg_id": "bonk"
+  },
+  {
+    "symbol": "BOS",
+    "cg_id": "bitcoinos"
+  },
+  {
+    "symbol": "BR",
+    "cg_id": "bedrock-token"
+  },
+  {
+    "symbol": "BRETT",
+    "cg_id": "based-brett"
+  },
+  {
+    "symbol": "BREV",
+    "cg_id": "brevis"
+  },
+  {
+    "symbol": "BROCCOLI",
+    "cg_id": "czs-dog"
+  },
+  {
+    "symbol": "BSU",
+    "cg_id": "baby-shark-universe"
+  },
+  {
+    "symbol": "BSV",
+    "cg_id": "bitcoin-cash-sv"
+  },
+  {
+    "symbol": "BTC",
+    "cg_id": "bitcoin"
+  },
+  {
+    "symbol": "BTR",
+    "cg_id": "bitlayer-bitvm"
+  },
+  {
+    "symbol": "BTT",
+    "cg_id": "bittorrent"
+  },
+  {
+    "symbol": "BYTE",
+    "cg_id": "byte"
+  },
+  {
+    "symbol": "C",
+    "cg_id": "chainbase"
+  },
+  {
+    "symbol": "C98",
+    "cg_id": "coin98"
+  },
+  {
+    "symbol": "CAKE",
+    "cg_id": "pancakeswap-token"
+  },
+  {
+    "symbol": "CAMP",
+    "cg_id": "camp-network"
+  },
+  {
+    "symbol": "CARV",
+    "cg_id": "carv"
+  },
+  {
+    "symbol": "CATI",
+    "cg_id": "catizen"
+  },
+  {
+    "symbol": "CBK",
+    "cg_id": "cobak-token"
+  },
+  {
+    "symbol": "CELO",
+    "cg_id": "celo"
+  },
+  {
+    "symbol": "CELR",
+    "cg_id": "celer-network"
+  },
+  {
+    "symbol": "CESS",
+    "cg_id": "cumulus-encrypted-storage-system"
+  },
+  {
+    "symbol": "CETUS",
+    "cg_id": "cetus-protocol"
+  },
+  {
+    "symbol": "CFX",
+    "cg_id": "conflux-token"
+  },
+  {
+    "symbol": "CGN",
+    "cg_id": "cygnus-2"
+  },
+  {
+    "symbol": "CGPT",
+    "cg_id": "chaingpt"
+  },
+  {
+    "symbol": "CHEEMS",
+    "cg_id": "cheems-token"
+  },
+  {
+    "symbol": "CHESS",
+    "cg_id": "tranchess"
+  },
+  {
+    "symbol": "CHILLGUY",
+    "cg_id": "chill-guy"
+  },
+  {
+    "symbol": "CHR",
+    "cg_id": "chromaway"
+  },
+  {
+    "symbol": "CHZ",
+    "cg_id": "chiliz"
+  },
+  {
+    "symbol": "CKB",
+    "cg_id": "nervos-network"
+  },
+  {
+    "symbol": "CLANKER",
+    "cg_id": "tokenbot-2"
+  },
+  {
+    "symbol": "COAI",
+    "cg_id": "chainopera-ai"
+  },
+  {
+    "symbol": "COLLECT",
+    "cg_id": "collect-on-fanable"
+  },
+  {
+    "symbol": "COMMON",
+    "cg_id": "common-2"
+  },
+  {
+    "symbol": "COMP",
+    "cg_id": "compound-governance-token"
+  },
+  {
+    "symbol": "COOKIE",
+    "cg_id": "cookie"
+  },
+  {
+    "symbol": "CORE",
+    "cg_id": "coredaoorg"
+  },
+  {
+    "symbol": "COTI",
+    "cg_id": "coti"
+  },
+  {
+    "symbol": "COW",
+    "cg_id": "cow-protocol"
+  },
+  {
+    "symbol": "CPOOL",
+    "cg_id": "clearpool"
+  },
+  {
+    "symbol": "CREO",
+    "cg_id": "creo-engine"
+  },
+  {
+    "symbol": "CRO",
+    "cg_id": "crypto-com-chain"
+  },
+  {
+    "symbol": "CROSS",
+    "cg_id": "cross-2"
+  },
+  {
+    "symbol": "CRV",
+    "cg_id": "curve-dao-token"
+  },
+  {
+    "symbol": "CSPR",
+    "cg_id": "casper-network"
+  },
+  {
+    "symbol": "CTC",
+    "cg_id": "creditcoin-2"
+  },
+  {
+    "symbol": "CTSI",
+    "cg_id": "cartesi"
+  },
+  {
+    "symbol": "CUDIS",
+    "cg_id": "cudis"
+  },
+  {
+    "symbol": "CVC",
+    "cg_id": "civic"
+  },
+  {
+    "symbol": "CVX",
+    "cg_id": "convex-finance"
+  },
+  {
+    "symbol": "CYBER",
+    "cg_id": "cyberconnect"
+  },
+  {
+    "symbol": "CYS",
+    "cg_id": "cysic"
+  },
+  {
+    "symbol": "D",
+    "cg_id": "dar-open-network"
+  },
+  {
+    "symbol": "DAI",
+    "cg_id": "dai"
+  },
+  {
+    "symbol": "DBR",
+    "cg_id": "debridge"
+  },
+  {
+    "symbol": "DEEP",
+    "cg_id": "deep"
+  },
+  {
+    "symbol": "DEGEN",
+    "cg_id": "degen-base"
+  },
+  {
+    "symbol": "DENT",
+    "cg_id": "dent"
+  },
+  {
+    "symbol": "DMC",
+    "cg_id": "delorean"
+  },
+  {
+    "symbol": "DN",
+    "cg_id": "deepnode"
+  },
+  {
+    "symbol": "DODO",
+    "cg_id": "dodo"
+  },
+  {
+    "symbol": "DOG",
+    "cg_id": "dog-go-to-the-moon-rune"
+  },
+  {
+    "symbol": "DOGE",
+    "cg_id": "dogecoin"
+  },
+  {
+    "symbol": "DOGS",
+    "cg_id": "dogs-2"
+  },
+  {
+    "symbol": "DOOD",
+    "cg_id": "doodles"
+  },
+  {
+    "symbol": "DOT",
+    "cg_id": "polkadot"
+  },
+  {
+    "symbol": "DRIFT",
+    "cg_id": "drift-protocol"
+  },
+  {
+    "symbol": "DTEC",
+    "cg_id": "dtec-token"
+  },
+  {
+    "symbol": "DUCK",
+    "cg_id": "duckchain-token"
+  },
+  {
+    "symbol": "DUSK",
+    "cg_id": "dusk-network"
+  },
+  {
+    "symbol": "DYDX",
+    "cg_id": "dydx-chain"
+  },
+  {
+    "symbol": "DYM",
+    "cg_id": "dymension"
+  },
+  {
+    "symbol": "EDEN",
+    "cg_id": "openeden"
+  },
+  {
+    "symbol": "EGL1",
+    "cg_id": "egl1"
+  },
+  {
+    "symbol": "EGLD",
+    "cg_id": "elrond-erd-2"
+  },
+  {
+    "symbol": "EIGEN",
+    "cg_id": "eigenlayer"
+  },
+  {
+    "symbol": "ELA",
+    "cg_id": "elastos"
+  },
+  {
+    "symbol": "ELIZAOS",
+    "cg_id": "elizaos"
+  },
+  {
+    "symbol": "ENA",
+    "cg_id": "ethena"
+  },
+  {
+    "symbol": "ENJ",
+    "cg_id": "enjincoin"
+  },
+  {
+    "symbol": "ENS",
+    "cg_id": "ethereum-name-service"
+  },
+  {
+    "symbol": "ENSO",
+    "cg_id": "enso"
+  },
+  {
+    "symbol": "EPT",
+    "cg_id": "balance"
+  },
+  {
+    "symbol": "ERA",
+    "cg_id": "caldera"
+  },
+  {
+    "symbol": "ES",
+    "cg_id": "eclipse-3"
+  },
+  {
+    "symbol": "ESIM",
+    "cg_id": "depinsim"
+  },
+  {
+    "symbol": "ESPORTS",
+    "cg_id": "yooldo-games"
+  },
+  {
+    "symbol": "ETC",
+    "cg_id": "ethereum-classic"
+  },
+  {
+    "symbol": "ETH",
+    "cg_id": "ethereum"
+  },
+  {
+    "symbol": "ETHFI",
+    "cg_id": "ether-fi"
+  },
+  {
+    "symbol": "ETHW",
+    "cg_id": "ethereum-pow-iou"
+  },
+  {
+    "symbol": "F",
+    "cg_id": "synfutures"
+  },
+  {
+    "symbol": "FARTCOIN",
+    "cg_id": "fartcoin"
+  },
+  {
+    "symbol": "FET",
+    "cg_id": "fetch-ai"
+  },
+  {
+    "symbol": "FF",
+    "cg_id": "falcon-finance-ff"
+  },
+  {
+    "symbol": "FHE",
+    "cg_id": "mind-network"
+  },
+  {
+    "symbol": "FIDA",
+    "cg_id": "bonfida"
+  },
+  {
+    "symbol": "FIL",
+    "cg_id": "filecoin"
+  },
+  {
+    "symbol": "FLK",
+    "cg_id": "fleek"
+  },
+  {
+    "symbol": "FLOCK",
+    "cg_id": "flock-2"
+  },
+  {
+    "symbol": "FLOKI",
+    "cg_id": "floki"
+  },
+  {
+    "symbol": "FLOW",
+    "cg_id": "flow"
+  },
+  {
+    "symbol": "FLUX",
+    "cg_id": "zelcash"
+  },
+  {
+    "symbol": "FOGO",
+    "cg_id": "fogo"
+  },
+  {
+    "symbol": "FORM",
+    "cg_id": "four"
+  },
+  {
+    "symbol": "FRAX",
+    "cg_id": "frax"
+  },
+  {
+    "symbol": "FROGGIE",
+    "cg_id": "froggie"
+  },
+  {
+    "symbol": "FTT",
+    "cg_id": "ftx-token"
+  },
+  {
+    "symbol": "FUEL",
+    "cg_id": "fuel-network"
+  },
+  {
+    "symbol": "FUN",
+    "cg_id": "funfair"
+  },
+  {
+    "symbol": "G",
+    "cg_id": "g-token"
+  },
+  {
+    "symbol": "GAIA",
+    "cg_id": "gaia-3"
+  },
+  {
+    "symbol": "GAIB",
+    "cg_id": "gaib"
+  },
+  {
+    "symbol": "GALA",
+    "cg_id": "gala"
+  },
+  {
+    "symbol": "GAS",
+    "cg_id": "gas"
+  },
+  {
+    "symbol": "GHO",
+    "cg_id": "gho"
+  },
+  {
+    "symbol": "GHST",
+    "cg_id": "aavegotchi"
+  },
+  {
+    "symbol": "GLM",
+    "cg_id": "golem"
+  },
+  {
+    "symbol": "GLMR",
+    "cg_id": "moonbeam"
+  },
+  {
+    "symbol": "GMT",
+    "cg_id": "stepn"
+  },
+  {
+    "symbol": "GMX",
+    "cg_id": "gmx"
+  },
+  {
+    "symbol": "GNO",
+    "cg_id": "gnosis"
+  },
+  {
+    "symbol": "GNS",
+    "cg_id": "gains-network"
+  },
+  {
+    "symbol": "GOAT",
+    "cg_id": "goatseus-maximus"
+  },
+  {
+    "symbol": "GODS",
+    "cg_id": "gods-unchained"
+  },
+  {
+    "symbol": "GOMINING",
+    "cg_id": "gmt-token"
+  },
+  {
+    "symbol": "GPS",
+    "cg_id": "goplus-security"
+  },
+  {
+    "symbol": "GRASS",
+    "cg_id": "grass"
+  },
+  {
+    "symbol": "GRT",
+    "cg_id": "the-graph"
+  },
+  {
+    "symbol": "GUN",
+    "cg_id": "gunz"
+  },
+  {
+    "symbol": "GWEI",
+    "cg_id": "ethgas-2"
+  },
+  {
+    "symbol": "H",
+    "cg_id": "humanity"
+  },
+  {
+    "symbol": "HAEDAL",
+    "cg_id": "haedal"
+  },
+  {
+    "symbol": "HBAR",
+    "cg_id": "hedera-hashgraph"
+  },
+  {
+    "symbol": "HEI",
+    "cg_id": "heima"
+  },
+  {
+    "symbol": "HFT",
+    "cg_id": "hashflow"
+  },
+  {
+    "symbol": "HIGH",
+    "cg_id": "high"
+  },
+  {
+    "symbol": "HIPPO",
+    "cg_id": "sudeng"
+  },
+  {
+    "symbol": "HIVE",
+    "cg_id": "hive"
+  },
+  {
+    "symbol": "HMSTR",
+    "cg_id": "hamster-kombat"
+  },
+  {
+    "symbol": "HNT",
+    "cg_id": "helium"
+  },
+  {
+    "symbol": "HOLD",
+    "cg_id": "holdstation-2"
+  },
+  {
+    "symbol": "HOLO",
+    "cg_id": "holoworld"
+  },
+  {
+    "symbol": "HOME",
+    "cg_id": "home"
+  },
+  {
+    "symbol": "HOOK",
+    "cg_id": "hooked-protocol"
+  },
+  {
+    "symbol": "HOT",
+    "cg_id": "holotoken"
+  },
+  {
+    "symbol": "HTX",
+    "cg_id": "htx-dao"
+  },
+  {
+    "symbol": "HUMA",
+    "cg_id": "huma-finance"
+  },
+  {
+    "symbol": "HYPE",
+    "cg_id": "hyperliquid"
+  },
+  {
+    "symbol": "HYPER",
+    "cg_id": "hyperlane"
+  },
+  {
+    "symbol": "IAG",
+    "cg_id": "iagon"
+  },
+  {
+    "symbol": "ICNT",
+    "cg_id": "impossible-cloud-network-token"
+  },
+  {
+    "symbol": "ICP",
+    "cg_id": "internet-computer"
+  },
+  {
+    "symbol": "ICX",
+    "cg_id": "icon"
+  },
+  {
+    "symbol": "ID",
+    "cg_id": "space-id"
+  },
+  {
+    "symbol": "IDEX",
+    "cg_id": "aurora-dao"
+  },
+  {
+    "symbol": "IDOL",
+    "cg_id": "meet48"
+  },
+  {
+    "symbol": "IKA",
+    "cg_id": "ika"
+  },
+  {
+    "symbol": "ILV",
+    "cg_id": "illuvium"
+  },
+  {
+    "symbol": "IMU",
+    "cg_id": "immunefi"
+  },
+  {
+    "symbol": "IMX",
+    "cg_id": "immutable-x"
+  },
+  {
+    "symbol": "IN",
+    "cg_id": "infinit"
+  },
+  {
+    "symbol": "INIT",
+    "cg_id": "initia"
+  },
+  {
+    "symbol": "INJ",
+    "cg_id": "injective-protocol"
+  },
+  {
+    "symbol": "INTER",
+    "cg_id": "inter-milan-fan-token"
+  },
+  {
+    "symbol": "IO",
+    "cg_id": "io"
+  },
+  {
+    "symbol": "IOST",
+    "cg_id": "iostoken"
+  },
+  {
+    "symbol": "IOTX",
+    "cg_id": "iotex"
+  },
+  {
+    "symbol": "IP",
+    "cg_id": "story-2"
+  },
+  {
+    "symbol": "IQ",
+    "cg_id": "everipedia"
+  },
+  {
+    "symbol": "IR",
+    "cg_id": "infrared-finance"
+  },
+  {
+    "symbol": "IRYS",
+    "cg_id": "irys"
+  },
+  {
+    "symbol": "J",
+    "cg_id": "jambo"
+  },
+  {
+    "symbol": "JASMY",
+    "cg_id": "jasmycoin"
+  },
+  {
+    "symbol": "JCT",
+    "cg_id": "janction"
+  },
+  {
+    "symbol": "JELLYJELLY",
+    "cg_id": "jelly-my-jelly"
+  },
+  {
+    "symbol": "JOE",
+    "cg_id": "joe"
+  },
+  {
+    "symbol": "JST",
+    "cg_id": "just"
+  },
+  {
+    "symbol": "JTO",
+    "cg_id": "jito-governance-token"
+  },
+  {
+    "symbol": "JUP",
+    "cg_id": "jupiter-exchange-solana"
+  },
+  {
+    "symbol": "JUV",
+    "cg_id": "juventus-fan-token"
+  },
+  {
+    "symbol": "KAIA",
+    "cg_id": "kaia"
+  },
+  {
+    "symbol": "KAITO",
+    "cg_id": "kaito"
+  },
+  {
+    "symbol": "KAS",
+    "cg_id": "kaspa"
+  },
+  {
+    "symbol": "KAVA",
+    "cg_id": "kava"
+  },
+  {
+    "symbol": "KERNEL",
+    "cg_id": "kernel-2"
+  },
+  {
+    "symbol": "KGEN",
+    "cg_id": "kgen"
+  },
+  {
+    "symbol": "KITE",
+    "cg_id": "kite-2"
+  },
+  {
+    "symbol": "KLV",
+    "cg_id": "klever"
+  },
+  {
+    "symbol": "KMNO",
+    "cg_id": "kamino"
+  },
+  {
+    "symbol": "KNC",
+    "cg_id": "kyber-network-crystal"
+  },
+  {
+    "symbol": "KOMA",
+    "cg_id": "koma-inu"
+  },
+  {
+    "symbol": "KSM",
+    "cg_id": "kusama"
+  },
+  {
+    "symbol": "KUB",
+    "cg_id": "bitkub-coin"
+  },
+  {
+    "symbol": "LA",
+    "cg_id": "lagrange"
+  },
+  {
+    "symbol": "LAB",
+    "cg_id": "lab"
+  },
+  {
+    "symbol": "LAT",
+    "cg_id": "platon-network"
+  },
+  {
+    "symbol": "LAYER",
+    "cg_id": "solayer"
+  },
+  {
+    "symbol": "LAZIO",
+    "cg_id": "lazio-fan-token"
+  },
+  {
+    "symbol": "LDO",
+    "cg_id": "lido-dao"
+  },
+  {
+    "symbol": "LIGHT",
+    "cg_id": "bitlight"
+  },
+  {
+    "symbol": "LINEA",
+    "cg_id": "linea"
+  },
+  {
+    "symbol": "LINK",
+    "cg_id": "chainlink"
+  },
+  {
+    "symbol": "LISTA",
+    "cg_id": "lista"
+  },
+  {
+    "symbol": "LIT",
+    "cg_id": "lighter"
+  },
+  {
+    "symbol": "LMWR",
+    "cg_id": "limewire-token"
+  },
+  {
+    "symbol": "LNQ",
+    "cg_id": "linqai"
+  },
+  {
+    "symbol": "LPT",
+    "cg_id": "livepeer"
+  },
+  {
+    "symbol": "LQTY",
+    "cg_id": "liquity"
+  },
+  {
+    "symbol": "LRC",
+    "cg_id": "loopring"
+  },
+  {
+    "symbol": "LSK",
+    "cg_id": "lisk"
+  },
+  {
+    "symbol": "LTC",
+    "cg_id": "litecoin"
+  },
+  {
+    "symbol": "LUMIA",
+    "cg_id": "lumia"
+  },
+  {
+    "symbol": "LUNA",
+    "cg_id": "terra-luna-2"
+  },
+  {
+    "symbol": "LUNC",
+    "cg_id": "terra-luna"
+  },
+  {
+    "symbol": "M",
+    "cg_id": "memecore"
+  },
+  {
+    "symbol": "MAGIC",
+    "cg_id": "magic"
+  },
+  {
+    "symbol": "MAGMA",
+    "cg_id": "magma-finance"
+  },
+  {
+    "symbol": "MAK",
+    "cg_id": "metacene"
+  },
+  {
+    "symbol": "MANA",
+    "cg_id": "decentraland"
+  },
+  {
+    "symbol": "MANTA",
+    "cg_id": "manta-network"
+  },
+  {
+    "symbol": "MAPO",
+    "cg_id": "marcopolo"
+  },
+  {
+    "symbol": "MAS",
+    "cg_id": "massa"
+  },
+  {
+    "symbol": "MASK",
+    "cg_id": "mask-network"
+  },
+  {
+    "symbol": "MAV",
+    "cg_id": "maverick-protocol"
+  },
+  {
+    "symbol": "MBL",
+    "cg_id": "moviebloc"
+  },
+  {
+    "symbol": "MBOX",
+    "cg_id": "mobox"
+  },
+  {
+    "symbol": "ME",
+    "cg_id": "magic-eden"
+  },
+  {
+    "symbol": "MEME",
+    "cg_id": "memecoin-2"
+  },
+  {
+    "symbol": "MERL",
+    "cg_id": "merlin-chain"
+  },
+  {
+    "symbol": "MET",
+    "cg_id": "meteora"
+  },
+  {
+    "symbol": "METIS",
+    "cg_id": "metis-token"
+  },
+  {
+    "symbol": "MEW",
+    "cg_id": "cat-in-a-dogs-world"
+  },
+  {
+    "symbol": "MGO",
+    "cg_id": "mango-network"
+  },
+  {
+    "symbol": "MINA",
+    "cg_id": "mina-protocol"
+  },
+  {
+    "symbol": "MIRA",
+    "cg_id": "mira-3"
+  },
+  {
+    "symbol": "ML",
+    "cg_id": "mintlayer"
+  },
+  {
+    "symbol": "MMT",
+    "cg_id": "momentum-3"
+  },
+  {
+    "symbol": "MOCA",
+    "cg_id": "mocaverse"
+  },
+  {
+    "symbol": "MOEW",
+    "cg_id": "moew"
+  },
+  {
+    "symbol": "MOG",
+    "cg_id": "mog-coin"
+  },
+  {
+    "symbol": "MON",
+    "cg_id": "monad"
+  },
+  {
+    "symbol": "MOODENG",
+    "cg_id": "moo-deng"
+  },
+  {
+    "symbol": "MORPHO",
+    "cg_id": "morpho"
+  },
+  {
+    "symbol": "MOVE",
+    "cg_id": "movement"
+  },
+  {
+    "symbol": "MOVR",
+    "cg_id": "moonriver"
+  },
+  {
+    "symbol": "MTL",
+    "cg_id": "metal"
+  },
+  {
+    "symbol": "MUBARAK",
+    "cg_id": "mubarak"
+  },
+  {
+    "symbol": "MX",
+    "cg_id": "mx-token"
+  },
+  {
+    "symbol": "MYX",
+    "cg_id": "myx-finance"
+  },
+  {
+    "symbol": "NAORIS",
+    "cg_id": "naoris"
+  },
+  {
+    "symbol": "NEAR",
+    "cg_id": "near"
+  },
+  {
+    "symbol": "NEIROCTO",
+    "cg_id": "neiro-3"
+  },
+  {
+    "symbol": "NEO",
+    "cg_id": "neo"
+  },
+  {
+    "symbol": "NERO",
+    "cg_id": "nero-chain"
+  },
+  {
+    "symbol": "NESS",
+    "cg_id": "ness-lab"
+  },
+  {
+    "symbol": "NEWT",
+    "cg_id": "newton-protocol"
+  },
+  {
+    "symbol": "NEXO",
+    "cg_id": "nexo"
+  },
+  {
+    "symbol": "NFP",
+    "cg_id": "nfprompt-token"
+  },
+  {
+    "symbol": "NFT",
+    "cg_id": "apenft"
+  },
+  {
+    "symbol": "NIL",
+    "cg_id": "nillion"
+  },
+  {
+    "symbol": "NKN",
+    "cg_id": "nkn"
+  },
+  {
+    "symbol": "NMR",
+    "cg_id": "numeraire"
+  },
+  {
+    "symbol": "NODE",
+    "cg_id": "node-2"
+  },
+  {
+    "symbol": "NOM",
+    "cg_id": "nomina"
+  },
+  {
+    "symbol": "NOT",
+    "cg_id": "notcoin"
+  },
+  {
+    "symbol": "NPC",
+    "cg_id": "non-playable-coin"
+  },
+  {
+    "symbol": "NS",
+    "cg_id": "suins-token"
+  },
+  {
+    "symbol": "NTRN",
+    "cg_id": "neutron-3"
+  },
+  {
+    "symbol": "NXPC",
+    "cg_id": "nexpace"
+  },
+  {
+    "symbol": "NYM",
+    "cg_id": "nym"
+  },
+  {
+    "symbol": "OG",
+    "cg_id": "og-fan-token"
+  },
+  {
+    "symbol": "OGN",
+    "cg_id": "origin-protocol"
+  },
+  {
+    "symbol": "OM",
+    "cg_id": "mantra-dao"
+  },
+  {
+    "symbol": "ONDO",
+    "cg_id": "ondo-finance"
+  },
+  {
+    "symbol": "ONE",
+    "cg_id": "harmony"
+  },
+  {
+    "symbol": "ONG",
+    "cg_id": "ong"
+  },
+  {
+    "symbol": "ONT",
+    "cg_id": "ontology"
+  },
+  {
+    "symbol": "OP",
+    "cg_id": "optimism"
+  },
+  {
+    "symbol": "OPEN",
+    "cg_id": "openledger-2"
+  },
+  {
+    "symbol": "ORBS",
+    "cg_id": "orbs"
+  },
+  {
+    "symbol": "ORCA",
+    "cg_id": "orca"
+  },
+  {
+    "symbol": "ORDER",
+    "cg_id": "orderly-network"
+  },
+  {
+    "symbol": "ORDI",
+    "cg_id": "ordinals"
+  },
+  {
+    "symbol": "OSMO",
+    "cg_id": "osmosis"
+  },
+  {
+    "symbol": "OXT",
+    "cg_id": "orchid-protocol"
+  },
+  {
+    "symbol": "P",
+    "cg_id": "pop-planet"
+  },
+  {
+    "symbol": "PARTI",
+    "cg_id": "particle-network"
+  },
+  {
+    "symbol": "PAXG",
+    "cg_id": "pax-gold"
+  },
+  {
+    "symbol": "PCI",
+    "cg_id": "pay-coin"
+  },
+  {
+    "symbol": "PEAQ",
+    "cg_id": "peaq-2"
+  },
+  {
+    "symbol": "PENDLE",
+    "cg_id": "pendle"
+  },
+  {
+    "symbol": "PENGU",
+    "cg_id": "pudgy-penguins"
+  },
+  {
+    "symbol": "PENGUIN",
+    "cg_id": "nietzschean-penguin"
+  },
+  {
+    "symbol": "PEOPLE",
+    "cg_id": "constitutiondao"
+  },
+  {
+    "symbol": "PEPE",
+    "cg_id": "pepe"
+  },
+  {
+    "symbol": "PHA",
+    "cg_id": "pha"
+  },
+  {
+    "symbol": "PHB",
+    "cg_id": "phoenix-global"
+  },
+  {
+    "symbol": "PI",
+    "cg_id": "pi-network"
+  },
+  {
+    "symbol": "PIXEL",
+    "cg_id": "pixels"
+  },
+  {
+    "symbol": "PLAI",
+    "cg_id": "play-ai"
+  },
+  {
+    "symbol": "PLANCK",
+    "cg_id": "planck"
+  },
+  {
+    "symbol": "PLUME",
+    "cg_id": "plume"
+  },
+  {
+    "symbol": "PNUT",
+    "cg_id": "peanut-the-squirrel"
+  },
+  {
+    "symbol": "POL",
+    "cg_id": "polygon-ecosystem-token"
+  },
+  {
+    "symbol": "POLYX",
+    "cg_id": "polymesh"
+  },
+  {
+    "symbol": "POND",
+    "cg_id": "marlin"
+  },
+  {
+    "symbol": "PORTAL",
+    "cg_id": "portal-2"
+  },
+  {
+    "symbol": "PORTO",
+    "cg_id": "fc-porto"
+  },
+  {
+    "symbol": "POWER",
+    "cg_id": "power-protocol"
+  },
+  {
+    "symbol": "POWR",
+    "cg_id": "power-ledger"
+  },
+  {
+    "symbol": "PRAI",
+    "cg_id": "privasea-ai"
+  },
+  {
+    "symbol": "PRCL",
+    "cg_id": "parcl"
+  },
+  {
+    "symbol": "PRIME",
+    "cg_id": "hastra-prime"
+  },
+  {
+    "symbol": "PROM",
+    "cg_id": "prometeus"
+  },
+  {
+    "symbol": "PROMPT",
+    "cg_id": "wayfinder"
+  },
+  {
+    "symbol": "PROPS",
+    "cg_id": "propbase"
+  },
+  {
+    "symbol": "PROVE",
+    "cg_id": "succinct"
+  },
+  {
+    "symbol": "PSG",
+    "cg_id": "paris-saint-germain-fan-token"
+  },
+  {
+    "symbol": "PUBLIC",
+    "cg_id": "publicai"
+  },
+  {
+    "symbol": "PUFFER",
+    "cg_id": "puffer-finance"
+  },
+  {
+    "symbol": "PUMP",
+    "cg_id": "pump-fun"
+  },
+  {
+    "symbol": "PUMPBTC",
+    "cg_id": "pumpbtc"
+  },
+  {
+    "symbol": "PUNDIX",
+    "cg_id": "pundi-x-2"
+  },
+  {
+    "symbol": "PYR",
+    "cg_id": "vulcan-forged"
+  },
+  {
+    "symbol": "PYTH",
+    "cg_id": "pyth-network"
+  },
+  {
+    "symbol": "PYUSD",
+    "cg_id": "paypal-usd"
+  },
+  {
+    "symbol": "Q",
+    "cg_id": "quack-ai"
+  },
+  {
+    "symbol": "QKC",
+    "cg_id": "quark-chain"
+  },
+  {
+    "symbol": "QNT",
+    "cg_id": "quant-network"
+  },
+  {
+    "symbol": "QTUM",
+    "cg_id": "qtum"
+  },
+  {
+    "symbol": "QUBIC",
+    "cg_id": "qubic-network"
+  },
+  {
+    "symbol": "QUICK",
+    "cg_id": "quick"
+  },
+  {
+    "symbol": "RARE",
+    "cg_id": "superrare"
+  },
+  {
+    "symbol": "RATS",
+    "cg_id": "goldenrat"
+  },
+  {
+    "symbol": "RAVE",
+    "cg_id": "ravedao"
+  },
+  {
+    "symbol": "RAY",
+    "cg_id": "raydium"
+  },
+  {
+    "symbol": "RDAC",
+    "cg_id": "redacted-2"
+  },
+  {
+    "symbol": "RDNT",
+    "cg_id": "radiant-capital"
+  },
+  {
+    "symbol": "RECALL",
+    "cg_id": "recall"
+  },
+  {
+    "symbol": "RED",
+    "cg_id": "redstone-oracles"
+  },
+  {
+    "symbol": "RENDER",
+    "cg_id": "render-token"
+  },
+  {
+    "symbol": "RESOLV",
+    "cg_id": "resolv"
+  },
+  {
+    "symbol": "REZ",
+    "cg_id": "renzo"
+  },
+  {
+    "symbol": "RHEA",
+    "cg_id": "rhea-2"
+  },
+  {
+    "symbol": "RIF",
+    "cg_id": "rif-token"
+  },
+  {
+    "symbol": "RIVER",
+    "cg_id": "river"
+  },
+  {
+    "symbol": "RLC",
+    "cg_id": "iexec-rlc"
+  },
+  {
+    "symbol": "RLS",
+    "cg_id": "rayls"
+  },
+  {
+    "symbol": "RLUSD",
+    "cg_id": "ripple-usd"
+  },
+  {
+    "symbol": "ROAM",
+    "cg_id": "roam-token"
+  },
+  {
+    "symbol": "ROLL",
+    "cg_id": "roll-2"
+  },
+  {
+    "symbol": "RON",
+    "cg_id": "ronin"
+  },
+  {
+    "symbol": "ROSE",
+    "cg_id": "oasis-network"
+  },
+  {
+    "symbol": "RPL",
+    "cg_id": "rocket-pool"
+  },
+  {
+    "symbol": "RSR",
+    "cg_id": "reserve-rights-token"
+  },
+  {
+    "symbol": "RTX",
+    "cg_id": "orbitx"
+  },
+  {
+    "symbol": "RUNE",
+    "cg_id": "thorchain"
+  },
+  {
+    "symbol": "RVN",
+    "cg_id": "ravencoin"
+  },
+  {
+    "symbol": "RVV",
+    "cg_id": "astra-nova"
+  },
+  {
+    "symbol": "RWA",
+    "cg_id": "allo"
+  },
+  {
+    "symbol": "S",
+    "cg_id": "sonic-3"
+  },
+  {
+    "symbol": "SAFE",
+    "cg_id": "safe"
+  },
+  {
+    "symbol": "SAGA",
+    "cg_id": "saga-2"
+  },
+  {
+    "symbol": "SAHARA",
+    "cg_id": "sahara-ai"
+  },
+  {
+    "symbol": "SAND",
+    "cg_id": "the-sandbox"
+  },
+  {
+    "symbol": "SANTOS",
+    "cg_id": "santos-fc-fan-token"
+  },
+  {
+    "symbol": "SAPIEN",
+    "cg_id": "sapien-2"
+  },
+  {
+    "symbol": "SAROS",
+    "cg_id": "saros-finance"
+  },
+  {
+    "symbol": "SATS",
+    "cg_id": "sats-ordinals"
+  },
+  {
+    "symbol": "SCA",
+    "cg_id": "scallop-2"
+  },
+  {
+    "symbol": "SD",
+    "cg_id": "stader"
+  },
+  {
+    "symbol": "SDEX",
+    "cg_id": "smardex"
+  },
+  {
+    "symbol": "SEI",
+    "cg_id": "sei-network"
+  },
+  {
+    "symbol": "SENT",
+    "cg_id": "sentient"
+  },
+  {
+    "symbol": "SFP",
+    "cg_id": "safepal"
+  },
+  {
+    "symbol": "SHELL",
+    "cg_id": "myshell"
+  },
+  {
+    "symbol": "SHIB",
+    "cg_id": "shiba-inu"
+  },
+  {
+    "symbol": "SIGN",
+    "cg_id": "sign-global"
+  },
+  {
+    "symbol": "SKL",
+    "cg_id": "skale"
+  },
+  {
+    "symbol": "SKR",
+    "cg_id": "seeker"
+  },
+  {
+    "symbol": "SKY",
+    "cg_id": "sky"
+  },
+  {
+    "symbol": "SLP",
+    "cg_id": "smooth-love-potion"
+  },
+  {
+    "symbol": "SNEK",
+    "cg_id": "snek"
+  },
+  {
+    "symbol": "SNT",
+    "cg_id": "status"
+  },
+  {
+    "symbol": "SNX",
+    "cg_id": "havven"
+  },
+  {
+    "symbol": "SOL",
+    "cg_id": "solana"
+  },
+  {
+    "symbol": "SOLO",
+    "cg_id": "solo-coin"
+  },
+  {
+    "symbol": "SOLV",
+    "cg_id": "solv-protocol"
+  },
+  {
+    "symbol": "SOMI",
+    "cg_id": "somnia"
+  },
+  {
+    "symbol": "SONIC",
+    "cg_id": "sonic-svm"
+  },
+  {
+    "symbol": "SOON",
+    "cg_id": "soon-2"
+  },
+  {
+    "symbol": "SOPH",
+    "cg_id": "sophon"
+  },
+  {
+    "symbol": "SPACE",
+    "cg_id": "spacecoin-2"
+  },
+  {
+    "symbol": "SPELL",
+    "cg_id": "spell-token"
+  },
+  {
+    "symbol": "SPK",
+    "cg_id": "spark-2"
+  },
+  {
+    "symbol": "SSV",
+    "cg_id": "ssv-network"
+  },
+  {
+    "symbol": "STABLE",
+    "cg_id": "stable-2"
+  },
+  {
+    "symbol": "STETH",
+    "cg_id": "staked-ether"
+  },
+  {
+    "symbol": "STG",
+    "cg_id": "stargate-finance"
+  },
+  {
+    "symbol": "STO",
+    "cg_id": "stakestone"
+  },
+  {
+    "symbol": "STORJ",
+    "cg_id": "storj"
+  },
+  {
+    "symbol": "STRAX",
+    "cg_id": "stratis"
+  },
+  {
+    "symbol": "STRK",
+    "cg_id": "starknet"
+  },
+  {
+    "symbol": "STX",
+    "cg_id": "blockstack"
+  },
+  {
+    "symbol": "SUI",
+    "cg_id": "sui"
+  },
+  {
+    "symbol": "SUN",
+    "cg_id": "sun-token"
+  },
+  {
+    "symbol": "SUPER",
+    "cg_id": "superfarm"
+  },
+  {
+    "symbol": "SUSHI",
+    "cg_id": "sushi"
+  },
+  {
+    "symbol": "SWARMS",
+    "cg_id": "swarms"
+  },
+  {
+    "symbol": "SWCH",
+    "cg_id": "swisscheese"
+  },
+  {
+    "symbol": "SWEAT",
+    "cg_id": "sweatcoin"
+  },
+  {
+    "symbol": "SWELL",
+    "cg_id": "swell-network"
+  },
+  {
+    "symbol": "SXP",
+    "cg_id": "swipe"
+  },
+  {
+    "symbol": "SXT",
+    "cg_id": "space-and-time"
+  },
+  {
+    "symbol": "SYN",
+    "cg_id": "synapse-2"
+  },
+  {
+    "symbol": "SYRUP",
+    "cg_id": "syrup"
+  },
+  {
+    "symbol": "SYS",
+    "cg_id": "syscoin"
+  },
+  {
+    "symbol": "T",
+    "cg_id": "threshold-network-token"
+  },
+  {
+    "symbol": "TAC",
+    "cg_id": "tac"
+  },
+  {
+    "symbol": "TAG",
+    "cg_id": "tagger"
+  },
+  {
+    "symbol": "TAIKO",
+    "cg_id": "taiko"
+  },
+  {
+    "symbol": "TANSSI",
+    "cg_id": "tanssi"
+  },
+  {
+    "symbol": "TAO",
+    "cg_id": "bittensor"
+  },
+  {
+    "symbol": "TCOM",
+    "cg_id": "tcom-global"
+  },
+  {
+    "symbol": "THE",
+    "cg_id": "thena"
+  },
+  {
+    "symbol": "THQ",
+    "cg_id": "theoriq"
+  },
+  {
+    "symbol": "TIA",
+    "cg_id": "celestia"
+  },
+  {
+    "symbol": "TLM",
+    "cg_id": "alien-worlds"
+  },
+  {
+    "symbol": "TLOS",
+    "cg_id": "telos"
+  },
+  {
+    "symbol": "TNSR",
+    "cg_id": "tensor"
+  },
+  {
+    "symbol": "TON",
+    "cg_id": "the-open-network"
+  },
+  {
+    "symbol": "TOSHI",
+    "cg_id": "toshi"
+  },
+  {
+    "symbol": "TOWN",
+    "cg_id": "alt-town"
+  },
+  {
+    "symbol": "TOWNS",
+    "cg_id": "towns"
+  },
+  {
+    "symbol": "TRADOOR",
+    "cg_id": "tradoor"
+  },
+  {
+    "symbol": "TRB",
+    "cg_id": "tellor"
+  },
+  {
+    "symbol": "TREE",
+    "cg_id": "tree-capital"
+  },
+  {
+    "symbol": "TRIA",
+    "cg_id": "tria"
+  },
+  {
+    "symbol": "TRU",
+    "cg_id": "truefi"
+  },
+  {
+    "symbol": "TRUMP",
+    "cg_id": "official-trump"
+  },
+  {
+    "symbol": "TRUST",
+    "cg_id": "intuition"
+  },
+  {
+    "symbol": "TRX",
+    "cg_id": "tron"
+  },
+  {
+    "symbol": "TURBO",
+    "cg_id": "turbo"
+  },
+  {
+    "symbol": "TUSD",
+    "cg_id": "true-usd"
+  },
+  {
+    "symbol": "TUT",
+    "cg_id": "tutorial"
+  },
+  {
+    "symbol": "TWT",
+    "cg_id": "trust-wallet-token"
+  },
+  {
+    "symbol": "U2U",
+    "cg_id": "unicorn-ultra"
+  },
+  {
+    "symbol": "UAI",
+    "cg_id": "unifai-network"
+  },
+  {
+    "symbol": "UMA",
+    "cg_id": "uma"
+  },
+  {
+    "symbol": "UNI",
+    "cg_id": "uniswap"
+  },
+  {
+    "symbol": "UPC",
+    "cg_id": "upcx"
+  },
+  {
+    "symbol": "US",
+    "cg_id": "talus"
+  },
+  {
+    "symbol": "USAT",
+    "cg_id": "usa"
+  },
+  {
+    "symbol": "USD1",
+    "cg_id": "usd1-wlfi"
+  },
+  {
+    "symbol": "USDC",
+    "cg_id": "usd-coin"
+  },
+  {
+    "symbol": "USDE",
+    "cg_id": "ethena-usde"
+  },
+  {
+    "symbol": "USDS",
+    "cg_id": "usds"
+  },
+  {
+    "symbol": "USDT",
+    "cg_id": "tether"
+  },
+  {
+    "symbol": "USTC",
+    "cg_id": "terrausd"
+  },
+  {
+    "symbol": "USUAL",
+    "cg_id": "usual"
+  },
+  {
+    "symbol": "UXLINK",
+    "cg_id": "uxlink"
+  },
+  {
+    "symbol": "VANA",
+    "cg_id": "vana"
+  },
+  {
+    "symbol": "VANRY",
+    "cg_id": "vanar-chain"
+  },
+  {
+    "symbol": "VELO",
+    "cg_id": "velo"
+  },
+  {
+    "symbol": "VELODROME",
+    "cg_id": "velodrome-finance"
+  },
+  {
+    "symbol": "VELVET",
+    "cg_id": "velvet"
+  },
+  {
+    "symbol": "VERT",
+    "cg_id": "vertus"
+  },
+  {
+    "symbol": "VET",
+    "cg_id": "vechain"
+  },
+  {
+    "symbol": "VFY",
+    "cg_id": "zkverify"
+  },
+  {
+    "symbol": "VIC",
+    "cg_id": "tomochain"
+  },
+  {
+    "symbol": "VINE",
+    "cg_id": "vine"
+  },
+  {
+    "symbol": "VIRTUAL",
+    "cg_id": "virtual-protocol"
+  },
+  {
+    "symbol": "VOOI",
+    "cg_id": "vooi"
+  },
+  {
+    "symbol": "VSN",
+    "cg_id": "vision-3"
+  },
+  {
+    "symbol": "VTHO",
+    "cg_id": "vethor-token"
+  },
+  {
+    "symbol": "W",
+    "cg_id": "wormhole"
+  },
+  {
+    "symbol": "WAI",
+    "cg_id": "world3"
+  },
+  {
+    "symbol": "WAL",
+    "cg_id": "walrus-2"
+  },
+  {
+    "symbol": "WARD",
+    "cg_id": "warden-2"
+  },
+  {
+    "symbol": "WAVES",
+    "cg_id": "waves"
+  },
+  {
+    "symbol": "WAXP",
+    "cg_id": "wax"
+  },
+  {
+    "symbol": "WBTC",
+    "cg_id": "wrapped-bitcoin"
+  },
+  {
+    "symbol": "WCT",
+    "cg_id": "connect-token-wct"
+  },
+  {
+    "symbol": "WEETH",
+    "cg_id": "wrapped-eeth"
+  },
+  {
+    "symbol": "WEMIX",
+    "cg_id": "wemix-token"
+  },
+  {
+    "symbol": "WIF",
+    "cg_id": "dogwifcoin"
+  },
+  {
+    "symbol": "WIN",
+    "cg_id": "wink"
+  },
+  {
+    "symbol": "WLD",
+    "cg_id": "worldcoin-wld"
+  },
+  {
+    "symbol": "WLFI",
+    "cg_id": "world-liberty-financial"
+  },
+  {
+    "symbol": "WOO",
+    "cg_id": "woo-network"
+  },
+  {
+    "symbol": "WUSD",
+    "cg_id": "worldwide-usd"
+  },
+  {
+    "symbol": "XAI",
+    "cg_id": "xai-blockchain"
+  },
+  {
+    "symbol": "XAUT",
+    "cg_id": "tether-gold"
+  },
+  {
+    "symbol": "XCX",
+    "cg_id": "xeleb-protocol"
+  },
+  {
+    "symbol": "XDC",
+    "cg_id": "xdce-crowd-sale"
+  },
+  {
+    "symbol": "XION",
+    "cg_id": "xion-2"
+  },
+  {
+    "symbol": "XLM",
+    "cg_id": "stellar"
+  },
+  {
+    "symbol": "XPL",
+    "cg_id": "plasma"
+  },
+  {
+    "symbol": "XRP",
+    "cg_id": "ripple"
+  },
+  {
+    "symbol": "XTER",
+    "cg_id": "xterio"
+  },
+  {
+    "symbol": "XTZ",
+    "cg_id": "tezos"
+  },
+  {
+    "symbol": "YB",
+    "cg_id": "yield-basis"
+  },
+  {
+    "symbol": "YFI",
+    "cg_id": "yearn-finance"
+  },
+  {
+    "symbol": "YGG",
+    "cg_id": "yield-guild-games"
+  },
+  {
+    "symbol": "ZAMA",
+    "cg_id": "zama"
+  },
+  {
+    "symbol": "ZBCN",
+    "cg_id": "zebec-network"
+  },
+  {
+    "symbol": "ZBT",
+    "cg_id": "zerobase"
+  },
+  {
+    "symbol": "ZEC",
+    "cg_id": "zcash"
+  },
+  {
+    "symbol": "ZEN",
+    "cg_id": "zencash"
+  },
+  {
+    "symbol": "ZENT",
+    "cg_id": "zentry"
+  },
+  {
+    "symbol": "ZEREBRO",
+    "cg_id": "zerebro"
+  },
+  {
+    "symbol": "ZETA",
+    "cg_id": "zetachain"
+  },
+  {
+    "symbol": "ZIG",
+    "cg_id": "zignaly"
+  },
+  {
+    "symbol": "ZIL",
+    "cg_id": "zilliqa"
+  },
+  {
+    "symbol": "ZK",
+    "cg_id": "zksync"
+  },
+  {
+    "symbol": "ZKC",
+    "cg_id": "boundless"
+  },
+  {
+    "symbol": "ZKJ",
+    "cg_id": "polyhedra-network"
+  },
+  {
+    "symbol": "ZKL",
+    "cg_id": "zklink"
+  },
+  {
+    "symbol": "ZORA",
+    "cg_id": "zora"
+  },
+  {
+    "symbol": "ZRC",
+    "cg_id": "zircuit"
+  },
+  {
+    "symbol": "ZRO",
+    "cg_id": "layerzero"
+  },
+  {
+    "symbol": "ZRX",
+    "cg_id": "0x"
+  },
+  {
+    "symbol": "ZTC",
+    "cg_id": "zenchain-2"
+  }
+]

@@ -104,7 +104,7 @@ export function usePortfolio(userAddress: string | undefined): UsePortfolioRetur
     }
 
     fetchAll(true)
-    const interval = setInterval(() => fetchAll(false), 30000)
+    const interval = setInterval(() => fetchAll(false), 5000)
     return () => clearInterval(interval)
   }, [userAddress, fetchAll])
 
