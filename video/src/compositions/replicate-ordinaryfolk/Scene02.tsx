@@ -27,7 +27,7 @@ const { fontFamily } = loadFont("normal", {
  */
 
 const BG_LIGHT = "#EBEAF4";
-const BG_DARK = "#1A1A2E";
+const BG_DARK = "#0D0D10";
 const TEXT_DARK = "#1d1d1f";
 const TEXT_GRAY = "#a8a8b0";
 const BLUE_TINT = "#5B6FD6";
@@ -72,9 +72,11 @@ function generateBardFragments(): BardFragment[] {
       const r = (n: number) => seededRandom(seed + n * 137);
       const letterWidth = letter === "B" ? 30 : letter === "a" ? 26 : letter === "r" ? 18 : 26;
       const letterHeight = 44;
-      // Ref frame_011: particles stream upward-left from Bard letters
-      const baseAngle = -Math.PI * 0.65 + (letterIdx - 1.5) * 0.12;
-      const angleSpread = r(0) * Math.PI * 0.45 - Math.PI * 0.22;
+      // Ref frame_011: particles stream upward-left in tight cone [PI*0.6, PI*0.9]
+      const coneMin = Math.PI * 0.6;
+      const coneMax = Math.PI * 0.9;
+      const baseAngle = coneMin + r(0) * (coneMax - coneMin);
+      const angleSpread = 0;
 
       fragments.push({
         letter, letterIdx, fragIdx,
@@ -84,8 +86,8 @@ function generateBardFragments(): BardFragment[] {
         distance: 160 + r(3) * 450,
         curveStrength: (r(4) - 0.5) * 200,
         rotationSpeed: (r(5) - 0.5) * 12,
-        width: 2 + r(6) * 10,
-        height: 2 + r(7) * 12,
+        width: (2 + r(6) * 10) * 0.4,
+        height: (2 + r(7) * 12) * 0.4,
         delay: letterIdx * 1.0 + r(8) * 3,
         hueShift: r(9) < 0.5 ? (r(9) - 0.25) * 40 : 40 + r(9) * 60,
         saturation: 65 + r(10) * 30,
@@ -117,7 +119,7 @@ const TypingText: React.FC<{ frame: number }> = ({ frame }) => {
         className="chapter-text"
         style={{
           fontSize: 42,
-          fontWeight: 300,
+          fontWeight: 400,
           fontFamily,
           color: BLUE_TINT,
           letterSpacing: "-0.02em",
@@ -217,7 +219,7 @@ export const Scene02: React.FC = () => {
       t.to(todayGrad, { opacity: 0, duration: s(3) }, s(135));
     }
     if (todayGlow) {
-      t.fromTo(todayGlow, { opacity: 0 }, { opacity: 0.5, duration: s(8) }, s(108));
+      t.fromTo(todayGlow, { opacity: 0 }, { opacity: 0.75, duration: s(8) }, s(108));
       t.to(todayGlow, { opacity: 0, duration: s(5) }, s(135));
     }
 
@@ -260,13 +262,6 @@ export const Scene02: React.FC = () => {
       t.to(darkPhase, { opacity: 0, duration: s(8) }, s(166));
     }
 
-    // Background glow
-    const bgGlow = el.querySelector<HTMLElement>(".bg-glow");
-    if (bgGlow) {
-      t.fromTo(bgGlow, { opacity: 0 }, { opacity: 1, duration: s(12) }, s(108));
-      t.to(bgGlow, { opacity: 0, duration: s(12) }, s(162));
-    }
-
     // Seek immediately after build — Remotion stills only get one render cycle
     t.seek(frame / fps);
   }, []);
@@ -299,8 +294,8 @@ export const Scene02: React.FC = () => {
       const fragOpacity = interpolate(rawProgress, [0, 0.05, 0.4, 0.75, 1], [0, 1, 1, 0.65, 0], C);
       const scale = interpolate(rawProgress, [0, 0.2, 1], [1.1, 1, 0.3], C);
 
-      const hue = frag.hueShift < 20 ? 340 + frag.hueShift : 260 + frag.hueShift;
-      const color = `hsl(${hue % 360}, ${frag.saturation}%, ${frag.lightness}%)`;
+      const palette = ["#6366f1","#7c3aed","#8b5cf6","#a78bfa","#c084fc"];
+      const color = palette[Math.floor(seededRandom(i * 777) * palette.length)];
 
       return (
         <div
@@ -400,7 +395,7 @@ export const Scene02: React.FC = () => {
           className="phase-a-row"
           style={{
             position: "absolute",
-            left: 0, right: 0, top: "50%",
+            left: 0, right: 0, top: "45%",
             transform: "translateY(-50%)",
             display: "flex",
             justifyContent: "center",
@@ -421,7 +416,7 @@ export const Scene02: React.FC = () => {
                 style={{
                   display: "inline-block",
                   fontSize: 42,
-                  fontWeight: i === 0 ? 300 : i === 1 ? 400 : 300,
+                  fontWeight: 400,
                   fontFamily,
                   color: wordColor,
                   marginRight: 11,
@@ -441,7 +436,7 @@ export const Scene02: React.FC = () => {
           className="phase-b-row"
           style={{
             position: "absolute",
-            left: 0, right: 0, top: "50%",
+            left: 0, right: 0, top: "45%",
             transform: "translateY(-50%)",
             display: "flex",
             justifyContent: "center",
@@ -467,7 +462,7 @@ export const Scene02: React.FC = () => {
             >
               <AbsoluteFill
                 style={{
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "#F5F5F8",
                   opacity: pageOpacity,
                   clipPath: turnProgress < 0.01
                     ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
@@ -480,14 +475,14 @@ export const Scene02: React.FC = () => {
                         // Normal: quadrilateral — fold intersects top edge and right edge
                         : `polygon(0% 0%, ${cTopX}% 0%, 100% ${cRightY}%, 100% 100%, 0% 100%)`,
                   transform: `rotateZ(${pageRotateZ}deg) rotateX(${pageRotateX}deg)`,
-                  transformOrigin: "0% 100%",
+                  transformOrigin: "left center",
                 }}
               >
                 {/* Text ON the turning page */}
                 <div
                   style={{
                     position: "absolute",
-                    left: 0, right: 0, top: "50%",
+                    left: 0, right: 0, top: "45%",
                     transform: "translateY(-50%)",
                     display: "flex",
                     justifyContent: "center",
@@ -498,7 +493,7 @@ export const Scene02: React.FC = () => {
                   <span
                     style={{
                       fontSize: 42,
-                      fontWeight: 300,
+                      fontWeight: 400,
                       fontFamily,
                       color: TEXT_DARK,
                       letterSpacing: "-0.02em",
@@ -513,7 +508,7 @@ export const Scene02: React.FC = () => {
             {/* Fold shadow — along the diagonal fold line */}
             {turnProgress > 0.06 && turnProgress < 0.92 && (() => {
               const sw = 5;
-              const shadowOpacity = interpolate(turnProgress, [0.06, 0.2, 0.6, 0.92], [0, 0.18, 0.1, 0], C);
+              const shadowOpacity = interpolate(turnProgress, [0.06, 0.2, 0.6, 0.92], [0, 0.36, 0.2, 0], C);
               // Shadow band runs parallel to fold line: from (topX, 0) to (100, rightY)
               const foldDeg = Math.atan2(cRightY, 100 - cTopX) * (180 / Math.PI);
 
@@ -576,30 +571,13 @@ export const Scene02: React.FC = () => {
 
         {/* ════ DARK PHASE ════ */}
 
-        {/* Background glow halo */}
-        <div
-          className="bg-glow"
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 360,
-            height: 120,
-            borderRadius: "50%",
-            background: `radial-gradient(ellipse, rgba(160,170,230,0.18) 0%, rgba(140,130,210,0.09) 45%, transparent 75%)`,
-            filter: "blur(32px)",
-            pointerEvents: "none",
-            opacity: 0,
-          }}
-        />
 
         {/* Dark phase text — "Today" gradient → "Today, Bard is becoming" */}
         <div
           className="dark-phase-text"
           style={{
             position: "absolute",
-            left: 0, right: 0, top: "50%",
+            left: 0, right: 0, top: "45%",
             transform: "translateY(-50%)",
             display: "flex",
             justifyContent: "center",
@@ -622,14 +600,14 @@ export const Scene02: React.FC = () => {
               style={{
                 position: "absolute",
                 left: 0, top: 0,
-                fontSize: 46,
+                fontSize: 58,
                 fontWeight: 400,
                 fontFamily,
                 color: GRADIENT_PURPLE,
                 opacity: 0,
                 letterSpacing: "-0.02em",
                 lineHeight: 1.2,
-                filter: "blur(14px)",
+                filter: "blur(28px)",
                 pointerEvents: "none",
               }}
             >
@@ -637,7 +615,7 @@ export const Scene02: React.FC = () => {
             </span>
             <span
               style={{
-                fontSize: 46,
+                fontSize: 58,
                 fontWeight: 400,
                 fontFamily,
                 background: `linear-gradient(135deg, ${GRADIENT_PURPLE}, ${GRADIENT_BLUE})`,
@@ -667,7 +645,7 @@ export const Scene02: React.FC = () => {
             <span
               style={{
                 fontSize: 44,
-                fontWeight: 300,
+                fontWeight: 400,
                 fontFamily,
                 color: "#ffffff",
                 marginRight: 11,
@@ -709,7 +687,7 @@ export const Scene02: React.FC = () => {
               className="word-is"
               style={{
                 fontSize: 44,
-                fontWeight: 300,
+                fontWeight: 400,
                 fontFamily,
                 color: "#ffffff",
                 marginRight: 11,
@@ -724,7 +702,7 @@ export const Scene02: React.FC = () => {
               className="word-becoming"
               style={{
                 fontSize: 44,
-                fontWeight: 300,
+                fontWeight: 400,
                 fontFamily,
                 color: "#ffffff",
                 letterSpacing: "-0.02em",

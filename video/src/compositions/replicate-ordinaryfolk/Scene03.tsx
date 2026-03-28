@@ -190,9 +190,9 @@ const SegGeminiReveal: React.FC = () => {
           return <span key={i} style={{display:"inline-block",background:`linear-gradient(90deg, ${BLUE} 0%, ${PURPLE} 45%, ${PINK} 100%)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",transform:`translate(${arcX+wob.x}px,${arcY+wob.y}px) scale(${sc})`,opacity:op}}>{letter}</span>;
         })}
       </div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spMainOp,transform:`scale(${spMainS})`}}><Sparkle x={640} y={300} size={36} color={PURPLE} opacity={1} rotation={spRot}/></div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spSecOp,transform:`scale(${spSecS})`}}><Sparkle x={700} y={310} size={20} color={BLUE} opacity={1} rotation={-spRot*0.6}/></div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spTerOp,transform:`scale(${spTerS})`}}><Sparkle x={720} y={340} size={12} color={PINK} opacity={1} rotation={spRot*1.2}/></div>
+      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spMainOp,transform:`scale(${spMainS})`}}><Sparkle x={685} y={295} size={36} color={PURPLE} opacity={1} rotation={spRot}/></div>
+      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spSecOp,transform:`scale(${spSecS})`}}><Sparkle x={710} y={288} size={20} color={BLUE} opacity={1} rotation={-spRot*0.6}/></div>
+      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spTerOp,transform:`scale(${spTerS})`}}><Sparkle x={698} y={310} size={12} color={PINK} opacity={1} rotation={spRot*1.2}/></div>
     </AbsoluteFill>
   );
 };
@@ -207,7 +207,7 @@ const SegDesktopUI: React.FC = () => {
   const howChars = Math.floor(interpolate(frame, [fps*0.9,fps*1.8], [0,howText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
   const bs = spring({frame, fps, delay:0, config:{damping:14,stiffness:80,mass:1.0}});
   const bY = interpolate(bs, [0,1], [55,0]);
-  const bSc = interpolate(bs, [0,1], [1.12,1]);
+  const bSc = interpolate(bs, [0,1], [4.0,1]);
   const bRx = interpolate(bs, [0,1], [8,0]);
   const bOp = interpolate(bs, [0,0.3], [0,1], {extrapolateRight:"clamp"});
   const cSpr = [0,1,2,3].map(i => spring({frame, fps, delay: Math.floor(fps*1.5)+i*3, config:{damping:12,stiffness:100,mass:0.8}}));
@@ -268,7 +268,7 @@ const SegItsEverything: React.FC = () => {
   const gridRows = 5;
   const gridCols = 3;
   const rowSpacing = 70;
-  const colSpacing = 350;
+  const colSpacing = 210;
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translate(${scrollX}px,${scrollY}px) rotate(${wob.rot*0.2}deg)`,opacity:containerOp}}>
@@ -295,21 +295,30 @@ const SegItsEverything: React.FC = () => {
 };
 
 /* --- SEGMENT 5: Google App Icons + "you know and love" --- */
+const ORBIT_APPS = [{name:"Docs",icon:"doc"},{name:"Maps",icon:"pin"},{name:"Gmail",icon:"mail"},{name:"Drive",icon:"triangle"},{name:"YouTube",icon:"play"},{name:"Travel",icon:"plane"},{name:"Sheets",icon:"grid"}];
+
 const SegAppsFloat: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const apps = [{name:"Sheets",x:240,y:170,icon:"grid"},{name:"Docs",x:370,y:140,icon:"doc"},{name:"Maps",x:540,y:155,icon:"pin"},{name:"Gmail",x:680,y:140,icon:"mail"},{name:"Drive",x:200,y:420,icon:"triangle"},{name:"YouTube",x:290,y:510,icon:"play"},{name:"Travel",x:700,y:350,icon:"plane"}];
   const tYK = spring({frame, fps, delay:0, config:{damping:14,stiffness:100,mass:0.7}});
   const tAL = spring({frame, fps, delay: Math.floor(fps*0.5), config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-10,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* Full circular orbit: icons evenly spaced around center */
+  const orbitRadius = 190;
+  const orbitSpeed = 0.008; /* slow rotation */
+  const cx = 640;
+  const cy = 360;
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      {apps.map((app, i) => {
+      {ORBIT_APPS.map((app, i) => {
         const iSpr = spring({frame, fps, delay: i*2+1, config:{damping:10,stiffness:100,mass:0.6}});
-        const fY = noise2D("app"+i, frame/35, 0)*14;
-        const fX = noise2D("appx"+i, 0, frame/45)*10;
-        const aW = organicWobble("afw"+i, frame, 3, 2.5, 0.02);
-        return <div key={i} style={{position:"absolute",left:app.x+fX+aW.x,top:app.y+fY+aW.y,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`rotate(${aW.rot*0.4}deg) scale(${interpolate(iSpr,[0,1],[0,1])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden"}}>
+        const baseAngle = (i / ORBIT_APPS.length) * Math.PI * 2;
+        const angle = baseAngle + frame * orbitSpeed;
+        const fY = noise2D("app"+i, frame/35, 0)*8;
+        const fX = noise2D("appx"+i, 0, frame/45)*6;
+        const ax = cx + Math.cos(angle) * orbitRadius + fX;
+        const ay = cy + Math.sin(angle) * orbitRadius * 0.65 + fY; /* elliptical orbit */
+        return <div key={i} style={{position:"absolute",left:ax-26,top:ay-26,width:52,height:52,borderRadius:app.icon==="plane"?"50%":12,backgroundColor:app.icon==="plane"?"#E8F0FE":"white",transform:`scale(${interpolate(iSpr,[0,1],[0,1])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden"}}>
           {app.icon==="pin"&&<svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/><circle cx="12" cy="9" r="2.5" fill="#B31412"/><path d="M12 2C8.13 2 5 5.13 5 9c0 1.74.5 3.37 1.41 4.84L12 9V2z" fill="#34A853"/></svg>}
           {app.icon==="mail"&&<svg width="28" height="20" viewBox="0 0 28 20"><rect x="0" y="0" width="28" height="20" rx="2" fill="white" stroke="#D5D5D5" strokeWidth="0.5"/><path d="M0 2L14 12L28 2" stroke="#EA4335" strokeWidth="2.5" fill="none"/><path d="M0 2L14 12" stroke="#34A853" strokeWidth="2.5" fill="none" opacity="0.7"/><path d="M28 2L14 12" stroke="#FBBC04" strokeWidth="2.5" fill="none" opacity="0.7"/></svg>}
           {app.icon==="plane"&&<svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" fill="#4285F4"/></svg>}
@@ -402,8 +411,8 @@ const SegGeminiResponse: React.FC = () => {
 };
 
 /* --- SEGMENT 8: And moooore --- */
-const GEMINI_BALLS = ["#4285F4","#EA4335","#FBBC04","#34A853","#7B61FF"];
-const MAX_BALLS = 18;
+const GEMINI_GRADIENT_STOPS = ["#4285F4","#7B61FF","#E8458B","#EA4335","#FBBC04","#34A853"];
+const MAX_OS = 18;
 
 const SegAndMore: React.FC = () => {
   const frame = useCurrentFrame();
@@ -411,48 +420,41 @@ const SegAndMore: React.FC = () => {
   const stretchStart = fps;
   const stretchRaw = frame - stretchStart;
   const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*2], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
-  const oCount = Math.floor(interpolate(stretch, [0,0.8], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
-  const ballProgress = stretch > 0.15 ? interpolate(stretch, [0.15,0.5], [0,1], {extrapolateRight:"clamp"}) : 0;
+  const oCount = Math.floor(interpolate(stretch, [0,0.8], [1,MAX_OS], {extrapolateRight:"clamp"}));
   const scrollX = interpolate(stretch, [0.1,1], [0,-420], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.5,fps*0.9], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
-  const renderBalls = () => Array.from({length:oCount}, (_,i) => {
+  /* Typographic "o" letterforms tinted with continuous Gemini gradient */
+  const renderOs = () => Array.from({length:oCount}, (_,i) => {
     const bd = stretchStart+i*2.2;
-    const damp = 6+(i%5)*1.4;
-    const stiff = 120+(i%3)*30;
-    const mass = 0.4+(i%4)*0.15;
     const bR = Math.max(0, frame-bd);
     const bT = Math.min(bR/(fps*0.5), 1);
-    const om = Math.sqrt(stiff/mass);
-    const z = damp/(2*Math.sqrt(stiff*mass));
-    const bS = bT<=0?0:1-Math.exp(-z*om*bT/fps*15)*Math.cos(om*Math.sqrt(1-z*z)*bT/fps*15);
-    const cS = Math.max(0,Math.min(1.3,bS));
-    const sz = 28*Math.min(cS,1);
-    const bOp = interpolate(cS,[0,0.4],[0,1],{extrapolateRight:"clamp"});
-    const lOp = interpolate(ballProgress,[0,0.6],[1,0],{extrapolateRight:"clamp"});
-    const wA = interpolate(stretch,[0.2,0.5],[0,18],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+    const oSpr = bT<=0?0:1-Math.exp(-3.5*bT)*Math.cos(12*Math.sqrt(0.7)*bT);
+    const cS = Math.max(0,Math.min(1.2,oSpr));
+    const oOp = interpolate(cS,[0,0.3],[0,1],{extrapolateRight:"clamp"});
+    const wA = interpolate(stretch,[0.2,0.5],[0,12],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
     const wY = Math.sin(frame*(0.11+(i%4)*0.025)+i*0.55+(i%3)*0.35)*wA*Math.min(cS,1);
     const wX = noise2D("bx"+i,frame*0.025,i)*3*Math.min(cS,1);
-    const col = GEMINI_BALLS[i%GEMINI_BALLS.length];
-    const sO = interpolate(cS,[0,0.3,0.6,1,1.3],[0.15,1.3,0.9,1,1.1],{extrapolateRight:"clamp"});
-    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:Math.max(sz+2,14),height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`}}>
-      {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:BLUE,fontSize:44}}>o</span>}
-      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 8px ${col}44`:undefined}} />}
+    /* Continuous gradient position — each "o" samples a different point along the Gemini spectrum */
+    const gradPos = (i / Math.max(oCount-1,1)) * 100;
+    const gradAngle = 90 + frame * 0.3; /* slow rotation for life */
+    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,transform:`translateY(${wY}px) translateX(${wX}px) scale(${Math.min(cS,1)})`,opacity:oOp}}>
+      <span style={{background:`linear-gradient(${gradAngle}deg, ${GEMINI_GRADIENT_STOPS.join(", ")})`,backgroundSize:"600% 100%",backgroundPosition:`${gradPos}% 0%`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>o</span>
     </span>;
   });
 
   return (
     <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:"radial-gradient(ellipse at 55% 40%, rgba(232,69,139,0.035) 0%, rgba(196,181,253,0.025) 35%, transparent 60%)"}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?1:12,fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,whiteSpace:"nowrap"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"baseline",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,whiteSpace:"nowrap"}}>
         <span style={{color:DARK,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>And</span>
-        {stretch<=0.02 ? <span style={{color:BLUE,fontSize:44,opacity:mOp}}>more</span> : <>
-          <span style={{color:BLUE,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
-          {renderBalls()}
-          <span style={{color:BLUE,fontSize:44,display:"inline-block",marginLeft:-6}}>re</span>
+        {stretch<=0.02 ? <span style={{background:`linear-gradient(90deg, ${BLUE}, ${PURPLE}, ${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontSize:44,opacity:mOp}}>more</span> : <>
+          <span style={{background:`linear-gradient(90deg, ${BLUE}, ${PURPLE}, ${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
+          {renderOs()}
+          <span style={{background:`linear-gradient(90deg, ${PURPLE}, ${PINK})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontSize:44,display:"inline-block"}}>re</span>
         </>}
       </div>
     </AbsoluteFill>

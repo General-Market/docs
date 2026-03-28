@@ -462,7 +462,7 @@ const GeminiInterface: React.FC<{
           inset: -1,
           borderRadius: 13,
           padding: 1,
-          background: `linear-gradient(135deg, ${BLUE}66, ${PURPLE}66, ${PINK}66)`,
+          background: `linear-gradient(135deg, ${BLUE}BF, ${PURPLE}BF, ${PINK}BF)`,
           WebkitMask:
             "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
           WebkitMaskComposite: "xor" as any,
@@ -583,7 +583,7 @@ const GeminiInterface: React.FC<{
           }}
         >
           <GradientText
-            gradient={`linear-gradient(135deg, ${PURPLE}, ${PINK}, ${BLUE})`}
+            gradient={`linear-gradient(90deg, ${PURPLE}, ${PINK})`}
           >
             {typedHello}
           </GradientText>
@@ -1173,7 +1173,7 @@ export const Scene05: React.FC = () => {
         opacity: 0,
         rotateX: 22,
         rotateY: 50,
-        scale: 1.6,
+        scale: 2.8,
         y: 100,
       }, 0);
       // Fade in
@@ -1186,7 +1186,7 @@ export const Scene05: React.FC = () => {
       t.to(interfaceWrapRef.current, {
         rotateX: 15,
         rotateY: 35,
-        scale: 1.4,
+        scale: 2.0,
         y: 60,
         duration: f(30),
         ease: "power1.out",
@@ -1349,12 +1349,17 @@ export const Scene05: React.FC = () => {
         duration: f(16),
         ease: "power2.out",
       }, f(260));
-      // Continuous 3D Y-axis rotation while visible
+      // Gentle 3D Y-axis rock (NOT 360° spin — slow, dignified)
       t.to(cardZoomGRef.current, {
-        rotateY: 360,
-        duration: f(48),
-        ease: "none",
+        rotateY: 20,
+        duration: f(24),
+        ease: "sine.inOut",
       }, f(260));
+      t.to(cardZoomGRef.current, {
+        rotateY: -20,
+        duration: f(24),
+        ease: "sine.inOut",
+      }, f(284));
       // Exit
       t.to(cardZoomGRef.current, {
         opacity: 0,
@@ -1391,12 +1396,17 @@ export const Scene05: React.FC = () => {
         duration: f(16),
         ease: "power2.out",
       }, f(350));
-      // Continuous 3D Y-axis rotation
+      // Gentle 3D Y-axis rock (NOT 360° spin)
       t.to(cardZoomIRef.current, {
-        rotateY: -360,
-        duration: f(48),
-        ease: "none",
+        rotateY: -20,
+        duration: f(24),
+        ease: "sine.inOut",
       }, f(350));
+      t.to(cardZoomIRef.current, {
+        rotateY: 20,
+        duration: f(24),
+        ease: "sine.inOut",
+      }, f(374));
       // Exit
       t.to(cardZoomIRef.current, {
         opacity: 0,
@@ -1445,16 +1455,21 @@ export const Scene05: React.FC = () => {
         ease: "power1.in",
       }, f(470));
     }
-    // Each card in K spins on its own Y-axis (card flip)
+    // Each card in K rocks gently on its own Y-axis (NOT 360° spin)
     cardPanItemRefs.current.forEach((el, i) => {
       if (!el) return;
       const dir = i === 0 ? 1 : -1;
-      t.set(el, { rotateY: dir * -20 }, 0);
+      t.set(el, { rotateY: dir * -15 }, 0);
       t.to(el, {
-        rotateY: dir * 360,
-        duration: f(48),
-        ease: "none",
+        rotateY: dir * 20,
+        duration: f(24),
+        ease: "sine.inOut",
       }, f(430));
+      t.to(el, {
+        rotateY: dir * -15,
+        duration: f(24),
+        ease: "sine.inOut",
+      }, f(454));
     });
 
     // ═══ L: "With access to" — readable, then chars peel inward (480-520) ═══
@@ -2032,7 +2047,7 @@ export const Scene05: React.FC = () => {
         </div>
       </div>
 
-      {/* H: "coding" typewriter */}
+      {/* H: "{ coding }" typewriter — monospace terminal aesthetic */}
       <div
         ref={typewriterHRef}
         style={{
@@ -2041,13 +2056,14 @@ export const Scene05: React.FC = () => {
           left: "50%",
           transform: "translate(-50%, -50%)",
           fontSize: 52,
-          fontFamily: FONT,
-          fontWeight: 300,
+          fontFamily: "'Source Code Pro', 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace",
+          fontWeight: 400,
           color: "#fff",
           whiteSpace: "nowrap",
           opacity: 0,
         }}
       >
+        <span style={{ color: "rgba(255,255,255,0.4)" }}>{"{ "}</span>
         {typewriterText.slice(0, twCharsVisible)}
         <span
           style={{
@@ -2058,6 +2074,9 @@ export const Scene05: React.FC = () => {
         >
           _
         </span>
+        {twCharsVisible >= typewriterText.length && (
+          <span style={{ color: "rgba(255,255,255,0.4)" }}>{" }"}</span>
+        )}
       </div>
 
       {/* I: Card zoom 1 — 3D rotating code card */}
