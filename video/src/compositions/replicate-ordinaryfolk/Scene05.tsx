@@ -150,6 +150,9 @@ const GoogleG: React.FC<{
       ? `drop-shadow(0 0 ${12 * blueGlow}px rgba(66,133,244,0.7)) drop-shadow(0 0 ${30 * pulse}px rgba(139,92,246,0.3))`
       : "none";
 
+  // Animated gradient rotation for continuous rainbow flow
+  const gradRotation = frame * 1.5;
+
   return (
     <div style={{ width: s, height: s, opacity, position: "relative" }}>
       <svg
@@ -158,21 +161,26 @@ const GoogleG: React.FC<{
         height={s}
         style={{ filter: svgFilter }}
       >
+        <defs>
+          <linearGradient
+            id={`g-rainbow-${s}`}
+            gradientUnits="userSpaceOnUse"
+            x1={24 + 22 * Math.cos((gradRotation * Math.PI) / 180)}
+            y1={24 + 22 * Math.sin((gradRotation * Math.PI) / 180)}
+            x2={24 - 22 * Math.cos((gradRotation * Math.PI) / 180)}
+            y2={24 - 22 * Math.sin((gradRotation * Math.PI) / 180)}
+          >
+            <stop offset="0%" stopColor="#EA4335" />
+            <stop offset="25%" stopColor="#FBBC05" />
+            <stop offset="50%" stopColor="#34A853" />
+            <stop offset="75%" stopColor="#4285F4" />
+            <stop offset="100%" stopColor="#EA4335" />
+          </linearGradient>
+        </defs>
+        {/* Single G path with continuous rainbow gradient */}
         <path
           d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"
-          fill="#4285F4"
-        />
-        <path
-          d="M3 12.5l7.3 5.3C12.2 13.5 17.6 10 24 10c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 14.8 2 6.7 6.2 3 12.5z"
-          fill="#EA4335"
-        />
-        <path
-          d="M24 46c5.4 0 10.3-1.8 14.1-5l-6.5-5.5C29.5 37.1 26.9 38 24 38c-6 0-10.6-3.9-12.4-9.3L4.3 34C8 40.3 15.2 46 24 46z"
-          fill="#34A853"
-        />
-        <path
-          d="M44.5 20H24v8.5h11.8c-1 3.1-2.8 5.5-5.3 7.1l6.5 5.5c3.8-3.5 6.5-8.8 6.5-15.1 0-1.3-.2-2.7-.5-4z"
-          fill="#FBBC05"
+          fill={`url(#g-rainbow-${s})`}
         />
       </svg>
       <div
