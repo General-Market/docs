@@ -19,17 +19,26 @@ const { fontFamily: nunitoFamily } = loadFont("normal", {
  *
  * Public.com end card. Reference analysis (scene 12):
  *
- * Phase 1 (f0-15):  "public" centered, single blue dot bounces in below text
- * Phase 2 (f12-24): dot splits into two-circle logo mark, slides left of text;
- *                    ".com" appears; lockup centers
- * Phase 3 (f20-28): tagline fades in below
- * Phase 4 (f24-32): app store badges fade in
- * Phase 5 (f32-76): hold
+ * Phase 1 (f0-10):  "public" centered, single blue dot bounces in below text
+ * Phase 2 (f8-18):  dot fades out, logo mark (two circles) fades in to left of text;
+ *                    ".com" slides/fades in; lockup recenters
+ * Phase 3 (f16-24): tagline fades + slides up
+ * Phase 4 (f22-30): app store badges fade + slide up
+ * Phase 5 (f30-81): hold
+ *
+ * Timing is compressed and snappy — springs with moderate damping, not slow elegance.
  */
 
 const BLUE = "#042EF4";
 const TEXT_COLOR = "#111111";
-const TAG_COLOR = "#444444";
+const TAG_COLOR = "#717171";
+
+/* ── Sizes matched to reference ── */
+const LOGO_LARGE = 46;
+const LOGO_SMALL = 14;
+const LOGO_GAP = 3;
+const TEXT_SIZE = 92;
+const TAGLINE_SIZE = 27;
 
 /* ── Apple logo SVG path (simplified) ── */
 const AppleLogo: React.FC<{ size?: number }> = ({ size = 20 }) => (
@@ -71,68 +80,80 @@ export const Scene04: React.FC = () => {
   const { fps } = useVideoConfig();
 
   // ── Phase 1: Dot bounce ──
-  // Starts at scale 0, rapidly bounces to 1 with overshoot
+  // Very snappy spring — dot should be fully in by frame 2-3
   const dotSpring = spring({
     frame,
     fps,
-    config: { damping: 10, mass: 0.5, stiffness: 180 },
+    config: { damping: 8, mass: 0.3, stiffness: 280 },
   });
 
   // ── Phase 2: Transition — dot → logo mark + slide left ──
-  // Compressed: starts frame 10, finishes by frame 20
-  const transition = interpolate(frame, [10, 20], [0, 1], {
+  // Sharper transition: 7→14 (7 frames = ~240ms)
+  const transition = interpolate(frame, [7, 14], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    easing: Easing.bezier(0.22, 0.1, 0.25, 1),
   });
 
-  // ".com" fades in AFTER logo mark has settled — frames 18-24
-  const comOpacity = interpolate(frame, [18, 24], [0, 1], {
+  // ".com" fades in quickly — frames 12-16 (snappy, not slow)
+  const comOpacity = interpolate(frame, [12, 16], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const comSlideX = interpolate(frame, [12, 16], [10, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
 
-  // ── Phase 3: Tagline — spring for organic feel ──
+  // ── Phase 3: Tagline — appears quickly after logo settles ──
   const taglineSpring = spring({
+    frame: Math.max(0, frame - 14),
+    fps,
+    config: { damping: 12, mass: 0.3, stiffness: 140 },
+  });
+  const taglineProgress = frame < 14 ? 0 : taglineSpring;
+
+  // ── Phase 4: Badges — follow tagline closely ──
+  const badgesSpring = spring({
     frame: Math.max(0, frame - 18),
     fps,
-    config: { damping: 14, mass: 0.4, stiffness: 100 },
+    config: { damping: 11, mass: 0.35, stiffness: 120 },
   });
-  const taglineProgress = frame < 18 ? 0 : taglineSpring;
-
-  // ── Phase 4: Badges — spring with slight overshoot ──
-  const badgesSpring = spring({
-    frame: Math.max(0, frame - 24),
-    fps,
-    config: { damping: 12, mass: 0.5, stiffness: 90 },
-  });
-  const badgesProgress = frame < 24 ? 0 : badgesSpring;
+  const badgesProgress = frame < 18 ? 0 : badgesSpring;
 
   // ── Derived values ──
 
-  // Initial single dot: visible in phase 1, fades as transition starts
+  // Initial single dot: fades out quickly, drifts upward + left toward logo mark position
   const singleDotOpacity = interpolate(transition, [0, 0.35], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const singleDotY = interpolate(transition, [0, 0.5], [0, -20], {
+  const singleDotY = interpolate(transition, [0, 0.5], [0, -18], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+  const singleDotX = interpolate(transition, [0, 0.5], [0, -30], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
 
-  // Logo mark (two circles): fades in during transition
-  const logoMarkOpacity = interpolate(transition, [0.15, 0.55], [0, 1], {
+  // Logo mark (two circles): comes in slightly after dot fades
+  const logoMarkOpacity = interpolate(transition, [0.15, 0.5], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const logoMarkScale = spring({
-    frame: Math.max(0, frame - 10),
+    frame: Math.max(0, frame - 7),
     fps,
-    config: { damping: 12, mass: 0.4, stiffness: 140 },
+    config: { damping: 10, mass: 0.3, stiffness: 180 },
   });
 
-  // Content block shifts up slightly to keep visual center as more items appear below
-  const contentShiftY = interpolate(frame, [18, 32], [0, -10], {
+  // Content block shifts up slightly to keep visual center
+  const contentShiftY = interpolate(frame, [14, 26], [0, -8], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -140,19 +161,19 @@ export const Scene04: React.FC = () => {
   const taglineY = interpolate(taglineProgress, [0, 1], [8, 0]);
   const badgesY = interpolate(badgesProgress, [0, 1], [10, 0]);
 
-  // Badge scale — slight overshoot for "pop" feel
-  const badgesScale = spring({
-    frame: Math.max(0, frame - 24),
+  // Badge scale — subtle pop
+  const badgesScaleRaw = spring({
+    frame: Math.max(0, frame - 18),
     fps,
-    config: { damping: 10, mass: 0.3, stiffness: 150 },
+    config: { damping: 10, mass: 0.25, stiffness: 180 },
   });
-  const badgesScaleValue = frame < 24 ? 0.95 : 0.95 + 0.05 * badgesScale;
+  const badgesScaleValue = frame < 18 ? 0.97 : 0.97 + 0.03 * badgesScaleRaw;
 
   return (
     <AbsoluteFill
       style={{
         background:
-          "radial-gradient(ellipse at center, #FFFFFF 0%, #FAFAFA 50%, #F2F2F2 100%)",
+          "radial-gradient(ellipse at center, #FFFFFF 0%, #FDFDFD 50%, #F6F6F6 100%)",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -162,7 +183,7 @@ export const Scene04: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          transform: `translateY(${contentShiftY}px)`,
+          transform: `translateY(${contentShiftY - 16}px)`,
         }}
       >
         {/* ── Logo lockup: [mark] [public.com] ── */}
@@ -172,33 +193,33 @@ export const Scene04: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             position: "relative",
-            minHeight: 80,
+            minHeight: 90,
           }}
         >
           {/* Logo mark — two blue circles, large on top, small below */}
           <div
             style={{
-              marginRight: 14,
+              marginRight: 16,
               opacity: logoMarkOpacity,
               transform: `scale(${logoMarkScale})`,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 4,
+              gap: LOGO_GAP,
             }}
           >
             <div
               style={{
-                width: 38,
-                height: 38,
+                width: LOGO_LARGE,
+                height: LOGO_LARGE,
                 borderRadius: "50%",
                 backgroundColor: BLUE,
               }}
             />
             <div
               style={{
-                width: 17,
-                height: 17,
+                width: LOGO_SMALL,
+                height: LOGO_SMALL,
                 borderRadius: "50%",
                 backgroundColor: BLUE,
               }}
@@ -209,11 +230,11 @@ export const Scene04: React.FC = () => {
           <div style={{ display: "flex", alignItems: "baseline" }}>
             <span
               style={{
-                fontSize: 76,
-                fontWeight: 700,
+                fontSize: TEXT_SIZE,
+                fontWeight: 800,
                 fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
                 color: TEXT_COLOR,
-                letterSpacing: -1,
+                letterSpacing: -1.5,
                 lineHeight: 1,
               }}
             >
@@ -221,34 +242,36 @@ export const Scene04: React.FC = () => {
             </span>
             <span
               style={{
-                fontSize: 76,
-                fontWeight: 700,
+                fontSize: TEXT_SIZE,
+                fontWeight: 800,
                 fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
                 color: TEXT_COLOR,
-                letterSpacing: -1,
+                letterSpacing: -1.5,
                 lineHeight: 1,
                 opacity: comOpacity,
+                transform: `translateX(${comSlideX}px)`,
+                display: "inline-block",
               }}
             >
               .com
             </span>
           </div>
 
-          {/* Single bounce dot — below "public" text, slightly left of center */}
+          {/* Single bounce dot — below "public" text, centered under the word */}
           <div
             style={{
               position: "absolute",
-              left: "44%",
-              bottom: -14,
-              transform: `translate(-50%, ${24 + singleDotY}px) scale(${dotSpring})`,
+              left: "50%",
+              bottom: -6,
+              transform: `translate(-50%, ${18 + singleDotY}px) translateX(${singleDotX}px) scale(${dotSpring})`,
               opacity: singleDotOpacity,
               pointerEvents: "none" as const,
             }}
           >
             <div
               style={{
-                width: 30,
-                height: 30,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
                 backgroundColor: BLUE,
               }}
@@ -259,18 +282,18 @@ export const Scene04: React.FC = () => {
         {/* ── Tagline ── */}
         <div
           style={{
-            marginTop: 20,
+            marginTop: 18,
             opacity: taglineProgress,
             transform: `translateY(${taglineY}px)`,
           }}
         >
           <span
             style={{
-              fontSize: 26,
+              fontSize: TAGLINE_SIZE,
               fontFamily: `${nunitoFamily}, system-ui, sans-serif`,
               color: TAG_COLOR,
               fontWeight: 400,
-              letterSpacing: 0.2,
+              letterSpacing: 0.3,
             }}
           >
             Stocks, Treasuries, Crypto, & More
@@ -282,7 +305,7 @@ export const Scene04: React.FC = () => {
           style={{
             display: "flex",
             gap: 20,
-            marginTop: 32,
+            marginTop: 40,
             opacity: badgesProgress,
             transform: `translateY(${badgesY}px) scale(${badgesScaleValue})`,
           }}
@@ -292,15 +315,15 @@ export const Scene04: React.FC = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              border: "1.5px solid #DCDCDC",
+              gap: 12,
+              border: "1px solid #DDDDDD",
               borderRadius: 10,
-              padding: "12px 28px",
+              padding: "12px 30px",
               backgroundColor: "#FFFFFF",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}
           >
-            <AppleLogo size={22} />
+            <AppleLogo size={26} />
             <div
               style={{
                 display: "flex",
@@ -309,7 +332,7 @@ export const Scene04: React.FC = () => {
             >
               <span
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: `${nunitoFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.1,
@@ -320,7 +343,7 @@ export const Scene04: React.FC = () => {
               </span>
               <span
                 style={{
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: 700,
                   fontFamily: `${nunitoFamily}, system-ui`,
                   color: "#000",
@@ -337,15 +360,15 @@ export const Scene04: React.FC = () => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              border: "1.5px solid #DCDCDC",
+              gap: 12,
+              border: "1px solid #DDDDDD",
               borderRadius: 10,
-              padding: "12px 28px",
+              padding: "12px 30px",
               backgroundColor: "#FFFFFF",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
             }}
           >
-            <GooglePlayLogo size={22} />
+            <GooglePlayLogo size={26} />
             <div
               style={{
                 display: "flex",
@@ -354,7 +377,7 @@ export const Scene04: React.FC = () => {
             >
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 10,
                   fontFamily: `${nunitoFamily}, system-ui`,
                   color: "#000",
                   lineHeight: 1.1,
@@ -367,7 +390,7 @@ export const Scene04: React.FC = () => {
               </span>
               <span
                 style={{
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: 700,
                   fontFamily: `${nunitoFamily}, system-ui`,
                   color: "#000",
