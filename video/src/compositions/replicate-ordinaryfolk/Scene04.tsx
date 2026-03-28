@@ -110,7 +110,7 @@ function createDefaultState(): AnimState {
     phoneX: 200, phoneY: 120, phoneRotation: 6, phoneOpacity: 0, phoneScale: 0.88,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
-    geminiOpacity: 0, geminiY: 120, geminiScale: 1.6, geminiPanX: -260, geminiPanY: 180,
+    geminiOpacity: 0, geminiY: 120, geminiScale: 1.3, geminiPanX: -120, geminiPanY: 100,
     geminiDropdownOpen: 0, geminiRow1: 0, geminiRow2: 0, geminiCheckmark: 0, geminiGlowAngle: 0,
     fadeToBlack: 0, darkShrink: 1,
     wordOpacities: [0, 0, 0], wordYs: [30, 30, 30], wordXs: [20, 20, 20],
@@ -207,9 +207,10 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { geminiOpacity: 1, duration: sec(10), ease: "power2.out" }, gemStart);
     t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemStart);
     /* Zoom in to top-left corner over time */
-    t.to(s, { geminiScale: 2.4, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanX: -320, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanY: 260, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    /* Slow zoom + pan toward top-left corner of the panel to focus on dropdown */
+    t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    t.to(s, { geminiPanX: -200, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    t.to(s, { geminiPanY: 180, duration: sec(46), ease: "power1.inOut" }, gemStart);
     /* Dropdown animation */
     t.to(s, { geminiDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GEMINI_UI.start + 8));
     t.to(s, { geminiRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 12));
