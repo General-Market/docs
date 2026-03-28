@@ -222,3 +222,11 @@ The wave tracking on each letter of "experimenting" must be much more dramatic.
 Letters should have LARGE displacement (30-50px Y offset in a sine wave pattern).
 The wave should be VISIBLE and dramatic, not subtle.
 **Fix:** Increase scatter Y amplitudes from current values to 30-50px. The wave pattern should be obvious — like text on a roller coaster track.
+
+### 0:24 — Gemini response interface MORE tilted + top-left + float
+The interface at 0:24 (Gemini response with "Summarize my recent emails") should be:
+- MUCH more horizontally tilted (rotateY -15 to -20deg, not just -8deg)
+- Camera positioned at TOP-LEFT corner (not centered)
+- ALWAYS floating with continuous wave animation (use tilt3d phoneFloat or desktopTilt preset)
+- Never static during the sequence — constant gentle 3D drift
+**Fix:** Increase rotateY to -18deg. Add translateX(-15%) translateY(-10%) to shift view to top-left. Wrap in useFloat3D with desktopTilt preset for continuous wave motion throughout.
