@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useAccount, useReadContract, useConnect, usePublicClient } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
@@ -41,29 +42,17 @@ const ERC20_BALANCE_ABI = [
 type RoundPhase = 'betting' | 'closed' | 'settling'
 
 function useRoundPhase(bettingEnd: string | null | undefined, tickDuration: number): RoundPhase {
-  const [phase, setPhase] = useState<RoundPhase>('betting')
+  const remaining = useSharedCountdown(bettingEnd ?? null)
 
-  useEffect(() => {
-    if (!bettingEnd || tickDuration <= 0) {
-      setPhase('betting')
-      return
-    }
+  if (!bettingEnd || tickDuration <= 0) return 'betting'
+  if (remaining > 0) return 'betting'
 
-    const compute = () => {
-      const now = Date.now()
-      const end = new Date(bettingEnd).getTime()
-      if (now < end) return 'betting' as const
-      const settlementStart = end + tickDuration * 1000
-      if (now < settlementStart) return 'closed' as const
-      return 'settling' as const
-    }
-
-    setPhase(compute())
-    const id = setInterval(() => setPhase(compute()), 1000)
-    return () => clearInterval(id)
-  }, [bettingEnd, tickDuration])
-
-  return phase
+  // Past bettingEnd — check if within settlement window
+  const now = Date.now()
+  const end = new Date(bettingEnd).getTime()
+  const settlementStart = end + tickDuration * 1000
+  if (now < settlementStart) return 'closed'
+  return 'settling'
 }
 
 export default function BatchEntryPanel({
@@ -301,23 +290,13 @@ export default function BatchEntryPanel({
   const displayError = joinError || submitError
 
   // -- Settlement countdown (only relevant in 'closed' phase) --
-  const [settlementCountdown, setSettlementCountdown] = useState('')
-  useEffect(() => {
-    if (roundPhase !== 'closed' || !bettingEnd || tickDuration <= 0) {
-      setSettlementCountdown('')
-      return
-    }
-    const compute = () => {
-      const settlementTime = new Date(bettingEnd).getTime() + tickDuration * 1000
-      const remaining = Math.max(0, Math.floor((settlementTime - Date.now()) / 1000))
-      const m = Math.floor(remaining / 60)
-      const s = remaining % 60
-      return `${m}:${s.toString().padStart(2, '0')}`
-    }
-    setSettlementCountdown(compute())
-    const id = setInterval(() => setSettlementCountdown(compute()), 1000)
-    return () => clearInterval(id)
-  }, [roundPhase, bettingEnd, tickDuration])
+  const settlementTarget = (roundPhase === 'closed' && bettingEnd && tickDuration > 0)
+    ? new Date(new Date(bettingEnd).getTime() + tickDuration * 1000).toISOString()
+    : null
+  const settlementRemaining = useSharedCountdown(settlementTarget)
+  const settlementCountdown = settlementTarget
+    ? `${Math.floor(settlementRemaining / 60)}:${(settlementRemaining % 60).toString().padStart(2, '0')}`
+    : ''
 
   return (
     <div>

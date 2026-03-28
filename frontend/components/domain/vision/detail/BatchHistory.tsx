@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
+import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { useRounds, type RoundInfo } from '@/hooks/vision/useRounds'
@@ -48,18 +49,7 @@ function timeAgo(iso: string): string {
 }
 
 function useCountdown(target: string | null) {
-  const [remaining, setRemaining] = useState(0)
-  useEffect(() => {
-    if (!target) return
-    const update = () => {
-      const diff = Math.floor((new Date(target).getTime() - Date.now()) / 1000)
-      setRemaining(diff)
-    }
-    update()
-    const iv = setInterval(update, 1000)
-    return () => clearInterval(iv)
-  }, [target])
-  return remaining
+  return useSharedCountdown(target)
 }
 
 function formatTimer(secs: number) {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatchConfig } from '@/hooks/vision/useBatchConfig'
@@ -62,17 +63,7 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
 }
 
 function CountdownTimer({ bettingEnd }: { bettingEnd: string | null }) {
-  const [remaining, setRemaining] = useState<number>(0)
-  useEffect(() => {
-    if (!bettingEnd) return
-    const update = () => {
-      const diff = Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000)
-      setRemaining(Math.max(0, diff))
-    }
-    update()
-    const iv = setInterval(update, 1000)
-    return () => clearInterval(iv)
-  }, [bettingEnd])
+  const remaining = useSharedCountdown(bettingEnd)
   if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
   if (remaining <= 0) {
     return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 
 interface CountdownRingProps {
   bettingEnd: string | null
@@ -23,18 +23,7 @@ export function CountdownRing({
   size = 48,
   strokeWidth = 3,
 }: CountdownRingProps) {
-  const [remaining, setRemaining] = useState(0)
-
-  useEffect(() => {
-    if (!bettingEnd) return
-    const update = () => {
-      const diff = Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000))
-      setRemaining(diff)
-    }
-    update()
-    const iv = setInterval(update, 1000)
-    return () => clearInterval(iv)
-  }, [bettingEnd])
+  const remaining = useSharedCountdown(bettingEnd)
 
   if (!bettingEnd || tickDuration <= 0) return null
 
@@ -115,18 +104,7 @@ interface ProgressBarProps {
  * When settling, becomes a pulsing amber bar.
  */
 export function BatchProgressBar({ bettingEnd, tickDuration, isSettling }: ProgressBarProps) {
-  const [remaining, setRemaining] = useState(0)
-
-  useEffect(() => {
-    if (!bettingEnd) return
-    const update = () => {
-      const diff = Math.max(0, Math.floor((new Date(bettingEnd).getTime() - Date.now()) / 1000))
-      setRemaining(diff)
-    }
-    update()
-    const iv = setInterval(update, 1000)
-    return () => clearInterval(iv)
-  }, [bettingEnd])
+  const remaining = useSharedCountdown(bettingEnd)
 
   if (isSettling) {
     return (

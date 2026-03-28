@@ -179,23 +179,19 @@ export interface SSEContextValue {
   connectionState: SSEConnectionState
 }
 
-const INITIAL_DATA: SSEData = {
-  itpNav: [],
-  oraclePrices: null,
-  systemStatus: null,
-  morphoMarkets: [],
-  morphoVault: null,
-  userBalances: null,
-  userAllowances: null,
-  userOrders: [],
-  userPositions: null,
-  userCostBasis: null,
-}
+// ── Per-slice contexts (prevents cross-topic re-render cascades) ──
 
-const SSEContext = createContext<SSEContextValue>({
-  data: INITIAL_DATA,
-  connectionState: 'disconnected',
-})
+const SSENavContext = createContext<NavSnapshot[]>([])
+const SSEOracleContext = createContext<OracleSnapshot | null>(null)
+const SSESystemContext = createContext<SystemSnapshot | null>(null)
+const SSEMorphoMarketsContext = createContext<MorphoMarketSSE[]>([])
+const SSEMorphoVaultContext = createContext<MorphoVaultSSE | null>(null)
+const SSEUserBalancesContext = createContext<UserBalances | null>(null)
+const SSEUserAllowancesContext = createContext<UserAllowances | null>(null)
+const SSEUserOrdersContext = createContext<UserOrder[]>([])
+const SSEUserPositionsContext = createContext<Record<string, MorphoPositionSnapshot> | null>(null)
+const SSEUserCostBasisContext = createContext<UserCostBasis | null>(null)
+const SSEConnectionContext = createContext<SSEConnectionState>('disconnected')
 
 // ── SSEProvider ──
 
@@ -209,7 +205,16 @@ interface SSEProviderProps {
 }
 
 export function SSEProvider({ children, topics, address }: SSEProviderProps) {
-  const [data, setData] = useState<SSEData>(INITIAL_DATA)
+  const [itpNav, setItpNav] = useState<NavSnapshot[]>([])
+  const [oraclePrices, setOraclePrices] = useState<OracleSnapshot | null>(null)
+  const [systemStatus, setSystemStatus] = useState<SystemSnapshot | null>(null)
+  const [morphoMarkets, setMorphoMarkets] = useState<MorphoMarketSSE[]>([])
+  const [morphoVault, setMorphoVault] = useState<MorphoVaultSSE | null>(null)
+  const [userBalances, setUserBalances] = useState<UserBalances | null>(null)
+  const [userAllowances, setUserAllowances] = useState<UserAllowances | null>(null)
+  const [userOrders, setUserOrders] = useState<UserOrder[]>([])
+  const [userPositions, setUserPositions] = useState<Record<string, MorphoPositionSnapshot> | null>(null)
+  const [userCostBasis, setUserCostBasis] = useState<UserCostBasis | null>(null)
   const [connectionState, setConnectionState] = useState<SSEConnectionState>('disconnected')
 
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -224,14 +229,11 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
   useEffect(() => {
     if (prevAddressRef.current !== address) {
       prevAddressRef.current = address
-      setData(prev => ({
-        ...prev,
-        userBalances: null,
-        userAllowances: null,
-        userOrders: [],
-        userPositions: null,
-        userCostBasis: null,
-      }))
+      setUserBalances(null)
+      setUserAllowances(null)
+      setUserOrders([])
+      setUserPositions(null)
+      setUserCostBasis(null)
     }
   }, [address])
 
@@ -273,7 +275,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('itp-nav', (event: MessageEvent) => {
           try {
             const parsed: NavSnapshot[] = JSON.parse(event.data)
-            setData(prev => ({ ...prev, itpNav: parsed }))
+            setItpNav(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) {
@@ -286,10 +288,10 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('itp-nav-delta', (event: MessageEvent) => {
           try {
             const delta: NavSnapshot[] = JSON.parse(event.data)
-            setData(prev => {
-              const navMap = new Map(prev.itpNav.map(s => [s.itp_id, s]))
+            setItpNav(prev => {
+              const navMap = new Map(prev.map(s => [s.itp_id, s]))
               delta.forEach(s => navMap.set(s.itp_id, s))
-              return { ...prev, itpNav: Array.from(navMap.values()) }
+              return Array.from(navMap.values())
             })
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
@@ -299,7 +301,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('oracle-prices', (event: MessageEvent) => {
           try {
             const parsed: OracleSnapshot = JSON.parse(event.data)
-            setData(prev => ({ ...prev, oraclePrices: parsed }))
+            setOraclePrices(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -309,7 +311,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('system-status', (event: MessageEvent) => {
           try {
             const parsed: SystemSnapshot = JSON.parse(event.data)
-            setData(prev => ({ ...prev, systemStatus: parsed }))
+            setSystemStatus(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -319,7 +321,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('morpho-markets', (event: MessageEvent) => {
           try {
             const parsed: MorphoMarketSSE[] = JSON.parse(event.data)
-            setData(prev => ({ ...prev, morphoMarkets: parsed }))
+            setMorphoMarkets(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -329,7 +331,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('morpho-vault', (event: MessageEvent) => {
           try {
             const parsed: MorphoVaultSSE = JSON.parse(event.data)
-            setData(prev => ({ ...prev, morphoVault: parsed }))
+            setMorphoVault(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -339,7 +341,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('user-balances', (event: MessageEvent) => {
           try {
             const parsed: UserBalances = JSON.parse(event.data)
-            setData(prev => ({ ...prev, userBalances: parsed }))
+            setUserBalances(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -349,7 +351,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('user-allowances', (event: MessageEvent) => {
           try {
             const parsed: UserAllowances = JSON.parse(event.data)
-            setData(prev => ({ ...prev, userAllowances: parsed }))
+            setUserAllowances(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -359,7 +361,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('user-orders', (event: MessageEvent) => {
           try {
             const parsed: UserOrder[] = JSON.parse(event.data)
-            setData(prev => ({ ...prev, userOrders: parsed }))
+            setUserOrders(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -369,7 +371,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('user-positions', (event: MessageEvent) => {
           try {
             const parsed: Record<string, MorphoPositionSnapshot> = JSON.parse(event.data)
-            setData(prev => ({ ...prev, userPositions: parsed }))
+            setUserPositions(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -379,7 +381,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
         es.addEventListener('user-cost-basis', (event: MessageEvent) => {
           try {
             const parsed: UserCostBasis = JSON.parse(event.data)
-            setData(prev => ({ ...prev, userCostBasis: parsed }))
+            setUserCostBasis(parsed)
             setConnectionState('connected')
             reconnectAttemptRef.current = 0
             if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
@@ -425,78 +427,100 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
     }
   }, [topicsKey, address, cleanup])
 
-  const value = useMemo<SSEContextValue>(
-    () => ({ data, connectionState }),
-    [data, connectionState],
+  return (
+    <SSEConnectionContext.Provider value={connectionState}>
+    <SSENavContext.Provider value={itpNav}>
+    <SSEOracleContext.Provider value={oraclePrices}>
+    <SSESystemContext.Provider value={systemStatus}>
+    <SSEMorphoMarketsContext.Provider value={morphoMarkets}>
+    <SSEMorphoVaultContext.Provider value={morphoVault}>
+    <SSEUserBalancesContext.Provider value={userBalances}>
+    <SSEUserAllowancesContext.Provider value={userAllowances}>
+    <SSEUserOrdersContext.Provider value={userOrders}>
+    <SSEUserPositionsContext.Provider value={userPositions}>
+    <SSEUserCostBasisContext.Provider value={userCostBasis}>
+      {children}
+    </SSEUserCostBasisContext.Provider>
+    </SSEUserPositionsContext.Provider>
+    </SSEUserOrdersContext.Provider>
+    </SSEUserAllowancesContext.Provider>
+    </SSEUserBalancesContext.Provider>
+    </SSEMorphoVaultContext.Provider>
+    </SSEMorphoMarketsContext.Provider>
+    </SSESystemContext.Provider>
+    </SSEOracleContext.Provider>
+    </SSENavContext.Provider>
+    </SSEConnectionContext.Provider>
   )
-
-  return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>
 }
 
-// ── Consumer hooks — one per data slice ──
+// ── Consumer hooks — each reads from its own context (no cross-topic re-renders) ──
 
 export function useSSE(): SSEContextValue {
-  return useContext(SSEContext)
+  const itpNav = useContext(SSENavContext)
+  const oraclePrices = useContext(SSEOracleContext)
+  const systemStatus = useContext(SSESystemContext)
+  const morphoMarkets = useContext(SSEMorphoMarketsContext)
+  const morphoVault = useContext(SSEMorphoVaultContext)
+  const userBalances = useContext(SSEUserBalancesContext)
+  const userAllowances = useContext(SSEUserAllowancesContext)
+  const userOrders = useContext(SSEUserOrdersContext)
+  const userPositions = useContext(SSEUserPositionsContext)
+  const userCostBasis = useContext(SSEUserCostBasisContext)
+  const connectionState = useContext(SSEConnectionContext)
+  return {
+    data: { itpNav, oraclePrices, systemStatus, morphoMarkets, morphoVault, userBalances, userAllowances, userOrders, userPositions, userCostBasis },
+    connectionState,
+  }
 }
 
 export function useSSENav(): NavSnapshot[] {
-  const { data } = useContext(SSEContext)
-  return data.itpNav
+  return useContext(SSENavContext)
 }
 
 export function useSSEBalances(): UserBalances | null {
-  const { data } = useContext(SSEContext)
-  return data.userBalances
+  return useContext(SSEUserBalancesContext)
 }
 
 export function useSSEAllowances(): UserAllowances | null {
-  const { data } = useContext(SSEContext)
-  return data.userAllowances
+  return useContext(SSEUserAllowancesContext)
 }
 
 export function useSSEOrders(): UserOrder[] {
-  const { data } = useContext(SSEContext)
-  return data.userOrders
+  return useContext(SSEUserOrdersContext)
 }
 
 export function useSSEPositions(): Record<string, MorphoPositionSnapshot> | null {
-  const { data } = useContext(SSEContext)
-  return data.userPositions
+  return useContext(SSEUserPositionsContext)
 }
 
 /** Look up a single market's position from the SSE positions map by market ID. */
 export function useSSEPositionForMarket(marketId: string | undefined): MorphoPositionSnapshot | null {
-  const { data } = useContext(SSEContext)
-  if (!marketId || !data.userPositions) return null
-  return data.userPositions[marketId] ?? null
+  const positions = useContext(SSEUserPositionsContext)
+  if (!marketId || !positions) return null
+  return positions[marketId] ?? null
 }
 
 export function useSSECostBasis(): UserCostBasis | null {
-  const { data } = useContext(SSEContext)
-  return data.userCostBasis
+  return useContext(SSEUserCostBasisContext)
 }
 
 export function useSSESystem(): SystemSnapshot | null {
-  const { data } = useContext(SSEContext)
-  return data.systemStatus
+  return useContext(SSESystemContext)
 }
 
 export function useSSEOracle(): OracleSnapshot | null {
-  const { data } = useContext(SSEContext)
-  return data.oraclePrices
+  return useContext(SSEOracleContext)
 }
 
 export function useSSEMorphoMarkets(): MorphoMarketSSE[] {
-  const { data } = useContext(SSEContext)
-  return data.morphoMarkets
+  return useContext(SSEMorphoMarketsContext)
 }
 
 export function useSSEMorphoVault(): MorphoVaultSSE | null {
-  const { data } = useContext(SSEContext)
-  return data.morphoVault
+  return useContext(SSEMorphoVaultContext)
 }
 
 export function useSSEConnectionState(): SSEConnectionState {
-  const { connectionState } = useContext(SSEContext)
-  return connectionState
+  return useContext(SSEConnectionContext)
 }
