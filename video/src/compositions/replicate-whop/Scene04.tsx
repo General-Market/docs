@@ -642,7 +642,7 @@ const GrowthChartSegment: React.FC = () => {
 
   // 90 frames total for this segment
   const segDur = 90;
-  const zoomStart = fps * 0.8; // start zooming earlier
+  const zoomStart = fps * 1.2; // zoom starts after bars partially grown
 
   const entryScale = spring({
     fps,
@@ -651,23 +651,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into chart — moderate zoom, bars stay within visible area
+  // Zoom into chart — starts late, builds slowly, matches reference progression
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.5],
+    [1, 1.6],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -20],
+    [0, -30],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomX = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -140],
+    [0, -160],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
@@ -689,10 +689,10 @@ const GrowthChartSegment: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
-  // Interest counter animates slower than main counter — still counting at zoom
+  // Interest counter animates very slowly — reference shows ~$118K at midpoint
   const interestVal = interpolate(
     frame,
-    [fps * 0.6, fps * 3.2],
+    [fps * 0.8, segDur + fps * 0.5],
     [0, FINAL_INTEREST],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -866,12 +866,12 @@ const GrowthChartSegment: React.FC = () => {
             const depositH = (bar.deposit / MAX_TOTAL) * maxH;
             const interestH = fullH - depositH;
 
-            // Bars grow together after counter starts — subtle left-to-right wave
-            const delayFrames = fps * 0.25 + i * 0.25;
+            // Bars grow slowly — still growing when zoom kicks in
+            const delayFrames = fps * 0.3 + i * 0.2;
             const growProgress = spring({
               fps,
               frame: frame - delayFrames,
-              config: { damping: 12, stiffness: 50, mass: 1.2 },
+              config: { damping: 20, stiffness: 30, mass: 1.8 },
             });
 
             const currentDepositH = depositH * growProgress;

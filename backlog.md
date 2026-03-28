@@ -1,5 +1,20 @@
 # Design Decision Backlog
 
+## Session: 20260328-2145-q8f3 (WorkDriven feedback loop on tx revert)
+
+- [DECISION] Added freshness gate to `has_in_flight_orders()` — orders whose last status change was >30s ago no longer trigger WorkDriven cycles. The watchdog (5min threshold) handles truly stuck orders on heartbeat. Without this, a single reverted tx triggers 20 WorkDriven cycles/sec indefinitely until the watchdog intervenes — 6,000 wasted cycles that desync oracles.
+- [DECISION] Mark completeBuyOrder failures as Failed immediately — CBO has no retry path (the `Ok(None)` and `Err(_)` branches returned without updating status, leaving orders at `Batched` forever). Now calls `mark_orders_failed` on both revert and timeout.
+- [FAILED] Considered per-order revert counters — adds complexity for a problem better solved by the freshness gate. A revert counter would require propagating state through consensus rounds. The freshness approach is local and self-healing.
+
+## Session: 20260328-1830-v2s8 (Vision PnL zero-sum fix)
+
+- [DECISION] Removed safety-net refund in `compute_settlement` — the block at lines 56-68 refunded any player with zero total payout their full deposit. Intended for bitmap-purge edge cases but fires for legitimate total losers (fully matched, lost every market). Creates money from nothing: winners get loser's stake via side_matching AND loser gets deposit back via safety net. The 2x multiplier.
+- [DECISION] Added zero-sum invariant check after payout aggregation — if total_payouts != total_deposits, logs CRITICAL error and clamps all payouts proportionally to preserve solvency. Defense-in-depth against future regressions.
+- [DECISION] Fixed test_all_same_side_refund test — was constructing invalid intermediate data (payout=100 AND refund=100 for each player, doubling their stake). Corrected to match actual refund_all behavior (payout=effective_stake, refund=0).
+- [DECISION] Fixed test_voided_players_get_deposit_back — had addr(1) as non-voided with no market results (impossible state). Fixed to void both players.
+- [DECISION] Cleaned stale "commitment multiplier" comment from resolver.rs test — referenced a removed feature (log10 balance/stake scaling). The resolver uses flat deposit/num_markets splitting.
+- [FAILED] Initial investigation of chain_listener for multiplier — `deposit` and `initial_deposit` are both set from the same log data at join time, never diverge. The multiplier was never in the chain listener or resolver; it was in the settlement safety net.
+
 ## Session: 20260328-j9m2 (aum-ranking investigation)
 
 - [FAILED] Suspected data-node /aum-ranking endpoint hang — endpoint responds in <1ms from cache. The cache is populated by a 10s background poller. Cold-start window is ~300ms (server starts → hydration completes). No deadlock, no RPC calls in the hot path.

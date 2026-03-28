@@ -488,14 +488,14 @@ const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const pW = organicWobble("ph10", frame, 2.5, 2, 0.018);
-  /* Phone enters from below, slower entry to match reference cropping */
-  const eP = interpolate(frame, [0,fps*1.8], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 60, 40, 10, 0);
-  const pY = cubicBez(eP, 600, 400, 80, 0);
-  const pR = interpolate(eP, [0,1], [3,0]);
-  const pS = interpolate(eP, [0,1], [0.85,1]);
+  /* Phone enters from below-right, moderate speed */
+  const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
+  const pX = cubicBez(eP, 150, 120, 30, 0);
+  const pY = cubicBez(eP, 550, 380, 60, 0);
+  const pR = interpolate(eP, [0,1], [6,0]);
+  const pS = interpolate(eP, [0,1], [0.75,1]);
   const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
-  const sF = frame - fps*1.8;
+  const sF = frame - fps*1.5;
   const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
   const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
   const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
@@ -571,10 +571,10 @@ const SegPhoneGoodMorning: React.FC = () => {
   /* No fade-out: hard cut to Scene04 preserves phone continuity */
   const exitOp = 1;
   const eP = interpolate(frame, [0,fps], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 250, 200, 50, 0);
-  const pY = cubicBez(eP, 400, 280, 30, 0);
-  const pR = interpolate(eP, [0,1], [10,0]);
-  const pS = interpolate(eP, [0,0.3,1], [0.6,0.72,0.75], {extrapolateRight:"clamp"});
+  const pX = cubicBez(eP, 200, 150, 30, -30);
+  const pY = cubicBez(eP, 350, 250, 30, -20);
+  const pR = interpolate(eP, [0,1], [12,5]);
+  const pS = interpolate(eP, [0,0.3,1], [0.6,0.78,0.85], {extrapolateRight:"clamp"});
   const pOp = interpolate(eP, [0,0.1], [0,1], {extrapolateRight:"clamp"});
   const sF = frame-fps;
   const sB = sF>0 ? interpolate(sF, [0,3,10], [0,-6,0], {extrapolateRight:"clamp"}) : 0;

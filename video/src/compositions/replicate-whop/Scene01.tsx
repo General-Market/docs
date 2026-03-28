@@ -1130,7 +1130,7 @@ export const Scene01: React.FC = () => {
             whiteSpace: "nowrap",
           }}
         >
-          <WordReveal text="Introducing" color="#6B7280" startFrame={INTRO_START} frame={frame} fontWeight={400} />
+          <WordReveal text="Introducing" color="#9CA3AF" startFrame={INTRO_START} frame={frame} fontWeight={400} />
           <WordReveal text="Whop" color={RED} startFrame={WHOP_START} frame={frame} />
           <WordReveal text="Treasury" color={RED} startFrame={TREASURY_START} frame={frame} />
         </div>
