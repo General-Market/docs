@@ -14,6 +14,48 @@ use tracing::{debug, info, warn, error};
 
 use crate::helpers::{fill_price_respects_limit, is_snapshot_too_old_error, calculate_bridge_leader};
 
+/// Known confirmFills error selectors that encode an orderId as their first ABI parameter.
+///
+/// Solidity errors whose first param is `uint256 orderId`:
+///   E022_OrderNotFound(uint256)                             → 0x0cf46178
+///   E023_FillExceedsOrder(uint256,uint256,uint256)          → 0xa1f4d58b
+///   E024_InvalidOrderStatus(uint256,uint256,uint256)        → 0x6e6e29cb
+///   E036_FillCycleMismatch(uint256,uint256)                 → 0xe6aac9f3
+///   E126_FillPriceViolatesLimit(uint256,uint256,uint256,uint8) → 0xcbaa4cd6
+///   E021_OrderAlreadyBatched(uint256)                       → 0x7a5425d1
+const FILL_ERROR_SELECTORS: &[&str] = &[
+    "0cf46178", // E022
+    "a1f4d58b", // E023
+    "6e6e29cb", // E024
+    "e6aac9f3", // E036
+    "cbaa4cd6", // E126
+    "7a5425d1", // E021
+];
+
+/// Attempt to extract the offending orderId from a confirmFills revert string.
+///
+/// The error string from ethers typically contains the hex-encoded revert data,
+/// e.g. `"execution reverted: 0x6e6e29cb<32-byte orderId>..."`. We locate a known
+/// selector, then decode the next 32 hex chars (64 nibbles) as a U256 orderId.
+///
+/// Returns `None` if the error doesn't match any known fill selector or if the
+/// orderId can't be parsed.
+fn extract_order_id_from_fill_revert(err: &str) -> Option<ethers::types::U256> {
+    for selector in FILL_ERROR_SELECTORS {
+        if let Some(pos) = err.find(selector) {
+            // orderId starts right after the 8-char selector
+            let id_start = pos + selector.len();
+            if err.len() >= id_start + 64 {
+                let id_hex = &err[id_start..id_start + 64];
+                if let Ok(bytes) = hex::decode(id_hex) {
+                    return Some(ethers::types::U256::from_big_endian(&bytes));
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Price update task — fetches prices, runs price consensus, logs result.
 /// Same pattern as every other task: detect work, propose, settle.
 /// Returns `true` on consensus success, `false` on failure/timeout.

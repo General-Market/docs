@@ -798,6 +798,17 @@ where
         Ok(result.as_u64())
     }
 
+    async fn get_order_on_chain_status(&self, order_id: U256) -> Option<u8> {
+        let contract = self.index_contract();
+        match contract.get_order(order_id).call().await {
+            Ok(order_tuple) => Some(order_tuple.10), // status is the 11th field
+            Err(e) => {
+                debug!(order_id = %order_id, error = %e, "Failed to read on-chain order status");
+                None
+            }
+        }
+    }
+
     async fn get_pending_rebalances(&self) -> Result<Vec<PendingRebalance>, Error> {
         let contract = self.index_contract();
 

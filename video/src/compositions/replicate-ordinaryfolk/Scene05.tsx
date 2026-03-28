@@ -919,24 +919,10 @@ const UltraOrb: React.FC<{
   );
 };
 
-// ─── Spiral inward capability words ───
-const SPIRAL_WORDS = [
-  "reasoning", "coding", "math", "images",
-  "analysis", "writing", "data", "logic",
-  "research", "creative",
-];
-
-// Pre-compute starting positions: evenly distributed around a large ellipse at screen edges
-const SPIRAL_WORD_STARTS = SPIRAL_WORDS.map((_, i) => {
-  const angle = (i / SPIRAL_WORDS.length) * Math.PI * 2 + Math.PI * 0.15;
-  const rx = 520; // horizontal radius (well outside 1280 viewport center)
-  const ry = 340; // vertical radius
-  return {
-    x: Math.cos(angle) * rx,
-    y: Math.sin(angle) * ry,
-    angle, // starting angle on the spiral
-  };
-});
+// ─── Spiral inward text chars ───
+const SPIRAL_TEXT = "With access to";
+const SPIRAL_CHARS = SPIRAL_TEXT.split("");
+const SPIRAL_WORDS = ["Search", "YouTube", "Maps", "Flights", "Gmail", "Workspace"];
 
 // ═══ MAIN SCENE — GSAP-DRIVEN ═══
 
@@ -961,6 +947,8 @@ export const Scene05: React.FC = () => {
   const cardsPanRef = useRef<HTMLDivElement>(null);
   const spiralContainerRef = useRef<HTMLDivElement>(null);
   const spiralWordsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const spiralTextRef = useRef<HTMLDivElement>(null);
+  const spiralCharsRef = useRef<(HTMLDivElement | null)[]>([]);
   const spiralGlowRef = useRef<HTMLDivElement>(null);
   const orbWrapRef = useRef<HTMLDivElement>(null);
   const expTitleRef = useRef<HTMLDivElement>(null);
@@ -1019,25 +1007,21 @@ export const Scene05: React.FC = () => {
   const kineticF = { text: "for reasoning", accent: "reasoning" };
   const kineticJ = { text: "and more", accent: "more" };
 
-  // Pre-compute logarithmic spiral waypoints for each capability word
-  // Each word spirals INWARD from its starting position to center (0,0)
-  const spiralWaypoints = useMemo(() => {
-    return SPIRAL_WORDS.map((word, i) => {
-      const start = SPIRAL_WORD_STARTS[i];
-      const baseAngle = start.angle;
-      // Generate ~8 waypoints along a logarithmic spiral path
-      const steps = 8;
-      const path: { x: number; y: number }[] = [];
-      for (let s = 0; s <= steps; s++) {
-        const progress = s / steps;
-        // Logarithmic spiral: r decays exponentially, angle advances
-        const r = (1 - progress) * Math.sqrt(start.x * start.x + start.y * start.y);
-        const theta = baseAngle + progress * 4 * Math.PI; // ~2 full rotations inward
-        const x = r * Math.cos(theta);
-        const y = r * Math.sin(theta);
-        path.push({ x, y });
-      }
-      return path;
+  // Pre-compute char start X offsets for "With access to" at ~52px font
+  const spiralCharParams = useMemo(() => {
+    const charWidths = SPIRAL_CHARS.map(ch =>
+      ch === " " ? 14 : ch === "W" ? 36 : ch.toLowerCase() === "m" ? 28 : 22
+    );
+    const totalWidth = charWidths.reduce((a, b) => a + b, 0);
+    let cumX = -totalWidth / 2;
+    return SPIRAL_CHARS.map((ch, i) => {
+      const startX = cumX + charWidths[i] / 2;
+      cumX += charWidths[i];
+      return {
+        ch,
+        startX,
+        isAccent: i >= 5 && i <= 10, // "access" highlighted
+      };
     });
   }, []);
 
@@ -1228,23 +1212,27 @@ export const Scene05: React.FC = () => {
     animateKineticWords(kineticJRefs, 400, 25, kineticJ.text.split(" "));
 
     // ═══ G: Card zoom 0 — "Walk me through solving a problem" (260-310) ═══
+    // 3D rotating card: enters from right, rotates continuously on Y-axis
     if (cardZoomGRef.current) {
-      t.set(cardZoomGRef.current, { opacity: 0, scale: 0.6 * 1.8, x: 90, y: 0 }, 0);
-      // Arc entrance with spring
+      t.set(cardZoomGRef.current, { opacity: 0, scale: 1.6, x: 200 }, 0);
+      // Sweep in
       t.to(cardZoomGRef.current, {
         opacity: 1,
-        scale: 1.8,
         x: -30,
-        y: 0,
-        duration: f(18),
-        ease: "elastic.out(1, 0.5)",
+        duration: f(16),
+        ease: "power2.out",
       }, f(260));
-      // Exit sweep
+      // Continuous 3D Y-axis rotation while visible
+      t.to(cardZoomGRef.current, {
+        rotateY: 360,
+        duration: f(48),
+        ease: "none",
+      }, f(260));
+      // Exit
       t.to(cardZoomGRef.current, {
         opacity: 0,
-        x: 10,
-        y: -30,
-        duration: f(12),
+        x: -80,
+        duration: f(10),
         ease: "power2.in",
       }, f(300));
     }
@@ -1265,50 +1253,64 @@ export const Scene05: React.FC = () => {
       }, f(345));
     }
 
-    // ═══ I: Card zoom 1 (350-400) ═══
+    // ═══ I: Card zoom 1 — "Help me write HTML" (350-400) ═══
+    // 3D rotating card with code content
     if (cardZoomIRef.current) {
-      t.set(cardZoomIRef.current, { opacity: 0, scale: 0.6 * 1.8, x: 90 }, 0);
+      t.set(cardZoomIRef.current, { opacity: 0, scale: 1.6, x: -180 }, 0);
+      // Sweep in from left
       t.to(cardZoomIRef.current, {
         opacity: 1,
-        scale: 1.8,
-        x: 20,
-        duration: f(18),
-        ease: "elastic.out(1, 0.5)",
+        x: 40,
+        duration: f(16),
+        ease: "power2.out",
       }, f(350));
+      // Continuous 3D Y-axis rotation
+      t.to(cardZoomIRef.current, {
+        rotateY: -360,
+        duration: f(48),
+        ease: "none",
+      }, f(350));
+      // Exit
       t.to(cardZoomIRef.current, {
         opacity: 0,
-        x: 60,
-        y: -30,
-        duration: f(12),
+        x: 120,
+        duration: f(10),
         ease: "power2.in",
       }, f(395));
     }
 
-    // Card peek (card 0 peeking from left during I)
+    // Card peek (card 0 peeking from left during I, also rotating)
     if (cardPeekRef.current) {
-      t.set(cardPeekRef.current, { opacity: 0 }, 0);
+      t.set(cardPeekRef.current, { opacity: 0, rotateY: -20 }, 0);
       t.to(cardPeekRef.current, {
-        opacity: 0.4,
-        duration: f(10),
+        opacity: 0.5,
+        rotateY: 15,
+        duration: f(15),
         ease: "power1.out",
       }, f(350));
       t.to(cardPeekRef.current, {
         opacity: 0,
+        rotateY: 30,
         duration: f(10),
         ease: "power1.in",
       }, f(390));
     }
 
-    // ═══ K: Cards pan 2+3 (430-480) ═══
+    // ═══ K: Cards pan 2+3 (430-480) — 3D carousel rotation ═══
     if (cardsPanRef.current) {
-      t.set(cardsPanRef.current, { opacity: 0, x: 120 }, 0);
+      t.set(cardsPanRef.current, { opacity: 0, x: 200, rotateY: -30 }, 0);
+      // Sweep in with perspective tilt
       t.to(cardsPanRef.current, {
         opacity: 1,
-        duration: f(12),
-        ease: "power1.out",
+        x: 0,
+        rotateY: 0,
+        duration: f(16),
+        ease: "power2.out",
       }, f(430));
+      // Slow continuous rotation through the pan
       t.to(cardsPanRef.current, {
-        x: -120,
+        x: -180,
+        rotateY: 25,
         duration: f(45),
         ease: "power1.inOut",
       }, f(430));
@@ -1319,49 +1321,62 @@ export const Scene05: React.FC = () => {
       }, f(470));
     }
 
-    // ═══ L: Capability words spiral INWARD (480-520) ═══
-    // Words start scattered at screen edges, spiral inward on logarithmic paths,
-    // shrinking and overlapping to form a compressed cluster that becomes the orb.
-    spiralWordsRef.current.forEach((el, i) => {
-      if (!el) return;
-      const startPos = SPIRAL_WORD_STARTS[i];
-      const waypoints = spiralWaypoints[i];
-
-      // Start at outer position, visible, full size
-      t.set(el, {
-        opacity: 0,
-        x: startPos.x,
-        y: startPos.y,
-        scale: 1,
-        rotation: (startPos.angle * 180) / Math.PI - 90,
-      }, 0);
-
-      // Stagger fade-in: words appear in quick succession at their outer positions
-      const staggerDelay = i * 1.2;
-      t.to(el, {
+    // ═══ L: "With access to" — readable, then chars peel inward (480-520) ═══
+    // Phase 1: readable text appears
+    if (spiralTextRef.current) {
+      t.set(spiralTextRef.current, { opacity: 0 }, 0);
+      t.to(spiralTextRef.current, {
         opacity: 1,
-        duration: f(4),
-        ease: "power1.out",
-      }, f(480 + staggerDelay));
+        duration: f(10),
+        ease: "power2.out",
+      }, f(480));
+      // Hide readable text when chars start peeling
+      t.to(spiralTextRef.current, {
+        opacity: 0,
+        duration: f(1),
+      }, f(497));
+    }
 
-      // Spiral inward along logarithmic path
+    // Phase 2: chars peel from right side, curving inward to center
+    const totalChars = spiralCharsRef.current.length;
+    spiralCharsRef.current.forEach((el, i) => {
+      if (!el) return;
+      const params = spiralCharParams[i];
+
+      // Start invisible at text position
+      t.set(el, { opacity: 0, x: params.startX, y: 0, rotation: 0, scale: 1 }, 0);
+      // Make visible when readable text hides
+      t.set(el, { opacity: 1 }, f(497));
+
+      // Later chars (end of text) move first — "to" peels before "With"
+      const reverseIdx = totalChars - 1 - i;
+      const staggerFrame = 497 + reverseIdx * 0.8;
+
+      // Each char curves through a control point before converging to center
+      const arcDirX = params.startX > 0 ? 1 : -1;
+      const arcDirY = params.startX > 0 ? -1 : 1;
+      const arcMag = 90 + Math.abs(params.startX) * 0.4;
+
+      const waypoints = [
+        { x: params.startX, y: 0 },
+        { x: params.startX * 0.7 + arcDirX * arcMag * 0.3, y: arcDirY * arcMag },
+        { x: params.startX * 0.15 + arcDirX * arcMag * 0.1, y: arcDirY * arcMag * 0.5 },
+        { x: 0, y: 0 },
+      ];
+
+      const dur = 24 + reverseIdx * 0.4;
+
       t.to(el, {
         motionPath: {
           path: waypoints,
-          curviness: 1.8,
+          curviness: 2,
         },
-        scale: 0.12, // shrink dramatically as they converge
-        rotation: `+=${360 + i * 40}`, // continuous rotation during spiral
-        duration: f(35 - i * 0.5),
-        ease: "power2.in",
-      }, f(484 + staggerDelay));
-
-      // Fade to 0 as they reach the center mass
-      t.to(el, {
+        scale: 0.15,
+        rotation: (i % 2 === 0 ? 1 : -1) * (12 + reverseIdx * 2.5),
         opacity: 0,
-        duration: f(6),
-        ease: "power1.in",
-      }, f(514));
+        duration: f(dur),
+        ease: "power3.in",
+      }, f(staggerFrame));
     });
 
     // Spiral center glow

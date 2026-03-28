@@ -396,7 +396,7 @@ const SegGeminiReveal: React.FC = () => {
               className="gemini-letter"
               style={{
                 display: "inline-block",
-                background: `linear-gradient(90deg, ${BLUE} 0%, ${PURPLE} 45%, ${PINK} 100%)`,
+                background: `linear-gradient(90deg, ${PINK} 0%, ${PURPLE} 45%, ${BLUE} 100%)`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 willChange: "transform, opacity",

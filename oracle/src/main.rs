@@ -657,14 +657,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // VisionDepositWatcher deleted (round-only purge)
 
-                    // Wire per-source co-sign router into protocol
+                    // Share the protocol's DashMap-based co-sign router with the lifecycle manager.
+                    // No Option wrapper, no mutex dance — both sides reference the same DashMap.
                     if let Some(ref protocol) = components.consensus.protocol {
-                                let cosign_router: oracle::vision::lifecycle::CosignRouter =
-                                    std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new()));
-                                if let Ok(mut guard) = protocol.cosign_router.lock() {
-                                    *guard = Some(cosign_router.clone());
-                                    info!(node_id, "cosign_router installed on consensus protocol");
-                                }
+                                let cosign_router = protocol.cosign_router.clone();
+                                info!(node_id, "cosign_router shared with lifecycle manager (DashMap)");
 
                                 // Spawn BatchLifecycleManager for round-based sources
                                 let lm_chain_writer = components.chain.writer.clone();
@@ -685,7 +682,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     lm_chain_writer,
                                     lm_bls_keypair,
                                     lm_broadcast_tx,
-                                    cosign_router.clone(),
+                                    cosign_router,
                                     lm_peer_id,
                                 );
                                 let lm = std::sync::Arc::new(lm);
@@ -724,7 +721,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             lm_chain_writer,
                             lm_bls_keypair,
                             None, // no broadcast_tx
-                            std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())), // empty router (no P2P)
+                            std::sync::Arc::new(dashmap::DashMap::new()), // empty router (no P2P)
                             lm_peer_id,
                         );
                         let lm = std::sync::Arc::new(lm);

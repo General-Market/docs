@@ -154,19 +154,20 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     /* Emoji burst: shrink phone scale */
     t.to(s, { phoneScale: 0.88, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
-    /* ═══ Phone exit — curved arc left ═══ */
+    /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
     const exitStart = sec(PHASE.TRANSITION_TEXT.start);
     const phoneExitTween = gsap.to({ t: 0 }, {
-      t: 1, duration: sec(14), ease: "power3.in", paused: true,
+      t: 1, duration: sec(16), ease: "power3.in", paused: true,
       onUpdate() {
         const p = this.progress();
-        s.phoneX = quadBezier(p, 0, -200, -700);
-        s.phoneY = quadBezier(p, 0, -60, 30);
+        /* Start from ~(20, 5) — current drift position — and fly far left */
+        s.phoneX = quadBezier(p, 20, -250, -800);
+        s.phoneY = quadBezier(p, 5, -40, 20);
       },
     });
     t.add(phoneExitTween, exitStart);
-    t.to(s, { phoneRotation: -12, duration: sec(14), ease: "power3.in" }, exitStart);
-    t.to(s, { phoneOpacity: 0, duration: sec(7), ease: "power2.in" }, exitStart);
+    t.to(s, { phoneRotation: -18, duration: sec(16), ease: "power3.in" }, exitStart);
+    t.to(s, { phoneOpacity: 0, duration: sec(10), ease: "power2.in" }, exitStart + sec(4));
 
     /* ═══ "But that's not all..." ═══ */
     const textStart = sec(PHASE.TRANSITION_TEXT.start);
@@ -908,15 +909,16 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Phone tilt */
+  /* Phone tilt — strong entrance tilt, reduces over time, ramps up during exit */
   const phoneTilt = interpolate(frame,
-    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.EMOJI_BURST.start],
-    [-18, -14, -10, -6, -4],
+    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [-18, -14, -10, -6, -4, -4, -45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
+  /* Phone X rotation — subtle forward lean that reduces over time */
   const phoneXTilt = interpolate(frame,
-    [0, PHASE.AI_RESPONSE.start],
-    [5, 2],
+    [0, PHASE.AI_RESPONSE.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [5, 2, 2, 8],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 

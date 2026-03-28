@@ -185,10 +185,11 @@ export const Scene02: React.FC = () => {
       t.fromTo(phaseB, { opacity: 0 }, { opacity: 1, duration: s(4) }, s(58));
     }
 
-    // Typing color transition: blue → dark (text content is frame-driven in JSX)
+    // Typing color transition: blue → dark. Ref frame_006 (f~75) shows fully dark.
+    // Start earlier, shorter duration for snappier transition.
     const chapterText = el.querySelector<HTMLElement>(".chapter-text");
     if (chapterText) {
-      t.to(chapterText, { color: TEXT_DARK, duration: s(8), ease: "none" }, s(72));
+      t.to(chapterText, { color: TEXT_DARK, duration: s(5), ease: "power2.out" }, s(70));
     }
 
     // Phase B-C exit (chapter fades for page turn)

@@ -1,5 +1,18 @@
 # Design Decision Backlog
 
+## Session: 20260328-1530-g9m2 (GSAP Rewrite Scene03)
+
+- [FAILED] GSAP DOM-mode rewrite of Scene03 (12 segments, 2241 lines) — GSAP `.from()`/`.to()` targeting DOM elements via class selectors does not work in Remotion headless rendering. useEffect builds timeline and sets initial DOM state, but headless renderer screenshots before GSAP updates propagate. Scoped selectors via `gsap.context()` also failed. Root cause: GSAP mutates DOM directly, Remotion reads inline React styles — these are orthogonal.
+- [FAILED] GSAP proxy-object approach — animating plain JS `useRef` objects instead of DOM. Sound in theory (GSAP as calculation engine, React reads proxy values). Failed in practice due to file size (2241 lines, 12 segments each needing proxy refs + timeline builds). Two-part heredoc write caused duplicate declarations. After fixing duplicates, proxy values appeared correct but the full rewrite lost too much visual fidelity vs original spring()+interpolate() code.
+- [DECISION] Reverted Scene03 to original. The existing `spring()` + `interpolate()` + procedural math approach works correctly in both Studio and headless. GSAP adds easing vocabulary but insufficient value for the refactor cost. Particle explosions, bezier arcs, organic wobble — all already implemented with frame-driven math that GSAP cannot improve on.
+- [DECISION] Updated `useGsapTimeline.ts` hook to be backward-compatible: dual seek (useMemo for proxy mode + useEffect for DOM mode), re-exported MorphSVGPlugin for Scene05. Scene02 and Scene05 continue working with DOM-mode GSAP.
+
+## Session: 20260328-1400-v3q8 (Explorer Vision Activity Chart)
+
+- [DECISION] Network Activity chart in Explorer Vision tab showed "Orders / 60s: 0" — reading oracle health `orders_processed_last_60s` which only counts ITP buy/sell, not Vision activity. Replaced with Vision-native activity data from `vision_batch_lifecycle` table (rounds settled, rounds created, player counts bucketed by time).
+- [DECISION] New oracle endpoint `GET /vision/activity?range=24h&bucket_mins=15` queries `vision_batch_lifecycle` with `FULL OUTER JOIN` of settled_at and created_at time-bucketed aggregates. No new DB table or column needed — existing timestamps suffice.
+- [DECISION] Frontend proxy at `/api/vision/activity` forwards to oracle. VisionSection fetches directly instead of reading from oracle health snapshots. The `snapshots`/`latest`/`loading` props from useExplorerHealth are now unused but kept for interface stability.
+
 ## Session: 20260327-1530-b7k1 (Bitmap Length Mismatch Root Cause)
 
 - [DECISION] Root cause: `resolve_and_settle` fetched `fetch_recommended()` (current config) instead of the batch's pinned `config_hash`. Market lists drift as assets become healthy/unhealthy between batch creation and resolution. Bot builds bitmap against creation-time config (N markets), oracle resolves against resolution-time config (M markets where M > N). Fix: use `fetch_config_by_hash(batch.config_hash)` with fallback to recommended if pinned config is purged.

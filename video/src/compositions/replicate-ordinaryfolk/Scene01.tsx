@@ -654,8 +654,8 @@ const SOLVE_SCATTER: Array<{ x: number; y: number; size: number }> = [
 ];
 
 // Final settled layout — compute char positions for centered text
-const SOLVE_FINAL_SIZE = 40;
-const SOLVE_CHAR_W = [22, 20, 10, 20, 18, 10, 20, 12, 20, 20, 10, 18, 26, 14];
+const SOLVE_FINAL_SIZE = 44;
+const SOLVE_CHAR_W = [24, 22, 11, 22, 20, 11, 22, 13, 22, 22, 11, 20, 29, 15];
 const SOLVE_TOTAL_W = SOLVE_CHAR_W.reduce((a, b) => a + b, 0);
 const SOLVE_FINAL_CX = W * 0.5;
 const SOLVE_FINAL_CY = H * 0.49;

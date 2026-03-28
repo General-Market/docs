@@ -9,7 +9,6 @@
 //!   3. Record lifecycle in Postgres
 //!   4. Rotate: previous = current, current = new
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -17,6 +16,7 @@ use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::traits::BLSSigner;
 use common::types::P2PMessage;
 use common::BLSSignature;
+use dashmap::DashMap;
 use ethers::abi::{encode, Token};
 use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
@@ -48,10 +48,11 @@ pub struct IncomingCreateBatchSign {
 
 /// Per-source routing map for co-sign messages.
 ///
-/// Each source registers a sender when it starts collecting co-signs,
-/// and removes it when done. Protocol.rs looks up the source_id to
-/// route co-signs to the correct receiver — no cross-source theft.
-pub type CosignRouter = Arc<tokio::sync::RwLock<HashMap<H256, mpsc::Sender<IncomingCreateBatchSign>>>>;
+/// DashMap for lock-free concurrent dispatch. Each source registers a sender
+/// when it starts collecting co-signs and removes it when done. Protocol.rs
+/// looks up the source_id to route co-signs to the correct receiver —
+/// no cross-source theft, no write-lock contention between sources.
+pub type CosignRouter = Arc<DashMap<H256, mpsc::Sender<IncomingCreateBatchSign>>>;
 
 /// How long the leader waits for follower co-signs per attempt (seconds).
 /// Short timeout + retry is better than one long timeout — keeps the pipeline moving.
@@ -817,7 +818,7 @@ impl BatchLifecycleManager {
                     if let Some(ref broadcast_tx) = self.broadcast_tx {
                         // Register a per-source channel BEFORE broadcasting the proposal
                         let (sign_tx, mut sign_rx) = mpsc::channel::<IncomingCreateBatchSign>(8);
-                        self.cosign_router.write().await.insert(source_id, sign_tx);
+                        self.cosign_router.insert(source_id, sign_tx);
 
                         let proposal = P2PMessage::VisionCreateBatchProposal {
                             leader_id: self.peer_id,
@@ -879,7 +880,7 @@ impl BatchLifecycleManager {
                         }
 
                         // Deregister — channel is done
-                        self.cosign_router.write().await.remove(&source_id);
+                        self.cosign_router.remove(&source_id);
                     } else {
                         warn!(source = %source_name, "No P2P broadcast channel — submitting with single-oracle sig (will fail 2-of-3 threshold)");
                     }
@@ -981,9 +982,11 @@ impl BatchLifecycleManager {
                     "createBatch submitted — on-chain batchId extracted from receipt"
                 );
 
-                // Update the lifecycle DB record with the real on-chain batch ID
+                // Store the on-chain batch ID in the lifecycle record.
+                // The lifecycle row keeps its auto-increment batch_id as PK;
+                // on_chain_batch_id is what joins against vision_batches.
                 if let Err(e) = sqlx::query(
-                    "UPDATE vision_batch_lifecycle SET batch_id = $1 WHERE batch_id = $2",
+                    "UPDATE vision_batch_lifecycle SET on_chain_batch_id = $1 WHERE batch_id = $2",
                 )
                 .bind(on_chain_batch_id as i64)
                 .bind(lifecycle_id as i64)
@@ -995,7 +998,7 @@ impl BatchLifecycleManager {
                         lifecycle_id,
                         on_chain_batch_id,
                         error = %e,
-                        "Failed to update lifecycle record with on-chain batch_id"
+                        "Failed to set on_chain_batch_id in lifecycle record"
                     );
                 }
 

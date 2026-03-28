@@ -55,20 +55,20 @@ const FilmGrain: React.FC<{ opacity?: number }> = ({ opacity = 0.04 }) => {
   );
 };
 
-// Stock ticker data — single column, right-aligned as in reference
-const TICKERS = [
-  { price: "567,10", dir: "up", pct: "+2,45%" },
-  { price: "250.10", dir: "up", pct: "+1.25%" },
-  { price: "413.12", dir: "down", pct: "-0.06%" },
-  { price: "871.56", dir: "up", pct: "+2.73%" },
-  { price: "517.94", dir: "down", pct: "-1.04%" },
-  { price: "328.63", dir: "up", pct: "+0.15%" },
-  { price: "699.46", dir: "up", pct: "+0.91%" },
-  { price: "735.00", dir: "up", pct: "+1.39%" },
-  { price: "964.25", dir: "down", pct: "-0.52%" },
-  { price: "452.89", dir: "up", pct: "+3.01%" },
-  { price: "573.36", dir: "down", pct: "-0.29%" },
-  { price: "240.21", dir: "up", pct: "+1.48%" },
+// Dense ticker LINES — full-width scrolling rows of stock data filling entire viewport
+const TICKER_LINES = [
+  "567,10  \u2191 +2,45%    AAPL 189.42  \u2191 +1.12%    TSLA 271.30  \u2193 -0.89%    MSFT 412.05  \u2191 +0.34%    NVDA 871.56  \u2191 +2.73%    META 517.94  \u2193 -1.04%    AMZN 178.63  \u2191 +0.15%",
+  "250.10  \u2191 +1.25%    GOOG 142.88  \u2191 +0.67%    BRK.B 413.12  \u2193 -0.06%    JPM 198.40  \u2191 +0.91%    V 282.15  \u2191 +0.44%    UNH 524.30  \u2193 -0.28%    JNJ 155.70  \u2191 +0.33%",
+  "413.12  \u2193 -0.06%    WMT 167.22  \u2191 +1.55%    PG 162.45  \u2191 +0.22%    MA 465.80  \u2193 -0.41%    HD 358.92  \u2191 +0.78%    DIS 112.55  \u2191 +2.10%    COST 735.00  \u2191 +1.39%",
+  "871.56  \u2191 +2.73%    NFLX 628.15  \u2193 -0.52%    AMD 164.30  \u2191 +3.01%    CRM 312.75  \u2193 -0.29%    INTC 43.82  \u2191 +1.48%    BA 218.55  \u2193 -1.22%    GE 164.90  \u2191 +0.88%",
+  "517.94  \u2193 -1.04%    PYPL 73.42  \u2191 +2.15%    UBER 78.65  \u2191 +1.30%    SQ 82.14  \u2193 -0.75%    SHOP 81.22  \u2191 +0.55%    COIN 267.40  \u2191 +4.12%    ABNB 153.70  \u2193 -0.38%",
+  "328.63  \u2191 +0.15%    SNAP 11.42  \u2193 -2.30%    PINS 34.88  \u2191 +0.92%    RBLX 42.15  \u2191 +1.77%    PLTR 24.55  \u2191 +3.44%    SOFI 9.82  \u2193 -0.65%    RIVN 18.30  \u2191 +1.08%",
+  "699.46  \u2191 +0.91%    LLY 782.40  \u2191 +0.33%    PFE 28.15  \u2193 -1.45%    ABBV 178.90  \u2191 +0.67%    MRK 128.55  \u2191 +0.22%    TMO 571.80  \u2193 -0.18%    ABT 112.35  \u2191 +0.44%",
+  "735.00  \u2191 +1.39%    XOM 112.80  \u2193 -0.55%    CVX 158.42  \u2191 +0.28%    COP 118.95  \u2191 +1.15%    SLB 52.70  \u2193 -0.82%    OXY 62.35  \u2191 +0.45%    EOG 128.90  \u2191 +0.73%",
+  "964.25  \u2193 -0.52%    T 17.55  \u2191 +0.88%    VZ 38.42  \u2193 -0.15%    CMCSA 44.80  \u2191 +0.33%    TMUS 165.25  \u2191 +1.02%    NEE 72.15  \u2191 +0.55%    DUK 98.40  \u2193 -0.22%",
+  "452.89  \u2191 +3.01%    LOW 242.75  \u2191 +0.62%    TGT 142.35  \u2193 -1.18%    SBUX 98.82  \u2191 +0.44%    NKE 108.55  \u2193 -0.77%    MCD 298.40  \u2191 +0.33%    YUM 138.15  \u2191 +0.91%",
+  "573.36  \u2193 -0.29%    ADBE 578.20  \u2191 +1.25%    NOW 742.55  \u2191 +0.88%    SNOW 192.40  \u2193 -1.55%    DDOG 128.75  \u2191 +2.30%    ZS 218.90  \u2191 +0.67%    PANW 312.45  \u2193 -0.44%",
+  "240.21  \u2191 +1.48%    SPGI 442.30  \u2191 +0.55%    ICE 128.15  \u2193 -0.33%    CME 218.42  \u2191 +0.78%    BLK 818.55  \u2191 +0.44%    SCHW 72.90  \u2193 -0.92%    MS 98.35  \u2191 +1.15%",
 ];
 
 /**
@@ -92,14 +92,14 @@ const SometimesSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Ticker columns fade in after first word appears
-  const tickerOpacity = interpolate(frame, [fps * 0.3, fps * 0.6], [0, 0.35], {
+  // Ticker lines fade in staggered after first word appears
+  const tickerOpacity = interpolate(frame, [fps * 0.25, fps * 0.55], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Subtle ticker scroll
-  const tickerScrollY = interpolate(frame, [0, fps * 2], [10, -10], {
+  // Slow upward scroll for the entire ticker field
+  const tickerScrollY = interpolate(frame, [0, fps * 2.3], [15, -20], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -110,37 +110,40 @@ const SometimesSegment: React.FC = () => {
     const dist = Math.abs(frame - bf);
     return dist < 4 ? Math.max(acc, 1 - dist / 4) : acc;
   }, 0);
-  const tickerPulseOpacity = tickerOpacity + beatPulse * 0.12;
+  const tickerPulseOpacity = tickerOpacity * (0.4 + beatPulse * 0.15);
 
   return (
     <AbsoluteFill style={{ opacity: segmentOpacity }}>
       <FilmGrain opacity={0.035} />
 
-      {/* Stock tickers — dense lines filling entire viewport vertically, as in reference */}
+      {/* Dense ticker lines — edge-to-edge, filling entire viewport top to bottom */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: "-5%",
+          left: "-5%",
+          right: "-5%",
+          bottom: "-5%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "flex-end",
-          paddingRight: "8%",
-          paddingTop: "3%",
-          paddingBottom: "3%",
+          justifyContent: "space-between",
           transform: `translateY(${tickerScrollY}px)`,
           opacity: tickerPulseOpacity,
-          gap: 0,
+          overflow: "hidden",
         }}
       >
-        {TICKERS.map((t, i) => {
+        {TICKER_LINES.map((line, i) => {
           const stagger = interpolate(
             frame,
-            [fps * 0.3 + i * 0.8, fps * 0.45 + i * 0.8],
+            [fps * 0.25 + i * 1.2, fps * 0.4 + i * 1.2],
             [0, 1],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+          );
+          // Alternating scroll direction for visual density
+          const lineScroll = interpolate(
+            frame,
+            [0, fps * 2.3],
+            [i % 2 === 0 ? 0 : -40, i % 2 === 0 ? -60 : 20],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
           );
           return (
@@ -148,17 +151,17 @@ const SometimesSegment: React.FC = () => {
               key={i}
               style={{
                 fontFamily,
-                fontSize: 42,
+                fontSize: 28,
                 fontWeight: 300,
                 color: "rgba(255,255,255,0.35)",
                 whiteSpace: "nowrap",
-                letterSpacing: 2,
+                letterSpacing: 1.5,
                 opacity: stagger,
-                textAlign: "right",
-                lineHeight: 1.35,
+                lineHeight: 1.0,
+                transform: `translateX(${lineScroll}px)`,
               }}
             >
-              {t.price}&nbsp;&nbsp;{t.dir === "up" ? "\u2191" : "\u2193"}&nbsp;{t.pct}
+              {line}
             </div>
           );
         })}
@@ -507,9 +510,112 @@ const AllOverSegment: React.FC = () => {
 };
 
 /**
- * Segment 3: Phone mockup with public.com → tilts → isometric grid
+ * Single phone mockup — reusable for both the centered phone and the grid.
+ * Shows public.com logo with dynamic island, side buttons, and bezel.
+ */
+const PhoneMockup: React.FC<{
+  width?: number;
+  height?: number;
+  showPortfolio?: boolean;
+  elevated?: boolean;
+}> = ({ width = 320, height = 640, showPortfolio = false, elevated = false }) => {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        background: "linear-gradient(160deg, #2a3050, #1a2040, #0e1530)",
+        borderRadius: width * 0.15,
+        padding: width * 0.019,
+        boxShadow: elevated
+          ? `0 20px 60px rgba(0,0,0,0.45), 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,120,180,0.3)`
+          : `0 8px 30px rgba(0,0,0,0.25), 0 3px 10px rgba(0,0,0,0.15), inset 0 1px 0 rgba(100,120,180,0.2)`,
+        position: "relative",
+        flexShrink: 0,
+      }}
+    >
+      {/* Screen */}
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background: WHITE,
+          borderRadius: width * 0.12,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {/* Dynamic Island */}
+        <div
+          style={{
+            position: "absolute",
+            top: width * 0.044,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: width * 0.28,
+            height: width * 0.075,
+            background: "#101830",
+            borderRadius: width * 0.038,
+          }}
+        />
+        {showPortfolio ? (
+          <div style={{ width: "100%", padding: `${width * 0.156}px ${width * 0.056}px ${width * 0.056}px`, display: "flex", flexDirection: "column", gap: width * 0.019 }}>
+            <div style={{ fontFamily, fontSize: width * 0.034, fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Portfolio</div>
+            <div style={{ fontFamily, fontSize: width * 0.075, fontWeight: 700, color: "#0a0a2e" }}>$125,367.10</div>
+            <div style={{ fontFamily, fontSize: width * 0.031, fontWeight: 500, color: "#00c853" }}>Today +$1,432.50 (+1.15%)</div>
+            <svg viewBox="0 0 240 60" style={{ width: "100%", height: width * 0.156, marginTop: width * 0.013 }}>
+              <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10" fill="none" stroke="rgba(4,47,243,0.3)" strokeWidth={1.5} />
+              <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10 L 240,60 L 0,60 Z" fill="rgba(4,47,243,0.05)" />
+            </svg>
+            <div style={{ display: "flex", gap: width * 0.038, marginTop: width * 0.013, borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: width * 0.019 }}>
+              {["Portfolio", "Assets", "Activity"].map((tab, ti) => (
+                <div key={tab} style={{ fontFamily, fontSize: width * 0.028, fontWeight: ti === 0 ? 600 : 400, color: ti === 0 ? BLUE : "rgba(0,20,60,0.4)" }}>{tab}</div>
+              ))}
+            </div>
+            {[
+              { name: "AAPL", amount: "$24,500", pct: "+2.3%" },
+              { name: "TSLA", amount: "$18,200", pct: "-1.1%" },
+              { name: "BTC", amount: "$15,800", pct: "+4.5%" },
+              { name: "SPY", amount: "$12,400", pct: "+0.8%" },
+            ].map((h, hi) => (
+              <div key={hi} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: `${width * 0.013}px 0`, borderBottom: "0.5px solid rgba(0,0,0,0.04)" }}>
+                <div>
+                  <div style={{ fontFamily, fontSize: width * 0.031, fontWeight: 600, color: "#0a0a2e" }}>{h.name}</div>
+                  <div style={{ fontFamily, fontSize: width * 0.025, fontWeight: 400, color: "rgba(0,20,60,0.4)" }}>{h.amount}</div>
+                </div>
+                <div style={{ fontFamily, fontSize: width * 0.028, fontWeight: 500, color: h.pct.startsWith("+") ? "#00c853" : "#ff1744" }}>{h.pct}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: width * 0.031 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: width * 0.009 }}>
+              <div style={{ width: width * 0.038, height: width * 0.038, borderRadius: "50%", background: BLUE }} />
+              <div style={{ width: width * 0.022, height: width * 0.022, borderRadius: "50%", background: BLUE }} />
+            </div>
+            <span style={{ fontFamily, fontSize: width * 0.069, fontWeight: 600, color: "#0a0a2e", letterSpacing: -0.5 }}>
+              public.com
+            </span>
+          </div>
+        )}
+      </div>
+      {/* Side buttons */}
+      <div style={{ position: "absolute", right: -3, top: height * 0.203, width: 3, height: height * 0.086, background: "#3a4060", borderRadius: "0 2px 2px 0" }} />
+      <div style={{ position: "absolute", left: -3, top: height * 0.172, width: 3, height: height * 0.047, background: "#3a4060", borderRadius: "2px 0 0 2px" }} />
+      <div style={{ position: "absolute", left: -3, top: height * 0.234, width: 3, height: height * 0.086, background: "#3a4060", borderRadius: "2px 0 0 2px" }} />
+    </div>
+  );
+};
+
+/**
+ * Segment 3: Phone mockup with public.com → tilts → grid of identical 3D phones
  * Reference: frame_008–014
- * Phone enters centered, tilts with perspective, then zooms to isometric grid.
+ * Phone enters centered, tilts with perspective, then zooms out to reveal
+ * a 5x3 grid of identical phones in slight isometric perspective.
  */
 const PhoneSegment: React.FC = () => {
   const frame = useCurrentFrame();
@@ -545,15 +651,15 @@ const PhoneSegment: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }
   );
 
-  // Transition to isometric view (~1.2s in)
-  const isoStart = Math.round(fps * 1.2);
-  const isoProgress = interpolate(frame, [isoStart, isoStart + Math.round(fps * 0.5)], [0, 1], {
+  // Transition to phone grid (~1.2s in)
+  const gridStart = Math.round(fps * 1.2);
+  const gridProgress = interpolate(frame, [gridStart, gridStart + Math.round(fps * 0.5)], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
 
-  // Exit — hold the isometric view longer, then fade for crossfade with next segment
+  // Exit — hold the grid view, then fade for crossfade with next segment
   const exitOpacity = interpolate(frame, [fps * 3.2, fps * 3.6], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -561,412 +667,155 @@ const PhoneSegment: React.FC = () => {
 
   const phoneY = interpolate(entrySpring, [0, 1], [600, 0]);
 
-  // Tilt transforms — subtle perspective rotation matching reference (~12-14°)
+  // Tilt transforms — subtle perspective rotation matching reference (~12-14 degrees)
   const tiltRotateY = interpolate(tiltProgress, [0, 1], [0, -13]);
   const tiltRotateX = interpolate(tiltProgress, [0, 1], [0, 4]);
 
-  // Isometric transforms
-  const phoneScale = interpolate(isoProgress, [0, 1], [1, 0.58]);
-  const isoRotateX = interpolate(isoProgress, [0, 1], [tiltRotateX, 55]);
-  const isoRotateZ = interpolate(isoProgress, [0, 1], [0, -45]);
-  const isoRotateY = interpolate(isoProgress, [0, 1], [tiltRotateY, 0]);
+  // Grid transforms — zoom out + slight perspective tilt
+  const gridScale = interpolate(gridProgress, [0, 1], [1, 0.32]);
+  const gridRotateX = interpolate(gridProgress, [0, 1], [tiltRotateX, 52]);
+  const gridRotateZ = interpolate(gridProgress, [0, 1], [0, -42]);
+  const gridRotateY = interpolate(gridProgress, [0, 1], [tiltRotateY, 0]);
 
-  // Isometric card data — rich content matching reference screenshots
-  type IsoCard = {
-    label: string; amount: string; subtitle?: string;
-    hasChart: boolean; hasBar: boolean; hasProfile?: boolean;
-    greenText?: string; redText?: string; extraLines?: number;
-    buttonText?: string;
-  };
-  const isoCards: IsoCard[] = [
-    { label: "Treasury account", amount: "$5,585.00", subtitle: "$4,400.00 available", hasChart: false, hasBar: true, extraLines: 3 },
-    { label: "Holdings", amount: "", subtitle: "45.0%", hasChart: true, hasBar: false, extraLines: 4, greenText: "+$338.07 (+1.63%)" },
-    { label: "About", amount: "", subtitle: "Company overview", hasChart: false, hasBar: true, extraLines: 5 },
-    { label: "Statements", amount: "", hasChart: false, hasBar: true, extraLines: 4, buttonText: "Download" },
-    { label: "Treasury Bills", amount: "", subtitle: "Current yield", hasChart: false, hasBar: false, extraLines: 3 },
-    { label: "Rating", amount: "", subtitle: "Analyst ratings", hasChart: false, hasBar: true, extraLines: 3 },
-    { label: "Buy", amount: "", hasChart: false, hasBar: true, extraLines: 2, buttonText: "Buy" },
-    { label: "$125,367.10", amount: "Today", subtitle: "+$1,432.50 (+1.15%)", hasChart: true, hasBar: false, greenText: "+$1,432.50" },
-    { label: "Research", amount: "", subtitle: "Expert analysis", hasChart: true, hasBar: false, extraLines: 5 },
-    { label: "Public Live", amount: "", hasChart: false, hasBar: false, hasProfile: true, extraLines: 3 },
-    { label: "Top holdings", amount: "13.7%", subtitle: "3.8% in 10 of 102 holdings", hasChart: false, hasBar: true, extraLines: 2 },
-    { label: "Watchlist", amount: "", hasChart: true, hasBar: false, extraLines: 4, greenText: "$2,771.10" },
-    { label: "Your position", amount: "", subtitle: "Avg cost $142.50", hasChart: false, hasBar: false, extraLines: 3 },
-    { label: "View all", amount: "", hasChart: false, hasBar: false, extraLines: 2, redText: "+$338.07 (+1.63%)" },
-    { label: "Let's Talk", amount: "", hasChart: false, hasBar: false, hasProfile: true, extraLines: 3, buttonText: "Start" },
-  ];
+  // Grid layout: 5 columns x 3 rows of identical phones
+  const GRID_COLS = 5;
+  const GRID_ROWS = 3;
+  const gridPhoneW = 200;
+  const gridPhoneH = 400;
+
+  // Light background fades in for grid view
+  const bgOpacity = interpolate(gridProgress, [0, 0.5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ opacity: exitOpacity * entryOpacity }}>
       <FilmGrain opacity={0.03} />
 
-      {/* Light background that fades in for isometric view */}
-      {isoProgress > 0 && (
+      {/* Light background that fades in for grid view */}
+      {gridProgress > 0 && (
         <div
           style={{
             position: "absolute",
             inset: 0,
             background: `linear-gradient(135deg, #eef0f5, #e8eaf2, #f0f1f6)`,
-            opacity: isoProgress,
+            opacity: bgOpacity,
           }}
         />
       )}
 
-      {/* Background app screen cards (isometric grid) */}
-      {isoProgress > 0 && (
+      {/* Phone grid — 5x3 identical phones in isometric perspective */}
+      {gridProgress > 0 && (
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: `translate(-50%, -50%) perspective(1400px) rotateX(55deg) rotateZ(-45deg)`,
-            opacity: isoProgress,
+            transform: `translate(-50%, -50%) perspective(1400px) rotateX(52deg) rotateZ(-42deg)`,
+            opacity: gridProgress,
             display: "grid",
-            gridTemplateColumns: "repeat(5, 320px)",
-            gridTemplateRows: "repeat(3, 540px)",
+            gridTemplateColumns: `repeat(${GRID_COLS}, ${gridPhoneW + 16}px)`,
+            gridTemplateRows: `repeat(${GRID_ROWS}, ${gridPhoneH + 16}px)`,
             gap: 14,
+            alignItems: "center",
+            justifyItems: "center",
           }}
         >
-          {isoCards.map((card, i) => {
-            const isCenter = i === 7;
-            // Radial stagger: cards closer to center appear first
-            const row = Math.floor(i / 5);
-            const col = i % 5;
+          {Array.from({ length: GRID_ROWS * GRID_COLS }).map((_, i) => {
+            const row = Math.floor(i / GRID_COLS);
+            const col = i % GRID_COLS;
+            const isCenter = row === 1 && col === 2;
+            // Radial stagger from center
             const distFromCenter = Math.sqrt(Math.pow(row - 1, 2) + Math.pow(col - 2, 2));
-            const cardDelay = distFromCenter * 0.06;
-            const cardOpacity = interpolate(
-              isoProgress,
-              [cardDelay, cardDelay + 0.25],
+            const cardDelay = distFromCenter * 0.08;
+            const phoneOpacity = interpolate(
+              gridProgress,
+              [cardDelay, cardDelay + 0.3],
               [0, 1],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             );
-            // Cards slide up from below as they appear
-            const cardSlideY = interpolate(
-              isoProgress,
-              [cardDelay, cardDelay + 0.3],
-              [40, 0],
+            const phoneSlideY = interpolate(
+              gridProgress,
+              [cardDelay, cardDelay + 0.35],
+              [50, 0],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             );
             return (
               <div
                 key={i}
                 style={{
-                  background: isCenter
-                    ? "linear-gradient(145deg, #ffffff, #f8f9ff)"
-                    : "linear-gradient(145deg, #fcfcff, #f4f5fb)",
-                  borderRadius: 16,
-                  transform: `translateY(${cardSlideY}px)`,
-                  border: isCenter
-                    ? "2px solid rgba(80,140,255,0.35)"
-                    : "1.5px solid rgba(190,200,230,0.4)",
-                  boxShadow: isCenter
-                    ? "0 12px 50px rgba(0,0,80,0.18), 0 3px 12px rgba(0,0,80,0.1), inset 0 1px 0 rgba(255,255,255,0.9)"
-                    : `0 6px 25px rgba(0,0,60,0.08), 0 2px 8px rgba(0,0,60,0.04), 0 0 0 1px rgba(${180 + (i * 13) % 40},${160 + (i * 19) % 60},255,0.12), inset 0 1px 0 rgba(255,255,255,0.7)`,
-                  overflow: "hidden",
-                  padding: 18,
-                  opacity: cardOpacity,
-                  position: "relative",
+                  opacity: phoneOpacity,
+                  transform: `translateY(${phoneSlideY}px)`,
+                  filter: isCenter ? "none" : "brightness(0.92)",
                 }}
               >
-                {/* Iridescent border glow — visible colored edges */}
-                {!isCenter && (
-                  <div style={{
-                    position: "absolute", inset: -2, borderRadius: 18, pointerEvents: "none",
-                    border: `2.5px solid rgba(${140 + (i * 23) % 80},${190 + (i * 17) % 50},${230 + (i * 7) % 25},0.25)`,
-                    boxShadow: `0 0 12px rgba(${100 + (i * 31) % 100},${200 + (i * 13) % 55},${220 + (i * 7) % 35},0.15), 0 0 4px rgba(${220 + (i * 11) % 35},${140 + (i * 19) % 60},${255},0.1)`,
-                    zIndex: 5,
-                  }} />
-                )}
-                {/* Card label */}
-                <div
-                  style={{
-                    fontFamily,
-                    fontSize: isCenter ? 18 : 26,
-                    fontWeight: 700,
-                    color: "rgba(0,20,80,0.82)",
-                    marginBottom: 6,
-                    letterSpacing: -0.3,
-                  }}
-                >
-                  {card.label}
-                </div>
-                {card.subtitle && (
-                  <div style={{ fontFamily, fontSize: 11, fontWeight: 400, color: "rgba(0,20,60,0.45)", marginBottom: 6 }}>
-                    {card.subtitle}
-                  </div>
-                )}
-                {card.amount && (
-                  <div
-                    style={{
-                      fontFamily,
-                      fontSize: isCenter ? 26 : 22,
-                      fontWeight: 800,
-                      color: "rgba(0,20,80,0.85)",
-                      marginBottom: 6,
-                      letterSpacing: -0.5,
-                    }}
-                  >
-                    {card.amount}
-                  </div>
-                )}
-                {/* Green/red financial text */}
-                {card.greenText && (
-                  <div style={{ fontFamily, fontSize: 12, fontWeight: 600, color: "#00c853", marginBottom: 6 }}>
-                    {card.greenText}
-                  </div>
-                )}
-                {card.redText && (
-                  <div style={{ fontFamily, fontSize: 12, fontWeight: 600, color: "#ff1744", marginBottom: 6 }}>
-                    {card.redText}
-                  </div>
-                )}
-                {/* Chart line — prominent, with area fill */}
-                {card.hasChart && (
-                  <svg viewBox="0 0 100 35" style={{ width: "100%", height: 45, marginBottom: 10 }}>
-                    <path
-                      d={`M 0,${20 + (i % 5) * 2} C 15,${14 - (i % 3) * 3} 30,${24 + (i % 4)} 50,${10 - (i % 2) * 3} S 75,${20 + (i % 3)} 100,${12 - (i % 5)}`}
-                      fill="none"
-                      stroke={`rgba(4,47,243,${0.5 + (i % 3) * 0.1})`}
-                      strokeWidth={2.5}
-                    />
-                    <path
-                      d={`M 0,${20 + (i % 5) * 2} C 15,${14 - (i % 3) * 3} 30,${24 + (i % 4)} 50,${10 - (i % 2) * 3} S 75,${20 + (i % 3)} 100,${12 - (i % 5)} L 100,35 L 0,35 Z`}
-                      fill={`rgba(4,47,243,${0.08 + (i % 3) * 0.03})`}
-                    />
-                  </svg>
-                )}
-                {/* Text skeleton lines */}
-                {Array.from({ length: card.extraLines || 3 }).map((_, li) => (
-                  <div key={li} style={{
-                    width: `${85 - li * 10 + (i * 7) % 12}%`,
-                    height: 8,
-                    background: `rgba(0,20,80,${0.07 + li * 0.015})`,
-                    borderRadius: 3,
-                    marginBottom: 6,
-                  }} />
-                ))}
-                {/* Bar chart */}
-                {card.hasBar && (
-                  <div style={{ display: "flex", gap: 6, alignItems: "flex-end", marginTop: 8 }}>
-                    {[35, 60, 25, 72, 45, 62, 38, 52].map((h, j) => (
-                      <div
-                        key={j}
-                        style={{
-                          width: 18,
-                          height: h * 0.9,
-                          background: `rgba(4,47,243,${0.2 + j * 0.04})`,
-                          borderRadius: 2,
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                {/* Profile circle — large, visible */}
-                {card.hasProfile && (
-                  <div style={{
-                    width: 60, height: 60, borderRadius: "50%",
-                    background: "linear-gradient(135deg, rgba(160,170,200,0.5), rgba(140,150,180,0.3))",
-                    margin: "10px auto 6px",
-                    border: "3px solid rgba(0,20,80,0.1)",
-                  }} />
-                )}
-                {/* Action button — prominent */}
-                {card.buttonText && (
-                  <div style={{
-                    marginTop: 12, padding: "8px 0", width: "65%",
-                    background: BLUE, borderRadius: 10,
-                    fontFamily, fontSize: 14, fontWeight: 700,
-                    color: WHITE, textAlign: "center",
-                    opacity: 0.9,
-                  }}>
-                    {card.buttonText}
-                  </div>
-                )}
-                {/* Green/red indicator dot */}
-                {i % 3 === 1 && (
-                  <div style={{
-                    position: "absolute", top: 16, right: 16,
-                    width: 14, height: 14, borderRadius: "50%",
-                    background: i % 2 === 0 ? "#00c853" : "#ff1744",
-                  }} />
-                )}
+                <PhoneMockup
+                  width={gridPhoneW}
+                  height={gridPhoneH}
+                  showPortfolio={isCenter}
+                  elevated={isCenter}
+                />
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Main phone mockup */}
+      {/* Main phone mockup — zooms into the grid */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: `translate(-50%, calc(-50% + ${phoneY}px)) perspective(1000px) rotateY(${isoRotateY}deg) rotateX(${isoRotateX}deg) rotateZ(${isoRotateZ + settleRock}deg) scale(${phoneScale})`,
+          transform: `translate(-50%, calc(-50% + ${phoneY}px)) perspective(1000px) rotateY(${gridRotateY}deg) rotateX(${gridRotateX}deg) rotateZ(${gridRotateZ + settleRock}deg) scale(${gridScale})`,
           transformStyle: "preserve-3d",
-          width: 320,
-          height: 640,
-          background: "linear-gradient(160deg, #2a3050, #1a2040, #0e1530)",
-          borderRadius: 48,
-          padding: 6,
-          boxShadow: `0 ${20 + isoProgress * 10}px ${60 + isoProgress * 20}px rgba(0,0,0,${0.4 + isoProgress * 0.15}), 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,120,180,0.3)`,
+          opacity: gridProgress > 0.5 ? 0 : 1,
           zIndex: 10,
         }}
       >
-        {/* Screen */}
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            background: WHITE,
-            borderRadius: 38,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          {/* Dynamic Island */}
-          <div
-            style={{
-              position: "absolute",
-              top: 14,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 90,
-              height: 24,
-              background: "#101830",
-              borderRadius: 12,
-            }}
-          />
-          {/* Phone content — shows logo initially, then portfolio in iso mode */}
-          {isoProgress < 0.3 ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                <div style={{ width: 12, height: 12, borderRadius: "50%", background: BLUE }} />
-                <div style={{ width: 7, height: 7, borderRadius: "50%", background: BLUE }} />
-              </div>
-              <span style={{ fontFamily, fontSize: 22, fontWeight: 600, color: "#0a0a2e", letterSpacing: -0.5 }}>
-                public.com
-              </span>
-            </div>
-          ) : (
-            <div style={{ width: "100%", padding: "50px 18px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
-              {/* Portfolio header */}
-              <div style={{ fontFamily, fontSize: 11, fontWeight: 400, color: "rgba(0,20,60,0.5)" }}>Portfolio</div>
-              <div style={{ fontFamily, fontSize: 24, fontWeight: 700, color: "#0a0a2e" }}>$125,367.10</div>
-              <div style={{ fontFamily, fontSize: 10, fontWeight: 500, color: "#00c853" }}>Today +$1,432.50 (+1.15%)</div>
-              {/* Mini chart */}
-              <svg viewBox="0 0 240 60" style={{ width: "100%", height: 50, marginTop: 4 }}>
-                <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10" fill="none" stroke="rgba(4,47,243,0.3)" strokeWidth={1.5} />
-                <path d="M 0,45 C 30,40 60,35 80,30 S 120,20 150,25 S 200,15 240,10 L 240,60 L 0,60 Z" fill="rgba(4,47,243,0.05)" />
-              </svg>
-              {/* Tab bar */}
-              <div style={{ display: "flex", gap: 12, marginTop: 4, borderBottom: "1px solid rgba(0,0,0,0.06)", paddingBottom: 6 }}>
-                {["Portfolio", "Assets", "Activity"].map((tab, ti) => (
-                  <div key={tab} style={{ fontFamily, fontSize: 9, fontWeight: ti === 0 ? 600 : 400, color: ti === 0 ? BLUE : "rgba(0,20,60,0.4)" }}>{tab}</div>
-                ))}
-              </div>
-              {/* Holdings list */}
-              {[
-                { name: "AAPL", amount: "$24,500", pct: "+2.3%" },
-                { name: "TSLA", amount: "$18,200", pct: "-1.1%" },
-                { name: "BTC", amount: "$15,800", pct: "+4.5%" },
-                { name: "SPY", amount: "$12,400", pct: "+0.8%" },
-              ].map((h, hi) => (
-                <div key={hi} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "0.5px solid rgba(0,0,0,0.04)" }}>
-                  <div>
-                    <div style={{ fontFamily, fontSize: 10, fontWeight: 600, color: "#0a0a2e" }}>{h.name}</div>
-                    <div style={{ fontFamily, fontSize: 8, fontWeight: 400, color: "rgba(0,20,60,0.4)" }}>{h.amount}</div>
-                  </div>
-                  <div style={{ fontFamily, fontSize: 9, fontWeight: 500, color: h.pct.startsWith("+") ? "#00c853" : "#ff1744" }}>{h.pct}</div>
-                </div>
-              ))}
-              {/* Blue dot indicator */}
-              <div style={{ position: "absolute", right: 16, top: "50%", width: 24, height: 24, borderRadius: "50%", background: BLUE, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "white" }} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Side buttons — matching silver bezel */}
-        <div
-          style={{
-            position: "absolute",
-            right: -3,
-            top: 130,
-            width: 3,
-            height: 55,
-            background: "#3a4060",
-            borderRadius: "0 2px 2px 0",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: -3,
-            top: 110,
-            width: 3,
-            height: 30,
-            background: "#3a4060",
-            borderRadius: "2px 0 0 2px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: -3,
-            top: 150,
-            width: 3,
-            height: 55,
-            background: "#3a4060",
-            borderRadius: "2px 0 0 2px",
-          }}
-        />
+        <PhoneMockup width={320} height={640} showPortfolio={false} elevated />
       </div>
     </AbsoluteFill>
   );
 };
 
 /**
- * Segment 4: "One place" glass text + blue arrow box → slide → "invest in"
- * Reference: frame_015–018
+ * Segment 4: "One place" glass text + blue arrow box → slide → "invest" / "in" collision + shockwave
+ * Reference: frame_015–020
  * "One" is enormous glass/iridescent text, "place" is bold blue below.
- * Arrow box on the right. Whole white panel slides left to reveal blue "invest in".
+ * Arrow box on the right. White panel slides left to reveal blue bg.
+ * "invest" flies from LEFT, "in" flies from RIGHT. They COLLIDE at center.
+ * At collision: shockwave circle radiates outward as clip-path, revealing "everything" grid.
+ * Screen shake for 5 frames at collision.
  */
 const OnePlaceSegment: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // "One" appears with snappy spring — reaches full quickly
+  // "One" appears with snappy spring
   const oneSpring = spring({
     frame,
     fps,
     config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
-  // Bezier curved entrance for "One" — diagonal from lower-left
   const oneT = Math.min(1, oneSpring);
   const oneX = bezier2(oneT, -45, 12, 0);
   const oneY = bezier2(oneT, 60, -15, 0);
   const oneWobX = noise2D("onex", frame * 0.03, 0) * 4;
   const oneWobY = noise2D("oney", frame * 0.03, 0) * 3;
-  // Motion blur for "One"
   const onePrevT = Math.min(1, spring({ frame: Math.max(0, frame - 1), fps, config: { damping: 14, mass: 0.5, stiffness: 180 } }));
   const onePrevX = bezier2(onePrevT, -45, 12, 0);
   const onePrevY = bezier2(onePrevT, 60, -15, 0);
   const oneVel = Math.abs(oneX - onePrevX) + Math.abs(oneY - onePrevY);
 
-  // "place" appears slightly after — also snappy
+  // "place" appears slightly after
   const placeFrame = Math.max(0, frame - Math.round(fps * 0.08));
   const placeSpring = spring({
     frame: placeFrame,
     fps,
     config: { damping: 14, mass: 0.5, stiffness: 180 },
   });
-  // Bezier curved entrance for "place" — diagonal from lower-right
   const placeT = Math.min(1, placeSpring);
   const placeX = bezier2(placeT, 30, -8, 0);
   const placeY = bezier2(placeT, 35, -10, 0);
@@ -998,49 +847,222 @@ const OnePlaceSegment: React.FC = () => {
   });
   const slideX = slideProgress * -1300;
 
-  // "invest in" text — appears as panel begins sliding, visible through the gap
-  const investOpacity = interpolate(frame, [slideStart + Math.round(fps * 0.05), slideStart + Math.round(fps * 0.25)], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  // "invest in" noise wobble
-  const investWobX = noise2D("invx", frame * 0.03, 0) * 3;
-  const investWobY = noise2D("invy", frame * 0.03, 0) * 2.5;
+  // --- COLLISION TIMELINE ---
+  // "invest" and "in" appear once slide reveals enough blue (~60% through)
+  const flyStart = slideStart + Math.round(fps * 0.25);
+  const collisionFrame = flyStart + Math.round(fps * 0.35); // fast 0.35s flight
+  const collisionDuration = Math.round(fps * 0.4);
 
-  // Exit
-  const exitOpacity = interpolate(frame, [fps * 2.2, fps * 2.5], [1, 0], {
+  // "invest" flies from left, "in" from right — converge to touching
+  // Gap = 8px at collision (tight, nearly touching)
+  const investX = interpolate(frame, [flyStart, collisionFrame], [-400, -8], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.quad),
+  });
+  const inX = interpolate(frame, [flyStart, collisionFrame], [400, 8], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.quad),
+  });
+  // Opacity — pop in instantly
+  const flyOpacity = interpolate(frame, [flyStart, flyStart + 3], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  // After collision, flash bright then fade fast
+  const collisionFlash = frame >= collisionFrame && frame < collisionFrame + 3 ? 1 : 0;
+  const postCollisionFade = interpolate(frame, [collisionFrame, collisionFrame + Math.round(fps * 0.15)], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  // Motion blur proportional to speed (less aggressive)
+  const investVel = frame < collisionFrame && frame >= flyStart
+    ? Math.abs(interpolate(frame, [flyStart, collisionFrame], [-400, -8], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.quad) })
+        - interpolate(Math.max(flyStart, frame - 1), [flyStart, collisionFrame], [-400, -8], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.quad) }))
+    : 0;
+  const inVel = frame < collisionFrame && frame >= flyStart
+    ? Math.abs(interpolate(frame, [flyStart, collisionFrame], [400, 8], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.quad) })
+        - interpolate(Math.max(flyStart, frame - 1), [flyStart, collisionFrame], [400, 8], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.quad) }))
+    : 0;
+
+  // --- SHOCKWAVE ---
+  // Circle expands from center after collision, revealing "everything"
+  const shockwaveProgress = interpolate(
+    frame,
+    [collisionFrame, collisionFrame + collisionDuration],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }
+  );
+  const shockwaveRadius = shockwaveProgress * 160;
+
+  // Shockwave ring — visible expanding circle outline
+  const ringOpacity = interpolate(
+    frame,
+    [collisionFrame, collisionFrame + Math.round(collisionDuration * 0.2), collisionFrame + collisionDuration],
+    [0, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const ringRadius = shockwaveProgress * 1000;
+
+  // --- SCREEN SHAKE ---
+  const shakeIntensity = frame >= collisionFrame && frame < collisionFrame + 6
+    ? interpolate(frame, [collisionFrame, collisionFrame + 6], [8, 0], { extrapolateRight: "clamp" })
+    : 0;
+  const shakeX = shakeIntensity > 0 ? (noise2D("skx", frame * 3, 0) * shakeIntensity) : 0;
+  const shakeY = shakeIntensity > 0 ? (noise2D("sky", frame * 3, 7.7) * shakeIntensity) : 0;
+
+  // --- EVERYTHING GRID (revealed by shockwave) ---
+  const COLS = 5;
+  const ROWS = 9;
+  const centerRow = Math.floor(ROWS / 2);
+  const centerCol = Math.floor(COLS / 2);
+  const everythingScrollX = interpolate(frame, [collisionFrame, collisionFrame + fps * 1.8], [20, -30], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const centerScaleBase = interpolate(
+    frame,
+    [collisionFrame + Math.round(fps * 0.15), collisionFrame + Math.round(fps * 0.35)],
+    [0.9, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.back(1.4)) }
+  );
+  const centerBreathe = frame > collisionFrame + Math.round(fps * 0.35)
+    ? Math.sin((frame - collisionFrame - fps * 0.35) * 0.18) * 0.02
+    : 0;
+  const centerScale = centerScaleBase + centerBreathe;
+  const glowIntensity = frame > collisionFrame + Math.round(fps * 0.35)
+    ? 0.15 + Math.sin((frame - collisionFrame - fps * 0.35) * 0.22) * 0.08
+    : 0.15;
 
   return (
-    <AbsoluteFill style={{ opacity: exitOpacity }}>
-      {/* Blue background always behind */}
-      <AbsoluteFill style={{ background: BLUE }}>
+    <AbsoluteFill style={{ transform: `translate(${shakeX}px, ${shakeY}px)` }}>
+      {/* Layer 0: "everything" grid — always behind, revealed by shockwave clip-path */}
+      <AbsoluteFill
+        style={{
+          background: BLUE,
+          clipPath: shockwaveProgress > 0
+            ? `circle(${shockwaveRadius}% at 50% 46%)`
+            : "circle(0% at 50% 46%)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+              gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+              width: "115%",
+              height: "95%",
+              alignItems: "center",
+              justifyItems: "center",
+              transform: `translateX(${everythingScrollX}px)`,
+            }}
+          >
+            {Array.from({ length: ROWS * COLS }).map((_, i) => {
+              const row = Math.floor(i / COLS);
+              const col = i % COLS;
+              const isCenter = row === centerRow && col === centerCol;
+              const dist = Math.sqrt(Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2));
+              const dimFactor = Math.max(0.1, 1 - dist * 0.18);
+              const rowOffset = isCenter ? 0 : ((row % 3) - 1) * 18;
+              const wobX = noise2D("ewx" + i, frame * 0.025, i * 0.7) * 4;
+              const wobY = noise2D("ewy" + i, frame * 0.025, i * 1.3) * 3;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    fontFamily,
+                    fontSize: isCenter ? 42 : 26,
+                    fontWeight: isCenter ? 800 : 400,
+                    color: isCenter ? WHITE : `rgba(80,120,255,${0.3 * dimFactor})`,
+                    letterSpacing: isCenter ? -1 : -0.3,
+                    whiteSpace: "nowrap",
+                    transform: isCenter
+                      ? `scale(${centerScale}) translate(${wobX}px, ${wobY}px)`
+                      : `translate(${rowOffset + wobX}px, ${wobY}px)`,
+                    textShadow: isCenter ? `0 0 ${20 + glowIntensity * 40}px rgba(255,255,255,${glowIntensity})` : undefined,
+                  }}
+                >
+                  everything
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <FilmGrain opacity={0.03} />
+      </AbsoluteFill>
+
+      {/* Layer 1: Blue background with flying "invest" / "in" words */}
+      {shockwaveProgress < 1 && (
+        <AbsoluteFill style={{ background: BLUE, opacity: shockwaveProgress > 0 ? 1 - shockwaveProgress : 1 }}>
+          {/* "invest" — flies from LEFT */}
+          {frame >= flyStart && (
+            <div
+              style={{
+                position: "absolute",
+                top: "46%",
+                left: "50%",
+                transform: `translate(calc(-100% + ${investX}px), -50%)`,
+                opacity: flyOpacity * postCollisionFade,
+                filter: investVel > 15 ? `blur(${Math.min(investVel * 0.04, 4)}px)` : "none",
+                textShadow: collisionFlash ? "0 0 40px rgba(255,255,255,0.9)" : "0 0 15px rgba(255,255,255,0.3)",
+              }}
+            >
+              <span style={{ fontFamily, fontSize: 56, fontWeight: 500, color: WHITE, letterSpacing: -0.5 }}>
+                invest
+              </span>
+            </div>
+          )}
+          {/* "in" — flies from RIGHT */}
+          {frame >= flyStart && (
+            <div
+              style={{
+                position: "absolute",
+                top: "46%",
+                left: "50%",
+                transform: `translate(${inX}px, -50%)`,
+                opacity: flyOpacity * postCollisionFade,
+                filter: inVel > 15 ? `blur(${Math.min(inVel * 0.04, 4)}px)` : "none",
+                textShadow: collisionFlash ? "0 0 40px rgba(255,255,255,0.9)" : "0 0 15px rgba(255,255,255,0.3)",
+              }}
+            >
+              <span style={{ fontFamily, fontSize: 56, fontWeight: 500, color: WHITE, letterSpacing: -0.5 }}>
+                in
+              </span>
+            </div>
+          )}
+        </AbsoluteFill>
+      )}
+
+      {/* Shockwave ring — visible expanding circle */}
+      {ringOpacity > 0 && (
         <div
           style={{
             position: "absolute",
             top: "46%",
-            left: "52%",
-            transform: `translate(calc(-50% + ${investWobX}px), calc(-50% + ${investWobY}px))`,
-            opacity: investOpacity,
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: ringRadius * 2,
+            height: ringRadius * 2,
+            borderRadius: "50%",
+            border: `3px solid rgba(255,255,255,${ringOpacity * 0.6})`,
+            boxShadow: `0 0 30px rgba(255,255,255,${ringOpacity * 0.3}), inset 0 0 20px rgba(255,255,255,${ringOpacity * 0.15})`,
+            pointerEvents: "none",
           }}
-        >
-          <span
-            style={{
-              fontFamily,
-              fontSize: 52,
-              fontWeight: 400,
-              color: WHITE,
-              letterSpacing: -0.3,
-            }}
-          >
-            invest in
-          </span>
-        </div>
-      </AbsoluteFill>
+        />
+      )}
 
-      {/* White panel with "One place" — slides left */}
+      {/* Layer 2: White panel with "One place" — slides left to reveal blue */}
       <div
         style={{
           position: "absolute",
@@ -1063,7 +1085,7 @@ const OnePlaceSegment: React.FC = () => {
             alignItems: "flex-start",
           }}
         >
-          {/* "One" — glass/crystal 3D iridescent text, bezier arc entrance */}
+          {/* "One" — glass/crystal iridescent text */}
           <div
             style={{
               position: "relative",
@@ -1072,13 +1094,11 @@ const OnePlaceSegment: React.FC = () => {
               filter: `drop-shadow(0 6px 22px rgba(140,120,200,0.12)) ${oneVel > 0.5 ? `blur(${Math.min(oneVel * 0.15, 5)}px)` : ""}`.trim(),
             }}
           >
-            {/* SVG-based glass text — proper clipping, no rectangular artifacts */}
             <svg
               viewBox="0 0 580 260"
               style={{ width: 580, height: 260, overflow: "visible" }}
             >
               <defs>
-                {/* Glow filter for glass text shadow */}
                 <filter id="ribbonGlow">
                   <feGaussianBlur stdDeviation="2.5" result="blur" />
                   <feMerge>
@@ -1086,7 +1106,6 @@ const OnePlaceSegment: React.FC = () => {
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
-                {/* Iridescent gradient — animated, strong prismatic colors */}
                 <linearGradient id="glassIridescent" x1="0%" y1="0%" x2="100%" y2="100%"
                   gradientTransform={`rotate(${(frame * 0.4) % 360})`}>
                   <stop offset="0%" stopColor="rgba(200,130,240,0.7)" />
@@ -1098,7 +1117,6 @@ const OnePlaceSegment: React.FC = () => {
                   <stop offset="84%" stopColor="rgba(255,140,190,0.6)" />
                   <stop offset="100%" stopColor="rgba(180,140,255,0.5)" />
                 </linearGradient>
-                {/* Specular highlight gradient — sharp white bands */}
                 <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="100%"
                   gradientTransform={`rotate(${(frame * 0.25 + 15) % 360})`}>
                   <stop offset="0%" stopColor="transparent" />
@@ -1111,7 +1129,6 @@ const OnePlaceSegment: React.FC = () => {
                   <stop offset="92%" stopColor="rgba(255,255,255,0.4)" />
                   <stop offset="100%" stopColor="transparent" />
                 </linearGradient>
-                {/* Glass base fill — visible glass body */}
                 <linearGradient id="glassFill" x1="0%" y1="20%" x2="100%" y2="80%">
                   <stop offset="0%" stopColor="rgba(195,190,225,0.38)" />
                   <stop offset="35%" stopColor="rgba(205,200,230,0.28)" />
@@ -1119,12 +1136,10 @@ const OnePlaceSegment: React.FC = () => {
                   <stop offset="100%" stopColor="rgba(200,195,225,0.35)" />
                 </linearGradient>
               </defs>
-              {/* Shadow — subtle depth */}
               <text x="4" y="210" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="rgba(160,150,200,0.08)" filter="url(#ribbonGlow)">
                 One
               </text>
-              {/* 3D extrusion shadow — gives thickness to the glass */}
               <text x="2" y="212" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="rgba(170,160,210,0.06)">
                 One
@@ -1133,22 +1148,18 @@ const OnePlaceSegment: React.FC = () => {
                 letterSpacing="-10" fill="rgba(175,165,215,0.05)">
                 One
               </text>
-              {/* Glass fill — more visible body */}
               <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="url(#glassFill)">
                 One
               </text>
-              {/* Iridescent color — strong prismatic */}
               <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="url(#glassIridescent)">
                 One
               </text>
-              {/* Specular highlights */}
               <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="url(#glassSpecular)">
                 One
               </text>
-              {/* Edge stroke — visible glass boundary */}
               <text x="0" y="208" fontFamily={fontFamily} fontSize="260" fontWeight="200"
                 letterSpacing="-10" fill="none" stroke="rgba(170,165,210,0.55)" strokeWidth="1.8">
                 One
@@ -1156,7 +1167,7 @@ const OnePlaceSegment: React.FC = () => {
             </svg>
           </div>
 
-          {/* "place" — bold blue, bezier arc entrance from lower-right */}
+          {/* "place" — bold blue */}
           <div
             style={{
               fontFamily,
@@ -1176,7 +1187,7 @@ const OnePlaceSegment: React.FC = () => {
           </div>
         </div>
 
-        {/* Blue arrow box — bezier arc from top-right */}
+        {/* Blue arrow box */}
         <div
           style={{
             width: 110,
@@ -1198,115 +1209,7 @@ const OnePlaceSegment: React.FC = () => {
   );
 };
 
-/**
- * Segment 5: "everything" grid pattern
- * Reference: frame_019–020
- * Blue background, repeated "everything" in a grid, center one is bold white.
- * Remaining are dimmed blue-ish text.
- */
-const EverythingSegment: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const entrySpring = spring({
-    frame,
-    fps,
-    config: { damping: 12, mass: 0.5, stiffness: 120 },
-  });
-
-  const COLS = 5;
-  const ROWS = 9;
-  const centerRow = Math.floor(ROWS / 2);
-  const centerCol = Math.floor(COLS / 2);
-
-  // Horizontal scroll — reference shows words drifting left
-  const scrollX = interpolate(frame, [0, fps * 1.8], [20, -30], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Center word scale pulse with ongoing subtle breathe
-  const centerScaleBase = interpolate(frame, [fps * 0.3, fps * 0.5], [0.9, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.out(Easing.back(1.4)),
-  });
-  // Subtle ongoing pulse — micro-animation glow
-  const centerBreathe = frame > fps * 0.5
-    ? Math.sin((frame - fps * 0.5) * 0.18) * 0.02
-    : 0;
-  const centerScale = centerScaleBase + centerBreathe;
-
-  // Glow intensity pulse for center word
-  const glowIntensity = frame > fps * 0.5
-    ? 0.15 + Math.sin((frame - fps * 0.5) * 0.22) * 0.08
-    : 0.15;
-
-  return (
-    <AbsoluteFill
-      style={{
-        background: BLUE,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-      }}
-    >
-      <FilmGrain opacity={0.03} />
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-          width: "115%",
-          height: "95%",
-          alignItems: "center",
-          justifyItems: "center",
-          opacity: entrySpring,
-          transform: `translateX(${scrollX}px)`,
-        }}
-      >
-        {Array.from({ length: ROWS * COLS }).map((_, i) => {
-          const row = Math.floor(i / COLS);
-          const col = i % COLS;
-          const isCenter = row === centerRow && col === centerCol;
-          const dist = Math.sqrt(
-            Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
-          );
-          const dimFactor = Math.max(0.1, 1 - dist * 0.18);
-
-          const rowOffset = isCenter ? 0 : ((row % 3) - 1) * 18;
-          // Noise wobble per word — organic sea of text
-          const wobX = noise2D("ewx" + i, frame * 0.025, i * 0.7) * 4;
-          const wobY = noise2D("ewy" + i, frame * 0.025, i * 1.3) * 3;
-
-          return (
-            <span
-              key={i}
-              style={{
-                fontFamily,
-                fontSize: isCenter ? 42 : 26,
-                fontWeight: isCenter ? 800 : 400,
-                color: isCenter
-                  ? WHITE
-                  : `rgba(80,120,255,${0.3 * dimFactor})`,
-                letterSpacing: isCenter ? -1 : -0.3,
-                whiteSpace: "nowrap",
-                transform: isCenter
-                  ? `scale(${centerScale}) translate(${wobX}px, ${wobY}px)`
-                  : `translate(${rowOffset + wobX}px, ${wobY}px)`,
-                textShadow: isCenter ? `0 0 ${20 + glowIntensity * 40}px rgba(255,255,255,${glowIntensity})` : undefined,
-              }}
-            >
-              everything
-            </span>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
+/* EverythingSegment removed — now integrated into OnePlaceSegment as shockwave reveal */
 
 /**
  * Scene 01 — 0.0s to ~10.1s (301 frames at 29fps)
@@ -1338,14 +1241,9 @@ export const Scene01: React.FC = () => {
         <PhoneSegment />
       </Sequence>
 
-      {/* Segment 4: "One place" → "invest in" */}
-      <Sequence from={195} durationInFrames={60}>
+      {/* Segment 4: "One place" → slide → "invest"/"in" collision → shockwave → "everything" */}
+      <Sequence from={195} durationInFrames={106}>
         <OnePlaceSegment />
-      </Sequence>
-
-      {/* Segment 5: "everything" grid */}
-      <Sequence from={244} durationInFrames={57}>
-        <EverythingSegment />
       </Sequence>
     </AbsoluteFill>
   );

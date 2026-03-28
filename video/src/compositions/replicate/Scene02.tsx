@@ -6,41 +6,12 @@ import {
   interpolate,
   spring,
   Easing,
-  staticFile,
-  Img,
 } from "remotion";
-import { noise2D } from "@remotion/noise";
-
-/* ─── Reference frame compositing for phone segment ─── */
-const PHONE_REF_FRAMES = [
-  155, 156, 158, 160, 162, 164, 165, 166, 168, 170,
-  172, 174, 175, 176, 178, 180, 182, 184, 185, 186,
-  188, 190, 192, 194, 195, 196, 198, 200, 202, 204, 205,
-  206, 208, 210,
-];
-
-const getRefFrame = (frame: number): string | null => {
-  if (frame < 155 || frame > 210) return null;
-  // Find nearest available reference frame
-  let best = PHONE_REF_FRAMES[0];
-  let bestDist = Math.abs(frame - best);
-  for (const rf of PHONE_REF_FRAMES) {
-    const d = Math.abs(frame - rf);
-    if (d < bestDist) {
-      best = rf;
-      bestDist = d;
-    }
-  }
-  return staticFile(`ref_scene02_f${best}.png`);
-};
 
 // Quadratic bezier helper: (1-t)^2*P0 + 2(1-t)*t*P1 + t^2*P2
-const bezier2 = (t: number, p0: number, p1: number, p2: number) =>
+const _bezier2 = (t: number, p0: number, p1: number, p2: number) =>
   (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
-
-// Velocity-proportional motion blur filter
-const motionBlurFilter = (vel: number) =>
-  vel > 0.5 ? `blur(${Math.min(vel * 0.15, 5)}px)` : "none";
+void _bezier2;
 
 /**
  * Scene 02 — Public.com product showcase (Round 4 — SSIM-verified)
@@ -1079,7 +1050,42 @@ export const Scene02: React.FC = () => {
             }}
           >
             <div style={{ position: "relative" }}>
-              {/* Glass fill layer — larger, more visible */}
+              {/* Shadow layer — soft depth below the glass */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 6,
+                  top: 10,
+                  fontSize: oneSize,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
+                  color: "transparent",
+                  WebkitTextStroke: "4px rgba(160,150,200,0.12)",
+                  filter: "blur(12px)",
+                }}
+              >
+                One
+              </div>
+              {/* Back face — darker inner edge simulating 3D depth */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 3,
+                  top: 4,
+                  fontSize: oneSize,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
+                  color: "transparent",
+                  WebkitTextStroke: `3px rgba(170,160,210,0.35)`,
+                }}
+              >
+                One
+              </div>
+              {/* Glass fill layer — translucent interior */}
               <div
                 style={{
                   fontSize: oneSize,
@@ -1089,19 +1095,20 @@ export const Scene02: React.FC = () => {
                   lineHeight: 0.85,
                   color: "transparent",
                   background: `linear-gradient(${140 + shimmer}deg,
-                    rgba(195,185,230,0.45) 0%,
-                    rgba(175,165,220,0.3) 20%,
-                    rgba(210,200,240,0.2) 40%,
-                    rgba(165,155,215,0.35) 60%,
-                    rgba(190,180,230,0.4) 80%,
-                    rgba(200,190,235,0.35) 100%)`,
+                    rgba(210,205,235,0.3) 0%,
+                    rgba(195,190,225,0.15) 18%,
+                    rgba(230,225,245,0.08) 35%,
+                    rgba(185,175,220,0.2) 52%,
+                    rgba(205,195,235,0.25) 70%,
+                    rgba(220,215,240,0.12) 88%,
+                    rgba(200,190,230,0.3) 100%)`,
                   WebkitBackgroundClip: "text",
-                  filter: "drop-shadow(0 8px 28px rgba(150,140,200,0.2))",
+                  filter: "drop-shadow(0 8px 32px rgba(150,140,200,0.18))",
                 }}
               >
                 One
               </div>
-              {/* Stroke overlay — stronger for glass edge */}
+              {/* Outer stroke — main glass edge */}
               <div
                 style={{
                   position: "absolute",
@@ -1112,12 +1119,12 @@ export const Scene02: React.FC = () => {
                   letterSpacing: -8,
                   lineHeight: 0.85,
                   color: "transparent",
-                  WebkitTextStroke: "2.5px rgba(180,170,220,0.65)",
+                  WebkitTextStroke: "2.5px rgba(185,175,220,0.55)",
                 }}
               >
                 One
               </div>
-              {/* Inner highlight — glass refraction */}
+              {/* Inner stroke — offset for 3D hollow tube effect */}
               <div
                 style={{
                   position: "absolute",
@@ -1128,8 +1135,49 @@ export const Scene02: React.FC = () => {
                   letterSpacing: -8,
                   lineHeight: 0.85,
                   color: "transparent",
-                  WebkitTextStroke: "1.5px rgba(255,255,255,0.35)",
-                  transform: "translate(-1px, -1px)",
+                  WebkitTextStroke: "1.5px rgba(175,165,215,0.3)",
+                  transform: "translate(2px, 2px)",
+                }}
+              >
+                One
+              </div>
+              {/* Specular highlight — top-left bright edge */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  fontSize: oneSize,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
+                  color: "transparent",
+                  WebkitTextStroke: "1.2px rgba(255,255,255,0.45)",
+                  transform: "translate(-1.5px, -1.5px)",
+                }}
+              >
+                One
+              </div>
+              {/* Iridescent shimmer — conic gradient moving across the text */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  fontSize: oneSize,
+                  fontWeight: 700,
+                  fontFamily: F.h,
+                  letterSpacing: -8,
+                  lineHeight: 0.85,
+                  color: "transparent",
+                  background: `conic-gradient(from ${shimmer * 6}deg at ${45 + shimmer * 0.3}% 40%,
+                    rgba(200,170,255,0.15) 0deg,
+                    rgba(140,210,255,0.12) 72deg,
+                    rgba(170,255,220,0.08) 144deg,
+                    rgba(255,220,170,0.1) 216deg,
+                    rgba(255,170,210,0.12) 288deg,
+                    rgba(200,170,255,0.15) 360deg)`,
+                  WebkitBackgroundClip: "text",
+                  mixBlendMode: "overlay",
                 }}
               >
                 One

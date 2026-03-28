@@ -409,7 +409,8 @@ where
     // vision_bitmap_gossip_tx deleted (round-only purge)
     /// Per-source co-sign router for VisionCreateBatchSign messages.
     /// Each source registers its own channel; protocol routes by source_id.
-    pub cosign_router: Arc<std::sync::Mutex<Option<crate::vision::lifecycle::CosignRouter>>>,
+    /// DashMap — lock-free concurrent access, no Option wrapper needed.
+    pub cosign_router: crate::vision::lifecycle::CosignRouter,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -501,7 +502,7 @@ where
             known_assets: RwLock::new(Vec::new()),
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
             // vision channels deleted (round-only purge)
-            cosign_router: Arc::new(std::sync::Mutex::new(None)),
+            cosign_router: std::sync::Arc::new(dashmap::DashMap::new()),
         }
     }
 
@@ -3052,22 +3053,17 @@ where
             MessageHandleResult::ProcessVisionCreateBatchSign {
                 from: _, signer_id: _, signer_index, source_id, message_hash, signature,
             } => {
-                if let Ok(guard) = self.cosign_router.lock() {
-                    if let Some(ref router) = *guard {
-                        let incoming = crate::vision::lifecycle::IncomingCreateBatchSign {
-                            signer_index,
-                            source_id,
-                            message_hash,
-                            signature: common::types::BLSSignature(signature.0),
-                        };
-                        // Route to the per-source channel (if registered)
-                        let router_read = router.blocking_read();
-                        if let Some(tx) = router_read.get(&source_id) {
-                            let _ = tx.try_send(incoming);
-                        } else {
-                            debug!(?source_id, "No active co-sign listener for source — discarding");
-                        }
-                    }
+                let incoming = crate::vision::lifecycle::IncomingCreateBatchSign {
+                    signer_index,
+                    source_id,
+                    message_hash,
+                    signature: common::types::BLSSignature(signature.0),
+                };
+                // Route to the per-source channel via DashMap (lock-free lookup)
+                if let Some(tx) = self.cosign_router.get(&source_id) {
+                    let _ = tx.try_send(incoming);
+                } else {
+                    debug!(?source_id, "No active co-sign listener for source — discarding");
                 }
             }
             // Vision bitmap gossip — forward to bitmap gossip task

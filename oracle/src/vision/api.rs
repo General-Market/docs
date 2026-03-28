@@ -111,6 +111,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/points", get(vision_points))
         .route("/vision/points/:address", get(vision_points_player))
         .route("/vision/activity", get(vision_activity))
+        .route("/vision/explorer/tie-rate-history", get(tie_rate_history))
         .with_state(state)
 }
 
@@ -270,24 +271,26 @@ async fn list_batches(
 
     match rows {
         Ok(rows) => {
-            // Build batch_id → (source_id, market_count, player_count) from vision_batch_lifecycle
-            // (persisted at creation with plain text source names)
+            // Build on_chain_batch_id → (source_id, market_count, player_count) from vision_batch_lifecycle.
+            // Keyed by on_chain_batch_id so lookups from vision_batches.id work.
             let mut lifecycle_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
             let mut lifecycle_sources: std::collections::HashMap<u64, String> = std::collections::HashMap::new();
             let mut lifecycle_player_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
-            if let Ok(lc_rows) = sqlx::query_as::<_, (i64, String, Option<i32>, Option<i32>)>(
-                "SELECT batch_id, source_id, market_count, player_count FROM vision_batch_lifecycle"
+            if let Ok(lc_rows) = sqlx::query_as::<_, (Option<i64>, String, Option<i32>, Option<i32>)>(
+                "SELECT on_chain_batch_id, source_id, market_count, player_count FROM vision_batch_lifecycle WHERE on_chain_batch_id IS NOT NULL"
             )
             .fetch_all(&state.pool)
             .await
             {
-                for (bid, src, mc, pc) in lc_rows {
-                    lifecycle_sources.insert(bid as u64, src);
-                    if let Some(count) = mc {
-                        lifecycle_counts.insert(bid as u64, count as usize);
-                    }
-                    if let Some(count) = pc {
-                        lifecycle_player_counts.insert(bid as u64, count as usize);
+                for (ocid, src, mc, pc) in lc_rows {
+                    if let Some(bid) = ocid {
+                        lifecycle_sources.insert(bid as u64, src);
+                        if let Some(count) = mc {
+                            lifecycle_counts.insert(bid as u64, count as usize);
+                        }
+                        if let Some(count) = pc {
+                            lifecycle_player_counts.insert(bid as u64, count as usize);
+                        }
                     }
                 }
             }
@@ -420,7 +423,7 @@ async fn batch_state(
             // Prefer plain-text source name from lifecycle table.
             // Fallback: batches without lifecycle rows (chain_listener discovery path).
             let lifecycle_source: Option<String> = sqlx::query_scalar(
-                "SELECT source_id FROM vision_batch_lifecycle WHERE batch_id = $1"
+                "SELECT source_id FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
             )
             .bind(id as i64)
             .fetch_optional(&state.pool)
@@ -753,7 +756,7 @@ async fn submit_bitmap(
     // A short bitmap causes the player's stake on uncovered markets to be
     // refunded but diluted — effectively gambling at half strength.
     if let Ok(Some(mc)) = sqlx::query_scalar::<_, i32>(
-        "SELECT market_count FROM vision_batch_lifecycle WHERE batch_id = $1 ORDER BY id DESC LIMIT 1"
+        "SELECT market_count FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1 LIMIT 1"
     )
     .bind(req.batch_id as i64)
     .fetch_optional(&state.pool)
@@ -1207,7 +1210,7 @@ async fn leaderboard_from_postgres(
                     SUM(vrp.correct_count)::bigint as total_correct,
                     SUM(vrp.total_markets)::bigint as total_markets
              FROM vision_round_players vrp
-             JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+             JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
              WHERE vbl.source_id = '{safe_sid}'
              GROUP BY vrp.player",
             safe_sid = safe_sid
@@ -1799,10 +1802,10 @@ async fn player_profile(
         std::collections::HashMap::new()
     } else {
         match sqlx::query_as::<_, BatchMetaRow>(
-            "SELECT vbl.batch_id as id,
+            "SELECT vbl.on_chain_batch_id as id,
                     vbl.source_id as source_id_raw
              FROM vision_batch_lifecycle vbl
-             WHERE vbl.batch_id = ANY($1)"
+             WHERE vbl.on_chain_batch_id = ANY($1)"
         )
         .bind(&all_batch_ids)
         .fetch_all(&state.pool)
@@ -2128,7 +2131,7 @@ async fn source_batch_history(
     let total_settled: i64 = sqlx::query_scalar(
         "SELECT COUNT(DISTINCT vrp.batch_id)::bigint
          FROM vision_round_players vrp
-         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
          WHERE vbl.source_id = $1"
     )
     .bind(&source_id)
@@ -2150,7 +2153,7 @@ async fn source_batch_history(
                  WHERE sub.batch_id = vrp.batch_id
                  ORDER BY sub.pnl::numeric DESC LIMIT 1) AS top_earner_address
          FROM vision_round_players vrp
-         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.batch_id
+         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
          LEFT JOIN vision_batches vb ON vrp.batch_id = vb.id
          WHERE vbl.source_id = $1
          GROUP BY vrp.batch_id, vb.created_at_tick, vb.tick_duration, vbl.market_count
@@ -2291,11 +2294,10 @@ async fn rounds_active(
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
                     .as_secs();
-                // The lifecycle table uses internal auto-increment batch_ids, not on-chain IDs.
-                // First try direct match (works when lifecycle batch_id = on-chain batch_id).
-                // Fallback: compute betting_end from on-chain created_at_tick + tick_duration.
+                // Join on on_chain_batch_id — the lifecycle table's own batch_id is
+                // an auto-increment PK that doesn't match vision_batches.id.
                 let lifecycle_row: Option<(chrono::DateTime<chrono::Utc>, String, Option<i32>)> = sqlx::query_as(
-                    "SELECT betting_end, source_id, player_count FROM vision_batch_lifecycle WHERE batch_id = $1"
+                    "SELECT betting_end, source_id, player_count FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                 )
                 .bind(batch_id as i64)
                 .fetch_optional(&state.pool)
@@ -2822,6 +2824,57 @@ async fn vision_activity(
         }))).into_response(),
         Err(e) => {
             warn!("Vision activity query failed: {e}");
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/explorer/tie-rate-history — hourly tie rates per source
+// ---------------------------------------------------------------------------
+
+/// A single hour-source bucket of tie-rate data.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+struct TieRateBucket {
+    hour: chrono::DateTime<chrono::Utc>,
+    source_id: String,
+    total_rounds: i64,
+    ties: i64,
+}
+
+/// Hourly tie-rate history broken down by source. A "tie" is a round where
+/// every player who participated ended with PnL = 0 (no winner, no loser).
+async fn tie_rate_history(
+    State(state): State<Arc<VisionState>>,
+) -> impl IntoResponse {
+    let rows = sqlx::query_as::<_, TieRateBucket>(
+        r#"
+        SELECT
+            date_trunc('hour', vbl.created_at) AS hour,
+            vbl.source_id,
+            COUNT(*)::bigint AS total_rounds,
+            COALESCE(SUM(CASE WHEN sub.is_tie THEN 1 ELSE 0 END), 0)::bigint AS ties
+        FROM (
+            SELECT batch_id, BOOL_AND(pnl::numeric = 0) AS is_tie
+            FROM vision_round_players
+            GROUP BY batch_id
+            HAVING COUNT(DISTINCT player) > 1
+        ) sub
+        JOIN vision_batch_lifecycle vbl ON sub.batch_id = vbl.batch_id
+        GROUP BY 1, 2
+        ORDER BY 1
+        LIMIT 5000
+        "#,
+    )
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(data) => (StatusCode::OK, Json(serde_json::json!({
+            "history": data,
+        }))).into_response(),
+        Err(e) => {
+            warn!("Tie-rate history query failed: {e}");
             (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
         }
     }
