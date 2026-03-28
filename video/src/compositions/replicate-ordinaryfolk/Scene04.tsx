@@ -139,10 +139,12 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
     /* Camera push during photo expand — zoom in */
     t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
-    /* Pull back for AI response */
-    t.to(s, { phoneScale: 0.98, duration: sec(30), ease: "power2.inOut" }, sec(PHASE.AI_RESPONSE.start));
-    /* Emoji burst: slight shrink from energy release */
-    t.to(s, { phoneScale: 0.90, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
+    /* AI response: reference shows extreme close-up — camera pushes in hard
+       so the chat content nearly fills the viewport */
+    t.to(s, { phoneScale: 1.85, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
+    t.to(s, { phoneY: -80, duration: sec(35), ease: "power2.out" }, sec(PHASE.AI_RESPONSE.start));
+    /* Emoji burst: slight pullback but stay zoomed */
+    t.to(s, { phoneScale: 1.65, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
     /* Delay exit 8 frames — reference phone stays stable through early transition text */
@@ -151,9 +153,9 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
       t: 1, duration: sec(16), ease: "power3.in", paused: true,
       onUpdate() {
         const p = this.progress();
-        /* Start from drift position and fly far left */
+        /* Start from current zoomed-in position and fly far left */
         s.phoneX = quadBezier(p, 20, -280, -850);
-        s.phoneY = quadBezier(p, 0, -50, 20);
+        s.phoneY = quadBezier(p, -80, -100, 20);
       },
     });
     t.add(phoneExitTween, exitStart);
@@ -198,10 +200,12 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const gemRise = sec(PHASE.GEMINI_UI.start - 5);
     t.to(s, { geminiOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
     t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
-    /* Start at full view, then zoom toward top-left corner for dropdown focus */
-    t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanX: -200, duration: sec(46), ease: "power1.inOut" }, gemStart);
-    t.to(s, { geminiPanY: 180, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    /* Start at full view, then zoom aggressively toward top-left corner.
+       Reference shows extreme close-up on dropdown by end — scale ~2.8,
+       pan further left and up to crop out right edge of browser frame */
+    t.to(s, { geminiScale: 2.8, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    t.to(s, { geminiPanX: -340, duration: sec(46), ease: "power1.inOut" }, gemStart);
+    t.to(s, { geminiPanY: 260, duration: sec(46), ease: "power1.inOut" }, gemStart);
     /* Dropdown animation */
     t.to(s, { geminiDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GEMINI_UI.start + 8));
     t.to(s, { geminiRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 12));

@@ -1004,16 +1004,16 @@ const DepositSegment: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: BG, fontFamily: FONT }}>
-      {/* Title */}
+      {/* Title — smaller, higher, matching reference proportions */}
       <div
         style={{
           position: "absolute",
-          top: 440,
+          top: 340,
           width: "100%",
           textAlign: "center",
-          fontSize: 140,
+          fontSize: 110,
           fontWeight: 700,
-          letterSpacing: -3,
+          letterSpacing: -2,
         }}
       >
         {words.map((word, wi) => {
@@ -1035,18 +1035,18 @@ const DepositSegment: React.FC = () => {
         })}
       </div>
 
-      {/* Deposit modal */}
+      {/* Deposit modal — compact, matching reference proportions */}
       <div
         style={{
           position: "absolute",
-          top: 830,
+          top: 720,
           left: "50%",
           transform: `translateX(-50%) translateY(${modalY}px)`,
-          width: 1400,
+          width: 1200,
           backgroundColor: CARD_BG,
-          borderRadius: 36,
-          padding: "56px 64px",
-          boxShadow: "0 20px 80px rgba(0,0,0,0.08)",
+          borderRadius: 32,
+          padding: "48px 56px",
+          boxShadow: "0 16px 60px rgba(0,0,0,0.07)",
           opacity: modalOp,
         }}
       >

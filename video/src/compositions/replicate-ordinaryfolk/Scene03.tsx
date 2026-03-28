@@ -75,19 +75,19 @@ function generateParticles(count: number, seed: number): Particle[] {
   const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, "#A78BFA", "#F472B6", "#60A5FA"];
   const shapes: Particle["shape"][] = ["circle","circle","circle","diamond","star"];
   return Array.from({length: count}, (_, i) => {
-    const angle = (rng() - 0.3) * Math.PI * 1.2;
-    const dist = 120 + rng() * 400;
+    const angle = (rng() - 0.3) * Math.PI * 0.8;
+    const dist = 80 + rng() * 280;
     const perpAngle = angle + (rng() > 0.5 ? Math.PI/2 : -Math.PI/2);
-    const cpDist = 60 + rng() * 180;
+    const cpDist = 40 + rng() * 120;
     return {
-      id: i, x: 300 + rng()*680, y: 150 + (rng()-0.5)*400,
+      id: i, x: 500 + rng()*280, y: 300 + (rng()-0.5)*120,
       cpOffX: Math.cos(perpAngle)*cpDist + Math.cos(angle)*dist*0.5,
       cpOffY: Math.sin(perpAngle)*cpDist + Math.sin(angle)*dist*0.5,
       endX: Math.cos(angle)*dist, endY: Math.sin(angle)*dist,
-      size: 3 + rng()*18, color: colors[Math.floor(rng()*colors.length)],
+      size: 2 + rng()*10, color: colors[Math.floor(rng()*colors.length)],
       speed: 0.5 + rng()*3, angle,
       noiseOffsetX: rng()*1000, noiseOffsetY: rng()*1000,
-      delay: rng()*6, shape: shapes[Math.floor(rng()*shapes.length)],
+      delay: rng()*15, shape: shapes[Math.floor(rng()*shapes.length)],
     };
   });
 }
@@ -629,8 +629,8 @@ export const Scene03: React.FC = () => {
     {start:330,dur:100,Comp:SegGeminiResponse},
     {start:420,dur:75,Comp:SegAndMore},
     {start:490,dur:70,Comp:SegStartingWith},
-    {start:548,dur:90,Comp:SegPhoneMockup},
-    {start:625,dur:70,Comp:SegSupercharge},
+    {start:555,dur:80,Comp:SegPhoneMockup},
+    {start:630,dur:65,Comp:SegSupercharge},
     {start:690,dur:55,Comp:SegPhoneGoodMorning},
   ];
   return (

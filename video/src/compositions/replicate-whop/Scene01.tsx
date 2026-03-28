@@ -1065,11 +1065,12 @@ export const Scene01: React.FC = () => {
   const { fps } = useVideoConfig();
 
   /* ── Phase 1: "Introducing Whop Treasury" ── */
-  const introOpacity = interpolate(frame, [HOLD_END, ZOOM_OUT_END], [1, 0], {
+  // Ref: fast fade, aggressive zoom. By f42 ~30% opacity, by f45 nearly gone
+  const introOpacity = interpolate(frame, [HOLD_END, HOLD_END + 6], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const introScale = interpolate(frame, [HOLD_END, ZOOM_OUT_END], [1, 2.5], {
+  const introScale = interpolate(frame, [HOLD_END, ZOOM_OUT_END], [1, 3.0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
