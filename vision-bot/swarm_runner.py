@@ -96,6 +96,8 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
 
     except Exception as e:
         log.error("Bot %d fatal: %s", bot_id, e, exc_info=True)
+    except BaseException as e:
+        log.error("Bot %d BaseException: %s", bot_id, e, exc_info=True)
 
 
 def main():
@@ -149,15 +151,20 @@ def main():
             time.sleep(stagger)
 
     logging.getLogger().info("All %d bots running", len(threads))
+    sys.stdout.flush()
+    sys.stderr.flush()
 
     # Wait forever (threads are daemons, so main exit kills them)
     try:
         while True:
             alive = sum(1 for t in threads if t.is_alive())
+            logging.getLogger().info("Alive check: %d/%d threads", alive, len(threads))
+            sys.stdout.flush()
             if alive == 0:
-                logging.getLogger().error("All bots died")
+                logging.getLogger().error("All bots died — exiting")
+                sys.stdout.flush()
                 sys.exit(1)
-            time.sleep(60)
+            time.sleep(30)
     except KeyboardInterrupt:
         logging.getLogger().info("Shutting down...")
 
