@@ -274,3 +274,21 @@ The icon orbit at 0:21 ("you know and love") needs:
 
 ### 0:41 — Phone flat 2/3 of screen, "that's not all" on horizon
 The phone at 0:41 should be nearly FLAT (very low rotateX, high perspective), filling 2/3 of the frame height. "But that's not all..." text appears on the HORIZON line of the phone (at the top edge where the phone meets the background). Phone and text are TRACKED together — text follows the phone's position.
+
+## CRITICAL — Phone3D must use GLB model, not ExtrudeGeometry
+
+Phone3D.tsx at `video/src/lib/Phone3D.tsx` still uses hand-built ExtrudeGeometry.
+A GLB model exists at `video/public/models/iphone.glb` (757KB, older iPhone).
+
+**To fix:** Update Phone3D.tsx to use `useGLTF` from @react-three/drei:
+```tsx
+import { useGLTF } from "@react-three/drei";
+const { scene } = useGLTF(staticFile("models/iphone.glb"));
+return <primitive object={scene} scale={...} />;
+```
+
+**For iPhone 16 Pro (high-def):** User must manually download from:
+- https://sketchfab.com/3d-models/iphone-16-pro-max-41a071ae12794b668502f58d1e0fd1a3
+- Save as video/public/models/iphone.glb (replace existing)
+
+**ALL phones in ALL scenes must use the SAME GLB model.** No CSS phones, no ExtrudeGeometry.
