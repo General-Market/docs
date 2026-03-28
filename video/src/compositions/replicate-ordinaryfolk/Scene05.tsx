@@ -1352,6 +1352,7 @@ export const Scene05: React.FC = () => {
         rotateX: 0,
         rotateY: 0,
         scale: 1.0,
+        transformOrigin: "50% 50%",
         x: 0,
         y: 0,
         duration: f(50),

@@ -843,12 +843,13 @@ const SegPhoneGoodMorning: React.FC = () => {
   const rotY = interpolate(flattenT, [0, 1], [0.22, 0.02]);
   const rotX = interpolate(flattenT, [0, 1], [-0.06, -0.015]);
 
-  /* Phone3D mesh scale + CSS wrapper scale -> fills 2/3 of frame height when flat */
-  const phoneScale = interpolate(flattenT, [0, 1], [1.2, 1.4]);
-  const cssScale = interpolate(flattenT, [0, 1], [1.1, 2.0]);
+  /* Phone3D mesh scale + CSS wrapper scale -> fills 2/3 of frame height when flat.
+     Phone body ~400px at scale 1. 2/3 of 720 = 480px -> total ~1.2x. */
+  const phoneScale = interpolate(flattenT, [0, 1], [1.0, 1.0]);
+  const cssScale = interpolate(flattenT, [0, 1], [0.95, 1.35]);
 
   /* Phone drifts down so top edge creates a clear horizon line */
-  const phoneY = interpolate(flattenT, [0, 1], [enterY, 200]) + tilt.translateY;
+  const phoneY = interpolate(flattenT, [0, 1], [enterY, 100]) + tilt.translateY;
   const phoneX = tilt.translateX;
 
   /* "But that's not all..." appears during flatten */
@@ -857,8 +858,9 @@ const SegPhoneGoodMorning: React.FC = () => {
   const textOp = interpolate(textSpr, [0, 0.3], [0, 1], {extrapolateRight:"clamp"});
   const textYOff = interpolate(textSpr, [0, 1], [12, 0]);
   /* Horizon Y: text sits right at the top edge of the phone where it meets the background.
-     As the phone flattens and shifts down, the horizon rises in the frame. */
-  const horizonY = interpolate(flattenT, [0, 1], [280, 110]);
+     As the phone flattens and shifts down, the horizon rises in the frame.
+     Phone top edge at flattenT=1 is ~30px from frame top. Text at the boundary. */
+  const horizonY = interpolate(flattenT, [0, 1], [280, 14]);
 
   /* Screen: Good Morning Gemini content */
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));
