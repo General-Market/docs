@@ -9,6 +9,9 @@ import {
   Easing,
 } from "remotion";
 import { noise2D } from "@remotion/noise";
+import { CameraMotionBlur } from "@remotion/motion-blur";
+import { Phone3D } from "../../lib/Phone3D";
+import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
 
 /* --- bezier / motion helpers --- */
 function cubicBez(t: number, p0: number, p1: number, p2: number, p3: number): number {
@@ -141,21 +144,86 @@ const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]
   </>
 );
 
-/* --- SEGMENT 1: Particle Explosion --- */
-const SegParticleExplosion: React.FC = () => {
+/* --- Avalanche bokeh particle data --- */
+interface BokehParticle {
+  id: number; startX: number; startY: number; size: number;
+  color: string; speed: number; yDrift: number; delay: number; blur: number;
+  opacity: number;
+}
+
+function generateBokehParticles(count: number, seed: number): BokehParticle[] {
+  const rng = seededRandom(seed);
+  const colors = [
+    "#F472B6","#EC4899","#A78BFA","#818CF8","#60A5FA","#38BDF8",
+    "#FFFFFF","#FDE68A","#FCA5A5","#C4B5FD","#93C5FD","#F9A8D4",
+  ];
+  return Array.from({length: count}, (_, i) => ({
+    id: i,
+    startX: 1400 + rng()*600, /* start off-screen right */
+    startY: rng()*720,
+    size: 8 + rng()*22, /* 8-30px bokeh spheres */
+    color: colors[Math.floor(rng()*colors.length)],
+    speed: 280 + rng()*520, /* px per second streaming left */
+    yDrift: (rng()-0.5)*120, /* vertical wander */
+    delay: rng()*30, /* stagger entry over ~1s */
+    blur: 2 + rng()*6, /* bokeh blur amount */
+    opacity: 0.25 + rng()*0.65,
+  }));
+}
+
+/* --- SEGMENT 1: Particle Avalanche (Bard→Gemini transition) --- */
+const AVALANCHE_COUNT = 220;
+
+const SegParticleAvalancheInner: React.FC = () => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const particles = useMemo(() => generateParticles(120, 42), []);
-  const wob = organicWobble("pexp", frame, 4, 3, 0.025);
-  const glowOp = interpolate(frame, [0,9,11,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
-  const phase: "explode"|"swirl" = frame < fps*0.8 ? "explode" : "swirl";
+  const {fps, durationInFrames} = useVideoConfig();
+  const bokeh = useMemo(() => generateBokehParticles(AVALANCHE_COUNT, 42), []);
+
+  /* Orange/warm center glow */
+  const glowIntensity = interpolate(frame, [0,8,fps*0.4,durationInFrames-10,durationInFrames], [0,0.7,1,1,0], {extrapolateRight:"clamp"});
+  /* Global fade in/out */
+  const globalOp = interpolate(frame, [0,4,durationInFrames-6,durationInFrames], [0,1,1,0], {extrapolateRight:"clamp"});
+
   return (
-    <AbsoluteFill style={{backgroundColor: BG}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",width:400,height:400,transform:`translate(calc(-50% + ${wob.x}px), calc(-50% + ${wob.y}px))`,background:"radial-gradient(circle, rgba(123,97,255,0.15) 0%, transparent 70%)",opacity:glowOp}} />
-      <ParticleField frame={frame} fps={fps} particles={particles} phase={phase} />
+    <AbsoluteFill style={{backgroundColor:"#1A1520",opacity:globalOp}}>
+      {/* Warm orange center glow — like a light source the particles stream through */}
+      <div style={{position:"absolute",left:"50%",top:"50%",width:600,height:500,transform:"translate(-50%,-50%)",background:"radial-gradient(ellipse, rgba(255,160,60,0.3) 0%, rgba(255,120,40,0.15) 25%, rgba(200,80,60,0.06) 50%, transparent 70%)",opacity:glowIntensity,filter:"blur(20px)"}} />
+      <div style={{position:"absolute",left:"50%",top:"50%",width:350,height:300,transform:"translate(-50%,-50%)",background:"radial-gradient(circle, rgba(255,200,100,0.25) 0%, transparent 60%)",opacity:glowIntensity,filter:"blur(12px)"}} />
+
+      {/* Bokeh particle field — streaming right to left like a blizzard */}
+      {bokeh.map((p) => {
+        const t = Math.max(0, frame - p.delay) / fps;
+        if (t <= 0) return null;
+        const px = p.startX - p.speed*t;
+        const yNoise = noise2D("ay"+p.id, t*0.6, p.id*0.1)*40;
+        const py = p.startY + Math.sin(t*1.2 + p.id)*p.yDrift*0.3 + yNoise;
+        /* Fade in quickly, sustain, no fade-out (they exit left) */
+        const fadeIn = interpolate(t, [0,0.15], [0,1], {extrapolateRight:"clamp"});
+        /* Kill if off-screen left */
+        if (px < -60) return null;
+        const sizeOsc = p.size * (0.9 + 0.1*Math.sin(t*3+p.id));
+        return <div key={p.id} style={{
+          position:"absolute",
+          left: px - sizeOsc/2,
+          top: py - sizeOsc/2,
+          width: sizeOsc,
+          height: sizeOsc,
+          borderRadius: "50%",
+          backgroundColor: p.color,
+          opacity: p.opacity * fadeIn,
+          filter: `blur(${p.blur}px)`,
+          boxShadow: `0 0 ${p.size*0.8}px ${p.color}88`,
+        }} />;
+      })}
     </AbsoluteFill>
   );
 };
+
+const SegParticleExplosion: React.FC = () => (
+  <CameraMotionBlur samples={6} shutterAngle={160}>
+    <SegParticleAvalancheInner />
+  </CameraMotionBlur>
+);
 
 /* --- SEGMENT 2: Gemini Reveal --- */
 const GEMINI_LETTERS = "Gemini".split("");
@@ -439,10 +507,10 @@ const SegGeminiResponse: React.FC = () => {
 };
 
 /* --- SEGMENT 8: And moooore --- */
-const GEMINI_BALLS = ["#4285F4","#EA4335","#FBBC04","#34A853","#7B61FF"];
-const MAX_BALLS = 18;
+const GEMINI_BALLS = ["#4285F4","#EA4335","#FBBC04","#34A853","#7B61FF","#E8458B","#A78BFA","#60A5FA"];
+const MAX_BALLS = 40;
 
-const SegAndMore: React.FC = () => {
+const SegAndMoreInner: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const stretchStart = fps;
@@ -450,14 +518,15 @@ const SegAndMore: React.FC = () => {
   const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*2], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
   const oCount = Math.floor(interpolate(stretch, [0,0.8], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
   const ballProgress = stretch > 0.15 ? interpolate(stretch, [0.15,0.5], [0,1], {extrapolateRight:"clamp"}) : 0;
-  const scrollX = interpolate(stretch, [0.1,1], [0,-420], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
+  /* Wider scroll — chain must extend edge-to-edge, some off-screen */
+  const scrollX = interpolate(stretch, [0.1,1], [0,-720], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
   const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
   const mOp = interpolate(frame, [fps*0.5,fps*0.9], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
   const renderBalls = () => Array.from({length:oCount}, (_,i) => {
-    const bd = stretchStart+i*2.2;
+    const bd = stretchStart+i*1.5;
     const damp = 6+(i%5)*1.4;
     const stiff = 120+(i%3)*30;
     const mass = 0.4+(i%4)*0.15;
@@ -467,33 +536,48 @@ const SegAndMore: React.FC = () => {
     const z = damp/(2*Math.sqrt(stiff*mass));
     const bS = bT<=0?0:1-Math.exp(-z*om*bT/fps*15)*Math.cos(om*Math.sqrt(1-z*z)*bT/fps*15);
     const cS = Math.max(0,Math.min(1.3,bS));
-    const sz = 28*Math.min(cS,1);
+    const sz = 26*Math.min(cS,1);
     const bOp = interpolate(cS,[0,0.4],[0,1],{extrapolateRight:"clamp"});
     const lOp = interpolate(ballProgress,[0,0.6],[1,0],{extrapolateRight:"clamp"});
-    const wA = interpolate(stretch,[0.2,0.5],[0,18],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-    const wY = Math.sin(frame*(0.11+(i%4)*0.025)+i*0.55+(i%3)*0.35)*wA*Math.min(cS,1);
+    /* Sine wave vertical displacement — necklace of colored beads */
+    const sineAmp = interpolate(stretch,[0.15,0.6],[0,28],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+    const sineFreq = 0.35 + (i%3)*0.05;
+    const sinePhase = i*0.42 + frame*0.06;
+    const wY = Math.sin(sinePhase*sineFreq)*sineAmp*Math.min(cS,1);
     const wX = noise2D("bx"+i,frame*0.025,i)*3*Math.min(cS,1);
     const col = GEMINI_BALLS[i%GEMINI_BALLS.length];
     const sO = interpolate(cS,[0,0.3,0.6,1,1.3],[0.15,1.3,0.9,1,1.1],{extrapolateRight:"clamp"});
-    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:Math.max(sz+2,14),height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`}}>
-      {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:BLUE,fontSize:44}}>o</span>}
-      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 8px ${col}44`:undefined}} />}
+    /* Each slot ~32px wide so 40 balls span ~1280px (full viewport width) */
+    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:32,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
+      {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
+      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
     </span>;
   });
 
   return (
-    <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp}}>
+    <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:"radial-gradient(ellipse at 55% 40%, rgba(232,69,139,0.035) 0%, rgba(196,181,253,0.025) 35%, transparent 60%)"}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?1:12,fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,whiteSpace:"nowrap"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:"'Google Sans',sans-serif",fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
         <span style={{color:DARK,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>And</span>
         {stretch<=0.02 ? <span style={{color:BLUE,fontSize:44,opacity:mOp}}>more</span> : <>
           <span style={{color:BLUE,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
           {renderBalls()}
-          <span style={{color:BLUE,fontSize:44,display:"inline-block",marginLeft:-6}}>re</span>
+          <span style={{color:BLUE,fontSize:44,display:"inline-block",marginLeft:-4}}>re</span>
         </>}
       </div>
     </AbsoluteFill>
   );
+};
+
+/* Wrap inner with CameraMotionBlur during the stretch phase */
+const SegAndMore: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const stretchActive = frame > fps;
+  if (stretchActive) {
+    return <CameraMotionBlur samples={6} shutterAngle={100}><SegAndMoreInner /></CameraMotionBlur>;
+  }
+  return <SegAndMoreInner />;
 };
 
 /* --- SEGMENT 9: Starting with the new Gemini app --- */
@@ -538,10 +622,7 @@ const SegStartingWith: React.FC = () => {
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const pW = organicWobble("ph10", frame, 2.5, 2, 0.018);
-  /* FIX 3: continuous 3D tilt with noise micro-motion — never flat */
-  const tiltY = 14 + noise2D("ph10ty", frame * 0.012, 0) * 3.5;
-  const tiltX = -3 + noise2D("ph10tx", 0, frame * 0.015) * 2;
+  const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
   /* Phone enters from below-right */
   const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
   const pX = cubicBez(eP, 150, 120, 30, 0);
@@ -554,25 +635,36 @@ const SegPhoneMockup: React.FC = () => {
   const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
   const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-  return (
-    <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",perspective:800,transformStyle:"preserve-3d"}}>
-        <div style={{transform:`translate(-50%,-50%) translate(${pX+pW.x}px,${pY+sB+pW.y}px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) rotate(${pR}deg) scale(${pS})`,opacity:pOp,width:320,height:620,backgroundColor:"#FFFFFF",borderRadius:40,border:"3px solid #1A1A2E",overflow:"hidden",boxShadow:`12px 20px 60px rgba(0,0,0,0.22), 4px 8px 20px rgba(0,0,0,0.12)`}}>
-          <PhoneStatusBar />
-          <div style={{padding:"30px 24px"}}>
-            <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:PURPLE}}>Hi</span>{" "}
-              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK}}>{"I'm "}</span>
-              <span style={{fontSize:36,fontWeight:700,fontFamily:"'Google Sans',sans-serif",background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
-            </div>
-            <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-              <div style={{fontSize:32,fontWeight:700,fontFamily:"'Google Sans',sans-serif",color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
-              <div style={{marginTop:24,fontSize:16,fontFamily:"'Google Sans',sans-serif",color:"#666",lineHeight:1.5}}>I can help you write, plan, learn, and more.</div>
-            </div>
-          </div>
-          <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
+
+  const phoneScreen = (
+    <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Google Sans',sans-serif"}}>
+      <PhoneStatusBar />
+      <div style={{padding:"30px 24px"}}>
+        <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+          <span style={{fontSize:36,fontWeight:700,color:PURPLE}}>Hi</span>{" "}
+          <span style={{fontSize:36,fontWeight:700,color:DARK}}>{"I'm "}</span>
+          <span style={{fontSize:36,fontWeight:700,background:`linear-gradient(135deg, ${PINK}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Gemini,</span>
+        </div>
+        <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+          <div style={{fontSize:32,fontWeight:700,color:DARK,lineHeight:1.2}}>an experimental<br/>AI assistant on<br/>your phone.</div>
+          <div style={{marginTop:24,fontSize:16,color:"#666",lineHeight:1.5}}>I can help you write, plan, learn, and more.</div>
         </div>
       </div>
+      <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",border:"2px solid #DDD"}} />
+    </div>
+  );
+
+  return (
+    <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
+      <Phone3D
+        rotateY={0.24}
+        rotateX={-0.05}
+        scale={1}
+        screenContent={phoneScreen}
+        screenColor="#FFFFFF"
+        opacity={pOp}
+        style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
+      />
       <div style={{position:"absolute",bottom:20,left:30,fontSize:11,fontFamily:"'Google Sans',sans-serif",color:"#B0B0B8",opacity:interpolate(frame,[fps,fps*1.5],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>The Gemini mobile app is available for select devices, languages and locations.</div>
     </AbsoluteFill>
   );
@@ -700,10 +792,7 @@ const PhoneHomeScreen: React.FC<{frame: number; fps: number}> = ({frame, fps}) =
 const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
-  const pW = organicWobble("ph12", frame, 2, 1.5, 0.018);
-  /* FIX 1+3: persistent 3D tilt ~15deg rotateY with noise oscillation */
-  const tiltY = 15 + noise2D("ph12ty", frame * 0.01, 0) * 4;
-  const tiltX = -4 + noise2D("ph12tx", 0, frame * 0.013) * 2.5;
+  const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
   /* Phase: home screen (0-30f), transition to Good Morning Gemini (30-50f), Gemini visible (50-80f), camera (80f+) */
   const homeToGemini = frame > fps*1.0 ? interpolate(frame, [fps*1.0,fps*1.7], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_QUART}) : 0;
   const camT = frame>durationInFrames*0.75 ? interpolate(frame, [durationInFrames*0.75,durationInFrames*0.87], [0,1], {extrapolateRight:"clamp"}) : 0;
@@ -718,58 +807,66 @@ const SegPhoneGoodMorning: React.FC = () => {
   const sB = sF>0 ? interpolate(sF, [0,3,10], [0,-6,0], {extrapolateRight:"clamp"}) : 0;
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*1.3)+i*5, config:{damping:14,stiffness:100,mass:0.7}}));
   const inputSpr = spring({frame, fps, delay: Math.floor(fps*2.0), config:{damping:14,stiffness:100,mass:0.7}});
-  return (
-    <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",perspective:800,transformStyle:"preserve-3d"}}>
-        <div style={{transform:`translate(-50%,-50%) translate(${pX+pW.x}px,${pY+sB+pW.y}px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) scale(${pS})`,opacity:pOp,width:320,height:620,borderRadius:40,border:"6px solid #1A1A2E",overflow:"hidden",boxShadow:`14px 24px 70px rgba(0,0,0,0.24), 5px 10px 24px rgba(0,0,0,0.14)`}}>
-          {/* FIX 2: Actual home screen (wallpaper, dock, search bar) */}
-          <div style={{position:"absolute",inset:0,opacity:Math.max(0,1-homeToGemini-camT)}}>
-            <PhoneHomeScreen frame={frame} fps={fps} />
-          </div>
-          {/* Good Morning Gemini screen (ref frame 19) */}
-          <div style={{position:"absolute",inset:0,backgroundColor:"#FFFFFF",opacity:homeToGemini*(1-camT),padding:"0"}}>
-            <PhoneStatusBar />
-            <div style={{padding:"16px 24px 24px"}}>
-              <div style={{fontSize:28,fontFamily:"'Google Sans',sans-serif",fontWeight:500,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>Good morning</div>
-              {/* Suggestion cards (ref: YouTube, walking directions, etc) */}
-              {[
-                {text:"Watch YouTube videos about houseplant care",icon:"youtube",color:"#FF0000"},
-                {text:"Get walking directions to the nearest park",icon:"walk",color:"#34A853"},
-                {text:"Create a playlist for a road trip",icon:"music",color:PURPLE},
-              ].map((card, ci) => {
-                const s = cSpr[ci];
-                return <div key={ci} style={{height:52,backgroundColor:"#F4F4F8",borderRadius:14,marginBottom:8,padding:"10px 14px",fontSize:12.5,fontFamily:"'Google Sans',sans-serif",color:"#555",display:"flex",alignItems:"center",gap:10,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-                  <div style={{width:28,height:28,borderRadius:8,backgroundColor:card.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    {card.icon==="youtube"&&<div style={{width:18,height:12,borderRadius:3,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"6px solid white",borderTop:"3.5px solid transparent",borderBottom:"3.5px solid transparent"}} /></div>}
-                    {card.icon==="walk"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" fill="#34A853"/></svg>}
-                    {card.icon==="music"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill={PURPLE}/></svg>}
-                  </div>
-                  <span>{card.text}</span>
-                </div>;
-              })}
-              {/* Chats section */}
-              <div style={{display:"flex",justifyContent:"space-between",marginTop:16,marginBottom:10,fontSize:13,fontWeight:500,color:"#888"}}><span>Chats</span><span style={{fontSize:16}}>&#9998;</span></div>
-              {/* Input bar */}
-              <div style={{height:46,backgroundColor:"#EDEDF1",borderRadius:24,display:"flex",alignItems:"center",padding:"0 16px",fontSize:13,color:"#AAA",fontFamily:"'Google Sans',sans-serif",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>Type, talk, or share a photo</div>
-            </div>
-          </div>
-          {/* Camera/dog view */}
-          <div style={{position:"absolute",inset:0,backgroundColor:"#1A1A2E",opacity:camT,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-            <div style={{width:"100%",height:"75%",background:"linear-gradient(180deg, #87CEEB 0%, #90B86C 30%, #78A55A 50%, #8B7355 70%, #C4A67A 100%)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-              <div style={{width:120,height:100,borderRadius:"40% 40% 20% 20%",backgroundColor:"#D4A574",position:"relative"}}>
-                <div style={{position:"absolute",top:-12,left:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(-15deg)"}} />
-                <div style={{position:"absolute",top:-12,right:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(15deg)"}} />
-                <div style={{position:"absolute",top:20,left:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
-                <div style={{position:"absolute",top:20,right:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
-                <div style={{position:"absolute",top:38,left:"50%",transform:"translateX(-50%)",width:12,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
+
+  const phoneScreen = (
+    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden"}}>
+      {/* Home screen layer */}
+      <div style={{position:"absolute",inset:0,opacity:Math.max(0,1-homeToGemini-camT)}}>
+        <PhoneHomeScreen frame={frame} fps={fps} />
+      </div>
+      {/* Good Morning Gemini screen (ref frame 19) */}
+      <div style={{position:"absolute",inset:0,backgroundColor:"#FFFFFF",opacity:homeToGemini*(1-camT),padding:"0"}}>
+        <PhoneStatusBar />
+        <div style={{padding:"16px 24px 24px"}}>
+          <div style={{fontSize:28,fontFamily:"'Google Sans',sans-serif",fontWeight:500,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>Good morning</div>
+          {[
+            {text:"Watch YouTube videos about houseplant care",icon:"youtube",color:"#FF0000"},
+            {text:"Get walking directions to the nearest park",icon:"walk",color:"#34A853"},
+            {text:"Create a playlist for a road trip",icon:"music",color:PURPLE},
+          ].map((card, ci) => {
+            const s = cSpr[ci];
+            return <div key={ci} style={{height:52,backgroundColor:"#F4F4F8",borderRadius:14,marginBottom:8,padding:"10px 14px",fontSize:12.5,fontFamily:"'Google Sans',sans-serif",color:"#555",display:"flex",alignItems:"center",gap:10,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+              <div style={{width:28,height:28,borderRadius:8,backgroundColor:card.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {card.icon==="youtube"&&<div style={{width:18,height:12,borderRadius:3,backgroundColor:"#FF0000",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:0,height:0,borderLeft:"6px solid white",borderTop:"3.5px solid transparent",borderBottom:"3.5px solid transparent"}} /></div>}
+                {card.icon==="walk"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" fill="#34A853"/></svg>}
+                {card.icon==="music"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill={PURPLE}/></svg>}
               </div>
-            </div>
-            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:30}}>
-              <div style={{width:54,height:54,borderRadius:"50%",border:"3px solid white",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:44,height:44,borderRadius:"50%",backgroundColor:"rgba(255,255,255,0.9)"}} /></div>
-            </div>
-          </div>
+              <span>{card.text}</span>
+            </div>;
+          })}
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:16,marginBottom:10,fontSize:13,fontWeight:500,color:"#888"}}><span>Chats</span><span style={{fontSize:16}}>&#9998;</span></div>
+          <div style={{height:46,backgroundColor:"#EDEDF1",borderRadius:24,display:"flex",alignItems:"center",padding:"0 16px",fontSize:13,color:"#AAA",fontFamily:"'Google Sans',sans-serif",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>Type, talk, or share a photo</div>
         </div>
       </div>
+      {/* Camera/dog view */}
+      <div style={{position:"absolute",inset:0,backgroundColor:"#1A1A2E",opacity:camT,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <div style={{width:"100%",height:"75%",background:"linear-gradient(180deg, #87CEEB 0%, #90B86C 30%, #78A55A 50%, #8B7355 70%, #C4A67A 100%)",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+          <div style={{width:120,height:100,borderRadius:"40% 40% 20% 20%",backgroundColor:"#D4A574",position:"relative"}}>
+            <div style={{position:"absolute",top:-12,left:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(-15deg)"}} />
+            <div style={{position:"absolute",top:-12,right:8,width:24,height:20,borderRadius:"50% 50% 0 0",backgroundColor:"#C4956A",transform:"rotate(15deg)"}} />
+            <div style={{position:"absolute",top:20,left:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
+            <div style={{position:"absolute",top:20,right:28,width:8,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
+            <div style={{position:"absolute",top:38,left:"50%",transform:"translateX(-50%)",width:12,height:8,borderRadius:"50%",backgroundColor:"#333"}} />
+          </div>
+        </div>
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:30}}>
+          <div style={{width:54,height:54,borderRadius:"50%",border:"3px solid white",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:44,height:44,borderRadius:"50%",backgroundColor:"rgba(255,255,255,0.9)"}} /></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
+      <Phone3D
+        rotateY={0.26}
+        rotateX={-0.07}
+        scale={1}
+        screenContent={phoneScreen}
+        screenColor="#FFFFFF"
+        opacity={pOp}
+        style={{transform:`translate(${pX}px,${pY+sB}px) scale(${pS}) ${tilt.transform}`}}
+      />
     </AbsoluteFill>
   );
 };

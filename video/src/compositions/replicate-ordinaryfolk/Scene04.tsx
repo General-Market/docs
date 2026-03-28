@@ -10,6 +10,8 @@ import {
 import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import { gsap } from "gsap";
+import { Phone3D } from "../../lib/Phone3D";
+import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
 
 /* ─── timing (30fps, 339 frames ~ 11.3s) ─── */
 const PHASE = {
@@ -211,10 +213,9 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     /* Glow rotation */
     t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
 
-    /* ═══ Dark ending — very late, very fast. Reference still shows bright
-       Gemini UI at frame 338. Only the last 2-3 frames darken. ═══ */
-    t.to(s, { fadeToBlack: 0.85, duration: sec(3), ease: "power3.in" }, sec(336));
-    t.to(s, { darkShrink: 0.95, duration: sec(3), ease: "power3.in" }, sec(336));
+    /* ═══ Dark ending — removed. FadeWrapper now handles the zoom-out
+       exit with scaleOut=3 over 24 frames. Keeping internal darkening
+       killed the zoom (zooming into blackness is invisible). ═══ */
 
     tlRef.current = t;
   }
@@ -377,71 +378,6 @@ const DogPhotoScreen: React.FC = () => {
           <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" fill="#fff"/>
         </svg>
         <span style={{ fontSize: 9, color: "#fff", fontWeight: 600, fontFamily: "system-ui, sans-serif" }}>Photos</span>
-      </div>
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════
-   PHONE MOCKUP
-   ═══════════════════════════════════════════════════════ */
-const PhoneMockup: React.FC<{
-  children: React.ReactNode;
-  tilt?: number;
-  xTilt?: number;
-  scale?: number;
-  shadowOpacity?: number;
-}> = ({ children, tilt = -3, xTilt = 3, scale = 1, shadowOpacity = 0.15 }) => {
-  const shadowShiftX = -(tilt ?? -3) * 3;
-  const shadowShiftY = 28 + Math.abs(tilt ?? 0) * 0.5;
-  const edgeWidth = Math.max(0, Math.abs(tilt) * 0.6);
-  const edgeSide = tilt < 0 ? "left" : "right";
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: "50%", top: "50%",
-        transformStyle: "preserve-3d",
-        transform: `translate(-50%, -50%) scale(${scale}) perspective(900px) rotateY(${tilt}deg) rotateX(${xTilt}deg)`,
-        width: 280, height: 580,
-        borderRadius: 40,
-        background: "linear-gradient(145deg, #2A2A30, #1A1A1E, #35353A)",
-        padding: 4,
-        boxShadow: `${shadowShiftX}px ${shadowShiftY}px 70px rgba(0,0,0,${shadowOpacity * 1.2}), ${shadowShiftX * 0.5}px ${shadowShiftY * 0.5}px 30px rgba(0,0,0,${shadowOpacity * 0.6}), 0 4px 8px rgba(0,0,0,${shadowOpacity * 0.3})`,
-      }}
-    >
-      {edgeWidth > 1 && (
-        <div style={{
-          position: "absolute", top: 8, bottom: 8,
-          [edgeSide]: -edgeWidth,
-          width: edgeWidth,
-          borderRadius: edgeSide === "left" ? "6px 0 0 6px" : "0 6px 6px 0",
-          background: "linear-gradient(180deg, #3A3A40, #28282E, #3A3A40)",
-          transform: `translateZ(-${edgeWidth * 0.5}px)`,
-        }} />
-      )}
-      <div style={{
-        width: "100%", height: "100%",
-        borderRadius: 36, background: PHONE_BG,
-        overflow: "hidden", position: "relative",
-      }}>
-        <div style={{
-          height: 36, background: PHONE_BG,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, color: GREY_TEXT,
-          fontFamily: "system-ui, sans-serif", fontWeight: 600,
-          position: "relative",
-        }}>
-          <div style={{
-            position: "absolute", top: 6, left: "50%",
-            transform: "translateX(-50%)",
-            width: 80, height: 22, borderRadius: 12, background: "#1A1A1A",
-          }} />
-          <div style={{ position: "absolute", left: 16, top: 10, fontSize: 10, fontWeight: 600 }}>9:41</div>
-        </div>
-        <div style={{ overflow: "hidden", height: 536 }}>
-          {children}
-        </div>
       </div>
     </div>
   );
@@ -891,6 +827,7 @@ export const Scene04: React.FC = () => {
   const { fps } = useVideoConfig();
   const frame = useCurrentFrame();
   const { state: s } = useGsapAnimState(fps);
+  const phoneTilt3D = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
 
   /* ── Phase visibility ── */
   const showDogPhoto = frame < PHASE.DOG_PHOTO.end;
@@ -978,17 +915,25 @@ export const Scene04: React.FC = () => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
-          /* Perlin noise idle float — phone is never perfectly still */
-          const phoneNoiseX = noise2D("phX", frame * 0.012, 0) * 6;
-          const phoneNoiseY = noise2D("phY", 0, frame * 0.010) * 4;
-          const phoneNoiseRot = noise2D("phR", frame * 0.008, 5) * 1.2;
-          const content = (
-            <div style={{
-              position: "absolute", inset: 0,
-              opacity: s.phoneOpacity,
-              transform: `translate(${s.phoneX + phoneNoiseX}px, ${s.phoneY + phoneNoiseY}px) rotate(${s.phoneRotation + phoneNoiseRot}deg)`,
-            }}>
-              <PhoneMockup tilt={phoneTilt} xTilt={phoneXTilt} scale={s.phoneScale} shadowOpacity={0.18}>
+          /* Phone3D screen content — all phases layered */
+          const phoneScreenContent = (
+            <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden", background: PHONE_BG }}>
+              {/* Status bar */}
+              <div style={{
+                height: 36, background: PHONE_BG,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, color: GREY_TEXT,
+                fontFamily: "system-ui, sans-serif", fontWeight: 600,
+                position: "relative",
+              }}>
+                <div style={{
+                  position: "absolute", top: 6, left: "50%",
+                  transform: "translateX(-50%)",
+                  width: 80, height: 22, borderRadius: 12, background: "#1A1A1A",
+                }} />
+                <div style={{ position: "absolute", left: 16, top: 10, fontSize: 10, fontWeight: 600 }}>9:41</div>
+              </div>
+              <div style={{ overflow: "hidden", height: "calc(100% - 36px)" }}>
                 {/* DOG PHOTO — full-screen, hard cut at frame 15 */}
                 {showDogPhoto && <DogPhotoScreen />}
                 {/* CHAT — "Good morning" with keyboard */}
@@ -1011,7 +956,25 @@ export const Scene04: React.FC = () => {
                 )}
                 {/* AI Response */}
                 {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
-              </PhoneMockup>
+              </div>
+            </div>
+          );
+          /* Convert degree tilts to radians for Phone3D */
+          const tiltYRad = (phoneTilt * Math.PI) / 180;
+          const tiltXRad = (phoneXTilt * Math.PI) / 180;
+          const content = (
+            <div style={{
+              position: "absolute", inset: 0,
+              opacity: s.phoneOpacity,
+              transform: `translate(${s.phoneX}px, ${s.phoneY}px) rotate(${s.phoneRotation}deg) scale(${s.phoneScale}) ${phoneTilt3D.transform}`,
+            }}>
+              <Phone3D
+                rotateY={tiltYRad}
+                rotateX={tiltXRad}
+                scale={1}
+                screenContent={phoneScreenContent}
+                screenColor="#FFFFFF"
+              />
               {/* Floating emojis */}
               {showEmojis && FLOATING_EMOJIS.map((item, i) => (
                 <FloatingEmoji

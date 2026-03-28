@@ -7,6 +7,7 @@ import { Scene04, scene04Meta } from "./Scene04";
 import { Scene05, scene05Meta } from "./Scene05";
 import { scene01Meta } from "./Scene01";
 import { scene02Meta } from "./Scene02";
+import { OFReplicateSFX } from "./OFReplicateSFX";
 
 /**
  * Standard crossfade duration at most scene boundaries (in frames).
@@ -20,6 +21,13 @@ const XFADE = 12;
  * or crossfade ghosts two phones. Clean cut preserves continuity.
  */
 const S03_S04_OVERLAP = 0;
+
+/**
+ * S04→S05: deep zoom transition.
+ * Longer than standard XFADE so the zoom is visible while
+ * S04 still has content (before it goes fully black).
+ */
+const S04_S05_OVERLAP = 24;
 
 /* Scene durations
  * Cut at 0:35 (frame 1050 absolute) — phone scene stays in S03
@@ -41,9 +49,9 @@ const S01_START = 0;
 const S02_START = S01_START + S01_DUR - XFADE;      // 247
 const S03_START = S02_START + S02_DUR - XFADE;      // 410
 const S04_START = S03_START + S03_DUR - S03_S04_OVERLAP; // 1155 (hard cut)
-const S05_START = S04_START + S04_DUR - XFADE;      // 1482
+const S05_START = S04_START + S04_DUR - S04_S05_OVERLAP; // deeper overlap for zoom
 
-const TOTAL_FRAMES = S05_START + S05_DUR;            // 2177
+const TOTAL_FRAMES = S05_START + S05_DUR;
 
 /**
  * FadeWrapper — simple opacity crossfade for standard transitions.
@@ -90,8 +98,8 @@ const FadeWrapper: React.FC<{
 export const OFReplicateComposition: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
-      {/* ── Audio — original track (music + SFX) ── */}
-      <Audio src={staticFile("of-audio.wav")} />
+      {/* ── SFX only — Google Material Design sounds, frame-synced ── */}
+      <OFReplicateSFX />
 
       {/* ── Scene 01 ── */}
       <Sequence from={S01_START} durationInFrames={S01_DUR} name="Scene 01">
@@ -120,18 +128,19 @@ export const OFReplicateComposition: React.FC = () => {
            Starts S03_S04_OVERLAP frames before S03 ends.
            Draws ON TOP of S03 (later in DOM = higher z-index).
            No fade-in — S04 manages its own phone visibility.
-           Deep zoom out: white scene scales to 3x while fading. */}
+           Deep zoom out: scene scales to 3x over 24 frames while fading,
+           so the zoom is visible while Gemini UI content is still bright. */}
       <Sequence from={S04_START} durationInFrames={S04_DUR} name="Scene 04">
-        <FadeWrapper duration={S04_DUR} fadeOutFrames={XFADE} scaleOut={3}>
+        <FadeWrapper duration={S04_DUR} fadeOutFrames={S04_S05_OVERLAP} scaleOut={3}>
           <Scene04 />
         </FadeWrapper>
       </Sequence>
 
       {/* ── Scene 05 ──
-           Deep zoom in: dark scene starts at 0.5x, grows to 1x.
-           "Diving into screen" effect at the white→dark boundary. */}
+           Deep zoom in: dark scene starts at 0.3x, grows to 1x over
+           the full 24-frame overlap. "Diving into screen" at boundary. */}
       <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
-        <FadeWrapper duration={S05_DUR} fadeInFrames={XFADE} scaleIn={0.5}>
+        <FadeWrapper duration={S05_DUR} fadeInFrames={S04_S05_OVERLAP} scaleIn={0.3}>
           <Scene05 />
         </FadeWrapper>
       </Sequence>

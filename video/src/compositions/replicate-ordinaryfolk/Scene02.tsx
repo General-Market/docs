@@ -335,17 +335,21 @@ export const Scene02: React.FC = () => {
   //
   // At progress 0: both intercepts at the corner (100%, 0%) — no dark visible
   // At progress 0.4 (ref frame_008 moment): topX ~ 55%, rightY ~ 45%
-  // At progress 1: fold has swept fully past, entire frame is dark
-  const topX = 100 - turnProgress * 140;      // fold's X on top edge
-  const rightY = turnProgress * 130 - 10;     // fold's Y on right edge
+  // At progress 1: fold has swept fully past (topX=-5%, rightY=105%)
+  //
+  // Previous values (140 / 130) overshot wildly, creating dark leaks on
+  // both sides. Now limited to 105% travel — just past the edge.
+  const topX = 100 - turnProgress * 105;     // fold's X on top edge
+  const rightY = turnProgress * 105;          // fold's Y on right edge
 
   // Clamp for polygon construction
-  const cTopX = Math.max(-10, Math.min(110, topX));
-  const cRightY = Math.max(-10, Math.min(110, rightY));
+  const cTopX = Math.max(0, Math.min(100, topX));
+  const cRightY = Math.max(0, Math.min(100, rightY));
 
-  // 3D tilt of the white page surface — subtle, grows with progress
-  const pageRotateZ = turnProgress * 10;
-  const pageRotateX = turnProgress * 6;
+  // 3D tilt of the white page surface — subtle, grows with progress.
+  // Reduced from 10/6 to prevent edges peeking through and creating dark leaks.
+  const pageRotateZ = turnProgress * 5;
+  const pageRotateX = turnProgress * 3;
   const pageOpacity = turnProgress > 0.88 ? Math.max(0, (1 - turnProgress) / 0.12) : 1;
   const foldAngle = turnProgress * 40;
 
@@ -552,8 +556,8 @@ export const Scene02: React.FC = () => {
                     width: "100%",
                     height: "100%",
                     clipPath: `polygon(
-                      ${cTopX}% 0%, ${Math.min(cTopX + 15, 105)}% 0%,
-                      ${Math.min(100 + 15, 115)}% ${cRightY}%, 100% ${cRightY}%
+                      ${cTopX}% 0%, ${Math.min(cTopX + 12, 100)}% 0%,
+                      100% ${cRightY}%, 100% ${Math.min(cRightY + 12, 100)}%
                     )`,
                     opacity: interpolate(turnProgress, [0.06, 0.15, 0.5, 0.85], [0, 0.3, 0.18, 0], C),
                     background: `linear-gradient(
