@@ -286,6 +286,7 @@ const SegParticleExplosion: React.FC = () => {
       { opacity: 0, duration: (fps * 1.5 - 10) / fps, ease: "power2.in" },
       10 / fps
     );
+    tl.current.seek(frame / fps);
   }, []);
 
   const phase: "explode" | "swirl" = frame < fps * 0.8 ? "explode" : "swirl";
@@ -359,6 +360,7 @@ const SegGeminiReveal: React.FC = () => {
     t.to(".sparkle-main, .sparkle-secondary, .sparkle-tertiary", {
       opacity: 0, duration: 0.3, ease: "power2.in",
     }, 1.2);
+    tl.current.seek(frame / fps);
   }, []);
 
   // Sparkle rotation is continuous — keep frame-driven
@@ -480,6 +482,7 @@ const SegDesktopUI: React.FC = () => {
       duration: 0.5,
       ease: "power2.out",
     }, 1.5);
+    tl.current.seek(frame / fps);
   }, []);
 
   const cards = [
@@ -770,6 +773,7 @@ const SegItsEverything: React.FC = () => {
       duration: 10 / fps,
       ease: "power2.in",
     }, dur - 10 / fps);
+    tl.current.seek(frame / fps);
   }, []);
 
   // Scroll the text wall + organic wobble (frame-driven for noise)
@@ -886,6 +890,7 @@ const SegAppsFloat: React.FC = () => {
       duration: 10 / fps,
       ease: "power2.in",
     }, dur - 10 / fps);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
@@ -1054,6 +1059,7 @@ const SegTypingPrompt: React.FC = () => {
       duration: 8 / fps,
       ease: "power2.in",
     }, dur - 8 / fps);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
@@ -1190,6 +1196,7 @@ const SegGeminiResponse: React.FC = () => {
       duration: 0.5,
       ease: "power2.out",
     }, 0.5);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
@@ -1473,6 +1480,7 @@ const SegAndMore: React.FC = () => {
       duration: 0.4,
       ease: "power2.out",
     }, 0.5);
+    tl.current.seek(frame / fps);
   }, []);
 
   /* ── Ball rendering — sine-wave bounce + noise wobble ── */
@@ -1664,6 +1672,7 @@ const SegStartingWith: React.FC = () => {
       ease: "power2.in",
       stagger: { each: 0.02, from: "edges" },
     }, scatterStart);
+    tl.current.seek(frame / fps);
   }, []);
 
   const content = (
@@ -1781,6 +1790,7 @@ const SegPhoneMockup: React.FC = () => {
       duration: 8 / fps,
       ease: "power2.in",
     }, dur - 8 / fps);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
@@ -1990,6 +2000,7 @@ const SegSupercharge: React.FC = () => {
       ease: "power2.in",
       stagger: { each: 0.02 },
     }, 1.5);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
@@ -2139,6 +2150,7 @@ const SegPhoneGoodMorning: React.FC = () => {
       ease: "power3.out",
       stagger: 0.2,
     }, 0.3);
+    tl.current.seek(frame / fps);
   }, []);
 
   return (
