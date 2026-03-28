@@ -250,7 +250,7 @@ const PhaseExperimenting: React.FC = () => {
       >
         been
       </span>
-      <span style={{ display: "inline-flex", fontSize: 30 }}>
+      <span style={{ display: "inline-flex", fontSize: 44 }}>
         {EXP_LETTERS.map((ch, i) => {
           const l = s[`l${i}`];
           const pr = Math.max(0, Math.min(1, l.purple));
