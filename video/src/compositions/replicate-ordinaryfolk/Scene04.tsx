@@ -211,9 +211,10 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     /* Glow rotation */
     t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
 
-    /* ═══ Dark ending ═══ */
-    t.to(s, { fadeToBlack: 0.97, duration: sec(13), ease: "power3.in" }, sec(326));
-    t.to(s, { darkShrink: 0.88, duration: sec(13), ease: "power3.in" }, sec(326));
+    /* ═══ Dark ending — very late, very fast. Reference still shows bright
+       Gemini UI at frame 338. Only the last 2-3 frames darken. ═══ */
+    t.to(s, { fadeToBlack: 0.85, duration: sec(3), ease: "power3.in" }, sec(336));
+    t.to(s, { darkShrink: 0.95, duration: sec(3), ease: "power3.in" }, sec(336));
 
     tlRef.current = t;
   }
