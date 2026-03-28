@@ -5,8 +5,8 @@ Structural issues (affect multiple scenes) at the top.
 
 ## STRUCTURAL — Affects Entire Video
 
-- [ ] **Timeline offset ~0.5s too fast everywhere.** Phase transitions happen 0.3-0.5s earlier than reference. Needs a global timing audit — every phase start/end should be shifted later by ~15 frames.
-- [ ] **Font size consistently 6-8px too small.** Body text is 44px, should be 50-52px. Affects S01, S03, S05.
+- [x] **Timeline offset ~0.5s too fast everywhere.** FIXED in S01 — all phases shifted ~15 frames later. S03, S05 still need audit.
+- [x] **Font size consistently 6-8px too small.** FIXED in S01 — all text now 50px. S03, S05 still need audit.
 - [ ] **Background saturation 2-3x too high.** Three ghost blobs on #edeef6, our version announces itself instead of breathing. Cut saturation in half, enlarge ellipses, halve drift speed.
 - [ ] **CSS phones everywhere — need Phone3D.** Phone3D.tsx is built but not integrated. All scenes with phones need to import it.
 - [ ] **No SFX.** Original audio added as single track. Separate SFX layer not yet extracted.
@@ -190,3 +190,68 @@ The reference video has 17 distinct 3D elements. Each needs:
 - [x] Phone3D.tsx built
 - [x] TransitionSeries → manual Sequences with S03/S04 hard cut
 - [x] Scene interpretation complete (5 scenes)
+
+## SCENE 3 — Critics Update (from investigation)
+
+**File:** `video/src/compositions/replicate-ordinaryfolk/Scene03.tsx`
+
+### Particles (0:14-0:17)
+- [ ] Particle explosion too long (+1.17s). Compress by ~35 frames.
+- [ ] Lacks coherent arc trajectory — reference shows sweeping comet-like curve, ours is random scatter.
+
+### Desktop UI (0:18-0:20) — CRITICAL
+- [ ] **Camera sweep DRAMATICALLY wrong.** Reference: 4-5x zoom pullout from browser corner. Ours: scale 1.12→1.0 (barely visible). Need scale 4.0→1.0 with perspective tilt.
+- [ ] Sparkle position: above "m"/"i", not above "G"/"e".
+
+### "It's everything" (0:20)
+- [ ] Column spacing 350px → should be 200-220px. Grid too sparse.
+
+### "you know and love" (0:22)
+- [ ] Icon distribution clusters in upper-left. Should be FULL CIRCULAR ORBIT around text.
+- [ ] Missing heart glyph between "and" and "love".
+
+### "And moooore" (0:30)
+- [ ] Uses colored BALLS replacing letters. Reference keeps TYPOGRAPHIC "o" letterforms tinted with continuous Gemini gradient. Wrong approach.
+
+### Phones (0:35-0:38)
+- [ ] All phones lack 3D perspective tilt on exit. Use Phone3D component.
+- [ ] "Good morning" phone sits flat → should be tilted.
+- [ ] Camera viewfinder uses CSS cartoon bear → needs real photo (structural ceiling).
+- [ ] Avatar is gradient blob → should be photograph.
+
+### Timing
+- [ ] Not uniform offset. Particle explosion +1.17s too long. Gemini response -0.5-0.9s too short. Compounds to +1.5-2.0s late by Scene 03 end.
+
+## SCENE 1 — Additional Findings (2-4s investigation)
+
+- [ ] **"to" was CORRECT.** We WRONGLY removed it. Restore "to" to typewriter. Reference: "to" typed first in dark → "Write" in gradient → "to" fades. Line ~402 TYPE_PHASES needs "to" back.
+- [ ] **Bard persists 0.5s too long.** P3 should end at frame ~85 (2.83s), not 102 (3.4s). Line 1112: P3_FROM=90 but P3 duration should be ~20 frames not 31.
+- [ ] **Bard fade-in too slow.** 0.35s → should be 0.08-0.12s. Find Bard opacity tween duration.
+- [ ] **"experimenting" should be LARGER** than surrounding words. ~45-50px while "You've/been/with" are ~30px. Currently all 50px uniform.
+
+## SCENE 5 — Critics Update (0:50-1:04 investigation)
+
+**File:** `video/src/compositions/replicate-ordinaryfolk/Scene05.tsx`
+
+### Gemini dropdown (0:50-0:52)
+- [ ] **Zoom too small.** Current scale ~1.6 → should start at ~2.8 (only top-left quadrant visible). The reveal IS the drama.
+- [ ] Gradient border opacity 40% → should be 70-80%.
+
+### "Hello, Lisa." (0:52)
+- [ ] Gradient direction wrong: 135° diagonal with blue → should be 90° horizontal (violet to pink, NO blue).
+- [ ] Position dead center → should be left-of-center.
+
+### Gemini sparkle (0:53)
+- [ ] **35px icon → should be FULL-FRAME 4-point star outline with colored strokes.** Massive size difference.
+
+### "for reasoning" (0:55)
+- [ ] Should whisper in lavender, not shout in gradient. Reduce color intensity.
+
+### "coding" (0:57) — CRITICAL
+- [ ] **Missing brackets and monospace font.** Should read `{ coding }` in a terminal/code aesthetic. The braces ARE the point.
+- [ ] Monospace font needed (Source Code Pro, JetBrains Mono, or similar).
+
+### Card rotation (0:57-1:04) — CRITICAL CORRECTION
+- [ ] **Cards do NOT do 360° spins.** They ROCK gently through 30-40° arc. Change all `rotateY` ranges from `[0, 360]` to `[-20, 20]` or `[-15, 25]`.
+- [ ] The motion is slow and dignified, not carnival.
+- [ ] Each card turns slightly on its own axis during a cinematic pan.
