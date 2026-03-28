@@ -104,14 +104,73 @@ const Glow: React.FC<{
   </div>
 );
 
-// ─── Google "G" logo — MULTI-LAYER BREATHING GLOW ───
+// ─── Google "G" logo — LUMINOUS LIGHT SOURCE ───
+// The G is NOT a flat SVG. It is a lamp projecting colored light in a dark room.
+
+/** Tiny floating particles near the G — like dust caught in projected light */
+const GParticles: React.FC<{ count: number; frame: number; spread: number; intensity: number }> = ({
+  count,
+  frame,
+  spread,
+  intensity,
+}) => {
+  const particles = useMemo(() => {
+    const arr: { x: number; y: number; size: number; speed: number; seed: string; phase: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      arr.push({
+        x: (Math.random() - 0.5) * spread * 2,
+        y: (Math.random() - 0.8) * spread * 1.6, // biased upward
+        size: 1 + Math.random() * 2,
+        speed: 0.008 + Math.random() * 0.015,
+        seed: `gp${i}`,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+    return arr;
+  }, [count, spread]);
+
+  return (
+    <>
+      {particles.map((p, i) => {
+        const dx = noise2D(p.seed, frame * p.speed, 0) * 12;
+        const dy = noise2D(p.seed, 0, frame * p.speed * 0.7) * 8 - frame * 0.04;
+        const flickerOp =
+          (Math.sin(frame * 0.1 + p.phase) * 0.3 + 0.7) *
+          intensity *
+          (0.4 + Math.random() * 0.2);
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: `calc(50% + ${p.x + dx}px)`,
+              top: `calc(50% + ${p.y + dy}px)`,
+              width: p.size,
+              height: p.size,
+              borderRadius: "50%",
+              background: i % 3 === 0
+                ? "rgba(251,188,5,0.9)"
+                : i % 3 === 1
+                  ? "rgba(52,168,83,0.8)"
+                  : "rgba(255,255,255,0.7)",
+              opacity: flickerOp,
+              pointerEvents: "none" as const,
+              boxShadow: `0 0 ${p.size * 2}px rgba(251,188,5,0.3)`,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
 
 const GoogleG: React.FC<{
   size?: number;
   opacity?: number;
   glowIntensity?: number;
   frame?: number;
-}> = ({ size = 60, opacity = 1, glowIntensity = 0, frame = 0 }) => {
+  isLightSource?: boolean;
+}> = ({ size = 60, opacity = 1, glowIntensity = 0, frame = 0, isLightSource = false }) => {
   const s = size;
 
   const sineBreath = Math.sin(frame * 0.09) * 0.5 + 0.5;
@@ -131,39 +190,112 @@ const GoogleG: React.FC<{
     pulse * 0.6 +
     noise2D("gGrn", frame * 0.032, 3) * 0.1 * glowIntensity;
 
+  // For light-source mode: dramatically amplified glow
+  const lightMult = isLightSource ? 3.0 : 1.0;
+
   const glowShadow =
     glowIntensity > 0
       ? [
-          `0 0 ${20 * blueGlow}px rgba(66,133,244,0.6)`,
-          `0 0 ${45 * blueGlow}px rgba(66,133,244,0.25)`,
-          `0 0 ${35 * redGlow}px rgba(234,67,53,0.35)`,
-          `0 0 ${70 * redGlow}px rgba(234,67,53,0.12)`,
-          `0 0 ${50 * yellowGlow}px rgba(251,188,5,0.25)`,
-          `0 0 ${90 * yellowGlow}px rgba(251,188,5,0.08)`,
-          `0 0 ${40 * greenGlow}px rgba(52,168,83,0.3)`,
-          `0 0 ${75 * greenGlow}px rgba(52,168,83,0.1)`,
+          `0 0 ${20 * blueGlow * lightMult}px rgba(66,133,244,${isLightSource ? 0.8 : 0.6})`,
+          `0 0 ${45 * blueGlow * lightMult}px rgba(66,133,244,${isLightSource ? 0.4 : 0.25})`,
+          `0 0 ${35 * redGlow * lightMult}px rgba(234,67,53,${isLightSource ? 0.5 : 0.35})`,
+          `0 0 ${70 * redGlow * lightMult}px rgba(234,67,53,${isLightSource ? 0.2 : 0.12})`,
+          `0 0 ${50 * yellowGlow * lightMult}px rgba(251,188,5,${isLightSource ? 0.5 : 0.25})`,
+          `0 0 ${90 * yellowGlow * lightMult}px rgba(251,188,5,${isLightSource ? 0.15 : 0.08})`,
+          `0 0 ${40 * greenGlow * lightMult}px rgba(52,168,83,${isLightSource ? 0.6 : 0.3})`,
+          `0 0 ${75 * greenGlow * lightMult}px rgba(52,168,83,${isLightSource ? 0.2 : 0.1})`,
+          ...(isLightSource
+            ? [
+                `0 0 ${120 * pulse}px rgba(52,168,83,0.25)`,
+                `0 0 ${160 * pulse}px rgba(251,188,5,0.15)`,
+                `0 0 ${200 * pulse}px rgba(52,168,83,0.08)`,
+              ]
+            : []),
         ].join(", ")
       : "none";
 
   const svgFilter =
     pulse > 0
-      ? `drop-shadow(0 0 ${12 * blueGlow}px rgba(66,133,244,0.7)) drop-shadow(0 0 ${30 * pulse}px rgba(139,92,246,0.3))`
+      ? `drop-shadow(0 0 ${12 * blueGlow * lightMult}px rgba(66,133,244,0.7)) drop-shadow(0 0 ${30 * pulse * lightMult}px rgba(139,92,246,0.3))${isLightSource ? ` drop-shadow(0 0 ${50 * pulse}px rgba(52,168,83,0.4))` : ""}`
       : "none";
 
-  // Animated gradient rotation for continuous rainbow flow
-  const gradRotation = frame * 1.5;
+  // Animated gradient rotation — continuous rainbow flow
+  const gradRotation = frame * (isLightSource ? 2.5 : 1.5);
 
   return (
     <div style={{ width: s, height: s, opacity, position: "relative" }}>
+      {/* LIGHT SOURCE MODE: large warm green/gold radial glow BEHIND the G */}
+      {isLightSource && (
+        <>
+          {/* Outermost warm light projection — 500px+ — the lamp's reach */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 550,
+              height: 550,
+              borderRadius: "50%",
+              background: `radial-gradient(circle,
+                rgba(52,168,83,${0.35 * pulse}) 0%,
+                rgba(120,160,50,${0.25 * pulse}) 15%,
+                rgba(251,188,5,${0.18 * pulse}) 30%,
+                rgba(52,168,83,${0.10 * pulse}) 50%,
+                rgba(180,160,40,${0.04 * pulse}) 70%,
+                transparent 88%)`,
+              pointerEvents: "none",
+            }}
+          />
+          {/* Inner warm halo — 350px — the bright core behind the G */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 360,
+              height: 360,
+              borderRadius: "50%",
+              background: `radial-gradient(circle,
+                rgba(251,188,5,${0.45 * pulse}) 0%,
+                rgba(52,168,83,${0.30 * pulse}) 25%,
+                rgba(180,160,40,${0.15 * pulse}) 50%,
+                transparent 75%)`,
+              pointerEvents: "none",
+            }}
+          />
+          {/* Hot core — tight bright spot right behind the G */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 160,
+              height: 160,
+              borderRadius: "50%",
+              background: `radial-gradient(circle,
+                rgba(255,240,200,${0.15 * pulse}) 0%,
+                rgba(251,188,5,${0.25 * pulse}) 30%,
+                rgba(52,168,83,${0.10 * pulse}) 60%,
+                transparent 85%)`,
+              pointerEvents: "none",
+            }}
+          />
+          {/* Floating particles */}
+          <GParticles count={35} frame={frame} spread={200} intensity={pulse} />
+        </>
+      )}
       <svg
         viewBox="0 0 48 48"
         width={s}
         height={s}
-        style={{ filter: svgFilter }}
+        style={{ filter: svgFilter, position: "relative", zIndex: 2 }}
       >
         <defs>
           <linearGradient
-            id={`g-rainbow-${s}`}
+            id={`g-rainbow-${s}-${isLightSource ? "ls" : "n"}`}
             gradientUnits="userSpaceOnUse"
             x1={24 + 22 * Math.cos((gradRotation * Math.PI) / 180)}
             y1={24 + 22 * Math.sin((gradRotation * Math.PI) / 180)}
@@ -180,24 +312,25 @@ const GoogleG: React.FC<{
         {/* Single G path with continuous rainbow gradient */}
         <path
           d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"
-          fill={`url(#g-rainbow-${s})`}
+          fill={`url(#g-rainbow-${s}-${isLightSource ? "ls" : "n"})`}
         />
       </svg>
       <div
         style={{
           position: "absolute",
-          inset: -6,
+          inset: isLightSource ? -12 : -6,
           borderRadius: "50%",
           boxShadow: glowShadow,
           pointerEvents: "none",
+          zIndex: 1,
         }}
       />
       <div
         style={{
           position: "absolute",
-          inset: -20,
+          inset: isLightSource ? -40 : -20,
           borderRadius: "50%",
-          background: `radial-gradient(circle, rgba(66,133,244,${0.08 * pulse}) 0%, rgba(139,92,246,${0.04 * pulse}) 40%, transparent 70%)`,
+          background: `radial-gradient(circle, rgba(66,133,244,${(isLightSource ? 0.15 : 0.08) * pulse}) 0%, rgba(139,92,246,${(isLightSource ? 0.08 : 0.04) * pulse}) 40%, transparent 70%)`,
           pointerEvents: "none",
         }}
       />
@@ -282,30 +415,50 @@ const PromptCard: React.FC<{
   width?: number;
   opacity?: number;
   scale?: number;
-}> = ({ card, width = 200, opacity = 1, scale = 1 }) => {
+  isActive?: boolean;
+}> = ({ card, width = 200, opacity = 1, scale = 1, isActive = false }) => {
   const isCode = card.title.includes("HTML");
   return (
     <div
       style={{
         width,
-        background: "#1A1A2E",
-        borderRadius: 16,
-        padding: 16,
+        background: `linear-gradient(180deg, #1A1A2E 0%, #1A1A2E 95%, rgba(255,255,255,0.02) 100%)`,
+        borderRadius: 12,
+        padding: 14,
         opacity,
         transform: `scale(${scale})`,
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: `0 0 20px ${card.accentColor}22, 0 4px 20px rgba(0,0,0,0.5)`,
+        border: "0.5px solid rgba(255,255,255,0.06)",
+        boxShadow: [
+          `inset 0 1px 1px rgba(255,255,255,0.04)`,
+          `inset 0 -1px 2px rgba(0,0,0,0.3)`,
+          `0 4px 20px rgba(0,0,0,0.5)`,
+          `0 0 20px ${card.accentColor}22`,
+          ...(isActive
+            ? [`0 0 20px rgba(139,92,246,0.15)`, `0 0 40px rgba(139,92,246,0.08)`]
+            : []),
+        ].join(", "),
         overflow: "hidden",
         position: "relative" as const,
       }}
     >
+      {/* Glossy surface overlay */}
+      <div
+        style={{
+          position: "absolute" as const,
+          inset: 0,
+          borderRadius: 12,
+          background: "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 40%, transparent 90%, rgba(255,255,255,0.02) 100%)",
+          pointerEvents: "none" as const,
+          zIndex: 1,
+        }}
+      />
       <div
         style={{
           width: "100%",
-          height: 80,
-          borderRadius: 10,
+          height: 76,
+          borderRadius: 8,
           background: `linear-gradient(135deg, ${card.thumbColor}, ${card.accentColor}33)`,
-          marginBottom: 12,
+          marginBottom: 10,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -321,7 +474,7 @@ const PromptCard: React.FC<{
                 borderRadius: "50%",
                 background: `radial-gradient(circle, #FFD700, ${PURPLE})`,
                 position: "absolute" as const,
-                top: 25,
+                top: 22,
                 left: "30%",
                 boxShadow: `0 0 15px ${PURPLE}`,
               }}
@@ -333,7 +486,7 @@ const PromptCard: React.FC<{
                 borderRadius: "50%",
                 background: "radial-gradient(circle, #60A5FA, #1E3A5F)",
                 position: "absolute" as const,
-                top: 40,
+                top: 37,
                 left: "55%",
                 boxShadow: "0 0 10px #60A5FA",
               }}
@@ -355,12 +508,13 @@ const PromptCard: React.FC<{
       <div
         style={{
           color: "#fff",
-          fontSize: 13,
+          fontSize: 12,
           fontFamily: FONT,
-          fontWeight: 600,
-          lineHeight: 1.3,
+          fontWeight: 500,
+          lineHeight: 1.35,
           whiteSpace: "pre-line",
-          marginBottom: 8,
+          marginBottom: 6,
+          letterSpacing: 0.1,
         }}
       >
         {card.title}
@@ -368,12 +522,13 @@ const PromptCard: React.FC<{
       {card.body.length > 0 && (
         <div
           style={{
-            color: "rgba(255,255,255,0.5)",
-            fontSize: 9,
+            color: "rgba(255,255,255,0.4)",
+            fontSize: 8.5,
             fontFamily: isCode
               ? "'Fira Code', 'SF Mono', monospace"
               : FONT,
-            lineHeight: 1.5,
+            lineHeight: 1.55,
+            letterSpacing: 0.05,
           }}
         >
           {card.body.map((line, i) => (
@@ -384,7 +539,7 @@ const PromptCard: React.FC<{
                     color:
                       line.startsWith("<") || line.startsWith(" ")
                         ? "#7DD3FC"
-                        : "rgba(255,255,255,0.5)",
+                        : "rgba(255,255,255,0.4)",
                   }}
                 >
                   {line}
@@ -402,9 +557,9 @@ const PromptCard: React.FC<{
           bottom: 0,
           left: "10%",
           right: "10%",
-          height: 2,
-          background: `linear-gradient(90deg, transparent, ${card.accentColor}, transparent)`,
-          boxShadow: `0 0 10px ${card.accentColor}`,
+          height: 1.5,
+          background: `linear-gradient(90deg, transparent, ${card.accentColor}88, transparent)`,
+          boxShadow: `0 0 8px ${card.accentColor}66`,
         }}
       />
     </div>
@@ -1628,28 +1783,45 @@ export const Scene05: React.FC = () => {
         ease: "power2.out",
       }, f(550));
     }
-    // Phone arc sweep from bottom-left
+    // Phone slides in from right with expo deceleration, overshoots, settles into 30° pose
     if (expPhoneRef.current) {
-      t.set(expPhoneRef.current, { opacity: 0, x: -60, y: 220, rotation: 8 }, 0);
+      t.set(expPhoneRef.current, { opacity: 0, x: 400, y: 60, rotation: -12 }, 0);
+      // Fast entrance from right — expo deceleration
       t.to(expPhoneRef.current, {
         opacity: 1,
+        x: -30, // overshoot left past final position
+        y: -8,
+        rotation: 4,
+        duration: f(14),
+        ease: "expo.out",
+      }, f(555));
+      // Settle back to final position (30° toward viewer is set on the style)
+      t.to(expPhoneRef.current, {
         x: 0,
         y: 0,
         rotation: 0,
-        duration: f(23),
-        ease: "power2.out",
-      }, f(555));
+        duration: f(12),
+        ease: "power2.inOut",
+      }, f(569));
     }
-    // Desktop arc sweep from right
+    // Desktop slides in from further right, slight delay, same expo overshoot
     if (expDesktopRef.current) {
-      t.set(expDesktopRef.current, { opacity: 0, x: 280, rotation: -4 }, 0);
+      t.set(expDesktopRef.current, { opacity: 0, x: 500, rotation: 8 }, 0);
+      // Fast entrance from right — expo deceleration
       t.to(expDesktopRef.current, {
         opacity: 1,
+        x: -25, // overshoot left
+        rotation: -3,
+        duration: f(15),
+        ease: "expo.out",
+      }, f(558));
+      // Settle back to final position (–30° toward viewer is set on the style)
+      t.to(expDesktopRef.current, {
         x: 0,
         rotation: 0,
-        duration: f(22),
-        ease: "power2.out",
-      }, f(560));
+        duration: f(12),
+        ease: "power2.inOut",
+      }, f(573));
     }
     // Devices container — no shrink, hold at full scale
     if (expDevicesRef.current) {
@@ -2520,6 +2692,53 @@ export const Scene05: React.FC = () => {
         }}
       />
 
+      {/* P: Warm golden-green background wash — G is a LAMP projecting light across the room */}
+      {frame >= 625 && frame < 700 && (() => {
+        const washProgress = frame < 640
+          ? (frame - 625) / 15
+          : frame > 686
+            ? Math.max(0, 1 - (frame - 686) / 8)
+            : 1;
+        const washPulse = (Math.sin(frame * 0.06) * 0.15 + 0.85) * washProgress;
+        return (
+          <>
+            {/* Full-screen warm green/gold tint — the projected light */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `
+                  radial-gradient(ellipse 120% 120% at 50% 50%,
+                    rgba(52,168,83,${0.22 * washPulse}) 0%,
+                    rgba(120,160,50,${0.14 * washPulse}) 15%,
+                    rgba(251,188,5,${0.10 * washPulse}) 30%,
+                    rgba(52,168,83,${0.06 * washPulse}) 50%,
+                    rgba(180,160,40,${0.03 * washPulse}) 70%,
+                    transparent 90%)
+                `,
+                pointerEvents: "none" as const,
+                zIndex: 0,
+              }}
+            />
+            {/* Secondary warm diffuse wash — edges of the room */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: `
+                  radial-gradient(ellipse 80% 80% at 50% 45%,
+                    rgba(251,188,5,${0.08 * washPulse}) 0%,
+                    rgba(52,168,83,${0.04 * washPulse}) 40%,
+                    transparent 75%)
+                `,
+                pointerEvents: "none" as const,
+                zIndex: 0,
+              }}
+            />
+          </>
+        );
+      })()}
+
       {/* O+P: Sparkle → Google G morph (continuous container) */}
       <div
         ref={sparkleWrapRef}
@@ -2594,7 +2813,7 @@ export const Scene05: React.FC = () => {
             pointerEvents: "none",
           }}
         />
-        <GoogleG size={80} glowIntensity={gFinalGlow * 0.5} frame={frame} />
+        <GoogleG size={80} glowIntensity={gFinalGlow * 0.8} frame={frame} isLightSource />
       </div>
 
       {/* Bottom disclaimer during interface */}
