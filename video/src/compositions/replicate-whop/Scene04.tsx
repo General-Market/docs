@@ -32,11 +32,14 @@ const FINAL_INTEREST = 706347; // matches reference "$706,347 earned in 30 years
 
 function generateBarData() {
   const bars: { year: number; deposit: number; interest: number }[] = [];
+  // 6% APY compound growth — deposit grows linearly, interest exponentially
+  // Reference: interest dominates ~60-70% of tallest bars
+  const rate = 0.06;
   for (let i = 1; i <= BAR_COUNT; i++) {
     const deposit = DEPOSIT_PER_YEAR * i;
-    // Compound interest — reference shows green visible from ~year 8 onward
-    const t = i / BAR_COUNT;
-    const interest = FINAL_INTEREST * Math.pow(t, 2.5);
+    // Future value of annuity minus pure deposits = compound interest earned
+    const fv = DEPOSIT_PER_YEAR * ((Math.pow(1 + rate, i) - 1) / rate);
+    const interest = Math.max(0, fv - deposit);
     bars.push({ year: i, deposit, interest });
   }
   return bars;
@@ -582,7 +585,7 @@ const GrowthChartSegment: React.FC = () => {
 
   // 90 frames total for this segment
   const segDur = 90;
-  const zoomStart = fps * 1.2; // start zooming at 1.2s (frame 30)
+  const zoomStart = fps * 0.8; // start zooming earlier
 
   const entryScale = spring({
     fps,
@@ -591,23 +594,23 @@ const GrowthChartSegment: React.FC = () => {
     to: 1,
     config: { damping: 20 },
   });
-  // Zoom into chart — gentle zoom, pan left to crop early bars
+  // Zoom into chart — aggressive zoom focusing on the bar area
   const zoomScale = interpolate(
     frame,
     [zoomStart, segDur],
-    [1, 1.6],
+    [1, 1.85],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomY = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -100],
+    [0, -60],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const zoomX = interpolate(
     frame,
     [zoomStart, segDur],
-    [0, -220],
+    [0, -280],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const cardScale = entryScale * zoomScale;
@@ -640,12 +643,12 @@ const GrowthChartSegment: React.FC = () => {
     extrapolateRight: "clamp",
   });
 
-  // Chart area — match reference proportions: ~75% bar, ~25% gap
+  // Chart area — bars must fill majority of vertical space
   const CARD_W = 3200;
   const CARD_H = 1800;
   const PAD_X = 140;
-  const PAD_TOP = 420; // space for badge + number + legend
-  const PAD_BOTTOM = 100; // space for x-axis labels
+  const PAD_TOP = 380; // space for badge + number + legend
+  const PAD_BOTTOM = 80; // space for x-axis labels
   const chartWidth = CARD_W - PAD_X * 2;
   const chartHeight = CARD_H - PAD_TOP - PAD_BOTTOM;
   const barSlot = chartWidth / BAR_COUNT;
@@ -804,11 +807,12 @@ const GrowthChartSegment: React.FC = () => {
             const depositH = (bar.deposit / MAX_TOTAL) * maxH;
             const interestH = fullH - depositH;
 
-            const delayFrames = fps * 0.2 + i * 0.6;
+            // All bars grow simultaneously — slight stagger for wave effect
+            const delayFrames = fps * 0.15 + i * 0.3;
             const growProgress = spring({
               fps,
               frame: frame - delayFrames,
-              config: { damping: 18, stiffness: 80, mass: 0.8 },
+              config: { damping: 14, stiffness: 60, mass: 1.0 },
             });
 
             const currentDepositH = depositH * growProgress;

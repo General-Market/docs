@@ -107,7 +107,7 @@ interface AnimState {
 
 function createDefaultState(): AnimState {
   return {
-    phoneX: 200, phoneY: 120, phoneRotation: 6, phoneOpacity: 0, phoneScale: 0.88,
+    phoneX: 340, phoneY: 180, phoneRotation: 8, phoneOpacity: 1, phoneScale: 0.82,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
     geminiOpacity: 0, geminiY: 120, geminiScale: 1.3, geminiPanX: -120, geminiPanY: 100,
@@ -129,22 +129,20 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const sec = (f: number) => f / fps;
     const t = gsap.timeline({ paused: true });
 
-    /* ═══ Phase 1: Phone entrance — curved motionPath arc ═══ */
-    t.to(s, {
-      phoneOpacity: 1,
-      duration: sec(8),
-      ease: "power2.out",
-    }, 0);
+    /* ═══ Phase 1: Phone entrance — hard cut (opacity already 1), curved arc ═══ */
     const phoneEntryTween = gsap.to({ t: 0 }, {
       t: 1, duration: sec(20), ease: "expo.out", paused: true,
       onUpdate() {
         const progress = this.progress();
-        s.phoneX = quadBezier(progress, 200, 40, 0);
-        s.phoneY = quadBezier(progress, 120, -30, 0);
+        s.phoneX = quadBezier(progress, 340, 60, 50);
+        s.phoneY = quadBezier(progress, 180, -20, -10);
       },
     });
     t.add(phoneEntryTween, 0);
     t.to(s, { phoneRotation: 0, duration: sec(20), ease: "expo.out" }, 0);
+
+    /* Slow drift toward center after entry settles */
+    t.to(s, { phoneX: 20, phoneY: 0, duration: sec(100), ease: "sine.inOut" }, sec(PHASE.CHAT_IN.start));
 
     /* Phone scale — breathing + zoom during photo expand */
     t.to(s, { phoneScale: 0.96, duration: sec(40), ease: "sine.inOut" }, 0);
@@ -200,12 +198,13 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { introOpacity: 1, duration: sec(6), ease: "power2.out" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introScale: 1.0, duration: sec(20), ease: "elastic.out(1, 0.6)" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introClipRight: 0, duration: sec(21), ease: "expo.out" }, sec(PHASE.INTRODUCING.start));
-    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 8));
+    /* Intro fades out exactly as Gemini fades in — no dead gap */
+    t.to(s, { introOpacity: 0, duration: sec(5), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 3));
 
     /* ═══ Gemini Desktop Browser UI ═══ */
     const gemStart = sec(PHASE.GEMINI_UI.start);
-    t.to(s, { geminiOpacity: 1, duration: sec(10), ease: "power2.out" }, gemStart);
-    t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemStart);
+    t.to(s, { geminiOpacity: 1, duration: sec(5), ease: "power2.out" }, gemStart);
+    t.to(s, { geminiY: 0, duration: sec(12), ease: "expo.out" }, gemStart);
     /* Zoom in to top-left corner over time */
     /* Slow zoom + pan toward top-left corner of the panel to focus on dropdown */
     t.to(s, { geminiScale: 1.9, duration: sec(46), ease: "power1.inOut" }, gemStart);

@@ -720,93 +720,175 @@ const GeminiInterface: React.FC<{
   );
 };
 
-// ─── Phone mockup (light mode) ───
+// ─── Phone mockup (3D with depth) ───
 
 const PhoneMockup: React.FC<{
   className?: string;
   style?: React.CSSProperties;
-}> = ({ className, style }) => (
-  <div
-    className={className}
-    style={{
-      width: 180,
-      height: 360,
-      background: "#F5F5F5",
-      borderRadius: 24,
-      border: "3px solid #333",
-      overflow: "hidden",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-      ...style,
-    }}
-  >
+}> = ({ className, style }) => {
+  const W = 180;
+  const H = 360;
+  const DEPTH = 12;
+  const BR = 24;
+
+  return (
     <div
+      className={className}
       style={{
-        height: 24,
-        background: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 12px",
+        width: W,
+        height: H,
+        position: "relative",
+        transformStyle: "preserve-3d",
+        ...style,
       }}
     >
-      <span style={{ fontSize: 8, color: "#333", fontFamily: FONT }}>
-        9:30
-      </span>
-      <span style={{ fontSize: 8, color: "#333", fontFamily: FONT }}>
-        5G
-      </span>
-    </div>
-    <div style={{ padding: 14, background: "#fff", height: "100%" }}>
+      {/* Front face — the screen */}
       <div
         style={{
-          fontSize: 20,
-          fontWeight: 400,
-          fontFamily: FONT,
-          color: "#333",
-          marginBottom: 12,
+          position: "absolute",
+          width: W,
+          height: H,
+          background: "#F5F5F5",
+          borderRadius: BR,
+          border: "3px solid #333",
+          overflow: "hidden",
+          transform: `translateZ(${DEPTH / 2}px)`,
+          backfaceVisibility: "hidden",
+          boxShadow: "0 0 20px rgba(0,0,0,0.3)",
         }}
       >
-        Good morning
-      </div>
-      {[
-        { bg: "#E8F0FE", color: "#1A73E8", text: "Find places to eat..." },
-        { bg: "#FEF7E0", color: "#E37400", text: "Help me plan..." },
-        { bg: "#E6F4EA", color: "#137333", text: "Tell me about..." },
-      ].map((c, i) => (
         <div
-          key={i}
           style={{
-            background: c.bg,
-            borderRadius: 12,
-            padding: "8px 10px",
-            marginBottom: 6,
-            fontSize: 8,
-            fontFamily: FONT,
-            color: c.color,
+            height: 24,
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 12px",
           }}
         >
-          {c.text}
+          <span style={{ fontSize: 8, color: "#333", fontFamily: FONT }}>
+            9:30
+          </span>
+          <span style={{ fontSize: 8, color: "#333", fontFamily: FONT }}>
+            5G
+          </span>
         </div>
-      ))}
+        <div style={{ padding: 14, background: "#fff", height: "100%" }}>
+          <div
+            style={{
+              fontSize: 20,
+              fontWeight: 400,
+              fontFamily: FONT,
+              color: "#333",
+              marginBottom: 12,
+            }}
+          >
+            Good morning
+          </div>
+          {[
+            { bg: "#E8F0FE", color: "#1A73E8", text: "Find places to eat..." },
+            { bg: "#FEF7E0", color: "#E37400", text: "Help me plan..." },
+            { bg: "#E6F4EA", color: "#137333", text: "Tell me about..." },
+          ].map((c, i) => (
+            <div
+              key={i}
+              style={{
+                background: c.bg,
+                borderRadius: 12,
+                padding: "8px 10px",
+                marginBottom: 6,
+                fontSize: 8,
+                fontFamily: FONT,
+                color: c.color,
+              }}
+            >
+              {c.text}
+            </div>
+          ))}
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
+              margin: "12px auto 0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{ width: 8, height: 12, borderRadius: 4, background: "#fff" }}
+            />
+          </div>
+        </div>
+      </div>
+      {/* Back face */}
       <div
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          background: `linear-gradient(135deg, ${BLUE}, ${PURPLE})`,
-          margin: "12px auto 0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: "absolute",
+          width: W,
+          height: H,
+          background: "linear-gradient(180deg, #2A2A2A, #1A1A1A)",
+          borderRadius: BR,
+          transform: `translateZ(-${DEPTH / 2}px) rotateY(180deg)`,
+          backfaceVisibility: "hidden",
         }}
-      >
-        <div
-          style={{ width: 8, height: 12, borderRadius: 4, background: "#fff" }}
-        />
-      </div>
+      />
+      {/* Right edge */}
+      <div
+        style={{
+          position: "absolute",
+          width: DEPTH,
+          height: H - BR,
+          background: "linear-gradient(180deg, #444, #222)",
+          transform: `rotateY(90deg) translateZ(${W / 2 - DEPTH / 2}px)`,
+          top: BR / 2,
+          left: W / 2 - DEPTH / 2,
+        }}
+      />
+      {/* Left edge */}
+      <div
+        style={{
+          position: "absolute",
+          width: DEPTH,
+          height: H - BR,
+          background: "linear-gradient(180deg, #444, #222)",
+          transform: `rotateY(-90deg) translateZ(${W / 2 - DEPTH / 2}px)`,
+          top: BR / 2,
+          left: W / 2 - DEPTH / 2,
+        }}
+      />
+      {/* Top edge */}
+      <div
+        style={{
+          position: "absolute",
+          width: W - BR,
+          height: DEPTH,
+          background: "#3A3A3A",
+          transform: `rotateX(90deg) translateZ(${DEPTH / 2}px)`,
+          top: -DEPTH / 2,
+          left: BR / 2,
+          borderRadius: "2px 2px 0 0",
+        }}
+      />
+      {/* Bottom edge */}
+      <div
+        style={{
+          position: "absolute",
+          width: W - BR,
+          height: DEPTH,
+          background: "#2A2A2A",
+          transform: `rotateX(-90deg) translateZ(${H - DEPTH / 2}px)`,
+          top: -DEPTH / 2,
+          left: BR / 2,
+          borderRadius: "0 0 2px 2px",
+        }}
+      />
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Ultra 1.0 orb ───
 
@@ -945,8 +1027,10 @@ export const Scene05: React.FC = () => {
   const cardPeekRef = useRef<HTMLDivElement>(null);
   const kineticJRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const cardsPanRef = useRef<HTMLDivElement>(null);
+  const cardPanItemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const spiralContainerRef = useRef<HTMLDivElement>(null);
   const spiralWordsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const spiralRingRef = useRef<HTMLDivElement>(null);
   const spiralTextRef = useRef<HTMLDivElement>(null);
   const spiralCharsRef = useRef<(HTMLDivElement | null)[]>([]);
   const spiralGlowRef = useRef<HTMLDivElement>(null);
@@ -1339,21 +1423,19 @@ export const Scene05: React.FC = () => {
       }, f(390));
     }
 
-    // ═══ K: Cards pan 2+3 (430-480) — 3D carousel rotation ═══
+    // ═══ K: Cards pan 2+3 (430-480) — each card rotates on its OWN Y-axis ═══
     if (cardsPanRef.current) {
-      t.set(cardsPanRef.current, { opacity: 0, x: 200, rotateY: -30 }, 0);
-      // Sweep in with perspective tilt
+      t.set(cardsPanRef.current, { opacity: 0, x: 200 }, 0);
+      // Sweep container in
       t.to(cardsPanRef.current, {
         opacity: 1,
         x: 0,
-        rotateY: 0,
         duration: f(16),
         ease: "power2.out",
       }, f(430));
-      // Slow continuous rotation through the pan
+      // Pan container left
       t.to(cardsPanRef.current, {
         x: -180,
-        rotateY: 25,
         duration: f(45),
         ease: "power1.inOut",
       }, f(430));
@@ -1363,6 +1445,17 @@ export const Scene05: React.FC = () => {
         ease: "power1.in",
       }, f(470));
     }
+    // Each card in K spins on its own Y-axis (card flip)
+    cardPanItemRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const dir = i === 0 ? 1 : -1;
+      t.set(el, { rotateY: dir * -20 }, 0);
+      t.to(el, {
+        rotateY: dir * 360,
+        duration: f(48),
+        ease: "none",
+      }, f(430));
+    });
 
     // ═══ L: "With access to" — readable, then chars peel inward (480-520) ═══
     // Phase 1: readable text appears
@@ -1422,41 +1515,46 @@ export const Scene05: React.FC = () => {
       }, f(staggerFrame));
     });
 
-    // Spiral words — appear at outer ring, converge INWARD to center
+    // Spiral words — 3D orbital ring: words orbit on a tilted ellipse
+    // The ring container tilts in 3D, words are positioned on the ring
+    if (spiralRingRef.current) {
+      t.set(spiralRingRef.current, { opacity: 0, rotateX: 60, rotateZ: -15, scale: 0.6 }, 0);
+      // Fade in with 3D tilt
+      t.to(spiralRingRef.current, {
+        opacity: 1,
+        scale: 1,
+        duration: f(12),
+        ease: "power2.out",
+      }, f(492));
+      // Slow orbit rotation while visible
+      t.to(spiralRingRef.current, {
+        rotateZ: 15,
+        duration: f(35),
+        ease: "none",
+      }, f(492));
+      // Converge inward and fade
+      t.to(spiralRingRef.current, {
+        scale: 0.15,
+        opacity: 0,
+        duration: f(12),
+        ease: "power2.in",
+      }, f(520));
+    }
+    // Individual words fade in with stagger
     spiralWordsRef.current.forEach((el, i) => {
       if (!el) return;
-      const angle = (i / SPIRAL_WORDS.length) * Math.PI * 2 - Math.PI / 2;
-      const outerR = 260;
-      const startX = Math.cos(angle) * outerR;
-      const startY = Math.sin(angle) * outerR;
-
-      t.set(el, { opacity: 0, x: startX, y: startY, scale: 1.2, rotation: (i % 2 === 0 ? -15 : 15) }, 0);
-
-      // Fade in at outer position
+      t.set(el, { opacity: 0, scale: 0.7 }, 0);
       t.to(el, {
         opacity: 1,
+        scale: 1,
         duration: f(8),
         ease: "power1.out",
-      }, f(495 + i * 2));
-
-      // Spiral INWARD — converge to center along curved path
-      const midAngle = angle + Math.PI * 0.4;
-      const midR = outerR * 0.45;
+      }, f(494 + i * 2));
       t.to(el, {
-        motionPath: {
-          path: [
-            { x: startX, y: startY },
-            { x: Math.cos(midAngle) * midR, y: Math.sin(midAngle) * midR },
-            { x: 0, y: 0 },
-          ],
-          curviness: 1.8,
-        },
-        scale: 0.2,
-        rotation: 0,
         opacity: 0,
-        duration: f(25),
-        ease: "power2.in",
-      }, f(500 + i * 2));
+        duration: f(6),
+        ease: "power1.in",
+      }, f(522 + i * 1));
     });
 
     // Spiral center glow
@@ -1779,9 +1877,10 @@ export const Scene05: React.FC = () => {
           top: "28%",
           left: "22%",
           opacity: 0,
+          perspective: 800,
         }}
       >
-        <PhoneMockup style={{ transform: "scale(0.6)" }} />
+        <PhoneMockup style={{ transform: "scale(0.6) rotateY(8deg)" }} />
       </div>
 
       {/* B+C+D: Gemini Interface */}
@@ -2040,7 +2139,7 @@ export const Scene05: React.FC = () => {
         "rgba(139,92,246,0.2)"
       )}
 
-      {/* K: Cards pan 2+3 — 3D carousel */}
+      {/* K: Cards pan 2+3 — each card rotates on its OWN axis */}
       <div
         style={{
           position: "absolute",
@@ -2059,9 +2158,44 @@ export const Scene05: React.FC = () => {
             opacity: 0,
           }}
         >
-          {[2, 3].map((idx) => (
-            <div key={idx} style={{ transform: "scale(1.35)" }}>
-              <PromptCard card={CARDS[idx]} width={200} />
+          {[2, 3].map((idx, i) => (
+            <div
+              key={idx}
+              ref={(el) => { cardPanItemRefs.current[i] = el; }}
+              style={{
+                transform: "scale(1.35)",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {/* Front face */}
+              <div style={{ backfaceVisibility: "hidden" }}>
+                <PromptCard card={CARDS[idx]} width={200} />
+              </div>
+              {/* Back face */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 200,
+                    height: "100%",
+                    background: `linear-gradient(135deg, ${CARDS[idx].thumbColor}, ${CARDS[idx].accentColor}44)`,
+                    borderRadius: 16,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: `0 0 30px ${CARDS[idx].accentColor}33`,
+                  }}
+                >
+                  <GeminiSparkle size={40} color={CARDS[idx].accentColor} />
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -2077,6 +2211,8 @@ export const Scene05: React.FC = () => {
           transform: "translate(-50%, -50%)",
           width: 0,
           height: 0,
+          perspective: 900,
+          transformStyle: "preserve-3d",
         }}
       >
         {/* Central convergence glow */}
@@ -2154,39 +2290,56 @@ export const Scene05: React.FC = () => {
           );
         })}
 
-        {/* Capability words that spiral inward around the convergence */}
-        {SPIRAL_WORDS.map((word, i) => {
-          const gradients = [
-            `linear-gradient(90deg, ${PURPLE}, ${PINK})`,
-            `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
-            `linear-gradient(90deg, ${PINK}, ${BLUE})`,
-          ];
-          const gradient = gradients[i % gradients.length];
-          return (
-            <div
-              key={`spiral-word-${i}`}
-              ref={(el) => { spiralWordsRef.current[i] = el; }}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                transform: "translate(-50%, -50%)",
-                fontSize: 28 - (i % 3) * 2,
-                fontFamily: FONT,
-                fontWeight: 400,
-                background: gradient,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text" as const,
-                filter: `drop-shadow(0 0 10px ${PURPLE})`,
-                whiteSpace: "nowrap",
-                opacity: 0,
-              }}
-            >
-              {word}
-            </div>
-          );
-        })}
+        {/* Capability words on a 3D orbital ring */}
+        <div
+          ref={spiralRingRef}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            transform: "translate(-50%, -50%)",
+            width: 0,
+            height: 0,
+            transformStyle: "preserve-3d",
+            opacity: 0,
+          }}
+        >
+          {SPIRAL_WORDS.map((word, i) => {
+            const angle = (i / SPIRAL_WORDS.length) * 360;
+            const ringRadius = 220;
+            const gradients = [
+              `linear-gradient(90deg, ${PURPLE}, ${PINK})`,
+              `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
+              `linear-gradient(90deg, ${PINK}, ${BLUE})`,
+            ];
+            const gradient = gradients[i % gradients.length];
+            return (
+              <div
+                key={`spiral-word-${i}`}
+                ref={(el) => { spiralWordsRef.current[i] = el; }}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  transform: `rotateY(${angle}deg) translateZ(${ringRadius}px) rotateY(-${angle}deg)`,
+                  fontSize: 26,
+                  fontFamily: FONT,
+                  fontWeight: 500,
+                  background: gradient,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text" as const,
+                  filter: `drop-shadow(0 0 12px ${PURPLE})`,
+                  whiteSpace: "nowrap",
+                  opacity: 0,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {word}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* M: Ultra 1.0 orb */}
@@ -2256,8 +2409,8 @@ export const Scene05: React.FC = () => {
             marginTop: 10,
           }}
         >
-          <div ref={expPhoneRef} style={{ opacity: 0 }}>
-            <PhoneMockup style={{ transform: "scale(0.85) perspective(800px) rotateY(6deg)" }} />
+          <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
+            <PhoneMockup style={{ transform: "scale(0.85) rotateY(8deg)" }} />
           </div>
           <div ref={expDesktopRef} style={{ opacity: 0 }}>
             <div

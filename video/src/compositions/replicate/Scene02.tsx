@@ -8,6 +8,7 @@ import {
   Easing,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
@@ -91,21 +92,80 @@ const Spark: React.FC<{
 /* ── Iridescent glass material (shared) ── */
 const GLASS_MAT_PROPS = {
   transparent: true,
-  opacity: 0.6,
-  roughness: 0.03,
-  metalness: 0.22,
+  opacity: 0.88,
+  roughness: 0.06,
+  metalness: 0.12,
   clearcoat: 1.0,
-  clearcoatRoughness: 0.01,
+  clearcoatRoughness: 0.02,
   side: THREE.DoubleSide as THREE.Side,
-  envMapIntensity: 3.0,
-  emissiveIntensity: 0.25,
-  specularIntensity: 2.8,
+  envMapIntensity: 4.0,
+  emissiveIntensity: 0.4,
+  specularIntensity: 3.5,
   iridescence: 1.0,
   iridescenceIOR: 1.5,
   iridescenceThicknessRange: [100, 400] as [number, number],
-  sheen: 0.3,
-  sheenRoughness: 0.15,
+  sheen: 0.5,
+  sheenRoughness: 0.08,
   sheenColor: new THREE.Color("#c8b0ff"),
+};
+
+/* ── Procedural environment map for glass reflections ── */
+const useGradientEnvMap = () => {
+  return useMemo(() => {
+    const size = 64;
+    const data = new Float32Array(size * size * 4 * 6); // 6 faces
+    for (let face = 0; face < 6; face++) {
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const idx = (face * size * size + y * size + x) * 4;
+          const u = x / size;
+          const v = y / size;
+          // High-contrast gradient — strong purples, blues, pinks, whites
+          const angle = Math.atan2(v - 0.5, u - 0.5);
+          const r = 0.8 + Math.sin(angle + face * 1.0) * 0.25 + Math.sin(u * 6.28) * 0.12;
+          const g = 0.75 + Math.cos(angle * 0.8 + face * 1.3) * 0.2 + Math.cos(v * 6.28) * 0.1;
+          const b = 0.92 + Math.sin((angle + u + v) * 1.5 + face * 0.7) * 0.15;
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = b;
+          data[idx + 3] = 1;
+        }
+      }
+    }
+    const texture = new THREE.DataArrayTexture(data, size, size, 6);
+    // Build a CubeTexture from individual face data
+    const cubeData: HTMLCanvasElement[] = [];
+    for (let face = 0; face < 6; face++) {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      const imgData = ctx.createImageData(size, size);
+      for (let i = 0; i < size * size; i++) {
+        const srcIdx = (face * size * size + i) * 4;
+        imgData.data[i * 4] = Math.round(data[srcIdx] * 255);
+        imgData.data[i * 4 + 1] = Math.round(data[srcIdx + 1] * 255);
+        imgData.data[i * 4 + 2] = Math.round(data[srcIdx + 2] * 255);
+        imgData.data[i * 4 + 3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      cubeData.push(canvas);
+    }
+    const cubeTexture = new THREE.CubeTexture(cubeData);
+    cubeTexture.needsUpdate = true;
+    void texture; // not used directly
+    return cubeTexture;
+  }, []);
+};
+
+/* ── Scene environment setter ── */
+const SceneEnv: React.FC = () => {
+  const { scene } = useThree();
+  const envMap = useGradientEnvMap();
+  useMemo(() => {
+    scene.environment = envMap;
+  }, [scene, envMap]);
+  return null;
 };
 
 /* ── Glass Orb (Stocks) ── */
@@ -114,6 +174,7 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
   const wobble = Math.sin(frame * 0.05) * 0.08;
   return (
     <>
+      <SceneEnv />
       <ambientLight intensity={0.8} />
       <directionalLight position={[3, 4, 5]} intensity={3.0} color="#e8e0ff" />
       <directionalLight position={[-4, 2, 3]} intensity={1.5} color="#d0b8ff" />
@@ -183,6 +244,7 @@ const GlassDonutScene: React.FC<{ progress: number; frame: number }> = ({ progre
 
   return (
     <>
+      <SceneEnv />
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 4, 5]} intensity={2.2} color="#e0e8ff" />
       <directionalLight position={[-3, 1, 3]} intensity={0.8} color="#c4b8ff" />
