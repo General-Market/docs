@@ -261,7 +261,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [address, writeMint, resetMint, refetchSettlementUsdc])
 
   // Amount in 6 decimals (Settlement USDC)
-  const parsedAmount = amount ? parseUnits(amount, SETTLEMENT_USDC_DECIMALS) : 0n
+  // Guard against negative, NaN, or excessive-decimal input
+  const sanitizedAmount = (() => {
+    if (!amount) return ''
+    const n = parseFloat(amount)
+    if (isNaN(n) || n < 0) return ''
+    // Clamp to 6 decimal places (Settlement USDC precision)
+    const parts = amount.split('.')
+    if (parts[1] && parts[1].length > SETTLEMENT_USDC_DECIMALS) {
+      return `${parts[0]}.${parts[1].slice(0, SETTLEMENT_USDC_DECIMALS)}`
+    }
+    return amount
+  })()
+  const parsedAmount = sanitizedAmount ? parseUnits(sanitizedAmount, SETTLEMENT_USDC_DECIMALS) : 0n
+  const insufficientBalance = parsedAmount > 0n && parsedAmount > usdcBalance
   const needsApproval = parsedAmount > 0n && usdcAllowance < parsedAmount
 
   const snapshotBalances = useCallback(() => {
@@ -269,7 +282,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [userShares])
 
   const handleApprove = useCallback(async () => {
-    if (!amount) return
+    if (!amount || insufficientBalance) return
     buyStartTime.current = Date.now()
     capture('buy_submitted', {
       itp_id: itpId, amount_usd: amount, slippage: SLIPPAGE_TIERS[slippageTier].label,
@@ -300,10 +313,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }).catch(() => {
       // Error handled by approveError effect
     })
-  }, [amount, parsedAmount, writeApproveAsync, snapshotBalances, currentChainId, switchChainAsync, capture, itpId, slippageTier, deadlineHours, limitPrice])
+  }, [amount, parsedAmount, insufficientBalance, writeApproveAsync, snapshotBalances, currentChainId, switchChainAsync, capture, itpId, slippageTier, deadlineHours, limitPrice])
 
   const handleBuy = useCallback(async () => {
-    if (!settlementPublicClient || !amount) return
+    if (!settlementPublicClient || !amount || insufficientBalance) return
     buyHandled.current = false
     setTxError(null)
 
@@ -356,7 +369,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     }).catch(() => {
       // Error handled by buyError effect
     })
-  }, [settlementPublicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
+  }, [settlementPublicClient, amount, insufficientBalance, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuyAsync, micro, snapshotBalances, currentChainId, switchChainAsync, capture])
 
   // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
@@ -741,7 +754,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 stepRanges={adjustedRanges}
                 txRefs={txRefs}
               />
-              {processStalled && (
+              {processStalled && micro >= BuyMicro.RELAY && micro < BuyMicro.DONE && (
                 <div className={`${glass.section} p-4 text-sm`}>
                   <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>
                   <p className="text-text-secondary">{t('stall.description')}</p>
@@ -799,7 +812,17 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('amount_label')}</label>
-                    <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
+                      {usdcBalance > 0n && (
+                        <button
+                          onClick={() => setAmount(formatUnits(usdcBalance, SETTLEMENT_USDC_DECIMALS))}
+                          className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
+                        >
+                          {tc('actions.max')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <input
                     type="number"
@@ -810,7 +833,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                     step="1"
                     className={glass.input}
                   />
-                  {amount && parsedAmount > usdcBalance && (
+                  {insufficientBalance && (
                     <p className="text-color-down text-xs mt-1">{t('insufficient_usdc')}</p>
                   )}
                 </div>
@@ -898,7 +921,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
-                disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance || hasNonceGap}
+                disabled={!amount || parsedAmount === 0n || isProcessing || insufficientBalance || hasNonceGap}
                 className={glass.ctaUp}
               >
                 {buttonText}

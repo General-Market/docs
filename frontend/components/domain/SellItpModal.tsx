@@ -16,6 +16,7 @@ import { useUserState } from '@/hooks/useUserState'
 import { useItpCostBasis } from '@/hooks/useItpCostBasis'
 import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, type UserOrder } from '@/hooks/useSSE'
+import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
@@ -103,6 +104,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
   const { switchChainAsync } = useSwitchChain()
+  const { hasNonceGap, pendingCount, refresh: refreshNonce } = useNonceCheck()
 
   // Approve BridgedITP → SettlementBridgeCustody
   const {
@@ -450,7 +452,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     setTxError(null)
     setStuckWarning(false)
     clearTxHashes()
-  }, [resetApprove, resetSell, clearTxHashes])
+    refreshNonce()
+  }, [resetApprove, resetSell, clearTxHashes, refreshNonce])
 
   const handleReset = useCallback(() => {
     setMicro(-1)
@@ -819,9 +822,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     </div>
                   )}
 
+                  {hasNonceGap && (
+                    <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
+                      <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
+                      <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
+                    </div>
+                  )}
+
                   <WalletActionButton
                     onClick={needsApproval ? handleApprove : handleSell}
-                    disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming || !bridgedItpAddress}
+                    disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming || !bridgedItpAddress || hasNonceGap}
                     className={glass.ctaDown}
                   >
                     {buttonText}

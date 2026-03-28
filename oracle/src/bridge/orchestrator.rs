@@ -414,27 +414,24 @@ impl BridgeOrchestrator {
         self.sell_order_status.write().await.insert(order_id, status);
     }
 
-    /// Returns true if any buy or sell orders are in non-terminal (in-flight) status.
+    /// Returns true if any buy or sell orders are actively progressing.
     ///
     /// Used by the demand-driven CycleManager to decide whether to trigger
     /// fast (WorkDriven) cycles instead of waiting for the next heartbeat.
+    ///
+    /// An order is only "actively progressing" if its last status change was
+    /// within the freshness window (30s). Orders stuck longer than that are
+    /// not worth burning WorkDriven cycles on — the heartbeat watchdog will
+    /// detect them at the 5-minute mark and reset them for retry.
+    ///
+    /// Without this freshness gate, a reverted tx leaves the order in-flight
+    /// status forever, triggering WorkDriven cycles every 50ms until the
+    /// watchdog finally intervenes — 6,000 wasted cycles that desync oracles.
     pub async fn has_in_flight_orders(&self) -> bool {
-        let buy_active = self.order_status.read().await.values().any(|s| matches!(s,
-            BridgeOrderStatus::Pending |
-            BridgeOrderStatus::BridgedToL3 |
-            BridgeOrderStatus::SubmittedOnL3 |
-            BridgeOrderStatus::Batched
-        ));
-        if buy_active {
-            return true;
-        }
-        self.sell_order_status.read().await.values().any(|s| matches!(s,
-            BridgeOrderStatus::SellPending |
-            BridgeOrderStatus::SellBurnPending |
-            BridgeOrderStatus::SellBurned |
-            BridgeOrderStatus::SellSubmittedOnL3 |
-            BridgeOrderStatus::SellFilled
-        ))
+        use std::time::Duration;
+        const WORK_DRIVEN_FRESHNESS: Duration = Duration::from_secs(30);
+
+        self.watchdog.read().await.has_fresh_in_flight(WORK_DRIVEN_FRESHNESS)
     }
 
     /// Mark a sell order as fully processed and clean up transient state

@@ -147,7 +147,7 @@ const SegParticleExplosion: React.FC = () => {
   const {fps} = useVideoConfig();
   const particles = useMemo(() => generateParticles(120, 42), []);
   const wob = organicWobble("pexp", frame, 4, 3, 0.025);
-  const glowOp = interpolate(frame, [0,10,10,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
+  const glowOp = interpolate(frame, [0,9,11,fps*1.5], [0,0.8,0.8,0], {extrapolateRight:"clamp"});
   const phase: "explode"|"swirl" = frame < fps*0.8 ? "explode" : "swirl";
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>

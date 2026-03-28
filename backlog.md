@@ -1,5 +1,13 @@
 # Design Decision Backlog
 
+## Session: 20260328-r4k7 (BuyItpModal / SellItpModal Refactor)
+
+- [DECISION] Input validation: Added sanitizedAmount guard — rejects negative, NaN, and truncates excess decimals (>6 for Settlement USDC). Prevents `parseUnits` crash on malformed input.
+- [DECISION] Added `insufficientBalance` guard inside `handleApprove` and `handleBuy` callbacks. Button `disabled` prop already checked this, but callbacks lacked the guard — rapid-click or dev tools could bypass the disabled state and submit a doomed approval tx.
+- [DECISION] Added `useNonceCheck` to SellItpModal — BuyItpModal had it since 20260208 session, SellItpModal never got it. Sell button now gated on nonce health, cancel refreshes nonce state.
+- [DECISION] Scoped `processStalled` warning to `micro >= RELAY && micro < DONE` in BuyItpModal. Was showing at APPROVE/SUBMIT steps where it made no sense — the stall timer starts at RELAY.
+- [DECISION] Added Max button to BuyItpModal USDC input (sell modal already had one). Users no longer have to manually transcribe their balance.
+
 ## Session: 20260328-1530-g9m2 (GSAP Rewrite Scene03)
 
 - [FAILED] GSAP DOM-mode rewrite of Scene03 (12 segments, 2241 lines) — GSAP `.from()`/`.to()` targeting DOM elements via class selectors does not work in Remotion headless rendering. useEffect builds timeline and sets initial DOM state, but headless renderer screenshots before GSAP updates propagate. Scoped selectors via `gsap.context()` also failed. Root cause: GSAP mutates DOM directly, Remotion reads inline React styles — these are orthogonal.

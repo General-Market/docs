@@ -65,6 +65,29 @@ impl StaleOrderWatchdog {
         stale
     }
 
+    /// Returns true if any non-terminal order has had a status change within `freshness`.
+    ///
+    /// Used by `has_in_flight_orders()` to gate WorkDriven cycles: orders that
+    /// haven't progressed recently are not "active work" — they're stuck, and the
+    /// heartbeat watchdog will handle them. Without this, a reverted tx leaves an
+    /// order in-flight forever, triggering rapid WorkDriven cycles that desync oracles.
+    pub fn has_fresh_in_flight(&self, freshness: Duration) -> bool {
+        for (_, (status, last_change)) in &self.order_timestamps {
+            // Terminal statuses are never in-flight
+            if matches!(status,
+                BridgeOrderStatus::Filled | BridgeOrderStatus::ReleasedToVault | BridgeOrderStatus::Failed |
+                BridgeOrderStatus::SharesBridged | BridgeOrderStatus::BridgedBackToSettlement |
+                BridgeOrderStatus::SellCompleted
+            ) {
+                continue;
+            }
+            if last_change.elapsed() < freshness {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Remove a specific order from tracking (after reset or completion).
     pub fn clear(&mut self, order_id: &U256) {
         self.order_timestamps.remove(order_id);
@@ -155,5 +178,43 @@ mod tests {
         assert_eq!(watchdog.tracked_count(), 3);
         watchdog.cleanup_terminal();
         assert_eq!(watchdog.tracked_count(), 1); // Only Pending remains
+    }
+
+    #[test]
+    fn test_fresh_in_flight_recent_order() {
+        let mut watchdog = StaleOrderWatchdog::new(Duration::from_secs(300));
+        watchdog.record_status_change(U256::from(1), BridgeOrderStatus::Batched);
+        // Just created — well within 30s freshness
+        assert!(watchdog.has_fresh_in_flight(Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn test_fresh_in_flight_stale_order() {
+        let mut watchdog = StaleOrderWatchdog::new(Duration::from_secs(300));
+        watchdog.record_status_change(U256::from(1), BridgeOrderStatus::Batched);
+        sleep(Duration::from_millis(80));
+        // 80ms > 50ms freshness — no longer fresh
+        assert!(!watchdog.has_fresh_in_flight(Duration::from_millis(50)));
+    }
+
+    #[test]
+    fn test_fresh_in_flight_terminal_ignored() {
+        let mut watchdog = StaleOrderWatchdog::new(Duration::from_secs(300));
+        watchdog.record_status_change(U256::from(1), BridgeOrderStatus::Failed);
+        watchdog.record_status_change(U256::from(2), BridgeOrderStatus::SellCompleted);
+        // Terminal orders are never "fresh in-flight" even if just created
+        assert!(!watchdog.has_fresh_in_flight(Duration::from_secs(30)));
+    }
+
+    #[test]
+    fn test_fresh_in_flight_mixed() {
+        let mut watchdog = StaleOrderWatchdog::new(Duration::from_secs(300));
+        watchdog.record_status_change(U256::from(1), BridgeOrderStatus::Batched);
+        sleep(Duration::from_millis(80));
+        // Order 1 is stale (80ms > 50ms)
+        // Add a fresh sell order
+        watchdog.record_status_change(U256::from(2), BridgeOrderStatus::SellPending);
+        // At least one fresh non-terminal order exists
+        assert!(watchdog.has_fresh_in_flight(Duration::from_millis(50)));
     }
 }

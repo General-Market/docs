@@ -865,10 +865,19 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             confirmed.push(id);
                         }
                         Ok(None) => {
-                            // Order processing completed but was not confirmed (error already logged above)
+                            // CBO reverted/failed/timed-out — no retry path exists.
+                            // Mark Failed immediately to prevent stale in-flight status
+                            // from triggering a WorkDriven feedback loop.
+                            warn!(order_id = %order_id, "completeBuyOrder not confirmed — marking Failed");
+                            let orch = orchestrator.write().await;
+                            orch.mark_orders_failed(&[*order_id]).await;
+                            drop(orch);
                         }
                         Err(_) => {
-                            warn!(order_id = %order_id, "Order processing timed out, skipping");
+                            warn!(order_id = %order_id, "Order processing timed out — marking Failed");
+                            let orch = orchestrator.write().await;
+                            orch.mark_orders_failed(&[*order_id]).await;
+                            drop(orch);
                         }
                     }
                 }

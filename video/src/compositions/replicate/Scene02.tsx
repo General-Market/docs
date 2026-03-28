@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, Suspense } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -7,17 +7,14 @@ import {
   spring,
   Easing,
 } from "remotion";
-
-// Quadratic bezier helper: (1-t)^2*P0 + 2(1-t)*t*P1 + t^2*P2
-const _bezier2 = (t: number, p0: number, p1: number, p2: number) =>
-  (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
-void _bezier2;
+import { ThreeCanvas } from "@remotion/three";
+import * as THREE from "three";
 
 /**
- * Scene 02 — Public.com product showcase (Round 4 — SSIM-verified)
+ * Scene 02 — Public.com product showcase (Round 5 — Three.js glass rewrite)
  * 364 frames at 29fps (~12.5s)
  *
- * Segments (re-timed to match reference):
+ * Segments:
  * 1. Stocks      (0-28)
  * 2. ETFs        (28-68)
  * 3. Crypto      (68-96)
@@ -58,7 +55,7 @@ const Arrow: React.FC<{ opacity: number; size?: number }> = ({ opacity, size = 2
   </svg>
 );
 
-/* ─── Sparkline (with progressive draw) ─── */
+/* ─── Sparkline ─── */
 const Spark: React.FC<{
   w?: number;
   h?: number;
@@ -66,7 +63,7 @@ const Spark: React.FC<{
   color?: string;
   sw?: number;
   fill?: boolean;
-  drawProgress?: number; // 0-1, undefined = fully drawn
+  drawProgress?: number;
 }> = ({ w = 60, h = 24, pts = [4, 8, 6, 12, 10, 16, 14, 18, 15, 20], color = C.green, sw = 1.5, fill = false, drawProgress }) => {
   const mx = Math.max(...pts);
   const mn = Math.min(...pts);
@@ -89,273 +86,422 @@ const Spark: React.FC<{
   );
 };
 
-/* ─── CSS Iridescent Glass Orb ─── */
-const GlassOrb: React.FC<{
-  sz: number;
-  x: number;
-  y: number;
-  op: number;
-  rot?: number;
-  frame?: number;
-  phase?: number;
-  shimmerSpeed?: number;
-}> = ({ sz, x, y, op, rot = 0, frame = 0, phase = 0, shimmerSpeed = 1 }) => {
-  const f = frame + phase;
-  const shimmer = Math.sin(f * 0.09 * shimmerSpeed) * 18;
-  const shimmer2 = Math.cos(f * 0.07 * shimmerSpeed) * 12;
-  const hlX = 22 + shimmer * 0.4;
-  const hlY = 15 + shimmer2 * 0.3;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: x - sz / 2,
-        top: y - sz / 2,
-        width: sz,
-        height: sz,
-        borderRadius: "50%",
-        opacity: op,
-        transform: `rotate(${rot}deg)`,
-        filter: `drop-shadow(0 8px 24px rgba(140,120,200,0.25))`,
-      }}
-    >
-      {/* Base shape */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "50%",
-          background: `radial-gradient(ellipse at ${35 + shimmer * 0.3}% ${35 + shimmer2 * 0.2}%, rgba(255,255,255,0.88) 0%, rgba(220,210,245,0.55) 22%, rgba(190,180,230,0.38) 48%, rgba(170,160,215,0.28) 72%, rgba(160,150,210,0.18) 100%)`,
-          boxShadow: `
-            inset -${sz * 0.15}px -${sz * 0.1}px ${sz * 0.3}px rgba(140,120,200,0.28),
-            inset ${sz * 0.05}px ${sz * 0.05}px ${sz * 0.2}px rgba(255,255,255,0.65),
-            0 ${sz * 0.05}px ${sz * 0.15}px rgba(140,120,200,0.18)
-          `,
-        }}
-      />
-      {/* Iridescent overlay — faster sweep */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: "50%",
-          background: `conic-gradient(from ${shimmer * 4}deg at ${38 + shimmer2 * 0.2}% ${38 + shimmer * 0.15}%,
-            rgba(180,140,255,0.22) 0deg,
-            rgba(120,200,255,0.25) 55deg,
-            rgba(140,255,200,0.18) 115deg,
-            rgba(255,210,140,0.15) 175deg,
-            rgba(255,150,200,0.2) 235deg,
-            rgba(200,160,255,0.18) 300deg,
-            rgba(180,140,255,0.22) 360deg)`,
-          mixBlendMode: "overlay",
-        }}
-      />
-      {/* Secondary color band */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "10%",
-          borderRadius: "50%",
-          background: `linear-gradient(${120 + shimmer * 3}deg,
-            rgba(200,160,255,0.1) 0%,
-            rgba(140,220,255,0.12) 50%,
-            rgba(255,180,200,0.08) 100%)`,
-          mixBlendMode: "color-dodge",
-        }}
-      />
-      {/* Specular highlight — drifts */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${hlX}%`,
-          top: `${hlY}%`,
-          width: "32%",
-          height: "22%",
-          borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 68%)",
-        }}
-      />
-      {/* Rim light */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 2,
-          borderRadius: "50%",
-          border: "1px solid rgba(255,255,255,0.45)",
-        }}
-      />
-    </div>
-  );
+/* ═══════════════════ THREE.JS GLASS OBJECTS ═══════════════════ */
+
+/* ── Iridescent glass material (shared) ── */
+const GLASS_MAT_PROPS = {
+  transparent: true,
+  opacity: 0.6,
+  roughness: 0.03,
+  metalness: 0.22,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.01,
+  side: THREE.DoubleSide as THREE.Side,
+  envMapIntensity: 3.0,
+  emissiveIntensity: 0.25,
+  specularIntensity: 2.8,
+  iridescence: 1.0,
+  iridescenceIOR: 1.5,
+  iridescenceThicknessRange: [100, 400] as [number, number],
+  sheen: 0.3,
+  sheenRoughness: 0.15,
+  sheenColor: new THREE.Color("#c8b0ff"),
 };
 
-/* ─── CSS Iridescent Glass Donut (ETFs) — segmented glass blocks in ring ─── */
-const GlassDonut: React.FC<{
-  sz: number;
-  x: number;
-  y: number;
-  op: number;
-  rot?: number;
-  frame?: number;
-}> = ({ sz, x, y, op, rot = 0, frame = 0 }) => {
-  const shimmer = Math.sin(frame * 0.065) * 16;
-  const _shimmer2 = Math.cos(frame * 0.05) * 11;
-  void _shimmer2;
-  const segments = 8;
-  const ringR = sz * 0.34;
-  const blockW = sz * 0.18;
-  const blockH = sz * 0.22;
+/* ── Glass Orb (Stocks) ── */
+const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
+  const rot = frame * 0.012;
+  const wobble = Math.sin(frame * 0.05) * 0.08;
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: x - sz / 2,
-        top: y - sz / 2,
-        width: sz,
-        height: sz,
-        opacity: op,
-        transform: `rotate(${rot}deg) perspective(500px) rotateX(30deg)`,
-        filter: `drop-shadow(0 16px 40px rgba(140,120,200,0.22))`,
-      }}
-    >
-      {Array.from({ length: segments }).map((_, i) => {
-        const angle = (i / segments) * 360;
-        const rad = (angle * Math.PI) / 180;
-        const cx = sz / 2 + Math.cos(rad) * ringR - blockW / 2;
-        const cy = sz / 2 + Math.sin(rad) * ringR - blockH / 2;
-        const hue = (angle + shimmer * 4) % 360;
-        // Blocks further from viewer (top) are slightly darker
-        const depth = Math.sin(rad) * 0.15 + 0.85;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: cx,
-              top: cy,
-              width: blockW,
-              height: blockH,
-              borderRadius: blockW * 0.25,
-              transform: `rotate(${angle + 90}deg)`,
-              background: `linear-gradient(${180 + shimmer}deg,
-                hsla(${hue}, 40%, 82%, ${depth * 0.8}) 0%,
-                hsla(${(hue + 40) % 360}, 35%, 78%, ${depth * 0.6}) 50%,
-                hsla(${(hue + 80) % 360}, 30%, 75%, ${depth * 0.7}) 100%)`,
-              boxShadow: `
-                inset -3px -2px 8px rgba(140,120,200,0.2),
-                inset 2px 2px 6px rgba(255,255,255,0.5),
-                0 2px 6px rgba(140,120,200,0.1)
-              `,
-              border: "1px solid rgba(255,255,255,0.3)",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-};
-
-/* ─── CSS Glass Pillar (Treasuries) ─── */
-const GlassPillar: React.FC<{
-  w: number;
-  h: number;
-  x: number;
-  y: number;
-  op: number;
-  frame?: number;
-}> = ({ w, h, x, y, op, frame = 0 }) => {
-  const shimmer = Math.sin(frame * 0.04) * 8;
-  const breathe = Math.sin(frame * 0.03) * 0.012;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        width: w,
-        height: h,
-        opacity: op,
-        filter: `drop-shadow(0 10px 30px rgba(140,120,200,0.2))`,
-        transform: `perspective(500px) rotateY(-5deg) scale(${1 + breathe})`,
-      }}
-    >
-      {/* Column body */}
-      <div
-        style={{
-          position: "absolute",
-          left: w * 0.1,
-          top: w * 0.3,
-          width: w * 0.8,
-          height: h - w * 0.6,
-          borderRadius: 6,
-          background: `linear-gradient(${90 + shimmer}deg,
-            rgba(210,200,240,0.6),
-            rgba(190,180,225,0.4) 30%,
-            rgba(220,210,245,0.5) 50%,
-            rgba(180,170,215,0.35) 70%,
-            rgba(200,190,235,0.5))`,
-          boxShadow: `
-            inset -8px 0 20px rgba(160,140,200,0.2),
-            inset 4px 0 12px rgba(255,255,255,0.3)
-          `,
-        }}
+    <>
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[5, 5, 5]} intensity={2.2} color="#e0e8ff" />
+      <directionalLight position={[-3, 2, 4]} intensity={1.0} color="#d4b8ff" />
+      <pointLight position={[0, -2, 3]} intensity={0.6} color="#b8d4ff" />
+      <pointLight position={[2, 2, 2]} intensity={0.8} color="#ffd0f0" />
+      <mesh
+        position={[0, wobble, 0]}
+        rotation={[rot * 0.3, rot, 0]}
+        scale={progress * 1.15}
       >
-        {/* Fluting lines */}
-        {[0.25, 0.42, 0.58, 0.75].map((r) => (
-          <div
-            key={r}
-            style={{
-              position: "absolute",
-              left: `${r * 100}%`,
-              top: 8,
-              width: 1,
-              height: "calc(100% - 16px)",
-              background: `linear-gradient(180deg, rgba(255,255,255,0.3), rgba(180,170,220,0.2), rgba(255,255,255,0.3))`,
-            }}
-          />
-        ))}
-        {/* Iridescent overlay */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: 6,
-            background: `linear-gradient(${180 + shimmer * 2}deg,
-              rgba(180,140,255,0.1),
-              rgba(140,200,255,0.08),
-              rgba(255,180,200,0.1))`,
-            mixBlendMode: "overlay",
-          }}
+        <sphereGeometry args={[0.85, 64, 64]} />
+        <meshPhysicalMaterial
+          {...GLASS_MAT_PROPS}
+          color="#c8c0e8"
+          emissive="#9080c0"
+          specularColor={new THREE.Color("#ffd0f0")}
         />
-      </div>
-      {/* Capital (top) */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: w,
-          height: w * 0.22,
-          borderRadius: 4,
-          background: `linear-gradient(180deg, rgba(220,210,245,0.6), rgba(200,190,235,0.4))`,
-          boxShadow: "inset 0 2px 6px rgba(255,255,255,0.4), 0 3px 8px rgba(140,120,200,0.1)",
-        }}
-      />
-      {/* Base (bottom) */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          bottom: 0,
-          width: w,
-          height: w * 0.22,
-          borderRadius: 4,
-          background: `linear-gradient(0deg, rgba(220,210,245,0.6), rgba(200,190,235,0.4))`,
-          boxShadow: "inset 0 -2px 6px rgba(255,255,255,0.4), 0 3px 8px rgba(140,120,200,0.1)",
-        }}
-      />
-    </div>
+      </mesh>
+    </>
   );
 };
+
+/* ── Glass Donut (ETFs) — segmented ring ── */
+const GlassDonutScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
+  const rot = frame * 0.008;
+  const segments = useMemo(() => {
+    const count = 8;
+    const arr: Array<{ pos: [number, number, number]; rotZ: number }> = [];
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const r = 0.75;
+      arr.push({
+        pos: [Math.cos(angle) * r, Math.sin(angle) * r, 0] as [number, number, number],
+        rotZ: angle + Math.PI / 2,
+      });
+    }
+    return arr;
+  }, []);
+
+  const blockGeo = useMemo(() => {
+    const shape = new THREE.Shape();
+    const w = 0.32;
+    const h = 0.42;
+    const rad = 0.08;
+    shape.moveTo(-w / 2 + rad, -h / 2);
+    shape.lineTo(w / 2 - rad, -h / 2);
+    shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + rad);
+    shape.lineTo(w / 2, h / 2 - rad);
+    shape.quadraticCurveTo(w / 2, h / 2, w / 2 - rad, h / 2);
+    shape.lineTo(-w / 2 + rad, h / 2);
+    shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - rad);
+    shape.lineTo(-w / 2, -h / 2 + rad);
+    shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + rad, -h / 2);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.18,
+      bevelEnabled: true,
+      bevelThickness: 0.04,
+      bevelSize: 0.04,
+      bevelSegments: 8,
+    });
+    geo.center();
+    return geo;
+  }, []);
+
+  const colors = ["#b0a8e0", "#a8b8e8", "#b8a0d8", "#a0c0e8", "#c0a8d0", "#a8a8e0", "#b0b0e0", "#c0b0d8"];
+
+  return (
+    <>
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[4, 4, 5]} intensity={2.2} color="#e0e8ff" />
+      <directionalLight position={[-3, 1, 3]} intensity={0.8} color="#c4b8ff" />
+      <pointLight position={[0, 0, 3]} intensity={0.6} color="#ffd0e0" />
+      <group rotation={[0.4, rot, 0.1]} scale={progress * 1.0}>
+        {segments.map((seg, i) => (
+          <mesh
+            key={i}
+            position={seg.pos}
+            rotation={[0, 0, seg.rotZ]}
+            geometry={blockGeo}
+          >
+            <meshPhysicalMaterial
+              {...GLASS_MAT_PROPS}
+              opacity={0.52}
+              color={colors[i]}
+              emissive="#8878b0"
+              specularColor={new THREE.Color("#e0d0ff")}
+            />
+          </mesh>
+        ))}
+      </group>
+    </>
+  );
+};
+
+/* ── Glass Crypto Coins ── */
+const GlassCryptoScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
+  const rot = frame * 0.01;
+  const wobble1 = Math.sin(frame * 0.05) * 0.06;
+  const wobble2 = Math.cos(frame * 0.04) * 0.08;
+  return (
+    <>
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[5, 5, 5]} intensity={2.2} color="#e0e8ff" />
+      <directionalLight position={[-3, 2, 4]} intensity={0.8} color="#ffd4b8" />
+      <pointLight position={[1, 1, 3]} intensity={0.6} color="#ffd0e0" />
+      {/* Large BTC coin */}
+      <mesh
+        position={[0, wobble1, 0]}
+        rotation={[0.3 + rot * 0.2, rot, 0]}
+        scale={progress * 1.1}
+      >
+        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+        <meshPhysicalMaterial
+          {...GLASS_MAT_PROPS}
+          color="#d0c8e8"
+          emissive="#9080c0"
+          specularColor={new THREE.Color("#ffe0d0")}
+        />
+      </mesh>
+      {/* ETH coin */}
+      <mesh
+        position={[-0.6, -0.5 + wobble2, 0.3]}
+        rotation={[0.2, rot * 0.8 + 1, 0.1]}
+        scale={progress * 0.7}
+      >
+        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+        <meshPhysicalMaterial
+          {...GLASS_MAT_PROPS}
+          opacity={0.48}
+          color="#b8b0d8"
+          emissive="#7070a0"
+          specularColor={new THREE.Color("#d0e0ff")}
+        />
+      </mesh>
+      {/* SOL coin */}
+      <mesh
+        position={[0.5, -0.3, -0.2]}
+        rotation={[-0.2, rot * 1.2, 0.3]}
+        scale={progress * 0.5}
+      >
+        <cylinderGeometry args={[0.5, 0.5, 0.12, 48]} />
+        <meshPhysicalMaterial
+          {...GLASS_MAT_PROPS}
+          opacity={0.45}
+          color="#c0b8e0"
+          emissive="#8070b0"
+          specularColor={new THREE.Color("#e0d0ff")}
+        />
+      </mesh>
+    </>
+  );
+};
+
+/* ── Glass Pillar (Treasuries) ── */
+const GlassPillarScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
+  const breathe = Math.sin(frame * 0.03) * 0.02;
+  const shimmer = frame * 0.005;
+
+  const columnGeo = useMemo(() => {
+    const pts: THREE.Vector2[] = [];
+    const segments = 48;
+    const baseR = 0.32;
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const y = t * 2.8 - 1.4;
+      const entasis = 1 + Math.sin(t * Math.PI) * 0.05;
+      const taper = 1 - t * 0.08;
+      const r = baseR * entasis * taper;
+      pts.push(new THREE.Vector2(r, y));
+    }
+    return new THREE.LatheGeometry(pts, 48);
+  }, []);
+
+  const capitalGeo = useMemo(() => {
+    const shape = new THREE.Shape();
+    const w = 0.55;
+    const h = 0.2;
+    const r = 0.05;
+    shape.moveTo(-w / 2 + r, -h / 2);
+    shape.lineTo(w / 2 - r, -h / 2);
+    shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+    shape.lineTo(w / 2, h / 2 - r);
+    shape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+    shape.lineTo(-w / 2 + r, h / 2);
+    shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+    shape.lineTo(-w / 2, -h / 2 + r);
+    shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+    return new THREE.ExtrudeGeometry(shape, {
+      depth: 0.5,
+      bevelEnabled: true,
+      bevelThickness: 0.03,
+      bevelSize: 0.03,
+      bevelSegments: 4,
+    });
+  }, []);
+
+  const glassPillarMat = (
+    <meshPhysicalMaterial
+      {...GLASS_MAT_PROPS}
+      color="#c8c0e8"
+      emissive="#8878b8"
+      specularColor={new THREE.Color("#e0d0ff")}
+    />
+  );
+
+  return (
+    <>
+      <ambientLight intensity={1.3} />
+      <directionalLight position={[4, 6, 5]} intensity={2.2} color="#e0e8ff" />
+      <directionalLight position={[-4, 2, 3]} intensity={0.8} color="#d4b8ff" />
+      <pointLight position={[0, -2, 2]} intensity={0.5} color="#b8d4ff" />
+      <group
+        rotation={[0, shimmer, 0]}
+        scale={progress * (1 + breathe)}
+      >
+        <mesh geometry={columnGeo}>
+          {glassPillarMat}
+        </mesh>
+        <mesh geometry={capitalGeo} position={[0, 1.5, -0.25]}>
+          {glassPillarMat}
+        </mesh>
+        <mesh geometry={capitalGeo} position={[0, -1.5, -0.25]}>
+          {glassPillarMat}
+        </mesh>
+      </group>
+    </>
+  );
+};
+
+/* ── Glass "One" text (3D extruded letter shapes) ── */
+const GlassOneTextScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
+  const rot = Math.sin(frame * 0.02) * 0.08;
+
+  // "O" — ring shape
+  const oGeo = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, 0.85, 0, Math.PI * 2, false);
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, 0.55, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.35,
+      bevelEnabled: true,
+      bevelThickness: 0.06,
+      bevelSize: 0.06,
+      bevelSegments: 12,
+      curveSegments: 48,
+    });
+    geo.center();
+    return geo;
+  }, []);
+
+  // "n" — left vertical + arch + right vertical
+  const nGeo = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.35, -0.7);
+    shape.lineTo(-0.35, 0.7);
+    shape.lineTo(-0.15, 0.7);
+    shape.lineTo(-0.15, 0.1);
+    shape.quadraticCurveTo(-0.15, 0.7, 0.25, 0.7);
+    shape.lineTo(0.35, 0.7);
+    shape.lineTo(0.35, -0.7);
+    shape.lineTo(0.15, -0.7);
+    shape.lineTo(0.15, 0.4);
+    shape.quadraticCurveTo(0.15, 0.5, 0.0, 0.5);
+    shape.quadraticCurveTo(-0.15, 0.5, -0.15, 0.4);
+    shape.lineTo(-0.15, -0.7);
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.35,
+      bevelEnabled: true,
+      bevelThickness: 0.04,
+      bevelSize: 0.04,
+      bevelSegments: 8,
+    });
+    geo.center();
+    return geo;
+  }, []);
+
+  // "e" — open arc with crossbar (proper letter e shape)
+  const eGeo = useMemo(() => {
+    const shape = new THREE.Shape();
+    const outer = 0.55;
+    const inner = 0.35;
+    const strokeW = outer - inner;
+    // Outer arc from bottom-right gap, going counter-clockwise around
+    // Gap at bottom-right: ~330deg to ~350deg open
+    shape.absarc(0, 0, outer, -0.4, Math.PI * 2 - 0.6, false);
+    // Close to inner radius
+    shape.lineTo(inner * Math.cos(Math.PI * 2 - 0.6), inner * Math.sin(Math.PI * 2 - 0.6));
+    // Inner arc back
+    shape.absarc(0, 0, inner, Math.PI * 2 - 0.6, -0.4, true);
+    shape.closePath();
+
+    // Crossbar through the middle
+    const bar = new THREE.Shape();
+    bar.moveTo(-outer, -strokeW * 0.4);
+    bar.lineTo(outer * 0.9, -strokeW * 0.4);
+    bar.lineTo(outer * 0.9, strokeW * 0.4);
+    bar.lineTo(-outer, strokeW * 0.4);
+    bar.closePath();
+
+    const extOpts = {
+      depth: 0.35,
+      bevelEnabled: true,
+      bevelThickness: 0.04,
+      bevelSize: 0.04,
+      bevelSegments: 8,
+      curveSegments: 32,
+    };
+    const geo1 = new THREE.ExtrudeGeometry(shape, extOpts);
+    const geo2 = new THREE.ExtrudeGeometry(bar, extOpts);
+    // Merge geometries
+    const merged = new THREE.BufferGeometry();
+    const m1 = geo1.toNonIndexed();
+    const m2 = geo2.toNonIndexed();
+    const positions = new Float32Array(m1.attributes.position.count * 3 + m2.attributes.position.count * 3);
+    positions.set(m1.attributes.position.array, 0);
+    positions.set(m2.attributes.position.array, m1.attributes.position.count * 3);
+    const normals = new Float32Array(m1.attributes.normal.count * 3 + m2.attributes.normal.count * 3);
+    normals.set(m1.attributes.normal.array, 0);
+    normals.set(m2.attributes.normal.array, m1.attributes.normal.count * 3);
+    merged.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    merged.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+    merged.center();
+    return merged;
+  }, []);
+
+  const glassTextMat = (
+    <meshPhysicalMaterial
+      {...GLASS_MAT_PROPS}
+      opacity={0.5}
+      color="#c8c0e8"
+      emissive="#9088c0"
+      specularColor={new THREE.Color("#ffd0f0")}
+    />
+  );
+
+  return (
+    <>
+      <ambientLight intensity={1.4} />
+      <directionalLight position={[5, 5, 5]} intensity={2.5} color="#e0e8ff" />
+      <directionalLight position={[-4, 3, 4]} intensity={1.0} color="#d4b8ff" />
+      <pointLight position={[0, 0, 3]} intensity={0.8} color="#ffd0e0" />
+      <group scale={progress * 1.05} rotation={[0, rot, 0]}>
+        <mesh geometry={oGeo} position={[-1.6, 0.15, 0]}>
+          {glassTextMat}
+        </mesh>
+        <mesh geometry={nGeo} position={[-0.15, 0, 0]}>
+          {glassTextMat}
+        </mesh>
+        <mesh geometry={eGeo} position={[1.15, 0, 0]}>
+          {glassTextMat}
+        </mesh>
+      </group>
+    </>
+  );
+};
+
+/* ═══════════════ SHARED THREE CANVAS WRAPPER ═══════════════ */
+const GlassCanvas: React.FC<{
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  camPos?: [number, number, number];
+  fov?: number;
+}> = ({ children, style, camPos = [0, 0, 3.5], fov = 50 }) => (
+  <div style={{ position: "absolute", ...style }}>
+    <ThreeCanvas
+      width={460}
+      height={420}
+      style={{ width: 460, height: 420 }}
+      camera={{ position: camPos, fov }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.1,
+      }}
+    >
+      <Suspense fallback={null}>
+        {children}
+      </Suspense>
+    </ThreeCanvas>
+  </div>
+);
+
+/* ═══════════════════ 2D COMPONENTS ═══════════════════ */
 
 /* ─── Stock Card ─── */
 const StockCard: React.FC<{
@@ -370,57 +516,57 @@ const StockCard: React.FC<{
   ic?: string;
   z?: number;
   drawProgress?: number;
-  float?: number; // frame-based subtle hover
+  float?: number;
 }> = ({ name, ticker, price, x, y, opacity, scale = 1, pts, ic = "#6B7AED", z = 1, drawProgress, float = 0 }) => {
   const fy = Math.sin(float * 0.08) * 2.5;
   const shadowBlur = 32 + Math.sin(float * 0.08) * 4;
   return (
-  <div
-    style={{
-      position: "absolute",
-      left: x,
-      top: y + fy,
-      opacity,
-      background: C.card,
-      borderRadius: 16,
-      padding: "10px 14px",
-      boxShadow: `0 ${8 + fy}px ${shadowBlur}px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`,
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      transform: `scale(${scale})`,
-      zIndex: z,
-    }}
-  >
     <div
       style={{
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        background: ic,
+        position: "absolute",
+        left: x,
+        top: y + fy,
+        opacity,
+        background: C.card,
+        borderRadius: 16,
+        padding: "10px 14px",
+        boxShadow: `0 ${8 + fy}px ${shadowBlur}px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)`,
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontSize: 12,
-        fontWeight: 700,
-        fontFamily: F.b,
-        boxShadow: `0 2px 8px ${ic}40`,
+        gap: 10,
+        transform: `scale(${scale})`,
+        zIndex: z,
       }}
     >
-      {ticker.charAt(0)}
-    </div>
-    <div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, fontFamily: F.b, whiteSpace: "nowrap" }}>
-        {name}
+      <div
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          background: ic,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: F.b,
+          boxShadow: `0 2px 8px ${ic}40`,
+        }}
+      >
+        {ticker.charAt(0)}
       </div>
-      <div style={{ fontSize: 10, color: "#999", fontFamily: F.b }}>{ticker}</div>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.navy, fontFamily: F.b, whiteSpace: "nowrap" }}>
+          {name}
+        </div>
+        <div style={{ fontSize: 10, color: "#999", fontFamily: F.b }}>{ticker}</div>
+      </div>
+      <div style={{ textAlign: "right", marginLeft: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.navy, fontFamily: F.b }}>{price}</div>
+        <Spark w={40} h={16} pts={pts} drawProgress={drawProgress} />
+      </div>
     </div>
-    <div style={{ textAlign: "right", marginLeft: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.navy, fontFamily: F.b }}>{price}</div>
-      <Spark w={40} h={16} pts={pts} drawProgress={drawProgress} />
-    </div>
-  </div>
   );
 };
 
@@ -651,9 +797,9 @@ const PanelChart: React.FC<{ w: number; h: number; drawProgress?: number }> = ({
   const visible = pts.slice(0, visCount);
   const d = visible
     .map((p, i) => {
-      const x = (i / (pts.length - 1)) * w;
-      const y = h - ((p - mn) / r) * (h * 0.5) - h * 0.25;
-      return `${i === 0 ? "M" : "L"}${x},${y}`;
+      const px = (i / (pts.length - 1)) * w;
+      const py = h - ((p - mn) / r) * (h * 0.5) - h * 0.25;
+      return `${i === 0 ? "M" : "L"}${px},${py}`;
     })
     .join(" ");
   return (
@@ -663,7 +809,7 @@ const PanelChart: React.FC<{ w: number; h: number; drawProgress?: number }> = ({
   );
 };
 
-/* ─── Background dots (slowly drifting) ─── */
+/* ─── Background dots ─── */
 const BgDots: React.FC<{ opacity: number; frame?: number }> = ({ opacity, frame = 0 }) => {
   const dx = Math.sin(frame * 0.018) * 6;
   const dy = Math.cos(frame * 0.014) * 4.5;
@@ -681,27 +827,30 @@ const BgDots: React.FC<{ opacity: number; frame?: number }> = ({ opacity, frame 
   );
 };
 
-/* ─── Showcase Panel ─── */
+/* ─── Showcase Panel (with 3D glass overlay) ─── */
 const Showcase: React.FC<{
   frame: number;
   fps: number;
   start: number;
   dur: number;
   label: string;
-  glass: React.ReactNode;
+  glassScene: React.ReactNode;
   cards: React.ReactNode;
-}> = ({ frame, fps, start, dur, label, glass, cards }) => {
+  glassCamPos?: [number, number, number];
+  glassFov?: number;
+}> = ({ frame, fps, start, dur, label, glassScene, cards, glassCamPos, glassFov }) => {
   const lf = frame - start;
   const enter = spring({ frame: lf, fps, config: { damping: 13, mass: 0.5, stiffness: 130 }, durationInFrames: 15 });
   const exit = spring({ frame: lf - (dur - 10), fps, config: { damping: 200 }, durationInFrames: 10 });
   const op = Math.min(enter, 1) * (1 - exit);
   const tx = interpolate(enter, [0, 1], [35, 0]) + interpolate(exit, [0, 1], [0, -30]);
   const arrowOp = interpolate(lf, [dur * 0.3, dur * 0.42], [0, 1], CL) * (1 - exit);
+  const glassProgress = interpolate(lf, [0, 18], [0, 1], CL);
 
   return (
     <div style={{ position: "absolute", inset: 0, opacity: op, transform: `translateX(${tx}px)` }}>
       <BgDots opacity={0.5} frame={frame} />
-      {/* Panel */}
+      {/* White panel */}
       <div
         style={{
           position: "absolute",
@@ -718,8 +867,17 @@ const Showcase: React.FC<{
       >
         <PanelChart w={460} h={420} drawProgress={interpolate(lf, [4, 25], [0, 1], CL)} />
       </div>
-      {/* Glass objects */}
-      {glass}
+      {/* Three.js glass overlay */}
+      <GlassCanvas
+        style={{ left: 110, top: 80 }}
+        camPos={glassCamPos}
+        fov={glassFov}
+      >
+        {React.cloneElement(glassScene as React.ReactElement, {
+          progress: glassProgress,
+          frame,
+        })}
+      </GlassCanvas>
       {/* Cards */}
       {cards}
       {/* Label */}
@@ -754,16 +912,7 @@ export const Scene02: React.FC = () => {
           start={0}
           dur={28}
           label="Stocks"
-          glass={
-            <GlassOrb
-              sz={180}
-              x={340}
-              y={290}
-              op={sp(frame - 1)}
-              rot={interpolate(frame, [0, 28], [0, 15], CL)}
-              frame={frame}
-            />
-          }
+          glassScene={<GlassOrbScene progress={0} frame={0} />}
           cards={
             <>
               <StockCard
@@ -821,16 +970,8 @@ export const Scene02: React.FC = () => {
           start={28}
           dur={40}
           label="ETFs"
-          glass={
-            <GlassDonut
-              sz={240}
-              x={340}
-              y={290}
-              op={sp(frame - 30)}
-              rot={interpolate(frame, [28, 68], [0, 25], CL)}
-              frame={frame}
-            />
-          }
+          glassScene={<GlassDonutScene progress={0} frame={0} />}
+          glassCamPos={[0, 0.2, 3.2]}
           cards={
             <>
               <InfoCard
@@ -869,13 +1010,8 @@ export const Scene02: React.FC = () => {
           start={68}
           dur={28}
           label="Crypto"
-          glass={
-            <>
-              <GlassOrb sz={140} x={340} y={260} op={sp(frame - 70) * 0.9} rot={0} frame={frame} phase={0} shimmerSpeed={1} />
-              <GlassOrb sz={90} x={280} y={350} op={sp(frame - 72) * 0.7} rot={0} frame={frame} phase={40} shimmerSpeed={1.3} />
-              <GlassOrb sz={65} x={420} y={370} op={sp(frame - 74) * 0.6} rot={0} frame={frame} phase={75} shimmerSpeed={0.8} />
-            </>
-          }
+          glassScene={<GlassCryptoScene progress={0} frame={0} />}
+          glassCamPos={[0, 0, 3.0]}
           cards={
             <>
               <InfoCard title="Bitcoin" sub="BTC" x={155} y={115} op={sp(frame - 71)} scale={sp(frame - 71)} w={140} ic="#F7931A" />
@@ -894,16 +1030,8 @@ export const Scene02: React.FC = () => {
           start={96}
           dur={56}
           label="Treasuries"
-          glass={
-            <GlassPillar
-              w={90}
-              h={240}
-              x={295}
-              y={160}
-              op={sp(frame - 98)}
-              frame={frame}
-            />
-          }
+          glassScene={<GlassPillarScene progress={0} frame={0} />}
+          glassCamPos={[0, 0, 3.8]}
           cards={
             <>
               <InfoCard
@@ -942,17 +1070,12 @@ export const Scene02: React.FC = () => {
           [10, 8, 9, 6, 7, 4, 5, 3, 4, 2],
           [4, 6, 8, 6, 9, 7, 10, 12, 10, 14],
         ];
-        /* Header backgrounds matching reference photographic content:
-           Phone 1: teal/blue architectural building photo
-           Phone 2: pink sneakers on pink background
-           Phone 3: dark red/brown vinyl records */
+        /* Photographic-style header backgrounds */
         const headerBgs = [
           "linear-gradient(160deg, #5BA0D0 0%, #3B8CC0 20%, #4A9DD8 40%, #2D7AB4 60%, #6CB0E0 80%, #87C4EB 100%)",
           "linear-gradient(160deg, #E8A0B0 0%, #F0B0C0 20%, #E88898 40%, #D87888 60%, #F0A0B0 80%, #F8C0C8 100%)",
           "linear-gradient(160deg, #8B2020 0%, #6B1818 20%, #A03030 40%, #5A1010 60%, #7A2828 80%, #602020 100%)",
         ];
-        /* Phone positions from pixel analysis of reference frame 185:
-           Phone 1: x=350-545 (195px), Phone 2: x=555-775 (220px), Phone 3: x=830-1050+ (220px) */
         const phoneXs = [350, 555, 830];
         const phoneWs = [195, 220, 220];
         return (
@@ -1026,16 +1149,13 @@ export const Scene02: React.FC = () => {
         );
       })()}
 
-      {/* ── 6. "One place" glass text (212-258) ── */}
+      {/* ── 6. "One place" — Three.js glass text (212-258) ── */}
       {frame >= 204 && frame < 266 && (() => {
         const lf = frame - 212;
         const en = sp(lf);
         const ex = spring({ frame: lf - 38, fps, config: { damping: 200 }, durationInFrames: 10 });
         const op = en * (1 - ex);
-        const scSpring = spring({ frame: lf, fps, config: { damping: 10, mass: 0.4, stiffness: 140 } });
-        const sc = interpolate(scSpring, [0, 1], [0.88, 1]);
-        const shimmer = Math.sin(frame * 0.08) * 10;
-        const oneSize = 280;
+        const glassProgress = interpolate(lf, [0, 15], [0, 1], CL);
         return (
           <div
             style={{
@@ -1046,143 +1166,29 @@ export const Scene02: React.FC = () => {
               alignItems: "center",
               justifyContent: "center",
               opacity: op,
-              transform: `scale(${sc})`,
             }}
           >
-            <div style={{ position: "relative" }}>
-              {/* Shadow layer — soft depth below the glass */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 6,
-                  top: 10,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  WebkitTextStroke: "4px rgba(160,150,200,0.12)",
-                  filter: "blur(12px)",
+            {/* Three.js glass "One" */}
+            <div style={{ position: "relative", width: 600, height: 280 }}>
+              <ThreeCanvas
+                width={600}
+                height={280}
+                style={{ width: 600, height: 280 }}
+                camera={{ position: [0, 0, 3.5], fov: 50 }}
+                gl={{
+                  antialias: true,
+                  alpha: true,
+                  powerPreference: "high-performance",
+                  toneMapping: THREE.ACESFilmicToneMapping,
+                  toneMappingExposure: 1.2,
                 }}
               >
-                One
-              </div>
-              {/* Back face — darker inner edge simulating 3D depth */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 3,
-                  top: 4,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  WebkitTextStroke: `3px rgba(170,160,210,0.35)`,
-                }}
-              >
-                One
-              </div>
-              {/* Glass fill layer — translucent interior */}
-              <div
-                style={{
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  background: `linear-gradient(${140 + shimmer}deg,
-                    rgba(210,205,235,0.3) 0%,
-                    rgba(195,190,225,0.15) 18%,
-                    rgba(230,225,245,0.08) 35%,
-                    rgba(185,175,220,0.2) 52%,
-                    rgba(205,195,235,0.25) 70%,
-                    rgba(220,215,240,0.12) 88%,
-                    rgba(200,190,230,0.3) 100%)`,
-                  WebkitBackgroundClip: "text",
-                  filter: "drop-shadow(0 8px 32px rgba(150,140,200,0.18))",
-                }}
-              >
-                One
-              </div>
-              {/* Outer stroke — main glass edge */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  WebkitTextStroke: "2.5px rgba(185,175,220,0.55)",
-                }}
-              >
-                One
-              </div>
-              {/* Inner stroke — offset for 3D hollow tube effect */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  WebkitTextStroke: "1.5px rgba(175,165,215,0.3)",
-                  transform: "translate(2px, 2px)",
-                }}
-              >
-                One
-              </div>
-              {/* Specular highlight — top-left bright edge */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  WebkitTextStroke: "1.2px rgba(255,255,255,0.45)",
-                  transform: "translate(-1.5px, -1.5px)",
-                }}
-              >
-                One
-              </div>
-              {/* Iridescent shimmer — conic gradient moving across the text */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  fontSize: oneSize,
-                  fontWeight: 700,
-                  fontFamily: F.h,
-                  letterSpacing: -8,
-                  lineHeight: 0.85,
-                  color: "transparent",
-                  background: `conic-gradient(from ${shimmer * 6}deg at ${45 + shimmer * 0.3}% 40%,
-                    rgba(200,170,255,0.15) 0deg,
-                    rgba(140,210,255,0.12) 72deg,
-                    rgba(170,255,220,0.08) 144deg,
-                    rgba(255,220,170,0.1) 216deg,
-                    rgba(255,170,210,0.12) 288deg,
-                    rgba(200,170,255,0.15) 360deg)`,
-                  WebkitBackgroundClip: "text",
-                  mixBlendMode: "overlay",
-                }}
-              >
-                One
-              </div>
+                <Suspense fallback={null}>
+                  <GlassOneTextScene progress={glassProgress} frame={frame} />
+                </Suspense>
+              </ThreeCanvas>
             </div>
+            {/* "place" text below */}
             <div
               style={{
                 fontSize: 110,
@@ -1287,35 +1293,30 @@ export const Scene02: React.FC = () => {
         const rightEn = sp(Math.max(0, lf - 5));
         const overallOp = sp(lf);
 
-        // 3D Y-axis rotation starts ~1.2s into the segment, runs ~1.5s
-        const rotStart = Math.round(fps * 1.2); // ~35 frames in
-        const rotDur = Math.round(fps * 1.5);   // ~44 frames
+        const rotStart = Math.round(fps * 1.2);
+        const rotDur = Math.round(fps * 1.5);
         const rotationY = interpolate(lf, [rotStart, rotStart + rotDur], [0, 180], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: Easing.inOut(Easing.cubic),
         });
 
-        // Screen content fades as phone passes ~70° (content disappears before backface)
         const screenOpacity = interpolate(rotationY, [0, 70, 90], [1, 0.3, 0], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
 
-        // Phone scales up slightly during rotation (reference shows it growing)
         const rotScale = interpolate(lf, [rotStart, rotStart + rotDur * 0.6], [1, 1.08], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: Easing.out(Easing.cubic),
         });
 
-        // Text fades out as phone rotation takes over
         const textFade = interpolate(lf, [rotStart, rotStart + 12], [1, 0], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
 
-        // Background transitions toward Scene03 blue during final frames
         const bgBlue = interpolate(lf, [rotStart + rotDur * 0.6, rotStart + rotDur], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
@@ -1325,7 +1326,6 @@ export const Scene02: React.FC = () => {
           ? `rgb(${Math.round(245 - 241 * bgBlue)}, ${Math.round(245 - 198 * bgBlue)}, ${Math.round(247 - 3 * bgBlue)})`
           : C.bg;
 
-        // Shadow shrinks and fades as phone lifts off during rotation
         const shadowOp = interpolate(rotationY, [0, 90, 180], [0.08, 0.03, 0], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
@@ -1397,7 +1397,6 @@ export const Scene02: React.FC = () => {
                       <span style={{ fontSize: 9, color: C.green, fontFamily: F.b, fontWeight: 600 }}>Transfer a portfolio</span>
                       <span style={{ fontSize: 10, color: "#ccc" }}>&#8250;</span>
                     </div>
-                    {/* Blue dot indicator */}
                     <div style={{ position: "absolute", top: 8, right: 10, width: 7, height: 7, borderRadius: 4, background: C.blue }} />
                   </div>
                   <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 600, color: C.navy, fontFamily: F.b }}>
@@ -1406,7 +1405,7 @@ export const Scene02: React.FC = () => {
                   </div>
                 </div>
               </Phone>
-              {/* Phone back face — visible when rotated past 90° */}
+              {/* Phone back face */}
               <div
                 style={{
                   position: "absolute",
@@ -1421,7 +1420,6 @@ export const Scene02: React.FC = () => {
                   overflow: "hidden",
                 }}
               >
-                {/* Camera bump */}
                 <div style={{
                   position: "absolute",
                   top: 20,
@@ -1438,7 +1436,6 @@ export const Scene02: React.FC = () => {
                 }}>
                   <div style={{ width: 22, height: 22, borderRadius: 11, background: "linear-gradient(135deg, #111 0%, #1a1a2e 100%)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.08), 0 0 4px rgba(0,0,0,0.5)" }} />
                 </div>
-                {/* Logo area */}
                 <div style={{
                   position: "absolute",
                   bottom: 40,
