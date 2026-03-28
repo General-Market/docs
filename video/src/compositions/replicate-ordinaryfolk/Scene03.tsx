@@ -159,13 +159,13 @@ function generateBokehParticles(count: number, seed: number): BokehParticle[] {
   ];
   return Array.from({length: count}, (_, i) => ({
     id: i,
-    startX: 1400 + rng()*600, /* start off-screen right */
-    startY: rng()*720,
+    startX: 1300 + rng()*400, /* start just off-screen right, tighter spread */
+    startY: -40 + rng()*800, /* extend past vertical edges for density */
     size: 8 + rng()*22, /* 8-30px bokeh spheres */
     color: colors[Math.floor(rng()*colors.length)],
-    speed: 280 + rng()*520, /* px per second streaming left */
-    yDrift: (rng()-0.5)*120, /* vertical wander */
-    delay: rng()*30, /* stagger entry over ~1s */
+    speed: 350 + rng()*600, /* px per second streaming left */
+    yDrift: (rng()-0.5)*140, /* vertical wander */
+    delay: rng()*18, /* stagger entry over ~0.6s for fast density */
     blur: 2 + rng()*6, /* bokeh blur amount */
     opacity: 0.25 + rng()*0.65,
   }));
