@@ -8,8 +8,8 @@ import {
 
 /* ─── timing (25 fps) — tuned against reference ─── */
 const INTRO_START = 0;        // "Introducing" appears
-const WHOP_START = 6;         // "Whop" appears
-const TREASURY_START = 12;    // "Treasury" appears
+const WHOP_START = 2;         // "Whop" appears — ref: stagger ~2f
+const TREASURY_START = 4;     // "Treasury" appears — ref: stagger ~2f
 const HOLD_END = 38;          // text holds fully visible (ref: fading at f40)
 const ZOOM_OUT_END = 47;      // text zooms/fades out (ref: blank at f45)
 const EARN_VISIBLE = 48;      // "Earn up to X%" begins (ref: visible f50)
@@ -62,8 +62,9 @@ const WordReveal: React.FC<{
   startFrame: number;
   frame: number;
   fontSize?: number;
-}> = ({ text, color, startFrame, frame, fontSize = 180 }) => {
-  const progress = clamp01((frame - startFrame) / 10);
+  fontWeight?: number;
+}> = ({ text, color, startFrame, frame, fontSize = 180, fontWeight = 700 }) => {
+  const progress = clamp01((frame - startFrame) / 6);
   const e = easeOut(progress);
   return (
     <span
@@ -71,10 +72,10 @@ const WordReveal: React.FC<{
         display: "inline-block",
         color,
         fontSize,
-        fontWeight: 700,
+        fontWeight,
         fontFamily: "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif",
         opacity: e,
-        transform: `translateY(${(1 - e) * 40}px)`,
+        transform: `translateY(${(1 - e) * 30}px)`,
         marginRight: fontSize * 0.22,
         letterSpacing: "-0.03em",
       }}
@@ -192,16 +193,16 @@ const Dashboard: React.FC<{ frame: number; fps: number; entryProgress: number }>
   const dashFrame = frame - DASHBOARD_START;
   const chartDraw = clamp01(dashFrame / 30);
 
-  // Animate the gross revenue number counting up — reach target faster to match ref
+  // Animate the gross revenue number counting up — slower to match ref counter values
   const grossBase = 2431.30;
   const grossTarget = 3570.61;
-  const grossProgress = clamp01(dashFrame / 25);
+  const grossProgress = clamp01(dashFrame / 40);
   const grossValue = grossBase + (grossTarget - grossBase) * easeInOut(grossProgress);
 
-  // Animate total balance counting up — reach target faster to match ref
+  // Animate total balance counting up — slower to match ref counter values
   const balBase = 34609.07;
   const balTarget = 42740.24;
-  const balProgress = clamp01(dashFrame / 25);
+  const balProgress = clamp01(dashFrame / 40);
   const balValue = balBase + (balTarget - balBase) * easeInOut(balProgress);
 
   const fmt = (v: number) =>
@@ -1077,7 +1078,7 @@ export const Scene01: React.FC = () => {
   /* ── Phase 2: "Earn up to 6%" ── */
   const earnOpacity = interpolate(
     frame,
-    [EARN_VISIBLE, EARN_VISIBLE + 5, HOLD_EARN_END, DASHBOARD_START],
+    [EARN_VISIBLE, EARN_VISIBLE + 2, HOLD_EARN_END, DASHBOARD_START],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
@@ -1128,7 +1129,7 @@ export const Scene01: React.FC = () => {
             whiteSpace: "nowrap",
           }}
         >
-          <WordReveal text="Introducing" color={TEXT_PRIMARY} startFrame={INTRO_START} frame={frame} />
+          <WordReveal text="Introducing" color="#6B7280" startFrame={INTRO_START} frame={frame} fontWeight={400} />
           <WordReveal text="Whop" color={RED} startFrame={WHOP_START} frame={frame} />
           <WordReveal text="Treasury" color={RED} startFrame={TREASURY_START} frame={frame} />
         </div>

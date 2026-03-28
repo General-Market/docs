@@ -181,16 +181,21 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
       <pointLight position={[0, -2, 3]} intensity={1.0} color="#b0c8ff" />
       <pointLight position={[2, 2, 4]} intensity={1.2} color="#ffc0e8" />
       <pointLight position={[-2, 1, 2]} intensity={0.8} color="#c0e0ff" />
+      {/* Subtle backdrop plane for reflection/shadow reference */}
+      <mesh position={[0, 0, -1.5]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[6, 6]} />
+        <meshBasicMaterial color="#eeeaff" transparent opacity={0.15} />
+      </mesh>
       <mesh
         position={[0, wobble, 0]}
         rotation={[rot * 0.3, rot, 0]}
-        scale={progress * 1.15}
+        scale={progress * 1.4}
       >
         <sphereGeometry args={[0.85, 64, 64]} />
         <meshPhysicalMaterial
           {...GLASS_MAT_PROPS}
-          color="#b8b0d8"
-          emissive="#8870b8"
+          color="#a898c8"
+          emissive="#7868a8"
           specularColor={new THREE.Color("#ffd0f0")}
         />
       </mesh>
