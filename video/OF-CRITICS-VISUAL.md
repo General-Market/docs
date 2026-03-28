@@ -110,3 +110,18 @@ Reference Image 22: Normal desktop view with "Hello, Lisa.", suggestion cards, d
 **Both devices at 45° OPPOSITE angles toward the viewer.**
 Reference: Phone (left, showing "Good morning" screen) tilted ~30° rotateY toward viewer. Desktop/laptop (right, showing "Gemini Advanced" dark interface) tilted ~-30° rotateY toward viewer. "Experience Gemini" and "gemini.google.com" above. Both devices have proper 3D depth.
 **Fix:** Phone at `rotateY(30deg)`, laptop at `rotateY(-30deg)`. Both with `perspective(800px)`. Add "gemini.google.com" subtitle below "Experience Gemini".
+
+## S05 — Device Duo Acceleration (Images 24-25, 1:10)
+**Devices accelerate/slide to the LEFT before final position.**
+The phone and desktop don't just appear — they slide in from right, accelerating to the left, then settle into their 45° opposite positions. The motion has momentum.
+**Fix:** Entrance animation: both devices start off-screen right, slide LEFT with `ease_out_expo`, overshoot slightly, settle.
+
+## S05 — Google G Logo Finale (Image 26, 1:11)
+**G logo is a PROJECTED COLORED LIGHT with particles.**
+Reference: The G is NOT a flat SVG. It's a luminous light source — rainbow colored (red→yellow→green→blue around the G shape), PROJECTING colored light onto the dark background. Green/warm light radiates outward from the G. Tiny particles/dust float in the light beam. The background has a warm-green light wash emanating from the G.
+**Fix:** 
+1. G itself: radial glow behind it, rainbow gradient that ROTATES
+2. Light projection: large radial gradient (300px+) in warm green/gold behind the G
+3. Particles: 30+ tiny dots (1-3px) floating slowly in the upper area
+4. Background wash: warm golden-green tint radiating from G position
+5. The G should feel like a lamp projecting light in a dark room
