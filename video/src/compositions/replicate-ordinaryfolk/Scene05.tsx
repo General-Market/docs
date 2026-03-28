@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
+import React, { useLayoutEffect, useRef, useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
 import {
@@ -919,9 +919,24 @@ const UltraOrb: React.FC<{
   );
 };
 
-// ─── Spiral inward text chars ───
-const SPIRAL_TEXT = "With access to";
-const SPIRAL_CHARS = SPIRAL_TEXT.split("");
+// ─── Spiral inward capability words ───
+const SPIRAL_WORDS = [
+  "reasoning", "coding", "math", "images",
+  "analysis", "writing", "data", "logic",
+  "research", "creative",
+];
+
+// Pre-compute starting positions: evenly distributed around a large ellipse at screen edges
+const SPIRAL_WORD_STARTS = SPIRAL_WORDS.map((_, i) => {
+  const angle = (i / SPIRAL_WORDS.length) * Math.PI * 2 + Math.PI * 0.15;
+  const rx = 520; // horizontal radius (well outside 1280 viewport center)
+  const ry = 340; // vertical radius
+  return {
+    x: Math.cos(angle) * rx,
+    y: Math.sin(angle) * ry,
+    angle, // starting angle on the spiral
+  };
+});
 
 // ═══ MAIN SCENE — GSAP-DRIVEN ═══
 
@@ -1005,18 +1020,28 @@ export const Scene05: React.FC = () => {
   const kineticF = { text: "for reasoning", accent: "reasoning" };
   const kineticJ = { text: "and more", accent: "more" };
 
-  // Pre-compute spiral parameters
-  const spiralParams = useMemo(
-    () =>
-      SPIRAL_CHARS.map((ch, i) => ({
+  // Pre-compute spiral parameters — each char gets a unique curve path from text position to center
+  const spiralParams = useMemo(() => {
+    // Approximate character offsets in the readable text "With access to"
+    // Total text width at ~42px font is roughly 350px, centered, so offsets from center:
+    const charWidths = SPIRAL_CHARS.map(ch => ch === " " ? 12 : ch === "W" ? 30 : ch.toLowerCase() === "m" ? 24 : 18);
+    const totalWidth = charWidths.reduce((a, b) => a + b, 0);
+    let cumX = -totalWidth / 2;
+    return SPIRAL_CHARS.map((ch, i) => {
+      const startX = cumX + charWidths[i] / 2;
+      cumX += charWidths[i];
+      // Each char gets a unique arc angle for its curved path
+      const arcBias = (i - SPIRAL_CHARS.length / 2) * 0.15;
+      const arcStrength = 60 + (i % 3) * 30; // how far the curve bows out
+      return {
         ch,
-        goldenAngle: i * 137.508,
-        baseRadius: 220 + (i % 3) * 60,
-        spiralSpeed: 0.6 + (i % 4) * 0.15,
+        startX,
+        arcBias,
+        arcStrength,
         isAccent: i >= 5 && i <= 10,
-      })),
-    []
-  );
+      };
+    });
+  }, []);
 
   // ─── Build GSAP timeline (useLayoutEffect = synchronous, before paint) ───
   useLayoutEffect(() => {
@@ -1312,53 +1337,52 @@ export const Scene05: React.FC = () => {
       }, f(495));
     }
 
-    // Phase 2+3: individual chars spiral inward using keyframed waypoints
+    // Phase 2+3: chars peel from right side, curving inward to center
+    // Later chars (end of word) move first; "W","i","t","h" barely move until later
+    const totalChars = spiralCharsRef.current.length;
     spiralCharsRef.current.forEach((el, i) => {
       if (!el) return;
       const params = spiralParams[i];
-      const baseRadius = params.baseRadius;
-      const goldenAngle = params.goldenAngle;
-      const spiralSpeed = params.spiralSpeed;
-      const startAngle = (goldenAngle * Math.PI) / 180;
-      const endAngle = startAngle + Math.PI * 2 * spiralSpeed;
 
-      // Start invisible
-      t.set(el, { opacity: 0, x: 0, y: 0, rotation: 0, scale: 1 }, 0);
+      // Start invisible at text position
+      t.set(el, { opacity: 0, x: params.startX, y: 0, rotation: 0, scale: 1 }, 0);
 
-      // At spiral start: snap to outer position
-      t.to(el, {
-        opacity: 1,
-        x: baseRadius * Math.cos(startAngle),
-        y: baseRadius * Math.sin(startAngle) * 0.7,
-        scale: 1,
-        duration: f(10),
-        ease: "power2.out",
-      }, f(495));
+      // Make visible at text position when readable text hides
+      t.set(el, { opacity: 1 }, f(495));
 
-      // Spiral inward using MotionPathPlugin with pre-computed waypoints
-      const STEPS = 12;
-      const waypoints: { x: number; y: number }[] = [];
-      for (let s = 0; s <= STEPS; s++) {
-        const p = s / STEPS;
-        const r = baseRadius * (1 - p);
-        const theta = startAngle + (endAngle - startAngle) * p;
-        waypoints.push({
-          x: r * Math.cos(theta),
-          y: r * Math.sin(theta) * 0.7,
-        });
-      }
+      // Stagger: later chars (higher index) move FIRST (reverse order)
+      // "to" moves at frame 496, "ss" at 498, "acce" at 500-504, "With " at 506-510
+      const reverseIndex = totalChars - 1 - i;
+      const staggerFrame = 496 + reverseIndex * 1.0;
+
+      // Each char curves through a control point before converging to center
+      // Right-side chars arc upward-right; left-side chars arc downward-left
+      const normPos = i / (totalChars - 1); // 0=first char, 1=last
+      const arcDirX = params.startX > 0 ? 1 : -1;
+      const arcDirY = params.startX > 0 ? -1 : 1; // right chars go up, left chars go down
+      const arcMag = 80 + Math.abs(params.startX) * 0.5;
+
+      const waypoints = [
+        { x: params.startX, y: 0 },
+        { x: params.startX * 0.8 + arcDirX * arcMag * 0.4, y: arcDirY * arcMag },
+        { x: params.startX * 0.2 + arcDirX * arcMag * 0.15, y: arcDirY * arcMag * 0.6 },
+        { x: 0, y: 0 },
+      ];
+
+      // Duration varies: chars that move first have more time to travel
+      const dur = 24 + reverseIndex * 0.5;
 
       t.to(el, {
         motionPath: {
           path: waypoints,
-          curviness: 1.5,
+          curviness: 2,
         },
-        scale: 0.1,
-        rotation: (i - 7) * 40 + 180,
+        scale: 0.2,
+        rotation: (i % 2 === 0 ? 1 : -1) * (15 + reverseIndex * 3),
         opacity: 0,
-        duration: f(20),
-        ease: "power2.in",
-      }, f(505));
+        duration: f(dur),
+        ease: "power3.in",
+      }, f(staggerFrame));
     });
 
     // Spiral center glow
