@@ -199,7 +199,7 @@ async fn get_all_24h_changes(
             FROM market_prices
             WHERE source = $1
               AND fetched_at >= NOW() - INTERVAL '24 hours'
-              AND value > 0
+              AND value IS NOT NULL
         )
         SELECT
             latest.asset_id,
@@ -296,7 +296,7 @@ async fn get_healthy_assets(
         FROM market_prices_latest
         WHERE source = $1
           AND fetched_at >= $2
-          AND value > 0
+          AND value IS NOT NULL
         ORDER BY asset_id
         LIMIT $3
         "#,

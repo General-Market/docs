@@ -228,7 +228,7 @@ async fn refresh_health_stats(
                    ROW_NUMBER() OVER (PARTITION BY source, asset_id ORDER BY fetched_at DESC) as rn
             FROM market_prices
             WHERE fetched_at > NOW() - INTERVAL '24 hours'
-              AND value > 0
+              AND value IS NOT NULL
         )
         SELECT l1.source,
                AVG(ABS((l1.value - l2.value) / NULLIF(l2.value, 0) * 100))::float8 as avg_pct,
