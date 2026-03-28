@@ -259,7 +259,7 @@ const PhaseBardFull: React.FC = () => {
   const baseAngle = interpolate(frame, [0, 29], [100, 210], clamp);
   const noiseAngle = noise2D("bard-angle", frame * 0.015, 0) * 8;
   const gradAngle = baseAngle + noiseAngle;
-  const gradient = `linear-gradient(${gradAngle}deg, #E85070, #D03888, #9538B8, #6248D0)`;
+  const gradient = `linear-gradient(${gradAngle}deg, #E04868, #D046A0, #8B5CF6, #5B78E8)`;
 
   return (
     <div
@@ -272,6 +272,7 @@ const PhaseBardFull: React.FC = () => {
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
         backgroundClip: "text",
+        fontWeight: 500,
         letterSpacing: "-0.5px",
       }}
     >
