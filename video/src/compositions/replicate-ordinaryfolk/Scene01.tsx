@@ -1,26 +1,19 @@
 /**
  * Scene 01 — Ordinary Folk (Google Gemini promo) replication
  *
- * AGGRESSIVE REWRITE from dense reference frames + tracking data.
+ * TIMING FIX — shifted all phases ~15 frames later to match reference.
  *
- * Timeline (from reference frames at 0.5s intervals, 30fps):
- *   0.0s (f0):    "You've" — appears slightly right, slides left
- *   0.5s (f15):   "You've been" — been fades in, pair drifts left
- *   1.0s (f30):   "You've been experimenting" — letters scattered, settling
- *   1.5s (f45):   "You've been experimenting with" — almost settled
- *   2.0s (f60):   Fully settled, left of center, starts fading
- *   2.5s (f75):   "Bard" — big gradient text (purple→blue)
- *   3.0s (f90):   "Bard" holds
- *   3.5s (f105):  "to|" — typewriter cursor starts
- *   4.0s (f120):  "Write|" — gradient purple→coral text
- *   4.5s (f135):  "Write emails" — gradient rectangle pill on "emails"
- *   5.0s (f150):  "Write emails" — settled, "Write" is dark, pill visible
- *   5.5s (f165):  Letter scatter exit
- *   6.0s (f180):  "Solve problems" — letters scattered at different sizes
- *   6.5s (f195):  "Solve problems" — converging
- *   7.0s (f210):  "Brainstorm ideas" — floating word field
- *   7.5s (f225):  Word field + centered text appearing
- *   8.0s (f240):  "Brainstorm ideas" — centered final
+ * Timeline (corrected, from reference at 0.5s intervals, 30fps):
+ *   0.0s (f0):    "You've" — visible immediately, opacity 1
+ *   0.3s (f8):    "been" starts fading in, "experimenting" scatter begins
+ *   2.4s (f72):   "You've been experimenting with" fully settled
+ *   2.4s (f72):   "Bard" — big gradient text (purple→blue)
+ *   3.67s (f110): "Write" typewriter (no "to" prefix)
+ *   5.0s (f150):  "Write emails" — gradient rectangle pill
+ *   6.17s (f185): Letter scatter exit (SLOW — 1.2s duration)
+ *   7.0s (f210):  "Solve problems" — letters scattered at different sizes
+ *   8.0s (f240):  "Brainstorm ideas" — floating word field
+ *   8.6s (f258):  End
  *
  * 1280x720, 30fps, 258 frames (~8.6s)
  */
@@ -370,49 +363,58 @@ const PhaseBard: React.FC = () => {
     (tl, p) => {
       tl.fromTo(
         p.main,
-        { x: 8, opacity: 0, scale: 0.92 },
-        { x: 0, opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" },
+        { x: 6, opacity: 0, scale: 0.94 },
+        { x: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
       );
     },
-    { main: { x: 8, opacity: 0, scale: 0.92 } },
+    { main: { x: 6, opacity: 0, scale: 0.94 } },
   );
 
-  // Gradient shifts over time — starts more purple, drifts bluer
-  // The tracking data shows color cycling: purple → blue → coral → back
+  // Reference: "B" is deep purple, "a" purple-blue, "r" blue, "d" brighter blue
+  // The gradient is a clear purple→blue left-to-right.
+  // It slowly shifts/cycles but stays in the purple-blue range.
   const t = frame / FPS;
 
-  // 4 letters, each at a different point on the gradient
-  // Base gradient: purple (160, 90, 190) → blue (100, 115, 210)
-  const getLetterColor = (letterIdx: number): string => {
-    const phase = t * 0.8 + letterIdx * 0.25;
-    // Cycle through purple → blue spectrum
-    const r = Math.round(130 + Math.sin(phase * 1.5) * 40);
-    const g = Math.round(85 + Math.sin(phase * 1.2 + 0.5) * 25);
-    const b = Math.round(195 + Math.sin(phase * 0.9 + 1.0) * 25);
-    return `rgb(${r}, ${g}, ${b})`;
-  };
+  // 4 letter gradient stops — deep, saturated colors matching reference
+  // Reference at 3.1s: BGR [184, 96, 159] = RGB(159, 96, 184) — purple
+  // Reference at 3.3s: BGR [116, 89, 200] = RGB(200, 89, 116) — but that seems wrong...
+  // Looking at the VISUAL reference: B=purple, a=mid purple-blue, r=blue, d=blue
+  const BARD_COLORS: Array<[number, number, number]> = [
+    [140, 80, 190], // B — deep purple
+    [120, 85, 200], // a — purple-blue
+    [95, 100, 210], // r — blue
+    [80, 110, 220], // d — brighter blue
+  ];
 
   return (
     <div
       style={{
         position: "absolute",
         top: `${0.50 * H}px`,
-        left: `${0.503 * W}px`,
+        left: `${0.50 * W}px`,
         transform: `translate(calc(-50% + ${s.main.x}px), -50%) scale(${s.main.scale})`,
         fontFamily,
-        fontSize: 77,
+        fontSize: 78,
         fontWeight: 400,
-        letterSpacing: "-0.5px",
+        letterSpacing: "-1px",
         opacity: s.main.opacity,
         whiteSpace: "nowrap",
         display: "inline-flex",
       }}
     >
-      {BARD_CHARS.map((ch, i) => (
-        <span key={i} style={{ color: getLetterColor(i) }}>
-          {ch}
-        </span>
-      ))}
+      {BARD_CHARS.map((ch, i) => {
+        const base = BARD_COLORS[i];
+        // Subtle slow shift
+        const shift = Math.sin(t * 0.6 + i * 0.4) * 12;
+        const r = Math.round(Math.max(0, Math.min(255, base[0] + shift)));
+        const g = Math.round(Math.max(0, Math.min(255, base[1] + shift * 0.5)));
+        const b = Math.round(Math.max(0, Math.min(255, base[2] - shift * 0.3)));
+        return (
+          <span key={i} style={{ color: `rgb(${r}, ${g}, ${b})` }}>
+            {ch}
+          </span>
+        );
+      })}
     </div>
   );
 };
