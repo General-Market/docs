@@ -27,7 +27,7 @@ const { fontFamily } = loadFont("normal", {
  */
 
 const BG_LIGHT = "#EBEAF4";
-const BG_DARK = "#101011";
+const BG_DARK = "#1A1A2E";
 const TEXT_DARK = "#1d1d1f";
 const TEXT_GRAY = "#a8a8b0";
 const BLUE_TINT = "#5B6FD6";
@@ -264,35 +264,25 @@ const TypingReveal: React.FC<{
 
 // ── "Bard" disintegrating text with per-letter fragments ──
 const BardDisintegration: React.FC<{
-  disintegrateStart: number; // frame when disintegration begins
-  bardAppearStart: number; // frame when "Bard" first appears
+  disintegrateStart: number;
+  bardAppearStart: number;
   opacity: number;
-  // Position offsets for the "Bard" word relative to its text row
 }> = ({ disintegrateStart, bardAppearStart, opacity }) => {
   const frame = useCurrentFrame();
   const fragments = useMemo(() => generateBardFragments(), []);
 
-  // How far into disintegration we are (0 = start, 1 = fully scattered)
-  const disintProgress = interpolate(
-    frame,
-    [disintegrateStart, disintegrateStart + 20],
-    [0, 1],
-    C
-  );
+  // Per-letter x offsets (B, a, r, d) — measured at 44px Plus Jakarta Sans weight 500
+  const letterCenters = [-30, -6, 10, 30];
 
-  // Per-letter x offsets (B, a, r, d) — approximate spacing at 44px font
-  // Letters are centered within the "Bard" word block
-  const letterCenters = [-28, -6, 10, 28]; // x offset from "Bard" center
-
-  // The intact text fades as fragments take over
+  // Intact text: vanishes FAST once disintegration starts (3 frames)
   const textOpacity = interpolate(
     frame,
-    [disintegrateStart, disintegrateStart + 8],
+    [disintegrateStart, disintegrateStart + 3],
     [1, 0],
     C
   );
 
-  // Appear animation for the whole word
+  // Appear animation
   const appearProgress = interpolate(
     frame,
     [bardAppearStart, bardAppearStart + 8],
@@ -309,7 +299,7 @@ const BardDisintegration: React.FC<{
         opacity: opacity * appearProgress,
       }}
     >
-      {/* Intact "Bard" text — fades out as disintegration starts */}
+      {/* Intact "Bard" text — snaps away as fragments erupt */}
       <span
         style={{
           fontSize: 44,
@@ -324,49 +314,61 @@ const BardDisintegration: React.FC<{
         Bard
       </span>
 
-      {/* Fragment particles — each one is a small colored rectangle */}
-      {disintProgress > 0 && fragments.map((frag, i) => {
-        // Per-fragment progress with individual delay
+      {/* Fragment particles — rectangular shards from each letterform */}
+      {frame >= disintegrateStart && fragments.map((frag, i) => {
+        // Each fragment has its own timeline based on delay
+        const fragStart = disintegrateStart + frag.delay;
+        const fragDuration = 22; // frames of travel
         const fragProgress = interpolate(
           frame,
-          [
-            disintegrateStart + frag.delay,
-            disintegrateStart + frag.delay + 18,
-          ],
+          [fragStart, fragStart + fragDuration],
           [0, 1],
           C
         );
 
         if (fragProgress <= 0) return null;
 
-        // Deceleration curve — fast start, slow end
-        const eased = 1 - Math.pow(1 - fragProgress, 2.5);
+        // Deceleration: explosive start, asymptotic settle
+        const eased = 1 - Math.pow(1 - fragProgress, 3);
 
-        // Position: start at letter origin, fly outward on curved path
+        // Primary trajectory along angle
         const travelX = Math.cos(frag.angle) * frag.distance * eased;
         const travelY = Math.sin(frag.angle) * frag.distance * eased;
 
-        // Perpendicular curve (makes trajectories arc, not straight)
-        const perpX = -Math.sin(frag.angle) * frag.curveStrength * eased * (1 - eased);
-        const perpY = Math.cos(frag.angle) * frag.curveStrength * eased * (1 - eased);
+        // Arc curve — peaks at midpoint, creates organic curved paths
+        const arcPhase = Math.sin(fragProgress * Math.PI); // 0->1->0
+        const perpX = -Math.sin(frag.angle) * frag.curveStrength * arcPhase;
+        const perpY = Math.cos(frag.angle) * frag.curveStrength * arcPhase;
 
-        // Origin: letter center + fragment offset within letter
+        // Gravity: slight downward drift in late travel (embers cooling)
+        const gravityY = fragProgress * fragProgress * 20;
+
+        // Origin: letter center + offset within the letter's bounding box
         const originX = letterCenters[frag.letterIdx] + frag.offsetX;
         const originY = frag.offsetY;
 
         const x = originX + travelX + perpX;
-        const y = originY + travelY + perpY;
-        const rotation = frag.rotationSpeed * fragProgress * 360;
+        const y = originY + travelY + perpY + gravityY;
+        const rotation = frag.rotationSpeed * eased * 360;
 
-        // Fade: visible immediately, fade out toward end of travel
-        const fragOpacity = interpolate(fragProgress, [0, 0.1, 0.7, 1], [0, 1, 0.8, 0], C);
+        // Opacity: instant appearance, long visible tail, fade at end
+        const fragOpacity = interpolate(
+          fragProgress,
+          [0, 0.05, 0.5, 0.85, 1],
+          [0, 1, 0.9, 0.5, 0],
+          C
+        );
 
-        // Scale: starts at full size, shrinks slightly as it travels
-        const scale = interpolate(fragProgress, [0, 0.3, 1], [1, 1, 0.4], C);
+        // Scale: starts full, shrinks as it recedes
+        const scale = interpolate(fragProgress, [0, 0.2, 1], [1.1, 1, 0.3], C);
 
-        // Color from pink range with per-fragment variation
-        const hue = 340 + frag.hueShift; // pink-coral range
-        const color = `hsl(${hue}, ${frag.saturation}%, ${frag.lightness}%)`;
+        // Color: map hueShift to actual hue
+        // Fragments <0.5 hueShift → pink/coral (335-355)
+        // Fragments >=0.5 hueShift → purple/blue (260-300)
+        const hue = frag.hueShift < 20
+          ? 340 + frag.hueShift     // pink range
+          : 260 + frag.hueShift;    // purple-blue range
+        const color = `hsl(${hue % 360}, ${frag.saturation}%, ${frag.lightness}%)`;
 
         return (
           <div
@@ -377,11 +379,11 @@ const BardDisintegration: React.FC<{
               top: "50%",
               width: frag.width,
               height: frag.height,
-              borderRadius: frag.width > 4 ? 1 : 0,
+              borderRadius: Math.min(frag.width, frag.height) > 4 ? 1 : 0,
               backgroundColor: color,
               opacity: fragOpacity,
               transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
-              boxShadow: `0 0 ${frag.width * 2}px ${color}`,
+              boxShadow: `0 0 ${Math.max(frag.width, frag.height) * 2.5}px ${color}`,
               pointerEvents: "none",
             }}
           />
@@ -413,25 +415,29 @@ export const Scene02: React.FC = () => {
   const chapterIn = interpolate(frame, [TYPING_START, TYPING_START + 4], [0, 1], C);
 
   // ═══ Page turn — corner peel from BOTTOM-RIGHT ═══
-  // The white page lifts from its bottom-right corner, rotating around
-  // a diagonal axis (roughly top-left ↔ bottom-right). Dark bg revealed
-  // from the top-right inward.
+  //
+  // Reference frame_008 shows: dark revealed in TOP-RIGHT, white page in
+  // BOTTOM-LEFT. The fold line intersects:
+  //   - TOP edge at (foldTX%, 0%) — starts at 100% (top-right corner)
+  //   - RIGHT edge at (100%, foldRY%) — starts at 0% (top-right corner)
+  //
+  // As progress increases, foldTX sweeps left and foldRY sweeps down,
+  // enlarging the dark triangle in the top-right.
   const turnProgress = interpolate(frame, [TURN_START, TURN_END], [0, 1], {
     ...C,
     easing: Easing.inOut(Easing.cubic),
   });
 
-  // The peel diagonal: as turnProgress goes 0→1, the fold line
-  // moves from bottom-right corner toward top-left.
-  // We clip the white page to only show the un-peeled portion.
-  // The fold line intersects the right edge at peelY and the bottom edge at peelX.
-  const peelX = interpolate(turnProgress, [0, 1], [100, -30], C); // % from left on bottom
-  const peelY = interpolate(turnProgress, [0, 1], [100, -30], C); // % from top on right
+  // Fold line: starts at top-right corner (100%, 0%), sweeps toward bottom-left.
+  // At ~25% progress (~f108) the fold should already show a decent triangle.
+  // foldTX: where fold meets top edge (100 → -50)
+  // foldRY: where fold meets right edge (0 → 150)
+  const foldTX = interpolate(turnProgress, [0, 1], [100, -50], C);
+  const foldRY = interpolate(turnProgress, [0, 1], [0, 150], C);
 
-  // The page rotates around the diagonal fold axis.
-  // We approximate this with rotateX + rotateY combined with perspective.
-  const foldAngle = interpolate(turnProgress, [0, 1], [0, 75]); // degrees of fold
-  const pageOpacity = interpolate(turnProgress, [0, 0.7, 1], [1, 0.85, 0], C);
+  // 3D fold angle of the lifted flap
+  const foldAngle = interpolate(turnProgress, [0, 1], [0, 80]);
+  const pageOpacity = interpolate(turnProgress, [0, 0.85, 1], [1, 0.9, 0], C);
 
   // ═══ Dark phase ═══
   const todayFadeIn = interpolate(frame, [DARK_TEXT_START, DARK_TEXT_START + 10], [0, 1], C);
@@ -519,102 +525,134 @@ export const Scene02: React.FC = () => {
         </TextRow>
       )}
 
-      {/* Page turn — corner peel from bottom-right */}
-      {frame >= TURN_START && frame <= TURN_END + 2 && (
-        <>
-          {/* Shadow under the fold — a diagonal gradient that follows the peel */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: `linear-gradient(
-                ${interpolate(turnProgress, [0, 1], [135, 160])}deg,
-                transparent ${Math.max(0, peelX - 15)}%,
-                rgba(0,0,0,${interpolate(turnProgress, [0, 0.3, 0.8], [0, 0.25, 0.1], C)}) ${peelX}%,
-                transparent ${peelX + 8}%
-              )`,
-              opacity: turnProgress > 0.01 ? 1 : 0,
-              pointerEvents: "none",
-              zIndex: 2,
-            }}
-          />
+      {/* Page turn — corner peel: dark reveals from TOP-RIGHT */}
+      {frame >= TURN_START && frame <= TURN_END + 2 && (() => {
+        // Fold line: from (foldTX%, 0%) on top edge to (100%, foldRY%) on right edge.
+        // foldTX starts at 100% and moves left; foldRY starts at 0% and moves down.
+        // The revealed dark triangle is ABOVE/RIGHT of this line.
+        const tx = Math.max(-5, Math.min(105, foldTX));
+        const ry = Math.max(-5, Math.min(105, foldRY));
 
-          {/* White page — clipped to the un-peeled region */}
-          <AbsoluteFill
-            style={{
-              backgroundColor: "#ffffff",
-              opacity: pageOpacity,
-              // Clip: polygon that shows only the "flat" portion of the page.
-              // The fold line moves diagonally from bottom-right to top-left.
-              // Points: top-left, top-right (clamped by peelY on right edge),
-              //         fold intersection, bottom-left
-              clipPath: `polygon(
-                0% 0%,
-                ${Math.min(100, peelX)}% 0%,
-                ${Math.min(100, peelX)}% ${Math.min(100, peelY)}%,
-                0% ${Math.min(100, peelY)}%
-              )`,
-              zIndex: 1,
-            }}
-          >
-            <TextRow opacity={interpolate(turnProgress, [0, 0.4], [1, 0], C)}>
-              <span
-                style={{
-                  fontSize: 42,
-                  fontWeight: 300,
-                  fontFamily,
-                  color: TEXT_DARK,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                the next chapter
-              </span>
-            </TextRow>
-          </AbsoluteFill>
+        // White page: everything BELOW/LEFT of the fold line
+        // polygon: top-left, fold-on-top-edge, fold-on-right-edge, bottom-right, bottom-left
+        const whiteClip = tx <= 100 && ry <= 100
+          ? `polygon(0% 0%, ${tx}% 0%, 100% ${ry}%, 100% 100%, 0% 100%)`
+          : `polygon(0% 0%, 0% 0%, 0% 0%)`; // fully peeled
 
-          {/* The peeled corner — the lifted portion of the page with 3D perspective */}
-          {turnProgress > 0.02 && (
+        // Dark triangle: ABOVE/RIGHT of fold line (top-right corner)
+        const darkTriClip = `polygon(${tx}% 0%, 100% 0%, 100% ${ry}%)`;
+
+        // Fold line angle (direction from top-edge point to right-edge point)
+        const dx = 100 - tx;
+        const dy = ry - 0;
+        const foldLineAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        // Subtle 3D tilt for the white page (bottom-left comes forward)
+        const pageTiltX = interpolate(turnProgress, [0, 0.6], [0, 8], C); // rotateX: top recedes
+        const pageTiltY = interpolate(turnProgress, [0, 0.6], [0, -6], C); // rotateY: right recedes
+
+        return (
+          <>
+            {/* White page — clipped to un-peeled region, with 3D perspective tilt */}
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                overflow: "hidden",
-                perspective: 1200,
-                zIndex: 3,
-                pointerEvents: "none",
+                perspective: 1400,
+                perspectiveOrigin: "30% 70%", // bottom-left is the "anchor"
+                zIndex: 1,
               }}
             >
+              <AbsoluteFill
+                style={{
+                  backgroundColor: "#ffffff",
+                  opacity: pageOpacity,
+                  clipPath: whiteClip,
+                  transform: `rotateX(${pageTiltX}deg) rotateY(${pageTiltY}deg)`,
+                  transformOrigin: "0% 100%", // anchor at bottom-left
+                }}
+              >
+                <TextRow opacity={interpolate(turnProgress, [0, 0.4], [1, 0], C)}>
+                  <span
+                    style={{
+                      fontSize: 42,
+                      fontWeight: 300,
+                      fontFamily,
+                      color: TEXT_DARK,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    the next chapter
+                  </span>
+                </TextRow>
+              </AbsoluteFill>
+            </div>
+
+            {/* Fold shadow — narrow band along the fold edge only */}
+            {turnProgress > 0.04 && (() => {
+              // Create a clip path that's a thin strip along the fold line
+              // Expand the dark triangle clip slightly to include the shadow zone
+              const shadowExpand = 5; // % expansion
+              const stx = Math.max(-10, tx - shadowExpand);
+              const sry = Math.min(115, ry + shadowExpand);
+              const shadowClip = `polygon(${stx}% 0%, 100% 0%, 100% ${sry}%, ${tx}% 0%)`.replace(
+                `${tx}% 0%)`,
+                `${Math.max(-10, tx - shadowExpand * 2)}% ${shadowExpand}%)`
+              );
+
+              return (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: `linear-gradient(
+                      ${foldLineAngle + 90}deg,
+                      transparent 44%,
+                      rgba(0,0,0,${interpolate(turnProgress, [0, 0.12, 0.5, 1], [0, 0.12, 0.06, 0], C)}) 49%,
+                      rgba(0,0,0,${interpolate(turnProgress, [0, 0.12, 0.5, 1], [0, 0.05, 0.02, 0], C)}) 51%,
+                      transparent 56%
+                    )`,
+                    pointerEvents: "none",
+                    zIndex: 4,
+                  }}
+                />
+              );
+            })()}
+
+            {/* Peeled flap: paper underside — subtle, just a hint of the fold */}
+            {turnProgress > 0.04 && turnProgress < 0.85 && (
               <div
                 style={{
                   position: "absolute",
-                  width: "100%",
-                  height: "100%",
-                  backgroundColor: "#f0eef5",
-                  // The folded part clips to the area BEYOND the fold line
-                  clipPath: `polygon(
-                    ${Math.min(100, peelX)}% 0%,
-                    100% 0%,
-                    100% 100%,
-                    0% 100%,
-                    0% ${Math.min(100, peelY)}%,
-                    ${Math.min(100, peelX)}% ${Math.min(100, peelY)}%
-                  )`,
-                  transformOrigin: `${peelX}% ${peelY}%`,
-                  transform: `rotate3d(1, 1, 0, ${foldAngle}deg)`,
-                  opacity: interpolate(turnProgress, [0, 0.05, 0.85, 1], [0, 0.6, 0.4, 0], C),
-                  // Subtle gradient to simulate paper thickness / shadow on fold
-                  background: `linear-gradient(
-                    ${135 + foldAngle * 0.3}deg,
-                    rgba(220,218,228,0.9) 0%,
-                    rgba(240,238,245,0.7) 40%,
-                    rgba(200,198,210,0.5) 100%
-                  )`,
+                  inset: 0,
+                  perspective: 1200,
+                  zIndex: 3,
+                  pointerEvents: "none",
+                  overflow: "hidden",
                 }}
-              />
-            </div>
-          )}
-        </>
-      )}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    clipPath: darkTriClip,
+                    transformOrigin: `${(tx + 100) / 2}% ${ry / 2}%`,
+                    transform: `rotate3d(${dy}, ${-dx}, 0, ${foldAngle * 0.5}deg)`,
+                    opacity: interpolate(turnProgress, [0.04, 0.12, 0.6, 0.85], [0, 0.35, 0.2, 0], C),
+                    background: `linear-gradient(
+                      ${foldLineAngle + 180}deg,
+                      rgba(210,208,225,0.6) 0%,
+                      rgba(235,233,245,0.35) 60%,
+                      rgba(190,188,210,0.15) 100%
+                    )`,
+                  }}
+                />
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* ════ DARK PHASE ════ */}
 

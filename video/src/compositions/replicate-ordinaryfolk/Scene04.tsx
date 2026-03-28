@@ -780,14 +780,16 @@ export const Scene04: React.FC = () => {
                   }}>all</span>
                 );
               })()}
-              {/* Ellipsis dots — each pops in with spring on 5-frame stagger, all purple */}
+              {/* Ellipsis dots — spring pop, gradient-tinted: blue -> purple -> pink */}
               <span style={{ display: "inline-flex", gap: 2, marginLeft: -2, alignItems: "baseline" }}>
                 {dotSprings.map((d, i) => {
                   const popScale = interpolate(d, [0, 0.4, 1], [0, 1.45, 1]);
                   const dotOpacity = Math.min(d * 2.5, 1);
+                  /* Subtle Gemini gradient shift across the three dots */
+                  const dotColor = i === 0 ? "#5C6BC0" : i === 1 ? "#7B1FA2" : "#AD1457";
                   return (
                     <span key={i} style={{
-                      color: "#7B1FA2",
+                      color: dotColor,
                       fontSize: 42,
                       fontWeight: 700,
                       opacity: dotOpacity,
@@ -803,61 +805,83 @@ export const Scene04: React.FC = () => {
         );
       })()}
 
-      {/* "Introducing" — animated gradient sweep from left to right */}
+      {/* "Introducing" — two-layer gradient sweep (dark base + gradient overlay) */}
       {frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start + 5 && (() => {
         const introLocal = frame - PHASE.INTRODUCING.start;
         const introSpringScale = spring({ frame: introLocal, fps, config: { damping: 8, stiffness: 70, mass: 1 } });
         const scaleVal = interpolate(introSpringScale, [0, 1], [0.88, 1.0]);
 
-        /* Sweep progress: 0 = gradient hasn't arrived, 1 = fully colored */
-        const sweepT = interpolate(introLocal, [0, fps * 1.0], [0, 1], {
+        /* Sweep progress: clip-path reveals gradient text left->right, ~0.7s (21 frames) */
+        const sweepT = interpolate(introLocal, [0, 21], [0, 1], {
           extrapolateLeft: "clamp", extrapolateRight: "clamp",
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          easing: Easing.bezier(0.16, 1, 0.3, 1), /* fast start, gentle settle */
         });
+        const clipRight = interpolate(sweepT, [0, 1], [100, 0]);
 
-        /* The gradient slides from left to right through the text.
-           We use background-size wider than the text and animate background-position.
-           Left side: red/pink (already swept), right side: fades to dark (not yet swept) */
-        const bgPosPercent = interpolate(sweepT, [0, 1], [-80, 0]);
-
-        /* Breathing glow that follows the sweep edge */
-        const glowBreath = 0.3 + Math.sin(introLocal * 0.18) * 0.12;
-        const glowBreath2 = 0.18 + Math.sin(introLocal * 0.14 + 1.5) * 0.08;
-        /* Glow X position tracks the sweep */
-        const glowX = interpolate(sweepT, [0, 1], [-200, 0]);
+        /* Breathing glow that follows the sweep leading edge */
+        const glowBreath = 0.4 + Math.sin(introLocal * 0.18) * 0.15;
+        const glowBreath2 = 0.25 + Math.sin(introLocal * 0.14 + 1.5) * 0.1;
+        /* Glow X tracks sweep: starts off-left, ends center */
+        const glowX = interpolate(sweepT, [0, 1], [-280, 0]);
 
         const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
         const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
 
+        /* Shared text style */
+        const textStyle: React.CSSProperties = {
+          fontSize: 96, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 300,
+          letterSpacing: -1, textAlign: "center" as const, whiteSpace: "nowrap" as const,
+        };
+
+        /* Sweep edge glow — a narrow bright spot that travels with the leading edge */
+        const sweepEdgeX = interpolate(sweepT, [0, 1], [-320, 320]);
+
         return (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: introOpacity, transform: `scale(${scaleVal}) translate(${introWobX}px, ${introWobY}px)` }}>
-            {/* Radial glow behind text — follows the sweep edge */}
+            {/* Main glow — warm pink haze behind the swept portion */}
             <div style={{
-              position: "absolute", width: 500, height: 180,
-              transform: `translateX(${glowX}px)`,
-              background: `radial-gradient(ellipse at 50% 50%, rgba(210,140,220,${glowBreath}) 0%, rgba(180,140,240,${glowBreath * 0.4}) 40%, transparent 70%)`,
+              position: "absolute", width: 600, height: 240,
+              transform: `translateX(${glowX * 0.6}px)`,
+              background: `radial-gradient(ellipse at 50% 50%, rgba(220,140,200,${glowBreath * 1.2}) 0%, rgba(200,120,220,${glowBreath * 0.6}) 30%, rgba(180,100,240,${glowBreath * 0.3}) 55%, transparent 75%)`,
               filter: "blur(50px)",
             }} />
-            {/* Secondary glow — softer, wider */}
+            {/* Broader ambient glow — always present once sweep starts */}
             <div style={{
-              position: "absolute", width: 600, height: 140,
-              background: `radial-gradient(ellipse, rgba(200,120,200,${glowBreath2}) 0%, transparent 65%)`,
-              filter: "blur(40px)",
-              opacity: 0.5 + Math.sin(introLocal * 0.1) * 0.2,
+              position: "absolute", width: 800, height: 200,
+              background: `radial-gradient(ellipse, rgba(210,140,210,${glowBreath2 * 1.3}) 0%, rgba(190,120,220,${glowBreath2 * 0.5}) 35%, transparent 65%)`,
+              filter: "blur(50px)",
+              opacity: 0.7 + Math.sin(introLocal * 0.1) * 0.15,
             }} />
-            {/* Text with sweeping gradient — background-position animates */}
-            <div style={{
-              fontSize: 72, fontFamily: "'Google Sans', 'Product Sans', system-ui, sans-serif", fontWeight: 300,
-              /* Wide gradient: red -> pink -> purple -> blue -> dark
-                 The dark end creates the "not yet swept" appearance */
-              background: `linear-gradient(90deg, #EA4335 0%, #D946A8 25%, #9C27B0 45%, #7B61FF 65%, #4285F4 80%, ${DARK_TEXT} 95%, ${DARK_TEXT} 100%)`,
-              backgroundSize: "200% 100%",
-              backgroundPosition: `${bgPosPercent}% 0`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: -1, position: "relative", textAlign: "center",
-            }}>
-              Introducing
+            {/* Sweep edge glow — narrow bright band at leading edge */}
+            {sweepT < 0.98 && (
+              <div style={{
+                position: "absolute", width: 140, height: 120,
+                transform: `translateX(${sweepEdgeX}px)`,
+                background: "radial-gradient(ellipse, rgba(210,150,240,0.55) 0%, rgba(180,100,220,0.25) 40%, transparent 70%)",
+                filter: "blur(28px)",
+              }} />
+            )}
+            {/* Two-layer text stack */}
+            <div style={{ position: "relative" }}>
+              {/* Bottom layer: dark text (visible where gradient hasn't swept yet) */}
+              <div style={{
+                ...textStyle,
+                color: DARK_TEXT,
+                opacity: 0.85,
+              }}>
+                Introducing
+              </div>
+              {/* Top layer: gradient text, revealed left-to-right via clip-path */}
+              <div style={{
+                ...textStyle,
+                position: "absolute", inset: 0,
+                background: "linear-gradient(90deg, #D93025 0%, #E040A0 18%, #B040C0 36%, #8060E0 54%, #5080E8 72%, #4285F4 88%, #3B78E7 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                clipPath: `inset(0 ${clipRight}% 0 0)`,
+              }}>
+                Introducing
+              </div>
             </div>
           </div>
         );

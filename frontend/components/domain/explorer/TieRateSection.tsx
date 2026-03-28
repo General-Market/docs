@@ -31,8 +31,8 @@ export function TieRateSection() {
       title="Tie Rate by Source"
       subtitle={`${data.length} sources · ${totalRounds.toLocaleString()} rounds · ${avgTie.toFixed(1)}% avg tie rate`}
     >
-      <div className="p-4 space-y-0.5 max-h-[500px] overflow-y-auto scrollbar-hide">
-        {data.map(d => (
+      <div className="p-4 space-y-0.5 max-h-[500px] overflow-y-auto" style={{ overflowY: 'auto' }}>
+        {[...data].sort((a, b) => a.pct - b.pct).map(d => (
           <div key={d.source} className="grid grid-cols-[100px_1fr_44px_44px] gap-2 items-center group hover:bg-white/[0.03] rounded px-1 -mx-1">
             <div className="text-[10px] font-mono text-white/50 truncate group-hover:text-white/80 transition-colors">
               {d.source}

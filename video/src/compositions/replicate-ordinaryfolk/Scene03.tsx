@@ -1691,7 +1691,7 @@ const SegPhoneMockup: React.FC = () => {
           height: 620,
           backgroundColor: "#FFFFFF",
           borderRadius: 40,
-          border: "6px solid #1A1A2E",
+          border: "3px solid #1A1A2E",
           overflow: "hidden",
           boxShadow: "0 30px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.1)",
           opacity: phoneOp,
@@ -1700,12 +1700,12 @@ const SegPhoneMockup: React.FC = () => {
         {/* Status bar with Dynamic Island */}
         <div
           style={{
-            height: 48,
+            height: 44,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "8px 24px 0",
-            fontSize: 14,
+            padding: "6px 20px 0",
+            fontSize: 13,
             fontWeight: 600,
             color: "#333",
           }}
@@ -1714,9 +1714,9 @@ const SegPhoneMockup: React.FC = () => {
           {/* Dynamic Island — pill shape */}
           <div
             style={{
-              width: 90,
-              height: 28,
-              borderRadius: 14,
+              width: 80,
+              height: 24,
+              borderRadius: 12,
               backgroundColor: "#000",
             }}
           />

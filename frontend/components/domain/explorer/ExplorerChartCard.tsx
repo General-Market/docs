@@ -15,7 +15,7 @@ export function ExplorerChartCard({ title, subtitle, loading, children, classNam
     <div
       className={`
         explorer-glass-card
-        relative overflow-hidden rounded-xl p-5
+        relative rounded-xl p-5
         glass-surface-dark
         transition-[border-color,box-shadow] duration-300
         hover:border-white/[0.15]
@@ -38,7 +38,7 @@ export function ExplorerChartCard({ title, subtitle, loading, children, classNam
             <div className="w-6 h-6 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="h-[200px]">{children}</div>
+          <div className="min-h-[200px]">{children}</div>
         )}
       </div>
     </div>

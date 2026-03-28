@@ -233,6 +233,32 @@ import { noise2D } from "@remotion/noise";
 const wobbleX = noise2D("x", frame * 0.02, 0) * 5;
 ```
 
+### USE INSTALLED LIBRARIES — don't hand-code what's already solved
+
+```tsx
+// Per-letter/word animation — DON'T manually split().map()
+import { AnimateText } from "remotion-animate-text";
+<AnimateText text="Introducing" animation="fadeInUp" by="characters" stagger={3} />
+
+// Declarative animation wrapper — DON'T manual interpolate() for simple moves
+import { Animated, Move, Scale, Fade } from "remotion-animated";
+<Animated animations={[Move({ y: 0, start: 20 }), Fade({ to: 1 })]}>
+  <MyComponent />
+</Animated>
+
+// Page turn / curl — DON'T CSS clip-path hack. Use GLSL shader:
+// gl-transitions has PageCurl, Swap, and 80+ other shader transitions
+import { TransitionSeries } from "@remotion/transitions";
+
+// SVG morph (e.g., sparkle → G logo) — DON'T manual point interpolation
+import { interpolatePath, evolvePath } from "@remotion/paths";
+const morphed = interpolatePath(progress, sparklePath, gLogoPath);
+
+// Scene transitions — DON'T manual opacity crossfade
+import { fade } from "@remotion/transitions/fade";
+import { slide } from "@remotion/transitions/slide";
+```
+
 ### Three.js for real 3D
 ```tsx
 import { ThreeCanvas } from "@remotion/three";
