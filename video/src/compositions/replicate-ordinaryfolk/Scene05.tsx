@@ -1162,9 +1162,10 @@ export const Scene05: React.FC = () => {
         rotateX: 0,
         rotateY: -20,
         scale: 2.5,
-        y: 40,
+        x: 180,
+        y: 480,
       }, 0);
-      // Fade in — title screen phase
+      // Fade in — title screen phase (zoomed on "Gemini Advanced" header)
       t.to(interfaceWrapRef.current, {
         opacity: 1,
         duration: f(8),
@@ -1174,7 +1175,8 @@ export const Scene05: React.FC = () => {
       t.to(interfaceWrapRef.current, {
         rotateY: -14,
         scale: 2.2,
-        y: 30,
+        x: 120,
+        y: 400,
         duration: f(35),
         ease: "power1.out",
       }, f(30));
@@ -1183,6 +1185,7 @@ export const Scene05: React.FC = () => {
         rotateX: 0,
         rotateY: 0,
         scale: 1.0,
+        x: 0,
         y: 0,
         duration: f(50),
         ease: "power2.inOut",

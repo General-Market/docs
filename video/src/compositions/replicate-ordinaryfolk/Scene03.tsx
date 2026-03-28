@@ -747,9 +747,9 @@ const SegPhoneGoodMorning: React.FC = () => {
   /* FIX 1+3: persistent 3D tilt ~15deg rotateY with noise oscillation */
   const tiltY = 15 + noise2D("ph12ty", frame * 0.01, 0) * 4;
   const tiltX = -4 + noise2D("ph12tx", 0, frame * 0.013) * 2.5;
-  /* Phase: home screen first, then transition to Good Morning Gemini screen */
-  const homeToGemini = frame > fps*2.5 ? interpolate(frame, [fps*2.5,fps*3.2], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_QUART}) : 0;
-  const camT = frame>durationInFrames*0.6 ? interpolate(frame, [durationInFrames*0.6,durationInFrames*0.72], [0,1], {extrapolateRight:"clamp"}) : 0;
+  /* Phase: home screen (0-30f), transition to Good Morning Gemini (30-50f), Gemini visible (50-80f), camera (80f+) */
+  const homeToGemini = frame > fps*1.0 ? interpolate(frame, [fps*1.0,fps*1.7], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_QUART}) : 0;
+  const camT = frame>durationInFrames*0.75 ? interpolate(frame, [durationInFrames*0.75,durationInFrames*0.87], [0,1], {extrapolateRight:"clamp"}) : 0;
   /* No fade-out: hard cut to Scene04 preserves phone continuity */
   const exitOp = 1;
   const eP = interpolate(frame, [0,fps], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
@@ -759,8 +759,8 @@ const SegPhoneGoodMorning: React.FC = () => {
   const pOp = interpolate(eP, [0,0.1], [0,1], {extrapolateRight:"clamp"});
   const sF = frame-fps;
   const sB = sF>0 ? interpolate(sF, [0,3,10], [0,-6,0], {extrapolateRight:"clamp"}) : 0;
-  const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*2.8)+i*5, config:{damping:14,stiffness:100,mass:0.7}}));
-  const inputSpr = spring({frame, fps, delay: Math.floor(fps*3.5), config:{damping:14,stiffness:100,mass:0.7}});
+  const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*1.3)+i*5, config:{damping:14,stiffness:100,mass:0.7}}));
+  const inputSpr = spring({frame, fps, delay: Math.floor(fps*2.0), config:{damping:14,stiffness:100,mass:0.7}});
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
       <div style={{position:"absolute",left:"50%",top:"50%",perspective:800,transformStyle:"preserve-3d"}}>
