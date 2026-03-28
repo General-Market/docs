@@ -145,7 +145,8 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { phoneScale: 0.90, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
-    const exitStart = sec(PHASE.TRANSITION_TEXT.start);
+    /* Delay exit 8 frames — reference phone stays stable through early transition text */
+    const exitStart = sec(PHASE.TRANSITION_TEXT.start + 8);
     const phoneExitTween = gsap.to({ t: 0 }, {
       t: 1, duration: sec(16), ease: "power3.in", paused: true,
       onUpdate() {
@@ -893,7 +894,7 @@ export const Scene04: React.FC = () => {
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
   const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
   const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
-  const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
+  const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start + 10;
   const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
   const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start;
 
