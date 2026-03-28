@@ -449,11 +449,11 @@ const PhaseTypewriter: React.FC = () => {
       // Type "to " — reference shows "to|" at 3.0s (0.27s into phase)
       tl.to(p[`c0`], { visible: 1, duration: 0.001 }, 0.06); // t
       tl.to(p[`c1`], { visible: 1, duration: 0.001 }, 0.15); // o
-      // "to" fades out AFTER Write is well underway (no deletion, clean progression)
+      // "to" fades out AS Write begins — reference shows only "W" at 3.5s
       tl.to(
         p.toFade,
-        { opacity: 0, duration: 0.25, ease: "power1.out" },
-        0.80,
+        { opacity: 0, duration: 0.12, ease: "power1.out" },
+        0.48,
       );
       tl.to(p[`c2`], { visible: 1, duration: 0.001 }, 0.30); // space
       // Type "Write" — slower. Reference: "W" at 3.5s (0.77s), "Write" at 4.0s (1.27s)
