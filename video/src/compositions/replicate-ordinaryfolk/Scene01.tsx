@@ -342,7 +342,7 @@ const PhaseExperimenting: React.FC = () => {
       <span
         style={{
           display: "inline-block",
-          fontSize: 40,
+          fontSize: 42,
           opacity: s.with_.opacity,
         }}
       >
