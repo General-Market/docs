@@ -707,11 +707,10 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
   const zoomEnd = 200;
   const zoomProgress = easeInOut(clamp01((frame - zoomStart) / (zoomEnd - zoomStart)));
   // Zoom to show buttons + balance bar + $ amounts (ref f200 ~ 2x zoom)
-  const zoomScale = 1 + zoomProgress * 0.95; // zoom from 1x to 1.95x
-  // transformOrigin is "center 25%". Buttons are at x~2400 in card space.
-  // translate happens in scaled space: need to center viewport on buttons+bar area
-  const panX = Math.round(zoomProgress * -200); // shift to center buttons
-  const panY = Math.round(zoomProgress * 30);   // slight down to show bar below buttons
+  const zoomScale = 1 + zoomProgress * 0.85; // zoom from 1x to 1.85x
+  // No translate — origin handles the zoom centering
+  const panX = 0;
+  const panY = 0;
 
   // Cursor animation: appears at frame 162, moves toward "Move" button
   const cursorStart = 162;
@@ -801,7 +800,7 @@ const WalletPage: React.FC<{ frame: number; entryProgress: number }> = ({
           display: "flex",
           flexDirection: "column",
           transform: `translateY(${Math.round((1 - e) * 400)}px) scale(${zoomScale}) translate(${panX}px, ${panY}px)`,
-          transformOrigin: "center 25%",
+          transformOrigin: `${50 + zoomProgress * 22}% ${25 - zoomProgress * 12}%`,
           gap: 40,
           overflow: "hidden",
         }}

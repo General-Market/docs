@@ -172,6 +172,7 @@ const SceneEnv: React.FC = () => {
 const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress, frame }) => {
   const rot = frame * 0.012;
   const wobble = Math.sin(frame * 0.05) * 0.08;
+  const sc = progress * 1.4;
   return (
     <>
       <SceneEnv />
@@ -181,24 +182,32 @@ const GlassOrbScene: React.FC<{ progress: number; frame: number }> = ({ progress
       <pointLight position={[0, -2, 3]} intensity={1.0} color="#b0c8ff" />
       <pointLight position={[2, 2, 4]} intensity={1.2} color="#ffc0e8" />
       <pointLight position={[-2, 1, 2]} intensity={0.8} color="#c0e0ff" />
-      {/* Subtle backdrop plane for reflection/shadow reference */}
-      <mesh position={[0, 0, -1.5]} rotation={[0, 0, 0]}>
-        <planeGeometry args={[6, 6]} />
-        <meshBasicMaterial color="#eeeaff" transparent opacity={0.15} />
-      </mesh>
-      <mesh
-        position={[0, wobble, 0]}
-        rotation={[rot * 0.3, rot, 0]}
-        scale={progress * 1.4}
-      >
-        <sphereGeometry args={[0.85, 64, 64]} />
-        <meshPhysicalMaterial
-          {...GLASS_MAT_PROPS}
-          color="#a898c8"
-          emissive="#7868a8"
-          specularColor={new THREE.Color("#ffd0f0")}
-        />
-      </mesh>
+      <group position={[0, wobble, 0]} rotation={[rot * 0.3, rot, 0]} scale={sc}>
+        {/* Inner colored blobs — visible through translucent shell */}
+        <mesh position={[-0.2, 0.15, 0.1]}>
+          <sphereGeometry args={[0.45, 24, 24]} />
+          <meshStandardMaterial color="#c084fc" transparent opacity={0.5} emissive="#8b5cf6" emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[0.25, -0.1, -0.15]}>
+          <sphereGeometry args={[0.35, 24, 24]} />
+          <meshStandardMaterial color="#7dd3fc" transparent opacity={0.4} emissive="#38bdf8" emissiveIntensity={0.3} />
+        </mesh>
+        <mesh position={[0.1, 0.2, 0.25]}>
+          <sphereGeometry args={[0.3, 24, 24]} />
+          <meshStandardMaterial color="#f9a8d4" transparent opacity={0.35} emissive="#ec4899" emissiveIntensity={0.25} />
+        </mesh>
+        {/* Outer glass shell */}
+        <mesh>
+          <sphereGeometry args={[0.85, 64, 64]} />
+          <meshPhysicalMaterial
+            {...GLASS_MAT_PROPS}
+            opacity={0.45}
+            color="#d0c8e8"
+            emissive="#9888c0"
+            specularColor={new THREE.Color("#ffd0f0")}
+          />
+        </mesh>
+      </group>
     </>
   );
 };
@@ -874,8 +883,8 @@ const PanelChart: React.FC<{ w: number; h: number; drawProgress?: number }> = ({
     })
     .join(" ");
   return (
-    <svg width={w} height={h} style={{ position: "absolute", left: 0, top: 0, opacity: 0.3 * prog }}>
-      <path d={d} stroke="rgba(180,170,210,0.4)" strokeWidth={1.5} fill="none" />
+    <svg width={w} height={h} style={{ position: "absolute", left: 0, top: 0, opacity: 0.45 * prog }}>
+      <path d={d} stroke="rgba(170,160,200,0.5)" strokeWidth={2} fill="none" />
     </svg>
   );
 };
