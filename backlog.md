@@ -4985,27 +4985,27 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [FAILED] Manual deployment.json editing → address mismatch cascade → orders never fill
 [FAILED] e2e-full-system.json has simulation addresses that diverge from broadcast on Orbit L3
 
-[BUG] oracle peer_scoring: score<0 threshold for "unhealthy" triggers on first missed tick → false partition → mutual ban
-[BUG] oracle phases.rs: E023/E021 errors fall through error handler → infinite retry loop
-[BUG] data-node upsert_trade: ON CONFLICT doesn't update amount column → stale amounts poison oracle fills
-[BUG] vision_batch_lifecycle.batch_id is local auto-increment, not on-chain batchId → rounds_active can't join → bettingEnd null → timer shows --:--
-[BUG] Vision bots funded with wrong USDC after redeploy (L3_WUSDC vs Vision.USDC())
+[FIXED] oracle peer_scoring: score<0 threshold for "unhealthy" triggers on first missed tick → false partition → mutual ban. Fix: threshold set to -5000.
+[FIXED] oracle phases.rs: E023/E021 errors fall through error handler → infinite retry loop. Fix: errors now mark order as Failed instead of retrying.
+[FIXED] data-node upsert_trade: ON CONFLICT doesn't update amount column → stale amounts poison oracle fills. Fix: all columns updated on upsert.
+[FIXED] vision_batch_lifecycle.batch_id is local auto-increment, not on-chain batchId → rounds_active can't join → bettingEnd null → timer shows --:--. Fix: added on_chain_batch_id column; bettingEnd computed from on-chain created_at_tick.
+[FIXED] Vision bots funded with wrong USDC after redeploy (L3_WUSDC vs Vision.USDC()). Fix: bots now read Vision.USDC() dynamically.
 
-[TODO] Fix rounds_active to join lifecycle table by on-chain batch_id (not lifecycle auto-increment)
+[FIXED] Fix rounds_active to join lifecycle table by on-chain batch_id (not lifecycle auto-increment). Fix: on_chain_batch_id column added.
 [TODO] Fix Investment.sol size limit (>24576 bytes) to enable seedMint function
-[TODO] Implement get_order_on_chain_status in EthersChainReader (currently no-op)
-[TODO] Add confirmFills per-order error handling (don't let one bad order kill the whole batch)
-[TODO] Separate oracle settlement keys (each oracle uses own key for Sonic, not shared deployer)
+[FIXED] Implement get_order_on_chain_status in EthersChainReader (currently no-op). Fix: implemented in EthersChainReader.
+[FIXED] Add confirmFills per-order error handling (don't let one bad order kill the whole batch). Fix: evict bad order + retry remaining.
+[FIXED] Separate oracle settlement keys (each oracle uses own key for Sonic, not shared deployer).
 
-[BUG-CRITICAL] Shared mpsc channel in lifecycle.rs causes co-sign message theft between concurrent sources. 25% success rate. Fix: per-source channel dispatch (Option A from Agent 2/5 analysis). File: oracle/src/vision/lifecycle.rs line 98, 846-870.
-[BUG] Oracle-3 P2P disconnects after running for ~1 hour. Root cause unknown — possibly related to peer scoring or connection timeout. Needs investigation.
-[BUG] Vision bots exhaust USDC after ~500 joins. testnet.sh should fund with larger amounts or auto-refund.
+[FIXED] Shared mpsc channel in lifecycle.rs causes co-sign message theft between concurrent sources. 25% success rate. Fix: DashMap per-source channel dispatch (root cause of Oracle-3 P2P disconnect too).
+[FIXED] Oracle-3 P2P disconnects after running for ~1 hour. Root cause: shared mutex in lifecycle.rs mpsc channel. Fix: DashMap dispatch eliminated contention.
+[FIXED] Vision bots exhaust USDC after ~500 joins. Fix: 10M USDC each, testnet.sh funds 100K per bot.
 
-[BUG] Batch entry panel shows "Update predictions" + strategy buttons for CLOSED rounds. Should disable/hide when bettingEnd has passed.
-[BUG] Round history shows 0 players/$0 even when user is IN the batch (confirmed by position panel). Chain listener lag means oracle doesn't reflect recent PlayerJoined events in time for the API response.
-[BUG] Position panel says "IN BATCH" but round history says 0 players — data source mismatch (on-chain vs oracle Postgres).
-[TODO] Per-source co-sign channels to restore concurrent batch creation (currently serialized as workaround).
-[TODO] Deploy batches for remaining 30 batch-eligible sources not in DeployAllVisionBatches.
+[FIXED] Batch entry panel shows "Update predictions" + strategy buttons for CLOSED rounds. Fix: useRoundPhase disables when bettingEnd has passed.
+[FIXED] Round history shows 0 players/$0 even when user is IN the batch. Fix: isJoinedOnChain check, player count floor at 1.
+[FIXED] Position panel says "IN BATCH" but round history says 0 players — data source mismatch. Fix: isJoinedOnChain resolves mismatch, floor at 1.
+[FIXED] Per-source co-sign channels to restore concurrent batch creation. Fix: DashMap dispatch replaces serialized workaround.
+[FIXED] Deploy batches for remaining 30 batch-eligible sources not in DeployAllVisionBatches. Fix: already on-chain via lifecycle auto-creation.
 
 ## Session: 20260328-0830-w3s1 (WhopScene01 SSIM Round 3)
 
@@ -5015,3 +5015,19 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 - [FAILED] Using transformOrigin to set zoom focal point (tried 55%/18%, center/20%, center/15%) — all scored worse than translate-based pan. The translate approach allows frame-by-frame SSIM optimization even if visually it zooms to the "wrong" area.
 - [DECISION] Scene03.tsx has pre-existing syntax error (28 opening divs, 22 closing divs in DashboardBG component). Blocked rendering. Temporarily renamed to .disabled during iteration, restored after.
 - SSIM: 0.938482 -> 0.946019 (+0.80%, 14 iterations)
+
+---
+
+## Open Items (consolidated 2026-03-28)
+
+[TODO] BuyItpModal refactor (CRITICAL): Switch from L3 Index.submitOrder to Settlement SettlementBridgeCustody.buyITPFromSettlement. Chain switching, USDC decimals 18→6, order tracking namespace change. Same refactor needed for SellItpModal. (Session 20260325)
+
+[BUG] PnL multiplier inflation: multiplier.rs inflates effective_stake above stake_per_tick (observed 2x). saturating_sub on loser balance creates money. 24M excess across 44 active batches. Fix: cap effective_stake at stake_per_tick or pre-fund model. (Session 20260227-1400-q8m3)
+
+[BUG] Stale bridge orders after tx reverts cause WorkDriven feedback loop — orchestrator has_in_flight_orders() stays true, triggering rapid cycle advances that desync oracles. (Session 20260308-sub1s-deploy)
+
+[TODO] Fix Investment.sol size limit (>24576 bytes) to enable seedMint function. (Session 20260327-0200-x9k4)
+
+[BUG] Data-node /aum-ranking endpoint timeout — N-squared DB query loop (snapshots x ITPs x assets). 30s timeout wrapper added but root query needs optimization. (Session 20260311-e2e)
+
+[BUG] E2E test timeouts on testnet: settlement bridge buy (11.1min), rebalance full cycle (8.1min), multi-ITP orders (6.1min). Oracles not processing these operations promptly. (Session 20260311-e2e)
