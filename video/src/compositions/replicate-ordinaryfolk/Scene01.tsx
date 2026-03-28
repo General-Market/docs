@@ -439,10 +439,11 @@ const PhaseTypewriter: React.FC = () => {
     >
       {TYPE_CHARS.slice(0, visibleCount).map((ch, i) => {
         if (i < DARK_PREFIX) {
-          // "to " in dark text
+          // "to " in dark text — use NBSP for visible space
+          const displayCh = ch === " " ? "\u00A0" : ch;
           return (
             <span key={i} style={{ color: TEXT_DARK }}>
-              {ch}
+              {displayCh}
             </span>
           );
         }
