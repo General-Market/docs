@@ -1302,7 +1302,7 @@ export const Scene05: React.FC = () => {
         opacity: 0.3,
         duration: f(6),
         ease: "power1.out",
-      }, f(24)); // delay past S04→S05 transition overlap
+      }, f(40)); // well past transition — no phone during S04→S05 crossfade
       t.to(phoneARef.current, {
         x: 0,
         y: 0,

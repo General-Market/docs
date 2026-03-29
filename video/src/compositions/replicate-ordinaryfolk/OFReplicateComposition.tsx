@@ -27,7 +27,7 @@ const S03_S04_OVERLAP = 0;
  * Longer than standard XFADE so the zoom is visible while
  * S04 still has content (before it goes fully black).
  */
-const S04_S05_OVERLAP = 24;
+const S04_S05_OVERLAP = 8; // fast smooth transition
 
 /* Scene durations
  * Cut at 0:35 (frame 1050 absolute) — phone scene stays in S03
@@ -173,13 +173,11 @@ export const OFReplicateComposition: React.FC = () => {
         </FadeWrapper>
       </Sequence>
 
-      {/* ── Scene 05 ──
-           Black band reveal: rounded-rect clip-path expands from center
-           like zooming into the letter "O". Fast vertical expansion. */}
+      {/* ── Scene 05 ── fast smooth fade, no zoom gimmick */}
       <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
-        <BlackBandReveal duration={S05_DUR} revealFrames={S04_S05_OVERLAP}>
+        <FadeWrapper duration={S05_DUR} fadeInFrames={S04_S05_OVERLAP}>
           <Scene05 />
-        </BlackBandReveal>
+        </FadeWrapper>
       </Sequence>
     </AbsoluteFill>
   );

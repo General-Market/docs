@@ -319,3 +319,14 @@ Same pattern for "Solve problems" letters after.
 The final "Brainstorm ideas" should appear as a LARGE BLURRED BLUE copy that slowly SHARPENS into the final crisp dark text. Like focusing a camera — starts at blur(15px) in blue/purple, ends at blur(0) in dark text.
 NOT a fade-in. A BLUR-TO-SHARP transition.
 **Fix:** Start with large blue "Brainstorm ideas" at filter:blur(15px), color:#6366f1. Animate to filter:blur(0) color:#1a1a2e over 0.8s. The blurred version is LARGER than final (scale 1.3→1.0).
+
+## LATEST
+
+### 0:35 Phone completely bugged — use 0:30 phone model
+The phone at 0:35 is broken. Replace it with the same phone instance from 0:30 (which looks correct).
+
+### 1:06 Transition direction reversed
+IN transition should be a CUT (instant). OUT transition should be a SWOOSH left. Currently it's the opposite.
+
+### 1:02:20 Words on circle surface spinning fast
+The words (Gmail, Search, Maps etc) should be WRITTEN ON the surface of a circle/ring shape. The circle itself spins very fast. Words follow the circular path like text on a coin edge. NOT individual words orbiting — text ON the spinning circle.
