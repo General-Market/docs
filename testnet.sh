@@ -462,8 +462,7 @@ cmd_deploy() {
             itp_meta,
             trades,
             user_shares,
-            points_ledger,
-            points_totals,
+            -- points_ledger and points_totals preserved (player lifetime stats, not contract-bound)
             issuer_health_snapshots,
             oracle_health_snapshots,
             collector_cursors,
