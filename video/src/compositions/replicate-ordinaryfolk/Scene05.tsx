@@ -1148,7 +1148,7 @@ const SPIRAL_CHARS = SPIRAL_TEXT.split("");
 const SPIRAL_WORDS = ["Search", "YouTube", "Maps", "Flights", "Gmail", "Workspace"];
 
 // ─── Circular stamp text (coin/seal style) ───
-const STAMP_TEXT = "Gmail · Search · YouTube · Maps · Flights · Workspace · Gmail · Search · YouTube · Maps · ";
+const STAMP_TEXT = "Gmail  ·  Search  ·  YouTube  ·  Maps  ·  Flights  ·  Workspace  ·  ";
 const STAMP_CHARS = STAMP_TEXT.split("");
 
 // ═══ MAIN SCENE — GSAP-DRIVEN ═══
@@ -2510,7 +2510,7 @@ export const Scene05: React.FC = () => {
           >
             {STAMP_CHARS.map((ch, i) => {
               const angleDeg = (i / STAMP_CHARS.length) * 360;
-              const radius = 180;
+              const radius = 260;
               return (
                 <div
                   key={`stamp-${i}`}
@@ -2520,13 +2520,13 @@ export const Scene05: React.FC = () => {
                     left: 0,
                     transform: `rotate(${angleDeg}deg) translateY(-${radius}px)`,
                     transformOrigin: "0 0",
-                    fontSize: 18,
+                    fontSize: 16,
                     fontFamily: FONT,
-                    fontWeight: 500,
-                    color: "#ffffff",
+                    fontWeight: 400,
+                    color: "rgba(255,255,255,0.85)",
                     whiteSpace: "nowrap",
-                    textShadow: "0 0 10px rgba(255,255,255,0.3)",
-                    letterSpacing: "-0.5px",
+                    textShadow: "0 0 12px rgba(255,255,255,0.25)",
+                    letterSpacing: "0.5px",
                   }}
                 >
                   {ch === " " ? "\u00A0" : ch}
