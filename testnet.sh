@@ -592,7 +592,12 @@ cmd_deploy() {
     # We verify success via deployment JSON + receipt count below, not forge exit code.
     # --slow: wait for each TX confirmation before sending next — prevents nonce batching
     # drift on Orbit L3 where rapid-fire TXs get reordered.
-        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        # DEPLOY_SEED forces fresh CREATE2 addresses on every deploy.
+        # Without this, proxy storage persists across redeploys (same address = same storage)
+        # and ITPs/oracles reference dead token addresses from previous deployments.
+        local DEPLOY_SEED=$(date +%s)
+        echo -e "  DEPLOY_SEED=$DEPLOY_SEED (ensures fresh contract addresses)"
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" DEPLOY_SEED="$DEPLOY_SEED" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
@@ -932,7 +937,7 @@ print(f'Patched {patched} addresses from broadcast receipts (impl->proxy matchin
         echo -e "  ${YELLOW}Sonic not reachable (got $SONIC_CHAIN_ID, expected $SETTLEMENT_CHAIN_ID) — skipping settlement deploy${NC}"
     else
         rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/
-        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" DEPLOY_SEED="${DEPLOY_SEED:-$(date +%s)}" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$SETTLEMENT_RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
@@ -1250,7 +1255,7 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
             # --slow: wait for each TX confirmation before next — Orbit L3's rapid-fire
             # nonce batching kills token deploys after ~200 TXs without this.
             (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-                MOCK_BITGET_VAULT="$MOCK_VAULT" \
+                MOCK_BITGET_VAULT="$MOCK_VAULT" DEPLOY_SEED="${DEPLOY_SEED:-$(date +%s)}" \
                 forge script script/DeployAllTokens.s.sol:DeployAllTokens \
                 $FORGE_BROADCAST_FLAG --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
                 --private-key "$DEPLOYER_KEY" \

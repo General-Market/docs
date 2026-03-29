@@ -59,8 +59,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // MUST NOT use block.timestamp — it differs between simulation and broadcast on Orbit L3,
         // causing CREATE2 addresses to diverge. Use only deterministic values.
         // Salt uses deployer nonce at script start (fetched once) to ensure uniqueness across redeploys.
-        // Each deploy gets fresh addresses because the deployer nonce differs.
-        return keccak256(abi.encode("INDEX_DEPLOY", block.chainid, _deployerStartNonce, ++_saltCounter));
+        // DEPLOY_SEED env var provides additional uniqueness — bump it to force fresh addresses
+        // when the deployer nonce alone doesn't change enough (Orbit nonce drift).
+        uint256 seed = vm.envOr("DEPLOY_SEED", uint256(0));
+        return keccak256(abi.encode("INDEX_DEPLOY", block.chainid, _deployerStartNonce, seed, ++_saltCounter));
     }
 
     function _deployProxy(address impl, bytes memory initData) internal returns (address) {
