@@ -673,7 +673,7 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                     if is_sync_leader && (first_sync || snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
-                                if let (Some(mirror_addr), Some(_oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
+                                if let (Some(mirror_addr), Some(oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
                                     mirror_sync_first.store(false, Ordering::Release);
                                     // NOTE: Do NOT clear mirror_sync_needed here — clear it inside
                                     // the sync task ONLY on success. Clearing before the task runs
@@ -687,13 +687,14 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                                     let p = Arc::clone(protocol);
                                     let aw = Arc::clone(settlement_writer);
                                     let cr = consensus_chain_reader.clone();
+                                    let l3w = consensus_chain_writer_for_task.clone();
                                     let cycle = current_cycle;
                                     let msn_sync = mirror_sync_needed.clone();
                                     tokio::spawn(async move {
                                         let _guard = FlagGuard(flag);
                                         match tokio::time::timeout(
                                             std::time::Duration::from_secs(90),
-                                            mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle),
+                                            mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle, l3w.as_ref(), Some(oracle_reg_addr)),
                                         ).await {
                                             Ok(Err(e)) => warn!(cycle, error = %e, "Mirror registry sync failed"),
                                             Ok(Ok(())) => {

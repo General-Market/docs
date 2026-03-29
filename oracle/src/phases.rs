@@ -2388,6 +2388,10 @@ pub(crate) async fn run_mock_consensus(
 ///
 /// Reads L3 registry nonce and Settlement mirror nonce, runs BLS consensus if stale,
 /// and submits the sync transaction to Settlement.
+///
+/// Also refreshes the L3 OracleRegistry snapshot to prevent BLSVerifier__SnapshotTooOld.
+/// The L3 snapshot's blockNumber goes stale after 86400 blocks (~6h on Orbit).
+/// Without periodic refresh, ALL BLS-verified calls (createBatch, settleBatch) fail.
 pub(crate) async fn mirror_sync_task<P, W, K, PF>(
     chain_reader: &Arc<dyn common::traits::ChainReader>,
     settlement_writer: &Arc<oracle::SettlementChainWriter>,
@@ -2395,6 +2399,8 @@ pub(crate) async fn mirror_sync_task<P, W, K, PF>(
     mirror_addr: ethers::types::Address,
     settlement_chain_id: u64,
     cycle: u64,
+    l3_writer: Option<&Arc<oracle::EthersChainWriter>>,
+    l3_registry_addr: Option<ethers::types::Address>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
 where
     P: common::traits::P2PTransport + Send + Sync + 'static,
@@ -2639,6 +2645,23 @@ where
                     // Last resort: keep whatever nonce we had before
                     warn!(cycle, "Could not read mirror nonce after receipt timeout, keeping previous registry nonce");
                 }
+            }
+        }
+    }
+
+    // ── L3 OracleRegistry snapshot refresh ──
+    // The L3 OracleRegistry's snapshot has a blockNumber that goes stale after 86400 blocks.
+    // BLSVerifier__SnapshotTooOld then bricks ALL BLS-verified calls (createBatch, settleBatch).
+    // Call refreshSnapshot() — callable by any registered oracle, updates blockNumber only.
+    if let (Some(writer), Some(reg_addr)) = (l3_writer, l3_registry_addr) {
+        use common::traits::ChainWriter as _;
+        let refresh_sel = &ethers::utils::keccak256(b"refreshSnapshot()")[..4];
+        match writer.send_transaction(reg_addr, refresh_sel.to_vec(), U256::zero()).await {
+            Ok(tx_hash) => {
+                info!(cycle, ?tx_hash, "L3 snapshot refresh: refreshSnapshot submitted");
+            }
+            Err(e) => {
+                warn!(cycle, error = %e, "L3 snapshot refresh failed");
             }
         }
     }

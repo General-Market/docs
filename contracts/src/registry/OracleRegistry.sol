@@ -89,6 +89,9 @@ contract OracleRegistry is IOracleRegistry, Initializable, UUPSUpgradeable {
     /// @notice Thrown when a snapshot is pending (must call setAggregatedPubkey before further mutations)
     error OracleRegistry__PendingSnapshot();
 
+    /// @notice No snapshot exists at the current nonce
+    error OracleRegistry__SnapshotNotFound();
+
     // ============ CONSTANTS ============
 
     /// @notice Key rotation approval threshold (10/19 other oracles)
@@ -686,6 +689,29 @@ contract OracleRegistry is IOracleRegistry, Initializable, UUPSUpgradeable {
 
         emit AggregatedPubkeyUpdated(pubkey);
         emit EventsLib.SnapshotCreated(nonce, block.number, activeBitmask);
+    }
+
+    /// @notice Refresh the latest snapshot's blockNumber to prevent BLSVerifier__SnapshotTooOld.
+    /// @dev Callable by any active oracle. Does NOT change the pubkey, nonce, or any state —
+    ///      only updates the snapshot's blockNumber so BLSVerifier's staleness check passes.
+    ///      Without periodic refresh, all BLS-verified calls brick after 86400 blocks (~6h on Orbit).
+    function refreshSnapshot() external {
+        // Caller must be an active oracle
+        bool isOracle = false;
+        for (uint256 i = 0; i < _oracleCount; i++) {
+            if (_oracles[i].addr == msg.sender && _oracles[i].status == 1) {
+                isOracle = true;
+                break;
+            }
+        }
+        if (!isOracle) revert Unauthorized();
+
+        uint256 nonce = lastSnapshotNonce;
+        TypesLib.RegistrySnapshot storage snap = _nonceSnapshots[nonce];
+        // Only refresh if the snapshot exists (activeCount > 0 or nonce was written)
+        if (snap.blockNumber == 0 && snap.activeCount == 0) revert OracleRegistry__SnapshotNotFound();
+        snap.blockNumber = block.number;
+        emit EventsLib.SnapshotCreated(nonce, block.number, snap.activeBitmask);
     }
 
     /// @notice Get pubkeys for specific oracles (for off-chain aggregation)
