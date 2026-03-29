@@ -23,11 +23,10 @@ const XFADE = 12;
 const S03_S04_OVERLAP = 0;
 
 /**
- * S04→S05: deep zoom transition.
- * Longer than standard XFADE so the zoom is visible while
- * S04 still has content (before it goes fully black).
+ * S04→S05: smooth opacity crossfade.
+ * 8 frames — just enough for a clean float, no zoom, no gimmick.
  */
-const S04_S05_OVERLAP = 8; // fast smooth transition
+const S04_S05_OVERLAP = 8;
 
 /* Scene durations
  * Cut at 0:35 (frame 1050 absolute) — phone scene stays in S03

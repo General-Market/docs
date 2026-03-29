@@ -17,10 +17,10 @@ import { useFloat3D } from "../../lib/tilt3d";
    synced to Remotion frame clock.
 
    Sub-segments (frame ranges, local to this scene):
-   A  0-30     Dark void + faint G logo + tilted phone emerges
-   B  30-75    Phone 3D perspective, "Gemini Advanced" header
-   C  75-130   Interface straightens, "Hello, Lisa." types in
-   D  130-180  Full interface with cards + "How can I help you today?"
+   A  0-30     "Gemini Advanced" title zoomed in + tilted phone emerges
+   B  0-45     Phone 3D perspective, title holds
+   C  45-100   Interface straightens, "Hello, Lisa." types in
+   D  100-150  Full interface with cards + "How can I help you today?"
    E  180-220  "Our most capable AI" kinetic text
    F  220-260  "for reasoning" centered text
    G  260-310  Zoom into card: "Walk me through solving a problem"
@@ -1747,71 +1747,32 @@ export const Scene05: React.FC = () => {
       }, f(530));
     }
 
-    // ═══ N: Experience Gemini + devices (540-610) — shifted 30 frames earlier ═══
+    // ═══ N: Experience Gemini + devices (540-610) ═══
+    // IN = CUT (instant). All elements snap visible at frame 540.
     if (expTitleRef.current) {
-      t.set(expTitleRef.current, { opacity: 0, y: 16 }, 0);
-      t.to(expTitleRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: f(12),
-        ease: "power2.out",
-      }, f(540));
+      t.set(expTitleRef.current, { opacity: 0, y: 0 }, 0);
+      t.set(expTitleRef.current, { opacity: 1 }, f(540));
     }
     if (expUrlRef.current) {
       t.set(expUrlRef.current, { opacity: 0 }, 0);
-      t.to(expUrlRef.current, {
-        opacity: 1,
-        duration: f(12),
-        ease: "power2.out",
-      }, f(550));
+      t.set(expUrlRef.current, { opacity: 1 }, f(540));
     }
-    // Phone slides in from right with expo deceleration, overshoots, settles into 30° pose
+    // Phone — CUT in at frame 540 (no slide, no overshoot)
     if (expPhoneRef.current) {
-      t.set(expPhoneRef.current, { opacity: 0, x: 400, y: 60, rotation: -12 }, 0);
-      // Fast entrance from right — expo deceleration
-      t.to(expPhoneRef.current, {
-        opacity: 1,
-        x: -30, // overshoot left past final position
-        y: -8,
-        rotation: 4,
-        duration: f(14),
-        ease: "expo.out",
-      }, f(555));
-      // Settle back to final position (30° toward viewer is set on the style)
-      t.to(expPhoneRef.current, {
-        x: 0,
-        y: 0,
-        rotation: 0,
-        duration: f(12),
-        ease: "power2.inOut",
-      }, f(569));
+      t.set(expPhoneRef.current, { opacity: 0, x: 0, y: 0, rotation: 0 }, 0);
+      t.set(expPhoneRef.current, { opacity: 1 }, f(540));
     }
-    // Desktop slides in from further right, slight delay, same expo overshoot
+    // Desktop — CUT in at frame 540
     if (expDesktopRef.current) {
-      t.set(expDesktopRef.current, { opacity: 0, x: 500, rotation: 8 }, 0);
-      // Fast entrance from right — expo deceleration
-      t.to(expDesktopRef.current, {
-        opacity: 1,
-        x: -25, // overshoot left
-        rotation: -3,
-        duration: f(15),
-        ease: "expo.out",
-      }, f(558));
-      // Settle back to final position (–30° toward viewer is set on the style)
-      t.to(expDesktopRef.current, {
-        x: 0,
-        rotation: 0,
-        duration: f(12),
-        ease: "power2.inOut",
-      }, f(573));
+      t.set(expDesktopRef.current, { opacity: 0, x: 0, rotation: 0 }, 0);
+      t.set(expDesktopRef.current, { opacity: 1 }, f(540));
     }
-    // Devices container — no shrink, hold at full scale
+    // Devices container — hold at full scale
     if (expDevicesRef.current) {
       t.set(expDevicesRef.current, { scale: 1 }, 0);
     }
 
-    // Experience section — FAST SWOOSH LEFT at 1:07 (frame 600)
-    // Everything slides out to left rapidly: translateX 0→-1400px in 8 frames
+    // OUT = SWOOSH LEFT: translateX 0 -> -1400 in 8 frames, expo.out
     if (expSectionRef.current) {
       t.set(expSectionRef.current, { x: 0, opacity: 1 }, 0);
       t.to(expSectionRef.current, {
@@ -1822,7 +1783,7 @@ export const Scene05: React.FC = () => {
       // Snap invisible after swoosh
       t.set(expSectionRef.current, { opacity: 0 }, f(608));
     }
-    // Experience fade overlay — still fades in but only as backup
+    // Experience fade overlay
     if (expFadeRef.current) {
       t.set(expFadeRef.current, { opacity: 0 }, 0);
       t.to(expFadeRef.current, {
