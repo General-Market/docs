@@ -174,6 +174,14 @@ _sync_docker_files() {
 _sync_config_files() {
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    # CRITICAL: sync deployment files AFTER git pull to ensure oracles build with
+    # the latest addresses. Without this, oracle Docker images bake in stale
+    # deployment.json from git (which may not have the latest settlement addresses).
+    for f in active-deployment.json vision-batches.json morpho-e2e.json; do
+        [ -f "$SCRIPT_DIR/deployments/$f" ] && \
+            rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/deployments/$f" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/$f" 2>/dev/null || true
+    done
+    rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/deployments/active-deployment.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/deployments/active-deployment.json" 2>/dev/null || true
     # AP on VPS 2 also needs symbol-map for FillConfirmed decomposition
     rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/data/symbol-map.json" 2>/dev/null || true
     # Sync deployment JSONs to VPSes — file watcher on services detects changes automatically
