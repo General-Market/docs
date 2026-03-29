@@ -32,6 +32,46 @@ echo "  .env → frontend/.env.local"
 
 # 2. Patch deployment.json from latest forge broadcasts, then copy to destinations
 "$REPO_ROOT/sync-deployment.sh" "$ENV_NAME" 2>/dev/null || true
+
+# Validate deployment.json before copying — prevent Anvil addresses from reaching testnet/mainnet
+DEPLOY_FILE="$ENV_DIR/deployment.json"
+if [[ -f "$DEPLOY_FILE" ]]; then
+  DEPLOY_CHAIN_ID=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE')).get('chainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
+  DEPLOY_SETTLEMENT_ID=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE')).get('settlementChainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
+
+  # Expected chain IDs per environment
+  case "$ENV_NAME" in
+    local)
+      # Local Anvil — any chain ID is fine
+      ;;
+    testnet)
+      if [[ "$DEPLOY_CHAIN_ID" != "111222333" ]]; then
+        echo -e "${RED}FATAL: deployment.json chainId=$DEPLOY_CHAIN_ID but testnet expects 111222333${NC}"
+        echo -e "${RED}This file contains wrong contract addresses. Refusing to copy.${NC}"
+        exit 1
+      fi
+      if [[ "$DEPLOY_SETTLEMENT_ID" != "14601" ]]; then
+        echo -e "${RED}FATAL: deployment.json settlementChainId=$DEPLOY_SETTLEMENT_ID but testnet expects 14601 (Sonic)${NC}"
+        echo -e "${RED}This file contains wrong contract addresses. Refusing to copy.${NC}"
+        exit 1
+      fi
+      # Verify at least one Settlement contract exists on-chain (BridgeProxy)
+      BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('$DEPLOY_FILE'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
+      if [[ -n "$BRIDGE_PROXY" ]]; then
+        CODE_SIZE=$(cast codesize "$BRIDGE_PROXY" --rpc-url https://rpc.testnet.soniclabs.com 2>/dev/null || echo "0")
+        if [[ "$CODE_SIZE" == "0" ]]; then
+          echo -e "${RED}FATAL: BridgeProxy $BRIDGE_PROXY has NO CODE on Sonic testnet${NC}"
+          echo -e "${RED}These are likely Anvil-only addresses. Refusing to copy.${NC}"
+          exit 1
+        fi
+      fi
+      ;;
+    mainnet)
+      # Mainnet chain IDs TBD — add validation when mainnet launches
+      ;;
+  esac
+fi
+
 cp "$ENV_DIR/deployment.json" "$REPO_ROOT/deployments/active-deployment.json"
 cp "$ENV_DIR/deployment.json" "$REPO_ROOT/frontend/lib/contracts/deployment.json"
 echo "  deployment.json → deployments/active-deployment.json + frontend/lib/contracts/"

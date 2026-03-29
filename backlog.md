@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260329-1145-msyn (Mirror sync deadlock + deployment file corruption)
+
+- [DECISION] Root cause: VPS active-deployment.json was overwritten with envs/testnet/deployment.json which contained Anvil-local addresses (0xe3516..., 0x5195...) that don't exist on Sonic. The oracle was talking to a bricked MirrorOracleRegistry (0x5195..., registryNonce=3, admin slot zero from storage layout mismatch after upgrade).
+- [DECISION] Fix: restored correct active-deployment.json (SettlementOracleRegistry=0x42FA..., registryNonce=100) on VPS, restarted oracles.
+- [DECISION] Added chain ID + contract existence validation to switch-env.sh and vps-deploy.sh. Testnet deployment files must have chainId=111222333, settlementChainId=14601, and BridgeProxy must have code on Sonic. Prevents future Anvil→testnet contamination.
+- [DECISION] ITP creation: now increments fail_count on Settlement write failures (was only on L3 failures). Also detects SnapshotTooOld and sets mirror_sync_needed. Prevents infinite retry loop that consumes consensus bandwidth and creates orphaned L3 ITPs.
+- [DECISION] mirror_sync_needed flag: no longer cleared before the sync task runs. Only cleared on confirmed success inside the spawned task. Prevents livelock where the flag is cleared then immediately re-set by downstream SnapshotTooOld errors.
+- [DECISION] Removed unwrap_or(42161) default for settlement chain ID in mirror sync. Now panics if not configured — wrong chain ID is worse than a crash.
+- [FAILED] resetForReSync() on the bricked mirror (0x5195...) — admin slot was zero due to storage layout mismatch from a contract upgrade. UUPS _authorizeUpgrade also broken. Contract is permanently bricked. No path to recovery except deploying a fresh one.
+
 ## Session: 20260328-2130-itpf (ITP creation pipeline fix)
 
 - [DECISION] Data-node settlement poller: `"BridgeProxy"` → `"SettlementBridgeProxy"` in chain_pollers.rs:1162 and chain_event_scanner.rs:118. The old key resolved to L3 address 0xe351... which doesn't exist on Sonic. nextCreationNonce() returned nothing, pending_creations stayed empty forever.

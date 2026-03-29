@@ -194,6 +194,7 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
     node_index: u8,
     num_oracles: u8,
     first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, (std::time::Instant, u32)>>>,
+    mirror_sync_needed: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -260,6 +261,7 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                                         &request.assets,
                                         &request.prices,
                                         request.nonce,
+                                        request.admin,
                                     ).await {
                                         Ok(itp_id) => {
                                             info!(nonce = %request.nonce, itp_id = ?itp_id, "ITP created on L3");
@@ -295,7 +297,22 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                                             info!(nonce = %result.nonce, itp_id = ?itp_id, tx_hash = ?receipt.transaction_hash, "ITP creation confirmed on both L3 and Settlement");
                                         }
                                         Err(e) => {
+                                            let err_str = format!("{}", e);
                                             error!(nonce = %result.nonce, error = %e, "Failed to complete ITP creation on Settlement (L3 succeeded)");
+                                            // Increment failure count for Settlement failures too (prevents infinite retry loop)
+                                            {
+                                                let mut fs = first_seen.lock().await;
+                                                if let Some(entry) = fs.get_mut(&request.nonce) {
+                                                    entry.1 += 1;
+                                                    warn!(nonce = %request.nonce, fail_count = entry.1, threshold = CREATION_FAIL_THRESHOLD,
+                                                          "ITP Settlement write failure recorded");
+                                                }
+                                            }
+                                            // If SnapshotTooOld, signal mirror sync needed
+                                            if is_snapshot_too_old_error(&err_str) {
+                                                warn!(nonce = %request.nonce, "ITP creation hit SnapshotTooOld — requesting mirror sync");
+                                                mirror_sync_needed.store(true, std::sync::atomic::Ordering::Release);
+                                            }
                                         }
                                     }
                                 }

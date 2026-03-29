@@ -408,11 +408,12 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_oracles;
+                            let msn_itp = mirror_sync_needed.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(60),
-                                    run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs),
+                                    run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs, msn_itp),
                                 ).await {
                                     Ok(()) => {},
                                     Err(_) => warn!(cycle, "ITP creation timed out after 60s, releasing flag"),
@@ -674,14 +675,20 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
                                     mirror_sync_first.store(false, Ordering::Release);
-                                    mirror_sync_needed.store(false, Ordering::Release);
-                                    let settlement_cid = settlement_chain_id_for_task.unwrap_or(42161);
+                                    // NOTE: Do NOT clear mirror_sync_needed here — clear it inside
+                                    // the sync task ONLY on success. Clearing before the task runs
+                                    // causes a race: downstream SnapshotTooOld errors re-set the flag
+                                    // but the sync hasn't completed yet, creating a livelock.
+                                    let settlement_cid = settlement_chain_id_for_task.expect(
+                                        "ORACLE_SETTLEMENT_CHAIN_ID must be set — refusing to use wrong default"
+                                    );
                                     mirror_sync_active.store(true, Ordering::Release);
                                     let flag = mirror_sync_active.clone();
                                     let p = Arc::clone(protocol);
                                     let aw = Arc::clone(settlement_writer);
                                     let cr = consensus_chain_reader.clone();
                                     let cycle = current_cycle;
+                                    let msn_sync = mirror_sync_needed.clone();
                                     tokio::spawn(async move {
                                         let _guard = FlagGuard(flag);
                                         match tokio::time::timeout(
@@ -689,7 +696,10 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                                             mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle),
                                         ).await {
                                             Ok(Err(e)) => warn!(cycle, error = %e, "Mirror registry sync failed"),
-                                            Ok(Ok(())) => {},
+                                            Ok(Ok(())) => {
+                                                // Only clear on confirmed success
+                                                msn_sync.store(false, Ordering::Release);
+                                            },
                                             Err(_) => warn!(cycle, "Mirror registry sync timed out after 90s, releasing flag"),
                                         }
                                     });

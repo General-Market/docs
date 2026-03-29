@@ -202,10 +202,29 @@ mkdir -p "$STAGING_DIR/logs" "$STAGING_DIR/data" "$STAGING_DIR/deployments"
 cp "$BINARY_DIR/oracle" "$STAGING_DIR/"
 cp "$BINARY_DIR/data-node" "$STAGING_DIR/"
 
-# Deployment file
+# Deployment file — validate before syncing to VPS
 if [ -f "deployments/active-deployment.json" ]; then
+    # Validate chain IDs match testnet expectations
+    _CHAIN_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json')).get('chainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
+    _SETTLEMENT_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json')).get('settlementChainId', 'MISSING'))" 2>/dev/null || echo "PARSE_ERROR")
+    if [[ "$_CHAIN_ID" != "111222333" || "$_SETTLEMENT_ID" != "14601" ]]; then
+        echo -e "${RED}FATAL: active-deployment.json has chainId=$_CHAIN_ID settlementChainId=$_SETTLEMENT_ID${NC}"
+        echo -e "${RED}Expected chainId=111222333 settlementChainId=14601 for testnet.${NC}"
+        echo -e "${RED}Refusing to deploy Anvil/local addresses to VPS.${NC}"
+        exit 1
+    fi
+    # Verify BridgeProxy has code on Sonic
+    _BP=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
+    if [[ -n "$_BP" ]]; then
+        _CODE=$(cast codesize "$_BP" --rpc-url https://rpc.testnet.soniclabs.com 2>/dev/null || echo "0")
+        if [[ "$_CODE" == "0" ]]; then
+            echo -e "${RED}FATAL: BridgeProxy $_BP has NO CODE on Sonic testnet${NC}"
+            echo -e "${RED}These are Anvil-only addresses. Refusing to deploy to VPS.${NC}"
+            exit 1
+        fi
+    fi
     cp deployments/active-deployment.json "$STAGING_DIR/deployments/"
-    echo -e "  Copied active-deployment.json"
+    echo -e "  Copied active-deployment.json (validated: chainId=$_CHAIN_ID settlement=$_SETTLEMENT_ID)"
 else
     echo -e "${YELLOW}  Warning: No deployments/active-deployment.json found${NC}"
 fi
