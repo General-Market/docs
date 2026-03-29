@@ -564,7 +564,8 @@ cmd_deploy() {
             --private-key "$DEPLOYER_KEY" \
             --broadcast --slow \
             --chain-id $CHAIN_ID \
-            --legacy --with-gas-price $GAS_PRICE) \
+            --legacy --with-gas-price $GAS_PRICE \
+            --code-size-limit 49152) \
             > logs/deploy-core.log 2>&1 || true
 
         # Verify deployment succeeded: check both JSON file exists AND has receipts
@@ -903,7 +904,8 @@ print(f'Patched {patched} addresses from broadcast receipts (impl->proxy matchin
             --private-key "$DEPLOYER_KEY" \
             --broadcast --slow \
             --chain-id $SETTLEMENT_CHAIN_ID \
-            --legacy --with-gas-price $GAS_PRICE) \
+            --legacy --with-gas-price $GAS_PRICE \
+            --code-size-limit 49152) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
 
         if [ -f "deployments/e2e-full-system.json" ]; then
@@ -1110,7 +1112,8 @@ for name, b in vb.get('batches', {}).items():
         --private-key "$DEPLOYER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE \
+        --code-size-limit 49152) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
     # Add Vision address to active-deployment.json BEFORE batch deploy
