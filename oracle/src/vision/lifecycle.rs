@@ -1528,13 +1528,16 @@ impl BatchLifecycleManager {
         let node_index = self.config.node_index;
         let my_bit: i64 = 1i64 << node_index;
 
-        // Find proofs where we haven't signed yet
+        // Find recent proofs where we haven't signed yet.
+        // Only consider proofs created in the last 24 hours — older ones belong to
+        // previous deployments and their batch data is no longer available.
         let rows: Vec<(i64,)> = match sqlx::query_as(
             "SELECT sp.batch_id
              FROM vision_settlement_proofs sp
              WHERE sp.submitted = false
                AND (sp.signer_bitmap & $1) = 0
-             ORDER BY sp.batch_id ASC
+               AND sp.created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY sp.batch_id DESC
              LIMIT 10"
         )
         .bind(my_bit)
@@ -1633,14 +1636,16 @@ impl BatchLifecycleManager {
 
         let threshold = (self.config.num_oracles / 2) + 1;
 
-        // Find unsubmitted proofs with stored payloads and sufficient signatures
+        // Find unsubmitted proofs with stored payloads and sufficient signatures.
+        // Only consider recent proofs (24h) — older ones belong to previous deployments.
         let rows: Vec<(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value, i32)> = match sqlx::query_as(
             "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count
              FROM vision_settlement_proofs
              WHERE submitted = false
                AND players_json IS NOT NULL
                AND retry_count < $1
-             ORDER BY batch_id ASC
+               AND created_at > NOW() - INTERVAL '24 hours'
+             ORDER BY batch_id DESC
              LIMIT 20"
         )
         .bind(max_retries)
