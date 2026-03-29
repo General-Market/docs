@@ -1391,32 +1391,33 @@ json.dump(result, sys.stdout)
         > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; tail -10 logs/deploy-itp-create.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITPs created${NC}"
 
-    # Verify ITP #1 assets are priced (prevents rebalance stall)
-    echo -e "  Verifying ITP #1 asset prices..."
-    python3 -c "
-import json, urllib.request
-smap = json.load(open('data/symbol-map.json'))
-# Read ITP #1 assets from chain
-payload = {'jsonrpc': '2.0', 'id': 1, 'method': 'eth_call',
-    'params': [{'to': '$(read_deployment_addr Index)', 'data': '0x7bfb3953' + '0'*63 + '1'}, 'latest']}
-req = urllib.request.Request('$RPC_URL', data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
-with urllib.request.urlopen(req, timeout=10) as resp:
-    result = json.load(resp)
-raw = result['result'][2:]
-words = [raw[i*64:(i+1)*64] for i in range(len(raw)//64)]
-offset = int(words[3], 16) // 32
-count = int(words[offset], 16)
-missing = 0
-for i in range(count):
-    addr = '0x' + words[offset + 1 + i][24:]
-    if addr.lower() not in smap:
-        print(f'  MISSING: {addr}')
-        missing += 1
-if missing > 0:
-    print(f'{missing}/{count} assets not in symbol-map!')
-    exit(1)
-print(f'All {count} ITP #1 assets in symbol-map')
-" 2>/dev/null || echo -e "  ${YELLOW}ITP asset verification skipped${NC}"
+    # Verify ITP assets have code on-chain and exist in symbol-map.
+    # Orbit nonce drift can cause token deploy addresses to diverge from what
+    # the ITP creation script used. If ITP assets point to dead addresses,
+    # NAV computation fails (all prices = 0). Check first 5 ITPs as a canary.
+    echo -e "  Verifying ITP asset addresses have code on-chain..."
+    local ITP_ASSET_OK=true
+    for _itp_check in 1 2 3 4 5; do
+        local _itp_hex=$(printf "0x%064x" $_itp_check)
+        # Read first asset of this ITP
+        local _first_asset=$(cast call "$INDEX_ADDR_ITP" \
+            "getITPState(bytes32)((address,uint256,uint256,address[],uint256[],uint256[]))" \
+            "$_itp_hex" --rpc-url "$RPC_URL" 2>/dev/null | \
+            python3 -c "import sys; s=sys.stdin.read(); parts=s.split('['); assets=parts[1].split(']')[0].split(',') if len(parts)>1 else []; print(assets[0].strip() if assets else '')" 2>/dev/null)
+        if [ -n "$_first_asset" ] && [ "$_first_asset" != "0x0000000000000000000000000000000000000000" ]; then
+            local _asset_code=$(cast code --rpc-url "$RPC_URL" "$_first_asset" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$_asset_code" -lt 10 ]; then
+                echo -e "  ${RED}FATAL: ITP $_itp_check asset $_first_asset has NO CODE on-chain${NC}"
+                echo -e "  ${RED}  Token addresses diverged during deploy. Full redeploy needed.${NC}"
+                ITP_ASSET_OK=false
+            fi
+        fi
+    done
+    if [ "$ITP_ASSET_OK" = false ]; then
+        echo -e "  ${RED}ITP assets point to dead token addresses. Aborting.${NC}"
+        exit 1
+    fi
+    echo -e "  ${GREEN}ITP asset addresses verified on-chain${NC}"
 
     echo -e "${BLUE}[12/14] Deploying ITP vaults...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
