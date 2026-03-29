@@ -1460,78 +1460,206 @@ impl BatchLifecycleManager {
     }
 
     // =========================================================================
-    // Settlement recovery loop
+    // Settlement co-sign + recovery loop
     // =========================================================================
 
-    /// Background loop that retries failed on-chain `settleBatch` submissions.
+    /// Background loop that (a) co-signs pending settlements and (b) retries
+    /// failed on-chain `settleBatch` submissions.
     ///
-    /// Scans `vision_settlement_proofs` for rows where:
-    ///   - `submitted = false` (on-chain call never succeeded)
-    ///   - `players_json IS NOT NULL` (payload was stored — new rows only)
-    ///   - quorum is met (popcount(signer_bitmap) >= threshold)
-    ///   - `retry_count < MAX_RETRIES` (give up after repeated failures)
+    /// **Co-signing** (all oracles):
+    /// Scans `vision_settlement_proofs` for rows where this oracle hasn't signed
+    /// yet. For each, independently resolves the batch, verifies the payouts hash
+    /// matches, and adds its BLS signature. This is how quorum is reached —
+    /// the leader resolves first, followers verify and co-sign.
     ///
-    /// Each retry reconstructs the `settle_batch` call from stored data.
-    /// The contract's `BatchAlreadySettled` check makes double-submission safe.
+    /// **Recovery** (leader only):
+    /// After co-signing, scans for proofs with quorum met but not yet submitted
+    /// on-chain. Retries the `settleBatch` call with stored payload.
     ///
-    /// Runs every 60 seconds. Only the leader oracle (node_index == 0) retries.
+    /// Runs every 15 seconds for co-signing, every 60 seconds for recovery.
     pub async fn run_settlement_recovery(self: Arc<Self>) {
-        const POLL_INTERVAL_SECS: u64 = 60;
+        const COSIGN_INTERVAL_SECS: u64 = 15;
+        const RECOVERY_INTERVAL_SECS: u64 = 60;
         const MAX_RETRIES: i32 = 10;
 
-        // Only the leader drives on-chain submissions
-        if self.config.node_index != 0 {
-            info!("Settlement recovery: not leader (node_index={}), sleeping", self.config.node_index);
+        let has_bls = self.bls_keypair.is_some();
+        let is_leader = self.config.node_index == 0;
+
+        if !has_bls {
+            info!("Settlement co-sign/recovery: no BLS keypair — sleeping");
             return;
         }
 
+        info!(
+            node_index = self.config.node_index,
+            is_leader,
+            "Settlement co-sign/recovery loop starting (cosign={}s, recovery={}s)",
+            COSIGN_INTERVAL_SECS, RECOVERY_INTERVAL_SECS,
+        );
+
+        let mut cosign_interval = tokio::time::interval(
+            tokio::time::Duration::from_secs(COSIGN_INTERVAL_SECS),
+        );
+        let mut last_recovery = std::time::Instant::now();
+
+        while !self.shutdown.load(Ordering::Relaxed) {
+            cosign_interval.tick().await;
+
+            // ── Phase 1: Co-sign pending settlements (ALL oracles) ──
+            self.co_sign_pending_settlements().await;
+
+            // ── Phase 2: Retry on-chain submission (leader only, every 60s) ──
+            if is_leader && last_recovery.elapsed().as_secs() >= RECOVERY_INTERVAL_SECS {
+                last_recovery = std::time::Instant::now();
+                self.retry_unsubmitted_settlements(MAX_RETRIES).await;
+            }
+        }
+
+        info!("Settlement co-sign/recovery loop shutting down");
+    }
+
+    /// Co-sign pending settlements that this oracle hasn't signed yet.
+    ///
+    /// For each unsubmitted proof where our bit is NOT set in signer_bitmap:
+    /// 1. Look up the batch's source_name from vision_batch_lifecycle
+    /// 2. Independently resolve the batch (deterministic — same inputs → same output)
+    /// 3. sign_and_aggregate_settlement verifies hash match before adding our signature
+    async fn co_sign_pending_settlements(&self) {
+        let node_index = self.config.node_index;
+        let my_bit: i64 = 1i64 << node_index;
+
+        // Find proofs where we haven't signed yet
+        let rows: Vec<(i64,)> = match sqlx::query_as(
+            "SELECT sp.batch_id
+             FROM vision_settlement_proofs sp
+             WHERE sp.submitted = false
+               AND (sp.signer_bitmap & $1) = 0
+             ORDER BY sp.batch_id ASC
+             LIMIT 10"
+        )
+        .bind(my_bit)
+        .fetch_all(&self.pool)
+        .await {
+            Ok(rows) => rows,
+            Err(e) => {
+                warn!(error = %e, "Co-sign sweep: failed to query pending proofs");
+                return;
+            }
+        };
+
+        if rows.is_empty() {
+            return;
+        }
+
+        debug!(node_index, count = rows.len(), "Co-sign sweep: found proofs needing signature");
+
+        for (batch_id,) in &rows {
+            let batch_id_u64 = *batch_id as u64;
+
+            // Look up source_name from lifecycle table
+            let source_name: Option<String> = sqlx::query_scalar(
+                "SELECT source_id FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
+            )
+            .bind(*batch_id)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten();
+
+            let source_name = match source_name {
+                Some(s) => s,
+                None => {
+                    debug!(batch_id = batch_id_u64, "Co-sign sweep: no lifecycle row — skipping");
+                    continue;
+                }
+            };
+
+            // Independently resolve the batch — deterministic given same inputs
+            let settlement = match self.resolve_and_settle(batch_id_u64, &source_name).await {
+                Ok(s) => s,
+                Err(e) => {
+                    debug!(
+                        batch_id = batch_id_u64,
+                        source = %source_name,
+                        error = %e,
+                        "Co-sign sweep: resolve failed — skipping (data may be unavailable)"
+                    );
+                    continue;
+                }
+            };
+
+            if settlement.players.is_empty() {
+                debug!(batch_id = batch_id_u64, "Co-sign sweep: empty settlement — skipping");
+                continue;
+            }
+
+            // sign_and_aggregate_settlement handles:
+            // - Hash mismatch detection (refuses to sign if our payouts differ)
+            // - Idempotent (already-signed check via bitmap)
+            // - Quorum detection + on-chain submission when threshold met
+            match self.sign_and_aggregate_settlement(&settlement).await {
+                Ok(()) => {
+                    info!(
+                        batch_id = batch_id_u64,
+                        node_index,
+                        source = %source_name,
+                        "Co-sign sweep: signed settlement"
+                    );
+                }
+                Err(e) => {
+                    warn!(
+                        batch_id = batch_id_u64,
+                        node_index,
+                        error = %e,
+                        "Co-sign sweep: signing failed"
+                    );
+                }
+            }
+
+            // Small delay between batches
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        }
+    }
+
+    /// Retry on-chain submission for proofs that have quorum but haven't been submitted.
+    async fn retry_unsubmitted_settlements(&self, max_retries: i32) {
         let writer = match &self.chain_writer {
             Some(w) => w.clone(),
             None => {
-                warn!("Settlement recovery: no chain_writer — cannot retry settlements");
+                debug!("Settlement recovery: no chain_writer — skipping");
                 return;
             }
         };
 
         let threshold = (self.config.num_oracles / 2) + 1;
 
-        info!("Settlement recovery loop starting (interval={}s, max_retries={}, threshold={})",
-            POLL_INTERVAL_SECS, MAX_RETRIES, threshold);
-
-        let mut interval = tokio::time::interval(
-            tokio::time::Duration::from_secs(POLL_INTERVAL_SECS),
-        );
-
-        while !self.shutdown.load(Ordering::Relaxed) {
-            interval.tick().await;
-
-            // Find unsubmitted proofs with stored payloads and sufficient signatures
-            let rows: Vec<(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value, i32)> = match sqlx::query_as(
-                "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count
-                 FROM vision_settlement_proofs
-                 WHERE submitted = false
-                   AND players_json IS NOT NULL
-                   AND retry_count < $1
-                 ORDER BY batch_id ASC
-                 LIMIT 20"
-            )
-            .bind(MAX_RETRIES)
-            .fetch_all(&self.pool)
-            .await {
-                Ok(rows) => rows,
-                Err(e) => {
-                    warn!(error = %e, "Settlement recovery: failed to query unsubmitted proofs");
-                    continue;
-                }
-            };
-
-            if rows.is_empty() {
-                continue;
+        // Find unsubmitted proofs with stored payloads and sufficient signatures
+        let rows: Vec<(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value, i32)> = match sqlx::query_as(
+            "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count
+             FROM vision_settlement_proofs
+             WHERE submitted = false
+               AND players_json IS NOT NULL
+               AND retry_count < $1
+             ORDER BY batch_id ASC
+             LIMIT 20"
+        )
+        .bind(max_retries)
+        .fetch_all(&self.pool)
+        .await {
+            Ok(rows) => rows,
+            Err(e) => {
+                warn!(error = %e, "Settlement recovery: failed to query unsubmitted proofs");
+                return;
             }
+        };
 
-            info!(count = rows.len(), "Settlement recovery: found unsubmitted settlements");
+        if rows.is_empty() {
+            return;
+        }
 
-            for (batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count) in &rows {
+        info!(count = rows.len(), "Settlement recovery: found unsubmitted settlements");
+
+        for (batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count) in &rows {
                 let batch_id_u64 = *batch_id as u64;
                 let popcount = signer_bitmap.count_ones();
 
@@ -1559,7 +1687,7 @@ impl BatchLifecycleManager {
                         if !parse_ok {
                             error!(batch_id = batch_id_u64, "Settlement recovery: failed to parse players_json — marking exhausted");
                             let _ = sqlx::query("UPDATE vision_settlement_proofs SET retry_count = $1 WHERE batch_id = $2")
-                                .bind(MAX_RETRIES)
+                                .bind(max_retries)
                                 .bind(*batch_id)
                                 .execute(&self.pool)
                                 .await;
@@ -1584,7 +1712,7 @@ impl BatchLifecycleManager {
                         if !parse_ok {
                             error!(batch_id = batch_id_u64, "Settlement recovery: failed to parse payouts_json — marking exhausted");
                             let _ = sqlx::query("UPDATE vision_settlement_proofs SET retry_count = $1 WHERE batch_id = $2")
-                                .bind(MAX_RETRIES)
+                                .bind(max_retries)
                                 .bind(*batch_id)
                                 .execute(&self.pool)
                                 .await;
@@ -1683,9 +1811,6 @@ impl BatchLifecycleManager {
                 // Small delay between retries to avoid nonce contention
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             }
-        }
-
-        info!("Settlement recovery loop shutting down");
     }
 }
 
