@@ -211,19 +211,10 @@ const PhoneScene: React.FC<{
 
   return (
     <>
-      {/* Lighting — cool white to avoid brown tint on titanium */}
-      <ambientLight intensity={0.6} color="#f0f0ff" />
-      <directionalLight
-        position={[3, 5, 5]}
-        intensity={1.0}
-        color="#ffffff"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
-      <directionalLight position={[-2, 3, -3]} intensity={0.4} color="#e8e8ff" />
-      {/* Rim light — cool white for clean edge */}
-      <pointLight position={[0, 0, 4]} intensity={0.6} color="#ffffff" />
+      {/* Lighting — FLAT even lighting to prevent color shifts during rotation */}
+      <ambientLight intensity={1.2} color="#ffffff" />
+      <directionalLight position={[0, 0, 5]} intensity={0.5} color="#ffffff" />
+      <directionalLight position={[0, 0, -5]} intensity={0.3} color="#ffffff" />
 
       {/* Environment for clean reflections — studio preset is most neutral */}
       <Environment preset="studio" />

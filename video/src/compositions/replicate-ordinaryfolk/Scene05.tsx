@@ -1302,7 +1302,7 @@ export const Scene05: React.FC = () => {
         opacity: 0.3,
         duration: f(6),
         ease: "power1.out",
-      }, 0);
+      }, f(24)); // delay past S04→S05 transition overlap
       t.to(phoneARef.current, {
         x: 0,
         y: 0,
@@ -1311,12 +1311,12 @@ export const Scene05: React.FC = () => {
         scale: 0.42,
         duration: f(28),
         ease: "power2.out",
-      }, 0);
+      }, f(24)); // delay past transition
       t.to(phoneARef.current, {
         opacity: 0,
         duration: f(10),
         ease: "power2.in",
-      }, f(22));
+      }, f(46)); // shifted to match delayed start
     }
 
     // ═══ B+C+D: Gemini Interface (30-180) ═══
