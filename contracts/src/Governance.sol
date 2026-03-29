@@ -29,8 +29,12 @@ contract Governance is IGovernance, Initializable, UUPSUpgradeable {
     /// @dev Per-ITP pause flags
     mapping(bytes32 => bool) private _itpPaused;
 
-    /// @dev Storage gap for upgrade safety (50 slots total)
-    uint256[47] private __gap;
+    /// @dev Recovery address — can only set admin when _admin == address(0).
+    /// Prevents permanent governance bricking from deploy bugs or storage shifts.
+    address private _recoveryAddress;
+
+    /// @dev Storage gap for upgrade safety (50 slots total, reduced by 1 for _recoveryAddress)
+    uint256[46] private __gap;
 
     // ============ MODIFIERS ============
 
@@ -55,6 +59,7 @@ contract Governance is IGovernance, Initializable, UUPSUpgradeable {
         if (initialAdmin == address(0)) revert ZeroAddress();
         __UUPSUpgradeable_init();
         _admin = initialAdmin;
+        _recoveryAddress = initialAdmin;
         emit AdminTransferred(address(0), initialAdmin);
     }
 
@@ -101,6 +106,18 @@ contract Governance is IGovernance, Initializable, UUPSUpgradeable {
     }
 
     // ============ ADMIN MANAGEMENT ============
+
+    /// @notice Emergency admin recovery — only callable when admin is address(0).
+    /// @dev This is the escape hatch for bricked governance. Only the recovery address
+    ///      (set at initialize time, same as the original deployer) can use it.
+    ///      Cannot be used to hijack a working governance — reverts if admin is set.
+    function recoverAdmin(address newAdmin) external {
+        if (_admin != address(0)) revert Unauthorized(); // only when bricked
+        if (msg.sender != _recoveryAddress) revert Unauthorized();
+        if (newAdmin == address(0)) revert ZeroAddress();
+        _admin = newAdmin;
+        emit AdminTransferred(address(0), newAdmin);
+    }
 
     /// @inheritdoc IGovernance
     function setAdmin(address newAdmin) external onlyAdmin {
