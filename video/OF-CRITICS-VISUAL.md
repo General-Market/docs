@@ -292,3 +292,30 @@ return <primitive object={scene} scale={...} />;
 - Save as video/public/models/iphone.glb (replace existing)
 
 **ALL phones in ALL scenes must use the SAME GLB model.** No CSS phones, no ExtrudeGeometry.
+
+## LATEST BATCH
+
+### 0:37 Phone not fixed
+Phone at 0:37 still has issues. Needs to look correct with the updated Phone3D (thinner, titanium).
+
+### 0:40 Weird color change
+Something changes color at 0:40 that looks wrong. Check and fix.
+
+### 0:41 Screen less tilted than phone case — SUPER WEIRD
+The screen content overlay is not rotating at the same angle as the 3D phone body. The screen appears flatter than the phone case. This is because the screen is an HTML overlay that doesn't match the 3D transform.
+**Fix:** The screen overlay must have EXACTLY the same CSS perspective/rotateY/rotateX as the Phone3D wrapper. Pass the current tilt values to the screenContent container.
+
+### 0:04 Write should SLIDE not replace
+"Write" should slide in from below/right — NOT replace existing text. The old text stays, "Write" slides into position next to it.
+**Fix:** "Write" entrance: translateY(30px) opacity(0) → translateY(0) opacity(1). No removal of previous text.
+
+### 0:05 Letter dispersion — axis-locked with 3-4 switches per letter
+Each letter: accelerate on X axis → pause → accelerate on Y axis → pause → X again → pause → Y again.
+3-4 directional switches per letter. Only ONE axis moves at a time. Each switch has acceleration (ease-in) then deceleration (ease-out).
+Same pattern for "Solve problems" letters after.
+**Fix:** Per-letter timeline with 3-4 segments: [{axis:"x", dist:80, dur:0.15}, {pause:0.08}, {axis:"y", dist:-60, dur:0.12}, {pause:0.06}, {axis:"x", dist:-40, dur:0.1}, {pause:0.05}]
+
+### 0:08 Brainstorm — blurred blue copy recovers to sharp (Image 32)
+The final "Brainstorm ideas" should appear as a LARGE BLURRED BLUE copy that slowly SHARPENS into the final crisp dark text. Like focusing a camera — starts at blur(15px) in blue/purple, ends at blur(0) in dark text.
+NOT a fade-in. A BLUR-TO-SHARP transition.
+**Fix:** Start with large blue "Brainstorm ideas" at filter:blur(15px), color:#6366f1. Animate to filter:blur(0) color:#1a1a2e over 0.8s. The blurred version is LARGER than final (scale 1.3→1.0).
