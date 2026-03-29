@@ -453,7 +453,14 @@ cmd_deploy() {
             batch_configs,
             batch_settlements,
             signed_batch_configs,
-            liquidity_snapshots
+            liquidity_snapshots,
+            sim_nav_series,
+            sim_holdings,
+            sim_trades,
+            market_prices,
+            market_prices_latest,
+            market_assets,
+            coingecko_market_caps
         CASCADE;
     \" 2>&1" \
         && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
