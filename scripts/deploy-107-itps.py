@@ -56,7 +56,7 @@ def normalize_weights(holdings, prices):
     for h in holdings:
         w18 = int(h["weight_pct"] * 1e16)
         pair, pw = get_price(h["symbol"], prices)
-        if pair is None or w18 < MIN_WEIGHT:
+        if pair is None or pw is None or float(pw) == 0 or w18 < MIN_WEIGHT:
             continue
         raw.append((h["symbol"], w18, pw, pair))
     if not raw:
@@ -292,25 +292,47 @@ FALLBACK_SYMBOLS = {
 
 
 def fetch_valid_bitget_symbols():
-    """Fetch tradeable spot symbols from Bitget. Returns set of base symbols (e.g. 'BTC')."""
-    url = "https://api.bitget.com/api/v2/spot/public/products"
+    """Fetch actively traded spot symbols from Bitget. Returns set of base symbols (e.g. 'BTC').
+    Uses the tickers endpoint which only returns pairs with live prices — delisted tokens excluded."""
+    # Primary: tickers endpoint (only active pairs with live prices)
+    url = "https://api.bitget.com/api/v2/spot/market/tickers"
     try:
-        resp = urllib.request.urlopen(url, timeout=10)
-        products = json.loads(resp.read())["data"]
-        # Each product has a 'symbol' field like 'BTCUSDT'. Extract base by stripping quote.
+        resp = urllib.request.urlopen(url, timeout=15)
+        data = json.loads(resp.read())
+        if data.get("code") != "00000":
+            raise ValueError(f"API error: {data.get('code')} {data.get('msg')}")
+        tickers = data["data"]
         valid = set()
-        for p in products:
-            sym = p.get("symbol", "")
-            for quote in ("USDT", "USDC"):
-                if sym.endswith(quote):
-                    valid.add(sym[: -len(quote)])
-                    break
-        print(f"Fetched {len(valid)} valid Bitget base symbols")
+        for t in tickers:
+            sym = t.get("symbol", "")
+            price = float(t.get("lastPr", "0") or "0")
+            # Only include pairs with non-zero price (actively traded)
+            if price > 0:
+                for quote in ("USDT", "USDC"):
+                    if sym.endswith(quote):
+                        valid.add(sym[: -len(quote)])
+                        break
+        print(f"Fetched {len(valid)} valid Bitget base symbols (from live tickers)")
         return valid
     except Exception as e:
-        print(f"Warning: Could not fetch Bitget pairs: {e}")
-        print(f"Falling back to {len(FALLBACK_SYMBOLS)} hardcoded symbols")
-        return FALLBACK_SYMBOLS
+        print(f"Warning: Could not fetch Bitget tickers: {e}")
+        # Fallback: try products endpoint
+        try:
+            resp = urllib.request.urlopen("https://api.bitget.com/api/v2/spot/public/products", timeout=10)
+            products = json.loads(resp.read())["data"]
+            valid = set()
+            for p in products:
+                sym = p.get("symbol", "")
+                for quote in ("USDT", "USDC"):
+                    if sym.endswith(quote):
+                        valid.add(sym[: -len(quote)])
+                        break
+            print(f"Fetched {len(valid)} valid Bitget base symbols (from products)")
+            return valid
+        except Exception as e2:
+            print(f"Warning: Both Bitget endpoints failed: {e2}")
+            print(f"Falling back to {len(FALLBACK_SYMBOLS)} hardcoded symbols")
+            return FALLBACK_SYMBOLS
 
 
 def main():
