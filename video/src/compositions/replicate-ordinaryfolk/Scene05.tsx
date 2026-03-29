@@ -1147,6 +1147,10 @@ const SPIRAL_TEXT = "With access to";
 const SPIRAL_CHARS = SPIRAL_TEXT.split("");
 const SPIRAL_WORDS = ["Search", "YouTube", "Maps", "Flights", "Gmail", "Workspace"];
 
+// ─── Circular stamp text (coin/seal style) ───
+const STAMP_TEXT = "Gmail \u2605 Search \u2605 YouTube \u2605 Maps \u2605 Flights \u2605 Workspace \u2605 ";
+const STAMP_CHARS = STAMP_TEXT.split("");
+
 // ═══ MAIN SCENE — GSAP-DRIVEN ═══
 
 export const Scene05: React.FC = () => {
@@ -1157,7 +1161,6 @@ export const Scene05: React.FC = () => {
   const builtRef = useRef(false);
 
   // Refs for GSAP-targeted elements
-  const gLogoRef = useRef<HTMLDivElement>(null);
   const phoneARef = useRef<HTMLDivElement>(null);
   const interfaceWrapRef = useRef<HTMLDivElement>(null);
   const interfaceGlowRef = useRef<HTMLDivElement>(null);
@@ -1270,23 +1273,8 @@ export const Scene05: React.FC = () => {
     // Convert frame to seconds for GSAP
     const f = (fr: number) => fr / fps;
 
-    // ═══ A: Dark void + G logo + phone (0-30) ═══
-
-    // G logo: fade in → fade out
-    if (gLogoRef.current) {
-      t.set(gLogoRef.current, { opacity: 0, scale: 0.4 }, 0);
-      t.to(gLogoRef.current, {
-        opacity: 1,
-        scale: 0.6,
-        duration: f(15),
-        ease: "power2.out",
-      }, 0);
-      t.to(gLogoRef.current, {
-        opacity: 0,
-        duration: f(15),
-        ease: "power2.in",
-      }, f(20));
-    }
+    // ═══ A: Dark void + phone (0-30) ═══
+    // G logo removed — scene opens directly into Gemini Advanced title
 
     // Phone A: arc sweep from bottom-left
     if (phoneARef.current) {
@@ -1319,9 +1307,9 @@ export const Scene05: React.FC = () => {
       }, f(46)); // shifted to match delayed start
     }
 
-    // ═══ B+C+D: Gemini Interface (30-180) ═══
-    // Starts HEAVILY zoomed scale(4.5) rotateY(-20deg) -- title IS the frame.
-    // Only "Gemini Advanced" visible for first 30 frames. Then pulls back to scale(1)
+    // ═══ B+C+D: Gemini Interface (0-150) ═══
+    // Opens immediately with "Gemini Advanced" title zoomed in.
+    // No G logo preamble — title IS the first thing you see.
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
@@ -1332,13 +1320,13 @@ export const Scene05: React.FC = () => {
         x: 0,
         y: 0,
       }, 0);
-      // Fade in — tilted top-left view right after transition
+      // Fade in immediately — title visible during S04→S05 crossfade
       t.to(interfaceWrapRef.current, {
         opacity: 1,
         duration: f(8),
         ease: "power2.out",
-      }, f(30));
-      // Phase 1: hold zoomed title view, slow drift (30-65)
+      }, f(0));
+      // Phase 1: hold zoomed title view, slow drift (0-35)
       t.to(interfaceWrapRef.current, {
         rotateY: -14,
         scale: 2.6,
@@ -1346,8 +1334,8 @@ export const Scene05: React.FC = () => {
         y: 0,
         duration: f(35),
         ease: "power1.out",
-      }, f(30));
-      // Phase 2: pull back to reveal full interface (65-115)
+      }, f(0));
+      // Phase 2: pull back to reveal full interface (35-85)
       t.to(interfaceWrapRef.current, {
         rotateX: 0,
         rotateY: 0,
@@ -1357,19 +1345,19 @@ export const Scene05: React.FC = () => {
         y: 0,
         duration: f(50),
         ease: "power2.inOut",
-      }, f(65));
-      // Phase 3: final settle (115-130)
+      }, f(35));
+      // Phase 3: final settle (85-100)
       t.to(interfaceWrapRef.current, {
         scale: 0.95,
         duration: f(15),
         ease: "power1.out",
-      }, f(115));
+      }, f(85));
       // Fade out
       t.to(interfaceWrapRef.current, {
         opacity: 0,
         duration: f(15),
         ease: "power2.in",
-      }, f(165));
+      }, f(135));
     }
 
     // Rainbow border glow — bright during zoomed title, fades as interface settles
@@ -1379,13 +1367,13 @@ export const Scene05: React.FC = () => {
         opacity: 1,
         duration: f(10),
         ease: "power2.out",
-      }, f(30));
+      }, f(0));
       // Hold glow during title phase, then fade as we pull back
       t.to(interfaceGlowRef.current, {
         opacity: 0,
         duration: f(30),
         ease: "power2.inOut",
-      }, f(75));
+      }, f(45));
     }
 
     // Disclaimer
@@ -1395,12 +1383,12 @@ export const Scene05: React.FC = () => {
         opacity: 0.4,
         duration: f(10),
         ease: "power1.inOut",
-      }, f(50));
+      }, f(20));
       t.to(disclaimerRef.current, {
         opacity: 0,
         duration: f(10),
         ease: "power1.inOut",
-      }, f(160));
+      }, f(130));
     }
 
     // Interface backdrop (visible behind 3D rotating cards)
@@ -1701,30 +1689,17 @@ export const Scene05: React.FC = () => {
       }, f(staggerFrame));
     });
 
-    // Spiral words — 3D orbital ring: WHIP 3-4 full revolutions then settle
+    // Circular stamp text — rotation driven by frame*12 in JSX, GSAP controls opacity only
     if (spiralRingRef.current) {
-      // Start: tilted, spinning fast
-      t.set(spiralRingRef.current, { opacity: 0, rotateX: 60, rotateZ: 0, scale: 0.6 }, 0);
+      t.set(spiralRingRef.current, { opacity: 0, scale: 0.6 }, 0);
       // Snap visible
       t.to(spiralRingRef.current, {
         opacity: 1,
         scale: 1,
-        duration: f(4),
+        duration: f(6),
         ease: "power2.out",
       }, f(465));
-      // FAST SPIN: 3.5 full revolutions (1260 degrees) in 20 frames — whipping
-      t.to(spiralRingRef.current, {
-        rotateZ: 1260,
-        duration: f(20),
-        ease: "expo.out", // fast start, decelerating — whip effect
-      }, f(465));
-      // Settle: tilt eases out as ring slows
-      t.to(spiralRingRef.current, {
-        rotateX: 45,
-        duration: f(18),
-        ease: "power2.out",
-      }, f(470));
-      // Exit
+      // Exit — shrink and fade
       t.to(spiralRingRef.current, {
         scale: 0.15,
         opacity: 0,
@@ -1732,22 +1707,6 @@ export const Scene05: React.FC = () => {
         ease: "power2.in",
       }, f(488));
     }
-    // Individual words — appear quickly, hold during spin
-    spiralWordsRef.current.forEach((el, i) => {
-      if (!el) return;
-      t.set(el, { opacity: 0, scale: 0.7 }, 0);
-      t.to(el, {
-        opacity: 1,
-        scale: 1,
-        duration: f(3),
-        ease: "power1.out",
-      }, f(466 + i * 0.8));
-      t.to(el, {
-        opacity: 0,
-        duration: f(4),
-        ease: "power1.in",
-      }, f(489 + i * 0.5));
-    });
 
     // Spiral center glow
     if (spiralGlowRef.current) {
@@ -2066,24 +2025,6 @@ export const Scene05: React.FC = () => {
           zIndex: 0,
         }}
       />
-
-      {/* A: G logo */}
-      <div
-        ref={gLogoRef}
-        style={{
-          position: "absolute",
-          top: "38%",
-          left: "35%",
-          opacity: 0,
-        }}
-      >
-        <Glow
-          color={PURPLE}
-          spread={breathingGlow(frame, 25, 20, 0.15)}
-        >
-          <GoogleG size={50} glowIntensity={0.8} frame={frame} />
-        </Glow>
-      </div>
 
       {/* A: Phone */}
       <div
@@ -2583,7 +2524,7 @@ export const Scene05: React.FC = () => {
           );
         })}
 
-        {/* Capability words on a 3D orbital ring */}
+        {/* Circular stamp/coin text — characters placed on circle circumference */}
         <div
           ref={spiralRingRef}
           style={{
@@ -2593,45 +2534,44 @@ export const Scene05: React.FC = () => {
             transform: "translate(-50%, -50%)",
             width: 0,
             height: 0,
-            transformStyle: "preserve-3d",
             opacity: 0,
           }}
         >
-          {SPIRAL_WORDS.map((word, i) => {
-            const angle = (i / SPIRAL_WORDS.length) * 360;
-            const ringRadius = 220;
-            const gradients = [
-              `linear-gradient(90deg, ${PURPLE}, ${PINK})`,
-              `linear-gradient(90deg, ${BLUE}, ${PURPLE})`,
-              `linear-gradient(90deg, ${PINK}, ${BLUE})`,
-            ];
-            const gradient = gradients[i % gradients.length];
-            return (
-              <div
-                key={`spiral-word-${i}`}
-                ref={(el) => { spiralWordsRef.current[i] = el; }}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  transform: `rotateY(${angle}deg) translateZ(${ringRadius}px) rotateY(-${angle}deg)`,
-                  fontSize: 26,
-                  fontFamily: FONT,
-                  fontWeight: 500,
-                  background: gradient,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text" as const,
-                  filter: `drop-shadow(0 0 12px ${PURPLE})`,
-                  whiteSpace: "nowrap",
-                  opacity: 0,
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                {word}
-              </div>
-            );
-          })}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              transform: `translate(-50%, -50%) rotate(${frame * 12}deg)`,
+              width: 0,
+              height: 0,
+            }}
+          >
+            {STAMP_CHARS.map((ch, i) => {
+              const angleDeg = (i / STAMP_CHARS.length) * 360;
+              const radius = 200;
+              return (
+                <div
+                  key={`stamp-${i}`}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    transform: `rotate(${angleDeg}deg) translateY(-${radius}px)`,
+                    transformOrigin: "0 0",
+                    fontSize: 14,
+                    fontFamily: FONT,
+                    fontWeight: 500,
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                    textShadow: "0 0 6px rgba(139,92,246,0.5)",
+                  }}
+                >
+                  {ch === " " ? "\u00A0" : ch}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

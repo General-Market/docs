@@ -829,38 +829,16 @@ const SegPhoneGoodMorning: React.FC = () => {
   const {fps, durationInFrames} = useVideoConfig();
   const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
 
-  /* Flatten progress: tilted -> nearly flat */
-  const flattenStart = Math.floor(durationInFrames * 0.45);
-  const flattenEnd = Math.floor(durationInFrames * 0.7);
-  const flattenT = interpolate(frame, [flattenStart, flattenEnd], [0, 1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-
-  /* Entrance */
-  const eP = interpolate(frame, [0, fps*0.8], [0, 1], {extrapolateRight:"clamp", easing:EASE_OUT_EXPO});
-  const enterOp = interpolate(eP, [0, 0.08], [0, 1], {extrapolateRight:"clamp"});
-  const enterY = interpolate(eP, [0, 1], [120, 0]);
-
-  /* Rotations: tilted -> nearly flat (very low rotateX, minimal rotateY) */
-  const rotY = interpolate(flattenT, [0, 1], [0.22, 0.02]);
-  const rotX = interpolate(flattenT, [0, 1], [-0.06, -0.015]);
-
-  /* Phone3D mesh scale + CSS wrapper scale -> fills 2/3 of frame height when flat.
-     Phone body ~400px at scale 1. 2/3 of 720 = 480px -> total ~1.2x. */
-  const phoneScale = interpolate(flattenT, [0, 1], [1.0, 1.0]);
-  const cssScale = interpolate(flattenT, [0, 1], [0.95, 1.35]);
-
-  /* Phone drifts down so top edge creates a clear horizon line */
-  const phoneY = interpolate(flattenT, [0, 1], [enterY, 100]) + tilt.translateY;
-  const phoneX = tilt.translateX;
-
-  /* "But that's not all..." appears during flatten */
-  const textDelay = Math.floor(flattenStart + (flattenEnd - flattenStart) * 0.5);
-  const textSpr = spring({frame, fps, delay: textDelay, config:{damping:14, stiffness:100, mass:0.7}});
-  const textOp = interpolate(textSpr, [0, 0.3], [0, 1], {extrapolateRight:"clamp"});
-  const textYOff = interpolate(textSpr, [0, 1], [12, 0]);
-  /* Horizon Y: text sits right at the top edge of the phone where it meets the background.
-     As the phone flattens and shifts down, the horizon rises in the frame.
-     Phone top edge at flattenT=1 is ~30px from frame top. Text at the boundary. */
-  const horizonY = interpolate(flattenT, [0, 1], [280, 14]);
+  /* ── Same entrance as SegPhoneMockup: cubic-bezier from below-right ── */
+  const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
+  const pX = cubicBez(eP, 150, 120, 30, 0);
+  const pY = cubicBez(eP, 550, 380, 60, 0);
+  const pR = interpolate(eP, [0,1], [6,0]);
+  const pS = interpolate(eP, [0,1], [1.1,1.6]);
+  const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
+  const sF = frame - fps*1.5;
+  const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
+  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   /* Screen: Good Morning Gemini content */
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));
@@ -893,38 +871,16 @@ const SegPhoneGoodMorning: React.FC = () => {
   );
 
   return (
-    <AbsoluteFill style={{backgroundColor:"#FAFAFA"}}>
+    <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
       <Phone3D
-        rotateY={rotY}
-        rotateX={rotX}
-        scale={phoneScale}
+        rotateY={0.24}
+        rotateX={-0.05}
+        scale={1}
         screenContent={phoneScreen}
         screenColor="#FFFFFF"
-        opacity={enterOp}
-        style={{
-          transform: `translate(${phoneX}px, ${phoneY}px) scale(${cssScale})`,
-          transformOrigin: "center center",
-        }}
+        opacity={pOp}
+        style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
       />
-      {/* "But that's not all..." tracked to phone horizon (top edge where phone meets background) */}
-      {textOp > 0.01 && (
-        <div style={{
-          position: "absolute",
-          left: "50%",
-          top: horizonY + textYOff,
-          transform: `translateX(-50%) translateX(${phoneX}px)`,
-          opacity: textOp,
-          fontSize: 28,
-          fontFamily: "'Google Sans','Product Sans',sans-serif",
-          fontWeight: 400,
-          color: DARK,
-          whiteSpace: "nowrap",
-          textShadow: "0 2px 12px rgba(255,255,255,0.8)",
-          letterSpacing: 0.5,
-        }}>
-          {`But that\u2019s not all...`}
-        </div>
-      )}
     </AbsoluteFill>
   );
 };
