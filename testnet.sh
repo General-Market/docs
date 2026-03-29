@@ -459,6 +459,21 @@ cmd_deploy() {
         && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
         || echo -e "  ${YELLOW}Postgres wipe failed — tables may have stale data${NC}"
 
+    # Also wipe data_node vision tables (separate DB) — stale batches from previous
+    # deployments confuse the frontend and oracle batch discovery.
+    vps_be_ssh "psql -U max -d data_node -c \"
+        TRUNCATE
+            vision_batches,
+            vision_tick_results,
+            vision_reference_prices,
+            batch_configs,
+            signed_batch_configs,
+            batch_settlements
+        CASCADE;
+    \" 2>&1" \
+        && echo -e "  ${GREEN}Data-node vision tables wiped${NC}" \
+        || echo -e "  ${YELLOW}Data-node wipe failed (tables may not exist yet)${NC}"
+
     echo -e "${CYAN}Deploying contracts to L3 (chain $CHAIN_ID)...${NC}"
 
     # Prerequisites
