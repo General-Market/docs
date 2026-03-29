@@ -908,16 +908,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
     /// @notice Get all ITP vault addresses (for frontend compatibility)
     /// @return vaults Array of ITP vault addresses
-    function getAllItps() external view returns (address[] memory vaults) {
-        uint256 len = _allItpIds.length;
-        vaults = new address[](len);
-        for (uint256 i = 0; i < len;) {
-            vaults[i] = itpVaults[_allItpIds[i]];
-            unchecked {
-                ++i;
-            }
-        }
-    }
+    // getAllItps removed for code size — frontend uses getItpCount + getITP loop.
 
     /// @notice Get ITP count
     /// @return count Number of ITPs created
@@ -925,47 +916,8 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         return _itpCount;
     }
 
-    /// @notice Get ITP name and symbol by ID
-    function getItpNameSymbol(bytes32 itpId) external view returns (string memory name, string memory symbol) {
-        TypesLib.ITPCore storage itp = _itps[itpId];
-        name = _bytes32ToString(itp.name);
-        symbol = _bytes32ToString(itp.symbol);
-    }
-
-    /// @notice Get ITP info for frontend (name, symbol, totalSupply, price)
-    /// @param itpAddress The ITP vault address
-    /// @return name Token name
-    /// @return symbol Token symbol
-    /// @return totalSupply Total supply
-    /// @return price Current price (NAV)
-    function getItpInfo(address itpAddress) external view returns (
-        string memory name,
-        string memory symbol,
-        uint256 totalSupply,
-        uint256 price
-    ) {
-        bytes32 itpId = _vault2Id[itpAddress];
-        if (itpId == bytes32(0)) {
-            return ("", "", 0, 0);
-        }
-        TypesLib.ITPCore storage itp = _itps[itpId];
-        name = _bytes32ToString(itp.name);
-        symbol = _bytes32ToString(itp.symbol);
-        totalSupply = itp.totalSupply;
-        price = _getCurrentPrice(itpId);
-        return (name, symbol, totalSupply, price);
-    }
-
-    /// @notice Get ITP price for frontend
-    /// @param itpAddress The ITP vault address
-    /// @return price Current price (NAV)
-    function getItpPrice(address itpAddress) external view returns (uint256 price) {
-        bytes32 itpId = _vault2Id[itpAddress];
-        if (itpId == bytes32(0)) {
-            return 0;
-        }
-        return _getCurrentPrice(itpId);
-    }
+    // getItpNameSymbol, getItpInfo, getItpPrice removed for code size.
+    // Frontend: use getITP(itpId) + getNAV(itpId) or multicall.
 
     /// @inheritdoc IInvestment
     function getOrder(uint256 orderId) external view returns (TypesLib.LimitOrder memory order) {
@@ -1292,19 +1244,6 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         assembly {
             result := mload(add(source, 32))
         }
-    }
-
-    /// @notice Convert bytes32 to string (for frontend compatibility)
-    function _bytes32ToString(bytes32 source) internal pure returns (string memory) {
-        uint256 len = 0;
-        while (len < 32 && source[len] != 0) {
-            len++;
-        }
-        bytes memory result = new bytes(len);
-        for (uint256 i = 0; i < len; i++) {
-            result[i] = source[i];
-        }
-        return string(result);
     }
 
     /// @notice Authorize upgrade (UUPS pattern)

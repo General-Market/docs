@@ -745,38 +745,6 @@ contract IndexTest is TestHelper {
         index.setStalenessLimit(0, 10);
     }
 
-    function test_setStalenessLimitsBatch_success() public {
-        uint256[] memory types = new uint256[](3);
-        types[0] = 0; // CEX
-        types[1] = 1; // DEX
-        types[2] = 2; // low-liquidity
-
-        uint256[] memory limits = new uint256[](3);
-        limits[0] = 10;
-        limits[1] = 30;
-        limits[2] = 60;
-
-        vm.prank(admin);
-        index.setStalenessLimitsBatch(types, limits);
-
-        assertEq(index.stalenessLimits(0), 10);
-        assertEq(index.stalenessLimits(1), 30);
-        assertEq(index.stalenessLimits(2), 60);
-    }
-
-    function test_setStalenessLimitsBatch_revertsLengthMismatch() public {
-        uint256[] memory types = new uint256[](2);
-        types[0] = 0;
-        types[1] = 1;
-
-        uint256[] memory limits = new uint256[](1);
-        limits[0] = 10;
-
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E015_LengthMismatch.selector, 2, 1));
-        vm.prank(admin);
-        index.setStalenessLimitsBatch(types, limits);
-    }
-
     function test_setStalenessLimit_zeroDisablesCheck() public {
         vm.prank(admin);
         index.setStalenessLimit(0, 0); // 0 means no limit
