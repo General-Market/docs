@@ -33,10 +33,10 @@ import {
 /* ── iPhone 15 Pro proportions (mm → Three.js units, scaled) ── */
 const PHONE_W = 1.5;       // ~75mm → 1.5 units
 const PHONE_H = 3.0;       // ~150mm → 3.0 units
-const PHONE_D = 0.16;      // ~8mm → 0.16 units
-const CORNER_R = 0.18;     // corner radius
-const BEZEL = 0.06;        // bezel inset from edge
-const SCREEN_R = 0.12;     // screen corner radius (slightly less than body)
+const PHONE_D = 0.06;      // thin like a real iPhone (~8mm but scaled down for visual)
+const CORNER_R = 0.22;     // corner radius (more rounded like iPhone 16)
+const BEZEL = 0.04;        // bezel inset — thinner bezels
+const SCREEN_R = 0.18;     // screen corner radius (close to body for edge-to-edge look)
 
 /* Dynamic Island */
 const DI_W = 0.38;         // pill width
@@ -79,8 +79,8 @@ const PhoneBody: React.FC<{
   backColor?: string;
 }> = ({
   screenColor = "#0a0a0a",
-  frameColor = "#c8c8cc",
-  backColor = "#e8e8ea",
+  frameColor = "#e0e0e4",
+  backColor = "#f0f0f2",
 }) => {
   /* Body: extruded rounded rect — titanium silver iPhone */
   const bodyGeometry = useMemo(() => {
@@ -88,9 +88,9 @@ const PhoneBody: React.FC<{
     const geo = new THREE.ExtrudeGeometry(shape, {
       depth: PHONE_D,
       bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.006,
-      bevelSegments: 3,
+      bevelThickness: 0.003,
+      bevelSize: 0.003,
+      bevelSegments: 2,
     });
     geo.center();
     return geo;
@@ -211,21 +211,22 @@ const PhoneScene: React.FC<{
 
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.4} />
+      {/* Lighting — cool white to avoid brown tint on titanium */}
+      <ambientLight intensity={0.6} color="#f0f0ff" />
       <directionalLight
         position={[3, 5, 5]}
-        intensity={1.2}
+        intensity={1.0}
+        color="#ffffff"
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <directionalLight position={[-2, 3, -3]} intensity={0.3} />
-      {/* Rim light for edge definition */}
-      <pointLight position={[0, 0, 4]} intensity={0.5} color="#ffffff" />
+      <directionalLight position={[-2, 3, -3]} intensity={0.4} color="#e8e8ff" />
+      {/* Rim light — cool white for clean edge */}
+      <pointLight position={[0, 0, 4]} intensity={0.6} color="#ffffff" />
 
-      {/* Environment for reflections */}
-      <Environment preset="city" />
+      {/* Environment for clean reflections — studio preset is most neutral */}
+      <Environment preset="studio" />
 
       {/* Phone group with transforms */}
       <group
@@ -301,8 +302,8 @@ export const Phone3D: React.FC<Phone3DProps> = ({
   scale: phoneScale = 1,
   screenContent,
   screenColor = "#0a0a0a",
-  frameColor = "#c8c8cc",
-  backColor = "#e8e8ea",
+  frameColor = "#e0e0e4",
+  backColor = "#f0f0f2",
   opacity = 1,
   screenOverlay,
   style,
