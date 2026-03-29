@@ -456,11 +456,7 @@ cmd_deploy() {
             liquidity_snapshots,
             sim_nav_series,
             sim_holdings,
-            sim_trades,
-            market_prices,
-            market_prices_latest,
-            market_assets,
-            coingecko_market_caps
+            sim_trades
         CASCADE;
     \" 2>&1" \
         && echo -e "  ${GREEN}Deployment tables wiped (raw market data preserved)${NC}" \
