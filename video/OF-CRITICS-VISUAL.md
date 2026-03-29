@@ -330,3 +330,26 @@ IN transition should be a CUT (instant). OUT transition should be a SWOOSH left.
 
 ### 1:02:20 Words on circle surface spinning fast
 The words (Gmail, Search, Maps etc) should be WRITTEN ON the surface of a circle/ring shape. The circle itself spins very fast. Words follow the circular path like text on a coin edge. NOT individual words orbiting — text ON the spinning circle.
+
+### 1:02 CLARIFICATION — Words ARE the circle
+The words (Gmail, Search, Maps, YouTube, etc) are POSITIONED IN A CIRCLE — each word sits on the circumference like text typeset on a coin edge. The words FORM the ring shape. There is no separate circle — the words themselves create the circular form. Then the whole ring of text spins fast (multiple revolutions).
+
+Implementation:
+```tsx
+// Each word positioned using rotateZ + translateX on a shared container
+{words.map((word, i) => {
+  const angle = (i / words.length) * 360 + spinAngle;
+  return (
+    <div style={{
+      position: "absolute",
+      transform: `rotate(${angle}deg) translateX(200px) rotate(-${angle}deg)`,
+      // or for text following the curve:
+      transform: `rotate(${angle}deg) translateX(200px)`,
+      // text rotated to follow the circle tangent
+    }}>
+      {word}
+    </div>
+  );
+})}
+// spinAngle increases rapidly: frame * 15 (multiple revolutions)
+```
