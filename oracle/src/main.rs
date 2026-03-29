@@ -686,10 +686,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     lm_peer_id,
                                 );
                                 let lm = std::sync::Arc::new(lm);
+                                let lm_recovery = lm.clone();
                                 tokio::spawn(async move { lm.run().await });
+                                tokio::spawn(async move { lm_recovery.run_settlement_recovery().await });
                                 info!(
                                     sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                                    "BatchLifecycleManager spawned (with P2P co-sign)"
+                                    "BatchLifecycleManager spawned (with P2P co-sign + settlement recovery)"
                                 );
                     }
 
@@ -725,10 +727,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             lm_peer_id,
                         );
                         let lm = std::sync::Arc::new(lm);
+                        let lm_recovery = lm.clone();
                         tokio::spawn(async move { lm.run().await });
+                        tokio::spawn(async move { lm_recovery.run_settlement_recovery().await });
                         info!(
                             sources = ?Vec::<String>::new() /* round_based_sources deleted */,
-                            "BatchLifecycleManager spawned (no-P2P mode)"
+                            "BatchLifecycleManager spawned (no-P2P mode + settlement recovery)"
                         );
                     }
 

@@ -310,20 +310,31 @@ impl BatchLifecycleManager {
                                 if let Err(e) = mgr.record_settlement(&settlement).await {
                                     error!(batch_id = prev_id, error = %e, "Failed to record settlement in DB");
                                 }
-                                if let Err(e) = mgr.sign_and_aggregate_settlement(&settlement).await {
-                                    error!(batch_id = prev_id, error = %e, "Settlement BLS signing/aggregation failed");
-                                }
-                                if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
-                                    error!(batch_id = prev_id, error = %e, "mark_settled failed");
-                                }
-                                if let Err(e) = mgr.bitmap_store.purge_batch_from_db(&mgr.pool, prev_id).await {
-                                    error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                                let bls_ok = match mgr.sign_and_aggregate_settlement(&settlement).await {
+                                    Ok(()) => true,
+                                    Err(e) => {
+                                        error!(batch_id = prev_id, error = %e, "Settlement BLS signing/submission failed — retry sweep will recover");
+                                        false
+                                    }
+                                };
+                                // Only mark settled + purge bitmaps if on-chain submission succeeded.
+                                // Failed submissions are recovered by the retry sweep — the proof row
+                                // (submitted=false) persists in vision_settlement_proofs with the full payload.
+                                if bls_ok {
+                                    if let Err(e) = mgr.scheduler.mark_settled(&mgr.pool, prev_id).await {
+                                        error!(batch_id = prev_id, error = %e, "mark_settled failed");
+                                    }
+                                    if let Err(e) = mgr.bitmap_store.purge_batch_from_db(&mgr.pool, prev_id).await {
+                                        error!(batch_id = prev_id, error = %e, "purge_batch_from_db failed");
+                                    }
                                 }
                             }
                             Err(e) => {
                                 warn!(source = %source_name, batch_id = prev_id, error = %e, "Failed to resolve previous round");
                             }
                         }
+                        // Always clear previous_batch_id to unblock rotation.
+                        // Failed settlements are retried by the periodic sweep, not the heartbeat.
                         src_lock.lock().await.previous_batch_id = None;
                         } // else ready_to_settle
                     }
@@ -1130,27 +1141,49 @@ impl BatchLifecycleManager {
                 }
             };
 
-            // Update existing row
+            // Update existing row — also backfill payload if missing (pre-migration rows)
+            let players_json = serde_json::to_value(
+                settlement.players.iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>()
+            ).unwrap_or_default();
+            let payouts_json = serde_json::to_value(
+                settlement.payouts.iter().map(|p| p.to_string()).collect::<Vec<_>>()
+            ).unwrap_or_default();
+
             sqlx::query(
-                "UPDATE vision_settlement_proofs SET bls_sig = $1, signer_bitmap = $2 WHERE batch_id = $3"
+                "UPDATE vision_settlement_proofs
+                 SET bls_sig = $1, signer_bitmap = $2,
+                     players_json = COALESCE(players_json, $4),
+                     payouts_json = COALESCE(payouts_json, $5)
+                 WHERE batch_id = $3"
             )
             .bind(&merged_sig[..])
             .bind(merged_bitmap)
             .bind(batch_id as i64)
+            .bind(&players_json)
+            .bind(&payouts_json)
             .execute(&mut *tx)
             .await?;
 
             (merged_sig, merged_bitmap, false)
         } else {
-            // First signer — insert new row
+            // First signer — insert new row (include payload for recovery)
+            let players_json = serde_json::to_value(
+                settlement.players.iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>()
+            ).unwrap_or_default();
+            let payouts_json = serde_json::to_value(
+                settlement.payouts.iter().map(|p| p.to_string()).collect::<Vec<_>>()
+            ).unwrap_or_default();
+
             sqlx::query(
-                "INSERT INTO vision_settlement_proofs (batch_id, players_hash, bls_sig, signer_bitmap)
-                 VALUES ($1, $2, $3, $4)"
+                "INSERT INTO vision_settlement_proofs (batch_id, players_hash, bls_sig, signer_bitmap, players_json, payouts_json)
+                 VALUES ($1, $2, $3, $4, $5, $6)"
             )
             .bind(batch_id as i64)
             .bind(&my_payouts_hash_hex)
             .bind(&sig_bytes[..])
             .bind(node_bitmap)
+            .bind(&players_json)
+            .bind(&payouts_json)
             .execute(&mut *tx)
             .await?;
 
@@ -1195,11 +1228,33 @@ impl BatchLifecycleManager {
                             .await?;
                     }
                     Err(e) => {
+                        let err_str = e.to_string();
+                        // Record failure for the retry sweep
+                        let _ = sqlx::query(
+                            "UPDATE vision_settlement_proofs SET last_error = $1, last_retry_at = NOW(), retry_count = retry_count + 1 WHERE batch_id = $2"
+                        )
+                        .bind(&err_str)
+                        .bind(batch_id as i64)
+                        .execute(&self.pool)
+                        .await;
+
+                        // If the batch was already settled on-chain (revert), mark submitted
+                        // to prevent infinite retries.
+                        if err_str.to_lowercase().contains("already settled") || err_str.to_lowercase().contains("batchalreadysettled") {
+                            info!(batch_id, "Batch already settled on-chain — marking submitted");
+                            let _ = sqlx::query("UPDATE vision_settlement_proofs SET submitted = true WHERE batch_id = $1")
+                                .bind(batch_id as i64)
+                                .execute(&self.pool)
+                                .await;
+                            return Ok(());
+                        }
+
                         error!(
                             batch_id,
-                            error = %e,
-                            "settleBatch on-chain call failed — will retry next cycle"
+                            error = %err_str,
+                            "settleBatch on-chain call failed — retry sweep will pick this up"
                         );
+                        return Err(format!("settleBatch failed for batch {}: {}", batch_id, err_str).into());
                     }
                 }
             } else {
@@ -1402,6 +1457,235 @@ impl BatchLifecycleManager {
                 Some(0)
             }
         }
+    }
+
+    // =========================================================================
+    // Settlement recovery loop
+    // =========================================================================
+
+    /// Background loop that retries failed on-chain `settleBatch` submissions.
+    ///
+    /// Scans `vision_settlement_proofs` for rows where:
+    ///   - `submitted = false` (on-chain call never succeeded)
+    ///   - `players_json IS NOT NULL` (payload was stored — new rows only)
+    ///   - quorum is met (popcount(signer_bitmap) >= threshold)
+    ///   - `retry_count < MAX_RETRIES` (give up after repeated failures)
+    ///
+    /// Each retry reconstructs the `settle_batch` call from stored data.
+    /// The contract's `BatchAlreadySettled` check makes double-submission safe.
+    ///
+    /// Runs every 60 seconds. Only the leader oracle (node_index == 0) retries.
+    pub async fn run_settlement_recovery(self: Arc<Self>) {
+        const POLL_INTERVAL_SECS: u64 = 60;
+        const MAX_RETRIES: i32 = 10;
+
+        // Only the leader drives on-chain submissions
+        if self.config.node_index != 0 {
+            info!("Settlement recovery: not leader (node_index={}), sleeping", self.config.node_index);
+            return;
+        }
+
+        let writer = match &self.chain_writer {
+            Some(w) => w.clone(),
+            None => {
+                warn!("Settlement recovery: no chain_writer — cannot retry settlements");
+                return;
+            }
+        };
+
+        let threshold = (self.config.num_oracles / 2) + 1;
+
+        info!("Settlement recovery loop starting (interval={}s, max_retries={}, threshold={})",
+            POLL_INTERVAL_SECS, MAX_RETRIES, threshold);
+
+        let mut interval = tokio::time::interval(
+            tokio::time::Duration::from_secs(POLL_INTERVAL_SECS),
+        );
+
+        while !self.shutdown.load(Ordering::Relaxed) {
+            interval.tick().await;
+
+            // Find unsubmitted proofs with stored payloads and sufficient signatures
+            let rows: Vec<(i64, Vec<u8>, i64, serde_json::Value, serde_json::Value, i32)> = match sqlx::query_as(
+                "SELECT batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count
+                 FROM vision_settlement_proofs
+                 WHERE submitted = false
+                   AND players_json IS NOT NULL
+                   AND retry_count < $1
+                 ORDER BY batch_id ASC
+                 LIMIT 20"
+            )
+            .bind(MAX_RETRIES)
+            .fetch_all(&self.pool)
+            .await {
+                Ok(rows) => rows,
+                Err(e) => {
+                    warn!(error = %e, "Settlement recovery: failed to query unsubmitted proofs");
+                    continue;
+                }
+            };
+
+            if rows.is_empty() {
+                continue;
+            }
+
+            info!(count = rows.len(), "Settlement recovery: found unsubmitted settlements");
+
+            for (batch_id, bls_sig, signer_bitmap, players_json, payouts_json, retry_count) in &rows {
+                let batch_id_u64 = *batch_id as u64;
+                let popcount = signer_bitmap.count_ones();
+
+                if (popcount as usize) < threshold {
+                    debug!(
+                        batch_id = batch_id_u64,
+                        signers = popcount,
+                        threshold,
+                        "Settlement recovery: insufficient signatures — skipping"
+                    );
+                    continue;
+                }
+
+                // Parse players from JSON
+                let players: Vec<Address> = match players_json.as_array() {
+                    Some(arr) => {
+                        let mut addrs = Vec::with_capacity(arr.len());
+                        let mut parse_ok = true;
+                        for v in arr {
+                            match v.as_str().and_then(|s| s.parse::<Address>().ok()) {
+                                Some(a) => addrs.push(a),
+                                None => { parse_ok = false; break; }
+                            }
+                        }
+                        if !parse_ok {
+                            error!(batch_id = batch_id_u64, "Settlement recovery: failed to parse players_json — marking exhausted");
+                            let _ = sqlx::query("UPDATE vision_settlement_proofs SET retry_count = $1 WHERE batch_id = $2")
+                                .bind(MAX_RETRIES)
+                                .bind(*batch_id)
+                                .execute(&self.pool)
+                                .await;
+                            continue;
+                        }
+                        addrs
+                    }
+                    None => continue,
+                };
+
+                // Parse payouts from JSON
+                let payouts: Vec<U256> = match payouts_json.as_array() {
+                    Some(arr) => {
+                        let mut vals = Vec::with_capacity(arr.len());
+                        let mut parse_ok = true;
+                        for v in arr {
+                            match v.as_str().and_then(|s| U256::from_dec_str(s).ok()) {
+                                Some(p) => vals.push(p),
+                                None => { parse_ok = false; break; }
+                            }
+                        }
+                        if !parse_ok {
+                            error!(batch_id = batch_id_u64, "Settlement recovery: failed to parse payouts_json — marking exhausted");
+                            let _ = sqlx::query("UPDATE vision_settlement_proofs SET retry_count = $1 WHERE batch_id = $2")
+                                .bind(MAX_RETRIES)
+                                .bind(*batch_id)
+                                .execute(&self.pool)
+                                .await;
+                            continue;
+                        }
+                        vals
+                    }
+                    None => continue,
+                };
+
+                if players.len() != payouts.len() || players.is_empty() {
+                    error!(
+                        batch_id = batch_id_u64,
+                        players = players.len(),
+                        payouts = payouts.len(),
+                        "Settlement recovery: array length mismatch or empty — skipping"
+                    );
+                    continue;
+                }
+
+                // Read fresh reference nonce for the retry
+                let ref_nonce = self.read_last_snapshot_nonce().await.unwrap_or(0);
+
+                info!(
+                    batch_id = batch_id_u64,
+                    players = players.len(),
+                    signers = popcount,
+                    retry = retry_count + 1,
+                    "Settlement recovery: retrying settleBatch"
+                );
+
+                match writer.settle_batch(
+                    batch_id_u64,
+                    players,
+                    payouts,
+                    bls_sig.clone(),
+                    ref_nonce,
+                    U256::from(*signer_bitmap as u64),
+                ).await {
+                    Ok(tx_hash) => {
+                        info!(
+                            batch_id = batch_id_u64,
+                            tx = %tx_hash,
+                            "Settlement recovery: settleBatch succeeded"
+                        );
+                        let _ = sqlx::query(
+                            "UPDATE vision_settlement_proofs SET submitted = true, last_retry_at = NOW() WHERE batch_id = $1"
+                        )
+                        .bind(*batch_id)
+                        .execute(&self.pool)
+                        .await;
+                        // Complete the deferred post-settlement cleanup
+                        if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
+                            error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: mark_settled failed");
+                        }
+                        if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, batch_id_u64).await {
+                            error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: purge_batch_from_db failed");
+                        }
+                    }
+                    Err(e) => {
+                        let err_str = format!("{}", e);
+                        // If the contract says already settled, mark as submitted — someone else got there first
+                        if err_str.contains("BatchAlreadySettled") || err_str.contains("already settled") {
+                            info!(
+                                batch_id = batch_id_u64,
+                                "Settlement recovery: batch already settled on-chain — marking submitted"
+                            );
+                            let _ = sqlx::query(
+                                "UPDATE vision_settlement_proofs SET submitted = true, last_retry_at = NOW() WHERE batch_id = $1"
+                            )
+                            .bind(*batch_id)
+                            .execute(&self.pool)
+                            .await;
+                            // Clean up scheduler state even though we didn't submit the TX
+                            if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
+                                error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: mark_settled failed (already-settled path)");
+                            }
+                        } else {
+                            warn!(
+                                batch_id = batch_id_u64,
+                                retry = retry_count + 1,
+                                error = %e,
+                                "Settlement recovery: settleBatch failed — will retry"
+                            );
+                            let _ = sqlx::query(
+                                "UPDATE vision_settlement_proofs SET retry_count = retry_count + 1, last_retry_at = NOW(), last_error = $2 WHERE batch_id = $1"
+                            )
+                            .bind(*batch_id)
+                            .bind(&err_str)
+                            .execute(&self.pool)
+                            .await;
+                        }
+                    }
+                }
+
+                // Small delay between retries to avoid nonce contention
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+        }
+
+        info!("Settlement recovery loop shutting down");
     }
 }
 
