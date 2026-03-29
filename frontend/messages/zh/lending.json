@@ -24,7 +24,8 @@
     "title": "借款 -- 以 ITP 抵押",
     "collateral_value": "抵押品 (ITP 价值)",
     "outstanding_debt": "未偿债务",
-    "max_borrow": "最大可借 ({lltv}% LTV)"
+    "max_borrow": "最大可借 ({lltv}% LTV)",
+    "change_itp": "更换"
   },
   "actions": {
     "deposit": "存款",
@@ -56,7 +57,7 @@
     "section_subtitle": "您的金库存款",
     "vault_shares": "金库份额",
     "current_value": "当前价值",
-    "shares_fallback": "shares",
+    "shares_fallback": "份额",
     "button": {
       "confirm_wallet": "请在钱包中确认...",
       "withdrawing": "提款中...",
@@ -152,12 +153,38 @@
       "my_balance": "我的余额",
       "borrow_apy": "借款 APY (年化收益率)",
       "tvl": "TVL (总锁仓量)",
-      "lltv": "LLTV"
+      "available": "可用",
+      "lltv": "LLTV",
+      "position": ""
     },
     "loading": "加载市场中...",
     "no_markets": "暂无可用市场",
     "market_pair": "{name} / USDC",
-    "coming_soon": "Coming Soon"
+    "coming_soon": "即将上线"
+  },
+  "positions": {
+    "title": "您的仓位",
+    "collateral": "抵押品",
+    "debt": "债务",
+    "health": "健康度"
+  },
+  "market_modal": {
+    "title": "{name}",
+    "tab_supply": "存入",
+    "tab_borrow": "借款",
+    "tab_repay": "还款",
+    "tab_withdraw": "提取",
+    "position_summary": "仓位",
+    "collateral_value": "抵押品",
+    "debt_value": "债务",
+    "health_factor": "健康因子",
+    "connect_wallet": "连接钱包以管理仓位"
+  },
+  "vault_supply": {
+    "title": "USDC 金库",
+    "description": "从借款人利息中赚取收益",
+    "your_deposits": "您的存款",
+    "vault_tvl": "金库 TVL (总锁仓量)"
   },
   "common": {
     "something_went_wrong": "出现错误",
@@ -172,14 +199,14 @@
     "view_on_explorer": "在浏览器中查看"
   },
   "collateral_selector": {
-    "title": "Select Collateral",
-    "description": "Choose an ITP to use as collateral for borrowing USDC",
-    "no_itps": "No ITPs with lending markets in your wallet",
-    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
-    "balance": "Balance",
+    "title": "选择抵押品",
+    "description": "选择一个 ITP 作为借入 USDC 的抵押品",
+    "no_itps": "钱包中没有可用于借贷市场的 ITP",
+    "no_itps_hint": "请先购买 ITP，然后再回来进行抵押借款。",
+    "balance": "余额",
     "nav": "NAV",
-    "no_market": "No lending market",
-    "select": "Select"
+    "no_market": "暂无借贷市场",
+    "select": "选择"
   },
   "lend_modal": {
     "title": "以 {name} 抵押借款",

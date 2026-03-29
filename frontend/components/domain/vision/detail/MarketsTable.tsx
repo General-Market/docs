@@ -8,6 +8,14 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
+import { getLineStyle } from '@/lib/vision/transport-colors'
+import { getAssetImageUrl } from '@/lib/vision/asset-images'
+// Side-effect imports: register official color maps
+import '@/lib/vision/line-maps/transit-eu'
+import '@/lib/vision/line-maps/db-trains'
+import '@/lib/vision/line-maps/sports'
+import '@/lib/vision/line-maps/gtfs-flights'
+import '@/lib/vision/line-maps/aviation-misc'
 import {
   LineChart,
   Line,
@@ -266,6 +274,58 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
   )
 }
 
+// ── Asset Icon (image → text badge → arrow fallback) ──
+
+function AssetIcon({
+  sourceId, assetId, prefixes, imageUrl: apiImageUrl, isExpanded,
+}: {
+  sourceId: string
+  assetId: string
+  prefixes?: string[]
+  imageUrl?: string | null
+  isExpanded: boolean
+}) {
+  const [imgErr, setImgErr] = useState(false)
+  const src = apiImageUrl || getAssetImageUrl(sourceId, assetId, prefixes ?? [])
+  const lineStyle = getLineStyle(sourceId, assetId, prefixes)
+
+  if (src && !imgErr) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className="shrink-0 w-[22px] h-[22px] rounded-full object-cover"
+        loading="lazy"
+        onError={() => setImgErr(true)}
+      />
+    )
+  }
+  if (lineStyle) {
+    return (
+      <span
+        className="shrink-0 inline-flex items-center justify-center rounded-full font-black text-[10px] leading-none"
+        style={{
+          background: lineStyle.bg,
+          color: lineStyle.fg,
+          width: lineStyle.label.length > 1 ? 28 : 22,
+          height: 22,
+        }}
+      >
+        {lineStyle.label}
+      </span>
+    )
+  }
+  return (
+    <svg
+      className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+    </svg>
+  )
+}
+
 // ── Markets Table ──
 
 export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
@@ -439,13 +499,13 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                 >
                   {/* Name */}
                   <div className="min-w-0 flex items-center gap-2">
-                    <svg
-                      className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <AssetIcon
+                      sourceId={sourceId}
+                      assetId={market.assetId}
+                      prefixes={sourceEntry?.prefixes}
+                      imageUrl={market.imageUrl}
+                      isExpanded={isExpanded}
+                    />
                     <div className="min-w-0 overflow-hidden">
                       <div className="font-semibold text-black truncate" title={market.name || market.symbol}>
                         {truncateMiddle(market.name || market.symbol, 28)}

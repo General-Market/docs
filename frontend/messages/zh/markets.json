@@ -333,9 +333,9 @@
       "status": "状态"
     },
     "no_assets": "该数据源没有资产",
-    "status_zero": "Zero",
-    "status_stale": "Stale",
-    "status_off": "Off",
+    "status_zero": "零值",
+    "status_stale": "过期",
+    "status_off": "关闭",
     "tooltip_zero": "零值",
     "tooltip_stale": "过期数据",
     "tooltip_active": "活跃且数据最新",

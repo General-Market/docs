@@ -24,7 +24,8 @@
     "title": "대출 — ITP 담보",
     "collateral_value": "담보 (ITP 가치)",
     "outstanding_debt": "미상환 부채",
-    "max_borrow": "최대 대출 ({lltv}% LTV)"
+    "max_borrow": "최대 대출 ({lltv}% LTV)",
+    "change_itp": "변경"
   },
   "actions": {
     "deposit": "예치",
@@ -86,7 +87,7 @@
       "max_borrow": "최대 대출",
       "max_borrow_value": "{amount} USDC",
       "bundle_label": "번들:",
-      "bundle_steps": "Bundle: {steps}",
+      "bundle_steps": "번들: {steps}",
       "expired": "견적 만료 --",
       "refresh": "새로고침",
       "execute_bundle": "번들 실행",
@@ -152,12 +153,38 @@
       "my_balance": "내 잔액",
       "borrow_apy": "대출 APY (연수익률)",
       "tvl": "TVL (총예치금액)",
-      "lltv": "LLTV"
+      "available": "이용 가능",
+      "lltv": "LLTV",
+      "position": ""
     },
     "loading": "마켓 로딩 중...",
     "no_markets": "이용 가능한 마켓이 없습니다",
     "market_pair": "{name} / USDC",
-    "coming_soon": "Coming Soon"
+    "coming_soon": "출시 예정"
+  },
+  "positions": {
+    "title": "내 포지션",
+    "collateral": "담보",
+    "debt": "부채",
+    "health": "건전성"
+  },
+  "market_modal": {
+    "title": "{name}",
+    "tab_supply": "예치",
+    "tab_borrow": "대출",
+    "tab_repay": "상환",
+    "tab_withdraw": "출금",
+    "position_summary": "포지션",
+    "collateral_value": "담보",
+    "debt_value": "부채",
+    "health_factor": "건전성 지수",
+    "connect_wallet": "포지션을 관리하려면 지갑을 연결하세요"
+  },
+  "vault_supply": {
+    "title": "USDC 볼트",
+    "description": "대출 이자로 수익을 얻으세요",
+    "your_deposits": "내 예치금",
+    "vault_tvl": "볼트 TVL"
   },
   "common": {
     "something_went_wrong": "문제가 발생했습니다",
@@ -172,14 +199,14 @@
     "view_on_explorer": "익스플로러에서 보기"
   },
   "collateral_selector": {
-    "title": "Select Collateral",
-    "description": "Choose an ITP to use as collateral for borrowing USDC",
-    "no_itps": "No ITPs with lending markets in your wallet",
-    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
-    "balance": "Balance",
+    "title": "담보 선택",
+    "description": "USDC 대출에 사용할 ITP를 선택하세요",
+    "no_itps": "지갑에 대출 마켓이 있는 ITP가 없습니다",
+    "no_itps_hint": "먼저 ITP를 구매한 후 다시 돌아오세요.",
+    "balance": "잔액",
     "nav": "NAV",
-    "no_market": "No lending market",
-    "select": "Select"
+    "no_market": "대출 마켓 없음",
+    "select": "선택"
   },
   "lend_modal": {
     "title": "{name} 담보 대출",

@@ -24,7 +24,8 @@
     "title": "借入 — ITP担保",
     "collateral_value": "担保価値（ITP評価額）",
     "outstanding_debt": "未返済残高",
-    "max_borrow": "最大借入額（{lltv}% LTV）"
+    "max_borrow": "最大借入額（{lltv}% LTV）",
+    "change_itp": "変更"
   },
   "actions": {
     "deposit": "預入",
@@ -56,7 +57,7 @@
     "section_subtitle": "あなたのVault預入額",
     "vault_shares": "Vaultシェア",
     "current_value": "現在の価値",
-    "shares_fallback": "shares",
+    "shares_fallback": "シェア",
     "button": {
       "confirm_wallet": "ウォレットで確認してください...",
       "withdrawing": "引出中...",
@@ -86,7 +87,7 @@
       "max_borrow": "最大借入額",
       "max_borrow_value": "{amount} USDC",
       "bundle_label": "バンドル：",
-      "bundle_steps": "Bundle: {steps}",
+      "bundle_steps": "バンドル：{steps}",
       "expired": "見積期限切れ --",
       "refresh": "更新",
       "execute_bundle": "バンドルを実行",
@@ -152,12 +153,38 @@
       "my_balance": "残高",
       "borrow_apy": "借入APY (年利回り)",
       "tvl": "TVL (預入総額)",
-      "lltv": "LLTV"
+      "available": "利用可能",
+      "lltv": "LLTV",
+      "position": ""
     },
     "loading": "マーケットを読み込み中...",
     "no_markets": "利用可能なマーケットがありません",
     "market_pair": "{name} / USDC",
-    "coming_soon": "Coming Soon"
+    "coming_soon": "近日公開"
+  },
+  "positions": {
+    "title": "あなたのポジション",
+    "collateral": "担保",
+    "debt": "債務",
+    "health": "ヘルス"
+  },
+  "market_modal": {
+    "title": "{name}",
+    "tab_supply": "供給",
+    "tab_borrow": "借入",
+    "tab_repay": "返済",
+    "tab_withdraw": "引出",
+    "position_summary": "ポジション",
+    "collateral_value": "担保",
+    "debt_value": "債務",
+    "health_factor": "ヘルスファクター",
+    "connect_wallet": "ポジションを管理するにはウォレットを接続してください"
+  },
+  "vault_supply": {
+    "title": "USDC Vault",
+    "description": "借り手の利息から利回りを獲得",
+    "your_deposits": "あなたの預入額",
+    "vault_tvl": "Vault TVL"
   },
   "common": {
     "something_went_wrong": "エラーが発生しました",
@@ -172,14 +199,14 @@
     "view_on_explorer": "エクスプローラーで表示"
   },
   "collateral_selector": {
-    "title": "Select Collateral",
-    "description": "Choose an ITP to use as collateral for borrowing USDC",
-    "no_itps": "No ITPs with lending markets in your wallet",
-    "no_itps_hint": "Buy an ITP first, then come back to borrow against it.",
-    "balance": "Balance",
+    "title": "担保の選択",
+    "description": "USDCの借入に担保として使用するITPを選択してください",
+    "no_itps": "ウォレットにレンディングマーケット対応のITPがありません",
+    "no_itps_hint": "先にITPを購入してから、担保として借入にお戻りください。",
+    "balance": "残高",
     "nav": "NAV",
-    "no_market": "No lending market",
-    "select": "Select"
+    "no_market": "レンディングマーケットなし",
+    "select": "選択"
   },
   "lend_modal": {
     "title": "{name}を担保に借入",

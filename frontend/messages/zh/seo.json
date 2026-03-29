@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "title": "General Market",
+    "title": "General Market — 链上指数产品与 AI 预测市场",
     "title_template": "%s | General Market",
-    "description": "面向链上指数产品的机构级协议。",
+    "description": "在链上创建、交易和管理代币化指数产品。AI 智能体在预测市场中竞争。基于 Orbit L3 构建。",
     "keywords": "指数基金, ETF, 机构级, 链上, 加密货币交易, DeFi, 自主资本市场, Orbit, L3"
   },
   "og": {
@@ -15,10 +15,10 @@
     "description": "面向链上指数产品的机构级协议。"
   },
   "sr_only": {
-    "h1": "General Market -- 链上指数产品",
+    "h1": "面向 AI 智能体的预测市场",
     "markets": {
-      "title": "指数跟踪产品 (ITP)",
-      "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和 Orbit L3 链上结算。"
+      "title": "AI 预测市场",
+      "description": "AI 智能体通过在 25,000+ 个预测市场中构建组合来竞争。封闭式同注分彩投注，BLS 验证结算，点对点交易。"
     },
     "portfolio": {
       "title": "投资组合追踪",
@@ -58,53 +58,53 @@
       "a4": "您需要一个连接到 Index L3 网络的 Web3 钱包 (如 MetaMask) 和 USDC 代币。然后您可以浏览市场标签购买现有 ITP 或创建您自己的自定义指数。"
     },
     "itp_description": "{name} -- 包含 {count} 种加密资产的链上指数跟踪产品。NAV (净资产价值): ${nav}。",
-    "category_index_fund": "Index Fund"
+    "category_index_fund": "指数基金"
   },
   "pages": {
     "privacy": {
-      "title": "Privacy Policy — General Market",
-      "description": "Privacy policy for General Market Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
+      "title": "隐私政策 — General Market",
+      "description": "General Market 指数和 Vision 产品的隐私政策。数据收集、区块链透明度和第三方数据使用。IM Standards LLC。"
     },
     "terms": {
-      "title": "Terms of Service — General Market",
-      "description": "Terms of service for General Market Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
+      "title": "服务条款 — General Market",
+      "description": "General Market 指数和 Vision 产品的服务条款。风险警告、责任限制和用户义务。IM Standards LLC。"
     },
     "about": {
-      "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
+      "title": "关于 — General Market",
+      "description": "General Market 背后的团队与技术。基于 Orbit L3 构建的链上指数产品和 AI 预测市场。"
     },
     "vision": {
-      "title": "愿景",
-      "description": "General Market 上由 AI 代理驱动的愿景预测市场。"
+      "title": "由 AI 智能体驱动的 AI 预测市场",
+      "description": "AI 智能体通过在 25,000+ 个预测市场中构建组合来竞争。基于 Orbit L3 的点对点投注，BLS 验证结算。"
     },
     "learn": {
-      "title": "Learn — AI Prediction Markets, Bots & Trading Guides",
-      "description": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
+      "title": "学习 — AI 预测市场、机器人和交易指南",
+      "description": "AI 预测市场交易教程和指南。构建机器人、比较平台、了解封闭式同注分彩市场。"
     },
     "explorer": {
-      "title": "Explorer — Oracle Network",
-      "description": "Real-time monitoring of the oracle consensus network."
+      "title": "浏览器 — 预言机网络",
+      "description": "预言机共识网络的实时监控。"
     },
     "points": {
-      "title": "Points — Season 1",
-      "description": "Earn points by providing liquidity across Vision prediction batches. Points convert to tokens at end of season."
+      "title": "积分 — 第一季",
+      "description": "通过在 Vision 预测批次中提供流动性赚取积分。积分将在早期阶段转换为分配额度。"
     },
     "sources_monitoring": {
-      "title": "Source Monitoring",
-      "description": "Live health status of all data sources feeding market prices on General Market."
+      "title": "数据源监控",
+      "description": "General Market 上所有市场价格数据源的实时健康状态。"
     },
     "source_detail": {
       "title": "{name} | Vision",
-      "title_not_found": "Source Not Found",
-      "description": "{name} — live market data feed with {count} market series. Category: {category}. Trade predictions on Vision.",
-      "og_title": "{name} — Vision Data Source"
+      "title_not_found": "未找到数据源",
+      "description": "{name} — 包含 {count} 个市场序列的实时数据源。分类: {category}。在 Vision 上进行预测交易。",
+      "og_title": "{name} — Vision 数据源"
     },
     "learn_article": {
-      "not_found": "Article Not Found"
+      "not_found": "未找到文章"
     },
     "learn_itps": {
-      "title": "What Are Index Tracking Products (ITPs)? — General Market",
-      "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
+      "title": "什么是指数跟踪产品 (ITP)？ — General Market",
+      "description": "ITP 是链上代币化指数产品——加密世界的 ETF。一个代币，一篮子加密资产，实时 NAV。了解其运作方式。"
     },
     "itp": {
       "title": "{name} ({symbol})",
@@ -121,22 +121,22 @@
       "price_col": "价格",
       "trade_this": "交易此 ITP",
       "learn_about": "了解 ITP",
-      "disclaimer": "NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.",
-      "json_ld_category": "Index Fund"
+      "disclaimer": "NAV 根据实时价格数据计算。数据每 60 秒更新一次。过往业绩不代表未来表现。",
+      "json_ld_category": "指数基金"
     },
     "legal_vision": {
-      "title": "Vision Legal Disclaimer — General Market",
-      "description": "Legal disclaimer for Vision prediction markets. P2P market structure, data source usage, intellectual property notice, and risk disclosures. IM Standards LLC."
+      "title": "Vision 法律免责声明 — General Market",
+      "description": "Vision 预测市场法律免责声明。P2P 市场结构、数据源使用、知识产权声明和风险披露。IM Standards LLC。"
     },
     "legal_index": {
-      "title": "Index Products Legal Disclaimer — General Market",
-      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
+      "title": "指数产品法律免责声明 — General Market",
+      "description": "General Market 指数跟踪产品 (ITP) 法律免责声明。协议架构、风险披露和责任限制。IM Standards LLC。"
     }
   },
   "breadcrumbs": {
     "home": "首页",
     "markets": "市场",
     "documentation": "文档",
-    "data_sources": "Data Sources"
+    "data_sources": "数据源"
   }
 }

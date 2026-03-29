@@ -17,7 +17,7 @@ function transformSnapshot(s: Record<string, unknown>) {
     volume24h: s.volume24h ?? null,
     marketCap: s.marketCap ?? null,
     fetchedAt: s.fetchedAt,
-    imageUrl: null,
+    imageUrl: (s.imageUrl as string) ?? null,
   }
 }
 

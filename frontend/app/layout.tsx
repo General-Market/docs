@@ -55,7 +55,7 @@ export default async function RootLayout({
       <head>
         <link rel="preconnect" href="https://us.i.posthog.com" />
       </head>
-      <body className="bg-page text-text-primary font-sans antialiased">
+      <body className="bg-page text-text-primary font-sans antialiased" suppressHydrationWarning>
         <SequinWaveBackground />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientProviders>

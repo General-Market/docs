@@ -1,0 +1,11 @@
+{
+  "chainId": 14601,
+  "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
+  "timestamp": 1774791959,
+  "contracts": {
+    "SettlementBridgeCustody": {
+      "proxy": "0xC4cf91D6a161a9F1e066Cca55DE74f848d064070",
+      "implementation": "0x022f5B1D450DCE894137c9E476d9E4464C478208"
+    }
+  }
+}

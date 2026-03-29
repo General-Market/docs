@@ -166,7 +166,7 @@
   },
   "vault_trades": {
     "section_title": "AP 订单流",
-    "section_subtitle_active": "{count} 笔交易已执行 \u00b7 手续费: {fee}",
+    "section_subtitle_active": "{count} 笔交易已执行 · 手续费: {fee}",
     "section_subtitle_empty": "MockBitgetVault 交易历史",
     "no_trades": "尚无交易记录",
     "table": {

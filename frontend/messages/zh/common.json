@@ -30,7 +30,7 @@
     "explorer": "浏览器",
     "points": "积分",
     "about": "关于",
-    "sections": "Sections"
+    "sections": "板块"
   },
   "footer": {
     "product": "产品",
@@ -55,10 +55,10 @@
     "twitter": "X (Twitter)",
     "collapse": "收起",
     "close_modal": "关闭弹窗",
-    "close": "Close",
-    "dismiss": "Dismiss",
-    "language": "Language",
-    "play_video": "Play {title}"
+    "close": "关闭",
+    "dismiss": "忽略",
+    "language": "语言",
+    "play_video": "播放 {title}"
   },
   "language": {
     "label": "语言",
@@ -90,11 +90,11 @@
     "show_all": "显示全部 {count} 个基金",
     "fullscreen": "全屏",
     "esc": "ESC",
-    "try_again": "Try Again",
-    "how_it_works": "How It Works"
+    "try_again": "重试",
+    "how_it_works": "运作方式"
   },
   "wallet": {
-    "login": "在 Base 上登录",
+    "login": "连接钱包",
     "connecting": "连接中...",
     "switching": "切换中...",
     "switch_network": "切换到 Index Settlement",
@@ -128,8 +128,8 @@
     "confirmation_failed": "确认失败",
     "insufficient_balance": "余额不足",
     "failed_to_fetch": "数据获取失败",
-    "something_went_wrong": "Something went wrong",
-    "unexpected_error": "An unexpected error occurred. Please try again."
+    "something_went_wrong": "出现错误",
+    "unexpected_error": "发生意外错误，请重试。"
   },
   "warnings": {
     "tx_stuck_title": "交易可能卡住",
@@ -322,9 +322,9 @@
   "showing_of": "显示 {shown} / {total}",
   "connect_wallet_to_view": "连接钱包以查看余额",
   "failed_to_load_balance": "加载余额失败，正在重试...",
-  "callout_note": "Note",
-  "callout_warning": "Warning",
-  "callout_tip": "Tip",
+  "callout_note": "提示",
+  "callout_warning": "警告",
+  "callout_tip": "小贴士",
   "about": {
     "eyebrow": "General Market",
     "title": "关于",
@@ -356,35 +356,35 @@
     "contact": "联系"
   },
   "chain_guard": {
-    "wrong_network": "Wrong Network",
-    "wallet_on_chain": "Your wallet is connected to chain {chainId}.",
-    "please_switch": "Please switch to {chainName} (chain {targetChainId}).",
-    "switching": "Switching...",
-    "switch_network": "Switch Network"
+    "wrong_network": "网络错误",
+    "wallet_on_chain": "您的钱包连接到了链 {chainId}。",
+    "please_switch": "请切换到 {chainName}（链 {targetChainId}）。",
+    "switching": "切换中...",
+    "switch_network": "切换网络"
   },
   "profile": {
-    "round_history": "Round History",
-    "batch": "Source",
+    "round_history": "回合历史",
+    "batch": "来源",
     "roi": "ROI",
-    "active": "Active",
-    "exited": "Settled",
-    "no_pnl_data": "No P&L data yet",
+    "active": "活跃",
+    "exited": "已结算",
+    "no_pnl_data": "暂无盈亏数据",
     "pnl_label": "P&L",
-    "tab_index": "Index",
+    "tab_index": "指数",
     "tab_vision": "Vision",
-    "loss": "Loss",
-    "win": "Win",
-    "no_vision_history": "No round history yet",
-    "rounds_count": "{count} rounds",
-    "deposited": "deposited",
-    "deposited_amount": "${amount} deposited",
-    "round_title": "Round #{tickId}: {sign}${pnl}",
-    "last_active": "Last active {time}",
-    "points_title": "Points",
+    "loss": "亏损",
+    "win": "盈利",
+    "no_vision_history": "暂无回合历史",
+    "rounds_count": "{count} 个回合",
+    "deposited": "已存入",
+    "deposited_amount": "已存入 ${amount}",
+    "round_title": "回合 #{tickId}: {sign}${pnl}",
+    "last_active": "最近活跃 {time}",
+    "points_title": "积分",
     "points_vision": "Vision",
-    "points_creator": "Creator",
-    "points_holder": "Holder",
-    "points_total": "Total",
-    "no_index_data": "No ITP holdings found"
+    "points_creator": "创建者",
+    "points_holder": "持有者",
+    "points_total": "总计",
+    "no_index_data": "未找到 ITP 持仓"
   }
 }

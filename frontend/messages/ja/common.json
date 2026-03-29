@@ -30,7 +30,7 @@
     "explorer": "エクスプローラー",
     "points": "ポイント",
     "about": "概要",
-    "sections": "Sections"
+    "sections": "セクション"
   },
   "footer": {
     "product": "プロダクト",
@@ -55,10 +55,10 @@
     "twitter": "X (Twitter)",
     "collapse": "折りたたむ",
     "close_modal": "モーダルを閉じる",
-    "close": "Close",
-    "dismiss": "Dismiss",
-    "language": "Language",
-    "play_video": "Play {title}"
+    "close": "閉じる",
+    "dismiss": "閉じる",
+    "language": "言語",
+    "play_video": "{title}を再生"
   },
   "language": {
     "label": "言語",
@@ -90,17 +90,17 @@
     "show_all": "全{count}ファンドを表示",
     "fullscreen": "全画面表示",
     "esc": "ESC",
-    "try_again": "Try Again",
-    "how_it_works": "How It Works"
+    "try_again": "再試行",
+    "how_it_works": "仕組み"
   },
   "wallet": {
-    "login": "Baseでログイン",
+    "login": "ウォレットを接続",
     "connecting": "接続中...",
     "switching": "切り替え中...",
     "switch_network": "Index Settlementに切り替え",
     "install_metamask": "MetaMaskをインストール",
-    "connect_to_buy": "ITTシェアを購入するにはウォレットを接続してください",
-    "connect_to_sell": "ITTシェアを売却するにはウォレットを接続してください",
+    "connect_to_buy": "ITPシェアを購入するにはウォレットを接続してください",
+    "connect_to_sell": "ITPシェアを売却するにはウォレットを接続してください",
     "connect_to_create": "バッチを作成するにはウォレットを接続してください",
     "sign_up": "サインアップ",
     "deposit": "入金"
@@ -128,8 +128,8 @@
     "confirmation_failed": "確認に失敗しました",
     "insufficient_balance": "残高が不足しています",
     "failed_to_fetch": "データの取得に失敗しました",
-    "something_went_wrong": "Something went wrong",
-    "unexpected_error": "An unexpected error occurred. Please try again."
+    "something_went_wrong": "エラーが発生しました",
+    "unexpected_error": "予期しないエラーが発生しました。もう一度お試しください。"
   },
   "warnings": {
     "tx_stuck_title": "トランザクションが停止している可能性があります",
@@ -322,9 +322,9 @@
   "showing_of": "{total}件中{shown}件を表示",
   "connect_wallet_to_view": "残高を確認するにはウォレットを接続してください",
   "failed_to_load_balance": "残高の読み込みに失敗しました。再試行中...",
-  "callout_note": "Note",
-  "callout_warning": "Warning",
-  "callout_tip": "Tip",
+  "callout_note": "備考",
+  "callout_warning": "警告",
+  "callout_tip": "ヒント",
   "about": {
     "eyebrow": "General Market",
     "title": "概要",
@@ -356,35 +356,35 @@
     "contact": "お問い合わせ"
   },
   "chain_guard": {
-    "wrong_network": "Wrong Network",
-    "wallet_on_chain": "Your wallet is connected to chain {chainId}.",
-    "please_switch": "Please switch to {chainName} (chain {targetChainId}).",
-    "switching": "Switching...",
-    "switch_network": "Switch Network"
+    "wrong_network": "ネットワークが違います",
+    "wallet_on_chain": "ウォレットはチェーン {chainId} に接続されています。",
+    "please_switch": "{chainName}（チェーン {targetChainId}）に切り替えてください。",
+    "switching": "切り替え中...",
+    "switch_network": "ネットワークを切り替え"
   },
   "profile": {
-    "round_history": "Round History",
-    "batch": "Source",
+    "round_history": "ラウンド履歴",
+    "batch": "ソース",
     "roi": "ROI",
-    "active": "Active",
-    "exited": "Settled",
-    "no_pnl_data": "No P&L data yet",
+    "active": "アクティブ",
+    "exited": "決済済み",
+    "no_pnl_data": "損益データがまだありません",
     "pnl_label": "P&L",
-    "tab_index": "Index",
+    "tab_index": "インデックス",
     "tab_vision": "Vision",
-    "loss": "Loss",
-    "win": "Win",
-    "no_vision_history": "No round history yet",
-    "rounds_count": "{count} rounds",
-    "deposited": "deposited",
-    "deposited_amount": "${amount} deposited",
-    "round_title": "Round #{tickId}: {sign}${pnl}",
-    "last_active": "Last active {time}",
-    "points_title": "Points",
+    "loss": "損失",
+    "win": "勝利",
+    "no_vision_history": "ラウンド履歴がまだありません",
+    "rounds_count": "{count}ラウンド",
+    "deposited": "入金済み",
+    "deposited_amount": "${amount}入金済み",
+    "round_title": "ラウンド #{tickId}: {sign}${pnl}",
+    "last_active": "最終アクティブ {time}",
+    "points_title": "ポイント",
     "points_vision": "Vision",
-    "points_creator": "Creator",
-    "points_holder": "Holder",
-    "points_total": "Total",
-    "no_index_data": "No ITP holdings found"
+    "points_creator": "作成者",
+    "points_holder": "保有者",
+    "points_total": "合計",
+    "no_index_data": "ITP保有が見つかりません"
   }
 }

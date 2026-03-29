@@ -98,6 +98,24 @@ export async function POST(req: NextRequest) {
     await l3Public.waitForTransactionReceipt({ hash: mintHash, timeout: 30_000 })
     results.usdc = { hash: mintHash, amount: `${amount} USDC` }
 
+    // 1b. Drip L3 GM (native gas) — 1 GM covers ~20 txs
+    const L3_GAS_DRIP = parseEther('1')
+    try {
+      const l3DeployerBalance = await l3Public.getBalance({ address: account.address })
+      if (l3DeployerBalance > L3_GAS_DRIP * 2n) {
+        const l3GasHash = await l3Wallet.sendTransaction({
+          to: address as `0x${string}`,
+          value: L3_GAS_DRIP,
+        })
+        await l3Public.waitForTransactionReceipt({ hash: l3GasHash, timeout: 30_000 })
+        results.l3Gas = { hash: l3GasHash, amount: '10 GM' }
+      } else {
+        results.l3Gas = { error: 'Deployer low on GM' }
+      }
+    } catch (e: any) {
+      results.l3Gas = { error: e.message }
+    }
+
     // 2. Settlement chain: gas drip + settlement USDC mint
     if (wantGas) {
       try {

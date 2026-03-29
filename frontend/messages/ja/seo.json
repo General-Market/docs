@@ -2,7 +2,7 @@
   "metadata": {
     "title": "General Market",
     "title_template": "%s | General Market",
-    "description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。",
+    "description": "オンチェーンでトークン化されたインデックス商品を作成、取引、管理。AIエージェントが予測マーケットで競い合います。Orbit L3上に構築。",
     "keywords": "インデックスファンド, ETF, 機関投資家, オンチェーン, 暗号通貨取引, DeFi, 自律型資本市場, Orbit, L3"
   },
   "og": {
@@ -15,10 +15,10 @@
     "description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。"
   },
   "sr_only": {
-    "h1": "General Market — オンチェーンインデックス商品",
+    "h1": "AIエージェントのための予測マーケット",
     "markets": {
-      "title": "インデックス追跡商品（ITP）",
-      "description": "分散型インデックス商品をご覧ください。各ITPはリアルタイムのNAV (純資産価値) 価格設定とOrbit L3上のオンチェーン決済で暗号資産のバスケットを追跡します。"
+      "title": "AI予測マーケット",
+      "description": "AIエージェントが25,000以上の予測マーケットでポートフォリオを構築して競い合います。シールドパリミュチュエルベット、BLS検証済み決済、ピアツーピア。"
     },
     "portfolio": {
       "title": "ポートフォリオ管理",
@@ -26,7 +26,7 @@
     },
     "create": {
       "title": "オリジナルITPの作成",
-      "description": "100以上の暗号資産から選択し、ウェイトを割り当ててカスタムインデックス商品を設計できます。1回のトランザクションでデプロイ可能。ITPはNAV (純資産価値) $1から開始し、原資産の価格に連動して変動します。"
+      "description": "100以上の暗号資産から選択し、ウェイトを割り当ててカスタムインデックス商品を設計できます。1回のトランザクションでデプロイ可能。ITPはNAV $1から開始し、原資産の価格に連動して変動します。"
     },
     "lending": {
       "title": "レンディング & 借入",
@@ -37,7 +37,7 @@
       "description": "実際の資金を投入する前に、過去の価格データでポートフォリオのパフォーマンスをシミュレーションできます。リターン、ドローダウン、シャープレシオを確認し、勝てる戦略をITPとして直接デプロイできます。"
     },
     "itp_article": {
-      "nav_per_share": "1シェアあたりのNAV (純資産価値)：${nav}",
+      "nav_per_share": "1シェアあたりのNAV：${nav}",
       "aum": "運用資産額：${aum}",
       "holdings": "保有銘柄：{count}資産",
       "view_details": "{name}の詳細を見る"
@@ -57,54 +57,62 @@
       "q4": "始めるには何が必要ですか？",
       "a4": "Index L3ネットワークに接続されたWeb3ウォレット（MetaMaskなど）とUSDCトークンが必要です。マーケットタブから既存のITPを購入するか、独自のカスタムインデックスを作成できます。"
     },
-    "itp_description": "{name} — {count}種類の暗号資産を含むオンチェーンインデックス追跡商品。NAV (純資産価値)：${nav}。",
+    "itp_description": "{name} — {count}種類の暗号資産を含むオンチェーンインデックス追跡商品。NAV：${nav}。",
     "category_index_fund": "Index Fund"
   },
   "pages": {
     "privacy": {
-      "title": "Privacy Policy — General Market",
-      "description": "Privacy policy for General Market Index and Vision products. Data collection, blockchain transparency, and third-party data usage. IM Standards LLC."
+      "title": "プライバシーポリシー",
+      "description": "General Market IndexおよびVision商品のプライバシーポリシー。データ収集、ブロックチェーンの透明性、サードパーティデータの使用。IM Standards LLC。"
     },
     "terms": {
-      "title": "Terms of Service — General Market",
-      "description": "Terms of service for General Market Index and Vision products. Risk warnings, limitation of liability, and user responsibilities. IM Standards LLC."
+      "title": "利用規約",
+      "description": "General Market IndexおよびVision商品の利用規約。リスク警告、責任の制限、ユーザーの責任。IM Standards LLC。"
     },
     "about": {
-      "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
+      "title": "概要",
+      "description": "General Marketの背後にあるチームとテクノロジー。Orbit L3上に構築されたオンチェーンインデックス商品とAI予測マーケット。"
+    },
+    "legal_vision": {
+      "title": "Vision法的免責事項",
+      "description": "Vision予測マーケットの法的免責事項。P2Pマーケット構造、データソースの使用、知的財産に関する通知、リスク開示。IM Standards LLC。"
+    },
+    "legal_index": {
+      "title": "インデックス商品法的免責事項",
+      "description": "General Marketインデックス追跡商品（ITP）の法的免責事項。プロトコルアーキテクチャ、リスク開示、責任の制限。IM Standards LLC。"
     },
     "vision": {
-      "title": "ビジョン",
-      "description": "General MarketでAIエージェントが駆動するビジョン予測マーケット。"
+      "title": "AIエージェントが駆動するAI予測マーケット",
+      "description": "AIエージェントが25,000以上の予測マーケットでポートフォリオを構築して競い合います。Orbit L3上でBLS検証済み決済によるピアツーピアベッティング。"
     },
     "learn": {
-      "title": "Learn — AI Prediction Markets, Bots & Trading Guides",
-      "description": "Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
+      "title": "学習 — AI予測マーケット、ボット＆トレーディングガイド",
+      "description": "AI予測マーケットトレーディングのチュートリアルとガイド。ボットの構築、プラットフォームの比較、シールドパリミュチュエルマーケットの理解。"
     },
     "explorer": {
-      "title": "Explorer — Oracle Network",
-      "description": "Real-time monitoring of the oracle consensus network."
+      "title": "エクスプローラー — オラクルネットワーク",
+      "description": "オラクルコンセンサスネットワークのリアルタイムモニタリング。"
     },
     "points": {
-      "title": "Points — Season 1",
-      "description": "Earn points by providing liquidity across Vision prediction batches. Points convert to tokens at end of season."
+      "title": "ポイント — シーズン1",
+      "description": "Vision予測バッチ全体に流動性を提供してポイントを獲得。初期段階でポイントがアロケーションに変換されます。"
     },
     "sources_monitoring": {
-      "title": "Source Monitoring",
-      "description": "Live health status of all data sources feeding market prices on General Market."
+      "title": "ソースモニタリング",
+      "description": "General Marketにマーケット価格を供給するすべてのデータソースのリアルタイムヘルスステータス。"
     },
     "source_detail": {
       "title": "{name} | Vision",
-      "title_not_found": "Source Not Found",
-      "description": "{name} — live market data feed with {count} market series. Category: {category}. Trade predictions on Vision.",
-      "og_title": "{name} — Vision Data Source"
+      "title_not_found": "ソースが見つかりません",
+      "description": "{name} — {count}マーケットシリーズを含むライブマーケットデータフィード。カテゴリ：{category}。Visionで予測を取引。",
+      "og_title": "{name} — Visionデータソース"
     },
     "learn_article": {
-      "not_found": "Article Not Found"
+      "not_found": "記事が見つかりません"
     },
     "learn_itps": {
-      "title": "What Are Index Tracking Products (ITPs)? — General Market",
-      "description": "ITPs are on-chain tokenized index products — the crypto equivalent of ETFs. One token, a basket of crypto assets, real-time NAV. Learn how they work."
+      "title": "インデックス追跡商品（ITP）とは？ — General Market",
+      "description": "ITPはオンチェーンのトークン化されたインデックス商品 — 暗号通貨版ETF。1つのトークン、暗号資産のバスケット、リアルタイムNAV。仕組みを学びましょう。"
     },
     "itp": {
       "title": "{name} ({symbol})",
@@ -121,22 +129,14 @@
       "price_col": "価格",
       "trade_this": "このITPを取引する",
       "learn_about": "ITPについて学ぶ",
-      "disclaimer": "NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.",
+      "disclaimer": "NAVはリアルタイム価格フィードから算出されます。データは60秒ごとに更新されます。過去のパフォーマンスは将来の結果を示すものではありません。",
       "json_ld_category": "Index Fund"
-    },
-    "legal_vision": {
-      "title": "Vision Legal Disclaimer — General Market",
-      "description": "Legal disclaimer for Vision prediction markets. P2P market structure, data source usage, intellectual property notice, and risk disclosures. IM Standards LLC."
-    },
-    "legal_index": {
-      "title": "Index Products Legal Disclaimer — General Market",
-      "description": "Legal disclaimer for General Market Index tracking products (ITPs). Protocol architecture, risk disclosures, and limitation of liability. IM Standards LLC."
     }
   },
   "breadcrumbs": {
     "home": "ホーム",
     "markets": "マーケット",
     "documentation": "ドキュメント",
-    "data_sources": "Data Sources"
+    "data_sources": "データソース"
   }
 }

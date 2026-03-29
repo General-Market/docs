@@ -30,7 +30,7 @@
     "explorer": "탐색기",
     "points": "포인트",
     "about": "소개",
-    "sections": "Sections"
+    "sections": "섹션"
   },
   "footer": {
     "product": "상품",
@@ -55,10 +55,10 @@
     "twitter": "X (Twitter)",
     "collapse": "접기",
     "close_modal": "모달 닫기",
-    "close": "Close",
-    "dismiss": "Dismiss",
-    "language": "Language",
-    "play_video": "Play {title}"
+    "close": "닫기",
+    "dismiss": "닫기",
+    "language": "언어",
+    "play_video": "{title} 재생"
   },
   "language": {
     "label": "언어",
@@ -90,11 +90,11 @@
     "show_all": "전체 {count}개 펀드 보기",
     "fullscreen": "전체화면",
     "esc": "ESC",
-    "try_again": "Try Again",
-    "how_it_works": "How It Works"
+    "try_again": "다시 시도",
+    "how_it_works": "작동 방식"
   },
   "wallet": {
-    "login": "Base에서 로그인",
+    "login": "지갑 연결",
     "connecting": "연결 중...",
     "switching": "전환 중...",
     "switch_network": "Index Settlement으로 전환",
@@ -128,8 +128,8 @@
     "confirmation_failed": "확인 실패",
     "insufficient_balance": "잔액 부족",
     "failed_to_fetch": "데이터를 불러오지 못했습니다",
-    "something_went_wrong": "Something went wrong",
-    "unexpected_error": "An unexpected error occurred. Please try again."
+    "something_went_wrong": "문제가 발생했습니다",
+    "unexpected_error": "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요."
   },
   "warnings": {
     "tx_stuck_title": "트랜잭션이 지연되고 있을 수 있습니다",
@@ -322,9 +322,9 @@
   "showing_of": "{total}개 중 {shown}개 표시",
   "connect_wallet_to_view": "잔액을 확인하려면 지갑을 연결하세요",
   "failed_to_load_balance": "잔액을 불러오지 못했습니다. 재시도 중...",
-  "callout_note": "Note",
-  "callout_warning": "Warning",
-  "callout_tip": "Tip",
+  "callout_note": "참고",
+  "callout_warning": "경고",
+  "callout_tip": "팁",
   "about": {
     "eyebrow": "General Market",
     "title": "소개",
@@ -356,35 +356,35 @@
     "contact": "문의"
   },
   "chain_guard": {
-    "wrong_network": "Wrong Network",
-    "wallet_on_chain": "Your wallet is connected to chain {chainId}.",
-    "please_switch": "Please switch to {chainName} (chain {targetChainId}).",
-    "switching": "Switching...",
-    "switch_network": "Switch Network"
+    "wrong_network": "잘못된 네트워크",
+    "wallet_on_chain": "지갑이 체인 {chainId}에 연결되어 있습니다.",
+    "please_switch": "{chainName} (체인 {targetChainId})으로 전환해 주세요.",
+    "switching": "전환 중...",
+    "switch_network": "네트워크 전환"
   },
   "profile": {
-    "round_history": "Round History",
-    "batch": "Source",
+    "round_history": "라운드 기록",
+    "batch": "소스",
     "roi": "ROI",
-    "active": "Active",
-    "exited": "Settled",
-    "no_pnl_data": "No P&L data yet",
+    "active": "활성",
+    "exited": "정산됨",
+    "no_pnl_data": "아직 P&L 데이터가 없습니다",
     "pnl_label": "P&L",
     "tab_index": "Index",
     "tab_vision": "Vision",
-    "loss": "Loss",
-    "win": "Win",
-    "no_vision_history": "No round history yet",
-    "rounds_count": "{count} rounds",
-    "deposited": "deposited",
-    "deposited_amount": "${amount} deposited",
-    "round_title": "Round #{tickId}: {sign}${pnl}",
-    "last_active": "Last active {time}",
-    "points_title": "Points",
+    "loss": "손실",
+    "win": "승리",
+    "no_vision_history": "아직 라운드 기록이 없습니다",
+    "rounds_count": "{count}개 라운드",
+    "deposited": "입금됨",
+    "deposited_amount": "${amount} 입금됨",
+    "round_title": "라운드 #{tickId}: {sign}${pnl}",
+    "last_active": "최근 활동 {time}",
+    "points_title": "포인트",
     "points_vision": "Vision",
-    "points_creator": "Creator",
-    "points_holder": "Holder",
-    "points_total": "Total",
-    "no_index_data": "No ITP holdings found"
+    "points_creator": "생성자",
+    "points_holder": "보유자",
+    "points_total": "합계",
+    "no_index_data": "ITP 보유 내역을 찾을 수 없습니다"
   }
 }
