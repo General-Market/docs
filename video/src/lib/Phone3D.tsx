@@ -1,14 +1,11 @@
 /**
- * Phone3D — Reusable 3D iPhone component for Remotion scenes.
+ * Phone3D — iPhone mockup using downloaded GLB model + screen content overlay.
  *
- * Uses @remotion/three ThreeCanvas + @react-three/drei for a real 3D phone
- * with glass front, metallic frame, matte back, Dynamic Island, and shadows.
+ * Uses the GLB at public/models/iphone.glb loaded via useGLTF.
+ * Screen content is a React overlay positioned on top of the 3D phone.
  *
- * Screen content: pass `screenContent` (React node) — rendered as an HTML
- * overlay precisely aligned to the 3D phone's screen region. The 3D phone
- * renders a dark screen plane; the React content floats on top via absolute
- * positioning. This is the only reliable cross-renderer approach in Remotion
- * (no Html component from drei, no portals — pure overlay alignment).
+ * If the GLB fails to load, falls back to a simple CSS phone mockup
+ * (rounded rect with shadow — NOT ExtrudeGeometry).
  *
  * Usage:
  *   <Phone3D
@@ -18,359 +15,191 @@
  *   />
  */
 
-import React, { useMemo, useRef, Suspense } from "react";
-import {
-  AbsoluteFill,
-  useVideoConfig,
-} from "remotion";
+import React, { useMemo, Suspense } from "react";
+import { staticFile } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
-import {
-  ContactShadows,
-  Environment,
-} from "@react-three/drei";
-
-/* ── iPhone 15 Pro proportions (mm → Three.js units, scaled) ── */
-const PHONE_W = 1.5;       // ~75mm → 1.5 units
-const PHONE_H = 3.0;       // ~150mm → 3.0 units
-const PHONE_D = 0.16;      // ~8mm → 0.16 units
-const CORNER_R = 0.18;     // corner radius
-const BEZEL = 0.06;        // bezel inset from edge
-const SCREEN_R = 0.12;     // screen corner radius (slightly less than body)
-
-/* Dynamic Island */
-const DI_W = 0.38;         // pill width
-const DI_H = 0.12;         // pill height
-const DI_R = 0.06;         // pill corner radius
-const DI_Y_OFFSET = 0.12;  // distance from top of screen
-
-/* ── Rounded rect shape helper ── */
-function roundedRectShape(
-  w: number, h: number, r: number
-): THREE.Shape {
-  const shape = new THREE.Shape();
-  const hw = w / 2;
-  const hh = h / 2;
-
-  shape.moveTo(-hw + r, -hh);
-  shape.lineTo(hw - r, -hh);
-  shape.quadraticCurveTo(hw, -hh, hw, -hh + r);
-  shape.lineTo(hw, hh - r);
-  shape.quadraticCurveTo(hw, hh, hw - r, hh);
-  shape.lineTo(-hw + r, hh);
-  shape.quadraticCurveTo(-hw, hh, -hw, hh - r);
-  shape.lineTo(-hw, -hh + r);
-  shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
-
-  return shape;
-}
-
-/* ── Pill shape for Dynamic Island ── */
-function pillShape(w: number, h: number, r: number): THREE.Shape {
-  return roundedRectShape(w, h, r);
-}
+import { useGLTF, Environment, ContactShadows } from "@react-three/drei";
 
 /* ══════════════════════════════════════════
-   PhoneBody — the 3D mesh group
+   GLB Phone Model
    ══════════════════════════════════════════ */
-const PhoneBody: React.FC<{
-  screenColor?: string;
-  frameColor?: string;
-  backColor?: string;
-}> = ({
-  screenColor = "#0a0a0a",
-  frameColor = "#c8c8cc",
-  backColor = "#e8e8ea",
-}) => {
-  /* Body: extruded rounded rect — titanium silver iPhone */
-  const bodyGeometry = useMemo(() => {
-    const shape = roundedRectShape(PHONE_W, PHONE_H, CORNER_R);
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth: PHONE_D,
-      bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.006,
-      bevelSegments: 3,
+const PhoneGLB: React.FC<{ url: string }> = ({ url }) => {
+  const { scene } = useGLTF(url);
+
+  const cloned = useMemo(() => {
+    const s = scene.clone();
+    // Make materials more metallic/silver
+    s.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        const mat = child.material;
+        if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
+          // Brighten frame to titanium silver
+          if (mat.metalness > 0.5) {
+            mat.color = new THREE.Color("#d4d4d8");
+            mat.metalness = 0.95;
+            mat.roughness = 0.08;
+          }
+        }
+      }
     });
-    geo.center();
-    return geo;
-  }, []);
+    return s;
+  }, [scene]);
 
-  /* Screen: flat rounded rect, slightly inset */
-  const screenGeometry = useMemo(() => {
-    const sw = PHONE_W - BEZEL * 2;
-    const sh = PHONE_H - BEZEL * 2;
-    const shape = roundedRectShape(sw, sh, SCREEN_R);
-    const geo = new THREE.ShapeGeometry(shape, 32);
-    return geo;
-  }, []);
-
-  /* Dynamic Island: pill cutout on screen */
-  const diGeometry = useMemo(() => {
-    const shape = pillShape(DI_W, DI_H, DI_R);
-    const geo = new THREE.ShapeGeometry(shape, 16);
-    return geo;
-  }, []);
-
-  /* Camera lens bump (back) — subtle cylinder */
-  const lensGeometry = useMemo(() => {
-    return new THREE.CylinderGeometry(0.12, 0.12, 0.02, 32);
-  }, []);
-
-  const screenTopEdge = PHONE_H / 2 - BEZEL;
-
-  return (
-    <group>
-      {/* ── Phone body (titanium frame) ── */}
-      <mesh geometry={bodyGeometry}>
-        <meshStandardMaterial
-          color={frameColor}
-          metalness={0.95}
-          roughness={0.08}
-          envMapIntensity={1.5}
-        />
-      </mesh>
-
-      {/* ── Screen (dark, sits on front face) ── */}
-      <mesh
-        geometry={screenGeometry}
-        position={[0, 0, PHONE_D / 2 + 0.002]}
-      >
-        <meshBasicMaterial color={screenColor} />
-      </mesh>
-
-      {/* ── Dynamic Island ── */}
-      <mesh
-        geometry={diGeometry}
-        position={[0, screenTopEdge - DI_Y_OFFSET - DI_H / 2, PHONE_D / 2 + 0.003]}
-      >
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-
-      {/* ── Matte back (frosted titanium) ── */}
-      <mesh position={[0, 0, -PHONE_D / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
-        <planeGeometry args={[PHONE_W - 0.02, PHONE_H - 0.02]} />
-        <meshStandardMaterial
-          color={backColor}
-          metalness={0.3}
-          roughness={0.5}
-        />
-      </mesh>
-
-      {/* ── Camera lens bump (back, top-left) ── */}
-      <mesh
-        geometry={lensGeometry}
-        position={[-0.35, 1.05, -PHONE_D / 2 - 0.01]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
-        <meshStandardMaterial
-          color="#1a1a1a"
-          metalness={0.9}
-          roughness={0.1}
-        />
-      </mesh>
-
-      {/* ── Side buttons (volume, power) ── */}
-      {/* Power button — right side */}
-      <mesh position={[PHONE_W / 2 + 0.01, 0.5, 0]}>
-        <boxGeometry args={[0.02, 0.25, 0.06]} />
-        <meshStandardMaterial color={frameColor} metalness={0.9} roughness={0.15} />
-      </mesh>
-      {/* Volume up — left side */}
-      <mesh position={[-PHONE_W / 2 - 0.01, 0.6, 0]}>
-        <boxGeometry args={[0.02, 0.18, 0.06]} />
-        <meshStandardMaterial color={frameColor} metalness={0.9} roughness={0.15} />
-      </mesh>
-      {/* Volume down — left side */}
-      <mesh position={[-PHONE_W / 2 - 0.01, 0.3, 0]}>
-        <boxGeometry args={[0.02, 0.18, 0.06]} />
-        <meshStandardMaterial color={frameColor} metalness={0.9} roughness={0.15} />
-      </mesh>
-      {/* Mute switch — left side, above volume */}
-      <mesh position={[-PHONE_W / 2 - 0.01, 0.9, 0]}>
-        <boxGeometry args={[0.02, 0.1, 0.05]} />
-        <meshStandardMaterial color={frameColor} metalness={0.9} roughness={0.15} />
-      </mesh>
-    </group>
-  );
+  return <primitive object={cloned} />;
 };
 
 /* ══════════════════════════════════════════
-   PhoneScene — camera, lights, shadows
+   CSS Fallback Phone (simple, clean)
    ══════════════════════════════════════════ */
-const PhoneScene: React.FC<{
-  rotateX: number;
-  rotateY: number;
-  rotateZ: number;
-  phoneScale: number;
-  screenColor?: string;
-  frameColor?: string;
-  backColor?: string;
-}> = ({ rotateX, rotateY, rotateZ, phoneScale, screenColor, frameColor, backColor }) => {
-  const groupRef = useRef<THREE.Group>(null);
-
-  return (
-    <>
-      {/* Lighting */}
-      <ambientLight intensity={0.4} />
-      <directionalLight
-        position={[3, 5, 5]}
-        intensity={1.2}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
-      <directionalLight position={[-2, 3, -3]} intensity={0.3} />
-      {/* Rim light for edge definition */}
-      <pointLight position={[0, 0, 4]} intensity={0.5} color="#ffffff" />
-
-      {/* Environment for reflections */}
-      <Environment preset="city" />
-
-      {/* Phone group with transforms */}
-      <group
-        ref={groupRef}
-        rotation={[rotateX, rotateY, rotateZ]}
-        scale={phoneScale}
-      >
-        <PhoneBody
-          screenColor={screenColor}
-          frameColor={frameColor}
-          backColor={backColor}
-        />
-      </group>
-
-      {/* Ground shadow */}
-      <ContactShadows
-        position={[0, -1.8, 0]}
-        opacity={0.5}
-        scale={5}
-        blur={2.5}
-        far={4}
-      />
-    </>
-  );
-};
-
-/* ══════════════════════════════════════════════════════════════
-   Phone3D — Public API
-   ══════════════════════════════════════════════════════════════ */
-export interface Phone3DProps {
-  /** Rotation around X axis (radians). Default 0. */
-  rotateX?: number;
-  /** Rotation around Y axis (radians). Default 0. */
-  rotateY?: number;
-  /** Rotation around Z axis (radians). Default 0. */
-  rotateZ?: number;
-  /** Uniform scale. Default 1. */
-  scale?: number;
-  /** React node to render as screen content, overlaid on the phone screen. */
-  screenContent?: React.ReactNode;
-  /** Screen background color in the 3D scene. Default "#0a0a0a". */
-  screenColor?: string;
-  /** Frame/side metallic color. Default "#8a8a8e" (titanium). */
-  frameColor?: string;
-  /** Back panel color. Default "#2c2c2e" (dark matte). */
-  backColor?: string;
-  /** Overall opacity. Default 1. */
-  opacity?: number;
-  /**
-   * Screen overlay positioning — percentage offsets within the container.
-   * Tune these if your rotation makes the overlay misalign.
-   * Defaults are calibrated for near-frontal views (rotateY < 0.3 rad)
-   * on a 16:9 canvas with the default camera (z=5, fov=35).
-   */
-  screenOverlay?: {
-    /** Top offset as % of container height. Default 5 */
-    top?: number;
-    /** Left offset as % of container width. Default 37.5 */
-    left?: number;
-    /** Width as % of container width. Default 25 */
-    width?: number;
-    /** Height as % of container height. Default 88 */
-    height?: number;
-  };
-  /** Style overrides for the outer container */
+const CSSPhone: React.FC<{
+  children?: React.ReactNode;
   style?: React.CSSProperties;
-}
+}> = ({ children, style }) => (
+  <div
+    style={{
+      width: 280,
+      height: 580,
+      borderRadius: 36,
+      background: "#1a1a1a",
+      border: "3px solid #d4d4d8",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset",
+      overflow: "hidden",
+      position: "relative",
+      ...style,
+    }}
+  >
+    {/* Dynamic Island */}
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 90,
+        height: 28,
+        borderRadius: 14,
+        background: "#000",
+        zIndex: 10,
+      }}
+    />
+    {/* Screen content */}
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 33,
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </div>
+  </div>
+);
 
-export const Phone3D: React.FC<Phone3DProps> = ({
+/* ══════════════════════════════════════════
+   Phone3D — Main export
+   ══════════════════════════════════════════ */
+export const Phone3D: React.FC<{
+  rotateX?: number;
+  rotateY?: number;
+  rotateZ?: number;
+  scale?: number;
+  screenContent?: React.ReactNode;
+  screenColor?: string;
+  frameColor?: string;
+  backColor?: string;
+  opacity?: number;
+  style?: React.CSSProperties;
+  useGLB?: boolean;
+}> = ({
   rotateX = 0,
   rotateY = 0,
   rotateZ = 0,
-  scale: phoneScale = 1,
+  scale = 1,
   screenContent,
-  screenColor = "#0a0a0a",
-  frameColor = "#c8c8cc",
-  backColor = "#e8e8ea",
   opacity = 1,
-  screenOverlay,
   style,
+  useGLB: useGLBProp = false, // Default to CSS fallback — GLB needs testing per project
 }) => {
-  const { width, height } = useVideoConfig();
+  const glbUrl = staticFile("models/iphone.glb");
 
-  /* Screen overlay defaults — calibrated for head-on view on 16:9 canvas,
-     camera at z=5, fov=35. Phone body is 1.5x3.0 units.
-     Screen inset by BEZEL on each side. */
-  const overlay = {
-    top: screenOverlay?.top ?? 5.5,
-    left: screenOverlay?.left ?? 38,
-    width: screenOverlay?.width ?? 24,
-    height: screenOverlay?.height ?? 86,
-  };
-
-  return (
-    <AbsoluteFill style={{ opacity, ...style }}>
-      {/* 3D phone render */}
-      <ThreeCanvas
-        width={width}
-        height={height}
-        camera={{ position: [0, 0, 5], fov: 35 }}
-        style={{ position: "absolute", inset: 0 }}
+  if (useGLBProp) {
+    return (
+      <div
+        style={{
+          width: 320,
+          height: 640,
+          position: "relative",
+          opacity,
+          ...style,
+        }}
       >
-        <Suspense fallback={null}>
-          <PhoneScene
-            rotateX={rotateX}
-            rotateY={rotateY}
-            rotateZ={rotateZ}
-            phoneScale={phoneScale}
-            screenColor={screenColor}
-            frameColor={frameColor}
-            backColor={backColor}
-          />
-        </Suspense>
-      </ThreeCanvas>
-
-      {/* Screen content overlay — positioned to align with the 3D screen region.
-          The caller can fine-tune via screenOverlay props if rotation is extreme. */}
-      {screenContent && (
-        <div
-          style={{
-            position: "absolute",
-            top: `${overlay.top}%`,
-            left: `${overlay.left}%`,
-            width: `${overlay.width}%`,
-            height: `${overlay.height}%`,
-            overflow: "hidden",
-            borderRadius: 12,
-            pointerEvents: "none",
-            /* Apply matching rotation so overlay tracks the 3D phone.
-               For small angles this CSS perspective approximation is sufficient.
-               For large rotations, increase perspective or adjust overlay bounds. */
-            transform: [
-              `perspective(1200px)`,
-              `rotateX(${rotateX}rad)`,
-              `rotateY(${rotateY}rad)`,
-              `rotateZ(${rotateZ}rad)`,
-              `scale(${phoneScale})`,
-            ].join(" "),
-            transformOrigin: "center center",
-          }}
+        {/* 3D Phone */}
+        <ThreeCanvas
+          width={320}
+          height={640}
+          style={{ position: "absolute", inset: 0 }}
+          camera={{ position: [0, 0, 5], fov: 35 }}
         >
-          {screenContent}
-        </div>
-      )}
-    </AbsoluteFill>
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[5, 5, 5]} intensity={0.8} />
+          <directionalLight position={[-3, 2, 4]} intensity={0.4} />
+          <Suspense fallback={null}>
+            <group
+              rotation={[rotateX, rotateY, rotateZ]}
+              scale={[scale, scale, scale]}
+            >
+              <PhoneGLB url={glbUrl} />
+            </group>
+            <Environment preset="city" />
+            <ContactShadows
+              position={[0, -2.5, 0]}
+              opacity={0.4}
+              scale={8}
+              blur={2.5}
+            />
+          </Suspense>
+        </ThreeCanvas>
+
+        {/* Screen overlay */}
+        {screenContent && (
+          <div
+            style={{
+              position: "absolute",
+              top: "6%",
+              left: "8%",
+              right: "8%",
+              bottom: "6%",
+              borderRadius: 20,
+              overflow: "hidden",
+              pointerEvents: "none",
+            }}
+          >
+            {screenContent}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // CSS fallback — clean, fast, no Three.js overhead
+  return (
+    <div
+      style={{
+        transform: `perspective(800px) rotateX(${rotateX * (180 / Math.PI)}deg) rotateY(${rotateY * (180 / Math.PI)}deg) rotateZ(${rotateZ * (180 / Math.PI)}deg) scale(${scale})`,
+        transformStyle: "preserve-3d",
+        opacity,
+        ...style,
+      }}
+    >
+      <CSSPhone>
+        {screenContent}
+      </CSSPhone>
+    </div>
   );
 };
 
