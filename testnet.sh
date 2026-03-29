@@ -186,6 +186,11 @@ _sync_config_files() {
             rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/deployments/$f" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/$f" 2>/dev/null || true
     done
     rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/deployments/active-deployment.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/deployments/active-deployment.json" 2>/dev/null || true
+    # Sync frontend deployment files — THREE copies must match:
+    # lib/contracts/deployment.json (build-time), public/deployment.json (runtime), public/morpho-deployment.json
+    cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/frontend/lib/contracts/deployment.json" 2>/dev/null || true
+    cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/frontend/public/deployment.json" 2>/dev/null || true
+    cp "$SCRIPT_DIR/deployments/morpho-e2e.json" "$SCRIPT_DIR/frontend/public/morpho-deployment.json" 2>/dev/null || true
     # AP on VPS 2 also needs symbol-map for FillConfirmed decomposition
     rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/data/symbol-map.json" 2>/dev/null || true
     # Sync deployment JSONs to VPSes — file watcher on services detects changes automatically
@@ -1613,10 +1618,27 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     echo -e "${BLUE}[13.5/14] Final deployment sync...${NC}"
     # Single scp to VPS — file watcher handles the rest
     rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
-    # Keep local copies for switch-env compatibility
+    # Keep local copies for switch-env compatibility.
+    # THREE places in the frontend read deployment addresses — all must match:
+    #   1. frontend/lib/contracts/deployment.json (imported by addresses.ts at build time)
+    #   2. frontend/public/deployment.json (served statically, read at runtime)
+    #   3. frontend/public/morpho-deployment.json (Morpho addresses at runtime)
     cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json 2>/dev/null || true
     cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
-    echo -e "  ${GREEN}Deployment synced to VPS (file watcher), envs, and frontend${NC}"
+    cp "$DEPLOYMENT_FILE" frontend/public/deployment.json
+    cp deployments/morpho-e2e.json frontend/public/morpho-deployment.json 2>/dev/null || true
+    # Verify all three match
+    local _lib_sbc=$(python3 -c "import json; print(json.load(open('frontend/lib/contracts/deployment.json'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null)
+    local _pub_sbc=$(python3 -c "import json; print(json.load(open('frontend/public/deployment.json'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null)
+    local _act_sbc=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null)
+    if [ "$_lib_sbc" != "$_act_sbc" ] || [ "$_pub_sbc" != "$_act_sbc" ]; then
+        echo -e "  ${RED}FATAL: Frontend deployment files out of sync!${NC}"
+        echo -e "  ${RED}  active:  $_act_sbc${NC}"
+        echo -e "  ${RED}  lib:     $_lib_sbc${NC}"
+        echo -e "  ${RED}  public:  $_pub_sbc${NC}"
+        exit 1
+    fi
+    echo -e "  ${GREEN}Deployment synced (VPS + envs + frontend lib + frontend public — all verified)${NC}"
 
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true
