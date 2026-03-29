@@ -556,11 +556,11 @@ const PhaseWriteEmails: React.FC = () => {
 
   const s = useGsapProxy(
     (tl, p) => {
-      // "Write" appears
+      // "Write" SLIDES IN from below — translateY 30→0, additive to existing text
       tl.fromTo(
         p.write,
-        { y: 6, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.25, ease: "power2.out" },
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" },
         0,
       );
       // Pill bounces in
@@ -591,7 +591,7 @@ const PhaseWriteEmails: React.FC = () => {
       );
     },
     {
-      write: { y: 6, opacity: 0 },
+      write: { y: 30, opacity: 0 },
       pill: { x: 25, y: 6, scale: 0.85, opacity: 0 },
       emailsDark: { opacity: 0 },
     },
@@ -714,47 +714,54 @@ const PhaseLetterScatter: React.FC = () => {
     return init;
   }, []);
 
-  // Scatter targets matching reference at 5.5s — visible, spread pattern
-  const scatterTargets = [
-    { dx: -180, dy: -80, rot: -3 },  // W — upper-left (big move)
-    { dx: -30, dy: 25, rot: 2 },     // r
-    { dx: 15, dy: 18, rot: -1 },     // i
-    { dx: -50, dy: 80, rot: 3 },     // t — drops down
-    { dx: 8, dy: 15, rot: -1 },      // e
-    { dx: 0, dy: 0, rot: 0 },        // space
-    { dx: 8, dy: 18, rot: 1 },       // e
-    { dx: 30, dy: 12, rot: -2 },     // m
-    { dx: 55, dy: -50, rot: 2 },     // a — rises up
-    { dx: 80, dy: 15, rot: -3 },     // i
-    { dx: 120, dy: 15, rot: 1 },     // l
-    { dx: 170, dy: -20, rot: -2 },   // s — far right
+  // Axis-locked scatter: each letter moves ONE axis at a time with pauses
+  // Segment 1: X (+80px, 0.15s) → pause 0.08s → Segment 2: Y (-60px, 0.12s) → pause 0.06s → Segment 3: X (-40px, 0.1s) → pause 0.05s
+  // Each letter staggers 3-5 frames (0.1-0.17s) after previous
+  const scatterDirections = [
+    { s1x: 80, s2y: -60, s3x: -40 },   // W
+    { s1x: -60, s2y: 40, s3x: 30 },     // r
+    { s1x: 50, s2y: 30, s3x: -25 },     // i
+    { s1x: -70, s2y: -50, s3x: 35 },    // t
+    { s1x: 60, s2y: 25, s3x: -30 },     // e
+    { s1x: 0, s2y: 0, s3x: 0 },         // space
+    { s1x: -55, s2y: 35, s3x: 28 },     // e
+    { s1x: 65, s2y: -45, s3x: -32 },    // m
+    { s1x: -50, s2y: -55, s3x: 25 },    // a
+    { s1x: 70, s2y: 30, s3x: -35 },     // i
+    { s1x: -60, s2y: -40, s3x: 30 },    // l
+    { s1x: 80, s2y: -35, s3x: -40 },    // s
   ];
 
   const s = useGsapProxy(
     (tl, p) => {
       SCATTER_LETTERS.forEach((_, i) => {
-        const target = scatterTargets[i] || { dx: 0, dy: 0, rot: 0 };
+        const dirs = scatterDirections[i] || { s1x: 0, s2y: 0, s3x: 0 };
+        // Stagger: each letter starts 0.1-0.17s after previous (3-5 frames at 30fps)
+        const stagger = i * 0.12;
+
+        // Segment 1: accelerate on X
         tl.to(
           p[`l${i}`],
-          {
-            x: target.dx,
-            y: target.dy,
-            rotation: target.rot,
-            scale: 1,
-            opacity: 1,
-            duration: 0.65,
-            ease: "power2.out",
-          },
-          i * 0.012,
+          { x: dirs.s1x, duration: 0.15, ease: "power2.inOut" },
+          stagger,
         );
+        // Pause 0.08s, then Segment 2: accelerate on Y
         tl.to(
           p[`l${i}`],
-          {
-            opacity: 0,
-            duration: 0.3,
-            ease: "power1.out",
-          },
-          0.6 + i * 0.008,
+          { y: dirs.s2y, duration: 0.12, ease: "power2.inOut" },
+          stagger + 0.15 + 0.08,
+        );
+        // Pause 0.06s, then Segment 3: accelerate on X again
+        tl.to(
+          p[`l${i}`],
+          { x: dirs.s1x + dirs.s3x, duration: 0.1, ease: "power2.inOut" },
+          stagger + 0.15 + 0.08 + 0.12 + 0.06,
+        );
+        // Fade out after last segment + pause
+        tl.to(
+          p[`l${i}`],
+          { opacity: 0, duration: 0.15, ease: "power1.out" },
+          stagger + 0.15 + 0.08 + 0.12 + 0.06 + 0.1 + 0.05,
         );
       });
     },
@@ -839,8 +846,9 @@ const SOLVE_FINAL_X: number[] = [];
 const SOLVE_FINAL_Y = H * 0.49;
 
 const PhaseSolveProblems: React.FC = () => {
-  // Snake movement: each letter moves in axis-locked segments
-  // X→pause→Y→pause→X, staggered start per letter (3-5 frame offset)
+  // Axis-locked convergence: each letter moves ONE axis at a time
+  // Segment 1: X (0.15s) → pause 0.08s → Segment 2: Y (0.12s) → pause 0.06s → Segment 3: X final (0.1s)
+  // Staggered 3-5 frames per letter
   const proxyInit = useMemo(() => {
     const init: Record<string, ProxyState> = {};
     for (let i = 0; i < SOLVE_LETTERS.length; i++) {
@@ -859,18 +867,35 @@ const PhaseSolveProblems: React.FC = () => {
     (tl, p) => {
       SOLVE_LETTERS.forEach((ch, i) => {
         if (ch === "\u00A0") return;
-        // All letters converge simultaneously with tiny stagger
-        // Total time: 0.15s delay + 0.30s duration = settles by 0.45s
+        const sc = SOLVE_SCATTER[i];
+        const startX = sc.x || SOLVE_FINAL_X[i];
+        const startY = sc.y || SOLVE_FINAL_Y;
+        const finalX = SOLVE_FINAL_X[i];
+        const finalY = SOLVE_FINAL_Y;
+
+        // Stagger: 3-5 frames = 0.1-0.17s per letter
+        const stagger = i * 0.12;
+
+        // Intermediate X position: move ~60% of X distance first
+        const midX = startX + (finalX - startX) * 0.6;
+
+        // Segment 1: accelerate on X only (0.15s)
         tl.to(
           p[`l${i}`],
-          {
-            x: SOLVE_FINAL_X[i],
-            y: SOLVE_FINAL_Y,
-            size: SOLVE_FINAL_SIZE,
-            duration: 0.30,
-            ease: "power2.out",
-          },
-          0.15 + i * 0.005,
+          { x: midX, duration: 0.15, ease: "power2.inOut" },
+          stagger,
+        );
+        // Pause 0.08s, then Segment 2: accelerate on Y only (0.12s)
+        tl.to(
+          p[`l${i}`],
+          { y: finalY, size: SOLVE_FINAL_SIZE, duration: 0.12, ease: "power2.inOut" },
+          stagger + 0.15 + 0.08,
+        );
+        // Pause 0.06s, then Segment 3: accelerate on X to final position (0.1s)
+        tl.to(
+          p[`l${i}`],
+          { x: finalX, duration: 0.1, ease: "power2.inOut" },
+          stagger + 0.15 + 0.08 + 0.12 + 0.06,
         );
       });
     },
@@ -949,9 +974,21 @@ const PhaseBrainstormIdeas: React.FC = () => {
   // Accelerating camera — slow start, fast end
   const cameraZ = zProgress * zProgress * 1.2;
 
-  // Final text fades in during last 30% of the phase
-  const finalOpacity = interpolate(frame, [totalFrames * 0.55, totalFrames * 0.75], [0, 1], clamp);
-  const finalScale = interpolate(frame, [totalFrames * 0.55, totalFrames * 0.75], [0.92, 1], clamp);
+  // Focus-pull: LARGE BLURRED BLUE text sharpens into crisp dark text
+  // 0.8s duration (~24 frames at 30fps), starts at 55% into the phase
+  const focusStart = totalFrames * 0.55;
+  const focusDur = 24; // 0.8s
+  const focusProgress = interpolate(frame, [focusStart, focusStart + focusDur], [0, 1], clamp);
+  // Blur: 15px → 0
+  const finalBlur = interpolate(focusProgress, [0, 1], [15, 0], clamp);
+  // Scale: 1.3 → 1.0
+  const finalScale = interpolate(focusProgress, [0, 1], [1.3, 1.0], clamp);
+  // Color: #6366f1 (indigo/blue) → #1a1a2e (dark)
+  const colorR = Math.round(interpolate(focusProgress, [0, 1], [0x63, 0x1a], clamp));
+  const colorG = Math.round(interpolate(focusProgress, [0, 1], [0x66, 0x1a], clamp));
+  const colorB = Math.round(interpolate(focusProgress, [0, 1], [0xf1, 0x2e], clamp));
+  // Opacity: appear immediately at focus start (not a fade)
+  const finalOpacity = focusProgress > 0 ? 1 : 0;
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
@@ -1025,7 +1062,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
         );
       })}
 
-      {/* Final centered "Brainstorm ideas" — emerges as camera reaches destination */}
+      {/* Final centered "Brainstorm ideas" — focus-pull: blurred blue → crisp dark */}
       <div
         style={{
           position: "absolute",
@@ -1035,10 +1072,11 @@ const PhaseBrainstormIdeas: React.FC = () => {
           fontFamily,
           fontSize: BODY_FONT,
           fontWeight: 400,
-          color: TEXT_DARK,
+          color: `rgb(${colorR}, ${colorG}, ${colorB})`,
           whiteSpace: "nowrap",
           opacity: finalOpacity,
           letterSpacing: "-0.3px",
+          filter: finalBlur > 0.3 ? `blur(${finalBlur}px)` : undefined,
         }}
       >
         Brainstorm ideas

@@ -320,6 +320,12 @@ export const Phone3D: React.FC<Phone3DProps> = ({
     height: screenOverlay?.height ?? 86,
   };
 
+  /* CSS perspective that matches the Three.js camera projection.
+     Formula: canvasWidth / (2 * tan(fov/2)).
+     Camera: z=5, fov=35deg → tan(17.5deg) ≈ 0.3153.
+     1280 / (2 * 0.3153) ≈ 2030px. */
+  const cssPerspective = Math.round(width / (2 * Math.tan((35 / 2) * Math.PI / 180)));
+
   return (
     <AbsoluteFill style={{ opacity, ...style }}>
       {/* 3D phone render */}
@@ -343,32 +349,46 @@ export const Phone3D: React.FC<Phone3DProps> = ({
       </ThreeCanvas>
 
       {/* Screen content overlay — positioned to align with the 3D screen region.
-          The caller can fine-tune via screenOverlay props if rotation is extreme. */}
+          The overlay lives inside a perspective container that matches the Three.js
+          camera, then applies the same rotation as the 3D mesh. This keeps the
+          HTML screen content locked to the phone body through all rotations.
+
+          Architecture: outer div sets perspective (the "camera distance"),
+          inner div applies the rotation (the "object transform"). This is
+          equivalent to how Three.js separates camera from object transforms. */}
       {screenContent && (
         <div
           style={{
             position: "absolute",
-            top: `${overlay.top}%`,
-            left: `${overlay.left}%`,
-            width: `${overlay.width}%`,
-            height: `${overlay.height}%`,
-            overflow: "hidden",
-            borderRadius: 12,
+            inset: 0,
+            perspective: cssPerspective,
+            perspectiveOrigin: "center center",
             pointerEvents: "none",
-            /* Apply matching rotation so overlay tracks the 3D phone.
-               For small angles this CSS perspective approximation is sufficient.
-               For large rotations, increase perspective or adjust overlay bounds. */
-            transform: [
-              `perspective(1200px)`,
-              `rotateX(${rotateX}rad)`,
-              `rotateY(${rotateY}rad)`,
-              `rotateZ(${rotateZ}rad)`,
-              `scale(${phoneScale})`,
-            ].join(" "),
-            transformOrigin: "center center",
           }}
         >
-          {screenContent}
+          <div
+            style={{
+              position: "absolute",
+              top: `${overlay.top}%`,
+              left: `${overlay.left}%`,
+              width: `${overlay.width}%`,
+              height: `${overlay.height}%`,
+              overflow: "hidden",
+              borderRadius: 12,
+              /* Same rotation as the Three.js phone mesh.
+                 The perspective is on the parent, so this rotates
+                 "inside" the same projection — no mismatch. */
+              transform: [
+                `rotateX(${rotateX}rad)`,
+                `rotateY(${rotateY}rad)`,
+                `rotateZ(${rotateZ}rad)`,
+                `scale(${phoneScale})`,
+              ].join(" "),
+              transformOrigin: "center center",
+            }}
+          >
+            {screenContent}
+          </div>
         </div>
       )}
     </AbsoluteFill>
