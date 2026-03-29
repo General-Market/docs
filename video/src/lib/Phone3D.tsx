@@ -339,42 +339,34 @@ export const Phone3D: React.FC<Phone3DProps> = ({
         </Suspense>
       </ThreeCanvas>
 
-      {/* Screen content overlay — positioned to align with the 3D screen region.
-          The overlay lives inside a perspective container that matches the Three.js
-          camera, then applies the same rotation as the 3D mesh. This keeps the
-          HTML screen content locked to the phone body through all rotations.
-
-          Architecture: outer div sets perspective (the "camera distance"),
-          inner div applies the rotation (the "object transform"). This is
-          equivalent to how Three.js separates camera from object transforms. */}
+      {/* Screen content — REPLACES Three.js overlay with CSS-only phone+screen
+          in the SAME transform space. This guarantees screen tilts with the case. */}
       {screenContent && (
         <div
           style={{
             position: "absolute",
             inset: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
             perspective: cssPerspective,
-            perspectiveOrigin: "center center",
             pointerEvents: "none",
           }}
         >
           <div
             style={{
-              position: "absolute",
-              top: `${overlay.top}%`,
-              left: `${overlay.left}%`,
-              width: `${overlay.width}%`,
-              height: `${overlay.height}%`,
+              width: 280,
+              height: 580,
+              borderRadius: 36,
               overflow: "hidden",
-              borderRadius: 12,
-              /* Same rotation as the Three.js phone mesh.
-                 The perspective is on the parent, so this rotates
-                 "inside" the same projection — no mismatch. */
+              position: "relative",
               transform: [
                 `rotateX(${rotateX}rad)`,
                 `rotateY(${rotateY}rad)`,
                 `rotateZ(${rotateZ}rad)`,
                 `scale(${phoneScale})`,
               ].join(" "),
+              transformStyle: "preserve-3d",
               transformOrigin: "center center",
             }}
           >
