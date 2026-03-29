@@ -273,11 +273,15 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   const [isFetchingPrices, setIsFetchingPrices] = useState(false)
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   const handleSubmit = async () => {
+    if (isSubmitting || isPending || isConfirming || isSuccess) return
     if (!isConnected || !name || !symbol || selectedAssets.length === 0 || !isValidWeights) {
       setTxError(t('errors.fill_all_fields'))
       return
     }
+    setIsSubmitting(true)
 
     // Reset any stale state from previous attempts
     resetWrite()
@@ -363,6 +367,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         refetchDeployerName()
       }
 
+      submittedSymbolRef.current = symbol
+
       capture('create_itp_submitted', {
         asset_count: assets.length,
         name,
@@ -413,6 +419,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       console.error('[CreateITP] writeContractAsync threw:', e)
       setTxError(e.message || 'Failed to submit transaction')
       capture('create_itp_failed', { error_message: e.message || 'writeContractAsync threw', step: 'submit' })
+      setIsSubmitting(false)
     }
   }
 
@@ -479,17 +486,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   }, [isConfirming])
 
   // Wait for new ITP to appear in the SSE listing (visible to all users)
+  // Match by symbol (unique, user-provided) instead of predicting ITP ID
+  const submittedSymbolRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!isSuccess || consensusReached || itpCountBefore == null) return
-    const nextId = itpCountBefore + 1
-    const nextIdHex = '0x' + nextId.toString(16).padStart(64, '0')
-    // Check if the new ITP is already in the SSE nav list
-    const found = sseNavs.some(n => n.itp_id?.toLowerCase() === nextIdHex.toLowerCase())
+    if (!isSuccess || consensusReached) return
+    const sym = submittedSymbolRef.current
+    if (!sym) return
+    const found = sseNavs.find(n => n.symbol?.toUpperCase() === sym.toUpperCase())
     if (found) {
       setConsensusReached(true)
-      capture('create_itp_consensus_reached', { itp_id: nextIdHex })
+      capture('create_itp_consensus_reached', { itp_id: found.itp_id, symbol: sym })
     }
-  }, [isSuccess, itpCountBefore, consensusReached, sseNavs])
+  }, [isSuccess, consensusReached, sseNavs])
 
   const handleCancel = useCallback(() => {
     resetWrite()
@@ -497,6 +505,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setStuckWarning(false)
     setItpCountBefore(null)
     setConsensusReached(false)
+    submittedSymbolRef.current = null
+    setIsSubmitting(false)
     refreshNonce()
   }, [resetWrite, refreshNonce])
 

@@ -1208,22 +1208,20 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
                     *cache = pending;
                     state.chain_cache.pending_creations_gen.bump();
 
-                    // ── Build itp_id → requester map from completed bridge creations ──
-                    // For each completed nonce, get admin from Settlement + itp_id from L3.
-                    // Uses raw calldata for _bridgeNonceToItpId because leading-underscore
-                    // Solidity names are not reliably handled by ethers abigen.
+                    // ── Build itp_id → requester map from ALL bridge creations ──
+                    // For each nonce with a non-zero admin, look up itp_id on L3.
+                    // Includes pending (L3 created but Settlement not completed) creations.
                     if let Ok(index_addr) = crate::api::deployment_addr(&state.deployment, "Index") {
-                        // selector = keccak256("_bridgeNonceToItpId(uint256)")[..4]
                         let selector = &ethers::utils::keccak256(b"_bridgeNonceToItpId(uint256)")[..4];
                         let mut requesters: std::collections::HashMap<String, String> = std::collections::HashMap::new();
 
                         for nonce in 0..next_nonce {
                             match bridge.get_pending_creation(U256::from(nonce)).call().await {
-                                Ok((admin, _name, _symbol, _weights, _assets, _prices, _created_at, completed)) => {
-                                    if !completed || admin.is_zero() {
+                                Ok((admin, _name, _symbol, _weights, _assets, _prices, _created_at, _completed)) => {
+                                    if admin.is_zero() {
                                         continue;
                                     }
-                                    // Completed: look up which itp_id was created for this nonce
+                                    // Look up which itp_id was created for this nonce on L3
                                     let mut calldata = selector.to_vec();
                                     let mut nonce_bytes = [0u8; 32];
                                     U256::from(nonce).to_big_endian(&mut nonce_bytes);
