@@ -353,3 +353,32 @@ Implementation:
 })}
 // spinAngle increases rapidly: frame * 15 (multiple revolutions)
 ```
+
+### 1:02 FINAL CLARIFICATION — Circular text like a stamp/coin (Image 36)
+Each CHARACTER is placed along the circumference of a circle, rotated to follow the tangent. Like text on a stamp or coin edge. The string "Gmail Search YouTube Maps Flights Workspace" wraps around a circle. Then the whole ring of characters spins FAST.
+
+```tsx
+const text = "Gmail ★ Search ★ YouTube ★ Maps ★ Flights ★ Workspace ★";
+const radius = 200;
+const chars = text.split("");
+const anglePerChar = 360 / chars.length;
+const spin = frame * 12; // fast rotation
+
+{chars.map((char, i) => {
+  const angle = i * anglePerChar + spin;
+  const rad = (angle * Math.PI) / 180;
+  const x = Math.cos(rad) * radius;
+  const y = Math.sin(rad) * radius;
+  return (
+    <span style={{
+      position: "absolute",
+      left: "50%", top: "50%",
+      transform: `translate(-50%,-50%) rotate(${angle}deg) translateY(-${radius}px)`,
+      transformOrigin: "center center",
+      fontSize: 14,
+    }}>
+      {char}
+    </span>
+  );
+})}
+```
