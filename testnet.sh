@@ -2003,6 +2003,49 @@ _start_oracles_docker() {
     VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
     MIRROR_REGISTRY=$(read_deployment_addr "SettlementOracleRegistry")
 
+    # Verify critical L3 addresses have code before starting oracles.
+    for _check_name in Vision OracleRegistry Index; do
+        local _check_addr=$(read_deployment_addr "$_check_name" 2>/dev/null || echo "")
+        if [ -n "$_check_addr" ] && [ "$_check_addr" != "0x0000000000000000000000000000000000000000" ]; then
+            local _check_code=$(cast code --rpc-url "$RPC_URL" "$_check_addr" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$_check_code" -lt 10 ]; then
+                echo -e "  ${RED}FATAL: $_check_name ($_check_addr) has NO CODE on L3${NC}"
+                echo -e "  ${RED}  Deployment file is stale. Re-run: ./testnet.sh deploy${NC}"
+                exit 1
+            fi
+        fi
+    done
+    echo -e "  ${GREEN}L3 contract addresses verified${NC}"
+
+    # Verify critical settlement addresses have code on their respective chains.
+    # Stale addresses (from Orbit CREATE divergence or cross-session deploys)
+    # cause silent failures in bridge/settlement — catch them here before baking
+    # into oracle Docker images.
+    if [ -n "$VISION_SETTLEMENT_CUSTODY" ]; then
+        local SBC_CODE_LEN=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$VISION_SETTLEMENT_CUSTODY" 2>/dev/null | wc -c | tr -d ' ')
+        if [ "$SBC_CODE_LEN" -lt 10 ]; then
+            echo -e "  ${RED}FATAL: SettlementBridgeCustody ($VISION_SETTLEMENT_CUSTODY) has NO CODE on Settlement chain${NC}"
+            echo -e "  ${RED}  This address is stale. Update active-deployment.json with the correct address.${NC}"
+            echo -e "  ${RED}  Check: deployments/e2e-full-system-sonic.json for the current Sonic deployment.${NC}"
+            # Attempt auto-fix from Sonic deployment
+            local SONIC_SBC=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-sonic.json'))['contracts']['SettlementBridgeCustody'])" 2>/dev/null || echo "")
+            if [ -n "$SONIC_SBC" ]; then
+                local SONIC_SBC_CODE=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$SONIC_SBC" 2>/dev/null | wc -c | tr -d ' ')
+                if [ "$SONIC_SBC_CODE" -gt 10 ]; then
+                    echo -e "  ${YELLOW}Auto-fixing from Sonic deployment: $SONIC_SBC${NC}"
+                    python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['SettlementBridgeCustody']='$SONIC_SBC'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
+                    VISION_SETTLEMENT_CUSTODY="$SONIC_SBC"
+                    echo -e "  ${GREEN}Fixed SettlementBridgeCustody → $SONIC_SBC${NC}"
+                else
+                    echo -e "  ${RED}Sonic SBC ($SONIC_SBC) also has no code. Full redeploy needed.${NC}"
+                    exit 1
+                fi
+            else
+                exit 1
+            fi
+        fi
+    fi
+
     # Build per-oracle command as YAML list (safe from injection)
     # NOTE: Dockerfile uses ENTRYPOINT ["service-entrypoint"] so command: is ARGS only — no binary path.
     _oracle_command_yaml() {
