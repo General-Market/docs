@@ -79,18 +79,18 @@ const PhoneBody: React.FC<{
   backColor?: string;
 }> = ({
   screenColor = "#0a0a0a",
-  frameColor = "#8a8a8e",
-  backColor = "#2c2c2e",
+  frameColor = "#c8c8cc",
+  backColor = "#e8e8ea",
 }) => {
-  /* Body: extruded rounded rect */
+  /* Body: extruded rounded rect — titanium silver iPhone */
   const bodyGeometry = useMemo(() => {
     const shape = roundedRectShape(PHONE_W, PHONE_H, CORNER_R);
     const geo = new THREE.ExtrudeGeometry(shape, {
       depth: PHONE_D,
       bevelEnabled: true,
-      bevelThickness: 0.012,
-      bevelSize: 0.012,
-      bevelSegments: 8,
+      bevelThickness: 0.006,
+      bevelSize: 0.006,
+      bevelSegments: 3,
     });
     geo.center();
     return geo;
@@ -121,30 +121,13 @@ const PhoneBody: React.FC<{
 
   return (
     <group>
-      {/* ── Phone body (frame + back) ── */}
+      {/* ── Phone body (titanium frame) ── */}
       <mesh geometry={bodyGeometry}>
         <meshStandardMaterial
           color={frameColor}
-          metalness={0.85}
-          roughness={0.15}
-          envMapIntensity={1.2}
-        />
-      </mesh>
-
-      {/* ── Glass front face ── */}
-      <mesh
-        position={[0, 0, PHONE_D / 2 + 0.001]}
-      >
-        <planeGeometry args={[PHONE_W, PHONE_H]} />
-        <meshPhysicalMaterial
-          color="#111111"
-          metalness={0.0}
-          roughness={0.05}
-          clearcoat={1.0}
-          clearcoatRoughness={0.02}
-          reflectivity={0.9}
-          transparent
-          opacity={0.4}
+          metalness={0.95}
+          roughness={0.08}
+          envMapIntensity={1.5}
         />
       </mesh>
 
@@ -164,13 +147,13 @@ const PhoneBody: React.FC<{
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* ── Matte back ── */}
+      {/* ── Matte back (frosted titanium) ── */}
       <mesh position={[0, 0, -PHONE_D / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[PHONE_W - 0.02, PHONE_H - 0.02]} />
         <meshStandardMaterial
           color={backColor}
-          metalness={0.1}
-          roughness={0.7}
+          metalness={0.3}
+          roughness={0.5}
         />
       </mesh>
 
@@ -318,8 +301,8 @@ export const Phone3D: React.FC<Phone3DProps> = ({
   scale: phoneScale = 1,
   screenContent,
   screenColor = "#0a0a0a",
-  frameColor = "#8a8a8e",
-  backColor = "#2c2c2e",
+  frameColor = "#c8c8cc",
+  backColor = "#e8e8ea",
   opacity = 1,
   screenOverlay,
   style,
