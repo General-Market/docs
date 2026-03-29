@@ -973,7 +973,7 @@ export const Scene04: React.FC = () => {
                 rotateX={tiltXRad}
                 scale={1}
                 screenContent={phoneScreenContent}
-                screenColor="#FFFFFF"
+                screenColor="#0a0a0a"
               />
               {/* Floating emojis */}
               {showEmojis && FLOATING_EMOJIS.map((item, i) => (
