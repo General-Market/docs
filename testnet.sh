@@ -45,6 +45,10 @@ RPC_URL="http://142.132.164.24/"
 # Gas price (wei) — must exceed L3 base fee. Query: cast base-fee --rpc-url $RPC_URL
 GAS_PRICE=10000000000  # 10 gwei
 
+# Orbit L3 supports 49152 byte contracts (vs 24576 EVM default).
+# Forge broadcast rejects deployments over 24576 without this flag.
+FORGE_SIZE_FLAG="$FORGE_SIZE_FLAG"
+
 # Settlement chain (Sonic Testnet)
 SETTLEMENT_CHAIN_ID=14601
 SETTLEMENT_RPC_URL="https://rpc.testnet.soniclabs.com"
@@ -591,7 +595,7 @@ cmd_deploy() {
             --broadcast --slow \
             --chain-id $CHAIN_ID \
             --legacy --with-gas-price $GAS_PRICE \
-            --code-size-limit 49152) \
+            $FORGE_SIZE_FLAG) \
             > logs/deploy-core.log 2>&1 || true
 
         # Verify deployment succeeded: check both JSON file exists AND has receipts
@@ -931,7 +935,7 @@ print(f'Patched {patched} addresses from broadcast receipts (impl->proxy matchin
             --broadcast --slow \
             --chain-id $SETTLEMENT_CHAIN_ID \
             --legacy --with-gas-price $GAS_PRICE \
-            --code-size-limit 49152) \
+            $FORGE_SIZE_FLAG) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
 
         if [ -f "deployments/e2e-full-system.json" ]; then
@@ -1124,7 +1128,7 @@ for name, b in vb.get('batches', {}).items():
         --private-key "$DEPLOYER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE $FORGE_SIZE_FLAG) \
         >> logs/deploy-morpho.log 2>&1 || echo -e "  ${YELLOW}Morpho deploy had warnings — check logs/deploy-morpho.log${NC}"
     echo -e "  ${GREEN}Morpho deployed${NC}"
 
@@ -1139,7 +1143,7 @@ for name, b in vb.get('batches', {}).items():
         --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price $GAS_PRICE \
-        --code-size-limit 49152) \
+        $FORGE_SIZE_FLAG) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
     # Add Vision address to active-deployment.json BEFORE batch deploy
@@ -1166,7 +1170,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --private-key "$DEPLOYER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE $FORGE_SIZE_FLAG) \
         >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
     echo -e "  ${GREEN}Vision deployed${NC}"
 
@@ -1246,7 +1250,7 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
                 forge script script/DeployAllTokens.s.sol:DeployAllTokens \
                 $FORGE_BROADCAST_FLAG --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
                 --private-key "$DEPLOYER_KEY" \
-                --chain-id $CHAIN_ID) \
+                --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
                 >> logs/deploy-tokens.log 2>&1 || true
 
             TOKEN_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
@@ -1378,7 +1382,7 @@ json.dump(result, sys.stdout)
         forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
         --broadcast --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --chain-id $CHAIN_ID) \
+        --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
         > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; tail -10 logs/deploy-itp-create.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITPs created${NC}"
 
@@ -1419,7 +1423,7 @@ print(f'All {count} ITP #1 assets in symbol-map')
         forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
         --broadcast --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --chain-id $CHAIN_ID) \
+        --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; tail -10 logs/deploy-itp-vaults.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITP vaults deployed${NC}"
 
@@ -1439,14 +1443,23 @@ print(f'All {count} ITP #1 assets in symbol-map')
         ITP_COUNT=$(cast call "$INDEX_ADDR_BATCH" "getItpCount()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
 
         BATCH_VAULTS=()
+        local SKIPPED_NO_CODE=0
         for i in $(seq 1 "$ITP_COUNT"); do
             ITP_HEX=$(printf "0x%064x" "$i")
             V=$(cast call "$INDEX_ADDR_BATCH" "itpVaults(bytes32)(address)" "$ITP_HEX" --rpc-url "$RPC_URL" 2>/dev/null || echo "0x0000000000000000000000000000000000000000")
             [ "$V" = "0x0000000000000000000000000000000000000000" ] && continue
             V_LOWER=$(echo "$V" | tr '[:upper:]' '[:lower:]')
             [ "$V_LOWER" = "$EXISTING_COLLATERAL" ] && continue
+            # Verify vault has code — stale vault addresses from previous deploys
+            # produce Morpho markets with dead collateral tokens
+            local V_CODE=$(cast code --rpc-url "$RPC_URL" "$V" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$V_CODE" -lt 10 ]; then
+                SKIPPED_NO_CODE=$((SKIPPED_NO_CODE + 1))
+                continue
+            fi
             BATCH_VAULTS+=("$V")
         done
+        [ "$SKIPPED_NO_CODE" -gt 0 ] && echo -e "  ${YELLOW}Skipped $SKIPPED_NO_CODE vaults with no code (stale from previous deploy)${NC}"
 
         NEW_COUNT=${#BATCH_VAULTS[@]}
         if [ "$NEW_COUNT" -gt 0 ]; then
@@ -1468,7 +1481,7 @@ print(f'All {count} ITP #1 assets in symbol-map')
                 forge script script/DeployBatchMarkets.s.sol \
                 --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price $GAS_PRICE \
                 --private-key "$DEPLOYER_KEY" \
-                --chain-id $CHAIN_ID) \
+                --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
                 > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
 
             # Strip Foundry cast annotations from lltv values (e.g. "770...000 [7.7e17]" → "770...000")
@@ -2628,7 +2641,7 @@ print(len(configs))
         --private-key "$DEPLOYER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE $FORGE_SIZE_FLAG) \
         > logs/deploy-vision-batches.log 2>&1
 
     if [ $? -ne 0 ]; then
@@ -2749,7 +2762,8 @@ cmd_seed_orders() {
         --private-key "$SEEDER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE \
+        $FORGE_SIZE_FLAG) \
         > logs/seed-buy-orders.log 2>&1
 
     if [ $? -ne 0 ]; then
@@ -2862,7 +2876,8 @@ cmd_seed_orders() {
         --private-key "$DEPLOYER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE \
+        $FORGE_SIZE_FLAG) \
         > logs/seed-reallocate.log 2>&1
 
     if [ $? -ne 0 ]; then
@@ -2881,7 +2896,8 @@ cmd_seed_orders() {
         --private-key "$SEEDER_KEY" \
         --broadcast --slow \
         --chain-id $CHAIN_ID \
-        --legacy --with-gas-price $GAS_PRICE) \
+        --legacy --with-gas-price $GAS_PRICE \
+        $FORGE_SIZE_FLAG) \
         > logs/seed-borrows.log 2>&1
 
     if [ $? -ne 0 ]; then
