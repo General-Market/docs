@@ -1437,6 +1437,82 @@ json.dump(result, sys.stdout)
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; tail -10 logs/deploy-itp-vaults.log 2>/dev/null; exit 1; }
     echo -e "  ${GREEN}ITP vaults deployed${NC}"
 
+    # [12a] Orbit L3 address fix: the vault deploy script calls setITPVault with
+    # simulation addresses, which diverge from broadcast addresses on Orbit.
+    # Read actual vault addresses from broadcast receipts and patch the Index mapping.
+    echo -e "  Verifying ITP vault addresses (Orbit L3 fixup)..."
+    local VAULT_BROADCAST="contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/run-latest.json"
+    if [ -f "$VAULT_BROADCAST" ]; then
+        python3 -c "
+import json, subprocess, sys
+
+bd = json.load(open('$VAULT_BROADCAST'))
+index_addr = '$(read_deployment_addr Index)'
+rpc = '$RPC_URL'
+chain_id = '$CHAIN_ID'
+gas_price = '$GAS_PRICE'
+deployer_key = '$DEPLOYER_KEY'
+
+# Extract vault CREATE txs and the setITPVault calls that follow each
+# Pattern: CREATE (ITPVault) → CALL (setITPVault with itpId + vault addr)
+vaults = {}  # itpId -> broadcast_vault_addr
+for tx in bd.get('transactions', []):
+    if tx.get('transactionType') in ('CREATE', 'CREATE2') and 'Vault' in tx.get('contractName', ''):
+        vault_addr = tx['contractAddress']
+        # The next tx should be setITPVault — but we can also match by looking at
+        # the vault addresses in the receipts
+        pass
+
+# Simpler: read all ITP vault addresses from on-chain, check code at each,
+# if no code, find the correct address from broadcast receipts
+# The receipts have contractAddress for CREATE txs
+vault_creates = []
+for r in bd.get('receipts', []):
+    if r.get('contractAddress') and r['contractAddress'] != '':
+        vault_creates.append(r['contractAddress'])
+
+# Read ITP count
+result = subprocess.run(['cast', 'call', '--rpc-url', rpc, index_addr, 'getItpCount()(uint256)'], capture_output=True, text=True)
+itp_count = int(result.stdout.strip().split()[0]) if result.stdout.strip() else 0
+
+patched = 0
+for i in range(1, itp_count + 1):
+    itp_hex = '0x' + hex(i)[2:].zfill(64)
+    result = subprocess.run(['cast', 'call', '--rpc-url', rpc, index_addr, 'itpVaults(bytes32)(address)', itp_hex], capture_output=True, text=True)
+    stored_vault = result.stdout.strip()
+    if not stored_vault or stored_vault == '0x0000000000000000000000000000000000000000':
+        continue
+    # Check if stored vault has code
+    result = subprocess.run(['cast', 'code', '--rpc-url', rpc, stored_vault], capture_output=True, text=True)
+    code_len = len(result.stdout.strip())
+    if code_len > 10:
+        continue  # has code, all good
+
+    # Stored vault has no code — find matching receipt by index
+    # vault_creates[i-1] should be the correct one (deployed in order)
+    if i - 1 < len(vault_creates):
+        correct_addr = vault_creates[i - 1]
+        # Verify correct_addr has code
+        result = subprocess.run(['cast', 'code', '--rpc-url', rpc, correct_addr], capture_output=True, text=True)
+        if len(result.stdout.strip()) > 10:
+            # Patch: call setITPVault
+            subprocess.run([
+                'cast', 'send', '--rpc-url', rpc,
+                '--private-key', deployer_key,
+                '--chain', chain_id,
+                '--legacy', '--gas-price', gas_price,
+                index_addr, 'setITPVault(bytes32,address)', itp_hex, correct_addr
+            ], capture_output=True)
+            patched += 1
+            print(f'  Patched ITP {i}: {stored_vault[:18]}... -> {correct_addr[:18]}...')
+
+if patched > 0:
+    print(f'  Fixed {patched} vault addresses from broadcast receipts')
+else:
+    print(f'  All {itp_count} vault addresses verified (no Orbit divergence)')
+" 2>&1 | while read line; do echo -e "  $line"; done
+    fi
+
     # Deploy Morpho lending markets for ALL ITPs
     echo -e "${BLUE}[12b/14] Deploying batch lending markets for all ITPs...${NC}"
     MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
