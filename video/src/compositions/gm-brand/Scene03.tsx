@@ -51,35 +51,36 @@ const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const EASE_OUT_QUART = Easing.bezier(0.25, 1, 0.5, 1);
 const EASE_IN_QUART = Easing.bezier(0.5, 0, 0.75, 0);
 
-/* --- Avalanche bokeh particle data --- */
+/* --- Avalanche "+X%" text particles streaming across screen --- */
 interface BokehParticle {
   id: number; startX: number; startY: number; size: number;
   color: string; speed: number; yDrift: number; delay: number; blur: number;
-  opacity: number;
+  opacity: number; label: string;
 }
 
 function generateBokehParticles(count: number, seed: number): BokehParticle[] {
   const rng = seededRandom(seed);
-  const colors = [
-    GM.green,GM.greenDark,GM.green,GM.greenLight,GM.red,GM.redStatus,
-    GM.textInverse,GM.green,GM.greenDark,GM.greenLight,GM.green,GM.greenDark,
-  ];
-  return Array.from({length: count}, (_, i) => ({
-    id: i,
-    startX: 1300 + rng()*400, /* start just off-screen right, tighter spread */
-    startY: -40 + rng()*800, /* extend past vertical edges for density */
-    size: 8 + rng()*22, /* 8-30px bokeh spheres */
-    color: colors[Math.floor(rng()*colors.length)],
-    speed: 350 + rng()*600, /* px per second streaming left */
-    yDrift: (rng()-0.5)*140, /* vertical wander */
-    delay: rng()*18, /* stagger entry over ~0.6s for fast density */
-    blur: 2 + rng()*6, /* bokeh blur amount */
-    opacity: 0.25 + rng()*0.65,
-  }));
+  const colors = [GM.textInverse, GM.textInverse, GM.greenLight, GM.textInverse, GM.greenStatus];
+  return Array.from({length: count}, (_, i) => {
+    const val = (rng() * 30 + 0.1).toFixed(1);
+    return {
+      id: i,
+      startX: 1300 + rng()*600,
+      startY: -60 + rng()*840,
+      size: rng() < 0.5 ? 11 + rng()*4 : rng() < 0.8 ? 16 + rng()*4 : 22 + rng()*6,
+      color: colors[Math.floor(rng() * colors.length)],
+      speed: 300 + rng()*700,
+      yDrift: (rng()-0.5)*160,
+      delay: rng()*14,
+      blur: 0,
+      opacity: 0.3 + rng()*0.6,
+      label: `+${val}%`,
+    };
+  });
 }
 
 /* --- SEGMENT 1: Particle Avalanche (Bard→Gemini transition) --- */
-const AVALANCHE_COUNT = 220;
+const AVALANCHE_COUNT = 320;
 
 const SegParticleAvalancheInner: React.FC = () => {
   const frame = useCurrentFrame();
@@ -92,35 +93,31 @@ const SegParticleAvalancheInner: React.FC = () => {
   const globalOp = interpolate(frame, [0,4,durationInFrames-6,durationInFrames], [0,1,1,0], {extrapolateRight:"clamp"});
 
   return (
-    <AbsoluteFill style={{backgroundColor:"#1A1520",opacity:globalOp}}>
-      {/* Warm orange center glow — like a light source the particles stream through */}
-      <div style={{position:"absolute",left:"50%",top:"50%",width:600,height:500,transform:"translate(-50%,-50%)",background:"radial-gradient(ellipse, rgba(255,160,60,0.3) 0%, rgba(255,120,40,0.15) 25%, rgba(200,80,60,0.06) 50%, transparent 70%)",opacity:glowIntensity,filter:"blur(20px)"}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",width:350,height:300,transform:"translate(-50%,-50%)",background:"radial-gradient(circle, rgba(255,200,100,0.25) 0%, transparent 60%)",opacity:glowIntensity,filter:"blur(12px)"}} />
+    <AbsoluteFill style={{backgroundColor:GM.bgDarkGreen,opacity:globalOp}}>
+      {/* Green center glow */}
+      <div style={{position:"absolute",left:"50%",top:"50%",width:600,height:500,transform:"translate(-50%,-50%)",background:`radial-gradient(ellipse, ${GM.green}4D 0%, ${GM.green}26 25%, ${GM.greenDark}10 50%, transparent 70%)`,opacity:glowIntensity,filter:"blur(20px)"}} />
+      <div style={{position:"absolute",left:"50%",top:"50%",width:350,height:300,transform:"translate(-50%,-50%)",background:`radial-gradient(circle, ${GM.greenLight}40 0%, transparent 60%)`,opacity:glowIntensity,filter:"blur(12px)"}} />
 
-      {/* Bokeh particle field — streaming right to left like a blizzard */}
+      {/* "+X%" text particles streaming right to left */}
       {bokeh.map((p) => {
         const t = Math.max(0, frame - p.delay) / fps;
         if (t <= 0) return null;
         const px = p.startX - p.speed*t;
         const yNoise = noise2D("ay"+p.id, t*0.6, p.id*0.1)*40;
         const py = p.startY + Math.sin(t*1.2 + p.id)*p.yDrift*0.3 + yNoise;
-        /* Fade in quickly, sustain, no fade-out (they exit left) */
         const fadeIn = interpolate(t, [0,0.15], [0,1], {extrapolateRight:"clamp"});
-        /* Kill if off-screen left */
-        if (px < -60) return null;
-        const sizeOsc = p.size * (0.9 + 0.1*Math.sin(t*3+p.id));
-        return <div key={p.id} style={{
+        if (px < -80) return null;
+        return <span key={p.id} style={{
           position:"absolute",
-          left: px - sizeOsc/2,
-          top: py - sizeOsc/2,
-          width: sizeOsc,
-          height: sizeOsc,
-          borderRadius: "50%",
-          backgroundColor: p.color,
+          left: px,
+          top: py,
+          fontSize: p.size,
+          fontFamily: GM.fontMono,
+          fontWeight: 700,
+          color: p.color,
           opacity: p.opacity * fadeIn,
-          filter: `blur(${p.blur}px)`,
-          boxShadow: `0 0 ${p.size*0.8}px ${p.color}88`,
-        }} />;
+          whiteSpace: "nowrap",
+        }}>{p.label}</span>;
       })}
     </AbsoluteFill>
   );
@@ -145,10 +142,9 @@ function generatePctParticles(count: number, seed: number): PctParticle[] {
   return Array.from({length: count}, (_, i) => {
     const r1 = rng(); const r2 = rng(); const r3 = rng();
     const r4 = rng(); const r5 = rng(); const r6 = rng(); const r7 = rng();
-    const isPositive = r1 > 0.2;
-    const value = (r2 * 25).toFixed(1);
-    const label = isPositive ? `+${value}%` : `-${value}%`;
-    const color = isPositive ? GM.greenStatus : GM.redStatus;
+    const value = (r2 * 25 + 0.1).toFixed(1);
+    const label = `+${value}%`;
+    const color = GM.greenStatus;
     // Sizes: 70% tiny 8-10, 22% medium 12-14, 8% large 16-18
     let fontSize: number;
     if (r3 < 0.70) fontSize = 8 + r4 * 2;
@@ -206,10 +202,9 @@ function generateBurstPcts(count: number, seed: number): BurstPct[] {
     const r2 = rng();
     const r3 = rng();
     const r4 = rng();
-    const isPos = r1 > 0.2;
-    const val = (r2 * 25).toFixed(1);
-    const label = isPos ? `+${val}%` : `-${val}%`;
-    const color = isPos ? GM.greenStatus : GM.redStatus;
+    const val = (r2 * 25 + 0.1).toFixed(1);
+    const label = `+${val}%`;
+    const color = GM.greenStatus;
     const angle = (i / count) * Math.PI * 2 + (r3 - 0.5) * 0.6;
     const dist = 200 + r4 * 400;
     const fontSize = r3 < 0.6 ? 9 : r3 < 0.85 ? 12 : 16;
@@ -1097,7 +1092,8 @@ export const Scene03: React.FC = () => {
    * Ref 0:35 = local 630: built to maximize (END of S03)
    */
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
-    {start:0,dur:50,Comp:SegGMReveal},
+    {start:0,dur:40,Comp:SegParticleExplosion},
+    {start:35,dur:50,Comp:SegGMReveal},
     {start:45,dur:95,Comp:SegDesktopUI},
     {start:140,dur:55,Comp:SegItsEverything},
     {start:190,dur:65,Comp:SegAppsFloat},
