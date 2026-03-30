@@ -2990,59 +2990,111 @@ cmd_seed_orders() {
     echo -e "${GREEN}Seeding complete. Running post-deploy verification...${NC}"
 
     # ── Post-deploy verification ─────────────────────────────
+    # Acceptance criteria:
+    #   - 10 players on each active batch
+    #   - 50+ active Vision sources
+    #   - 50+ lending markets with > $10
+    #   - 50+ ITPs with > $50 bought
+    #   - ALL ITP NAVs within 20% of $1 ($0.80-$1.20)
+    #   - Settlements submitted on-chain
     echo -e "${BLUE}[7/7] Verifying system is operational...${NC}"
     local VERIFY_PASS=0
     local VERIFY_FAIL=0
 
-    # 1. ITP fills: pendingOrderCount should be 0 or very low
+    # 1. ITP fills: pendingOrderCount should be 0
     local PENDING=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "pendingOrderCount()(uint256)" 2>/dev/null | awk '{print $1}')
     if [ "$PENDING" -le 5 ] 2>/dev/null; then
-        echo -e "  ${GREEN}ITP fills: $PENDING pending (OK)${NC}"
+        echo -e "  ${GREEN}[1] ITP fills: $PENDING pending (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${RED}ITP fills: $PENDING still pending${NC}"
+        echo -e "  ${RED}[1] ITP fills: $PENDING still pending${NC}"
         VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 
-    # 2. Borrows: check SeedBorrows log for supplied > 0
+    # 2. ITP NAV prices: all within $0.80-$1.20
+    local ITP_TOTAL=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+    local NAV_BAD=0
+    local NAV_CHECKED=0
+    for _ni in $(seq 1 "${ITP_TOTAL:-0}"); do
+        local _nhex=$(printf "0x%064x" "$_ni")
+        local _nav=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getNAV(bytes32)(uint256)" "$_nhex" 2>/dev/null | awk '{print $1}')
+        [ -z "$_nav" ] && continue
+        NAV_CHECKED=$((NAV_CHECKED + 1))
+        # Check if NAV is between 0.8e18 and 1.2e18
+        if python3 -c "n=int('$_nav'); exit(0 if n < 800000000000000000 or n > 1200000000000000000 else 1)" 2>/dev/null; then
+            NAV_BAD=$((NAV_BAD + 1))
+            [ "$NAV_BAD" -le 3 ] && echo -e "  ${RED}    ITP $_ni NAV out of range: $_nav${NC}"
+        fi
+    done
+    if [ "$NAV_BAD" -eq 0 ] && [ "$NAV_CHECKED" -gt 0 ]; then
+        echo -e "  ${GREEN}[2] ITP NAVs: all $NAV_CHECKED within \$0.80-\$1.20 (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${RED}[2] ITP NAVs: $NAV_BAD/$NAV_CHECKED out of range${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
+    fi
+
+    # 3. ITP buys: 50+ ITPs with > $50 supply
+    local ITPS_WITH_SUPPLY=0
+    for _si in $(seq 1 "${ITP_TOTAL:-0}"); do
+        local _shex=$(printf "0x%064x" "$_si")
+        local _vault=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "itpVaults(bytes32)(address)" "$_shex" 2>/dev/null)
+        [ -z "$_vault" ] || [ "$_vault" = "0x0000000000000000000000000000000000000000" ] && continue
+        local _supply=$(cast call --rpc-url "$RPC_URL" "$_vault" "totalSupply()(uint256)" 2>/dev/null | awk '{print $1}')
+        # $50 = 50e18 in 18-decimal shares (NAV ~$1)
+        if python3 -c "exit(0 if int('${_supply:-0}') > 50000000000000000000 else 1)" 2>/dev/null; then
+            ITPS_WITH_SUPPLY=$((ITPS_WITH_SUPPLY + 1))
+        fi
+    done
+    if [ "$ITPS_WITH_SUPPLY" -ge 50 ]; then
+        echo -e "  ${GREEN}[3] ITP buys: $ITPS_WITH_SUPPLY ITPs with >\$50 supply (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${RED}[3] ITP buys: only $ITPS_WITH_SUPPLY ITPs with >\$50 (need 50+)${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
+    fi
+
+    # 4. Lending: 50+ markets with > $10
     local SUPPLIED=$(grep "Total markets supplied:" logs/seed-borrows.log 2>/dev/null | tail -1 | grep -o '[0-9]*' | tail -1)
-    if [ "${SUPPLIED:-0}" -gt 0 ]; then
-        echo -e "  ${GREEN}Lending: $SUPPLIED markets with borrows (OK)${NC}"
+    if [ "${SUPPLIED:-0}" -ge 50 ]; then
+        echo -e "  ${GREEN}[4] Lending: $SUPPLIED markets supplied (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${YELLOW}Lending: 0 markets supplied (fills may still be processing — re-run seed-orders later)${NC}"
+        echo -e "  ${RED}[4] Lending: ${SUPPLIED:-0} markets supplied (need 50+)${NC}"
         VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 
-    # 3. Vision batches: at least 20 active sources
+    # 5. Vision batches: 50+ active sources
     local ACTIVE_SOURCES=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(DISTINCT source_id) FROM vision_batch_lifecycle WHERE settled_at IS NULL;\"" 2>/dev/null | tr -d ' ')
-    if [ "${ACTIVE_SOURCES:-0}" -ge 20 ]; then
-        echo -e "  ${GREEN}Vision batches: $ACTIVE_SOURCES active sources (OK)${NC}"
+    if [ "${ACTIVE_SOURCES:-0}" -ge 50 ]; then
+        echo -e "  ${GREEN}[5] Vision batches: $ACTIVE_SOURCES active sources (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${YELLOW}Vision batches: $ACTIVE_SOURCES active sources (data-node still discovering — will grow to 50+)${NC}"
+        echo -e "  ${YELLOW}[5] Vision batches: ${ACTIVE_SOURCES:-0} active sources (data-node still discovering — need 50+)${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 
-    # 4. Vision bots: at least 5 unique players
-    local BOT_PLAYERS=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(DISTINCT player) FROM vision_positions;\"" 2>/dev/null | tr -d ' ')
-    if [ "${BOT_PLAYERS:-0}" -ge 5 ]; then
-        echo -e "  ${GREEN}Vision bots: $BOT_PLAYERS players joining batches (OK)${NC}"
+    # 6. Vision bots: 10 players on active batches
+    local BOT_PLAYERS=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(DISTINCT player) FROM vision_positions vp JOIN vision_batch_lifecycle vbl ON vbl.on_chain_batch_id = vp.batch_id WHERE vbl.settled_at IS NULL;\"" 2>/dev/null | tr -d ' ')
+    if [ "${BOT_PLAYERS:-0}" -ge 10 ]; then
+        echo -e "  ${GREEN}[6] Vision bots: $BOT_PLAYERS players on active batches (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${YELLOW}Vision bots: $BOT_PLAYERS players (swarm may still be starting)${NC}"
+        echo -e "  ${RED}[6] Vision bots: ${BOT_PLAYERS:-0} players (need 10)${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 
-    # 5. Settlements: check if proofs are being created (may be 0 if batches haven't expired yet)
+    # 7. Settlements: proofs submitted on-chain
     local PROOF_COUNT=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs;\"" 2>/dev/null | tr -d ' ')
     local SUBMITTED=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs WHERE submitted = true;\"" 2>/dev/null | tr -d ' ')
-    if [ "${PROOF_COUNT:-0}" -gt 0 ]; then
-        echo -e "  ${GREEN}Settlements: $SUBMITTED/$PROOF_COUNT submitted (OK)${NC}"
+    if [ "${SUBMITTED:-0}" -gt 0 ]; then
+        echo -e "  ${GREEN}[7] Settlements: $SUBMITTED/$PROOF_COUNT submitted on-chain (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${YELLOW}Settlements: 0 proofs yet (batches need 1-10 min to expire — check again shortly)${NC}"
+        echo -e "  ${YELLOW}[7] Settlements: 0 submitted (batches need 1-10 min to expire)${NC}"
     fi
 
-    # 6. All services running
+    # 8. All services running
     local SVC_OK=true
     for svc in oracle-1 oracle-2 oracle-3; do
         if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "$svc" > /dev/null 2>&1; then
@@ -3050,17 +3102,23 @@ cmd_seed_orders() {
         fi
     done
     if [ "$SVC_OK" = true ]; then
-        echo -e "  ${GREEN}Services: all 3 oracles + data-node + swarm running (OK)${NC}"
+        echo -e "  ${GREEN}[8] Services: all 3 oracles running (OK)${NC}"
         VERIFY_PASS=$((VERIFY_PASS + 1))
     else
-        echo -e "  ${RED}Services: some oracles not running${NC}"
+        echo -e "  ${RED}[8] Services: some oracles not running${NC}"
         VERIFY_FAIL=$((VERIFY_FAIL + 1))
     fi
 
     echo -e ""
-    echo -e "  Verification: ${GREEN}$VERIFY_PASS passed${NC}, ${YELLOW}$VERIFY_FAIL warnings${NC}"
-    if [ "$VERIFY_FAIL" -gt 2 ]; then
-        echo -e "  ${YELLOW}Some checks failed — system may need manual attention${NC}"
+    echo -e "  ════════════════════════════════════════"
+    echo -e "  Verification: ${GREEN}$VERIFY_PASS passed${NC}, ${RED}$VERIFY_FAIL failed${NC} / 8 checks"
+    echo -e "  ════════════════════════════════════════"
+    if [ "$VERIFY_FAIL" -eq 0 ]; then
+        echo -e "  ${GREEN}ALL CHECKS PASSED — system fully operational${NC}"
+    elif [ "$VERIFY_FAIL" -le 2 ]; then
+        echo -e "  ${YELLOW}Some checks pending — Vision batches/settlements need time. Re-check in 10 min.${NC}"
+    else
+        echo -e "  ${RED}Multiple failures — manual investigation needed${NC}"
     fi
 }
 
