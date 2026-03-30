@@ -109,9 +109,9 @@ interface AnimState {
 
 function createDefaultState(): AnimState {
   return {
-    /* Phone starts centered and still — matching Scene03's resting phone.
-       Hard cut: screen content changes, phone frame stays put. */
-    phoneX: 0, phoneY: 0, phoneRotation: 0, phoneOpacity: 1, phoneScale: 0.82,
+    /* Phone enters from bottom-right with dramatic arc — reference shows
+       phone off-screen at 35s, corner visible at 36s, settled by 37s. */
+    phoneX: 400, phoneY: 500, phoneRotation: 8, phoneOpacity: 0, phoneScale: 1.3,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
     geminiOpacity: 0, geminiY: 300, geminiScale: 1.0, geminiPanX: 0, geminiPanY: 0,
@@ -133,18 +133,28 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     const sec = (f: number) => f / fps;
     const t = gsap.timeline({ paused: true });
 
-    /* ═══ Phase 1: Phone already centered (hard cut from Scene03).
-       No entrance arc — just gentle scale breathing. ═══ */
+    /* ═══ Phase 1: Dramatic entrance arc from bottom-right.
+       Reference: phone off-screen at 35s, corner visible at 36s (~f40),
+       fully settled by 37s (~f70). ═══ */
 
-    /* Phone scale — breathing from 0.82 up, then zoom during photo expand */
-    t.to(s, { phoneScale: 0.88, duration: sec(40), ease: "sine.inOut" }, 0);
-    t.to(s, { phoneScale: 1.02, duration: sec(30), ease: "sine.inOut" }, sec(40));
-    /* Camera push during photo expand — zoom in */
-    t.to(s, { phoneScale: 1.25, duration: sec(30), ease: "power2.out" }, sec(PHASE.PHOTO_EXPAND.start));
-    /* Pull back for AI response */
-    t.to(s, { phoneScale: 0.98, duration: sec(30), ease: "power2.inOut" }, sec(PHASE.AI_RESPONSE.start));
-    /* Emoji burst: slight shrink from energy release */
-    t.to(s, { phoneScale: 0.90, duration: sec(20), ease: "power1.out" }, sec(PHASE.EMOJI_BURST.start));
+    /* Fade in during entrance */
+    t.to(s, { phoneOpacity: 1, duration: sec(8), ease: "power2.out" }, 0);
+
+    /* Entrance arc: bottom-right → center via bezier path */
+    const entranceTween = gsap.to({ t: 0 }, {
+      t: 1, duration: sec(35), ease: "power3.out", paused: true,
+      onUpdate() {
+        const p = this.progress();
+        s.phoneX = quadBezier(p, 400, 180, 0);
+        s.phoneY = quadBezier(p, 500, 100, 0);
+      },
+    });
+    t.add(entranceTween, 0);
+    t.to(s, { phoneRotation: 0, duration: sec(35), ease: "power3.out" }, 0);
+
+    /* Phone scale — now driven by Remotion interpolate keyframes (motionScale).
+       GSAP phoneScale set to 1.0 so it's inert in the wrapper transform. */
+    t.to(s, { phoneScale: 1.0, duration: 0 }, 0);
 
     /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
     const exitStart = sec(PHASE.TRANSITION_TEXT.start);
@@ -152,8 +162,8 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
       t: 1, duration: sec(16), ease: "power3.in", paused: true,
       onUpdate() {
         const p = this.progress();
-        /* Start from drift position and fly far left */
-        s.phoneX = quadBezier(p, 20, -280, -850);
+        /* Start from center and fly far left */
+        s.phoneX = quadBezier(p, 0, -280, -850);
         s.phoneY = quadBezier(p, 0, -50, 20);
       },
     });
@@ -842,29 +852,81 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Phone tilt — reference-matched frame-by-frame angles:
-   *   0-15f  (dog photo):     rotateY -3deg  — nearly flat, head-on
-   *   15-80f (chat):          rotateY -5deg  — slight natural tilt
-   *   80-110f (photo expand): rotateY -8deg  — tilts away to show depth
-   *   110-170f (AI response): rotateY -2deg  — flattens so text is readable
-   *   170-198f (emoji burst): rotateY -2deg  — holds flat
-   *   198+ (exit):            rotateY -45deg — dramatic edge-on exit
+  /* ── Precise motion track from reference video (0.5s frame extraction) ──
+   *
+   * The phone enters from bottom-right at f0, settles by f35.
+   * During typing (f40-f110), it progressively zooms into the prompt area,
+   * shifting left and up. At AI response (f110+), it pulls back to show
+   * the full chat. By emoji burst (f170), it's nearly flat and centered.
+   *
+   * Reference timestamps mapped to local frames (30fps):
+   *   35.0s = f0   (scene start, phone off-screen)
+   *   36.0s = f30  (entering, top-right corner visible)
+   *   36.5s = f45  ("Good morning" visible, settling)
+   *   37.0s = f60  (full chat + cards + keyboard visible)
+   *   38.0s = f90  (camera view — dog photo)
+   *   38.5s = f105 (camera dimming)
+   *   39.0s = f120 (photo expanded, "Attach" button)
+   *   39.5s = f135 (back to chat, keyboard + input visible)
+   *   40.0s = f150 (typing "Creat|" with thumbnail)
+   *   40.5s = f165 ("Create a cute s|")
+   *   41.0s = f180 ("Create a cute social capt|" — zooming in)
+   *   41.5s = f195 ("caption for B|" — tight on prompt)
+   *   42.0s = f210 (full prompt, deep zoom)
+   *   42.5s = f225 (keyboard receding, zoomed)
+   *   43.0s = f240 (transitioning to AI response)
+   *   43.5s = f255 ("Baxter is the hilltop" appearing)
+   *   44.0s = f270 (full response + action buttons)
+   *   44.5s = f285 (response complete with hashtags)
+   *   45.0s = f300 (full chat view, zoomed out, emojis starting)
+   *   45.5s = f315 (phone + floating emojis)
+   *   46.0s = f330 (full phone with emojis, nearly flat)
+   *   46.5s = f345 (phone exiting, "But that's not all...")
    */
-  const phoneTilt = interpolate(frame,
-    [0, 15, 40, PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end, PHASE.AI_RESPONSE.start + 15, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [-3, -5, -5, -8, -5, -2, -2, -2, -45],
+
+  /* Scale: entrance oversized → settles → progressive zoom during typing
+     → pulls back for response → shrinks for emoji burst.
+     PHASE refs: PHOTO_EXPAND 80-110, AI_RESPONSE 110-170,
+     EMOJI_BURST 170-205, TRANSITION_TEXT 198-258. */
+  const motionScale = interpolate(frame,
+    [0,    15,   35,   60,   80,   100,  110,  125,  140,
+     155,  165,  175,  185,  195,  205,  339],
+    [1.30, 1.15, 1.05, 0.95, 0.92, 1.00, 0.98, 1.05, 1.15,
+     1.25, 1.35, 1.25, 1.00, 0.88, 0.82, 0.82],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-  /* Phone X rotation — reference-matched:
-   *   0-15f:   2deg forward lean (dog photo, flat)
-   *   15-80f:  2deg (gentle, chat visible)
-   *   80-110f: 5deg (tilts forward during expand)
-   *   110+:    1deg (nearly flat for readability)
-   *   exit:    8deg (dramatic forward lean on exit)
-   */
+
+  /* Position drift during typing zoom — GSAP handles entrance (f0-35)
+     and exit (f198+). This adds the mid-section drift where the camera
+     pushes into the prompt area (left + up shift), then returns to
+     center for the emoji burst / exit. */
+  const motionDriftX = interpolate(frame,
+    [35,  60,  80,  100,  110,  125,  140,  155,  165,  175,  190,  198],
+    [0,   0,   0,   -20,  -30,  -50,  -70,  -90,  -80,  -50,  -10,  0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const motionDriftY = interpolate(frame,
+    [35,  60,  80,  100,  110,  125,  140,  155,  165,  175,  190,  198],
+    [0,   0,   -20, -40,  30,   20,   0,    -20,  -40,  -30,  -5,   0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  /* RotateY — heavy tilt on entrance, eases flat as content becomes readable.
+     Frames must be strictly monotonically increasing for Remotion interpolate. */
+  const phoneTilt = interpolate(frame,
+    [0,   15,  35,  60,  80,  95,  110,
+     125, 140, 155, 165, 175, 185, 195, 205, 214],
+    [-20, -15, -12, -10, -8,  -10, -12,
+     -10, -12, -12, -10, -5,  -3,  -2,  -2,  -45],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+
+  /* RotateX — forward lean on entrance, subtle during content */
   const phoneXTilt = interpolate(frame,
-    [0, 15, PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end, PHASE.AI_RESPONSE.start + 15, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [2, 2, 5, 3, 1, 1, 8],
+    [0,  15,  35,  60,  80,  95,  110,
+     125, 155, 175, 195, 205, 214],
+    [5,  4,   4,   3,   2,   4,   5,
+     3,   4,   2,   1,   1,   8],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -978,7 +1040,7 @@ export const Scene04: React.FC = () => {
             <div style={{
               position: "absolute", inset: 0,
               opacity: s.phoneOpacity,
-              transform: `translate(${s.phoneX}px, ${s.phoneY}px) rotate(${s.phoneRotation}deg) scale(${s.phoneScale}) ${phoneTilt3D.transform}`,
+              transform: `translate(${s.phoneX + motionDriftX}px, ${s.phoneY + motionDriftY}px) rotate(${s.phoneRotation}deg) scale(${motionScale}) ${phoneTilt3D.transform}`,
             }}>
               <Phone3D
                 rotateY={tiltYRad}
