@@ -273,12 +273,25 @@ const SegDesktopUI: React.FC = () => {
   const howText = "How can I help you today?";
   const helloChars = Math.floor(interpolate(frame, [fps*0.3,fps*0.8], [0,helloText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
   const howChars = Math.floor(interpolate(frame, [fps*0.9,fps*1.8], [0,howText.length], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}));
-  /* 3D entrance: perspective + rotateY(-25deg) + rotateX(10deg) + scale(2.5) → identity over 1.5s */
-  const enterT = interpolate(frame, [0, fps*1.5], [0, 1], {extrapolateRight:"clamp", easing: EASE_OUT_EXPO});
-  const bRotY = interpolate(enterT, [0,1], [-25, 0]);
-  const bRotX = interpolate(enterT, [0,1], [10, 0]);
-  const bScale = interpolate(enterT, [0,1], [2.5, 1]);
-  const bOp = interpolate(enterT, [0,0.08], [0,1], {extrapolateRight:"clamp"});
+  /* 3D entrance: multi-keyframe interpolation matched to reference frames (0:17–0:20).
+   *   Starts zoomed ~2.3x at ~22deg rotateY, decelerates to flat 1x.
+   *   Reference shows gradual reveal: toolbar → greeting → cards → full view */
+  const bRotY = interpolate(frame,
+    [0, 10, 20, 35, 50, 65, 80, 95],
+    [-22, -18, -14, -10, -7, -4, -2, 0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const bRotX = interpolate(frame,
+    [0, 10, 20, 35, 50, 65, 80, 95],
+    [8, 6.5, 5, 4, 3, 2, 1, 0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const bScale = interpolate(frame,
+    [0, 10, 20, 35, 50, 65, 80, 95],
+    [2.3, 2.0, 1.7, 1.4, 1.2, 1.1, 1.03, 1.0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const bOp = interpolate(frame, [0, 3], [0, 1], {extrapolateRight:"clamp"});
   const cSpr = [0,1,2,3].map(i => spring({frame, fps, delay: Math.floor(fps*1.5)+i*3, config:{damping:12,stiffness:100,mass:0.8}}));
   const inputOp = interpolate(frame, [fps*2.0,fps*2.5], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const discOp = interpolate(frame, [fps*1.5,fps*2.0], [0,0.6], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
@@ -287,7 +300,9 @@ const SegDesktopUI: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:`linear-gradient(135deg, rgba(196,181,253,0.15) 0%, rgba(232,69,139,0.08) 50%, rgba(66,133,244,0.1) 100%)`}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,transformStyle:"preserve-3d",transform:`translate(-50%,-50%) perspective(800px) rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,opacity:bOp,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
+      {/* Perspective on PARENT div, preserve-3d on animated child */}
+      <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,perspective:800,transform:"translate(-50%,-50%)",opacity:bOp}}>
+      <div style={{width:"100%",height:"100%",transformStyle:"preserve-3d",transform:`rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,borderRadius:18,background:`linear-gradient(135deg, ${LAVENDER}88, ${PINK}44, ${BLUE}66, ${PURPLE}44)`,padding:2}}>
         <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",position:"relative"}}>
           <div style={{height:48,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:16}}>
             <div style={{fontSize:18,color:"#666"}}>&#9776;</div>
@@ -319,6 +334,7 @@ const SegDesktopUI: React.FC = () => {
           <div style={{position:"absolute",bottom:20,left:40,right:40,height:44,backgroundColor:"#F2F2F6",borderRadius:22,display:"flex",alignItems:"center",padding:"0 20px",fontSize:13,color:"#AAA",fontFamily:"'Google Sans',sans-serif",opacity:inputOp}}>Enter a prompt here</div>
         </div>
       </div>
+      </div>{/* close perspective parent */}
       <div style={{position:"absolute",bottom:24,left:40,fontSize:11,fontFamily:"'Google Sans',sans-serif",color:"#B0B0B8",opacity:discOp}}>Sequences shortened and simulated.</div>
     </AbsoluteFill>
   );
@@ -471,13 +487,27 @@ const SegGeminiResponse: React.FC = () => {
   const chSpr = spring({frame, fps, delay: Math.floor(fps*0.3), config:{damping:12,stiffness:120,mass:0.6}});
   const ecSpr = [0,1].map(i => spring({frame, fps, delay: Math.floor(durationInFrames*0.7)+i*3, config:{damping:14,stiffness:100,mass:0.7}}));
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-  /* FIX 1: 3D tilt + zoom — rotateY -18deg, top-left offset, continuous float */
-  const tiltY = interpolate(cs, [0,1], [0,-18]);
-  const zoomScale = interpolate(cs, [0,1], [0.92,1.4]);
+  /* 3D tilt + zoom — reference shows entering tilted ~12deg rotateY, zoomed ~1.4x,
+     then easing to nearly flat as response text reveals. Multi-keyframe match. */
+  const tiltY = interpolate(frame,
+    [0, 5, 12, 25, 35, 40],
+    [-12, -14, -10, -5, -2, 0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const tiltX = interpolate(frame,
+    [0, 5, 12, 25, 35, 40],
+    [4, 5, 3, 1.5, 0.5, 0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const zoomScale = interpolate(frame,
+    [0, 5, 15, 30, 40],
+    [1.35, 1.4, 1.25, 1.08, 1.0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
   const float3d = useFloat3D(frame, fps, TILT_PRESETS.desktopTilt);
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(-15%) translateY(-10%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY + float3d.rotateY}deg) rotateX(${float3d.rotateX}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(-15%) translateY(-10%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY + float3d.rotateY}deg) rotateX(${tiltX + float3d.rotateX}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
         <div style={{width:4,backgroundColor:PURPLE,flexShrink:0}} />
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{height:44,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:12}}>
@@ -631,43 +661,44 @@ const SegStartingWith: React.FC = () => {
   );
 };
 
-/* --- SEGMENT 10: Phone Mockup (3D tilted, ref frames 14-15) ---
- * Reference timeline (extracted frame-by-frame):
- *   0-45f  (entrance):  rotateY -5deg, rotateX 2deg  — nearly head-on
- *   45-55f (hold):      rotateY -5deg, rotateX 2deg  — gentle float
- *   55-72f (tilt away): rotateY ramps to -25deg, rotateX to 10deg  — dramatic 3/4
- *   72-84f (exit):      rotateY -28deg, rotateX 12deg — fully turned
+/* --- SEGMENT 10: Phone Mockup "Hi I'm Gemini" ---
+ * Reference (0:30–0:32.5): phone is ALWAYS massive, mostly head-on.
+ *   0-15f:  entering, scale ~2.5x, slight -5deg tilt
+ *   15-45f: settle, dezooms to ~2.0x, nearly flat
+ *   45-72f: zoom RAMPS back up to 2.8x, still mostly head-on
+ *   72-84f: 3.0x scale, tilt starts increasing to -15deg (dramatic tilt continues in next segment)
  */
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
-  /* Phone enters from below-right */
-  const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 150, 120, 30, 0);
-  const pY = cubicBez(eP, 550, 380, 60, 0);
-  const pR = interpolate(eP, [0,1], [6,0]);
-  const pS = interpolate(eP, [0,1], [1.1,1.6]);
-  const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
-  const sF = frame - fps*1.5;
-  const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
-  const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
-  const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
-  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
-  /* Frame-interpolated tilt matching reference (degrees → radians) */
+  /* Frame-by-frame motion from reference (0:30–0:32.5):
+     Phone is ALWAYS massive. Starts ~2.5x, briefly eases to ~2.0x, then ramps to 3.0x.
+     Tilt stays modest (head-on) until the final frames where it starts to turn.
+     The dramatic 25deg tilt happens AFTER this segment (in SegSupercharge overlap). */
+  const phoneScale = interpolate(frame,
+    [0, 15, 30, 45, 60, 72, 84],
+    [2.5, 2.3, 2.0, 2.0, 2.4, 2.8, 3.0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
   const tiltYDeg = interpolate(frame,
-    [0, 45, 55, 72, 84],
-    [-5, -5, -12, -25, -28],
+    [0, 30, 50, 65, 78, 84],
+    [-5, -3, -3, -5, -10, -15],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltXDeg = interpolate(frame,
-    [0, 45, 55, 72, 84],
-    [2, 2, 5, 10, 12],
+    [0, 30, 50, 65, 78, 84],
+    [2, 1, 1, 2, 4, 6],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYRad = (tiltYDeg * Math.PI) / 180;
   const tiltXRad = (tiltXDeg * Math.PI) / 180;
+  const pOp = interpolate(frame, [0, 3], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"});
+
+  const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
+  const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
+  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   const phoneScreen = (
     <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Google Sans',sans-serif"}}>
@@ -695,7 +726,7 @@ const SegPhoneMockup: React.FC = () => {
         scale={1}
         screenContent={phoneScreen}
         opacity={pOp}
-        style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
+        style={{transform:`scale(${phoneScale}) ${tilt.transform}`}}
       />
       <div style={{position:"absolute",bottom:20,left:30,fontSize:11,fontFamily:"'Google Sans',sans-serif",color:"#B0B0B8",opacity:interpolate(frame,[fps,fps*1.5],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>The Gemini mobile app is available for select devices, languages and locations.</div>
     </AbsoluteFill>
@@ -837,42 +868,48 @@ const PhoneHomeScreen: React.FC<{frame: number; fps: number}> = ({frame, fps}) =
   );
 };
 
-/* --- SEGMENT 12: Phone Good Morning → Flat horizon with "But that's not all..."
+/* --- SEGMENT 12: Phone Good Morning — enters from bottom-right
  *   Reference timeline (extracted frame-by-frame):
- *     0-20f  (entrance): rotateY -8deg, rotateX 3deg — entering from top-right
- *     20-50f (settle):   rotateY eases to -3deg, rotateX to 1deg — nearly flat
- *     50-90f (hold):     rotateY -3deg, rotateX 1deg — head-on, gentle float
- *     90-110f (exit):    rotateY -4deg, rotateX 1deg — subtle drift
+ *     Frame 0:        scale=2.0, rotateY=-25deg, rotateX=10deg, translateX=300, translateY=200 — bottom-right
+ *     Frame 15 (0.5s): scale=1.5, rotateY=-18deg, rotateX=7deg  — sliding in
+ *     Frame 30 (1s):   scale=1.3, rotateY=-15deg, rotateX=5deg  — centered, full screen visible
+ *     Frame 60+:       scale=1.1, rotateY=-8deg,  rotateX=3deg  — gentle float drift
  */
 const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
   const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
 
-  /* ── Same entrance as SegPhoneMockup: cubic-bezier from below-right ── */
-  const eP = interpolate(frame, [0,fps*1.5], [0,1], {extrapolateRight:"clamp",easing:EASE_OUT_EXPO});
-  const pX = cubicBez(eP, 150, 120, 30, 0);
-  const pY = cubicBez(eP, 550, 380, 60, 0);
-  const pR = interpolate(eP, [0,1], [6,0]);
-  const pS = interpolate(eP, [0,1], [1.1,1.6]);
-  const pOp = interpolate(eP, [0,0.05], [0,1], {extrapolateRight:"clamp"});
-  const sF = frame - fps*1.5;
-  const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
-  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
-
-  /* Frame-interpolated tilt matching reference (degrees → radians) */
+  /* Frame-interpolated 3D entrance from bottom-right */
+  const phoneScale = interpolate(frame,
+    [0, 15, 30, 60],
+    [2.0, 1.5, 1.3, 1.1],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
   const tiltYDeg = interpolate(frame,
-    [0, 20, 50, 90, 110],
-    [-8, -5, -3, -3, -4],
+    [0, 15, 30, 60],
+    [-25, -18, -15, -8],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltXDeg = interpolate(frame,
-    [0, 20, 50, 90, 110],
-    [3, 2, 1, 1, 1],
+    [0, 15, 30, 60],
+    [10, 7, 5, 3],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const phoneTx = interpolate(frame,
+    [0, 15, 30, 60],
+    [300, 150, 40, 0],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const phoneTy = interpolate(frame,
+    [0, 15, 30, 60],
+    [200, 100, 30, 0],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYRad = (tiltYDeg * Math.PI) / 180;
   const tiltXRad = (tiltXDeg * Math.PI) / 180;
+  const pOp = interpolate(frame, [0, 3], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"});
+  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   /* Screen: Good Morning Gemini content */
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));
@@ -912,7 +949,7 @@ const SegPhoneGoodMorning: React.FC = () => {
         scale={1}
         screenContent={phoneScreen}
         opacity={pOp}
-        style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
+        style={{transform:`translate(${phoneTx}px,${phoneTy}px) scale(${phoneScale}) ${tilt.transform}`}}
       />
     </AbsoluteFill>
   );
@@ -942,6 +979,9 @@ export const Scene03: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+/* Suppress noUnusedLocals for helpers preserved for future segments */
+void cubicBez; void EASE_OUT_EXPO; void PhoneHomeScreen;
 
 export const scene03Meta = {
   id: "OFScene03",

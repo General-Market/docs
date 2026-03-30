@@ -1308,14 +1308,17 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ B+C+D: Gemini Interface (0-150) ═══
-    // Opens immediately with "Gemini Advanced" title zoomed in.
-    // No G logo preamble — title IS the first thing you see.
+    // Precise motion tracking: dramatic zoomed/tilted entrance.
+    // Frame 0: scale=3.0, rotateY=-20°, rotateX=8° — only header visible, rainbow glow
+    // Frame 30: scale=2.0, rotateY=-12°, rotateX=5° — "Hello, Lisa." appearing
+    // Frame 60: scale=1.3, rotateY=-6°, rotateX=3° — suggestion cards visible
+    // Frame 90: scale=1.0, rotateY=-2°, rotateX=1° — settled
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
-        rotateX: 0,
+        rotateX: 8,
         rotateY: -20,
-        scale: 4.5,
+        scale: 3.0,
         transformOrigin: "15% 7%",
         x: 0,
         y: 0,
@@ -1326,32 +1329,40 @@ export const Scene05: React.FC = () => {
         duration: f(8),
         ease: "power2.out",
       }, f(0));
-      // Phase 1: hold zoomed title view, slow drift (0-35)
+      // Phase 1: frame 0→30 — scale 3.0→2.0, rotateY -20→-12, rotateX 8→5
       t.to(interfaceWrapRef.current, {
-        rotateY: -14,
-        scale: 2.6,
-        x: 0,
-        y: 0,
-        duration: f(35),
-        ease: "power1.out",
+        rotateX: 5,
+        rotateY: -12,
+        scale: 2.0,
+        duration: f(30),
+        ease: "power2.out",
       }, f(0));
-      // Phase 2: pull back to reveal full interface (35-85)
+      // Phase 2: frame 30→60 — scale 2.0→1.3, rotateY -12→-6, rotateX 5→3
+      t.to(interfaceWrapRef.current, {
+        rotateX: 3,
+        rotateY: -6,
+        scale: 1.3,
+        transformOrigin: "35% 30%",
+        duration: f(30),
+        ease: "power2.inOut",
+      }, f(30));
+      // Phase 3: frame 60→90 — scale 1.3→1.0, rotateY -6→-2, rotateX 3→1 — settled
+      t.to(interfaceWrapRef.current, {
+        rotateX: 1,
+        rotateY: -2,
+        scale: 1.0,
+        transformOrigin: "50% 50%",
+        duration: f(30),
+        ease: "power1.out",
+      }, f(60));
+      // Phase 4: final rest (90-100) — settle to flat
       t.to(interfaceWrapRef.current, {
         rotateX: 0,
         rotateY: 0,
-        scale: 1.0,
-        transformOrigin: "50% 50%",
-        x: 0,
-        y: 0,
-        duration: f(50),
-        ease: "power2.inOut",
-      }, f(35));
-      // Phase 3: final settle (85-100)
-      t.to(interfaceWrapRef.current, {
         scale: 0.95,
-        duration: f(15),
+        duration: f(10),
         ease: "power1.out",
-      }, f(85));
+      }, f(90));
       // Fade out
       t.to(interfaceWrapRef.current, {
         opacity: 0,
@@ -1498,31 +1509,31 @@ export const Scene05: React.FC = () => {
     animateKineticWords(kineticJRefs, 400, 25, kineticJ.text.split(" "));
 
     // ═══ G: Card zoom 0 — "Walk me through solving a problem" (260-310) ═══
-    // 3D rotating card: enters from right, rotates continuously on Y-axis
+    // Dark mode card zoom: scale=1.8-2.0, rotateY=-10 entrance, ~2s hold
     if (cardZoomGRef.current) {
-      t.set(cardZoomGRef.current, { opacity: 0, scale: 1.6, x: 200 }, 0);
-      // Sweep in
+      t.set(cardZoomGRef.current, { opacity: 0, scale: 0.6, x: 200, rotateY: 15 }, 0);
+      // Zoom in: scale to 1.9 with rotateY=-10 tilt (cinematic detail zoom)
       t.to(cardZoomGRef.current, {
         opacity: 1,
-        x: -30,
-        duration: f(16),
+        scale: 1.9,
+        x: 0,
+        rotateY: -10,
+        duration: f(18),
         ease: "power2.out",
       }, f(260));
-      // Gentle 3D Y-axis rock (NOT 360° spin — slow, dignified)
+      // Slow drift at scale — subtle rotation rock during 2s hold
       t.to(cardZoomGRef.current, {
-        rotateY: 20,
-        duration: f(24),
+        scale: 2.0,
+        rotateY: 8,
+        duration: f(30),
         ease: "sine.inOut",
-      }, f(260));
-      t.to(cardZoomGRef.current, {
-        rotateY: -20,
-        duration: f(24),
-        ease: "sine.inOut",
-      }, f(284));
+      }, f(278));
       // Exit
       t.to(cardZoomGRef.current, {
         opacity: 0,
+        scale: 1.6,
         x: -80,
+        rotateY: -5,
         duration: f(10),
         ease: "power2.in",
       }, f(300));
@@ -1545,31 +1556,31 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ I: Card zoom 1 — "Help me write HTML" (350-400) ═══
-    // 3D rotating card with code content
+    // Dark mode card zoom: scale=1.8-2.0, rotateY=10 entrance (mirrored from G)
     if (cardZoomIRef.current) {
-      t.set(cardZoomIRef.current, { opacity: 0, scale: 1.6, x: -180 }, 0);
-      // Sweep in from left
+      t.set(cardZoomIRef.current, { opacity: 0, scale: 0.6, x: -180, rotateY: -15 }, 0);
+      // Zoom in: scale to 1.8 with rotateY=10 tilt
       t.to(cardZoomIRef.current, {
         opacity: 1,
-        x: 40,
-        duration: f(16),
+        scale: 1.8,
+        x: 0,
+        rotateY: 10,
+        duration: f(18),
         ease: "power2.out",
       }, f(350));
-      // Gentle 3D Y-axis rock (NOT 360° spin)
+      // Slow drift at scale — subtle rotation rock during 2s hold
       t.to(cardZoomIRef.current, {
-        rotateY: -20,
-        duration: f(24),
+        scale: 2.0,
+        rotateY: -8,
+        duration: f(30),
         ease: "sine.inOut",
-      }, f(350));
-      t.to(cardZoomIRef.current, {
-        rotateY: 20,
-        duration: f(24),
-        ease: "sine.inOut",
-      }, f(374));
+      }, f(368));
       // Exit
       t.to(cardZoomIRef.current, {
         opacity: 0,
+        scale: 1.6,
         x: 120,
+        rotateY: 5,
         duration: f(10),
         ease: "power2.in",
       }, f(395));
@@ -1748,24 +1759,71 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ N: Experience Gemini + devices (540-610) ═══
-    // IN = CUT (instant). All elements snap visible at frame 540.
+    // Device Duo: phone (left, rotateY=30°) and laptop (right, rotateY=-30°)
+    // Both slide in from offscreen-right with momentum, overshoot, settle by frame 585 (1.5s)
     if (expTitleRef.current) {
-      t.set(expTitleRef.current, { opacity: 0, y: 0 }, 0);
-      t.set(expTitleRef.current, { opacity: 1 }, f(540));
+      t.set(expTitleRef.current, { opacity: 0, y: 20 }, 0);
+      t.to(expTitleRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: f(12),
+        ease: "power2.out",
+      }, f(540));
     }
     if (expUrlRef.current) {
-      t.set(expUrlRef.current, { opacity: 0 }, 0);
-      t.set(expUrlRef.current, { opacity: 1 }, f(540));
+      t.set(expUrlRef.current, { opacity: 0, y: 10 }, 0);
+      t.to(expUrlRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: f(10),
+        ease: "power2.out",
+      }, f(545));
     }
-    // Phone — CUT in at frame 540 (no slide, no overshoot)
+    // Phone — slides in from right, overshoots left, settles at left-third position
     if (expPhoneRef.current) {
-      t.set(expPhoneRef.current, { opacity: 0, x: 0, y: 0, rotation: 0 }, 0);
-      t.set(expPhoneRef.current, { opacity: 1 }, f(540));
+      t.set(expPhoneRef.current, { opacity: 0, x: 600, y: 20 }, 0);
+      // Fade in as it enters
+      t.to(expPhoneRef.current, {
+        opacity: 1,
+        duration: f(8),
+        ease: "power1.out",
+      }, f(540));
+      // Slide in with overshoot — arrives frame 540+45=585
+      t.to(expPhoneRef.current, {
+        x: -15,
+        y: 0,
+        duration: f(35),
+        ease: "power3.out",
+      }, f(540));
+      // Settle from overshoot
+      t.to(expPhoneRef.current, {
+        x: 0,
+        duration: f(10),
+        ease: "elastic.out(1, 0.6)",
+      }, f(575));
     }
-    // Desktop — CUT in at frame 540
+    // Desktop — slides in from right (slightly delayed), overshoots, settles
     if (expDesktopRef.current) {
-      t.set(expDesktopRef.current, { opacity: 0, x: 0, rotation: 0 }, 0);
-      t.set(expDesktopRef.current, { opacity: 1 }, f(540));
+      t.set(expDesktopRef.current, { opacity: 0, x: 700, y: 15 }, 0);
+      // Fade in
+      t.to(expDesktopRef.current, {
+        opacity: 1,
+        duration: f(8),
+        ease: "power1.out",
+      }, f(543));
+      // Slide in with overshoot — staggered 3 frames after phone
+      t.to(expDesktopRef.current, {
+        x: 12,
+        y: 0,
+        duration: f(35),
+        ease: "power3.out",
+      }, f(543));
+      // Settle from overshoot
+      t.to(expDesktopRef.current, {
+        x: 0,
+        duration: f(10),
+        ease: "elastic.out(1, 0.6)",
+      }, f(578));
     }
     // Devices container — hold at full scale
     if (expDevicesRef.current) {
@@ -2016,6 +2074,7 @@ export const Scene05: React.FC = () => {
           style={{
             opacity: 0,
             perspective: 1200,
+            transformStyle: "preserve-3d",
           }}
         >
           {/* Rainbow border glow — visible during zoomed title phase */}
@@ -2609,16 +2668,20 @@ export const Scene05: React.FC = () => {
                 marginTop: 0,
               }}
             >
-              {/* Phone LEFT — backs face each other, screen faces outward LEFT */}
+              {/* Phone LEFT — rotateY=30° toward viewer, continuous noise float */}
               <div ref={expPhoneRef} style={{ opacity: 0, perspective: 800 }}>
-                <PhoneMockup style={{ transform: "scale(1.15) rotateY(-30deg)" }} />
+                <PhoneMockup style={{
+                  transform: `scale(1.15) rotateY(30deg) rotateX(${frame >= 540 ? organicOffset(frame, "duoPhRx", 0.012, 1.5) : 0}deg) translateY(${frame >= 540 ? organicOffset(frame, "duoPhTy", 0.015, 2) : 0}px)`,
+                  transformStyle: "preserve-3d" as const,
+                }} />
               </div>
-              {/* Desktop RIGHT — backs face each other, screen faces outward RIGHT */}
+              {/* Desktop RIGHT — rotateY=-30° toward viewer, continuous noise float */}
               <div ref={expDesktopRef} style={{ opacity: 0, perspective: 800 }}>
                 <div
                   style={{
-                    transform: "scale(0.8) rotateY(30deg)",
+                    transform: `scale(0.8) rotateY(-30deg) rotateX(${frame >= 540 ? organicOffset(frame, "duoDtRx", 0.01, 1.2) : 0}deg) translateY(${frame >= 540 ? organicOffset(frame, "duoDtTy", 0.013, 1.8) : 0}px)`,
                     transformOrigin: "center center",
+                    transformStyle: "preserve-3d" as const,
                   }}
                 >
                   <GeminiInterface frame={90} fps={fps} />

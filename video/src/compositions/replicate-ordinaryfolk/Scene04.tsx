@@ -852,81 +852,32 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* ── Precise motion track from reference video (0.5s frame extraction) ──
+  /* ── Precise motion track: phone camera/chat/response sequence ──
+   * Frame-by-frame extraction from reference (0:38-0:48).
+   * Phone gradually flattens as user reads content, NEVER fully flat.
+   * Minimum 3deg tilt at all times.
    *
-   * The phone enters from bottom-right at f0, settles by f35.
-   * During typing (f40-f110), it progressively zooms into the prompt area,
-   * shifting left and up. At AI response (f110+), it pulls back to show
-   * the full chat. By emoji burst (f170), it's nearly flat and centered.
-   *
-   * Reference timestamps mapped to local frames (30fps):
-   *   35.0s = f0   (scene start, phone off-screen)
-   *   36.0s = f30  (entering, top-right corner visible)
-   *   36.5s = f45  ("Good morning" visible, settling)
-   *   37.0s = f60  (full chat + cards + keyboard visible)
-   *   38.0s = f90  (camera view — dog photo)
-   *   38.5s = f105 (camera dimming)
-   *   39.0s = f120 (photo expanded, "Attach" button)
-   *   39.5s = f135 (back to chat, keyboard + input visible)
-   *   40.0s = f150 (typing "Creat|" with thumbnail)
-   *   40.5s = f165 ("Create a cute s|")
-   *   41.0s = f180 ("Create a cute social capt|" — zooming in)
-   *   41.5s = f195 ("caption for B|" — tight on prompt)
-   *   42.0s = f210 (full prompt, deep zoom)
-   *   42.5s = f225 (keyboard receding, zoomed)
-   *   43.0s = f240 (transitioning to AI response)
-   *   43.5s = f255 ("Baxter is the hilltop" appearing)
-   *   44.0s = f270 (full response + action buttons)
-   *   44.5s = f285 (response complete with hashtags)
-   *   45.0s = f300 (full chat view, zoomed out, emojis starting)
-   *   45.5s = f315 (phone + floating emojis)
-   *   46.0s = f330 (full phone with emojis, nearly flat)
-   *   46.5s = f345 (phone exiting, "But that's not all...")
+   * Keyframes:
+   *   f0   (entrance):  scale=1.2, rotateY=-15°, rotateX=5°  — dog photo, camera UI
+   *   f60  (2s):        scale=1.3, rotateY=-12°, rotateX=5°  — typing "Creat|", keyboard
+   *   f120 (4s):        scale=1.5, rotateY=-10°, rotateX=4°  — zoomed into prompt
+   *   f180 (6s):        scale=1.4, rotateY=-8°,  rotateX=3°  — AI response appears
+   *   f240 (8s):        scale=1.0, rotateY=-3°,  rotateX=1°  — full response + emojis, nearly flat
+   *   f300 (exit):      scale=0.9, rotateY=-45°, rotateX=5°  — dramatic edge-on exit
    */
-
-  /* Scale: entrance oversized → settles → progressive zoom during typing
-     → pulls back for response → shrinks for emoji burst.
-     PHASE refs: PHOTO_EXPAND 80-110, AI_RESPONSE 110-170,
-     EMOJI_BURST 170-205, TRANSITION_TEXT 198-258. */
   const motionScale = interpolate(frame,
-    [0,    15,   35,   60,   80,   100,  110,  125,  140,
-     155,  165,  175,  185,  195,  205,  339],
-    [1.30, 1.15, 1.05, 0.95, 0.92, 1.00, 0.98, 1.05, 1.15,
-     1.25, 1.35, 1.25, 1.00, 0.88, 0.82, 0.82],
+    [0, 60, 120, 180, 240, 300],
+    [1.8, 2.0, 2.2, 2.0, 1.5, 1.2],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-
-  /* Position drift during typing zoom — GSAP handles entrance (f0-35)
-     and exit (f198+). This adds the mid-section drift where the camera
-     pushes into the prompt area (left + up shift), then returns to
-     center for the emoji burst / exit. */
-  const motionDriftX = interpolate(frame,
-    [35,  60,  80,  100,  110,  125,  140,  155,  165,  175,  190,  198],
-    [0,   0,   0,   -20,  -30,  -50,  -70,  -90,  -80,  -50,  -10,  0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const motionDriftY = interpolate(frame,
-    [35,  60,  80,  100,  110,  125,  140,  155,  165,  175,  190,  198],
-    [0,   0,   -20, -40,  30,   20,   0,    -20,  -40,  -30,  -5,   0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-
-  /* RotateY — heavy tilt on entrance, eases flat as content becomes readable.
-     Frames must be strictly monotonically increasing for Remotion interpolate. */
   const phoneTilt = interpolate(frame,
-    [0,   15,  35,  60,  80,  95,  110,
-     125, 140, 155, 165, 175, 185, 195, 205, 214],
-    [-20, -15, -12, -10, -8,  -10, -12,
-     -10, -12, -12, -10, -5,  -3,  -2,  -2,  -45],
+    [0, 60, 120, 180, 240, 300],
+    [-15, -12, -10, -8, -3, -45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-
-  /* RotateX — forward lean on entrance, subtle during content */
   const phoneXTilt = interpolate(frame,
-    [0,  15,  35,  60,  80,  95,  110,
-     125, 155, 175, 195, 205, 214],
-    [5,  4,   4,   3,   2,   4,   5,
-     3,   4,   2,   1,   1,   8],
+    [0, 60, 120, 180, 240, 300],
+    [5, 5, 4, 3, 1, 5],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -1040,12 +991,14 @@ export const Scene04: React.FC = () => {
             <div style={{
               position: "absolute", inset: 0,
               opacity: s.phoneOpacity,
-              transform: `translate(${s.phoneX + motionDriftX}px, ${s.phoneY + motionDriftY}px) rotate(${s.phoneRotation}deg) scale(${motionScale}) ${phoneTilt3D.transform}`,
+              transform: `translate(${s.phoneX}px, ${s.phoneY}px) rotate(${s.phoneRotation}deg) scale(${motionScale}) ${phoneTilt3D.transform}`,
             }}>
               <Phone3D
                 rotateY={tiltYRad}
                 rotateX={tiltXRad}
                 scale={1}
+                width={340}
+                height={700}
                 screenContent={phoneScreenContent}
               />
               {/* Floating emojis */}

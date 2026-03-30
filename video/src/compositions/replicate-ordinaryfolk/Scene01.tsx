@@ -939,7 +939,7 @@ const PhaseBrainstormIdeas: React.FC = () => {
           f.delay,
         );
       });
-      // Floaters drift inward and fade — SLOW (1.1s), starts late (0.35s)
+      // Floaters drift inward and fade — 0.8s, starts at 0.25s
       FLOATERS.forEach((f, i) => {
         tl.to(
           p[`g${i}`],
@@ -947,23 +947,23 @@ const PhaseBrainstormIdeas: React.FC = () => {
             x: f.x * 0.12,
             y: f.y * 0.12,
             opacity: 0,
-            duration: 1.1,
+            duration: 0.8,
             ease: "power1.inOut",
           },
-          0.35 + f.delay * 0.2,
+          0.25 + f.delay * 0.15,
         );
       });
       // Blob fades with floaters
       tl.to(
         p.blob,
-        { opacity: 0, duration: 0.6, ease: "power1.inOut" },
-        0.5,
+        { opacity: 0, duration: 0.5, ease: "power1.inOut" },
+        0.4,
       );
-      // Final centered text appears earlier
+      // Final centered text appears
       tl.to(
         p.final,
-        { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" },
-        0.45,
+        { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" },
+        0.35,
       );
     },
     proxyInit,
@@ -1039,8 +1039,8 @@ const P3_FROM = 72; // 2.4s — "Bard"
 const P4_FROM = 110; // 3.67s — Typewriter "Write" (no "to")
 const P5_FROM = 150; // 5.0s — "Write emails" pill
 const P6_FROM = 185; // 6.17s — Letter scatter (SLOW 1.2s)
-const P7_FROM = 210; // 7.0s — "Solve problems"
-const P8_FROM = 240; // 8.0s — "Brainstorm ideas"
+const P7_FROM = 200; // 6.67s — "Solve problems"
+const P8_FROM = 218; // 7.27s — "Brainstorm ideas" (ref: ~7.5s)
 
 // --- Composition -----------------------------------------------------------
 export const Scene01: React.FC = () => {
@@ -1078,7 +1078,7 @@ export const Scene01: React.FC = () => {
         <PhaseSolveProblems />
       </Sequence>
 
-      <Sequence from={P8_FROM} durationInFrames={258 - P8_FROM}>
+      <Sequence from={P8_FROM} durationInFrames={259 - P8_FROM}>
         <PhaseBrainstormIdeas />
       </Sequence>
     </AbsoluteFill>
