@@ -12,6 +12,7 @@ import { visionVC3Meta } from "./compositions/vision-vc3/VisionVC3Composition";
 import { replicateMeta, sceneMetas } from "./compositions/replicate/ReplicateComposition";
 import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicate-ordinaryfolk/OFReplicateComposition";
 import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop/WhopReplicateComposition";
+import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandComposition";
 
 // remotion-scenes showcases
 import {
@@ -127,6 +128,29 @@ export const RemotionRoot: React.FC = () => {
       />
       <Folder name="OF-Scenes">
         {ofSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ GM BRAND — rebranded OF ═══ */}
+      <Composition
+        id={gmBrandMeta.id}
+        component={gmBrandMeta.component}
+        durationInFrames={gmBrandMeta.durationInFrames}
+        fps={gmBrandMeta.fps}
+        width={gmBrandMeta.width}
+        height={gmBrandMeta.height}
+      />
+      <Folder name="GM-Scenes">
+        {gmSceneMetas.map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
