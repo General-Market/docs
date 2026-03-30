@@ -85,7 +85,7 @@ def generate_sol(symbols):
         a(f"    function _deployBatch{bi}(address[] memory t) internal {{")
         for j, sym in enumerate(batch):
             idx = start + j
-            a(f'        t[{idx}] = address(new MockERC20{}("Mock {sym}", "{sym}", 18));')
+            a(f'        t[{idx}] = address(new MockERC20("Mock {sym}", "{sym}", 18));')
         a("    }")
         a("")
 
