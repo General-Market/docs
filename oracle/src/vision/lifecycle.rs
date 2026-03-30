@@ -1589,9 +1589,11 @@ impl BatchLifecycleManager {
         let rows: Vec<(i64,)> = match sqlx::query_as(
             "SELECT sp.batch_id
              FROM vision_settlement_proofs sp
+             JOIN vision_batch_lifecycle vbl ON vbl.on_chain_batch_id = sp.batch_id
              WHERE sp.submitted = false
                AND (sp.signer_bitmap & $1) = 0
                AND sp.created_at > NOW() - INTERVAL '24 hours'
+               AND vbl.end_prices IS NOT NULL
              ORDER BY sp.batch_id DESC
              LIMIT 10"
         )
