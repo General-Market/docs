@@ -670,11 +670,22 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                         info!(cycle = current_cycle, node_index = node_index_for_task,
                             "Follower: clearing mirror_sync_first (grace period passed)");
                     }
-                    if is_sync_leader && (first_sync || snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
+                    // Leader: clear mirror_sync_first once bridge_ready, even if mirror sync
+                    // can't run (missing protocol/writer/registry). Without this, a leader with
+                    // mirror_registry configured but missing oracle_registry blocks settlement
+                    // polling forever (mirror_sync_pending stays true).
+                    if is_sync_leader && first_sync && bridge_ready {
+                        mirror_sync_first.store(false, Ordering::Release);
+                        // Trigger an immediate mirror sync attempt via snapshot_stale flag,
+                        // replacing the old first_sync trigger in the sync condition.
+                        mirror_sync_needed.store(true, Ordering::Release);
+                        info!(cycle = current_cycle, node_index = node_index_for_task,
+                            "Leader: clearing mirror_sync_first, requesting immediate sync");
+                    }
+                    if is_sync_leader && (snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
-                                    mirror_sync_first.store(false, Ordering::Release);
                                     // NOTE: Do NOT clear mirror_sync_needed here — clear it inside
                                     // the sync task ONLY on success. Clearing before the task runs
                                     // causes a race: downstream SnapshotTooOld errors re-set the flag

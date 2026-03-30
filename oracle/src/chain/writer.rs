@@ -913,8 +913,7 @@ impl ChainWriter for EthersChainWriter {
         prices: &[U256],
         bridge_nonce: U256,
     ) -> Result<H256, Error> {
-        // Delegate to inherent method — trait doesn't carry creator, use zero address
-        EthersChainWriter::create_itp(self, name, symbol, weights, assets, prices, bridge_nonce, Address::zero()).await
+        EthersChainWriter::create_itp(self, name, symbol, weights, assets, prices, bridge_nonce).await
     }
 
     async fn send_transaction(
@@ -964,7 +963,7 @@ impl ChainWriter for EthersChainWriter {
 impl EthersChainWriter {
     /// Build a createITP transaction
     ///
-    /// Encodes: Index.createITP(name, symbol, weights, assets)
+    /// Encodes: Index.createITP(name, symbol, weights, assets, prices, bridgeNonce)
     /// Returns the L3 ITP ID (bytes32)
     fn build_create_itp_tx(
         &self,
@@ -974,9 +973,9 @@ impl EthersChainWriter {
         assets: &[Address],
         prices: &[U256],
         bridge_nonce: U256,
-        creator: Address,
     ) -> TypedTransaction {
-        // Function signature: createITP(string,string,uint256[],address[],uint256[],uint256,address)
+        // Function signature: createITP(string,string,uint256[],address[],uint256[],uint256)
+        // Must match Investment.sol exactly — contract uses msg.sender as creator
         let function = ethers::abi::Function {
             name: "createITP".to_string(),
             inputs: vec![
@@ -1008,11 +1007,6 @@ impl EthersChainWriter {
                 ethers::abi::Param {
                     name: "bridgeNonce".to_string(),
                     kind: ethers::abi::ParamType::Uint(256),
-                    internal_type: None,
-                },
-                ethers::abi::Param {
-                    name: "creator".to_string(),
-                    kind: ethers::abi::ParamType::Address,
                     internal_type: None,
                 },
             ],
@@ -1048,7 +1042,6 @@ impl EthersChainWriter {
                     .collect(),
             ),
             ethers::abi::Token::Uint(bridge_nonce),
-            ethers::abi::Token::Address(creator),
         ];
 
         let calldata = function
@@ -1079,7 +1072,6 @@ impl EthersChainWriter {
         assets: &[Address],
         prices: &[U256],
         bridge_nonce: U256,
-        creator: Address,
     ) -> Result<H256, Error> {
         debug!(
             name = name,
@@ -1091,7 +1083,7 @@ impl EthersChainWriter {
             "Building createITP transaction"
         );
 
-        let tx = self.build_create_itp_tx(name, symbol, weights, assets, prices, bridge_nonce, creator);
+        let tx = self.build_create_itp_tx(name, symbol, weights, assets, prices, bridge_nonce);
         let tx_hash = self.submit_tx(tx, "create_itp").await?;
 
         // Wait for receipt with 30 second timeout
@@ -1494,13 +1486,12 @@ mod tests {
         let prices = vec![U256::from(10u64).pow(U256::from(18)), U256::from(10u64).pow(U256::from(18))];
         let bridge_nonce = U256::MAX; // Sentinel for non-bridge calls
 
-        let creator = Address::from([0xAAu8; 20]);
-        let tx = writer.build_create_itp_tx(name, symbol, &weights, &assets, &prices, bridge_nonce, creator);
+        let tx = writer.build_create_itp_tx(name, symbol, &weights, &assets, &prices, bridge_nonce);
 
         assert!(tx.to().is_some());
         assert!(tx.data().is_some());
 
-        // Verify function selector is correct for createITP(string,string,uint256[],address[],uint256[],uint256,address)
+        // Verify function selector is correct for createITP(string,string,uint256[],address[],uint256[],uint256)
         let calldata = tx.data().unwrap();
         let expected_selector = ethers::utils::keccak256("createITP(string,string,uint256[],address[],uint256[],uint256)");
         assert_eq!(

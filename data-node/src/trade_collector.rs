@@ -145,6 +145,7 @@ pub async fn run(
     index_address: String,
     poll_interval_secs: u64,
     chain_event_tx: Option<tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>>,
+    deploy_block: u64,
 ) {
     let (provider, addr) = match create_provider_and_address(&rpc_url, &index_address, "trade_collector") {
         Some(pa) => pa,
@@ -159,6 +160,10 @@ pub async fn run(
         .await
         .unwrap_or(0);
 
+    // Never scan before the deployment block — events from prior deployments
+    // at the same contract address are ghosts (wrong ITP IDs, wrong order space).
+    let effective_start = persisted_block.max(deploy_block);
+
     let current_block = match provider.get_block_number().await {
         Ok(b) => b.as_u64(),
         Err(e) => {
@@ -167,9 +172,12 @@ pub async fn run(
         }
     };
 
-    if persisted_block < current_block {
-        info!(from = persisted_block, to = current_block, "Backfilling missed trade events");
-        backfill_trade_events(&pool, &contract, persisted_block, current_block).await;
+    if effective_start < current_block {
+        if effective_start > persisted_block {
+            info!(persisted_block, deploy_block, effective_start, "Skipping pre-deployment blocks to avoid ghost orders");
+        }
+        info!(from = effective_start, to = current_block, "Backfilling missed trade events");
+        backfill_trade_events(&pool, &contract, effective_start, current_block).await;
     } else {
         info!(persisted_block, "Trade collector resuming — no backfill needed");
     }

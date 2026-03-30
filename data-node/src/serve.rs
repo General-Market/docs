@@ -228,6 +228,17 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         let trade_poll_interval = args.itp_poll_interval;
         let trade_event_tx = early_chain_event_tx.clone();
 
+        // Read deploy_block from deployment.json to avoid scanning ghost events
+        // from prior deployments at the same contract address.
+        let deploy_block: u64 = std::fs::read_to_string(&args.deployment_file)
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .and_then(|v| v.get("deployBlock").and_then(|b| b.as_u64()))
+            .unwrap_or(0);
+        if deploy_block > 0 {
+            info!(deploy_block, "Trade collector will skip blocks before deployment");
+        }
+
         tokio::spawn(async move {
             crate::trade_collector::run(
                 trade_pool,
@@ -236,6 +247,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
                 trade_index_address,
                 trade_poll_interval,
                 Some(trade_event_tx),
+                deploy_block,
             )
             .await;
         });

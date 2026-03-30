@@ -261,7 +261,6 @@ pub(crate) async fn run_itp_creation_phase<P, W, K, PF>(
                                         &request.assets,
                                         &request.prices,
                                         request.nonce,
-                                        request.admin,
                                     ).await {
                                         Ok(itp_id) => {
                                             info!(nonce = %request.nonce, itp_id = ?itp_id, "ITP created on L3");
