@@ -328,32 +328,52 @@ _merge_deployments() {
     local output="$3"        # e.g., deployments/active-deployment.json
 
     python3 -c "
-import json
+import json, os
 l3 = json.load(open('$l3_json'))
 sonic = json.load(open('$sonic_json'))
 sc = sonic['contracts']
+
+# Preserve existing keys from active-deployment.json that aren't in L3 or Sonic
+# (e.g., Vision from step 6, Morpho from step 5 — these are added by later steps)
+existing = {}
+if os.path.exists('$output'):
+    try:
+        existing = json.load(open('$output')).get('contracts', {})
+    except: pass
+
+# Start with L3 as base
+merged = dict(l3['contracts'])
+
+# Preserve keys from existing deployment that L3 doesn't have
+# (Vision, Morpho, InvestmentImpl, OracleRegistryImpl, etc.)
+for key, val in existing.items():
+    if key not in merged and val:
+        merged[key] = val
+
 # Override settlement-specific contracts with Sonic addresses
 for key in ['SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SETTLEMENT_USDC_DECIMALS', 'MockBitgetVault', 'MOCK_USDT']:
     if key in sc:
-        l3['contracts'][key] = sc[key]
+        merged[key] = sc[key]
 # BridgedItpFactory: exists on BOTH chains. Keep L3 version for Morpho collateral.
 if 'BridgedItpFactory' in sc:
-    l3['contracts']['L3BridgedItpFactory'] = l3['contracts'].get('BridgedItpFactory', '')
-    l3['contracts']['BridgedItpFactory'] = sc['BridgedItpFactory']
-    l3['contracts']['SettlementBridgedItpFactory'] = sc['BridgedItpFactory']
+    merged['L3BridgedItpFactory'] = merged.get('BridgedItpFactory', '')
+    merged['BridgedItpFactory'] = sc['BridgedItpFactory']
+    merged['SettlementBridgedItpFactory'] = sc['BridgedItpFactory']
 # Add Sonic-specific keys
 if 'OracleRegistry' in sc:
-    l3['contracts']['SettlementOracleRegistry'] = sc['OracleRegistry']
+    merged['SettlementOracleRegistry'] = sc['OracleRegistry']
 # BridgeProxy: frontend/E2E use this for settlement operations (requestCreateItp etc.)
 # so it MUST point to the Sonic address. Save L3's as L3BridgeProxy.
 if 'BridgeProxy' in sc:
-    l3['contracts']['L3BridgeProxy'] = l3['contracts'].get('BridgeProxy', '')
-    l3['contracts']['BridgeProxy'] = sc['BridgeProxy']
-    l3['contracts']['SettlementBridgeProxy'] = sc['BridgeProxy']
+    merged['L3BridgeProxy'] = merged.get('BridgeProxy', '')
+    merged['BridgeProxy'] = sc['BridgeProxy']
+    merged['SettlementBridgeProxy'] = sc['BridgeProxy']
 # Add settlement chain metadata
+l3['contracts'] = merged
 l3['settlementChainId'] = $SETTLEMENT_CHAIN_ID
 json.dump(l3, open('$output', 'w'), indent=2)
-print('Merged: L3 (%d contracts) + Sonic (%d contracts) -> %s' % (len(l3['contracts']), len(sc), '$output'))
+print('Merged: L3 (%d) + Sonic (%d) + preserved (%d extra) -> %s' % (
+    len(l3['contracts']), len(sc), len(existing), '$output'))
 "
 }
 
@@ -1161,6 +1181,17 @@ print(f'Patched {patched} Phase 2 addresses from broadcast receipts')
         echo -e "  SettlementBridgeCustody:          $MERGED_SBC"
         echo -e "  SettlementBridgeProxy:            $MERGED_SBP"
         echo -e "  SETTLEMENT_USDC:                  $MERGED_SUSDC"
+
+        # Verify settlement contracts have code on Sonic
+        for _sc_name in BridgeProxy SettlementBridgeCustody; do
+            local _sc_addr=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('$_sc_name',''))" 2>/dev/null)
+            if [ -n "$_sc_addr" ]; then
+                local _sc_code=$(cast code --rpc-url "$SETTLEMENT_RPC_URL" "$_sc_addr" 2>/dev/null | wc -c | tr -d ' ')
+                if [ "$_sc_code" -lt 10 ]; then
+                    echo -e "  ${RED}$_sc_name ($_sc_addr) has NO CODE on Sonic — frontend buy/create will fail${NC}"
+                fi
+            fi
+        done
 
         if [ -n "$SONIC_BP" ] && [ "$MERGED_BP" != "$SONIC_BP" ]; then
             echo -e "  ${RED}CRITICAL: BridgeProxy in merged deployment ($MERGED_BP) does not match Sonic deploy ($SONIC_BP)${NC}"
