@@ -167,6 +167,37 @@ npx playwright test --grep "buy ITP|sell ITP"
 - Full suite is a FINAL validation step only, after all individual tests pass.
 - Time to reach end of dev is the priority. Skip tests we know work.
 
+## Deployment & Prod Operations
+
+**Aggressively monitor long-running operations.** Don't fire-and-forget. Docker builds take 8-12 min, forge deploys take 5-15 min per step, full `testnet.sh deploy --seed` takes 40-60 min. SSH connections drop after ~5 min of idle output.
+
+**Known timings (when things work):**
+- Core contracts (step 3): ~3 min (47 txs with --slow)
+- Token deploy (step 9): ~10 min (621 txs)
+- ITP creation (step 11): ~3 min (96 txs)
+- Vault deploy (step 12): ~3 min (96 txs)
+- Batch markets (step 12b): ~5 min (96 markets)
+- Oracle Docker build: ~8-12 min (Rust compilation)
+- Seed buy orders + fills: ~15 min (96 orders at ~10/min)
+- Settlement delay: 10 min (SETTLEMENT_DELAY_SECS=600)
+- Vision batch first cycle: tick_duration + 10 min delay
+
+**If something exceeds 2x the expected time, it's stuck — investigate immediately.**
+
+**Rules:**
+- Use `nohup` on VPS for anything >5 min (SSH drops kill processes)
+- Never redeploy ALL if you can fix in-place (patch addresses, refresh snapshots, restart containers)
+- Before redeploying, check: can we just `setITPVault`, `refreshSnapshot`, `recoverAdmin`, or `resetOrderState`?
+- Before rebuilding Docker, check: did the code actually change? (`find -newer` check)
+- Track deployer nonce — if it jumps unexpectedly, something is sending txs concurrently
+- Keep `active-deployment.json` as single source of truth — read on-chain addresses from Index contract to verify
+
+**Orbit L3 specific:**
+- CREATE addresses diverge between forge simulation and broadcast
+- Always read actual addresses from broadcast receipts, not simulation output
+- `--slow` flag prevents most nonce drift but not all
+- Settlement delay window (10 min) must pass before oracles resolve batches
+
 ## Design Decision Backlog
 
 Log design decisions and failed attempts to `./backlog.md`.
