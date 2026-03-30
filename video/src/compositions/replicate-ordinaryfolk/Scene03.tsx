@@ -685,19 +685,26 @@ const SegPhoneMockup: React.FC = () => {
    * f60-75:  recovery — rotates back, forward lean increases
    * f75-90:  settling — phone shrinks behind "supercharge" text
    * f90-110: phone fades, only text visible */
+  /* 130-frame arc: massive flat → flip → flatten toward viewer → shrink behind text
+   * f0-20:   massive flat entrance (fills viewport)
+   * f20-40:  dramatic flip (side edge visible)
+   * f40-60:  peak flip ~55°, then recovery
+   * f60-80:  phone flattens TOWARD viewer (high rotateX), "supercharge" text arrives
+   * f80-100: phone behind text, shrinking
+   * f100-130: phone fades out, text only */
   const phoneScale = interpolate(frame,
-    [0,   15,  30,  45,  60,  75,  90, 110],
-    [3.0, 3.0, 2.5, 2.0, 1.5, 1.2, 0.8, 0.5],
+    [0,   20,  40,  60,  80,  100, 130],
+    [3.0, 3.0, 2.2, 1.5, 1.0, 0.7, 0.4],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYDeg = interpolate(frame,
-    [0,  15,  30,  45,  60,  75,  90,  110],
-    [-2, -5, -25, -55, -30, -15, -10,  -8],
+    [0,  20,  40,  55,  70,  90,  130],
+    [-2, -8, -40, -55, -20, -8,   -5],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltXDeg = interpolate(frame,
-    [0,  15,  30,  45,  60,  75,  90,  110],
-    [2,   2,   5,  12,  22,  25,  12,   5],
+    [0,  20,  40,  55,  70,  90,  130],
+    [2,   3,   8,  15,  30,  35,   25],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYRad = (tiltYDeg * Math.PI) / 180;
@@ -707,7 +714,8 @@ const SegPhoneMockup: React.FC = () => {
   /* Text visible immediately — ref shows it already on screen at entrance */
   const hiSpr = spring({frame, fps, delay: 0, config:{damping:14,stiffness:100,mass:0.7}});
   const bdSpr = spring({frame, fps, delay: 4, config:{damping:14,stiffness:100,mass:0.7}});
-  const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  /* Phone fades over last 40 frames as "supercharge" text takes over */
+  const exitOp = interpolate(frame, [durationInFrames-40,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   const phoneScreen = (
     <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Google Sans',sans-serif"}}>
@@ -991,8 +999,8 @@ export const Scene03: React.FC = () => {
     {start:360,dur:50,Comp:SegGeminiResponse},
     {start:405,dur:50,Comp:SegAndMore},
     {start:450,dur:70,Comp:SegStartingWith},
-    {start:520,dur:110,Comp:SegPhoneMockup},
-    {start:620,dur:60,Comp:SegSupercharge},
+    {start:520,dur:120,Comp:SegPhoneMockup},
+    {start:600,dur:80,Comp:SegSupercharge},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>

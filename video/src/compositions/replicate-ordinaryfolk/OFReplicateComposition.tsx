@@ -33,14 +33,14 @@ const S04_S05_OVERLAP = 15;
  * Cut at 0:48 (frame 1440 absolute) — 3D dark mode all in S05
  * S01: 0:00-0:08 (259 frames)
  * S02: 0:08-0:14 (175 frames)
- * S03: 0:14-0:35 = 21s = 630 frames (was 745, moved phone end to S04)
- * S04: 0:35-0:48 = 13s = 390 frames (was 339, gained phone start + lost dark mode end)
+ * S03: 0:14-0:36 = 22s = 680 frames (extended to fit "supercharge" text)
+ * S04: 0:36-0:48 = 12s = 360 frames (starts after supercharge)
  * S05: 0:48-1:14 = 26s = 780 frames (was 695, gained dark mode start)
  */
 const S01_DUR = 259;
 const S02_DUR = 175;
-const S03_DUR = 630;
-const S04_DUR = 390;
+const S03_DUR = 680;
+const S04_DUR = 360;
 const S05_DUR = 720;
 
 /* Calculate absolute start positions */

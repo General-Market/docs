@@ -140,34 +140,18 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     /* Fade in during entrance */
     t.to(s, { phoneOpacity: 1, duration: sec(8), ease: "power2.out" }, 0);
 
-    /* Entrance arc: bottom-right → center via bezier path */
-    const entranceTween = gsap.to({ t: 0 }, {
-      t: 1, duration: sec(35), ease: "power3.out", paused: true,
-      onUpdate() {
-        const p = this.progress();
-        s.phoneX = quadBezier(p, 400, 180, 0);
-        s.phoneY = quadBezier(p, 500, 100, 0);
-      },
-    });
-    t.add(entranceTween, 0);
+    /* Entrance: bottom-right → center. Simple .to() — no onUpdate bezier
+       (onUpdate doesn't fire on seek-past, leaving position stuck). */
+    t.to(s, { phoneX: 0, phoneY: 0, duration: sec(35), ease: "power3.out" }, 0);
     t.to(s, { phoneRotation: 0, duration: sec(35), ease: "power3.out" }, 0);
 
     /* Phone scale — now driven by Remotion interpolate keyframes (motionScale).
        GSAP phoneScale set to 1.0 so it's inert in the wrapper transform. */
     t.to(s, { phoneScale: 1.0, duration: 0 }, 0);
 
-    /* ═══ Phone exit — dramatic arc left, turns edge-on ═══ */
+    /* ═══ Phone exit — fly far left ═══ */
     const exitStart = sec(PHASE.TRANSITION_TEXT.start);
-    const phoneExitTween = gsap.to({ t: 0 }, {
-      t: 1, duration: sec(16), ease: "power3.in", paused: true,
-      onUpdate() {
-        const p = this.progress();
-        /* Start from center and fly far left */
-        s.phoneX = quadBezier(p, 0, -280, -850);
-        s.phoneY = quadBezier(p, 0, -50, 20);
-      },
-    });
-    t.add(phoneExitTween, exitStart);
+    t.to(s, { phoneX: -850, phoneY: 20, duration: sec(16), ease: "power3.in" }, exitStart);
     t.to(s, { phoneRotation: -18, duration: sec(16), ease: "power3.in" }, exitStart);
     t.to(s, { phoneOpacity: 0, duration: sec(10), ease: "power2.in" }, exitStart + sec(4));
 
@@ -991,15 +975,15 @@ export const Scene04: React.FC = () => {
             <div style={{
               position: "absolute", inset: 0,
               opacity: s.phoneOpacity,
-              transform: `translate(${s.phoneX}px, ${s.phoneY}px) rotate(${s.phoneRotation}deg) scale(${motionScale}) ${phoneTilt3D.transform}`,
             }}>
               <Phone3D
                 rotateY={tiltYRad}
                 rotateX={tiltXRad}
-                scale={1}
+                scale={motionScale}
                 width={340}
                 height={700}
                 screenContent={phoneScreenContent}
+                style={{transform: `translate(${s.phoneX}px, ${s.phoneY}px) ${phoneTilt3D.transform}`}}
               />
               {/* Floating emojis */}
               {showEmojis && FLOATING_EMOJIS.map((item, i) => (
