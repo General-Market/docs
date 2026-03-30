@@ -2555,6 +2555,13 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         chain_event_lag_total: std::sync::atomic::AtomicU64::new(0),
     });
 
+    // Eagerly load nextOrderId before pollers start, so ghost orders from
+    // previous deployments are filtered from the very first pending_orders poll.
+    if let Ok(()) = crate::chain_pollers::poll_cycle_metadata_once(&app_state).await {
+        let noid = app_state.chain_cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
+        info!(next_order_id = noid, "Pre-loaded cycle metadata for ghost order protection");
+    }
+
     // Spawn chain pollers via run_collector_loop
     macro_rules! spawn_poller {
         ($name:expr, $secs:expr, $fn:path) => {{

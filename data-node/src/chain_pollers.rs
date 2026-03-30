@@ -687,20 +687,39 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
         .collect();
     drop(users);
 
+    let next_order_id = state.chain_cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
+
     for (user_addr, user_cache) in &user_list {
         // DB-only: read active + recently filled orders for this user.
-        let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, Option<String>, Option<String>, i64)>(
-            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
-                    status, fill_price, fill_amount, \
-                    EXTRACT(EPOCH FROM order_timestamp)::bigint \
-             FROM trades WHERE LOWER(user_address) = $1 \
-             AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
-             ORDER BY order_id DESC LIMIT 50"
-        )
-        .bind(user_addr)
-        .fetch_all(&state.pool)
-        .await
-        .unwrap_or_default();
+        // Exclude ghost orders from previous deployments (order_id >= nextOrderId).
+        let rows = if next_order_id > 0 {
+            sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, Option<String>, Option<String>, i64)>(
+                "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                        status, fill_price, fill_amount, \
+                        EXTRACT(EPOCH FROM order_timestamp)::bigint \
+                 FROM trades WHERE LOWER(user_address) = $1 AND order_id < $2 \
+                 AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+                 ORDER BY order_id DESC LIMIT 50"
+            )
+            .bind(user_addr)
+            .bind(next_order_id as i64)
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default()
+        } else {
+            sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, Option<String>, Option<String>, i64)>(
+                "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                        status, fill_price, fill_amount, \
+                        EXTRACT(EPOCH FROM order_timestamp)::bigint \
+                 FROM trades WHERE LOWER(user_address) = $1 \
+                 AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+                 ORDER BY order_id DESC LIMIT 50"
+            )
+            .bind(user_addr)
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default()
+        };
 
         let orders: Vec<UserOrder> = rows.into_iter().map(|r| {
             UserOrder {
@@ -951,7 +970,15 @@ pub async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn s
 /// Poll pending orders (status == 0) from the trades table.
 /// Also reconciles stale pending orders: if an order has been pending > 60s,
 /// check on-chain status via L3 RPC and update the DB if it's no longer pending.
+///
+/// Ghost order protection: orders whose order_id >= nextOrderId on the current
+/// Index contract are relics from a previous deployment. They are marked as
+/// cancelled (status=3) in the DB and excluded from the cache.
 pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // The contract's nextOrderId — any order_id >= this value cannot belong
+    // to the current deployment and must be purged.
+    let next_order_id = state.chain_cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
+
     // Reconcile stale pending orders every ~30 polls (30s at 1s interval).
     // Uses a static counter to avoid running on every poll cycle.
     {
@@ -961,7 +988,7 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
             let stale_rows = sqlx::query_as::<_, (i64,)>(
                 "SELECT order_id FROM trades WHERE status = 0 \
                  AND order_timestamp < NOW() - INTERVAL '60 seconds' \
-                 ORDER BY order_id DESC LIMIT 5"
+                 ORDER BY order_id DESC LIMIT 20"
             )
             .fetch_all(&state.pool)
             .await
@@ -973,6 +1000,22 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
                     .and_then(|s| s.parse().ok())
                     .unwrap_or_default();
                 for (order_id,) in &stale_rows {
+                    // Ghost order from a previous deployment — the current
+                    // contract has no knowledge of this ID. Cancel it.
+                    if next_order_id > 0 && (*order_id as u64) >= next_order_id {
+                        sqlx::query("UPDATE trades SET status = 3 WHERE order_id = $1")
+                            .bind(*order_id)
+                            .execute(&state.pool)
+                            .await
+                            .ok();
+                        tracing::info!(
+                            order_id,
+                            next_order_id,
+                            "Cancelled ghost order from previous deployment"
+                        );
+                        continue;
+                    }
+
                     let calldata = format!("0x8f216830{:064x}", order_id);
                     let tx = ethers::types::transaction::eip2718::TypedTransaction::Legacy(
                         ethers::types::TransactionRequest::new()
@@ -1000,15 +1043,30 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
         }
     }
 
-    let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
-        "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
-                status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
-         FROM trades WHERE status = 0 \
-         ORDER BY order_id DESC LIMIT 100"
-    )
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    // Fetch pending orders from DB, filtering out ghost orders at the query level
+    let rows = if next_order_id > 0 {
+        sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                    status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+             FROM trades WHERE status = 0 AND order_id < $1 \
+             ORDER BY order_id DESC LIMIT 100"
+        )
+        .bind(next_order_id as i64)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    } else {
+        // nextOrderId not yet loaded — fall back to unfiltered query
+        sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                    status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+             FROM trades WHERE status = 0 \
+             ORDER BY order_id DESC LIMIT 100"
+        )
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    };
 
     let pending: Vec<CachedLimitOrder> = rows.into_iter().map(|r| {
         CachedLimitOrder {
@@ -1032,16 +1090,32 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
 }
 
 /// Poll batched orders (status == 1) from the trades table.
+/// Excludes ghost orders from previous deployments (order_id >= nextOrderId).
 pub async fn poll_batched_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
-        "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
-                status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
-         FROM trades WHERE status = 1 \
-         ORDER BY order_id DESC LIMIT 100"
-    )
-    .fetch_all(&state.pool)
-    .await
-    .unwrap_or_default();
+    let next_order_id = state.chain_cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
+
+    let rows = if next_order_id > 0 {
+        sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                    status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+             FROM trades WHERE status = 1 AND order_id < $1 \
+             ORDER BY order_id DESC LIMIT 100"
+        )
+        .bind(next_order_id as i64)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    } else {
+        sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                    status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+             FROM trades WHERE status = 1 \
+             ORDER BY order_id DESC LIMIT 100"
+        )
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    };
 
     let batched: Vec<CachedLimitOrder> = rows.into_iter().map(|r| {
         CachedLimitOrder {
