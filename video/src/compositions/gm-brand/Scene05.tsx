@@ -1609,17 +1609,17 @@ export const Scene05: React.FC = () => {
     }
 
     // ═══ B+C+D: GM Interface (0-150) ═══
-    // Precise motion tracking: dramatic zoomed/tilted entrance.
-    // Frame 0: scale=3.0, rotateY=-20°, rotateX=8° — only header visible, rainbow glow
-    // Frame 30: scale=2.0, rotateY=-12°, rotateX=5° — "Hello, Lisa." appearing
-    // Frame 60: scale=1.3, rotateY=-6°, rotateX=3° — suggestion cards visible
-    // Frame 90: scale=1.0, rotateY=-2°, rotateX=1° — settled
+    // Faster dezoom so "Welcome back" is visible by frame 30.
+    // Frame 0: scale=2.5, rotateY=-15°, rotateX=6°
+    // Frame 20: scale=1.5, rotateY=-8°, rotateX=3°
+    // Frame 40: scale=1.1, rotateY=-3°, rotateX=1.5°
+    // Frame 60: scale=1.0, rotateY=-1°, rotateX=0.5° — settled
     if (interfaceWrapRef.current) {
       t.set(interfaceWrapRef.current, {
         opacity: 0,
-        rotateX: 8,
-        rotateY: -20,
-        scale: 3.0,
+        rotateX: 6,
+        rotateY: -15,
+        scale: 2.5,
         transformOrigin: "15% 7%",
         x: 0,
         y: 0,
@@ -1630,32 +1630,32 @@ export const Scene05: React.FC = () => {
         duration: f(8),
         ease: "power2.out",
       }, f(0));
-      // Phase 1: frame 0→30 — scale 3.0→2.0, rotateY -20→-12, rotateX 8→5
-      t.to(interfaceWrapRef.current, {
-        rotateX: 5,
-        rotateY: -12,
-        scale: 2.0,
-        duration: f(30),
-        ease: "power2.out",
-      }, f(0));
-      // Phase 2: frame 30→60 — scale 2.0→1.3, rotateY -12→-6, rotateX 5→3
+      // Phase 1: frame 0→20 — scale 2.5→1.5, rotateY -15→-8, rotateX 6→3
       t.to(interfaceWrapRef.current, {
         rotateX: 3,
-        rotateY: -6,
-        scale: 1.3,
-        transformOrigin: "35% 30%",
-        duration: f(30),
-        ease: "power2.inOut",
-      }, f(30));
-      // Phase 3: frame 60→90 — scale 1.3→1.0, rotateY -6→-2, rotateX 3→1 — settled
+        rotateY: -8,
+        scale: 1.5,
+        duration: f(20),
+        ease: "power2.out",
+      }, f(0));
+      // Phase 2: frame 20→40 — scale 1.5→1.1, rotateY -8→-3, rotateX 3→1.5
       t.to(interfaceWrapRef.current, {
-        rotateX: 1,
-        rotateY: -2,
+        rotateX: 1.5,
+        rotateY: -3,
+        scale: 1.1,
+        transformOrigin: "35% 30%",
+        duration: f(20),
+        ease: "power2.inOut",
+      }, f(20));
+      // Phase 3: frame 40→60 — scale 1.1→1.0, rotateY -3→-1, rotateX 1.5→0.5 — settled
+      t.to(interfaceWrapRef.current, {
+        rotateX: 0.5,
+        rotateY: -1,
         scale: 1.0,
         transformOrigin: "50% 50%",
-        duration: f(30),
+        duration: f(20),
         ease: "power1.out",
-      }, f(60));
+      }, f(40));
       // Phase 4: final rest (90-100) — settle to flat
       t.to(interfaceWrapRef.current, {
         rotateX: 0,

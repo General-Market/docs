@@ -603,6 +603,13 @@ const SegAndMoreInner: React.FC = () => {
   const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
   const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
+  /* Market lines overlay — fades in during second half */
+  const treeOp = interpolate(frame, [fps*0.8, fps*1.2], [0, 0.85], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const lineStart = Math.floor(fps * 0.9);
+  const lineProg = interpolate(frame, [lineStart, lineStart+20], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  /* Pick 8 evenly spaced ball indices from the chain */
+  const LABEL_BALLS = MARKET_NODES.map((_, mi) => Math.floor((mi / (MARKET_NODES.length - 1)) * (MAX_BALLS - 1)));
+
   const renderBalls = () => Array.from({length:oCount}, (_,i) => {
     const bd = stretchStart+i*0.5;
     const damp = 6+(i%5)*1.4;
@@ -624,19 +631,20 @@ const SegAndMoreInner: React.FC = () => {
     const wX = noise2D("bx"+i,frame*0.025,i)*3*Math.min(cS,1);
     const col = GM_BALLS[i%GM_BALLS.length];
     const sO = interpolate(cS,[0,0.3,0.6,1,1.3],[0.15,1.3,0.9,1,1.1],{extrapolateRight:"clamp"});
+    const labelIdx = LABEL_BALLS.indexOf(i);
+    const hasLine = labelIdx >= 0 && treeOp > 0.01;
+    const goesUp = labelIdx % 2 === 0;
+    const lineH = hasLine ? interpolate(lineProg, [0,1], [0, 80 + (labelIdx % 3) * 20], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}) : 0;
+    const lineCol = hasLine ? MARKET_NODES[labelIdx].color : col;
+    const lineLabel = hasLine ? MARKET_NODES[labelIdx].label : "";
     return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
       {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
       {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
+      {hasLine && <div style={{position:"absolute",left:"50%",width:1,backgroundColor:lineCol,opacity:treeOp,transform:"translateX(-50%)",...(goesUp?{bottom:"50%",height:lineH}:{top:"50%",height:lineH})}}>
+        <div style={{position:"absolute",...(goesUp?{top:-16}:{bottom:-16}),left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:700,fontFamily:GM.fontSans,color:lineCol,opacity:interpolate(lineProg,[0.5,1],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),whiteSpace:"nowrap"}}>{lineLabel}</div>
+      </div>}
     </span>;
   });
-
-  /* Market tree overlay — fades in during second half */
-  const treeOp = interpolate(frame, [fps*0.8, fps*1.2], [0, 0.85], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const lineStart = Math.floor(fps * 0.9);
-  const lineProg = interpolate(frame, [lineStart, lineStart+20], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const lineTop = 100; const lineBot = 600;
-  const lineHeight = (lineBot - lineTop) * lineProg;
-  const nodeSpacing = (lineBot - lineTop) / (MARKET_NODES.length - 1);
 
   return (
     <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
@@ -650,26 +658,9 @@ const SegAndMoreInner: React.FC = () => {
           <span style={{color:GM.green,fontSize:44,display:"inline-block",marginLeft:-4}}>re</span>
         </>}
       </div>
-      {/* Market tree overlay — appears in second half */}
+      {/* "91 markets" label — appears at end of line animation */}
       {treeOp > 0.01 && (
-        <div style={{position:"absolute",inset:0,opacity:treeOp}}>
-          <div style={{position:"absolute",left:"50%",top:lineTop,width:2,height:lineHeight,backgroundColor:GM.green,transform:"translateX(-50%)"}} />
-          {MARKET_NODES.map((node, i) => {
-            const nodeY = lineTop + i * nodeSpacing;
-            const nodeDelay = lineStart + 3 * i;
-            const nodeSpr = lineProg > i / MARKET_NODES.length ? spring({frame, fps, delay: nodeDelay, config:{damping:12,stiffness:140,mass:0.5}}) : 0;
-            const isLeft = node.side === "left";
-            const ox = isLeft ? -30 : 30;
-            return (
-              <div key={i} style={{position:"absolute",left:"50%",top:nodeY}}>
-                <div style={{position:"absolute",top:-1,left:isLeft?-20:1,width:20,height:2,backgroundColor:GM.green,opacity:nodeSpr,transform:`scaleX(${nodeSpr})`,transformOrigin:isLeft?"right":"left"}} />
-                <div style={{position:"absolute",left:ox-6,top:-6,width:12,height:12,borderRadius:"50%",backgroundColor:node.color,transform:`scale(${interpolate(nodeSpr,[0,1],[0.3,1])})`,opacity:nodeSpr}} />
-                <div style={{position:"absolute",left:isLeft?ox-56:ox+10,top:-8,fontSize:12,fontWeight:600,fontFamily:GM.fontSans,color:node.color,opacity:nodeSpr,whiteSpace:"nowrap"}}>{node.label}</div>
-              </div>
-            );
-          })}
-          <div style={{position:"absolute",left:"50%",top:lineBot+20,transform:"translateX(-50%)",fontSize:15,fontWeight:700,fontFamily:GM.fontSans,color:GM.green,opacity:interpolate(lineProg,[0.8,1],[0,1],{extrapolateRight:"clamp"})}}>91 markets</div>
-        </div>
+        <div style={{position:"absolute",bottom:80,left:"50%",transform:"translateX(-50%)",fontSize:15,fontWeight:700,fontFamily:GM.fontSans,color:GM.green,opacity:interpolate(lineProg,[0.6,1],[0,treeOp],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>91 markets</div>
       )}
     </AbsoluteFill>
   );

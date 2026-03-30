@@ -812,30 +812,27 @@ export const Scene04: React.FC = () => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
-          /* Phone3D screen content — card flip at each transition point.
-             12 frames out (0° → 90°), swap content at midpoint, 12 frames in (-90° → 0°). */
+          /* Phone body flip at each transition point.
+             12 frames out (0° → 180°), swap content at midpoint, 12 frames in (180° → 360°).
+             The extra rotation is added to Phone3D's rotateY so the WHOLE phone flips. */
           const FLIP_HALF = 12;
           const flipTransitions = [PHASE.DOG_PHOTO.end, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start];
-          let screenFlipY = 0;
+          let phoneFlipDeg = 0;
           for (const tFrame of flipTransitions) {
             const dist = frame - tFrame;
             if (dist >= -FLIP_HALF && dist < FLIP_HALF) {
-              if (dist < 0) {
-                /* First half: 0° → 90° (old content fading out) */
-                screenFlipY = interpolate(dist, [-FLIP_HALF, 0], [0, 90], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-              } else {
-                /* Second half: -90° → 0° (new content fading in) */
-                screenFlipY = interpolate(dist, [0, FLIP_HALF], [-90, 0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-              }
+              /* 0° → 180° over 24 frames, eased */
+              phoneFlipDeg = interpolate(dist, [-FLIP_HALF, FLIP_HALF], [0, 180], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
               break;
+            } else if (dist >= FLIP_HALF) {
+              /* Past this transition — flip completed, reset */
+              phoneFlipDeg = 0;
             }
           }
           const phoneScreenContent = (
             <div style={{
               width: "100%", height: "100%", position: "relative", overflow: "hidden",
               background: PHONE_BG,
-              transform: `perspective(600px) rotateY(${screenFlipY}deg)`,
-              backfaceVisibility: "hidden" as const,
             }}>
               {/* Portfolio screen */}
               {showDogPhoto && <DogPhotoScreen />}
@@ -860,8 +857,8 @@ export const Scene04: React.FC = () => {
               {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
             </div>
           );
-          /* Convert degree tilts to radians for Phone3D */
-          const tiltYRad = (phoneTilt * Math.PI) / 180;
+          /* Convert degree tilts to radians for Phone3D (+ body flip offset) */
+          const tiltYRad = ((phoneTilt + phoneFlipDeg) * Math.PI) / 180;
           const tiltXRad = (phoneXTilt * Math.PI) / 180;
           const content = (
             <div style={{
