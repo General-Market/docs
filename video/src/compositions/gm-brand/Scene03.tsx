@@ -12,7 +12,7 @@ import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import { Phone3D } from "../../lib/Phone3D";
 import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
-import { GM, SourceLogos } from "./theme";
+import { GM, SOURCE_LOGOS, SourceLogo } from "./theme";
 
 /* --- bezier / motion helpers --- */
 function cubicBez(t: number, p0: number, p1: number, p2: number, p3: number): number {
@@ -408,17 +408,11 @@ const SegItsEverything: React.FC = () => {
 };
 
 /* --- SEGMENT 5: Source logos orbiting "in one place" --- */
-const ORBIT_ICONS: {icon:keyof typeof SourceLogos;name:string}[] = [
+const ORBIT_ICONS: {icon:keyof typeof SOURCE_LOGOS;name:string}[] = [
   {icon:"steam",name:"Steam"},{icon:"reddit",name:"Reddit"},{icon:"polymarket",name:"Polymarket"},
   {icon:"pumpfun",name:"Pump.fun"},{icon:"tmdb",name:"TMDB"},{icon:"twitch",name:"Twitch"},
   {icon:"db",name:"DB"},{icon:"crypto",name:"Crypto"},
 ];
-
-const AppIcon: React.FC<{icon:string}> = ({icon}) => {
-  const logo = SourceLogos[icon as keyof typeof SourceLogos];
-  if (logo) return <div style={{color:GM.green}}>{logo(28)}</div>;
-  return null;
-};
 
 const SegAppsFloat: React.FC = () => {
   const frame = useCurrentFrame();
@@ -449,7 +443,7 @@ const SegAppsFloat: React.FC = () => {
             const oy = orbitCY + Math.sin(orbitAngle) * orbitRadius;
             const aW = organicWobble("afw"+i, frame, 2, 1.5, 0.015);
             return <div key={i} style={{position:"absolute",left:ox+aW.x-26,top:oy+aW.y-26,width:52,height:52,borderRadius:12,backgroundColor:"white",transform:`scale(${interpolate(iSpr,[0,1],[0,depthFactor])})`,opacity:interpolate(iSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(0,0,0,0.08)",overflow:"hidden",zIndex:Math.round(depthFactor*10)}}>
-              <AppIcon icon={app.icon} />
+              <SourceLogo source={app.icon} size={28} />
             </div>;
           })}
         </div>
@@ -567,15 +561,15 @@ const SegGMResponse: React.FC = () => {
 };
 
 /* --- SEGMENT 8: And moooore — vertical market icons tree --- */
-const MARKET_NODES: {label:string; color:string; side:"left"|"right"}[] = [
-  {label:"Steam",      color:"#1B2838", side:"left"},
-  {label:"Reddit",     color:"#FF4500", side:"right"},
-  {label:"Crypto",     color:"#F7931A", side:"left"},
-  {label:"Polymarket", color:"#4A90D9", side:"right"},
-  {label:"Pump.fun",   color:"#00E676", side:"left"},
-  {label:"TMDB",       color:"#01D277", side:"right"},
-  {label:"Twitch",     color:"#9146FF", side:"left"},
-  {label:"DB",         color:"#EC0016", side:"right"},
+const MARKET_NODES: {label:string; sourceId:string; color:string; side:"left"|"right"}[] = [
+  {label:"Steam",      sourceId:"steam",      color:"#1B2838", side:"left"},
+  {label:"Reddit",     sourceId:"reddit",     color:"#FF4500", side:"right"},
+  {label:"Crypto",     sourceId:"crypto",     color:"#F7931A", side:"left"},
+  {label:"Polymarket", sourceId:"polymarket", color:"#4A90D9", side:"right"},
+  {label:"Pump.fun",   sourceId:"pumpfun",    color:"#00E676", side:"left"},
+  {label:"TMDB",       sourceId:"tmdb",       color:"#01D277", side:"right"},
+  {label:"Twitch",     sourceId:"twitch",     color:"#9146FF", side:"left"},
+  {label:"DB",         sourceId:"db",         color:"#EC0016", side:"right"},
 ];
 
 /* ── "And moooore" balls (original animation) + market tree overlay ── */
@@ -630,11 +624,21 @@ const SegAndMoreInner: React.FC = () => {
     const lineH = hasLine ? interpolate(lineProg, [0,1], [0, 80 + (labelIdx % 3) * 20], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}) : 0;
     const lineCol = hasLine ? MARKET_NODES[labelIdx].color : col;
     const lineLabel = hasLine ? MARKET_NODES[labelIdx].label : "";
+    const lineSourceId = hasLine ? MARKET_NODES[labelIdx].sourceId : "";
     return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
       {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
-      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
+      {hasLine && cS>0.01 ? (
+        <div style={{width:sz,height:sz,borderRadius:4,opacity:bOp,transform:`scale(${sO})`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <SourceLogo source={lineSourceId} size={Math.round(sz)} />
+        </div>
+      ) : (
+        cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />
+      )}
       {hasLine && <div style={{position:"absolute",left:"50%",width:1,backgroundColor:lineCol,opacity:treeOp,transform:"translateX(-50%)",...(goesUp?{bottom:"50%",height:lineH}:{top:"50%",height:lineH})}}>
-        <div style={{position:"absolute",...(goesUp?{top:-16}:{bottom:-16}),left:"50%",transform:"translateX(-50%)",fontSize:10,fontWeight:700,fontFamily:GM.fontSans,color:lineCol,opacity:interpolate(lineProg,[0.5,1],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),whiteSpace:"nowrap"}}>{lineLabel}</div>
+        <div style={{position:"absolute",...(goesUp?{top:-22}:{bottom:-22}),left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",gap:4,opacity:interpolate(lineProg,[0.5,1],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),whiteSpace:"nowrap"}}>
+          <SourceLogo source={lineSourceId} size={16} />
+          <span style={{fontSize:10,fontWeight:700,fontFamily:GM.fontSans,color:lineCol}}>{lineLabel}</span>
+        </div>
       </div>}
     </span>;
   });
