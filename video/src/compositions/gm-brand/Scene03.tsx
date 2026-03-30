@@ -20,14 +20,6 @@ function cubicBez(t: number, p0: number, p1: number, p2: number, p3: number): nu
   return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
 }
 
-function quadBez(t: number, p0: number, p1: number, p2: number): number {
-  const u = 1 - t;
-  return u*u*p0 + 2*u*t*p1 + t*t*p2;
-}
-
-function decel(t: number, rate = 3.0): number {
-  return 1 - Math.exp(-t * rate);
-}
 
 function organicWobble(seed: string, frame: number, ax = 3, ay = 2, speed = 0.02) {
   return {
@@ -41,7 +33,6 @@ function organicWobble(seed: string, frame: number, ax = 3, ay = 2, speed = 0.02
 const PINK = GM.red;          /* accent red */
 const PURPLE = GM.greenDark;  /* dark green */
 const BLUE = GM.green;        /* primary green */
-const CORAL = GM.redStatus;   /* red */
 const LAVENDER = GM.greenLight; /* light green bg */
 const BG = GM.bgSurface;
 const BG_WARM = GM.bgPage;
@@ -59,91 +50,6 @@ function seededRandom(seed: number) {
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const EASE_OUT_QUART = Easing.bezier(0.25, 1, 0.5, 1);
 const EASE_IN_QUART = Easing.bezier(0.5, 0, 0.75, 0);
-const EASE_ELASTIC_APPROX = Easing.bezier(0.68, -0.55, 0.27, 1.55);
-
-const Sparkle: React.FC<{x: number; y: number; size: number; color: string; opacity: number; rotation: number}> = ({x, y, size, color, opacity, rotation}) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" style={{position: "absolute", left: x - size/2, top: y - size/2, opacity, transform: `rotate(${rotation}deg)`}}>
-    <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5Z" fill={color}/>
-  </svg>
-);
-
-interface Particle {
-  id: number; x: number; y: number; cpOffX: number; cpOffY: number;
-  endX: number; endY: number; size: number; color: string; speed: number;
-  angle: number; noiseOffsetX: number; noiseOffsetY: number; delay: number;
-  shape: "circle"|"diamond"|"star";
-}
-
-function generateParticles(count: number, seed: number): Particle[] {
-  const rng = seededRandom(seed);
-  const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, GM.green, GM.greenDark, GM.redStatus];
-  const shapes: Particle["shape"][] = ["circle","circle","circle","diamond","star"];
-  return Array.from({length: count}, (_, i) => {
-    const angle = (rng() - 0.3) * Math.PI * 0.8;
-    const dist = 80 + rng() * 280;
-    const perpAngle = angle + (rng() > 0.5 ? Math.PI/2 : -Math.PI/2);
-    const cpDist = 40 + rng() * 120;
-    return {
-      id: i, x: 500 + rng()*280, y: 300 + (rng()-0.5)*120,
-      cpOffX: Math.cos(perpAngle)*cpDist + Math.cos(angle)*dist*0.5,
-      cpOffY: Math.sin(perpAngle)*cpDist + Math.sin(angle)*dist*0.5,
-      endX: Math.cos(angle)*dist, endY: Math.sin(angle)*dist,
-      size: 2 + rng()*10, color: colors[Math.floor(rng()*colors.length)],
-      speed: 0.5 + rng()*3, angle,
-      noiseOffsetX: rng()*1000, noiseOffsetY: rng()*1000,
-      delay: rng()*15, shape: shapes[Math.floor(rng()*shapes.length)],
-    };
-  });
-}
-
-const ParticleField: React.FC<{frame: number; fps: number; particles: Particle[]; phase: "explode"|"swirl"|"converge"|"scatter"}> = ({frame, fps, particles, phase}) => (
-  <>
-    {particles.map((p) => {
-      const rawT = Math.max(0, frame - p.delay) / fps;
-      const noiseX = noise2D("px"+p.id, rawT*0.8+p.noiseOffsetX, 0)*40;
-      const noiseY = noise2D("py"+p.id, 0, rawT*0.8+p.noiseOffsetY)*40;
-      const wob = organicWobble("p"+p.id, frame, 2.5, 2, 0.025);
-      let px: number, py: number, opacity: number, scale: number;
-
-      if (phase === "explode") {
-        const tNorm = Math.min(rawT/1.2, 1);
-        const d = decel(tNorm*3, 2.8);
-        px = quadBez(d, p.x, p.x+p.cpOffX, p.x+p.endX)+noiseX+wob.x;
-        py = quadBez(d, p.y, p.y+p.cpOffY, p.y+p.endY)+noiseY+wob.y;
-        opacity = interpolate(tNorm, [0,0.04,0.5,0.85,1], [0,1,0.9,0.4,0], {extrapolateRight:"clamp"});
-        scale = interpolate(tNorm, [0,0.1,0.6,1], [0.15,1.1,0.7,0.15], {extrapolateRight:"clamp"});
-      } else if (phase === "swirl") {
-        const sA = p.angle + rawT*2;
-        const dist = 50 + p.speed*rawT*40;
-        px = 640+Math.cos(sA)*dist+noiseX*0.5+wob.x;
-        py = 360+Math.sin(sA)*dist+noiseY*0.5+wob.y;
-        opacity = interpolate(rawT, [0,0.3,2,2.5], [1,0.8,0.6,0], {extrapolateRight:"clamp"});
-        scale = 0.7 + Math.sin(rawT*3)*0.3;
-      } else if (phase === "converge") {
-        const startX = p.x+Math.cos(p.angle)*300+noiseX;
-        const startY = p.y+Math.sin(p.angle)*200+noiseY;
-        const prog = interpolate(rawT, [0,1.5], [0,1], {extrapolateRight:"clamp", easing: Easing.bezier(0.25,0.46,0.45,0.94)});
-        const midX = (startX+640)/2+p.cpOffX*0.5;
-        const midY = (startY+360)/2+p.cpOffY*0.5;
-        px = quadBez(prog, startX, midX, 640)+wob.x;
-        py = quadBez(prog, startY, midY, 360)+wob.y;
-        opacity = interpolate(rawT, [0,0.2,1.2,1.5], [0,1,1,0], {extrapolateRight:"clamp"});
-        scale = interpolate(prog, [0,0.5,1], [1,0.8,0.2], {extrapolateRight:"clamp"});
-      } else {
-        const tNorm = Math.min(rawT/0.8, 1);
-        const d = decel(tNorm*2.5, 2.0);
-        const dist = p.speed*200;
-        px = quadBez(d, p.x, p.x+p.cpOffX*0.7, p.x+Math.cos(p.angle)*dist)+noiseX*2+wob.x;
-        py = quadBez(d, p.y, p.y+p.cpOffY*0.7, p.y+Math.sin(p.angle)*dist)+noiseY*2+wob.y;
-        opacity = interpolate(rawT, [0,0.1,0.5,1], [1,0.8,0.4,0], {extrapolateRight:"clamp"});
-        scale = interpolate(rawT, [0,0.5], [1,0], {extrapolateRight:"clamp"});
-      }
-      if (opacity <= 0) return null;
-      const s = p.size*scale;
-      return <div key={p.id} style={{position:"absolute",left:px-s/2,top:py-s/2,width:s,height:s,opacity,borderRadius:p.shape==="circle"?"50%":p.shape==="diamond"?"2px":"50%",backgroundColor:p.color,transform:p.shape==="diamond"?`rotate(${45+wob.rot}deg)`:p.shape==="star"?`rotate(${rawT*60+wob.rot}deg)`:`rotate(${wob.rot}deg)`}} />;
-    })}
-  </>
-);
 
 /* --- Avalanche bokeh particle data --- */
 interface BokehParticle {
@@ -227,6 +133,66 @@ const SegParticleExplosion: React.FC = () => (
 );
 
 /* --- SEGMENT 2: GM Reveal --- */
+/* --- Percentage ticker particles for GM reveal --- */
+interface PctParticle {
+  id: number; x: number; y: number; label: string; color: string;
+  fontSize: number; opacity: number; noiseOffX: number; noiseOffY: number;
+  driftAngle: number; driftSpeed: number;
+}
+
+function generatePctParticles(count: number, seed: number): PctParticle[] {
+  const rng = seededRandom(seed);
+  return Array.from({length: count}, (_, i) => {
+    const r1 = rng(); const r2 = rng(); const r3 = rng();
+    const r4 = rng(); const r5 = rng(); const r6 = rng(); const r7 = rng();
+    const isPositive = r1 > 0.2;
+    const value = (r2 * 25).toFixed(1);
+    const label = isPositive ? `+${value}%` : `-${value}%`;
+    const color = isPositive ? GM.greenStatus : GM.redStatus;
+    // Sizes: 70% tiny 8-10, 22% medium 12-14, 8% large 16-18
+    let fontSize: number;
+    if (r3 < 0.70) fontSize = 8 + r4 * 2;
+    else if (r3 < 0.92) fontSize = 12 + r4 * 2;
+    else fontSize = 16 + r4 * 2;
+    return {
+      id: i, x: r5 * 1280, y: r6 * 720,
+      label, color, fontSize,
+      opacity: 0.2 + r7 * 0.6,
+      noiseOffX: rng() * 1000, noiseOffY: rng() * 1000,
+      driftAngle: rng() * Math.PI * 2,
+      driftSpeed: 0.3 + rng() * 1.5,
+    };
+  });
+}
+
+const PctParticleField: React.FC<{frame: number; fps: number; particles: PctParticle[]}> = ({frame, fps, particles}) => (
+  <>
+    {particles.map((p) => {
+      const t = frame / fps;
+      const nx = noise2D("pctx"+p.id, t*0.4+p.noiseOffX, 0) * 30;
+      const ny = noise2D("pcty"+p.id, 0, t*0.4+p.noiseOffY) * 30;
+      const drift = t * p.driftSpeed * 18;
+      const px = p.x + Math.cos(p.driftAngle) * drift + nx;
+      const py = p.y + Math.sin(p.driftAngle) * drift * 0.5 - drift * 0.3 + ny;
+      // wrap vertically so they don't all vanish
+      const wrappedY = ((py % 820) + 820) % 820 - 50;
+      const wrappedX = ((px % 1380) + 1380) % 1380 - 50;
+      const fadeIn = interpolate(frame, [0, fps*0.4], [0, 1], {extrapolateRight:"clamp"});
+      const fadeOut = interpolate(frame, [fps*1.2, fps*1.6], [1, 0], {extrapolateRight:"clamp"});
+      const op = p.opacity * fadeIn * fadeOut;
+      if (op <= 0.01) return null;
+      return (
+        <span key={p.id} style={{
+          position:"absolute", left: wrappedX, top: wrappedY,
+          fontSize: p.fontSize, fontFamily: GM.fontMono, fontWeight: 600,
+          color: p.color, opacity: op, whiteSpace: "nowrap",
+          userSelect: "none", pointerEvents: "none",
+        }}>{p.label}</span>
+      );
+    })}
+  </>
+);
+
 const GEMINI_LETTERS = "GM".split("");
 const LETTER_ARC_ANGLES = [-0.9,0.3];
 const LETTER_ARC_DIST = [60,55];
@@ -234,19 +200,12 @@ const LETTER_ARC_DIST = [60,55];
 const SegGMReveal: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const particles = useMemo(() => generateParticles(60, 99), []);
-  const spRot = interpolate(frame, [0, fps*2], [0, 360]);
-  const spMainOp = interpolate(frame, [fps*0.3,fps*0.6,fps*1.2,fps*1.5], [0,1,1,0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const spMainS = interpolate(frame, [fps*0.3,fps*0.6], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_ELASTIC_APPROX});
-  const spSecOp = interpolate(frame, [fps*0.5,fps*0.7,fps*1.2,fps*1.5], [0,1,1,0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const spSecS = interpolate(frame, [fps*0.5,fps*0.7], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-  const spTerOp = interpolate(frame, [fps*0.6,fps*0.8,fps*1.2,fps*1.5], [0,1,1,0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
-  const spTerS = interpolate(frame, [fps*0.6,fps*0.8], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
+  const pctParticles = useMemo(() => generatePctParticles(100, 99), []);
 
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>
-      <div style={{opacity: interpolate(frame, [0,fps*2], [0.5,0], {extrapolateRight:"clamp"})}}>
-        <ParticleField frame={frame} fps={fps} particles={particles} phase="scatter" />
+      <div style={{opacity: interpolate(frame, [0,fps*2], [0.6,0], {extrapolateRight:"clamp"})}}>
+        <PctParticleField frame={frame} fps={fps} particles={pctParticles} />
       </div>
       <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"baseline",fontSize:72,fontFamily:GM.fontSans,fontWeight:400,letterSpacing:-1}}>
         {GEMINI_LETTERS.map((letter, i) => {
@@ -259,9 +218,6 @@ const SegGMReveal: React.FC = () => {
           return <span key={i} style={{display:"inline-block",background:`linear-gradient(135deg, ${BLUE} 0%, ${PURPLE} 100%)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",transform:`translate(${arcX+wob.x}px,${arcY+wob.y}px) scale(${sc})`,opacity:op}}>{letter}</span>;
         })}
       </div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spMainOp,transform:`scale(${spMainS})`}}><Sparkle x={640} y={300} size={36} color={PURPLE} opacity={1} rotation={spRot}/></div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spSecOp,transform:`scale(${spSecS})`}}><Sparkle x={700} y={310} size={20} color={BLUE} opacity={1} rotation={-spRot*0.6}/></div>
-      <div style={{position:"absolute",left:0,top:0,width:"100%",height:"100%",opacity:spTerOp,transform:`scale(${spTerS})`}}><Sparkle x={720} y={340} size={12} color={PINK} opacity={1} rotation={spRot*1.2}/></div>
     </AbsoluteFill>
   );
 };
@@ -646,7 +602,7 @@ const SegAndMoreInner: React.FC = () => {
       <div style={{position:"absolute",width:"100%",height:"100%",background:`radial-gradient(ellipse at 55% 40%, ${GM.green}09 0%, transparent 60%)`}} />
       {/* Original "m-ooo-re" animation */}
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:GM.fontSans,fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
-        <span style={{color:GM.textPrimary,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>And</span>
+        <span style={{color:GM.textPrimary,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>and 500k+</span>
         {stretch<=0.02 ? <span style={{color:GM.green,fontSize:44,opacity:mOp}}>more</span> : <>
           <span style={{color:GM.green,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
           {renderBalls()}
