@@ -585,99 +585,104 @@ const MARKET_NODES: {label:string; color:string; side:"left"|"right"}[] = [
   {label:"Meme",color:"#FACC15", side:"right"},
 ];
 
-const SegAndMore: React.FC = () => {
+/* ── "And moooore" balls (original animation) + market tree overlay ── */
+const GM_BALLS = [GM.green, GM.greenDark, GM.red, GM.greenStatus, GM.green, GM.redStatus, GM.greenDark, GM.greenStatus];
+const MAX_BALLS = 22;
+
+const SegAndMoreInner: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
+  const stretchStart = Math.floor(fps * 0.45);
+  const stretchRaw = frame - stretchStart;
+  const stretch = stretchRaw > 0 ? interpolate(stretchRaw, [0,fps*0.8], [0,1], {extrapolateRight:"clamp",easing:Easing.bezier(0.22,0.1,0.25,1)}) : 0;
+  const oCount = Math.floor(interpolate(stretch, [0,0.7], [1,MAX_BALLS], {extrapolateRight:"clamp"}));
+  const ballProgress = stretch > 0.1 ? interpolate(stretch, [0.1,0.4], [0,1], {extrapolateRight:"clamp"}) : 0;
+  const scrollX = interpolate(stretch, [0.05,1], [0,-200], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:Easing.bezier(0.2,0,0.3,1)});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+  const aSpr = spring({frame, fps, delay:0, config:{damping:10,stiffness:100,mass:0.6}});
+  const mOp = interpolate(frame, [fps*0.3,fps*0.55], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const aW = organicWobble("and8", frame, 2, 2.5, 0.015);
 
-  /* Vertical line draws top-to-bottom over 30 frames starting at frame 4 */
-  const lineStart = 4;
-  const lineProg = interpolate(frame, [lineStart, lineStart+30], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const renderBalls = () => Array.from({length:oCount}, (_,i) => {
+    const bd = stretchStart+i*0.5;
+    const damp = 6+(i%5)*1.4;
+    const stiff = 120+(i%3)*30;
+    const mass = 0.4+(i%4)*0.15;
+    const bR = Math.max(0, frame-bd);
+    const bT = Math.min(bR/(fps*0.5), 1);
+    const om = Math.sqrt(stiff/mass);
+    const z = damp/(2*Math.sqrt(stiff*mass));
+    const bS = bT<=0?0:1-Math.exp(-z*om*bT/fps*15)*Math.cos(om*Math.sqrt(1-z*z)*bT/fps*15);
+    const cS = Math.max(0,Math.min(1.3,bS));
+    const sz = 26*Math.min(cS,1);
+    const bOp = interpolate(cS,[0,0.4],[0,1],{extrapolateRight:"clamp"});
+    const lOp = interpolate(ballProgress,[0,0.6],[1,0],{extrapolateRight:"clamp"});
+    const sineAmp = interpolate(stretch,[0.15,0.6],[0,28],{extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+    const sineFreq = 0.35 + (i%3)*0.05;
+    const sinePhase = i*0.42 + frame*0.06;
+    const wY = Math.sin(sinePhase*sineFreq)*sineAmp*Math.min(cS,1);
+    const wX = noise2D("bx"+i,frame*0.025,i)*3*Math.min(cS,1);
+    const col = GM_BALLS[i%GM_BALLS.length];
+    const sO = interpolate(cS,[0,0.3,0.6,1,1.3],[0.15,1.3,0.9,1,1.1],{extrapolateRight:"clamp"});
+    return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
+      {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
+      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
+    </span>;
+  });
 
-  /* Tree layout: line spans from y=80 to y=620, nodes evenly distributed */
-  const lineTop = 80;
-  const lineBot = 620;
+  /* Market tree overlay — fades in during second half */
+  const treeOp = interpolate(frame, [fps*0.8, fps*1.2], [0, 0.85], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const lineStart = Math.floor(fps * 0.9);
+  const lineProg = interpolate(frame, [lineStart, lineStart+20], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const lineTop = 100; const lineBot = 600;
   const lineHeight = (lineBot - lineTop) * lineProg;
   const nodeSpacing = (lineBot - lineTop) / (MARKET_NODES.length - 1);
-  const connectorW = 20;
-  const nodeSize = 12;
-
-  /* "91 markets" label at bottom */
-  const labelSpr = spring({frame, fps, delay: lineStart+32, config:{damping:14,stiffness:100,mass:0.8}});
 
   return (
-    <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp}}>
-      <div style={{position:"absolute",width:"100%",height:"100%",background:"radial-gradient(ellipse at 50% 45%, rgba(0,163,108,0.05) 0%, transparent 55%)"}}>
-        {/* Vertical green trunk */}
-        <div style={{
-          position:"absolute",left:"50%",top:lineTop,
-          width:2,height:lineHeight,
-          backgroundColor:GM.green,
-          transform:"translateX(-50%)",
-        }} />
-        {/* Market nodes */}
-        {MARKET_NODES.map((node, i) => {
-          const nodeY = lineTop + i * nodeSpacing;
-          const lineReachedNode = lineHeight >= (nodeY - lineTop);
-          const nodeDelay = lineStart + Math.floor((i * 30) / MARKET_NODES.length) + 4 * i;
-          const nodeSpr = lineReachedNode
-            ? spring({frame, fps, delay: nodeDelay, config:{damping:12,stiffness:140,mass:0.5}})
-            : 0;
-          const isLeft = node.side === "left";
-          const offsetX = isLeft ? -(connectorW + nodeSize/2 + 4) : (connectorW + nodeSize/2 + 4);
-          return (
-            <div key={i} style={{position:"absolute",left:"50%",top:nodeY}}>
-              {/* Horizontal connector */}
-              <div style={{
-                position:"absolute",
-                top:-1,
-                left: isLeft ? -(connectorW) : 1,
-                width:connectorW,height:2,
-                backgroundColor:GM.green,
-                opacity: nodeSpr,
-                transform:`scaleX(${nodeSpr})`,
-                transformOrigin: isLeft ? "right center" : "left center",
-              }} />
-              {/* Node circle */}
-              <div style={{
-                position:"absolute",
-                left: offsetX - nodeSize/2,
-                top: -nodeSize/2,
-                width:nodeSize,height:nodeSize,
-                borderRadius:"50%",
-                backgroundColor:node.color,
-                transform:`scale(${interpolate(nodeSpr,[0,1],[0.3,1])})`,
-                opacity:nodeSpr,
-                boxShadow:`0 2px 8px ${node.color}44`,
-              }} />
-              {/* Label */}
-              <div style={{
-                position:"absolute",
-                left: isLeft ? offsetX - nodeSize/2 - 50 : offsetX + nodeSize/2 + 6,
-                top: -8,
-                fontSize:13,
-                fontWeight:600,
-                fontFamily:GM.fontSans,
-                color:node.color,
-                opacity: interpolate(nodeSpr,[0,0.4],[0,1],{extrapolateRight:"clamp"}),
-                transform:`translateX(${interpolate(nodeSpr,[0,1],[isLeft?10:-10,0])}px)`,
-                whiteSpace:"nowrap",
-              }}>{node.label}</div>
-            </div>
-          );
-        })}
-        {/* "91 markets" label */}
-        <div style={{
-          position:"absolute",left:"50%",top:lineBot + 30,
-          transform:`translateX(-50%) translateY(${interpolate(labelSpr,[0,1],[12,0])}px)`,
-          fontSize:16,fontWeight:700,fontFamily:GM.fontSans,
-          color:GM.green,
-          opacity:interpolate(labelSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),
-          whiteSpace:"nowrap",
-        }}>91 markets</div>
+    <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
+      <div style={{position:"absolute",width:"100%",height:"100%",background:`radial-gradient(ellipse at 55% 40%, ${GM.green}09 0%, transparent 60%)`}} />
+      {/* Original "m-ooo-re" animation */}
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:GM.fontSans,fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
+        <span style={{color:GM.textPrimary,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>And</span>
+        {stretch<=0.02 ? <span style={{color:GM.green,fontSize:44,opacity:mOp}}>more</span> : <>
+          <span style={{color:GM.green,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
+          {renderBalls()}
+          <span style={{color:GM.green,fontSize:44,display:"inline-block",marginLeft:-4}}>re</span>
+        </>}
       </div>
+      {/* Market tree overlay — appears in second half */}
+      {treeOp > 0.01 && (
+        <div style={{position:"absolute",inset:0,opacity:treeOp}}>
+          <div style={{position:"absolute",left:"50%",top:lineTop,width:2,height:lineHeight,backgroundColor:GM.green,transform:"translateX(-50%)"}} />
+          {MARKET_NODES.map((node, i) => {
+            const nodeY = lineTop + i * nodeSpacing;
+            const nodeDelay = lineStart + 3 * i;
+            const nodeSpr = lineProg > i / MARKET_NODES.length ? spring({frame, fps, delay: nodeDelay, config:{damping:12,stiffness:140,mass:0.5}}) : 0;
+            const isLeft = node.side === "left";
+            const ox = isLeft ? -30 : 30;
+            return (
+              <div key={i} style={{position:"absolute",left:"50%",top:nodeY}}>
+                <div style={{position:"absolute",top:-1,left:isLeft?-20:1,width:20,height:2,backgroundColor:GM.green,opacity:nodeSpr,transform:`scaleX(${nodeSpr})`,transformOrigin:isLeft?"right":"left"}} />
+                <div style={{position:"absolute",left:ox-6,top:-6,width:12,height:12,borderRadius:"50%",backgroundColor:node.color,transform:`scale(${interpolate(nodeSpr,[0,1],[0.3,1])})`,opacity:nodeSpr}} />
+                <div style={{position:"absolute",left:isLeft?ox-56:ox+10,top:-8,fontSize:12,fontWeight:600,fontFamily:GM.fontSans,color:node.color,opacity:nodeSpr,whiteSpace:"nowrap"}}>{node.label}</div>
+              </div>
+            );
+          })}
+          <div style={{position:"absolute",left:"50%",top:lineBot+20,transform:"translateX(-50%)",fontSize:15,fontWeight:700,fontFamily:GM.fontSans,color:GM.green,opacity:interpolate(lineProg,[0.8,1],[0,1],{extrapolateRight:"clamp"})}}>91 markets</div>
+        </div>
+      )}
     </AbsoluteFill>
   );
+};
+
+const SegAndMore: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const stretchActive = frame > Math.floor(fps * 0.45);
+  if (stretchActive) {
+    return <CameraMotionBlur samples={6} shutterAngle={100}><SegAndMoreInner /></CameraMotionBlur>;
+  }
+  return <SegAndMoreInner />;
 };
 
 /* --- SEGMENT 9: Starting with the new GM protocol --- */
