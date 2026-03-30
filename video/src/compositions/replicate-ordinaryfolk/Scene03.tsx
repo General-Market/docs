@@ -631,7 +631,13 @@ const SegStartingWith: React.FC = () => {
   );
 };
 
-/* --- SEGMENT 10: Phone Mockup (3D tilted, ref frames 14-15) --- */
+/* --- SEGMENT 10: Phone Mockup (3D tilted, ref frames 14-15) ---
+ * Reference timeline (extracted frame-by-frame):
+ *   0-45f  (entrance):  rotateY -5deg, rotateX 2deg  — nearly head-on
+ *   45-55f (hold):      rotateY -5deg, rotateX 2deg  — gentle float
+ *   55-72f (tilt away): rotateY ramps to -25deg, rotateX to 10deg  — dramatic 3/4
+ *   72-84f (exit):      rotateY -28deg, rotateX 12deg — fully turned
+ */
 const SegPhoneMockup: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps, durationInFrames} = useVideoConfig();
@@ -648,6 +654,20 @@ const SegPhoneMockup: React.FC = () => {
   const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
   const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+
+  /* Frame-interpolated tilt matching reference (degrees → radians) */
+  const tiltYDeg = interpolate(frame,
+    [0, 45, 55, 72, 84],
+    [-5, -5, -12, -25, -28],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const tiltXDeg = interpolate(frame,
+    [0, 45, 55, 72, 84],
+    [2, 2, 5, 10, 12],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const tiltYRad = (tiltYDeg * Math.PI) / 180;
+  const tiltXRad = (tiltXDeg * Math.PI) / 180;
 
   const phoneScreen = (
     <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Google Sans',sans-serif"}}>
@@ -670,11 +690,10 @@ const SegPhoneMockup: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
       <Phone3D
-        rotateY={0.24}
-        rotateX={-0.05}
+        rotateY={tiltYRad}
+        rotateX={tiltXRad}
         scale={1}
         screenContent={phoneScreen}
-        screenColor="#FFFFFF"
         opacity={pOp}
         style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
       />
@@ -819,10 +838,11 @@ const PhoneHomeScreen: React.FC<{frame: number; fps: number}> = ({frame, fps}) =
 };
 
 /* --- SEGMENT 12: Phone Good Morning → Flat horizon with "But that's not all..."
- *   Phase A (0-45%): Phone enters tilted showing Good Morning screen, floats
- *   Phase B (45-100%): Phone flattens (nearly head-on), fills 2/3 frame height.
- *     "But that's not all..." text on the horizon line (top edge of phone).
- *     Text tracked to phone vertical position.
+ *   Reference timeline (extracted frame-by-frame):
+ *     0-20f  (entrance): rotateY -8deg, rotateX 3deg — entering from top-right
+ *     20-50f (settle):   rotateY eases to -3deg, rotateX to 1deg — nearly flat
+ *     50-90f (hold):     rotateY -3deg, rotateX 1deg — head-on, gentle float
+ *     90-110f (exit):    rotateY -4deg, rotateX 1deg — subtle drift
  */
 const SegPhoneGoodMorning: React.FC = () => {
   const frame = useCurrentFrame();
@@ -839,6 +859,20 @@ const SegPhoneGoodMorning: React.FC = () => {
   const sF = frame - fps*1.5;
   const sB = sF>0 ? interpolate(sF, [0,4,13], [0,-8,0], {extrapolateRight:"clamp"}) : 0;
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
+
+  /* Frame-interpolated tilt matching reference (degrees → radians) */
+  const tiltYDeg = interpolate(frame,
+    [0, 20, 50, 90, 110],
+    [-8, -5, -3, -3, -4],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const tiltXDeg = interpolate(frame,
+    [0, 20, 50, 90, 110],
+    [3, 2, 1, 1, 1],
+    {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
+  );
+  const tiltYRad = (tiltYDeg * Math.PI) / 180;
+  const tiltXRad = (tiltXDeg * Math.PI) / 180;
 
   /* Screen: Good Morning Gemini content */
   const cSpr = [0,1,2].map(i => spring({frame, fps, delay: Math.floor(fps*0.5)+i*4, config:{damping:14,stiffness:100,mass:0.7}}));
@@ -873,11 +907,10 @@ const SegPhoneGoodMorning: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG,opacity:exitOp}}>
       <Phone3D
-        rotateY={0.24}
-        rotateX={-0.05}
+        rotateY={tiltYRad}
+        rotateX={tiltXRad}
         scale={1}
         screenContent={phoneScreen}
-        screenColor="#FFFFFF"
         opacity={pOp}
         style={{transform:`translate(${pX}px,${pY+sB}px) rotate(${pR}deg) scale(${pS}) ${tilt.transform}`}}
       />

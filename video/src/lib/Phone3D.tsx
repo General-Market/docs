@@ -42,14 +42,28 @@ export const Phone3D: React.FC<{
   const ry = typeof rotateY === "number" ? rotateY * (180 / Math.PI) : 0;
   const rz = typeof rotateZ === "number" ? rotateZ * (180 / Math.PI) : 0;
 
+  /* Merge the centering translate with any consumer-supplied transform */
+  const baseTransform = "translate(-50%, -50%)";
+  const consumerTransform = style?.transform ?? "";
+  const mergedTransform = consumerTransform
+    ? `${baseTransform} ${consumerTransform}`
+    : baseTransform;
+
+  /* Pull transform out of style so we don't double-apply */
+  const { transform: _ignored, ...restStyle } = style ?? {};
+
   return (
     <div
       style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: mergedTransform,
         width,
         height,
         perspective: 800,
         opacity,
-        ...style,
+        ...restStyle,
       }}
     >
       <div

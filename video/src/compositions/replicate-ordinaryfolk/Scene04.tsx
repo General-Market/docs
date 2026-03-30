@@ -842,17 +842,29 @@ export const Scene04: React.FC = () => {
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  /* Phone tilt — strong entrance tilt, flattens during AI response (nearly head-on),
-     ramps up during exit */
+  /* Phone tilt — reference-matched frame-by-frame angles:
+   *   0-15f  (dog photo):     rotateY -3deg  — nearly flat, head-on
+   *   15-80f (chat):          rotateY -5deg  — slight natural tilt
+   *   80-110f (photo expand): rotateY -8deg  — tilts away to show depth
+   *   110-170f (AI response): rotateY -2deg  — flattens so text is readable
+   *   170-198f (emoji burst): rotateY -2deg  — holds flat
+   *   198+ (exit):            rotateY -45deg — dramatic edge-on exit
+   */
   const phoneTilt = interpolate(frame,
-    [0, 30, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start, PHASE.AI_RESPONSE.start + 20, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [-18, -14, -10, -6, -2, -2, -2, -45],
+    [0, 15, 40, PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end, PHASE.AI_RESPONSE.start + 15, PHASE.EMOJI_BURST.start, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [-3, -5, -5, -8, -5, -2, -2, -2, -45],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
-  /* Phone X rotation — subtle forward lean, flattens during AI response */
+  /* Phone X rotation — reference-matched:
+   *   0-15f:   2deg forward lean (dog photo, flat)
+   *   15-80f:  2deg (gentle, chat visible)
+   *   80-110f: 5deg (tilts forward during expand)
+   *   110+:    1deg (nearly flat for readability)
+   *   exit:    8deg (dramatic forward lean on exit)
+   */
   const phoneXTilt = interpolate(frame,
-    [0, PHASE.AI_RESPONSE.start, PHASE.AI_RESPONSE.start + 15, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
-    [5, 2, 0.5, 0.5, 8],
+    [0, 15, PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end, PHASE.AI_RESPONSE.start + 15, PHASE.TRANSITION_TEXT.start, PHASE.TRANSITION_TEXT.start + 16],
+    [2, 2, 5, 3, 1, 1, 8],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
 
@@ -973,7 +985,6 @@ export const Scene04: React.FC = () => {
                 rotateX={tiltXRad}
                 scale={1}
                 screenContent={phoneScreenContent}
-                screenColor="#0a0a0a"
               />
               {/* Floating emojis */}
               {showEmojis && FLOATING_EMOJIS.map((item, i) => (
