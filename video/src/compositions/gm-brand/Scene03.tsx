@@ -12,7 +12,7 @@ import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import { Phone3D } from "../../lib/Phone3D";
 import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
-import { GM } from "./theme";
+import { GM, SourceLogos } from "./theme";
 
 /* --- bezier / motion helpers --- */
 function cubicBez(t: number, p0: number, p1: number, p2: number, p3: number): number {
@@ -409,21 +409,16 @@ const SegItsEverything: React.FC = () => {
   );
 };
 
-/* --- SEGMENT 5: Finance Icons + "in one place" --- */
-const ORBIT_ICONS: {icon:string;name:string}[] = [
-  {icon:"chart",name:"Markets"},{icon:"portfolio",name:"Portfolio"},{icon:"wallet",name:"Wallet"},
-  {icon:"trend",name:"Trends"},{icon:"index",name:"ITPs"},{icon:"vision",name:"Vision"},
-  {icon:"swap",name:"Trade"},
+/* --- SEGMENT 5: Source logos orbiting "in one place" --- */
+const ORBIT_ICONS: {icon:keyof typeof SourceLogos;name:string}[] = [
+  {icon:"steam",name:"Steam"},{icon:"reddit",name:"Reddit"},{icon:"polymarket",name:"Polymarket"},
+  {icon:"pumpfun",name:"Pump.fun"},{icon:"tmdb",name:"TMDB"},{icon:"twitch",name:"Twitch"},
+  {icon:"db",name:"DB"},{icon:"crypto",name:"Crypto"},
 ];
 
 const AppIcon: React.FC<{icon:string}> = ({icon}) => {
-  if (icon==="chart") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill={GM.green}/></svg>;
-  if (icon==="portfolio") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" fill={GM.greenDark}/></svg>;
-  if (icon==="wallet") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 8H4V9h16v6zm-3-3.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" fill={GM.green}/></svg>;
-  if (icon==="trend") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill={GM.green}/></svg>;
-  if (icon==="index") return <svg width="28" height="28" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" fill={GM.greenDark}/><rect x="6" y="7" width="4" height="2" rx="1" fill="white"/><rect x="6" y="11" width="4" height="2" rx="1" fill="white"/><rect x="6" y="15" width="4" height="2" rx="1" fill="white"/><rect x="13" y="7" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="11" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="15" width="5" height="2" rx="1" fill="white" opacity="0.7"/></svg>;
-  if (icon==="vision") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill={GM.green}/><circle cx="12" cy="12" r="2.5" fill={GM.greenDark}/></svg>;
-  if (icon==="swap") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" fill={GM.green}/></svg>;
+  const logo = SourceLogos[icon as keyof typeof SourceLogos];
+  if (logo) return <div style={{color:GM.green}}>{logo(28)}</div>;
   return null;
 };
 
@@ -575,14 +570,14 @@ const SegGMResponse: React.FC = () => {
 
 /* --- SEGMENT 8: And moooore — vertical market icons tree --- */
 const MARKET_NODES: {label:string; color:string; side:"left"|"right"}[] = [
-  {label:"BTC", color:"#F7931A", side:"left"},
-  {label:"DeFi",color:GM.green,    side:"right"},
-  {label:"ETH", color:"#627EEA", side:"left"},
-  {label:"AI",  color:"#14B8A6", side:"right"},
-  {label:"SOL", color:"#9945FF", side:"left"},
-  {label:"L1",  color:GM.textMuted,side:"right"},
-  {label:"AVAX",color:"#E84142", side:"left"},
-  {label:"Meme",color:"#FACC15", side:"right"},
+  {label:"Steam",      color:"#1B2838", side:"left"},
+  {label:"Reddit",     color:"#FF4500", side:"right"},
+  {label:"Crypto",     color:"#F7931A", side:"left"},
+  {label:"Polymarket", color:"#4A90D9", side:"right"},
+  {label:"Pump.fun",   color:"#00E676", side:"left"},
+  {label:"TMDB",       color:"#01D277", side:"right"},
+  {label:"Twitch",     color:"#9146FF", side:"left"},
+  {label:"DB",         color:"#EC0016", side:"right"},
 ];
 
 /* ── "And moooore" balls (original animation) + market tree overlay ── */
