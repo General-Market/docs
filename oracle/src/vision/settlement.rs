@@ -67,22 +67,30 @@ pub fn compute_settlement(
     let total_payouts: U256 = sorted.iter().map(|(_, p, _)| *p).fold(U256::zero(), |a, b| a + b);
     let total_deposits: U256 = player_deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
     if total_payouts != total_deposits {
-        tracing::error!(
+        let delta = if total_payouts > total_deposits {
+            total_payouts - total_deposits
+        } else {
+            total_deposits - total_payouts
+        };
+        tracing::warn!(
             batch_id = tick_result.batch_id,
             total_payouts = %total_payouts,
             total_deposits = %total_deposits,
-            delta = %(total_payouts.max(total_deposits) - total_payouts.min(total_deposits)),
-            "CRITICAL: zero-sum invariant violated — clamping payouts to deposits"
+            delta = %delta,
+            "Zero-sum invariant violated — adjusting last player to restore balance"
         );
-        // Clamp: scale all payouts proportionally so total == total_deposits.
-        // This prevents insolvency on-chain while preserving relative ordering.
-        if !total_payouts.is_zero() {
-            for item in sorted.iter_mut() {
-                // new_payout = payout * total_deposits / total_payouts
-                item.1 = item.1
-                    .checked_mul(total_deposits)
-                    .and_then(|v| v.checked_div(total_payouts))
-                    .unwrap_or(item.1);
+        // Deterministic fix: adjust the LAST player's payout (sorted by address,
+        // so "last" is identical across all oracles). This avoids the proportional
+        // scaling that produces different results on each oracle due to integer
+        // division rounding on slightly different total_payouts values.
+        if let Some(last) = sorted.last_mut() {
+            if total_payouts > total_deposits {
+                // Overpaid — reduce last player's payout
+                let reduce = std::cmp::min(delta, last.1);
+                last.1 = last.1 - reduce;
+            } else {
+                // Underpaid — increase last player's payout
+                last.1 = last.1 + delta;
             }
         }
     }

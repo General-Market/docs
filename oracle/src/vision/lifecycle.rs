@@ -685,6 +685,61 @@ impl BatchLifecycleManager {
             prices.insert(market_id, start_price, end_price, fetched_at);
         }
 
+        // ── End-price consensus: freeze end prices so all oracles use the same values ──
+        // Without this, each oracle fetches prices at slightly different times, producing
+        // different payouts → different payouts_hash → co-signing fails → settlements stuck.
+        // First oracle to resolve saves end_prices to DB. All subsequent oracles read from DB.
+        let end_prices_saved: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT end_prices FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
+        )
+        .bind(batch_id as i64)
+        .fetch_optional(&self.pool)
+        .await
+        .ok()
+        .flatten();
+
+        if let Some(saved) = end_prices_saved {
+            // Use saved end prices (overwrite live-fetched ones for determinism)
+            if let Some(obj) = saved.as_object() {
+                for (asset_id, val) in obj {
+                    let market_id = H256::from(keccak256(asset_id.as_bytes()));
+                    let end_price = val.as_str()
+                        .and_then(|s| s.parse::<i128>().ok())
+                        .or_else(|| val.as_f64().map(|f| (f * 1e8).round() as i128))
+                        .unwrap_or(0);
+                    if end_price != 0 {
+                        if let Some((start, _)) = prices.get_prices(&market_id) {
+                            prices.insert(market_id, start, end_price, now_secs);
+                        }
+                    }
+                }
+                debug!(batch_id, "Using saved end prices for settlement determinism");
+            }
+        } else {
+            // First resolver — save end prices for other oracles to use
+            let end_price_map: serde_json::Value = {
+                let mut map = serde_json::Map::new();
+                for snap in snapshots.iter() {
+                    let aid = snap.get("asset_id").or_else(|| snap.get("assetId"))
+                        .and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("");
+                    if aid.is_empty() { continue; }
+                    let market_id = H256::from(keccak256(aid.as_bytes()));
+                    if let Some((_, end)) = prices.get_prices(&market_id) {
+                        map.insert(aid.to_string(), serde_json::Value::String(end.to_string()));
+                    }
+                }
+                serde_json::Value::Object(map)
+            };
+            let _ = sqlx::query(
+                "UPDATE vision_batch_lifecycle SET end_prices = $1 WHERE on_chain_batch_id = $2"
+            )
+            .bind(&end_price_map)
+            .bind(batch_id as i64)
+            .execute(&self.pool)
+            .await;
+            debug!(batch_id, assets = end_price_map.as_object().map(|m| m.len()).unwrap_or(0), "Saved end prices for settlement determinism");
+        }
+
         // Flip bitmaps (pending → active) so resolver picks up latest predictions
         self.bitmap_store.flip(batch_id).await;
 
