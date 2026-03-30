@@ -626,18 +626,13 @@ const SegAndMoreInner: React.FC = () => {
     const lineLabel = hasLine ? MARKET_NODES[labelIdx].label : "";
     const lineSourceId = hasLine ? MARKET_NODES[labelIdx].sourceId : "";
     return <span key={i} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative",width:28,height:Math.max(sz+2,30),transform:`translateY(${wY}px) translateX(${wX}px)`,flexShrink:0}}>
+      {/* Always render the colored O circle */}
       {lOp>0.01&&<span style={{position:"absolute",opacity:lOp*Math.min(cS*3,1),color:col,fontSize:44}}>o</span>}
-      {hasLine && cS>0.01 ? (
-        <div style={{width:sz,height:sz,borderRadius:4,opacity:bOp,transform:`scale(${sO})`,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <SourceLogo source={lineSourceId} size={Math.round(sz)} />
-        </div>
-      ) : (
-        cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />
-      )}
+      {cS>0.01&&<div style={{width:sz,height:sz,borderRadius:"50%",backgroundColor:col,opacity:bOp,transform:`scale(${sO})`,boxShadow:cS>0.5?`0 2px 10px ${col}66, 0 0 16px ${col}33`:undefined}} />}
+      {/* Vertical line + big logo at the end */}
       {hasLine && <div style={{position:"absolute",left:"50%",width:1,backgroundColor:lineCol,opacity:treeOp,transform:"translateX(-50%)",...(goesUp?{bottom:"50%",height:lineH}:{top:"50%",height:lineH})}}>
-        <div style={{position:"absolute",...(goesUp?{top:-22}:{bottom:-22}),left:"50%",transform:"translateX(-50%)",display:"flex",alignItems:"center",gap:4,opacity:interpolate(lineProg,[0.5,1],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),whiteSpace:"nowrap"}}>
-          <SourceLogo source={lineSourceId} size={16} />
-          <span style={{fontSize:10,fontWeight:700,fontFamily:GM.fontSans,color:lineCol}}>{lineLabel}</span>
+        <div style={{position:"absolute",...(goesUp?{top:-36}:{bottom:-36}),left:"50%",transform:"translateX(-50%)",opacity:interpolate(lineProg,[0.5,1],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>
+          <SourceLogo source={lineSourceId} size={28} />
         </div>
       </div>}
     </span>;
@@ -646,9 +641,18 @@ const SegAndMoreInner: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:`radial-gradient(ellipse at 55% 40%, ${GM.green}09 0%, transparent 60%)`}} />
-      {/* Original "m-ooo-re" animation */}
+      {/* Full-screen "and 500k+ more" title — shows first, fades as balls start */}
+      <div style={{
+        position:"absolute",left:"50%",top:"50%",
+        transform:`translate(-50%,-50%) scale(${interpolate(aSpr,[0,1],[0.92,1])})`,
+        opacity: interpolate(stretch,[0,0.15],[1,0],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}) * interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"}),
+        fontFamily:GM.fontSans,fontSize:52,fontWeight:900,letterSpacing:"-0.03em",
+        color:GM.textPrimary,whiteSpace:"nowrap",textAlign:"center",
+      }}>
+        and <span style={{color:GM.green}}>500k+</span> more
+      </div>
+      {/* "m-ooo-re" ball animation */}
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:GM.fontSans,fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
-        <span style={{color:GM.textPrimary,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>and 500k+</span>
         {stretch<=0.02 ? <span style={{color:GM.green,fontSize:44,opacity:mOp}}>more</span> : <>
           <span style={{color:GM.green,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
           {renderBalls()}
