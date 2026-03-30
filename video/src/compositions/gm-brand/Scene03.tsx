@@ -12,6 +12,7 @@ import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import { Phone3D } from "../../lib/Phone3D";
 import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
+import { GM } from "./theme";
 
 /* --- bezier / motion helpers --- */
 function cubicBez(t: number, p0: number, p1: number, p2: number, p3: number): number {
@@ -37,14 +38,14 @@ function organicWobble(seed: string, frame: number, ax = 3, ay = 2, speed = 0.02
 }
 
 /* --- palette (GM brand) --- */
-const PINK = "#C40000";       /* accent red */
-const PURPLE = "#008A5A";     /* dark green */
-const BLUE = "#00A36C";       /* primary green */
-const CORAL = "#DC2626";      /* red */
-const LAVENDER = "#E6F7F0";   /* light green bg */
-const BG = "#F5F5F5";
-const BG_WARM = "#FFFFFF";
-const DARK = "#1A1A1A";
+const PINK = GM.red;          /* accent red */
+const PURPLE = GM.greenDark;  /* dark green */
+const BLUE = GM.green;        /* primary green */
+const CORAL = GM.redStatus;   /* red */
+const LAVENDER = GM.greenLight; /* light green bg */
+const BG = GM.bgSurface;
+const BG_WARM = GM.bgPage;
+const DARK = GM.textPrimary;
 
 function seededRandom(seed: number) {
   let s = seed % 2147483647;
@@ -75,7 +76,7 @@ interface Particle {
 
 function generateParticles(count: number, seed: number): Particle[] {
   const rng = seededRandom(seed);
-  const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, "#00A36C", "#008A5A", "#DC2626"];
+  const colors = [PINK, PURPLE, BLUE, CORAL, LAVENDER, GM.green, GM.greenDark, GM.redStatus];
   const shapes: Particle["shape"][] = ["circle","circle","circle","diamond","star"];
   return Array.from({length: count}, (_, i) => {
     const angle = (rng() - 0.3) * Math.PI * 0.8;
@@ -154,8 +155,8 @@ interface BokehParticle {
 function generateBokehParticles(count: number, seed: number): BokehParticle[] {
   const rng = seededRandom(seed);
   const colors = [
-    "#00A36C","#008A5A","#00A36C","#E6F7F0","#C40000","#DC2626",
-    "#FFFFFF","#00A36C","#008A5A","#E6F7F0","#00A36C","#008A5A",
+    GM.green,GM.greenDark,GM.green,GM.greenLight,GM.red,GM.redStatus,
+    GM.textInverse,GM.green,GM.greenDark,GM.greenLight,GM.green,GM.greenDark,
   ];
   return Array.from({length: count}, (_, i) => ({
     id: i,
@@ -247,7 +248,7 @@ const SegGMReveal: React.FC = () => {
       <div style={{opacity: interpolate(frame, [0,fps*2], [0.5,0], {extrapolateRight:"clamp"})}}>
         <ParticleField frame={frame} fps={fps} particles={particles} phase="scatter" />
       </div>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"baseline",fontSize:72,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,letterSpacing:-1}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"baseline",fontSize:72,fontFamily:GM.fontSans,fontWeight:400,letterSpacing:-1}}>
         {GEMINI_LETTERS.map((letter, i) => {
           const wob = organicWobble("gl"+i, frame, 1.5, 1, 0.018);
           const spr = spring({frame, fps, delay: i*3, config:{damping:12,stiffness:120,mass:0.8}});
@@ -308,9 +309,9 @@ const SegDesktopUI: React.FC = () => {
       {/* Perspective on PARENT div, preserve-3d on animated child */}
       <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,perspective:800,transform:"translate(-50%,-50%)",opacity:bOp}}>
       <div style={{width:"100%",height:"100%",transformStyle:"preserve-3d",transform:`rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,borderRadius:18,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)"}}>
-        <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,overflow:"hidden",position:"relative"}}>
+        <div style={{width:"100%",height:"100%",backgroundColor:GM.bgPage,borderRadius:16,overflow:"hidden",position:"relative"}}>
           {/* Browser chrome — GM web app top bar */}
-          <div style={{height:64,backgroundColor:"#FFFFFF",borderBottom:"1px solid #E0E0E0",display:"flex",alignItems:"center",padding:"0 24px"}}>
+          <div style={{height:64,backgroundColor:GM.bgPage,borderBottom:`1px solid ${GM.borderLight}`,display:"flex",alignItems:"center",padding:"0 24px"}}>
             {/* Left: GM logo + brand name */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <svg width="36" height="36" viewBox="0 0 102 102" fill="none">
@@ -323,40 +324,40 @@ const SegDesktopUI: React.FC = () => {
                 <rect x="66" y="48" width="15" height="6" rx="3" fill="white"/>
                 <rect x="78" y="48" width="9" height="6" rx="3" fill="white"/>
               </svg>
-              <span style={{fontSize:22,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:900,color:"#1A1A1A",letterSpacing:"-0.03em"}}>General Market</span>
+              <span style={{fontSize:22,fontFamily:GM.fontSans,fontWeight:900,color:GM.textPrimary,letterSpacing:"-0.03em"}}>General Market</span>
             </div>
             {/* Center nav */}
             <div style={{flex:1,display:"flex",justifyContent:"center",gap:32}}>
               {["Markets","Portfolio","Vision"].map(n => (
-                <span key={n} style={{fontSize:14,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A"}}>{n}</span>
+                <span key={n} style={{fontSize:14,fontFamily:GM.fontSans,fontWeight:600,color:GM.textPrimary}}>{n}</span>
               ))}
             </div>
             {/* Right: Connect Wallet */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:8,height:8,borderRadius:"50%",backgroundColor:"#22C55E"}} />
-              <div style={{border:"2px solid #1A1A1A",borderRadius:8,padding:"6px 16px",fontSize:13,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A"}}>Connect Wallet</div>
+              <div style={{border:`2px solid ${GM.textPrimary}`,borderRadius:8,padding:"6px 16px",fontSize:13,fontFamily:GM.fontSans,fontWeight:600,color:GM.textPrimary}}>Connect Wallet</div>
             </div>
           </div>
           {/* Main content area */}
-          <div style={{backgroundColor:"#F5F5F5",padding:"44px 60px 30px",display:"flex",flexDirection:"column",alignItems:"center",height:"calc(100% - 64px)",position:"relative"}}>
-            <div style={{fontSize:48,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:900,color:"#1A1A1A",letterSpacing:"-0.035em",lineHeight:1.2,marginBottom:8,textAlign:"center"}}>
+          <div style={{backgroundColor:GM.bgSurface,padding:"44px 60px 30px",display:"flex",flexDirection:"column",alignItems:"center",height:"calc(100% - 64px)",position:"relative"}}>
+            <div style={{fontSize:48,fontFamily:GM.fontSans,fontWeight:900,color:GM.textPrimary,letterSpacing:"-0.035em",lineHeight:1.2,marginBottom:8,textAlign:"center"}}>
               {helloText.slice(0, helloChars)}
               {helloChars < helloText.length && <span style={{opacity: frame%20<10?1:0, color: BLUE}}>|</span>}
             </div>
-            <div style={{fontSize:20,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#555555",lineHeight:1.2,marginBottom:32}}>{howText.slice(0, howChars)}</div>
+            <div style={{fontSize:20,fontFamily:GM.fontSans,fontWeight:400,color:GM.textSecondary,lineHeight:1.2,marginBottom:32}}>{howText.slice(0, howChars)}</div>
             <div style={{display:"flex",gap:14}}>
               {cards.map((card, i) => {
                 const cs = cSpr[i];
-                return <div key={i} style={{width:155,backgroundColor:"#FFFFFF",border:"1px solid #E0E0E0",borderRadius:6,padding:"18px 16px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",transform:`translateY(${interpolate(cs,[0,1],[40,0])}px) scale(${interpolate(cs,[0,1],[0.9,1])})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-                  <div style={{fontSize:14,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A",lineHeight:1.3,marginBottom:4}}>{card.emoji} {card.title}</div>
-                  <div style={{fontSize:12,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#999999",lineHeight:1.3}}>{card.sub}</div>
+                return <div key={i} style={{width:155,backgroundColor:GM.bgPage,border:`1px solid ${GM.borderLight}`,borderRadius:6,padding:"18px 16px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",transform:`translateY(${interpolate(cs,[0,1],[40,0])}px) scale(${interpolate(cs,[0,1],[0.9,1])})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+                  <div style={{fontSize:14,fontFamily:GM.fontSans,fontWeight:600,color:GM.textPrimary,lineHeight:1.3,marginBottom:4}}>{card.emoji} {card.title}</div>
+                  <div style={{fontSize:12,fontFamily:GM.fontSans,fontWeight:400,color:GM.textMuted,lineHeight:1.3}}>{card.sub}</div>
                 </div>;
               })}
             </div>
             {/* Input bar */}
-            <div style={{position:"absolute",bottom:36,left:60,right:60,height:48,backgroundColor:"#FFFFFF",border:"1px solid #D4D4D8",borderRadius:12,display:"flex",alignItems:"center",padding:"0 20px",fontSize:14,color:"#999",fontFamily:"'Geist Sans',system-ui,sans-serif",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",opacity:inputOp}}>Enter a prompt here...</div>
+            <div style={{position:"absolute",bottom:36,left:60,right:60,height:48,backgroundColor:GM.bgPage,border:`1px solid ${GM.borderMedium}`,borderRadius:12,display:"flex",alignItems:"center",padding:"0 20px",fontSize:14,color:GM.textMuted,fontFamily:GM.fontSans,boxShadow:"0 1px 3px rgba(0,0,0,0.04)",opacity:inputOp}}>Enter a prompt here...</div>
             {/* Footer disclaimer */}
-            <div style={{position:"absolute",bottom:14,left:0,right:0,textAlign:"center",fontSize:11,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#999999",opacity:discOp}}>GM may display inaccurate info. Verify on-chain.</div>
+            <div style={{position:"absolute",bottom:14,left:0,right:0,textAlign:"center",fontSize:11,fontFamily:GM.fontSans,color:GM.textMuted,opacity:discOp}}>GM may display inaccurate info. Verify on-chain.</div>
           </div>
         </div>
       </div>
@@ -397,7 +398,7 @@ const SegItsEverything: React.FC = () => {
           /* Gradient tint on some nearby copies — purple, pink */
           const hasGradient = isCenter || (dist <= 2 && (row+col)%2===0);
           const hasPurpleTint = !isCenter && !hasGradient && dist <= 2.5 && row%2===0;
-          const base: React.CSSProperties = {position:"absolute",left:(col-cC)*colSpacing+cW.x,top:(row-cR)*rowSpacing+cW.y+cY,fontSize:isCenter?60:32,fontWeight:isCenter?700:400,fontFamily:"'Geist Sans',system-ui,sans-serif",opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`};
+          const base: React.CSSProperties = {position:"absolute",left:(col-cC)*colSpacing+cW.x,top:(row-cR)*rowSpacing+cW.y+cY,fontSize:isCenter?60:32,fontWeight:isCenter?700:400,fontFamily:GM.fontSans,opacity:op*cOp,whiteSpace:"nowrap",transform:isCenter?`scale(${cSc})`:`rotate(${cW.rot*0.3}deg)`};
           if (isCenter) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}, ${PURPLE}, ${BLUE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"Everything you need"}</div>;
           if (hasGradient) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PINK}88, ${PURPLE}66)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"Everything you need"}</div>;
           if (hasPurpleTint) return <div key={`${row}-${col}`} style={{...base,background:`linear-gradient(90deg, ${PURPLE}55, ${LAVENDER}44)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{"Everything you need"}</div>;
@@ -416,13 +417,13 @@ const ORBIT_ICONS: {icon:string;name:string}[] = [
 ];
 
 const AppIcon: React.FC<{icon:string}> = ({icon}) => {
-  if (icon==="chart") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill="#00A36C"/></svg>;
-  if (icon==="portfolio") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" fill="#008A5A"/></svg>;
-  if (icon==="wallet") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 8H4V9h16v6zm-3-3.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" fill="#00A36C"/></svg>;
-  if (icon==="trend") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="#00A36C"/></svg>;
-  if (icon==="index") return <svg width="28" height="28" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" fill="#008A5A"/><rect x="6" y="7" width="4" height="2" rx="1" fill="white"/><rect x="6" y="11" width="4" height="2" rx="1" fill="white"/><rect x="6" y="15" width="4" height="2" rx="1" fill="white"/><rect x="13" y="7" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="11" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="15" width="5" height="2" rx="1" fill="white" opacity="0.7"/></svg>;
-  if (icon==="vision") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill="#00A36C"/><circle cx="12" cy="12" r="2.5" fill="#008A5A"/></svg>;
-  if (icon==="swap") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" fill="#00A36C"/></svg>;
+  if (icon==="chart") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill={GM.green}/></svg>;
+  if (icon==="portfolio") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" fill={GM.greenDark}/></svg>;
+  if (icon==="wallet") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 8H4V9h16v6zm-3-3.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" fill={GM.green}/></svg>;
+  if (icon==="trend") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill={GM.green}/></svg>;
+  if (icon==="index") return <svg width="28" height="28" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" fill={GM.greenDark}/><rect x="6" y="7" width="4" height="2" rx="1" fill="white"/><rect x="6" y="11" width="4" height="2" rx="1" fill="white"/><rect x="6" y="15" width="4" height="2" rx="1" fill="white"/><rect x="13" y="7" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="11" width="5" height="2" rx="1" fill="white" opacity="0.7"/><rect x="13" y="15" width="5" height="2" rx="1" fill="white" opacity="0.7"/></svg>;
+  if (icon==="vision") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill={GM.green}/><circle cx="12" cy="12" r="2.5" fill={GM.greenDark}/></svg>;
+  if (icon==="swap") return <svg width="28" height="28" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" fill={GM.green}/></svg>;
   return null;
 };
 
@@ -463,7 +464,7 @@ const SegAppsFloat: React.FC = () => {
       {(() => {
         const tw = organicWobble("ykl", frame, 1.5, 1, 0.018);
         const heartSpr = spring({frame, fps, delay: Math.floor(fps*0.35), config:{damping:8,stiffness:120,mass:0.5}});
-        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(calc(-50% + ${driftX*0.5}px),-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:10,alignItems:"center",fontSize:30,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:DARK}}>
+        return <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(calc(-50% + ${driftX*0.5}px),-50%) rotate(${tw.rot*0.15}deg)`,display:"flex",gap:10,alignItems:"center",fontSize:30,fontFamily:GM.fontSans,fontWeight:400,color:DARK}}>
           <span style={{display:"inline-block",transform:`translateY(${interpolate(tYK,[0,1],[18,0])}px)`,opacity:interpolate(tYK,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>in one</span>
           <span style={{display:"inline-block",color:BLUE,fontSize:18,transform:`translateY(${interpolate(heartSpr,[0,1],[12,0])}px) scale(${interpolate(heartSpr,[0,1],[0,1])})`,opacity:interpolate(heartSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>{"\u25C6"}</span>
           <span style={{display:"inline-block",transform:`translateY(${interpolate(tAL,[0,1],[18,0])}px)`,opacity:interpolate(tAL,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>place</span>
@@ -488,12 +489,12 @@ const SegTypingPrompt: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
       <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(calc(-50% + ${slideX}px),-50%) translateY(${interpolate(bs,[0,1],[25,0])+wob.y}px) scale(${interpolate(bs,[0,1],[0.96,1])}) rotate(${wob.rot*0.1}deg)`,width:780,opacity:interpolate(bs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-        <div style={{backgroundColor:"#EDECF2",borderRadius:28,padding:"22px 32px",fontSize:26,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#444",minHeight:36,lineHeight:1.4}}>
+        <div style={{backgroundColor:"#EDECF2",borderRadius:28,padding:"22px 32px",fontSize:26,fontFamily:GM.fontSans,fontWeight:400,color:"#444",minHeight:36,lineHeight:1.4}}>
           {fullText.slice(0, charCount)}
           {charCount < fullText.length && <span style={{display:"inline-block",width:2,height:28,backgroundColor:"#666",marginLeft:1,opacity:frame%20<12?1:0,verticalAlign:"text-bottom"}} />}
         </div>
       </div>
-      <div style={{position:"absolute",bottom:30,left:"50%",transform:"translateX(-50%)",fontSize:11,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#B0B0B0",opacity:interpolate(frame,[fps*0.5,fps],[0,0.6],{extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART})}}>
+      <div style={{position:"absolute",bottom:30,left:"50%",transform:"translateX(-50%)",fontSize:11,fontFamily:GM.fontSans,color:"#B0B0B0",opacity:interpolate(frame,[fps*0.5,fps],[0,0.6],{extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART})}}>
         Sequences shortened and simulated. On-chain execution may vary.
       </div>
     </AbsoluteFill>
@@ -532,15 +533,15 @@ const SegGMResponse: React.FC = () => {
   const float3d = useFloat3D(frame, fps, TILT_PRESETS.desktopTilt);
   return (
     <AbsoluteFill style={{backgroundColor:"#FAFAFA",opacity:exitOp}}>
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(-15%) translateY(-10%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY + float3d.rotateY}deg) rotateX(${tiltX + float3d.rotateX}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(-15%) translateY(-10%) translateY(${interpolate(cs,[0,1],[35,0])+wob.y}px) perspective(800px) rotateY(${tiltY + float3d.rotateY}deg) rotateX(${tiltX + float3d.rotateX}deg) scale(${zoomScale})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"}),width:960,height:580,backgroundColor:GM.bgPage,borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",display:"flex",transformStyle:"preserve-3d"}}>
         <div style={{width:4,backgroundColor:PURPLE,flexShrink:0}} />
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{height:44,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:12}}>
             <div style={{fontSize:16,color:"#666"}}>&#9776;</div>
-            <div style={{fontSize:14,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#444",fontWeight:500}}>General Market <span style={{fontSize:10,color:"#999"}}>&#9660;</span></div>
+            <div style={{fontSize:14,fontFamily:GM.fontSans,color:"#444",fontWeight:500}}>General Market <span style={{fontSize:10,color:GM.textMuted}}>&#9660;</span></div>
             <div style={{flex:1}} />
             {/* Actions button */}
-            <div style={{fontSize:12,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#666",fontWeight:500,padding:"4px 12px",borderRadius:8,backgroundColor:"#F5F5F5",opacity:interpolate(frame,[fps*0.5,fps],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>Execute</div>
+            <div style={{fontSize:12,fontFamily:GM.fontSans,color:"#666",fontWeight:500,padding:"4px 12px",borderRadius:8,backgroundColor:GM.bgSurface,opacity:interpolate(frame,[fps*0.5,fps],[0,1],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>Execute</div>
             {/* FIX 1: Speaker icon */}
             <svg width="18" height="18" viewBox="0 0 24 24" style={{opacity:interpolate(frame,[fps*0.5,fps],[0,0.7],{extrapolateLeft:"clamp",extrapolateRight:"clamp"}),color:"#666",flexShrink:0}}>
               <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" fill="currentColor"/>
@@ -550,30 +551,30 @@ const SegGMResponse: React.FC = () => {
           <div style={{flex:1,padding:"20px 28px",overflow:"hidden"}}>
             <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"flex-start"}}>
               <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg, #D4A574, #8B6F47)",flexShrink:0}} />
-              <div style={{fontSize:13,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#444",fontStyle:"italic",paddingTop:4}}>Rebalance my ITP portfolio</div>
+              <div style={{fontSize:13,fontFamily:GM.fontSans,color:"#444",fontStyle:"italic",paddingTop:4}}>Rebalance my ITP portfolio</div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,marginLeft:38,transform:`scale(${interpolate(chSpr,[0,1],[0.8,1])})`,opacity:interpolate(chSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
               <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 0L9 5L14 7L9 9L7 14L5 9L0 7L5 5Z" fill={BLUE}/></svg>
-              <div style={{padding:"5px 12px",borderRadius:16,border:"1px solid #E0E0E4",fontSize:12,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:500,color:"#444",display:"flex",alignItems:"center",gap:5}}>On-Chain Data <span style={{fontSize:9,color:"#999"}}>&#9660;</span></div>
+              <div style={{padding:"5px 12px",borderRadius:16,border:"1px solid #E0E0E4",fontSize:12,fontFamily:GM.fontSans,fontWeight:500,color:"#444",display:"flex",alignItems:"center",gap:5}}>On-Chain Data <span style={{fontSize:9,color:GM.textMuted}}>&#9660;</span></div>
             </div>
             {/* FIX 2: Left-to-right wipe reveal using clip-path */}
-            <div style={{fontSize:13,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#333",lineHeight:1.7,whiteSpace:"pre-wrap",marginLeft:38,clipPath:`inset(0 ${100-revealProg}% 0 0)`}}>{resp}</div>
+            <div style={{fontSize:13,fontFamily:GM.fontSans,color:"#333",lineHeight:1.7,whiteSpace:"pre-wrap",marginLeft:38,clipPath:`inset(0 ${100-revealProg}% 0 0)`}}>{resp}</div>
             <div style={{display:"flex",gap:12,marginTop:20,marginLeft:38}}>
               {[{title:"DeFi Blue Chip ITP",sub:"Rebalance recommended",color:BLUE},{title:"AI Narrative ITP",sub:"Weight drift detected",color:PINK}].map((card, ci) => {
                 const e = ecSpr[ci];
-                return <div key={ci} style={{flex:1,height:65,backgroundColor:"#F6F6FA",borderRadius:10,padding:"10px 14px",borderLeft:`3px solid ${card.color}`,transform:`translateY(${interpolate(e,[0,1],[15,0])}px)`,opacity:interpolate(e,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}><div style={{fontSize:11,fontWeight:600,color:"#333",fontFamily:"'Geist Sans',system-ui,sans-serif",marginBottom:4}}>{card.title}</div><div style={{fontSize:10,color:"#888",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>{card.sub}</div></div>;
+                return <div key={ci} style={{flex:1,height:65,backgroundColor:"#F6F6FA",borderRadius:10,padding:"10px 14px",borderLeft:`3px solid ${card.color}`,transform:`translateY(${interpolate(e,[0,1],[15,0])}px)`,opacity:interpolate(e,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}><div style={{fontSize:11,fontWeight:600,color:"#333",fontFamily:GM.fontSans,marginBottom:4}}>{card.title}</div><div style={{fontSize:10,color:"#888",fontFamily:GM.fontSans}}>{card.sub}</div></div>;
               })}
             </div>
           </div>
         </div>
       </div>
-      <div style={{position:"absolute",bottom:20,left:"50%",transform:"translateX(-50%)",fontSize:10,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#555555",opacity:interpolate(frame,[fps*0.5,fps],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART})}}>Sequences shortened and simulated. On-chain execution may vary.</div>
+      <div style={{position:"absolute",bottom:20,left:"50%",transform:"translateX(-50%)",fontSize:10,fontFamily:GM.fontSans,color:GM.textSecondary,opacity:interpolate(frame,[fps*0.5,fps],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART})}}>Sequences shortened and simulated. On-chain execution may vary.</div>
     </AbsoluteFill>
   );
 };
 
 /* --- SEGMENT 8: And moooore --- */
-const GEMINI_BALLS = ["#00A36C","#008A5A","#00A36C","#C40000","#008A5A","#DC2626","#00A36C","#008A5A"];
+const GEMINI_BALLS = [GM.green,GM.greenDark,GM.green,GM.red,GM.greenDark,GM.redStatus,GM.green,GM.greenDark];
 const MAX_BALLS = 22;
 
 const SegAndMoreInner: React.FC = () => {
@@ -625,7 +626,7 @@ const SegAndMoreInner: React.FC = () => {
   return (
     <AbsoluteFill style={{backgroundColor:BG_WARM,opacity:exitOp,overflow:"visible"}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:"radial-gradient(ellipse at 55% 40%, rgba(0,163,108,0.05) 0%, rgba(230,247,240,0.035) 35%, transparent 60%)"}} />
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:`translate(-50%,-50%) translateX(${scrollX}px)`,display:"flex",alignItems:"center",flexWrap:"nowrap",gap:stretch>0.1?0:12,fontSize:44,fontFamily:GM.fontSans,fontWeight:400,whiteSpace:"nowrap",overflow:"visible"}}>
         <span style={{color:DARK,transform:`translateY(${interpolate(aSpr,[0,1],[20,0])+aW.y}px) translateX(${aW.x}px)`,display:"inline-block",marginRight:4,opacity:interpolate(aSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})*interpolate(stretch,[0,0.15],[1,0],{extrapolateRight:"clamp"})}}>And</span>
         {stretch<=0.02 ? <span style={{color:BLUE,fontSize:44,opacity:mOp}}>more</span> : <>
           <span style={{color:BLUE,fontSize:44,display:"inline-block",opacity:mOp}}>m</span>
@@ -667,7 +668,7 @@ const SegStartingWith: React.FC = () => {
       {[{x:480,y:340,w:380,rot:-3,h:2},{x:520,y:370,w:320,rot:5,h:1.5},{x:440,y:355,w:420,rot:-1,h:2.5}].map((ray,ri) => (
         <div key={ri} style={{position:"absolute",left:ray.x,top:ray.y,width:ray.w,height:ray.h,background:`linear-gradient(90deg, transparent 0%, ${LAVENDER}88 30%, ${BLUE}44 70%, transparent 100%)`,transform:`rotate(${ray.rot}deg)`,opacity:rayOp,filter:"blur(1px)"}} />
       ))}
-      <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",gap:14,fontSize:40,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400}}>
+      <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",gap:14,fontSize:40,fontFamily:GM.fontSans,fontWeight:400}}>
         {words.map((word, i) => {
           const wW = organicWobble(`sw${i}`, frame, 2, 1.5, 0.02);
           const wSpr = spring({frame, fps, delay: i*4, config:{damping:12,stiffness:100,mass:0.8}});
@@ -743,31 +744,31 @@ const SegPhoneMockup: React.FC = () => {
   const exitOp = interpolate(frame, [durationInFrames-40,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   const phoneScreen = (
-    <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>
+    <div style={{width:"100%",height:"100%",backgroundColor:GM.bgPage,fontFamily:GM.fontSans}}>
       {/* GM Header Bar */}
-      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+      <div style={{height:56,backgroundColor:GM.bgPage,borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
-            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:GM.bgPage,borderRadius:1}} />)}
           </div>
-          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary}}>General Market</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
-          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:GM.greenStatus}} />
+          <div style={{fontSize:12,fontWeight:600,border:`1px solid ${GM.borderMedium}`,borderRadius:6,padding:"4px 12px",color:GM.textPrimary}}>Connect</div>
         </div>
       </div>
       {/* Tab Strip */}
-      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${GM.borderLight}`}}>
         {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
-          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?"#1A1A1A":"#555",borderBottom:ti===1?"2px solid #1A1A1A":"2px solid transparent",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>{tab}</div>
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?GM.textPrimary:GM.textSecondary,borderBottom:ti===1?`2px solid ${GM.textPrimary}`:"2px solid transparent",fontFamily:GM.fontSans}}>{tab}</div>
         ))}
       </div>
       {/* Portfolio Overview Content */}
       <div style={{padding:"16px 16px 0",transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#999",marginBottom:4}}>Portfolio</div>
-        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A",fontFamily:"'JetBrains Mono',monospace"}}>$12,847.32</div>
-        <div style={{fontSize:13,color:"#16A34A",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>+$847.32 (+7.05%)</div>
+        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:GM.textMuted,marginBottom:4}}>Portfolio</div>
+        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary,fontFamily:GM.fontMono}}>$12,847.32</div>
+        <div style={{fontSize:13,color:GM.greenStatus,fontFamily:GM.fontMono,marginTop:2}}>+$847.32 (+7.05%)</div>
         {/* Mini area chart */}
         <svg width="100%" height={120} viewBox="0 0 280 120" style={{marginTop:8}}>
           <defs><linearGradient id="chartGrad03" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3}/><stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02}/></linearGradient></defs>
@@ -783,14 +784,14 @@ const SegPhoneMockup: React.FC = () => {
           {name:"L1 Leaders ITP",shares:"6.1 shares",value:"$4,892.00",change:"-2.1%",up:false},
           {name:"Memecoin Index",shares:"10.0 shares",value:"$2,431.77",change:"+22.3%",up:true},
         ].map((row,ri)=>(
-          <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #E0E0E0",padding:"10px 16px"}}>
+          <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${GM.borderLight}`,padding:"10px 16px"}}>
             <div>
-              <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{row.name}</div>
-              <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#999"}}>{row.shares}</div>
+              <div style={{fontSize:14,fontWeight:600,color:GM.textPrimary}}>{row.name}</div>
+              <div style={{fontSize:12,fontFamily:GM.fontMono,color:GM.textMuted}}>{row.shares}</div>
             </div>
             <div style={{textAlign:"right"}}>
-              <div style={{fontSize:14,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.value}</div>
-              <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626"}}>{row.change}</div>
+              <div style={{fontSize:14,fontFamily:GM.fontMono,color:GM.textPrimary}}>{row.value}</div>
+              <div style={{fontSize:12,fontFamily:GM.fontMono,color:row.up?GM.greenStatus:GM.redStatus}}>{row.change}</div>
             </div>
           </div>
         ))}
@@ -810,7 +811,7 @@ const SegPhoneMockup: React.FC = () => {
         opacity={pOp}
         style={{transform:`scale(${phoneScale}) ${tilt.transform}`}}
       />
-      <div style={{position:"absolute",bottom:20,left:30,fontSize:11,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#555555",opacity:interpolate(frame,[fps,fps*1.5],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>The GM protocol is permissionless and available globally.</div>
+      <div style={{position:"absolute",bottom:20,left:30,fontSize:11,fontFamily:GM.fontSans,color:GM.textSecondary,opacity:interpolate(frame,[fps,fps*1.5],[0,0.5],{extrapolateLeft:"clamp",extrapolateRight:"clamp"})}}>The GM protocol is permissionless and available globally.</div>
     </AbsoluteFill>
   );
 };
@@ -818,7 +819,7 @@ const SegPhoneMockup: React.FC = () => {
 /* --- SEGMENT 11: Built to maximize your edge --- */
 /* Per-letter color assignment for "maximize" —
    each letter gets an explicit color cycling every 2 frames + 1-2px position jitter */
-const ELEC_COLORS = [BLUE, PURPLE, BLUE, "#00A36C", "#008A5A", "#00A36C"];
+const ELEC_COLORS = [BLUE, PURPLE, BLUE, GM.green, GM.greenDark, GM.green];
 const SUPERCHARGE_LETTERS = "maximize".split("");
 const SegSupercharge: React.FC = () => {
   const frame = useCurrentFrame();
@@ -835,7 +836,7 @@ const SegSupercharge: React.FC = () => {
           const wY = interpolate(spr, [0,1], [w.accent?35:25, 0]);
           const wS = w.accent?interpolate(spr,[0,1],[0.7,1]):interpolate(spr,[0,1],[0.95,1]);
           const wOp = interpolate(spr, [0,0.3], [0,1], {extrapolateRight:"clamp"});
-          const base: React.CSSProperties = {display:"inline-block",fontSize:w.fontSize,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:w.accent?500:400,fontStyle:w.italic?"italic":"normal",transform:`translate(${sw.x}px,${wY+sw.y}px) scale(${wS})`,opacity:wOp};
+          const base: React.CSSProperties = {display:"inline-block",fontSize:w.fontSize,fontFamily:GM.fontSans,fontWeight:w.accent?500:400,fontStyle:w.italic?"italic":"normal",transform:`translate(${sw.x}px,${wY+sw.y}px) scale(${wS})`,opacity:wOp};
           if (w.accent) {
             /* Per-letter colored spans with electrical jitter */
             return <span key={i} style={{...base, display:"inline-flex"}}>
@@ -907,31 +908,31 @@ const PhoneHomeScreen: React.FC<{frame: number; fps: number}> = ({frame, fps}) =
       {/* GM Search Bar */}
       <div style={{position:"absolute",bottom:100,left:20,right:20,height:46,backgroundColor:"rgba(255,255,255,0.92)",borderRadius:24,display:"flex",alignItems:"center",padding:"0 14px",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,0.08)",transform:`translateY(${interpolate(searchSpr,[0,1],[20,0])}px)`,opacity:interpolate(searchSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
         {/* GM logo */}
-        <div style={{width:22,height:22,borderRadius:4,background:"linear-gradient(135deg, #00A36C, #008A5A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"white"}}>GM</div>
-        <span style={{flex:1,fontSize:13,color:"#555555",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>Search markets...</span>
+        <div style={{width:22,height:22,borderRadius:4,background:`linear-gradient(135deg, ${GM.green}, ${GM.greenDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"white"}}>GM</div>
+        <span style={{flex:1,fontSize:13,color:GM.textSecondary,fontFamily:GM.fontSans}}>Search markets...</span>
         {/* Search icon */}
         <svg width="18" height="18" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8" fill="none" stroke="#00A36C" strokeWidth="2"/>
-          <path d="M21 21l-4.35-4.35" stroke="#00A36C" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="11" cy="11" r="8" fill="none" stroke={GM.green} strokeWidth="2"/>
+          <path d="M21 21l-4.35-4.35" stroke={GM.green} strokeWidth="2" strokeLinecap="round"/>
         </svg>
       </div>
       {/* Dock: Portfolio, Markets, GM logo, Wallet */}
       <div style={{position:"absolute",bottom:30,left:30,right:30,display:"flex",justifyContent:"space-around",alignItems:"center",transform:`translateY(${interpolate(dockSpr,[0,1],[30,0])}px)`,opacity:interpolate(dockSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
         {/* Portfolio icon */}
-        <div style={{width:48,height:48,borderRadius:12,backgroundColor:"#00A36C",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{width:48,height:48,borderRadius:12,backgroundColor:GM.green,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill="white"/></svg>
         </div>
         {/* Markets icon */}
-        <div style={{width:48,height:48,borderRadius:12,backgroundColor:"#008A5A",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{width:48,height:48,borderRadius:12,backgroundColor:GM.greenDark,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <svg width="22" height="22" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill="white"/></svg>
         </div>
         {/* GM logo icon */}
-        <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg, #00A36C, #008A5A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"white",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>
+        <div style={{width:48,height:48,borderRadius:12,background:`linear-gradient(135deg, ${GM.green}, ${GM.greenDark})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"white",fontFamily:GM.fontSans}}>
           GM
         </div>
         {/* Wallet icon */}
-        <div style={{width:48,height:48,borderRadius:12,backgroundColor:"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #E0E0E4"}}>
-          <svg width="22" height="22" viewBox="0 0 24 24"><path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 8H4V9h16v6zm-3-3.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" fill="#1A1A1A"/></svg>
+        <div style={{width:48,height:48,borderRadius:12,backgroundColor:GM.bgSurface,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #E0E0E4"}}>
+          <svg width="22" height="22" viewBox="0 0 24 24"><path d="M21 7H3c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-1 8H4V9h16v6zm-3-3.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z" fill={GM.textPrimary}/></svg>
         </div>
       </div>
     </div>
@@ -986,29 +987,29 @@ const SegPhoneGoodMorning: React.FC = () => {
   const inputSpr = spring({frame, fps, delay: Math.floor(fps*1.2), config:{damping:14,stiffness:100,mass:0.7}});
 
   const phoneScreen = (
-    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden",backgroundColor:"#FFFFFF",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>
+    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden",backgroundColor:GM.bgPage,fontFamily:GM.fontSans}}>
       {/* GM Header Bar */}
-      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+      <div style={{height:56,backgroundColor:GM.bgPage,borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
-            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:GM.bgPage,borderRadius:1}} />)}
           </div>
-          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary}}>General Market</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
-          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:GM.greenStatus}} />
+          <div style={{fontSize:12,fontWeight:600,border:`1px solid ${GM.borderMedium}`,borderRadius:6,padding:"4px 12px",color:GM.textPrimary}}>Connect</div>
         </div>
       </div>
       {/* Tab Strip */}
-      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${GM.borderLight}`}}>
         {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
-          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===0?600:500,color:ti===0?"#1A1A1A":"#555",borderBottom:ti===0?"2px solid #1A1A1A":"2px solid transparent",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>{tab}</div>
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===0?600:500,color:ti===0?GM.textPrimary:GM.textSecondary,borderBottom:ti===0?`2px solid ${GM.textPrimary}`:"2px solid transparent",fontFamily:GM.fontSans}}>{tab}</div>
         ))}
       </div>
       {/* Section header */}
-      <div style={{backgroundColor:"#1A1A1A",padding:"8px 16px"}}>
-        <span style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#FFFFFF"}}>Crypto Markets &middot; 847 live</span>
+      <div style={{backgroundColor:GM.textPrimary,padding:"8px 16px"}}>
+        <span style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:GM.textInverse}}>Crypto Markets &middot; 847 live</span>
       </div>
       {/* Market rows */}
       {[
@@ -1018,22 +1019,22 @@ const SegPhoneGoodMorning: React.FC = () => {
       ].map((row,ri)=>{
         const s = cSpr[ri];
         return (
-          <div key={ri} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:"1px solid #E0E0E0",transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+          <div key={ri} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:`1px solid ${GM.borderLight}`,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.symbol}</div>
+              <div style={{fontSize:14,fontWeight:700,fontFamily:GM.fontMono,color:GM.textPrimary}}>{row.symbol}</div>
             </div>
-            <div style={{fontSize:13,fontFamily:"'JetBrains Mono',monospace",color:"#555"}}>{row.price}</div>
-            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626",minWidth:48,textAlign:"right"}}>{row.change}</div>
+            <div style={{fontSize:13,fontFamily:GM.fontMono,color:GM.textSecondary}}>{row.price}</div>
+            <div style={{fontSize:12,fontFamily:GM.fontMono,color:row.up?GM.greenStatus:GM.redStatus,minWidth:48,textAlign:"right"}}>{row.change}</div>
             {/* Mini sparkline */}
             <svg width={40} height={20} viewBox="0 0 40 20">
-              <path d={row.up?"M0 16 Q10 14,15 10 Q25 4,30 6 Q35 5,40 2":"M0 4 Q10 6,15 10 Q25 14,30 16 Q35 15,40 18"} fill="none" stroke={row.up?"#16A34A":"#DC2626"} strokeWidth={1.5}/>
+              <path d={row.up?"M0 16 Q10 14,15 10 Q25 4,30 6 Q35 5,40 2":"M0 4 Q10 6,15 10 Q25 14,30 16 Q35 15,40 18"} fill="none" stroke={row.up?GM.greenStatus:GM.redStatus} strokeWidth={1.5}/>
             </svg>
           </div>
         );
       })}
       {/* Input bar at bottom */}
       <div style={{padding:"12px 16px",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-        <div style={{height:40,backgroundColor:"#F4F4F5",border:"1px solid #D4D4D8",borderRadius:8,display:"flex",alignItems:"center",padding:"0 14px",fontSize:13,color:"#999",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>Search markets...</div>
+        <div style={{height:40,backgroundColor:"#F4F4F5",border:`1px solid ${GM.borderMedium}`,borderRadius:8,display:"flex",alignItems:"center",padding:"0 14px",fontSize:13,color:GM.textMuted,fontFamily:GM.fontSans}}>Search markets...</div>
       </div>
     </div>
   );

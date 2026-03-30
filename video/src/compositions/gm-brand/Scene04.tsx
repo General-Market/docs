@@ -12,6 +12,7 @@ import { CameraMotionBlur } from "@remotion/motion-blur";
 import { gsap } from "gsap";
 import { Phone3D } from "../../lib/Phone3D";
 import { useFloat3D, TILT_PRESETS } from "../../lib/tilt3d";
+import { GM } from "./theme";
 
 /* ─── timing (30fps, 339 frames ~ 11.3s) ─── */
 const PHASE = {
@@ -22,22 +23,22 @@ const PHASE = {
   EMOJI_BURST: { start: 170, end: 205 },
   TRANSITION_TEXT: { start: 198, end: 258 },
   INTRODUCING: { start: 255, end: 298 },
-  GEMINI_UI: { start: 293, end: 339 },
+  GM_UI: { start: 293, end: 339 },
 };
 
 /* ─── colors ─── */
-const BG = "#E6F7F0";
-const PHONE_BG = "#FFFFFF";
-const GM_GREEN = "#00A36C";
-const GM_DARK_GREEN = "#008A5A";
-const USER_BUBBLE = "#E6F7F0";
-const AI_BUBBLE = "#FFFFFF";
+const BG = GM.greenLight;
+const PHONE_BG = GM.bgPage;
+const GM_GREEN = GM.green;
+const GM_DARK_GREEN = GM.greenDark;
+const USER_BUBBLE = GM.greenLight;
+const AI_BUBBLE = GM.bgPage;
 const GREY_TEXT = "#5F6368";
-const DARK_TEXT = "#1A1A1A";
+const DARK_TEXT = GM.textPrimary;
 const KB_BG = "#2C2C2E";
 const KB_KEY = "#4A4A4C";
-const KB_KEY_TEXT = "#FFFFFF";
-const FONT = "'Geist Sans', system-ui, sans-serif";
+const KB_KEY_TEXT = GM.textInverse;
+const FONT = GM.fontSans;
 
 /* ─── emoji constants ─── */
 const HEART_EYES = String.fromCodePoint(0x1f60d);
@@ -81,17 +82,17 @@ interface AnimState {
   introOpacity: number;
   introScale: number;
   introClipRight: number;
-  /* Gemini desktop browser */
-  geminiOpacity: number;
-  geminiY: number;
-  geminiScale: number;
-  geminiPanX: number;
-  geminiPanY: number;
-  geminiDropdownOpen: number;
-  geminiRow1: number;
-  geminiRow2: number;
-  geminiCheckmark: number;
-  geminiGlowAngle: number;
+  /* GM desktop browser */
+  gmOpacity: number;
+  gmY: number;
+  gmScale: number;
+  gmPanX: number;
+  gmPanY: number;
+  gmDropdownOpen: number;
+  gmRow1: number;
+  gmRow2: number;
+  gmCheckmark: number;
+  gmGlowAngle: number;
   fadeToBlack: number;
   darkShrink: number;
   /* Per-word state for "But that's not all..." */
@@ -112,8 +113,8 @@ function createDefaultState(): AnimState {
     phoneX: 400, phoneY: 500, phoneRotation: 8, phoneOpacity: 0, phoneScale: 1.3,
     butTextOpacity: 0,
     introOpacity: 0, introScale: 0.88, introClipRight: 100,
-    geminiOpacity: 0, geminiY: 300, geminiScale: 1.0, geminiPanX: 0, geminiPanY: 0,
-    geminiDropdownOpen: 0, geminiRow1: 0, geminiRow2: 0, geminiCheckmark: 0, geminiGlowAngle: 0,
+    gmOpacity: 0, gmY: 300, gmScale: 1.0, gmPanX: 0, gmPanY: 0,
+    gmDropdownOpen: 0, gmRow1: 0, gmRow2: 0, gmCheckmark: 0, gmGlowAngle: 0,
     fadeToBlack: 0, darkShrink: 1,
     wordOpacities: [0, 0, 0], wordYs: [30, 30, 30], wordXs: [20, 20, 20],
     allOpacity: 0, allY: 30, allX: 20,
@@ -182,28 +183,28 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     t.to(s, { introOpacity: 1, duration: sec(6), ease: "power2.out" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introScale: 1.0, duration: sec(20), ease: "elastic.out(1, 0.6)" }, sec(PHASE.INTRODUCING.start));
     t.to(s, { introClipRight: 0, duration: sec(21), ease: "expo.out" }, sec(PHASE.INTRODUCING.start));
-    /* Intro holds, then crossfades WITH Gemini rising — reference shows overlap */
-    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.GEMINI_UI.start - 4));
+    /* Intro holds, then crossfades WITH GM rising — reference shows overlap */
+    t.to(s, { introOpacity: 0, duration: sec(8), ease: "power2.in" }, sec(PHASE.GM_UI.start - 4));
 
-    /* ═══ Gemini Desktop Browser UI ═══ */
+    /* ═══ GM Desktop Browser UI ═══ */
     /* Browser starts rising 5 frames early to overlap with fading "Introducing" */
-    const gemStart = sec(PHASE.GEMINI_UI.start);
-    const gemRise = sec(PHASE.GEMINI_UI.start - 5);
-    t.to(s, { geminiOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
-    t.to(s, { geminiY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
-    /* Zoom into dropdown area — keep "Gemini" title visible, hide rainbow border.
+    const gemStart = sec(PHASE.GM_UI.start);
+    const gemRise = sec(PHASE.GM_UI.start - 5);
+    t.to(s, { gmOpacity: 1, duration: sec(6), ease: "power2.out" }, gemRise);
+    t.to(s, { gmY: 0, duration: sec(18), ease: "expo.out" }, gemRise);
+    /* Zoom into dropdown area — keep "GM" title visible, hide rainbow border.
        Reference: zoom centers on dropdown card, not on browser edge.
        panX less extreme to avoid exposing right-side rainbow border. */
-    t.to(s, { geminiScale: 2.4, duration: sec(46), ease: "power2.in" }, gemStart);
-    t.to(s, { geminiPanX: -180, duration: sec(46), ease: "power2.in" }, gemStart);
-    t.to(s, { geminiPanY: 160, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { gmScale: 2.4, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { gmPanX: -180, duration: sec(46), ease: "power2.in" }, gemStart);
+    t.to(s, { gmPanY: 160, duration: sec(46), ease: "power2.in" }, gemStart);
     /* Dropdown animation */
-    t.to(s, { geminiDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GEMINI_UI.start + 8));
-    t.to(s, { geminiRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 12));
-    t.to(s, { geminiRow2: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GEMINI_UI.start + 18));
-    t.to(s, { geminiCheckmark: 1, duration: sec(6), ease: "back.out(2)" }, sec(PHASE.GEMINI_UI.start + 16));
+    t.to(s, { gmDropdownOpen: 1, duration: sec(12), ease: "back.out(1.5)" }, sec(PHASE.GM_UI.start + 8));
+    t.to(s, { gmRow1: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GM_UI.start + 12));
+    t.to(s, { gmRow2: 1, duration: sec(8), ease: "power2.out" }, sec(PHASE.GM_UI.start + 18));
+    t.to(s, { gmCheckmark: 1, duration: sec(6), ease: "back.out(2)" }, sec(PHASE.GM_UI.start + 16));
     /* Glow rotation */
-    t.to(s, { geminiGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
+    t.to(s, { gmGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
 
     /* ═══ Dark ending — removed. FadeWrapper now handles the zoom-out
        exit with scaleOut=3 over 24 frames. Keeping internal darkening
@@ -225,32 +226,32 @@ const DogPhotoScreen: React.FC = () => {
   return (
     <div style={{
       width: "100%", height: "100%", position: "relative", overflow: "hidden",
-      background: "#FFFFFF", fontFamily: FONT,
+      background: GM.textInverse, fontFamily: FONT,
     }}>
       {/* GM Header Bar */}
-      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+      <div style={{height:56,backgroundColor:GM.textInverse,borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
-            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:GM.bgPage,borderRadius:1}} />)}
           </div>
-          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary}}>General Market</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
-          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:GM.greenStatus}} />
+          <div style={{fontSize:12,fontWeight:600,border:`1px solid ${GM.borderMedium}`,borderRadius:6,padding:"4px 12px",color:GM.textPrimary}}>Connect</div>
         </div>
       </div>
       {/* Tab Strip */}
-      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${GM.borderLight}`}}>
         {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
-          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?"#1A1A1A":"#555",borderBottom:ti===1?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?GM.textPrimary:GM.textSecondary,borderBottom:ti===1?`2px solid ${GM.textPrimary}`:"2px solid transparent",fontFamily:FONT}}>{tab}</div>
         ))}
       </div>
       {/* Portfolio Content */}
       <div style={{padding:"16px 16px 0"}}>
-        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#999",marginBottom:4}}>Portfolio</div>
-        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A",fontFamily:"'JetBrains Mono',monospace"}}>$12,847.32</div>
-        <div style={{fontSize:13,color:"#16A34A",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>+$847.32 (+7.05%)</div>
+        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:GM.textMuted,marginBottom:4}}>Portfolio</div>
+        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary,fontFamily:GM.fontMono}}>$12,847.32</div>
+        <div style={{fontSize:13,color:GM.greenStatus,fontFamily:GM.fontMono,marginTop:2}}>+$847.32 (+7.05%)</div>
         {/* Mini area chart */}
         <svg width="100%" height={120} viewBox="0 0 280 120" style={{marginTop:8}}>
           <defs><linearGradient id="chartGrad04dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3}/><stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02}/></linearGradient></defs>
@@ -265,14 +266,14 @@ const DogPhotoScreen: React.FC = () => {
         {name:"L1 Leaders ITP",shares:"6.1 shares",value:"$4,892.00",change:"-2.1%",up:false},
         {name:"Memecoin Index",shares:"10.0 shares",value:"$2,431.77",change:"+22.3%",up:true},
       ].map((row,ri)=>(
-        <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #E0E0E0",padding:"10px 16px"}}>
+        <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${GM.borderLight}`,padding:"10px 16px"}}>
           <div>
-            <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{row.name}</div>
-            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#999"}}>{row.shares}</div>
+            <div style={{fontSize:14,fontWeight:600,color:GM.textPrimary}}>{row.name}</div>
+            <div style={{fontSize:12,fontFamily:GM.fontMono,color:GM.textMuted}}>{row.shares}</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:14,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.value}</div>
-            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626"}}>{row.change}</div>
+            <div style={{fontSize:14,fontFamily:GM.fontMono,color:GM.textPrimary}}>{row.value}</div>
+            <div style={{fontSize:12,fontFamily:GM.fontMono,color:row.up?GM.greenStatus:GM.redStatus}}>{row.change}</div>
           </div>
         </div>
       ))}
@@ -299,42 +300,42 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: FONT }}>
       {/* GM Header Bar */}
-      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+      <div style={{height:56,backgroundColor:GM.textInverse,borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
-            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:GM.bgPage,borderRadius:1}} />)}
           </div>
-          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary}}>General Market</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
-          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:GM.greenStatus}} />
+          <div style={{fontSize:12,fontWeight:600,border:`1px solid ${GM.borderMedium}`,borderRadius:6,padding:"4px 12px",color:GM.textPrimary}}>Connect</div>
         </div>
       </div>
       {/* Tab Strip */}
-      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${GM.borderLight}`}}>
         {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
-          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?"#1A1A1A":"#555",borderBottom:ti===3?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?GM.textPrimary:GM.textSecondary,borderBottom:ti===3?`2px solid ${GM.textPrimary}`:"2px solid transparent",fontFamily:FONT}}>{tab}</div>
         ))}
       </div>
       {/* Input field */}
       <div style={{ padding: "16px 16px 12px" }}>
-        <div style={{ height: 40, backgroundColor: "#F4F4F5", border: "1px solid #D4D4D8", borderRadius: 8, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 13, color: "#999", fontFamily: FONT }}>
+        <div style={{ height: 40, backgroundColor: "#F4F4F5", border: `1px solid ${GM.borderMedium}`, borderRadius: 8, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 13, color: GM.textMuted, fontFamily: FONT }}>
           {typedText || "Rebalance portfolio..."}
           {showCursor && <span style={{ color: GM_GREEN, fontWeight: 300 }}>|</span>}
         </div>
       </div>
       {/* Recent action card */}
       <div style={{ padding: "0 16px", flex: 1, opacity: cardSpring, transform: `translateY(${cardY}px) scale(${cardScale})`, transformOrigin: "top left" }}>
-        <div style={{ border: "1px solid #E0E0E0", borderRadius: 6, padding: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+        <div style={{ border: `1px solid ${GM.borderLight}`, borderRadius: 6, padding: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <svg width={16} height={16} viewBox="0 0 16 16"><circle cx={8} cy={8} r={7} fill="#16A34A"/><path d="M5 8l2 2 4-4" stroke="#fff" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width={16} height={16} viewBox="0 0 16 16"><circle cx={8} cy={8} r={7} fill={GM.greenStatus}/><path d="M5 8l2 2 4-4" stroke={GM.textInverse} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
             <span style={{ fontSize: 14, fontWeight: 600, color: DARK_TEXT }}>Portfolio rebalanced</span>
           </div>
           <div style={{ fontSize: 12, color: GREY_TEXT, lineHeight: 1.5, marginBottom: 8 }}>
             BTC 40%, ETH 30%, SOL 15%, AVAX 10%, LINK 5%
           </div>
-          <div style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: "#16A34A" }}>
+          <div style={{ fontSize: 12, fontFamily: GM.fontMono, color: GM.greenStatus }}>
             Estimated APY: 12.4%
           </div>
         </div>
@@ -353,7 +354,7 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
         <div style={{ display: "flex", justifyContent: "center", gap: 3, marginTop: 1 }}>
           <div style={{ width: 44, height: 22, borderRadius: 4, background: "#3A3A3C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: KB_KEY_TEXT }}>123</div>
           <div style={{ flex: 1, maxWidth: 120, height: 22, borderRadius: 4, background: KB_KEY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "#AAA" }}>space</div>
-          <div style={{ width: 44, height: 22, borderRadius: 4, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: "#fff" }}>return</div>
+          <div style={{ width: 44, height: 22, borderRadius: 4, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: GM.textInverse }}>return</div>
         </div>
       </div>
     </div>
@@ -380,28 +381,28 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: FONT }}>
       {/* GM Header Bar */}
-      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+      <div style={{height:56,backgroundColor:GM.textInverse,borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
-            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:GM.bgPage,borderRadius:1}} />)}
           </div>
-          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:GM.textPrimary}}>General Market</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
-          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:GM.greenStatus}} />
+          <div style={{fontSize:12,fontWeight:600,border:`1px solid ${GM.borderMedium}`,borderRadius:6,padding:"4px 12px",color:GM.textPrimary}}>Connect</div>
         </div>
       </div>
       {/* Tab Strip */}
-      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+      <div style={{display:"flex",borderBottom:`1px solid ${GM.borderLight}`}}>
         {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
-          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?"#1A1A1A":"#555",borderBottom:ti===3?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?GM.textPrimary:GM.textSecondary,borderBottom:ti===3?`2px solid ${GM.textPrimary}`:"2px solid transparent",fontFamily:FONT}}>{tab}</div>
         ))}
       </div>
       {/* Response card */}
       <div style={{ flex: 1, padding: "16px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{
-          border: "1px solid #E0E0E0", borderRadius: 6, padding: 16,
+          border: `1px solid ${GM.borderLight}`, borderRadius: 6, padding: 16,
           boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
           opacity: responseBubbleSpring,
           transform: `translateY(${responseBubbleY}px) scale(${responseBubbleScale})`,
@@ -411,25 +412,25 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
           {/* Allocation table */}
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #E0E0E0", marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", flex: 1 }}>Asset</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", width: 40, textAlign: "right" }}>%</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", width: 72, textAlign: "right" }}>Value</span>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${GM.borderLight}`, marginBottom: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: GM.textMuted, flex: 1 }}>Asset</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: GM.textMuted, width: 40, textAlign: "right" }}>%</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: GM.textMuted, width: 72, textAlign: "right" }}>Value</span>
             </div>
             {allocations.map((a, ai) => (
               <div key={ai} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: DARK_TEXT, fontFamily: "'JetBrains Mono', monospace", flex: 1 }}>{a.asset}</span>
-                <span style={{ fontSize: 12, color: GREY_TEXT, fontFamily: "'JetBrains Mono', monospace", width: 40, textAlign: "right" }}>{a.pct}</span>
-                <span style={{ fontSize: 12, color: DARK_TEXT, fontFamily: "'JetBrains Mono', monospace", width: 72, textAlign: "right" }}>{a.value}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: DARK_TEXT, fontFamily: GM.fontMono, flex: 1 }}>{a.asset}</span>
+                <span style={{ fontSize: 12, color: GREY_TEXT, fontFamily: GM.fontMono, width: 40, textAlign: "right" }}>{a.pct}</span>
+                <span style={{ fontSize: 12, color: DARK_TEXT, fontFamily: GM.fontMono, width: 72, textAlign: "right" }}>{a.value}</span>
               </div>
             ))}
           </div>
         </div>
         {/* Execute button */}
         <div style={{
-          height: 40, backgroundColor: "#16A34A", borderRadius: 8,
+          height: 40, backgroundColor: GM.greenStatus, borderRadius: 8,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 14, fontWeight: 600, color: "#FFFFFF",
+          fontSize: 14, fontWeight: 600, color: GM.textInverse,
           opacity: btnSpring,
           transform: `translateY(${interpolate(btnSpring, [0, 1], [10, 0])}px)`,
         }}>
@@ -441,7 +442,7 @@ const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) 
 };
 
 /* ═══════════════════════════════════════════════════════
-   4-POINT SPARKLE SVG — proper Gemini sparkle icon
+   4-POINT SPARKLE SVG — proper GM sparkle icon
    ═══════════════════════════════════════════════════════ */
 const SparkleIcon: React.FC<{
   size?: number;
@@ -489,7 +490,7 @@ const DesktopBrowserFrame: React.FC<{
       width: 560, height: 580,
       borderRadius: 14,
       /* Green gradient border via padding trick — thicker + glow */
-      background: `linear-gradient(${gradAngle}deg, #00A36C 0%, #008A5A 33%, #16A34A 66%, #00A36C 100%)`,
+      background: `linear-gradient(${gradAngle}deg, ${GM.green} 0%, ${GM.greenDark} 33%, ${GM.greenStatus} 66%, ${GM.green} 100%)`,
       padding: 3,
       boxShadow: `0 20px 80px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.06), 0 0 30px rgba(0,163,108,0.12), 0 0 60px rgba(0,138,90,0.08)`,
     }}>
@@ -514,14 +515,14 @@ const DesktopBrowserFrame: React.FC<{
 };
 
 /* ═══════════════════════════════════════════════════════
-   GEMINI DROPDOWN UI — DESKTOP style
-   Reference: hamburger menu, "Gemini" title with
+   GM DROPDOWN UI — DESKTOP style
+   Reference: hamburger menu, "GM" title with
    dropdown arrow, dropdown card with two rows:
-   - Gemini: blue sparkle + checkmark circle
-   - Gemini Advanced: pink/purple sparkle + "Upgrade" btn
+   - GM: green sparkle + checkmark circle
+   - GM Pro: green sparkle + "Upgrade" btn
    Grey "+" button on left, search bar at bottom.
    ═══════════════════════════════════════════════════════ */
-const GeminiDesktopUI: React.FC<{
+const GMDesktopUI: React.FC<{
   dropdownOpen: number;
   row1: number;
   row2: number;
@@ -534,7 +535,7 @@ const GeminiDesktopUI: React.FC<{
       fontFamily: FONT,
       position: "relative",
     }}>
-      {/* Top bar — hamburger + "Gemini" dropdown title */}
+      {/* Top bar — hamburger + "GM" dropdown title */}
       <div style={{
         padding: "20px 28px",
         display: "flex", alignItems: "center", gap: 18,
@@ -617,7 +618,7 @@ const GeminiDesktopUI: React.FC<{
             flex: 1, letterSpacing: -0.2, whiteSpace: "nowrap",
           }}>GM Pro</div>
           <div style={{
-            background: DARK_TEXT, color: "#fff",
+            background: DARK_TEXT, color: GM.textInverse,
             fontSize: 13, fontWeight: 600,
             padding: "6px 16px", borderRadius: 6,
             whiteSpace: "nowrap",
@@ -712,11 +713,11 @@ export const Scene04: React.FC = () => {
   const showDogPhoto = frame < PHASE.DOG_PHOTO.end;
   const showChat = frame >= PHASE.DOG_PHOTO.end && frame < PHASE.PHOTO_EXPAND.start;
   const showPhotoExpand = frame >= PHASE.PHOTO_EXPAND.start && frame < PHASE.AI_RESPONSE.start;
-  const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GEMINI_UI.start;
-  const showGeminiUI = frame >= PHASE.GEMINI_UI.start;
+  const showAIResponse = frame >= PHASE.AI_RESPONSE.start && frame < PHASE.GM_UI.start;
+  const showGMUI = frame >= PHASE.GM_UI.start;
   const showEmojis = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.TRANSITION_TEXT.start;
   const showButText = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.INTRODUCING.start + 15;
-  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GEMINI_UI.start;
+  const showIntro = frame >= PHASE.INTRODUCING.start && frame < PHASE.GM_UI.start;
 
   /* Photo expand progress */
   const photoExpandProgress = interpolate(frame, [PHASE.PHOTO_EXPAND.start, PHASE.PHOTO_EXPAND.end], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -756,8 +757,8 @@ export const Scene04: React.FC = () => {
   const bgX2 = 70 + noise2D("bg2X", frame * 0.004, 2) * 8;
   const bgY2 = 60 + noise2D("bg2Y", frame * 0.004, 3) * 6;
 
-  /* Gemini local frame */
-  const geminiLocalFrame = Math.max(0, frame - (PHASE.GEMINI_UI.start - 10));
+  /* GM local frame */
+  const gmLocalFrame = Math.max(0, frame - (PHASE.GM_UI.start - 10));
 
   /* Introducing glow effects */
   const introLocal = frame - PHASE.INTRODUCING.start;
@@ -768,7 +769,7 @@ export const Scene04: React.FC = () => {
   const introWobX = noise2D("intx", frame * 0.02, 0) * 3;
   const introWobY = noise2D("inty", 0, frame * 0.02) * 2;
 
-  /* Gemini noise wobble */
+  /* GM noise wobble */
   const gemWobX = noise2D("gmwx", frame * 0.015, 0) * 3;
   const gemWobY = noise2D("gmwy", 0, frame * 0.015) * 2;
 
@@ -805,7 +806,7 @@ export const Scene04: React.FC = () => {
         {/* ════════════════════════════════════════════════
             PHONE SECTION — Dog photo (hard cut) Chat AI Response
             ════════════════════════════════════════════════ */}
-        {frame < PHASE.GEMINI_UI.start && (() => {
+        {frame < PHASE.GM_UI.start && (() => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
@@ -820,14 +821,14 @@ export const Scene04: React.FC = () => {
               {showPhotoExpand && (
                 <div style={{
                   width: "100%", height: "100%",
-                  background: `linear-gradient(145deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 50%, #16A34A 100%)`,
+                  background: `linear-gradient(145deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 50%, ${GM.greenStatus} 100%)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   opacity: interpolate(photoExpandProgress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" }),
                 }}>
                   <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.08) 80%)" }} />
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", fontFamily: FONT, textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: GM.textInverse, fontFamily: FONT, textAlign: "center" }}>
                     <div>Portfolio</div>
-                    <div style={{ fontSize: 40, fontFamily: "'JetBrains Mono', monospace", marginTop: 8, transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})` }}>$12,847</div>
+                    <div style={{ fontSize: 40, fontFamily: GM.fontMono, marginTop: 8, transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})` }}>$12,847</div>
                   </div>
                 </div>
               )}
@@ -905,7 +906,7 @@ export const Scene04: React.FC = () => {
               <span style={{ display: "inline-flex", gap: 2, marginLeft: -2, alignItems: "baseline" }}>
                 {[0, 1, 2].map((i) => (
                   <span key={i} style={{
-                    color: i === 0 ? GM_GREEN : i === 1 ? GM_DARK_GREEN : "#16A34A",
+                    color: i === 0 ? GM_GREEN : i === 1 ? GM_DARK_GREEN : GM.greenStatus,
                     fontSize: 42, fontWeight: 700,
                     display: "inline-block",
                     transformOrigin: "center bottom",
@@ -959,39 +960,39 @@ export const Scene04: React.FC = () => {
         )}
 
         {/* ════════════════════════════════════════════════
-            GEMINI UI — DESKTOP BROWSER with rainbow border
+            GM UI — DESKTOP BROWSER with rainbow border
             Zoomed into top-left corner
             ════════════════════════════════════════════════ */}
-        {showGeminiUI && (() => {
-          const geminiContent = (
+        {showGMUI && (() => {
+          const gmContent = (
             <div style={{
               position: "absolute", inset: 0,
-              opacity: s.geminiOpacity,
-              transform: `translateY(${s.geminiY}px) translate(${gemWobX}px, ${gemWobY}px)`,
+              opacity: s.gmOpacity,
+              transform: `translateY(${s.gmY}px) translate(${gemWobX}px, ${gemWobY}px)`,
             }}>
               <DesktopBrowserFrame
-                scale={s.geminiScale}
-                x={s.geminiPanX}
-                y={s.geminiPanY}
-                glowAngle={s.geminiGlowAngle}
+                scale={s.gmScale}
+                x={s.gmPanX}
+                y={s.gmPanY}
+                glowAngle={s.gmGlowAngle}
               >
-                <GeminiDesktopUI
-                  dropdownOpen={s.geminiDropdownOpen}
-                  row1={s.geminiRow1}
-                  row2={s.geminiRow2}
-                  checkmark={s.geminiCheckmark}
+                <GMDesktopUI
+                  dropdownOpen={s.gmDropdownOpen}
+                  row1={s.gmRow1}
+                  row2={s.gmRow2}
+                  checkmark={s.gmCheckmark}
                 />
               </DesktopBrowserFrame>
             </div>
           );
-          if (geminiLocalFrame > 0 && geminiLocalFrame < 10) {
+          if (gmLocalFrame > 0 && gmLocalFrame < 10) {
             return (
               <CameraMotionBlur samples={5} shutterAngle={90}>
-                {geminiContent}
+                {gmContent}
               </CameraMotionBlur>
             );
           }
-          return geminiContent;
+          return gmContent;
         })()}
 
         {/* Dark overlay for scene end */}

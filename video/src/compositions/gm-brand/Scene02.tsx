@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { AbsoluteFill, interpolate } from "remotion";
 import { useGsapTimeline, gsap } from "../../lib/useGsapTimeline";
+import { GM } from "./theme";
 
-const fontFamily = "'Geist Sans', system-ui, sans-serif";
+const fontFamily = GM.fontSans;
 
 /**
  * Scene 02 — "the next era" kinetic text + GM disintegration
@@ -22,14 +23,14 @@ const fontFamily = "'Geist Sans', system-ui, sans-serif";
  *   Phase H (148–174): logo holds with glow/shimmer → dissolve out
  */
 
-const BG_LIGHT = "#E6F7F0";
-const BG_DARK = "#0A2E1C";
-const TEXT_DARK = "#1A1A1A";
-const TEXT_GRAY = "#555555";
-const BLUE_TINT = "#00A36C";
-const PINK = "#00A36C";
-const GRADIENT_PURPLE = "#00A36C";
-const GRADIENT_BLUE = "#16A34A";
+const BG_LIGHT = GM.greenLight;
+const BG_DARK = GM.bgDarkGreen;
+const TEXT_DARK = GM.textPrimary;
+const TEXT_GRAY = GM.textSecondary;
+const BLUE_TINT = GM.green;
+const PINK = GM.green;
+const GRADIENT_PURPLE = GM.green;
+const GRADIENT_BLUE = GM.greenStatus;
 
 const C = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
 
@@ -98,7 +99,7 @@ function sampleLogoBars(): { x: number; y: number }[] {
   return points;
 }
 
-const PARTICLE_COLORS = ["#00A36C", "#16A34A", "#008A5A", "#E6F7F0"];
+const PARTICLE_COLORS = [GM.green, GM.greenStatus, GM.greenDark, GM.greenLight];
 const SIZE_TIERS = [2, 3.2, 4.8]; // small, medium, large
 
 function generateLogoParticles(): LogoParticle[] {
@@ -438,8 +439,8 @@ export const Scene02: React.FC = () => {
 
       // Color: transitions to white as particles arrive
       const color =
-        convergeT >= 0.85 ? "#FFFFFF" : convergeT >= 0.5
-          ? "#E6F7F0"
+        convergeT >= 0.85 ? GM.textInverse : convergeT >= 0.5
+          ? GM.greenLight
           : p.color;
 
       return (
@@ -632,7 +633,7 @@ export const Scene02: React.FC = () => {
             >
               <AbsoluteFill
                 style={{
-                  backgroundColor: "#F5F5F5",
+                  backgroundColor: GM.bgSurface,
                   opacity: pageOpacity,
                   clipPath: turnProgress < 0.01
                     ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
@@ -942,7 +943,7 @@ export const Scene02: React.FC = () => {
                   fontSize: 22,
                   fontWeight: 900,
                   fontFamily,
-                  color: "#FFFFFF",
+                  color: GM.textInverse,
                   letterSpacing: "-0.03em",
                 }}
               >

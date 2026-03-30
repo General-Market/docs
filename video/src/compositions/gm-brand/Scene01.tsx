@@ -27,8 +27,9 @@ import {
 } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { gsap } from "gsap";
+import { GM } from "./theme";
 
-const fontFamily = "'Geist Sans', system-ui, sans-serif";
+const fontFamily = GM.fontSans;
 
 const FPS = 30;
 const W = 1280;
@@ -38,8 +39,8 @@ const H = 720;
 const SCALE = 720 / 540; // 1.333
 
 // --- Palette (General Market brand kit) ------------------------------------
-const BG_BASE = "#E6F7F0";
-const TEXT_DARK = "#1A1A1A";
+const BG_BASE = GM.greenLight;
+const TEXT_DARK = GM.textPrimary;
 
 const clamp = {
   extrapolateLeft: "clamp" as const,
@@ -101,7 +102,7 @@ const PastelBackground: React.FC = () => {
           radial-gradient(ellipse 120% 100% at ${x1}% ${y1}%, hsla(${152 + hueShift}, 40%, 90%, 0.85), transparent 65%),
           radial-gradient(ellipse 70% 80% at ${x2}% ${y2}%, hsla(${145 + hueShift}, 35%, 93%, 0.6), transparent 60%),
           radial-gradient(ellipse 60% 50% at ${x3}% ${y3}%, hsla(${160 + hueShift}, 25%, 95%, 0.45), transparent 55%),
-          linear-gradient(135deg, #E6F7F0 0%, #FAFAFA 45%, #F0FDF4 100%)
+          linear-gradient(135deg, ${GM.greenLight} 0%, #FAFAFA 45%, ${GM.greenMint} 100%)
         `,
       }}
     />
@@ -541,7 +542,7 @@ const PhaseWriteEmails: React.FC = () => {
   // Gradient angle stays roughly horizontal
   const gradAngle =
     90 + noise2D("pill-angle", frame * 0.02, 0) * 3;
-  const pillGrad = `linear-gradient(${gradAngle}deg, #00A36C, #008A5A, #16A34A)`;
+  const pillGrad = `linear-gradient(${gradAngle}deg, ${GM.green}, ${GM.greenDark}, ${GM.greenStatus})`;
 
   return (
     <div
@@ -584,7 +585,7 @@ const PhaseWriteEmails: React.FC = () => {
             background: pillGrad,
             padding: "6px 14px",
             borderRadius: 4,
-            color: "#FFFFFF",
+            color: GM.textInverse,
             fontSize: 50,
             fontWeight: 400,
             lineHeight: 1.2,
@@ -865,18 +866,18 @@ const FLOATERS: Array<{
   blur: number;
 }> = [
   // 4 prominent copies at the corners/edges
-  { word: "Capture", x: -280, y: -110, color: "#00A36C", size: 62, weight: 500, delay: 0, blur: 4 },
-  { word: "alpha", x: 260, y: -90, color: "#555555", size: 42, weight: 400, delay: 0.02, blur: 6 },
-  { word: "alpha", x: -320, y: 100, color: "#16A34A", size: 58, weight: 500, delay: 0.01, blur: 1 },
-  { word: "Capture", x: 300, y: 120, color: "#C40000", size: 56, weight: 500, delay: 0.03, blur: 2 },
+  { word: "Capture", x: -280, y: -110, color: GM.green, size: 62, weight: 500, delay: 0, blur: 4 },
+  { word: "alpha", x: 260, y: -90, color: GM.textSecondary, size: 42, weight: 400, delay: 0.02, blur: 6 },
+  { word: "alpha", x: -320, y: 100, color: GM.greenStatus, size: 58, weight: 500, delay: 0.01, blur: 1 },
+  { word: "Capture", x: 300, y: 120, color: GM.red, size: 56, weight: 500, delay: 0.03, blur: 2 },
   // Secondary depth copies — mid-field
-  { word: "Capture", x: -100, y: -180, color: "#008A5A", size: 36, weight: 400, delay: 0.04, blur: 8 },
-  { word: "alpha", x: 160, y: 170, color: "#16A34A", size: 34, weight: 400, delay: 0.05, blur: 10 },
+  { word: "Capture", x: -100, y: -180, color: GM.greenDark, size: 36, weight: 400, delay: 0.04, blur: 8 },
+  { word: "alpha", x: 160, y: 170, color: GM.greenStatus, size: 34, weight: 400, delay: 0.05, blur: 10 },
   // Far depth — heavily blurred, edges
-  { word: "alpha", x: -460, y: -30, color: "#555555", size: 30, weight: 400, delay: 0.03, blur: 13 },
-  { word: "Capture", x: 440, y: -50, color: "#008A5A", size: 32, weight: 400, delay: 0.06, blur: 14 },
-  { word: "capture", x: 80, y: -160, color: "#00A36C", size: 28, weight: 400, delay: 0.05, blur: 12 },
-  { word: "alpha", x: -180, y: 200, color: "#16A34A", size: 38, weight: 400, delay: 0.04, blur: 9 },
+  { word: "alpha", x: -460, y: -30, color: GM.textSecondary, size: 30, weight: 400, delay: 0.03, blur: 13 },
+  { word: "Capture", x: 440, y: -50, color: GM.greenDark, size: 32, weight: 400, delay: 0.06, blur: 14 },
+  { word: "capture", x: 80, y: -160, color: GM.green, size: 28, weight: 400, delay: 0.05, blur: 12 },
+  { word: "alpha", x: -180, y: 200, color: GM.greenStatus, size: 38, weight: 400, delay: 0.04, blur: 9 },
 ];
 
 const PhaseBrainstormIdeas: React.FC = () => {

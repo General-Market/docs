@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { CameraMotionBlur } from "@remotion/motion-blur";
 import {
@@ -8,16 +8,17 @@ import {
   MotionPathPlugin,
 } from "../../lib/useGsapTimeline";
 import { useFloat3D } from "../../lib/tilt3d";
+import { GM, GMLogo } from "./theme";
 
 /* ═══════════════════════════════════════════════════════════════
-   Scene 05 — Gemini Advanced Interface
+   Scene 05 — GM Advanced Interface
    694 frames @ 30fps = 23.13s
 
    GSAP-driven rewrite. All animations via paused GSAP timeline
    synced to Remotion frame clock.
 
    Sub-segments (frame ranges, local to this scene):
-   A  0-30     "Gemini Advanced" title zoomed in + tilted phone emerges
+   A  0-30     "GM Advanced" title zoomed in + tilted phone emerges
    B  0-45     Phone 3D perspective, title holds
    C  45-100   Interface straightens, "Hello, Lisa." types in
    D  100-150  Full interface with cards + "How can I help you today?"
@@ -30,18 +31,17 @@ import { useFloat3D } from "../../lib/tilt3d";
    K  430-465  Pan across cards 3 & 4 (compressed -15f)
    L  465-490  "With access to" spiral (compressed -15f)
    M  490-540  "Ultra 1.0" inside gradient orb
-   N  540-600  "Experience Gemini" + URL + devices rise
+   N  540-600  "Experience GM" + URL + devices rise
    O  600-640  Phone + desktop side by side
-   P  610-694  Gemini sparkle -> Google G logo -> fade
+   P  610-694  GM Logo light show -> settle + fade
   ═══════════════════════════════════════════════════════════════ */
 
-const BG = "#0C0C0D";
-const GM_GREEN = "#00A36C";
-const GM_DARK_GREEN = "#008A5A";
-const GM_LIGHT_GREEN = "#16A34A";
+const BG = GM.bgDark;
+const GM_GREEN = GM.green;
+const GM_DARK_GREEN = GM.greenDark;
+const GM_LIGHT_GREEN = GM.greenStatus;
 const GRADIENT_TEXT = `linear-gradient(135deg, ${GM_GREEN}, ${GM_LIGHT_GREEN})`;
-const FONT =
-  "'Geist Sans', system-ui, -apple-system, sans-serif";
+const FONT = GM.fontSans;
 /* Legacy aliases for minimal diff — mapped to GM greens */
 const PURPLE = GM_GREEN;
 const PINK = GM_DARK_GREEN;
@@ -110,7 +110,7 @@ const Glow: React.FC<{
   </div>
 );
 
-// ─── Google "G" logo — LUMINOUS LIGHT SOURCE ───
+// ─── GM Logo — LUMINOUS LIGHT SOURCE ───
 // The G is NOT a flat SVG. It is a lamp projecting colored light in a dark room.
 
 /** Tiny floating particles near the G — like dust caught in projected light */
@@ -170,7 +170,330 @@ const GParticles: React.FC<{ count: number; frame: number; spread: number; inten
   );
 };
 
-const GoogleG: React.FC<{
+// ─── GM Light Show — replaces sparkle→GMLightLogo finale ───
+
+const LIGHT_SHOW_START = 610;
+const LIGHT_SHOW_END = 694;
+
+/** 12 primary rays + 8 secondary rays configuration */
+const PRIMARY_RAYS = Array.from({ length: 12 }, (_, i) => ({
+  angle: i * 30,
+  length: 200 + (i % 3) * 100, // 200, 300, 400 alternating
+  width: 2 + (i % 2),
+  delay: i * 3, // stagger: 3 frames between each
+}));
+
+const SECONDARY_RAYS = Array.from({ length: 8 }, (_, i) => ({
+  angle: i * 45 + 22.5, // offset from primary
+  length: 100 + (i % 2) * 100, // 100 or 200
+  width: 1.5,
+  delay: i * 2 + 15, // start after primaries begin
+}));
+
+/** Particles: 35 tiny dots floating in the light cone */
+const LIGHT_PARTICLES = Array.from({ length: 35 }, (_, i) => ({
+  angle: Math.random() * 360,
+  dist: 40 + Math.random() * 260,
+  size: 1 + Math.random() * 2,
+  speed: 0.01 + Math.random() * 0.015,
+  seed: `lp${i}`,
+  phase: Math.random() * Math.PI * 2,
+  isWhite: i % 4 === 0,
+}));
+
+const GMLightShow: React.FC<{ frame: number; opacity: number; fps: number }> = ({
+  frame,
+  opacity,
+  fps,
+}) => {
+  const localFrame = frame - LIGHT_SHOW_START;
+  if (localFrame < 0 || frame > LIGHT_SHOW_END) return null;
+
+  // ── Phase 1 (0-15): Emergence — logo fades in small, grows with spring ──
+  const logoOpacity = interpolate(localFrame, [0, 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const logoSpring = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 12, stiffness: 80, mass: 0.8 },
+  });
+  const logoSize = interpolate(logoSpring, [0, 1], [60, 120]);
+
+  // Green point of light behind logo (emergence)
+  const emergeGlow = interpolate(localFrame, [0, 15], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // ── Phase 2 (15-40): Light Rays extend outward ──
+  const raysActive = localFrame >= 15;
+
+  // ── Phase 3 (40-60): Full Bloom — rays rotate, secondary ring, particles ──
+  const bloomProgress = interpolate(localFrame, [40, 50], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Rays slow rotation: 0.5° per frame after bloom starts
+  const rayRotation = localFrame >= 40
+    ? (localFrame - 40) * 0.5
+    : 0;
+
+  // Logo breathing (scale 1.0 → 1.05 → 1.0, 20-frame cycle)
+  const breathe = localFrame >= 40
+    ? 1 + 0.05 * Math.sin(((localFrame - 40) / 20) * Math.PI * 2)
+    : 1;
+
+  // ── Phase 4 (60-84): Settle + Fade ──
+  const settleProgress = interpolate(localFrame, [60, 70], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Rays retract
+  const rayRetract = interpolate(localFrame, [60, 80], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Glow reduces
+  const glowFade = interpolate(localFrame, [60, 80], [1, 0.2], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Text appears
+  const textOpacity = interpolate(localFrame, [60, 68], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const textY = interpolate(localFrame, [60, 68], [8, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Final fade to black (last 10 frames)
+  const finalFade = interpolate(localFrame, [74, 84], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // Background wash — faint green tint radiating from center (phase 3)
+  const washOpacity = bloomProgress * glowFade;
+
+  // Combined ray intensity: ramp up then retract in phase 4
+  const rayIntensity = raysActive
+    ? interpolate(localFrame, [15, 25], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      }) * (localFrame >= 60 ? rayRetract : 1)
+    : 0;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: opacity * finalFade,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Background wash — faint green tint */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(ellipse 120% 120% at 50% 50%,
+            rgba(0,163,108,${0.15 * washOpacity}) 0%,
+            rgba(0,138,90,${0.08 * washOpacity}) 30%,
+            rgba(0,163,108,${0.03 * washOpacity}) 60%,
+            transparent 90%)`,
+        }}
+      />
+
+      {/* Central container */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        {/* Radial glow behind logo — 600px diameter at full bloom */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: interpolate(emergeGlow, [0, 1], [80, 600]),
+            height: interpolate(emergeGlow, [0, 1], [80, 600]),
+            borderRadius: "50%",
+            background: `radial-gradient(circle,
+              rgba(0,163,108,${0.35 * emergeGlow * glowFade}) 0%,
+              rgba(0,138,90,${0.20 * emergeGlow * glowFade}) 25%,
+              rgba(22,163,74,${0.10 * emergeGlow * glowFade}) 50%,
+              transparent 80%)`,
+          }}
+        />
+
+        {/* Primary light rays (12) */}
+        {raysActive &&
+          PRIMARY_RAYS.map((ray, i) => {
+            const rayLocal = localFrame - 15 - ray.delay;
+            if (rayLocal < 0) return null;
+            const extend = interpolate(rayLocal, [0, 12], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const rayLen = ray.length * extend * (localFrame >= 60 ? rayRetract : 1);
+            const rayOp = interpolate(extend, [0, 0.3, 1], [0, 0.35, 0.15 + (i % 3) * 0.08], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            return (
+              <div
+                key={`pr-${i}`}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: ray.width,
+                  height: rayLen,
+                  background: `linear-gradient(to top, ${GM.green}, transparent)`,
+                  opacity: rayOp * rayIntensity,
+                  transform: `translate(-50%, -100%) rotate(${ray.angle + rayRotation}deg)`,
+                  transformOrigin: "bottom center",
+                }}
+              />
+            );
+          })}
+
+        {/* Secondary light rays (8) — appear at bloom */}
+        {bloomProgress > 0 &&
+          SECONDARY_RAYS.map((ray, i) => {
+            const secLocal = localFrame - 40 - i * 2;
+            if (secLocal < 0) return null;
+            const extend = interpolate(secLocal, [0, 8], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const rayLen = ray.length * extend * (localFrame >= 60 ? rayRetract : 1);
+            return (
+              <div
+                key={`sr-${i}`}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: ray.width,
+                  height: rayLen,
+                  background: `linear-gradient(to top, rgba(0,163,108,0.6), transparent)`,
+                  opacity: 0.2 * bloomProgress * (localFrame >= 60 ? rayRetract : 1),
+                  transform: `translate(-50%, -100%) rotate(${ray.angle + rayRotation}deg)`,
+                  transformOrigin: "bottom center",
+                }}
+              />
+            );
+          })}
+
+        {/* Floating particles — appear gradually from phase 2 */}
+        {localFrame >= 20 &&
+          LIGHT_PARTICLES.map((p, i) => {
+            const pLocal = localFrame - 20;
+            const pAppear = interpolate(pLocal, [i * 0.5, i * 0.5 + 8], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            // Organic drift
+            const dx = noise2D(p.seed, frame * p.speed, 0) * 15;
+            const dy = noise2D(p.seed, 0, frame * p.speed * 0.8) * 12;
+            const flicker = Math.sin(frame * 0.12 + p.phase) * 0.3 + 0.7;
+            const px =
+              Math.cos((p.angle * Math.PI) / 180) * p.dist + dx;
+            const py =
+              Math.sin((p.angle * Math.PI) / 180) * p.dist + dy;
+            return (
+              <div
+                key={`lp-${i}`}
+                style={{
+                  position: "absolute",
+                  left: `calc(50% + ${px}px)`,
+                  top: `calc(50% + ${py}px)`,
+                  width: p.size,
+                  height: p.size,
+                  borderRadius: "50%",
+                  background: p.isWhite
+                    ? "rgba(255,255,255,0.8)"
+                    : i % 2 === 0
+                      ? `rgba(0,163,108,0.9)`
+                      : `rgba(22,163,74,0.85)`,
+                  opacity: pAppear * flicker * (localFrame >= 60 ? rayRetract : 1),
+                  boxShadow: `0 0 ${p.size * 3}px rgba(0,163,108,0.4)`,
+                }}
+              />
+            );
+          })}
+
+        {/* GM Logo — centered, breathing */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: `translate(-50%, -50%) scale(${breathe})`,
+            opacity: logoOpacity,
+            filter: `drop-shadow(0 0 ${20 * emergeGlow * glowFade}px rgba(0,163,108,0.6)) drop-shadow(0 0 ${50 * emergeGlow * glowFade}px rgba(0,163,108,0.25))`,
+          }}
+        >
+          <GMLogo size={logoSize} />
+        </div>
+
+        {/* Text: "General Market" + URL — phase 4 */}
+        <div
+          style={{
+            position: "absolute",
+            top: `calc(50% + ${logoSize / 2 + 24}px)`,
+            left: "50%",
+            transform: `translate(-50%, ${textY}px)`,
+            textAlign: "center",
+            opacity: textOpacity * finalFade,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 22,
+              fontFamily: FONT,
+              fontWeight: 900,
+              color: GM.textInverse,
+              letterSpacing: 0.5,
+              whiteSpace: "nowrap",
+            }}
+          >
+            General Market
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              fontFamily: FONT,
+              color: "#A1A1AA",
+              marginTop: 6,
+              letterSpacing: 0.3,
+            }}
+          >
+            generalmarket.io
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GMLightLogo: React.FC<{
   size?: number;
   opacity?: number;
   glowIntensity?: number;
@@ -308,11 +631,11 @@ const GoogleG: React.FC<{
             x2={24 - 22 * Math.cos((gradRotation * Math.PI) / 180)}
             y2={24 - 22 * Math.sin((gradRotation * Math.PI) / 180)}
           >
-            <stop offset="0%" stopColor="#00A36C" />
-            <stop offset="25%" stopColor="#008A5A" />
-            <stop offset="50%" stopColor="#16A34A" />
-            <stop offset="75%" stopColor="#00A36C" />
-            <stop offset="100%" stopColor="#008A5A" />
+            <stop offset="0%" stopColor={GM.green} />
+            <stop offset="25%" stopColor={GM.greenDark} />
+            <stop offset="50%" stopColor={GM.greenStatus} />
+            <stop offset="75%" stopColor={GM.green} />
+            <stop offset="100%" stopColor={GM.greenDark} />
           </linearGradient>
         </defs>
         {/* Single G path with continuous rainbow gradient */}
@@ -344,21 +667,17 @@ const GoogleG: React.FC<{
   );
 };
 
-// ─── Gemini sparkle (4-point star) with SVG path for morph ───
+// ─── GM sparkle (4-point star) with SVG path for morph ───
 
 const SPARKLE_PATH =
   "M12 0C12 6.627 6.627 12 0 12c6.627 0 12 5.373 12 12 0-6.627 5.373-12 12-12-6.627 0-12-5.373-12-12z";
 
-// Google G path data (simplified) for MorphSVG target
-const GOOGLE_G_PATH =
-  "M23.5 12C23.5 11.2 23.4 10.7 23.3 10H12v4.3h6.5c-.3 1.6-1.1 2.9-2.4 3.8l3.8 3c2.2-2 3.6-5 3.6-8.6 0-1.1-.1-2-.3-2.5zM12 24c3.2 0 5.9-1.1 7.9-2.9l-3.8-3c-1.1.7-2.4 1.1-4.1 1.1c-3.2 0-5.8-2.1-6.8-5l-3.9 3C3.4 20.6 7.3 24 12 24zM5.2 14.3c-.5-1.5-.5-3 0-4.5l-3.9-3c-1.7 3.5-1.7 7.5 0 11l3.9-3.5zM12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4C17.8 1.1 15.1 0 12 0 7.3 0 3.4 3.4 1.3 8.3l3.9 3C6.2 8.1 8.8 4.8 12 4.8z";
-
-const GeminiSparkle: React.FC<{
+const GMSparkle: React.FC<{
   size?: number;
   opacity?: number;
   color?: string;
   id?: string;
-}> = ({ size = 30, opacity = 1, color = "#fff", id }) => (
+}> = ({ size = 30, opacity = 1, color = GM.textInverse, id }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" style={{ opacity }}>
     <path id={id} d={SPARKLE_PATH} fill={color} />
   </svg>
@@ -401,7 +720,7 @@ const CARDS: CardData[] = [
     title: "Generate a set of\nfantastical images",
     body: [],
     thumbColor: "#1B3B2E",
-    accentColor: "#16A34A",
+    accentColor: GM.greenStatus,
   },
   {
     title: "Role play as a\ncharacter from a novel",
@@ -428,7 +747,7 @@ const PromptCard: React.FC<{
     <div
       style={{
         width,
-        background: `linear-gradient(180deg, #18181B 0%, #18181B 95%, rgba(255,255,255,0.02) 100%)`,
+        background: `linear-gradient(180deg, ${GM.bgDarkCard} 0%, ${GM.bgDarkCard} 95%, rgba(255,255,255,0.02) 100%)`,
         borderRadius: 12,
         padding: 14,
         opacity,
@@ -478,7 +797,7 @@ const PromptCard: React.FC<{
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: `radial-gradient(circle, #00A36C, ${PURPLE})`,
+                background: `radial-gradient(circle, ${GM.green}, ${PURPLE})`,
                 position: "absolute" as const,
                 top: 22,
                 left: "30%",
@@ -490,11 +809,11 @@ const PromptCard: React.FC<{
                 width: 20,
                 height: 20,
                 borderRadius: "50%",
-                background: "radial-gradient(circle, #16A34A, #0C0C0D)",
+                background: `radial-gradient(circle, ${GM.greenStatus}, ${GM.bgDark})`,
                 position: "absolute" as const,
                 top: 37,
                 left: "55%",
-                boxShadow: "0 0 10px #16A34A",
+                boxShadow: `0 0 10px ${GM.greenStatus}`,
               }}
             />
           </>
@@ -505,7 +824,7 @@ const PromptCard: React.FC<{
               width: 40,
               height: 50,
               borderRadius: 8,
-              background: "linear-gradient(180deg, #006644, #00A36C)",
+              background: `linear-gradient(180deg, #006644, ${GM.green})`,
               boxShadow: "0 0 10px rgba(0,163,108,0.5)",
             }}
           />
@@ -513,7 +832,7 @@ const PromptCard: React.FC<{
       </div>
       <div
         style={{
-          color: "#fff",
+          color: GM.textInverse,
           fontSize: 12,
           fontFamily: FONT,
           fontWeight: 500,
@@ -574,7 +893,7 @@ const PromptCard: React.FC<{
 
 // ─── Full interface mockup (uses frame for typing only) ───
 
-const GeminiInterface: React.FC<{
+const GMInterface: React.FC<{
   frame: number;
   fps: number;
   style?: React.CSSProperties;
@@ -617,7 +936,7 @@ const GeminiInterface: React.FC<{
       style={{
         width: 820,
         height: 500,
-        background: "#0C0C0D",
+        background: GM.bgDark,
         borderRadius: 12,
         position: "relative",
         overflow: "hidden",
@@ -650,7 +969,7 @@ const GeminiInterface: React.FC<{
       <div
         style={{
           height: 64,
-          backgroundColor: "#18181B",
+          backgroundColor: GM.bgDarkCard,
           borderBottom: "1px solid #333",
           display: "flex",
           alignItems: "center",
@@ -661,20 +980,20 @@ const GeminiInterface: React.FC<{
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="36" height="36" viewBox="0 0 102 102" fill="none">
             <rect width="102" height="102" fill="white"/>
-            <rect x="15" y="48" width="15" height="6" rx="3" fill="#18181B"/>
-            <rect x="27" y="48" width="15" height="6" rx="3" fill="#18181B"/>
-            <rect x="38" y="48" width="15" height="6" rx="3" fill="#18181B"/>
-            <rect x="49" y="48" width="15" height="6" rx="3" fill="#18181B"/>
-            <rect x="61" y="48" width="9" height="6" rx="3" fill="#18181B"/>
-            <rect x="66" y="48" width="15" height="6" rx="3" fill="#18181B"/>
-            <rect x="78" y="48" width="9" height="6" rx="3" fill="#18181B"/>
+            <rect x="15" y="48" width="15" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="27" y="48" width="15" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="38" y="48" width="15" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="49" y="48" width="15" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="61" y="48" width="9" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="66" y="48" width="15" height="6" rx="3" fill={GM.bgDarkCard}/>
+            <rect x="78" y="48" width="9" height="6" rx="3" fill={GM.bgDarkCard}/>
           </svg>
           <span
             style={{
               fontSize: 22,
               fontFamily: FONT,
               fontWeight: 900,
-              color: "#FFFFFF",
+              color: GM.textInverse,
               letterSpacing: "-0.03em",
             }}
           >
@@ -690,7 +1009,7 @@ const GeminiInterface: React.FC<{
                 fontSize: 14,
                 fontFamily: FONT,
                 fontWeight: 600,
-                color: "#FFFFFF",
+                color: GM.textInverse,
               }}
             >
               {n}
@@ -702,13 +1021,13 @@ const GeminiInterface: React.FC<{
           <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22C55E" }} />
           <div
             style={{
-              border: "2px solid #FFFFFF",
+              border: `2px solid ${GM.textInverse}`,
               borderRadius: 8,
               padding: "6px 16px",
               fontSize: 13,
               fontFamily: FONT,
               fontWeight: 600,
-              color: "#FFFFFF",
+              color: GM.textInverse,
             }}
           >
             Connect Wallet
@@ -785,7 +1104,7 @@ const GeminiInterface: React.FC<{
               className={`interface-card interface-card-${i}`}
               style={{
                 width: 220,
-                backgroundColor: "#18181B",
+                backgroundColor: GM.bgDarkCard,
                 border: "1px solid #333",
                 borderRadius: 6,
                 padding: "18px 16px",
@@ -796,7 +1115,7 @@ const GeminiInterface: React.FC<{
                   fontSize: 14,
                   fontFamily: FONT,
                   fontWeight: 600,
-                  color: "#FFFFFF",
+                  color: GM.textInverse,
                   lineHeight: 1.3,
                   marginBottom: 4,
                 }}
@@ -829,7 +1148,7 @@ const GeminiInterface: React.FC<{
           height: 48,
           borderRadius: 12,
           border: "1px solid #333",
-          background: "#18181B",
+          background: GM.bgDarkCard,
           display: "flex",
           alignItems: "center",
           padding: "0 20px",
@@ -895,7 +1214,7 @@ const PhoneMockup: React.FC<{
           position: "absolute",
           width: W,
           height: H,
-          background: "#F5F5F5",
+          background: GM.bgSurface,
           borderRadius: BR,
           border: "3px solid #333",
           overflow: "hidden",
@@ -907,7 +1226,7 @@ const PhoneMockup: React.FC<{
         <div
           style={{
             height: 24,
-            background: "#fff",
+            background: GM.bgPage,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -921,7 +1240,7 @@ const PhoneMockup: React.FC<{
             5G
           </span>
         </div>
-        <div style={{ padding: 14, background: "#fff", height: "100%" }}>
+        <div style={{ padding: 14, background: GM.bgPage, height: "100%" }}>
           <div
             style={{
               fontSize: 20,
@@ -934,9 +1253,9 @@ const PhoneMockup: React.FC<{
             Portfolio
           </div>
           {[
-            { bg: "#E6F7F0", color: "#00A36C", text: "Show my positions..." },
-            { bg: "#E6F7F0", color: "#008A5A", text: "Create new ITP..." },
-            { bg: "#E6F7F0", color: "#16A34A", text: "Vision markets..." },
+            { bg: GM.greenLight, color: GM.green, text: "Show my positions..." },
+            { bg: GM.greenLight, color: GM.greenDark, text: "Create new ITP..." },
+            { bg: GM.greenLight, color: GM.greenStatus, text: "Vision markets..." },
           ].map((c, i) => (
             <div
               key={i}
@@ -966,7 +1285,7 @@ const PhoneMockup: React.FC<{
             }}
           >
             <div
-              style={{ width: 8, height: 12, borderRadius: 4, background: "#fff" }}
+              style={{ width: 8, height: 12, borderRadius: 4, background: GM.bgPage }}
             />
           </div>
         </div>
@@ -977,7 +1296,7 @@ const PhoneMockup: React.FC<{
           position: "absolute",
           width: W,
           height: H,
-          background: "linear-gradient(180deg, #2A2A2A, #1A1A1A)",
+          background: `linear-gradient(180deg, #2A2A2A, ${GM.textPrimary})`,
           borderRadius: BR,
           transform: `translateZ(-${DEPTH / 2}px) rotateY(180deg)`,
           backfaceVisibility: "hidden",
@@ -1096,7 +1415,7 @@ const UltraOrb: React.FC<{
           background: `
             radial-gradient(ellipse at 30% 20%, rgba(0,100,70,0.5) 0%, transparent 45%),
             radial-gradient(ellipse at 70% 80%, rgba(0,60,40,0.25) 0%, transparent 45%),
-            radial-gradient(circle at 50% 50%, #0C1A14 0%, #0C0C0D 100%)
+            radial-gradient(circle at 50% 50%, #0C1A14 0%, ${GM.bgDark} 100%)
           `,
           boxShadow: `
             inset 0 -30px 50px rgba(0,0,0,0.6),
@@ -1112,7 +1431,7 @@ const UltraOrb: React.FC<{
           fontSize: 80,
           fontFamily: FONT,
           fontWeight: 400,
-          color: "#fff",
+          color: GM.textInverse,
           textShadow: "0 0 30px rgba(0,163,108,0.25)",
           zIndex: 1,
           letterSpacing: 2,
@@ -1168,7 +1487,7 @@ export const Scene05: React.FC = () => {
   const expDesktopRef = useRef<HTMLDivElement>(null);
   const expDevicesRef = useRef<HTMLDivElement>(null);
   const sparkleWrapRef = useRef<HTMLDivElement>(null);
-  const gFinalWrapRef = useRef<HTMLDivElement>(null);
+  // gFinalWrapRef removed — replaced by GMLightShow
   const interfaceBackdropRef = useRef<HTMLDivElement>(null);
   const disclaimerRef = useRef<HTMLDivElement>(null);
   const bgGlowRef = useRef<HTMLDivElement>(null);
@@ -1256,7 +1575,7 @@ export const Scene05: React.FC = () => {
     const f = (fr: number) => fr / fps;
 
     // ═══ A: Dark void + phone (0-30) ═══
-    // G logo removed — scene opens directly into Gemini Advanced title
+    // G logo removed — scene opens directly into GM Advanced title
 
     // Phone A: arc sweep from bottom-left
     if (phoneARef.current) {
@@ -1289,7 +1608,7 @@ export const Scene05: React.FC = () => {
       }, f(46)); // shifted to match delayed start
     }
 
-    // ═══ B+C+D: Gemini Interface (0-150) ═══
+    // ═══ B+C+D: GM Interface (0-150) ═══
     // Precise motion tracking: dramatic zoomed/tilted entrance.
     // Frame 0: scale=3.0, rotateY=-20°, rotateX=8° — only header visible, rainbow glow
     // Frame 30: scale=2.0, rotateY=-12°, rotateX=5° — "Hello, Lisa." appearing
@@ -1740,7 +2059,7 @@ export const Scene05: React.FC = () => {
       }, f(530));
     }
 
-    // ═══ N: Experience Gemini + devices (540-610) ═══
+    // ═══ N: Experience GM + devices (540-610) ═══
     // Device Duo: phone (left, rotateY=30°) and laptop (right, rotateY=-30°)
     // Both slide in from offscreen-right with momentum, overshoot, settle by frame 585 (1.5s)
     if (expTitleRef.current) {
@@ -1833,68 +2152,15 @@ export const Scene05: React.FC = () => {
       }, f(606));
     }
 
-    // ═══ O+P: Sparkle → Google G morph (610-694) — shifted 30 frames earlier ═══
-    // Single continuous container: sparkle appears, morphs into G, then fades
+    // ═══ O+P: GM Light Show (610-694) ═══
+    // Light show is self-animated via interpolate() — just control wrapper opacity
     if (sparkleWrapRef.current) {
-      t.set(sparkleWrapRef.current, { opacity: 0, scale: 0.15 }, 0);
-      // Sparkle enters with spring
+      t.set(sparkleWrapRef.current, { opacity: 0 }, 0);
       t.to(sparkleWrapRef.current, {
         opacity: 1,
-        scale: 1,
-        duration: f(12),
-        ease: "elastic.out(1, 0.5)",
-      }, f(610));
-      // Scale up slightly during morph for dramatic effect
-      t.to(sparkleWrapRef.current, {
-        scale: 1.3,
-        duration: f(18),
-        ease: "power1.inOut",
-      }, f(622));
-      // Final fade out
-      t.to(sparkleWrapRef.current, {
-        opacity: 0,
-        scale: 1.0,
-        duration: f(8),
-        ease: "power2.in",
-      }, f(686));
-    }
-
-    // SVG morph: sparkle path → Google G path (the core transition)
-    const sparklePathEl = containerRef.current?.querySelector("#sparkle-morph-path");
-    if (sparklePathEl) {
-      t.to(sparklePathEl, {
-        morphSVG: {
-          shape: GOOGLE_G_PATH,
-          shapeIndex: "auto",
-        },
-        fill: "#00A36C", // transition fill from white to GM green
-        duration: f(18),
-        ease: "power2.inOut",
-      }, f(622));
-    }
-
-    // Google G full-color overlay fades in over the morph result
-    if (gFinalWrapRef.current) {
-      t.set(gFinalWrapRef.current, { opacity: 0, scale: 1.3 }, 0);
-      // Fade in the multi-color G once morph is ~70% done
-      t.to(gFinalWrapRef.current, {
-        opacity: 1,
-        scale: 1.3,
         duration: f(8),
         ease: "power1.out",
-      }, f(635));
-      // Match the parent scale-down
-      t.to(gFinalWrapRef.current, {
-        scale: 1.0,
-        duration: f(12),
-        ease: "power1.inOut",
-      }, f(640));
-      // Final fade out together — holds longer now
-      t.to(gFinalWrapRef.current, {
-        opacity: 0,
-        duration: f(8),
-        ease: "power2.in",
-      }, f(686));
+      }, f(610));
     }
 
     builtRef.current = true;
@@ -1923,31 +2189,7 @@ export const Scene05: React.FC = () => {
   const bgGlow3X = 30 + organicOffset(frame, "bg3X", 0.006, 8);
   const bgGlow3Y = 70 + organicOffset(frame, "bg3Y", 0.007, 6);
 
-  // G final glow computation — extends through the morph (shifted -30)
-  const gFinalLocal = Math.max(0, frame - 635);
-  const gFinalGlow =
-    frame >= 635
-      ? Math.min(1, gFinalLocal / 10) * (gFinalLocal > 25 ? 0.5 : 1)
-      : 0;
-
-  // Sparkle/morph glow — continuous from sparkle through G morph (shifted -30)
-  const sparkleLocal = Math.max(0, frame - 610);
-  const sparkleGlow =
-    frame >= 610 && frame < 694
-      ? sparkleLocal < 8
-        ? sparkleLocal / 8 // ramp up
-        : sparkleLocal < 35
-          ? 1 // full glow through morph
-          : Math.max(0, 1 - (sparkleLocal - 35) / 15) // slow fade
-      : 0;
-
-  // Morph progress for color interpolation on glow (shifted -30)
-  const morphProgress =
-    frame >= 622 && frame < 640
-      ? Math.min(1, (frame - 622) / 18)
-      : frame >= 640
-        ? 1
-        : 0;
+  // Light show opacity (GSAP drives the wrapper, interpolate drives internals)
 
   // Orb local frame for internal animation (shifted -30)
   const orbLocalFrame = Math.max(0, frame - 490);
@@ -1974,7 +2216,7 @@ export const Scene05: React.FC = () => {
           fontSize: 52,
           fontFamily: FONT,
           fontWeight: 300,
-          color: "#fff",
+          color: GM.textInverse,
           whiteSpace: "nowrap",
           display: "flex",
           gap: "0.3em",
@@ -2041,7 +2283,7 @@ export const Scene05: React.FC = () => {
         <PhoneMockup style={{ transform: "scale(0.6) rotateY(8deg)" }} />
       </div>
 
-      {/* B+C+D: Gemini Interface — float wrapper adds continuous 3D drift */}
+      {/* B+C+D: GM Interface — float wrapper adds continuous 3D drift */}
       <div
         style={{
           position: "absolute",
@@ -2077,7 +2319,7 @@ export const Scene05: React.FC = () => {
               zIndex: 20,
             }}
           />
-          <GeminiInterface
+          <GMInterface
             frame={interfaceLocalFrame}
             fps={fps}
           />
@@ -2102,7 +2344,7 @@ export const Scene05: React.FC = () => {
             opacity: 0,
           }}
         >
-          <GeminiInterface frame={90} fps={fps} />
+          <GMInterface frame={90} fps={fps} />
         </div>
       </div>
 
@@ -2184,7 +2426,7 @@ export const Scene05: React.FC = () => {
               fontSize: 52,
               fontFamily: FONT,
               fontWeight: 300,
-              color: "#fff",
+              color: GM.textInverse,
               whiteSpace: "nowrap",
               display: "flex",
               gap: "0.3em",
@@ -2258,7 +2500,7 @@ export const Scene05: React.FC = () => {
                 boxShadow: `0 0 30px ${CARDS[0].accentColor}33`,
               }}
             >
-              <GeminiSparkle size={40} color={CARDS[0].accentColor} />
+              <GMSparkle size={40} color={CARDS[0].accentColor} />
             </div>
           </div>
         </div>
@@ -2275,7 +2517,7 @@ export const Scene05: React.FC = () => {
           fontSize: 52,
           fontFamily: "'Source Code Pro', 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace",
           fontWeight: 400,
-          color: "#fff",
+          color: GM.textInverse,
           whiteSpace: "nowrap",
           opacity: 0,
         }}
@@ -2339,7 +2581,7 @@ export const Scene05: React.FC = () => {
                 boxShadow: `0 0 30px ${CARDS[1].accentColor}33`,
               }}
             >
-              <GeminiSparkle size={40} color={CARDS[1].accentColor} />
+              <GMSparkle size={40} color={CARDS[1].accentColor} />
             </div>
           </div>
         </div>
@@ -2429,7 +2671,7 @@ export const Scene05: React.FC = () => {
                     boxShadow: `0 0 30px ${CARDS[idx].accentColor}33`,
                   }}
                 >
-                  <GeminiSparkle size={40} color={CARDS[idx].accentColor} />
+                  <GMSparkle size={40} color={CARDS[idx].accentColor} />
                 </div>
               </div>
             </div>
@@ -2483,7 +2725,7 @@ export const Scene05: React.FC = () => {
             fontSize: 52,
             fontFamily: FONT,
             fontWeight: 300,
-            color: "#fff",
+            color: GM.textInverse,
             whiteSpace: "nowrap",
             opacity: 0,
           }}
@@ -2510,7 +2752,7 @@ export const Scene05: React.FC = () => {
                 fontSize: 52,
                 fontFamily: FONT,
                 fontWeight: 300,
-                color: isAccent ? undefined : "#fff",
+                color: isAccent ? undefined : GM.textInverse,
                 ...(isAccent ? {
                   background: `linear-gradient(90deg, ${PURPLE}, ${BLUE})`,
                   WebkitBackgroundClip: "text",
@@ -2592,7 +2834,7 @@ export const Scene05: React.FC = () => {
         <UltraOrb frame={orbLocalFrame} fps={fps} />
       </div>
 
-      {/* N: Experience Gemini + devices — swooshes LEFT at 1:07 with motion blur */}
+      {/* N: Experience GM + devices — swooshes LEFT at 1:07 with motion blur */}
       {(() => {
         const swooshActive = frame >= 598 && frame <= 610;
         const expContent = (
@@ -2615,7 +2857,7 @@ export const Scene05: React.FC = () => {
                 fontSize: 46,
                 fontFamily: FONT,
                 fontWeight: 400,
-                color: "#fff",
+                color: GM.textInverse,
                 opacity: 0,
                 marginBottom: 10,
               }}
@@ -2666,7 +2908,7 @@ export const Scene05: React.FC = () => {
                     transformStyle: "preserve-3d" as const,
                   }}
                 >
-                  <GeminiInterface frame={90} fps={fps} />
+                  <GMInterface frame={90} fps={fps} />
                 </div>
               </div>
             </div>
@@ -2689,146 +2931,16 @@ export const Scene05: React.FC = () => {
         }}
       />
 
-      {/* P: Warm golden-green background wash — G is a LAMP projecting light across the room */}
-      {frame >= 625 && frame < 700 && (() => {
-        const washProgress = frame < 640
-          ? (frame - 625) / 15
-          : frame > 686
-            ? Math.max(0, 1 - (frame - 686) / 8)
-            : 1;
-        const washPulse = (Math.sin(frame * 0.06) * 0.15 + 0.85) * washProgress;
-        return (
-          <>
-            {/* Full-screen warm green/gold tint — the projected light */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: `
-                  radial-gradient(ellipse 120% 120% at 50% 50%,
-                    rgba(0,163,108,${0.22 * washPulse}) 0%,
-                    rgba(0,138,90,${0.14 * washPulse}) 15%,
-                    rgba(22,163,74,${0.10 * washPulse}) 30%,
-                    rgba(0,163,108,${0.06 * washPulse}) 50%,
-                    rgba(0,163,108,${0.03 * washPulse}) 70%,
-                    transparent 90%)
-                `,
-                pointerEvents: "none" as const,
-                zIndex: 0,
-              }}
-            />
-            {/* Secondary warm diffuse wash — edges of the room */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: `
-                  radial-gradient(ellipse 80% 80% at 50% 45%,
-                    rgba(22,163,74,${0.08 * washPulse}) 0%,
-                    rgba(0,163,108,${0.04 * washPulse}) 40%,
-                    transparent 75%)
-                `,
-                pointerEvents: "none" as const,
-                zIndex: 0,
-              }}
-            />
-          </>
-        );
-      })()}
-
-      {/* O+P: Sparkle → Google G morph (continuous container) */}
+      {/* O+P: GM Light Show (610-694) */}
       <div
         ref={sparkleWrapRef}
         style={{
           position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(-50%, -50%) rotate(${frame >= 610 ? organicOffset(frame, "spkRot", 0.04, 8) : 0}deg)`,
+          inset: 0,
           opacity: 0,
         }}
       >
-        {/* Ambient glow that transitions from purple (sparkle) to multi-color (G) */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 280,
-            height: 280,
-            borderRadius: "50%",
-            background: `radial-gradient(circle,
-              rgba(${Math.round(139 - morphProgress * 73)},${Math.round(92 + morphProgress * 41)},${Math.round(246 - morphProgress * 2)},${0.2 * sparkleGlow}) 0%,
-              rgba(0,163,108,${0.08 * sparkleGlow * morphProgress}) 30%,
-              transparent 70%)`,
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* SVG that morphs from sparkle to G shape */}
-        <svg
-          width={80}
-          height={80}
-          viewBox="0 0 24 24"
-          style={{
-            filter: `drop-shadow(0 0 ${20 * sparkleGlow}px rgba(${Math.round(139 - morphProgress * 73)},${Math.round(92 + morphProgress * 41)},246,0.8)) drop-shadow(0 0 ${40 * sparkleGlow}px rgba(0,163,108,${0.3 * morphProgress}))`,
-          }}
-        >
-          <path
-            id="sparkle-morph-path"
-            d={SPARKLE_PATH}
-            fill="#fff"
-          />
-        </svg>
-      </div>
-
-      {/* P: GM Logo finale (replaces Google G) — logo with green glow + particles */}
-      <div
-        ref={gFinalWrapRef}
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: `translate(calc(-50% + ${frame >= 635 ? organicOffset(frame, "gFinX", 0.015, 1.5) : 0}px), calc(-50% + ${frame >= 635 ? organicOffset(frame, "gFinY", 0.018, 1.0) : 0}px))`,
-          opacity: 0,
-        }}
-      >
-        {/* Green glow radiating from logo */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            background: `radial-gradient(circle,
-              rgba(0,163,108,${0.3 * gFinalGlow}) 0%,
-              rgba(0,163,108,${0.15 * gFinalGlow}) 25%,
-              rgba(0,138,90,${0.08 * gFinalGlow}) 50%,
-              transparent 75%)`,
-            pointerEvents: "none",
-          }}
-        />
-        {/* Subtle breathing pulse on the logo */}
-        <div style={{
-          transform: `scale(${1 + 0.03 * Math.sin(frame * 0.08)})`,
-          filter: `drop-shadow(0 0 ${20 * gFinalGlow}px rgba(0,163,108,0.6)) drop-shadow(0 0 ${50 * gFinalGlow}px rgba(0,163,108,0.25))`,
-        }}>
-          <svg width="80" height="80" viewBox="0 0 102 102" fill="none">
-            <rect width="102" height="102" fill="black"/>
-            <rect x="15" y="48" width="15" height="6" rx="3" fill="white"/>
-            <rect x="27" y="48" width="15" height="6" rx="3" fill="white"/>
-            <rect x="38" y="48" width="15" height="6" rx="3" fill="white"/>
-            <rect x="49" y="48" width="15" height="6" rx="3" fill="white"/>
-            <rect x="61" y="48" width="9" height="6" rx="3" fill="white"/>
-            <rect x="66" y="48" width="15" height="6" rx="3" fill="white"/>
-            <rect x="78" y="48" width="9" height="6" rx="3" fill="white"/>
-          </svg>
-        </div>
-        {/* Green floating particles */}
-        <GParticles count={25} frame={frame} spread={160} intensity={gFinalGlow * 0.6} />
+        <GMLightShow frame={frame} opacity={1} fps={fps} />
       </div>
 
       {/* Bottom disclaimer during interface */}
