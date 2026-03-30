@@ -677,27 +677,36 @@ const SegPhoneMockup: React.FC = () => {
      Phone starts nearly flat at MASSIVE zoom (3x), then flips dramatically through
      a ~65deg rotateY arc — side edge clearly visible — before settling back as it
      shrinks and the "supercharge" text takes over. */
+  /* Reference 0:31-0:34.5 mapped to 110 frames:
+   * f0-15:   phone enters MASSIVE and nearly flat (fills viewport)
+   * f15-30:  still massive, slight tilt building
+   * f30-45:  MID FLIP — dramatic 40° Y rotation, side edge visible
+   * f45-60:  PEAK FLIP — 65° Y, phone almost showing backface
+   * f60-75:  recovery — rotates back, forward lean increases
+   * f75-90:  settling — phone shrinks behind "supercharge" text
+   * f90-110: phone fades, only text visible */
   const phoneScale = interpolate(frame,
-    [0,   15,  25,  35,  45,  55,  70, 84],
-    [3.0, 2.8, 2.5, 2.0, 1.5, 1.2, 1.0, 0.8],
+    [0,   15,  30,  45,  60,  75,  90, 110],
+    [3.0, 3.0, 2.5, 2.0, 1.5, 1.2, 0.8, 0.5],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYDeg = interpolate(frame,
-    [0,  15,  25,  35,  45,  55,  70,  84],
-    [-2, -15, -40, -65, -30, -15, -10, -10],
+    [0,  15,  30,  45,  60,  75,  90,  110],
+    [-2, -5, -25, -55, -30, -15, -10,  -8],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltXDeg = interpolate(frame,
-    [0,  15,  25,  35,  45,  55,  70,  84],
-    [2,   3,   5,  10,  20,  25,  15,   5],
+    [0,  15,  30,  45,  60,  75,  90,  110],
+    [2,   2,   5,  12,  22,  25,  12,   5],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYRad = (tiltYDeg * Math.PI) / 180;
   const tiltXRad = (tiltXDeg * Math.PI) / 180;
   const pOp = interpolate(frame, [0, 3], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"});
 
-  const hiSpr = spring({frame, fps, delay: Math.floor(fps*0.6), config:{damping:14,stiffness:100,mass:0.7}});
-  const bdSpr = spring({frame, fps, delay: fps, config:{damping:14,stiffness:100,mass:0.7}});
+  /* Text visible immediately — ref shows it already on screen at entrance */
+  const hiSpr = spring({frame, fps, delay: 0, config:{damping:14,stiffness:100,mass:0.7}});
+  const bdSpr = spring({frame, fps, delay: 4, config:{damping:14,stiffness:100,mass:0.7}});
   const exitOp = interpolate(frame, [durationInFrames-8,durationInFrames], [1,0], {extrapolateRight:"clamp",extrapolateLeft:"clamp"});
 
   const phoneScreen = (
@@ -959,19 +968,31 @@ const SegPhoneGoodMorning: React.FC = () => {
 
 /* === MAIN SCENE 03 === */
 export const Scene03: React.FC = () => {
+  /* Segment timing aligned to reference (S03 starts at absolute frame 410):
+   * Ref 0:14 = local 0:   particles
+   * Ref 0:16 = local 60:  Gemini reveal
+   * Ref 0:17 = local 90:  desktop Hello Lisa
+   * Ref 0:20 = local 180: it's everything
+   * Ref 0:22 = local 240: apps float
+   * Ref 0:24 = local 300: typing prompt
+   * Ref 0:26 = local 360: Gemini response
+   * Ref 0:28 = local 420: and moooore
+   * Ref 0:29 = local 450: starting with
+   * Ref 0:31 = local 520: phone "Hi I'm Gemini" (MASSIVE, then flip)
+   * Ref 0:35 = local 630: designed to supercharge (END of S03)
+   */
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
     {start:0,dur:50,Comp:SegParticleExplosion},
     {start:45,dur:50,Comp:SegGeminiReveal},
     {start:90,dur:95,Comp:SegDesktopUI},
-    {start:185,dur:30,Comp:SegItsEverything},
-    {start:208,dur:55,Comp:SegAppsFloat},
-    {start:255,dur:80,Comp:SegTypingPrompt},
-    {start:330,dur:40,Comp:SegGeminiResponse},
-    {start:365,dur:55,Comp:SegAndMore},
-    {start:416,dur:62,Comp:SegStartingWith},
-    {start:476,dur:84,Comp:SegPhoneMockup},
-    {start:555,dur:85,Comp:SegSupercharge},
-    {start:635,dur:110,Comp:SegPhoneGoodMorning},
+    {start:185,dur:55,Comp:SegItsEverything},
+    {start:235,dur:65,Comp:SegAppsFloat},
+    {start:295,dur:70,Comp:SegTypingPrompt},
+    {start:360,dur:50,Comp:SegGeminiResponse},
+    {start:405,dur:50,Comp:SegAndMore},
+    {start:450,dur:70,Comp:SegStartingWith},
+    {start:520,dur:110,Comp:SegPhoneMockup},
+    {start:620,dur:60,Comp:SegSupercharge},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
