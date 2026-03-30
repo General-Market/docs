@@ -62,7 +62,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // DEPLOY_SEED env var provides additional uniqueness — bump it to force fresh addresses
         // when the deployer nonce alone doesn't change enough (Orbit nonce drift).
         uint256 seed = vm.envOr("DEPLOY_SEED", uint256(0));
-        return keccak256(abi.encode("INDEX_DEPLOY", block.chainid, _deployerStartNonce, seed, ++_saltCounter));
+        // Use ONLY DEPLOY_SEED + chainid + counter. Do NOT use _deployerStartNonce —
+        // it diverges between forge simulation and broadcast on Orbit L3, causing
+        // CREATE2 to produce the same address as a previous deploy (proxy storage persists).
+        return keccak256(abi.encode("INDEX_DEPLOY_V2", block.chainid, seed, ++_saltCounter));
     }
 
     function _deployProxy(address impl, bytes memory initData) internal returns (address) {

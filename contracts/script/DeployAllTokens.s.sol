@@ -18,7 +18,8 @@ contract DeployAllTokens is Script {
     uint256 private _deployerStartNonce;
 
     function _nextSalt() internal returns (bytes32) {
-        return keccak256(abi.encode("INDEX_TOKENS", block.chainid, _deployerStartNonce, ++_saltCounter));
+        uint256 seed = vm.envOr("DEPLOY_SEED", uint256(0));
+        return keccak256(abi.encode("INDEX_TOKENS_V2", block.chainid, seed, ++_saltCounter));
     }
 
     function run() external {
