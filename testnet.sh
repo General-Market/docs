@@ -2185,8 +2185,6 @@ _start_oracles_docker() {
       - "$BLS_IDX"
       - "--num-oracles"
       - "3"
-      - "--signature-threshold"
-      - "3"
       - "--registry-sync"
       - "--data-node-url"
       - "http://localhost:$DATA_NODE_PORT"
