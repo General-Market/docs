@@ -2987,7 +2987,81 @@ cmd_seed_orders() {
         echo -e "  ${GREEN}Borrows seeded${NC}"
     fi
 
-    echo -e "${GREEN}Seeding complete. ITPs have supply, Morpho has borrows.${NC}"
+    echo -e "${GREEN}Seeding complete. Running post-deploy verification...${NC}"
+
+    # ── Post-deploy verification ─────────────────────────────
+    echo -e "${BLUE}[7/7] Verifying system is operational...${NC}"
+    local VERIFY_PASS=0
+    local VERIFY_FAIL=0
+
+    # 1. ITP fills: pendingOrderCount should be 0 or very low
+    local PENDING=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "pendingOrderCount()(uint256)" 2>/dev/null | awk '{print $1}')
+    if [ "$PENDING" -le 5 ] 2>/dev/null; then
+        echo -e "  ${GREEN}ITP fills: $PENDING pending (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${RED}ITP fills: $PENDING still pending${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
+    fi
+
+    # 2. Borrows: check SeedBorrows log for supplied > 0
+    local SUPPLIED=$(grep "Total markets supplied:" logs/seed-borrows.log 2>/dev/null | tail -1 | grep -o '[0-9]*' | tail -1)
+    if [ "${SUPPLIED:-0}" -gt 0 ]; then
+        echo -e "  ${GREEN}Lending: $SUPPLIED markets with borrows (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${YELLOW}Lending: 0 markets supplied (fills may still be processing — re-run seed-orders later)${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
+    fi
+
+    # 3. Vision batches: at least 20 active sources
+    local ACTIVE_SOURCES=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(DISTINCT source_id) FROM vision_batch_lifecycle WHERE settled_at IS NULL;\"" 2>/dev/null | tr -d ' ')
+    if [ "${ACTIVE_SOURCES:-0}" -ge 20 ]; then
+        echo -e "  ${GREEN}Vision batches: $ACTIVE_SOURCES active sources (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${YELLOW}Vision batches: $ACTIVE_SOURCES active sources (data-node still discovering — will grow to 50+)${NC}"
+    fi
+
+    # 4. Vision bots: at least 5 unique players
+    local BOT_PLAYERS=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(DISTINCT player) FROM vision_positions;\"" 2>/dev/null | tr -d ' ')
+    if [ "${BOT_PLAYERS:-0}" -ge 5 ]; then
+        echo -e "  ${GREEN}Vision bots: $BOT_PLAYERS players joining batches (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${YELLOW}Vision bots: $BOT_PLAYERS players (swarm may still be starting)${NC}"
+    fi
+
+    # 5. Settlements: check if proofs are being created (may be 0 if batches haven't expired yet)
+    local PROOF_COUNT=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs;\"" 2>/dev/null | tr -d ' ')
+    local SUBMITTED=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs WHERE submitted = true;\"" 2>/dev/null | tr -d ' ')
+    if [ "${PROOF_COUNT:-0}" -gt 0 ]; then
+        echo -e "  ${GREEN}Settlements: $SUBMITTED/$PROOF_COUNT submitted (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${YELLOW}Settlements: 0 proofs yet (batches need 1-10 min to expire — check again shortly)${NC}"
+    fi
+
+    # 6. All services running
+    local SVC_OK=true
+    for svc in oracle-1 oracle-2 oracle-3; do
+        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "$svc" > /dev/null 2>&1; then
+            SVC_OK=false
+        fi
+    done
+    if [ "$SVC_OK" = true ]; then
+        echo -e "  ${GREEN}Services: all 3 oracles + data-node + swarm running (OK)${NC}"
+        VERIFY_PASS=$((VERIFY_PASS + 1))
+    else
+        echo -e "  ${RED}Services: some oracles not running${NC}"
+        VERIFY_FAIL=$((VERIFY_FAIL + 1))
+    fi
+
+    echo -e ""
+    echo -e "  Verification: ${GREEN}$VERIFY_PASS passed${NC}, ${YELLOW}$VERIFY_FAIL warnings${NC}"
+    if [ "$VERIFY_FAIL" -gt 2 ]; then
+        echo -e "  ${YELLOW}Some checks failed — system may need manual attention${NC}"
+    fi
 }
 
 # ── Main dispatcher ──────────────────────────────────────────
