@@ -1440,77 +1440,57 @@ json.dump(result, sys.stdout)
     # [12a] Orbit L3 address fix: the vault deploy script calls setITPVault with
     # simulation addresses, which diverge from broadcast addresses on Orbit.
     # Read actual vault addresses from broadcast receipts and patch the Index mapping.
-    echo -e "  Verifying ITP vault addresses (Orbit L3 fixup)..."
-    local VAULT_BROADCAST="contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/run-latest.json"
-    if [ -f "$VAULT_BROADCAST" ]; then
-        python3 -c "
-import json, subprocess, sys
-
-bd = json.load(open('$VAULT_BROADCAST'))
-index_addr = '$(read_deployment_addr Index)'
-rpc = '$RPC_URL'
-chain_id = '$CHAIN_ID'
-gas_price = '$GAS_PRICE'
-deployer_key = '$DEPLOYER_KEY'
-
-# Extract vault CREATE txs and the setITPVault calls that follow each
-# Pattern: CREATE (ITPVault) → CALL (setITPVault with itpId + vault addr)
-vaults = {}  # itpId -> broadcast_vault_addr
-for tx in bd.get('transactions', []):
-    if tx.get('transactionType') in ('CREATE', 'CREATE2') and 'Vault' in tx.get('contractName', ''):
-        vault_addr = tx['contractAddress']
-        # The next tx should be setITPVault — but we can also match by looking at
-        # the vault addresses in the receipts
-        pass
-
-# Simpler: read all ITP vault addresses from on-chain, check code at each,
-# if no code, find the correct address from broadcast receipts
-# The receipts have contractAddress for CREATE txs
-vault_creates = []
-for r in bd.get('receipts', []):
-    if r.get('contractAddress') and r['contractAddress'] != '':
-        vault_creates.append(r['contractAddress'])
-
-# Read ITP count
-result = subprocess.run(['cast', 'call', '--rpc-url', rpc, index_addr, 'getItpCount()(uint256)'], capture_output=True, text=True)
-itp_count = int(result.stdout.strip().split()[0]) if result.stdout.strip() else 0
-
-patched = 0
-for i in range(1, itp_count + 1):
-    itp_hex = '0x' + hex(i)[2:].zfill(64)
-    result = subprocess.run(['cast', 'call', '--rpc-url', rpc, index_addr, 'itpVaults(bytes32)(address)', itp_hex], capture_output=True, text=True)
-    stored_vault = result.stdout.strip()
-    if not stored_vault or stored_vault == '0x0000000000000000000000000000000000000000':
-        continue
-    # Check if stored vault has code
-    result = subprocess.run(['cast', 'code', '--rpc-url', rpc, stored_vault], capture_output=True, text=True)
-    code_len = len(result.stdout.strip())
-    if code_len > 10:
-        continue  # has code, all good
-
-    # Stored vault has no code — find matching receipt by index
-    # vault_creates[i-1] should be the correct one (deployed in order)
-    if i - 1 < len(vault_creates):
-        correct_addr = vault_creates[i - 1]
-        # Verify correct_addr has code
-        result = subprocess.run(['cast', 'code', '--rpc-url', rpc, correct_addr], capture_output=True, text=True)
-        if len(result.stdout.strip()) > 10:
-            # Patch: call setITPVault
-            subprocess.run([
-                'cast', 'send', '--rpc-url', rpc,
-                '--private-key', deployer_key,
-                '--chain', chain_id,
-                '--legacy', '--gas-price', gas_price,
-                index_addr, 'setITPVault(bytes32,address)', itp_hex, correct_addr
-            ], capture_output=True)
-            patched += 1
-            print(f'  Patched ITP {i}: {stored_vault[:18]}... -> {correct_addr[:18]}...')
-
-if patched > 0:
-    print(f'  Fixed {patched} vault addresses from broadcast receipts')
-else:
-    print(f'  All {itp_count} vault addresses verified (no Orbit divergence)')
-" 2>&1 | while read line; do echo -e "  $line"; done
+    # [12a] Verify EVERY vault's indexContract() matches the actual Index.
+    # ITP vault's indexContract is immutable — if it doesn't match, the vault
+    # was deployed with a stale Index address (Orbit divergence) and fills will
+    # revert with E063_MintFailed. In that case, redeploy vaults.
+    echo -e "  Verifying vault.indexContract() matches Index..."
+    local INDEX_ON_CHAIN="$INDEX_ADDR_ITP"
+    local VAULT_MISMATCH=0
+    local VAULT_OK=0
+    local ITP_TOTAL=$(cast call "$INDEX_ON_CHAIN" "getItpCount()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    for _vi in $(seq 1 "$ITP_TOTAL"); do
+        local _vhex=$(printf "0x%064x" "$_vi")
+        local _vault=$(cast call "$INDEX_ON_CHAIN" "itpVaults(bytes32)(address)" "$_vhex" --rpc-url "$RPC_URL" 2>/dev/null)
+        [ -z "$_vault" ] || [ "$_vault" = "0x0000000000000000000000000000000000000000" ] && continue
+        local _vault_index=$(cast call "$_vault" "indexContract()(address)" --rpc-url "$RPC_URL" 2>/dev/null)
+        if [ "$(echo "$_vault_index" | tr '[:upper:]' '[:lower:]')" != "$(echo "$INDEX_ON_CHAIN" | tr '[:upper:]' '[:lower:]')" ]; then
+            VAULT_MISMATCH=$((VAULT_MISMATCH + 1))
+            [ "$VAULT_MISMATCH" -le 3 ] && echo -e "  ${RED}ITP $_vi: vault.indexContract=$_vault_index != Index=$INDEX_ON_CHAIN${NC}"
+        else
+            VAULT_OK=$((VAULT_OK + 1))
+        fi
+    done
+    if [ "$VAULT_MISMATCH" -gt 0 ]; then
+        echo -e "  ${RED}FATAL: $VAULT_MISMATCH/$ITP_TOTAL vaults have wrong indexContract (immutable — must redeploy vaults)${NC}"
+        echo -e "  ${RED}  Cleaning vault broadcast and redeploying...${NC}"
+        rm -rf contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+            ADMIN_KEY="$DEPLOYER_KEY" \
+            INDEX_ADDRESS="$INDEX_ON_CHAIN" \
+            L3_WUSDC="$L3_USDC" \
+            forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
+            --broadcast --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
+            > logs/deploy-itp-vaults-retry.log 2>&1 || { echo -e "  ${RED}Vault redeploy FAILED${NC}"; tail -5 logs/deploy-itp-vaults-retry.log; exit 1; }
+        echo -e "  ${GREEN}Vaults redeployed — re-verifying...${NC}"
+        # Re-verify after redeploy
+        local _rv_mismatch=0
+        for _vi in $(seq 1 5); do
+            local _vhex=$(printf "0x%064x" "$_vi")
+            local _vault=$(cast call "$INDEX_ON_CHAIN" "itpVaults(bytes32)(address)" "$_vhex" --rpc-url "$RPC_URL" 2>/dev/null)
+            [ -z "$_vault" ] || [ "$_vault" = "0x0000000000000000000000000000000000000000" ] && continue
+            local _vault_index=$(cast call "$_vault" "indexContract()(address)" --rpc-url "$RPC_URL" 2>/dev/null)
+            if [ "$(echo "$_vault_index" | tr '[:upper:]' '[:lower:]')" != "$(echo "$INDEX_ON_CHAIN" | tr '[:upper:]' '[:lower:]')" ]; then
+                _rv_mismatch=$((_rv_mismatch + 1))
+                echo -e "  ${RED}STILL MISMATCHED after redeploy: ITP $_vi vault.indexContract=$_vault_index${NC}"
+            fi
+        done
+        [ "$_rv_mismatch" -gt 0 ] && { echo -e "  ${RED}FATAL: Vault redeploy didn't fix indexContract mismatch. Manual intervention needed.${NC}"; exit 1; }
+        echo -e "  ${GREEN}Vault indexContract verified after redeploy${NC}"
+    else
+        echo -e "  ${GREEN}All $VAULT_OK vaults verified: indexContract == Index${NC}"
     fi
 
     # Deploy Morpho lending markets for ALL ITPs
