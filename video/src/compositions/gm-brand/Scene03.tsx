@@ -197,16 +197,58 @@ const GEMINI_LETTERS = "GM".split("");
 const LETTER_ARC_ANGLES = [-0.9,0.3];
 const LETTER_ARC_DIST = [60,55];
 
+/* Burst particles — "+X%" text that EXPLODES from center when GM appears */
+interface BurstPct { id: number; label: string; color: string; angle: number; dist: number; fontSize: number; delay: number; }
+function generateBurstPcts(count: number, seed: number): BurstPct[] {
+  const rng = seededRandom(seed);
+  return Array.from({length: count}, (_, i) => {
+    const r1 = rng();
+    const r2 = rng();
+    const r3 = rng();
+    const r4 = rng();
+    const isPos = r1 > 0.2;
+    const val = (r2 * 25).toFixed(1);
+    const label = isPos ? `+${val}%` : `-${val}%`;
+    const color = isPos ? GM.greenStatus : GM.redStatus;
+    const angle = (i / count) * Math.PI * 2 + (r3 - 0.5) * 0.6;
+    const dist = 200 + r4 * 400;
+    const fontSize = r3 < 0.6 ? 9 : r3 < 0.85 ? 12 : 16;
+    const delay = Math.floor(r4 * 8);
+    return { id: i, label, color, angle, dist, fontSize, delay };
+  });
+}
+
 const SegGMReveal: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const pctParticles = useMemo(() => generatePctParticles(100, 99), []);
+  const burstPcts = useMemo(() => generateBurstPcts(60, 42), []);
 
   return (
     <AbsoluteFill style={{backgroundColor: BG}}>
+      {/* Background floating +X% */}
       <div style={{opacity: interpolate(frame, [0,fps*2], [0.6,0], {extrapolateRight:"clamp"})}}>
         <PctParticleField frame={frame} fps={fps} particles={pctParticles} />
       </div>
+      {/* Burst +X% particles exploding from center */}
+      {burstPcts.map((bp) => {
+        const burstStart = 4 + bp.delay; // starts just as GM appears
+        const burstProg = interpolate(frame, [burstStart, burstStart + 25], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"});
+        if (burstProg <= 0) return null;
+        const eased = 1 - Math.pow(1 - burstProg, 2.5); // expo out
+        const bx = 640 + Math.cos(bp.angle) * bp.dist * eased;
+        const by = 360 + Math.sin(bp.angle) * bp.dist * eased;
+        const bOp = interpolate(burstProg, [0, 0.15, 0.7, 1], [0, 1, 0.8, 0], {extrapolateRight:"clamp"});
+        return (
+          <span key={`burst-${bp.id}`} style={{
+            position:"absolute", left: bx, top: by,
+            fontSize: bp.fontSize, fontFamily: GM.fontMono, fontWeight: 700,
+            color: bp.color, opacity: bOp, whiteSpace: "nowrap",
+            transform: `translate(-50%,-50%) scale(${interpolate(burstProg, [0,0.3], [0.5,1], {extrapolateRight:"clamp"})})`,
+          }}>{bp.label}</span>
+        );
+      })}
+      {/* GM text */}
       <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"baseline",fontSize:72,fontFamily:GM.fontSans,fontWeight:400,letterSpacing:-1}}>
         {GEMINI_LETTERS.map((letter, i) => {
           const wob = organicWobble("gl"+i, frame, 1.5, 1, 0.018);
