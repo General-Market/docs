@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, interpolate } from "remotion";
 import { useGsapTimeline, gsap } from "../../lib/useGsapTimeline";
 
 const fontFamily = "'Geist Sans', system-ui, sans-serif";
@@ -18,8 +18,8 @@ const fontFamily = "'Geist Sans', system-ui, sans-serif";
  *   Phase D (100–126): page-turn corner peel from top-right
  *   Phase E (121–137): "Today" with luminous green gradient
  *   Phase F (135–148): "Today, GM" — Today white, GM green
- *   Phase G (148–166): "Today, GM is becoming" + GM disintegration
- *   Phase H (162–174): dissolve out — particles stream off
+ *   Phase G (100–148): scattered particles converge → GM logo assembly
+ *   Phase H (148–174): logo holds with glow/shimmer → dissolve out
  */
 
 const BG_LIGHT = "#E6F7F0";
@@ -39,59 +39,117 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-interface BardFragment {
-  letter: string;
-  letterIdx: number;
-  fragIdx: number;
-  offsetX: number;
-  offsetY: number;
-  angle: number;
-  distance: number;
-  curveStrength: number;
-  rotationSpeed: number;
-  width: number;
-  height: number;
+interface LogoParticle {
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
+  /** Bezier control point offset from midpoint — creates curved paths */
+  ctrlOffsetX: number;
+  ctrlOffsetY: number;
+  size: number;
+  color: string;
+  /** Staggered delay in frames for organic convergence */
   delay: number;
-  hueShift: number;
-  saturation: number;
-  lightness: number;
+  /** Drift velocity for scatter phase */
+  driftVX: number;
+  driftVY: number;
 }
 
-function generateBardFragments(): BardFragment[] {
-  const letters = ["G", "M"];
-  const fragments: BardFragment[] = [];
+/**
+ * GM logo target positions — white horizontal bars inside a black square.
+ * The logo is centered at (640, 360). Square is 200x200 → spans (540..740, 260..460).
+ *
+ * Bars represent the stylized "GM" mark:
+ *   Bar 1: x=556-588, y=348-354  (left portion)
+ *   Bar 2: x=592-624, y=348-354
+ *   Bar 3: x=628-660, y=348-354
+ *   Bar 4: x=564-596, y=370-376  (lower row, left)
+ *   Bar 5: x=600-632, y=370-376
+ *   Bar 6: x=644-676, y=370-376
+ *   Bar 7: x=680-724, y=370-376  (lower row, right)
+ */
+function sampleLogoBars(): { x: number; y: number }[] {
+  const bars: { x1: number; x2: number; y1: number; y2: number }[] = [
+    { x1: 556, x2: 588, y1: 342, y2: 354 },
+    { x1: 596, x2: 628, y1: 342, y2: 354 },
+    { x1: 636, x2: 668, y1: 342, y2: 354 },
+    { x1: 676, x2: 708, y1: 342, y2: 354 },
+    { x1: 556, x2: 588, y1: 362, y2: 374 },
+    { x1: 596, x2: 628, y1: 362, y2: 374 },
+    { x1: 636, x2: 668, y1: 362, y2: 374 },
+    { x1: 676, x2: 724, y1: 362, y2: 374 },
+  ];
 
-  letters.forEach((letter, letterIdx) => {
-    const count = letter === "G" ? 36 : 36;
-    for (let fragIdx = 0; fragIdx < count; fragIdx++) {
-      const seed = letterIdx * 1000 + fragIdx;
-      const r = (n: number) => seededRandom(seed + n * 137);
-      const letterWidth = letter === "G" ? 30 : 34;
-      const letterHeight = 44;
-      // Ref frame_011: particles stream upward-left in tight cone [PI*0.6, PI*0.9]
-      const coneMin = Math.PI * 0.6;
-      const coneMax = Math.PI * 0.9;
-      const baseAngle = coneMin + r(0) * (coneMax - coneMin);
-      const angleSpread = 0;
-
-      fragments.push({
-        letter, letterIdx, fragIdx,
-        offsetX: (r(1) - 0.5) * letterWidth,
-        offsetY: (r(2) - 0.5) * letterHeight,
-        angle: baseAngle + angleSpread,
-        distance: 160 + r(3) * 450,
-        curveStrength: (r(4) - 0.5) * 200,
-        rotationSpeed: (r(5) - 0.5) * 12,
-        width: (2 + r(6) * 10) * 0.4,
-        height: (2 + r(7) * 12) * 0.4,
-        delay: letterIdx * 1.0 + r(8) * 3,
-        hueShift: r(9) < 0.5 ? (r(9) - 0.25) * 40 : 40 + r(9) * 60,
-        saturation: 65 + r(10) * 30,
-        lightness: 50 + r(11) * 25,
+  const points: { x: number; y: number }[] = [];
+  let seed = 42;
+  bars.forEach((bar) => {
+    const count = Math.round(((bar.x2 - bar.x1) * (bar.y2 - bar.y1)) / 12);
+    for (let i = 0; i < count; i++) {
+      seed++;
+      const rx = seededRandom(seed * 3 + 1);
+      const ry = seededRandom(seed * 3 + 2);
+      points.push({
+        x: bar.x1 + rx * (bar.x2 - bar.x1),
+        y: bar.y1 + ry * (bar.y2 - bar.y1),
       });
     }
   });
-  return fragments;
+  return points;
+}
+
+const PARTICLE_COLORS = ["#00A36C", "#16A34A", "#008A5A", "#E6F7F0"];
+const SIZE_TIERS = [2, 3.2, 4.8]; // small, medium, large
+
+function generateLogoParticles(): LogoParticle[] {
+  const targets = sampleLogoBars();
+  const particles: LogoParticle[] = [];
+
+  targets.forEach((target, i) => {
+    const seed = i * 7 + 31;
+    const r = (n: number) => seededRandom(seed + n * 137);
+
+    const startX = r(0) * 1280;
+    const startY = r(1) * 720;
+
+    // Bezier control offset — larger offset = more curvature
+    const dist = Math.sqrt((target.x - startX) ** 2 + (target.y - startY) ** 2);
+    const ctrlOffsetX = (r(2) - 0.5) * dist * 0.6;
+    const ctrlOffsetY = (r(3) - 0.5) * dist * 0.6;
+
+    const tierIdx = r(4) < 0.5 ? 0 : r(4) < 0.82 ? 1 : 2;
+    const size = SIZE_TIERS[tierIdx];
+    const color = PARTICLE_COLORS[Math.floor(r(5) * PARTICLE_COLORS.length)];
+    const delay = r(6) * 15; // 0–15 frame stagger
+
+    particles.push({
+      startX, startY,
+      targetX: target.x,
+      targetY: target.y,
+      ctrlOffsetX,
+      ctrlOffsetY,
+      size,
+      color,
+      delay,
+      driftVX: (r(7) - 0.5) * 0.4,
+      driftVY: (r(8) - 0.5) * 0.4,
+    });
+  });
+
+  return particles;
+}
+
+/** Quadratic bezier at parameter t */
+function bezierPoint(
+  p0: number, p1: number, p2: number, t: number,
+): number {
+  const mt = 1 - t;
+  return mt * mt * p0 + 2 * mt * t * p1 + t * t * p2;
+}
+
+/** power2 inOut easing */
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
 
 const FPS = 30;
@@ -144,8 +202,7 @@ const TypingText: React.FC<{ frame: number }> = ({ frame }) => {
 
 export const Scene02: React.FC = () => {
   const { tl, containerRef, frame, fps } = useGsapTimeline();
-  const fragments = useMemo(() => generateBardFragments(), []);
-  const letterCenters = [-18, 18];
+  const particles = useMemo(() => generateLogoParticles(), []);
   const builtRef = useRef(false);
 
   // ── Build GSAP timeline once, then seek to current frame ──
@@ -241,78 +298,193 @@ export const Scene02: React.FC = () => {
       t.fromTo(becomingWord, { opacity: 0, x: 14 }, { opacity: 1, x: 0, duration: s(8), ease: "power3.out" }, s(142));
     }
 
-    // Phase G: GM intact text vanishes
+    // Phase G: GM intact text vanishes as particles begin assembly
     const bardIntact = el.querySelector<HTMLElement>(".bard-intact");
     if (bardIntact) {
       t.to(bardIntact, { opacity: 0, duration: s(3) }, s(148));
     }
 
-    // Fragments become visible
-    const fragContainer = el.querySelector<HTMLElement>(".bard-fragments");
-    if (fragContainer) {
-      t.set(fragContainer, { opacity: 1 }, s(148));
+    // "is" and "becoming" also fade for the logo assembly takeover
+    if (isWord) {
+      t.to(isWord, { opacity: 0, duration: s(4) }, s(148));
+    }
+    if (becomingWord) {
+      t.to(becomingWord, { opacity: 0, duration: s(4) }, s(148));
+    }
+    const todayWhiteEl = el.querySelector<HTMLElement>(".today-white");
+    if (todayWhiteEl) {
+      t.to(todayWhiteEl, { opacity: 0, duration: s(5) }, s(148));
     }
 
-    // Phase H: dissolve out — later start, so fragments stay visible
+    // "General Market" text fades in under the assembled logo
+    const gmLabel = el.querySelector<HTMLElement>(".gm-label");
+    if (gmLabel) {
+      t.fromTo(gmLabel, { opacity: 0 }, { opacity: 1, duration: s(8) }, s(150));
+    }
+
+    // Phase H: dissolve out — logo, particles, and label
     if (darkPhase) {
       t.to(darkPhase, { opacity: 0, duration: s(8) }, s(166));
+    }
+    const logoOverlay = el.querySelector<HTMLElement>(".logo-overlay");
+    if (logoOverlay) {
+      t.to(logoOverlay, { opacity: 0, duration: s(8) }, s(166));
+    }
+    if (gmLabel) {
+      t.to(gmLabel, { opacity: 0, duration: s(6) }, s(166));
     }
 
     // Seek immediately after build — Remotion stills only get one render cycle
     t.seek(frame / fps);
   }, []);
 
-  // ── GM fragment physics (frame-driven, deterministic) ──
-  const BARD_DISINTEGRATE = 148;
-  const fragmentElements = useMemo(() => {
-    if (frame < BARD_DISINTEGRATE) return null;
+  // ── Particle assembly phases (frame-driven, deterministic) ──
+  //
+  // Phase 1 (100-120): scattered particles drift
+  // Phase 2 (120-148): converge along bezier curves to logo positions
+  // Phase 3 (148-166): hold as logo, shimmer, glow pulses
+  // Phase 4 (166-174): dissolve — drift apart, fade to 0
+  //
+  const SCATTER_START = 100;
+  const CONVERGE_START = 120;
+  const CONVERGE_END = 148;
+  const HOLD_END = 166;
+  const DISSOLVE_END = 174;
 
-    return fragments.map((frag, i) => {
-      const fragStart = BARD_DISINTEGRATE + frag.delay;
-      const fragDuration = 28;
-      const rawProgress = Math.max(0, Math.min(1, (frame - fragStart) / fragDuration));
-      if (rawProgress <= 0) return null;
+  const particleElements = useMemo(() => {
+    if (frame < SCATTER_START) return null;
 
-      const eased = 1 - Math.pow(1 - rawProgress, 3);
-      const travelX = Math.cos(frag.angle) * frag.distance * eased;
-      const travelY = Math.sin(frag.angle) * frag.distance * eased;
-      const arcPhase = Math.sin(rawProgress * Math.PI);
-      const perpX = -Math.sin(frag.angle) * frag.curveStrength * arcPhase;
-      const perpY = Math.cos(frag.angle) * frag.curveStrength * arcPhase;
-      const gravityY = rawProgress * rawProgress * 20;
+    return particles.map((p, i) => {
+      // Drift offset during scatter phase (noise-like, deterministic)
+      const driftX = p.driftVX * (frame - SCATTER_START);
+      const driftY = p.driftVY * (frame - SCATTER_START);
 
-      const originX = letterCenters[frag.letterIdx] + frag.offsetX;
-      const originY = frag.offsetY;
-      const x = originX + travelX + perpX;
-      const y = originY + travelY + perpY + gravityY;
-      const rotation = frag.rotationSpeed * eased * 360;
+      // Convergence progress per particle (staggered by delay)
+      const convergeRaw = Math.max(
+        0,
+        Math.min(
+          1,
+          (frame - CONVERGE_START - p.delay) /
+            (CONVERGE_END - CONVERGE_START - p.delay),
+        ),
+      );
+      const convergeT = easeInOut(convergeRaw);
 
-      const fragOpacity = interpolate(rawProgress, [0, 0.05, 0.4, 0.75, 1], [0, 1, 1, 0.65, 0], C);
-      const scale = interpolate(rawProgress, [0, 0.2, 1], [1.1, 1, 0.3], C);
+      // Bezier control point (midpoint + offset)
+      const midX = (p.startX + p.targetX) / 2 + p.ctrlOffsetX;
+      const midY = (p.startY + p.targetY) / 2 + p.ctrlOffsetY;
 
-      const palette = ["#00A36C","#16A34A","#008A5A","#10B981","#059669"];
-      const color = palette[Math.floor(seededRandom(i * 777) * palette.length)];
+      // Current position — bezier from scatter to target
+      let x: number;
+      let y: number;
+
+      if (convergeT <= 0) {
+        // Still scattered — apply drift
+        x = p.startX + driftX;
+        y = p.startY + driftY;
+      } else if (convergeT >= 1) {
+        // Arrived at target
+        x = p.targetX;
+        y = p.targetY;
+      } else {
+        // Bezier interpolation along curved path
+        const sx = p.startX + driftX * (1 - convergeT);
+        const sy = p.startY + driftY * (1 - convergeT);
+        x = bezierPoint(sx, midX, p.targetX, convergeT);
+        y = bezierPoint(sy, midY, p.targetY, convergeT);
+      }
+
+      // Phase 3: subtle shimmer jitter when holding
+      if (frame >= CONVERGE_END && frame < HOLD_END) {
+        const jitterSeed = i * 13 + frame * 7;
+        x += (seededRandom(jitterSeed) - 0.5) * 2;
+        y += (seededRandom(jitterSeed + 1) - 0.5) * 2;
+      }
+
+      // Phase 4: drift apart during dissolve
+      let dissolveOffset = 0;
+      if (frame >= HOLD_END) {
+        const dissolveProg = (frame - HOLD_END) / (DISSOLVE_END - HOLD_END);
+        dissolveOffset = dissolveProg * 40;
+        x += p.driftVX * dissolveOffset * 80;
+        y += p.driftVY * dissolveOffset * 80;
+      }
+
+      // Opacity: scatter phase → convergence brightening → hold → dissolve
+      let opacity: number;
+      if (frame < CONVERGE_START) {
+        // Scatter: varied opacity 0.3–0.8
+        opacity = interpolate(
+          frame,
+          [SCATTER_START, SCATTER_START + 5],
+          [0, 0.3 + seededRandom(i * 99) * 0.5],
+          C,
+        );
+      } else if (frame < CONVERGE_END) {
+        // Converging: brighten toward 1 as they arrive
+        opacity = interpolate(convergeT, [0, 0.7, 1], [0.4, 0.7, 1], C);
+      } else if (frame < HOLD_END) {
+        // Holding: full brightness
+        opacity = 1;
+      } else {
+        // Dissolve
+        opacity = interpolate(
+          frame,
+          [HOLD_END, DISSOLVE_END],
+          [1, 0],
+          C,
+        );
+      }
+
+      // Color: transitions to white as particles arrive
+      const color =
+        convergeT >= 0.85 ? "#FFFFFF" : convergeT >= 0.5
+          ? "#E6F7F0"
+          : p.color;
 
       return (
         <div
           key={i}
           style={{
             position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: frag.width,
-            height: frag.height,
-            borderRadius: Math.min(frag.width, frag.height) > 4 ? 1 : 0,
+            left: x,
+            top: y,
+            width: p.size,
+            height: p.size,
+            borderRadius: "50%",
             backgroundColor: color,
-            opacity: fragOpacity,
-            transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
-            boxShadow: `0 0 ${Math.max(frag.width, frag.height) * 3.5}px ${color}`,
-            pointerEvents: "none",
+            opacity,
+            boxShadow:
+              convergeT >= 0.85
+                ? `0 0 ${p.size * 2}px rgba(255,255,255,0.5)`
+                : `0 0 ${p.size * 2}px ${p.color}`,
+            pointerEvents: "none" as const,
+            transform: "translate(-50%, -50%)",
           }}
         />
       );
     });
-  }, [frame, fragments]);
+  }, [frame, particles]);
+
+  // Black square background for the logo — fades in during convergence
+  const logoSquareOpacity = interpolate(
+    frame,
+    [CONVERGE_START + 5, CONVERGE_END],
+    [0, 1],
+    C,
+  );
+  const logoSquareFinalOpacity =
+    frame >= HOLD_END
+      ? interpolate(frame, [HOLD_END, DISSOLVE_END], [1, 0], C)
+      : logoSquareOpacity;
+
+  // Green glow behind logo — pulses during hold phase
+  const glowOpacity =
+    frame >= CONVERGE_END && frame < HOLD_END
+      ? 0.2 + 0.2 * Math.sin((frame - CONVERGE_END) * 0.35)
+      : frame >= HOLD_END
+        ? interpolate(frame, [HOLD_END, DISSOLVE_END], [0.3, 0], C)
+        : interpolate(frame, [CONVERGE_START + 10, CONVERGE_END], [0, 0.2], C);
 
   // ── Page turn geometry (frame-driven for clipPath) ──
   // Reference frame_008: page lifts from top-right corner. The fold line
@@ -347,8 +519,6 @@ export const Scene02: React.FC = () => {
   const pageRotateZ = turnProgress * 5;
   const pageRotateX = turnProgress * 3;
   const pageOpacity = turnProgress > 0.88 ? Math.max(0, (1 - turnProgress) / 0.12) : 1;
-  const foldAngle = turnProgress * 40;
-
   // Warm accent drift
   const accentRight = -100 + Math.sin(frame * 0.015) * 40;
   const accentBottom = -80 + Math.cos(frame * 0.012) * 30;
@@ -678,9 +848,6 @@ export const Scene02: React.FC = () => {
               >
                 GM
               </span>
-              <span className="bard-fragments" style={{ opacity: 0 }}>
-                {fragmentElements}
-              </span>
             </span>
 
             <span
@@ -714,6 +881,76 @@ export const Scene02: React.FC = () => {
             </span>
           </div>
         </div>
+
+        {/* ════ PARTICLE ASSEMBLY + LOGO ════ */}
+        {frame >= SCATTER_START && (
+          <div
+            className="logo-overlay"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+            }}
+          >
+            {/* Green glow behind logo */}
+            <div
+              style={{
+                position: "absolute",
+                left: 640 - 140,
+                top: 360 - 140,
+                width: 280,
+                height: 280,
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(0,163,108,0.6) 0%, rgba(0,163,108,0.15) 50%, transparent 80%)",
+                opacity: glowOpacity,
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Black square — logo background */}
+            <div
+              style={{
+                position: "absolute",
+                left: 640 - 100,
+                top: 360 - 100,
+                width: 200,
+                height: 200,
+                backgroundColor: "#000000",
+                borderRadius: 6,
+                opacity: logoSquareFinalOpacity,
+              }}
+            />
+
+            {/* Particles */}
+            {particleElements}
+
+            {/* "General Market" label */}
+            <div
+              className="gm-label"
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: 360 + 120,
+                textAlign: "center",
+                opacity: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 22,
+                  fontWeight: 900,
+                  fontFamily,
+                  color: "#FFFFFF",
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                General Market
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </AbsoluteFill>
   );

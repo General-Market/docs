@@ -225,150 +225,57 @@ const DogPhotoScreen: React.FC = () => {
   return (
     <div style={{
       width: "100%", height: "100%", position: "relative", overflow: "hidden",
-      background: "linear-gradient(170deg, #a8c8a0 0%, #8db88a 20%, #c9b896 50%, #d4c4a0 65%, #bca87a 80%, #a09060 100%)",
+      background: "#FFFFFF", fontFamily: FONT,
     }}>
-      {/* Sky / blurred background upper portion */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: "45%",
-        background: "linear-gradient(180deg, #c8dcc4 0%, #a8c8a0 40%, #90b888 100%)",
-        filter: "blur(4px)",
-      }} />
-      {/* Ground / sandy surface */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0, height: "55%",
-        background: "linear-gradient(180deg, #c8b890 0%, #d0c098 30%, #b8a070 60%, #a89060 100%)",
-      }} />
-      {/* Ground texture — scattered patches */}
-      <div style={{
-        position: "absolute", bottom: "10%", left: "20%", width: 60, height: 20,
-        background: "rgba(160,140,100,0.4)", borderRadius: "50%", filter: "blur(3px)",
-      }} />
-      <div style={{
-        position: "absolute", bottom: "25%", right: "15%", width: 40, height: 14,
-        background: "rgba(140,120,80,0.3)", borderRadius: "50%", filter: "blur(2px)",
-      }} />
-
-      {/* Dog body — center of frame */}
-      <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: "translate(-50%, -45%)",
-        width: 120, height: 140,
-      }}>
-        {/* Body */}
-        <div style={{
-          position: "absolute", left: "50%", top: "50%",
-          transform: "translate(-50%, -30%)",
-          width: 80, height: 60,
-          background: "linear-gradient(135deg, #b0a090 0%, #c8b8a0 30%, #a89878 60%, #988868 100%)",
-          borderRadius: "45% 45% 40% 40%",
-        }} />
-        {/* Chest / lighter underside */}
-        <div style={{
-          position: "absolute", left: "50%", top: "58%",
-          transform: "translate(-50%, -30%)",
-          width: 50, height: 30,
-          background: "linear-gradient(180deg, #d8c8b0, #c8b8a0)",
-          borderRadius: "40%",
-        }} />
-        {/* Head */}
-        <div style={{
-          position: "absolute", left: "50%", top: "18%",
-          transform: "translate(-50%, 0)",
-          width: 55, height: 48,
-          background: "linear-gradient(150deg, #a89070 0%, #c0a888 40%, #b09878 100%)",
-          borderRadius: "50% 50% 45% 45%",
-        }} />
-        {/* Snout */}
-        <div style={{
-          position: "absolute", left: "50%", top: "40%",
-          transform: "translate(-50%, 0)",
-          width: 28, height: 18,
-          background: "linear-gradient(180deg, #b8a080, #a89070)",
-          borderRadius: "40% 40% 50% 50%",
-        }} />
-        {/* Nose */}
-        <div style={{
-          position: "absolute", left: "50%", top: "44%",
-          transform: "translate(-50%, 0)",
-          width: 10, height: 7,
-          background: "#3a3028",
-          borderRadius: "50%",
-        }} />
-        {/* Eyes */}
-        <div style={{
-          position: "absolute", left: "38%", top: "26%",
-          width: 8, height: 8,
-          background: "radial-gradient(circle at 40% 40%, #6a5040, #2a2018)",
-          borderRadius: "50%",
-        }} />
-        <div style={{
-          position: "absolute", left: "55%", top: "26%",
-          width: 8, height: 8,
-          background: "radial-gradient(circle at 40% 40%, #6a5040, #2a2018)",
-          borderRadius: "50%",
-        }} />
-        {/* Eye glints */}
-        <div style={{
-          position: "absolute", left: "40%", top: "27%",
-          width: 3, height: 3, background: "#fff",
-          borderRadius: "50%", opacity: 0.8,
-        }} />
-        <div style={{
-          position: "absolute", left: "57%", top: "27%",
-          width: 3, height: 3, background: "#fff",
-          borderRadius: "50%", opacity: 0.8,
-        }} />
-        {/* Left ear */}
-        <div style={{
-          position: "absolute", left: "22%", top: "8%",
-          width: 22, height: 28,
-          background: "linear-gradient(160deg, #908070, #a89078)",
-          borderRadius: "50% 50% 20% 40%",
-          transform: "rotate(-15deg)",
-        }} />
-        {/* Right ear */}
-        <div style={{
-          position: "absolute", right: "22%", top: "8%",
-          width: 22, height: 28,
-          background: "linear-gradient(200deg, #908070, #a89078)",
-          borderRadius: "50% 50% 40% 20%",
-          transform: "rotate(15deg)",
-        }} />
-        {/* Front legs */}
-        <div style={{
-          position: "absolute", left: "32%", bottom: "0%",
-          width: 16, height: 40,
-          background: "linear-gradient(180deg, #b0a090, #a89070)",
-          borderRadius: "6px 6px 8px 8px",
-        }} />
-        <div style={{
-          position: "absolute", right: "32%", bottom: "0%",
-          width: 16, height: 40,
-          background: "linear-gradient(180deg, #a89878, #988868)",
-          borderRadius: "6px 6px 8px 8px",
-        }} />
-        {/* Tail — upward sweep */}
-        <div style={{
-          position: "absolute", right: "8%", top: "20%",
-          width: 12, height: 40,
-          background: "linear-gradient(180deg, #b8a888, #a89070)",
-          borderRadius: "50%",
-          transform: "rotate(-30deg)",
-          transformOrigin: "bottom center",
-        }} />
+      {/* GM Header Bar */}
+      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+          </div>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
+          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+        </div>
       </div>
-
-      {/* Data badge — small green "Portfolio" pill at bottom */}
-      <div style={{
-        position: "absolute", bottom: 30, left: "50%",
-        transform: "translateX(-50%)",
-        background: "rgba(0,163,108,0.85)",
-        borderRadius: 14, padding: "4px 12px",
-        display: "flex", alignItems: "center", gap: 4,
-      }}>
-        <span style={{ fontSize: 12 }}>{String.fromCodePoint(0x1f4ca)}</span>
-        <span style={{ fontSize: 9, color: "#fff", fontWeight: 600, fontFamily: FONT }}>Portfolio</span>
+      {/* Tab Strip */}
+      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+        {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?"#1A1A1A":"#555",borderBottom:ti===1?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+        ))}
       </div>
+      {/* Portfolio Content */}
+      <div style={{padding:"16px 16px 0"}}>
+        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#999",marginBottom:4}}>Portfolio</div>
+        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A",fontFamily:"'JetBrains Mono',monospace"}}>$12,847.32</div>
+        <div style={{fontSize:13,color:"#16A34A",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>+$847.32 (+7.05%)</div>
+        {/* Mini area chart */}
+        <svg width="100%" height={120} viewBox="0 0 280 120" style={{marginTop:8}}>
+          <defs><linearGradient id="chartGrad04dog" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3}/><stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02}/></linearGradient></defs>
+          <path d="M0 90 Q30 85,60 70 Q90 55,120 60 Q150 50,180 35 Q210 25,240 30 Q260 28,280 20 L280 120 L0 120Z" fill="url(#chartGrad04dog)"/>
+          <path d="M0 90 Q30 85,60 70 Q90 55,120 60 Q150 50,180 35 Q210 25,240 30 Q260 28,280 20" fill="none" stroke="#3B82F6" strokeWidth={2}/>
+        </svg>
+      </div>
+      {/* Holdings */}
+      {[
+        {name:"DeFi Blue Chip ITP",shares:"4.2 shares",value:"$3,420.15",change:"+12.4%",up:true},
+        {name:"AI Narrative ITP",shares:"2.8 shares",value:"$2,103.40",change:"+8.7%",up:true},
+        {name:"L1 Leaders ITP",shares:"6.1 shares",value:"$4,892.00",change:"-2.1%",up:false},
+        {name:"Memecoin Index",shares:"10.0 shares",value:"$2,431.77",change:"+22.3%",up:true},
+      ].map((row,ri)=>(
+        <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #E0E0E0",padding:"10px 16px"}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{row.name}</div>
+            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#999"}}>{row.shares}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:14,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.value}</div>
+            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626"}}>{row.change}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -380,72 +287,57 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const typingProgress = interpolate(frame, [10, 60], [0, 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp",
   });
-  const fullText = "Rebalance my portfolio with 40% BTC, 30% ETH, 30% alts";
+  const fullText = "Rebalance portfolio...";
   const visibleChars = Math.floor(typingProgress * fullText.length);
   const typedText = fullText.slice(0, visibleChars);
   const showCursor = frame % 16 < 10 && frame < 65;
 
-  const iconSpring = spring({ frame: frame - 2, fps, config: { damping: 8, stiffness: 120, mass: 0.5 } });
-  const iconY = interpolate(iconSpring, [0, 1], [24, 0]);
-  const iconScale = interpolate(iconSpring, [0, 1], [0.85, 1]);
-  const photoSpring = spring({ frame: frame - 6, fps, config: { damping: 9, stiffness: 100, mass: 0.6 } });
-  const photoY = interpolate(photoSpring, [0, 1], [20, 0]);
-  const photoScale = interpolate(photoSpring, [0, 1], [0.9, 1]);
-  const bubbleSpring = spring({ frame: frame - 10, fps, config: { damping: 7, stiffness: 110, mass: 0.5 } });
-  const bubbleY = interpolate(bubbleSpring, [0, 1], [30, 0]);
-  const bubbleScale = interpolate(bubbleSpring, [0, 1], [0.92, 1]);
+  const cardSpring = spring({ frame: frame - 8, fps, config: { damping: 9, stiffness: 100, mass: 0.6 } });
+  const cardY = interpolate(cardSpring, [0, 1], [20, 0]);
+  const cardScale = interpolate(cardSpring, [0, 1], [0.92, 1]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: "system-ui, sans-serif" }}>
-      {/* Header */}
-      <div style={{ padding: "10px 16px", borderBottom: "1px solid #F0F0F0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 16, color: DARK_TEXT, fontWeight: 500, fontFamily: FONT }}>Portfolio Overview</div>
-        <div style={{ fontSize: 14, color: GREY_TEXT, opacity: 0.4 }}>{String.fromCodePoint(0x2197)}</div>
-      </div>
-      {/* Chats label */}
-      <div style={{ padding: "6px 16px 2px", fontSize: 11, color: GREY_TEXT, opacity: 0.6 }}>Chats</div>
-      {/* Content */}
-      <div style={{ flex: 1, padding: "8px 14px", display: "flex", flexDirection: "column", gap: 10, overflowY: "hidden" }}>
-        {/* Icon row — Google app chips */}
-        <div style={{ display: "flex", gap: 6, opacity: iconSpring, transform: `translateY(${iconY}px) scale(${iconScale})` }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: "#E6F7F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{String.fromCodePoint(0x1f4b0)}</div>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: "#E6F7F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{String.fromCodePoint(0x1f4c8)}</div>
-          <div style={{ width: 40, height: 40, borderRadius: 8, background: "#E6F7F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{String.fromCodePoint(0x1f4ca)}</div>
-          <div style={{ width: 40, height: 40, borderRadius: 8, background: "#E6F7F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 18, height: 18, borderRadius: 4, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700, fontFamily: FONT }}>GM</div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: FONT }}>
+      {/* GM Header Bar */}
+      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
           </div>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
         </div>
-        {/* Portfolio chart thumbnail */}
-        <div style={{ alignSelf: "flex-start", opacity: photoSpring, transform: `translateY(${photoY}px) scale(${photoScale})` }}>
-          <div style={{
-            width: 100, height: 80, borderRadius: 12,
-            background: `linear-gradient(135deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 100%)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative", overflow: "hidden",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          }}>
-            <div style={{ fontSize: 36, filter: "drop-shadow(1px 1px 2px rgba(0,0,0,0.2))" }}>{String.fromCodePoint(0x1f4ca)}</div>
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, background: "linear-gradient(to top, rgba(0,163,108,0.4), transparent)" }} />
-          </div>
-        </div>
-        {/* Typing bubble */}
-        <div style={{ alignSelf: "flex-start", maxWidth: "85%", opacity: bubbleSpring, transform: `translateY(${bubbleY}px) scale(${bubbleScale})`, transformOrigin: "bottom left" }}>
-          <div style={{ background: USER_BUBBLE, borderRadius: 20, padding: "12px 16px", fontSize: 13.5, color: DARK_TEXT, lineHeight: 1.45 }}>
-            {typedText}
-            {showCursor && <span style={{ color: GM_GREEN, fontWeight: 300 }}>|</span>}
-          </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
+          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
         </div>
       </div>
-      {/* Input hint */}
-      <div style={{ padding: "6px 14px 4px", fontSize: 11, color: "#9AA0A6", opacity: 0.5 }}>
-        Ask about your portfolio
+      {/* Tab Strip */}
+      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+        {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?"#1A1A1A":"#555",borderBottom:ti===3?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+        ))}
       </div>
-      {/* Action buttons */}
-      <div style={{ padding: "2px 14px 6px", display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 16, background: "#E6F7F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: GREY_TEXT }}>{MIC}</div>
-        <div style={{ width: 32, height: 32, borderRadius: 16, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff" }}>{CAMERA}</div>
-        <div style={{ flex: 1 }} />
-        <div style={{ width: 32, height: 32, borderRadius: 16, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", transform: "rotate(-30deg)" }}>{PLAY}</div>
+      {/* Input field */}
+      <div style={{ padding: "16px 16px 12px" }}>
+        <div style={{ height: 40, backgroundColor: "#F4F4F5", border: "1px solid #D4D4D8", borderRadius: 8, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 13, color: "#999", fontFamily: FONT }}>
+          {typedText || "Rebalance portfolio..."}
+          {showCursor && <span style={{ color: GM_GREEN, fontWeight: 300 }}>|</span>}
+        </div>
+      </div>
+      {/* Recent action card */}
+      <div style={{ padding: "0 16px", flex: 1, opacity: cardSpring, transform: `translateY(${cardY}px) scale(${cardScale})`, transformOrigin: "top left" }}>
+        <div style={{ border: "1px solid #E0E0E0", borderRadius: 6, padding: 16, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <svg width={16} height={16} viewBox="0 0 16 16"><circle cx={8} cy={8} r={7} fill="#16A34A"/><path d="M5 8l2 2 4-4" stroke="#fff" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span style={{ fontSize: 14, fontWeight: 600, color: DARK_TEXT }}>Portfolio rebalanced</span>
+          </div>
+          <div style={{ fontSize: 12, color: GREY_TEXT, lineHeight: 1.5, marginBottom: 8 }}>
+            BTC 40%, ETH 30%, SOL 15%, AVAX 10%, LINK 5%
+          </div>
+          <div style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: "#16A34A" }}>
+            Estimated APY: 12.4%
+          </div>
+        </div>
       </div>
       {/* Keyboard */}
       <div style={{ background: KB_BG, padding: "4px 3px 8px", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -472,72 +364,77 @@ const ChatUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
    AI RESPONSE UI
    ═══════════════════════════════════════════════════════ */
 const AIResponseUI: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
-  const responseText = "Portfolio rebalanced. New allocation: BTC 40%, ETH 30%, SOL 15%, AVAX 10%, LINK 5%. Estimated APY: 12.4%";
-  const words = responseText.split(/(\s+)/);
-  const totalWords = words.filter(w => w.trim().length > 0).length;
-  const wordProgress = interpolate(frame, [5, 45], [0, totalWords], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  let wordCount = 0;
-  let visible = "";
-  for (const w of words) {
-    if (w.trim().length > 0) {
-      wordCount++;
-      if (wordCount > wordProgress) break;
-    }
-    visible += w;
-  }
   const responseBubbleSpring = spring({ frame, fps, config: { damping: 7, stiffness: 100, mass: 0.6 } });
   const responseBubbleY = interpolate(responseBubbleSpring, [0, 1], [28, 0]);
   const responseBubbleScale = interpolate(responseBubbleSpring, [0, 1], [0.9, 1]);
+  const btnSpring = spring({ frame: frame - 20, fps, config: { damping: 10, stiffness: 120, mass: 0.5 } });
+
+  const allocations = [
+    { asset: "BTC", pct: "40%", value: "$5,138.93" },
+    { asset: "ETH", pct: "30%", value: "$3,854.20" },
+    { asset: "SOL", pct: "15%", value: "$1,927.10" },
+    { asset: "AVAX", pct: "10%", value: "$1,284.73" },
+    { asset: "LINK", pct: "5%", value: "$642.36" },
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ padding: "10px 16px", borderBottom: "1px solid #F0F0F0", display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ fontSize: 16, color: GREY_TEXT }}>{ARROW_LEFT}</div>
-        <div style={{ fontSize: 14, color: DARK_TEXT, fontWeight: 500, flex: 1, fontFamily: FONT }}>{"My Crypto Portfolio"}</div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: PHONE_BG, fontFamily: FONT }}>
+      {/* GM Header Bar */}
+      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+          </div>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
+          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+        </div>
       </div>
-      <div style={{ flex: 1, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ background: USER_BUBBLE, borderRadius: 18, padding: "10px 14px", fontSize: 12, color: GREY_TEXT, alignSelf: "flex-start", maxWidth: "80%" }}>
-          Rebalance my portfolio with 40% BTC, 30% ETH, 30% alts
-        </div>
+      {/* Tab Strip */}
+      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+        {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===3?600:500,color:ti===3?"#1A1A1A":"#555",borderBottom:ti===3?"2px solid #1A1A1A":"2px solid transparent",fontFamily:FONT}}>{tab}</div>
+        ))}
+      </div>
+      {/* Response card */}
+      <div style={{ flex: 1, padding: "16px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{
-          width: "100%", height: 150, borderRadius: 16,
-          background: `linear-gradient(145deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 50%, #16A34A 100%)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          position: "relative", overflow: "hidden",
-        }}>
-          <div style={{ fontSize: 60, filter: "drop-shadow(2px 2px 4px rgba(0,0,0,0.2))" }}>{String.fromCodePoint(0x1f4ca)}</div>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(to bottom, rgba(0,163,108,0.3), transparent)" }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "30%", background: "linear-gradient(to top, rgba(0,138,90,0.3), transparent)" }} />
-        </div>
-        <div style={{
-          background: AI_BUBBLE, borderRadius: 18, padding: "12px 16px",
-          fontSize: 13.5, color: DARK_TEXT, lineHeight: 1.5,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          border: "1px solid #E0E0E0", borderRadius: 6, padding: 16,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
           opacity: responseBubbleSpring,
           transform: `translateY(${responseBubbleY}px) scale(${responseBubbleScale})`,
           transformOrigin: "top left",
         }}>
-          {visible.split(/(#\w+)/g).map((part, i) =>
-            part.startsWith("#") ? (
-              <span key={i} style={{ color: GM_GREEN }}>{part}</span>
-            ) : (
-              <span key={i}>{part}</span>
-            )
-          )}
+          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_TEXT, marginBottom: 12 }}>Rebalance Complete</div>
+          {/* Allocation table */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #E0E0E0", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", flex: 1 }}>Asset</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", width: 40, textAlign: "right" }}>%</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#999", width: 72, textAlign: "right" }}>Value</span>
+            </div>
+            {allocations.map((a, ai) => (
+              <div key={ai} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: DARK_TEXT, fontFamily: "'JetBrains Mono', monospace", flex: 1 }}>{a.asset}</span>
+                <span style={{ fontSize: 12, color: GREY_TEXT, fontFamily: "'JetBrains Mono', monospace", width: 40, textAlign: "right" }}>{a.pct}</span>
+                <span style={{ fontSize: 12, color: DARK_TEXT, fontFamily: "'JetBrains Mono', monospace", width: 72, textAlign: "right" }}>{a.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <div style={{ padding: "6px 14px 6px", display: "flex", gap: 18, alignItems: "center", opacity: interpolate(frame, [40, 50], [0, 0.6], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        <div style={{ width: 18, height: 18, borderRadius: 4, background: GM_GREEN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 7, color: "#fff", fontWeight: 700, fontFamily: FONT }}>GM</div>
-        <div style={{ fontSize: 14, color: GREY_TEXT, opacity: 0.5 }}>{String.fromCodePoint(0x1f44d)}</div>
-        <div style={{ fontSize: 14, color: GREY_TEXT, opacity: 0.5 }}>{String.fromCodePoint(0x1f44e)}</div>
-        <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 12, color: GREY_TEXT, opacity: 0.4 }}>{String.fromCodePoint(0x2026)}</div>
-      </div>
-      <div style={{ padding: "6px 14px 14px", display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: GREY_TEXT, borderTop: "1px solid #F0F0F0" }}>
-        <span>{CLIP}</span>
-        <span style={{ flex: 1, opacity: 0.5, fontFamily: FONT }}>Ask about your portfolio...</span>
-        <div style={{ width: 24, height: 24, borderRadius: 12, background: "#F0F0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>{MIC}</div>
-        <div style={{ width: 24, height: 24, borderRadius: 12, background: "#F0F0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>{CAMERA}</div>
+        {/* Execute button */}
+        <div style={{
+          height: 40, backgroundColor: "#16A34A", borderRadius: 8,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, fontWeight: 600, color: "#FFFFFF",
+          opacity: btnSpring,
+          transform: `translateY(${interpolate(btnSpring, [0, 1], [10, 0])}px)`,
+        }}>
+          Execute Trade
+        </div>
       </div>
     </div>
   );
@@ -912,48 +809,30 @@ export const Scene04: React.FC = () => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
-          /* Phone3D screen content — all phases layered */
+          /* Phone3D screen content — all phases layered, each sub-component has its own GM header */
           const phoneScreenContent = (
             <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden", background: PHONE_BG }}>
-              {/* Status bar */}
-              <div style={{
-                height: 36, background: PHONE_BG,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, color: GREY_TEXT,
-                fontFamily: "system-ui, sans-serif", fontWeight: 600,
-                position: "relative",
-              }}>
+              {/* Portfolio screen */}
+              {showDogPhoto && <DogPhotoScreen />}
+              {/* Chat/Prompt screen */}
+              {showChat && <ChatUI frame={frame - PHASE.DOG_PHOTO.end} fps={fps} />}
+              {/* Photo expand — transition to green chart view */}
+              {showPhotoExpand && (
                 <div style={{
-                  position: "absolute", top: 6, left: "50%",
-                  transform: "translateX(-50%)",
-                  width: 80, height: 22, borderRadius: 12, background: "#1A1A1A",
-                }} />
-                <div style={{ position: "absolute", left: 16, top: 10, fontSize: 10, fontWeight: 600 }}>9:41</div>
-              </div>
-              <div style={{ overflow: "hidden", height: "calc(100% - 36px)" }}>
-                {/* DOG PHOTO — full-screen, hard cut at frame 15 */}
-                {showDogPhoto && <DogPhotoScreen />}
-                {/* CHAT — "Good morning" with keyboard */}
-                {showChat && <ChatUI frame={frame - PHASE.DOG_PHOTO.end} fps={fps} />}
-                {/* Photo expand */}
-                {showPhotoExpand && (
-                  <div style={{
-                    width: "100%", height: "100%",
-                    background: `linear-gradient(145deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 50%, #16A34A 100%)`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    opacity: interpolate(photoExpandProgress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" }),
-                  }}>
-                    <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.08) 80%)" }} />
-                    <div style={{
-                      fontSize: interpolate(photoExpandProgress, [0, 1], [60, 110]),
-                      filter: "drop-shadow(3px 3px 8px rgba(0,0,0,0.25))",
-                      transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
-                    }}>{String.fromCodePoint(0x1f4ca)}</div>
+                  width: "100%", height: "100%",
+                  background: `linear-gradient(145deg, ${GM_GREEN} 0%, ${GM_DARK_GREEN} 50%, #16A34A 100%)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: interpolate(photoExpandProgress, [0, 0.2], [0, 1], { extrapolateRight: "clamp" }),
+                }}>
+                  <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.08) 80%)" }} />
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", fontFamily: FONT, textAlign: "center" }}>
+                    <div>Portfolio</div>
+                    <div style={{ fontSize: 40, fontFamily: "'JetBrains Mono', monospace", marginTop: 8, transform: `scale(${interpolate(photoExpandProgress, [0.5, 1], [1, 1.05], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})` }}>$12,847</div>
                   </div>
-                )}
-                {/* AI Response */}
-                {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
-              </div>
+                </div>
+              )}
+              {/* AI Response screen */}
+              {showAIResponse && <AIResponseUI frame={frame - PHASE.AI_RESPONSE.start} fps={fps} />}
             </div>
           );
           /* Convert degree tilts to radians for Phone3D */
@@ -1123,6 +1002,9 @@ export const Scene04: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+/* Suppress noUnusedLocals for constants preserved from original composition */
+void USER_BUBBLE; void AI_BUBBLE; void MIC; void CAMERA; void CLIP; void ARROW_LEFT; void PLAY;
 
 export const scene04Meta = {
   id: "GMScene04",

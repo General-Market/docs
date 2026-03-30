@@ -295,47 +295,72 @@ const SegDesktopUI: React.FC = () => {
   const cSpr = [0,1,2,3].map(i => spring({frame, fps, delay: Math.floor(fps*1.5)+i*3, config:{damping:12,stiffness:100,mass:0.8}}));
   const inputOp = interpolate(frame, [fps*2.0,fps*2.5], [0,1], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
   const discOp = interpolate(frame, [fps*1.5,fps*2.0], [0,0.6], {extrapolateLeft:"clamp",extrapolateRight:"clamp",easing:EASE_OUT_QUART});
-  const cards = [{text:"Show me top-performing ITPs this week",icon:"chart"},{text:"Create a diversified crypto portfolio",icon:"portfolio"},{text:"What markets are trending on Vision?",icon:"market"},{text:"Analyze BTC correlation with tech stocks",icon:"analyze"}];
+  const cards = [
+    {emoji:"\uD83D\uDCCA",title:"Show me top ITPs",sub:"View performance data"},
+    {emoji:"\uD83D\uDCC8",title:"Trending Vision markets",sub:"See what's moving"},
+    {emoji:"\uD83D\uDCBC",title:"Build a portfolio",sub:"Custom index creation"},
+    {emoji:"\uD83D\uDD04",title:"Rebalance holdings",sub:"Optimize allocations"},
+  ];
 
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
       <div style={{position:"absolute",width:"100%",height:"100%",background:`linear-gradient(135deg, rgba(230,247,240,0.3) 0%, rgba(0,163,108,0.08) 50%, rgba(0,138,90,0.1) 100%)`}} />
       {/* Perspective on PARENT div, preserve-3d on animated child */}
       <div style={{position:"absolute",left:"50%",top:"50%",width:780,height:460,perspective:800,transform:"translate(-50%,-50%)",opacity:bOp}}>
-      <div style={{width:"100%",height:"100%",transformStyle:"preserve-3d",transform:`rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,borderRadius:18,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,padding:2}}>
-        <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)",overflow:"hidden",position:"relative"}}>
-          <div style={{height:48,borderBottom:"1px solid #E8E8EC",display:"flex",alignItems:"center",padding:"0 20px",gap:16}}>
-            <div style={{fontSize:18,color:"#666"}}>&#9776;</div>
-            <div style={{fontSize:16,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#444",fontWeight:500}}>General Market <span style={{fontSize:10,color:"#999"}}>&#9660;</span></div>
-            <div style={{flex:1}} />
-            <div style={{width:32,height:32,borderRadius:"50%",backgroundColor:"#E8E8EC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#666"}}>+</div>
-          </div>
-          <div style={{padding:"50px 60px 30px",display:"flex",flexDirection:"column",alignItems:"flex-start"}}>
-            <div style={{fontSize:38,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",lineHeight:1.2,marginBottom:8}}>
-              {helloText.slice(0, helloChars)}
-              {helloChars < helloText.length && <span style={{opacity: frame%20<10?1:0, WebkitTextFillColor: BLUE}}>|</span>}
+      <div style={{width:"100%",height:"100%",transformStyle:"preserve-3d",transform:`rotateY(${bRotY}deg) rotateX(${bRotX}deg) scale(${bScale})`,borderRadius:18,boxShadow:"0 20px 60px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05)"}}>
+        <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",borderRadius:16,overflow:"hidden",position:"relative"}}>
+          {/* Browser chrome — GM web app top bar */}
+          <div style={{height:64,backgroundColor:"#FFFFFF",borderBottom:"1px solid #E0E0E0",display:"flex",alignItems:"center",padding:"0 24px"}}>
+            {/* Left: GM logo + brand name */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <svg width="36" height="36" viewBox="0 0 102 102" fill="none">
+                <rect width="102" height="102" fill="black"/>
+                <rect x="15" y="48" width="15" height="6" rx="3" fill="white"/>
+                <rect x="27" y="48" width="15" height="6" rx="3" fill="white"/>
+                <rect x="38" y="48" width="15" height="6" rx="3" fill="white"/>
+                <rect x="49" y="48" width="15" height="6" rx="3" fill="white"/>
+                <rect x="61" y="48" width="9" height="6" rx="3" fill="white"/>
+                <rect x="66" y="48" width="15" height="6" rx="3" fill="white"/>
+                <rect x="78" y="48" width="9" height="6" rx="3" fill="white"/>
+              </svg>
+              <span style={{fontSize:22,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:900,color:"#1A1A1A",letterSpacing:"-0.03em"}}>General Market</span>
             </div>
-            <div style={{fontSize:34,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#555555",lineHeight:1.2,marginBottom:40}}>{howText.slice(0, howChars)}</div>
+            {/* Center nav */}
+            <div style={{flex:1,display:"flex",justifyContent:"center",gap:32}}>
+              {["Markets","Portfolio","Vision"].map(n => (
+                <span key={n} style={{fontSize:14,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A"}}>{n}</span>
+              ))}
+            </div>
+            {/* Right: Connect Wallet */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:8,height:8,borderRadius:"50%",backgroundColor:"#22C55E"}} />
+              <div style={{border:"2px solid #1A1A1A",borderRadius:8,padding:"6px 16px",fontSize:13,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A"}}>Connect Wallet</div>
+            </div>
+          </div>
+          {/* Main content area */}
+          <div style={{backgroundColor:"#F5F5F5",padding:"44px 60px 30px",display:"flex",flexDirection:"column",alignItems:"center",height:"calc(100% - 64px)",position:"relative"}}>
+            <div style={{fontSize:48,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:900,color:"#1A1A1A",letterSpacing:"-0.035em",lineHeight:1.2,marginBottom:8,textAlign:"center"}}>
+              {helloText.slice(0, helloChars)}
+              {helloChars < helloText.length && <span style={{opacity: frame%20<10?1:0, color: BLUE}}>|</span>}
+            </div>
+            <div style={{fontSize:20,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#555555",lineHeight:1.2,marginBottom:32}}>{howText.slice(0, howChars)}</div>
             <div style={{display:"flex",gap:14}}>
               {cards.map((card, i) => {
                 const cs = cSpr[i];
-                return <div key={i} style={{width:165,height:100,backgroundColor:"#F5F5F5",borderRadius:12,padding:"14px 12px",fontSize:12,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#1A1A1A",lineHeight:1.35,position:"relative",transform:`translateY(${interpolate(cs,[0,1],[40,0])}px) scale(${interpolate(cs,[0,1],[0.9,1])})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-                  {card.text}
-                  <div style={{position:"absolute",bottom:10,left:12,width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    {card.icon==="chart"&&<svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill={BLUE}/></svg>}
-                    {card.icon==="portfolio"&&<svg width="20" height="20" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" fill={PURPLE}/></svg>}
-                    {card.icon==="market"&&<svg width="20" height="20" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" fill={BLUE}/></svg>}
-                    {card.icon==="analyze"&&<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke={PURPLE} strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke={PURPLE} strokeWidth="2" strokeLinecap="round"/></svg>}
-                  </div>
+                return <div key={i} style={{width:155,backgroundColor:"#FFFFFF",border:"1px solid #E0E0E0",borderRadius:6,padding:"18px 16px",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",transform:`translateY(${interpolate(cs,[0,1],[40,0])}px) scale(${interpolate(cs,[0,1],[0.9,1])})`,opacity:interpolate(cs,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+                  <div style={{fontSize:14,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:600,color:"#1A1A1A",lineHeight:1.3,marginBottom:4}}>{card.emoji} {card.title}</div>
+                  <div style={{fontSize:12,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:400,color:"#999999",lineHeight:1.3}}>{card.sub}</div>
                 </div>;
               })}
             </div>
+            {/* Input bar */}
+            <div style={{position:"absolute",bottom:36,left:60,right:60,height:48,backgroundColor:"#FFFFFF",border:"1px solid #D4D4D8",borderRadius:12,display:"flex",alignItems:"center",padding:"0 20px",fontSize:14,color:"#999",fontFamily:"'Geist Sans',system-ui,sans-serif",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",opacity:inputOp}}>Enter a prompt here...</div>
+            {/* Footer disclaimer */}
+            <div style={{position:"absolute",bottom:14,left:0,right:0,textAlign:"center",fontSize:11,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#999999",opacity:discOp}}>GM may display inaccurate info. Verify on-chain.</div>
           </div>
-          <div style={{position:"absolute",bottom:20,left:40,right:40,height:44,backgroundColor:"#F5F5F5",borderRadius:22,display:"flex",alignItems:"center",padding:"0 20px",fontSize:13,color:"#555555",fontFamily:"'Geist Sans',system-ui,sans-serif",opacity:inputOp}}>Search markets or ask a question</div>
         </div>
       </div>
       </div>{/* close perspective parent */}
-      <div style={{position:"absolute",bottom:24,left:40,fontSize:11,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#555555",opacity:discOp}}>Sequences shortened and simulated.</div>
     </AbsoluteFill>
   );
 };
@@ -719,18 +744,57 @@ const SegPhoneMockup: React.FC = () => {
 
   const phoneScreen = (
     <div style={{width:"100%",height:"100%",backgroundColor:"#FFFFFF",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>
-      <PhoneStatusBar />
-      <div style={{padding:"30px 24px"}}>
-        <div style={{transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-          <span style={{fontSize:36,fontWeight:700,color:DARK}}>Welcome to </span>
-          <span style={{fontSize:36,fontWeight:700,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>GM.</span>
+      {/* GM Header Bar */}
+      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+          </div>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
         </div>
-        <div style={{marginTop:8,transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-          <div style={{fontSize:28,fontWeight:700,color:DARK,lineHeight:1.3}}>The institutional-grade<br/>protocol for on-chain<br/>index products.</div>
-          <div style={{marginTop:24,fontSize:16,color:"#555555",lineHeight:1.5}}>Build portfolios. Predict markets. Capture alpha.</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
+          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
         </div>
       </div>
-      <div style={{position:"absolute",top:58,right:20,width:36,height:36,borderRadius:8,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"white"}}>GM</div>
+      {/* Tab Strip */}
+      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+        {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===1?600:500,color:ti===1?"#1A1A1A":"#555",borderBottom:ti===1?"2px solid #1A1A1A":"2px solid transparent",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>{tab}</div>
+        ))}
+      </div>
+      {/* Portfolio Overview Content */}
+      <div style={{padding:"16px 16px 0",transform:`translateY(${interpolate(hiSpr,[0,1],[20,0])}px)`,opacity:interpolate(hiSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+        <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#999",marginBottom:4}}>Portfolio</div>
+        <div style={{fontSize:32,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A",fontFamily:"'JetBrains Mono',monospace"}}>$12,847.32</div>
+        <div style={{fontSize:13,color:"#16A34A",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>+$847.32 (+7.05%)</div>
+        {/* Mini area chart */}
+        <svg width="100%" height={120} viewBox="0 0 280 120" style={{marginTop:8}}>
+          <defs><linearGradient id="chartGrad03" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3B82F6" stopOpacity={0.3}/><stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02}/></linearGradient></defs>
+          <path d="M0 90 Q30 85,60 70 Q90 55,120 60 Q150 50,180 35 Q210 25,240 30 Q260 28,280 20 L280 120 L0 120Z" fill="url(#chartGrad03)"/>
+          <path d="M0 90 Q30 85,60 70 Q90 55,120 60 Q150 50,180 35 Q210 25,240 30 Q260 28,280 20" fill="none" stroke="#3B82F6" strokeWidth={2}/>
+        </svg>
+      </div>
+      {/* Holdings List */}
+      <div style={{transform:`translateY(${interpolate(bdSpr,[0,1],[15,0])}px)`,opacity:interpolate(bdSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+        {[
+          {name:"DeFi Blue Chip ITP",shares:"4.2 shares",value:"$3,420.15",change:"+12.4%",up:true},
+          {name:"AI Narrative ITP",shares:"2.8 shares",value:"$2,103.40",change:"+8.7%",up:true},
+          {name:"L1 Leaders ITP",shares:"6.1 shares",value:"$4,892.00",change:"-2.1%",up:false},
+          {name:"Memecoin Index",shares:"10.0 shares",value:"$2,431.77",change:"+22.3%",up:true},
+        ].map((row,ri)=>(
+          <div key={ri} style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #E0E0E0",padding:"10px 16px"}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:600,color:"#1A1A1A"}}>{row.name}</div>
+              <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:"#999"}}>{row.shares}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:14,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.value}</div>
+              <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626"}}>{row.change}</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -922,27 +986,54 @@ const SegPhoneGoodMorning: React.FC = () => {
   const inputSpr = spring({frame, fps, delay: Math.floor(fps*1.2), config:{damping:14,stiffness:100,mass:0.7}});
 
   const phoneScreen = (
-    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden",backgroundColor:"#FFFFFF"}}>
-      <PhoneStatusBar />
-      <div style={{padding:"16px 24px 24px"}}>
-        <div style={{fontSize:28,fontFamily:"'Geist Sans',system-ui,sans-serif",fontWeight:500,background:`linear-gradient(135deg, ${BLUE}, ${PURPLE})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",marginBottom:20}}>Portfolio Overview</div>
-        {[
-          {text:"View top-performing ITPs this month",icon:"chart",color:BLUE},
-          {text:"Check Vision market predictions",icon:"vision",color:PURPLE},
-          {text:"Rebalance portfolio allocations",icon:"rebalance",color:BLUE},
-        ].map((card, ci) => {
-          const s = cSpr[ci];
-          return <div key={ci} style={{height:52,backgroundColor:"#F4F4F8",borderRadius:14,marginBottom:8,padding:"10px 14px",fontSize:12.5,fontFamily:"'Geist Sans',system-ui,sans-serif",color:"#555",display:"flex",alignItems:"center",gap:10,transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
-            <div style={{width:28,height:28,borderRadius:8,backgroundColor:card.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {card.icon==="chart"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm6-4h2v12H9zm6-6h2v18h-2zm6 10h2v8h-2z" fill={BLUE}/></svg>}
-              {card.icon==="vision"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill={PURPLE}/><circle cx="12" cy="12" r="2.5" fill={PURPLE}/></svg>}
-              {card.icon==="rebalance"&&<svg width="16" height="16" viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z" fill={BLUE}/></svg>}
+    <div style={{width:"100%",height:"100%",position:"relative",overflow:"hidden",backgroundColor:"#FFFFFF",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>
+      {/* GM Header Bar */}
+      <div style={{height:56,backgroundColor:"#FFFFFF",borderBottom:"1px solid #000",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:36,height:36,backgroundColor:"#000",borderRadius:4,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:6}}>
+            {[0,1,2].map(j=><div key={j} style={{width:20,height:2.5,backgroundColor:"#fff",borderRadius:1}} />)}
+          </div>
+          <span style={{fontSize:19,fontWeight:900,letterSpacing:"-0.03em",color:"#1A1A1A"}}>General Market</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:6,height:6,borderRadius:3,backgroundColor:"#16A34A"}} />
+          <div style={{fontSize:12,fontWeight:600,border:"1px solid #D4D4D8",borderRadius:6,padding:"4px 12px",color:"#1A1A1A"}}>Connect</div>
+        </div>
+      </div>
+      {/* Tab Strip */}
+      <div style={{display:"flex",borderBottom:"1px solid #E0E0E0"}}>
+        {["Markets","Portfolio","Vision","Create"].map((tab,ti)=>(
+          <div key={ti} style={{flex:1,textAlign:"center",padding:"8px 0",fontSize:12,fontWeight:ti===0?600:500,color:ti===0?"#1A1A1A":"#555",borderBottom:ti===0?"2px solid #1A1A1A":"2px solid transparent",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>{tab}</div>
+        ))}
+      </div>
+      {/* Section header */}
+      <div style={{backgroundColor:"#1A1A1A",padding:"8px 16px"}}>
+        <span style={{fontSize:11,fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.08em",color:"#FFFFFF"}}>Crypto Markets &middot; 847 live</span>
+      </div>
+      {/* Market rows */}
+      {[
+        {symbol:"BTC/USD",price:"$67,432",change:"+2.4%",up:true},
+        {symbol:"ETH/USD",price:"$3,891",change:"+1.8%",up:true},
+        {symbol:"SOL/USD",price:"$142.50",change:"-0.7%",up:false},
+      ].map((row,ri)=>{
+        const s = cSpr[ri];
+        return (
+          <div key={ri} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:"1px solid #E0E0E0",transform:`translateY(${interpolate(s,[0,1],[15,0])}px)`,opacity:interpolate(s,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:"#1A1A1A"}}>{row.symbol}</div>
             </div>
-            <span>{card.text}</span>
-          </div>;
-        })}
-        <div style={{display:"flex",justifyContent:"space-between",marginTop:16,marginBottom:10,fontSize:13,fontWeight:500,color:"#555555"}}><span>Markets</span><span style={{fontSize:16}}>&#9998;</span></div>
-        <div style={{height:46,backgroundColor:"#EDEDF1",borderRadius:24,display:"flex",alignItems:"center",padding:"0 16px",fontSize:13,color:"#AAA",fontFamily:"'Geist Sans',system-ui,sans-serif",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>Type, talk, or share a photo</div>
+            <div style={{fontSize:13,fontFamily:"'JetBrains Mono',monospace",color:"#555"}}>{row.price}</div>
+            <div style={{fontSize:12,fontFamily:"'JetBrains Mono',monospace",color:row.up?"#16A34A":"#DC2626",minWidth:48,textAlign:"right"}}>{row.change}</div>
+            {/* Mini sparkline */}
+            <svg width={40} height={20} viewBox="0 0 40 20">
+              <path d={row.up?"M0 16 Q10 14,15 10 Q25 4,30 6 Q35 5,40 2":"M0 4 Q10 6,15 10 Q25 14,30 16 Q35 15,40 18"} fill="none" stroke={row.up?"#16A34A":"#DC2626"} strokeWidth={1.5}/>
+            </svg>
+          </div>
+        );
+      })}
+      {/* Input bar at bottom */}
+      <div style={{padding:"12px 16px",transform:`translateY(${interpolate(inputSpr,[0,1],[10,0])}px)`,opacity:interpolate(inputSpr,[0,0.3],[0,1],{extrapolateRight:"clamp"})}}>
+        <div style={{height:40,backgroundColor:"#F4F4F5",border:"1px solid #D4D4D8",borderRadius:8,display:"flex",alignItems:"center",padding:"0 14px",fontSize:13,color:"#999",fontFamily:"'Geist Sans',system-ui,sans-serif"}}>Search markets...</div>
       </div>
     </div>
   );

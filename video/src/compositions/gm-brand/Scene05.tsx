@@ -606,13 +606,18 @@ const GeminiInterface: React.FC<{
     Math.max(0, (frame - totalTypeFrames - 20) / (fps * 0.6))
   );
 
+  const darkCards = [
+    {emoji:"\uD83D\uDCDA",title:"Walk me through building an ITP",sub:"Step-by-step guide"},
+    {emoji:"\uD83D\uDCC8",title:"Show me Vision analytics",sub:"Market predictions"},
+  ];
+
   return (
     <div
       className={className}
       style={{
         width: 820,
         height: 500,
-        background: "#18181B",
+        background: "#0C0C0D",
         borderRadius: 12,
         position: "relative",
         overflow: "hidden",
@@ -624,14 +629,14 @@ const GeminiInterface: React.FC<{
         ...style,
       }}
     >
-      {/* Thin gradient border */}
+      {/* Subtle green gradient border */}
       <div
         style={{
           position: "absolute",
           inset: -1,
           borderRadius: 13,
           padding: 1,
-          background: `linear-gradient(135deg, ${BLUE}BF, ${PURPLE}BF, ${PINK}BF)`,
+          background: `linear-gradient(135deg, ${GM_GREEN}, ${GM_DARK_GREEN})`,
           WebkitMask:
             "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
           WebkitMaskComposite: "xor" as any,
@@ -641,118 +646,100 @@ const GeminiInterface: React.FC<{
         }}
       />
 
-      {/* Header bar */}
+      {/* Browser chrome — dark GM top bar */}
       <div
         style={{
-          padding: "16px 24px",
+          height: 64,
+          backgroundColor: "#18181B",
+          borderBottom: "1px solid #333",
           display: "flex",
           alignItems: "center",
-          gap: 12,
-          borderBottom: "1px solid rgba(255,255,255,0.04)",
+          padding: "0 24px",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <div
-            style={{
-              width: 16,
-              height: 1.5,
-              background: "rgba(255,255,255,0.4)",
-            }}
-          />
-          <div
-            style={{
-              width: 16,
-              height: 1.5,
-              background: "rgba(255,255,255,0.4)",
-            }}
-          />
-          <div
-            style={{
-              width: 16,
-              height: 1.5,
-              background: "rgba(255,255,255,0.4)",
-            }}
-          />
-        </div>
-        <span
-          style={{
-            color: "rgba(255,255,255,0.8)",
-            fontFamily: FONT,
-            fontSize: 14,
-            fontWeight: 400,
-          }}
-        >
-          GM{" "}
-          <GradientText
-            gradient={`linear-gradient(90deg, ${GM_GREEN}, ${GM_DARK_GREEN})`}
-          >
-            Pro
-          </GradientText>
+        {/* Left: GM logo (white on dark) + brand name */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <svg width="36" height="36" viewBox="0 0 102 102" fill="none">
+            <rect width="102" height="102" fill="white"/>
+            <rect x="15" y="48" width="15" height="6" rx="3" fill="#18181B"/>
+            <rect x="27" y="48" width="15" height="6" rx="3" fill="#18181B"/>
+            <rect x="38" y="48" width="15" height="6" rx="3" fill="#18181B"/>
+            <rect x="49" y="48" width="15" height="6" rx="3" fill="#18181B"/>
+            <rect x="61" y="48" width="9" height="6" rx="3" fill="#18181B"/>
+            <rect x="66" y="48" width="15" height="6" rx="3" fill="#18181B"/>
+            <rect x="78" y="48" width="9" height="6" rx="3" fill="#18181B"/>
+          </svg>
           <span
             style={{
-              color: "rgba(255,255,255,0.3)",
-              marginLeft: 4,
-              fontSize: 10,
+              fontSize: 22,
+              fontFamily: FONT,
+              fontWeight: 900,
+              color: "#FFFFFF",
+              letterSpacing: "-0.03em",
             }}
           >
-            {"\u25BE"}
+            General Market
           </span>
-        </span>
-      </div>
-
-      {/* Sidebar hint */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 50,
-          width: 48,
-          height: "calc(100% - 50px)",
-          borderRight: "1px solid rgba(255,255,255,0.03)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 16,
-        }}
-      >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: "50%",
-            border: "1.5px solid rgba(255,255,255,0.2)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "rgba(255,255,255,0.3)",
-            fontSize: 14,
-          }}
-        >
-          +
+        </div>
+        {/* Center nav */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 32 }}>
+          {["Markets", "Portfolio", "Vision"].map((n) => (
+            <span
+              key={n}
+              style={{
+                fontSize: 14,
+                fontFamily: FONT,
+                fontWeight: 600,
+                color: "#FFFFFF",
+              }}
+            >
+              {n}
+            </span>
+          ))}
+        </div>
+        {/* Right: Connect Wallet */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22C55E" }} />
+          <div
+            style={{
+              border: "2px solid #FFFFFF",
+              borderRadius: 8,
+              padding: "6px 16px",
+              fontSize: 13,
+              fontFamily: FONT,
+              fontWeight: 600,
+              color: "#FFFFFF",
+            }}
+          >
+            Connect Wallet
+          </div>
         </div>
       </div>
 
       {/* Main content area */}
       <div
         style={{
-          paddingLeft: 70,
-          paddingRight: 40,
-          paddingTop: 30,
+          padding: "44px 60px 30px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          height: "calc(100% - 64px)",
+          position: "relative",
         }}
       >
         <div
           style={{
-            fontSize: 36,
+            fontSize: 48,
             fontFamily: FONT,
-            fontWeight: 400,
+            fontWeight: 900,
+            letterSpacing: "-0.035em",
+            lineHeight: 1.2,
             marginBottom: 8,
+            textAlign: "center",
           }}
         >
           <GradientText
-            gradient={`linear-gradient(90deg, ${PURPLE}, ${PINK})`}
+            gradient={`linear-gradient(135deg, ${GM_GREEN}, ${GM_DARK_GREEN})`}
           >
             {typedHello}
           </GradientText>
@@ -761,8 +748,8 @@ const GeminiInterface: React.FC<{
               style={{
                 display: "inline-block",
                 width: 2,
-                height: 32,
-                background: `linear-gradient(180deg, ${PURPLE}, ${PINK})`,
+                height: 40,
+                background: `linear-gradient(180deg, ${GM_GREEN}, ${GM_DARK_GREEN})`,
                 marginLeft: 2,
                 verticalAlign: "middle",
                 opacity: Math.floor(frame / 8) % 2 === 0 ? 0.8 : 0.15,
@@ -773,18 +760,18 @@ const GeminiInterface: React.FC<{
 
         <div
           style={{
-            fontSize: 22,
+            fontSize: 20,
             fontFamily: FONT,
-            fontWeight: 300,
+            fontWeight: 400,
             color: "rgba(255,255,255,0.5)",
             opacity: subtitleProgress,
-            marginBottom: 36,
+            marginBottom: 32,
           }}
         >
           What would you like to trade?
         </div>
 
-        {/* Card grid */}
+        {/* Dark suggestion cards */}
         <div
           style={{
             display: "flex",
@@ -792,9 +779,41 @@ const GeminiInterface: React.FC<{
             opacity: cardsProgress,
           }}
         >
-          {CARDS.map((card, i) => (
-            <div key={i} className={`interface-card interface-card-${i}`}>
-              <PromptCard card={card} width={160} />
+          {darkCards.map((card, i) => (
+            <div
+              key={i}
+              className={`interface-card interface-card-${i}`}
+              style={{
+                width: 220,
+                backgroundColor: "#18181B",
+                border: "1px solid #333",
+                borderRadius: 6,
+                padding: "18px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontFamily: FONT,
+                  fontWeight: 600,
+                  color: "#FFFFFF",
+                  lineHeight: 1.3,
+                  marginBottom: 4,
+                }}
+              >
+                {card.emoji} {card.title}
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontFamily: FONT,
+                  fontWeight: 400,
+                  color: "#A1A1AA",
+                  lineHeight: 1.3,
+                }}
+              >
+                {card.sub}
+              </div>
             </div>
           ))}
         </div>
@@ -805,12 +824,12 @@ const GeminiInterface: React.FC<{
         style={{
           position: "absolute",
           bottom: 40,
-          left: 70,
+          left: 40,
           right: 40,
-          height: 44,
-          borderRadius: 24,
-          border: "1px solid rgba(255,255,255,0.1)",
-          background: "rgba(255,255,255,0.03)",
+          height: 48,
+          borderRadius: 12,
+          border: "1px solid #333",
+          background: "#18181B",
           display: "flex",
           alignItems: "center",
           padding: "0 20px",
@@ -821,29 +840,11 @@ const GeminiInterface: React.FC<{
           style={{
             color: "rgba(255,255,255,0.25)",
             fontFamily: FONT,
-            fontSize: 13,
+            fontSize: 14,
           }}
         >
-          Enter a prompt here
+          Enter a prompt here...
         </span>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 12 }}>
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.08)",
-            }}
-          />
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.08)",
-            }}
-          />
-        </div>
       </div>
 
       {/* Disclaimer */}
@@ -854,37 +855,14 @@ const GeminiInterface: React.FC<{
           left: 0,
           right: 0,
           textAlign: "center",
-          fontSize: 9,
+          fontSize: 11,
           fontFamily: FONT,
           color: "rgba(255,255,255,0.2)",
           opacity: cardsProgress,
         }}
       >
-        GM may display inaccurate info, including about markets, so
-        verify before trading.{" "}
-        <span
-          style={{
-            color: "rgba(0,163,108,0.4)",
-            textDecoration: "underline",
-          }}
-        >
-          Your privacy & GM
-        </span>
+        GM may display inaccurate info. Verify on-chain.
       </div>
-
-      {/* Avatar */}
-      <div
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 16,
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          background: `linear-gradient(135deg, ${PURPLE}, ${BLUE})`,
-          opacity: 0.6,
-        }}
-      />
     </div>
   );
 };
@@ -2804,7 +2782,7 @@ export const Scene05: React.FC = () => {
         </svg>
       </div>
 
-      {/* P: Google G full-color overlay (fades in over morph result) */}
+      {/* P: GM Logo finale (replaces Google G) — logo with green glow + particles */}
       <div
         ref={gFinalWrapRef}
         style={{
@@ -2815,24 +2793,42 @@ export const Scene05: React.FC = () => {
           opacity: 0,
         }}
       >
+        {/* Green glow radiating from logo */}
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 240,
-            height: 240,
+            width: 320,
+            height: 320,
             borderRadius: "50%",
             background: `radial-gradient(circle,
-              rgba(0,163,108,${0.06 * gFinalGlow}),
-              rgba(0,138,90,${0.03 * gFinalGlow}) 30%,
-              rgba(22,163,74,${0.02 * gFinalGlow}) 50%,
+              rgba(0,163,108,${0.3 * gFinalGlow}) 0%,
+              rgba(0,163,108,${0.15 * gFinalGlow}) 25%,
+              rgba(0,138,90,${0.08 * gFinalGlow}) 50%,
               transparent 75%)`,
             pointerEvents: "none",
           }}
         />
-        <GoogleG size={80} glowIntensity={gFinalGlow * 0.8} frame={frame} isLightSource />
+        {/* Subtle breathing pulse on the logo */}
+        <div style={{
+          transform: `scale(${1 + 0.03 * Math.sin(frame * 0.08)})`,
+          filter: `drop-shadow(0 0 ${20 * gFinalGlow}px rgba(0,163,108,0.6)) drop-shadow(0 0 ${50 * gFinalGlow}px rgba(0,163,108,0.25))`,
+        }}>
+          <svg width="80" height="80" viewBox="0 0 102 102" fill="none">
+            <rect width="102" height="102" fill="black"/>
+            <rect x="15" y="48" width="15" height="6" rx="3" fill="white"/>
+            <rect x="27" y="48" width="15" height="6" rx="3" fill="white"/>
+            <rect x="38" y="48" width="15" height="6" rx="3" fill="white"/>
+            <rect x="49" y="48" width="15" height="6" rx="3" fill="white"/>
+            <rect x="61" y="48" width="9" height="6" rx="3" fill="white"/>
+            <rect x="66" y="48" width="15" height="6" rx="3" fill="white"/>
+            <rect x="78" y="48" width="9" height="6" rx="3" fill="white"/>
+          </svg>
+        </div>
+        {/* Green floating particles */}
+        <GParticles count={25} frame={frame} spread={160} intensity={gFinalGlow * 0.6} />
       </div>
 
       {/* Bottom disclaimer during interface */}
