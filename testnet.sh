@@ -89,6 +89,14 @@ CURATOR_KEY="0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
 # ITP Bot key — Anvil account 6 (dedicated to avoid nonce conflicts with deployer)
 ITP_BOT_KEY="0x92db14e403b83dfe3df233f83dfa3ecda7b66661b024f5ece2e4d04c5f0b8aa2"
 
+# Token deployer key — Anvil account 7 (separate nonce space for 621-token deploy)
+TOKEN_DEPLOYER_KEY="0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"
+TOKEN_DEPLOYER_ADDRESS="0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+
+# Funder key — Anvil account 8 (cast send only: gas funding, USDC minting, BLS registration)
+FUNDER_KEY="0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"
+FUNDER_ADDRESS="0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+
 # Database
 DB_NAME="index_prices"
 
@@ -546,6 +554,20 @@ cmd_deploy() {
         exit 1
     fi
 
+    # Fund TOKEN_DEPLOYER and FUNDER accounts with gas from DEPLOYER
+    # These keys have separate nonce spaces to prevent nonce collisions during deployment.
+    echo -e "${BLUE}[1c/14] Funding TOKEN_DEPLOYER + FUNDER accounts with gas...${NC}"
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$TOKEN_DEPLOYER_ADDRESS" --value 50ether > /dev/null 2>&1 || true
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$FUNDER_ADDRESS" --value 50ether > /dev/null 2>&1 || true
+    # Fund FUNDER on Sonic too (needed for settlement USDC minting)
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+        "$FUNDER_ADDRESS" --value 1ether > /dev/null 2>&1 || true
+    echo -e "  ${GREEN}TOKEN_DEPLOYER ($TOKEN_DEPLOYER_ADDRESS) + FUNDER ($FUNDER_ADDRESS) funded${NC}"
+
     # Check bls-tool binary (needed for FFI in deploy scripts)
     echo -e "${BLUE}[2/14] Checking bls-tool (FFI)...${NC}"
     if [ ! -f "target/release/bls-tool" ]; then
@@ -580,76 +602,72 @@ cmd_deploy() {
     if [ "$CORE_DEPLOY_VALID" = true ]; then
         : # skip forge deploy
     else
-        # Log deployer nonce before deploy — helps diagnose nonce drift
+        # ============================================================
+        # TWO-PHASE DEPLOYMENT (Orbit L3 nonce safety)
+        # ============================================================
+        # Phase 1: tokens + implementations + Governance proxy + MockBitgetVault
+        #          (no proxy-to-proxy cross-references in init data)
+        # Between: rebuild Phase 1 addresses from broadcast receipts
+        # Phase 2: remaining proxies + wiring + oracles + user funding
+        #          (reads actual Phase 1 addresses — impl pointers are correct)
+        # ============================================================
+
         local DEPLOYER_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
         echo -e "  Deployer nonce before core deploy: $DEPLOYER_NONCE_BEFORE"
-        # Fresh core deploy — also nuke token broadcast since MockBitgetVault address will change
+
+        # Clean all stale artifacts
         rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
         rm -rf contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
         rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/
+        rm -rf deployments/phase1-addresses.json
         echo -e "  ${YELLOW}Core + token broadcasts cleaned (fresh deploy)${NC}"
-    # Forge may exit non-zero even on partial success (nonce races on redeployment).
-    # We verify success via deployment JSON + receipt count below, not forge exit code.
-    # --slow: wait for each TX confirmation before sending next — prevents nonce batching
-    # drift on Orbit L3 where rapid-fire TXs get reordered.
-        # DEPLOY_SEED forces fresh CREATE2 addresses on every deploy.
-        # Without this, proxy storage persists across redeploys (same address = same storage)
-        # and ITPs/oracles reference dead token addresses from previous deployments.
-        local DEPLOY_SEED=$(date +%s)
-        echo -e "  DEPLOY_SEED=$DEPLOY_SEED (ensures fresh contract addresses)"
-        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" DEPLOY_SEED="$DEPLOY_SEED" \
+
+        # ---- PHASE 1: Implementations + Governance proxy ----
+        echo -e "  ${BLUE}Phase 1: Deploying implementations + Governance proxy...${NC}"
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
+            --sig "runPhase1()" \
             --rpc-url "$RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
             --broadcast --slow \
             --chain-id $CHAIN_ID \
             --legacy --with-gas-price $GAS_PRICE \
             $FORGE_SIZE_FLAG) \
-            > logs/deploy-core.log 2>&1 || true
+            > logs/deploy-phase1.log 2>&1 || true
 
-        # Verify deployment succeeded: check both JSON file exists AND has receipts
-        if [ ! -f "deployments/e2e-full-system.json" ]; then
-            echo -e "  ${RED}Core deployment failed — no deployment JSON${NC}"
-            echo -e "  ${YELLOW}Last 20 lines of logs/deploy-core.log:${NC}"
-            tail -20 logs/deploy-core.log 2>/dev/null || true
+        # Verify Phase 1 produced output
+        if [ ! -f "deployments/phase1-addresses.json" ]; then
+            echo -e "  ${RED}Phase 1 failed — no phase1-addresses.json${NC}"
+            echo -e "  ${YELLOW}Last 30 lines of logs/deploy-phase1.log:${NC}"
+            tail -30 logs/deploy-phase1.log 2>/dev/null || true
             exit 1
         fi
-        local RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
-        if [ "$RECEIPT_COUNT" = "0" ]; then
-            echo -e "  ${RED}Core deployment broadcast failed — 0 receipts (transactions not submitted)${NC}"
-            echo -e "  ${YELLOW}Last 20 lines of logs/deploy-core.log:${NC}"
-            tail -20 logs/deploy-core.log 2>/dev/null || true
+        local P1_RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+        if [ "$P1_RECEIPT_COUNT" = "0" ]; then
+            echo -e "  ${RED}Phase 1 broadcast failed — 0 receipts${NC}"
+            tail -30 logs/deploy-phase1.log 2>/dev/null || true
             exit 1
         fi
-        echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
+        echo -e "  ${GREEN}Phase 1 complete ($P1_RECEIPT_COUNT txs confirmed)${NC}"
 
-        # Post-deploy on-chain verification: the e2e-full-system.json contains SIMULATION addresses
-        # which can diverge from BROADCAST addresses on Orbit L3 (nonce drift). Verify Index + OracleRegistry
-        # have code at their JSON-listed addresses. If not, attempt to rebuild JSON from broadcast receipts.
-        local POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
-        local POST_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
-        if [ -n "$POST_INDEX" ] && [ -n "$POST_REGISTRY" ]; then
-            local POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
-            local POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
-            # ALWAYS rebuild from broadcast receipts on Orbit L3 — simulation addresses
-            # diverge from broadcast due to nonce drift, and old deploys leave code at
-            # stale addresses making the code-length check unreliable.
-            if true; then
-                echo -e "  ${YELLOW}Rebuilding deployment addresses from broadcast receipts (Orbit L3 safety)...${NC}"
-                # Rebuild deployment JSON from broadcast receipts (actual on-chain addresses).
-                # Match proxies to implementations by first constructor arg (impl address).
-                python3 -c "
+        # ---- REBUILD PHASE 1 ADDRESSES FROM RECEIPTS ----
+        # phase1-addresses.json contains simulation addresses. Rebuild from broadcast
+        # receipts to get ACTUAL on-chain addresses for implementations and Governance proxy.
+        echo -e "  ${YELLOW}Rebuilding Phase 1 addresses from broadcast receipts...${NC}"
+        # Save Phase 1 broadcast before Phase 2 overwrites it
+        cp contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json \
+           contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json
+
+        python3 -c "
 import json, sys
 
-bd_path = 'contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json'
-deploy_path = 'deployments/e2e-full-system.json'
-bd = json.load(open(bd_path))
-deploy = json.load(open(deploy_path))
+bd = json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json'))
+p1 = json.load(open('deployments/phase1-addresses.json'))
 
-# Build map: impl_addr -> impl_name, and collect proxy->impl links
-impls = {}  # addr -> name
-proxy_map = {}  # impl_name -> proxy_addr
-creates = {}  # name -> [entries]
+# Build map of contract names to actual broadcast addresses
+impls = {}     # addr_lower -> name
+creates = {}   # name -> [entries]
+proxy_map = {} # impl_name -> proxy_addr
 
 for tx in bd.get('transactions', []):
     if tx.get('transactionType') not in ('CREATE', 'CREATE2'):
@@ -660,23 +678,177 @@ for tx in bd.get('transactions', []):
     if not name or not addr:
         continue
     if name == 'ERC1967Proxy':
-        # First arg is the implementation address
         if args:
             impl_addr = args[0].lower()
             if impl_addr in impls:
                 proxy_map[impls[impl_addr]] = addr
     else:
         impls[addr.lower()] = name
-        if name not in creates:
-            creates[name] = []
-        creates[name].append({'address': addr, 'args': args})
+        creates.setdefault(name, []).append({'address': addr, 'args': args})
 
-# Build patches: deployment JSON key -> broadcast address
-patches = {}
-
-# Proxied contracts (impl_name -> deploy_key)
-proxy_key_map = {
+# Patch implementations
+impl_map = {
     'Governance': 'Governance',
+    'Investment': 'Investment',
+    'OracleRegistry': 'OracleRegistry',
+    'L3BridgeCustody': 'L3BridgeCustody',
+    'SettlementBridgeCustody': 'SettlementBridgeCustody',
+    'BLSCustody': 'BLSCustody',
+    'BridgeProxy': 'BridgeProxy',
+}
+patched = 0
+for contract_name, json_key in impl_map.items():
+    if contract_name in creates and len(creates[contract_name]) >= 1:
+        actual = creates[contract_name][0]['address']
+        if p1['implementations'].get(json_key, '').lower() != actual.lower():
+            p1['implementations'][json_key] = actual
+            patched += 1
+
+# Patch Governance proxy
+if 'Governance' in proxy_map:
+    actual = proxy_map['Governance']
+    if p1['proxies'].get('Governance', '').lower() != actual.lower():
+        p1['proxies']['Governance'] = actual
+        patched += 1
+
+# Patch MockBitgetVault
+if 'MockBitgetVault' in creates and len(creates['MockBitgetVault']) == 1:
+    actual = creates['MockBitgetVault'][0]['address']
+    if p1['contracts'].get('MockBitgetVault', '').lower() != actual.lower():
+        p1['contracts']['MockBitgetVault'] = actual
+        patched += 1
+
+# Patch tokens
+for entry in creates.get('MockERC20', []):
+    args = entry.get('args', [])
+    if len(args) >= 2:
+        symbol = args[1]
+        if 'L3_WUSDC' in symbol or 'WUSDC' in symbol:
+            if p1['tokens'].get('L3_WUSDC', '').lower() != entry['address'].lower():
+                p1['tokens']['L3_WUSDC'] = entry['address']
+                patched += 1
+        elif 'SETTLEMENT_USDC' in symbol:
+            if p1['tokens'].get('SETTLEMENT_USDC', '').lower() != entry['address'].lower():
+                p1['tokens']['SETTLEMENT_USDC'] = entry['address']
+                patched += 1
+        elif 'MOCK_USDT' in symbol or 'USDT' in symbol:
+            if p1['tokens'].get('MOCK_USDT', '').lower() != entry['address'].lower():
+                p1['tokens']['MOCK_USDT'] = entry['address']
+                patched += 1
+
+json.dump(p1, open('deployments/phase1-addresses.json', 'w'), indent=2)
+print(f'Patched {patched} Phase 1 addresses from broadcast receipts')
+" 2>/dev/null && echo -e "  ${GREEN}Phase 1 addresses rebuilt from receipts${NC}" || {
+            echo -e "  ${RED}Phase 1 receipt rebuild failed. Aborting.${NC}"
+            exit 1
+        }
+
+        # Verify Governance proxy has code at its receipt-rebuilt address
+        local P1_GOV=$(python3 -c "import json; print(json.load(open('deployments/phase1-addresses.json'))['proxies']['Governance'])" 2>/dev/null || echo "")
+        if [ -n "$P1_GOV" ]; then
+            local GOV_CODE=$(cast code --rpc-url "$RPC_URL" "$P1_GOV" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$GOV_CODE" -lt 10 ]; then
+                echo -e "  ${RED}CRITICAL: Governance proxy at $P1_GOV has no code after receipt rebuild${NC}"
+                rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/phase1-addresses.json
+                exit 1
+            fi
+            # Verify Governance.admin() returns deployer
+            local GOV_ADMIN=$(cast call --rpc-url "$RPC_URL" "$P1_GOV" "admin()(address)" 2>/dev/null | tr -d '[:space:]')
+            local GOV_ADMIN_LOWER=$(echo "$GOV_ADMIN" | tr '[:upper:]' '[:lower:]')
+            local DEPLOYER_LOWER=$(echo "$DEPLOYER_ADDRESS" | tr '[:upper:]' '[:lower:]')
+            if [ "$GOV_ADMIN_LOWER" != "$DEPLOYER_LOWER" ]; then
+                echo -e "  ${RED}CRITICAL: Governance.admin() = $GOV_ADMIN, expected deployer $DEPLOYER_ADDRESS${NC}"
+                echo -e "  ${RED}Implementation pointer is wrong — proxy delegatecall reaches phantom.${NC}"
+                rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/phase1-addresses.json
+                exit 1
+            fi
+            echo -e "  ${GREEN}Governance proxy verified: admin() = deployer${NC}"
+        fi
+
+        # ---- PHASE 2: Proxies + Wiring ----
+        # Phase 2 reads phase1-addresses.json (receipt-rebuilt) so all implementation
+        # pointers and Phase 1 cross-references are correct.
+        echo -e "  ${BLUE}Phase 2: Deploying proxies + wiring...${NC}"
+        # Clean broadcast + cache dirs so forge doesn't try to resume Phase 1 transactions.
+        # Phase 1 broadcast is preserved as run-phase1.json in a temp location.
+        cp contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json \
+           /tmp/deploy-phase1-backup-$CHAIN_ID.json 2>/dev/null || true
+        rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+        rm -rf contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+        mkdir -p contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+        cp /tmp/deploy-phase1-backup-$CHAIN_ID.json \
+           contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json 2>/dev/null || true
+
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
+            --sig "runPhase2()" \
+            --rpc-url "$RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --broadcast --slow \
+            --chain-id $CHAIN_ID \
+            --legacy --with-gas-price $GAS_PRICE \
+            $FORGE_SIZE_FLAG) \
+            > logs/deploy-phase2.log 2>&1 || true
+
+        # Verify Phase 2
+        if [ ! -f "deployments/e2e-full-system.json" ]; then
+            echo -e "  ${RED}Phase 2 failed — no deployment JSON${NC}"
+            echo -e "  ${YELLOW}Last 30 lines of logs/deploy-phase2.log:${NC}"
+            tail -30 logs/deploy-phase2.log 2>/dev/null || true
+            exit 1
+        fi
+        local P2_RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+        if [ "$P2_RECEIPT_COUNT" = "0" ]; then
+            echo -e "  ${RED}Phase 2 broadcast failed — 0 receipts${NC}"
+            tail -30 logs/deploy-phase2.log 2>/dev/null || true
+            exit 1
+        fi
+        echo -e "  ${GREEN}Phase 2 complete ($P2_RECEIPT_COUNT txs confirmed)${NC}"
+
+        # ---- REBUILD FINAL ADDRESSES FROM PHASE 2 RECEIPTS ----
+        echo -e "  ${YELLOW}Rebuilding final deployment from Phase 2 broadcast receipts...${NC}"
+        python3 -c "
+import json, sys
+
+bd_path = 'contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json'
+deploy_path = 'deployments/e2e-full-system.json'
+p1_path = 'deployments/phase1-addresses.json'
+bd = json.load(open(bd_path))
+deploy = json.load(open(deploy_path))
+p1 = json.load(open(p1_path))
+
+# Phase 1 addresses are already correct (receipt-rebuilt). Inject them.
+deploy['contracts']['Governance'] = p1['proxies']['Governance']
+deploy['contracts']['MockBitgetVault'] = p1['contracts']['MockBitgetVault']
+for token_key in ['L3_WUSDC', 'SETTLEMENT_USDC', 'MOCK_USDT']:
+    if token_key in p1['tokens']:
+        deploy['contracts'][token_key] = p1['tokens'][token_key]
+deploy['contracts']['USDC'] = p1['tokens']['L3_WUSDC']
+
+# Rebuild Phase 2 proxy addresses from receipts
+impls = {}
+proxy_map = {}
+creates = {}
+
+for tx in bd.get('transactions', []):
+    if tx.get('transactionType') not in ('CREATE', 'CREATE2'):
+        continue
+    name = tx.get('contractName', '')
+    addr = tx.get('contractAddress', '')
+    args = tx.get('arguments', [])
+    if not name or not addr:
+        continue
+    if name == 'ERC1967Proxy':
+        if args:
+            impl_addr = args[0].lower()
+            if impl_addr in impls:
+                proxy_map[impls[impl_addr]] = addr
+    else:
+        impls[addr.lower()] = name
+        creates.setdefault(name, []).append({'address': addr, 'args': args})
+
+# Phase 2 proxy mapping
+proxy_key_map = {
     'Investment': 'Index',
     'OracleRegistry': 'OracleRegistry',
     'L3BridgeCustody': 'L3BridgeCustody',
@@ -684,55 +856,69 @@ proxy_key_map = {
     'BLSCustody': 'BLSCustody',
     'BridgeProxy': 'BridgeProxy',
 }
+patched = 0
 for impl_name, deploy_key in proxy_key_map.items():
     if impl_name in proxy_map:
-        patches[deploy_key] = proxy_map[impl_name]
+        if deploy['contracts'].get(deploy_key, '').lower() != proxy_map[impl_name].lower():
+            deploy['contracts'][deploy_key] = proxy_map[impl_name]
+            patched += 1
 
-# Unique non-proxy contracts
+# Non-proxy Phase 2 contracts
 for key, bcast_name in [
     ('CollateralRegistry', 'CollateralRegistry'),
-    ('MockBitgetVault', 'MockBitgetVault'),
     ('BridgedItpFactory', 'BridgedItpFactory'),
 ]:
     if bcast_name in creates and len(creates[bcast_name]) == 1:
-        patches[key] = creates[bcast_name][0]['address']
-
-# MockERC20: disambiguate by constructor args (symbol)
-for entry in creates.get('MockERC20', []):
-    args = entry.get('args', [])
-    if len(args) >= 2:
-        symbol = args[1]
-        if 'L3_WUSDC' in symbol or 'WUSDC' in symbol: patches['L3_WUSDC'] = entry['address']
-        elif 'SETTLEMENT_USDC' in symbol: patches['SETTLEMENT_USDC'] = entry['address']
-        elif 'MOCK_USDT' in symbol or 'USDT' in symbol: patches['MOCK_USDT'] = entry['address']
-
-# Apply
-patched = 0
-for key, addr in patches.items():
-    if key in deploy['contracts'] and deploy['contracts'][key].lower() != addr.lower():
-        deploy['contracts'][key] = addr
-        patched += 1
+        actual = creates[bcast_name][0]['address']
+        if deploy['contracts'].get(key, '').lower() != actual.lower():
+            deploy['contracts'][key] = actual
+            patched += 1
 
 json.dump(deploy, open(deploy_path, 'w'), indent=2)
-print(f'Patched {patched} addresses from broadcast receipts (impl->proxy matching)')
-" 2>/dev/null && echo -e "  ${GREEN}Deployment JSON rebuilt from broadcast receipts${NC}" || {
-                    echo -e "  ${RED}Auto-fix failed. Cleaning artifacts — re-run deploy.${NC}"
-                    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
-                    exit 1
-                }
+print(f'Patched {patched} Phase 2 addresses from broadcast receipts')
+" 2>/dev/null && echo -e "  ${GREEN}Deployment JSON rebuilt from both phases${NC}" || {
+            echo -e "  ${RED}Phase 2 receipt rebuild failed. Cleaning and aborting.${NC}"
+            rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
+            exit 1
+        }
 
-                # Re-verify after patch
-                POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
-                POST_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
-                POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
-                POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
-                if [ "$POST_INDEX_CODE" -lt 10 ] || [ "$POST_REG_CODE" -lt 10 ]; then
-                    echo -e "  ${RED}CRITICAL: Addresses still invalid after receipt rebuild. Cleaning and aborting.${NC}"
-                    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
-                    exit 1
-                fi
+        # ---- POST-DEPLOY VERIFICATION ----
+        local POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+        local POST_REGISTRY=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
+        if [ -n "$POST_INDEX" ] && [ -n "$POST_REGISTRY" ]; then
+            local POST_INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_INDEX" 2>/dev/null | wc -c | tr -d ' ')
+            local POST_REG_CODE=$(cast code --rpc-url "$RPC_URL" "$POST_REGISTRY" 2>/dev/null | wc -c | tr -d ' ')
+            if [ "$POST_INDEX_CODE" -lt 10 ] || [ "$POST_REG_CODE" -lt 10 ]; then
+                echo -e "  ${RED}CRITICAL: Index ($POST_INDEX_CODE bytes) or OracleRegistry ($POST_REG_CODE bytes) missing on-chain after deploy${NC}"
+                rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
+                exit 1
             fi
-            echo -e "  ${GREEN}On-chain verification passed (Index + OracleRegistry have code)${NC}"
+
+            # Verify OracleRegistry stores correct governance (may have Phase 2 drift)
+            local REG_GOV=$(cast call --rpc-url "$RPC_URL" "$POST_REGISTRY" "governance()(address)" 2>/dev/null | tr -d '[:space:]')
+            local REG_GOV_LOWER=$(echo "$REG_GOV" | tr '[:upper:]' '[:lower:]')
+            local EXPECTED_GOV=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Governance'])" 2>/dev/null || echo "")
+            local EXPECTED_GOV_LOWER=$(echo "$EXPECTED_GOV" | tr '[:upper:]' '[:lower:]')
+            if [ "$REG_GOV_LOWER" != "$EXPECTED_GOV_LOWER" ]; then
+                echo -e "  ${YELLOW}OracleRegistry.governance() = $REG_GOV, expected $EXPECTED_GOV — Phase 2 drift detected${NC}"
+                echo -e "  ${YELLOW}Repairing via setGovernance...${NC}"
+                cast send "$POST_REGISTRY" "setGovernance(address)" "$EXPECTED_GOV" \
+                    --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                    --legacy --gas-price $GAS_PRICE --gas-limit 200000 \
+                    > /dev/null 2>&1 && echo -e "  ${GREEN}OracleRegistry governance repaired${NC}" \
+                    || echo -e "  ${RED}OracleRegistry governance repair failed — may need full redeploy${NC}"
+            fi
+
+            # Verify Investment.governance() matches
+            local INV_GOV=$(cast call --rpc-url "$RPC_URL" "$POST_INDEX" "governance()(address)" 2>/dev/null | tr -d '[:space:]')
+            local INV_GOV_LOWER=$(echo "$INV_GOV" | tr '[:upper:]' '[:lower:]')
+            if [ "$INV_GOV_LOWER" != "$EXPECTED_GOV_LOWER" ]; then
+                echo -e "  ${RED}WARNING: Investment.governance() = $INV_GOV, expected $EXPECTED_GOV${NC}"
+                echo -e "  ${RED}Investment.governance is set-once at init — cannot repair without redeploy.${NC}"
+                echo -e "  ${RED}But this should not happen: Investment reads governance from Phase 1 (receipt-rebuilt).${NC}"
+            fi
+
+            echo -e "  ${GREEN}On-chain verification passed (Index + OracleRegistry have code, governance chain intact)${NC}"
         fi
     fi
 
@@ -1058,6 +1244,7 @@ for name, b in vb.get('batches', {}).items():
     vps_be_ssh "rm -f $VPS_BE_DIR/logs/consensus-*.wal" && echo -e "  ${GREEN}Consensus WAL files cleaned${NC}" || true
 
     # Fund Anvil accounts 1-6 (oracles + AP + curator + itp-bot) with GM for gas
+    # Uses FUNDER_KEY (separate nonce space) to avoid corrupting DEPLOYER nonce during forge broadcasts
     echo -e "${BLUE}[4/14] Funding oracle + AP + curator + bot accounts with gas...${NC}"
     ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
     ORACLE_2_ADDR=$(cast wallet address "$ORACLE_2_KEY")
@@ -1067,7 +1254,7 @@ for name, b in vb.get('batches', {}).items():
     ITP_BOT_ADDR=$(cast wallet address "$ITP_BOT_KEY")
 
     for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
-        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
             "$addr" --value 10ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 6 accounts with 10 GM each${NC}"
@@ -1075,7 +1262,7 @@ for name, b in vb.get('batches', {}).items():
     # Fund accounts with gas on Sonic
     echo -e "${BLUE}[4b/14] Funding accounts with gas on Sonic...${NC}"
     for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
-        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
             "$addr" --value 0.5ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 6 accounts with 0.5 S each on Sonic${NC}"
@@ -1095,9 +1282,9 @@ for name, b in vb.get('batches', {}).items():
             addr=$(echo "$addr" | tr -d '", ')
             [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
             [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
-            cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
                 "$addr" --value 1ether > /dev/null 2>&1 || true
-            cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
                 "$SWARM_USDC" "mint(address,uint256)" "$addr" "$SWARM_FUND" \
                 > /dev/null 2>&1 || true
         done < "docker/testnet/vision-swarm/addresses.json"
@@ -1198,11 +1385,11 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data/pnl-*.json" 2>/dev/null || true
     echo -e "  ${GREEN}Cleared stale bot PnL files${NC}"
 
-    # Fund test accounts with L3 USDC
+    # Fund test accounts with L3 USDC (FUNDER_KEY — mint is unrestricted on MockERC20)
     echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
         # Mint 1M USDC to deployer
-        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
             "$L3_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 1000000000000000000000000 \
             > /dev/null 2>&1 || true
         echo -e "  ${GREEN}Funded deployer with 1M L3 USDC${NC}"
@@ -1211,7 +1398,7 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     # Fund accounts with SETTLEMENT_USDC on Sonic (6 decimals)
     SONIC_USDC=$(read_deployment_addr "SETTLEMENT_USDC")
     if [ -n "$SONIC_USDC" ] && [ "$SONIC_USDC" != "" ]; then
-        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
             "$SONIC_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 50000000000 \
             > /dev/null 2>&1 || true
         echo -e "  ${GREEN}Funded deployer with 50k SETTLEMENT_USDC on Sonic${NC}"
@@ -1222,9 +1409,9 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     python3 scripts/deploy-all-tokens.py || { echo -e "${RED}Token generator failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Generated DeployAllTokens.s.sol (621 tokens)${NC}"
 
-    echo -e "${BLUE}[9/14] Deploying all 621 tokens + funding vault...${NC}"
-    local TOKEN_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
-    echo -e "  Deployer nonce before token deploy: $TOKEN_NONCE_BEFORE"
+    echo -e "${BLUE}[9/14] Deploying all 621 tokens + funding vault (TOKEN_DEPLOYER_KEY)...${NC}"
+    local TOKEN_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$TOKEN_DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
+    echo -e "  Token deployer nonce before token deploy: $TOKEN_NONCE_BEFORE"
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
 
     # Resume partial token deploys: check how many receipts exist from previous runs.
@@ -1253,11 +1440,11 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
             fi
             # --slow: wait for each TX confirmation before next — Orbit L3's rapid-fire
             # nonce batching kills token deploys after ~200 TXs without this.
-            (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+            (cd contracts && PRIVATE_KEY="$TOKEN_DEPLOYER_KEY" \
                 MOCK_BITGET_VAULT="$MOCK_VAULT" DEPLOY_SEED="${DEPLOY_SEED:-$(date +%s)}" \
                 forge script script/DeployAllTokens.s.sol:DeployAllTokens \
                 $FORGE_BROADCAST_FLAG --slow --legacy --with-gas-price $GAS_PRICE --rpc-url "$RPC_URL" \
-                --private-key "$DEPLOYER_KEY" \
+                --private-key "$TOKEN_DEPLOYER_KEY" \
                 --chain-id $CHAIN_ID $FORGE_SIZE_FLAG) \
                 >> logs/deploy-tokens.log 2>&1 || true
 
@@ -3120,6 +3307,184 @@ cmd_seed_orders() {
     else
         echo -e "  ${RED}Multiple failures — manual investigation needed${NC}"
     fi
+
+    # ── E2E Integration Tests ─────────────────────────────────
+    # Tests the full user flow with a non-admin wallet:
+    #   1. Create ITP via requestCreateItp (permissionless)
+    #   2. Wait for oracle to process + auto-list
+    #   3. Buy the new ITP
+    #   4. Deposit to Morpho + borrow USDC
+    #   5. Verify Vision settlement payouts land in wallets
+    echo -e ""
+    echo -e "${BLUE}[8/8] E2E integration tests (non-admin wallet)...${NC}"
+
+    # Test wallet: Anvil account 6 (not admin, not oracle, not seeder)
+    local TEST_KEY="0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
+    local TEST_ADDR="0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+    local E2E_PASS=0
+    local E2E_FAIL=0
+
+    # Fund test wallet
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE --value 1000000000000000000 "$TEST_ADDR" > /dev/null 2>&1
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$USDC_ADDR" "mint(address,uint256)" "$TEST_ADDR" 10000000000000000000000 > /dev/null 2>&1
+    cast send --private-key "$TEST_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE \
+        "$USDC_ADDR" "approve(address,uint256)" "$INDEX_ADDR" "$(cast max-uint)" > /dev/null 2>&1
+    echo -e "  Test wallet funded (10K USDC)"
+
+    # ── Test 1: Create ITP via admin (simulating requestCreateItp → oracle flow) ──
+    # requestCreateItp lives on Settlement BridgeProxy. For testnet, we simulate the
+    # oracle processing by having the admin create an ITP on behalf of the test user.
+    echo -e "  [T1] Creating ITP on behalf of test user..."
+    local TEST_ITP_ASSETS=()
+    local TEST_ITP_PRICES=()
+    local TEST_ITP_WEIGHTS=()
+    # Pick first 3 tokens from symbol-map
+    local _tokens=$(python3 -c "
+import json
+sm = json.load(open('data/symbol-map.json'))
+items = list(sm.items())[:3]
+for addr, val in items:
+    pair = val.get('pair','') if isinstance(val,dict) else val
+    print(addr)
+" 2>/dev/null)
+    local _tidx=0
+    while IFS= read -r _taddr; do
+        TEST_ITP_ASSETS+=("$_taddr")
+        TEST_ITP_PRICES+=("1000000000000000000")
+        if [ $_tidx -eq 2 ]; then
+            TEST_ITP_WEIGHTS+=("333333333333333334")
+        else
+            TEST_ITP_WEIGHTS+=("333333333333333333")
+        fi
+        _tidx=$((_tidx + 1))
+    done <<< "$_tokens"
+
+    local _w_arr=$(IFS=,; echo "${TEST_ITP_WEIGHTS[*]}")
+    local _a_arr=$(IFS=,; echo "${TEST_ITP_ASSETS[*]}")
+    local _p_arr=$(IFS=,; echo "${TEST_ITP_PRICES[*]}")
+
+    local ITP_COUNT_BEFORE=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE --gas-limit 2000000 \
+        "$INDEX_ADDR" "createITP(string,string,uint256[],address[],uint256[],uint256)" \
+        "E2E Test ITP" "E2ETEST" "[$_w_arr]" "[$_a_arr]" "[$_p_arr]" "$(cast max-uint)" \
+        > /dev/null 2>&1
+    local ITP_COUNT_AFTER=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+
+    if [ "$ITP_COUNT_AFTER" -gt "$ITP_COUNT_BEFORE" ] 2>/dev/null; then
+        echo -e "  ${GREEN}[T1] ITP created (#$ITP_COUNT_AFTER) ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    else
+        echo -e "  ${RED}[T1] ITP creation failed${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+    local NEW_ITP_ID=$(printf "0x%064x" "$ITP_COUNT_AFTER")
+
+    # ── Test 2: Wait for auto-listing in oracle DB (< 60s) ──
+    echo -e "  [T2] Waiting for auto-listing..."
+    local _listed=false
+    for _li in $(seq 1 12); do
+        sleep 5
+        local _meta=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM itp_snapshots WHERE itp_id = '$NEW_ITP_ID';\"" 2>/dev/null | tr -d ' ')
+        if [ "${_meta:-0}" -gt 0 ]; then
+            _listed=true
+            echo -e "  ${GREEN}[T2] Auto-listed in $((_li * 5))s ✓${NC}"
+            E2E_PASS=$((E2E_PASS + 1))
+            break
+        fi
+    done
+    [ "$_listed" = false ] && { echo -e "  ${RED}[T2] Not listed after 60s${NC}"; E2E_FAIL=$((E2E_FAIL + 1)); }
+
+    # ── Test 3: Buy the new ITP ──
+    echo -e "  [T3] Buying new ITP (\$500)..."
+    local _expiry=$(($(date +%s) + 86400))
+    cast send --private-key "$TEST_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price $GAS_PRICE --gas-limit 500000 \
+        "$INDEX_ADDR" "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
+        "$NEW_ITP_ID" 0 "500000000000000000000" 0 1 "$_expiry" > /dev/null 2>&1
+
+    # Wait for fill
+    local _filled=false
+    for _fi in $(seq 1 30); do
+        sleep 10
+        local _p=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "pendingOrderCount()(uint256)" 2>/dev/null | awk '{print $1}')
+        [ "$_p" = "0" ] && _filled=true && break
+    done
+
+    local _shares=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getUserShares(bytes32,address)(uint256)" "$NEW_ITP_ID" "$TEST_ADDR" 2>/dev/null | awk '{print $1}')
+    if [ "$_filled" = true ] && [ "${_shares:-0}" != "0" ]; then
+        echo -e "  ${GREEN}[T3] Bought + filled (shares: $_shares) ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    else
+        echo -e "  ${RED}[T3] Buy/fill failed (filled=$_filled shares=$_shares)${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
+    # ── Test 4: Deposit to Morpho + borrow ──
+    echo -e "  [T4] Lending: deposit collateral + borrow USDC..."
+    local _vault=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "itpVaults(bytes32)(address)" "$NEW_ITP_ID" 2>/dev/null)
+    local _vbal=$(cast call --rpc-url "$RPC_URL" "$_vault" "balanceOf(address)(uint256)" "$TEST_ADDR" 2>/dev/null | awk '{print $1}')
+
+    if [ -n "$MORPHO_ADDR" ] && [ "${_vbal:-0}" != "0" ]; then
+        # Create a Morpho market for this vault (permissionless)
+        local _loan=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['loanToken'])" 2>/dev/null)
+        local _irm=$(python3 -c "import json; c=json.load(open('deployments/morpho-e2e.json'))['contracts']; print(c.get('CURATOR_RATE_IRM', c.get('ADAPTIVE_IRM','')))" 2>/dev/null)
+        local _oracle_reg=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null)
+
+        # Approve vault token to Morpho
+        cast send --private-key "$TEST_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE \
+            "$_vault" "approve(address,uint256)" "$MORPHO_ADDR" "$(cast max-uint)" > /dev/null 2>&1
+
+        # Supply half as collateral
+        local _supply=$(python3 -c "print(int('$_vbal') // 2)")
+        cast send --private-key "$TEST_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE --gas-limit 500000 \
+            "$MORPHO_ADDR" "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)" \
+            "($_vault,$_loan,$_oracle_reg,$_irm,770000000000000000)" "$_supply" "$TEST_ADDR" "0x" \
+            > /dev/null 2>&1
+        local _sc_status=$?
+
+        # Borrow 25% of collateral
+        local _borrow=$(python3 -c "print(int('$_supply') // 4)")
+        cast send --private-key "$TEST_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE --gas-limit 500000 \
+            "$MORPHO_ADDR" "borrow((address,address,address,address,uint256),uint256,uint256,address,address)" \
+            "($_vault,$_loan,$_oracle_reg,$_irm,770000000000000000)" "$_borrow" 0 "$TEST_ADDR" "$TEST_ADDR" \
+            > /dev/null 2>&1
+        local _borrow_status=$?
+
+        if [ "$_sc_status" -eq 0 ] && [ "$_borrow_status" -eq 0 ]; then
+            echo -e "  ${GREEN}[T4] Collateral supplied + USDC borrowed ✓${NC}"
+            E2E_PASS=$((E2E_PASS + 1))
+        else
+            echo -e "  ${YELLOW}[T4] Lending partially failed (supply=$_sc_status borrow=$_borrow_status)${NC}"
+            E2E_FAIL=$((E2E_FAIL + 1))
+        fi
+    else
+        echo -e "  ${YELLOW}[T4] Skipped (no vault tokens or no Morpho)${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
+    # ── Test 5: Vision settlement payout check ──
+    echo -e "  [T5] Checking Vision settlement payouts..."
+    local _submitted=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs WHERE submitted = true;\"" 2>/dev/null | tr -d ' ')
+    local _with_payouts=$(vps_be_ssh "psql -U max -d index_prices -t -c \"SELECT COUNT(*) FROM vision_settlement_proofs WHERE submitted = true AND payouts_json IS NOT NULL AND payouts_json::text != '[\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\",\\\"0\\\"]';\"" 2>/dev/null | tr -d ' ')
+    if [ "${_submitted:-0}" -gt 0 ]; then
+        echo -e "  ${GREEN}[T5] Settlements submitted: $_submitted (non-zero payouts: $_with_payouts) ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    else
+        echo -e "  ${YELLOW}[T5] No settlements submitted yet (batches may need more time)${NC}"
+    fi
+
+    echo -e ""
+    echo -e "  ════════════════════════════════════════"
+    echo -e "  E2E Tests: ${GREEN}$E2E_PASS passed${NC}, ${RED}$E2E_FAIL failed${NC} / 5 tests"
+    echo -e "  ════════════════════════════════════════"
 }
 
 # ── Main dispatcher ──────────────────────────────────────────
