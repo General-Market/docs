@@ -37,11 +37,11 @@ const S04_S05_OVERLAP = 20;
  * S04: 0:36-0:48 = 12s = 360 frames (starts after supercharge)
  * S05: 0:48-1:14 = 26s = 780 frames (was 695, gained dark mode start)
  */
-const S01_DUR = 259;
+const S01_DUR = 285;
 const S02_DUR = 175;
 const S03_DUR = 680;
 const S04_DUR = 360;
-const S05_DUR = 720;
+const S05_DUR = 700;
 
 /* Calculate absolute start positions */
 const S01_START = 0;

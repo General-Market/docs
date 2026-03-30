@@ -6,11 +6,13 @@ import { GM } from "./theme";
 const fontFamily = GM.fontSans;
 
 /**
- * Scene 02 — "the next era" kinetic text + GM disintegration
+ * Scene 02 — "the next era" kinetic text + GM letter disintegration
  *
- * GSAP rewrite: single paused timeline seeked per-frame via useGsapTimeline.
- * GM fragment physics remain frame-driven (independent curved trajectories
- * with gravity — GSAP can't express that without nested timelines).
+ * Matches the OrdinaryFolk original visual flow:
+ *   - Light background with "the next era" typed in
+ *   - 3D page-turn corner peel (white page folds revealing dark background)
+ *   - "Today" in luminous green gradient
+ *   - "Today, GM is becoming" with GM letter fragments flying apart
  *
  * Flow (174 frames @ 30fps ≈ 5.8s):
  *   Phase A (0–50):   "And now it's time for" builds word by word
@@ -19,12 +21,12 @@ const fontFamily = GM.fontSans;
  *   Phase D (100–126): page-turn corner peel from top-right
  *   Phase E (121–137): "Today" with luminous green gradient
  *   Phase F (135–148): "Today, GM" — Today white, GM green
- *   Phase G (90–118): scattered particles converge → GM logo assembly
- *   Phase H (148–174): logo holds with glow/shimmer → dissolve out
+ *   Phase G (148–166): "Today, GM is becoming" + GM disintegration
+ *   Phase H (162–174): dissolve out — particles stream off
  */
 
 const BG_LIGHT = GM.greenLight;
-const BG_DARK = GM.bgDarkGreen;
+const BG_DARK = "#0A2E1C"; // dark green, not dark blue
 const TEXT_DARK = GM.textPrimary;
 const TEXT_GRAY = GM.textSecondary;
 const BLUE_TINT = GM.green;
@@ -40,117 +42,53 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-interface LogoParticle {
-  startX: number;
-  startY: number;
-  targetX: number;
-  targetY: number;
-  /** Bezier control point offset from midpoint — creates curved paths */
-  ctrlOffsetX: number;
-  ctrlOffsetY: number;
-  size: number;
-  color: string;
-  /** Staggered delay in frames for organic convergence */
+interface GMFragment {
+  letter: string;
+  letterIdx: number;
+  fragIdx: number;
+  offsetX: number;
+  offsetY: number;
+  angle: number;
+  distance: number;
+  curveStrength: number;
+  rotationSpeed: number;
+  width: number;
+  height: number;
   delay: number;
-  /** Drift velocity for scatter phase */
-  driftVX: number;
-  driftVY: number;
 }
 
-/**
- * GM logo target positions — white horizontal bars inside a black square.
- * The logo is centered at (640, 360). Square is 200x200 → spans (540..740, 260..460).
- *
- * Bars represent the stylized "GM" mark:
- *   Bar 1: x=556-588, y=348-354  (left portion)
- *   Bar 2: x=592-624, y=348-354
- *   Bar 3: x=628-660, y=348-354
- *   Bar 4: x=564-596, y=370-376  (lower row, left)
- *   Bar 5: x=600-632, y=370-376
- *   Bar 6: x=644-676, y=370-376
- *   Bar 7: x=680-724, y=370-376  (lower row, right)
- */
-function sampleLogoBars(): { x: number; y: number }[] {
-  const bars: { x1: number; x2: number; y1: number; y2: number }[] = [
-    { x1: 556, x2: 588, y1: 342, y2: 354 },
-    { x1: 596, x2: 628, y1: 342, y2: 354 },
-    { x1: 636, x2: 668, y1: 342, y2: 354 },
-    { x1: 676, x2: 708, y1: 342, y2: 354 },
-    { x1: 556, x2: 588, y1: 362, y2: 374 },
-    { x1: 596, x2: 628, y1: 362, y2: 374 },
-    { x1: 636, x2: 668, y1: 362, y2: 374 },
-    { x1: 676, x2: 724, y1: 362, y2: 374 },
-  ];
+function generateGMFragments(): GMFragment[] {
+  const letters = ["G", "M"];
+  const fragments: GMFragment[] = [];
 
-  const points: { x: number; y: number }[] = [];
-  let seed = 42;
-  bars.forEach((bar) => {
-    const count = Math.round(((bar.x2 - bar.x1) * (bar.y2 - bar.y1)) / 12);
-    for (let i = 0; i < count; i++) {
-      seed++;
-      const rx = seededRandom(seed * 3 + 1);
-      const ry = seededRandom(seed * 3 + 2);
-      points.push({
-        x: bar.x1 + rx * (bar.x2 - bar.x1),
-        y: bar.y1 + ry * (bar.y2 - bar.y1),
+  letters.forEach((letter, letterIdx) => {
+    // G is rounder/denser, M has more strokes
+    const count = letter === "G" ? 34 : 30;
+    for (let fragIdx = 0; fragIdx < count; fragIdx++) {
+      const seed = letterIdx * 1000 + fragIdx;
+      const r = (n: number) => seededRandom(seed + n * 137);
+      const letterWidth = letter === "G" ? 34 : 38;
+      const letterHeight = 44;
+      // Particles stream upward-left in tight cone [PI*0.6, PI*0.9]
+      const coneMin = Math.PI * 0.6;
+      const coneMax = Math.PI * 0.9;
+      const baseAngle = coneMin + r(0) * (coneMax - coneMin);
+
+      fragments.push({
+        letter, letterIdx, fragIdx,
+        offsetX: (r(1) - 0.5) * letterWidth,
+        offsetY: (r(2) - 0.5) * letterHeight,
+        angle: baseAngle,
+        distance: 160 + r(3) * 450,
+        curveStrength: (r(4) - 0.5) * 200,
+        rotationSpeed: (r(5) - 0.5) * 12,
+        width: (2 + r(6) * 10) * 0.4,
+        height: (2 + r(7) * 12) * 0.4,
+        delay: letterIdx * 1.0 + r(8) * 3,
       });
     }
   });
-  return points;
-}
-
-const PARTICLE_COLORS = [GM.green, GM.greenStatus, GM.greenDark, GM.greenLight];
-const SIZE_TIERS = [2, 3.2, 4.8]; // small, medium, large
-
-function generateLogoParticles(): LogoParticle[] {
-  const targets = sampleLogoBars();
-  const particles: LogoParticle[] = [];
-
-  targets.forEach((target, i) => {
-    const seed = i * 7 + 31;
-    const r = (n: number) => seededRandom(seed + n * 137);
-
-    const startX = r(0) * 1280;
-    const startY = r(1) * 720;
-
-    // Bezier control offset — larger offset = more curvature
-    const dist = Math.sqrt((target.x - startX) ** 2 + (target.y - startY) ** 2);
-    const ctrlOffsetX = (r(2) - 0.5) * dist * 0.6;
-    const ctrlOffsetY = (r(3) - 0.5) * dist * 0.6;
-
-    const tierIdx = r(4) < 0.5 ? 0 : r(4) < 0.82 ? 1 : 2;
-    const size = SIZE_TIERS[tierIdx];
-    const color = PARTICLE_COLORS[Math.floor(r(5) * PARTICLE_COLORS.length)];
-    const delay = r(6) * 8; // 0–8 frame stagger (compressed)
-
-    particles.push({
-      startX, startY,
-      targetX: target.x,
-      targetY: target.y,
-      ctrlOffsetX,
-      ctrlOffsetY,
-      size,
-      color,
-      delay,
-      driftVX: (r(7) - 0.5) * 0.4,
-      driftVY: (r(8) - 0.5) * 0.4,
-    });
-  });
-
-  return particles;
-}
-
-/** Quadratic bezier at parameter t */
-function bezierPoint(
-  p0: number, p1: number, p2: number, t: number,
-): number {
-  const mt = 1 - t;
-  return mt * mt * p0 + 2 * mt * t * p1 + t * t * p2;
-}
-
-/** power2 inOut easing */
-function easeInOut(t: number): number {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  return fragments;
 }
 
 const FPS = 30;
@@ -203,7 +141,8 @@ const TypingText: React.FC<{ frame: number }> = ({ frame }) => {
 
 export const Scene02: React.FC = () => {
   const { tl, containerRef, frame, fps } = useGsapTimeline();
-  const particles = useMemo(() => generateLogoParticles(), []);
+  const fragments = useMemo(() => generateGMFragments(), []);
+  const letterCenters = [-20, 18]; // G and M horizontal centers relative to container center
   const builtRef = useRef(false);
 
   // ── Build GSAP timeline once, then seek to current frame ──
@@ -227,8 +166,6 @@ export const Scene02: React.FC = () => {
       );
     });
 
-    // "And" color handled in JSX via frame-driven interpolation (React rerenders override GSAP color tweens)
-
     // Phase A exit
     const phaseA = el.querySelector<HTMLElement>(".phase-a-row");
     if (phaseA) {
@@ -241,8 +178,7 @@ export const Scene02: React.FC = () => {
       t.fromTo(phaseB, { opacity: 0 }, { opacity: 1, duration: s(4) }, s(58));
     }
 
-    // Typing color transition: blue → dark. Ref frame_006 (f~75) shows fully dark.
-    // Start earlier, shorter duration for snappier transition.
+    // Typing color transition: green → dark
     const chapterText = el.querySelector<HTMLElement>(".chapter-text");
     if (chapterText) {
       t.to(chapterText, { color: TEXT_DARK, duration: s(5), ease: "power2.out" }, s(70));
@@ -259,13 +195,13 @@ export const Scene02: React.FC = () => {
       t.set(darkBg, { opacity: 1 }, s(100));
     }
 
-    // Phase E: dark phase text container fades in — starts during page turn
+    // Phase E: dark phase text container fades in
     const darkPhase = el.querySelector<HTMLElement>(".dark-phase-text");
     if (darkPhase) {
       t.fromTo(darkPhase, { opacity: 0 }, { opacity: 1, duration: s(8) }, s(108));
     }
 
-    // "Today" gradient — appears as page finishes turning
+    // "Today" gradient
     const todayGrad = el.querySelector<HTMLElement>(".today-gradient");
     const todayGlow = el.querySelector<HTMLElement>(".today-glow");
     if (todayGrad) {
@@ -299,228 +235,96 @@ export const Scene02: React.FC = () => {
       t.fromTo(becomingWord, { opacity: 0, x: 14 }, { opacity: 1, x: 0, duration: s(8), ease: "power3.out" }, s(142));
     }
 
-    // Phase G: GM intact text vanishes as particles begin assembly
+    // Phase G: GM intact text vanishes as fragments begin
     const bardIntact = el.querySelector<HTMLElement>(".bard-intact");
     if (bardIntact) {
       t.to(bardIntact, { opacity: 0, duration: s(3) }, s(148));
     }
 
-    // "is" and "becoming" also fade for the logo assembly takeover
-    if (isWord) {
-      t.to(isWord, { opacity: 0, duration: s(4) }, s(148));
-    }
-    if (becomingWord) {
-      t.to(becomingWord, { opacity: 0, duration: s(4) }, s(148));
-    }
-    const todayWhiteEl = el.querySelector<HTMLElement>(".today-white");
-    if (todayWhiteEl) {
-      t.to(todayWhiteEl, { opacity: 0, duration: s(5) }, s(148));
+    // Fragments become visible
+    const fragContainer = el.querySelector<HTMLElement>(".bard-fragments");
+    if (fragContainer) {
+      t.set(fragContainer, { opacity: 1 }, s(148));
     }
 
-    // "General Market" text fades in under the assembled logo
-    const gmLabel = el.querySelector<HTMLElement>(".gm-label");
-    if (gmLabel) {
-      t.fromTo(gmLabel, { opacity: 0 }, { opacity: 1, duration: s(8) }, s(150));
-    }
-
-    // Phase H: dissolve out — logo, particles, and label
+    // Phase H: dissolve out
     if (darkPhase) {
       t.to(darkPhase, { opacity: 0, duration: s(8) }, s(166));
     }
-    const logoOverlay = el.querySelector<HTMLElement>(".logo-overlay");
-    if (logoOverlay) {
-      t.to(logoOverlay, { opacity: 0, duration: s(8) }, s(166));
-    }
-    if (gmLabel) {
-      t.to(gmLabel, { opacity: 0, duration: s(6) }, s(166));
-    }
 
-    // Seek immediately after build — Remotion stills only get one render cycle
+    // Seek immediately after build
     t.seek(frame / fps);
   }, []);
 
-  // ── Particle assembly phases (frame-driven, deterministic) ──
-  //
-  // Phase 1 (90-100): scattered particles drift (10 frames)
-  // Phase 2 (100-118): converge along bezier curves to logo positions (18 frames)
-  // Phase 3 (118-166): hold as logo, shimmer, glow pulses
-  // Phase 4 (166-174): dissolve — drift apart, fade to 0
-  //
-  const SCATTER_START = 90;
-  const CONVERGE_START = 100;
-  const CONVERGE_END = 118;
-  const HOLD_END = 166;
-  const DISSOLVE_END = 174;
+  // ── GM fragment physics (frame-driven, deterministic) ──
+  const GM_DISINTEGRATE = 148;
+  const fragmentElements = useMemo(() => {
+    if (frame < GM_DISINTEGRATE) return null;
 
-  const particleElements = useMemo(() => {
-    if (frame < SCATTER_START) return null;
+    const palette = [GM.green, GM.greenStatus, GM.greenDark, "#10B981", "#34D399"];
 
-    return particles.map((p, i) => {
-      // Drift offset during scatter phase (noise-like, deterministic)
-      const driftX = p.driftVX * (frame - SCATTER_START);
-      const driftY = p.driftVY * (frame - SCATTER_START);
+    return fragments.map((frag, i) => {
+      const fragStart = GM_DISINTEGRATE + frag.delay;
+      const fragDuration = 28;
+      const rawProgress = Math.max(0, Math.min(1, (frame - fragStart) / fragDuration));
+      if (rawProgress <= 0) return null;
 
-      // Convergence progress per particle (staggered by delay)
-      const convergeRaw = Math.max(
-        0,
-        Math.min(
-          1,
-          (frame - CONVERGE_START - p.delay) /
-            (CONVERGE_END - CONVERGE_START - p.delay),
-        ),
-      );
-      const convergeT = easeInOut(convergeRaw);
+      const eased = 1 - Math.pow(1 - rawProgress, 3);
+      const travelX = Math.cos(frag.angle) * frag.distance * eased;
+      const travelY = Math.sin(frag.angle) * frag.distance * eased;
+      const arcPhase = Math.sin(rawProgress * Math.PI);
+      const perpX = -Math.sin(frag.angle) * frag.curveStrength * arcPhase;
+      const perpY = Math.cos(frag.angle) * frag.curveStrength * arcPhase;
+      const gravityY = rawProgress * rawProgress * 20;
 
-      // Bezier control point (midpoint + offset)
-      const midX = (p.startX + p.targetX) / 2 + p.ctrlOffsetX;
-      const midY = (p.startY + p.targetY) / 2 + p.ctrlOffsetY;
+      const originX = letterCenters[frag.letterIdx] + frag.offsetX;
+      const originY = frag.offsetY;
+      const x = originX + travelX + perpX;
+      const y = originY + travelY + perpY + gravityY;
+      const rotation = frag.rotationSpeed * eased * 360;
 
-      // Current position — bezier from scatter to target
-      let x: number;
-      let y: number;
+      const fragOpacity = interpolate(rawProgress, [0, 0.05, 0.4, 0.75, 1], [0, 1, 1, 0.65, 0], C);
+      const scale = interpolate(rawProgress, [0, 0.2, 1], [1.1, 1, 0.3], C);
 
-      if (convergeT <= 0) {
-        // Still scattered — apply drift
-        x = p.startX + driftX;
-        y = p.startY + driftY;
-      } else if (convergeT >= 1) {
-        // Arrived at target
-        x = p.targetX;
-        y = p.targetY;
-      } else {
-        // Bezier interpolation along curved path
-        const sx = p.startX + driftX * (1 - convergeT);
-        const sy = p.startY + driftY * (1 - convergeT);
-        x = bezierPoint(sx, midX, p.targetX, convergeT);
-        y = bezierPoint(sy, midY, p.targetY, convergeT);
-      }
-
-      // Phase 3: subtle shimmer jitter when holding
-      if (frame >= CONVERGE_END && frame < HOLD_END) {
-        const jitterSeed = i * 13 + frame * 7;
-        x += (seededRandom(jitterSeed) - 0.5) * 2;
-        y += (seededRandom(jitterSeed + 1) - 0.5) * 2;
-      }
-
-      // Phase 4: drift apart during dissolve
-      let dissolveOffset = 0;
-      if (frame >= HOLD_END) {
-        const dissolveProg = (frame - HOLD_END) / (DISSOLVE_END - HOLD_END);
-        dissolveOffset = dissolveProg * 40;
-        x += p.driftVX * dissolveOffset * 80;
-        y += p.driftVY * dissolveOffset * 80;
-      }
-
-      // Opacity: scatter phase → convergence brightening → hold → dissolve
-      let opacity: number;
-      if (frame < CONVERGE_START) {
-        // Scatter: varied opacity 0.3–0.8
-        opacity = interpolate(
-          frame,
-          [SCATTER_START, SCATTER_START + 5],
-          [0, 0.3 + seededRandom(i * 99) * 0.5],
-          C,
-        );
-      } else if (frame < CONVERGE_END) {
-        // Converging: brighten toward 1 as they arrive
-        opacity = interpolate(convergeT, [0, 0.7, 1], [0.4, 0.7, 1], C);
-      } else if (frame < HOLD_END) {
-        // Holding: full brightness
-        opacity = 1;
-      } else {
-        // Dissolve
-        opacity = interpolate(
-          frame,
-          [HOLD_END, DISSOLVE_END],
-          [1, 0],
-          C,
-        );
-      }
-
-      // Color: transitions to white as particles arrive
-      const color =
-        convergeT >= 0.85 ? GM.textInverse : convergeT >= 0.5
-          ? GM.greenLight
-          : p.color;
+      const color = palette[Math.floor(seededRandom(i * 777) * palette.length)];
 
       return (
         <div
           key={i}
           style={{
             position: "absolute",
-            left: x,
-            top: y,
-            width: p.size,
-            height: p.size,
-            borderRadius: "50%",
+            left: "50%",
+            top: "50%",
+            width: frag.width,
+            height: frag.height,
+            borderRadius: Math.min(frag.width, frag.height) > 4 ? 1 : 0,
             backgroundColor: color,
-            opacity,
-            boxShadow:
-              convergeT >= 0.85
-                ? `0 0 ${p.size * 2}px rgba(255,255,255,0.5)`
-                : `0 0 ${p.size * 2}px ${p.color}`,
-            pointerEvents: "none" as const,
-            transform: "translate(-50%, -50%)",
+            opacity: fragOpacity,
+            transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
+            boxShadow: `0 0 ${Math.max(frag.width, frag.height) * 3.5}px ${color}`,
+            pointerEvents: "none",
           }}
         />
       );
     });
-  }, [frame, particles]);
-
-  // Black square background for the logo — fades in during convergence
-  const logoSquareOpacity = interpolate(
-    frame,
-    [CONVERGE_START + 5, CONVERGE_END],
-    [0, 1],
-    C,
-  );
-  const logoSquareFinalOpacity =
-    frame >= HOLD_END
-      ? interpolate(frame, [HOLD_END, DISSOLVE_END], [1, 0], C)
-      : logoSquareOpacity;
-
-  // Green glow behind logo — pulses during hold phase
-  const glowOpacity =
-    frame >= CONVERGE_END && frame < HOLD_END
-      ? 0.2 + 0.2 * Math.sin((frame - CONVERGE_END) * 0.35)
-      : frame >= HOLD_END
-        ? interpolate(frame, [HOLD_END, DISSOLVE_END], [0.3, 0], C)
-        : interpolate(frame, [CONVERGE_START + 10, CONVERGE_END], [0, 0.2], C);
+  }, [frame, fragments]);
 
   // ── Page turn geometry (frame-driven for clipPath) ──
-  // Reference frame_008: page lifts from top-right corner. The fold line
-  // sweeps diagonally from the top-right corner toward bottom-left.
-  // At the midpoint (~frame 108), about 25% of the frame is dark (top-right triangle).
-  // The white page surface tilts in 3D as it peels.
   const TURN_START = 100;
   const TURN_END = 122;
   const turnRaw = Math.max(0, Math.min(1, (frame - TURN_START) / (TURN_END - TURN_START)));
   const turnProgress = gsap.parseEase("power3.inOut")(turnRaw);
 
-  // Corner peel: fold line is a diagonal that starts at the top-right corner
-  // and sweeps toward bottom-left. Parameterized as two intercept points:
-  //   - Where the fold line crosses the top edge (y=0): topX%
-  //   - Where the fold line crosses the right edge (x=100): rightY%
-  //
-  // At progress 0: both intercepts at the corner (100%, 0%) — no dark visible
-  // At progress 0.4 (ref frame_008 moment): topX ~ 55%, rightY ~ 45%
-  // At progress 1: fold has swept fully past (topX=-5%, rightY=105%)
-  //
-  // Previous values (140 / 130) overshot wildly, creating dark leaks on
-  // both sides. Now limited to 105% travel — just past the edge.
-  const topX = 100 - turnProgress * 105;     // fold's X on top edge
-  const rightY = turnProgress * 105;          // fold's Y on right edge
+  const topX = 100 - turnProgress * 105;
+  const rightY = turnProgress * 105;
 
-  // Clamp for polygon construction
   const cTopX = Math.max(0, Math.min(100, topX));
   const cRightY = Math.max(0, Math.min(100, rightY));
 
-  // 3D tilt of the white page surface — subtle, grows with progress.
-  // Reduced from 10/6 to prevent edges peeking through and creating dark leaks.
   const pageRotateZ = turnProgress * 5;
   const pageRotateX = turnProgress * 3;
   const pageOpacity = turnProgress > 0.88 ? Math.max(0, (1 - turnProgress) / 0.12) : 1;
-  // Warm accent drift
+
   const accentRight = -100 + Math.sin(frame * 0.015) * 40;
   const accentBottom = -80 + Math.cos(frame * 0.012) * 30;
   const accentOpacity = frame >= TURN_START - 10
@@ -574,7 +378,6 @@ export const Scene02: React.FC = () => {
           }}
         >
           {["And", "now", "it\u2019s", "time", "for"].map((word, i) => {
-            // "And" starts gray and transitions to dark as "now" appears (frame 10–16)
             const wordColor = i === 0
               ? (frame < 10 ? TEXT_GRAY : frame < 16
                 ? `rgb(${Math.round(interpolate(frame, [10, 16], [168, 29], C))}, ${Math.round(interpolate(frame, [10, 16], [168, 29], C))}, ${Math.round(interpolate(frame, [10, 16], [176, 31], C))})`
@@ -621,7 +424,7 @@ export const Scene02: React.FC = () => {
         {/* ════ PAGE TURN ════ */}
         {frame >= TURN_START - 2 && frame <= TURN_END + 6 && (
           <>
-            {/* White page — clips to the un-peeled region (below/left of fold line) */}
+            {/* White page — clips to the un-peeled region */}
             <div
               style={{
                 position: "absolute",
@@ -638,12 +441,9 @@ export const Scene02: React.FC = () => {
                   clipPath: turnProgress < 0.01
                     ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"
                     : cRightY >= 100
-                      // Fold line has passed below the right edge — clip is a triangle
                       ? `polygon(0% 0%, ${cTopX}% 0%, 0% ${Math.min(100, (100 * (100 - cTopX)) / (100 - cTopX + 0.01))}%)`
                       : cTopX <= 0
-                        // Fold line has passed left of top edge — shrinking bottom-left triangle
                         ? `polygon(0% 0%, 0% ${100 - cRightY}%, 0% 100%)`
-                        // Normal: quadrilateral — fold intersects top edge and right edge
                         : `polygon(0% 0%, ${cTopX}% 0%, 100% ${cRightY}%, 100% 100%, 0% 100%)`,
                   transform: `rotateZ(${pageRotateZ}deg) rotateX(${pageRotateX}deg)`,
                   transformOrigin: "left center",
@@ -676,11 +476,10 @@ export const Scene02: React.FC = () => {
               </AbsoluteFill>
             </div>
 
-            {/* Fold shadow — along the diagonal fold line */}
+            {/* Fold shadow */}
             {turnProgress > 0.06 && turnProgress < 0.92 && (() => {
               const sw = 5;
               const shadowOpacity = interpolate(turnProgress, [0.06, 0.2, 0.6, 0.92], [0, 0.36, 0.2, 0], C);
-              // Shadow band runs parallel to fold line: from (topX, 0) to (100, rightY)
               const foldDeg = Math.atan2(cRightY, 100 - cTopX) * (180 / Math.PI);
 
               return (
@@ -706,7 +505,7 @@ export const Scene02: React.FC = () => {
               );
             })()}
 
-            {/* Peeled flap — paper underside along fold line */}
+            {/* Peeled flap */}
             {turnProgress > 0.06 && turnProgress < 0.85 && (
               <div
                 style={{
@@ -741,7 +540,6 @@ export const Scene02: React.FC = () => {
         )}
 
         {/* ════ DARK PHASE ════ */}
-
 
         {/* Dark phase text — "Today" gradient → "Today, GM is becoming" */}
         <div
@@ -849,6 +647,9 @@ export const Scene02: React.FC = () => {
               >
                 GM
               </span>
+              <span className="bard-fragments" style={{ opacity: 0 }}>
+                {fragmentElements}
+              </span>
             </span>
 
             <span
@@ -882,76 +683,6 @@ export const Scene02: React.FC = () => {
             </span>
           </div>
         </div>
-
-        {/* ════ PARTICLE ASSEMBLY + LOGO ════ */}
-        {frame >= SCATTER_START && (
-          <div
-            className="logo-overlay"
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-            }}
-          >
-            {/* Green glow behind logo */}
-            <div
-              style={{
-                position: "absolute",
-                left: 640 - 140,
-                top: 360 - 140,
-                width: 280,
-                height: 280,
-                borderRadius: "50%",
-                background:
-                  "radial-gradient(circle, rgba(0,163,108,0.6) 0%, rgba(0,163,108,0.15) 50%, transparent 80%)",
-                opacity: glowOpacity,
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Black square — logo background */}
-            <div
-              style={{
-                position: "absolute",
-                left: 640 - 100,
-                top: 360 - 100,
-                width: 200,
-                height: 200,
-                backgroundColor: "#000000",
-                borderRadius: 6,
-                opacity: logoSquareFinalOpacity,
-              }}
-            />
-
-            {/* Particles */}
-            {particleElements}
-
-            {/* "General Market" label */}
-            <div
-              className="gm-label"
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 360 + 120,
-                textAlign: "center",
-                opacity: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 22,
-                  fontWeight: 900,
-                  fontFamily,
-                  color: GM.textInverse,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                General Market
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </AbsoluteFill>
   );

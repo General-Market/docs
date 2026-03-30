@@ -10,12 +10,11 @@
  *   2.4s (f72):   "GM" — big gradient text (green→dark green)
  *   3.67s (f110): "Build" typewriter (no "to" prefix)
  *   5.0s (f150):  "Build portfolios" — gradient rectangle pill
- *   6.17s (f185): Letter scatter exit (SLOW — 1.2s duration)
- *   7.0s (f210):  "Predict markets" — letters scattered at different sizes
- *   8.0s (f240):  "Capture alpha" — floating word field
- *   8.6s (f258):  End
+ *   6.17s (f185): Letter scatter → reassemble (Y→pause→X→pause→Y → "Predict markets")
+ *   8.17s (f245): "Capture alpha" — floating word field
+ *   9.5s  (f285): End
  *
- * 1280x720, 30fps, 258 frames (~8.6s)
+ * 1280x720, 30fps, 285 frames (~9.5s)
  */
 import React, { useMemo } from "react";
 import {
@@ -46,6 +45,12 @@ const clamp = {
   extrapolateLeft: "clamp" as const,
   extrapolateRight: "clamp" as const,
 };
+
+// Seeded pseudo-random for deterministic scatter positions
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 9301 + 49297) * 49297;
+  return x - Math.floor(x);
+}
 
 // ===========================================================================
 // GSAP Proxy Engine
@@ -86,7 +91,7 @@ function useGsapProxy(
 // nearly white overall. Drifts very slowly.
 const PastelBackground: React.FC = () => {
   const frame = useCurrentFrame();
-  const hueShift = interpolate(frame, [0, 258], [0, 14], clamp);
+  const hueShift = interpolate(frame, [0, 285], [0, 14], clamp);
 
   const x1 = 30 + noise2D("bg1x", frame * 0.004, 0) * 10;
   const y1 = 45 + noise2D("bg1y", 0, frame * 0.003) * 8;
@@ -611,242 +616,183 @@ const PhaseWriteEmails: React.FC = () => {
 };
 
 // ===========================================================================
-// Phase 6: Letter scatter exit (frames 185-210)
-// FIXED: gentle scatter, 1.2s duration, full opacity during visible phase,
-// reduced distances (120-200px), minimal rotation (2-5deg), no scale-down.
-// Reference shows a VISIBLE, gentle scatter — letters stay fully readable.
+// Phase 6: Letter scatter → reassemble into "Predict markets"
+// Stepped motion: Y axis (10f) → pause (5f) → X axis (10f) → pause (5f) → Y axis (10f)
+// Then letters reassemble into "Predict markets" centered text.
+// Total phase: ~60 frames (2s)
 // ===========================================================================
 const SCATTER_TEXT = "Build\u00A0portfolios";
 const SCATTER_LETTERS = SCATTER_TEXT.split("");
 
+// Target text for reassembly
+const PREDICT_TEXT = "Predict\u00A0markets";
+const PREDICT_LETTERS = PREDICT_TEXT.split("");
+
 // Char widths scaled for 50px font
 const SCATTER_CHAR_WIDTHS: Record<string, number> = {
-  B: 32,
-  u: 26,
-  i: 11,
-  l: 11,
-  d: 26,
+  B: 32, u: 26, i: 11, l: 11, d: 26,
   "\u00A0": 12,
-  p: 26,
-  o: 27,
-  r: 18,
-  t: 15,
-  f: 15,
-  s: 20,
+  p: 26, o: 27, r: 18, t: 15, f: 15, s: 20,
 };
 
-const PhaseLetterScatter: React.FC = () => {
-  const charWidths = SCATTER_LETTERS.map(
-    (ch) => SCATTER_CHAR_WIDTHS[ch] || 17,
-  );
-  const totalWidth = charWidths.reduce((a, b) => a + b, 0);
-  const startXOffsets: number[] = [];
-  let runX = -totalWidth / 2;
-  for (let i = 0; i < SCATTER_LETTERS.length; i++) {
-    startXOffsets.push(runX + charWidths[i] / 2);
-    runX += charWidths[i];
-  }
-
-  const proxyInit = useMemo(() => {
-    const init: Record<string, ProxyState> = {};
-    for (let i = 0; i < SCATTER_LETTERS.length; i++) {
-      init[`l${i}`] = { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 };
-    }
-    return init;
-  }, []);
-
-  // Scatter trajectories — GENTLE. Letters stay close and readable.
-  const scatterTargets = [
-    { dx: -140, dy: -60, rot: -3 }, // B — upper-left
-    { dx: -20, dy: 20, rot: 2 },    // u
-    { dx: 10, dy: 15, rot: -1 },    // i
-    { dx: -40, dy: 60, rot: 3 },    // l
-    { dx: 5, dy: 12, rot: -1 },     // d
-    { dx: 0, dy: 0, rot: 0 },       // space
-    { dx: -30, dy: -20, rot: 1 },   // p
-    { dx: 20, dy: 10, rot: -2 },    // o
-    { dx: 40, dy: 15, rot: 2 },     // r
-    { dx: 60, dy: -30, rot: -3 },   // t
-    { dx: -10, dy: 25, rot: 1 },    // f
-    { dx: 80, dy: -10, rot: -1 },   // o
-    { dx: 100, dy: 12, rot: 1 },    // l
-    { dx: 30, dy: -15, rot: 2 },    // i
-    { dx: 120, dy: 5, rot: -2 },    // o
-    { dx: 140, dy: 8, rot: -2 },    // s
-  ];
-
-  const s = useGsapProxy(
-    (tl, p) => {
-      SCATTER_LETTERS.forEach((_, i) => {
-        const target = scatterTargets[i] || { dx: 0, dy: 0, rot: 0 };
-        // First phase: move to scattered positions, keep full opacity (0.8s)
-        tl.to(
-          p[`l${i}`],
-          {
-            x: target.dx,
-            y: target.dy,
-            rotation: target.rot,
-            scale: 1,
-            opacity: 1,
-            duration: 0.8,
-            ease: "power2.out",
-          },
-          i * 0.015,
-        );
-        // Second phase: fade out after hold (0.4s fade, delayed)
-        tl.to(
-          p[`l${i}`],
-          {
-            opacity: 0,
-            duration: 0.4,
-            ease: "power1.out",
-          },
-          0.8 + i * 0.01,
-        );
-      });
-    },
-    proxyInit,
-  );
-
-  return (
-    <AbsoluteFill>
-      {SCATTER_LETTERS.map((ch, i) => {
-        const l = s[`l${i}`];
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: `${0.491 * H}px`,
-              left: "50%",
-              transform: `translate(calc(-50% + ${startXOffsets[i] + l.x}px), calc(-50% + ${l.y}px)) rotate(${l.rotation}deg) scale(${l.scale})`,
-              fontFamily,
-              fontSize: 50,
-              fontWeight: 400,
-              color: TEXT_DARK,
-              opacity: l.opacity,
-              letterSpacing: "-0.2px",
-            }}
-          >
-            {ch}
-          </div>
-        );
-      })}
-    </AbsoluteFill>
-  );
+// Char widths for "Predict markets" at 50px
+const PREDICT_CHAR_WIDTHS: Record<string, number> = {
+  P: 32, r: 18, e: 25, d: 26, i: 11, c: 22, t: 15,
+  "\u00A0": 14,
+  m: 36, a: 23, k: 26, s: 20,
 };
 
-// ===========================================================================
-// Phase 7: "Predict markets" — letters scattered at DIFFERENT SIZES (frames 210-240)
-// FIXED: wider scatter covering ~500x300px, convergence delayed to 0.55s,
-// font 50px final, dramatic size range 30-96px.
-// ===========================================================================
-const SOLVE_TEXT = "Predict\u00A0markets";
-const SOLVE_LETTERS = SOLVE_TEXT.split("");
-
-// Scatter positions — every letter at a UNIQUE (x,y).
-// Coordinates are absolute pixel positions on the 1280x720 canvas.
-const SOLVE_SCATTER: Array<{ x: number; y: number; size: number }> = [
-  { x: 250, y: 248, size: 86 },  // P — large, left of center
-  { x: 410, y: 274, size: 44 },  // r — medium, center-left
-  { x: 340, y: 420, size: 32 },  // e — small, below-left
-  { x: 510, y: 236, size: 46 },  // d — center
-  { x: 620, y: 264, size: 42 },  // i — right of center
-  { x: 470, y: 400, size: 34 },  // c — below center
-  { x: 670, y: 242, size: 40 },  // t — right
-  { x: 0, y: 0, size: 50 },      // (space)
-  { x: 760, y: 270, size: 48 },  // m — right side
-  { x: 550, y: 178, size: 56 },  // a — above center (floating high)
-  { x: 440, y: 440, size: 30 },  // r — bottom
-  { x: 810, y: 256, size: 44 },  // k — far right
-  { x: 870, y: 388, size: 42 },  // e — far right, low
-  { x: 920, y: 296, size: 38 },  // t — furthest right
-  { x: 300, y: 180, size: 36 },  // s — upper-left area
+// Scatter targets — where each "Build portfolios" letter drifts to via stepped motion
+// Format: { dy1, dx, dy2 } — Y move 1, X move, Y move 2
+const SCATTER_STEPS = [
+  { dy1: -50, dx: -120, dy2: -30 },  // B
+  { dy1: 40, dx: -60, dy2: 20 },     // u
+  { dy1: -30, dx: 30, dy2: 15 },     // i
+  { dy1: 60, dx: -40, dy2: -20 },    // l
+  { dy1: -20, dx: 50, dy2: 35 },     // d
+  { dy1: 0, dx: 0, dy2: 0 },         // space
+  { dy1: -45, dx: -30, dy2: -25 },   // p
+  { dy1: 35, dx: 60, dy2: 10 },      // o
+  { dy1: -55, dx: 40, dy2: 20 },     // r
+  { dy1: 50, dx: -20, dy2: -40 },    // t
+  { dy1: -25, dx: 70, dy2: 30 },     // f
+  { dy1: 40, dx: 80, dy2: -15 },     // o
+  { dy1: -60, dx: -50, dy2: 25 },    // l
+  { dy1: 30, dx: 90, dy2: -10 },     // i
+  { dy1: -35, dx: 100, dy2: 20 },    // o
+  { dy1: 45, dx: 110, dy2: -30 },    // s
 ];
 
-// Final settled: centered at ~50%, cy=49%, uniform 50px
-const SOLVE_FINAL_SIZE = 50;
-// Char widths for "Predict markets" at 50px
-const SOLVE_CHAR_WIDTHS = [32, 18, 25, 26, 11, 22, 15, 14, 36, 23, 18, 26, 25, 15, 20];
-const SOLVE_TOTAL_W = SOLVE_CHAR_WIDTHS.reduce((a, b) => a + b, 0);
+const PhaseLetterScatter: React.FC = () => {
+  const frame = useCurrentFrame();
 
-const SOLVE_FINAL_X: number[] = [];
-{
-  let rx = W * 0.5 - SOLVE_TOTAL_W / 2;
-  for (let i = 0; i < SOLVE_LETTERS.length; i++) {
-    SOLVE_FINAL_X.push(rx + SOLVE_CHAR_WIDTHS[i] / 2);
-    rx += SOLVE_CHAR_WIDTHS[i];
+  // Source letter layout (centered "Build portfolios")
+  const srcWidths = SCATTER_LETTERS.map((ch) => SCATTER_CHAR_WIDTHS[ch] || 17);
+  const srcTotalW = srcWidths.reduce((a, b) => a + b, 0);
+  const srcOffsets: number[] = [];
+  let srcRun = -srcTotalW / 2;
+  for (let i = 0; i < SCATTER_LETTERS.length; i++) {
+    srcOffsets.push(srcRun + srcWidths[i] / 2);
+    srcRun += srcWidths[i];
   }
-}
-const SOLVE_FINAL_Y = H * 0.49;
 
-const PhaseSolveProblems: React.FC = () => {
-  const proxyInit = useMemo(() => {
-    const init: Record<string, ProxyState> = {};
-    for (let i = 0; i < SOLVE_LETTERS.length; i++) {
-      const sc = SOLVE_SCATTER[i];
-      init[`l${i}`] = {
-        x: sc.x || SOLVE_FINAL_X[i],
-        y: sc.y || SOLVE_FINAL_Y,
-        size: sc.size,
-        opacity: 0,
-      };
-    }
-    return init;
-  }, []);
+  // Target letter layout (centered "Predict markets")
+  const tgtWidths = PREDICT_LETTERS.map((ch) => PREDICT_CHAR_WIDTHS[ch] || 17);
+  const tgtTotalW = tgtWidths.reduce((a, b) => a + b, 0);
+  const tgtOffsets: number[] = [];
+  let tgtRun = -tgtTotalW / 2;
+  for (let i = 0; i < PREDICT_LETTERS.length; i++) {
+    tgtOffsets.push(tgtRun + tgtWidths[i] / 2);
+    tgtRun += tgtWidths[i];
+  }
 
-  const s = useGsapProxy(
-    (tl, p) => {
-      SOLVE_LETTERS.forEach((ch, i) => {
-        if (ch === "\u00A0") return;
-        // Fade in at scattered positions — fast
-        tl.to(
-          p[`l${i}`],
-          { opacity: 1, duration: 0.14, ease: "power1.out" },
-          i * 0.012,
-        );
-        // Converge to final centered line — delayed to 0.55s so scatter holds
-        tl.to(
-          p[`l${i}`],
-          {
-            x: SOLVE_FINAL_X[i],
-            y: SOLVE_FINAL_Y,
-            size: SOLVE_FINAL_SIZE,
-            duration: 0.55,
-            ease: "power2.out",
-          },
-          0.55 + i * 0.012,
-        );
+  // Timeline (frames, local to this Sequence):
+  // 0-10:  Y axis move (step 1)
+  // 10-15: pause
+  // 15-25: X axis move (step 2)
+  // 25-30: pause
+  // 30-40: Y axis move (step 3) — letters now at scattered positions
+  // 40-44: hold at scattered positions
+  // 44-56: reassemble into "Predict markets" — crossfade letters + converge
+  // 56-60: settled "Predict markets"
+
+  // Compute per-letter positions
+  const letterElements = useMemo(() => {
+    const elements: Array<{
+      ch: string;
+      x: number;
+      y: number;
+      opacity: number;
+      size: number;
+    }> = [];
+
+    // Source letters (scattering out)
+    for (let i = 0; i < SCATTER_LETTERS.length; i++) {
+      const step = SCATTER_STEPS[i] || { dy1: 0, dx: 0, dy2: 0 };
+
+      // Stepped motion — Y, pause, X, pause, Y
+      let dx = 0;
+      let dy = 0;
+
+      // Step 1: Y axis (frames 0-10)
+      const yProg1 = interpolate(frame, [0, 10], [0, 1], clamp);
+      const yEased1 = 1 - Math.pow(1 - yProg1, 2);
+      dy += step.dy1 * yEased1;
+
+      // Step 2: X axis (frames 15-25)
+      const xProg = interpolate(frame, [15, 25], [0, 1], clamp);
+      const xEased = 1 - Math.pow(1 - xProg, 2);
+      dx += step.dx * xEased;
+
+      // Step 3: Y axis (frames 30-40)
+      const yProg2 = interpolate(frame, [30, 40], [0, 1], clamp);
+      const yEased2 = 1 - Math.pow(1 - yProg2, 2);
+      dy += step.dy2 * yEased2;
+
+      // Fade out during reassembly (frames 44-50)
+      const srcOpacity = interpolate(frame, [44, 50], [1, 0], clamp);
+
+      elements.push({
+        ch: SCATTER_LETTERS[i],
+        x: srcOffsets[i] + dx,
+        y: dy,
+        opacity: srcOpacity,
+        size: 50,
       });
-    },
-    proxyInit,
-  );
+    }
+
+    // Target letters (assembling in) — "Predict markets"
+    for (let i = 0; i < PREDICT_LETTERS.length; i++) {
+      if (PREDICT_LETTERS[i] === "\u00A0") continue;
+
+      // Appear scattered, then converge (frames 44-56)
+      const appearProg = interpolate(frame, [44, 48], [0, 1], clamp);
+      const convergeProg = interpolate(frame, [46, 56], [0, 1], clamp);
+      const convEased = 1 - Math.pow(1 - convergeProg, 2.5);
+
+      // Each target letter starts from a scattered position
+      const scatterSeed = i * 137 + 42;
+      const scatterX = (seededRandom(scatterSeed) - 0.5) * 400;
+      const scatterY = (seededRandom(scatterSeed + 1) - 0.5) * 200;
+      const scatterSize = 30 + seededRandom(scatterSeed + 2) * 56; // 30-86
+
+      const tx = scatterX + (tgtOffsets[i] - scatterX) * convEased;
+      const ty = scatterY + (0 - scatterY) * convEased;
+      const tSize = scatterSize + (50 - scatterSize) * convEased;
+
+      elements.push({
+        ch: PREDICT_LETTERS[i],
+        x: tx,
+        y: ty,
+        opacity: appearProg,
+        size: tSize,
+      });
+    }
+
+    return elements;
+  }, [frame]);
 
   return (
     <AbsoluteFill>
-      {SOLVE_LETTERS.map((ch, i) => {
-        const l = s[`l${i}`];
-        if (ch === "\u00A0") return null;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              transform: `translate(${l.x}px, ${l.y}px) translate(-50%, -50%)`,
-              fontFamily,
-              fontSize: l.size,
-              fontWeight: 400,
-              color: TEXT_DARK,
-              opacity: l.opacity,
-              letterSpacing: "-0.2px",
-            }}
-          >
-            {ch}
-          </div>
-        );
-      })}
+      {letterElements.map((el, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            top: `${0.491 * H}px`,
+            left: "50%",
+            transform: `translate(calc(-50% + ${el.x}px), calc(-50% + ${el.y}px))`,
+            fontFamily,
+            fontSize: el.size,
+            fontWeight: 400,
+            color: TEXT_DARK,
+            opacity: el.opacity,
+            letterSpacing: "-0.2px",
+          }}
+        >
+          {el.ch}
+        </div>
+      ))}
     </AbsoluteFill>
   );
 };
@@ -1015,9 +961,9 @@ const P2_FROM = 8; // 0.27s — "been" starts fading in
 const P3_FROM = 72; // 2.4s — "GM"
 const P4_FROM = 110; // 3.67s — Typewriter "Build"
 const P5_FROM = 150; // 5.0s — "Build portfolios" pill
-const P6_FROM = 185; // 6.17s — Letter scatter (SLOW 1.2s)
-const P7_FROM = 200; // 6.67s — "Predict markets"
-const P8_FROM = 218; // 7.27s — "Capture alpha"
+const P6_FROM = 185; // 6.17s — Letter scatter → reassemble (Y→pause→X→pause→Y)
+const P7_FROM = 245; // 8.17s — "Capture alpha" (was P8)
+// P6 now spans 60 frames and includes "Predict markets" reassembly
 
 // --- Composition -----------------------------------------------------------
 export const Scene01: React.FC = () => {
@@ -1051,11 +997,7 @@ export const Scene01: React.FC = () => {
         <PhaseLetterScatter />
       </Sequence>
 
-      <Sequence from={P7_FROM} durationInFrames={P8_FROM - P7_FROM}>
-        <PhaseSolveProblems />
-      </Sequence>
-
-      <Sequence from={P8_FROM} durationInFrames={259 - P8_FROM}>
+      <Sequence from={P7_FROM} durationInFrames={285 - P7_FROM}>
         <PhaseBrainstormIdeas />
       </Sequence>
     </AbsoluteFill>
@@ -1068,5 +1010,5 @@ export const scene01Meta = {
   width: W,
   height: H,
   fps: FPS,
-  durationInFrames: 258,
+  durationInFrames: 285,
 };
