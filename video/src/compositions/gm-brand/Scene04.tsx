@@ -206,9 +206,11 @@ function useGsapAnimState(fps: number): { state: AnimState; frame: number } {
     /* Glow rotation */
     t.to(s, { gmGlowAngle: 360, duration: sec(46), ease: "none" }, gemStart);
 
-    /* ═══ Dark ending — removed. FadeWrapper now handles the zoom-out
-       exit with scaleOut=3 over 24 frames. Keeping internal darkening
-       killed the zoom (zooming into blackness is invisible). ═══ */
+    /* ═══ Dark ending — partial. Full fadeToBlack killed the zoom
+       (zooming into blackness is invisible). Instead, ramp to 0.85
+       over the last 25 frames — enough to bridge the green→dark
+       color gap without swallowing the zoom-out entirely. ═══ */
+    t.to(s, { fadeToBlack: 0.85, duration: sec(25), ease: "power2.in" }, sec(339 - 25));
 
     tlRef.current = t;
   }
@@ -810,9 +812,31 @@ export const Scene04: React.FC = () => {
           const phoneIsExiting = frame >= PHASE.TRANSITION_TEXT.start && frame < PHASE.TRANSITION_TEXT.start + 12;
           const emojiBursting = frame >= PHASE.EMOJI_BURST.start && frame < PHASE.EMOJI_BURST.start + 12;
           const needsBlur = phoneIsExiting || emojiBursting;
-          /* Phone3D screen content — all phases layered, each sub-component has its own GM header */
+          /* Phone3D screen content — card flip at each transition point.
+             12 frames out (0° → 90°), swap content at midpoint, 12 frames in (-90° → 0°). */
+          const FLIP_HALF = 12;
+          const flipTransitions = [PHASE.DOG_PHOTO.end, PHASE.PHOTO_EXPAND.start, PHASE.AI_RESPONSE.start];
+          let screenFlipY = 0;
+          for (const tFrame of flipTransitions) {
+            const dist = frame - tFrame;
+            if (dist >= -FLIP_HALF && dist < FLIP_HALF) {
+              if (dist < 0) {
+                /* First half: 0° → 90° (old content fading out) */
+                screenFlipY = interpolate(dist, [-FLIP_HALF, 0], [0, 90], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+              } else {
+                /* Second half: -90° → 0° (new content fading in) */
+                screenFlipY = interpolate(dist, [0, FLIP_HALF], [-90, 0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+              }
+              break;
+            }
+          }
           const phoneScreenContent = (
-            <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden", background: PHONE_BG }}>
+            <div style={{
+              width: "100%", height: "100%", position: "relative", overflow: "hidden",
+              background: PHONE_BG,
+              transform: `perspective(600px) rotateY(${screenFlipY}deg)`,
+              backfaceVisibility: "hidden" as const,
+            }}>
               {/* Portfolio screen */}
               {showDogPhoto && <DogPhotoScreen />}
               {/* Chat/Prompt screen */}

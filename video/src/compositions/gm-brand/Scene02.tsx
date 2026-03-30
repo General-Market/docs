@@ -19,7 +19,7 @@ const fontFamily = GM.fontSans;
  *   Phase D (100–126): page-turn corner peel from top-right
  *   Phase E (121–137): "Today" with luminous green gradient
  *   Phase F (135–148): "Today, GM" — Today white, GM green
- *   Phase G (100–148): scattered particles converge → GM logo assembly
+ *   Phase G (90–118): scattered particles converge → GM logo assembly
  *   Phase H (148–174): logo holds with glow/shimmer → dissolve out
  */
 
@@ -121,7 +121,7 @@ function generateLogoParticles(): LogoParticle[] {
     const tierIdx = r(4) < 0.5 ? 0 : r(4) < 0.82 ? 1 : 2;
     const size = SIZE_TIERS[tierIdx];
     const color = PARTICLE_COLORS[Math.floor(r(5) * PARTICLE_COLORS.length)];
-    const delay = r(6) * 15; // 0–15 frame stagger
+    const delay = r(6) * 8; // 0–8 frame stagger (compressed)
 
     particles.push({
       startX, startY,
@@ -341,14 +341,14 @@ export const Scene02: React.FC = () => {
 
   // ── Particle assembly phases (frame-driven, deterministic) ──
   //
-  // Phase 1 (100-120): scattered particles drift
-  // Phase 2 (120-148): converge along bezier curves to logo positions
-  // Phase 3 (148-166): hold as logo, shimmer, glow pulses
+  // Phase 1 (90-100): scattered particles drift (10 frames)
+  // Phase 2 (100-118): converge along bezier curves to logo positions (18 frames)
+  // Phase 3 (118-166): hold as logo, shimmer, glow pulses
   // Phase 4 (166-174): dissolve — drift apart, fade to 0
   //
-  const SCATTER_START = 100;
-  const CONVERGE_START = 120;
-  const CONVERGE_END = 148;
+  const SCATTER_START = 90;
+  const CONVERGE_START = 100;
+  const CONVERGE_END = 118;
   const HOLD_END = 166;
   const DISSOLVE_END = 174;
 
