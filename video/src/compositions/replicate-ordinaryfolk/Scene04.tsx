@@ -867,7 +867,7 @@ export const Scene04: React.FC = () => {
    */
   const motionScale = interpolate(frame,
     [0, 60, 120, 180, 240, 300],
-    [1.8, 2.0, 2.2, 2.0, 1.5, 1.2],
+    [1.3, 1.4, 1.5, 1.4, 1.1, 0.9],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
   );
   const phoneTilt = interpolate(frame,

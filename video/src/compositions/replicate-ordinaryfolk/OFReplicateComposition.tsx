@@ -26,7 +26,7 @@ const S03_S04_OVERLAP = 0;
  * S04→S05: smooth opacity crossfade.
  * 8 frames — just enough for a clean float, no zoom, no gimmick.
  */
-const S04_S05_OVERLAP = 8;
+const S04_S05_OVERLAP = 15;
 
 /* Scene durations
  * Cut at 0:35 (frame 1050 absolute) — phone scene stays in S03
@@ -167,14 +167,14 @@ export const OFReplicateComposition: React.FC = () => {
            No fade-in — S04 manages its own phone visibility.
            Fades out during overlap so the black band reveal can take over. */}
       <Sequence from={S04_START} durationInFrames={S04_DUR} name="Scene 04">
-        <FadeWrapper duration={S04_DUR} fadeOutFrames={S04_S05_OVERLAP}>
+        <FadeWrapper duration={S04_DUR} fadeOutFrames={S04_S05_OVERLAP} scaleOut={3.0}>
           <Scene04 />
         </FadeWrapper>
       </Sequence>
 
       {/* ── Scene 05 ── fast smooth fade, no zoom gimmick */}
       <Sequence from={S05_START} durationInFrames={S05_DUR} name="Scene 05">
-        <FadeWrapper duration={S05_DUR} fadeInFrames={S04_S05_OVERLAP}>
+        <FadeWrapper duration={S05_DUR} fadeInFrames={S04_S05_OVERLAP} scaleIn={0.5}>
           <Scene05 />
         </FadeWrapper>
       </Sequence>

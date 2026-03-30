@@ -673,23 +673,23 @@ const SegPhoneMockup: React.FC = () => {
   const {fps, durationInFrames} = useVideoConfig();
   const tilt = useFloat3D(frame, fps, TILT_PRESETS.phoneFloat);
 
-  /* Frame-by-frame motion from reference (0:30–0:32.5):
-     Phone is ALWAYS massive. Starts ~2.5x, briefly eases to ~2.0x, then ramps to 3.0x.
-     Tilt stays modest (head-on) until the final frames where it starts to turn.
-     The dramatic 25deg tilt happens AFTER this segment (in SegSupercharge overlap). */
+  /* Frame-by-frame FLIP from reference (0:32–0:35):
+     Phone starts nearly flat at MASSIVE zoom (3x), then flips dramatically through
+     a ~65deg rotateY arc — side edge clearly visible — before settling back as it
+     shrinks and the "supercharge" text takes over. */
   const phoneScale = interpolate(frame,
-    [0, 15, 30, 45, 60, 72, 84],
-    [2.5, 2.3, 2.0, 2.0, 2.4, 2.8, 3.0],
+    [0,   15,  25,  35,  45,  55,  70, 84],
+    [3.0, 2.8, 2.5, 2.0, 1.5, 1.2, 1.0, 0.8],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYDeg = interpolate(frame,
-    [0, 30, 50, 65, 78, 84],
-    [-5, -3, -3, -5, -10, -15],
+    [0,  15,  25,  35,  45,  55,  70,  84],
+    [-2, -15, -40, -65, -30, -15, -10, -10],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltXDeg = interpolate(frame,
-    [0, 30, 50, 65, 78, 84],
-    [2, 1, 1, 2, 4, 6],
+    [0,  15,  25,  35,  45,  55,  70,  84],
+    [2,   3,   5,  10,  20,  25,  15,   5],
     {extrapolateLeft:"clamp", extrapolateRight:"clamp"}
   );
   const tiltYRad = (tiltYDeg * Math.PI) / 180;
@@ -724,6 +724,8 @@ const SegPhoneMockup: React.FC = () => {
         rotateY={tiltYRad}
         rotateX={tiltXRad}
         scale={1}
+        width={340}
+        height={700}
         screenContent={phoneScreen}
         opacity={pOp}
         style={{transform:`scale(${phoneScale}) ${tilt.transform}`}}
