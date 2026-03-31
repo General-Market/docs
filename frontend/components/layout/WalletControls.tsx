@@ -124,17 +124,6 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
 
   return (
     <>
-      {/* Profile link */}
-      {mounted && authenticated && address && (
-        <Link
-          href={`/profile/${address}`}
-          className={`hidden sm:inline text-label font-bold transition-colors ${
-            isDark ? 'text-zinc-400 hover:text-white' : 'text-text-muted hover:text-black'
-          }`}
-        >
-          Portfolio
-        </Link>
-      )}
       {/* Points */}
       <Link
         href="/points"
