@@ -273,16 +273,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   const [isFetchingPrices, setIsFetchingPrices] = useState(false)
   const [unpricedAssets, setUnpricedAssets] = useState<Set<string>>(new Set())
+  const [priceCheckDone, setPriceCheckDone] = useState(false)
 
-  // Validate prices when assets change — flag unpriced ones immediately
+  // Validate prices when assets change — flag unpriced ones
   useEffect(() => {
-    if (selectedAssets.length === 0) { setUnpricedAssets(new Set()); return }
+    if (selectedAssets.length === 0) { setUnpricedAssets(new Set()); setPriceCheckDone(false); return }
+    setPriceCheckDone(false)
     const controller = new AbortController()
     const check = async () => {
       try {
         const addresses = selectedAssets.map(a => a.address).join(',')
         const res = await fetch(`${DATA_NODE_URL}/prices-by-address?addresses=${addresses}`, { signal: controller.signal })
-        if (!res.ok) return
+        if (!res.ok) { setPriceCheckDone(true); return }
         const data = await res.json()
         const missing = new Set<string>()
         for (const a of selectedAssets) {
@@ -292,7 +294,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           }
         }
         setUnpricedAssets(missing)
-      } catch { /* abort or network error — ignore */ }
+        setPriceCheckDone(true)
+      } catch { /* abort or network error — don't block */ }
     }
     check()
     return () => controller.abort()
@@ -709,7 +712,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                         <div className="flex justify-end mt-4">
                           <button
                             onClick={() => setShowFinalizeModal(true)}
-                            disabled={selectedAssets.length === 0 || !isValidWeights || unpricedAssets.size > 0}
+                            disabled={selectedAssets.length === 0 || !isValidWeights || (priceCheckDone && unpricedAssets.size > 0)}
                             className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
                             {t('configure_weights.continue')}
