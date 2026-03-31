@@ -1,7 +1,9 @@
-import { keccak256, toHex } from 'viem'
+import { keccak256, toHex, createPublicClient, http, encodeFunctionData, decodeFunctionResult } from 'viem'
 import { getIssuerVisionUrl } from '@/lib/config'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
 import sourcesDisplay from '@/data/sources-display.json'
+import deployment from '@/lib/contracts/deployment.json'
+import { indexL3 } from '@/lib/wagmi'
 
 // Static deploy configHash fallback: patches zero hashes from oracle
 const BATCH_ID_TO_CONFIG_HASH: Record<number, string> = {}
@@ -11,7 +13,6 @@ for (const [, val] of Object.entries(visionBatchesJson.batches)) {
 }
 
 // Build keccak hash → display sourceId lookup
-// On-chain source_id = keccak256(internalId + "_v2") etc.
 const HASH_TO_SOURCE: Record<string, string> = {}
 for (const s of (sourcesDisplay as any).sources) {
   const ids: string[] = s.internalIds ?? [s.sourceId]
@@ -20,7 +21,6 @@ for (const s of (sourcesDisplay as any).sources) {
       const hash = keccak256(toHex(iid + suffix)).toLowerCase()
       HASH_TO_SOURCE[hash] = s.sourceId
     }
-    // Also map plain internal ID
     HASH_TO_SOURCE[iid.toLowerCase()] = s.sourceId
   }
 }
@@ -28,6 +28,81 @@ for (const s of (sourcesDisplay as any).sources) {
 function resolveSourceId(rawId: string): string {
   const lower = rawId.toLowerCase()
   return HASH_TO_SOURCE[lower] ?? rawId
+}
+
+const GET_BATCH_ABI = {
+  inputs: [{ name: 'batchId', type: 'uint256' as const }],
+  name: 'getBatch',
+  outputs: [{
+    name: '',
+    type: 'tuple' as const,
+    components: [
+      { name: 'sourceId', type: 'bytes32' as const },
+      { name: 'creator', type: 'address' as const },
+      { name: 'configHash', type: 'bytes32' as const },
+      { name: 'marketIds', type: 'bytes32[]' as const },
+      { name: 'resolutionTypes', type: 'uint8[]' as const },
+      { name: 'tickDuration', type: 'uint32' as const },
+      { name: 'currentTick', type: 'uint32' as const },
+      { name: 'playerCount', type: 'uint32' as const },
+      { name: 'totalDeposited', type: 'uint256' as const },
+      { name: 'paused', type: 'bool' as const },
+    ],
+  }],
+  stateMutability: 'view' as const,
+  type: 'function' as const,
+} as const
+
+// Cache on-chain verification results (30s TTL)
+let verifiedCache: { alive: Set<number>; ts: number } = { alive: new Set(), ts: 0 }
+
+async function getAliveBatchIds(batchIds: number[]): Promise<Set<number>> {
+  // Return cache if fresh
+  if (Date.now() - verifiedCache.ts < 30_000 && verifiedCache.alive.size > 0) {
+    return verifiedCache.alive
+  }
+
+  const visionAddress = (deployment as any).contracts?.Vision
+  if (!visionAddress || visionAddress === '0x0000000000000000000000000000000000000000') {
+    // Can't verify — return all as alive (fail open)
+    return new Set(batchIds)
+  }
+
+  try {
+    const client = createPublicClient({
+      chain: indexL3,
+      transport: http(indexL3.rpcUrls.default.http[0]),
+    })
+
+    // L3 has no multicall3 — fire individual calls in parallel.
+    // Each call checks if the batch exists and has real activity.
+    const alive = new Set<number>()
+    const checks = batchIds.map(async (id) => {
+      try {
+        const result = await client.readContract({
+          address: visionAddress as `0x${string}`,
+          abi: [GET_BATCH_ABI],
+          functionName: 'getBatch',
+          args: [BigInt(id)],
+        }) as any
+        const tick = Number(result?.currentTick ?? 0)
+        const players = Number(result?.playerCount ?? 0)
+        const deposited = BigInt(result?.totalDeposited ?? 0n)
+        if (tick > 0 || players > 0 || deposited > 0n) {
+          alive.add(id)
+        }
+      } catch {
+        // Revert = batch doesn't exist
+      }
+    })
+
+    await Promise.all(checks)
+    verifiedCache = { alive, ts: Date.now() }
+    return alive
+  } catch {
+    // RPC failure — return all as alive (fail open)
+    return new Set(batchIds)
+  }
 }
 
 export async function GET() {
@@ -47,12 +122,12 @@ export async function GET() {
       }
     }
 
-    // Resolve keccak hashes to display names and deduplicate
+    // Resolve keccak hashes to display names
     for (const batch of (data.batches ?? [])) {
       batch.source_id = resolveSourceId(batch.source_id ?? '')
     }
 
-    // Deduplicate: keep latest NON-PAUSED batch per source (highest ID = most recent round)
+    // Deduplicate: keep latest NON-PAUSED batch per source
     const latestPerSource = new Map<string, any>()
     for (const batch of (data.batches ?? []).filter((b: any) => !b.paused)) {
       const existing = latestPerSource.get(batch.source_id)
@@ -61,7 +136,13 @@ export async function GET() {
       }
     }
 
-    return Response.json({ batches: Array.from(latestPerSource.values()) })
+    const candidates = Array.from(latestPerSource.values())
+
+    // Verify on-chain: filter out ghost batches (contract redeployed, batch deleted, etc.)
+    const aliveIds = await getAliveBatchIds(candidates.map((b: any) => b.id))
+    const verified = candidates.filter((b: any) => aliveIds.has(b.id))
+
+    return Response.json({ batches: verified })
   } catch (e) {
     console.error('Vision batches proxy error:', e)
     return Response.json({ batches: [] }, { status: 502 })
