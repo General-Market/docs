@@ -918,8 +918,19 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         return _itpCount;
     }
 
-    // getItpNameSymbol, getItpInfo, getItpPrice removed for code size.
-    // Frontend: use getITP(itpId) + getNAV(itpId) or multicall.
+    /// @notice Returns (name, symbol) for an ITP as human-readable strings.
+    function getItpNameSymbol(bytes32 itpId) external view returns (string memory, string memory) {
+        TypesLib.ITPCore storage itp = _itps[itpId];
+        return (_bytes32ToString(itp.name), _bytes32ToString(itp.symbol));
+    }
+
+    function _bytes32ToString(bytes32 b) internal pure returns (string memory) {
+        uint256 len = 0;
+        while (len < 32 && b[len] != 0) len++;
+        bytes memory s = new bytes(len);
+        for (uint256 i = 0; i < len; i++) s[i] = b[i];
+        return string(s);
+    }
 
     /// @inheritdoc IInvestment
     function getOrder(uint256 orderId) external view returns (TypesLib.LimitOrder memory order) {
