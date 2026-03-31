@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { AbsoluteFill, interpolate } from "remotion";
+import { noise2D } from "@remotion/noise";
 import { useGsapTimeline, gsap } from "../../lib/useGsapTimeline";
 import { GM } from "./theme";
 
@@ -14,15 +15,15 @@ const fontFamily = GM.fontSans;
  *   - "Today" in luminous green gradient
  *   - "Today, GM is becoming" with GM letter fragments flying apart
  *
- * Flow (174 frames @ 30fps ≈ 5.8s):
+ * Flow (204 frames @ 30fps ≈ 6.8s):
  *   Phase A (0–50):   "And now it's time for" builds word by word
  *   Phase B (55–72):  "the next era" types in green char-by-char
  *   Phase C (72–100): "the next era" holds, settles to dark
  *   Phase D (100–126): page-turn corner peel from top-right
  *   Phase E (121–137): "Today" with luminous green gradient
  *   Phase F (135–148): "Today, GM" — Today white, GM green
- *   Phase G (148–166): "Today, GM is becoming" + GM disintegration
- *   Phase H (162–174): dissolve out — particles stream off
+ *   Phase G (148–180): "Today, GM is becoming" + GM disintegration + pct particles bg
+ *   Phase H (178–204): dissolve out — particles stream off
  */
 
 const BG_LIGHT = GM.greenLight;
@@ -90,6 +91,88 @@ function generateGMFragments(): GMFragment[] {
   });
   return fragments;
 }
+
+/* ── Floating +X% particles for dark phase background ── */
+interface DarkPctParticle {
+  id: number; x: number; y: number; label: string;
+  color: string; fontSize: number; opacity: number;
+  noiseOffX: number; noiseOffY: number;
+  driftAngle: number; driftSpeed: number;
+}
+
+function generateDarkPctParticles(count: number, seed: number): DarkPctParticle[] {
+  const colors = [GM.greenStatus, GM.greenStatus, GM.greenStatus, GM.greenStatus, GM.textInverse];
+  const particles: DarkPctParticle[] = [];
+  for (let i = 0; i < count; i++) {
+    const s0 = seed + i;
+    const r = (n: number) => {
+      const x = Math.sin((s0 + n * 137) * 9301 + 49297) * 49297;
+      return x - Math.floor(x);
+    };
+    const val = (r(0) * 28 + 0.1).toFixed(1);
+    particles.push({
+      id: i,
+      x: r(1) * 1280,
+      y: r(2) * 720,
+      label: `+${val}%`,
+      color: colors[Math.floor(r(3) * colors.length)],
+      fontSize: 8 + Math.floor(r(4) * 7),
+      opacity: 0.2 + r(5) * 0.3,
+      noiseOffX: r(6) * 1000,
+      noiseOffY: r(7) * 1000,
+      driftAngle: r(8) * Math.PI * 2,
+      driftSpeed: 0.2 + r(9) * 0.8,
+    });
+  }
+  return particles;
+}
+
+const DARK_PCT_COUNT = 70;
+
+/** Background +X% particle field for the dark phase */
+const DarkPctField: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const particles = useMemo(() => generateDarkPctParticles(DARK_PCT_COUNT, 777), []);
+  const GM_DARK_START = 148;
+  const localFrame = frame - GM_DARK_START;
+  if (localFrame < 0) return null;
+
+  const fadeIn = interpolate(localFrame, [0, 12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+
+  return (
+    <>
+      {particles.map((p) => {
+        const t = localFrame / fps;
+        const nx = noise2D("dpx" + p.id, t * 0.3 + p.noiseOffX, 0) * 25;
+        const ny = noise2D("dpy" + p.id, 0, t * 0.3 + p.noiseOffY) * 25;
+        const drift = t * p.driftSpeed * 12;
+        const px = ((p.x + Math.cos(p.driftAngle) * drift + nx) % 1380 + 1380) % 1380 - 50;
+        const py = ((p.y + Math.sin(p.driftAngle) * drift * 0.5 - drift * 0.2 + ny) % 820 + 820) % 820 - 50;
+        const op = p.opacity * fadeIn;
+        if (op <= 0.01) return null;
+        return (
+          <span
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: px,
+              top: py,
+              fontSize: p.fontSize,
+              fontFamily: GM.fontMono,
+              fontWeight: 700,
+              color: p.color,
+              opacity: op,
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              pointerEvents: "none",
+            }}
+          >
+            {p.label}
+          </span>
+        );
+      })}
+    </>
+  );
+};
 
 const FPS = 30;
 const s = (f: number) => f / FPS;
@@ -249,7 +332,7 @@ export const Scene02: React.FC = () => {
 
     // Phase H: dissolve out
     if (darkPhase) {
-      t.to(darkPhase, { opacity: 0, duration: s(8) }, s(166));
+      t.to(darkPhase, { opacity: 0, duration: s(18) }, s(178));
     }
 
     // Seek immediately after build
@@ -541,6 +624,13 @@ export const Scene02: React.FC = () => {
 
         {/* ════ DARK PHASE ════ */}
 
+        {/* +X% background particles during dark phase */}
+        {frame >= 148 && (
+          <AbsoluteFill style={{ opacity: interpolate(frame, [148, 160, 190, 204], [0, 1, 1, 0], C) }}>
+            <DarkPctField frame={frame} fps={fps} />
+          </AbsoluteFill>
+        )}
+
         {/* Dark phase text — "Today" gradient → "Today, GM is becoming" */}
         <div
           className="dark-phase-text"
@@ -694,5 +784,5 @@ export const scene02Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 174,
+  durationInFrames: 204,
 };

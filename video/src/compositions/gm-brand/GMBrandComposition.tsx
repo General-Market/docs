@@ -38,8 +38,8 @@ const S04_S05_OVERLAP = 20;
  * S05: 0:48-1:14 = 26s = 780 frames (was 695, gained dark mode start)
  */
 const S01_DUR = 285;
-const S02_DUR = 175;
-const S03_DUR = 680;
+const S02_DUR = 205;
+const S03_DUR = 695;
 const S04_DUR = 360;
 const S05_DUR = 700;
 

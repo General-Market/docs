@@ -259,6 +259,139 @@ const SegGMReveal: React.FC = () => {
   );
 };
 
+/* --- MERGED SEGMENT: Particles converge → GM reveal --- */
+const CONVERGE_COUNT = 160;
+
+const SegParticlesAndGM: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const bokeh = useMemo(() => generateBokehParticles(CONVERGE_COUNT, 42), []);
+  const burstPcts = useMemo(() => generateBurstPcts(60, 42), []);
+
+  /* Phase timing:
+   *   0-20:  particles stream right-to-left (avalanche)
+   *   20-35: particles decelerate + converge toward center
+   *   35+:   GM text springs in, particles scatter outward
+   */
+  const CONVERGE_START = 20;
+  const GM_APPEAR = 35;
+
+  /* Background: dark green → light as GM appears */
+  const bgColor = frame < GM_APPEAR - 5
+    ? GM.bgDarkGreen
+    : (() => {
+      const t = interpolate(frame, [GM_APPEAR - 5, GM_APPEAR + 15], [0, 1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+      // Lerp from dark green to light
+      const r = Math.round(10 + t * 235);
+      const g = Math.round(46 + t * 199);
+      const b = Math.round(28 + t * 217);
+      return `rgb(${r},${g},${b})`;
+    })();
+
+  /* Global fade in */
+  const globalOp = interpolate(frame, [0, 3], [0, 1], {extrapolateRight:"clamp"});
+
+  /* Center glow (dark phase only) */
+  const glowOp = interpolate(frame, [0, 6, CONVERGE_START, GM_APPEAR + 5], [0, 0.7, 0.9, 0], {extrapolateRight:"clamp"});
+
+  /* Convergence progress: 0 at frame 20, 1 at frame 35 */
+  const convergeProg = interpolate(frame, [CONVERGE_START, GM_APPEAR], [0, 1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"});
+  const convergeEased = 1 - Math.pow(1 - convergeProg, 2);
+
+  /* After GM appears, scatter remaining particles outward */
+  const scatterProg = frame >= GM_APPEAR ? interpolate(frame, [GM_APPEAR, GM_APPEAR + 20], [0, 1], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}) : 0;
+
+  return (
+    <AbsoluteFill style={{backgroundColor: bgColor, opacity: globalOp}}>
+      {/* Center glow during convergence */}
+      {glowOp > 0.01 && (
+        <>
+          <div style={{position:"absolute",left:"50%",top:"50%",width:600,height:500,transform:"translate(-50%,-50%)",background:`radial-gradient(ellipse, ${GM.green}4D 0%, ${GM.green}26 25%, ${GM.greenDark}10 50%, transparent 70%)`,opacity:glowOp,filter:"blur(20px)"}} />
+          <div style={{position:"absolute",left:"50%",top:"50%",width:350,height:300,transform:"translate(-50%,-50%)",background:`radial-gradient(circle, ${GM.greenLight}40 0%, transparent 60%)`,opacity:glowOp,filter:"blur(12px)"}} />
+        </>
+      )}
+
+      {/* Streaming → converging → scattering particles */}
+      {bokeh.map((p) => {
+        const t = Math.max(0, frame - p.delay) / fps;
+        if (t <= 0) return null;
+
+        // Base streaming position (right to left)
+        let px = p.startX - p.speed * t;
+        const yNoise = noise2D("ay" + p.id, t * 0.6, p.id * 0.1) * 40;
+        let py = p.startY + Math.sin(t * 1.2 + p.id) * p.yDrift * 0.3 + yNoise;
+
+        // Convergence: attract toward center
+        if (convergeProg > 0 && scatterProg < 1) {
+          px += (640 - px) * convergeEased * 0.05 * (1 + convergeProg * 3);
+          py += (360 - py) * convergeEased * 0.05 * (1 + convergeProg * 3);
+        }
+
+        // Scatter after GM appears
+        if (scatterProg > 0) {
+          const scAngle = (p.id / CONVERGE_COUNT) * Math.PI * 2 + p.yDrift * 0.01;
+          const scDist = 500 * (1 - Math.pow(1 - scatterProg, 2));
+          px += Math.cos(scAngle) * scDist;
+          py += Math.sin(scAngle) * scDist;
+        }
+
+        const fadeIn = interpolate(t, [0, 0.15], [0, 1], {extrapolateRight:"clamp"});
+        const fadeOut = scatterProg > 0 ? interpolate(scatterProg, [0.3, 1], [1, 0], {extrapolateLeft:"clamp",extrapolateRight:"clamp"}) : 1;
+        if (px < -100 || px > 1400) return null;
+        const op = p.opacity * fadeIn * fadeOut;
+        if (op <= 0.01) return null;
+
+        return <span key={p.id} style={{
+          position:"absolute",
+          left: px,
+          top: py,
+          fontSize: p.size,
+          fontFamily: GM.fontMono,
+          fontWeight: 700,
+          color: p.color,
+          opacity: op,
+          whiteSpace: "nowrap",
+        }}>{p.label}</span>;
+      })}
+
+      {/* Burst +X% particles exploding from center when GM appears */}
+      {frame >= GM_APPEAR && burstPcts.map((bp) => {
+        const burstStart = GM_APPEAR + bp.delay;
+        const burstProg = interpolate(frame, [burstStart, burstStart + 25], [0, 1], {extrapolateLeft:"clamp", extrapolateRight:"clamp"});
+        if (burstProg <= 0) return null;
+        const eased = 1 - Math.pow(1 - burstProg, 2.5);
+        const bx = 640 + Math.cos(bp.angle) * bp.dist * eased;
+        const by = 360 + Math.sin(bp.angle) * bp.dist * eased;
+        const bOp = interpolate(burstProg, [0, 0.15, 0.7, 1], [0, 1, 0.8, 0], {extrapolateRight:"clamp"});
+        return (
+          <span key={`burst-${bp.id}`} style={{
+            position:"absolute", left: bx, top: by,
+            fontSize: bp.fontSize, fontFamily: GM.fontMono, fontWeight: 700,
+            color: bp.color, opacity: bOp, whiteSpace: "nowrap",
+            transform: `translate(-50%,-50%) scale(${interpolate(burstProg, [0, 0.3], [0.5, 1], {extrapolateRight:"clamp"})})`,
+          }}>{bp.label}</span>
+        );
+      })}
+
+      {/* GM text — springs in at frame 35 */}
+      {frame >= GM_APPEAR - 2 && (
+        <div style={{position:"absolute",left:"50%",top:"50%",transform:"translate(-50%,-50%)",display:"flex",alignItems:"baseline",fontSize:72,fontFamily:GM.fontSans,fontWeight:400,letterSpacing:-1}}>
+          {GEMINI_LETTERS.map((letter, i) => {
+            const localF = Math.max(0, frame - GM_APPEAR);
+            const wob = organicWobble("gl" + i, frame, 1.5, 1, 0.018);
+            const spr = spring({frame: localF, fps, delay: i * 3, config:{damping:12,stiffness:120,mass:0.8}});
+            const arcX = interpolate(spr, [0, 1], [Math.cos(LETTER_ARC_ANGLES[i]) * LETTER_ARC_DIST[i], 0]);
+            const arcY = interpolate(spr, [0, 1], [Math.sin(LETTER_ARC_ANGLES[i]) * LETTER_ARC_DIST[i], 0]);
+            const sc = interpolate(spr, [0, 1], [0.7, 1]);
+            const op = interpolate(spr, [0, 0.3], [0, 1], {extrapolateRight:"clamp"});
+            return <span key={i} style={{display:"inline-block",background:`linear-gradient(135deg, ${BLUE} 0%, ${PURPLE} 100%)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",transform:`translate(${arcX+wob.x}px,${arcY+wob.y}px) scale(${sc})`,opacity:op}}>{letter}</span>;
+          })}
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
+
 /* --- SEGMENT 3: Desktop UI --- */
 const SegDesktopUI: React.FC = () => {
   const frame = useCurrentFrame();
@@ -1092,17 +1225,16 @@ export const Scene03: React.FC = () => {
    * Ref 0:35 = local 630: built to maximize (END of S03)
    */
   const segments: {start:number;dur:number;Comp:React.FC}[] = [
-    {start:0,dur:40,Comp:SegParticleExplosion},
-    {start:35,dur:50,Comp:SegGMReveal},
-    {start:45,dur:95,Comp:SegDesktopUI},
-    {start:140,dur:55,Comp:SegItsEverything},
-    {start:190,dur:65,Comp:SegAppsFloat},
-    {start:250,dur:70,Comp:SegTypingPrompt},
-    {start:315,dur:50,Comp:SegGMResponse},
-    {start:360,dur:50,Comp:SegAndMore},
-    {start:405,dur:70,Comp:SegStartingWith},
-    {start:475,dur:120,Comp:SegPhoneMockup},
-    {start:555,dur:80,Comp:SegSupercharge},
+    {start:0,dur:60,Comp:SegParticlesAndGM},
+    {start:60,dur:95,Comp:SegDesktopUI},
+    {start:155,dur:55,Comp:SegItsEverything},
+    {start:205,dur:65,Comp:SegAppsFloat},
+    {start:265,dur:70,Comp:SegTypingPrompt},
+    {start:330,dur:50,Comp:SegGMResponse},
+    {start:375,dur:50,Comp:SegAndMore},
+    {start:420,dur:70,Comp:SegStartingWith},
+    {start:490,dur:120,Comp:SegPhoneMockup},
+    {start:570,dur:80,Comp:SegSupercharge},
   ];
   return (
     <AbsoluteFill style={{backgroundColor:BG}}>
@@ -1114,7 +1246,7 @@ export const Scene03: React.FC = () => {
 };
 
 /* Suppress noUnusedLocals for helpers preserved for future segments */
-void cubicBez; void EASE_OUT_EXPO; void PhoneHomeScreen; void SegPhoneGoodMorning; void SegParticleExplosion;
+void cubicBez; void EASE_OUT_EXPO; void PhoneHomeScreen; void SegPhoneGoodMorning; void SegParticleExplosion; void SegGMReveal;
 
 export const scene03Meta = {
   id: "GMScene03",
