@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ path
   // Let the dedicated icon route handler take precedence.
   // Next.js catch-all can swallow more-specific nested routes.
   if (path[0] === 'icon') {
-    const { resolveIcon } = await import('../icon/[source]/[...id]/route')
+    const { resolveIcon } = await import('@/lib/vision/icon-resolver')
     return resolveIcon(path.slice(1))
   }
   return proxyRequest(req, path)

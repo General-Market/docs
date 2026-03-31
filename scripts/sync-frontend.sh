@@ -11,6 +11,7 @@ set -e
 
 MONO_ROOT="$(git rev-parse --show-toplevel)"
 REMOTE="gm-frontend"
+REMOTE2="fnd"
 BRANCH="main"
 COMMIT_MSG="$(git log -1 --format='%s')"
 
@@ -30,3 +31,4 @@ else
 fi
 
 git push "$REMOTE" "$COMMIT:refs/heads/$BRANCH" 2>&1
+git push "$REMOTE2" "$COMMIT:refs/heads/$BRANCH" 2>&1 || echo "warn: push to $REMOTE2 failed (non-fatal)"
