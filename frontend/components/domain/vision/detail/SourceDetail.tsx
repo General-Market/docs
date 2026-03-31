@@ -20,7 +20,10 @@ import { BatchHistory } from './BatchHistory'
 import { BatchProgressBar } from '../CountdownRing'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
+import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { indexL3 } from '@/lib/wagmi'
+import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 
 function WalletSourceStats({ sourceId }: { sourceId: string }) {
@@ -157,9 +160,29 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
+  // Verify the batch actually exists on-chain. The oracle API can report
+  // stale batches that have already been settled/deleted on-chain.
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+  const { data: onChainBatch, isError: batchOnChainError, error: batchError } = useReadContract({
+    address: visionAddress,
+    abi: VISION_ABI,
+    functionName: 'getBatch',
+    args: activeBatch ? [BigInt(activeBatch.id)] : undefined,
+    chainId: indexL3.id,
+    query: {
+      enabled: !!activeBatch && visionAddress !== '0x0000000000000000000000000000000000000000',
+      retry: false,
+    },
+  })
+  const batchExistsOnChain = !!activeBatch && !batchOnChainError && batchError === null && onChainBatch !== undefined
+
+  // If oracle says batch exists but on-chain says it doesn't, treat as no batch.
+  const verifiedBatch = batchExistsOnChain ? activeBatch : null
+
   // Fetch the batch's PINNED market list (authoritative, immutable per config_hash).
   // The snapshot can drift as assets become healthy/stale; the batch config cannot.
-  const { data: batchConfig } = useBatchConfig(activeBatch?.configHash)
+  const { data: batchConfig } = useBatchConfig(verifiedBatch?.configHash)
   const marketIds = useMemo(() => {
     // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
     if (batchConfig?.markets?.length) {
@@ -170,7 +193,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const marketCount = marketIds.length || undefined
 
   // On-chain player position — used to reconcile oracle lag in BatchHistory
-  const { isJoined: isJoinedOnChain } = usePlayerPosition(activeBatch?.id)
+  const { isJoined: isJoinedOnChain } = usePlayerPosition(verifiedBatch?.id)
 
   // Active betting round — find the round that's actually accepting bets (not settling).
   // With round overlap, a settling round and a betting round can coexist.
@@ -213,11 +236,11 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={0} tickDuration={0} sourceId={sourceId} urgency={'normal'} />
 
         {/* Batch bar — always shows the open betting round */}
-        {activeBatch ? (
+        {verifiedBatch ? (
           <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
             <BatchProgressBar
               bettingEnd={bettingEnd}
-              tickDuration={activeBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+              tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
               isSettling={false}
             />
             <div className="flex items-center px-5 py-3">
@@ -227,7 +250,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {t('source_detail.round')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-black">
-                  #{activeBatch.id}
+                  #{verifiedBatch.id}
                 </div>
               </div>
               {/* Players */}
@@ -236,7 +259,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {t('source_detail.players')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-black">
-                  {activeBatch.playerCount}
+                  {verifiedBatch.playerCount}
                 </div>
               </div>
               {/* Pool */}
@@ -245,7 +268,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {t('source_detail.pool')}
                 </div>
                 <div className="text-[15px] font-bold font-mono text-color-up">
-                  {formatTvl(activeBatch.tvl)}
+                  {formatTvl(verifiedBatch.tvl)}
                 </div>
               </div>
               {/* Timer — anchored right, the dominant element */}
@@ -270,7 +293,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         {rounds && rounds.length > 0 && (
           <PendingPositions
             rounds={rounds}
-            activeBatchId={activeBatch?.id}
+            activeBatchId={verifiedBatch?.id}
           />
         )}
 
@@ -281,11 +304,11 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} />
             <BatchHistory
               sourceId={sourceId}
-              activeBatchId={activeBatch?.id}
+              activeBatchId={verifiedBatch?.id}
               bettingEnd={bettingEnd}
-              playerCount={bettingRound?.playerCount ?? activeBatch?.playerCount}
-              tvl={bettingRound?.tvl ?? activeBatch?.tvl}
-              tickDuration={activeBatch?.tickDuration ?? bettingRound?.timeframeSecs}
+              playerCount={bettingRound?.playerCount ?? verifiedBatch?.playerCount}
+              tvl={bettingRound?.tvl ?? verifiedBatch?.tvl}
+              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs}
               isJoinedOnChain={isJoinedOnChain}
             />
             <TopPlayers sourceId={sourceId} />

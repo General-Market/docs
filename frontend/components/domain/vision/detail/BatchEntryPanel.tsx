@@ -84,16 +84,24 @@ export default function BatchEntryPanel({
   const roundPhase = useRoundPhase(bettingEnd, tickDuration)
 
   // -- Read configHash from on-chain batch state --
+  // If getBatch reverts, the batch no longer exists on-chain (settled/deleted)
+  // even if the oracle API still reports it as active. Treat as no batch.
   const activeBatchId = activeBatch?.id ?? null
-  const { data: onChainBatch } = useReadContract({
+  const { data: onChainBatch, isError: batchOnChainError, error: batchError } = useReadContract({
     address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getBatch',
     args: activeBatchId !== null ? [BigInt(activeBatchId)] : undefined,
     chainId: indexL3.id,
-    query: { enabled: activeBatchId !== null && visionAddress !== '0x0000000000000000000000000000000000000000' },
+    query: {
+      enabled: activeBatchId !== null && visionAddress !== '0x0000000000000000000000000000000000000000',
+      retry: false,
+    },
   })
-  const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
+  const batchExistsOnChain = !batchOnChainError && batchError === null && onChainBatch !== undefined
+  const configHash = batchExistsOnChain
+    ? ((onChainBatch as any)?.configHash as `0x${string}` | undefined)
+    : undefined
 
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
@@ -301,7 +309,7 @@ export default function BatchEntryPanel({
   return (
     <div>
       {/* -- Active Position Banner (round-based) -- */}
-      {isJoined && position && (() => {
+      {batchExistsOnChain && isJoined && position && (() => {
         const deposit = position.deposit
         const depositNum = parseFloat(formatUnits(deposit, VISION_USDC_DECIMALS))
         return (
@@ -331,7 +339,7 @@ export default function BatchEntryPanel({
       })()}
 
       {/* -- Not Joined Banner -- */}
-      {isConnected && !isJoined && activeBatch && (
+      {isConnected && !isJoined && activeBatch && batchExistsOnChain && (
         <div className="border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 mb-1">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-neutral-300" />
@@ -351,7 +359,7 @@ export default function BatchEntryPanel({
               {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
             </h2>
             <p className="text-[10px] text-text-muted">
-              {activeBatch ? `Batch #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
+              {activeBatch && batchExistsOnChain ? `Batch #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
             </p>
           </div>
         </div>
@@ -538,7 +546,7 @@ export default function BatchEntryPanel({
         )}
 
         {/* Batch info footer */}
-        {activeBatch && (
+        {activeBatch && batchExistsOnChain && (
           <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
             <span>{t('batch_entry_panel.players', { count: activeBatch.playerCount })}</span>
             <span>{t('batch_entry_panel.markets', { count: activeBatch.marketCount || marketIds.length })}</span>
