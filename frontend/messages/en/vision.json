@@ -530,7 +530,9 @@
   },
   "source_hero": {
     "live": "LIVE",
-    "offline": "OFFLINE"
+    "offline": "OFFLINE",
+    "settles_in": "Settles in",
+    "settling_soon": "Settling soon"
   },
   "strategy_list": {
     "strategies": "Strategies",

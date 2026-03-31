@@ -16,6 +16,15 @@ interface SourceHeroProps {
   urgency?: 'normal' | 'urgent' | 'critical'
 }
 
+function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return 'now'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m`
+  return `${Math.floor(seconds)}s`
+}
+
 function formatLastSync(lastSync: string | null, locale?: string): string {
   if (!lastSync) return '--'
   const date = new Date(lastSync)
@@ -66,6 +75,25 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
           <p className="text-[12px] text-text-muted leading-snug mt-1.5">
             {source.description}
           </p>
+        )}
+
+        {/* Settlement countdown */}
+        {tickRemaining != null && tickRemaining > 0 && tickDuration != null && tickDuration > 0 && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[11px] text-text-muted">
+              {t('source_hero.settles_in', { time: formatCountdown(tickRemaining + tickDuration) })}
+            </span>
+            <span className="text-[11px] font-mono tabular-nums text-text-secondary">
+              {formatCountdown(tickRemaining + tickDuration)}
+            </span>
+          </div>
+        )}
+        {tickRemaining != null && tickRemaining <= 0 && tickDuration != null && tickDuration > 0 && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[11px] font-semibold text-amber-600">
+              {t('source_hero.settling_soon')}
+            </span>
+          </div>
         )}
       </div>
 
