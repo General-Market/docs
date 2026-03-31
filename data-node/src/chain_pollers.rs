@@ -296,12 +296,17 @@ pub async fn poll_batch_markets_reload(state: &AppState) -> Result<(), Box<dyn s
     if let (Ok(vault), Ok(morpho)) = (vault_addr, morpho_addr) {
         match discover_markets_from_vault(state, vault, morpho).await {
             Ok(markets) if !markets.is_empty() => {
+                // Deduplicate by market_id
+                let mut seen = std::collections::HashSet::new();
+                let deduped: Vec<_> = markets.into_iter()
+                    .filter(|m| seen.insert(m.market_id.clone()))
+                    .collect();
                 let current = state.batch_markets.read().await;
-                if markets.len() != current.len() {
+                if deduped.len() != current.len() {
                     drop(current);
-                    let count = markets.len();
+                    let count = deduped.len();
                     let mut w = state.batch_markets.write().await;
-                    *w = markets;
+                    *w = deduped;
                     tracing::info!(count, "Discovered batch markets from vault supply queue");
                 }
                 return Ok(());
