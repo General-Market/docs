@@ -8,12 +8,14 @@ import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
+import { useToast } from '@/lib/contexts/ToastContext'
 import { indexL3 } from '@/lib/wagmi'
 import { getTxUrl } from '@/lib/utils/explorer'
 
 export function VaultDeposit() {
   const t = useTranslations('lending')
   const { address } = useAccount()
+  const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'approving' | 'depositing' | 'success'>('input')
@@ -66,6 +68,8 @@ export function VaultDeposit() {
     if (isSuccess && !successHandled.current && step === 'depositing') {
       successHandled.current = true
       setStep('success')
+      const amt = amount || '0'
+      showSuccess(`Deposited ${parseFloat(amt).toFixed(2)} USDC to vault`, txHash ? { url: getTxUrl(txHash, 'l3'), text: 'View tx' } : undefined)
       refetchBalance()
       refetchAllowance()
       refetchVault()
@@ -82,7 +86,9 @@ export function VaultDeposit() {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
+      const errMsg = actionError.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Deposit failed: ${errMsg.slice(0, 80)}`)
       setStep('input')
       setPendingDepositAmount(0n)
       approvalHandled.current = false

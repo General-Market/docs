@@ -9,6 +9,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { useItpApproval } from '@/hooks/useItpApproval'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
@@ -28,6 +29,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   const t = useTranslations('lending')
   const { address } = useAccount()
   const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'approving' | 'depositing' | 'success'>('input')
@@ -99,7 +101,9 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
-      capture('lend_completed', { itp_id: itpId, action: 'deposit', tx_hash: undefined })
+      const amt = amount || '0'
+      showSuccess(`Deposited ${amt} ITP as collateral`, depositTxHash ? { url: getTxUrl(depositTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: itpId, action: 'deposit', tx_hash: depositTxHash })
       refetchBalance()
       refetchAllowance()
       onSuccess?.()
@@ -119,8 +123,10 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   // Handle errors
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
-      capture('lend_failed', { itp_id: itpId, action: 'deposit', error_message: actionError.message || 'Transaction failed' })
+      const errMsg = actionError.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Deposit failed: ${errMsg.slice(0, 80)}`)
+      capture('lend_failed', { itp_id: itpId, action: 'deposit', error_message: errMsg })
       setStep('input')
       setPendingDepositAmount(0n)
       resetAction()

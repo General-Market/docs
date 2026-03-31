@@ -7,6 +7,7 @@ import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { calculateHealthFactor } from '@/lib/types/morpho'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
@@ -25,6 +26,7 @@ interface WithdrawCollateralProps {
 export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProps) {
   const t = useTranslations('lending')
   const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'withdrawing' | 'success'>('input')
@@ -85,7 +87,9 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
-      capture('lend_completed', { itp_id: market?.collateralToken, action: 'withdraw', tx_hash: undefined })
+      const amt = amount || '0'
+      showSuccess(`Withdrew ${parseFloat(amt).toFixed(4)} ITP collateral`, withdrawTxHash ? { url: getTxUrl(withdrawTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: market?.collateralToken, action: 'withdraw', tx_hash: withdrawTxHash })
       refetchPosition()
       onSuccess?.()
       window.dispatchEvent(new Event('lending-refresh'))
@@ -100,8 +104,10 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
-      capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: actionError.message || 'Transaction failed' })
+      const errMsg = actionError.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Withdraw failed: ${errMsg.slice(0, 80)}`)
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: errMsg })
       setStep('input')
       resetAction()
     }

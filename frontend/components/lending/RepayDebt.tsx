@@ -11,6 +11,8 @@ import { useUserState } from '@/hooks/useUserState'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface RepayDebtProps {
@@ -29,6 +31,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
   const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'approving' | 'repaying' | 'success'>('input')
@@ -68,6 +71,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
     isSuccess,
     error: actionError,
     reset: resetAction,
+    txHash: repayTxHash,
   } = useMorphoActions(market)
 
   const [isMaxRepay, setIsMaxRepay] = useState(false)
@@ -102,7 +106,9 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
-      capture('lend_completed', { itp_id: itpId, action: 'repay', tx_hash: undefined })
+      const amt = amount || '0'
+      showSuccess(`Repaid ${parseFloat(amt).toFixed(2)} USDC`, repayTxHash ? { url: getTxUrl(repayTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: itpId, action: 'repay', tx_hash: repayTxHash })
       refetchPosition()
       refetchBalance()
       onSuccess?.()
@@ -124,6 +130,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
     if (actionError || approvalError) {
       const errMsg = (actionError || approvalError)?.message || t('common.transaction_failed')
       setTxError(errMsg)
+      showError(`Repay failed: ${errMsg.slice(0, 80)}`)
       capture('lend_failed', { itp_id: itpId, action: 'repay', error_message: errMsg })
       setStep('input')
       setPendingRepayAmount(0n)

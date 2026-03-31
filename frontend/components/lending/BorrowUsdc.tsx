@@ -10,6 +10,8 @@ import { useBundlerExec } from '@/hooks/useBundlerExec'
 import { calculateHealthFactor } from '@/lib/types/morpho'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface BorrowUsdcProps {
@@ -26,6 +28,7 @@ interface BorrowUsdcProps {
 export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const t = useTranslations('lending')
   const { capture } = usePostHogTracker()
+  const { showSuccess, showError } = useToast()
   const [amount, setAmount] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [step, setStep] = useState<'input' | 'borrowing' | 'success'>('input')
@@ -40,6 +43,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     isSuccess,
     error: actionError,
     reset: resetAction,
+    txHash: borrowTxHash,
   } = useMorphoActions(market)
 
   // Quote API integration (intent-based flow)
@@ -86,7 +90,9 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
     if (isSuccess && !successHandled.current) {
       successHandled.current = true
       setStep('success')
-      capture('lend_completed', { itp_id: market?.collateralToken, action: 'borrow', tx_hash: undefined })
+      const amt = amount || '0'
+      showSuccess(`Borrowed ${parseFloat(amt).toFixed(2)} USDC`, borrowTxHash ? { url: getTxUrl(borrowTxHash, 'l3'), text: 'View tx' } : undefined)
+      capture('lend_completed', { itp_id: market?.collateralToken, action: 'borrow', tx_hash: borrowTxHash })
       refetchPosition()
       onSuccess?.()
       window.dispatchEvent(new Event('lending-refresh'))
@@ -101,8 +107,10 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
-      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: actionError.message || 'Transaction failed' })
+      const errMsg = actionError.message || t('common.transaction_failed')
+      setTxError(errMsg)
+      showError(`Borrow failed: ${errMsg.slice(0, 80)}`)
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: errMsg })
       setStep('input')
       resetAction()
     }
