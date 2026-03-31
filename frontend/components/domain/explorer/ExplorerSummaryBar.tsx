@@ -66,7 +66,9 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
     },
     {
       label: t('explorer.summary.oracles'),
-      value: latest.total_peers.toString(),
+      // total_peers = SUM(connected_peers) across K nodes in a full mesh.
+      // Each node sees K-1 peers, so total = K*(K-1). Solve: K = (1+√(1+4·total))/2
+      value: Math.round((1 + Math.sqrt(1 + 4 * latest.total_peers)) / 2).toString(),
       color: 'text-white',
     },
   ]
