@@ -327,13 +327,18 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       for (const [addr, entry] of Object.entries(data.prices || {})) {
         priceMap[addr.toLowerCase()] = (entry as any).price
       }
-      // Map each asset to its real price — error if any is missing
+      // Map each asset to its real price — error if any is missing or suspiciously wrong
       prices = assets.map((addr, i) => {
         const p = priceMap[addr.toLowerCase()]
         if (!p || p === '0') {
           throw new Error(`No price for ${selectedAssets[i].symbol} — asset may not be listed yet`)
         }
-        return BigInt(p)
+        const pBn = BigInt(p)
+        // Sanity: price must be > $0.0001 (1e14 in 18-dec) and < $1M (1e24)
+        if (pBn < BigInt('100000000000000') || pBn > BigInt('1000000000000000000000000')) {
+          throw new Error(`Price for ${selectedAssets[i].symbol} looks wrong ($${Number(pBn) / 1e18}) — data feed may be stale`)
+        }
+        return pBn
       })
     } catch (e: any) {
       setIsFetchingPrices(false)
