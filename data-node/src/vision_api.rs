@@ -165,11 +165,22 @@ pub async fn snapshot(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SnapshotQuery>,
 ) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
-    let limit = params.limit.unwrap_or(10_000).min(100_000);
+    let limit = params.limit.unwrap_or(10_000).min(500_000) as i64;
 
     // Use market_prices_latest cache table for fast lookups instead of
     // expensive DISTINCT ON against the 12GB market_prices table.
-    // Falls back to the slow query if cache table is empty/missing.
+    //
+    // When no source filter is given, cap each source to at most `per_source_cap`
+    // rows so that large sources (polymarket 48K, crates_io 20K, weather 161K)
+    // don't crowd out smaller ones. With a source filter, return up to `limit`.
+    let has_source_filter = params.source.is_some();
+    // Per-source cap: fit ~84 sources into the limit, but at least 500 each
+    let per_source_cap = if has_source_filter {
+        limit
+    } else {
+        (limit / 84).max(500).min(5000)
+    };
+
     let rows: Vec<(
         String,         // asset_id
         String,         // source
@@ -183,22 +194,29 @@ pub async fn snapshot(
         DateTime<Utc>,   // fetched_at
     )> = sqlx::query_as(
         r#"
-        SELECT l.asset_id, l.source, l.symbol,
-            COALESCE(NULLIF(l.name, ''), a.name, l.symbol) AS name,
-            l.value, l.change_pct, l.volume_24h, l.market_cap,
-            COALESCE(l.category, a.category) AS category,
-            l.fetched_at
-        FROM market_prices_latest l
-        LEFT JOIN market_assets a ON a.source = l.source AND a.asset_id = l.asset_id
-        WHERE ($1::TEXT IS NULL OR l.source = $1)
-          AND ($2::TEXT IS NULL OR COALESCE(l.category, a.category) = $2)
-          AND (a.is_active IS NULL OR a.is_active = true)
-        ORDER BY l.source, l.asset_id
-        LIMIT $3
+        SELECT asset_id, source, symbol, name, value, change_pct,
+               volume_24h, market_cap, category, fetched_at
+        FROM (
+            SELECT l.asset_id, l.source, l.symbol,
+                COALESCE(NULLIF(l.name, ''), a.name, l.symbol) AS name,
+                l.value, l.change_pct, l.volume_24h, l.market_cap,
+                COALESCE(l.category, a.category) AS category,
+                l.fetched_at,
+                ROW_NUMBER() OVER (PARTITION BY l.source ORDER BY l.asset_id) AS rn
+            FROM market_prices_latest l
+            LEFT JOIN market_assets a ON a.source = l.source AND a.asset_id = l.asset_id
+            WHERE ($1::TEXT IS NULL OR l.source = $1)
+              AND ($2::TEXT IS NULL OR COALESCE(l.category, a.category) = $2)
+              AND (a.is_active IS NULL OR a.is_active = true)
+        ) sub
+        WHERE rn <= $3
+        ORDER BY source, asset_id
+        LIMIT $4
         "#,
     )
     .bind(params.source.as_deref())
     .bind(params.category.as_deref())
+    .bind(per_source_cap)
     .bind(limit)
     .fetch_all(&state.pool)
     .await
