@@ -358,9 +358,15 @@ async fn discover_markets_from_vault(
 
     let mut markets = Vec::with_capacity(queue_len as usize);
     for i in 0..queue_len {
-        let market_id_bytes = vault_reader.supply_queue(U256::from(i)).call().await?;
-        let (loan_token, collateral_token, oracle, irm, lltv) =
-            morpho_reader.id_to_market_params(market_id_bytes).call().await?;
+        let market_id_bytes = match vault_reader.supply_queue(U256::from(i)).call().await {
+            Ok(b) => b,
+            Err(e) => { tracing::debug!(index = i, %e, "Failed to read supply queue entry"); continue; }
+        };
+        let (loan_token, collateral_token, oracle, irm, lltv) = match
+            morpho_reader.id_to_market_params(market_id_bytes).call().await {
+            Ok(params) => params,
+            Err(e) => { tracing::debug!(index = i, %e, "Failed to read market params"); continue; }
+        };
 
         if collateral_token.is_zero() {
             continue;
