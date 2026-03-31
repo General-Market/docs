@@ -165,7 +165,9 @@ pub async fn snapshot(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SnapshotQuery>,
 ) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
-    let limit = params.limit.unwrap_or(10_000).min(500_000) as i64;
+    // No hard cap — the per-source ROW_NUMBER() window naturally bounds total rows
+    // to ~(num_sources * per_source_cap). Default 10K for lightweight grid requests.
+    let limit = params.limit.unwrap_or(10_000) as i64;
 
     // Use market_prices_latest cache table for fast lookups instead of
     // expensive DISTINCT ON against the 12GB market_prices table.
