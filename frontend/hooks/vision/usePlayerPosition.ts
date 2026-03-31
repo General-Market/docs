@@ -17,7 +17,7 @@ export function usePlayerPosition(batchId: number | undefined) {
   const { getAddress } = useDeployment()
   const visionAddress = getAddress('Vision')
 
-  const { data, isLoading, refetch } = useReadContract({
+  const { data, isLoading, isError, refetch } = useReadContract({
     address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getPosition',
@@ -36,7 +36,8 @@ export function usePlayerPosition(batchId: number | undefined) {
     totalDeposited: bigint
   } | undefined
 
-  const isJoined = pos !== undefined && pos.deposit > 0n
+  // If the contract call reverts (batch no longer exists), treat as not joined
+  const isJoined = !isError && pos !== undefined && pos.deposit > 0n
 
   return {
     position: isJoined ? {
