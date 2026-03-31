@@ -91,12 +91,6 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
     return result
   }, [snapshots])
 
-  // Signatures: show absolute value per snapshot instead of delta (counter may not be cumulative)
-  const sigData = useMemo(
-    () => snapshots.map((s) => ({ poll_batch_ts: s.poll_batch_ts, value: s.signatures_collected })),
-    [snapshots]
-  )
-
   const failedDeltas = useMemo(
     () => computeDeltas(snapshots, 'consensus_failed_total'),
     [snapshots]
@@ -282,31 +276,6 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* 6. Signatures Collected */}
-        <ExplorerChartCard
-          title={t('explorer.consensus_section.sigs_collected')}
-          subtitle={latest ? t('explorer.consensus_section.current_count', { count: latest.signatures_collected }) : undefined}
-          loading={loading}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sigData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis {...xAxisProps} />
-              <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
-              <Tooltip
-                labelFormatter={(v) => new Date(v as string).toLocaleString()}
-                formatter={(v: number) => [v, t('explorer.consensus_tooltip.signatures')]}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#000"
-                fill="#000"
-                fillOpacity={0.06}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ExplorerChartCard>
 
         {/* 7. Failed Rounds */}
         <ExplorerChartCard
