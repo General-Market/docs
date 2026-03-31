@@ -17,13 +17,14 @@ const REDIRECT_HEADERS = {
 const NOT_FOUND = () => new NextResponse(null, { status: 404, headers: REDIRECT_HEADERS })
 const BAD_GATEWAY = () => new NextResponse(null, { status: 502, headers: REDIRECT_HEADERS })
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ source: string; id: string[] }> },
-) {
-  const { source, id } = await params
-  const identifier = id.join('/')
-
+/**
+ * Called from the catch-all /api/vision/[...path] when path starts with "icon".
+ * path = ["crypto", "bitcoin"] → source="crypto", identifier="bitcoin"
+ */
+export async function resolveIcon(pathParts: string[]): Promise<NextResponse> {
+  const [source, ...rest] = pathParts
+  if (!source || rest.length === 0) return NOT_FOUND()
+  const identifier = rest.join('/')
   try {
     const imageUrl = await resolveImageUrl(source, identifier)
     if (!imageUrl) return NOT_FOUND()
@@ -31,6 +32,14 @@ export async function GET(
   } catch {
     return BAD_GATEWAY()
   }
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ source: string; id: string[] }> },
+) {
+  const { source, id } = await params
+  return resolveIcon([source, ...id])
 }
 
 // ESPN league code → API sport/league path

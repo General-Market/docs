@@ -22,8 +22,8 @@ const WalletControls = dynamic(() => import('./WalletControls').then(m => ({ def
 
 // ── Navigation ────────────────────────────────────────────
 const PRIMARY_NAV = [
-  { id: 'index',    href: '/index',    labelKey: 'nav.investment' },
   { id: 'vision',   href: '/',         labelKey: 'nav.vision' },
+  { id: 'index',    href: '/index',    labelKey: 'nav.investment' },
   { id: 'explorer', href: '/explorer', labelKey: 'nav.explorer' },
 ] as const
 
@@ -88,7 +88,7 @@ function TopbarStats() {
       {activeMarkets > 0 && (
         <><span className="font-bold">{activeMarkets.toLocaleString()}</span> live markets · </>
       )}
-      <span className="font-bold">{settled.toLocaleString()}</span> settled
+      <span className="font-bold">{settled.toLocaleString()}</span> settlements
     </span>
   )
 }
@@ -108,7 +108,7 @@ export function Header() {
 
   const activePage = resolveActivePage(pathname)
   const isDark = activePage !== null && DARK_PAGES.has(activePage)
-  const showVisionBalance = activePage === 'vision'
+  const showVisionBalance = false
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasWeb3 = useWeb3Available()

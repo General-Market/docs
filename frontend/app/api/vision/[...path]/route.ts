@@ -52,6 +52,12 @@ async function proxyRequest(req: NextRequest, pathSegments: string[]) {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params
+  // Let the dedicated icon route handler take precedence.
+  // Next.js catch-all can swallow more-specific nested routes.
+  if (path[0] === 'icon') {
+    const { resolveIcon } = await import('../icon/[source]/[...id]/route')
+    return resolveIcon(path.slice(1))
+  }
   return proxyRequest(req, path)
 }
 

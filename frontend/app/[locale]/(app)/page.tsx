@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
+import { WelcomeHero } from '@/components/domain/vision/WelcomeHero'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -18,15 +19,13 @@ export default async function VisionPage() {
   return (
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
-      <section className="px-6 lg:px-12 pt-12 pb-6">
-        <h1 className="text-display font-black text-black">
-          {t('h1')}
-        </h1>
-        <p className="text-body text-text-muted mt-3 max-w-xl font-normal leading-relaxed">
-          {t('markets.description')}
-        </p>
-      </section>
+
+      {/* Screen 1 — ChatGPT-style welcome */}
+      <WelcomeHero />
+
+      {/* Screen 2 — scrolls into view beneath the fold */}
       <div className="flex-1 overflow-x-clip">
+        <h1 className="sr-only">{t('h1')}</h1>
         <SourcesGrid />
       </div>
       <Footer />

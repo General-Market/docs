@@ -176,18 +176,18 @@ export function SourcesGrid() {
               </div>
             </div>
 
-            {/* Live uptime — right aligned, quieter */}
+            {/* Live uptime — right aligned, links to explorer */}
             <div className="ml-auto flex items-center gap-3 live-ambient-pulse">
-              <div className="flex items-center gap-2">
+              <a href="/explorer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                 </span>
                 <span className="text-label font-semibold text-green-400 uppercase">{t('sources_grid.live')}</span>
-              </div>
-              <span className="text-label font-mono font-bold text-white/50 tabular-nums">
-                {uptimePercent !== null ? `${uptimePercent}%` : '—'}
-              </span>
+                <span className="text-label font-mono font-bold text-white/50 tabular-nums">
+                  {uptimePercent !== null ? `${uptimePercent}%` : '—'}
+                </span>
+              </a>
               <button
                 onClick={() => setShowSectionBar(false)}
                 className="text-white/30 hover:text-white transition-colors text-title leading-none ml-1"
