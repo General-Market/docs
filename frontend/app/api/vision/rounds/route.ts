@@ -119,13 +119,10 @@ export async function GET(request: Request) {
       })
     }
 
-    // Verify on-chain: filter out zombie rounds
-    if (rounds.length > 0) {
-      const checks = await Promise.all(
-        rounds.map((r: any) => isBatchAlive(r.batchId ?? r.batch_id ?? r.id))
-      )
-      rounds = rounds.filter((_: any, i: number) => checks[i])
-    }
+    // No on-chain filtering for rounds — they are ephemeral and start with
+    // playerCount=0 before bots join. The oracle is authoritative for live
+    // round state. Zombie filtering belongs in /api/vision/batches (source cards)
+    // and /api/vision/source/*/history (round history), not here.
 
     return Response.json({ rounds })
   } catch (e) {
