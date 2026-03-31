@@ -187,11 +187,12 @@ export default function BatchEntryPanel({
   const exceedsBalance = isConnected && hasStake && depositAmount > walletUsdc
   const marketCountMismatch = !!(activeBatch?.marketCount && marketIds.length > 0
     && marketIds.length < activeBatch.marketCount)
-  // bettingEnd is advisory only — the on-chain contract enforces the real deadline.
-  // We no longer gate canSubmit on it: a stale oracle bettingEnd timestamp caused
-  // permanent button lockout between rounds.
+  // Block join when round is closed/settling. The contract enforces the real deadline
+  // but letting the tx revert wastes gas and confuses users.
+  const isBettingOpen = roundPhase === 'betting'
   const canSubmit = isConnected && hasStake && joinStep === 'idle'
     && !isJoined && allMarketsSet && !!configHash && !exceedsBalance && !marketCountMismatch
+    && isBettingOpen
 
   // -- Enter round handler --
   const handleEnterBatch = useCallback(async () => {
@@ -281,9 +282,12 @@ export default function BatchEntryPanel({
   const quickAmounts = [1, 5, 10, 50, 100]
 
   // -- Button label --
+  const bettingRemaining = useSharedCountdown(bettingEnd ?? null)
+
   const buttonLabel = useMemo(() => {
     if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
     if (isJoined || joinStep === 'done') return 'In Round'
+    if (!isBettingOpen) return 'Round Closed'
     if (isSubmitting) return t('batch_entry_panel.submitting')
     if (isJoinConfirming) return t('batch_entry_panel.confirming')
     if (isJoinPending) return t('batch_entry_panel.waiting_for_wallet')
@@ -291,7 +295,7 @@ export default function BatchEntryPanel({
     if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
     if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
     return t('batch_entry_panel.enter_batch')
-  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined])
+  }, [isConnected, joinStep, isJoinPending, isJoinConfirming, isSubmitting, stakeValue, isJoined, isBettingOpen])
 
   const isProcessing = joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done'
 
@@ -520,6 +524,15 @@ export default function BatchEntryPanel({
                 >
                   &times;
                 </button>
+              </div>
+            )}
+
+            {/* Closing soon warning */}
+            {!isJoined && isBettingOpen && bettingRemaining > 0 && bettingRemaining <= 30 && (
+              <div className="mb-2 px-2 py-1.5 rounded bg-amber-50 border border-amber-200 text-center">
+                <span className="text-[11px] font-bold text-amber-700">
+                  Closing in {bettingRemaining}s
+                </span>
               </div>
             )}
 
