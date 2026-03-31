@@ -21,7 +21,7 @@ abigen!(
     r#"[
         function getItpCount() external view returns (uint256)
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
-        function getItpNameSymbol(bytes32 itpId) external view returns (string name, string symbol)
+        function getItpNameSymbol(bytes32 itpId) external view returns (bytes32 name, bytes32 symbol)
         function itpVaults(bytes32 itpId) external view returns (address)
         event ITPCreated(bytes32 indexed itpId, address indexed creator, bytes32 name, bytes32 symbol, address[] assets, uint256[] weights)
         event Rebalanced(bytes32 indexed itpId, address[] newAssets, uint256[] newWeights, uint256[] newInventory, uint256 nav)
@@ -157,7 +157,7 @@ async fn fetch_name_symbol(
     itp_id_bytes: [u8; 32],
 ) -> (String, String) {
     match contract.get_itp_name_symbol(itp_id_bytes.into()).call().await {
-        Ok((name, symbol)) => (name, symbol),
+        Ok((name_b32, symbol_b32)) => (bytes32_to_string(name_b32), bytes32_to_string(symbol_b32)),
         Err(e) => {
             debug!(itp_id = %format!("0x{}", hex::encode(itp_id_bytes)), %e, "getItpNameSymbol failed, using empty");
             (String::new(), String::new())
