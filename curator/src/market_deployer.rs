@@ -19,8 +19,8 @@ const DEFAULT_LLTV: &str = "770000000000000000";
 /// Default initial oracle price: $1 in Morpho 36-decimal format
 const DEFAULT_INITIAL_PRICE: &str = "1000000000000000000000000000000000000";
 
-/// Max supply cap per market (type(uint184).max)
-const SUPPLY_CAP: &str = "24519928653854221733733552434404946937899825954937634816";
+/// Max supply cap per market (1M USDC = 1e24 in 18 decimals, fits uint184)
+const SUPPLY_CAP: &str = "1000000000000000000000000";
 
 #[derive(Debug, thiserror::Error)]
 pub enum DeployerError {
