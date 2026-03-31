@@ -75,14 +75,11 @@ export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
           <div key={g.sourceId} className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface transition-colors border-b border-border-light last:border-b-0">
             <div className="w-[160px] shrink-0">
               <div className="flex items-center gap-2">
-                {sourceEntry?.logo && (
-                  <div
-                    className="w-7 h-7 rounded flex items-center justify-center shrink-0"
-                    style={{ background: sourceEntry.brandBg ?? '#f5f5f5' }}
-                  >
-                    <img src={sourceEntry.logo} alt="" className="w-4 h-4 object-contain" />
-                  </div>
-                )}
+                <img
+                  src={`/source-imgs/icons/${sourceEntry?.sourceId ?? g.sourceId}.png`}
+                  alt=""
+                  className="w-6 h-6 shrink-0 object-contain"
+                />
                 <div className="text-caption font-semibold text-black truncate">
                   {sourceEntry?.name ?? g.sourceId}
                 </div>
@@ -95,7 +92,7 @@ export function BatchTickHistory({ batches }: BatchTickHistoryProps) {
                 )}
               </div>
               <div className="text-micro text-text-muted mt-0.5">
-                {g.rounds} rounds &middot; ${g.totalDeposited.toFixed(0)} vol
+                {g.rounds > 0 ? `${g.rounds} rounds` : '1 active'} &middot; ${g.totalDeposited.toFixed(0)} vol
               </div>
             </div>
             <TickSquares ticks={g.ticks} />
