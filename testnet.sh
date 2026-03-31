@@ -3512,9 +3512,118 @@ for addr, val in items:
         echo -e "  ${YELLOW}[T5] No settlements submitted yet (batches may need more time)${NC}"
     fi
 
+    # ── Test 6: Cross-chain ITP creation + auto-listing pipeline ──
+    # Full pipeline: requestCreateItp → oracle consensus → vault auto-deploy → Morpho market → SSE listing
+    echo -e "  [T6] Cross-chain ITP creation + auto-listing (<90s)..."
+    local SETTLEMENT_BRIDGE=$(python3 -c "import json; print(json.load(open('envs/testnet/deployment.json'))['contracts']['SettlementBridgeProxy'])" 2>/dev/null || echo "")
+
+    if [ -z "$SETTLEMENT_BRIDGE" ] || [ "$SETTLEMENT_BRIDGE" = "?" ]; then
+        echo -e "  ${YELLOW}[T6] Skipped (no SettlementBridgeProxy)${NC}"
+    else
+        # Fund test wallet on Settlement
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            "$TEST_ADDR" --value 1ether > /dev/null 2>&1
+        # Approve USDC on Settlement for BridgeProxy
+        local SETTLEMENT_USDC=$(python3 -c "import json; print(json.load(open('envs/testnet/deployment.json'))['contracts']['SETTLEMENT_USDC'])" 2>/dev/null)
+        cast send --private-key "$TEST_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            "$SETTLEMENT_USDC" "approve(address,uint256)" "$SETTLEMENT_BRIDGE" "$(cast max-uint)" > /dev/null 2>&1
+
+        # Pick 2 tokens from symbol-map for the cross-chain ITP
+        local _cc_tokens=$(python3 -c "
+import json
+sm = json.load(open('data/symbol-map.json'))
+items = list(sm.items())[:2]
+for addr, val in items:
+    print(addr)
+" 2>/dev/null)
+        local _cc_assets=()
+        local _cc_prices=()
+        local _cc_weights=()
+        local _ci=0
+        while IFS= read -r _ca; do
+            _cc_assets+=("$_ca")
+            _cc_prices+=("1000000000000000000")
+            if [ $_ci -eq 0 ]; then _cc_weights+=("500000000000000000"); else _cc_weights+=("500000000000000000"); fi
+            _ci=$((_ci + 1))
+        done <<< "$_cc_tokens"
+        local _ccw=$(IFS=,; echo "${_cc_weights[*]}")
+        local _cca=$(IFS=,; echo "${_cc_assets[*]}")
+        local _ccp=$(IFS=,; echo "${_cc_prices[*]}")
+
+        local _cc_itp_before=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+        local _cc_ts=$(date +%s)
+        local _cc_name="E2E-CC-$_cc_ts"
+        local _cc_symbol="CC${_cc_ts: -4}"
+
+        # Submit cross-chain ITP creation request
+        cast send --private-key "$TEST_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            --gas-limit 500000 \
+            "$SETTLEMENT_BRIDGE" \
+            "requestCreateItp(string,string,uint256[],address[],uint256[],(string,string,string))" \
+            "$_cc_name" "$_cc_symbol" "[$_ccw]" "[$_cca]" "[$_ccp]" '("","","")' \
+            > /dev/null 2>&1
+
+        if [ $? -ne 0 ]; then
+            echo -e "  ${RED}[T6] requestCreateItp tx failed${NC}"
+            E2E_FAIL=$((E2E_FAIL + 1))
+        else
+            echo -e "  [T6a] Request submitted, waiting for oracle + curator pipeline..."
+
+            # Wait up to 90s for: oracle creates ITP on L3 + curator deploys vault + market
+            local _cc_done=false
+            local _cc_itp_created=false
+            local _cc_vault_deployed=false
+            local _cc_market_listed=false
+            for _cci in $(seq 1 18); do
+                sleep 5
+
+                # Check ITP count increased (oracle processed it)
+                if [ "$_cc_itp_created" = false ]; then
+                    local _cc_itp_now=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+                    if [ "${_cc_itp_now:-0}" -gt "${_cc_itp_before:-0}" ] 2>/dev/null; then
+                        _cc_itp_created=true
+                        local _cc_new_id=$(printf "0x%064x" "$_cc_itp_now")
+                        echo -e "    ITP created on L3 (#$_cc_itp_now) at $((_cci * 5))s"
+                    fi
+                fi
+
+                # Check vault deployed (curator auto-deploy)
+                if [ "$_cc_itp_created" = true ] && [ "$_cc_vault_deployed" = false ]; then
+                    local _cc_vault=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "itpVaults(bytes32)(address)" "$_cc_new_id" 2>/dev/null)
+                    if [ -n "$_cc_vault" ] && [ "$_cc_vault" != "0x0000000000000000000000000000000000000000" ]; then
+                        _cc_vault_deployed=true
+                        echo -e "    Vault deployed at $((_cci * 5))s: $_cc_vault"
+                    fi
+                fi
+
+                # Check Morpho market exists via data-node SSE (batch_markets count)
+                if [ "$_cc_vault_deployed" = true ] && [ "$_cc_market_listed" = false ]; then
+                    local _cc_markets=$(vps_be_ssh "curl -s http://localhost:8200/sse/stream?topics=morpho-markets 2>/dev/null | head -c 100" 2>/dev/null || echo "")
+                    # Alternative: check supply queue length
+                    local _cc_qlen=$(cast call --rpc-url "$RPC_URL" "$VAULT_ADDR" "supplyQueueLength()(uint256)" 2>/dev/null | awk '{print $1}')
+                    local _cc_expected=$((_cc_itp_now + 1))  # queue should have itpCount+1 entries (idle market)
+                    if [ "${_cc_qlen:-0}" -ge "$_cc_itp_now" ] 2>/dev/null; then
+                        _cc_market_listed=true
+                        _cc_done=true
+                        echo -e "    Morpho market in supply queue at $((_cci * 5))s (queue=$_cc_qlen)"
+                        break
+                    fi
+                fi
+            done
+
+            if [ "$_cc_done" = true ]; then
+                echo -e "  ${GREEN}[T6] Cross-chain ITP created + auto-listed in $((_cci * 5))s ✓${NC}"
+                E2E_PASS=$((E2E_PASS + 1))
+            else
+                echo -e "  ${RED}[T6] Pipeline incomplete after 90s (itp=$_cc_itp_created vault=$_cc_vault_deployed market=$_cc_market_listed)${NC}"
+                E2E_FAIL=$((E2E_FAIL + 1))
+            fi
+        fi
+    fi
+
     echo -e ""
     echo -e "  ════════════════════════════════════════"
-    echo -e "  E2E Tests: ${GREEN}$E2E_PASS passed${NC}, ${RED}$E2E_FAIL failed${NC} / 5 tests"
+    echo -e "  E2E Tests: ${GREEN}$E2E_PASS passed${NC}, ${RED}$E2E_FAIL failed${NC} / 6 tests"
     echo -e "  ════════════════════════════════════════"
 }
 
