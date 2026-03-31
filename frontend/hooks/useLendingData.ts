@@ -154,7 +154,7 @@ export function useLendingData(): LendingData {
     })
 
     return result
-  }, [marketsMap, navSnapshots, navBySettlement, positions])
+  }, [marketsMap, navSnapshots, navBySettlement, balances, positions])
 
   const eligibleCollateral = useMemo<EligibleCollateral[]>(() => {
     if (!balances?.itp_shares || navSnapshots.length === 0) return []

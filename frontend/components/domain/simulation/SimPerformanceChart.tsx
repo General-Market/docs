@@ -48,6 +48,7 @@ interface DeployedItpRef {
   itpId: string
   name: string
   symbol: string
+  creator?: string
 }
 
 interface SingleChartProps {

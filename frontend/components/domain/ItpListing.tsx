@@ -38,6 +38,7 @@ export interface DeployedItpRef {
   itpId: string
   name: string
   symbol: string
+  creator?: string
 }
 
 interface ItpListingProps {
@@ -238,9 +239,14 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
   useEffect(() => {
     if (onItpsLoaded && namedRows.length > 0) {
-      onItpsLoaded(namedRows.map(r => ({ itpId: r.itpId, name: r.name, symbol: r.symbol })))
+      onItpsLoaded(namedRows.map(r => ({
+        itpId: r.itpId,
+        name: r.name,
+        symbol: r.symbol,
+        creator: creators.get(r.itpId.toLowerCase()),
+      })))
     }
-  }, [namedRows, onItpsLoaded])
+  }, [namedRows, onItpsLoaded, creators])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
+import { useAccount } from 'wagmi'
 import { SimFilterPanel, SimFilterState } from './SimFilterPanel'
 import { SimProgressBar } from './SimProgressBar'
 import { SimStatsGrid } from './SimStatsGrid'
@@ -17,6 +18,7 @@ interface DeployedItpRef {
   itpId: string
   name: string
   symbol: string
+  creator?: string
 }
 
 interface BacktestSectionProps {
@@ -29,6 +31,7 @@ interface BacktestSectionProps {
 
 export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItps, onRebalanceItp }: BacktestSectionProps) {
   const t = useTranslations('backtest')
+  const { address } = useAccount()
   const [filters, setFilters] = useState<SimFilterState>({
     category_id: 'all',
     top_n: 5,
@@ -54,6 +57,13 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
   const [isFullscreen, setIsFullscreen] = useState(false)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const quota = useSimQuota()
+
+  // Only show the connected wallet's own ITPs in the rebalance picker
+  const ownedItps = useMemo(() => {
+    if (!address || !deployedItps) return []
+    const addr = address.toLowerCase()
+    return deployedItps.filter(itp => itp.creator?.toLowerCase() === addr)
+  }, [address, deployedItps])
 
   const isSweep = filters.sweep !== 'none'
   const isCategorySweep = filters.sweep === 'category'
@@ -227,7 +237,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
               navSeries={sim.result.nav_series}
               runId={sim.result.run_id}
               onDeployIndex={handleDeployIndex}
-              deployedItps={deployedItps}
+              deployedItps={ownedItps}
               onRebalanceItp={handleRebalanceItp}
               chartContainerRef={chartContainerRef}
             />
@@ -270,7 +280,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
                 stats: v.stats,
               }))}
               onDeployIndex={handleDeployIndex}
-              deployedItps={deployedItps}
+              deployedItps={ownedItps}
               onRebalanceItp={handleRebalanceItp}
               chartContainerRef={chartContainerRef}
             />
