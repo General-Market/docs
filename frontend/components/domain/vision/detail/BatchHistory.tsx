@@ -328,32 +328,56 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           <div className="text-right">Time</div>
         </div>
 
-        {/* Active rounds — show all (betting + settling can overlap) */}
-        {page === 1 && activeRounds.map((round) => {
-          // Use locked bettingEnd — immune to oracle tick advances
-          const roundBettingEnd = getLockedBettingEnd(round.batchId)
-          const roundTickDuration = round.timeframeSecs ?? liveTickDuration
+        {/* ── Current round: single row that transitions through phases ──
+            Open → Close countdown → Settle countdown → next round.
+            No duplicate rows, no flicker. The latest active round is always
+            shown. When it closes, the retained round shows settlement.
+            When the next round opens, it seamlessly replaces it. */}
+        {page === 1 && (() => {
+          // Pick what to show: live round first, then retained, then props fallback
+          const live = activeRounds[0] ?? null
+          const retained = retainedRounds[0] ?? null
+
+          // Determine the "current" display round — the one actively counting down.
+          // If a live round exists (betting phase), show it.
+          // If only a retained round exists (settling phase), show that.
+          // If neither, fall back to activeBatch from props.
+          const displayRound = live ?? retained
+          if (!displayRound && !activeBatch) return null
+
+          const batchId = displayRound
+            ? ('batchId' in displayRound ? displayRound.batchId : 0)
+            : activeBatch!.batchId
+          const roundBettingEnd = displayRound
+            ? (live ? getLockedBettingEnd(live.batchId) : (retained?.bettingEnd ?? null))
+            : bettingEnd ?? null
+          const roundTickDuration = displayRound
+            ? ('timeframeSecs' in displayRound ? displayRound.timeframeSecs : liveTickDuration)
+            : liveTickDuration
           const roundSettlementEnd = roundBettingEnd && roundTickDuration
             ? new Date(new Date(roundBettingEnd).getTime() + roundTickDuration * 1000).toISOString()
             : null
-          const rawPool = round.tvl ? parseFloat(round.tvl) / 1e18 : 0
-          const participated = participatedBatches.has(round.batchId)
-          // On-chain join confirmation applies to the active batch even before oracle syncs
-          const knownJoined = participated || (isJoinedOnChain && round.batchId === activeBatchId)
-          const userEntry = participatedBatches.get(round.batchId)
-          // Reconcile: if user is in this batch but oracle lags, floor at their deposit
-          const players = knownJoined ? Math.max(round.playerCount ?? 0, 1) : (round.playerCount ?? 0)
+          const rawPool = displayRound
+            ? parseFloat(('tvl' in displayRound ? displayRound.tvl : '0') || '0') / 1e18
+            : activeBatch?.totalPool ?? 0
+          const participated = participatedBatches.has(batchId)
+          const knownJoined = participated || (isJoinedOnChain && batchId === activeBatchId)
+          const userEntry = participatedBatches.get(batchId)
+          const rawPlayers = displayRound
+            ? ('playerCount' in displayRound ? displayRound.playerCount : 0)
+            : activeBatch?.playerCount ?? 0
+          const players = knownJoined ? Math.max(rawPlayers, 1) : rawPlayers
           const pool = participated && userEntry ? Math.max(rawPool, userEntry.deposited) : rawPool
 
           return (
             <div
-              key={round.batchId}
+              key={batchId}
               className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${
                 participated ? 'bg-white' : 'bg-surface/60'
               }`}
             >
-              <div className={`font-mono text-[12px] tabular-nums ${participated ? 'font-bold text-black' : 'font-bold text-black'}`}>
-                #{round.batchId}
+              <div className="font-mono text-[12px] tabular-nums font-bold text-black">
+                #{batchId}
               </div>
               <ActiveStatus bettingEnd={roundBettingEnd} />
               <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
@@ -368,69 +392,8 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               </div>
             </div>
           )
-        })}
-        {/* Retained rounds — oracle dropped them but settlement window still open.
-            These show the CLOSED/Settle countdown that would otherwise be lost. */}
-        {page === 1 && retainedRounds.map((locked) => {
-          const roundSettlementEnd = new Date(
-            new Date(locked.bettingEnd).getTime() + locked.timeframeSecs * 1000
-          ).toISOString()
-          const rawPool = locked.tvl ? parseFloat(locked.tvl) / 1e18 : 0
-          const participated = participatedBatches.has(locked.batchId)
-          const userEntry = participatedBatches.get(locked.batchId)
-          const players = participated ? Math.max(locked.playerCount, 1) : locked.playerCount
-          const pool = participated && userEntry ? Math.max(rawPool, userEntry.deposited) : rawPool
-
-          return (
-            <div
-              key={`retained-${locked.batchId}`}
-              className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${
-                participated ? 'bg-white' : 'bg-surface/60'
-              }`}
-            >
-              <div className="font-mono text-[12px] tabular-nums font-bold text-black">
-                #{locked.batchId}
-              </div>
-              <ActiveStatus bettingEnd={locked.bettingEnd} />
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-                {players}
-              </div>
-              <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-                ${pool < 0.01 ? '0' : pool.toFixed(2)}
-              </div>
-              <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
-              <div className="text-right">
-                <ActiveTimers bettingEnd={locked.bettingEnd} settlementEnd={roundSettlementEnd} playerCount={players} />
-              </div>
-            </div>
-          )
-        })}
-        {/* Fallback: show single active batch from props if no live or retained rounds */}
-        {page === 1 && activeRounds.length === 0 && retainedRounds.length === 0 && activeBatch && (() => {
-          const participated = participatedBatches.has(activeBatch.batchId)
-          const knownJoined = participated || !!isJoinedOnChain
-          const userEntry = participatedBatches.get(activeBatch.batchId)
-          const players = knownJoined ? Math.max(activeBatch.playerCount, 1) : activeBatch.playerCount
-          const pool = participated && userEntry ? Math.max(activeBatch.totalPool, userEntry.deposited) : activeBatch.totalPool
-          return (
-          <div className={`grid ${GRID_COLS} items-center px-4 py-2.5 border-b border-border-light ${participated ? 'bg-white' : 'bg-surface/60'}`}>
-            <div className="font-mono text-[12px] font-bold text-black tabular-nums">
-              #{activeBatch.batchId}
-            </div>
-            <ActiveStatus bettingEnd={bettingEnd ?? null} />
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-              {players}
-            </div>
-            <div className="text-right font-mono text-[12px] tabular-nums text-text-secondary">
-              ${pool < 0.01 ? '0' : pool.toFixed(2)}
-            </div>
-            <div className="text-right font-mono text-[10px] tabular-nums text-text-muted">{'\u2014'}</div>
-            <div className="text-right">
-              <ActiveTimers bettingEnd={bettingEnd ?? null} settlementEnd={settlementTime} playerCount={players} />
-            </div>
-          </div>
-          )
         })()}
+        {/* (legacy fallback removed — single current round IIFE handles all states) */}
 
         {/* Settled rows */}
         {settled.map((batch) => {
