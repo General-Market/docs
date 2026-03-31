@@ -64,15 +64,16 @@ export function useLendingData(): LendingData {
   const positions = useSSEPositions()
   const { data: marketsMap, isLoading: marketsLoading } = useAllMorphoMarkets()
 
-  // Build a lookup from vault_address → nav snapshot (primary) + settlement_address fallback
-  const navByVault = useMemo(() => {
+  // Build a lookup from collateral address → nav snapshot
+  // Morpho collateral is the settlement BridgedITP address (primary) OR the L3 vault address (fallback)
+  const navByCollateral = useMemo(() => {
     const map = new Map<string, typeof navSnapshots[number]>()
     for (const n of navSnapshots) {
-      if (n.vault_address) {
-        map.set(n.vault_address.toLowerCase(), n)
-      }
       if (n.settlement_address) {
         map.set(n.settlement_address.toLowerCase(), n)
+      }
+      if (n.vault_address) {
+        map.set(n.vault_address.toLowerCase(), n)
       }
     }
     return map
@@ -93,7 +94,7 @@ export function useLendingData(): LendingData {
     const result: EnrichedMarket[] = []
 
     for (const [collateralToken, mktData] of marketsMap) {
-      const nav = navByVault.get(collateralToken.toLowerCase())
+      const nav = navByCollateral.get(collateralToken.toLowerCase())
       if (!nav) continue
 
       // Skip ITPs with zero NAV — no price feed resolved, broken or empty
@@ -157,7 +158,7 @@ export function useLendingData(): LendingData {
     })
 
     return result
-  }, [marketsMap, navSnapshots, navByVault, balances, positions])
+  }, [marketsMap, navSnapshots, navByCollateral, balances, positions])
 
   const eligibleCollateral = useMemo<EligibleCollateral[]>(() => {
     if (!balances?.itp_shares || navSnapshots.length === 0) return []
