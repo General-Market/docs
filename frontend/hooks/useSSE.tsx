@@ -67,6 +67,7 @@ export interface NavSnapshot {
   total_supply: string
   aum_usd: number
   settlement_address: string | null
+  vault_address: string | null
 }
 
 export interface OracleSnapshot {

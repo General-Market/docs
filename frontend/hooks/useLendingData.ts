@@ -64,10 +64,13 @@ export function useLendingData(): LendingData {
   const positions = useSSEPositions()
   const { data: marketsMap, isLoading: marketsLoading } = useAllMorphoMarkets()
 
-  // Build a lookup from settlement_address → nav snapshot (once)
-  const navBySettlement = useMemo(() => {
+  // Build a lookup from vault_address → nav snapshot (primary) + settlement_address fallback
+  const navByVault = useMemo(() => {
     const map = new Map<string, typeof navSnapshots[number]>()
     for (const n of navSnapshots) {
+      if (n.vault_address) {
+        map.set(n.vault_address.toLowerCase(), n)
+      }
       if (n.settlement_address) {
         map.set(n.settlement_address.toLowerCase(), n)
       }
@@ -90,7 +93,7 @@ export function useLendingData(): LendingData {
     const result: EnrichedMarket[] = []
 
     for (const [collateralToken, mktData] of marketsMap) {
-      const nav = navBySettlement.get(collateralToken.toLowerCase())
+      const nav = navByVault.get(collateralToken.toLowerCase())
       if (!nav) continue
 
       // Skip ITPs with zero NAV — no price feed resolved, broken or empty
@@ -154,7 +157,7 @@ export function useLendingData(): LendingData {
     })
 
     return result
-  }, [marketsMap, navSnapshots, navBySettlement, balances, positions])
+  }, [marketsMap, navSnapshots, navByVault, balances, positions])
 
   const eligibleCollateral = useMemo<EligibleCollateral[]>(() => {
     if (!balances?.itp_shares || navSnapshots.length === 0) return []

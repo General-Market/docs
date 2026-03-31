@@ -416,6 +416,7 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
             total_supply: itp.total_supply.to_string(),
             aum_usd: nav_f64 * supply_f64,
             settlement_address: itp.settlement_address.clone(),
+            vault_address: itp.vault_address.clone(),
         });
     }
 

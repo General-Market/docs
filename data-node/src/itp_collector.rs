@@ -22,6 +22,7 @@ abigen!(
         function getItpCount() external view returns (uint256)
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
         function getItpNameSymbol(bytes32 itpId) external view returns (string name, string symbol)
+        function itpVaults(bytes32 itpId) external view returns (address)
         event ITPCreated(bytes32 indexed itpId, address indexed creator, bytes32 name, bytes32 symbol, address[] assets, uint256[] weights)
         event Rebalanced(bytes32 indexed itpId, address[] newAssets, uint256[] newWeights, uint256[] newInventory, uint256 nav)
         event FillConfirmed(uint256 indexed orderId, uint256 indexed cycleNumber, uint256 fillPrice, uint256 fillAmount)
@@ -407,6 +408,13 @@ pub async fn run(
                     let _ = hex::decode_to_slice(hex_str, &mut itp_id_bytes);
                     let (name, symbol) = fetch_name_symbol(&contract, itp_id_bytes).await;
 
+                    // Fetch vault address
+                    let vault_address = match contract.itp_vaults(itp_id_bytes.into()).call().await {
+                        Ok(addr) if addr != ethers::types::Address::zero() =>
+                            Some(format!("{:?}", addr).to_lowercase()),
+                        _ => None,
+                    };
+
                     // Populate cache
                     let cached = CachedItpState {
                         creator,
@@ -418,6 +426,7 @@ pub async fn run(
                         name,
                         symbol,
                         settlement_address: None,
+                        vault_address,
                     };
                     {
                         let mut cache = chain_cache.itp_states.write().await;
@@ -576,6 +585,7 @@ pub async fn run(
                                 name,
                                 symbol,
                                 settlement_address: None,
+                                vault_address: None,
                             };
                             let mut cache = chain_cache.itp_states.write().await;
                             cache.states.insert(itp_id_hex, cached);
@@ -701,10 +711,10 @@ pub async fn run(
                         {
                             // Preserve existing name/symbol from cache (set at creation time)
                             let mut cache = chain_cache.itp_states.write().await;
-                            let (prev_name, prev_symbol, prev_settlement) = cache
+                            let (prev_name, prev_symbol, prev_settlement, prev_vault) = cache
                                 .states
                                 .get(&itp_id_hex)
-                                .map(|s| (s.name.clone(), s.symbol.clone(), s.settlement_address.clone()))
+                                .map(|s| (s.name.clone(), s.symbol.clone(), s.settlement_address.clone(), s.vault_address.clone()))
                                 .unwrap_or_default();
                             let cached = CachedItpState {
                                 creator,
@@ -716,6 +726,7 @@ pub async fn run(
                                 name: prev_name,
                                 symbol: prev_symbol,
                                 settlement_address: prev_settlement,
+                                vault_address: prev_vault,
                             };
                             cache.states.insert(itp_id_hex, cached);
                         }
@@ -882,6 +893,7 @@ pub async fn run(
                             name,
                             symbol,
                             settlement_address: None,
+                            vault_address: None,
                         };
                         let mut cache = chain_cache.itp_states.write().await;
                         cache.states.insert(itp_id_hex, cached_state);

@@ -26,6 +26,7 @@ pub struct NavSnapshot {
     pub total_supply: String,
     pub aum_usd: f64,
     pub settlement_address: Option<String>,
+    pub vault_address: Option<String>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -84,6 +85,7 @@ pub struct CachedItpState {
     pub name: String,
     pub symbol: String,
     pub settlement_address: Option<String>,
+    pub vault_address: Option<String>,
 }
 
 /// Cached MetaMorpho vault state (totalAssets, totalSupply, name, symbol, decimals)
