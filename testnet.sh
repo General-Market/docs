@@ -1358,6 +1358,23 @@ for name, b in vb.get('batches', {}).items():
         >> logs/deploy-morpho.log 2>&1 || echo -e "  ${YELLOW}Morpho deploy had warnings — check logs/deploy-morpho.log${NC}"
     echo -e "  ${GREEN}Morpho deployed${NC}"
 
+    # Inject chainId + deployBlock into morpho-e2e.json so data-node hydration works.
+    # data-node reads chainId from root to know which chain to scan, and uses deployBlock
+    # as the starting point for event discovery. Without these, market discovery never starts.
+    if [ -f "deployments/morpho-e2e.json" ]; then
+        local CURRENT_BLOCK
+        CURRENT_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+        python3 -c "
+import json
+d = json.load(open('deployments/morpho-e2e.json'))
+d['chainId'] = $CHAIN_ID
+d['deployBlock'] = int('$CURRENT_BLOCK')
+json.dump(d, open('deployments/morpho-e2e.json', 'w'), indent=2)
+print('Injected chainId=$CHAIN_ID deployBlock=$CURRENT_BLOCK into morpho-e2e.json')
+" 2>/dev/null && echo -e "  ${GREEN}morpho-e2e.json: chainId + deployBlock set${NC}" \
+            || echo -e "  ${YELLOW}morpho-e2e.json patch failed (non-critical)${NC}"
+    fi
+
     # Deploy Vision
     echo -e "${BLUE}[6/14] Deploying Vision + batches...${NC}"
     rm -rf contracts/broadcast/DeployVision.s.sol/$CHAIN_ID/ contracts/cache/DeployVision.s.sol/$CHAIN_ID/
@@ -1710,6 +1727,23 @@ json.dump(result, sys.stdout)
         echo -e "  ${GREEN}All $VAULT_OK vaults verified: indexContract == Index${NC}"
     fi
 
+    # [12b-pre] syncVaultBalance: mint vault tokens for ITP holders who bought before vaults existed.
+    # Investment.syncVaultBalance(itpId) is called by the deployer (registered oracle) for each ITP.
+    # Without this, early buyers have shares in Index but zero vault tokens — Morpho collateral = 0.
+    echo -e "  Calling syncVaultBalance for all ITPs (mint vault tokens for pre-vault holders)..."
+    local SYNC_OK=0
+    local SYNC_FAIL=0
+    for _svi in $(seq 1 "$ITP_TOTAL"); do
+        local _svhex=$(printf "0x%064x" "$_svi")
+        local _svvault=$(cast call "$INDEX_ON_CHAIN" "itpVaults(bytes32)(address)" "$_svhex" --rpc-url "$RPC_URL" 2>/dev/null)
+        [ -z "$_svvault" ] || [ "$_svvault" = "0x0000000000000000000000000000000000000000" ] && continue
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price $GAS_PRICE --gas-limit 500000 \
+            "$INDEX_ON_CHAIN" "syncVaultBalance(bytes32)" "$_svhex" \
+            > /dev/null 2>&1 && SYNC_OK=$((SYNC_OK + 1)) || SYNC_FAIL=$((SYNC_FAIL + 1))
+    done
+    echo -e "  ${GREEN}syncVaultBalance: $SYNC_OK OK, $SYNC_FAIL failed${NC}"
+
     # Deploy Morpho lending markets for ALL ITPs
     echo -e "${BLUE}[12b/14] Deploying batch lending markets for all ITPs...${NC}"
     MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
@@ -1780,6 +1814,25 @@ json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
             fi
             # Copy output to frontend
             [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
+
+            # Set initial 5% borrow rate on each new market via CuratorRateIRM.
+            # Without an explicit rate, the IRM returns 0 — no interest accrues, lenders get nothing.
+            # 5% APY in per-second ray = 5e16 / (365*24*3600) ≈ 1585489599 (but CuratorRateIRM
+            # takes APR in 1e18 basis: 5% = 50000000000000000)
+            if [ -n "$CURATOR_IRM" ] && [ -f "deployments/batch-markets.json" ]; then
+                local INITIAL_RATE="50000000000000000"  # 5% APR in 1e18 basis
+                local RATE_SET=0
+                local RATE_FAIL=0
+                while IFS= read -r _mktid; do
+                    [ -z "$_mktid" ] && continue
+                    cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                        --legacy --gas-price $GAS_PRICE --gas-limit 200000 \
+                        "$CURATOR_IRM" "setRate(bytes32,uint256)" "$_mktid" "$INITIAL_RATE" \
+                        > /dev/null 2>&1 && RATE_SET=$((RATE_SET + 1)) || RATE_FAIL=$((RATE_FAIL + 1))
+                done < <(python3 -c "import json; [print(m['marketId']) for m in json.load(open('deployments/batch-markets.json'))['markets']]" 2>/dev/null)
+                echo -e "  ${GREEN}CuratorRateIRM: 5% rate set on $RATE_SET markets ($RATE_FAIL failed)${NC}"
+            fi
+
             echo -e "  ${GREEN}$NEW_COUNT batch lending markets deployed${NC}"
         else
             echo -e "  ${GREEN}All ITPs already have markets${NC}"
@@ -1917,6 +1970,26 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         exit 1
     fi
     echo -e "  ${GREEN}Deployment synced (VPS + envs + frontend lib + frontend public — all verified)${NC}"
+
+    # Inject chainId at root of active-deployment.json (data-node hydration requires this).
+    # Without chainId at root level, data-node cannot identify the chain for on-chain reads.
+    # Also inject deployBlock so data-node starts event scanning from the right block.
+    local DEPLOY_BLOCK_FINAL
+    DEPLOY_BLOCK_FINAL=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    python3 -c "
+import json
+d = json.load(open('$DEPLOYMENT_FILE'))
+d['chainId'] = $CHAIN_ID
+d['deployBlock'] = int('$DEPLOY_BLOCK_FINAL')
+d['settlementChainId'] = $SETTLEMENT_CHAIN_ID
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+" 2>/dev/null && echo -e "  ${GREEN}active-deployment.json: chainId=$CHAIN_ID deployBlock=$DEPLOY_BLOCK_FINAL${NC}" \
+        || echo -e "  ${YELLOW}chainId/deployBlock injection failed (non-critical)${NC}"
+    # Propagate the updated file to all copies
+    cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    cp "$DEPLOYMENT_FILE" frontend/public/deployment.json
+    cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json 2>/dev/null || true
+    rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
 
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true
@@ -2567,6 +2640,17 @@ _start_curator_docker() {
             "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/oracle-bytecode.json"
     fi
 
+    # Copy ITPVault bytecode for auto vault deployment (curator deploys vaults for new ITPs).
+    # market_deployer.rs uses --vault-bytecode-path to deploy vaults + Morpho markets for
+    # ITPs created via requestCreateItp. Without this, new ITPs have no vault and no lending market.
+    local VAULT_BC="contracts/out/ITPVault.sol/ITPVault.json"
+    if [ -f "$VAULT_BC" ]; then
+        rsync -az -e "$RSYNC_SSH_BE" "$VAULT_BC" \
+            "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/vault-bytecode.json"
+    else
+        echo -e "  ${YELLOW}ITPVault.sol artifact not found at $VAULT_BC — auto vault deploy disabled${NC}"
+    fi
+
     if [ -z "$MORPHO_ADDR" ] || [ -z "$VAULT_ADDR" ]; then
         echo -e "  ${YELLOW}Curator skipped — no Morpho deployment${NC}"
         return
@@ -2586,6 +2670,7 @@ services:
     volumes:
       - /tmp/curator-key.txt:/tmp/curator-key.txt:ro
       - $VPS_BE_DIR/oracle-bytecode.json:/app/oracle-bytecode.json:ro
+      - $VPS_BE_DIR/vault-bytecode.json:/app/vault-bytecode.json:ro
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
     command:
       - "--unified-mode"
@@ -2627,6 +2712,8 @@ services:
       - "$LOAN_TOKEN_ADDR"
       - "--oracle-bytecode-path"
       - "/app/oracle-bytecode.json"
+      - "--vault-bytecode-path"
+      - "/app/vault-bytecode.json"
       - "--market-deploy-interval-secs"
       - "300"
       - "--log-level"
@@ -3621,9 +3708,112 @@ for addr, val in items:
         fi
     fi
 
+    # ── Test 7: Symbol-map validity — ITP NAVs must be non-zero ──
+    # If symbol-map is missing entries or has wrong pairs, oracle prices = 0 and NAV = 0.
+    # Test: spot-check 5 ITPs via data-node NAV endpoint.
+    echo -e "  [T7] Symbol-map validity (NAVs non-zero)..."
+    local _nav_nonzero=0
+    local _nav_zero=0
+    local _dn_itps=$(curl -sf "http://$VPS_BE_IP:$DATA_NODE_PORT/itps" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    itps = data if isinstance(data, list) else data.get('itps', [])
+    for itp in itps[:5]:
+        nav = itp.get('nav', '0')
+        print(nav)
+except: pass
+" 2>/dev/null || echo "")
+    while IFS= read -r _nav_val; do
+        [ -z "$_nav_val" ] && continue
+        if python3 -c "exit(0 if int('${_nav_val:-0}') > 0 else 1)" 2>/dev/null; then
+            _nav_nonzero=$((_nav_nonzero + 1))
+        else
+            _nav_zero=$((_nav_zero + 1))
+        fi
+    done <<< "$_dn_itps"
+    if [ "$_nav_nonzero" -ge 3 ] && [ "$_nav_zero" -eq 0 ]; then
+        echo -e "  ${GREEN}[T7] Symbol-map: $_nav_nonzero/5 ITPs have non-zero NAV ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    elif [ "$_nav_nonzero" -gt 0 ]; then
+        echo -e "  ${YELLOW}[T7] Symbol-map: $_nav_nonzero non-zero, $_nav_zero zero NAVs (partial — data-node may still be warming up)${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    else
+        echo -e "  ${RED}[T7] Symbol-map: all NAVs are zero — symbol-map likely missing entries or data-node unreachable${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
+    # ── Test 8: Lending markets visible in data-node ──
+    # Verifies data-node discovered Morpho markets via supply queue dedup.
+    # Result: data-node /morpho-markets endpoint returns >= 50 markets.
+    echo -e "  [T8] Lending markets visible in data-node..."
+    local _markets_count
+    _markets_count=$(curl -sf "http://$VPS_BE_IP:$DATA_NODE_PORT/morpho-markets" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    mkts = data if isinstance(data, list) else data.get('markets', [])
+    print(len(mkts))
+except: print(0)
+" 2>/dev/null || echo "0")
+    if [ "${_markets_count:-0}" -ge 50 ]; then
+        echo -e "  ${GREEN}[T8] Lending markets: $_markets_count visible in data-node ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    else
+        echo -e "  ${RED}[T8] Lending markets: only ${_markets_count:-0} visible (need 50+) — data-node market discovery may have failed${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
+    # ── Test 9: Vault deployed for every ITP (no missing vaults) ──
+    # Verifies all ITPs have a registered vault — prerequisite for Morpho collateral.
+    echo -e "  [T9] Vault deployment coverage..."
+    local _vaulted=0
+    local _no_vault=0
+    local _itp_total_t9
+    _itp_total_t9=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "getItpCount()(uint256)" 2>/dev/null | awk '{print $1}')
+    for _t9i in $(seq 1 "${_itp_total_t9:-0}"); do
+        local _t9hex=$(printf "0x%064x" "$_t9i")
+        local _t9vault=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR" "itpVaults(bytes32)(address)" "$_t9hex" 2>/dev/null)
+        if [ -n "$_t9vault" ] && [ "$_t9vault" != "0x0000000000000000000000000000000000000000" ]; then
+            _vaulted=$((_vaulted + 1))
+        else
+            _no_vault=$((_no_vault + 1))
+        fi
+    done
+    if [ "$_no_vault" -eq 0 ] && [ "$_vaulted" -gt 0 ]; then
+        echo -e "  ${GREEN}[T9] Vaults: all $_vaulted ITPs have vaults ✓${NC}"
+        E2E_PASS=$((E2E_PASS + 1))
+    else
+        echo -e "  ${RED}[T9] Vaults: $_no_vault/$_itp_total_t9 ITPs missing vault — syncVaultBalance or vault deploy may have failed${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
+    # ── Test 10: morpho-deployment.json correct (MORPHO + VAULT + loanToken non-zero) ──
+    # Verifies frontend/public/morpho-deployment.json has valid addresses from the current deploy.
+    # Stale addresses from a previous deploy cause frontend lending UI to call void contracts.
+    echo -e "  [T10] morpho-deployment.json addresses valid..."
+    local _morpho_pub=$(python3 -c "import json; d=json.load(open('frontend/public/morpho-deployment.json')); print(d['contracts'].get('MORPHO',''))" 2>/dev/null || echo "")
+    local _vault_pub=$(python3 -c "import json; d=json.load(open('frontend/public/morpho-deployment.json')); print(d['contracts'].get('METAMORPHO_VAULT',''))" 2>/dev/null || echo "")
+    local _loan_pub=$(python3 -c "import json; d=json.load(open('frontend/public/morpho-deployment.json')); print(d['marketParams'].get('loanToken',''))" 2>/dev/null || echo "")
+    local _morpho_src=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
+    if [ -n "$_morpho_pub" ] && [ "$_morpho_pub" = "$_morpho_src" ] && [ -n "$_vault_pub" ] && [ -n "$_loan_pub" ]; then
+        # Verify MORPHO has code on-chain
+        local _morpho_code=$(cast code --rpc-url "$RPC_URL" "$_morpho_pub" 2>/dev/null | wc -c | tr -d ' ')
+        if [ "$_morpho_code" -gt 10 ]; then
+            echo -e "  ${GREEN}[T10] morpho-deployment.json: MORPHO=$_morpho_pub (has code) ✓${NC}"
+            E2E_PASS=$((E2E_PASS + 1))
+        else
+            echo -e "  ${RED}[T10] morpho-deployment.json: MORPHO=$_morpho_pub has no code on-chain — stale address${NC}"
+            E2E_FAIL=$((E2E_FAIL + 1))
+        fi
+    else
+        echo -e "  ${RED}[T10] morpho-deployment.json: missing or mismatched (pub=$_morpho_pub src=$_morpho_src)${NC}"
+        E2E_FAIL=$((E2E_FAIL + 1))
+    fi
+
     echo -e ""
     echo -e "  ════════════════════════════════════════"
-    echo -e "  E2E Tests: ${GREEN}$E2E_PASS passed${NC}, ${RED}$E2E_FAIL failed${NC} / 6 tests"
+    echo -e "  E2E Tests: ${GREEN}$E2E_PASS passed${NC}, ${RED}$E2E_FAIL failed${NC} / 10 tests"
     echo -e "  ════════════════════════════════════════"
 }
 
