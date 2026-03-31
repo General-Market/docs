@@ -464,6 +464,10 @@ impl MarketDeployer {
         self.submit_cap(client, collateral_token, oracle_addr).await?;
         self.accept_cap(client, collateral_token, oracle_addr).await?;
 
+        // 4. Set initial borrow rate on CuratorRateIRM (5% APY)
+        // Without this, the punitive fallback rate (~100% APY) applies.
+        self.set_initial_rate(client, &market_id).await.ok(); // non-fatal
+
         Ok(market_id)
     }
 
@@ -688,6 +692,42 @@ impl MarketDeployer {
                 r.transaction_hash
             ))),
             None => Err(DeployerError::TxFailed("No receipt for setSupplyQueue".into())),
+        }
+    }
+
+    /// Set initial borrow rate on CuratorRateIRM so new markets don't show punitive 100% APY.
+    /// Uses 5% APY as a reasonable starting rate; the rate pusher adjusts it dynamically later.
+    async fn set_initial_rate(
+        &self,
+        client: &SignerMiddleware<Arc<Provider<Http>>, LocalWallet>,
+        market_id: &[u8; 32],
+    ) -> Result<(), DeployerError> {
+        // setRate(bytes32, uint256) — 5% APY ≈ 1.585e-9 per second in 1e18 scale
+        let selector = &ethers::utils::keccak256(b"setRate(bytes32,uint256)")[..4];
+        let rate = U256::from(1_585_489_599u64); // 5% APY
+        let encoded = ethers::abi::encode(&[
+            ethers::abi::Token::FixedBytes(market_id.to_vec()),
+            ethers::abi::Token::Uint(rate),
+        ]);
+        let mut calldata = selector.to_vec();
+        calldata.extend_from_slice(&encoded);
+
+        let tx = TransactionRequest::new()
+            .to(self.curator_irm)
+            .data(calldata);
+
+        let pending = client.send_transaction(tx, None).await
+            .map_err(|e| DeployerError::TxFailed(format!("setRate tx: {e}")))?;
+        let receipt = tokio::time::timeout(Duration::from_secs(30), pending).await
+            .map_err(|_| DeployerError::Timeout("setRate timeout".into()))?
+            .map_err(|e| DeployerError::TxFailed(format!("setRate: {e}")))?;
+
+        match receipt {
+            Some(r) if r.status == Some(1.into()) => {
+                info!(market = %ethers::utils::hex::encode(market_id), "Initial borrow rate set (5% APY)");
+                Ok(())
+            }
+            _ => Err(DeployerError::TxFailed("setRate failed".into())),
         }
     }
 }
