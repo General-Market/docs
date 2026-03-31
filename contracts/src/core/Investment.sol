@@ -695,8 +695,10 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         if (governance.isPaused()) {
             revert ErrorsLib.E004_SystemPaused();
         }
-        // Security: only admin can create ITPs (bridge proxy calls via admin relay)
-        if (msg.sender != governance.admin()) {
+        // Security: admin or registered oracle can create ITPs
+        bool isAdmin = msg.sender == governance.admin();
+        bool isOracle = address(oracleRegistry) != address(0) && oracleRegistry.isActiveOracle(msg.sender);
+        if (!isAdmin && !isOracle) {
             revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
 
