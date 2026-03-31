@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount } from 'wagmi'
-import { useSSEPositionForMarket, useSSEOracle } from './useSSE'
+import { useSSEPositionForMarket, useSSEOracle, useSSEMorphoMarkets } from './useSSE'
 import { fetchMorphoPosition, type MorphoPosition } from '@/lib/api/backend'
 import {
   UserPosition,
@@ -115,8 +115,20 @@ export function useMorphoPosition(market?: MorphoMarketEntry): UseMorphoPosition
     ? safeBigInt(restData.oracle_price)
     : undefined
 
-  // Computed fields from REST (need market-level data)
-  const debtAmount = restData ? safeBigInt(restData.debt_amount) : undefined
+  // Compute debt from SSE borrow_shares + market data (instant), fall back to REST
+  const sseMarkets = useSSEMorphoMarkets()
+  const sseMarket = sseMarkets?.find(m => m.market_id === market?.marketId)
+  const debtAmount = (() => {
+    // SSE-derived: debtAmount = borrowShares * totalBorrowAssets / totalBorrowShares
+    if (borrowShares !== undefined && borrowShares > 0n && sseMarket) {
+      const tba = safeBigInt(sseMarket.total_borrow_assets)
+      const tbs = safeBigInt(sseMarket.total_borrow_shares)
+      if (tbs > 0n) return (borrowShares * tba) / tbs
+    }
+    if (borrowShares === 0n) return 0n
+    // Fall back to REST
+    return restData ? safeBigInt(restData.debt_amount) : undefined
+  })()
 
   let position: UserPosition | undefined
   if (collateralAmount !== undefined && debtAmount !== undefined && oraclePrice !== undefined) {
