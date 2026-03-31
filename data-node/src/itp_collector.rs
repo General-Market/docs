@@ -21,7 +21,7 @@ abigen!(
     r#"[
         function getItpCount() external view returns (uint256)
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
-        function getItpNameSymbol(bytes32 itpId) external view returns (bytes32 name, bytes32 symbol)
+        function getITP(bytes32 itpId) external view returns (bytes32 name, bytes32 symbol, address creator, uint256 createdAt, uint256 feeRate, uint256 status, uint256 totalSupply, uint256 totalValue, uint256 assetCount)
         function itpVaults(bytes32 itpId) external view returns (address)
         event ITPCreated(bytes32 indexed itpId, address indexed creator, bytes32 name, bytes32 symbol, address[] assets, uint256[] weights)
         event Rebalanced(bytes32 indexed itpId, address[] newAssets, uint256[] newWeights, uint256[] newInventory, uint256 nav)
@@ -151,15 +151,16 @@ fn bytes32_to_string(b: [u8; 32]) -> String {
     String::from_utf8_lossy(&b[..end]).to_string()
 }
 
-/// Fetch name and symbol for an ITP from chain. Falls back to empty strings on failure.
+/// Fetch name and symbol for an ITP from chain via getITP(). Falls back to empty strings on failure.
 async fn fetch_name_symbol(
     contract: &IndexCollector<Provider<Http>>,
     itp_id_bytes: [u8; 32],
 ) -> (String, String) {
-    match contract.get_itp_name_symbol(itp_id_bytes.into()).call().await {
-        Ok((name_b32, symbol_b32)) => (bytes32_to_string(name_b32), bytes32_to_string(symbol_b32)),
+    match contract.get_itp(itp_id_bytes.into()).call().await {
+        Ok((name_b32, symbol_b32, _creator, _created, _fee, _status, _supply, _value, _count)) =>
+            (bytes32_to_string(name_b32), bytes32_to_string(symbol_b32)),
         Err(e) => {
-            debug!(itp_id = %format!("0x{}", hex::encode(itp_id_bytes)), %e, "getItpNameSymbol failed, using empty");
+            debug!(itp_id = %format!("0x{}", hex::encode(itp_id_bytes)), %e, "getITP failed, using empty");
             (String::new(), String::new())
         }
     }
