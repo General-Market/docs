@@ -1,6 +1,8 @@
-import { keccak256, toHex } from 'viem'
+import { keccak256, toHex, createPublicClient, http } from 'viem'
 import { getIssuerVisionUrl } from '@/lib/config'
 import sourcesDisplay from '@/data/sources-display.json'
+import deployment from '@/lib/contracts/deployment.json'
+import { indexL3 } from '@/lib/wagmi'
 
 // Build reverse mapping: internal sourceId → display sourceId, and keccak hashes
 const INTERNAL_TO_DISPLAY: Record<string, string> = {}
@@ -19,6 +21,69 @@ for (const s of (sourcesDisplay as any).sources) {
     hashes.add(iid.toLowerCase())
   }
   DISPLAY_HASHES[displayId.toLowerCase()] = hashes
+}
+
+const GET_BATCH_ABI = [{
+  inputs: [{ name: 'batchId', type: 'uint256' }],
+  name: 'getBatch',
+  outputs: [{
+    name: '', type: 'tuple',
+    components: [
+      { name: 'sourceId', type: 'bytes32' },
+      { name: 'creator', type: 'address' },
+      { name: 'configHash', type: 'bytes32' },
+      { name: 'marketIds', type: 'bytes32[]' },
+      { name: 'resolutionTypes', type: 'uint8[]' },
+      { name: 'tickDuration', type: 'uint32' },
+      { name: 'currentTick', type: 'uint32' },
+      { name: 'playerCount', type: 'uint32' },
+      { name: 'totalDeposited', type: 'uint256' },
+      { name: 'paused', type: 'bool' },
+    ],
+  }],
+  stateMutability: 'view',
+  type: 'function',
+}] as const
+
+// Cache verified batch IDs (30s TTL) — shared across requests
+let verifiedCache: { alive: Set<number>; dead: Set<number>; ts: number } = {
+  alive: new Set(), dead: new Set(), ts: 0,
+}
+
+async function isBatchAlive(batchId: number): Promise<boolean> {
+  // Check cache
+  if (Date.now() - verifiedCache.ts < 30_000) {
+    if (verifiedCache.alive.has(batchId)) return true
+    if (verifiedCache.dead.has(batchId)) return false
+  } else {
+    // Cache expired — reset
+    verifiedCache = { alive: new Set(), dead: new Set(), ts: Date.now() }
+  }
+
+  const visionAddress = (deployment as any).contracts?.Vision
+  if (!visionAddress || visionAddress === '0x0000000000000000000000000000000000000000') return true
+
+  try {
+    const client = createPublicClient({
+      chain: indexL3,
+      transport: http(indexL3.rpcUrls.default.http[0]),
+    })
+    const result = await client.readContract({
+      address: visionAddress as `0x${string}`,
+      abi: GET_BATCH_ABI,
+      functionName: 'getBatch',
+      args: [BigInt(batchId)],
+    })
+    const players = Number(result.playerCount ?? 0)
+    const deposited = BigInt(result.totalDeposited ?? 0n)
+    const alive = players > 0 || deposited > 0n
+    if (alive) verifiedCache.alive.add(batchId)
+    else verifiedCache.dead.add(batchId)
+    return alive
+  } catch {
+    verifiedCache.dead.add(batchId)
+    return false
+  }
 }
 
 export async function GET(request: Request) {
@@ -52,6 +117,14 @@ export async function GET(request: Request) {
         const sid = (r.source_id ?? r.sourceId ?? '').toLowerCase()
         return sid === filterLower || matchHashes.has(sid)
       })
+    }
+
+    // Verify on-chain: filter out zombie rounds
+    if (rounds.length > 0) {
+      const checks = await Promise.all(
+        rounds.map((r: any) => isBatchAlive(r.batchId ?? r.batch_id ?? r.id))
+      )
+      rounds = rounds.filter((_: any, i: number) => checks[i])
     }
 
     return Response.json({ rounds })
