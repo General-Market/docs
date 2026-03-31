@@ -11,6 +11,7 @@ import {
   TableCell,
 } from '@/components/ui/Table'
 import type { SourceHealth, SourceStatus } from '@/hooks/useSourceHealth'
+import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 
 // ── Types ──
 
@@ -33,6 +34,8 @@ interface SourceHealthTableProps {
   loading: boolean
   selectedSourceId: string | null
   onSelectSource: (sourceId: string) => void
+  /** Render with dark theme (for explorer) */
+  dark?: boolean
 }
 
 // ── Status helpers ──
@@ -181,14 +184,14 @@ const API_KEY_LINKS: Record<string, { url: string; label: string }> = {
 
 // ── Skeleton ──
 
-function TableSkeleton() {
+function TableSkeleton({ skelBg = 'bg-border-light' }: { skelBg?: string }) {
   return (
     <>
       {Array.from({ length: 6 }, (_, r) => (
         <TableRow key={r}>
           {Array.from({ length: 11 }, (_, c) => (
             <TableCell key={c}>
-              <div className={`h-4 bg-border-light rounded animate-pulse ${c === 0 ? 'w-28' : 'w-14'}`} />
+              <div className={`h-4 rounded animate-pulse ${c === 0 ? 'w-28' : 'w-14'} ${skelBg}`} />
             </TableCell>
           ))}
         </TableRow>
@@ -199,14 +202,14 @@ function TableSkeleton() {
 
 // ── Sort icon ──
 
-function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
+function SortIcon({ active, direction, color = 'text-black' }: { active: boolean; direction: SortDirection; color?: string }) {
   if (!active) {
     return (
       <span className="ml-1 text-text-muted opacity-40 text-[9px]">{'\u2195'}</span>
     )
   }
   return (
-    <span className="ml-1 text-black text-[9px]">
+    <span className={`ml-1 text-[9px] ${color}`}>
       {direction === 'asc' ? '\u2191' : '\u2193'}
     </span>
   )
@@ -219,8 +222,20 @@ export function SourceHealthTable({
   loading,
   selectedSourceId,
   onSelectSource,
+  dark = false,
 }: SourceHealthTableProps) {
+  // Theme tokens — dark mode uses explorer palette
+  const txt = dark ? 'text-white' : 'text-black'
+  const txtMuted = dark ? 'text-white/40' : 'text-text-muted'
+  const border = dark ? 'border-white/[0.08]' : 'border-border-light'
+  const bgContainer = dark ? 'glass-surface-dark' : ''
+  const bgSearch = dark ? 'bg-white/[0.04]' : 'bg-muted'
+  const bgInput = dark ? 'bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/30' : 'bg-card border-border-light text-black placeholder:text-text-muted'
+  const bgSkeleton = dark ? 'bg-white/[0.08]' : 'bg-border-light'
+  const hoverHead = dark ? 'hover:text-white' : 'hover:text-black'
+  const sortColor = dark ? 'text-white' : 'text-black'
   const t = useTranslations('markets')
+  const { sources: registrySources } = useSourceRegistry()
   const [sortField, setSortField] = useState<SortField>('status')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [search, setSearch] = useState('')
@@ -300,16 +315,16 @@ export function SourceHealthTable({
   ]
 
   return (
-    <div className="border border-border-light overflow-hidden">
+    <div className={`border ${border} overflow-hidden ${bgContainer}`}>
       {/* Search bar */}
-      <div className="px-3 py-2 border-b border-border-light bg-muted">
+      <div className={`px-3 py-2 border-b ${border} ${bgSearch}`}>
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('source_health.search_placeholder')}
-            className="w-full max-w-xs bg-card border border-border-light rounded px-3 py-1.5 text-caption text-black placeholder:text-text-muted focus:outline-none focus:border-color-info transition-colors"
+            className={`w-full max-w-xs rounded px-3 py-1.5 text-caption focus:outline-none focus:border-color-info transition-colors border ${bgInput}`}
           />
           {search && (
             <span className="text-label text-text-muted whitespace-nowrap">
@@ -326,18 +341,18 @@ export function SourceHealthTable({
               {columns.map(col => (
                 <TableHead
                   key={col.field}
-                  className={`cursor-pointer select-none hover:text-black transition-colors ${col.align || ''}`}
+                  className={`cursor-pointer select-none ${hoverHead} transition-colors ${col.align || ''}`}
                   onClick={() => handleSort(col.field)}
                 >
                   {col.label}
-                  <SortIcon active={sortField === col.field} direction={sortDirection} />
+                  <SortIcon active={sortField === col.field} direction={sortDirection} color={sortColor} />
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableSkeleton />
+              <TableSkeleton skelBg={bgSkeleton} />
             ) : sortedSources.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={11} className="py-12 text-center">
@@ -370,13 +385,25 @@ export function SourceHealthTable({
                     data-state={isSelected ? 'selected' : undefined}
                   >
                     {/* Source Name */}
-                    <TableCell className="font-bold text-black text-caption">
-                      <div className="flex flex-col">
-                        <span>{source.displayName}</span>
-                        <span className="text-micro font-mono text-text-muted font-normal">
-                          {source.sourceId}
-                        </span>
-                      </div>
+                    <TableCell className={`font-bold ${txt} text-caption`}>
+                      {(() => {
+                        const reg = findSource(registrySources, source.sourceId)
+                        return (
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={`/source-imgs/icons/${reg?.sourceId ?? source.sourceId}.png`}
+                              alt=""
+                              className="w-6 h-6 shrink-0 object-contain"
+                            />
+                            <div className="flex flex-col">
+                              <span>{source.displayName}</span>
+                              <span className="text-micro font-mono text-text-muted font-normal">
+                                {source.sourceId}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </TableCell>
 
                     {/* Status */}

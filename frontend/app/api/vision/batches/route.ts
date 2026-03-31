@@ -1,4 +1,4 @@
-import { keccak256, toHex, createPublicClient, http, encodeFunctionData, decodeFunctionResult } from 'viem'
+import { keccak256, toHex, createPublicClient, http } from 'viem'
 import { getIssuerVisionUrl } from '@/lib/config'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
 import sourcesDisplay from '@/data/sources-display.json'
@@ -57,6 +57,8 @@ const GET_BATCH_ABI = {
 let verifiedCache: { alive: Set<number>; ts: number } = { alive: new Set(), ts: 0 }
 
 async function getAliveBatchIds(batchIds: number[]): Promise<Set<number>> {
+  if (batchIds.length === 0) return new Set()
+
   // Return cache if fresh
   if (Date.now() - verifiedCache.ts < 30_000 && verifiedCache.alive.size > 0) {
     return verifiedCache.alive
@@ -71,32 +73,41 @@ async function getAliveBatchIds(batchIds: number[]): Promise<Set<number>> {
   try {
     const client = createPublicClient({
       chain: indexL3,
-      transport: http(indexL3.rpcUrls.default.http[0]),
+      transport: http(indexL3.rpcUrls.default.http[0], { timeout: 8_000 }),
     })
 
     // L3 has no multicall3 — fire individual calls in parallel.
     // Each call checks if the batch exists and has real activity.
     const alive = new Set<number>()
+    let rpcErrors = 0
     const checks = batchIds.map(async (id) => {
       try {
-        const result = await client.readContract({
+        await client.readContract({
           address: visionAddress as `0x${string}`,
           abi: [GET_BATCH_ABI],
           functionName: 'getBatch',
           args: [BigInt(id)],
-        }) as any
-        const tick = Number(result?.currentTick ?? 0)
-        const players = Number(result?.playerCount ?? 0)
-        const deposited = BigInt(result?.totalDeposited ?? 0n)
-        if (tick > 0 || players > 0 || deposited > 0n) {
-          alive.add(id)
-        }
+        })
+        // Call succeeded (no revert) — batch exists on-chain.
+        // A ghost batch (wrong contract / deleted) would revert.
+        alive.add(id)
       } catch {
-        // Revert = batch doesn't exist
+        // Revert = batch doesn't exist on this contract.
+        // RPC timeout/network error also lands here.
+        rpcErrors++
       }
     })
 
     await Promise.all(checks)
+
+    // Fail open: if ALL calls failed (RPC down, wrong contract address,
+    // contract redeployed) return all candidates. The verification exists
+    // to filter ghost batches, not to block all data when L3 is unreachable.
+    if (alive.size === 0 && rpcErrors === batchIds.length) {
+      console.warn(`[Vision batches] All ${rpcErrors} on-chain checks failed — returning all candidates (fail open)`)
+      return new Set(batchIds)
+    }
+
     verifiedCache = { alive, ts: Date.now() }
     return alive
   } catch {

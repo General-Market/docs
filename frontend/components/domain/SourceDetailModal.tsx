@@ -79,6 +79,7 @@ interface PriceHistoryPoint {
 interface SourceDetailModalProps {
   sourceId: string | null
   onClose: () => void
+  dark?: boolean
 }
 
 // ── Source metadata: value labels and units per source ──
@@ -614,7 +615,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
 
 // ── Component ──
 
-export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps) {
+export function SourceDetailModal({ sourceId, onClose, dark = false }: SourceDetailModalProps) {
   const t = useTranslations('markets')
   const [assets, setAssets] = useState<SourceAsset[]>([])
   const [buckets, setBuckets] = useState<HistoryBucket[]>([])
@@ -710,14 +711,14 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
       onClick={onClose}
     >
       <SpringModal
-        className={`${glass.modal} max-w-5xl w-full`}
+        className={`${dark ? 'glass-panel-dark rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto' : glass.modal} max-w-5xl w-full`}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-5">
             <div>
-              <h2 className="text-lg font-bold text-black">{t('source_detail.title')}</h2>
+              <h2 className={`text-lg font-bold ${dark ? 'text-white' : ''}`}>{t('source_detail.title')}</h2>
               <p className="text-caption font-mono text-text-muted mt-0.5">{sourceId}</p>
             </div>
             <ModalClose onClick={onClose} />
@@ -752,7 +753,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.total_assets')}
                   </p>
-                  <p className="text-heading font-extrabold font-mono tabular-nums text-black">
+                  <p className="text-heading font-extrabold font-mono tabular-nums">
                     {totalAssets}
                   </p>
                 </div>
@@ -768,7 +769,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.zero_values')}
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : 'text-black'}`}>
+                  <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : ''}`}>
                     {zeroCount}
                   </p>
                 </div>
@@ -776,7 +777,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     {t('source_detail.stale')}
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : 'text-black'}`}>
+                  <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : ''}`}>
                     {staleCount}
                   </p>
                 </div>
@@ -833,7 +834,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                     <div
                                       title={`${asset.symbol} — ${asset.name}\nClick to ${isExpanded ? 'hide' : 'show'} chart`}
                                     >
-                                      <span className="font-semibold text-caption text-black">
+                                      <span className="font-semibold text-caption">
                                         {asset.name || asset.symbol}
                                       </span>
                                       <span className="block font-mono text-micro text-text-muted truncate">

@@ -18,13 +18,14 @@ import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSe
 import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 import { SourcesExplorerSection } from '@/components/domain/explorer/SourcesExplorerSection'
 import { SystemExplorerSection } from '@/components/domain/explorer/SystemExplorerSection'
+import { LendingSection } from '@/components/domain/explorer/LendingSection'
 import { springs } from '@/components/ui/spring'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
-const TAB_IDS = ['consensus', 'orders', 'prices', 'p2p', 'cycles', 'itp', 'vision', 'sources', 'system', 'health', 'chain'] as const
+const TAB_IDS = ['consensus', 'orders', 'prices', 'p2p', 'cycles', 'itp', 'lending', 'vision', 'sources', 'system', 'health', 'chain'] as const
 type TabId = (typeof TAB_IDS)[number]
 
-const STANDALONE_TABS = new Set<TabId>(['sources', 'system'])
+const STANDALONE_TABS = new Set<TabId>(['sources', 'system', 'lending'])
 const RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '30d']
 
 export default function ExplorerPageClient() {
@@ -122,6 +123,7 @@ export default function ExplorerPageClient() {
           {activeTab === 'p2p' && <P2PSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'cycles' && <CycleSection snapshots={snapshots} latest={latest} loading={loading} />}
           {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'lending' && <LendingSection loading={loading} />}
           {activeTab === 'vision' && (
             <>
               <VisionSection snapshots={snapshots} latest={latest} loading={loading} />

@@ -21,35 +21,35 @@ export function SourcesExplorerSection() {
     <div>
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <div className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('explorer.sources_section.sources')}</p>
-          <p className="text-heading font-black tracking-tight font-mono tabular-nums text-black">
+        <div className="glass-surface-dark border border-white/[0.08] rounded-card p-3">
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">{t('explorer.sources_section.sources')}</p>
+          <p className="text-heading font-black tracking-tight font-mono tabular-nums text-white">
             {loading ? '--' : sources.length}
           </p>
         </div>
-        <div className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('explorer.sources_section.healthy')}</p>
+        <div className="glass-surface-dark border border-white/[0.08] rounded-card p-3">
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">{t('explorer.sources_section.healthy')}</p>
           <p className="text-heading font-black tracking-tight font-mono tabular-nums text-color-up">
             {loading ? '--' : healthyCt}
           </p>
         </div>
-        <div className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('explorer.sources_section.stale')}</p>
+        <div className="glass-surface-dark border border-white/[0.08] rounded-card p-3">
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">{t('explorer.sources_section.stale')}</p>
           <p className="text-heading font-black tracking-tight font-mono tabular-nums text-color-warning">
             {loading ? '--' : staleCt}
           </p>
         </div>
-        <div className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('explorer.sources_section.dead')}</p>
+        <div className="glass-surface-dark border border-white/[0.08] rounded-card p-3">
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">{t('explorer.sources_section.dead')}</p>
           <p className="text-heading font-black tracking-tight font-mono tabular-nums text-color-down">
             {loading ? '--' : deadCt}
           </p>
         </div>
-        <div className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('explorer.sources_section.live_assets')}</p>
-          <p className="text-heading font-black tracking-tight font-mono tabular-nums text-black">
+        <div className="glass-surface-dark border border-white/[0.08] rounded-card p-3">
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">{t('explorer.sources_section.live_assets')}</p>
+          <p className="text-heading font-black tracking-tight font-mono tabular-nums text-white">
             {loading ? '--' : (
-              <>{totalLiveAssets.toLocaleString()}<span className="text-caption text-text-muted font-semibold"> / {totalAssets.toLocaleString()}</span></>
+              <>{totalLiveAssets.toLocaleString()}<span className="text-caption text-white/40 font-semibold"> / {totalAssets.toLocaleString()}</span></>
             )}
           </p>
         </div>
@@ -70,11 +70,13 @@ export function SourcesExplorerSection() {
         loading={loading}
         selectedSourceId={selectedSourceId}
         onSelectSource={setSelectedSourceId}
+        dark
       />
 
       <SourceDetailModal
         sourceId={selectedSourceId}
         onClose={() => setSelectedSourceId(null)}
+        dark
       />
     </div>
   )

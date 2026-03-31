@@ -150,7 +150,8 @@
       "sources": "Sources",
       "system": "System",
       "health": "System Health",
-      "chain": "Chain & Gas"
+      "chain": "Chain & Gas",
+      "lending": "Lending"
     },
     "summary": {
       "oracles": "Oracles",
@@ -344,6 +345,15 @@
       "settlements": "Settlements",
       "no_settlement_data": "No settlement data",
       "roi": "ROI"
+    },
+    "lending_section": {
+      "title": "Lending",
+      "tvl": "Total Value Locked",
+      "utilization": "Utilization Rate",
+      "borrow_apy": "Borrow APY",
+      "borrowed": "Outstanding Debt",
+      "supply": "Market Liquidity",
+      "distribution": "Market Distribution"
     }
   },
   "points": {
