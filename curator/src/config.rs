@@ -185,6 +185,11 @@ pub struct CuratorArgs {
     #[arg(long, default_value = "")]
     pub oracle_bytecode_path: String,
 
+    /// Path to ITP vault bytecode (forge artifact JSON or raw hex file)
+    /// When set, the curator auto-deploys vaults for new ITPs that don't have one.
+    #[arg(long, default_value = "")]
+    pub vault_bytecode_path: String,
+
     /// Loan token address (L3 USDC)
     #[arg(long, default_value = "")]
     pub loan_token_address: String,
@@ -632,6 +637,7 @@ pub struct MarketDeployerConfig {
     pub curator_irm: Address,
     pub loan_token: Address,
     pub oracle_bytecode_path: String,
+    pub vault_bytecode_path: Option<String>,
     pub scan_interval: Duration,
 }
 
@@ -689,6 +695,7 @@ impl MarketDeployerConfig {
             curator_irm: args.curator_irm_address.parse().map_err(|e| format!("Bad curator IRM: {e}"))?,
             loan_token: args.loan_token_address.parse().map_err(|e| format!("Bad loan token: {e}"))?,
             oracle_bytecode_path: args.oracle_bytecode_path.clone(),
+            vault_bytecode_path: if args.vault_bytecode_path.is_empty() { None } else { Some(args.vault_bytecode_path.clone()) },
             scan_interval: Duration::from_secs(args.market_deploy_interval_secs),
         })
     }

@@ -44,6 +44,7 @@ pub struct MarketDeployer {
     curator_irm: Address,
     loan_token: Address,
     oracle_bytecode: Vec<u8>,
+    vault_bytecode: Option<Vec<u8>>,
     scan_interval: Duration,
 }
 
@@ -58,6 +59,8 @@ impl MarketDeployer {
             .map_err(|e| DeployerError::Rpc(format!("Invalid private key: {e}")))?;
 
         let bytecode = Self::load_bytecode(&config.oracle_bytecode_path)?;
+        let vault_bytecode = config.vault_bytecode_path.as_ref()
+            .and_then(|p| Self::load_bytecode(p).ok());
 
         Ok(Self {
             provider: Arc::new(provider),
@@ -69,6 +72,7 @@ impl MarketDeployer {
             curator_irm: config.curator_irm,
             loan_token: config.loan_token,
             oracle_bytecode: bytecode,
+            vault_bytecode,
             scan_interval: config.scan_interval,
         })
     }
@@ -207,6 +211,11 @@ impl MarketDeployer {
     }
 
     async fn get_all_vaults(&self, count: u64) -> Result<Vec<(u64, Address)>, DeployerError> {
+        let chain_id = self.provider.get_chainid().await
+            .map_err(|e| DeployerError::Rpc(format!("get_chainid: {e}")))?;
+        let wallet = self.wallet.clone().with_chain_id(chain_id.as_u64());
+        let client = SignerMiddleware::new(self.provider.clone(), wallet);
+
         let selector = &ethers::utils::keccak256(b"itpVaults(bytes32)")[..4];
         let mut vaults = Vec::new();
 
@@ -228,6 +237,17 @@ impl MarketDeployer {
                     let addr = Address::from_slice(&result[12..32]);
                     if addr != Address::zero() {
                         vaults.push((i, addr));
+                    } else if self.vault_bytecode.is_some() {
+                        // ITP exists but has no vault — deploy one
+                        match self.deploy_vault_for_itp(&client, i, itp_id_bytes).await {
+                            Ok(vault_addr) => {
+                                info!(itp = i, vault = %vault_addr, "Auto-deployed vault for new ITP");
+                                vaults.push((i, vault_addr));
+                            }
+                            Err(e) => {
+                                error!(itp = i, error = %e, "Failed to auto-deploy vault");
+                            }
+                        }
                     }
                 }
                 _ => {} // skip failed reads
@@ -235,6 +255,99 @@ impl MarketDeployer {
         }
 
         Ok(vaults)
+    }
+
+    /// Deploy an ITP vault (ERC4626 wrapper) and register it on the Index contract.
+    async fn deploy_vault_for_itp(
+        &self,
+        client: &SignerMiddleware<Arc<Provider<Http>>, LocalWallet>,
+        itp_num: u64,
+        itp_id_bytes: [u8; 32],
+    ) -> Result<Address, DeployerError> {
+        let vault_bytecode = self.vault_bytecode.as_ref()
+            .ok_or_else(|| DeployerError::Bytecode("No vault bytecode configured".into()))?;
+
+        // Read name/symbol from Index.getItpNameSymbol(itpId)
+        let ns_selector = &ethers::utils::keccak256(b"getItpNameSymbol(bytes32)")[..4];
+        let ns_encoded = ethers::abi::encode(&[ethers::abi::Token::FixedBytes(itp_id_bytes.to_vec())]);
+        let mut ns_calldata = ns_selector.to_vec();
+        ns_calldata.extend_from_slice(&ns_encoded);
+
+        let ns_tx = TransactionRequest::new().to(self.index_address).data(ns_calldata);
+        let ns_result = self.provider.call(&ns_tx.into(), None).await
+            .map_err(|e| DeployerError::Rpc(format!("getItpNameSymbol: {e}")))?;
+
+        // Decode ABI-encoded (string, string) — two dynamic offsets + string data
+        let (name, symbol) = if ns_result.len() >= 128 {
+            let decoded = ethers::abi::decode(
+                &[ethers::abi::ParamType::String, ethers::abi::ParamType::String],
+                &ns_result,
+            ).unwrap_or_default();
+            let n = decoded.first().and_then(|t| t.clone().into_string()).unwrap_or_default();
+            let s = decoded.get(1).and_then(|t| t.clone().into_string()).unwrap_or_default();
+            (n, s)
+        } else {
+            (format!("ITP-{itp_num}"), format!("ITP{itp_num}"))
+        };
+
+        info!(itp = itp_num, name = %name, symbol = %symbol, "Deploying vault");
+
+        // Constructor: ITP(bytes32 itpId, address indexContract, string name, string symbol, address asset)
+        let constructor_args = ethers::abi::encode(&[
+            ethers::abi::Token::FixedBytes(itp_id_bytes.to_vec()),
+            ethers::abi::Token::Address(self.index_address),
+            ethers::abi::Token::String(name),
+            ethers::abi::Token::String(symbol),
+            ethers::abi::Token::Address(self.loan_token),
+        ]);
+
+        let mut deploy_data = vault_bytecode.clone();
+        deploy_data.extend_from_slice(&constructor_args);
+
+        let tx = TransactionRequest::new().data(deploy_data);
+        let pending = client.send_transaction(tx, None).await
+            .map_err(|e| DeployerError::TxFailed(format!("Deploy vault tx: {e}")))?;
+        let tx_hash = pending.tx_hash();
+
+        let receipt = tokio::time::timeout(Duration::from_secs(120), pending).await
+            .map_err(|_| DeployerError::Timeout(format!("Vault deploy timeout (tx: {tx_hash:?})")))?
+            .map_err(|e| DeployerError::TxFailed(format!("Vault deploy: {e}")))?;
+
+        let vault_addr = match receipt {
+            Some(r) if r.status == Some(1.into()) => {
+                r.contract_address
+                    .ok_or_else(|| DeployerError::TxFailed("No contract address in vault receipt".into()))?
+            }
+            Some(r) => return Err(DeployerError::TxFailed(format!(
+                "Vault deploy reverted (tx: {:?})", r.transaction_hash
+            ))),
+            None => return Err(DeployerError::TxFailed("No receipt for vault deploy".into())),
+        };
+
+        // Register vault on Index: setITPVault(bytes32,address)
+        let set_selector = &ethers::utils::keccak256(b"setITPVault(bytes32,address)")[..4];
+        let set_encoded = ethers::abi::encode(&[
+            ethers::abi::Token::FixedBytes(itp_id_bytes.to_vec()),
+            ethers::abi::Token::Address(vault_addr),
+        ]);
+        let mut set_calldata = set_selector.to_vec();
+        set_calldata.extend_from_slice(&set_encoded);
+
+        let set_tx = TransactionRequest::new().to(self.index_address).data(set_calldata);
+        let set_pending = client.send_transaction(set_tx, None).await
+            .map_err(|e| DeployerError::TxFailed(format!("setITPVault tx: {e}")))?;
+
+        let set_receipt = tokio::time::timeout(Duration::from_secs(60), set_pending).await
+            .map_err(|_| DeployerError::Timeout("setITPVault timeout".into()))?
+            .map_err(|e| DeployerError::TxFailed(format!("setITPVault: {e}")))?;
+
+        match set_receipt {
+            Some(r) if r.status == Some(1.into()) => Ok(vault_addr),
+            Some(r) => Err(DeployerError::TxFailed(format!(
+                "setITPVault reverted (tx: {:?})", r.transaction_hash
+            ))),
+            None => Err(DeployerError::TxFailed("No receipt for setITPVault".into())),
+        }
     }
 
     async fn read_supply_queue(&self) -> Result<Vec<[u8; 32]>, DeployerError> {
