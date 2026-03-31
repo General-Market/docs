@@ -102,26 +102,52 @@ impl MarketDeployer {
     // ── Main loop ──
 
     pub async fn run_loop(&self, shutdown: Arc<AtomicBool>) {
-        info!("Market deployer started (scan every {:?})", self.scan_interval);
+        info!("Market deployer started (scan every {:?}, event-driven)", self.scan_interval);
 
-        // Initial delay — let other services stabilize
-        tokio::time::sleep(Duration::from_secs(30)).await;
+        // Initial scan after brief stabilization delay
+        tokio::time::sleep(Duration::from_secs(5)).await;
+        self.do_scan().await;
+
+        // Track last known ITP count for fast event-driven detection
+        let mut last_count = self.read_itp_count().await.unwrap_or(0);
+        // Fast poll: check ITP count every 10s. If it changed, scan immediately.
+        // Fallback full scan every scan_interval (5 min default).
+        let fast_poll = Duration::from_secs(10);
+        let mut since_full_scan = std::time::Instant::now();
 
         loop {
             if shutdown.load(Ordering::Relaxed) {
                 break;
             }
 
-            match self.scan_and_deploy().await {
-                Ok(0) => info!("Market scan: all ITPs have markets"),
-                Ok(n) => info!(deployed = n, "Deployed new lending markets"),
-                Err(e) => error!(error = %e, "Market deployer scan failed"),
-            }
+            tokio::time::sleep(fast_poll).await;
 
-            tokio::time::sleep(self.scan_interval).await;
+            // Fast check: did ITP count change?
+            let current_count = self.read_itp_count().await.unwrap_or(last_count);
+            let count_changed = current_count != last_count;
+
+            if count_changed {
+                info!(old = last_count, new = current_count, "New ITP detected — deploying vault + market");
+                last_count = current_count;
+                self.do_scan().await;
+                since_full_scan = std::time::Instant::now();
+            } else if since_full_scan.elapsed() >= self.scan_interval {
+                // Periodic full scan as fallback
+                self.do_scan().await;
+                last_count = current_count;
+                since_full_scan = std::time::Instant::now();
+            }
         }
 
         info!("Market deployer stopped");
+    }
+
+    async fn do_scan(&self) {
+        match self.scan_and_deploy().await {
+            Ok(0) => info!("Market scan: all ITPs have markets"),
+            Ok(n) => info!(deployed = n, "Deployed new lending markets"),
+            Err(e) => error!(error = %e, "Market deployer scan failed"),
+        }
     }
 
     async fn scan_and_deploy(&self) -> Result<usize, DeployerError> {

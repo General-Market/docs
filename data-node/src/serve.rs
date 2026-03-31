@@ -2604,7 +2604,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     spawn_poller!("user_cache_eviction", 300, crate::chain_pollers::poll_user_cache_eviction_once);
     spawn_poller!("morpho_markets", 30, crate::chain_pollers::poll_morpho_markets_once);
     spawn_poller!("morpho_vault",   30, crate::chain_pollers::poll_morpho_vault_once);
-    spawn_poller!("batch_markets_reload", 60, crate::chain_pollers::poll_batch_markets_reload);
+    spawn_poller!("batch_markets_reload", 15, crate::chain_pollers::poll_batch_markets_reload);
     info!("Chain pollers started (NAV=10s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, OracleRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=10s, UserCacheEviction=300s, MorphoMarkets=30s, MorphoVault=30s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
