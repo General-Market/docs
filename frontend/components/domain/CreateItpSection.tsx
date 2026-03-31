@@ -334,8 +334,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           throw new Error(`No price for ${selectedAssets[i].symbol} — asset may not be listed yet`)
         }
         const pBn = BigInt(p)
-        // Sanity: price must be > $0.0001 (1e14 in 18-dec) and < $1M (1e24)
-        if (pBn < BigInt('100000000000000') || pBn > BigInt('1000000000000000000000000')) {
+        // Sanity: price must be > $0.0001 (1e14 in 18-dec) and < $100M (1e26)
+        if (pBn < BigInt('100000000000000') || pBn > BigInt('100000000000000000000000000')) {
           throw new Error(`Price for ${selectedAssets[i].symbol} looks wrong ($${Number(pBn) / 1e18}) — data feed may be stale`)
         }
         return pBn
