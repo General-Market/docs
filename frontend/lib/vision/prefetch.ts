@@ -29,6 +29,7 @@ function deriveStatus(entry: BulkSourceEntry): string {
 
 export async function prefetchSnapshotMeta() {
   const res = await fetch(`${getAaDataNodeUrl()}/market/stats`, {
+    next: { revalidate: 30 },
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) throw new Error(`Bulk stats HTTP ${res.status}`)
@@ -68,6 +69,7 @@ function parseNum(v: unknown): number {
 
 export async function prefetchLeaderboard() {
   const res = await fetch(`${getIssuerVisionUrl()}/vision/leaderboard`, {
+    next: { revalidate: 15 },
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) throw new Error(`Leaderboard HTTP ${res.status}`)
@@ -103,7 +105,7 @@ export async function prefetchLeaderboard() {
 export async function prefetchSourceSnapshot(sourceId: string) {
   const res = await fetch(
     `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(sourceId)}&limit=10000`,
-    { signal: AbortSignal.timeout(8_000) }
+    { next: { revalidate: 30 }, signal: AbortSignal.timeout(8_000) }
   )
   if (!res.ok) throw new Error(`Snapshot HTTP ${res.status}`)
   return res.json()
@@ -119,7 +121,7 @@ export async function prefetchBatchConfigBySource(sourceId: string) {
       try {
         const res = await fetch(
           `${getDataNodeServer()}/batches/source/${encodeURIComponent(name)}/config`,
-          { signal: AbortSignal.timeout(5_000) }
+          { next: { revalidate: 300 }, signal: AbortSignal.timeout(5_000) }
         )
         if (res.ok) return res.json()
       } catch {}
@@ -135,6 +137,7 @@ export async function prefetchBatchConfigBySource(sourceId: string) {
 /** Prefetch active batches from issuer — lightweight version without on-chain verification. */
 export async function prefetchBatches() {
   const res = await fetch(`${getIssuerVisionUrl()}/vision/batches`, {
+    next: { revalidate: 10 },
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) throw new Error(`Batches HTTP ${res.status}`)
@@ -165,6 +168,7 @@ export async function prefetchBatches() {
 /** Prefetch active rounds for a source from issuer. */
 export async function prefetchRounds(sourceId: string) {
   const res = await fetch(`${getIssuerVisionUrl()}/vision/rounds/active`, {
+    next: { revalidate: 5 },
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) throw new Error(`Rounds HTTP ${res.status}`)
@@ -202,6 +206,7 @@ function sanitizeSource(s: Record<string, unknown>) {
 
 export async function prefetchSourceRegistry() {
   const res = await fetch(`${getDataNodeServer()}/sources/registry`, {
+    next: { revalidate: 120 },
     signal: AbortSignal.timeout(5_000),
   })
   if (!res.ok) return { sources: [], categories: [] }
