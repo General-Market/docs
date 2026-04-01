@@ -5231,16 +5231,33 @@ async fn batch_config_by_hash(
 
 /// GET /batches/source/:source_id/config — latest batch config for a source.
 /// Returns the most recently generated config with per-market resolution types.
+/// Uses a 5-minute in-memory TTL cache for DB fallback results.
 async fn batch_config_by_source(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(source_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
+    use std::sync::{Mutex, OnceLock};
+    use std::time::Instant;
+
+    static SOURCE_CONFIG_CACHE: OnceLock<Mutex<HashMap<String, (Instant, serde_json::Value)>>> = OnceLock::new();
+    let cache = SOURCE_CONFIG_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    const TTL: std::time::Duration = std::time::Duration::from_secs(300);
+
     // Check in-memory recommended configs first
     let configs = state.batch_engine.configs.read().await;
     if let Some(c) = configs.iter().find(|c| c.source_id == source_id) {
         return Ok(Json(serde_json::json!(c)));
     }
     drop(configs);
+
+    // Check TTL cache before hitting DB
+    if let Ok(guard) = cache.lock() {
+        if let Some((ts, val)) = guard.get(&source_id) {
+            if ts.elapsed() < TTL {
+                return Ok(Json(val.clone()));
+            }
+        }
+    }
 
     // Fall back to DB — latest config for this source
     let row: Option<(serde_json::Value, i32, i32, DateTime<Utc>)> = sqlx::query_as(
@@ -5254,13 +5271,20 @@ async fn batch_config_by_source(
     .flatten();
 
     match row {
-        Some((markets, tick_dur, lock_off, created_at)) => Ok(Json(serde_json::json!({
-            "sourceId": source_id,
-            "tickDurationSecs": tick_dur,
-            "lockOffsetSecs": lock_off,
-            "markets": markets,
-            "createdAt": created_at,
-        }))),
+        Some((markets, tick_dur, lock_off, created_at)) => {
+            let val = serde_json::json!({
+                "sourceId": source_id,
+                "tickDurationSecs": tick_dur,
+                "lockOffsetSecs": lock_off,
+                "markets": markets,
+                "createdAt": created_at,
+            });
+            // Store in TTL cache
+            if let Ok(mut guard) = cache.lock() {
+                guard.insert(source_id, (Instant::now(), val.clone()));
+            }
+            Ok(Json(val))
+        }
         None => Err(StatusCode::NOT_FOUND),
     }
 }
