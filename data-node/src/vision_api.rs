@@ -88,6 +88,7 @@ pub struct ErrorResponse {
 }
 
 /// Custom response type for snapshot endpoints that includes HMAC signature header.
+#[derive(Clone)]
 pub struct SnapshotResponse {
     status: StatusCode,
     headers: Vec<(String, String)>,
@@ -165,6 +166,32 @@ pub async fn snapshot(
     State(state): State<Arc<AppState>>,
     Query(params): Query<SnapshotQuery>,
 ) -> Result<SnapshotResponse, (StatusCode, Json<ErrorResponse>)> {
+    use std::sync::{Mutex, OnceLock};
+    use std::time::Instant;
+
+    // 15-second TTL cache for per-source snapshot results.
+    // Key: (source, category, limit). Eliminates redundant DB queries when
+    // multiple users view the same source detail page within the TTL window.
+    static SNAPSHOT_CACHE: OnceLock<Mutex<std::collections::HashMap<String, (Instant, SnapshotResponse)>>> = OnceLock::new();
+    let cache = SNAPSHOT_CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()));
+    const SNAPSHOT_TTL: std::time::Duration = std::time::Duration::from_secs(15);
+
+    let cache_key = format!(
+        "{}:{}:{}",
+        params.source.as_deref().unwrap_or("_all"),
+        params.category.as_deref().unwrap_or("_"),
+        params.limit.unwrap_or(10_000),
+    );
+
+    // Return cached response if within TTL
+    if let Ok(guard) = cache.lock() {
+        if let Some((ts, resp)) = guard.get(&cache_key) {
+            if ts.elapsed() < SNAPSHOT_TTL {
+                return Ok(resp.clone());
+            }
+        }
+    }
+
     // No hard cap — the per-source ROW_NUMBER() window naturally bounds total rows
     // to ~(num_sources * per_source_cap). Default 10K for lightweight grid requests.
     let limit = params.limit.unwrap_or(10_000) as i64;
@@ -262,11 +289,22 @@ pub async fn snapshot(
     // Compute HMAC signature if secret is configured
     let (status, headers, body_str) = add_snapshot_hmac(body_json, &state.snapshot_hmac_secret);
 
-    Ok(SnapshotResponse {
+    let resp = SnapshotResponse {
         status,
         headers,
         body: body_str,
-    })
+    };
+
+    // Cache result for subsequent requests within TTL
+    if let Ok(mut guard) = cache.lock() {
+        guard.insert(cache_key, (Instant::now(), resp.clone()));
+        // Evict stale entries to prevent unbounded growth
+        if guard.len() > 200 {
+            guard.retain(|_, (ts, _)| ts.elapsed() < SNAPSHOT_TTL);
+        }
+    }
+
+    Ok(resp)
 }
 
 // ---- POST /vision/snapshot/targeted ----
