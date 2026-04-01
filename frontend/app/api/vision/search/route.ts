@@ -61,11 +61,13 @@ function resolveImage(displaySource: string, assetId: string, snapshotImg: strin
   return getAssetImageUrl(displaySource, assetId, prefixes)
 }
 
-async function fetchSource(internalId: string, limit: number): Promise<Array<Record<string, any>>> {
+async function fetchSnapshot(limit: number, source?: string): Promise<Array<Record<string, any>>> {
   try {
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (source) params.set('source', source)
     const res = await fetch(
-      `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${limit}`,
-      { next: { revalidate: 120 }, signal: AbortSignal.timeout(10_000) },
+      `${getAaDataNodeUrl()}/vision/snapshot?${params}`,
+      { next: { revalidate: 120 }, signal: AbortSignal.timeout(15_000) },
     )
     if (!res.ok) return []
     const raw = await res.json()
@@ -78,7 +80,7 @@ async function fetchSource(internalId: string, limit: number): Promise<Array<Rec
 async function buildIndex(): Promise<SearchIndex> {
   // Single fetch — data-node caps each source to 5000 internally (per_source_cap).
   // With ~84 sources, this covers ~100K-400K assets in one call.
-  const allSnapshots = await fetchSource('', 500_000)
+  const allSnapshots = await fetchSnapshot(500_000)
 
   // Deduplicate by assetId
   const seen = new Set<string>()
