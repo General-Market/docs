@@ -21,6 +21,11 @@
     "SettlementOracleRegistry": "0xa6A9aF04C13eC5748FE6F8035B6Ac9ba4527E60C",
     "L3BridgeProxy": "0x9395cDfbb0ff99d2400471c4515B1893e6699CFB",
     "SettlementBridgeProxy": "0x19d9F7A778A30f8a73158Be5028C19571D9102d5",
-    "Vision": "0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649"
-  }
+    "Vision": "0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649",
+    "VisionVault": "0x8ef7896008E4f1D1E2B53377785b7335190dd286",
+    "VisionVaultFactory": "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
+  },
+  "whitelistedVaults": [
+    "0xe2FccF3e5860B7A21DD5b5fb073af44297CeFc58"
+  ]
 }

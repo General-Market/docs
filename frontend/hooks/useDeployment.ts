@@ -6,6 +6,7 @@ interface DeploymentConfig {
   chainId: number
   contracts: Record<string, string>
   accounts?: Record<string, string>
+  whitelistedVaults?: string[]
 }
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
@@ -33,9 +34,13 @@ export function useDeployment() {
     return (addr ?? '0x0000000000000000000000000000000000000000') as `0x${string}`
   }
 
+  const whitelistedVaults: `0x${string}`[] = (data?.whitelistedVaults ?? [])
+    .map(a => a.toLowerCase() as `0x${string}`)
+
   return {
     deployment: data ?? null,
     getAddress,
+    whitelistedVaults,
     isLoading,
     error: error ?? null,
   }

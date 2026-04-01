@@ -29,7 +29,7 @@ export interface VaultInfo {
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as const
 
 export function useVaults() {
-  const { getAddress } = useDeployment()
+  const { getAddress, whitelistedVaults } = useDeployment()
   const factoryAddress = getAddress('VisionVaultFactory')
   const enabled = factoryAddress !== ZERO_ADDR
 
@@ -46,7 +46,11 @@ export function useVaults() {
     query: { enabled },
   })
 
-  const addresses = (vaultAddresses as `0x${string}`[] | undefined) ?? []
+  // Filter by whitelist if one exists (empty whitelist = show all)
+  const allAddresses = (vaultAddresses as `0x${string}`[] | undefined) ?? []
+  const addresses = whitelistedVaults.length > 0
+    ? allAddresses.filter(a => whitelistedVaults.includes(a.toLowerCase() as `0x${string}`))
+    : allAddresses
 
   // 2. Multicall: read all vault data in one batch
   const vaultCalls = addresses.flatMap((addr) => [
