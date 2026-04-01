@@ -317,17 +317,18 @@ async fn get_healthy_assets(
 /// - 3-30%             → "up_300" with 300 bps (high volatility)
 /// - 30%+              → "up_3000" with 3000 bps (extreme volatility)
 fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
-    let abs_pct = change_pct.abs();
-    let is_down = change_pct < 0.0;
-    if abs_pct < 0.3 {
-        ("flat_x", 30)
-    } else if abs_pct < 3.0 {
-        if is_down { ("down_0", 30) } else { ("up_x", 30) }
-    } else if abs_pct < 30.0 {
-        if is_down { ("down_300", 300) } else { ("up_300", 300) }
-    } else {
-        if is_down { ("down_3000", 3000) } else { ("up_3000", 3000) }
+    // Use the same exact-threshold logic as resolution_from_median —
+    // compute bps from the actual change instead of bucketing into presets.
+    let threshold_bps = sanitize_threshold_bps(change_pct.abs());
+    let up = change_pct >= 0.0;
+
+    if threshold_bps < 10 {
+        return ("flat_x", 30);
     }
+    if threshold_bps < 20 {
+        return if up { ("up_0", 0) } else { ("down_0", 0) };
+    }
+    if up { ("up_x", threshold_bps) } else { ("down_x", threshold_bps) }
 }
 
 /// Convert a median signed change to a resolution type + threshold.
