@@ -4,7 +4,8 @@ import { useMemo, useRef } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
-import { useBatchConfig } from '@/hooks/vision/useBatchConfig'
+import { useQuery } from '@tanstack/react-query'
+import type { BatchConfigResponse } from '@/hooks/vision/useBatchConfig'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
@@ -25,6 +26,7 @@ import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
+import { FirstTradeCTA } from '../FirstTradeCTA'
 
 function WalletSourceStats({ sourceId }: { sourceId: string }) {
   const { address } = useAccount()
@@ -175,14 +177,25 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
       retry: false,
     },
   })
-  const batchExistsOnChain = !!activeBatch && !batchOnChainError && batchError === null && onChainBatch !== undefined
+  // Optimistic: show activeBatch immediately. Only hide if on-chain check
+  // explicitly failed (not while still loading). This eliminates the RPC
+  // waterfall from the critical render path.
+  const batchRpcFailed = !!activeBatch && (batchOnChainError || batchError !== null)
+  const verifiedBatch = batchRpcFailed ? null : activeBatch
 
-  // If oracle says batch exists but on-chain says it doesn't, treat as no batch.
-  const verifiedBatch = batchExistsOnChain ? activeBatch : null
-
-  // Fetch the batch's PINNED market list (authoritative, immutable per config_hash).
+  // Fetch latest batch config by sourceId — no waterfall dependency on configHash.
   // The snapshot can drift as assets become healthy/stale; the batch config cannot.
-  const { data: batchConfig } = useBatchConfig(verifiedBatch?.configHash)
+  const { data: batchConfig } = useQuery<BatchConfigResponse>({
+    queryKey: ['batch-config-source', sourceId],
+    queryFn: async () => {
+      const res = await fetch(`/api/vision/config/${sourceId}`)
+      if (!res.ok) return { markets: [] }
+      return res.json()
+    },
+    enabled: !!sourceId,
+    staleTime: 300_000,
+    retry: 1,
+  })
   const marketIds = useMemo(() => {
     // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
     if (batchConfig?.markets?.length) {
@@ -234,6 +247,11 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
       <div className="max-w-site mx-auto">
         {/* Source Hero */}
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={0} tickDuration={0} sourceId={sourceId} urgency={'normal'} />
+
+        {/* First-trade CTA — visible only to wallets with no history */}
+        <div className="mt-4">
+          <FirstTradeCTA />
+        </div>
 
         {/* Batch bar — always shows the open betting round */}
         {verifiedBatch ? (
