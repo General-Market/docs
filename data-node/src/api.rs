@@ -339,6 +339,8 @@ pub struct AppState {
     pub bitget_client: Arc<dyn BitgetReadOnlyClient + Send + Sync>,
     /// Orderbook aggregation cache (5s TTL)
     pub orderbook_cache: Arc<OrderbookCache>,
+    /// BatchWriter liveness — false means the write pipeline is dead
+    pub writer_alive: crate::market_data::write_channel::WriterAlive,
     /// Price broadcast hub for WebSocket streaming
     pub price_broadcast: Arc<crate::market_data::broadcast::PriceBroadcastHub>,
     /// Batch config cache for Vision WebSocket/history endpoints
@@ -553,24 +555,41 @@ pub fn router(state: Arc<AppState>) -> Router {
 struct HealthResponse {
     status: String,
     db_connected: bool,
+    writer_alive: bool,
     last_fetch_at: Option<DateTime<Utc>>,
     symbols_tracked: usize,
     chain_event_lag_total: u64,
 }
 
-async fn health(State(state): State<Arc<AppState>>) -> Json<HealthResponse> {
+async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, Json<HealthResponse>) {
     let db_connected = db::is_connected(&state.pool).await;
+    let writer_alive = state.writer_alive.load(std::sync::atomic::Ordering::Relaxed);
     let last_fetch_at = *state.collector.last_fetch_at.read().await;
     let symbols_tracked = *state.collector.symbols_tracked.read().await;
     let chain_event_lag_total = state.chain_event_lag_total.load(std::sync::atomic::Ordering::Relaxed);
 
-    Json(HealthResponse {
-        status: if db_connected { "healthy".into() } else { "degraded".into() },
+    let status = if !writer_alive {
+        "critical"
+    } else if !db_connected {
+        "degraded"
+    } else {
+        "healthy"
+    };
+
+    let http_status = if status == "critical" {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    } else {
+        axum::http::StatusCode::OK
+    };
+
+    (http_status, Json(HealthResponse {
+        status: status.into(),
         db_connected,
+        writer_alive,
         last_fetch_at,
         symbols_tracked,
         chain_event_lag_total,
-    })
+    }))
 }
 
 // ---- /price ----

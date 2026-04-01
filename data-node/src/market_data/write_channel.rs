@@ -10,6 +10,7 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
@@ -103,10 +104,15 @@ impl PriceWriteChannel {
     }
 }
 
-/// Create a (sender, receiver) pair for the write channel
-pub fn channel() -> (PriceWriteChannel, mpsc::Receiver<WriteMsg>) {
+/// Shared liveness flag — true while BatchWriter is running.
+/// AppState holds a clone; health endpoint reads it.
+pub type WriterAlive = Arc<AtomicBool>;
+
+/// Create a (sender, receiver, alive_flag) triple for the write channel.
+pub fn channel() -> (PriceWriteChannel, mpsc::Receiver<WriteMsg>, WriterAlive) {
     let (tx, rx) = mpsc::channel(CHANNEL_CAPACITY);
-    (PriceWriteChannel { tx }, rx)
+    let alive = Arc::new(AtomicBool::new(false));
+    (PriceWriteChannel { tx }, rx, alive)
 }
 
 /// Max chunks to process per retry tick. Prevents retry storms from blocking
@@ -118,6 +124,7 @@ pub struct BatchWriter {
     pool: PgPool,
     rx: mpsc::Receiver<WriteMsg>,
     broadcast_hub: Arc<PriceBroadcastHub>,
+    alive: WriterAlive,
     /// R4-4: VecDeque for O(1) pop_front eviction
     retry_buffer: VecDeque<(Vec<PriceRow>, u32)>,
     /// Total rows currently in retry_buffer (for cap enforcement)
@@ -133,11 +140,13 @@ impl BatchWriter {
         pool: PgPool,
         rx: mpsc::Receiver<WriteMsg>,
         broadcast_hub: Arc<PriceBroadcastHub>,
+        alive: WriterAlive,
     ) -> Self {
         Self {
             pool,
             rx,
             broadcast_hub,
+            alive,
             retry_buffer: VecDeque::new(),
             retry_buffer_rows: 0,
             latest_retry_buffer: VecDeque::new(),
@@ -148,6 +157,8 @@ impl BatchWriter {
     /// Run the batch writer loop forever.
     pub async fn run(mut self) {
         info!("[BatchWriter] Started — draining price channel");
+        self.alive.store(true, Ordering::SeqCst);
+
         let mut buffer: Vec<PriceRow> = Vec::with_capacity(BATCH_SIZE * 2);
         let mut flush_interval = tokio::time::interval(
             std::time::Duration::from_secs(FLUSH_INTERVAL_SECS),
@@ -191,6 +202,7 @@ impl BatchWriter {
                             // Final retry attempt (all remaining, no per-tick limit)
                             self.retry_all_remaining().await;
                             info!("[BatchWriter] Channel closed, exiting");
+                            self.alive.store(false, Ordering::SeqCst);
                             return;
                         }
                     }

@@ -415,19 +415,44 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     let broadcast_hub = Arc::new(crate::market_data::broadcast::PriceBroadcastHub::new());
 
     // Create batched write channel for all market data sources
-    let (price_writer, price_rx) = crate::market_data::write_channel::channel();
+    let (price_writer, price_rx, writer_alive) = crate::market_data::write_channel::channel();
 
     // Spawn BatchWriter and store JoinHandle for graceful shutdown
     let writer_handle: tokio::task::JoinHandle<()> = {
         let writer_pool = pool.clone();
         let writer_bh = broadcast_hub.clone();
+        let alive = writer_alive.clone();
         tokio::spawn(async move {
-            let writer = crate::market_data::write_channel::BatchWriter::new(writer_pool, price_rx, writer_bh);
+            let writer = crate::market_data::write_channel::BatchWriter::new(writer_pool, price_rx, writer_bh, alive.clone());
             writer.run().await;
+            alive.store(false, std::sync::atomic::Ordering::SeqCst);
             tracing::error!("[BatchWriter] Exited");
         })
     };
-    info!("BatchWriter started — all market data writes go through channel");
+
+    // Watchdog: if BatchWriter dies (panic or exit), terminate the process
+    // so Docker's `restart: unless-stopped` brings everything back clean.
+    // Uses write_channel.is_closed() as ground truth — survives panics where
+    // the alive flag might not get cleared.
+    {
+        let watchdog_channel = price_writer.clone();
+        let watchdog_alive = writer_alive.clone();
+        tokio::spawn(async move {
+            // Give BatchWriter time to start
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                if watchdog_channel.is_closed() {
+                    watchdog_alive.store(false, std::sync::atomic::Ordering::SeqCst);
+                    tracing::error!("[Watchdog] BatchWriter is dead (channel closed) — terminating process for Docker restart");
+                    // Brief pause to let the log flush
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                    std::process::exit(1);
+                }
+            }
+        });
+    }
+    info!("BatchWriter started with watchdog — all market data writes go through channel");
 
     // Each provider is gated on its config key. We use SyncEngine (fixed interval)
     // for simple sources and ScheduledSyncEngine for schedule-aware sources.
@@ -2551,6 +2576,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         batch_engine: batch_state,
         bitget_client,
         orderbook_cache,
+        writer_alive: writer_alive.clone(),
         price_broadcast: broadcast_hub.clone(),
         vision_batch_cache: Arc::new(crate::vision_batch_cache::VisionBatchCache::new(
             oracle_url.clone(),

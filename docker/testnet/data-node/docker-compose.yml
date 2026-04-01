@@ -23,6 +23,10 @@ services:
       - ../../../assets.json:/app/assets.json:ro
       - ../../../frontend/data/sources-display.json:/app/config/sources-display.json:ro
       - ../../../deployments/batch-markets.json:/app/deployments/batch-markets.json:ro
+    deploy:
+      resources:
+        limits:
+          memory: 6g
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
       interval: 30s
