@@ -76,25 +76,15 @@ async function fetchSource(internalId: string, limit: number): Promise<Array<Rec
 }
 
 async function buildIndex(): Promise<SearchIndex> {
-  const fetches: Promise<Array<Record<string, any>>>[] = []
+  // Single fetch — data-node caps each source to 5000 internally (per_source_cap).
+  // With ~84 sources, this covers ~100K-400K assets in one call.
+  const allSnapshots = await fetchSource('', 500_000)
 
-  // Fetch all priority sources
-  for (const displayId of PRIORITY_SOURCES) {
-    for (const iid of allInternalIds(displayId)) {
-      fetches.push(fetchSource(iid, 10_000))
-    }
-  }
-  // General scan
-  fetches.push(fetchSource('', 10_000)) // no source filter = all
-
-  const allResults = await Promise.all(fetches)
-
-  // Merge + deduplicate
+  // Deduplicate by assetId
   const seen = new Set<string>()
   const entries: IndexEntry[] = []
 
-  for (const batch of allResults) {
-    for (const s of batch) {
+  for (const s of allSnapshots) {
       const aid = s.assetId as string
       if (!aid || seen.has(aid)) continue
       seen.add(aid)
@@ -124,7 +114,6 @@ async function buildIndex(): Promise<SearchIndex> {
         _src: displaySource.toLowerCase(),
         _baseScore: baseScore,
       })
-    }
   }
 
   // Build prefix cache for 1-2 letter combos
