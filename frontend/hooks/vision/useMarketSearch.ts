@@ -19,17 +19,42 @@ interface SearchState {
   total: number
 }
 
+// Client-side result cache — avoids re-fetching for repeated/backspaced queries.
+// Bounded to 50 entries to prevent memory bloat.
+const resultCache = new Map<string, { results: SearchMarket[]; total: number; ts: number }>()
+const CACHE_TTL = 60_000 // 1 minute
+const CACHE_MAX = 50
+
+function getCached(q: string): { results: SearchMarket[]; total: number } | null {
+  const entry = resultCache.get(q)
+  if (!entry) return null
+  if (Date.now() - entry.ts > CACHE_TTL) {
+    resultCache.delete(q)
+    return null
+  }
+  return entry
+}
+
+function setCache(q: string, results: SearchMarket[], total: number) {
+  if (resultCache.size >= CACHE_MAX) {
+    // Evict oldest
+    const oldest = resultCache.keys().next().value
+    if (oldest) resultCache.delete(oldest)
+  }
+  resultCache.set(q, { results, total, ts: Date.now() })
+}
+
 /**
- * SSE-powered market search hook.
+ * SSE-powered market search hook with client-side caching.
  * Streams results from /api/vision/search as they arrive.
+ * Debounce is aggressive: 80ms (vs 250ms before).
  */
-export function useMarketSearch(query: string, debounceMs = 250) {
+export function useMarketSearch(query: string, debounceMs = 80) {
   const [state, setState] = useState<SearchState>({ results: [], loading: false, total: 0 })
   const abortRef = useRef<AbortController | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const search = useCallback((q: string) => {
-    // Cancel previous
     abortRef.current?.abort()
 
     if (!q.trim()) {
@@ -37,10 +62,34 @@ export function useMarketSearch(query: string, debounceMs = 250) {
       return
     }
 
+    // Check client cache first — instant for repeated queries
+    const cached = getCached(q)
+    if (cached) {
+      setState({ results: cached.results, loading: false, total: cached.total })
+      return
+    }
+
     const controller = new AbortController()
     abortRef.current = controller
 
-    setState(prev => ({ ...prev, loading: true, results: [] }))
+    // Show stale results from a prefix while loading (e.g., "bi" results while "bit" loads)
+    const prefixHint = q.length > 1 ? getCached(q.slice(0, -1)) : null
+    if (prefixHint) {
+      // Filter prefix results that still match the longer query
+      const filtered = prefixHint.results.filter(m => {
+        const ql = q.toLowerCase()
+        return m.symbol.toLowerCase().includes(ql) ||
+               m.name.toLowerCase().includes(ql) ||
+               m.assetId.toLowerCase().includes(ql)
+      })
+      if (filtered.length > 0) {
+        setState({ results: filtered, loading: true, total: 0 })
+      } else {
+        setState(prev => ({ ...prev, loading: true, results: [] }))
+      }
+    } else {
+      setState(prev => ({ ...prev, loading: true, results: [] }))
+    }
 
     const url = `/api/vision/search?q=${encodeURIComponent(q)}&limit=12`
 
@@ -55,6 +104,7 @@ export function useMarketSearch(query: string, debounceMs = 250) {
         function pump(): Promise<void> {
           return reader.read().then(({ done, value }) => {
             if (done) {
+              setCache(q, markets, markets.length)
               setState(prev => ({ ...prev, loading: false }))
               return
             }
@@ -71,6 +121,7 @@ export function useMarketSearch(query: string, debounceMs = 250) {
                   markets.push(event.market)
                   setState({ results: [...markets], loading: true, total: 0 })
                 } else if (event.type === 'done') {
+                  setCache(q, markets, event.total)
                   setState({ results: [...markets], loading: false, total: event.total })
                 }
               } catch {}
