@@ -16,9 +16,11 @@ const RANGE_MS: Record<TimeRange, number | null> = {
 
 interface PnlChartProps {
   history: PnlPoint[]
+  /** Hero mode — taller chart, prominent P&L figure, label header */
+  hero?: boolean
 }
 
-export function PnlChart({ history }: PnlChartProps) {
+export function PnlChart({ history, hero }: PnlChartProps) {
   const t = useTranslations('common')
   const locale = useLocale()
   const [range, setRange] = useState<TimeRange>('ALL')
@@ -31,8 +33,9 @@ export function PnlChart({ history }: PnlChartProps) {
   }, [history, range])
 
   if (history.length === 0) {
+    const emptyHeight = hero ? 'h-[200px]' : 'h-[140px]'
     return (
-      <div className="border border-border-light rounded p-6 h-[140px] flex items-center justify-center">
+      <div className={`${hero ? '' : 'border border-border-light rounded'} p-6 ${emptyHeight} flex items-center justify-center`}>
         <span className="text-caption text-text-muted">{t('profile.no_pnl_data')}</span>
       </div>
     )
@@ -42,11 +45,27 @@ export function PnlChart({ history }: PnlChartProps) {
   const isPositive = currentPnl >= 0
   const strokeColor = isPositive ? '#22c55e' : '#ef4444'
   const fillColor = isPositive ? '#22c55e' : '#ef4444'
+  const chartHeight = hero ? 120 : 100
 
   return (
-    <div className="border border-border-light rounded overflow-hidden">
+    <div className={hero ? '' : 'border border-border-light rounded overflow-hidden'}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className={`flex items-center justify-between ${hero ? 'px-5 pt-4 pb-1' : 'px-3 py-2'}`}>
+        {hero ? (
+          <div>
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+              Profit & Loss
+            </div>
+            <div className={`text-[28px] font-black font-mono tabular-nums leading-none ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+              {currentPnl >= 0 ? '+' : ''}${Math.abs(currentPnl).toFixed(2)}
+            </div>
+          </div>
+        ) : (
+          <div className={`text-subhead font-extrabold font-mono ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+            {currentPnl >= 0 ? '+' : ''}${currentPnl.toFixed(2)}
+          </div>
+        )}
+
         {/* Time range toggles */}
         <div className="flex items-center gap-1">
           {(['1D', '1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
@@ -63,17 +82,12 @@ export function PnlChart({ history }: PnlChartProps) {
             </button>
           ))}
         </div>
-
-        {/* Current value */}
-        <div className={`text-subhead font-extrabold font-mono ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
-          {currentPnl >= 0 ? '+' : ''}${currentPnl.toFixed(2)}
-        </div>
       </div>
 
       {/* Chart */}
-      <div style={{ height: 100 }}>
+      <div style={{ height: chartHeight }} className={hero ? 'px-2' : ''}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filtered} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <AreaChart data={filtered} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={fillColor} stopOpacity={0.2} />
@@ -100,7 +114,7 @@ export function PnlChart({ history }: PnlChartProps) {
               type="monotone"
               dataKey="pnl"
               stroke={strokeColor}
-              strokeWidth={1.5}
+              strokeWidth={hero ? 2 : 1.5}
               fill="url(#pnlGradient)"
             />
           </AreaChart>

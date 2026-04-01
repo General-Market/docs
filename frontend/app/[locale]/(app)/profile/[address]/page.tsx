@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { ProfileHeader } from '@/components/domain/profile/ProfileHeader'
+import { ProfileHero } from '@/components/domain/profile/ProfileHero'
 import { ProfileTabs } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
 import { IndexTab } from '@/components/domain/profile/IndexTab'
@@ -49,11 +49,22 @@ function ProfileContent({ address }: { address: string }) {
         <div className="border-b border-border-light">
           <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto py-6">
-              <div className="h-12 w-48 bg-surface rounded animate-pulse" />
-              <div className="mt-4 flex gap-6">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-8 w-20 bg-surface rounded animate-pulse" />
-                ))}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white border border-border-light rounded-xl p-5">
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="w-14 h-14 rounded-full bg-surface animate-pulse" />
+                    <div>
+                      <div className="h-6 w-36 bg-surface rounded animate-pulse" />
+                      <div className="h-3 w-24 bg-surface rounded animate-pulse mt-2" />
+                    </div>
+                  </div>
+                  <div className="flex gap-6">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="h-8 w-16 bg-surface rounded animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white border border-border-light rounded-xl h-[200px] animate-pulse" />
               </div>
             </div>
           </div>
@@ -70,10 +81,11 @@ function ProfileContent({ address }: { address: string }) {
 
   return (
     <>
-      <ProfileHeader
+      <ProfileHero
         address={address}
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
         stats={stats}
+        pnlHistory={profile?.pnlHistory ?? []}
       />
       <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
       <div className="px-6 lg:px-12">
