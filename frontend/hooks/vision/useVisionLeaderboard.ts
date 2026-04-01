@@ -83,8 +83,8 @@ export function useVisionLeaderboard(batchId?: number, sourceId?: string) {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['vision-leaderboard', batchId, sourceId],
     queryFn: () => fetchVisionLeaderboard(batchId, sourceId),
-    refetchInterval: 5000,
-    staleTime: 3000,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   })
 
   return {

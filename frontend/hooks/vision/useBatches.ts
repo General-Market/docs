@@ -45,6 +45,6 @@ export function useBatches() {
       }
       return Array.from(bySource.values())
     },
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
   })
 }
