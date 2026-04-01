@@ -220,6 +220,11 @@ function searchEntries(query: string, index: SearchIndex, limit: number): { resu
   return { results: scored.slice(0, limit).map(s => s.entry), total: scored.length }
 }
 
+// Eagerly start building the index when this module is first loaded.
+// On Vercel Fluid Compute, the function instance persists — so the index
+// is ready before the first user types anything.
+getIndex().catch(() => {})
+
 // ── Route Handler ───────────────────────────────────────
 
 export async function GET(request: Request) {
