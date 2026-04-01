@@ -116,7 +116,8 @@ async function buildIndex(): Promise<SearchIndex> {
       })
   }
 
-  // Build prefix cache for 1-2 letter combos
+  // Build prefix cache: 1-2 letter combos (exhaustive) + 3-letter combos (only those with matches).
+  // 1-2 letters: 36 + 1296 = 1332 entries. 3 letters: only prefixes that appear as symbol/name starts.
   const prefixCache = new Map<string, IndexEntry[]>()
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
@@ -125,6 +126,16 @@ async function buildIndex(): Promise<SearchIndex> {
     for (const c2 of alphabet) {
       buildPrefixResults(c1 + c2, entries, prefixCache)
     }
+  }
+
+  // 3-letter prefixes: collect from actual symbol/name starts to avoid 46K empty combos
+  const threePrefixes = new Set<string>()
+  for (const e of entries) {
+    if (e._sym.length >= 3) threePrefixes.add(e._sym.slice(0, 3))
+    if (e._name.length >= 3) threePrefixes.add(e._name.slice(0, 3))
+  }
+  for (const prefix of threePrefixes) {
+    buildPrefixResults(prefix, entries, prefixCache)
   }
 
   return { entries, prefixCache, builtAt: Date.now() }
