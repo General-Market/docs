@@ -63,12 +63,19 @@ export async function ensureCorrectChain(
   // if the switch hasn't propagated, it throws ConnectorChainMismatchError.
   const provider = typeof window !== 'undefined' ? (window as any).ethereum : null
   if (provider) {
-    const deadline = Date.now() + 3000
+    const deadline = Date.now() + 5000
     while (Date.now() < deadline) {
       const hex = await provider.request({ method: 'eth_chainId' })
       if (parseInt(hex, 16) === targetChainId) return
       await new Promise(r => setTimeout(r, 100))
     }
+    // Deadline passed — provider never confirmed the switch.
+    // Throwing here prevents writeContract from firing against the wrong chain,
+    // which would produce ConnectorChainMismatchError or send to the wrong network.
+    throw new Error(
+      `Chain switch to ${targetChainId} was not confirmed by the wallet within 5 seconds. ` +
+      `Please switch your wallet to the correct network and try again.`
+    )
   }
 }
 

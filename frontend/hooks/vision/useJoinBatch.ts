@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
-import { useChainWriteContract } from '@/hooks/useChainWrite'
+import { useAccount, useWaitForTransactionReceipt, useReadContract, useSwitchChain } from 'wagmi'
+import { useChainWriteContract, ensureCorrectChain } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { encodeBitmap, hashBitmap, type BetDirection } from '@/lib/vision/bitmap'
@@ -106,7 +106,8 @@ const ERC20_ABI = [
  * the actual bitmap bytes to the oracle nodes.
  */
 export function useJoinBatch(): UseJoinBatchReturn {
-  const { address } = useAccount()
+  const { address, chainId: currentChainId } = useAccount()
+  const { switchChainAsync } = useSwitchChain()
   const { getAddress } = useDeployment()
   const visionAddress = getAddress('Vision')
   const usdcAddress = getAddress('L3_WUSDC')
@@ -167,8 +168,24 @@ export function useJoinBatch(): UseJoinBatchReturn {
     label: 'Join round',
   })
 
-  const join = useCallback((params: UseJoinBatchParams) => {
+  const join = useCallback(async (params: UseJoinBatchParams) => {
     if (!address) return
+
+    // 0. Ensure wallet is on L3 before any writes.
+    // useChainWriteContract has its own ensureCorrectChain, but it swallows
+    // errors silently (returns without calling writeContract). If we pre-check
+    // here and fail, we can set a visible error for the user.
+    try {
+      await ensureCorrectChain(currentChainId, switchChainAsync)
+    } catch (e: any) {
+      setErrorMsg(
+        e?.message?.includes('rejected')
+          ? 'Chain switch rejected. Please switch to Index L3 and try again.'
+          : 'Could not switch to Index L3. Please switch manually in your wallet.'
+      )
+      setStep('error')
+      return
+    }
 
     // 1. Encode bitmap and hash
     const encoded = encodeBitmap(params.bets, params.marketCount)
@@ -202,7 +219,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
       functionName: 'joinBatchDirect',
       args: [params.batchId, params.configHash, params.depositAmount, params.depositAmount, hash],
     })
-  }, [address, allowance, writeApprove, writeJoin, usdcAddress, visionAddress])
+  }, [address, currentChainId, switchChainAsync, allowance, writeApprove, writeJoin, usdcAddress, visionAddress])
 
   // Approve success -> call joinBatchDirect
   useEffect(() => {

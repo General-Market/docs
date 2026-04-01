@@ -9,7 +9,7 @@ import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 const envRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 const rawL3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 const envL3RpcUrl = typeof window !== 'undefined' && window.location?.protocol === 'https:'
-  ? '/rpc'
+  ? '/api/rpc'
   : rawL3RpcUrl
 
 // Chain definition — L3 (Index Orbit chain where Vision.sol lives)

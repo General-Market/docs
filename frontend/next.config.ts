@@ -87,7 +87,12 @@ const nextConfig: NextConfig = {
           destination: "/en/:path",
         },
       ],
-      afterFiles: [],
+      afterFiles: [
+        // Wallet extensions cache chain RPC URLs. If the wallet stored "/rpc"
+        // from a previous session, it will keep hitting /rpc directly.
+        // Proxy to the actual route handler so it never gets HTML/RSC back.
+        { source: "/rpc", destination: "/api/rpc" },
+      ],
       fallback: [],
     };
   },

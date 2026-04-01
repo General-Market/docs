@@ -37,15 +37,12 @@ const GET_BATCH_ABI = {
     name: '',
     type: 'tuple' as const,
     components: [
-      { name: 'sourceId', type: 'bytes32' as const },
       { name: 'creator', type: 'address' as const },
+      { name: 'sourceId', type: 'bytes32' as const },
       { name: 'configHash', type: 'bytes32' as const },
-      { name: 'marketIds', type: 'bytes32[]' as const },
-      { name: 'resolutionTypes', type: 'uint8[]' as const },
-      { name: 'tickDuration', type: 'uint32' as const },
-      { name: 'currentTick', type: 'uint32' as const },
-      { name: 'playerCount', type: 'uint32' as const },
-      { name: 'totalDeposited', type: 'uint256' as const },
+      { name: 'tickDuration', type: 'uint256' as const },
+      { name: 'lockOffset', type: 'uint256' as const },
+      { name: 'createdAtTick', type: 'uint256' as const },
       { name: 'paused', type: 'bool' as const },
     ],
   }],
@@ -153,7 +150,12 @@ export async function GET() {
     const aliveIds = await getAliveBatchIds(candidates.map((b: any) => b.id))
     const verified = candidates.filter((b: any) => aliveIds.has(b.id))
 
-    return Response.json({ batches: verified })
+    return new Response(JSON.stringify({ batches: verified }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 's-maxage=30, stale-while-revalidate=60',
+      },
+    })
   } catch (e) {
     console.error('Vision batches proxy error:', e)
     return Response.json({ batches: [] }, { status: 502 })
