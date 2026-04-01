@@ -60,7 +60,10 @@ export function Header() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasWeb3 = useWeb3Available()
-  const { address, isConnected } = useAccount()
+  // useAccount crashes outside WagmiProvider (marketing pages). Catch gracefully.
+  let address: string | undefined
+  let isConnected = false
+  try { const acct = useAccount(); address = acct.address; isConnected = acct.isConnected } catch {}
 
   // ── PostHog ─────────────────────────────────────────────
   const { capture } = usePostHogTracker()
