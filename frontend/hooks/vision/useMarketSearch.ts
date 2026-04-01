@@ -20,9 +20,8 @@ interface SearchState {
 }
 
 // Client-side result cache — avoids re-fetching for repeated/backspaced queries.
-// Bounded to 50 entries to prevent memory bloat.
 const resultCache = new Map<string, { results: SearchMarket[]; total: number; ts: number }>()
-const CACHE_TTL = 60_000 // 1 minute
+const CACHE_TTL = 60_000
 const CACHE_MAX = 50
 
 function getCached(q: string): { results: SearchMarket[]; total: number } | null {
@@ -37,7 +36,6 @@ function getCached(q: string): { results: SearchMarket[]; total: number } | null
 
 function setCache(q: string, results: SearchMarket[], total: number) {
   if (resultCache.size >= CACHE_MAX) {
-    // Evict oldest
     const oldest = resultCache.keys().next().value
     if (oldest) resultCache.delete(oldest)
   }
@@ -45,9 +43,8 @@ function setCache(q: string, results: SearchMarket[], total: number) {
 }
 
 /**
- * SSE-powered market search hook with client-side caching.
- * Streams results from /api/vision/search as they arrive.
- * Debounce is aggressive: 80ms (vs 250ms before).
+ * Market search hook — JSON-first with SSE fallback.
+ * JSON eliminates SSE framing overhead. Debounce: 80ms.
  */
 export function useMarketSearch(query: string, debounceMs = 80) {
   const [state, setState] = useState<SearchState>({ results: [], loading: false, total: 0 })
@@ -62,7 +59,7 @@ export function useMarketSearch(query: string, debounceMs = 80) {
       return
     }
 
-    // Check client cache first — instant for repeated queries
+    // Check client cache first
     const cached = getCached(q)
     if (cached) {
       setState({ results: cached.results, loading: false, total: cached.total })
@@ -72,30 +69,40 @@ export function useMarketSearch(query: string, debounceMs = 80) {
     const controller = new AbortController()
     abortRef.current = controller
 
-    // Show stale results from a prefix while loading (e.g., "bi" results while "bit" loads)
+    // Show filtered prefix results while loading
     const prefixHint = q.length > 1 ? getCached(q.slice(0, -1)) : null
     if (prefixHint) {
-      // Filter prefix results that still match the longer query
-      const filtered = prefixHint.results.filter(m => {
-        const ql = q.toLowerCase()
-        return m.symbol.toLowerCase().includes(ql) ||
-               m.name.toLowerCase().includes(ql) ||
-               m.assetId.toLowerCase().includes(ql)
-      })
-      if (filtered.length > 0) {
-        setState({ results: filtered, loading: true, total: 0 })
-      } else {
-        setState(prev => ({ ...prev, loading: true, results: [] }))
-      }
+      const ql = q.toLowerCase()
+      const filtered = prefixHint.results.filter(m =>
+        m.symbol.toLowerCase().includes(ql) ||
+        m.name.toLowerCase().includes(ql) ||
+        m.assetId.toLowerCase().includes(ql)
+      )
+      setState({ results: filtered.length > 0 ? filtered : [], loading: true, total: 0 })
     } else {
       setState(prev => ({ ...prev, loading: true, results: [] }))
     }
 
     const url = `/api/vision/search?q=${encodeURIComponent(q)}&limit=12`
 
-    fetch(url, { signal: controller.signal })
-      .then(res => {
-        if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
+    fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
+      .then(async res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        // JSON response (fast path)
+        if (res.headers.get('Content-Type')?.includes('application/json')) {
+          const data = await res.json()
+          const results = data.results ?? []
+          setCache(q, results, data.total ?? results.length)
+          setState({ results, loading: false, total: data.total ?? results.length })
+          return
+        }
+
+        // SSE fallback (legacy)
+        if (!res.body) throw new Error('No body')
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -108,11 +115,9 @@ export function useMarketSearch(query: string, debounceMs = 80) {
               setState(prev => ({ ...prev, loading: false }))
               return
             }
-
             buffer += decoder.decode(value, { stream: true })
             const lines = buffer.split('\n')
             buffer = lines.pop() || ''
-
             for (const line of lines) {
               if (!line.startsWith('data: ')) continue
               try {
@@ -126,11 +131,9 @@ export function useMarketSearch(query: string, debounceMs = 80) {
                 }
               } catch {}
             }
-
             return pump()
           })
         }
-
         return pump()
       })
       .catch(err => {

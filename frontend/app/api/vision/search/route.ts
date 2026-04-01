@@ -239,27 +239,40 @@ export async function GET(request: Request) {
     })
   }
 
+  const wantsJson = request.headers.get('Accept')?.includes('application/json')
+
   try {
     const index = await getIndex()
     const { results, total } = searchEntries(query, index, limit)
 
-    // Stream results as SSE — each result emitted individually
+    const markets = results.map(entry => ({
+      assetId: entry.assetId,
+      symbol: entry.symbol,
+      name: entry.name,
+      source: entry.source,
+      category: entry.category,
+      value: entry.value,
+      changePct: entry.changePct,
+      volume24h: entry.volume24h,
+      marketCap: entry.marketCap,
+      imageUrl: entry.imageUrl,
+    }))
+
+    // Fast path: JSON response (no SSE overhead). Used by updated client hook.
+    if (wantsJson) {
+      return new Response(JSON.stringify({ results: markets, total }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 's-maxage=30, stale-while-revalidate=60',
+        },
+      })
+    }
+
+    // Legacy SSE path — kept for backwards compatibility
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       start(controller) {
-        for (const entry of results) {
-          const market = {
-            assetId: entry.assetId,
-            symbol: entry.symbol,
-            name: entry.name,
-            source: entry.source,
-            category: entry.category,
-            value: entry.value,
-            changePct: entry.changePct,
-            volume24h: entry.volume24h,
-            marketCap: entry.marketCap,
-            imageUrl: entry.imageUrl,
-          }
+        for (const market of markets) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'result', market })}\n\n`))
         }
         controller.enqueue(
