@@ -274,6 +274,15 @@ contract VisionVault is IVisionVault {
         require(shares > 0, "VisionVault: zero redeem");
         require(msg.sender == owner || msg.sender == controller, "VisionVault: unauthorized");
 
+        // If caller is not the owner, require ERC-20 allowance
+        if (msg.sender != owner) {
+            uint256 allowed = _allowances[owner][msg.sender];
+            require(allowed >= shares, "VisionVault: insufficient allowance");
+            if (allowed != type(uint256).max) {
+                _allowances[owner][msg.sender] = allowed - shares;
+            }
+        }
+
         // Transfer shares from owner to vault (locks them)
         _transfer(owner, address(this), shares);
 
@@ -331,7 +340,7 @@ contract VisionVault is IVisionVault {
 
         IVision(vision).joinBatchDirect(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
 
-        activeBatchDeposits[batchId] = depositAmount;
+        activeBatchDeposits[batchId] += depositAmount;
         totalActiveCapital += depositAmount;
 
         emit BatchJoined(batchId, depositAmount);
@@ -348,13 +357,19 @@ contract VisionVault is IVisionVault {
         uint256 deposited = activeBatchDeposits[batchId];
         if (deposited == 0) revert BatchAlreadyReconciled();
 
+        // Snapshot pre-reconcile assets for PnL calc
+        uint256 preAssets = totalAssets();
+
         // Clear active tracking
         activeBatchDeposits[batchId] = 0;
         totalActiveCapital -= deposited;
 
+        uint256 postAssets = totalAssets();
+        int256 pnl = int256(postAssets) - int256(preAssets);
+
         uint256 feeSharesMinted = 0;
         if (_totalSupply > 0) {
-            uint256 currentNav = VisionVaultAccounting.navPerShare(totalAssets(), _totalSupply);
+            uint256 currentNav = VisionVaultAccounting.navPerShare(postAssets, _totalSupply);
 
             if (currentNav > highWaterMark && performanceFeeRate > 0) {
                 feeSharesMinted = VisionVaultAccounting.performanceFeeShares(
@@ -363,7 +378,8 @@ contract VisionVault is IVisionVault {
                 if (feeSharesMinted > 0) {
                     _mint(manager, feeSharesMinted);
                 }
-                highWaterMark = currentNav;
+                // HWM set post-fee: recalculate NAV after fee shares minted
+                highWaterMark = VisionVaultAccounting.navPerShare(postAssets, _totalSupply);
             } else if (currentNav > highWaterMark) {
                 highWaterMark = currentNav;
             }
@@ -371,7 +387,7 @@ contract VisionVault is IVisionVault {
 
         uint256 fulfilled = _sweepRedeemQueue();
 
-        emit Reconciled(batchId, 0, feeSharesMinted, fulfilled);
+        emit Reconciled(batchId, pnl, feeSharesMinted, fulfilled);
     }
 
     // ── Internal ─────────────────────────────────────────────────────
