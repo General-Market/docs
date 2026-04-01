@@ -28,26 +28,31 @@ export async function GET(request: Request) {
   try {
     // If requesting a specific source, fetch just that source from data-node
     if (sourceFilter) {
-      // Try all internal IDs for this source (e.g., coingecko → ["defi", "crypto"])
-      let snapshots: Array<Record<string, unknown>> = []
-      for (const internalId of allInternalIds(sourceFilter)) {
-        const res = await fetch(
-          `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
-          { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
-        )
-        if (!res.ok) continue
-        const raw = await res.json()
-        const s: Array<Record<string, unknown>> = raw.snapshots ?? []
-        if (s.length > snapshots.length) snapshots = s
-      }
+      // Try all internal IDs in parallel (e.g., coingecko → ["defi", "crypto"]) — keep largest
+      const results = await Promise.all(
+        allInternalIds(sourceFilter).map(async (internalId) => {
+          try {
+            const res = await fetch(
+              `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
+              { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
+            )
+            if (!res.ok) return []
+            const raw = await res.json()
+            return (raw.snapshots ?? []) as Array<Record<string, unknown>>
+          } catch { return [] }
+        })
+      )
+      const snapshots = results.reduce((best, curr) => curr.length > best.length ? curr : best, [] as Array<Record<string, unknown>>)
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         generatedAt: new Date().toISOString(),
         maxAgeSecs: null,
         totalAssets: snapshots.length,
         sources: [],
         prices: snapshots.map(transformSnapshot),
       })
+      response.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60')
+      return response
     }
 
     // Grid view: fetch first 5000 for bitmap preview (fast, ~2s)
@@ -70,13 +75,15 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       generatedAt: raw.generatedAt,
       maxAgeSecs: null,
       totalAssets: raw.count ?? snapshots.length,
       sources: [],
       prices: capped.map(transformSnapshot),
     })
+    response.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60')
+    return response
   } catch (err) {
     console.error('Vision proxy error:', err)
     return NextResponse.json(

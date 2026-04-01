@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Link, useRouter } from '@/i18n/routing'
+import { useQueryClient } from '@tanstack/react-query'
 import type { VisionSource } from '@/lib/vision/sources'
 import { toInternalId } from '@/lib/vision/source-ids'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -76,10 +77,26 @@ function shortTypeLabel(label: string): string {
 export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus }: SourceCardProps) {
   const t = useTranslations('vision')
   const router = useRouter()
+  const queryClient = useQueryClient()
 
-  // Fetch per-source data immediately on mount
+  // Fetch per-source data on mount — warms React Query cache for detail page navigation.
+  // The grid passes metaAssetCount for immediate display; snapshot provides generatedAt.
   const dataNodeId = toInternalId(source.id)
-  const { data: sourceSnapshot, isLoading } = useSourceSnapshot(dataNodeId)
+  const { data: sourceSnapshot } = useSourceSnapshot(dataNodeId)
+
+  // Prefetch detail page data on hover — fills the cache before navigation
+  const handlePrefetch = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['source-snapshot', dataNodeId],
+      queryFn: () => fetch(`/api/vision/snapshot?source=${encodeURIComponent(dataNodeId)}`).then(r => r.json()),
+      staleTime: 30_000,
+    })
+    queryClient.prefetchQuery({
+      queryKey: ['batch-config-source', source.id],
+      queryFn: () => fetch(`/api/vision/config/${source.id}`).then(r => r.json()),
+      staleTime: 300_000,
+    })
+  }, [queryClient, dataNodeId, source.id])
 
   const totalMarkets = sourceSnapshot?.prices?.length ?? 0
   const displayMarketCount = metaAssetCount ?? totalMarkets
@@ -98,6 +115,20 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
       : t('source_card.settlement_inactive')
 
   const metricsRef = useRef<HTMLDivElement>(null)
+
+  // Accent color for the Live dot — use brandBg unless it's too light
+  const accentColor = (() => {
+    const bg = source.brandBg
+    if (bg.startsWith('linear')) return '#00A36C'
+    const hex = bg.replace('#', '')
+    if (hex.length !== 6) return '#00A36C'
+    const r = parseInt(hex.slice(0, 2), 16)
+    const g = parseInt(hex.slice(2, 4), 16)
+    const b = parseInt(hex.slice(4, 6), 16)
+    const lum = r * 0.299 + g * 0.587 + b * 0.114
+    return lum > 200 ? '#00A36C' : bg
+  })()
+  const isLive = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0)
 
   // Determine brand background style
   const brandStyle: React.CSSProperties = source.brandBg.startsWith('linear-gradient')
@@ -143,6 +174,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     <Link
       href={`/source/${source.id}`}
       onClick={handleViewTransition}
+      onMouseEnter={handlePrefetch}
       data-testid="source-card"
       className="block group cursor-pointer"
     >
@@ -159,7 +191,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
               height={logoSize.h}
               priority={index < 12}
               loading={index < 12 ? 'eager' : 'lazy'}
-              className="max-w-[90%] object-contain"
+              className="max-w-[80%] object-contain"
               style={{ maxHeight: logoSize.maxH }}
             />
             <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded glass-badge text-white/90">
@@ -169,22 +201,29 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
         </div>
 
       {/* Card content */}
-      <div className="px-5 pt-4 pb-0">
+      <div className="px-3 pt-2.5 pb-0 sm:px-5 sm:pt-4">
         <div className="flex justify-between items-start mb-1">
           <div className="min-w-0 flex-1 mr-2">
             <h3 className="text-subhead font-extrabold text-black tracking-[-0.01em]">{source.name}</h3>
-            <p className="text-label text-text-muted leading-snug mt-0.5 line-clamp-2">{source.description}</p>
+            <p className="text-caption text-text-muted leading-snug mt-0.5 line-clamp-2">{source.description}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <span className={`w-[6px] h-[6px] rounded-full ${statusColor}`} />
-            <span className={`text-label font-semibold ${statusTextColor}`}>
+            {isLive ? (
+              <span className="relative flex h-[6px] w-[6px]">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ backgroundColor: accentColor }} />
+                <span className="relative inline-flex rounded-full h-[6px] w-[6px]" style={{ backgroundColor: accentColor }} />
+              </span>
+            ) : (
+              <span className={`w-[6px] h-[6px] rounded-full ${statusColor}`} />
+            )}
+            <span className={`text-label font-semibold ${isLive ? '' : statusTextColor}`} style={isLive ? { color: accentColor } : undefined}>
               {statusLabel}
             </span>
           </div>
         </div>
 
         {/* Metrics row */}
-        <div ref={metricsRef} className="grid grid-cols-4 border-t border-b border-border-light -mx-5 px-5 mt-3">
+        <div ref={metricsRef} className="grid grid-cols-2 sm:grid-cols-4 border-t border-b border-border-light -mx-3 px-3 sm:-mx-5 sm:px-5 mt-2 sm:mt-3">
           <div className="py-2.5 pr-3">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.markets')}</div>
             <span className="text-body font-bold text-black font-mono tabular-nums">
@@ -202,11 +241,11 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.type')}</div>
             <span className="text-caption font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
-          <div className="py-2.5 px-3 border-l border-border-light">
+          <div className="py-2.5 px-3 border-l border-border-light hidden sm:block">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.updated')}</div>
             <span className="text-caption font-bold text-black"><LiveAge iso={sourceSnapshot?.generatedAt} /></span>
           </div>
-          <div className="py-2.5 pl-3 border-l border-border-light">
+          <div className="py-2.5 pl-3 border-l border-border-light hidden sm:block">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.settlement')}</div>
             <span className="flex items-center gap-1">
               <span className={`w-[5px] h-[5px] rounded-full ${settlementDotColor}`} />
