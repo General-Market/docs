@@ -365,10 +365,10 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
         return;
     }
 
-    // Use cursor for incremental scanning (fallback: 200 blocks back on first run ~3 min on Sonic).
-    // Kept short to avoid re-processing stale bridge orders from previous oracle sessions.
+    // Use cursor for incremental scanning (fallback: 10000 blocks back on first run ~2h on Sonic).
+    // Must be generous — a restart that misses in-flight orders leaves them stuck permanently.
     let cursor_val = block_cursor.load(Ordering::Relaxed);
-    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(10_000) };
     // Log every 60th scan to avoid spamming (scans every ~5s)
     if current_cycle % 60 == 0 {
         info!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
@@ -1303,10 +1303,10 @@ pub(crate) async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     if confirmed_block == 0 { info!(cycle = current_cycle, "Sell: confirmed_block=0, skipping"); return; }
 
-    // Use cursor for incremental scanning (fallback: 200 blocks back on first run ~3 min on Sonic).
-    // Kept short to avoid re-processing stale bridge orders from previous oracle sessions.
+    // Use cursor for incremental scanning (fallback: 10000 blocks back on first run ~2h on Sonic).
+    // Must be generous — a restart that misses in-flight orders leaves them stuck permanently.
     let cursor_val = block_cursor.load(Ordering::Relaxed);
-    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(10_000) };
 
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
     match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
