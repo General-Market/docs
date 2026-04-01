@@ -311,6 +311,27 @@ class Tracker:
             "total_pnl": active_pnl + history_pnl,
         }
 
+    # ── Vault state ──
+
+    def check_vault_state(self, vault_executor) -> dict | None:
+        """Read and log current vault metrics. Returns info dict or None on failure."""
+        try:
+            info = vault_executor.get_vault_info()
+            dec = 10**18
+            log.info(
+                "Vault %s | assets=%d | supply=%d | hwm=%d | idle=%d | shares=%d",
+                info["address"][:10],
+                info["total_assets"] // dec,
+                info["total_supply"] // dec,
+                info["hwm"] // dec,
+                info["idle_usdc"] // dec,
+                info["manager_shares"] // dec,
+            )
+            return info
+        except Exception as e:
+            log.warning("Vault state read failed: %s", e)
+            return None
+
     # Keccak256 of empty bytes — produced when joining without a real bitmap.
     _NULL_BITMAP_HASH = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
     # bytes32(0) — the zero hash
@@ -571,7 +592,22 @@ class Tracker:
                 if isinstance(p.get("bitmap_hash"), bytes):
                     p["bitmap_hash_hex"] = p.pop("bitmap_hash").hex()
                 active.append(p)
+            data = {"active": active, "history": self._history}
+            if hasattr(self, "_vault_state") and self._vault_state:
+                data["vault"] = self._vault_state
             with open(path, "w") as f:
-                json.dump({"active": active, "history": self._history}, f, indent=2)
+                json.dump(data, f, indent=2)
         except Exception:
             pass
+
+    def save_vault_state(self, vault_info: dict):
+        """Cache vault state for persistence."""
+        self._vault_state = {
+            "address": vault_info.get("address", ""),
+            "total_assets": vault_info.get("total_assets", 0),
+            "total_supply": vault_info.get("total_supply", 0),
+            "hwm": vault_info.get("hwm", 0),
+            "manager_shares": vault_info.get("manager_shares", 0),
+            "perf_fee_rate": vault_info.get("perf_fee_rate", 0),
+        }
+        self._save_history()

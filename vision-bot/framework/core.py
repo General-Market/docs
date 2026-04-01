@@ -146,6 +146,16 @@ def load_config(path=None):
         "pnl_file": "pnl.json",
         "batch_ids": [],  # empty = join any, e.g. [1, 3, 7]
     }
+    # Vault mode defaults
+    defaults["vault_mode"] = False
+    defaults["vault_address"] = ""
+    defaults["vault_factory_address"] = ""
+    defaults["vault_name"] = "Vision Bot Fund"
+    defaults["vault_symbol"] = "vbFUND"
+    defaults["vault_perf_fee"] = 2000
+    defaults["vault_seed_deposit"] = 100.0
+    defaults["vault_auto_reconcile"] = True
+
     # Try TOML parsing
     for p in [path, "config.toml", "../config.toml"]:
         if p and os.path.exists(p):
@@ -155,7 +165,24 @@ def load_config(path=None):
                 except ImportError:
                     import tomli as tomllib  # type: ignore[no-redef]
                 with open(p, "rb") as f:
-                    defaults.update(tomllib.load(f))
+                    raw = tomllib.load(f)
+                # Flatten [vault] section into top-level vault_* keys
+                vault_section = raw.pop("vault", {})
+                if vault_section:
+                    _vault_key_map = {
+                        "enabled": "vault_mode",
+                        "factory_address": "vault_factory_address",
+                        "vault_address": "vault_address",
+                        "name": "vault_name",
+                        "symbol": "vault_symbol",
+                        "perf_fee": "vault_perf_fee",
+                        "seed_deposit": "vault_seed_deposit",
+                        "auto_reconcile": "vault_auto_reconcile",
+                    }
+                    for toml_key, cfg_key in _vault_key_map.items():
+                        if toml_key in vault_section:
+                            defaults[cfg_key] = vault_section[toml_key]
+                defaults.update(raw)
             except ImportError:
                 pass  # no TOML parser, rely on defaults + env vars
             break
@@ -196,4 +223,26 @@ def load_config(path=None):
         defaults["min_batch_id"] = int(os.environ["MIN_BATCH_ID"])
     else:
         defaults["min_batch_id"] = 0
+    # Vault env var overrides
+    vault_env_map = {
+        "VAULT_MODE": ("vault_mode", bool),
+        "VAULT_ADDRESS": ("vault_address", str),
+        "VAULT_FACTORY_ADDRESS": ("vault_factory_address", str),
+        "VAULT_NAME": ("vault_name", str),
+        "VAULT_SYMBOL": ("vault_symbol", str),
+        "VAULT_PERF_FEE": ("vault_perf_fee", int),
+        "VAULT_SEED_DEPOSIT": ("vault_seed_deposit", float),
+        "VAULT_AUTO_RECONCILE": ("vault_auto_reconcile", bool),
+    }
+    for env_key, (conf_key, typ) in vault_env_map.items():
+        if env_key in os.environ:
+            val = os.environ[env_key]
+            if typ == bool:
+                defaults[conf_key] = val.lower() in ("true", "1", "yes")
+            elif typ == float:
+                defaults[conf_key] = float(val)
+            elif typ == int:
+                defaults[conf_key] = int(float(val))
+            else:
+                defaults[conf_key] = val
     return defaults

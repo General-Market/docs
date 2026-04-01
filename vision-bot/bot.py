@@ -15,6 +15,7 @@ from framework.core import (
 )
 from framework.chain import (
     Executor,
+    VaultExecutor,
     discover_oracles,
     fetch_batch_config,
     fetch_batches,
@@ -35,20 +36,22 @@ log = logging.getLogger("vision-bot")
 DECIMALS = 18
 
 
-def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
+def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor=None):
     """One poll cycle: join new batches, then check existing positions."""
     oracle_urls = oracle_urls_fn()
+    vault_mode = vault_executor is not None
 
     # Round-based mode: lifecycle manager creates batches. Skip static batch discovery.
     if cfg.get("round_based", False):
-        # Approve max once at the start
-        if not getattr(tracker, '_usdc_approved', False):
+        # Approve max once at the start (not needed in vault mode — vault manages USDC)
+        if not vault_mode and not getattr(tracker, '_usdc_approved', False):
             executor.approve_usdc(2**256 - 1)
             tracker._usdc_approved = True
         tracker.check_rounds(strategy=strategy)
 
         # Re-submit bitmaps only for RECENT positions (joined in last 10 min).
         # Old positions already have their bitmaps accepted by oracles.
+        round_player = vault_executor.vault_addr if vault_mode else executor.bot_addr
         cutoff = time.time() - 600
         recent_ids = [bid for bid in tracker.active_ids
                       if tracker.positions.get(bid, {}).get("joined_at", 0) > cutoff]
@@ -60,13 +63,22 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
             pos["bitmap_hash"] = bm_hash
             submit_bitmap(
-                oracle_urls, executor.bot_addr, bid,
+                oracle_urls, round_player, bid,
                 bm, bm_hash, retries=1,
             )
 
         exited = tracker.check_all()
         for bid in exited:
             risk.record_exit(bid)
+            if vault_mode and cfg.get("vault_auto_reconcile", True):
+                try:
+                    vault_executor.reconcile(bid)
+                except Exception as e:
+                    log.warning("Vault reconcile batch %d failed: %s", bid, e)
+        if vault_mode:
+            info = tracker.check_vault_state(vault_executor)
+            if info:
+                tracker.save_vault_state(info)
         return
 
     batches = fetch_batches(cfg["vision_api"], executor=executor)
@@ -176,18 +188,23 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
         except Exception:
             pass  # proceed if check fails
 
-        # Direct join: approve USDC then joinBatchDirect transfers it in one step
-        executor.approve_usdc(deposit_wei)
         stake_wei = int(cfg["stake"] * 10**DECIMALS)
-        executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+        if vault_mode:
+            vault_executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+        else:
+            executor.approve_usdc(deposit_wei)
+            executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
         time.sleep(2)  # initial wait for block confirmation
-        submit_bitmap(oracle_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
+        # In vault mode the player address is the vault, not the bot EOA
+        player_addr = vault_executor.vault_addr if vault_mode else executor.bot_addr
+        submit_bitmap(oracle_urls, player_addr, batch_id, bitmap, bm_hash, retries=5)
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets, bitmap_hash=bm_hash)
         risk.record_join(batch_id, deposit_wei)
 
     # Re-submit bitmaps for all active positions (survives oracle restarts)
+    player_for_bitmap = vault_executor.vault_addr if vault_mode else executor.bot_addr
     for bid in list(tracker.active_ids):
         pos = tracker.positions.get(bid)
         if not pos or not pos.get("bitmap") or pos.get("poisoned"):
@@ -196,7 +213,7 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
         bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
         pos["bitmap_hash"] = bm_hash
         submit_bitmap(
-            oracle_urls, executor.bot_addr, bid,
+            oracle_urls, player_for_bitmap, bid,
             bm, bm_hash, retries=1,
         )
 
@@ -208,6 +225,17 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
     exited = tracker.check_all()
     for bid in exited:
         risk.record_exit(bid)
+        if vault_mode and cfg.get("vault_auto_reconcile", True):
+            try:
+                vault_executor.reconcile(bid)
+            except Exception as e:
+                log.warning("Vault reconcile batch %d failed: %s", bid, e)
+
+    # Periodic vault state check
+    if vault_mode:
+        info = tracker.check_vault_state(vault_executor)
+        if info:
+            tracker.save_vault_state(info)
 
 
 def main():
@@ -275,6 +303,54 @@ def main():
     except Exception as e:
         log.warning("Bot registration failed: %s", e)
 
+    # Vault mode initialization
+    vault_executor = None
+    if cfg.get("vault_mode", False):
+        factory_addr = cfg.get("vault_factory_address", "")
+        vault_addr = cfg.get("vault_address", "")
+
+        if vault_addr:
+            vault_executor = VaultExecutor(executor, vault_addr, factory_addr)
+            log.info("  Vault mode:   using existing vault %s", vault_addr)
+        elif factory_addr:
+            log.info("  Vault mode:   creating new vault via factory %s", factory_addr[:16])
+            vault_executor = VaultExecutor.create_vault(
+                executor,
+                factory_addr,
+                cfg.get("vault_name", "Vision Bot Fund"),
+                cfg.get("vault_symbol", "vbFUND"),
+                cfg.get("vault_perf_fee", 2000),
+            )
+            log.info("  Vault:        %s", vault_executor.vault_addr)
+        else:
+            log.error("vault_mode enabled but no vault_address or vault_factory_address set")
+            sys.exit(1)
+
+        # Seed capital
+        seed = int(cfg.get("vault_seed_deposit", 0) * 10**DECIMALS)
+        if seed > 0:
+            bot_balance = executor.usdc_balance()
+            if bot_balance >= seed:
+                vault_executor.deposit_to_vault(seed)
+                log.info("  Seed deposit: %d USDC", seed // 10**DECIMALS)
+            else:
+                log.warning(
+                    "Insufficient USDC for seed deposit (have %d, need %d)",
+                    bot_balance // 10**DECIMALS, seed // 10**DECIMALS,
+                )
+
+        # Log vault state
+        try:
+            info = vault_executor.get_vault_info()
+            log.info(
+                "  Vault assets: %d USDC | shares: %d | HWM: %d",
+                info["total_assets"] // 10**DECIMALS,
+                info["total_supply"] // 10**DECIMALS,
+                info["hwm"] // 10**DECIMALS,
+            )
+        except Exception as e:
+            log.warning("Cannot read vault state: %s", e)
+
     # Create WebSocket feed with HTTP fallback
     feed = VisionFeed(
         ws_url=cfg["data_node"].replace("http://", "ws://").replace("https://", "wss://") + "/vision/ws",
@@ -292,14 +368,14 @@ def main():
 
     # Run
     if "--once" in sys.argv:
-        run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed)
+        run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor)
         feed.close()
         return
 
     try:
         while True:
             try:
-                run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed)
+                run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor)
             except Exception as e:
                 log.error("Cycle error: %s", e)
             time.sleep(cfg["poll_interval"])

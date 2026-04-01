@@ -579,3 +579,173 @@ def fetch_markets(data_node_url: str, market_ids: list[str]) -> list[dict]:
     except requests.RequestException as e:
         logger.debug("Snapshot fetch failed: %s", e)
     return default
+
+
+# ── Vault ABIs ────────────────────────────────────────────────
+
+VAULT_ABI = [
+    # Read
+    {"type": "function", "name": "name", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
+    {"type": "function", "name": "totalAssets", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "totalSupply", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "highWaterMark", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "totalActiveCapital", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "idleUSDC", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "balanceOf", "inputs": [{"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "manager", "inputs": [], "outputs": [{"type": "address"}], "stateMutability": "view"},
+    {"type": "function", "name": "performanceFeeRate", "inputs": [], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    {"type": "function", "name": "activeBatchDeposits", "inputs": [{"type": "uint256"}], "outputs": [{"type": "uint256"}], "stateMutability": "view"},
+    # Write
+    {"type": "function", "name": "requestDeposit", "inputs": [{"type": "uint256"}, {"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "claimDeposit", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "requestRedeem", "inputs": [{"type": "uint256"}, {"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "claimRedeem", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "joinBatch", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "uint256"}, {"type": "uint256"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "updateBitmap", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
+]
+
+FACTORY_ABI = [
+    {"type": "function", "name": "createVault", "inputs": [{"type": "string"}, {"type": "string"}, {"type": "uint256"}, {"type": "address"}], "outputs": [{"type": "address"}], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "getAllVaults", "inputs": [], "outputs": [{"type": "address[]"}], "stateMutability": "view"},
+    {"type": "function", "name": "getVaultsByManager", "inputs": [{"type": "address"}], "outputs": [{"type": "address[]"}], "stateMutability": "view"},
+]
+
+
+# ── VaultExecutor ─────────────────────────────────────────────
+
+
+class VaultExecutor:
+    """Wraps Executor for vault-mode trading. Calls VisionVault instead of Vision directly."""
+
+    def __init__(self, executor: Executor, vault_addr: str, factory_addr: str = ""):
+        self.executor = executor
+        self.w3 = executor.w3
+        self.account = executor.account
+        self.bot_addr = executor.bot_addr
+        self.vault_addr = Web3.to_checksum_address(vault_addr)
+        self.vault = self.w3.eth.contract(address=self.vault_addr, abi=VAULT_ABI)
+        self._factory = None
+        if factory_addr:
+            self._factory = self.w3.eth.contract(
+                address=Web3.to_checksum_address(factory_addr), abi=FACTORY_ABI
+            )
+
+    def _build_tx(self, gas: int = 500_000) -> dict:
+        return self.executor._build_tx(gas)
+
+    def _sign_and_send(self, tx: dict) -> bytes:
+        return self.executor._sign_and_send(tx)
+
+    # ── factory ──
+
+    @classmethod
+    def create_vault(
+        cls,
+        executor: Executor,
+        factory_addr: str,
+        name: str,
+        symbol: str,
+        perf_fee_bps: int,
+    ) -> "VaultExecutor":
+        """Deploy a new vault via factory. Returns a VaultExecutor bound to the new vault."""
+        factory = executor.w3.eth.contract(
+            address=Web3.to_checksum_address(factory_addr), abi=FACTORY_ABI
+        )
+        tx = factory.functions.createVault(
+            name, symbol, perf_fee_bps, executor.bot_addr
+        ).build_transaction(executor._build_tx(gas=2_000_000))
+        tx_hash = executor._sign_and_send(tx)
+        receipt = executor.w3.eth.get_transaction_receipt(tx_hash)
+        # Parse vault address from return value — read the last created vault
+        vaults = factory.functions.getVaultsByManager(executor.bot_addr).call()
+        if not vaults:
+            raise RuntimeError("createVault succeeded but no vault found for manager")
+        vault_addr = vaults[-1]
+        logger.info("Vault created: %s (tx: %s)", vault_addr, tx_hash.hex()[:16])
+        return cls(executor, vault_addr, factory_addr)
+
+    # ── deposits / withdrawals ──
+
+    def deposit_to_vault(self, amount: int):
+        """Approve USDC to vault, requestDeposit, then claimDeposit."""
+        # Approve USDC to the vault contract
+        tx = self.executor.usdc.functions.approve(
+            self.vault_addr, amount
+        ).build_transaction(self._build_tx(gas=200_000))
+        self._sign_and_send(tx)
+
+        # requestDeposit(amount, receiver, controller)
+        tx = self.vault.functions.requestDeposit(
+            amount, self.bot_addr, self.bot_addr
+        ).build_transaction(self._build_tx(gas=500_000))
+        self._sign_and_send(tx)
+
+        # claimDeposit(receiver, controller)
+        tx = self.vault.functions.claimDeposit(
+            self.bot_addr, self.bot_addr
+        ).build_transaction(self._build_tx(gas=500_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Deposited %d to vault %s (tx: %s)", amount, self.vault_addr[:10], tx_hash.hex()[:16])
+
+    def withdraw_from_vault(self, shares: int):
+        """requestRedeem then claimRedeem."""
+        tx = self.vault.functions.requestRedeem(
+            shares, self.bot_addr, self.bot_addr
+        ).build_transaction(self._build_tx(gas=500_000))
+        self._sign_and_send(tx)
+
+        tx = self.vault.functions.claimRedeem(
+            self.bot_addr, self.bot_addr
+        ).build_transaction(self._build_tx(gas=500_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Withdrew %d shares from vault (tx: %s)", shares, tx_hash.hex()[:16])
+
+    # ── trading ──
+
+    def join_batch(
+        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
+    ):
+        """Call vault.joinBatch — vault handles USDC internally."""
+        tx = self.vault.functions.joinBatch(
+            batch_id, config_hash, deposit, stake, bitmap_hash
+        ).build_transaction(self._build_tx(gas=800_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Vault joined batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
+
+    def update_bitmap(self, batch_id: int, config_hash: bytes, new_hash: bytes):
+        """Call vault.updateBitmap."""
+        tx = self.vault.functions.updateBitmap(
+            batch_id, config_hash, new_hash
+        ).build_transaction(self._build_tx(gas=300_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Vault bitmap updated batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16])
+
+    def reconcile(self, batch_id: int):
+        """Call vault.reconcile after settlement."""
+        tx = self.vault.functions.reconcile(
+            batch_id
+        ).build_transaction(self._build_tx(gas=500_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Vault reconciled batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
+
+    # ── reads ──
+
+    def get_vault_info(self) -> dict:
+        """Read vault state in one shot."""
+        return {
+            "address": self.vault_addr,
+            "name": self.vault.functions.name().call(),
+            "total_assets": self.vault.functions.totalAssets().call(),
+            "total_supply": self.vault.functions.totalSupply().call(),
+            "hwm": self.vault.functions.highWaterMark().call(),
+            "active_capital": self.vault.functions.totalActiveCapital().call(),
+            "idle_usdc": self.vault.functions.idleUSDC().call(),
+            "manager": self.vault.functions.manager().call(),
+            "manager_shares": self.vault.functions.balanceOf(self.bot_addr).call(),
+            "perf_fee_rate": self.vault.functions.performanceFeeRate().call(),
+        }
+
+    def get_active_deposit(self, batch_id: int) -> int:
+        """Read how much capital is locked in a specific batch."""
+        return self.vault.functions.activeBatchDeposits(batch_id).call()
