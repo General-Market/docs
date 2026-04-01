@@ -132,6 +132,62 @@ export async function prefetchBatchConfigBySource(sourceId: string) {
   return { markets: [] }
 }
 
+/** Prefetch active batches from issuer — lightweight version without on-chain verification. */
+export async function prefetchBatches() {
+  const res = await fetch(`${getIssuerVisionUrl()}/vision/batches`, {
+    signal: AbortSignal.timeout(5_000),
+  })
+  if (!res.ok) throw new Error(`Batches HTTP ${res.status}`)
+  const data = await res.json()
+  const raw: any[] = data.batches ?? (Array.isArray(data) ? data : [])
+  // Deduplicate: latest non-paused batch per source
+  const bySource = new Map<string, any>()
+  for (const b of raw.filter((x: any) => !x.paused).sort((a: any, z: any) => z.id - a.id)) {
+    const sid = b.source_id ?? b.sourceId ?? ''
+    if (!bySource.has(sid)) bySource.set(sid, b)
+  }
+  return Array.from(bySource.values()).map((b: any) => ({
+    id: b.id,
+    creator: b.creator ?? '',
+    sourceId: b.source_id ?? b.sourceId ?? '',
+    configHash: b.config_hash ?? b.configHash ?? '',
+    marketIds: b.market_ids ?? b.marketIds ?? [],
+    resolutionTypes: b.resolution_types ?? b.resolutionTypes ?? [],
+    tickDuration: b.tick_duration ?? b.tickDuration ?? 0,
+    marketCount: b.market_count ?? b.marketCount ?? (b.market_ids ?? b.marketIds ?? []).length,
+    playerCount: b.player_count ?? b.playerCount ?? 0,
+    tvl: b.tvl ?? '0',
+    currentTick: b.current_tick ?? b.currentTick ?? 0,
+    paused: b.paused ?? false,
+  }))
+}
+
+/** Prefetch active rounds for a source from issuer. */
+export async function prefetchRounds(sourceId: string) {
+  const res = await fetch(`${getIssuerVisionUrl()}/vision/rounds/active`, {
+    signal: AbortSignal.timeout(5_000),
+  })
+  if (!res.ok) throw new Error(`Rounds HTTP ${res.status}`)
+  const data = await res.json()
+  const rounds: any[] = data.rounds ?? (Array.isArray(data) ? data : [])
+  return rounds
+    .filter((r: any) => {
+      const sid = (r.source_id ?? r.sourceId ?? '').toLowerCase()
+      return sid === sourceId.toLowerCase()
+    })
+    .map((r: any) => ({
+      batchId: r.batchId ?? r.batch_id ?? r.id,
+      sourceId: r.sourceId ?? r.source_id ?? '',
+      status: r.status ?? 'betting',
+      playerCount: r.playerCount ?? r.player_count ?? 0,
+      tvl: r.tvl ?? '0',
+      bettingEnd: r.bettingEnd ?? r.betting_end ?? null,
+      settledAt: r.settledAt ?? r.settled_at ?? null,
+      marketCount: r.marketCount ?? r.market_count ?? 0,
+      timeframeSecs: r.timeframeSecs ?? r.timeframe_secs ?? 0,
+    }))
+}
+
 // ── Source Registry (SWR-based, returned as plain data) ──
 function sanitizeSource(s: Record<string, unknown>) {
   return {

@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
-import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta } from '@/lib/vision/prefetch'
+import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds } from '@/lib/vision/prefetch'
 import { toInternalId } from '@/lib/vision/source-ids'
 
 export const revalidate = 60
@@ -74,6 +74,14 @@ export default async function SourcePage({ params }: Props) {
     queryClient.prefetchQuery({
       queryKey: ['market-snapshot-meta'],
       queryFn: prefetchSnapshotMeta,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ['vision-batches'],
+      queryFn: prefetchBatches,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ['vision-rounds', sourceId],
+      queryFn: () => prefetchRounds(sourceId),
     }),
   ])
 
