@@ -495,8 +495,24 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         ))
       } catch {}
       setMicro(BuyMicro.DONE)
+      return
     }
-  }, [micro, userShares, initialSharesBn, savedBuyHash])
+
+    // Secondary fallback: check SSE for any recently-filled BUY on this ITP.
+    // Catches cases where the tracked orderId was never set (oracle restart
+    // during relay — event missed) but the order was filled on L3.
+    if (!trackedOrder) {
+      const filled = sseOrders.find(
+        o => o.itp_id === itpId && o.side === 0 && o.status >= 2
+          && o.timestamp > Date.now() / 1000 - 600 // within last 10 min
+      )
+      if (filled) {
+        if (filled.fill_price) try { setFillPrice(BigInt(filled.fill_price)) } catch {}
+        if (filled.fill_amount) try { setFillAmount(BigInt(filled.fill_amount)) } catch {}
+        setMicro(BuyMicro.DONE)
+      }
+    }
+  }, [micro, userShares, initialSharesBn, savedBuyHash, trackedOrder, sseOrders, itpId])
 
   // Toast notification on fill
   useEffect(() => {
