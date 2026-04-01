@@ -78,9 +78,9 @@ async function fetchSnapshot(limit: number, source?: string): Promise<Array<Reco
 }
 
 async function buildIndex(): Promise<SearchIndex> {
-  // Single fetch — data-node caps each source to 5000 internally (per_source_cap).
-  // With ~84 sources, this covers ~100K-400K assets in one call.
-  const allSnapshots = await fetchSnapshot(500_000)
+  // Single fetch — data-node caps each source to ~600 (50K / 84 sources).
+  // 50K entries is ~2MB, builds in ~2s. Enough coverage for search.
+  const allSnapshots = await fetchSnapshot(50_000)
 
   // Deduplicate by assetId
   const seen = new Set<string>()
