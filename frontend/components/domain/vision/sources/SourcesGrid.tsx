@@ -12,6 +12,11 @@ import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
 import { SourceCardsSkeleton } from '@/components/ui/VisionLoader'
 
+/** How many cards to render on first paint (3 rows × 4 cols) */
+const INITIAL_RENDER_COUNT = 12
+/** Minimum cursor movement (px) before recalculating brightness */
+const CURSOR_DEAD_ZONE = 4
+
 function assetCountForSource(sourceId: string, assetCounts: Record<string, number>): number {
   if (assetCounts[sourceId]) return assetCounts[sourceId]
   let total = 0
@@ -43,17 +48,55 @@ export function SourcesGrid() {
   const { data: meta, isLoading: metaLoading } = useMarketSnapshotMeta()
   const bitmapEditor = useBitmapEditor()
 
-  // Filter sources by category, then exclude non-working sources
+  // Filter sources by category, then exclude stale/dead sources
   const filteredSources = useMemo(() => {
     const byCategory = activeCategory === 'all'
       ? registrySources
       : registrySources.filter(s => s.category === activeCategory)
 
-    // Show all registry sources — the hasDeployedBatch filter in the API
-    // already ensures only valid sources appear. No need to double-filter
-    // against meta which uses internal IDs that may not match.
-    return byCategory
+    if (!meta?.sources) return byCategory
+    return byCategory.filter(s => {
+      const status = sourceStatusFromMeta(s.sourceId, meta.sources)
+      return status !== 'stale' && status !== 'dead'
+    })
   }, [activeCategory, registrySources, meta?.sources, meta?.assetCounts])
+
+  // ── Progressive rendering — show first 12 immediately, rest after idle ──
+  const [renderAll, setRenderAll] = useState(false)
+
+  useEffect(() => {
+    // Reset when filtered sources change (category switch)
+    if (filteredSources.length <= INITIAL_RENDER_COUNT) {
+      setRenderAll(true)
+      return
+    }
+    setRenderAll(false)
+    const schedule = typeof requestIdleCallback !== 'undefined'
+      ? requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 1)
+    const id = schedule(() => setRenderAll(true))
+    return () => {
+      if (typeof cancelIdleCallback !== 'undefined') {
+        cancelIdleCallback(id as number)
+      } else {
+        clearTimeout(id as number)
+      }
+    }
+  }, [filteredSources])
+
+  const visibleSources = renderAll
+    ? filteredSources
+    : filteredSources.slice(0, INITIAL_RENDER_COUNT)
+
+  // Stabilize source props — avoid creating { ...source, id } on every render.
+  // Each source object from the registry already has sourceId; we add `id` once and cache.
+  const stableSourceProps = useMemo(() => {
+    const map = new Map<string, typeof filteredSources[0] & { id: string }>()
+    for (const s of filteredSources) {
+      map.set(s.sourceId, Object.assign(Object.create(null), s, { id: s.sourceId }))
+    }
+    return map
+  }, [filteredSources])
 
   // Dynamic stats from live meta endpoint, with registry fallbacks
   const liveSourceCount = meta?.totalSources ?? 0
@@ -76,6 +119,8 @@ export function SourcesGrid() {
   const rafRef = useRef(0)
   const rectsRef = useRef<{ cx: number; cy: number }[]>([])
   const reducedMotion = useRef(false)
+  /** Last cursor position for dead-zone check */
+  const lastCursorRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -84,18 +129,24 @@ export function SourcesGrid() {
     if (!grid) return
     const io = new IntersectionObserver(
       (entries) => {
+        let needsRectUpdate = false
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             ;(entry.target as HTMLElement).classList.add('cascade-revealed')
             io.unobserve(entry.target)
+            needsRectUpdate = true
           }
         })
+        // Pre-populate rect cache as cards become visible — ready before mouseEnter
+        if (needsRectUpdate) {
+          cacheRects()
+        }
       },
       { threshold: 0.05 },
     )
     for (const child of Array.from(grid.children)) io.observe(child)
     return () => io.disconnect()
-  }, [filteredSources])
+  }, [filteredSources]) // eslint-disable-line react-hooks/exhaustive-deps — cacheRects is stable
 
   // ── Cursor wake — brightness pulse near cursor ──
   const cacheRects = useCallback(() => {
@@ -109,6 +160,14 @@ export function SourcesGrid() {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (reducedMotion.current) return
+
+    // Dead-zone: skip if cursor moved less than CURSOR_DEAD_ZONE px
+    const dx = e.clientX - lastCursorRef.current.x
+    const dy = e.clientY - lastCursorRef.current.y
+    if (dx * dx + dy * dy < CURSOR_DEAD_ZONE * CURSOR_DEAD_ZONE) return
+    lastCursorRef.current.x = e.clientX
+    lastCursorRef.current.y = e.clientY
+
     cancelAnimationFrame(rafRef.current)
     rafRef.current = requestAnimationFrame(() => {
       const grid = gridRef.current
@@ -116,9 +175,11 @@ export function SourcesGrid() {
       const children = grid.children
       const rects = rectsRef.current
       if (rects.length !== children.length) return
+      const mx = e.clientX
+      const my = e.clientY
       for (let i = 0; i < children.length; i++) {
         const { cx, cy } = rects[i]
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy)
+        const dist = Math.hypot(mx - cx, my - cy)
         const t = Math.max(0, 1 - dist / 300)
         const el = children[i].firstElementChild as HTMLElement | null
         if (!el) continue
@@ -208,19 +269,19 @@ export function SourcesGrid() {
           ) : (
           <div
             ref={gridRef}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light"
+            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light"
             onMouseEnter={cacheRects}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
-            {filteredSources.map((source, i) => (
+            {visibleSources.map((source, i) => (
               <div
                 key={source.sourceId}
                 className="source-card-cascade"
                 style={{ '--d': Math.floor(i / 4) + (i % 4) } as React.CSSProperties}
               >
                 <SourceCard
-                  source={{ ...source, id: source.sourceId }}
+                  source={stableSourceProps.get(source.sourceId)!}
                   bitmapEditor={bitmapEditor}
                   index={i}
                   metaAssetCount={meta?.assetCounts ? assetCountForSource(source.sourceId, meta.assetCounts) : undefined}

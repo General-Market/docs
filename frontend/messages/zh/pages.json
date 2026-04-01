@@ -8,7 +8,8 @@
     "nav_create_index": "创建指数",
     "nav_lending": "借贷",
     "nav_backtesting": "回测",
-    "nav_system": "系统"
+    "nav_system": "系统",
+    "nav_discovery": "Discovery"
   },
   "privacy": {
     "back": "← 返回",

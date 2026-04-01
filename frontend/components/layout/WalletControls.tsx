@@ -10,14 +10,21 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
 import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
 import { usePoints } from '@/hooks/usePoints'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { springs } from '@/components/ui/spring'
 
 interface WalletControlsProps {
   isDark: boolean
   showVisionBalance: boolean
 }
 
+const ENTER = { opacity: 0, y: -12, filter: 'blur(4px)' }
+const VISIBLE = { opacity: 1, y: 0, filter: 'blur(0px)' }
+const EXIT = { opacity: 0, y: -12, filter: 'blur(4px)' }
+
 export function WalletControls({ isDark, showVisionBalance }: WalletControlsProps) {
   const t = useTranslations('common')
+  const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
 
   const { address, isConnected } = useAccount()
@@ -108,10 +115,23 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
     } catch {}
   }
 
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const hasInjectedProvider = typeof window !== 'undefined' && !!window.ethereum
+
   const handleLogin = async () => {
-    capture('login_clicked', { source: 'header' })
+    capture('login_clicked', { source: 'header', mobile: isMobile, has_provider: hasInjectedProvider })
+
+    // Mobile browser without injected provider → deep-link to MetaMask app
+    if (isMobile && !hasInjectedProvider) {
+      const dappUrl = `${window.location.host}${window.location.pathname}`
+      window.location.href = `https://metamask.app.link/dapp/${dappUrl}`
+      return
+    }
+
     if (injectedConnector) {
-      try { await addAndSwitchChain() } catch {}
+      if (hasInjectedProvider) {
+        try { await addAndSwitchChain() } catch {}
+      }
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
   }
@@ -122,22 +142,32 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
     disconnect()
   }
 
-  return (
-    <>
-      {/* Points */}
-      <Link
-        href="/points"
-        className={`text-label font-bold font-mono transition-colors ${
-          isDark ? 'text-text-muted hover:text-white' : 'text-text-muted hover:text-black'
-        }`}
-      >
-        {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
-      </Link>
-      {showVisionBalance && <VisionBalanceBar />}
+  const spring = reduced ? { duration: 0 } : springs.entrance
 
-      {/* Wallet state */}
+  return (
+    <AnimatePresence mode="wait">
       {mounted && authenticated && address ? (
-        <div className="flex items-center gap-1.5">
+        <motion.div
+          key="connected"
+          className="flex items-center gap-1.5 sm:gap-2"
+          initial={reduced ? false : ENTER}
+          animate={VISIBLE}
+          exit={EXIT}
+          transition={spring}
+        >
+          {/* Points — only when connected */}
+          <Link
+            href="/points"
+            className={`hidden sm:inline text-label font-bold font-mono transition-colors ${
+              isDark ? 'text-text-muted hover:text-white' : 'text-text-muted hover:text-black'
+            }`}
+          >
+            {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
+          </Link>
+
+          {showVisionBalance && <VisionBalanceBar />}
+
+          {/* Balance — desktop only */}
           {!showVisionBalance && usdcBalance !== null && (
             <span
               className={`group/bal hidden sm:inline-flex items-center text-[12px] font-semibold font-mono tabular-nums tracking-tight ${
@@ -146,23 +176,17 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
               onClick={isFaucetEnabled && usdcBalance === 0 ? handleFaucet : undefined}
             >
               {isFaucetEnabled && usdcBalance === 0 ? (
-                <>
-                  <span className="group-hover/bal:hidden">
-                    {usdcBalance.toFixed(2)}
-                    <span className={`ml-0.5 font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>USDC</span>
-                  </span>
-                  <span className={`hidden group-hover/bal:inline text-[11px] font-semibold ${
-                    faucetState === 'loading' ? 'text-zinc-400'
-                      : faucetState === 'done' ? 'text-emerald-300'
-                      : faucetState === 'error' ? 'text-red-300'
-                      : 'text-emerald-300'
-                  }`}>
-                    {faucetState === 'loading' ? 'Minting...'
-                      : faucetState === 'done' ? '1K USDC + gas sent'
-                      : faucetState === 'error' ? 'Failed — retry'
-                      : 'Get test USDC + gas'}
-                  </span>
-                </>
+                <span className={`text-[11px] font-semibold ${
+                  faucetState === 'loading' ? 'text-zinc-400'
+                    : faucetState === 'done' ? (isDark ? 'text-emerald-300' : 'text-emerald-600')
+                    : faucetState === 'error' ? 'text-red-400'
+                    : (isDark ? 'text-emerald-300' : 'text-emerald-600')
+                }`}>
+                  {faucetState === 'loading' ? 'Minting...'
+                    : faucetState === 'done' ? '1K sent'
+                    : faucetState === 'error' ? 'Failed'
+                    : 'Get USDC'}
+                </span>
               ) : usdcBalance > 0 ? (
                 <>
                   {usdcBalance < 0.01 ? '<0.01'
@@ -187,6 +211,8 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
               )}
             </span>
           )}
+
+          {/* Wallet address button */}
           <button
             onClick={handleLogout}
             className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-mono font-medium rounded-lg transition-all duration-200 fluid-press ${
@@ -199,11 +225,16 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
             <span className="group-hover:hidden">{truncateAddress(address)}</span>
             <span className="hidden group-hover:inline text-[11px] font-sans font-semibold">{t('actions.disconnect')}</span>
           </button>
-        </div>
+        </motion.div>
       ) : mounted && isWrongNetwork ? (
-        <button
+        <motion.button
+          key="wrong-network"
           onClick={() => switchChain({ chainId: indexL3.id })}
           disabled={isSwitching}
+          initial={reduced ? false : ENTER}
+          animate={VISIBLE}
+          exit={EXIT}
+          transition={spring}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50 fluid-press ${
             isDark
               ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
@@ -212,20 +243,38 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
         >
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
           {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
-        </button>
+        </motion.button>
       ) : (
-        <button
-          onClick={handleLogin}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
-            isDark
-              ? 'border-white/20 text-white hover:bg-white/10'
-              : 'border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
-          }`}
+        <motion.div
+          key="disconnected"
+          className="flex items-center gap-1.5"
+          initial={reduced ? false : ENTER}
+          animate={VISIBLE}
+          exit={EXIT}
+          transition={spring}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          {t('wallet.login')}
-        </button>
+          <button
+            onClick={handleLogin}
+            className={`inline-flex items-center px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press ${
+              isDark
+                ? 'text-zinc-400 hover:text-white'
+                : 'text-zinc-500 hover:text-black'
+            }`}
+          >
+            {t('wallet.login')}
+          </button>
+          <button
+            onClick={handleLogin}
+            className={`inline-flex items-center px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
+              isDark
+                ? 'border-white/20 text-white hover:bg-white/10'
+                : 'border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
+            }`}
+          >
+            {t('wallet.sign_up')}
+          </button>
+        </motion.div>
       )}
-    </>
+    </AnimatePresence>
   )
 }

@@ -17,9 +17,12 @@ import { useItpNav } from '@/hooks/useItpNav'
 import { useSSEOrders, useSSEBalances, type UserOrder } from '@/hooks/useSSE'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import Link from 'next/link'
+import itpIdNames from '@/lib/itp-id-names.json'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
 import { indexL3, settlementChain, settlementChainId } from '@/lib/wagmi'
 
 /** Settlement USDC decimals — real USDC on Settlement is 6 decimals */
@@ -64,6 +67,7 @@ interface BuyItpModalProps {
 export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const t = useTranslations('buy-modal')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const { address, isConnected, chainId: currentChainId } = useAccount()
   const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
   const { showSuccess } = useToast()
@@ -154,8 +158,9 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   // Keep useUserState for ITP name/symbol (fetches from backend)
   const userState = useUserState(itpId)
-  const itpName = userState.bridgedItpName || 'ITP'
-  const itpSymbol = userState.bridgedItpSymbol || ''
+  const staticEntry = (itpIdNames as Record<string, { name: string; ticker: string }>)[itpId.toLowerCase()]
+  const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
+  const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
   // Settlement USDC balance (6 decimals) — read from Settlement chain
   const { data: settlementUsdcRaw, refetch: refetchSettlementUsdc } = useReadContract({
@@ -722,13 +727,15 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   return createPortal(
     <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
       <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-1">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
             <ModalClose onClick={handleClose} />
           </div>
-          {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
-          <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
+          {itpSymbol && <p className="text-text-secondary mb-0.5 font-mono text-sm">${itpSymbol}</p>}
+          <Link href={`/${locale}/itp/${itpId}`} className="text-xs text-accent hover:underline inline-block mb-2" onClick={handleClose}>More details &rarr;</Link>
+
+          <InlineOhlcChart itpId={itpId} height={180} />
 
           {videoUrl && (() => {
             const vid = extractYouTubeId(videoUrl)
@@ -807,10 +814,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className={`${glass.section} p-4 space-y-4`}>
+            <div className="space-y-2">
+              <div className={`${glass.section} p-3 space-y-3`}>
                 <div>
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center mb-1">
                     <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('amount_label')}</label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
@@ -852,8 +859,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 )}
               </div>
 
-              <div className={`${glass.section} p-4`}>
-                <div className="flex justify-between items-center mb-2">
+              <div className={`${glass.section} p-3`}>
+                <div className="flex justify-between items-center mb-1">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('max_price_label')}</label>
                   {navPerShare > 0 && (
                     <span className="text-xs text-text-secondary font-mono">

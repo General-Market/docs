@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourcesGrid } from '@/components/domain/vision/sources/SourcesGrid'
-import { WelcomeHero } from '@/components/domain/vision/WelcomeHero'
+import { WelcomeHero, HeroLeaderboard } from '@/components/domain/vision/WelcomeHero'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -22,6 +22,9 @@ export default async function VisionPage() {
 
       {/* Screen 1 — ChatGPT-style welcome */}
       <WelcomeHero />
+
+      {/* Leaderboard — between hero and grid */}
+      <HeroLeaderboard />
 
       {/* Screen 2 — scrolls into view beneath the fold */}
       <div className="flex-1 overflow-x-clip">

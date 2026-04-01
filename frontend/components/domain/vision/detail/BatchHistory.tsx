@@ -218,8 +218,9 @@ function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
   )
 }
 
-// Grid: Round | Status | Players | Pool | Winner | Time
-const GRID_COLS = 'grid-cols-[56px_64px_52px_60px_1fr_90px]'
+// Grid: Round | Status | Players | Pool | Result | Time
+// Use minmax with fr units so columns breathe on narrow screens
+const GRID_COLS = 'grid-cols-[minmax(48px,0.7fr)_minmax(52px,0.8fr)_minmax(40px,0.6fr)_minmax(48px,0.7fr)_minmax(80px,1.4fr)_minmax(56px,0.8fr)]'
 
 interface BatchHistoryProps {
   sourceId: string
@@ -423,15 +424,18 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
           const userEntry = participatedBatches.get(batch.batchId)
           const userPnl = userEntry?.pnl
           let winnerText: string | null = null
+          let winnerTitle: string | null = null
           let winnerPnl = topPnl
           if (participated && userPnl !== undefined) {
             const uSign = userPnl >= 0 ? '+' : '-'
             winnerText = `You ${uSign}$${Math.abs(userPnl).toFixed(2)}`
             winnerPnl = userPnl
           } else if (topAddr && topPnl > 0) {
-            winnerText = `${truncAddr(topAddr)} won $${topPnl.toFixed(2)}`
+            winnerText = `+$${topPnl.toFixed(2)}`
+            winnerTitle = `${truncAddr(topAddr)} won $${topPnl.toFixed(2)}`
           } else if (topAddr && topPnl !== 0) {
-            winnerText = `${truncAddr(topAddr)} ${topSign}$${Math.abs(topPnl).toFixed(2)}`
+            winnerText = `${topSign}$${Math.abs(topPnl).toFixed(2)}`
+            winnerTitle = `${truncAddr(topAddr)} ${topSign}$${Math.abs(topPnl).toFixed(2)}`
           } else if (batch.playerCount > 0) {
             winnerText = 'Tie'
           }
@@ -457,13 +461,13 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
                 ${batch.totalPool.toFixed(2)}
               </div>
               {/* Winner: "You: +$X" when participated, "0xABC...def +$X" otherwise */}
-              <div className={`text-right font-mono text-[11px] tabular-nums ${
+              <div className={`text-right font-mono text-[11px] tabular-nums truncate ${
                 winnerText
                   ? participated
                     ? winnerPnl > 0 ? 'text-color-up font-semibold' : 'text-color-down font-semibold'
                     : 'text-text-muted'
                   : 'text-text-muted'
-              }`}>
+              }`} title={winnerTitle ?? winnerText ?? undefined}>
                 {winnerText ?? '\u2014'}
               </div>
               <div className={`text-right font-mono text-[10px] ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>

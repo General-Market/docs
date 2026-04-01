@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 import { useWeb3Available } from '@/lib/contexts/Web3Context'
+import { useAccount } from 'wagmi'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 
 const WalletControls = dynamic(() => import('./WalletControls').then(m => ({ default: m.WalletControls })), {
   ssr: false,
@@ -20,11 +22,17 @@ const WalletControls = dynamic(() => import('./WalletControls').then(m => ({ def
   ),
 })
 
+const TopbarStats = dynamic(() => import('./TopbarStats').then(m => ({ default: m.TopbarStats })), {
+  ssr: false,
+  loading: () => <span className="tabular-nums">&nbsp;</span>,
+})
+
 // ── Navigation ────────────────────────────────────────────
 const PRIMARY_NAV = [
-  { id: 'vision',   href: '/',         labelKey: 'nav.vision' },
-  { id: 'index',    href: '/index',    labelKey: 'nav.investment' },
-  { id: 'explorer', href: '/explorer', labelKey: 'nav.explorer' },
+  { id: 'vision',    href: '/',         labelKey: 'nav.vision' },
+  { id: 'portfolio', href: '/profile',  labelKey: 'nav.portfolio' },
+  { id: 'index',     href: '/index',    labelKey: 'nav.itps' },
+  { id: 'explorer',  href: '/explorer', labelKey: 'nav.explorer' },
 ] as const
 
 type PageId = typeof PRIMARY_NAV[number]['id']
@@ -32,71 +40,11 @@ type PageId = typeof PRIMARY_NAV[number]['id']
 // Pages whose mood darkens the header
 const DARK_PAGES = new Set<string>(['vision'])
 
-// ── Topbar stats ──
-// Settlement counter: approximates total settled sub-markets from base + time.
-// Active markets: fetched once from the batches API (sum of market_count).
-const COUNTER_EPOCH = 1774600000
-const COUNTER_BASE = 500_000
-const MARKETS_PER_HOUR = 72_000
-
-function computeSettled(): number {
-  const hours = Math.max(0, (Date.now() / 1000 - COUNTER_EPOCH) / 3600)
-  return Math.floor(COUNTER_BASE + hours * MARKETS_PER_HOUR)
-}
-
-function TopbarStats() {
-  // Initialize to 0 on both server and client to avoid hydration mismatch.
-  // The real count is computed in useEffect (client-only).
-  const [settled, setSettled] = useState(0)
-  const [activeMarkets, setActiveMarkets] = useState(0)
-
-  useEffect(() => {
-    // Compute immediately on mount, then tick every 10s
-    setSettled(computeSettled())
-    const iv = setInterval(() => setSettled(computeSettled()), 10_000)
-
-    // Fetch active market count from data-node snapshot meta.
-    // Falls back to batches API + estimation if meta unavailable.
-    fetch('/api/dn/market-count')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.count > 0) { setActiveMarkets(d.count); return }
-        // Fallback: sum from batches + estimate unknowns at 3000 avg
-        return fetch('/api/vision/batches')
-          .then(r => r.ok ? r.json() : { batches: [] })
-          .then(d => {
-            const batches = d.batches ?? []
-            let total = 0, missing = 0
-            for (const b of batches) {
-              const mc = b.market_count ?? 0
-              if (mc > 0) total += mc; else missing++
-            }
-            total += missing * 3000
-            if (total > 0) setActiveMarkets(total)
-          })
-      })
-      .catch(() => {})
-
-    return () => clearInterval(iv)
-  }, [])
-
-  // Don't render counts until client-side effect has fired (avoids flash of "0")
-  if (settled === 0) return <span className="tabular-nums">&nbsp;</span>
-
-  return (
-    <span className="tabular-nums">
-      {activeMarkets > 0 && (
-        <><span className="font-bold">{activeMarkets.toLocaleString()}</span> live markets · </>
-      )}
-      <span className="font-bold">{settled.toLocaleString()}</span> settlements
-    </span>
-  )
-}
-
 function resolveActivePage(pathname: string): PageId | null {
-  if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
   if (pathname === '/explorer' || pathname.startsWith('/explorer/')) return 'explorer'
-  if (pathname === '/' || pathname.startsWith('/source/') || pathname.startsWith('/profile/')) return 'vision'
+  if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
+  if (pathname.startsWith('/profile/')) return 'portfolio'
+  if (pathname === '/' || pathname.startsWith('/source/')) return 'vision'
   return null
 }
 
@@ -112,9 +60,13 @@ export function Header() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasWeb3 = useWeb3Available()
+  const { address, isConnected } = useAccount()
 
   // ── PostHog ─────────────────────────────────────────────
   const { capture } = usePostHogTracker()
+
+  const navHref = (item: typeof PRIMARY_NAV[number]) =>
+    item.id === 'portfolio' ? (address ? `/profile/${address}` : null) : item.href
 
   const scrollTo = (id: string) => {
     capture('section_scrolled_to', { section_name: id })
@@ -123,14 +75,7 @@ export function Header() {
   }
 
   // ── Section nav (contextual scroll-to links for overflow) ──
-  const sectionNav = activePage === 'index' ? [
-    { id: 'markets', label: t('nav.markets') },
-    { id: 'portfolio', label: t('nav.portfolio') },
-    { id: 'create', label: t('nav.create') },
-    { id: 'lend', label: t('nav.lend') },
-    { id: 'backtest', label: t('nav.backtest') },
-    { id: 'system', label: t('nav.system'), href: '/explorer' },
-  ] : activePage === 'vision' ? [
+  const sectionNav = activePage === 'vision' ? [
     { id: 'vision', label: t('nav.vision_nav') },
     { id: 'leaderboard', label: t('nav.leaderboard') },
     { id: 'markets-data', label: t('nav.markets_data') },
@@ -140,7 +85,7 @@ export function Header() {
     <>
       {/* Topbar — thin black strip (scrolls away) */}
       <div className="bg-black text-white text-label font-medium text-center py-1.5">
-        <TopbarStats />. Testnet v0.93
+        <TopbarStats /> <span className="text-zinc-600 mx-1.5">·</span> <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Testnet v0.93</span>
       </div>
 
       <div className="sticky top-0 z-50">
@@ -153,7 +98,7 @@ export function Header() {
           }`}
           style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
         >
-          <div className="px-4 sm:px-6 lg:px-12">
+          <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto flex items-center justify-between h-14 sm:h-16">
 
               {/* Logo */}
@@ -174,30 +119,37 @@ export function Header() {
 
               {/* Desktop: 4 equal tabs with spring underline */}
               <nav className="hidden md:flex items-center">
-                {PRIMARY_NAV.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => router.push(item.href)}
-                    className={`relative px-5 py-5 text-[14px] font-semibold transition-colors duration-300 ${
-                      activePage === item.id
-                        ? isDark ? 'text-white' : 'text-black'
-                        : isDark
-                          ? 'text-zinc-400 hover:text-zinc-200'
-                          : 'text-text-secondary hover:text-black'
-                    }`}
-                  >
-                    {t(item.labelKey)}
-                    {activePage === item.id && (
-                      <motion.div
-                        className={`absolute bottom-0 left-0 right-0 h-0.5 ${
-                          isDark ? 'bg-white' : 'bg-black'
-                        }`}
-                        layoutId="header-nav-indicator"
-                        transition={reduced ? { duration: 0 } : springs.indicator}
-                      />
-                    )}
-                  </button>
-                ))}
+                <AnimatePresence>
+                  {PRIMARY_NAV.filter(item => item.id !== 'portfolio' || isConnected).map((item) => (
+                    <motion.button
+                      key={item.id}
+                      layout={!reduced}
+                      initial={item.id === 'portfolio' ? { opacity: 0, y: -12, filter: 'blur(4px)' } : false}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
+                      transition={reduced ? { duration: 0 } : springs.entrance}
+                      onClick={() => { const h = navHref(item); if (h) router.push(h) }}
+                      className={`relative px-5 py-5 text-[14px] font-semibold transition-colors duration-300 ${
+                        activePage === item.id
+                          ? isDark ? 'text-white' : 'text-black'
+                          : isDark
+                            ? 'text-zinc-400 hover:text-zinc-200'
+                            : 'text-text-secondary hover:text-black'
+                      }`}
+                    >
+                      {t(item.labelKey)}
+                      {activePage === item.id && (
+                        <motion.div
+                          className={`absolute bottom-0 left-0 right-0 h-0.5 ${
+                            isDark ? 'bg-white' : 'bg-black'
+                          }`}
+                          layoutId="header-nav-indicator"
+                          transition={reduced ? { duration: 0 } : springs.indicator}
+                        />
+                      )}
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
               </nav>
 
               {/* Right side — Links + Balance + Wallet + Hamburger */}
@@ -206,21 +158,9 @@ export function Header() {
                   <LanguageSwitcher variant={isDark ? 'dark' : 'light'} />
                 </div>
 
-                {/* Wallet controls — only rendered when Web3 providers are available */}
-                {hasWeb3 ? (
+                {/* Wallet controls — handles both connected and disconnected states */}
+                {hasWeb3 && (
                   <WalletControls isDark={isDark} showVisionBalance={showVisionBalance} />
-                ) : (
-                  <Link
-                    href="/"
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 border ${
-                      isDark
-                        ? 'border-white/20 text-white hover:bg-white/10'
-                        : 'border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    {t('wallet.login')}
-                  </Link>
                 )}
 
                 {/* Hamburger — spring-animated lines → X, mobile only */}
@@ -283,7 +223,7 @@ export function Header() {
                             {sectionNav.map((link) => (
                               <button
                                 key={link.id}
-                                onClick={() => 'href' in link && link.href ? (router.push(link.href), setMobileMenuOpen(false)) : scrollTo(link.id)}
+                                onClick={() => scrollTo(link.id)}
                                 className={`block w-full text-left px-2 py-2 text-caption rounded transition-colors ${
                                   isDark
                                     ? 'text-zinc-300 hover:text-white hover:bg-white/10'
@@ -342,38 +282,6 @@ export function Header() {
             </div>
           </div>
 
-          {/* ── Mobile tab strip — 4 equal tabs below header ── */}
-          <div
-            className={`md:hidden border-t transition-colors duration-500 ${
-              isDark ? 'border-zinc-800' : 'border-border-light/50'
-            }`}
-            style={{ transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-          >
-            <div className="px-2 flex">
-              {PRIMARY_NAV.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => { router.push(item.href); setMobileMenuOpen(false) }}
-                  className={`relative flex-1 py-2.5 text-[12px] font-semibold text-center transition-colors duration-300 ${
-                    activePage === item.id
-                      ? isDark ? 'text-white' : 'text-black'
-                      : isDark ? 'text-zinc-500' : 'text-text-muted'
-                  }`}
-                >
-                  {t(item.labelKey)}
-                  {activePage === item.id && (
-                    <motion.div
-                      className={`absolute bottom-0 left-3 right-3 h-0.5 rounded-full ${
-                        isDark ? 'bg-white' : 'bg-black'
-                      }`}
-                      layoutId="mobile-nav-indicator"
-                      transition={reduced ? { duration: 0 } : springs.indicator}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
         </header>
 
         {/* Section nav removed — lives in HomeClient as Morpho-style sidebar */}

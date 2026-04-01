@@ -8,6 +8,7 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
+import { TerminalBootLoader } from './TerminalBootLoader'
 import { getLineStyle } from '@/lib/vision/transport-colors'
 import { getAssetImageUrl } from '@/lib/vision/asset-images'
 // Side-effect imports: register official color maps
@@ -338,11 +339,26 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const unit = sourceEntry?.valueUnit ?? ''
 
   // Snapshot data — sourceId IS the data-node source ID
-  const { data, isLoading } = useSourceSnapshot(sourceId)
+  const { data, isLoading, refetch, dataUpdatedAt } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
 
   // Markets come directly from per-source snapshot (already filtered server-side)
   const sourceMarkets: SnapshotPrice[] = data?.prices ?? []
+
+  // Meta asset count for loading placeholder row count
+  const metaAssetCount = meta?.assetCounts?.[sourceId]
+
+  // If meta says markets exist but snapshot returned empty, keep showing loader and retry
+  const expectsMarkets = (metaAssetCount ?? 0) > 0
+  const snapshotEmpty = !isLoading && sourceMarkets.length === 0
+  const shouldRetry = snapshotEmpty && expectsMarkets
+
+  useEffect(() => {
+    if (!shouldRetry) return
+    // Retry every 5s until we get data
+    const iv = setInterval(() => refetch(), 5_000)
+    return () => clearInterval(iv)
+  }, [shouldRetry, refetch])
 
   // Fetch live batch to get per-market resolution types via batch ID
   const { data: batches } = useBatches()
@@ -432,7 +448,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         <div>
           <div className="section-bar-title">{t('markets_table.markets_title')}</div>
           <div className="section-bar-value">
-            {isLoading ? '...' : sourceMarkets.length}
+            {isLoading || shouldRetry
+              ? (metaAssetCount ? metaAssetCount.toLocaleString() : '...')
+              : sourceMarkets.length.toLocaleString()}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -441,31 +459,33 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             placeholder={t('markets_table.search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[180px]"
+            className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[120px] md:w-[180px]"
           />
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
-        {/* Column headers */}
-        <div className="grid grid-cols-[1fr_80px_100px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+        {/* Column headers — mobile: name + bet only; desktop: full 5-col */}
+        <div className="grid grid-cols-[1fr_100px] md:grid-cols-[1fr_80px_100px_80px_100px] items-center px-3 md:px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>{t('markets_table.name')}</div>
-          <div className="text-center">{t('markets_table.type')}</div>
-          <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
-          <div className="text-right">{t('markets_table.one_day')}</div>
+          <div className="hidden md:block text-center">{t('markets_table.type')}</div>
+          <div className="hidden md:block text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
+          <div className="hidden md:block text-right">{t('markets_table.one_day')}</div>
           <div className="text-center">{t('markets_table.bet')}</div>
         </div>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="px-4 py-8 text-center text-caption text-text-muted">
-            {t('common_labels.loading_markets')}
-          </div>
+        {/* Loading state — Bloomberg terminal boot (also shown when meta says markets exist but snapshot is empty) */}
+        {(isLoading || shouldRetry) && (
+          <TerminalBootLoader
+            rowCount={metaAssetCount ?? 16}
+            sourcePrefix={sourceEntry?.prefixes?.[0] ?? ''}
+            brandColor={sourceEntry?.brandBg ?? '#000000'}
+          />
         )}
 
-        {/* Empty state */}
-        {!isLoading && filteredMarkets.length === 0 && (
+        {/* Empty state — only when meta also confirms no markets */}
+        {!isLoading && !shouldRetry && filteredMarkets.length === 0 && (
           <div className="px-4 py-8 text-center text-caption text-text-muted">
             {search ? t('markets_table.no_match') : t('markets_table.no_markets')}
           </div>
@@ -492,12 +512,12 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             return (
               <div key={market.assetId} data-row className={isExpanded ? '' : 'cv-row'} style={{ '--row-i': idx } as React.CSSProperties}>
                 <SpringRow
-                  className={`grid grid-cols-[1fr_80px_100px_80px_100px] items-center px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
+                  className={`grid grid-cols-[1fr_100px] md:grid-cols-[1fr_80px_100px_80px_100px] items-center px-3 md:px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
                 >
-                  {/* Name */}
+                  {/* Name + mobile inline value/change */}
                   <div className="min-w-0 flex items-center gap-2">
                     <AssetIcon
                       sourceId={sourceId}
@@ -513,11 +533,20 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                       <div className="text-micro font-mono text-text-muted mt-0.5 truncate">
                         {truncateMiddle(market.symbol, 20)}{vol ? ` · Vol ${vol}` : ''}
                       </div>
+                      {/* Mobile: value + change inline */}
+                      <div className="flex items-center gap-2 mt-0.5 md:hidden">
+                        <span className="font-mono tabular-nums text-black font-semibold text-micro">
+                          {formatPrice(market.value, isPriceSource)}
+                        </span>
+                        <span className={`font-mono tabular-nums font-semibold text-micro ${change1d.color}`}>
+                          {change1d.text}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Resolution type — from config or computed from 24h change */}
-                  <div className="text-center">
+                  {/* Resolution type — desktop only */}
+                  <div className="hidden md:block text-center">
                     {resolutionBadge(
                       resInfo?.resType ?? (() => {
                         const pct = parseFloat(market.changePct ?? '0')
@@ -531,13 +560,13 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     )}
                   </div>
 
-                  {/* Value — momentum bar behind price */}
-                  <div className="text-right font-mono tabular-nums text-black font-semibold" style={momentumStyle}>
+                  {/* Value — desktop only */}
+                  <div className="hidden md:block text-right font-mono tabular-nums text-black font-semibold" style={momentumStyle}>
                     {formatPrice(market.value, isPriceSource)}
                   </div>
 
-                  {/* 1d change */}
-                  <div className={`text-right font-mono tabular-nums font-semibold ${change1d.color}`}>
+                  {/* 1d change — desktop only */}
+                  <div className={`hidden md:block text-right font-mono tabular-nums font-semibold ${change1d.color}`}>
                     {change1d.text}
                   </div>
 

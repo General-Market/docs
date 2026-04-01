@@ -112,11 +112,14 @@ export function getAssetImageUrl(
       return null
     }
 
-    // ── Twitch — game box art ────────────────────────────────────────
+    // ── Twitch — streamer profile pics + game box art ──────────────────
     case 'twitch': {
+      const isStream = suffix.startsWith('stream_')
       const id = suffix.replace(/^(stream_|game_)/, '')
-      if (id) return `/api/vision/icon/twitch/${encodeURIComponent(id)}`
-      return null
+      if (!id) return null
+      // Streams → user profile image (Helix API), games → box art (IGDB CDN)
+      if (isStream) return `/api/vision/icon/twitch-user/${encodeURIComponent(id)}`
+      return `/api/vision/icon/twitch/${encodeURIComponent(id)}`
     }
 
     // ── Last.fm — artist image ───────────────────────────────────────

@@ -122,13 +122,13 @@ export default function BatchEntryPanel({
   }, [connect, connectors])
 
   // -- Wallet USDC balance (round-based: no Vision balance pool) --
-  const { data: walletUsdcRaw, isLoading: isBalanceLoading } = useReadContract({
+  const { data: walletUsdcRaw, isLoading: isBalanceLoading, refetch: refetchBalance } = useReadContract({
     address: usdcAddress,
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: !!address && usdcAddress !== '0x0000000000000000000000000000000000000000', refetchInterval: 10_000 },
   })
   const walletUsdc = (walletUsdcRaw as bigint | undefined) ?? 0n
   const hasZeroBalance = !isBalanceLoading && walletUsdc === 0n
@@ -268,7 +268,7 @@ export default function BatchEntryPanel({
         setFaucetError(data.error || 'Faucet request failed')
       } else {
         setFaucetSuccess(true)
-        // Auto-dismiss after 4 seconds
+        setTimeout(() => refetchBalance(), 2000)
         setTimeout(() => setFaucetSuccess(false), 4000)
       }
     } catch (e: any) {
@@ -276,7 +276,7 @@ export default function BatchEntryPanel({
     } finally {
       setFaucetLoading(false)
     }
-  }, [address, faucetLoading])
+  }, [address, faucetLoading, refetchBalance])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]

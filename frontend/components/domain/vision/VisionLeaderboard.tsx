@@ -1,8 +1,40 @@
 'use client'
 
-import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { useVisionLeaderboard, VisionLeaderboardEntry } from '@/hooks/vision/useVisionLeaderboard'
 import { useTranslations } from 'next-intl'
+import { useIsMobile } from '@/hooks/useMediaQueries'
 import { LeaderboardSkeleton } from '@/components/ui/VisionLoader'
+
+function MobileCard({ entry, t }: { entry: VisionLeaderboardEntry; t: ReturnType<typeof useTranslations<'vision'>> }) {
+  const pnlPositive = entry.pnl >= 0
+  const rankDisplay = entry.rank <= 3
+    ? ['\u{1F947}', '\u{1F948}', '\u{1F949}'][entry.rank - 1]
+    : `#${entry.rank}`
+
+  return (
+    <div className={`px-4 py-3 border-b border-border-light ${entry.rank <= 3 ? 'bg-muted/40 border-l-2 border-l-brand' : ''}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-bold tabular-nums shrink-0 w-8">{rankDisplay}</span>
+          <span className="font-mono text-sm text-text-primary truncate">
+            {entry.walletAddress.slice(0, 6)}...{entry.walletAddress.slice(-4)}
+          </span>
+        </div>
+        <span className={`font-mono text-sm font-bold tabular-nums shrink-0 ${pnlPositive ? 'text-color-up' : 'text-color-down'}`}>
+          {pnlPositive ? '+' : '-'}${Math.abs(entry.pnl).toFixed(2)}
+        </span>
+      </div>
+      <div className="flex items-center gap-3 mt-1.5 text-xs text-text-muted font-mono">
+        <span className={entry.roi >= 0 ? 'text-color-up' : 'text-color-down'}>
+          {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
+        </span>
+        <span>{entry.roundsPlayed} {t('vision_leaderboard.rounds').toLowerCase()}</span>
+        <span>${entry.totalVolume.toFixed(2)}</span>
+        <span className="ml-auto">{entry.portfolioBets} {t('vision_leaderboard.batches').toLowerCase()}</span>
+      </div>
+    </div>
+  )
+}
 
 /**
  * Vision leaderboard showing player rankings by PnL.
@@ -11,6 +43,7 @@ import { LeaderboardSkeleton } from '@/components/ui/VisionLoader'
 export function VisionLeaderboard() {
   const t = useTranslations('vision')
   const { leaderboard, isLoading, isError } = useVisionLeaderboard()
+  const isMobile = useIsMobile()
 
   if (isLoading) {
     return <LeaderboardSkeleton />
@@ -22,6 +55,16 @@ export function VisionLeaderboard() {
         <p className="text-text-muted font-mono text-sm">
           {isError ? t('vision_leaderboard.failed_to_load') : t('vision_leaderboard.no_players')}
         </p>
+      </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <div className="py-6">
+        {leaderboard.map((entry) => (
+          <MobileCard key={entry.walletAddress} entry={entry} t={t} />
+        ))}
       </div>
     )
   }

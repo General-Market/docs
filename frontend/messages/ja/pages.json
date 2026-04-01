@@ -8,7 +8,8 @@
     "nav_create_index": "インデックス作成",
     "nav_lending": "レンディング",
     "nav_backtesting": "バックテスト",
-    "nav_system": "システム"
+    "nav_system": "システム",
+    "nav_discovery": "Discovery"
   },
   "privacy": {
     "back": "← Back",

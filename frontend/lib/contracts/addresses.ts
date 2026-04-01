@@ -27,7 +27,7 @@ export const INDEX_PROTOCOL = {
 export const BRIDGE_PROXY = c.BridgeProxy as `0x${string}`
 
 // Chain config
-export const CHAIN_ID = deployment.chainId
+export const CHAIN_ID = (deployment as any).chainId ?? 111222333
 
 // Legacy / General Market compat (unused but other files import these)
 export const CONTRACT_ADDRESS = c.Index as `0x${string}`
