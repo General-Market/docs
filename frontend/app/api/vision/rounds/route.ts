@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     const sourceFilter = searchParams.get('source')
 
     const res = await fetch(`${getIssuerVisionUrl()}/vision/rounds/active`, {
-      cache: 'no-store',
+      next: { revalidate: 5 },
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`Oracle API ${res.status}`)

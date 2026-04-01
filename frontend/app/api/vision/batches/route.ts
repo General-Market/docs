@@ -116,7 +116,7 @@ async function getAliveBatchIds(batchIds: number[]): Promise<Set<number>> {
 export async function GET() {
   try {
     const res = await fetch(`${getIssuerVisionUrl()}/vision/batches`, {
-      cache: 'no-store',
+      next: { revalidate: 10 },
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)
