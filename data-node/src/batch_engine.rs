@@ -766,9 +766,13 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
             }
         }
 
-        // GC: delete batch configs older than 2 hours that were never signed
+        // GC: delete batch configs older than 30 days that were never signed.
+        // Must be generous — on-chain batches reference config hashes immutably,
+        // and bots need to look them up for the full tick lifetime + buffer.
+        // 2 hours was too aggressive; data-node restarts left in-flight batches
+        // with unresolvable hashes.
         if let Err(e) = sqlx::query(
-            "DELETE FROM batch_configs WHERE created_at < NOW() - INTERVAL '2 hours' \
+            "DELETE FROM batch_configs WHERE created_at < NOW() - INTERVAL '30 days' \
              AND config_hash NOT IN (SELECT config_hash FROM signed_batch_configs)",
         )
         .execute(&pool)
