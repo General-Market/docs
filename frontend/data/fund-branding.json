@@ -6,10 +6,12 @@
       "tagline": "Crypto trends persist because the crowd reinforces itself. Herd rides the wave until it breaks.",
       "strategy": "Momentum",
       "color": "#F7931A",
-      "sources": ["coingecko"],
+      "sources": [
+        "coingecko"
+      ],
       "category": "Crypto",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xD5a293Be8f3b2De4b95F3D660971F9583C38899D"
     },
     {
       "symbol": "WASH",
@@ -17,43 +19,51 @@
       "tagline": "Every pump gets sold, every dump gets bought. Washout bets on the overcorrection after every move larger than 3%.",
       "strategy": "Contrarian",
       "color": "#E74C3C",
-      "sources": ["coingecko"],
+      "sources": [
+        "coingecko"
+      ],
       "category": "Crypto",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xFE70C0807b365572E67E9E79b8CFa9970A2D6181"
     },
     {
       "symbol": "DGEN",
       "name": "Degenerator",
-      "tagline": "Memecoins spike then die — but the spike lasts several ticks. Degenerator rides the momentum while it persists.",
+      "tagline": "Memecoins spike then die \u2014 but the spike lasts several ticks. Degenerator rides the momentum while it persists.",
       "strategy": "Momentum",
       "color": "#00D18C",
-      "sources": ["pumpfun"],
+      "sources": [
+        "pumpfun"
+      ],
       "category": "Crypto",
       "fee": 2500,
-      "vault": ""
+      "vault": "0x688B545A4E99E558Fe0E46e806815c5815197f9F"
     },
     {
       "symbol": "LOCK",
       "name": "Lockflow",
-      "tagline": "DeFi TVL moves slowly and with conviction. Lockflow only bets when TVL shifts by more than 2% — ignoring the noise between.",
+      "tagline": "DeFi TVL moves slowly and with conviction. Lockflow only bets when TVL shifts by more than 2% \u2014 ignoring the noise between.",
       "strategy": "Momentum",
       "color": "#1B1B1B",
-      "sources": ["defillama"],
+      "sources": [
+        "defillama"
+      ],
       "category": "Crypto",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x479BBa90FF3680De53a70330D2C249e0937F217a"
     },
     {
       "symbol": "ORCL",
       "name": "Oracle",
-      "tagline": "Prediction markets converge to truth as events approach. Oracle rides the odds direction — the crowd gets smarter as resolution nears.",
+      "tagline": "Prediction markets converge to truth as events approach. Oracle rides the odds direction \u2014 the crowd gets smarter as resolution nears.",
       "strategy": "Momentum",
       "color": "#1B1B1B",
-      "sources": ["polymarket"],
+      "sources": [
+        "polymarket"
+      ],
       "category": "Crypto",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x516E13190a5A58885855A3B382F72721a75c36BF"
     },
     {
       "symbol": "RVRT",
@@ -61,10 +71,13 @@
       "tagline": "Temperature always returns to the seasonal mean. Every heatwave ends, every cold snap breaks. Revert bets on the return.",
       "strategy": "Contrarian",
       "color": "#2ECC71",
-      "sources": ["weather", "openmeteo"],
+      "sources": [
+        "weather",
+        "openmeteo"
+      ],
       "category": "Weather & Geophysical",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xd11D09b648ADD649e1438BB01abbEc501CBcCf73"
     },
     {
       "symbol": "AFTR",
@@ -72,21 +85,25 @@
       "tagline": "Earthquakes come in swarms. After a big one, the next ticks bring more. Aftershock bets on seismic persistence.",
       "strategy": "Momentum",
       "color": "#C0392B",
-      "sources": ["earthquake"],
+      "sources": [
+        "earthquake"
+      ],
       "category": "Weather & Geophysical",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x98D71Fe0b2151dBBFA524EfC8219C29caAd951c0"
     },
     {
       "symbol": "EMBR",
       "name": "Ember",
-      "tagline": "Fire season is fire season. Once hotspots appear in a region, Ember bets they grow — fires don't extinguish themselves between ticks.",
+      "tagline": "Fire season is fire season. Once hotspots appear in a region, Ember bets they grow \u2014 fires don't extinguish themselves between ticks.",
       "strategy": "Momentum",
       "color": "#E67E22",
-      "sources": ["wildfire"],
+      "sources": [
+        "wildfire"
+      ],
       "category": "Weather & Geophysical",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xBA7e3519E9b665Bd335FB553F29b69cecf0Ac42D"
     },
     {
       "symbol": "CLR",
@@ -94,10 +111,12 @@
       "tagline": "AQI spikes are temporary. Smoke clears, winds shift, rain falls. Clearsky bets on recovery after every pollution event.",
       "strategy": "Contrarian",
       "color": "#3498DB",
-      "sources": ["airnow"],
+      "sources": [
+        "airnow"
+      ],
       "category": "Weather & Geophysical",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x5a491A36501380d5F958d9B70279918d941cFE9A"
     },
     {
       "symbol": "SWEL",
@@ -105,21 +124,25 @@
       "tagline": "Ocean swells propagate across basins for days. A storm generates waves that persist tick-over-tick. Swell rides the propagation.",
       "strategy": "Momentum",
       "color": "#1ABC9C",
-      "sources": ["ndbc"],
+      "sources": [
+        "ndbc"
+      ],
       "category": "Weather & Geophysical",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x225753B968c4509DAFdcc60Aa70D8eF60376A073"
     },
     {
       "symbol": "AURA",
       "name": "Aurora",
-      "tagline": "Solar storms come in bursts — a high Kp index this tick means elevated activity next tick. Aurora bets on solar persistence.",
+      "tagline": "Solar storms come in bursts \u2014 a high Kp index this tick means elevated activity next tick. Aurora bets on solar persistence.",
       "strategy": "Momentum",
       "color": "#8E44AD",
-      "sources": ["spaceweather"],
+      "sources": [
+        "spaceweather"
+      ],
       "category": "Weather & Geophysical",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x03557c86CF1532Bb0B4DDd728d9bBbF7ee064a56"
     },
     {
       "symbol": "CSCD",
@@ -127,10 +150,14 @@
       "tagline": "Transit disruptions cascade. One stuck train creates thirty delayed ones. Cascade bets that disruption persists once it starts.",
       "strategy": "Momentum",
       "color": "#0039A6",
-      "sources": ["mta_subway", "tfl_tube", "paris_metro"],
+      "sources": [
+        "mta_subway",
+        "tfl_tube",
+        "paris_metro"
+      ],
       "category": "Transport",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x30943951A44d985Df36a6F02c96aF20E6045d13C"
     },
     {
       "symbol": "TAIL",
@@ -138,21 +165,27 @@
       "tagline": "Flight delays resolve. The system recovers by next cycle. Tailwind bets on normalization after disruption.",
       "strategy": "Contrarian",
       "color": "#2C3E50",
-      "sources": ["flights", "ryanair", "faa_delays"],
+      "sources": [
+        "flights",
+        "ryanair",
+        "faa_delays"
+      ],
       "category": "Transport",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xC8f463e3065BB5692760D0176a0980B758A2f6a4"
     },
     {
       "symbol": "GRID",
       "name": "Gridlock",
-      "tagline": "Rush hour traffic builds on itself. Gridlock bets that congestion this tick will be worse next tick — the commute only deepens.",
+      "tagline": "Rush hour traffic builds on itself. Gridlock bets that congestion this tick will be worse next tick \u2014 the commute only deepens.",
       "strategy": "Momentum",
       "color": "#34495E",
-      "sources": ["tomtom_traffic"],
+      "sources": [
+        "tomtom_traffic"
+      ],
       "category": "Transport",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xf4F69E31497250898e223428A72E1bC4B28C367A"
     },
     {
       "symbol": "XING",
@@ -160,10 +193,12 @@
       "tagline": "Border waits compound. When lines form, more cars arrive, fewer get processed. Crossing bets that long waits get longer within the same day.",
       "strategy": "Momentum",
       "color": "#1A2744",
-      "sources": ["cbp_border"],
+      "sources": [
+        "cbp_border"
+      ],
       "category": "Transport",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x4e5925A9A67Ee890CB6a5744270FD247a522148f"
     },
     {
       "symbol": "SPOK",
@@ -171,10 +206,13 @@
       "tagline": "Empty bike racks refill. Late trains catch up. Spoke bets on mean-reversion in transit systems designed to self-balance.",
       "strategy": "Contrarian",
       "color": "#EC0016",
-      "sources": ["citybikes", "db_trains"],
+      "sources": [
+        "citybikes",
+        "db_trains"
+      ],
       "category": "Transport",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xE277BCCFB935137f974206BA4d1324a2F6B28CC0"
     },
     {
       "symbol": "PRME",
@@ -182,10 +220,12 @@
       "tagline": "Viewership begets viewership. When a streamer is hot, more viewers pile in tick-over-tick. Prime Time bets that rising counts keep rising within a session.",
       "strategy": "Momentum",
       "color": "#9146FF",
-      "sources": ["twitch"],
+      "sources": [
+        "twitch"
+      ],
       "category": "Entertainment & Social",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xe7D2c17E2cBB1EB837864AEbbe43DeE82Efa3453"
     },
     {
       "symbol": "WKND",
@@ -193,10 +233,12 @@
       "tagline": "Gamers play. Steam concurrent players trend up more often than down. Weekend applies a structural long bias to gaming activity.",
       "strategy": "Bullish",
       "color": "#171A21",
-      "sources": ["steam"],
+      "sources": [
+        "steam"
+      ],
       "category": "Entertainment & Social",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x94d01a0Ca7B0a97f1B795aecAb05F1D6519BD984"
     },
     {
       "symbol": "HIVE",
@@ -204,21 +246,25 @@
       "tagline": "Subreddit growth is viral. Once a community starts gaining subscribers, network effects accelerate it tick-over-tick. Hivemind rides the viral phase.",
       "strategy": "Momentum",
       "color": "#FF4500",
-      "sources": ["reddit"],
+      "sources": [
+        "reddit"
+      ],
       "category": "Entertainment & Social",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xceBB5D8B62bf0495fb534d1243dc68D9062D12eC"
     },
     {
       "symbol": "DCAY",
       "name": "Decay",
-      "tagline": "Every HN story peaks and falls. A high-score story this tick will have fewer points next tick. Decay fades the hype — reliably.",
+      "tagline": "Every HN story peaks and falls. A high-score story this tick will have fewer points next tick. Decay fades the hype \u2014 reliably.",
       "strategy": "Contrarian",
       "color": "#F66A0A",
-      "sources": ["hackernews"],
+      "sources": [
+        "hackernews"
+      ],
       "category": "Entertainment & Social",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x3f662edC2a85cd8918C5d6ff20E3541455901A7E"
     },
     {
       "symbol": "SZON",
@@ -226,10 +272,12 @@
       "tagline": "Anime popularity spikes at season premiere and sustains for weeks. Season bets that a trending show stays trending tick-over-tick.",
       "strategy": "Momentum",
       "color": "#152232",
-      "sources": ["anilist"],
+      "sources": [
+        "anilist"
+      ],
       "category": "Entertainment & Social",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x4F80C4f87eE1c87AddC6C10bF06cDF20Ef95A495"
     },
     {
       "symbol": "NOIS",
@@ -237,21 +285,26 @@
       "tagline": "4chan activity spikes are pure chaos. Every surge crashes back to baseline within a few ticks. Noise fades every spike.",
       "strategy": "Contrarian",
       "color": "#3D5C3D",
-      "sources": ["fourchan"],
+      "sources": [
+        "fourchan"
+      ],
       "category": "Entertainment & Social",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xA497a38ccA386a7d2761363B63b83E53158F56bE"
     },
     {
       "symbol": "HOME",
       "name": "Homecourt",
-      "tagline": "Home teams win 55-60% across all sports. Homecourt applies a systematic home-team bias — simple, persistent, profitable at scale.",
+      "tagline": "Home teams win 55-60% across all sports. Homecourt applies a systematic home-team bias \u2014 simple, persistent, profitable at scale.",
       "strategy": "Home Field",
       "color": "#1B1B1B",
-      "sources": ["sports", "pandascore"],
+      "sources": [
+        "sports",
+        "pandascore"
+      ],
       "category": "Entertainment & Social",
       "fee": 1000,
-      "vault": ""
+      "vault": "0x32024dbE3E55b5F6007448B5636bcCD16A7572e2"
     },
     {
       "symbol": "HAWK",
@@ -259,21 +312,27 @@
       "tagline": "Central banks move in cycles. A rate shift this tick predicts another next tick. Hawkish rides the policy direction until the rhetoric turns.",
       "strategy": "Momentum",
       "color": "#003366",
-      "sources": ["fred", "treasury"],
+      "sources": [
+        "fred",
+        "treasury"
+      ],
       "category": "Macro & Economic",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x53d51687e0e1Fc5A5B8E4cA3Ea8057A90635Beff"
     },
     {
       "symbol": "PYRL",
       "name": "Payroll",
-      "tagline": "Jobs data overshoots every tick. Markets overreact to every release. Payroll fades the surprise — strong data revises down, weak data revises up.",
+      "tagline": "Jobs data overshoots every tick. Markets overreact to every release. Payroll fades the surprise \u2014 strong data revises down, weak data revises up.",
       "strategy": "Contrarian",
       "color": "#2C3E50",
-      "sources": ["bls", "adzuna"],
+      "sources": [
+        "bls",
+        "adzuna"
+      ],
       "category": "Macro & Economic",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x182813f82C5da170C5664B7dd1Bcb3Ab8149FD12"
     },
     {
       "symbol": "BRRL",
@@ -281,21 +340,27 @@
       "tagline": "Energy prices trend in regimes. When production shifts, the effect persists for many ticks. Barrel follows the supply-demand narrative.",
       "strategy": "Momentum",
       "color": "#00526E",
-      "sources": ["eia", "opec"],
+      "sources": [
+        "eia",
+        "opec"
+      ],
       "category": "Macro & Economic",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xD15bde8D144f3699791e92Aa4B1cbb909e86b4E8"
     },
     {
       "symbol": "GLCR",
       "name": "Glacier",
-      "tagline": "Development indicators move at geological speed. Glacier only bets when something actually changes — which is rare, but when it does, it persists.",
+      "tagline": "Development indicators move at geological speed. Glacier only bets when something actually changes \u2014 which is rare, but when it does, it persists.",
       "strategy": "Momentum",
       "color": "#002244",
-      "sources": ["worldbank", "imf"],
+      "sources": [
+        "worldbank",
+        "imf"
+      ],
       "category": "Macro & Economic",
       "fee": 1000,
-      "vault": ""
+      "vault": "0x936Eb6ea46A75fD6B925CeCE8D455AcBfA89aA92"
     },
     {
       "symbol": "SPRD",
@@ -303,21 +368,29 @@
       "tagline": "Rate differentials oscillate. When one central bank moves too far from another, convergence pulls them back. Spread bets on the pull.",
       "strategy": "Contrarian",
       "color": "#0057B7",
-      "sources": ["ecb", "boe", "treasury"],
+      "sources": [
+        "ecb",
+        "boe",
+        "treasury"
+      ],
       "category": "Macro & Economic",
       "fee": 2000,
-      "vault": ""
+      "vault": "0xAc67cca95C8e17Bf45D0fC0D81D4d5626699B8f3"
     },
     {
       "symbol": "ADPT",
       "name": "Adoption",
-      "tagline": "Package downloads follow adoption S-curves. Rising downloads keep rising tick-over-tick — network effects in the dependency graph.",
+      "tagline": "Package downloads follow adoption S-curves. Rising downloads keep rising tick-over-tick \u2014 network effects in the dependency graph.",
       "strategy": "Momentum",
       "color": "#CB3837",
-      "sources": ["npm", "pypi", "crates_io"],
+      "sources": [
+        "npm",
+        "pypi",
+        "crates_io"
+      ],
       "category": "Tech & Developer",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xe23c6bb2B0eE6C131BD77D6aD6E1b721F73E54D3"
     },
     {
       "symbol": "TRND",
@@ -325,21 +398,26 @@
       "tagline": "GitHub stars spike when a repo gets attention. The spike sustains for several ticks before decay. Trending rides the first wave.",
       "strategy": "Momentum",
       "color": "#24292E",
-      "sources": ["github"],
+      "sources": [
+        "github"
+      ],
       "category": "Tech & Developer",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x355dFD3661C201C84452Eeb657671cd47862AF4c"
     },
     {
       "symbol": "RSLN",
       "name": "Resilience",
-      "tagline": "Internet outages resolve. Infrastructure teams fix things. Resilience bets on recovery — connectivity always comes back.",
+      "tagline": "Internet outages resolve. Infrastructure teams fix things. Resilience bets on recovery \u2014 connectivity always comes back.",
       "strategy": "Contrarian",
       "color": "#F38020",
-      "sources": ["ioda", "cloudflare"],
+      "sources": [
+        "ioda",
+        "cloudflare"
+      ],
       "category": "Tech & Developer",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x7073abAB8771e0F108f9d012B2ADFd2c5af0D517"
     },
     {
       "symbol": "OFLW",
@@ -347,10 +425,12 @@
       "tagline": "When a technology gains questions, it's gaining adopters. More questions mean more developers. Overflow rides the flywheel.",
       "strategy": "Momentum",
       "color": "#F48024",
-      "sources": ["stackexchange"],
+      "sources": [
+        "stackexchange"
+      ],
       "category": "Tech & Developer",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x22F446a44595daf0BBe7C51597f68981D696408d"
     },
     {
       "symbol": "DDLN",
@@ -358,21 +438,25 @@
       "tagline": "SEC filings cluster around deadlines. Filing volume builds tick-over-tick during disclosure windows. Deadline rides the surge.",
       "strategy": "Momentum",
       "color": "#0A3055",
-      "sources": ["sec"],
+      "sources": [
+        "sec"
+      ],
       "category": "Regulatory & Government",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x91e5e5dF86f5c59Bc8798bB5390fa9043bA7A3Ea"
     },
     {
       "symbol": "SESN",
       "name": "Session",
-      "tagline": "When Congress votes, it keeps voting. Legislative activity has momentum — a busy tick predicts another busy tick.",
+      "tagline": "When Congress votes, it keeps voting. Legislative activity has momentum \u2014 a busy tick predicts another busy tick.",
       "strategy": "Momentum",
       "color": "#1A2744",
-      "sources": ["congress"],
+      "sources": [
+        "congress"
+      ],
       "category": "Regulatory & Government",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xC6465F4894Ea9636015f0F7222937EA25aAFb8De"
     },
     {
       "symbol": "CMPL",
@@ -380,10 +464,12 @@
       "tagline": "NYC complaint spikes resolve. The city returns to its baseline whining within a few ticks. Complaint fades every surge.",
       "strategy": "Contrarian",
       "color": "#002D72",
-      "sources": ["nyc311"],
+      "sources": [
+        "nyc311"
+      ],
       "category": "Regulatory & Government",
       "fee": 1500,
-      "vault": ""
+      "vault": "0xF2AD95a69122571e1C5Dc3eC39E5C415318dCb9c"
     },
     {
       "symbol": "MIGR",
@@ -391,10 +477,14 @@
       "tagline": "Birds migrate on schedule. When sightings start increasing, they accelerate for many ticks. Migration bets on the biological clock.",
       "strategy": "Momentum",
       "color": "#4CAF50",
-      "sources": ["ebird", "animals", "movebank"],
+      "sources": [
+        "ebird",
+        "animals",
+        "movebank"
+      ],
       "category": "Nature & Academic",
       "fee": 1000,
-      "vault": ""
+      "vault": "0xBE1342272266b98e3C51edaA3978f3E01a59e28f"
     },
     {
       "symbol": "PRPT",
@@ -402,10 +492,14 @@
       "tagline": "Research output clusters around grant cycles. A publishing surge sustains for several ticks. Preprint rides the academic rhythm.",
       "strategy": "Momentum",
       "color": "#2196F3",
-      "sources": ["pubmed", "crossref", "openalex"],
+      "sources": [
+        "pubmed",
+        "crossref",
+        "openalex"
+      ],
       "category": "Nature & Academic",
       "fee": 1000,
-      "vault": ""
+      "vault": "0x29fD0B9983A843977973AB981da5d7F53Ae0B77B"
     },
     {
       "symbol": "TRNT",
@@ -413,21 +507,27 @@
       "tagline": "River discharge rises for many ticks after rainfall. Water flows downhill and accumulates. Torrent rides the hydrological lag.",
       "strategy": "Momentum",
       "color": "#0288D1",
-      "sources": ["usgs_water", "nwps"],
+      "sources": [
+        "usgs_water",
+        "nwps"
+      ],
       "category": "Water & Ocean",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x8bCFCA16426b5a3Edc2F08d8e629DBc57077B749"
     },
     {
       "symbol": "TIDE",
       "name": "Tideline",
-      "tagline": "Tides are periodic. What goes up comes down, every 12 hours. Tideline bets on reversal — the most predictable mean-reversion in nature.",
+      "tagline": "Tides are periodic. What goes up comes down, every 12 hours. Tideline bets on reversal \u2014 the most predictable mean-reversion in nature.",
       "strategy": "Contrarian",
       "color": "#01579B",
-      "sources": ["noaa_tides", "noaa_met"],
+      "sources": [
+        "noaa_tides",
+        "noaa_met"
+      ],
       "category": "Water & Ocean",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x013c8cc01233F76e543AbEc5c2b440e6D4F540CF"
     },
     {
       "symbol": "FAST",
@@ -435,10 +535,12 @@
       "tagline": "Theme park lines peak at 2pm and shrink by closing. Every ride has capacity that forces mean-reversion. Fastpass fades the midday rush.",
       "strategy": "Contrarian",
       "color": "#1A1A2E",
-      "sources": ["queue_times"],
+      "sources": [
+        "queue_times"
+      ],
       "category": "Niche & Exotic",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x44b2713F643cf52be9D6973304E8e1E49c610733"
     },
     {
       "symbol": "SOFT",
@@ -446,21 +548,25 @@
       "tagline": "Broken ice cream machines get fixed. McDonald's maintenance cycles are 24-48 hours. Soft Serve bets on repair.",
       "strategy": "Contrarian",
       "color": "#FFC72C",
-      "sources": ["mcbroken"],
+      "sources": [
+        "mcbroken"
+      ],
       "category": "Niche & Exotic",
       "fee": 1000,
-      "vault": ""
+      "vault": "0x6d5dCB5187059ce6a4Fc05fc8710B03C8f1E8C2a"
     },
     {
       "symbol": "DARK",
       "name": "After Dark",
-      "tagline": "Viewership follows the clock — evening means rising viewers. After Dark bets that peak-hour momentum sustains tick-over-tick.",
+      "tagline": "Viewership follows the clock \u2014 evening means rising viewers. After Dark bets that peak-hour momentum sustains tick-over-tick.",
       "strategy": "Momentum",
       "color": "#E91E63",
-      "sources": ["chaturbate"],
+      "sources": [
+        "chaturbate"
+      ],
       "category": "Niche & Exotic",
       "fee": 1500,
-      "vault": ""
+      "vault": "0x75D909e84426FF25C8a42511644Df4d06aA80241"
     },
     {
       "symbol": "UNSL",
@@ -468,10 +574,12 @@
       "tagline": "TF2 hat prices are driven by community consensus. When an item climbs, collectors pile in. Unusual rides the speculative wave.",
       "strategy": "Momentum",
       "color": "#363636",
-      "sources": ["backpacktf"],
+      "sources": [
+        "backpacktf"
+      ],
       "category": "Niche & Exotic",
       "fee": 2000,
-      "vault": ""
+      "vault": "0x4193F39f3bb259758E20c2D2fE51c51AA7543394"
     }
   ]
 }
