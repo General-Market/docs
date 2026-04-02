@@ -15,7 +15,8 @@ def _bot_rng(salt: str) -> random.Random:
 class BullishStrategy(Strategy):
     name = "bullish"
 
-    def __init__(self):
+    def __init__(self, params=None):
+        super().__init__(params)
         self._rng = _bot_rng("bullish")
 
     def predict(self, markets):
@@ -25,7 +26,8 @@ class BullishStrategy(Strategy):
 class BearishStrategy(Strategy):
     name = "bearish"
 
-    def __init__(self):
+    def __init__(self, params=None):
+        super().__init__(params)
         self._rng = _bot_rng("bearish")
 
     def predict(self, markets):

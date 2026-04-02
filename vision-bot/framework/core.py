@@ -50,6 +50,9 @@ class Strategy(ABC):
 
     name: str = ""
 
+    def __init__(self, params: dict = None):
+        self.params = params or {}
+
     @abstractmethod
     def predict(self, markets: list[dict]) -> list[str]:
         """
@@ -104,7 +107,7 @@ class RiskCheck:
 # ── Dynamic strategy loader ──────────────────────────────────────
 
 
-def load_strategy(name: str) -> Strategy:
+def load_strategy(name: str, params: dict = None) -> Strategy:
     """Import all modules in strategies/, find the one with matching name."""
     import strategies
 
@@ -118,7 +121,7 @@ def load_strategy(name: str) -> Strategy:
                 and cls is not Strategy
                 and getattr(cls, "name", "") == name
             ):
-                return cls()
+                return cls(params=params)
     raise ValueError(f"Unknown strategy: {name}")
 
 

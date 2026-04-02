@@ -12,18 +12,33 @@ def _rng(salt: str) -> random.Random:
 
 
 class MomentumStrategy(Strategy):
-    """Pure momentum — follow the trend."""
+    """Pure momentum — follow the trend. Supports min_change_pct param."""
     name = "momentum"
 
+    def __init__(self, params=None):
+        super().__init__(params)
+        self._rng = _rng("momentum")
+
     def predict(self, markets):
-        return ["UP" if (m.get("change") or 0) >= 0 else "DOWN" for m in markets]
+        threshold = self.params.get("min_change_pct", 0)
+        results = []
+        for m in markets:
+            change = m.get("change") or 0
+            if threshold and abs(change) < threshold:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            elif change >= 0:
+                results.append("UP")
+            else:
+                results.append("DOWN")
+        return results
 
 
 class MomentumNoiseStrategy(Strategy):
     """Momentum + 10% random flips."""
     name = "momentum_noise"
 
-    def __init__(self):
+    def __init__(self, params=None):
+        super().__init__(params)
         self._rng = _rng("noise")
 
     def predict(self, markets):
@@ -40,7 +55,8 @@ class MomentumThresholdStrategy(Strategy):
     """Momentum only when move > 1%, coin flip otherwise."""
     name = "momentum_threshold"
 
-    def __init__(self):
+    def __init__(self, params=None):
+        super().__init__(params)
         self._rng = _rng("thresh")
 
     def predict(self, markets):

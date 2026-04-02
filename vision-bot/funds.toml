@@ -1,0 +1,425 @@
+[manager]
+private_key_env = "FUND_MANAGER_KEY"
+rpc_url = "http://142.132.164.24/"
+factory = "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
+vision_address = "0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649"
+usdc_address = "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827"
+oracle_registry_address = "0x2F12F19a111cc25b114C2bcc535519854fcf83c7"
+vision_api = "http://142.132.164.24:10001"
+data_node = "http://142.132.164.24:8200"
+poll_interval = 30
+deposit_per_batch = 10.0
+stake_per_tick = 10.0
+oracle_discovery = "static"
+oracle_urls = ["http://142.132.164.24:10001", "http://142.132.164.24:10002", "http://142.132.164.24:10003"]
+
+# ── CRYPTO ───────────────────────────────────────────────────────
+
+# 1. Herd — crypto momentum
+[[funds]]
+name = "Herd"
+symbol = "HERD"
+vault = ""
+sources = ["coingecko"]
+strategy = "momentum"
+[funds.params]
+
+# 2. Washout — crypto contrarian, 3% threshold
+[[funds]]
+name = "Washout"
+symbol = "WASH"
+vault = ""
+sources = ["coingecko"]
+strategy = "contrarian"
+[funds.params]
+min_change_pct = 3.0
+
+# 3. Degenerator — memecoin momentum
+[[funds]]
+name = "Degenerator"
+symbol = "DGEN"
+vault = ""
+sources = ["pumpfun"]
+strategy = "momentum"
+[funds.params]
+
+# 4. Lockflow — DeFi TVL momentum, 2% threshold
+[[funds]]
+name = "Lockflow"
+symbol = "LOCK"
+vault = ""
+sources = ["defi"]
+strategy = "momentum"
+[funds.params]
+min_change_pct = 2.0
+
+# 5. Oracle — prediction market momentum
+[[funds]]
+name = "Oracle"
+symbol = "ORCL"
+vault = ""
+sources = ["polymarket"]
+strategy = "momentum"
+[funds.params]
+
+# ── WEATHER & GEOPHYSICAL ────────────────────────────────────────
+
+# 6. Revert — weather contrarian (mean reversion)
+[[funds]]
+name = "Revert"
+symbol = "RVRT"
+vault = ""
+sources = ["weather", "openmeteo"]
+strategy = "contrarian"
+[funds.params]
+
+# 7. Aftershock — earthquake momentum
+[[funds]]
+name = "Aftershock"
+symbol = "AFTR"
+vault = ""
+sources = ["earthquake"]
+strategy = "momentum"
+[funds.params]
+
+# 8. Ember — wildfire momentum
+[[funds]]
+name = "Ember"
+symbol = "EMBR"
+vault = ""
+sources = ["wildfire"]
+strategy = "momentum"
+[funds.params]
+
+# 9. Clearsky — air quality contrarian
+[[funds]]
+name = "Clearsky"
+symbol = "CLR"
+vault = ""
+sources = ["airnow"]
+strategy = "contrarian"
+[funds.params]
+
+# 10. Swell — ocean buoy momentum
+[[funds]]
+name = "Swell"
+symbol = "SWEL"
+vault = ""
+sources = ["ndbc"]
+strategy = "momentum"
+[funds.params]
+
+# 11. Aurora — space weather momentum
+[[funds]]
+name = "Aurora"
+symbol = "AURA"
+vault = ""
+sources = ["spaceweather"]
+strategy = "momentum"
+[funds.params]
+
+# ── TRANSPORT ────────────────────────────────────────────────────
+
+# 12. Cascade — transit disruption momentum
+[[funds]]
+name = "Cascade"
+symbol = "CSCD"
+vault = ""
+sources = ["mta_subway", "tfl_tube", "paris_metro"]
+strategy = "momentum"
+[funds.params]
+
+# 13. Tailwind — flight delay contrarian
+[[funds]]
+name = "Tailwind"
+symbol = "TAIL"
+vault = ""
+sources = ["flights", "ryanair", "faa_delays"]
+strategy = "contrarian"
+[funds.params]
+
+# 14. Gridlock — traffic momentum
+[[funds]]
+name = "Gridlock"
+symbol = "GRID"
+vault = ""
+sources = ["tomtom_traffic"]
+strategy = "momentum"
+[funds.params]
+
+# 15. Crossing — border wait momentum
+[[funds]]
+name = "Crossing"
+symbol = "XING"
+vault = ""
+sources = ["cbp_border"]
+strategy = "momentum"
+[funds.params]
+
+# 16. Spoke — bike/train contrarian (mean reversion)
+[[funds]]
+name = "Spoke"
+symbol = "SPOK"
+vault = ""
+sources = ["citybikes", "db_trains"]
+strategy = "contrarian"
+[funds.params]
+
+# ── ENTERTAINMENT & SOCIAL ───────────────────────────────────────
+
+# 17. Prime Time — Twitch viewership momentum
+[[funds]]
+name = "Prime Time"
+symbol = "PRME"
+vault = ""
+sources = ["twitch"]
+strategy = "momentum"
+[funds.params]
+
+# 18. Weekend — Steam bullish bias
+[[funds]]
+name = "Weekend"
+symbol = "WKND"
+vault = ""
+sources = ["steam"]
+strategy = "bullish"
+[funds.params]
+
+# 19. Hivemind — Reddit momentum
+[[funds]]
+name = "Hivemind"
+symbol = "HIVE"
+vault = ""
+sources = ["reddit"]
+strategy = "momentum"
+[funds.params]
+
+# 20. Decay — Hacker News contrarian
+[[funds]]
+name = "Decay"
+symbol = "DCAY"
+vault = ""
+sources = ["hackernews"]
+strategy = "contrarian"
+[funds.params]
+
+# 21. Season — anime momentum
+[[funds]]
+name = "Season"
+symbol = "SZON"
+vault = ""
+sources = ["anilist"]
+strategy = "momentum"
+[funds.params]
+
+# 22. Noise — 4chan contrarian
+[[funds]]
+name = "Noise"
+symbol = "NOIS"
+vault = ""
+sources = ["fourchan"]
+strategy = "contrarian"
+[funds.params]
+
+# 23. Homecourt — sports home field bias
+[[funds]]
+name = "Homecourt"
+symbol = "HOME"
+vault = ""
+sources = ["sports", "pandascore"]
+strategy = "home_field"
+[funds.params]
+
+# ── MACRO & ECONOMIC ─────────────────────────────────────────────
+
+# 24. Hawkish — rates momentum, 0.5% threshold
+[[funds]]
+name = "Hawkish"
+symbol = "HAWK"
+vault = ""
+sources = ["rates", "treasury", "fred"]
+strategy = "momentum"
+[funds.params]
+min_change_pct = 0.5
+
+# 25. Payroll — jobs data contrarian
+[[funds]]
+name = "Payroll"
+symbol = "PYRL"
+vault = ""
+sources = ["bls", "adzuna"]
+strategy = "contrarian"
+[funds.params]
+
+# 26. Barrel — energy momentum
+[[funds]]
+name = "Barrel"
+symbol = "BRRL"
+vault = ""
+sources = ["eia", "opec"]
+strategy = "momentum"
+[funds.params]
+
+# 27. Glacier — development indicators momentum, 1% threshold
+[[funds]]
+name = "Glacier"
+symbol = "GLCR"
+vault = ""
+sources = ["worldbank", "imf"]
+strategy = "momentum"
+[funds.params]
+min_change_pct = 1.0
+
+# 28. Spread — rate differential contrarian
+[[funds]]
+name = "Spread"
+symbol = "SPRD"
+vault = ""
+sources = ["ecb", "boe", "treasury"]
+strategy = "contrarian"
+[funds.params]
+
+# ── TECH & DEVELOPER ─────────────────────────────────────────────
+
+# 29. Adoption — package download momentum
+[[funds]]
+name = "Adoption"
+symbol = "ADPT"
+vault = ""
+sources = ["npm", "pypi", "crates_io"]
+strategy = "momentum"
+[funds.params]
+
+# 30. Trending — GitHub star momentum
+[[funds]]
+name = "Trending"
+symbol = "TRND"
+vault = ""
+sources = ["github"]
+strategy = "momentum"
+[funds.params]
+
+# 31. Resilience — internet outage contrarian
+[[funds]]
+name = "Resilience"
+symbol = "RSLN"
+vault = ""
+sources = ["ioda", "cloudflare"]
+strategy = "contrarian"
+[funds.params]
+
+# 32. Overflow — Stack Exchange momentum
+[[funds]]
+name = "Overflow"
+symbol = "OFLW"
+vault = ""
+sources = ["stackexchange"]
+strategy = "momentum"
+[funds.params]
+
+# ── REGULATORY & GOVERNMENT ──────────────────────────────────────
+
+# 33. Deadline — SEC filing momentum
+[[funds]]
+name = "Deadline"
+symbol = "DDLN"
+vault = ""
+sources = ["sec"]
+strategy = "momentum"
+[funds.params]
+
+# 34. Session — congressional activity momentum
+[[funds]]
+name = "Session"
+symbol = "SESN"
+vault = ""
+sources = ["congress"]
+strategy = "momentum"
+[funds.params]
+
+# 35. Complaint — NYC 311 contrarian
+[[funds]]
+name = "Complaint"
+symbol = "CMPL"
+vault = ""
+sources = ["nyc311"]
+strategy = "contrarian"
+[funds.params]
+
+# ── NATURE & ACADEMIC ────────────────────────────────────────────
+
+# 36. Migration — bird sighting momentum
+[[funds]]
+name = "Migration"
+symbol = "MIGR"
+vault = ""
+sources = ["ebird", "animals", "movebank"]
+strategy = "momentum"
+[funds.params]
+
+# 37. Preprint — research output momentum
+[[funds]]
+name = "Preprint"
+symbol = "PRPT"
+vault = ""
+sources = ["pubmed", "crossref", "openalex"]
+strategy = "momentum"
+[funds.params]
+
+# ── WATER & OCEAN ────────────────────────────────────────────────
+
+# 38. Torrent — river discharge momentum
+[[funds]]
+name = "Torrent"
+symbol = "TRNT"
+vault = ""
+sources = ["usgs_water", "nwps"]
+strategy = "momentum"
+[funds.params]
+
+# 39. Tideline — tidal contrarian
+[[funds]]
+name = "Tideline"
+symbol = "TIDE"
+vault = ""
+sources = ["noaa_tides", "noaa_met"]
+strategy = "contrarian"
+[funds.params]
+
+# ── NICHE & EXOTIC ───────────────────────────────────────────────
+
+# 40. Fastpass — theme park queue contrarian
+[[funds]]
+name = "Fastpass"
+symbol = "FAST"
+vault = ""
+sources = ["queue_times"]
+strategy = "contrarian"
+[funds.params]
+
+# 41. Soft Serve — McBroken contrarian
+[[funds]]
+name = "Soft Serve"
+symbol = "SOFT"
+vault = ""
+sources = ["mcbroken"]
+strategy = "contrarian"
+[funds.params]
+
+# 42. After Dark — viewership momentum
+[[funds]]
+name = "After Dark"
+symbol = "DARK"
+vault = ""
+sources = ["chaturbate"]
+strategy = "momentum"
+[funds.params]
+
+# 43. Unusual — TF2 hat price momentum
+[[funds]]
+name = "Unusual"
+symbol = "UNSL"
+vault = ""
+sources = ["backpacktf"]
+strategy = "momentum"
+[funds.params]
