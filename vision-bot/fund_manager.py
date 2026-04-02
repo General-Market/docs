@@ -139,8 +139,10 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg):
             else:
                 markets = fetch_markets(cfg["data_node"], market_ids)
 
-            # Strategy predict
-            bets = fund.strategy.predict(markets)
+            # Strategy predict (with historical context when available)
+            bets = fund.strategy.predict_with_context(
+                markets, feed=feed, batch_id=str(batch_id),
+            )
             while len(bets) < market_count:
                 bets.append(random.choice(["UP", "DOWN"]))
 

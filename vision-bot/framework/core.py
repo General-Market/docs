@@ -70,6 +70,15 @@ class Strategy(ABC):
         """
         ...
 
+    def predict_with_context(
+        self, markets: list[dict], feed=None, batch_id=None,
+    ) -> list[str]:
+        """Override for strategies that need historical context.
+
+        Default: ignore context, call predict().
+        """
+        return self.predict(markets)
+
 
 # ── Risk management ──────────────────────────────────────────────
 
