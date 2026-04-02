@@ -61,9 +61,8 @@ const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 30;
 /// Stagger interval between sources to avoid thundering herd.
 const SOURCE_STAGGER_SECS: u64 = 2;
 
-/// Delay between betting close and settlement (seconds).
-/// Gives players time to verify outcomes before payouts execute.
-const SETTLEMENT_DELAY_SECS: i64 = 600; // 10 minutes
+/// Settlement delay equals tick_duration per source — no global constant.
+/// A 2-minute source settles after 2 minutes. A 10-minute source, after 10.
 
 /// Per-source tracking state for round rotation.
 struct SourceState {
@@ -107,6 +106,8 @@ pub struct BatchLifecycleManager {
     cosign_router: CosignRouter,
     /// This oracle's P2P peer id (32-byte public key hash). Used as leader_id in proposals.
     peer_id: [u8; 32],
+    /// Broadcast sender for settlement SSE events (per-market parimutuel ratios).
+    settlement_tx: tokio::sync::broadcast::Sender<super::api::SettlementEvent>,
 }
 
 impl BatchLifecycleManager {
@@ -122,6 +123,7 @@ impl BatchLifecycleManager {
         broadcast_tx: Option<mpsc::Sender<P2PMessage>>,
         cosign_router: CosignRouter,
         peer_id: [u8; 32],
+        settlement_tx: tokio::sync::broadcast::Sender<super::api::SettlementEvent>,
     ) -> Self {
         Self {
             config,
@@ -135,6 +137,7 @@ impl BatchLifecycleManager {
             broadcast_tx,
             cosign_router,
             peer_id,
+            settlement_tx,
         }
     }
 
@@ -283,7 +286,7 @@ impl BatchLifecycleManager {
                             "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
-                        .bind(SETTLEMENT_DELAY_SECS as f64)
+                        .bind(source.tick_duration_secs as f64)
                         .fetch_optional(&mgr.pool)
                         .await
                         .ok()
@@ -299,7 +302,7 @@ impl BatchLifecycleManager {
                             // Don't clear previous_batch_id — will retry next heartbeat
                         } else {
                         match mgr.resolve_and_settle(prev_id, &source_name).await {
-                            Ok(settlement) => {
+                            Ok((settlement, tick_result)) => {
                                 info!(
                                     source = %source_name,
                                     batch_id = prev_id,
@@ -310,6 +313,10 @@ impl BatchLifecycleManager {
                                 if let Err(e) = mgr.record_settlement(&settlement).await {
                                     error!(batch_id = prev_id, error = %e, "Failed to record settlement in DB");
                                 }
+                                if let Err(e) = mgr.record_market_ratios(&tick_result).await {
+                                    error!(batch_id = prev_id, error = %e, "Failed to record market ratios");
+                                }
+                                mgr.broadcast_settlement_event(prev_id, &source_name, &tick_result);
                                 let bls_ok = match mgr.sign_and_aggregate_settlement(&settlement).await {
                                     Ok(()) => true,
                                     Err(e) => {
@@ -484,7 +491,7 @@ impl BatchLifecycleManager {
         &self,
         batch_id: u64,
         source_name: &str,
-    ) -> Result<RoundSettlement, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(RoundSettlement, super::types::TickResult), Box<dyn std::error::Error + Send + Sync>> {
         // Get batch state from scheduler
         let (batch, players) = self
             .scheduler
@@ -493,14 +500,22 @@ impl BatchLifecycleManager {
             .ok_or_else(|| format!("batch {} not found in scheduler", batch_id))?;
 
         if players.is_empty() {
-            return Ok(RoundSettlement {
+            let empty_settlement = RoundSettlement {
                 batch_id,
                 players: vec![],
                 payouts: vec![],
                 deposits: vec![],
                 correct_counts: vec![],
                 total_markets: 0,
-            });
+            };
+            let empty_tick = super::types::TickResult {
+                batch_id,
+                tick_id: 0,
+                market_results: vec![],
+                player_balances: vec![],
+                voided_players: vec![],
+            };
+            return Ok((empty_settlement, empty_tick));
         }
 
         // Fetch market config by the batch's PINNED config hash — not the current
@@ -757,7 +772,7 @@ impl BatchLifecycleManager {
             .collect();
         let settlement = compute_settlement(&tick_result, &player_deposits);
 
-        Ok(settlement)
+        Ok((settlement, tick_result))
     }
 
     /// Create a new round batch for a source.
@@ -1330,7 +1345,7 @@ impl BatchLifecycleManager {
     ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
         let now = chrono::Utc::now();
         let betting_end = now + chrono::Duration::seconds(tick_duration as i64);
-        let settlement_deadline = betting_end + chrono::Duration::seconds(SETTLEMENT_DELAY_SECS + tick_duration as i64);
+        let settlement_deadline = betting_end + chrono::Duration::seconds(tick_duration as i64);
 
         // Use nextBatchId from vision_batches as a proxy for the batch_id
         // (the real batch_id comes from the on-chain createBatch call)
@@ -1461,6 +1476,119 @@ impl BatchLifecycleManager {
         }
 
         Ok(())
+    }
+
+    /// Record per-market parimutuel ratios at settlement time.
+    ///
+    /// Extracts UP/DOWN stake totals from each market's player results and
+    /// stores them in `vision_market_ratios` for historical ratio display.
+    async fn record_market_ratios(
+        &self,
+        tick_result: &super::types::TickResult,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use super::types::Side;
+
+        for mr in &tick_result.market_results {
+            let mut up_stake = U256::zero();
+            let mut down_stake = U256::zero();
+
+            for pr in &mr.player_results {
+                match pr.side {
+                    Side::Up => up_stake = up_stake + pr.effective_stake,
+                    Side::Down => down_stake = down_stake + pr.effective_stake,
+                }
+            }
+
+            let outcome_str = match mr.outcome {
+                super::types::MarketOutcome::Up => "Up",
+                super::types::MarketOutcome::Down => "Down",
+                super::types::MarketOutcome::Flat => "Flat",
+                super::types::MarketOutcome::Cancelled => "Cancelled",
+                super::types::MarketOutcome::AllSameSide => "AllSameSide",
+                super::types::MarketOutcome::AllLosers => "AllLosers",
+            };
+
+            sqlx::query(
+                "INSERT INTO vision_market_ratios
+                     (batch_id, asset_id, up_stake, down_stake, outcome, pct_change_bps, settled_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                 ON CONFLICT (batch_id, asset_id) DO UPDATE SET
+                     up_stake = EXCLUDED.up_stake,
+                     down_stake = EXCLUDED.down_stake,
+                     outcome = EXCLUDED.outcome,
+                     pct_change_bps = EXCLUDED.pct_change_bps,
+                     settled_at = EXCLUDED.settled_at",
+            )
+            .bind(tick_result.batch_id as i64)
+            .bind(&mr.asset_id)
+            .bind(up_stake.to_string())
+            .bind(down_stake.to_string())
+            .bind(outcome_str)
+            .bind(mr.pct_change_bps)
+            .execute(&self.pool)
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Broadcast a settlement event over SSE to connected frontend clients.
+    fn broadcast_settlement_event(
+        &self,
+        batch_id: u64,
+        source_name: &str,
+        tick_result: &super::types::TickResult,
+    ) {
+        use super::api::{MarketRatioEvent, SettlementEvent};
+        use super::types::Side;
+
+        let markets: Vec<MarketRatioEvent> = tick_result
+            .market_results
+            .iter()
+            .map(|mr| {
+                let mut up: f64 = 0.0;
+                let mut down: f64 = 0.0;
+                for pr in &mr.player_results {
+                    let stake = pr.effective_stake.low_u128() as f64;
+                    match pr.side {
+                        Side::Up => up += stake,
+                        Side::Down => down += stake,
+                    }
+                }
+                let total = up + down;
+                let (up_pct, down_pct) = if total > 0.0 {
+                    ((up / total * 1000.0).round() / 10.0, (down / total * 1000.0).round() / 10.0)
+                } else {
+                    (50.0, 50.0)
+                };
+                let outcome_str = match mr.outcome {
+                    super::types::MarketOutcome::Up => "Up",
+                    super::types::MarketOutcome::Down => "Down",
+                    super::types::MarketOutcome::Flat => "Flat",
+                    super::types::MarketOutcome::Cancelled => "Cancelled",
+                    super::types::MarketOutcome::AllSameSide => "AllSameSide",
+                    super::types::MarketOutcome::AllLosers => "AllLosers",
+                };
+                MarketRatioEvent {
+                    asset_id: mr.asset_id.clone(),
+                    up_stake: up.to_string(),
+                    down_stake: down.to_string(),
+                    up_pct,
+                    down_pct,
+                    outcome: outcome_str.to_string(),
+                    pct_change_bps: mr.pct_change_bps,
+                }
+            })
+            .collect();
+
+        let event = SettlementEvent {
+            batch_id,
+            source_id: source_name.to_string(),
+            markets,
+        };
+
+        // send() fails only if no receivers — harmless (no SSE clients connected).
+        let _ = self.settlement_tx.send(event);
     }
 
     /// Read lastSnapshotNonce from the OracleRegistry contract.

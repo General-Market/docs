@@ -17,18 +17,23 @@ export function CreateVaultModal({ onClose }: CreateVaultModalProps) {
 
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
-  const [feePercent, setFeePercent] = useState(20)
+  const [feePercent, setFeePercent] = useState(5)
   const [managerInput, setManagerInput] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteError, setInviteError] = useState('')
 
   const managerAddress = (managerInput || address || '0x0000000000000000000000000000000000000000') as `0x${string}`
 
-  // Fee rate: contract expects basis points scaled to 1e18. 20% = 20e16 = 2000...0
-  // The contract uses feeRate where 1e18 = 100%, so 20% = 0.2e18 = 2e17
+  // Fee rate: contract expects basis points scaled to 1e18. 5% = 5e16
+  // The contract uses feeRate where 1e18 = 100%, so 5% = 0.05e18 = 5e16
   const feeRate = parseUnits(String(feePercent), 16) // feePercent * 1e16
 
   const handleSubmit = () => {
-    if (!name.trim() || !symbol.trim()) return
-    create({ name: name.trim(), symbol: symbol.trim(), performanceFeeRate: feeRate, manager: managerAddress })
+    if (!inviteCode.trim()) {
+      setInviteError('Invitation code required')
+      return
+    }
+    setInviteError('Invalid invitation code')
   }
 
   const busy = step === 'creating'
@@ -112,23 +117,29 @@ export function CreateVaultModal({ onClose }: CreateVaultModalProps) {
               />
             </div>
 
+            {/* Invitation Code */}
+            <div>
+              <label className="text-xs text-text-muted block mb-1">Invitation Code</label>
+              <input
+                type="text"
+                placeholder="Enter your invitation code"
+                value={inviteCode}
+                onChange={(e) => { setInviteCode(e.target.value); setInviteError('') }}
+                className="w-full px-3 py-2 border border-border-light rounded-md bg-card text-text-primary
+                           text-sm font-mono focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+              {inviteError && <p className="text-xs text-color-down mt-1">{inviteError}</p>}
+            </div>
+
             {/* Submit */}
             <WalletActionButton
               onClick={handleSubmit}
-              disabled={busy || isConfirming || isPending || !name.trim() || !symbol.trim()}
+              disabled={!name.trim() || !symbol.trim() || !inviteCode.trim()}
               className="w-full py-2.5 bg-brand text-white text-sm font-bold rounded-md
                          hover:bg-brand-dark transition-colors disabled:opacity-50"
             >
-              {step === 'creating' ? 'Creating...'
-                : isConfirming ? 'Confirming...'
-                : step === 'done' ? 'Vault Created'
-                : 'Create Vault'}
+              Create Vault
             </WalletActionButton>
-
-            {error && <p className="text-xs text-color-down">{error}</p>}
-            {step === 'done' && (
-              <p className="text-xs text-color-up">Vault deployed. It will appear in the grid momentarily.</p>
-            )}
           </div>
         </div>
       </SpringModal>

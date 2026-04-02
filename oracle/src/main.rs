@@ -657,6 +657,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // VisionDepositWatcher deleted (round-only purge)
 
+                    // Settlement SSE broadcast channel — shared between lifecycle manager and API.
+                    let (settlement_tx, _) = tokio::sync::broadcast::channel::<oracle::vision::api::SettlementEvent>(64);
+
                     // Share the protocol's DashMap-based co-sign router with the lifecycle manager.
                     // No Option wrapper, no mutex dance — both sides reference the same DashMap.
                     if let Some(ref protocol) = components.consensus.protocol {
@@ -684,6 +687,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     lm_broadcast_tx,
                                     cosign_router,
                                     lm_peer_id,
+                                    settlement_tx.clone(),
                                 );
                                 let lm = std::sync::Arc::new(lm);
                                 let lm_recovery = lm.clone();
@@ -725,6 +729,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             None, // no broadcast_tx
                             std::sync::Arc::new(dashmap::DashMap::new()), // empty router (no P2P)
                             lm_peer_id,
+                            settlement_tx.clone(),
                         );
                         let lm = std::sync::Arc::new(lm);
                         let lm_recovery = lm.clone();
@@ -757,6 +762,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         } else {
                             None
                         },
+                        settlement_tx: settlement_tx.clone(),
                     });
 
                     // Build the Vision router (merged into health port in run_main_loop)

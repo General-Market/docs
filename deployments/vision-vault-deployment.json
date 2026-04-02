@@ -1,0 +1,9 @@
+{
+  "chainId": 111222333,
+  "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
+  "timestamp": 1775082475,
+  "contracts": {
+    "VisionVault": "0x8ef7896008E4f1D1E2B53377785b7335190dd286",
+    "VisionVaultFactory": "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
+  }
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
@@ -8,17 +8,16 @@ import { useQuery } from '@tanstack/react-query'
 import type { BatchConfigResponse } from '@/hooks/vision/useBatchConfig'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
-import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SourceHero } from './SourceHero'
-import { MarketsTable } from './MarketsTable'
-import { TopPlayers } from './TopPlayers'
-import BatchEntryPanel from './BatchEntryPanel'
 import { PendingPositions } from './PendingPositions'
-import { BatchHistory } from './BatchHistory'
 import { BatchProgressBar } from '../CountdownRing'
+import { SubmarketsGrid } from './SubmarketsGrid'
+import { SourceSidebar } from './SourceSidebar'
+import { BatchVaultResults } from './BatchVaultResults'
+import { VaultCarousel } from './VaultCarousel'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
@@ -27,7 +26,8 @@ import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { FirstTradeCTA } from '../FirstTradeCTA'
-import { SourceFunds } from '@/components/domain/vaults/SourceFunds'
+
+// ── Wallet stats bar (same as SourceDetail) ──
 
 function WalletSourceStats({ sourceId }: { sourceId: string }) {
   const { address } = useAccount()
@@ -51,7 +51,9 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
       </div>
       <div>
         <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">ROI</div>
-        <div className={`text-[15px] font-bold font-mono ${entry.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>{entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%</div>
+        <div className={`text-[15px] font-bold font-mono ${entry.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
+        </div>
       </div>
       <div>
         <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Volume</div>
@@ -68,6 +70,8 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
   )
 }
 
+// ── Batch timers — shows close + settle phases ──
+
 function fmt(secs: number): string {
   const m = Math.floor(secs / 60)
   const s = secs % 60
@@ -83,8 +87,6 @@ function BatchTimers({ bettingEnd, tickDuration }: { bettingEnd: string | null; 
   const end = new Date(bettingEnd).getTime()
   const settleEnd = end + tickDuration * 1000
   const settleRemaining = Math.max(0, Math.floor((settleEnd - now) / 1000))
-  // Next round starts when settlement ends (= 2 * tickDuration from batch start)
-  const nextRemaining = settleRemaining
 
   // Betting open
   if (closeRemaining > 0) {
@@ -128,7 +130,7 @@ function BatchTimers({ bettingEnd, tickDuration }: { bettingEnd: string | null; 
     )
   }
 
-  // Both expired — waiting for next batch
+  // Both expired
   return (
     <span className="flex items-center gap-2 text-text-muted font-mono font-black">
       <span className="relative flex h-2 w-2">
@@ -140,10 +142,7 @@ function BatchTimers({ bettingEnd, tickDuration }: { bettingEnd: string | null; 
   )
 }
 
-interface SourceDetailProps {
-  sourceId: string
-  initialSource?: SourceDisplayServer
-}
+// ── Helpers ──
 
 function formatTvl(tvl: string): string {
   const raw = parseFloat(tvl)
@@ -154,7 +153,83 @@ function formatTvl(tvl: string): string {
   return `$${num.toFixed(2)}`
 }
 
-export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
+// ── Side banners — HLTV-style border images ──
+
+function SideBanner({ position }: { position: 'left' | 'right' }) {
+  const isLeft = position === 'left'
+  return (
+    <div className="hidden lg:block w-[120px] xl:w-[160px] shrink-0 sticky top-0 self-start h-screen">
+      <div className="h-full flex flex-col items-center pt-20 pb-8">
+        {/* Tall vertical banner */}
+        <div
+          className="w-[120px] xl:w-[160px] h-[600px] rounded overflow-hidden relative"
+          style={{
+            background: isLeft
+              ? 'linear-gradient(180deg, #0a1628 0%, #162d50 30%, #0f172a 60%, #1e3a5f 100%)'
+              : 'linear-gradient(180deg, #1a0a28 0%, #2d1650 30%, #170a2a 60%, #3a1e5f 100%)',
+          }}
+        >
+          {/* Grid pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+            }}
+          />
+          {/* Glow */}
+          <div
+            className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[120px] h-[120px] rounded-full blur-3xl"
+            style={{ background: isLeft ? 'rgba(59,130,246,0.08)' : 'rgba(168,85,247,0.08)' }}
+          />
+          {/* Content */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+            <div className="w-10 h-10 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3">
+              <svg
+                className="w-5 h-5"
+                style={{ color: isLeft ? 'rgba(96,165,250,0.5)' : 'rgba(192,132,252,0.5)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                {isLeft ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.577 3.01 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.577-3.01-9.963-7.178z" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+                )}
+              </svg>
+            </div>
+            <div className="text-[13px] font-black text-white/60 tracking-[-0.02em] text-center">
+              {isLeft ? 'VISION' : 'TRADE'}
+            </div>
+            <div className="text-[8px] font-bold uppercase tracking-[0.15em] mt-0.5 text-center"
+              style={{ color: isLeft ? 'rgba(96,165,250,0.35)' : 'rgba(192,132,252,0.35)' }}
+            >
+              {isLeft ? 'Prediction Markets' : 'Real-World Data'}
+            </div>
+            <div className="mt-8 w-px h-16 bg-white/[0.06]" />
+            <p className="mt-4 text-[8px] text-white/10 text-center leading-relaxed px-2">
+              {isLeft
+                ? '93 data sources. Thousands of markets. Every outcome settles on-chain.'
+                : 'AI-native trading. Build bots, deploy vaults, earn fees. Permissionless.'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ──
+
+interface SourceDetailV2Props {
+  sourceId: string
+  initialSource?: SourceDisplayServer
+}
+
+export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props) {
   const t = useTranslations('vision')
   const router = useRouter()
 
@@ -190,29 +265,27 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
         }
       : null
 
-  // Per-source snapshot for market list
+  // Snapshot + meta
   const { data: snapshotData } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
   const { data: rounds } = useRounds(sourceId)
-  const bitmapEditor = useBitmapEditor()
 
-  // Find source schedule from meta
+
   const sourceSchedule = useMemo(() => {
     if (!meta?.sources) return undefined
-    return meta.sources.find((s) => s.sourceId === sourceId)
+    return meta.sources.find(s => s.sourceId === sourceId)
   }, [meta?.sources, sourceId])
 
   const sourceMarkets = snapshotData?.prices ?? []
 
-  // Active batch matching this source
+  // Active batch
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Verify the batch actually exists on-chain. The oracle API can report
-  // stale batches that have already been settled/deleted on-chain.
+  // On-chain batch verification
   const { getAddress } = useDeployment()
   const visionAddress = getAddress('Vision')
   const { data: onChainBatch, isError: batchOnChainError, error: batchError } = useReadContract({
@@ -226,48 +299,43 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
       retry: false,
     },
   })
-  // Optimistic: show activeBatch immediately. Only hide if on-chain check
-  // explicitly failed (not while still loading). This eliminates the RPC
-  // waterfall from the critical render path.
   const batchRpcFailed = !!activeBatch && (batchOnChainError || batchError !== null)
   const verifiedBatch = batchRpcFailed ? null : activeBatch
 
-  // Fetch latest batch config by sourceId — no waterfall dependency on configHash.
-  // The snapshot can drift as assets become healthy/stale; the batch config cannot.
+  // Batch config
   const { data: batchConfig } = useQuery<BatchConfigResponse>({
     queryKey: ['batch-config-source', sourceId],
     queryFn: async () => {
       const res = await fetch(`/api/vision/config/${sourceId}`)
-      if (!res.ok) return { markets: [] }
+      if (!res.ok) return { markets: [] } as any
       return res.json()
     },
     enabled: !!sourceId,
     staleTime: 300_000,
     retry: 1,
   })
+
   const marketIds = useMemo(() => {
-    // Prefer batch config markets (authoritative). Fall back to snapshot if unavailable.
     if (batchConfig?.markets?.length) {
       return batchConfig.markets.map(m => m.assetId).filter(Boolean) as string[]
     }
     return sourceMarkets.map(p => p.assetId).filter(Boolean) as string[]
   }, [batchConfig?.markets, sourceMarkets])
+
   const marketCount = marketIds.length || undefined
 
-  // On-chain player position — used to reconcile oracle lag in BatchHistory
+  // Player position
   const { isJoined: isJoinedOnChain } = usePlayerPosition(verifiedBatch?.id)
 
-  // Active betting round — find the round that's actually accepting bets (not settling).
-  // With round overlap, a settling round and a betting round can coexist.
-  // The header always shows the betting round; settling rounds surface in PendingPositions.
+  // Betting round
   const bettingRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return null
     return rounds.find(r => r.status === 'betting') ?? null
   }, [rounds])
 
-  // bettingEnd: prefer the active betting round, fall back to activeBatch-derived timing
   const bettingEnd = bettingRound?.bettingEnd ?? null
 
+  // Loading / not-found states
   if (isRegistryLoading && !initialSource) {
     return <SourceDetailSkeleton />
   }
@@ -276,7 +344,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
     return (
       <div className="px-6 lg:px-12 py-12">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-2xl font-black text-black mb-2">{t('source_detail.source_not_found')}</h1>
+          <h1 className="text-2xl font-black text-black mb-2">
+            {t('source_detail.source_not_found')}
+          </h1>
           <p className="text-text-secondary mb-4">
             {t('source_detail.source_not_found_description', { sourceId })}
           </p>
@@ -292,17 +362,31 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   }
 
   return (
-    <div className="px-6 lg:px-12 py-6">
-      <div className="max-w-site mx-auto">
-        {/* Source Hero */}
-        <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={0} tickDuration={0} sourceId={sourceId} urgency={'normal'} />
+    <div className="flex justify-center">
+      {/* Left border banner — HLTV-style gutter ad */}
+      <SideBanner position="left" />
 
-        {/* First-trade CTA — visible only to wallets with no history */}
+      <div className="flex-1 max-w-[1440px] px-4 lg:px-8 py-6">
+        {/* Source Hero */}
+        <SourceHero
+          source={source}
+          sourceSchedule={sourceSchedule}
+          marketCount={marketCount}
+          tickRemaining={0}
+          tickDuration={0}
+          sourceId={sourceId}
+          urgency="normal"
+        />
+
+        {/* Wallet stats */}
+        <WalletSourceStats sourceId={sourceId} />
+
+        {/* First-trade CTA */}
         <div className="mt-4">
           <FirstTradeCTA />
         </div>
 
-        {/* Batch bar — shows betting countdown then settlement countdown */}
+        {/* Batch bar */}
         {verifiedBatch ? (
           <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
             <BatchProgressBar
@@ -310,7 +394,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
             />
             <div className="flex items-center px-5 py-3">
-              {/* Round # */}
               <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.round')}
@@ -319,7 +402,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   #{verifiedBatch.id}
                 </div>
               </div>
-              {/* Players */}
               <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.players')}
@@ -328,7 +410,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {verifiedBatch.playerCount}
                 </div>
               </div>
-              {/* Pool */}
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.pool')}
@@ -337,7 +418,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {formatTvl(verifiedBatch.tvl)}
                 </div>
               </div>
-              {/* Timer — anchored right */}
               <div className="ml-auto pl-5">
                 <BatchTimers bettingEnd={bettingEnd} tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300} />
               </div>
@@ -353,7 +433,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           </div>
         )}
 
-        {/* Pending positions — settling batches where user has a deposit */}
+        {/* Pending positions */}
         {rounds && rounds.length > 0 && (
           <PendingPositions
             rounds={rounds}
@@ -361,40 +441,32 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           />
         )}
 
-        {/* Managed Funds for this source */}
-        <SourceFunds sourceId={sourceId} />
+        {/* ── 2-Column HLTV Layout (sidebar + content) ── */}
+        <div className="flex gap-5 mt-5">
+          {/* Left sidebar — banner + related sources */}
+          <SourceSidebar
+            currentSourceId={sourceId}
+            category={source.category}
+          />
 
-        {/* Content split */}
-        <div className="flex flex-col lg:flex-row gap-6 mt-6">
-          {/* Left: Markets + Leaderboard + History */}
+          {/* Center content */}
           <div className="flex-1 min-w-0">
-            <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} />
-            <BatchHistory
-              sourceId={sourceId}
-              activeBatchId={verifiedBatch?.id}
-              bettingEnd={bettingEnd}
-              playerCount={bettingRound?.playerCount ?? verifiedBatch?.playerCount}
-              tvl={bettingRound?.tvl ?? verifiedBatch?.tvl}
-              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs}
-              isJoinedOnChain={isJoinedOnChain}
-            />
-            <TopPlayers sourceId={sourceId} />
-          </div>
+            {/* Vault carousel — above submarkets */}
+            <VaultCarousel sourceId={sourceId} />
 
-          {/* Right: Batch entry panel (300px, sticky) */}
-          <div className="w-full lg:w-[300px] shrink-0">
-            <div className="lg:sticky lg:top-28">
-              <BatchEntryPanel
-                bitmapEditor={bitmapEditor}
-                sourceId={sourceId}
-                marketIds={marketIds}
-                bettingEnd={bettingEnd}
-              />
+            {/* Submarkets grid — HLTV "Top streams" style */}
+            <div className="mt-5">
+              <SubmarketsGrid sourceId={sourceId} />
             </div>
+
+            {/* Vault results + batch history — HLTV "Recent results" style */}
+            <BatchVaultResults sourceId={sourceId} />
           </div>
         </div>
-
       </div>
+
+      {/* Right border banner — HLTV-style gutter ad */}
+      <SideBanner position="right" />
     </div>
   )
 }

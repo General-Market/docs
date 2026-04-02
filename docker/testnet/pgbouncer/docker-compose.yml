@@ -1,0 +1,20 @@
+services:
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: testnet-pgbouncer
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "6432"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "4m"
+        max-file: "2"

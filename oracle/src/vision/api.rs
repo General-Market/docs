@@ -30,10 +30,12 @@ use std::sync::Arc;
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Json;
 use ethers::types::{Address, H256, U256};
+use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
@@ -42,6 +44,27 @@ use common::types::P2PMessage;
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
 use super::tick_scheduler::TickScheduler;
+
+/// SSE event broadcast when a batch settles with per-market parimutuel ratios.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettlementEvent {
+    pub batch_id: u64,
+    pub source_id: String,
+    pub markets: Vec<MarketRatioEvent>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketRatioEvent {
+    pub asset_id: String,
+    pub up_stake: String,
+    pub down_stake: String,
+    pub up_pct: f64,
+    pub down_pct: f64,
+    pub outcome: String,
+    pub pct_change_bps: i64,
+}
 
 /// Shared state for Vision API handlers.
 pub struct VisionState {
@@ -57,6 +80,8 @@ pub struct VisionState {
     /// When Some, a BitmapGossip message is broadcast to peers on every
     /// accepted bitmap so all oracles converge on the same bitmap set.
     pub broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
+    /// Broadcast channel for settlement SSE events.
+    pub settlement_tx: tokio::sync::broadcast::Sender<SettlementEvent>,
     // TODO: Add TickResolver when Task 3.6 is complete
     // pub resolver: Arc<TickResolver>,
     // TODO: Add BLS signer for balance proofs
@@ -112,6 +137,8 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/points/:address", get(vision_points_player))
         .route("/vision/activity", get(vision_activity))
         .route("/vision/explorer/tie-rate-history", get(tie_rate_history))
+        .route("/vision/batch/:id/ratios", get(batch_ratios))
+        .route("/vision/sse/settlements", get(sse_settlements))
         .with_state(state)
 }
 
@@ -511,6 +538,126 @@ struct TickResultRow {
     player_count: Option<i32>,
     total_matched: Option<String>,
     results_json: Option<serde_json::Value>,
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/batch/:id/ratios — per-market parimutuel ratios
+// ---------------------------------------------------------------------------
+
+/// Per-market ratio entry returned by the ratios endpoint.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MarketRatioEntry {
+    asset_id: String,
+    up_stake: String,
+    down_stake: String,
+    up_pct: f64,
+    down_pct: f64,
+    outcome: String,
+    pct_change_bps: i64,
+    settled_at: String,
+}
+
+/// Row type for market ratio queries.
+#[derive(Debug, sqlx::FromRow)]
+struct MarketRatioRow {
+    asset_id: String,
+    up_stake: String,
+    down_stake: String,
+    outcome: String,
+    pct_change_bps: i64,
+    settled_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Get per-market parimutuel ratios for a settled batch.
+async fn batch_ratios(
+    State(state): State<Arc<VisionState>>,
+    Path(id): Path<u64>,
+) -> impl IntoResponse {
+    let rows = sqlx::query_as::<_, MarketRatioRow>(
+        "SELECT asset_id, up_stake, down_stake, outcome, pct_change_bps, settled_at
+         FROM vision_market_ratios
+         WHERE batch_id = $1
+         ORDER BY asset_id",
+    )
+    .bind(id as i64)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(rows) => {
+            let markets: Vec<MarketRatioEntry> = rows
+                .into_iter()
+                .map(|r| {
+                    let up: f64 = r.up_stake.parse().unwrap_or(0.0);
+                    let down: f64 = r.down_stake.parse().unwrap_or(0.0);
+                    let total = up + down;
+                    let (up_pct, down_pct) = if total > 0.0 {
+                        ((up / total * 1000.0).round() / 10.0, (down / total * 1000.0).round() / 10.0)
+                    } else {
+                        (50.0, 50.0)
+                    };
+                    MarketRatioEntry {
+                        asset_id: r.asset_id,
+                        up_stake: r.up_stake,
+                        down_stake: r.down_stake,
+                        up_pct,
+                        down_pct,
+                        outcome: r.outcome,
+                        pct_change_bps: r.pct_change_bps,
+                        settled_at: r.settled_at.to_rfc3339(),
+                    }
+                })
+                .collect();
+
+            (StatusCode::OK, Json(serde_json::json!({
+                "batchId": id,
+                "markets": markets,
+            }))).into_response()
+        }
+        Err(e) => {
+            warn!("Failed to query market ratios for batch {id}: {e}");
+            (StatusCode::OK, Json(serde_json::json!({
+                "batchId": id,
+                "markets": Vec::<()>::new(),
+            }))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/sse/settlements — SSE stream of settlement events with ratios
+// ---------------------------------------------------------------------------
+
+/// SSE endpoint that streams settlement events as batches settle.
+/// Each event contains per-market parimutuel ratios for the settled batch.
+async fn sse_settlements(
+    State(state): State<Arc<VisionState>>,
+) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let rx = state.settlement_tx.subscribe();
+
+    let stream = futures::stream::unfold(rx, |mut rx| async move {
+        loop {
+            match rx.recv().await {
+                Ok(event) => {
+                    let data = serde_json::to_string(&event).unwrap_or_default();
+                    let sse_event = Event::default()
+                        .event("batch-settled")
+                        .data(data);
+                    return Some((Ok(sse_event), rx));
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                    tracing::debug!(skipped = n, "SSE client lagged — skipping old events");
+                    continue;
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                    return None;
+                }
+            }
+        }
+    });
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
 // ---------------------------------------------------------------------------

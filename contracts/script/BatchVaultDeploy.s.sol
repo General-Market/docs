@@ -51,116 +51,116 @@ contract BatchVaultDeploy is Script {
 
     // ── Catalog ──────────────────────────────────────────────────────────────
     //
-    // Per-source funds. fee = performance fee in basis points (2000 = 20%).
+    // Per-source funds. fee = performance fee in basis points (500 = 5%).
     // Populate this list before running — fund-branding.json will supply the
     // final names/symbols; these are placeholders until that file is ready.
 
     function _buildCatalog() internal pure returns (Fund[] memory funds) {
         // ── Crypto data sources ───────────────────────────────────────────────
         Fund[] memory crypto = new Fund[](10);
-        crypto[0]  = Fund("Binance Spot",          "BNSP", 2000);
-        crypto[1]  = Fund("Binance Futures",       "BNFT", 2000);
-        crypto[2]  = Fund("Coinbase Spot",         "CBSP", 2000);
-        crypto[3]  = Fund("OKX Spot",              "OKXS", 2000);
-        crypto[4]  = Fund("Bybit Spot",            "BYBS", 2000);
-        crypto[5]  = Fund("Kraken Spot",           "KRKN", 2000);
-        crypto[6]  = Fund("Bitget Spot",           "BTGS", 2000);
-        crypto[7]  = Fund("Gate Spot",             "GATE", 2000);
-        crypto[8]  = Fund("HTX Spot",              "HTXS", 2000);
-        crypto[9]  = Fund("Kucoin Spot",           "KCSN", 2000);
+        crypto[0]  = Fund("Binance Spot",          "BNSP", 500);
+        crypto[1]  = Fund("Binance Futures",       "BNFT", 500);
+        crypto[2]  = Fund("Coinbase Spot",         "CBSP", 500);
+        crypto[3]  = Fund("OKX Spot",              "OKXS", 500);
+        crypto[4]  = Fund("Bybit Spot",            "BYBS", 500);
+        crypto[5]  = Fund("Kraken Spot",           "KRKN", 500);
+        crypto[6]  = Fund("Bitget Spot",           "BTGS", 500);
+        crypto[7]  = Fund("Gate Spot",             "GATE", 500);
+        crypto[8]  = Fund("HTX Spot",              "HTXS", 500);
+        crypto[9]  = Fund("Kucoin Spot",           "KCSN", 500);
 
         // ── Equities ─────────────────────────────────────────────────────────
         Fund[] memory equities = new Fund[](8);
-        equities[0] = Fund("NYSE Large Cap",       "NYSL", 1500);
-        equities[1] = Fund("NASDAQ Tech",          "NQTK", 1500);
-        equities[2] = Fund("S&P 500 Leaders",      "SP5L", 1500);
-        equities[3] = Fund("Dow Industrials",      "DOWJ", 1500);
-        equities[4] = Fund("Russell 2000",         "R2KF", 1500);
-        equities[5] = Fund("European Blue Chip",   "EUBC", 1500);
-        equities[6] = Fund("Nikkei Stars",         "NKST", 1500);
-        equities[7] = Fund("Hong Kong Listings",   "HKLI", 1500);
+        equities[0] = Fund("NYSE Large Cap",       "NYSL", 500);
+        equities[1] = Fund("NASDAQ Tech",          "NQTK", 500);
+        equities[2] = Fund("S&P 500 Leaders",      "SP5L", 500);
+        equities[3] = Fund("Dow Industrials",      "DOWJ", 500);
+        equities[4] = Fund("Russell 2000",         "R2KF", 500);
+        equities[5] = Fund("European Blue Chip",   "EUBC", 500);
+        equities[6] = Fund("Nikkei Stars",         "NKST", 500);
+        equities[7] = Fund("Hong Kong Listings",   "HKLI", 500);
 
         // ── Commodities ──────────────────────────────────────────────────────
         Fund[] memory commodities = new Fund[](6);
-        commodities[0] = Fund("Energy Complex",    "ENRG", 2000);
-        commodities[1] = Fund("Precious Metals",   "PMTL", 1500);
-        commodities[2] = Fund("Industrial Metals", "INMT", 1500);
-        commodities[3] = Fund("Agricultural",      "AGRI", 1500);
-        commodities[4] = Fund("Soft Commodities",  "SOFT", 1500);
-        commodities[5] = Fund("Livestock",         "LVST", 1000);
+        commodities[0] = Fund("Energy Complex",    "ENRG", 500);
+        commodities[1] = Fund("Precious Metals",   "PMTL", 500);
+        commodities[2] = Fund("Industrial Metals", "INMT", 500);
+        commodities[3] = Fund("Agricultural",      "AGRI", 500);
+        commodities[4] = Fund("Soft Commodities",  "SOFT", 500);
+        commodities[5] = Fund("Livestock",         "LVST", 500);
 
         // ── Forex ────────────────────────────────────────────────────────────
         Fund[] memory forex = new Fund[](8);
-        forex[0] = Fund("Majors",                  "FXMJ", 1500);
-        forex[1] = Fund("EUR Crosses",             "EURX", 1500);
-        forex[2] = Fund("Asia Pacific FX",         "APFX", 1500);
-        forex[3] = Fund("EM Currencies",           "EMFX", 2000);
-        forex[4] = Fund("Scandinavian FX",         "SCFX", 1500);
-        forex[5] = Fund("Latam FX",                "LTFX", 2000);
-        forex[6] = Fund("Middle East FX",          "MEFX", 2000);
-        forex[7] = Fund("Crypto-Forex Bridge",     "CFXB", 2000);
+        forex[0] = Fund("Majors",                  "FXMJ", 500);
+        forex[1] = Fund("EUR Crosses",             "EURX", 500);
+        forex[2] = Fund("Asia Pacific FX",         "APFX", 500);
+        forex[3] = Fund("EM Currencies",           "EMFX", 500);
+        forex[4] = Fund("Scandinavian FX",         "SCFX", 500);
+        forex[5] = Fund("Latam FX",                "LTFX", 500);
+        forex[6] = Fund("Middle East FX",          "MEFX", 500);
+        forex[7] = Fund("Crypto-Forex Bridge",     "CFXB", 500);
 
         // ── Weather ──────────────────────────────────────────────────────────
         Fund[] memory weather = new Fund[](8);
-        weather[0] = Fund("US Temperature",        "USWT", 1500);
-        weather[1] = Fund("EU Temperature",        "EUWT", 1500);
-        weather[2] = Fund("Precipitation",         "PRCP", 1500);
-        weather[3] = Fund("Wind Speed",            "WIND", 1500);
-        weather[4] = Fund("Hurricane Season",      "HURR", 2000);
-        weather[5] = Fund("Wildfire Index",        "FIRE", 2000);
-        weather[6] = Fund("Drought Monitor",       "DRGT", 1500);
-        weather[7] = Fund("Snow Depth",            "SNOW", 1000);
+        weather[0] = Fund("US Temperature",        "USWT", 500);
+        weather[1] = Fund("EU Temperature",        "EUWT", 500);
+        weather[2] = Fund("Precipitation",         "PRCP", 500);
+        weather[3] = Fund("Wind Speed",            "WIND", 500);
+        weather[4] = Fund("Hurricane Season",      "HURR", 500);
+        weather[5] = Fund("Wildfire Index",        "FIRE", 500);
+        weather[6] = Fund("Drought Monitor",       "DRGT", 500);
+        weather[7] = Fund("Snow Depth",            "SNOW", 500);
 
         // ── Sports ───────────────────────────────────────────────────────────
         Fund[] memory sports = new Fund[](10);
-        sports[0] = Fund("NFL Lines",              "NFLL", 2000);
-        sports[1] = Fund("NBA Spreads",            "NBAS", 2000);
-        sports[2] = Fund("MLB Totals",             "MLBT", 2000);
-        sports[3] = Fund("Premier League",         "EPLL", 2000);
-        sports[4] = Fund("Champions League",       "UCLL", 2000);
-        sports[5] = Fund("Tennis Majors",          "TNMS", 2000);
-        sports[6] = Fund("UFC Odds",               "UFCO", 2500);
-        sports[7] = Fund("Golf Outright",          "GOLF", 2000);
-        sports[8] = Fund("Formula 1",              "F1RN", 2000);
-        sports[9] = Fund("Esports",                "ESPT", 2500);
+        sports[0] = Fund("NFL Lines",              "NFLL", 500);
+        sports[1] = Fund("NBA Spreads",            "NBAS", 500);
+        sports[2] = Fund("MLB Totals",             "MLBT", 500);
+        sports[3] = Fund("Premier League",         "EPLL", 500);
+        sports[4] = Fund("Champions League",       "UCLL", 500);
+        sports[5] = Fund("Tennis Majors",          "TNMS", 500);
+        sports[6] = Fund("UFC Odds",               "UFCO", 500);
+        sports[7] = Fund("Golf Outright",          "GOLF", 500);
+        sports[8] = Fund("Formula 1",              "F1RN", 500);
+        sports[9] = Fund("Esports",                "ESPT", 500);
 
         // ── Politics & Macro ─────────────────────────────────────────────────
         Fund[] memory politics = new Fund[](8);
-        politics[0] = Fund("US Elections",         "USEL", 2000);
-        politics[1] = Fund("Fed Policy",           "FEDP", 2000);
-        politics[2] = Fund("ECB Policy",           "ECBP", 2000);
-        politics[3] = Fund("Geopolitical Risk",    "GPRS", 2500);
-        politics[4] = Fund("Trade Policy",         "TRDP", 2000);
-        politics[5] = Fund("Regulatory Watch",     "REGW", 1500);
-        politics[6] = Fund("Inflation Prints",     "INFP", 2000);
-        politics[7] = Fund("Jobs Reports",         "JOBS", 2000);
+        politics[0] = Fund("US Elections",         "USEL", 500);
+        politics[1] = Fund("Fed Policy",           "FEDP", 500);
+        politics[2] = Fund("ECB Policy",           "ECBP", 500);
+        politics[3] = Fund("Geopolitical Risk",    "GPRS", 500);
+        politics[4] = Fund("Trade Policy",         "TRDP", 500);
+        politics[5] = Fund("Regulatory Watch",     "REGW", 500);
+        politics[6] = Fund("Inflation Prints",     "INFP", 500);
+        politics[7] = Fund("Jobs Reports",         "JOBS", 500);
 
         // ── Entertainment ────────────────────────────────────────────────────
         Fund[] memory ent = new Fund[](6);
-        ent[0] = Fund("Box Office",                "BOXO", 1500);
-        ent[1] = Fund("Awards Season",             "AWRD", 1500);
-        ent[2] = Fund("Streaming Charts",          "STRM", 1500);
-        ent[3] = Fund("Music Charts",              "MUSC", 1500);
-        ent[4] = Fund("Social Trends",             "SCTR", 2000);
-        ent[5] = Fund("Reality TV",                "RLTV", 1500);
+        ent[0] = Fund("Box Office",                "BOXO", 500);
+        ent[1] = Fund("Awards Season",             "AWRD", 500);
+        ent[2] = Fund("Streaming Charts",          "STRM", 500);
+        ent[3] = Fund("Music Charts",              "MUSC", 500);
+        ent[4] = Fund("Social Trends",             "SCTR", 500);
+        ent[5] = Fund("Reality TV",                "RLTV", 500);
 
         // ── Science & Tech ───────────────────────────────────────────────────
         Fund[] memory tech = new Fund[](6);
-        tech[0] = Fund("AI Benchmarks",            "AIBM", 2000);
-        tech[1] = Fund("Biotech Catalysts",        "BIOT", 2500);
-        tech[2] = Fund("Space Launches",           "SPCE", 2000);
-        tech[3] = Fund("Earthquake Monitor",       "QUAK", 1500);
-        tech[4] = Fund("Volcano Activity",         "VLCN", 1500);
-        tech[5] = Fund("Epidemic Watch",           "EPID", 2000);
+        tech[0] = Fund("AI Benchmarks",            "AIBM", 500);
+        tech[1] = Fund("Biotech Catalysts",        "BIOT", 500);
+        tech[2] = Fund("Space Launches",           "SPCE", 500);
+        tech[3] = Fund("Earthquake Monitor",       "QUAK", 500);
+        tech[4] = Fund("Volcano Activity",         "VLCN", 500);
+        tech[5] = Fund("Epidemic Watch",           "EPID", 500);
 
         // ── Transport & Infrastructure ────────────────────────────────────────
         Fund[] memory transport = new Fund[](6);
-        transport[0] = Fund("Flight Delays",       "FLTD", 1500);
-        transport[1] = Fund("Port Congestion",     "PORT", 1500);
-        transport[2] = Fund("Rail Punctuality",    "RAIL", 1000);
-        transport[3] = Fund("Shipping Rates",      "SHIP", 2000);
-        transport[4] = Fund("EV Adoption",         "EVAD", 1500);
-        transport[5] = Fund("Traffic Index",       "TRFX", 1000);
+        transport[0] = Fund("Flight Delays",       "FLTD", 500);
+        transport[1] = Fund("Port Congestion",     "PORT", 500);
+        transport[2] = Fund("Rail Punctuality",    "RAIL", 500);
+        transport[3] = Fund("Shipping Rates",      "SHIP", 500);
+        transport[4] = Fund("EV Adoption",         "EVAD", 500);
+        transport[5] = Fund("Traffic Index",       "TRFX", 500);
 
         // ── Count total ──────────────────────────────────────────────────────
         uint256 total = crypto.length + equities.length + commodities.length +

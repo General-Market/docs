@@ -109,10 +109,9 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
       tickDuration = timing.tickDuration
     }
 
-    // Scale test timeout: tick must end + oracle settles + consensus + propagation
-    // Formula: tickDuration (worst case: just started) + 120s buffer for oracle processing
-    const settlementTimeoutMs = (tickDuration + 120) * 1000
-    const testTimeoutMs = Math.max(settlementTimeoutMs + 120_000, 600_000) // at least 10min
+    // Scale test timeout: betting tick + settlement delay (=tick) + oracle processing buffer
+    const settlementTimeoutMs = (tickDuration * 2 + 120) * 1000
+    const testTimeoutMs = settlementTimeoutMs + 60_000 // extra buffer for consensus propagation
     test.setTimeout(testTimeoutMs)
     console.log(`Batch ${batchId}: tickDuration=${tickDuration}s, settlementTimeout=${settlementTimeoutMs / 1000}s, testTimeout=${testTimeoutMs / 1000}s`)
 

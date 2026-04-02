@@ -474,7 +474,7 @@ async fn generate_batch_config(
     }
 
     let tick_duration_secs = sync_interval_secs;
-    let lock_offset_secs = 0u64; // No lock window — 10min settlement delay makes it unnecessary
+    let lock_offset_secs = 0u64; // No lock window — settlement delay = tick_duration (symmetric)
 
     let markets = compute_asset_thresholds(pool, source_id, &healthy).await;
 

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@emotion/is-prop-valid": "^1.4.0",
     "viem": "^2.45.0"
   },
   "devDependencies": {

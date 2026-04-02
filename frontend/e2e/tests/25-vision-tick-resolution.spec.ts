@@ -103,9 +103,9 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     if (configHash === ('0x' as `0x${string}`)) configHash = await getBatchConfigHash(batchId)
     const visionUsdc = await getVisionUsdcAddress()
 
-    // Scale test timeout based on tick duration (same pattern as test 21)
-    const settlementTimeoutMs = (selectedTickDuration + 120) * 1000
-    const testTimeoutMs = Math.max(settlementTimeoutMs + 120_000, 600_000) // at least 10min
+    // Scale test timeout: betting tick + settlement delay (=tick) + oracle processing buffer
+    const settlementTimeoutMs = (selectedTickDuration * 2 + 120) * 1000
+    const testTimeoutMs = settlementTimeoutMs + 60_000 // extra buffer for consensus propagation
     test.setTimeout(testTimeoutMs)
     console.log(`Using round ${batchId} (tick_duration=${selectedTickDuration}s, testTimeout=${testTimeoutMs / 1000}s)`)
 

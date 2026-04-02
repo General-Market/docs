@@ -96,44 +96,58 @@ export function CountdownRing({
 interface ProgressBarProps {
   bettingEnd: string | null
   tickDuration: number
-  isSettling: boolean
 }
 
 /**
- * Thin horizontal bar that depletes left-to-right over the betting period.
- * When settling, becomes a pulsing amber bar.
+ * Thin horizontal bar that shows two phases:
+ * 1. Betting: depletes green → amber → red over tickDuration
+ * 2. Settlement: depletes amber over tickDuration (symmetric)
  */
-export function BatchProgressBar({ bettingEnd, tickDuration, isSettling }: ProgressBarProps) {
+export function BatchProgressBar({ bettingEnd, tickDuration }: ProgressBarProps) {
   const remaining = useSharedCountdown(bettingEnd)
-
-  if (isSettling) {
-    return (
-      <div className="h-[2px] w-full overflow-hidden">
-        <div className="h-full w-full bg-color-warning/60 animate-pulse" />
-      </div>
-    )
-  }
 
   if (!bettingEnd || tickDuration <= 0) {
     return <div className="h-[2px] w-full bg-border-light" />
   }
 
-  const progress = Math.min(1, Math.max(0, remaining / tickDuration))
-  const urgent = remaining < 60
-  const critical = remaining < 30
+  // Betting phase
+  if (remaining > 0) {
+    const progress = Math.min(1, Math.max(0, remaining / tickDuration))
+    const urgent = remaining < 60
+    const critical = remaining < 30
+    const barColor = critical
+      ? 'bg-color-down'
+      : urgent
+        ? 'bg-color-warning'
+        : 'bg-color-up'
 
-  const barColor = critical
-    ? 'bg-color-down'
-    : urgent
-      ? 'bg-color-warning'
-      : 'bg-color-up'
+    return (
+      <div className="h-[2px] w-full bg-border-light/50 overflow-hidden">
+        <div
+          className={`h-full ${barColor} motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-linear`}
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+    )
+  }
 
-  return (
-    <div className="h-[2px] w-full bg-border-light/50 overflow-hidden">
-      <div
-        className={`h-full ${barColor} motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-linear`}
-        style={{ width: `${progress * 100}%` }}
-      />
-    </div>
-  )
+  // Settlement phase — depletes over tickDuration after bettingEnd
+  const now = Date.now()
+  const end = new Date(bettingEnd).getTime()
+  const settleRemaining = Math.max(0, (end + tickDuration * 1000 - now) / 1000)
+
+  if (settleRemaining > 0) {
+    const progress = Math.min(1, settleRemaining / tickDuration)
+    return (
+      <div className="h-[2px] w-full bg-border-light/50 overflow-hidden">
+        <div
+          className={`h-full bg-color-warning motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-linear`}
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+    )
+  }
+
+  // Both expired
+  return <div className="h-[2px] w-full bg-border-light" />
 }

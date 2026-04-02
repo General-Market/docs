@@ -794,13 +794,14 @@ function FeaturedSourceCard({
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(json => {
         if (cancelled) return
-        // data-node returns { data: { [assetId]: [{ value, fetched_at, ... }, ...] } }
+        // data-node returns { data: { [assetId]: [{ value, fetchedAt, ... }, ...] } }
+        // (camelCase — MarketPriceRecord uses #[serde(rename_all = "camelCase")])
         const parsed: Record<string, { value: number; ts: number }[]> = {}
         const rawData = json.data || {}
         for (const [assetId, records] of Object.entries(rawData)) {
           parsed[assetId] = (records as any[]).map(r => ({
             value: typeof r.value === 'string' ? parseFloat(r.value) : r.value,
-            ts: new Date(r.fetched_at).getTime(),
+            ts: new Date(r.fetchedAt).getTime(),
           })).sort((a, b) => a.ts - b.ts)
         }
         setHistoryData(parsed)

@@ -22,67 +22,67 @@ contract DeployFundCatalog is Script {
         funds = new Fund[](NUM_FUNDS);
 
         // CRYPTO
-        funds[0]  = Fund("Herd",        "HERD", 2000);
-        funds[1]  = Fund("Washout",     "WASH", 2000);
-        funds[2]  = Fund("Degenerator", "DGEN", 2500);
-        funds[3]  = Fund("Lockflow",    "LOCK", 1500);
-        funds[4]  = Fund("Oracle",      "ORCL", 2000);
+        funds[0]  = Fund("Herd",        "HERD", 500);
+        funds[1]  = Fund("Washout",     "WASH", 500);
+        funds[2]  = Fund("Degenerator", "DGEN", 500);
+        funds[3]  = Fund("Lockflow",    "LOCK", 500);
+        funds[4]  = Fund("Oracle",      "ORCL", 500);
 
         // WEATHER & GEOPHYSICAL
-        funds[5]  = Fund("Revert",      "RVRT", 1500);
-        funds[6]  = Fund("Aftershock",  "AFTR", 2000);
-        funds[7]  = Fund("Ember",       "EMBR", 2000);
-        funds[8]  = Fund("Clearsky",    "CLR",  1500);
-        funds[9]  = Fund("Swell",       "SWEL", 1500);
-        funds[10] = Fund("Aurora",      "AURA", 1500);
+        funds[5]  = Fund("Revert",      "RVRT", 500);
+        funds[6]  = Fund("Aftershock",  "AFTR", 500);
+        funds[7]  = Fund("Ember",       "EMBR", 500);
+        funds[8]  = Fund("Clearsky",    "CLR",  500);
+        funds[9]  = Fund("Swell",       "SWEL", 500);
+        funds[10] = Fund("Aurora",      "AURA", 500);
 
         // TRANSPORT
-        funds[11] = Fund("Cascade",     "CSCD", 2000);
-        funds[12] = Fund("Tailwind",    "TAIL", 1500);
-        funds[13] = Fund("Gridlock",    "GRID", 1500);
-        funds[14] = Fund("Crossing",    "XING", 1500);
-        funds[15] = Fund("Spoke",       "SPOK", 1500);
+        funds[11] = Fund("Cascade",     "CSCD", 500);
+        funds[12] = Fund("Tailwind",    "TAIL", 500);
+        funds[13] = Fund("Gridlock",    "GRID", 500);
+        funds[14] = Fund("Crossing",    "XING", 500);
+        funds[15] = Fund("Spoke",       "SPOK", 500);
 
         // ENTERTAINMENT & SOCIAL
-        funds[16] = Fund("Prime Time",  "PRME", 2000);
-        funds[17] = Fund("Weekend",     "WKND", 1500);
-        funds[18] = Fund("Hivemind",    "HIVE", 1500);
-        funds[19] = Fund("Decay",       "DCAY", 2000);
-        funds[20] = Fund("Season",      "SZON", 1500);
-        funds[21] = Fund("Noise",       "NOIS", 1500);
-        funds[22] = Fund("Homecourt",   "HOME", 1000);
+        funds[16] = Fund("Prime Time",  "PRME", 500);
+        funds[17] = Fund("Weekend",     "WKND", 500);
+        funds[18] = Fund("Hivemind",    "HIVE", 500);
+        funds[19] = Fund("Decay",       "DCAY", 500);
+        funds[20] = Fund("Season",      "SZON", 500);
+        funds[21] = Fund("Noise",       "NOIS", 500);
+        funds[22] = Fund("Homecourt",   "HOME", 500);
 
         // MACRO & ECONOMIC
-        funds[23] = Fund("Hawkish",     "HAWK", 2000);
-        funds[24] = Fund("Payroll",     "PYRL", 2000);
-        funds[25] = Fund("Barrel",      "BRRL", 2000);
-        funds[26] = Fund("Glacier",     "GLCR", 1000);
-        funds[27] = Fund("Spread",      "SPRD", 2000);
+        funds[23] = Fund("Hawkish",     "HAWK", 500);
+        funds[24] = Fund("Payroll",     "PYRL", 500);
+        funds[25] = Fund("Barrel",      "BRRL", 500);
+        funds[26] = Fund("Glacier",     "GLCR", 500);
+        funds[27] = Fund("Spread",      "SPRD", 500);
 
         // TECH & DEVELOPER
-        funds[28] = Fund("Adoption",    "ADPT", 1500);
-        funds[29] = Fund("Trending",    "TRND", 2000);
-        funds[30] = Fund("Resilience",  "RSLN", 1500);
-        funds[31] = Fund("Overflow",    "OFLW", 1500);
+        funds[28] = Fund("Adoption",    "ADPT", 500);
+        funds[29] = Fund("Trending",    "TRND", 500);
+        funds[30] = Fund("Resilience",  "RSLN", 500);
+        funds[31] = Fund("Overflow",    "OFLW", 500);
 
         // REGULATORY & GOVERNMENT
-        funds[32] = Fund("Deadline",    "DDLN", 1500);
-        funds[33] = Fund("Session",     "SESN", 1500);
-        funds[34] = Fund("Complaint",   "CMPL", 1500);
+        funds[32] = Fund("Deadline",    "DDLN", 500);
+        funds[33] = Fund("Session",     "SESN", 500);
+        funds[34] = Fund("Complaint",   "CMPL", 500);
 
         // NATURE & ACADEMIC
-        funds[35] = Fund("Migration",   "MIGR", 1000);
-        funds[36] = Fund("Preprint",    "PRPT", 1000);
+        funds[35] = Fund("Migration",   "MIGR", 500);
+        funds[36] = Fund("Preprint",    "PRPT", 500);
 
         // WATER & OCEAN
-        funds[37] = Fund("Torrent",     "TRNT", 1500);
-        funds[38] = Fund("Tideline",    "TIDE", 1500);
+        funds[37] = Fund("Torrent",     "TRNT", 500);
+        funds[38] = Fund("Tideline",    "TIDE", 500);
 
         // NICHE & EXOTIC
-        funds[39] = Fund("Fastpass",    "FAST", 1500);
-        funds[40] = Fund("Soft Serve",  "SOFT", 1000);
-        funds[41] = Fund("After Dark",  "DARK", 1500);
-        funds[42] = Fund("Unusual",     "UNSL", 2000);
+        funds[39] = Fund("Fastpass",    "FAST", 500);
+        funds[40] = Fund("Soft Serve",  "SOFT", 500);
+        funds[41] = Fund("After Dark",  "DARK", 500);
+        funds[42] = Fund("Unusual",     "UNSL", 500);
     }
 
     function run() external {
