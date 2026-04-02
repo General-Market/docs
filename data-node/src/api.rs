@@ -104,7 +104,7 @@ async fn refresh_health_stats_fast(
     }
 
     let newest_rows: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
-        "SELECT source, MAX(fetched_at) as newest FROM market_prices GROUP BY source",
+        "SELECT source, MAX(fetched_at) as newest FROM market_prices_latest GROUP BY source",
     )
     .fetch_all(pool).await.map_err(|e| format!("fast init newest: {}", e))?;
     for (source, newest) in newest_rows {
@@ -151,12 +151,12 @@ async fn refresh_health_stats(
         entry.active_assets = *active;
     }
 
-    // Query B: Per-source newest record (uses source_fetched index)
+    // Query B: Per-source newest record (market_prices_latest — 374K rows vs 65M)
     tracing::info!("health cache: query A done ({} sources, {:?}), starting query B", asset_counts.len(), start.elapsed());
     let newest_rows: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
         r#"
         SELECT source, MAX(fetched_at) as newest
-        FROM market_prices
+        FROM market_prices_latest
         GROUP BY source
         "#,
     )
@@ -169,17 +169,14 @@ async fn refresh_health_stats(
         entry.newest_record = Some(newest);
     }
 
-    // Query C: Latest price per (source, asset_id) for zero/stale counting (7d window)
-    tracing::info!("health cache: query B done ({:?}), starting query C (7d DISTINCT ON)", start.elapsed());
+    // Query C: Latest price per (source, asset_id) for zero/stale counting
+    // Uses market_prices_latest (374K rows, one row per asset) instead of
+    // DISTINCT ON over 65M-row market_prices — was taking 18.5s every 60s.
+    tracing::info!("health cache: query B done ({:?}), starting query C (latest cache)", start.elapsed());
     let rows: Vec<(String, rust_decimal::Decimal, DateTime<Utc>)> = sqlx::query_as(
         r#"
-        SELECT source, value, fetched_at FROM (
-            SELECT DISTINCT ON (source, asset_id)
-                   source, value, fetched_at
-            FROM market_prices
-            WHERE fetched_at > NOW() - INTERVAL '7 days'
-            ORDER BY source, asset_id, fetched_at DESC
-        ) sub
+        SELECT source, value, fetched_at
+        FROM market_prices_latest
         "#,
     )
     .fetch_all(pool)
@@ -5035,7 +5032,9 @@ async fn snapshot(
     // CoinGecko (crypto) and DeFiLlama (defi) now write to market_assets/market_prices
     // via MarketDataSource. The UNION ALL fallback to legacy tables is kept until the old
     // cg_collector/dl_collector pipelines are fully decommissioned.
-    // TODO: Remove the UNION ALL fallback once old collectors are decommissioned.
+    // Use market_prices_latest cache table (374K rows) instead of DISTINCT ON
+    // over the 65M-row market_prices table. Legacy CoinGecko/DeFiLlama fallbacks
+    // retained for sources that haven't migrated to the sync engine yet.
     let rows: Vec<(
         String, String, String, String, Option<String>,
         rust_decimal::Decimal, Option<rust_decimal::Decimal>, Option<rust_decimal::Decimal>,
@@ -5043,22 +5042,24 @@ async fn snapshot(
         DateTime<Utc>, Option<String>,
     )> = sqlx::query_as(
         r#"
-        SELECT DISTINCT ON (source, asset_id) asset_id, source, symbol, name, category,
+        SELECT asset_id, source, symbol, name, category,
                value, prev_close, change_pct, volume_24h, market_cap, fetched_at, image_url
         FROM (
-            -- All market data sources (including new crypto/defi via MarketDataSource)
+            -- All market data sources via market_prices_latest cache
             SELECT
-                a.asset_id, a.source, a.symbol, a.name, a.category,
-                p.value, p.prev_close, p.change_pct,
-                p.volume_24h, p.market_cap, p.fetched_at,
+                l.asset_id, l.source, l.symbol,
+                COALESCE(NULLIF(l.name, ''), a.name, l.symbol) AS name,
+                COALESCE(l.category, a.category) AS category,
+                l.value, NULL::decimal(30,10) as prev_close, l.change_pct,
+                l.volume_24h, l.market_cap, l.fetched_at,
                 a.metadata->>'image_url' as image_url
-            FROM market_assets a
-            JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
-            WHERE a.is_active = true
+            FROM market_prices_latest l
+            LEFT JOIN market_assets a ON a.source = l.source AND a.asset_id = l.asset_id
+            WHERE (a.is_active IS NULL OR a.is_active = true)
 
             UNION ALL
 
-            -- Legacy CoinGecko fallback (only if no market_prices rows exist for source='crypto')
+            -- Legacy CoinGecko fallback (only if no market_prices_latest rows for source='crypto')
             SELECT
                 c.coin_id as asset_id,
                 'crypto'::text as source,
@@ -5075,11 +5076,11 @@ async fn snapshot(
             FROM coingecko_market_caps c
             WHERE c.snapshot_date = (SELECT MAX(snapshot_date) FROM coingecko_market_caps)
               AND c.price_usd IS NOT NULL
-              AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'crypto' LIMIT 1)
+              AND NOT EXISTS (SELECT 1 FROM market_prices_latest WHERE source = 'crypto' LIMIT 1)
 
             UNION ALL
 
-            -- Legacy DeFiLlama fallback (only if no market_prices rows exist for source='defi')
+            -- Legacy DeFiLlama fallback (only if no market_prices_latest rows for source='defi')
             SELECT
                 d.slug as asset_id,
                 'defi'::text as source,
@@ -5095,9 +5096,9 @@ async fn snapshot(
                 NULL::text as image_url
             FROM defillama_protocols d
             WHERE d.tvl IS NOT NULL AND d.tvl > 0
-              AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'defi' LIMIT 1)
+              AND NOT EXISTS (SELECT 1 FROM market_prices_latest WHERE source = 'defi' LIMIT 1)
         ) combined
-        ORDER BY source, asset_id, fetched_at DESC
+        ORDER BY source, asset_id
         "#,
     )
     .fetch_all(&state.pool)

@@ -55,17 +55,17 @@ pub async fn get_market_prices(
         Option<String>,
     )> = sqlx::query_as(
         r#"
-        SELECT DISTINCT ON (a.asset_id)
+        SELECT
             a.asset_id, a.source, a.symbol, a.name, a.category,
-            p.value, p.prev_close, p.change_pct,
+            p.value, NULL::decimal(30,10) as prev_close, p.change_pct,
             p.volume_24h, p.market_cap, p.fetched_at,
             a.metadata->>'image_url' as image_url
         FROM market_assets a
-        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
+        JOIN market_prices_latest p ON a.source = p.source AND a.asset_id = p.asset_id
         WHERE a.source = $1
           AND a.is_active = true
           AND ($2::TEXT IS NULL OR a.category = $2)
-        ORDER BY a.asset_id, p.fetched_at DESC
+        ORDER BY a.asset_id
         LIMIT $3 OFFSET $4
         "#,
     )
@@ -142,14 +142,12 @@ pub async fn get_market_asset_price(
         r#"
         SELECT
             a.asset_id, a.source, a.symbol, a.name, a.category,
-            p.value, p.prev_close, p.change_pct,
+            p.value, NULL::decimal(30,10) as prev_close, p.change_pct,
             p.volume_24h, p.market_cap, p.fetched_at,
             a.metadata->>'image_url' as image_url
         FROM market_assets a
-        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
+        JOIN market_prices_latest p ON a.source = p.source AND a.asset_id = p.asset_id
         WHERE a.source = $1 AND a.asset_id = $2
-        ORDER BY p.fetched_at DESC
-        LIMIT 1
         "#,
     )
     .bind(source)
