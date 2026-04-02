@@ -1522,41 +1522,9 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         });
     }
 
-    // Maritime — Digitraffic AIS (free, no API key required)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("maritime", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match crate::market_data::sources::maritime::MaritimeMarketSource::from_env() {
-                    Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("Maritime init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("AIS maritime vessel provider started (Digitraffic)");
-    }
+    // Maritime — DISABLED (no live data, no DB history, no static fallback)
 
-    // AISstream WebSocket ship tracking (gated on API key)
-    if let Some(ref key) = args.aisstream_api_key {
-        std::env::set_var("AISSTREAM_API_KEY", key);
-        let aisstream_key = key.clone();
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("aisstream", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            let aisstream_key = aisstream_key.clone();
-            async move {
-                let source = crate::market_data::sources::aisstream::AisStreamMarketSource::new(aisstream_key);
-                let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
-                engine.run().await;
-            }
-        });
-        info!("AISstream ship tracking provider started");
-    }
+    // AISstream — DISABLED (no live data, no DB history, no static fallback)
 
     // Epidemic — disease.sh (no key)
     {
@@ -1638,34 +1606,11 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         });
     }
 
-    // Movebank GPS Animal Tracking — gated on username + password
-    if let Some(ref mb_user) = args.movebank_user {
-        if let Some(ref mb_pass) = args.movebank_password {
-            let mb_user_c = mb_user.clone();
-            let mb_pass_c = mb_pass.clone();
-            let pool_c = pool.clone();
-            let bh = broadcast_hub.clone();
-            let pw = price_writer.clone();
-            spawn_resilient("movebank", pw.clone(), move || {
-                let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-                let mb_user_c = mb_user_c.clone(); let mb_pass_c = mb_pass_c.clone();
-                async move {
-                    match crate::market_data::sources::movebank::MovebankMarketSource::new(mb_user_c, mb_pass_c) {
-                        Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                        Err(e) => { tracing::error!("Movebank init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                    }
-                }
-            });
-            info!("Movebank GPS animal tracking provider started");
-        } else {
-            info!("Movebank skipped (MOVEBANK_PASSWORD not configured)");
-        }
-    }
+    // Movebank — DISABLED (no live data, no DB history, no static fallback)
 
-    // eBird — DISABLED: API key expired/invalid (returns 403), all prices zero-filled
-    // To re-enable: get new key from ebird.org/api/keygen, restore spawn_resilient block
+    // eBird — DISABLED (no live data, no DB history, no static fallback)
 
-    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime, movebank, ebird)");
+    info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire)");
 
     // GTFS-RT Transit (NYC MTA Subway, BART — no API key needed)
     {
@@ -1720,22 +1665,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     // Reddit — DISABLED: public mode returns 0 subreddits, OAuth not configured
     // To re-enable: restore spawn_resilient block and remove record_not_started below
 
-    // Shelter — always-on, no auth needed (Austin Animal Center Socrata SODA)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("shelter", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match crate::market_data::sources::shelter::ShelterMarketSource::from_env() {
-                    Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("Shelter init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("Animal shelter tracker started");
-    }
+    // Shelter — DISABLED (no live data, no DB history, no static fallback)
 
     // Chaturbate — requires CHATURBATE_WM affiliate ID
     if std::env::var("CHATURBATE_WM").is_ok() {
@@ -2200,22 +2130,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("TfL Tube Status started");
     }
 
-    // Paris Metro Status — no key needed (free PRIM API)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("paris_metro", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match crate::market_data::sources::paris_metro::ParisMetroMarketSource::from_env() {
-                    Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("Paris Metro Status init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("Paris Metro Status started");
-    }
+    // Paris Metro — DISABLED (no live data, no DB history, no static fallback)
 
     // NYC MTA Subway Alerts — no key needed (free GTFS-RT feed)
     {
@@ -2366,16 +2281,10 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         if args.nasa_firms_key.is_none() {
             tracker.record_not_started("wildfire", "Missing --nasa-firms-key");
         }
-        // Maritime — always-on (Digitraffic, no key needed)
-        // AISstream (individual vessel tracking via WebSocket, needs paid API key)
-        if args.aisstream_api_key.is_none() {
-            tracker.record_not_started("aisstream", "Missing --aisstream-api-key");
+        // Disabled sources (no live data, no DB history, no static fallback)
+        for disabled in crate::batch_engine::DISABLED_SOURCES {
+            tracker.record_not_started(disabled, "Disabled — no live data, no DB history, no static fallback");
         }
-        // Movebank
-        if args.movebank_user.is_none() || args.movebank_password.is_none() {
-            tracker.record_not_started("movebank", "Missing --movebank-user / --movebank-password");
-        }
-        // eBird — unconditional record_not_started added below (API key expired)
         // FINRA
         if args.finra_client_id.is_none() || args.finra_client_secret.is_none() {
             tracker.record_not_started("finra", "Missing --finra-client-id / --finra-client-secret");
@@ -2411,7 +2320,6 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         }
 
         // Sources disabled due to external API issues (not key-related)
-        tracker.record_not_started("ebird", "API key expired (403) — get new key from ebird.org/api/keygen");
         tracker.record_not_started("nrc_nuclear", "nrc.gov unreachable from EU VPS (TLS/HTTP2 hangs)");
         tracker.record_not_started("cbp_border", "bwt.cbp.dhs.gov returns 403 from EU VPS");
         tracker.record_not_started("ioda", "CAIDA IODA API returns 0 prices (broken response)");

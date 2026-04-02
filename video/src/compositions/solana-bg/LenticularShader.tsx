@@ -178,6 +178,7 @@ const LenticularScene: React.FC<{ frame: number }> = ({ frame }) => {
       <AuroraLights time={time} />
       <AuroraBackdrop time={time} />
       <SlatArray time={time} />
+
     </>
   );
 };

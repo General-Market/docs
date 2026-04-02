@@ -20,6 +20,22 @@ use tracing::{info, warn};
 
 use crate::market_data::traits::BatchStrategy;
 
+// ── Disabled sources ─────────────────────────────────────────────────────
+// Sources with no live data, no DB history, and no static fallback.
+// Excluded from batch config generation and sync engine registration.
+pub const DISABLED_SOURCES: &[&str] = &[
+    "paris_metro",
+    "aisstream",
+    "maritime",
+    "ebird",
+    "movebank",
+    "shelter",
+];
+
+pub fn is_source_disabled(source_id: &str) -> bool {
+    DISABLED_SOURCES.contains(&source_id)
+}
+
 // ── Global strategy registry ──────────────────────────────────────────────
 // Sources register their BatchStrategy at sync engine startup.
 // The batch engine reads strategies from here.
@@ -678,6 +694,9 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
         let mut configs = Vec::new();
 
         for (source_id, display_name, sync_interval) in &sources {
+            if is_source_disabled(source_id) {
+                continue;
+            }
             if let Some(config) =
                 generate_batch_config(&pool, source_id, display_name, *sync_interval).await
             {
@@ -694,7 +713,7 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
             configs.iter().map(|c| c.source_id.clone()).collect();
 
         for (source_id, display_name, sync_interval) in &sources {
-            if live_source_ids.contains(source_id.as_str()) {
+            if is_source_disabled(source_id) || live_source_ids.contains(source_id.as_str()) {
                 continue;
             }
 
