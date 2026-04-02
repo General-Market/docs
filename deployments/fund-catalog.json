@@ -1,0 +1,223 @@
+{
+  "chainId": 111222333,
+  "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
+  "factory": "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e",
+  "timestamp": 1775136097,
+  "vaults": {
+    "Herd": {
+      "address": "0xD5a293Be8f3b2De4b95F3D660971F9583C38899D",
+      "symbol": "HERD",
+      "fee": 2000
+    },
+    "Washout": {
+      "address": "0xFE70C0807b365572E67E9E79b8CFa9970A2D6181",
+      "symbol": "WASH",
+      "fee": 2000
+    },
+    "Degenerator": {
+      "address": "0x688B545A4E99E558Fe0E46e806815c5815197f9F",
+      "symbol": "DGEN",
+      "fee": 2500
+    },
+    "Lockflow": {
+      "address": "0x479BBa90FF3680De53a70330D2C249e0937F217a",
+      "symbol": "LOCK",
+      "fee": 1500
+    },
+    "Oracle": {
+      "address": "0x516E13190a5A58885855A3B382F72721a75c36BF",
+      "symbol": "ORCL",
+      "fee": 2000
+    },
+    "Revert": {
+      "address": "0xd11D09b648ADD649e1438BB01abbEc501CBcCf73",
+      "symbol": "RVRT",
+      "fee": 1500
+    },
+    "Aftershock": {
+      "address": "0x98D71Fe0b2151dBBFA524EfC8219C29caAd951c0",
+      "symbol": "AFTR",
+      "fee": 2000
+    },
+    "Ember": {
+      "address": "0xBA7e3519E9b665Bd335FB553F29b69cecf0Ac42D",
+      "symbol": "EMBR",
+      "fee": 2000
+    },
+    "Clearsky": {
+      "address": "0x5a491A36501380d5F958d9B70279918d941cFE9A",
+      "symbol": "CLR",
+      "fee": 1500
+    },
+    "Swell": {
+      "address": "0x225753B968c4509DAFdcc60Aa70D8eF60376A073",
+      "symbol": "SWEL",
+      "fee": 1500
+    },
+    "Aurora": {
+      "address": "0x03557c86CF1532Bb0B4DDd728d9bBbF7ee064a56",
+      "symbol": "AURA",
+      "fee": 1500
+    },
+    "Cascade": {
+      "address": "0x30943951A44d985Df36a6F02c96aF20E6045d13C",
+      "symbol": "CSCD",
+      "fee": 2000
+    },
+    "Tailwind": {
+      "address": "0xC8f463e3065BB5692760D0176a0980B758A2f6a4",
+      "symbol": "TAIL",
+      "fee": 1500
+    },
+    "Gridlock": {
+      "address": "0xf4F69E31497250898e223428A72E1bC4B28C367A",
+      "symbol": "GRID",
+      "fee": 1500
+    },
+    "Crossing": {
+      "address": "0x4e5925A9A67Ee890CB6a5744270FD247a522148f",
+      "symbol": "XING",
+      "fee": 1500
+    },
+    "Spoke": {
+      "address": "0xE277BCCFB935137f974206BA4d1324a2F6B28CC0",
+      "symbol": "SPOK",
+      "fee": 1500
+    },
+    "Prime Time": {
+      "address": "0xe7D2c17E2cBB1EB837864AEbbe43DeE82Efa3453",
+      "symbol": "PRME",
+      "fee": 2000
+    },
+    "Weekend": {
+      "address": "0x94d01a0Ca7B0a97f1B795aecAb05F1D6519BD984",
+      "symbol": "WKND",
+      "fee": 1500
+    },
+    "Hivemind": {
+      "address": "0xceBB5D8B62bf0495fb534d1243dc68D9062D12eC",
+      "symbol": "HIVE",
+      "fee": 1500
+    },
+    "Decay": {
+      "address": "0x3f662edC2a85cd8918C5d6ff20E3541455901A7E",
+      "symbol": "DCAY",
+      "fee": 2000
+    },
+    "Season": {
+      "address": "0x4F80C4f87eE1c87AddC6C10bF06cDF20Ef95A495",
+      "symbol": "SZON",
+      "fee": 1500
+    },
+    "Noise": {
+      "address": "0xA497a38ccA386a7d2761363B63b83E53158F56bE",
+      "symbol": "NOIS",
+      "fee": 1500
+    },
+    "Homecourt": {
+      "address": "0x32024dbE3E55b5F6007448B5636bcCD16A7572e2",
+      "symbol": "HOME",
+      "fee": 1000
+    },
+    "Hawkish": {
+      "address": "0x53d51687e0e1Fc5A5B8E4cA3Ea8057A90635Beff",
+      "symbol": "HAWK",
+      "fee": 2000
+    },
+    "Payroll": {
+      "address": "0x182813f82C5da170C5664B7dd1Bcb3Ab8149FD12",
+      "symbol": "PYRL",
+      "fee": 2000
+    },
+    "Barrel": {
+      "address": "0xD15bde8D144f3699791e92Aa4B1cbb909e86b4E8",
+      "symbol": "BRRL",
+      "fee": 2000
+    },
+    "Glacier": {
+      "address": "0x936Eb6ea46A75fD6B925CeCE8D455AcBfA89aA92",
+      "symbol": "GLCR",
+      "fee": 1000
+    },
+    "Spread": {
+      "address": "0xAc67cca95C8e17Bf45D0fC0D81D4d5626699B8f3",
+      "symbol": "SPRD",
+      "fee": 2000
+    },
+    "Adoption": {
+      "address": "0xe23c6bb2B0eE6C131BD77D6aD6E1b721F73E54D3",
+      "symbol": "ADPT",
+      "fee": 1500
+    },
+    "Trending": {
+      "address": "0x355dFD3661C201C84452Eeb657671cd47862AF4c",
+      "symbol": "TRND",
+      "fee": 2000
+    },
+    "Resilience": {
+      "address": "0x7073abAB8771e0F108f9d012B2ADFd2c5af0D517",
+      "symbol": "RSLN",
+      "fee": 1500
+    },
+    "Overflow": {
+      "address": "0x22F446a44595daf0BBe7C51597f68981D696408d",
+      "symbol": "OFLW",
+      "fee": 1500
+    },
+    "Deadline": {
+      "address": "0x91e5e5dF86f5c59Bc8798bB5390fa9043bA7A3Ea",
+      "symbol": "DDLN",
+      "fee": 1500
+    },
+    "Session": {
+      "address": "0xC6465F4894Ea9636015f0F7222937EA25aAFb8De",
+      "symbol": "SESN",
+      "fee": 1500
+    },
+    "Complaint": {
+      "address": "0xF2AD95a69122571e1C5Dc3eC39E5C415318dCb9c",
+      "symbol": "CMPL",
+      "fee": 1500
+    },
+    "Migration": {
+      "address": "0xBE1342272266b98e3C51edaA3978f3E01a59e28f",
+      "symbol": "MIGR",
+      "fee": 1000
+    },
+    "Preprint": {
+      "address": "0x29fD0B9983A843977973AB981da5d7F53Ae0B77B",
+      "symbol": "PRPT",
+      "fee": 1000
+    },
+    "Torrent": {
+      "address": "0x8bCFCA16426b5a3Edc2F08d8e629DBc57077B749",
+      "symbol": "TRNT",
+      "fee": 1500
+    },
+    "Tideline": {
+      "address": "0x013c8cc01233F76e543AbEc5c2b440e6D4F540CF",
+      "symbol": "TIDE",
+      "fee": 1500
+    },
+    "Fastpass": {
+      "address": "0x44b2713F643cf52be9D6973304E8e1E49c610733",
+      "symbol": "FAST",
+      "fee": 1500
+    },
+    "Soft Serve": {
+      "address": "0x6d5dCB5187059ce6a4Fc05fc8710B03C8f1E8C2a",
+      "symbol": "SOFT",
+      "fee": 1000
+    },
+    "After Dark": {
+      "address": "0x75D909e84426FF25C8a42511644Df4d06aA80241",
+      "symbol": "DARK",
+      "fee": 1500
+    },
+    "Unusual": {
+      "address": "0x4193F39f3bb259758E20c2D2fE51c51AA7543394",
+      "symbol": "UNSL",
+      "fee": 2000
+    }
+  }
+}
