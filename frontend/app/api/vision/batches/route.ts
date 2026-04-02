@@ -73,29 +73,28 @@ async function getAliveBatchIds(batchIds: number[]): Promise<Set<number>> {
       transport: http(indexL3.rpcUrls.default.http[0], { timeout: 8_000 }),
     })
 
-    // L3 has no multicall3 — fire individual calls in parallel.
-    // Each call checks if the batch exists and has real activity.
-    const alive = new Set<number>()
-    let rpcErrors = 0
-    const checks = batchIds.map(async (id) => {
-      try {
-        await client.readContract({
-          address: visionAddress as `0x${string}`,
-          abi: [GET_BATCH_ABI],
-          functionName: 'getBatch',
-          args: [BigInt(id)],
-        })
-        // Call succeeded (no revert) — batch exists on-chain.
-        // A ghost batch (wrong contract / deleted) would revert.
-        alive.add(id)
-      } catch {
-        // Revert = batch doesn't exist on this contract.
-        // RPC timeout/network error also lands here.
-        rpcErrors++
-      }
+    // Single multicall3 — one RPC round-trip instead of N.
+    // multicall3 address configured in indexL3 chain definition (wagmi.ts).
+    const results = await client.multicall({
+      contracts: batchIds.map((id) => ({
+        address: visionAddress as `0x${string}`,
+        abi: [GET_BATCH_ABI] as const,
+        functionName: 'getBatch' as const,
+        args: [BigInt(id)],
+      })),
+      allowFailure: true,
     })
 
-    await Promise.all(checks)
+    const alive = new Set<number>()
+    let rpcErrors = 0
+    for (let i = 0; i < results.length; i++) {
+      if (results[i].status === 'success') {
+        alive.add(batchIds[i])
+      } else {
+        // Revert = batch doesn't exist on this contract.
+        rpcErrors++
+      }
+    }
 
     // Fail open: if ALL calls failed (RPC down, wrong contract address,
     // contract redeployed) return all candidates. The verification exists
