@@ -11,23 +11,45 @@ use sqlx::PgPool;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::LazyLock;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
 use super::broadcast::{PriceBroadcast, PriceBroadcastHub, SourcePriceBatch};
 
-/// Maximum rows per batched INSERT statement
-const BATCH_SIZE: usize = 500;
+/// Maximum rows per batched INSERT statement.
+/// Runtime-configurable via WRITE_CHANNEL_BATCH_SIZE (default: 500).
+static BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let size = std::env::var("WRITE_CHANNEL_BATCH_SIZE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(500);
+    // Runtime guard: BATCH_SIZE * columns must fit in PostgreSQL's 65535 bind limit.
+    // market_prices has 10 columns, so BATCH_SIZE * 10 must be <= 65535.
+    assert!(
+        size * 10 <= 65_535,
+        "WRITE_CHANNEL_BATCH_SIZE={size} exceeds PostgreSQL bind limit (max 6553)"
+    );
+    size
+});
 
-/// Compile-time guard: BATCH_SIZE * columns must fit in PostgreSQL's 65535 bind limit.
-/// market_prices has 10 columns, so BATCH_SIZE * 10 must be <= 65535.
-const _: () = assert!(BATCH_SIZE * 10 <= 65_535);
+/// How often to flush even if batch isn't full (seconds).
+/// Runtime-configurable via WRITE_CHANNEL_FLUSH_INTERVAL_SECS (default: 2).
+static FLUSH_INTERVAL_SECS: LazyLock<u64> = LazyLock::new(|| {
+    std::env::var("WRITE_CHANNEL_FLUSH_INTERVAL_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(2)
+});
 
-/// How often to flush even if batch isn't full (seconds)
-const FLUSH_INTERVAL_SECS: u64 = 2;
-
-/// Channel capacity — try_send drops on full instead of blocking
-const CHANNEL_CAPACITY: usize = 10_000;
+/// Channel capacity — try_send drops on full instead of blocking.
+/// Runtime-configurable via WRITE_CHANNEL_CAPACITY (default: 10000).
+static CHANNEL_CAPACITY: LazyLock<usize> = LazyLock::new(|| {
+    std::env::var("WRITE_CHANNEL_CAPACITY")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10_000)
+});
 
 /// Max retries for a failed DB batch before dropping
 const MAX_INSERT_RETRIES: u32 = 3;
@@ -110,7 +132,7 @@ pub type WriterAlive = Arc<AtomicBool>;
 
 /// Create a (sender, receiver, alive_flag) triple for the write channel.
 pub fn channel() -> (PriceWriteChannel, mpsc::Receiver<WriteMsg>, WriterAlive) {
-    let (tx, rx) = mpsc::channel(CHANNEL_CAPACITY);
+    let (tx, rx) = mpsc::channel(*CHANNEL_CAPACITY);
     let alive = Arc::new(AtomicBool::new(false));
     (PriceWriteChannel { tx }, rx, alive)
 }
@@ -159,9 +181,9 @@ impl BatchWriter {
         info!("[BatchWriter] Started — draining price channel");
         self.alive.store(true, Ordering::SeqCst);
 
-        let mut buffer: Vec<PriceRow> = Vec::with_capacity(BATCH_SIZE * 2);
+        let mut buffer: Vec<PriceRow> = Vec::with_capacity(*BATCH_SIZE * 2);
         let mut flush_interval = tokio::time::interval(
-            std::time::Duration::from_secs(FLUSH_INTERVAL_SECS),
+            std::time::Duration::from_secs(*FLUSH_INTERVAL_SECS),
         );
         // R3-C2: Delay mode prevents overdue ticks from accumulating and starving recv()
         flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -189,7 +211,7 @@ impl BatchWriter {
                         Some(WriteMsg::Prices(rows)) => {
                             buffer.extend(rows);
                             // Flush immediately if buffer is large enough
-                            if buffer.len() >= BATCH_SIZE {
+                            if buffer.len() >= *BATCH_SIZE {
                                 self.flush(&mut buffer).await;
                             }
                         }
@@ -324,8 +346,8 @@ impl BatchWriter {
         let mut inserted = 0usize;
 
         // Process BATCH_SIZE chunks from the front of buffer, leaving remainder in place
-        while buffer.len() >= BATCH_SIZE {
-            let chunk: Vec<PriceRow> = buffer.drain(..BATCH_SIZE).collect();
+        while buffer.len() >= *BATCH_SIZE {
+            let chunk: Vec<PriceRow> = buffer.drain(..*BATCH_SIZE).collect();
             total += chunk.len();
             match self.insert_history_batch(&chunk).await {
                 Ok(n) => {

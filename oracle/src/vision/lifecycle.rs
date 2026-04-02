@@ -56,7 +56,13 @@ pub type CosignRouter = Arc<DashMap<H256, mpsc::Sender<IncomingCreateBatchSign>>
 
 /// How long the leader waits for follower co-signs per attempt (seconds).
 /// Short timeout + retry is better than one long timeout — keeps the pipeline moving.
-const CREATE_BATCH_COSIGN_TIMEOUT_SECS: u64 = 30;
+/// Runtime-configurable via VISION_COSIGN_TIMEOUT_SECS (default: 30).
+fn cosign_timeout_secs() -> u64 {
+    std::env::var("VISION_COSIGN_TIMEOUT_SECS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(30)
+}
 
 /// Stagger interval between sources to avoid thundering herd.
 const SOURCE_STAGGER_SECS: u64 = 2;
@@ -202,8 +208,12 @@ impl BatchLifecycleManager {
         // Semaphore: limit concurrent source processing to avoid thundering herd.
         // Per-source co-sign channels eliminate cross-source message theft,
         // so concurrency > 1 is safe.
-        const MAX_CONCURRENT_SOURCES: usize = 10;
-        let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_SOURCES));
+        let max_concurrent_sources: usize = std::env::var("VISION_MAX_CONCURRENT_SOURCES")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10);
+        info!(max_concurrent_sources, "Semaphore capacity (env: VISION_MAX_CONCURRENT_SOURCES)");
+        let semaphore = Arc::new(Semaphore::new(max_concurrent_sources));
 
         // Poll interval: 1 second (fine-grained enough to respect stagger offsets)
         let poll_interval = tokio::time::Duration::from_secs(1);
@@ -919,7 +929,7 @@ impl BatchLifecycleManager {
 
                         // Collect co-signs from this source's dedicated channel
                         let deadline = tokio::time::Instant::now()
-                            + std::time::Duration::from_secs(CREATE_BATCH_COSIGN_TIMEOUT_SECS);
+                            + std::time::Duration::from_secs(cosign_timeout_secs());
 
                         loop {
                             if collected_sigs.len() >= threshold {
