@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { initPostHog, posthog } from '@/lib/posthog'
+import { posthog } from '@/lib/posthog'
 
 function PostHogPageTrackerInner() {
   const pathname = usePathname()
@@ -34,10 +34,6 @@ function PostHogPageTracker() {
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    initPostHog()
-  }, [])
-
   return (
     <>
       <PostHogPageTracker />

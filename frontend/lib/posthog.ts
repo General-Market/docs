@@ -1,6 +1,6 @@
 import posthog from 'posthog-js'
 
-export function initPostHog() {
+function initPostHog() {
   if (typeof window === 'undefined') return
   if (posthog.__loaded) return
 
@@ -37,5 +37,10 @@ export function initPostHog() {
     persistence: 'localStorage+cookie',
   })
 }
+
+// Initialize eagerly on import — the window guard prevents SSR execution.
+// This ensures PostHog is loaded before any useEffect fires, so the
+// initial landing page view is never dropped.
+initPostHog()
 
 export { posthog }
