@@ -617,7 +617,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Initialize Postgres pool, chain listener, and API routes
             match sqlx::postgres::PgPoolOptions::new()
-                .max_connections(3)
+                .max_connections(15)
                 .idle_timeout(std::time::Duration::from_secs(300))
                 .connect(&vision_cfg.database_url).await {
                 Ok(pool) => {
