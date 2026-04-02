@@ -14,6 +14,7 @@ import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicate-ordinary
 import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop/WhopReplicateComposition";
 import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandComposition";
 import { solanaBgMeta } from "./compositions/solana-bg/SolanaBgComposition";
+import { webglPicksMeta, webglSceneMetas } from "./compositions/webgl-picks/WebGLPicksComposition";
 
 // remotion-scenes showcases
 import {
@@ -185,6 +186,29 @@ export const RemotionRoot: React.FC = () => {
       />
       <Folder name="Whop-Scenes">
         {whopSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ WEBGL PICKS — Codrops / shader references ═══ */}
+      <Composition
+        id={webglPicksMeta.id}
+        component={webglPicksMeta.component}
+        durationInFrames={webglPicksMeta.durationInFrames}
+        fps={webglPicksMeta.fps}
+        width={webglPicksMeta.width}
+        height={webglPicksMeta.height}
+      />
+      <Folder name="WebGL-Picks">
+        {webglSceneMetas.map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
