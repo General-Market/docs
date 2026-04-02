@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Fund Manager — one bot, many vaults, source-specific strategies."""
 
+import json
 import logging
 import os
 import random
+import signal
 import sys
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 from framework.core import Strategy, encode_bitmap, hash_bitmap, load_strategy
 from framework.chain import (
@@ -26,6 +30,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("fund-manager")
 DECIMALS = 18
+
+STATE_FILE = "fund-manager-state.json"
+
+
+# ── Config ─────────────────────────────────────────────────────
 
 
 def load_funds_config(path="funds.toml"):
@@ -48,6 +57,9 @@ def resolve_source_ids(batches):
     return mapping
 
 
+# ── Fund state ─────────────────────────────────────────────────
+
+
 class FundState:
     """Per-fund runtime state."""
 
@@ -58,8 +70,10 @@ class FundState:
         self.sources = set(fund_cfg.get("sources", []))
         self.vault = vault_executor
         self.strategy = strategy
-        self.active_batches = {}   # batch_id -> deposit_wei
-        self.joined_batch_ids = set()
+        self.active_batches: dict[int, int] = {}   # batch_id -> deposit_wei
+        self.joined_batch_ids: set[int] = set()
+        self.joined_total: int = 0
+        self.reconciled_total: int = 0
 
     def matches_source(self, source_name):
         if not self.sources:
@@ -67,7 +81,143 @@ class FundState:
         return source_name in self.sources
 
 
-def run_cycle(funds, executor, oracle_urls, feed, cfg):
+# ── State persistence ──────────────────────────────────────────
+
+
+def save_state(funds, state_file=STATE_FILE):
+    state = {
+        "last_cycle": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "funds": {},
+    }
+    for fund in funds:
+        try:
+            info = fund.vault.get_vault_info()
+            total_assets = info.get("total_assets", 0)
+            total_supply = max(info.get("total_supply", 1), 1)
+            nav = total_assets / total_supply
+        except Exception:
+            nav = 0.0
+            total_assets = 0
+
+        state["funds"][fund.name] = {
+            "vault": fund.vault_addr,
+            "active_batches": list(fund.active_batches.keys()),
+            "joined_total": fund.joined_total,
+            "reconciled_total": fund.reconciled_total,
+            "total_assets_usdc": round(total_assets / 1e18, 4),
+            "nav": round(nav, 6),
+        }
+    try:
+        with open(state_file, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        log.warning("State save failed: %s", e)
+
+
+def load_state(funds, state_file=STATE_FILE):
+    if not Path(state_file).exists():
+        return
+    try:
+        with open(state_file) as f:
+            state = json.load(f)
+    except Exception as e:
+        log.warning("State load failed: %s", e)
+        return
+
+    for fund in funds:
+        fund_state = state.get("funds", {}).get(fund.name)
+        if not fund_state:
+            continue
+        for bid in fund_state.get("active_batches", []):
+            fund.joined_batch_ids.add(bid)
+            fund.active_batches.setdefault(bid, 0)
+        fund.joined_total = fund_state.get("joined_total", 0)
+        fund.reconciled_total = fund_state.get("reconciled_total", 0)
+        log.info(
+            "[%s] Resumed: %d active batches, %d joined total",
+            fund.name,
+            len(fund.active_batches),
+            fund.joined_total,
+        )
+
+
+# ── Reconciliation ─────────────────────────────────────────────
+
+
+def reconcile_settled_batches(fund, executor):
+    """Check all tracked batches and reconcile any that have settled on-chain."""
+    for bid in list(fund.active_batches.keys()):
+        # First check: is the batch settled? The contract marks it via activeDeposits=0.
+        # The old approach checked get_active_deposit()==0 and tried to reconcile,
+        # but that fires too early (batch is still live, just empty). Now we ask the
+        # chain directly for batch state, then confirm via active deposit.
+        try:
+            batch_info = executor.get_batch_info(bid)
+            if batch_info.get("paused"):
+                # Paused is not settled — skip.
+                continue
+        except Exception:
+            continue
+
+        # get_active_deposit == 0 means either settled or was never joined.
+        # We only track batches we joined, so 0 means settled.
+        try:
+            dep = fund.vault.get_active_deposit(bid)
+            if dep > 0:
+                continue  # still active
+        except Exception:
+            continue
+
+        # Settled. Try to reconcile.
+        try:
+            fund.vault.reconcile(bid)
+            log.info("[%s] Reconciled batch %d", fund.name, bid)
+            fund.reconciled_total += 1
+        except Exception as e:
+            if "BatchAlreadyReconciled" in str(e):
+                fund.reconciled_total += 1  # already done, count it
+            else:
+                log.warning("[%s] Reconcile %d failed: %s", fund.name, bid, e)
+                continue  # leave in active_batches, retry next cycle
+
+        fund.active_batches.pop(bid, None)
+        fund.joined_batch_ids.discard(bid)
+
+
+# ── NAV table ──────────────────────────────────────────────────
+
+
+def log_nav_table(funds):
+    """Log a compact NAV summary across all vaults."""
+    lines = ["NAV summary:"]
+    for fund in funds:
+        try:
+            info = fund.vault.get_vault_info()
+            total = info.get("total_assets", 0)
+            supply = max(info.get("total_supply", 1), 1)
+            nav = total / supply
+            idle = info.get("idle_usdc", 0) / 1e18
+            active = info.get("active_capital", 0) / 1e18
+            lines.append(
+                "  %-20s  NAV=%.5f  total=%.2f  active=%.2f  idle=%.2f  batches=%d"
+                % (
+                    fund.name,
+                    nav,
+                    total / 1e18,
+                    active,
+                    idle,
+                    len(fund.active_batches),
+                )
+            )
+        except Exception as e:
+            lines.append("  %-20s  (read error: %s)" % (fund.name, e))
+    log.info("\n".join(lines))
+
+
+# ── Main cycle ─────────────────────────────────────────────────
+
+
+def run_cycle(funds, executor, oracle_urls, feed, cfg, cycle_number=0):
     """One cycle: join new batches per fund, reconcile settled ones."""
     batches = fetch_batches(cfg["vision_api"], executor=executor)
     source_map = resolve_source_ids(batches)
@@ -139,10 +289,14 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg):
             else:
                 markets = fetch_markets(cfg["data_node"], market_ids)
 
-            # Strategy predict (with historical context when available)
-            bets = fund.strategy.predict_with_context(
-                markets, feed=feed, batch_id=str(batch_id),
-            )
+            # Strategy predict — use context-aware version when available
+            if hasattr(fund.strategy, "predict_with_context"):
+                bets = fund.strategy.predict_with_context(
+                    markets, feed=feed, batch_id=str(batch_id),
+                )
+            else:
+                bets = fund.strategy.predict(markets)
+
             while len(bets) < market_count:
                 bets.append(random.choice(["UP", "DOWN"]))
 
@@ -163,6 +317,7 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg):
                 )
                 fund.joined_batch_ids.add(batch_id)
                 fund.active_batches[batch_id] = deposit_wei
+                fund.joined_total += 1
                 log.info(
                     "[%s] Joined batch %d (%s) — %d markets, %d UP / %d DOWN",
                     fund.name, batch_id, source_name, market_count,
@@ -188,32 +343,9 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg):
 
     # Reconcile settled batches
     for fund in funds:
-        settled = []
-        for bid in list(fund.active_batches.keys()):
-            try:
-                dep = fund.vault.get_active_deposit(bid)
-                if dep > 0:
-                    continue
-            except Exception:
-                pass
+        reconcile_settled_batches(fund, executor)
 
-            try:
-                fund.vault.reconcile(bid)
-                settled.append(bid)
-                log.info("[%s] Reconciled batch %d", fund.name, bid)
-            except Exception as e:
-                if "BatchAlreadyReconciled" in str(e):
-                    settled.append(bid)
-                else:
-                    log.debug(
-                        "[%s] Batch %d reconcile skipped: %s",
-                        fund.name, bid, e,
-                    )
-
-        for bid in settled:
-            fund.active_batches.pop(bid, None)
-
-        # Log vault state
+        # Log per-fund vault state
         try:
             info = fund.vault.get_vault_info()
             nav = info.get("total_assets", 0) / max(info.get("total_supply", 1), 1)
@@ -227,6 +359,13 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg):
             )
         except Exception:
             pass
+
+    # Periodic NAV table every 10 cycles
+    if cycle_number % 10 == 0:
+        log_nav_table(funds)
+
+
+# ── Main ───────────────────────────────────────────────────────
 
 
 def main():
@@ -294,8 +433,6 @@ def main():
         log.error("No funds with vault addresses — nothing to manage")
         sys.exit(1)
 
-    log.info("Fund Manager started: %d funds", len(funds))
-
     # Oracle discovery
     oracle_urls_raw = manager_cfg.get("oracle_urls", [])
     oracle_discovery = manager_cfg.get("oracle_discovery", "static")
@@ -305,7 +442,7 @@ def main():
             return discover_oracles("dynamic", oracle_urls_raw, executor.w3)
         return oracle_urls_raw
 
-    # Feed
+    # Feed — connect early so history accumulates before first predict
     if not ws_url and data_node:
         ws_url = (
             data_node.replace("http://", "ws://")
@@ -314,26 +451,49 @@ def main():
         )
     feed = VisionFeed(ws_url=ws_url, http_url=data_node)
 
-    # Main loop
+    # Subscribe to any batch IDs we already know about from persisted state
+    load_state(funds, STATE_FILE)
+    all_known_batch_ids = set()
+    for fund in funds:
+        all_known_batch_ids.update(str(bid) for bid in fund.active_batches)
+    if all_known_batch_ids:
+        feed.subscribe(list(all_known_batch_ids))
+        log.info("Pre-subscribed to %d known batch feeds", len(all_known_batch_ids))
+
+    log.info("Fund Manager started: %d funds", len(funds))
+
+    def shutdown(signum=None, frame=None):
+        log.info("Shutting down...")
+        save_state(funds)
+        log_nav_table(funds)
+        feed.close()
+        log.info("Fund Manager stopped. State saved.")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+
+    # One-shot mode
     if "--once" in sys.argv:
         urls = oracle_urls_fn()
-        run_cycle(funds, executor, urls, feed, shared_cfg)
+        run_cycle(funds, executor, urls, feed, shared_cfg, cycle_number=0)
+        save_state(funds)
         feed.close()
         return
 
+    cycle = 0
     try:
         while True:
             try:
                 urls = oracle_urls_fn()
-                run_cycle(funds, executor, urls, feed, shared_cfg)
+                run_cycle(funds, executor, urls, feed, shared_cfg, cycle_number=cycle)
+                save_state(funds)
+                cycle += 1
             except Exception as e:
                 log.error("Cycle error: %s", e, exc_info=True)
             time.sleep(poll_interval)
     except KeyboardInterrupt:
-        pass
-    finally:
-        feed.close()
-        log.info("Fund Manager stopped")
+        shutdown()
 
 
 if __name__ == "__main__":
