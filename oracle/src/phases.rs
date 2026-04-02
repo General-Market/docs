@@ -2603,6 +2603,7 @@ where
     // This eliminates race conditions where bridge ops use a referenceNonce that doesn't
     // exist on-chain yet (causing NonceFuture) or points to a stale snapshot (SnapshotTooOld).
     const MIRROR_SYNC_RECEIPT_TIMEOUT: u64 = 30;
+    let mut mirror_reverted = false;
     match settlement_writer.wait_for_receipt(tx_hash, MIRROR_SYNC_RECEIPT_TIMEOUT).await {
         Ok(receipt) => {
             let status = receipt.status.map(|s| s.as_u64()).unwrap_or(0);
@@ -2627,6 +2628,7 @@ where
                 }
             } else {
                 // Tx reverted — do NOT update nonce, keep old valid one
+                mirror_reverted = true;
                 warn!(cycle, sync_nonce, ?tx_hash, "Mirror sync tx reverted (status=0), keeping previous registry nonce");
             }
         }
@@ -2663,6 +2665,10 @@ where
                 warn!(cycle, error = %e, "L3 snapshot refresh failed");
             }
         }
+    }
+
+    if mirror_reverted {
+        return Err("Mirror sync tx reverted (INFRA-002)".into());
     }
 
     Ok(())

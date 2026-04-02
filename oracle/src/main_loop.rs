@@ -1,7 +1,7 @@
 //! The main consensus loop for the oracle node.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use oracle::bootstrap::OracleComponents;
 use oracle::{
     BackendNavCalculator, NavCalculator, NavSignHandler, PriceFetcher, StubItpRegistryReader,
@@ -280,6 +280,9 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
         let mirror_sync_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_first = Arc::new(AtomicBool::new(true)); // Trigger sync on first eligible cycle
         let mirror_sync_needed = Arc::new(AtomicBool::new(false)); // Set by SnapshotTooOld errors to trigger immediate retry
+        // Exponential backoff for mirror sync failures (INFRA-002 reverts)
+        let mirror_sync_fail_count = Arc::new(AtomicU32::new(0));
+        let mirror_sync_next_retry = Arc::new(std::sync::atomic::AtomicU64::new(0));
         // vision_ops_active deleted (round-only purge)
 
         // Consecutive price failure counter (circuit breaker)
@@ -682,7 +685,9 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                         info!(cycle = current_cycle, node_index = node_index_for_task,
                             "Leader: clearing mirror_sync_first, requesting immediate sync");
                     }
-                    if is_sync_leader && (snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
+                    // Exponential backoff: skip sync if we haven't reached the next retry cycle
+                    let backoff_ready = current_cycle >= mirror_sync_next_retry.load(std::sync::atomic::Ordering::Acquire);
+                    if is_sync_leader && (snapshot_stale || current_cycle % 500 == 0) && backoff_ready && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
@@ -701,18 +706,32 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                                     let l3w = consensus_chain_writer_for_task.clone();
                                     let cycle = current_cycle;
                                     let msn_sync = mirror_sync_needed.clone();
+                                    let fail_count = mirror_sync_fail_count.clone();
+                                    let next_retry = mirror_sync_next_retry.clone();
                                     tokio::spawn(async move {
                                         let _guard = FlagGuard(flag);
                                         match tokio::time::timeout(
                                             std::time::Duration::from_secs(90),
                                             mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle, l3w.as_ref(), Some(oracle_reg_addr)),
                                         ).await {
-                                            Ok(Err(e)) => warn!(cycle, error = %e, "Mirror registry sync failed"),
+                                            Ok(Err(e)) => {
+                                                let prev = fail_count.fetch_add(1, Ordering::AcqRel);
+                                                let delay = std::cmp::min(2u64.saturating_pow(prev + 1), 600);
+                                                next_retry.store(cycle + delay, std::sync::atomic::Ordering::Release);
+                                                warn!(cycle, error = %e, backoff_cycles = delay, "Mirror sync failed, next retry in {} cycles", delay);
+                                            },
                                             Ok(Ok(())) => {
-                                                // Only clear on confirmed success
+                                                // Reset backoff on success
+                                                fail_count.store(0, Ordering::Release);
+                                                next_retry.store(0, std::sync::atomic::Ordering::Release);
                                                 msn_sync.store(false, Ordering::Release);
                                             },
-                                            Err(_) => warn!(cycle, "Mirror registry sync timed out after 90s, releasing flag"),
+                                            Err(_) => {
+                                                let prev = fail_count.fetch_add(1, Ordering::AcqRel);
+                                                let delay = std::cmp::min(2u64.saturating_pow(prev + 1), 600);
+                                                next_retry.store(cycle + delay, std::sync::atomic::Ordering::Release);
+                                                warn!(cycle, backoff_cycles = delay, "Mirror sync timed out after 90s, next retry in {} cycles", delay);
+                                            },
                                         }
                                     });
                                 }
