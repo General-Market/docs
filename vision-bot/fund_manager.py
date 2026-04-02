@@ -46,14 +46,20 @@ def load_funds_config(path="funds.toml"):
         return tomllib.load(f)
 
 
-def resolve_source_ids(batches):
-    """Build sourceId (hex) -> source_name mapping from active batches."""
+def build_source_id_map(fund_sources):
+    """Build keccak256(source_name) -> source_name for all fund sources.
+
+    The Vision API returns sourceId as hex (keccak256 of the source name).
+    We precompute the reverse mapping from all known fund source names.
+    """
+    from web3 import Web3
+
     mapping = {}
-    for b in batches:
-        sid = b.get("source_id") or b.get("sourceId")
-        name = b.get("source_name") or b.get("sourceName", "")
-        if sid and name:
-            mapping[sid] = name
+    for name in fund_sources:
+        source_hash = Web3.keccak(text=name).hex()
+        # API returns with 0x prefix
+        mapping["0x" + source_hash if not source_hash.startswith("0x") else source_hash] = name
+        mapping[source_hash] = name  # Also map without prefix
     return mapping
 
 
@@ -217,79 +223,97 @@ def log_nav_table(funds):
 # ── Main cycle ─────────────────────────────────────────────────
 
 
-def run_cycle(funds, executor, oracle_urls, feed, cfg, cycle_number=0):
+def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_number=0):
     """One cycle: join new batches per fund, reconcile settled ones."""
-    batches = fetch_batches(cfg["vision_api"], executor=executor)
-    source_map = resolve_source_ids(batches)
+    all_batches = fetch_batches(cfg["vision_api"], executor=executor)
+    # Filter: only batches with known market count (skip legacy batches without config)
+    batches = [b for b in all_batches if b.get("market_count", 0) > 0]
+    if not batches:
+        # Fallback: try all batches (market count will be resolved from data-node)
+        batches = all_batches
 
     deposit_wei = int(cfg.get("deposit_per_batch", 10) * 10**DECIMALS)
     stake_wei = int(cfg.get("stake_per_tick", 10) * 10**DECIMALS)
 
+    # Skip vault idle pre-cache on first cycles — too many RPC calls.
+    # Assume idle = seed amount (50 USDC) if no batches active.
+    SEED = 50 * 10**DECIMALS
+
+    joined_this_cycle = 0
+    log.info("Processing %d batches across %d funds...", len(batches), len(funds))
     for batch in batches:
         batch_id = batch.get("id", batch.get("batch_id"))
         if batch_id is None or batch.get("paused"):
             continue
 
-        source_name = source_map.get(
-            batch.get("source_id") or batch.get("sourceId"), ""
-        )
+        # Source name: try direct name first (from vision-batches.json fallback),
+        # then try keccak256 hash lookup (from API)
+        source_name = batch.get("source_name") or batch.get("sourceName") or ""
+        if not source_name:
+            raw_sid = batch.get("source_id") or batch.get("sourceId") or ""
+            source_name = source_id_map.get(raw_sid, "")
 
-        for fund in funds:
-            if not fund.matches_source(source_name):
-                continue
-            if batch_id in fund.joined_batch_ids:
-                continue
+        matched_funds = [f for f in funds if f.matches_source(source_name) and batch_id not in f.joined_batch_ids]
+        if not matched_funds:
+            continue
 
-            # Check idle capital
-            try:
-                idle = fund.vault.get_vault_info().get("idle_usdc", 0)
-                if idle < deposit_wei:
-                    continue
-            except Exception:
-                continue
+        # Filter by idle capital
+        matched_funds = [f for f in matched_funds if (SEED - sum(f.active_batches.values())) >= deposit_wei]
+        if not matched_funds:
+            continue
 
-            # Get config hash from chain
+        # Fetch batch config ONCE per batch (not per fund)
+        config_hash = batch.get("config_hash") or batch.get("configHash") or ""
+        if not config_hash:
             try:
                 info = executor.get_batch_info(batch_id)
                 config_hash = info["configHash"]
             except Exception as e:
-                log.warning(
-                    "[%s] Batch %d: cannot read configHash: %s",
-                    fund.name, batch_id, e,
-                )
+                log.warning("Batch %d: cannot read configHash: %s", batch_id, e)
                 continue
 
-            # Get market config from data-node
-            if isinstance(config_hash, bytes):
-                ch_hex = "0x" + config_hash.hex()
-            elif isinstance(config_hash, str):
-                ch_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
-            else:
-                ch_hex = ""
+        if isinstance(config_hash, bytes):
+            ch_hex = "0x" + config_hash.hex()
+        elif isinstance(config_hash, str):
+            ch_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
+        else:
+            continue
 
-            batch_cfg = fetch_batch_config(cfg["data_node"], ch_hex)
-            if not batch_cfg or not batch_cfg.get("markets"):
+        batch_cfg = fetch_batch_config(cfg["data_node"], ch_hex)
+        if not batch_cfg or not batch_cfg.get("markets"):
+            log.debug("Batch %d: no market config from data-node", batch_id)
+            continue
+        market_ids = [m["assetId"] for m in batch_cfg["markets"]]
+        market_count = len(market_ids)
+
+        # Get prices ONCE per batch
+        feed.subscribe([str(batch_id)])
+        raw_prices = feed.prices(str(batch_id))
+        if raw_prices:
+            markets = [
+                {
+                    "id": mid,
+                    "price": raw_prices.get(mid, {}).get("price", 0),
+                    "change": raw_prices.get(mid, {}).get("change_pct"),
+                    "volume": raw_prices.get(mid, {}).get("volume_24h"),
+                }
+                for mid in market_ids
+            ]
+        else:
+            markets = fetch_markets(cfg["data_node"], market_ids)
+
+        # Check tick lock once per batch
+        try:
+            if executor.is_tick_locked(batch_id):
                 continue
-            market_ids = [m["assetId"] for m in batch_cfg["markets"]]
-            market_count = len(market_ids)
+        except Exception:
+            pass
 
-            # Get prices
-            feed.subscribe([str(batch_id)])
-            raw_prices = feed.prices(str(batch_id))
-            if raw_prices:
-                markets = [
-                    {
-                        "id": mid,
-                        "price": raw_prices.get(mid, {}).get("price", 0),
-                        "change": raw_prices.get(mid, {}).get("change_pct"),
-                        "volume": raw_prices.get(mid, {}).get("volume_24h"),
-                    }
-                    for mid in market_ids
-                ]
-            else:
-                markets = fetch_markets(cfg["data_node"], market_ids)
+        log.info("Batch %d source=%s: %d funds, %d markets", batch_id, source_name, len(matched_funds), market_count)
 
-            # Strategy predict — use context-aware version when available
+        # Per-fund: predict, join, submit bitmap
+        for fund in matched_funds:
+            # Strategy predict — each fund has its own strategy
             if hasattr(fund.strategy, "predict_with_context"):
                 bets = fund.strategy.predict_with_context(
                     markets, feed=feed, batch_id=str(batch_id),
@@ -303,13 +327,6 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, cycle_number=0):
             bitmap = encode_bitmap(bets, market_count)
             bm_hash = hash_bitmap(bitmap)
 
-            # Skip if tick locked
-            try:
-                if executor.is_tick_locked(batch_id):
-                    continue
-            except Exception:
-                pass
-
             # Join via vault
             try:
                 fund.vault.join_batch(
@@ -318,6 +335,7 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, cycle_number=0):
                 fund.joined_batch_ids.add(batch_id)
                 fund.active_batches[batch_id] = deposit_wei
                 fund.joined_total += 1
+                joined_this_cycle += 1
                 log.info(
                     "[%s] Joined batch %d (%s) — %d markets, %d UP / %d DOWN",
                     fund.name, batch_id, source_name, market_count,
@@ -433,6 +451,13 @@ def main():
         log.error("No funds with vault addresses — nothing to manage")
         sys.exit(1)
 
+    # Build source name → sourceId (keccak256) reverse map
+    all_source_names = set()
+    for fund in funds:
+        all_source_names.update(fund.sources)
+    source_id_map = build_source_id_map(all_source_names)
+    log.info("Source ID map: %d sources → keccak256 hashes", len(source_id_map) // 2)
+
     # Oracle discovery
     oracle_urls_raw = manager_cfg.get("oracle_urls", [])
     oracle_discovery = manager_cfg.get("oracle_discovery", "static")
@@ -476,7 +501,7 @@ def main():
     # One-shot mode
     if "--once" in sys.argv:
         urls = oracle_urls_fn()
-        run_cycle(funds, executor, urls, feed, shared_cfg, cycle_number=0)
+        run_cycle(funds, executor, urls, feed, shared_cfg, source_id_map, cycle_number=0)
         save_state(funds)
         feed.close()
         return
@@ -486,7 +511,7 @@ def main():
         while True:
             try:
                 urls = oracle_urls_fn()
-                run_cycle(funds, executor, urls, feed, shared_cfg, cycle_number=cycle)
+                run_cycle(funds, executor, urls, feed, shared_cfg, source_id_map, cycle_number=cycle)
                 save_state(funds)
                 cycle += 1
             except Exception as e:

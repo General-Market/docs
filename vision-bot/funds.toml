@@ -5,13 +5,13 @@ factory = "0xbc418956A20DB5C343b56b6AE947AF4896b23A1e"
 vision_address = "0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649"
 usdc_address = "0x2710e49EBb807A0cB9369F13Ba24Bd809809a827"
 oracle_registry_address = "0x2F12F19a111cc25b114C2bcc535519854fcf83c7"
-vision_api = "http://142.132.164.24:10001"
-data_node = "http://142.132.164.24:8200"
+vision_api = "http://localhost:10001"
+data_node = "http://localhost:8200"
 poll_interval = 30
 deposit_per_batch = 10.0
 stake_per_tick = 10.0
 oracle_discovery = "static"
-oracle_urls = ["http://142.132.164.24:10001", "http://142.132.164.24:10002", "http://142.132.164.24:10003"]
+oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
 # ── ECONOMIC / adzuna ──
 
