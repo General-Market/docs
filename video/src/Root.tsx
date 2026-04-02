@@ -13,6 +13,7 @@ import { replicateMeta, sceneMetas } from "./compositions/replicate/ReplicateCom
 import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicate-ordinaryfolk/OFReplicateComposition";
 import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop/WhopReplicateComposition";
 import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandComposition";
+import { solanaBgMeta } from "./compositions/solana-bg/SolanaBgComposition";
 
 // remotion-scenes showcases
 import {
@@ -162,6 +163,16 @@ export const RemotionRoot: React.FC = () => {
           />
         ))}
       </Folder>
+
+      {/* ═══ SOLANA BG — lenticular prismatic background ═══ */}
+      <Composition
+        id={solanaBgMeta.id}
+        component={solanaBgMeta.component}
+        durationInFrames={solanaBgMeta.durationInFrames}
+        fps={solanaBgMeta.fps}
+        width={solanaBgMeta.width}
+        height={solanaBgMeta.height}
+      />
 
       {/* ═══ WHOP — replicate ═══ */}
       <Composition
