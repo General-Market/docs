@@ -10,6 +10,7 @@ import { toInternalId } from '@/lib/vision/source-ids'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
+import { getFundCountForSource } from '@/hooks/vaults/useFundBranding'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { SpringCard } from '@/components/ui/spring'
 
@@ -78,6 +79,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const t = useTranslations('vision')
   const router = useRouter()
   const queryClient = useQueryClient()
+  const fundCount = getFundCountForSource(source.id)
 
   // Fetch per-source data on mount — warms React Query cache for detail page navigation.
   // The grid passes metaAssetCount for immediate display; snapshot provides generatedAt.
@@ -221,6 +223,15 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
             </span>
           </div>
         </div>
+
+        {/* Fund count badge */}
+        {fundCount > 0 && (
+          <div className="mt-1.5 mb-0.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-brand bg-brand/8 px-1.5 py-0.5 rounded-full">
+              <span>{fundCount} fund{fundCount !== 1 ? 's' : ''}</span>
+            </span>
+          </div>
+        )}
 
         {/* Metrics row */}
         <div ref={metricsRef} className="grid grid-cols-2 sm:grid-cols-4 border-t border-b border-border-light -mx-3 px-3 sm:-mx-5 sm:px-5 mt-2 sm:mt-3">

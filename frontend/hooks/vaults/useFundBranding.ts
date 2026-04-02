@@ -14,6 +14,12 @@ export interface FundBranding {
   sourceLogos: string[]
 }
 
+export interface SourceDisplay {
+  sourceId: string
+  name: string
+  logo: string
+}
+
 const CATEGORY_ORDER = [
   'Crypto',
   'Weather & Geophysical',
@@ -70,4 +76,36 @@ export function getFundsByCategory(category: string): FundBranding[] {
   return fundData.funds
     .filter(f => f.category === category)
     .map(resolveBranding)
+}
+
+/** All unique primary sources that have at least one fund, in stable order */
+export function getAllFundSources(): SourceDisplay[] {
+  const seen = new Set<string>()
+  const result: SourceDisplay[] = []
+  for (const fund of fundData.funds) {
+    const primarySource = fund.sources[0]
+    if (!primarySource || seen.has(primarySource)) continue
+    seen.add(primarySource)
+    const display = sourcesData.sources.find(
+      s => s.sourceId === primarySource || (s.internalIds as string[] | undefined)?.includes(primarySource)
+    )
+    result.push({
+      sourceId: primarySource,
+      name: display?.name ?? primarySource,
+      logo: display?.logo ?? '',
+    })
+  }
+  return result
+}
+
+/** Funds whose primary source matches sourceId */
+export function getFundsBySource(sourceId: string): FundBranding[] {
+  return fundData.funds
+    .filter(f => f.sources[0] === sourceId)
+    .map(resolveBranding)
+}
+
+/** Number of funds for a given primary source — cheap, no branding resolution */
+export function getFundCountForSource(sourceId: string): number {
+  return fundData.funds.filter(f => f.sources.includes(sourceId)).length
 }

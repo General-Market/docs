@@ -3,7 +3,11 @@
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useVaults } from '@/hooks/vaults/useVaults'
-import { getAllCategories, getAllFundsBranded, getFundsByCategory } from '@/hooks/vaults/useFundBranding'
+import {
+  getAllFundsBranded,
+  getAllFundSources,
+  getFundsBySource,
+} from '@/hooks/vaults/useFundBranding'
 import { VaultCard } from './VaultCard'
 import { VaultActions } from './VaultActions'
 import { CreateVaultModal } from './CreateVaultModal'
@@ -16,15 +20,18 @@ function VaultsSkeleton() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="space-y-3">
           <div className="h-5 w-40 bg-black/[0.06] rounded animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {[0, 1, 2].map((j) => (
-              <div key={j} className="border border-border-light rounded-md bg-card p-5 space-y-3 animate-pulse">
-                <div className="h-5 w-32 bg-black/[0.06] rounded" />
-                <div className="h-4 w-24 bg-black/[0.06] rounded" />
-                <div className="h-8 w-20 bg-black/[0.06] rounded" />
-                <div className="flex gap-4">
-                  <div className="h-4 w-16 bg-black/[0.06] rounded" />
-                  <div className="h-4 w-16 bg-black/[0.06] rounded" />
+          <div className="flex gap-3 overflow-hidden">
+            {[0, 1, 2, 3].map((j) => (
+              <div
+                key={j}
+                className="shrink-0 w-[240px] border border-border-light rounded-md bg-card p-3.5 space-y-2.5 animate-pulse"
+              >
+                <div className="h-4 w-28 bg-black/[0.06] rounded" />
+                <div className="h-3 w-full bg-black/[0.06] rounded" />
+                <div className="flex gap-3">
+                  <div className="h-3 w-12 bg-black/[0.06] rounded" />
+                  <div className="h-3 w-12 bg-black/[0.06] rounded" />
+                  <div className="h-3 w-12 bg-black/[0.06] rounded" />
                 </div>
               </div>
             ))}
@@ -35,30 +42,73 @@ function VaultsSkeleton() {
   )
 }
 
-/** Collect unique source logos for a category */
-function CategorySourceLogos({ category }: { category: string }) {
-  const funds = getFundsByCategory(category)
-  const logos = [...new Set(funds.flatMap(f => f.sourceLogos))]
-  if (logos.length === 0) return null
+interface SourceSectionProps {
+  sourceId: string
+  sourceName: string
+  sourceLogo: string
+  vaults: VaultInfo[]
+  onSelect: (v: VaultInfo) => void
+}
+
+function SourceSection({ sourceId, sourceName, sourceLogo, vaults, onSelect }: SourceSectionProps) {
+  const brandedFunds = getFundsBySource(sourceId)
+
+  // Build ordered list: branded funds first (in catalog order), then unbranded vaults
+  const allBranded = getAllFundsBranded()
+  const ordered = useMemo(() => {
+    const byAddr = new Map(vaults.map(v => [v.address.toLowerCase(), v]))
+    const result: VaultInfo[] = []
+
+    // Branded order
+    for (const fund of brandedFunds) {
+      if (!fund.vault) continue
+      const vault = byAddr.get(fund.vault.toLowerCase())
+      if (vault) result.push(vault)
+    }
+
+    // Unbranded remainder
+    for (const vault of vaults) {
+      const hasBranding = allBranded.some(
+        f => f.vault && f.vault.toLowerCase() === vault.address.toLowerCase()
+      )
+      if (!hasBranding) result.push(vault)
+    }
+
+    return result
+  }, [vaults, brandedFunds, allBranded])
+
+  if (ordered.length === 0) return null
 
   return (
-    <div className="flex items-center gap-1 ml-3">
-      {logos.slice(0, 6).map((logo, i) => (
-        <Image
-          key={i}
-          src={logo}
-          alt=""
-          width={18}
-          height={18}
-          className="rounded-full opacity-60"
-        />
-      ))}
-      {logos.length > 6 && (
-        <span className="text-[10px] text-text-muted font-mono ml-0.5">
-          +{logos.length - 6}
+    <section id={`source-${sourceId}`}>
+      {/* Section header */}
+      <div className="flex items-center gap-2.5 mb-3">
+        {sourceLogo && (
+          <Image
+            src={sourceLogo}
+            alt={sourceName}
+            width={20}
+            height={20}
+            className="rounded-full object-contain"
+          />
+        )}
+        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+          {sourceName}
+        </h3>
+        <span className="text-[10px] text-text-muted font-mono tabular-nums bg-black/[0.04] px-1.5 py-0.5 rounded">
+          {ordered.length}
         </span>
-      )}
-    </div>
+      </div>
+
+      {/* Horizontal scroll row */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+        {ordered.map((vault) => (
+          <div key={vault.address} className="shrink-0 w-[240px]">
+            <VaultCard vault={vault} onClick={() => onSelect(vault)} />
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -67,40 +117,33 @@ export function VaultsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedVault, setSelectedVault] = useState<VaultInfo | null>(null)
 
-  const categories = getAllCategories()
+  const allSources = getAllFundSources()
   const allBranded = getAllFundsBranded()
 
-  // Map vaults to categories. Vaults with branding go into their category,
-  // vaults without branding go into "Other".
-  const grouped = useMemo(() => {
+  // Map vault address → primary source
+  const vaultsBySource = useMemo(() => {
     const map = new Map<string, VaultInfo[]>()
-
-    for (const cat of categories) {
-      map.set(cat, [])
-    }
 
     for (const vault of vaults) {
       const fund = allBranded.find(
         f => f.vault && f.vault.toLowerCase() === vault.address.toLowerCase()
       )
-      const cat = fund?.category ?? 'Other'
-      if (!map.has(cat)) map.set(cat, [])
-      map.get(cat)!.push(vault)
+      const primarySource = fund?.sources[0] ?? '__other__'
+      if (!map.has(primarySource)) map.set(primarySource, [])
+      map.get(primarySource)!.push(vault)
     }
 
-    // Also show branded categories that have no deployed vaults yet,
-    // using placeholder cards (just the branding data)
     return map
-  }, [vaults, categories, allBranded])
+  }, [vaults, allBranded])
 
-  // Categories that have at least one vault
-  const activeCategories = categories.filter(cat => {
-    const catVaults = grouped.get(cat)
-    return catVaults && catVaults.length > 0
+  // Sources that have at least one deployed vault, in catalog order
+  const activeSources = allSources.filter(s => {
+    const count = vaultsBySource.get(s.sourceId)?.length ?? 0
+    return count > 0
   })
 
-  // Uncategorized vaults
-  const otherVaults = grouped.get('Other') ?? []
+  // Vaults with no branding / unknown source
+  const otherVaults = vaultsBySource.get('__other__') ?? []
 
   const hasAnyVault = vaults.length > 0
 
@@ -134,44 +177,34 @@ export function VaultsPage() {
           {isLoading ? (
             <VaultsSkeleton />
           ) : hasAnyVault ? (
-            <div className="space-y-12">
-              {/* Categorized vaults */}
-              {activeCategories.map(cat => (
-                <section key={cat}>
-                  <div className="flex items-center mb-4">
-                    <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
-                      {cat}
-                    </h3>
-                    <CategorySourceLogos category={cat} />
-                    <span className="ml-2 text-[10px] text-text-muted font-mono tabular-nums">
-                      {grouped.get(cat)!.length}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {grouped.get(cat)!.map(vault => (
-                      <VaultCard
-                        key={vault.address}
-                        vault={vault}
-                        onClick={() => setSelectedVault(vault)}
-                      />
-                    ))}
-                  </div>
-                </section>
+            <div className="space-y-10">
+              {activeSources.map(source => (
+                <SourceSection
+                  key={source.sourceId}
+                  sourceId={source.sourceId}
+                  sourceName={source.name}
+                  sourceLogo={source.logo}
+                  vaults={vaultsBySource.get(source.sourceId) ?? []}
+                  onSelect={setSelectedVault}
+                />
               ))}
 
-              {/* Uncategorized */}
+              {/* Unbranded vaults */}
               {otherVaults.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted mb-4">
-                    Other
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                      Other
+                    </h3>
+                    <span className="text-[10px] text-text-muted font-mono tabular-nums bg-black/[0.04] px-1.5 py-0.5 rounded">
+                      {otherVaults.length}
+                    </span>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                     {otherVaults.map(vault => (
-                      <VaultCard
-                        key={vault.address}
-                        vault={vault}
-                        onClick={() => setSelectedVault(vault)}
-                      />
+                      <div key={vault.address} className="shrink-0 w-[240px]">
+                        <VaultCard vault={vault} onClick={() => setSelectedVault(vault)} />
+                      </div>
                     ))}
                   </div>
                 </section>
@@ -194,7 +227,6 @@ export function VaultsPage() {
         </div>
       </section>
 
-      {/* Vault detail / actions */}
       {selectedVault && (
         <VaultActions
           vault={selectedVault}
@@ -202,7 +234,6 @@ export function VaultsPage() {
         />
       )}
 
-      {/* Create modal */}
       {showCreateModal && (
         <CreateVaultModal onClose={() => { setShowCreateModal(false); refetch() }} />
       )}

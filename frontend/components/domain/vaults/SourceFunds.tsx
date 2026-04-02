@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
 import { useReadContracts } from 'wagmi'
+import { Link } from '@/i18n/routing'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'
 import fundData from '@/data/fund-branding.json'
@@ -62,6 +63,12 @@ export function SourceFunds({ sourceId }: SourceFundsProps) {
         <span className="text-[11px] font-mono text-text-muted bg-black/[0.04] px-1.5 py-0.5 rounded">
           {funds.length}
         </span>
+        <Link
+          href={`/vaults#source-${sourceId}`}
+          className="ml-auto text-[11px] font-semibold text-brand hover:text-brand-dark transition-colors"
+        >
+          View all funds →
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { formatUnits } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { cn } from '@/lib/utils/cn'
@@ -46,135 +45,84 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
   const perfPercent = (vault.performanceSinceInception * 100).toFixed(2)
   const isPositive = vault.performanceSinceInception >= 0
   const feePercent = branding ? branding.fee / 100 : Number(vault.performanceFeeRate) / 1e16
-  const deployedPercent = (vault.deployedRatio * 100).toFixed(1)
 
   return (
     <div
       onClick={onClick}
       className="bg-card border border-border-light rounded-md cursor-pointer
-                 hover:bg-card-hover hover:shadow-card-hover transition-all overflow-hidden"
+                 hover:bg-card-hover hover:shadow-card-hover transition-all overflow-hidden
+                 w-full"
     >
       {/* Color accent bar */}
-      {branding && (
-        <div className="h-1" style={{ backgroundColor: branding.color }} />
-      )}
+      <div
+        className="h-[3px]"
+        style={{ backgroundColor: branding?.color ?? 'var(--color-brand)' }}
+      />
 
-      <div className="p-5">
-        {/* Header: name + strategy + sources */}
-        <div className="flex items-start justify-between gap-2">
+      <div className="p-3.5">
+        {/* Name + symbol + strategy pill */}
+        <div className="flex items-start justify-between gap-1.5 mb-1.5">
           <div className="min-w-0">
-            <h3 className="font-bold text-text-primary text-sm">
+            <span className="font-bold text-text-primary text-sm leading-tight">
               {branding?.name ?? vault.name}
-              {branding && (
-                <span className="ml-1.5 text-text-muted font-mono text-xs font-normal">
-                  {branding.symbol}
-                </span>
-              )}
-            </h3>
+            </span>
+            {branding && (
+              <span className="ml-1.5 text-text-muted font-mono text-[11px] font-normal">
+                {branding.symbol}
+              </span>
+            )}
             {!branding && (
-              <p className="text-xs text-text-muted font-mono mt-0.5">
+              <p className="text-[10px] text-text-muted font-mono mt-0.5">
                 {truncateAddress(vault.manager)}
               </p>
             )}
           </div>
-
-          {/* Source logos */}
-          {branding && branding.sourceLogos.length > 0 && (
-            <div className="flex items-center gap-1 shrink-0">
-              {branding.sourceLogos.map((logo, i) => (
-                <Image
-                  key={i}
-                  src={logo}
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="rounded-full"
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Strategy + category pills */}
-        {branding && (
-          <div className="flex items-center gap-1.5 mt-2">
+          {branding && (
             <span className={cn(
-              'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full',
-              STRATEGY_COLORS[branding.strategy] ?? 'bg-black/5 text-text-secondary'
+              'shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full whitespace-nowrap',
+              STRATEGY_COLORS[branding.strategy] ?? 'bg-black/5 text-text-secondary',
             )}>
               {branding.strategy}
             </span>
-            <span className="text-[10px] font-medium text-text-muted bg-black/[0.04] px-1.5 py-0.5 rounded-full">
-              {branding.category}
-            </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Tagline */}
         {branding && (
-          <p className="text-xs text-text-secondary mt-2 line-clamp-2 leading-relaxed">
+          <p className="text-[11px] text-text-secondary leading-[1.35] line-clamp-1 mb-2.5">
             {branding.tagline}
           </p>
         )}
 
-        {/* TVL */}
-        <p className="text-title font-extrabold font-mono tabular-nums text-black mt-3">
-          ${vault.tvlFormatted}
-        </p>
-        <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">TVL</p>
-
-        {/* Stats row */}
-        <div className="flex gap-4 mt-3 text-xs text-text-secondary font-mono tabular-nums">
-          <div>
-            <span className="text-text-muted">NAV </span>
+        {/* Stats row: TVL | NAV | Perf | Fee */}
+        <div className="flex items-center gap-3 text-[11px] font-mono tabular-nums">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">TVL</span>
+            <span className="font-bold text-black">${vault.tvlFormatted}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">NAV</span>
             <span className="text-text-primary">${vault.navPerShare.toFixed(4)}</span>
           </div>
-          <div>
-            <span className="text-text-muted">Perf </span>
-            <span className={cn(
-              isPositive ? 'text-color-up' : 'text-color-down',
-            )}>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">Perf</span>
+            <span className={cn(isPositive ? 'text-color-up' : 'text-color-down')}>
               {isPositive ? '+' : ''}{perfPercent}%
             </span>
           </div>
-          <div>
-            <span className="text-text-muted">Fee </span>
-            <span>{feePercent.toFixed(0)}%</span>
+          <div className="flex flex-col ml-auto">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">Fee</span>
+            <span className="text-text-secondary">{feePercent.toFixed(0)}%</span>
           </div>
         </div>
 
-        {/* Deployed capital bar */}
-        <div className="mt-3">
-          <div className="flex justify-between text-micro text-text-muted mb-1">
-            <span>Capital deployed</span>
-            <span className="font-mono tabular-nums">{deployedPercent}%</span>
-          </div>
-          <div className="h-1 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${Math.min(vault.deployedRatio * 100, 100)}%`,
-                backgroundColor: branding?.color ?? 'var(--color-brand)',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* User balance */}
+        {/* User balance — only when wallet has shares */}
         {shares > 0n && (
-          <div className="mt-3 pt-3 border-t border-border-light">
-            <div className="flex justify-between text-xs">
-              <span className="text-text-muted">Your balance</span>
-              <span className="font-mono tabular-nums text-text-primary font-semibold">
-                ${userValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs mt-0.5">
-              <span className="text-text-muted">Shares</span>
-              <span className="font-mono tabular-nums text-text-secondary">
-                {parseFloat(formatUnits(shares, 18)).toLocaleString(undefined, { maximumFractionDigits: 4 })}
-              </span>
-            </div>
+          <div className="mt-2.5 pt-2.5 border-t border-border-light flex justify-between text-[11px]">
+            <span className="text-text-muted">Your position</span>
+            <span className="font-mono tabular-nums font-semibold text-text-primary">
+              ${userValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
         )}
       </div>
