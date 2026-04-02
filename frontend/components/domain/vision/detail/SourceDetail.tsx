@@ -74,69 +74,58 @@ function fmt(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-function BatchTimers({ bettingEnd, tickDuration }: { bettingEnd: string | null; tickDuration: number }) {
+interface TripleTimerProps {
+  bettingEnd: string | null
+  tickDuration: number
+  prevBettingEnd: string | null
+  prevTickDuration: number
+}
+
+function TripleTimer({ bettingEnd, tickDuration, prevBettingEnd, prevTickDuration }: TripleTimerProps) {
   const closeRemaining = useSharedCountdown(bettingEnd)
+
+  const now = Date.now()
+
+  // Current round settle
+  const curEnd = bettingEnd ? new Date(bettingEnd).getTime() : 0
+  const curSettleRemaining = bettingEnd ? Math.max(0, Math.floor((curEnd + tickDuration * 1000 - now) / 1000)) : 0
+
+  // Previous round settle
+  const prevEnd = prevBettingEnd ? new Date(prevBettingEnd).getTime() : 0
+  const prevSettleRemaining = prevBettingEnd ? Math.max(0, Math.floor((prevEnd + prevTickDuration * 1000 - now) / 1000)) : 0
 
   if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
 
-  const now = Date.now()
-  const end = new Date(bettingEnd).getTime()
-  const settleEnd = end + tickDuration * 1000
-  const settleRemaining = Math.max(0, Math.floor((settleEnd - now) / 1000))
-  // Next round starts when settlement ends (= 2 * tickDuration from batch start)
-  const nextRemaining = settleRemaining
-
-  // Betting open
-  if (closeRemaining > 0) {
-    return (
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
-          <div className={`text-[20px] font-black font-mono tabular-nums leading-none ${closeRemaining < 60 ? 'text-color-down' : 'text-black'}`}>
-            {fmt(closeRemaining)}
-          </div>
-        </div>
-        <div className="w-px h-8 bg-border-light" />
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-          <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-text-secondary">
-            {fmt(settleRemaining)}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Settlement phase
-  if (settleRemaining > 0) {
-    return (
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Closed</div>
-          <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-text-muted line-through">
-            0:00
-          </div>
-        </div>
-        <div className="w-px h-8 bg-border-light" />
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-          <div className="text-[20px] font-black font-mono tabular-nums leading-none text-color-warning">
-            {fmt(settleRemaining)}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Both expired — waiting for next batch
   return (
-    <span className="flex items-center gap-2 text-text-muted font-mono font-black">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-text-muted opacity-50" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-text-muted" />
-      </span>
-      New round...
-    </span>
+    <div className="flex items-center gap-3">
+      {/* Prev settle — only if a previous round is resolving */}
+      {prevBettingEnd && prevSettleRemaining > 0 && (
+        <>
+          <div className="text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Prev Settle</div>
+            <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-color-warning">
+              {fmt(prevSettleRemaining)}
+            </div>
+          </div>
+          <div className="w-px h-8 bg-border-light" />
+        </>
+      )}
+      {/* Close */}
+      <div className="text-right">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
+        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-text-muted line-through text-[14px] font-bold' : closeRemaining < 60 ? 'text-[20px] font-black text-color-down' : 'text-[20px] font-black text-black'}`}>
+          {fmt(Math.max(0, closeRemaining))}
+        </div>
+      </div>
+      <div className="w-px h-8 bg-border-light" />
+      {/* Settle */}
+      <div className="text-right">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
+        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-[20px] font-black text-color-warning' : 'text-[14px] font-bold text-text-secondary'}`}>
+          {fmt(curSettleRemaining)}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -257,15 +246,17 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   // On-chain player position — used to reconcile oracle lag in BatchHistory
   const { isJoined: isJoinedOnChain } = usePlayerPosition(verifiedBatch?.id)
 
-  // Active betting round — find the round that's actually accepting bets (not settling).
-  // With round overlap, a settling round and a betting round can coexist.
-  // The header always shows the betting round; settling rounds surface in PendingPositions.
+  // Betting round (current) + settling round (previous)
   const bettingRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return null
     return rounds.find(r => r.status === 'betting') ?? null
   }, [rounds])
 
-  // bettingEnd: prefer the active betting round, fall back to activeBatch-derived timing
+  const settlingRound = useMemo(() => {
+    if (!rounds || rounds.length === 0) return null
+    return rounds.find(r => r.status === 'settling' || r.status === 'locked') ?? null
+  }, [rounds])
+
   const bettingEnd = bettingRound?.bettingEnd ?? null
 
   if (isRegistryLoading && !initialSource) {
@@ -302,7 +293,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           <FirstTradeCTA />
         </div>
 
-        {/* Batch bar — shows betting countdown then settlement countdown */}
+        {/* Batch bar — single line with all three timers */}
         {verifiedBatch ? (
           <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
             <BatchProgressBar
@@ -310,7 +301,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
             />
             <div className="flex items-center px-5 py-3">
-              {/* Round # */}
               <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.round')}
@@ -319,7 +309,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   #{verifiedBatch.id}
                 </div>
               </div>
-              {/* Players */}
               <div className="mr-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.players')}
@@ -328,7 +317,6 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {verifiedBatch.playerCount}
                 </div>
               </div>
-              {/* Pool */}
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
                   {t('source_detail.pool')}
@@ -337,9 +325,13 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
                   {formatTvl(verifiedBatch.tvl)}
                 </div>
               </div>
-              {/* Timer — anchored right */}
               <div className="ml-auto pl-5">
-                <BatchTimers bettingEnd={bettingEnd} tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300} />
+                <TripleTimer
+                  bettingEnd={bettingEnd}
+                  tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+                  prevBettingEnd={settlingRound?.bettingEnd ?? null}
+                  prevTickDuration={settlingRound?.timeframeSecs ?? 300}
+                />
               </div>
             </div>
           </div>

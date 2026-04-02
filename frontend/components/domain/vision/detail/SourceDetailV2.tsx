@@ -70,7 +70,7 @@ function WalletSourceStats({ sourceId }: { sourceId: string }) {
   )
 }
 
-// ── Batch timers — shows close + settle phases ──
+// ── Triple timer — prev settle | close | settle ──
 
 function fmt(secs: number): string {
   const m = Math.floor(secs / 60)
@@ -78,67 +78,58 @@ function fmt(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-function BatchTimers({ bettingEnd, tickDuration }: { bettingEnd: string | null; tickDuration: number }) {
+interface TripleTimerProps {
+  bettingEnd: string | null
+  tickDuration: number
+  prevBettingEnd: string | null
+  prevTickDuration: number
+}
+
+function TripleTimer({ bettingEnd, tickDuration, prevBettingEnd, prevTickDuration }: TripleTimerProps) {
   const closeRemaining = useSharedCountdown(bettingEnd)
+
+  const now = Date.now()
+
+  // Current round settle
+  const curEnd = bettingEnd ? new Date(bettingEnd).getTime() : 0
+  const curSettleRemaining = bettingEnd ? Math.max(0, Math.floor((curEnd + tickDuration * 1000 - now) / 1000)) : 0
+
+  // Previous round settle
+  const prevEnd = prevBettingEnd ? new Date(prevBettingEnd).getTime() : 0
+  const prevSettleRemaining = prevBettingEnd ? Math.max(0, Math.floor((prevEnd + prevTickDuration * 1000 - now) / 1000)) : 0
 
   if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
 
-  const now = Date.now()
-  const end = new Date(bettingEnd).getTime()
-  const settleEnd = end + tickDuration * 1000
-  const settleRemaining = Math.max(0, Math.floor((settleEnd - now) / 1000))
-
-  // Betting open
-  if (closeRemaining > 0) {
-    return (
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
-          <div className={`text-[20px] font-black font-mono tabular-nums leading-none ${closeRemaining < 60 ? 'text-color-down' : 'text-black'}`}>
-            {fmt(closeRemaining)}
-          </div>
-        </div>
-        <div className="w-px h-8 bg-border-light" />
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-          <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-text-secondary">
-            {fmt(settleRemaining)}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Settlement phase
-  if (settleRemaining > 0) {
-    return (
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Closed</div>
-          <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-text-muted line-through">
-            0:00
-          </div>
-        </div>
-        <div className="w-px h-8 bg-border-light" />
-        <div className="text-right">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-          <div className="text-[20px] font-black font-mono tabular-nums leading-none text-color-warning">
-            {fmt(settleRemaining)}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Both expired
   return (
-    <span className="flex items-center gap-2 text-text-muted font-mono font-black">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-text-muted opacity-50" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-text-muted" />
-      </span>
-      New round...
-    </span>
+    <div className="flex items-center gap-3">
+      {/* Prev settle — only if a previous round is resolving */}
+      {prevBettingEnd && prevSettleRemaining > 0 && (
+        <>
+          <div className="text-right">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Prev Settle</div>
+            <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-color-warning">
+              {fmt(prevSettleRemaining)}
+            </div>
+          </div>
+          <div className="w-px h-8 bg-border-light" />
+        </>
+      )}
+      {/* Close */}
+      <div className="text-right">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
+        <div className={`text-[20px] font-black font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-text-muted line-through text-[14px]' : closeRemaining < 60 ? 'text-color-down' : 'text-black'}`}>
+          {fmt(Math.max(0, closeRemaining))}
+        </div>
+      </div>
+      <div className="w-px h-8 bg-border-light" />
+      {/* Settle */}
+      <div className="text-right">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
+        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-[20px] font-black text-color-warning' : 'text-[14px] font-bold text-text-secondary'}`}>
+          {fmt(curSettleRemaining)}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -153,70 +144,71 @@ function formatTvl(tvl: string): string {
   return `$${num.toFixed(2)}`
 }
 
-// ── Side banners — HLTV-style border images ──
+// ── Side banners — HLTV-style fixed border images ──
+// Fixed position, outside the content flow, only on very wide screens (>1700px)
 
 function SideBanner({ position }: { position: 'left' | 'right' }) {
   const isLeft = position === 'left'
   return (
-    <div className="hidden lg:block w-[120px] xl:w-[160px] shrink-0 sticky top-0 self-start h-screen">
-      <div className="h-full flex flex-col items-center pt-20 pb-8">
-        {/* Tall vertical banner */}
-        <div
-          className="w-[120px] xl:w-[160px] h-[600px] rounded overflow-hidden relative"
-          style={{
-            background: isLeft
-              ? 'linear-gradient(180deg, #0a1628 0%, #162d50 30%, #0f172a 60%, #1e3a5f 100%)'
-              : 'linear-gradient(180deg, #1a0a28 0%, #2d1650 30%, #170a2a 60%, #3a1e5f 100%)',
-          }}
-        >
-          {/* Grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-            }}
-          />
-          {/* Glow */}
-          <div
-            className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[120px] h-[120px] rounded-full blur-3xl"
-            style={{ background: isLeft ? 'rgba(59,130,246,0.08)' : 'rgba(168,85,247,0.08)' }}
-          />
-          {/* Content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-            <div className="w-10 h-10 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3">
-              <svg
-                className="w-5 h-5"
-                style={{ color: isLeft ? 'rgba(96,165,250,0.5)' : 'rgba(192,132,252,0.5)' }}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                {isLeft ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.577 3.01 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.577-3.01-9.963-7.178z" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-                )}
-              </svg>
-            </div>
-            <div className="text-[13px] font-black text-white/60 tracking-[-0.02em] text-center">
-              {isLeft ? 'VISION' : 'TRADE'}
-            </div>
-            <div className="text-[8px] font-bold uppercase tracking-[0.15em] mt-0.5 text-center"
-              style={{ color: isLeft ? 'rgba(96,165,250,0.35)' : 'rgba(192,132,252,0.35)' }}
-            >
-              {isLeft ? 'Prediction Markets' : 'Real-World Data'}
-            </div>
-            <div className="mt-8 w-px h-16 bg-white/[0.06]" />
-            <p className="mt-4 text-[8px] text-white/10 text-center leading-relaxed px-2">
-              {isLeft
-                ? '93 data sources. Thousands of markets. Every outcome settles on-chain.'
-                : 'AI-native trading. Build bots, deploy vaults, earn fees. Permissionless.'}
-            </p>
-          </div>
+    <div
+      className="hidden 2xl:block fixed top-[100px] w-[140px] h-[600px] rounded overflow-hidden z-0"
+      style={{ [isLeft ? 'left' : 'right']: '12px' }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{
+          background: isLeft
+            ? 'linear-gradient(180deg, #0a1628 0%, #162d50 30%, #0f172a 60%, #1e3a5f 100%)'
+            : 'linear-gradient(180deg, #1a0a28 0%, #2d1650 30%, #170a2a 60%, #3a1e5f 100%)',
+        }}
+      />
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+        }}
+      />
+      {/* Glow */}
+      <div
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[100px] h-[100px] rounded-full blur-3xl"
+        style={{ background: isLeft ? 'rgba(59,130,246,0.08)' : 'rgba(168,85,247,0.08)' }}
+      />
+      {/* Content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-3">
+        <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3">
+          <svg
+            className="w-4 h-4"
+            style={{ color: isLeft ? 'rgba(96,165,250,0.5)' : 'rgba(192,132,252,0.5)' }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            {isLeft ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.64 0 8.577 3.01 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.64 0-8.577-3.01-9.963-7.178z" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+            )}
+          </svg>
         </div>
+        <div className="text-[11px] font-black text-white/60 tracking-[-0.02em] text-center">
+          {isLeft ? 'VISION' : 'TRADE'}
+        </div>
+        <div
+          className="text-[7px] font-bold uppercase tracking-[0.15em] mt-0.5 text-center"
+          style={{ color: isLeft ? 'rgba(96,165,250,0.35)' : 'rgba(192,132,252,0.35)' }}
+        >
+          {isLeft ? 'Prediction Markets' : 'Real-World Data'}
+        </div>
+        <div className="mt-6 w-px h-12 bg-white/[0.06]" />
+        <p className="mt-3 text-[7px] text-white/10 text-center leading-relaxed px-1">
+          {isLeft
+            ? '93 data sources. Thousands of markets. Settles on-chain.'
+            : 'AI-native. Build bots, deploy vaults, earn fees.'}
+        </p>
       </div>
     </div>
   )
@@ -327,10 +319,15 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   // Player position
   const { isJoined: isJoinedOnChain } = usePlayerPosition(verifiedBatch?.id)
 
-  // Betting round
+  // Betting round (current) + settling round (previous)
   const bettingRound = useMemo(() => {
     if (!rounds || rounds.length === 0) return null
     return rounds.find(r => r.status === 'betting') ?? null
+  }, [rounds])
+
+  const settlingRound = useMemo(() => {
+    if (!rounds || rounds.length === 0) return null
+    return rounds.find(r => r.status === 'settling' || r.status === 'locked') ?? null
   }, [rounds])
 
   const bettingEnd = bettingRound?.bettingEnd ?? null
@@ -362,11 +359,12 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   }
 
   return (
-    <div className="flex justify-center">
-      {/* Left border banner — HLTV-style gutter ad */}
+    <div>
+      {/* HLTV-style fixed border banners */}
       <SideBanner position="left" />
+      <SideBanner position="right" />
 
-      <div className="flex-1 max-w-[1440px] px-4 lg:px-8 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-8 py-6">
         {/* Source Hero */}
         <SourceHero
           source={source}
@@ -386,7 +384,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           <FirstTradeCTA />
         </div>
 
-        {/* Batch bar */}
+        {/* Batch bar — single line with all three timers */}
         {verifiedBatch ? (
           <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
             <BatchProgressBar
@@ -419,7 +417,12 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
                 </div>
               </div>
               <div className="ml-auto pl-5">
-                <BatchTimers bettingEnd={bettingEnd} tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300} />
+                <TripleTimer
+                  bettingEnd={bettingEnd}
+                  tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+                  prevBettingEnd={settlingRound?.bettingEnd ?? null}
+                  prevTickDuration={settlingRound?.timeframeSecs ?? 300}
+                />
               </div>
             </div>
           </div>
@@ -464,9 +467,6 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           </div>
         </div>
       </div>
-
-      {/* Right border banner — HLTV-style gutter ad */}
-      <SideBanner position="right" />
     </div>
   )
 }
