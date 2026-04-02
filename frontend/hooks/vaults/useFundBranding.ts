@@ -7,7 +7,7 @@ export interface FundBranding {
   tagline: string
   strategy: string
   color: string
-  sources: string[]
+  source: string
   category: string
   fee: number
   vault: string
@@ -21,38 +21,34 @@ export interface SourceDisplay {
 }
 
 const CATEGORY_ORDER = [
-  'Crypto',
-  'Weather & Geophysical',
+  'Finance',
+  'Economic',
+  'Geophysical',
   'Transport',
-  'Entertainment & Social',
-  'Macro & Economic',
-  'Tech & Developer',
-  'Regulatory & Government',
-  'Nature & Academic',
-  'Water & Ocean',
-  'Niche & Exotic',
+  'Entertainment',
+  'Tech',
+  'Nature',
+  'Academic',
+  'Regulatory',
+  'Space',
 ] as const
 
 function resolveSourceLogo(sourceKey: string): string {
-  // Try direct sourceId match first, then internalIds
   const source = sourcesData.sources.find(
-    s => s.sourceId === sourceKey || s.internalIds?.includes(sourceKey)
+    (s: any) => s.sourceId === sourceKey || s.internalIds?.includes(sourceKey),
   )
   return source?.logo ?? ''
 }
 
 function resolveBranding(fund: (typeof fundData.funds)[number]): FundBranding {
-  const sourceLogos = fund.sources
-    .map(resolveSourceLogo)
-    .filter(Boolean)
-
+  const sourceLogos = [resolveSourceLogo(fund.source)].filter(Boolean)
   return { ...fund, sourceLogos }
 }
 
 export function useFundBranding(vaultAddress: string): FundBranding | null {
   if (!vaultAddress) return null
   const fund = fundData.funds.find(
-    f => f.vault && f.vault.toLowerCase() === vaultAddress.toLowerCase()
+    f => f.vault && f.vault.toLowerCase() === vaultAddress.toLowerCase(),
   )
   if (!fund) return null
   return resolveBranding(fund)
@@ -78,34 +74,30 @@ export function getFundsByCategory(category: string): FundBranding[] {
     .map(resolveBranding)
 }
 
-/** All unique primary sources that have at least one fund, in stable order */
 export function getAllFundSources(): SourceDisplay[] {
   const seen = new Set<string>()
   const result: SourceDisplay[] = []
   for (const fund of fundData.funds) {
-    const primarySource = fund.sources[0]
-    if (!primarySource || seen.has(primarySource)) continue
-    seen.add(primarySource)
+    if (!fund.source || seen.has(fund.source)) continue
+    seen.add(fund.source)
     const display = sourcesData.sources.find(
-      s => s.sourceId === primarySource || (s.internalIds as string[] | undefined)?.includes(primarySource)
+      (s: any) => s.sourceId === fund.source || s.internalIds?.includes(fund.source),
     )
     result.push({
-      sourceId: primarySource,
-      name: display?.name ?? primarySource,
+      sourceId: fund.source,
+      name: display?.name ?? fund.source,
       logo: display?.logo ?? '',
     })
   }
   return result
 }
 
-/** Funds whose primary source matches sourceId */
 export function getFundsBySource(sourceId: string): FundBranding[] {
   return fundData.funds
-    .filter(f => f.sources[0] === sourceId)
+    .filter(f => f.source === sourceId)
     .map(resolveBranding)
 }
 
-/** Number of funds for a given primary source — cheap, no branding resolution */
 export function getFundCountForSource(sourceId: string): number {
-  return fundData.funds.filter(f => f.sources.includes(sourceId)).length
+  return fundData.funds.filter(f => f.source === sourceId).length
 }

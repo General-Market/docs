@@ -128,7 +128,7 @@ export function VaultsPage() {
       const fund = allBranded.find(
         f => f.vault && f.vault.toLowerCase() === vault.address.toLowerCase()
       )
-      const primarySource = fund?.sources[0] ?? '__other__'
+      const primarySource = fund?.source ?? '__other__'
       if (!map.has(primarySource)) map.set(primarySource, [])
       map.get(primarySource)!.push(vault)
     }
