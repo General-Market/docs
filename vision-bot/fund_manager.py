@@ -47,19 +47,24 @@ def load_funds_config(path="funds.toml"):
 
 
 def build_source_id_map(fund_sources):
-    """Build keccak256(source_name) -> source_name for all fund sources.
+    """Build keccak256(source_name_vN) -> source_name for all fund sources.
 
-    The Vision API returns sourceId as hex (keccak256 of the source name).
-    We precompute the reverse mapping from all known fund source names.
+    On-chain sourceId = keccak256(name + "_v2") (or _v1, etc.).
+    We map all plausible versions so the API hex matches our fund sources.
     """
     from web3 import Web3
 
     mapping = {}
     for name in fund_sources:
-        source_hash = Web3.keccak(text=name).hex()
-        # API returns with 0x prefix
-        mapping["0x" + source_hash if not source_hash.startswith("0x") else source_hash] = name
-        mapping[source_hash] = name  # Also map without prefix
+        for version in ["v1", "v2", "v3"]:
+            key = f"{name}_{version}"
+            source_hash = Web3.keccak(text=key).hex()
+            h = source_hash if source_hash.startswith("0x") else "0x" + source_hash
+            mapping[h] = name
+        # Also map plain keccak256(name) as fallback
+        plain = Web3.keccak(text=name).hex()
+        h = plain if plain.startswith("0x") else "0x" + plain
+        mapping[h] = name
     return mapping
 
 
