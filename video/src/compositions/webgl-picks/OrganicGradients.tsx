@@ -1,3 +1,4 @@
+// Source: https://organic-gradients-shader.vercel.app/
 import React, { useMemo, useRef } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
