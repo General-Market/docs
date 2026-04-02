@@ -27,6 +27,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { FirstTradeCTA } from '../FirstTradeCTA'
+import { SourceFunds } from '@/components/domain/vaults/SourceFunds'
 
 function WalletSourceStats({ sourceId }: { sourceId: string }) {
   const { address } = useAccount()
@@ -314,6 +315,9 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
             activeBatchId={verifiedBatch?.id}
           />
         )}
+
+        {/* Managed Funds for this source */}
+        <SourceFunds sourceId={sourceId} />
 
         {/* Content split */}
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
