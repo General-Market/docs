@@ -245,12 +245,20 @@ def main():
             ).build_transaction(build_tx(w3, deployer, gas=5_000_000))
             receipt = send_tx(w3, account, tx)
 
-            events = factory.events.VaultCreated().process_receipt(receipt)
-            if not events:
-                log.error(f"  No VaultCreated event for {symbol}")
+            # Extract vault address from logs — the VaultCreated event has vault as first indexed topic
+            vault_addr = None
+            for entry in receipt.get("logs", []):
+                if entry["address"].lower() == FACTORY.lower() and len(entry["topics"]) >= 2:
+                    # topic[0] = event sig, topic[1] = vault (indexed address)
+                    raw = entry["topics"][1]
+                    if isinstance(raw, bytes):
+                        vault_addr = Web3.to_checksum_address("0x" + raw[-20:].hex())
+                    else:
+                        vault_addr = Web3.to_checksum_address("0x" + raw.hex()[-40:])
+                    break
+            if not vault_addr:
+                log.error(f"  No vault address in logs for {symbol}")
                 continue
-
-            vault_addr = events[0]["args"]["vault"]
             fund["vault"] = vault_addr
             deployed_count += 1
             log.info(f"  -> {vault_addr} (gas={receipt['gasUsed']})")
