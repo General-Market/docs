@@ -72,6 +72,7 @@ export function useVaults() {
     refetch: refetchData,
   } = useReadContracts({
     contracts: vaultCalls as any,
+    allowFailure: true,
     query: { enabled: addresses.length > 0 },
   })
 

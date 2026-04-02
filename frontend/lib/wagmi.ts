@@ -24,6 +24,11 @@ export const indexL3: Chain = {
   blockExplorers: {
     default: { name: 'L3 Explorer', url: getExplorerBaseUrl('l3') || '' },
   },
+  contracts: {
+    multicall3: {
+      address: '0xAF9Ea040EA72aE156F75eAdBa74a61e2683ed63d' as `0x${string}`,
+    },
+  },
   testnet: true,
 }
 
