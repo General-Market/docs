@@ -273,7 +273,7 @@ impl BatchLifecycleManager {
                     };
 
                     // Read state snapshot
-                    let prev_batch_id = {
+                    let (prev_batch_id, tick_duration_secs) = {
                         let source = src_lock.lock().await;
                         info!(
                             source = %source.source_name,
@@ -282,7 +282,7 @@ impl BatchLifecycleManager {
                             previous_batch = ?source.previous_batch_id,
                             "Lifecycle heartbeat"
                         );
-                        source.previous_batch_id
+                        (source.previous_batch_id, source.tick_duration_secs)
                     };
 
                     // Step 1: Resolve previous batch if its betting period has ended.
@@ -296,7 +296,7 @@ impl BatchLifecycleManager {
                             "SELECT betting_end + make_interval(secs => $2) <= NOW() FROM vision_batch_lifecycle WHERE on_chain_batch_id = $1"
                         )
                         .bind(prev_id as i64)
-                        .bind(source.tick_duration_secs as f64)
+                        .bind(tick_duration_secs as f64)
                         .fetch_optional(&mgr.pool)
                         .await
                         .ok()
