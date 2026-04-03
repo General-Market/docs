@@ -372,7 +372,7 @@ const DepthScene: React.FC<{ frame: number }> = ({ frame }) => {
   // Mood interpolation based on camera position relative to planes
   // Camera starts at z=5, planes at z=0,-5,-10,-15,-20
   // Map camera z to mood index
-  const moodProgress = interpolate(cameraZ, [5, -20], [0, MOODS.length - 1], {
+  const moodProgress = interpolate(-cameraZ, [-5, 20], [0, MOODS.length - 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
