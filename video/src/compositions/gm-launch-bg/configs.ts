@@ -355,3 +355,8 @@ export const prismatic: SceneConfig = {
   toneMapping: ToneMappingMode.AGX,
   toneMappingExposure: 2.5,
 };
+
+// ═══════════════════════════════════════════════════════
+// WHITE SERIES
+// ═══════════════════════════════════════════════════════
+

@@ -41,6 +41,11 @@ export interface SceneConfig {
   iridescenceThicknessBase: [number, number]; // min, max
   envMapIntensity: number;
   reflectivity: number;
+  // Optional glass/translucent properties
+  transmission?: number;
+  thickness?: number;
+  ior?: number;
+  transparent?: boolean;
 
   // Slats
   slatCount: number;
@@ -162,6 +167,11 @@ const Slats: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }
               iridescenceThicknessRange={[s.thMin, s.thMax]}
               envMapIntensity={config.envMapIntensity}
               reflectivity={config.reflectivity}
+              {...(config.transmission != null && { transmission: config.transmission })}
+              {...(config.thickness != null && { thickness: config.thickness })}
+              {...(config.ior != null && { ior: config.ior })}
+              {...(config.transparent != null && { transparent: config.transparent })}
+              side={config.transparent ? THREE.DoubleSide : THREE.FrontSide}
             />
           </mesh>
         );
