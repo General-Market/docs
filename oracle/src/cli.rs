@@ -96,8 +96,8 @@ pub(crate) struct Args {
     #[arg(long)]
     pub from_block: Option<u64>,
 
-    /// Maximum gas limit for transactions (default: 15M for large ITP operations).
-    #[arg(long, default_value = "15000000")]
+    /// Maximum gas limit for transactions (default: 50M, supports ~1000 players/batch).
+    #[arg(long, default_value = "50000000")]
     pub max_gas_limit: u64,
 
     /// Receipt wait timeout in seconds (default: 30, increase for heavy L3 load).

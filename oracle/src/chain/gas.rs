@@ -31,7 +31,7 @@ impl Default for GasConfig {
     fn default() -> Self {
         Self {
             gas_multiplier: 1.2, // 20% buffer
-            max_gas_limit: 15_000_000, // 15M gas max (100-asset ITP needs ~9.65M)
+            max_gas_limit: 50_000_000, // 50M gas max (supports ~1000 players/batch at ~50K gas each)
             fallback_gas_limit: 2_000_000, // 2M fallback
             use_eip1559: true,
             max_priority_fee: None, // Use network defaults
@@ -272,7 +272,7 @@ mod tests {
     fn test_gas_config_default() {
         let config = GasConfig::default();
         assert!((config.gas_multiplier - 1.2).abs() < 0.001);
-        assert_eq!(config.max_gas_limit, 15_000_000);
+        assert_eq!(config.max_gas_limit, 50_000_000);
         assert_eq!(config.fallback_gas_limit, 2_000_000);
         assert!(config.use_eip1559);
     }
