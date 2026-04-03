@@ -1,48 +1,47 @@
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
-import { EmeraldLenticular, scene01Meta } from "./Scene01_EmeraldLenticular";
-import { DarkPulse, scene02Meta } from "./Scene02_DarkPulse";
-import { GlassGrid, scene03Meta } from "./Scene03_GlassGrid";
-import { ParticleFlow, scene04Meta } from "./Scene04_ParticleFlow";
-import { GradientMorph, scene05Meta } from "./Scene05_GradientMorph";
+import { MetallicScene } from "./shared";
+import { silverIso, emeraldBrand, obsidianGold, frost, prismatic } from "./configs";
 
-const SCENE_DURATION = 240; // 8 seconds each at 30fps
+const SCENE_DURATION = 240;
 
-export const GMLaunchBgComposition: React.FC = () => {
-  return (
-    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
-      <Sequence from={0} durationInFrames={SCENE_DURATION} name="01 — Emerald Lenticular">
-        <EmeraldLenticular />
-      </Sequence>
-      <Sequence from={SCENE_DURATION} durationInFrames={SCENE_DURATION} name="02 — Dark Pulse">
-        <DarkPulse />
-      </Sequence>
-      <Sequence from={SCENE_DURATION * 2} durationInFrames={SCENE_DURATION} name="03 — Glass Grid">
-        <GlassGrid />
-      </Sequence>
-      <Sequence from={SCENE_DURATION * 3} durationInFrames={SCENE_DURATION} name="04 — Particle Flow">
-        <ParticleFlow />
-      </Sequence>
-      <Sequence from={SCENE_DURATION * 4} durationInFrames={SCENE_DURATION} name="05 — Gradient Morph">
-        <GradientMorph />
-      </Sequence>
-    </AbsoluteFill>
-  );
-};
+const V1 = () => <MetallicScene config={silverIso} />;
+const V2 = () => <MetallicScene config={emeraldBrand} />;
+const V3 = () => <MetallicScene config={obsidianGold} />;
+const V4 = () => <MetallicScene config={frost} />;
+const V5 = () => <MetallicScene config={prismatic} />;
+
+export const GMLaunchBgComposition: React.FC = () => (
+  <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+    <Sequence from={0} durationInFrames={SCENE_DURATION} name="V1 — Silver ISO">
+      <V1 />
+    </Sequence>
+    <Sequence from={SCENE_DURATION} durationInFrames={SCENE_DURATION} name="V2 — Emerald Brand">
+      <V2 />
+    </Sequence>
+    <Sequence from={SCENE_DURATION * 2} durationInFrames={SCENE_DURATION} name="V3 — Obsidian Gold">
+      <V3 />
+    </Sequence>
+    <Sequence from={SCENE_DURATION * 3} durationInFrames={SCENE_DURATION} name="V4 — Frost">
+      <V4 />
+    </Sequence>
+    <Sequence from={SCENE_DURATION * 4} durationInFrames={SCENE_DURATION} name="V5 — Prismatic">
+      <V5 />
+    </Sequence>
+  </AbsoluteFill>
+);
 
 export const gmLaunchBgMeta = {
   id: "GMLaunchBg",
   component: GMLaunchBgComposition,
-  width: 1920,
-  height: 1080,
-  fps: 30,
+  width: 1920, height: 1080, fps: 30,
   durationInFrames: SCENE_DURATION * 5,
 };
 
 export const gmLaunchSceneMetas = [
-  scene01Meta,
-  scene02Meta,
-  scene03Meta,
-  scene04Meta,
-  scene05Meta,
+  { id: "GMLaunch-V1-SilverISO", component: V1, width: 1920, height: 1080, fps: 30, durationInFrames: SCENE_DURATION },
+  { id: "GMLaunch-V2-EmeraldBrand", component: V2, width: 1920, height: 1080, fps: 30, durationInFrames: SCENE_DURATION },
+  { id: "GMLaunch-V3-ObsidianGold", component: V3, width: 1920, height: 1080, fps: 30, durationInFrames: SCENE_DURATION },
+  { id: "GMLaunch-V4-Frost", component: V4, width: 1920, height: 1080, fps: 30, durationInFrames: SCENE_DURATION },
+  { id: "GMLaunch-V5-Prismatic", component: V5, width: 1920, height: 1080, fps: 30, durationInFrames: SCENE_DURATION },
 ];
