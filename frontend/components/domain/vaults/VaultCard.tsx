@@ -148,11 +148,9 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
   const gradientId = `spark-${vault.address.slice(2, 8)}`
   const clipId = `clip-${vault.address.slice(2, 8)}`
 
-  const sparkline = useMemo(() => {
-    const seed = seedFromAddress(vault.address)
-    const values = generateSparklineData(seed, vault.performanceSinceInception)
-    return computeSparkline(values)
-  }, [vault.address, vault.performanceSinceInception])
+  // Sparkline disabled until real historical data is available
+  // TODO: wire useVaultHistory here once the oracle snapshot task is running
+  const sparkline = null as SparklineData | null
 
   useEffect(() => {
     if (reduced) {
@@ -206,6 +204,8 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
           )}
         </div>
 
+        {/* Sparkline — only rendered when real history data is available */}
+        {sparkline && (
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full mb-2.5"
@@ -271,6 +271,7 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
             }}
           />
         </svg>
+        )}
 
         <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
           <div className="flex flex-col">

@@ -28,11 +28,15 @@ class VolatilityFadeStrategy(Strategy):
         self._rng = random.Random()
 
     def predict(self, markets):
-        """Fallback: momentum (follow last tick)."""
-        return [
-            "UP" if (m.get("change") or 0) >= 0 else "DOWN"
-            for m in markets
-        ]
+        """Fallback: momentum (coin flip when change is None or 0)."""
+        results = []
+        for m in markets:
+            c = m.get("change")
+            if c is None or c == 0:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            else:
+                results.append("UP" if c > 0 else "DOWN")
+        return results
 
     def predict_with_context(self, markets, feed=None, batch_id=None):
         if not feed or not batch_id:
@@ -44,12 +48,14 @@ class VolatilityFadeStrategy(Strategy):
 
         for m in markets:
             asset_id = m.get("id", "")
-            change = m.get("change") or 0
+            change = m.get("change")
             history = feed.history(batch_id, asset_id)
 
-            if len(history) < 3:
-                # Not enough data — plain momentum
-                results.append("UP" if change >= 0 else "DOWN")
+            if len(history) < 3 or change is None or change == 0:
+                if change is not None and change != 0:
+                    results.append("UP" if change > 0 else "DOWN")
+                else:
+                    results.append(self._rng.choice(["UP", "DOWN"]))
                 continue
 
             recent = history[-lookback:]
@@ -59,7 +65,7 @@ class VolatilityFadeStrategy(Strategy):
             ]
 
             if not abs_changes:
-                results.append("UP" if change >= 0 else "DOWN")
+                results.append("UP" if change > 0 else "DOWN")
                 continue
 
             avg_abs = sum(abs_changes) / len(abs_changes)

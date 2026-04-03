@@ -28,11 +28,15 @@ class AdoptionCurveStrategy(Strategy):
         self._rng = random.Random()
 
     def predict(self, markets):
-        """Fallback: bullish bias (adoption metrics tend upward)."""
-        return [
-            "UP" if (m.get("change") or 0) >= 0 else "DOWN"
-            for m in markets
-        ]
+        """Fallback: momentum (coin flip when change is None or 0)."""
+        results = []
+        for m in markets:
+            c = m.get("change")
+            if c is None or c == 0:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            else:
+                results.append("UP" if c > 0 else "DOWN")
+        return results
 
     def predict_with_context(self, markets, feed=None, batch_id=None):
         if not feed or not batch_id:
@@ -45,10 +49,11 @@ class AdoptionCurveStrategy(Strategy):
             history = feed.history(batch_id, asset_id)
 
             if len(history) < 4:
-                # Need at least 4 points for a meaningful second derivative
-                results.append(
-                    "UP" if (m.get("change") or 0) >= 0 else "DOWN"
-                )
+                c = m.get("change")
+                if c is None or c == 0:
+                    results.append(self._rng.choice(["UP", "DOWN"]))
+                else:
+                    results.append("UP" if c > 0 else "DOWN")
                 continue
 
             # Extract prices from recent history

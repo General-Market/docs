@@ -28,10 +28,14 @@ class MeanReversionStrategy(Strategy):
 
     def predict(self, markets):
         """Fallback without history: simple contrarian on last change."""
-        return [
-            "DOWN" if (m.get("change") or 0) >= 0 else "UP"
-            for m in markets
-        ]
+        results = []
+        for m in markets:
+            c = m.get("change")
+            if c is None or c == 0:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            else:
+                results.append("DOWN" if c > 0 else "UP")
+        return results
 
     def predict_with_context(self, markets, feed=None, batch_id=None):
         if not feed or not batch_id:
@@ -46,10 +50,11 @@ class MeanReversionStrategy(Strategy):
             history = feed.history(batch_id, asset_id)
 
             if len(history) < 3:
-                # Not enough data — fall back to simple contrarian
-                results.append(
-                    "DOWN" if (m.get("change") or 0) >= 0 else "UP"
-                )
+                c = m.get("change")
+                if c is None or c == 0:
+                    results.append(self._rng.choice(["UP", "DOWN"]))
+                else:
+                    results.append("DOWN" if c > 0 else "UP")
                 continue
 
             recent = history[-lookback:]

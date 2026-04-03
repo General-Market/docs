@@ -494,8 +494,8 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
   const navHistory = useMemo(() => {
     if (hasHistory) return snapshots.map(s => s.nav)
-    return generateNavHistory(vault.navPerShare, vault.address)
-  }, [hasHistory, snapshots, vault.navPerShare, vault.address])
+    return null // No synthetic data — show nothing until real history exists
+  }, [hasHistory, snapshots])
 
   const accentColor = branding?.color ?? '#000'
   const strategyKey = branding?.strategy ?? ''
@@ -566,10 +566,16 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             )}
           </div>
 
-          {/* Interactive NAV chart */}
-          <div className="mt-4 mb-5 -mx-1">
-            <NavChart data={navHistory} vaultAddr={vault.address} timestamps={hasHistory ? snapshots.map(s => s.ts) : undefined} />
-          </div>
+          {/* Interactive NAV chart — only when real history exists */}
+          {navHistory && navHistory.length >= 2 ? (
+            <div className="mt-4 mb-5 -mx-1">
+              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
+            </div>
+          ) : (
+            <div className="mt-4 mb-5 flex items-center justify-center py-8 border border-dashed border-border-light rounded-md">
+              <p className="text-xs text-text-muted font-mono">No performance history yet</p>
+            </div>
+          )}
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3 mb-5">

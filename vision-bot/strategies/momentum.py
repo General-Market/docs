@@ -23,13 +23,17 @@ class MomentumStrategy(Strategy):
         threshold = self.params.get("min_change_pct", 0)
         results = []
         for m in markets:
-            change = m.get("change") or 0
-            if threshold and abs(change) < threshold:
+            change = m.get("change")
+            if change is None:
                 results.append(self._rng.choice(["UP", "DOWN"]))
-            elif change >= 0:
+            elif threshold and abs(change) < threshold:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            elif change > 0:
                 results.append("UP")
-            else:
+            elif change < 0:
                 results.append("DOWN")
+            else:
+                results.append(self._rng.choice(["UP", "DOWN"]))
         return results
 
 
@@ -44,7 +48,11 @@ class MomentumNoiseStrategy(Strategy):
     def predict(self, markets):
         out = []
         for m in markets:
-            d = "UP" if (m.get("change") or 0) >= 0 else "DOWN"
+            change = m.get("change")
+            if change is None or change == 0:
+                d = self._rng.choice(["UP", "DOWN"])
+            else:
+                d = "UP" if change > 0 else "DOWN"
             if self._rng.random() < 0.10:
                 d = "DOWN" if d == "UP" else "UP"
             out.append(d)
@@ -60,9 +68,13 @@ class MomentumThresholdStrategy(Strategy):
         self._rng = _rng("thresh")
 
     def predict(self, markets):
-        return [
-            ("UP" if (m.get("change") or 0) > 0 else "DOWN")
-            if abs(m.get("change") or 0) > 1.0
-            else self._rng.choice(["UP", "DOWN"])
-            for m in markets
-        ]
+        results = []
+        for m in markets:
+            change = m.get("change")
+            if change is None:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            elif abs(change) > 1.0:
+                results.append("UP" if change > 0 else "DOWN")
+            else:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+        return results

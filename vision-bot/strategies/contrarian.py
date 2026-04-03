@@ -15,11 +15,15 @@ class ContrarianStrategy(Strategy):
         threshold = self.params.get("min_change_pct", 0)
         results = []
         for m in markets:
-            change = m.get("change") or 0
-            if threshold and abs(change) < threshold:
+            change = m.get("change")
+            if change is None:
                 results.append(self._rng.choice(["UP", "DOWN"]))
-            elif change >= 0:
+            elif threshold and abs(change) < threshold:
+                results.append(self._rng.choice(["UP", "DOWN"]))
+            elif change > 0:
                 results.append("DOWN")
-            else:
+            elif change < 0:
                 results.append("UP")
+            else:
+                results.append(self._rng.choice(["UP", "DOWN"]))
         return results
