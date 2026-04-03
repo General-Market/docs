@@ -23,6 +23,7 @@ import { TextGsap } from "./TextGsap";
 import { OpeningSequence } from "./OpeningSequence";
 import { TextHighlight } from "./TextHighlight";
 import { TextTrail } from "./TextTrail";
+import { LenticularBackground } from "../solana-bg/LenticularShader";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -53,6 +54,7 @@ const ALL_SCENES = [
   { id: "WP-OpeningSequence", component: OpeningSequence },
   { id: "WP-TextSplit", component: TextSplit },
   { id: "WP-TextTrail", component: TextTrail },
+  { id: "WP-LenticularMetal", component: LenticularBackground },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
