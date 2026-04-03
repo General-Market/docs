@@ -14,6 +14,8 @@ import '@/lib/vision/line-maps/sports'
 import '@/lib/vision/line-maps/gtfs-flights'
 import '@/lib/vision/line-maps/aviation-misc'
 
+const PAGE_SIZE = 120
+
 interface SubmarketsGridProps {
   sourceId: string
 }
@@ -52,14 +54,12 @@ interface RatiosResponse {
   markets: MarketRatio[]
 }
 
-/** Convert implied probability (0-100) to decimal odds (min 1.01) */
 function toOdds(pct: number): string {
   if (pct <= 0) return '99.00'
   if (pct >= 100) return '1.01'
   return (100 / pct).toFixed(2)
 }
 
-/** Derive implied Up/Down % from 24h change when oracle ratios unavailable */
 function impliedRates(changePct: string | null): { upPct: number; downPct: number } {
   const pct = parseFloat(changePct ?? '0')
   if (isNaN(pct) || Math.abs(pct) < 0.01) return { upPct: 50, downPct: 50 }
@@ -74,13 +74,13 @@ function impliedRates(changePct: string | null): { upPct: number; downPct: numbe
 
 export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
   const [search, setSearch] = useState('')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const { sources } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
 
-  const { data, isLoading } = useSourceSnapshot(sourceId)
+  const { data, isLoading, isError, isFetching } = useSourceSnapshot(sourceId)
   const markets: SnapshotPrice[] = data?.prices ?? []
 
-  // Try real parimutuel ratios from last settled batch
   const { data: historyData } = useQuery<{ batches: { batchId: number; status: string }[] }>({
     queryKey: ['source-history', sourceId, 1],
     queryFn: async () => {
@@ -111,7 +111,6 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
     const map = new Map<string, MarketRatio>()
     if (ratiosData?.markets) {
       for (const r of ratiosData.markets) {
-        // Skip cancelled/flat markets with no real stakes — their 50/50 ratios are meaningless
         if (r.outcome === 'Cancelled' || r.outcome === 'Flat' || (r.upStake === '0' && r.downStake === '0')) continue
         map.set(r.assetId, r)
       }
@@ -127,6 +126,9 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
       m.symbol.toLowerCase().includes(q),
     )
   }, [markets, search])
+
+  const visible = filtered.slice(0, visibleCount)
+  const hasMore = filtered.length > visibleCount
 
   return (
     <div>
@@ -149,7 +151,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           type="text"
           placeholder="Search..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE) }}
           aria-label="Search submarkets"
           className="px-2.5 py-1 rounded text-label bg-white/[0.05] border border-white/10 text-text-inverse placeholder:text-text-inverse-muted/30 outline-none focus:border-white/25 focus:ring-1 focus:ring-white/15 w-[140px] transition-colors"
         />
@@ -161,11 +163,19 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           <div className="py-12 text-center text-caption text-text-inverse-muted/30 animate-pulse">
             Loading markets...
           </div>
+        ) : isError ? (
+          <div className="py-12 text-center text-caption text-color-down/60">
+            Failed to load markets. Retrying...
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             {search ? (
               <div className="text-caption text-text-inverse-muted/30">
                 No markets matching &ldquo;{search}&rdquo;
+              </div>
+            ) : isFetching ? (
+              <div className="text-caption text-text-inverse-muted/30 animate-pulse">
+                Loading markets...
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3">
@@ -184,50 +194,59 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-            {filtered.map((market) => {
-              const name = market.name || market.symbol
-              const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
-              const realRatio = ratioMap.get(market.assetId)
-              const rates = realRatio
-                ? { upPct: realRatio.upPct, downPct: realRatio.downPct }
-                : impliedRates(market.changePct)
-              const upOdds = toOdds(rates.upPct)
-              const downOdds = toOdds(rates.downPct)
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+              {visible.map((market) => {
+                const name = market.name || market.symbol
+                const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
+                const realRatio = ratioMap.get(market.assetId)
+                const rates = realRatio
+                  ? { upPct: realRatio.upPct, downPct: realRatio.downPct }
+                  : impliedRates(market.changePct)
+                const upOdds = toOdds(rates.upPct)
+                const downOdds = toOdds(rates.downPct)
 
-              return (
-                <div
-                  key={market.assetId}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03] hover:bg-white/[0.07] transition-colors"
-                >
-                  <MarketIcon
-                    sourceId={sourceId}
-                    assetId={market.assetId}
-                    prefixes={sourceEntry?.prefixes}
-                    imageUrl={market.imageUrl}
-                  />
-                  <span className="text-label text-text-inverse-muted truncate flex-1 font-medium leading-tight">
-                    {truncated}
-                  </span>
-                  {/* GG.bet-style decimal odds buttons */}
-                  <div className="flex gap-1 shrink-0">
-                    <span className="px-2 py-[3px] rounded bg-color-up/15 border border-color-up/20">
-                      <div className="text-[8px] font-semibold text-color-up/50 leading-none">UP</div>
-                      <div className="text-label font-bold font-mono tabular-nums text-color-up leading-tight">
-                        {upOdds}
-                      </div>
+                return (
+                  <div
+                    key={market.assetId}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03] hover:bg-white/[0.07] transition-colors"
+                  >
+                    <MarketIcon
+                      sourceId={sourceId}
+                      assetId={market.assetId}
+                      prefixes={sourceEntry?.prefixes}
+                      imageUrl={market.imageUrl}
+                    />
+                    <span className="text-label text-text-inverse-muted truncate flex-1 font-medium leading-tight">
+                      {truncated}
                     </span>
-                    <span className="px-2 py-[3px] rounded bg-color-down/15 border border-color-down/20">
-                      <div className="text-[8px] font-semibold text-color-down/50 leading-none">DOWN</div>
-                      <div className="text-label font-bold font-mono tabular-nums text-color-down leading-tight">
-                        {downOdds}
-                      </div>
-                    </span>
+                    <div className="flex gap-1 shrink-0">
+                      <span className="px-2 py-[3px] rounded bg-color-up/15 border border-color-up/20">
+                        <div className="text-[8px] font-semibold text-color-up/50 leading-none">UP</div>
+                        <div className="text-label font-bold font-mono tabular-nums text-color-up leading-tight">
+                          {upOdds}
+                        </div>
+                      </span>
+                      <span className="px-2 py-[3px] rounded bg-color-down/15 border border-color-down/20">
+                        <div className="text-[8px] font-semibold text-color-down/50 leading-none">DOWN</div>
+                        <div className="text-label font-bold font-mono tabular-nums text-color-down leading-tight">
+                          {downOdds}
+                        </div>
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                className="mt-4 w-full py-2 text-caption font-semibold text-text-inverse-muted/40 hover:text-text-inverse-muted/60 bg-white/[0.03] hover:bg-white/[0.06] rounded transition-colors"
+              >
+                Show more ({(filtered.length - visibleCount).toLocaleString()} remaining)
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

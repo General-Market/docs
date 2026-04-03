@@ -101,11 +101,11 @@ export async function prefetchLeaderboard() {
 }
 
 // ── Per-Source Detail Prefetch ───────────────────────────
-/** Prefetch source snapshot server-side (same data useSourceSnapshot fetches client-side).
- *  Must return the same shape as /api/vision/snapshot — client reads `prices`, not `snapshots`. */
+/** Prefetch source snapshot server-side (same shape as /api/vision/snapshot).
+ *  Caps at 500 to keep the RSC payload small — client refetches full set. */
 export async function prefetchSourceSnapshot(sourceId: string) {
   const res = await fetch(
-    `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(sourceId)}&limit=10000`,
+    `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(sourceId)}&limit=500`,
     { next: { revalidate: 30 }, signal: AbortSignal.timeout(8_000) }
   )
   if (!res.ok) throw new Error(`Snapshot HTTP ${res.status}`)
@@ -114,7 +114,7 @@ export async function prefetchSourceSnapshot(sourceId: string) {
   return {
     generatedAt: new Date().toISOString(),
     maxAgeSecs: null,
-    totalAssets: snapshots.length,
+    totalAssets: raw.count ?? snapshots.length,
     sources: [],
     prices: snapshots.map((s) => ({
       source: s.source,
