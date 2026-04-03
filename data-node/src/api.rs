@@ -9,6 +9,7 @@ use axum::response::Json;
 use axum::routing::get;
 use axum::Router;
 use chrono::{DateTime, Utc};
+use dashmap::DashMap;
 use ethers::prelude::*;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -360,6 +361,13 @@ pub struct AppState {
     pub batch_markets_path: String,
     /// Cumulative count of lagged events across all SSE chain-event consumers
     pub chain_event_lag_total: std::sync::atomic::AtomicU64,
+    /// Immutable config cache: config_hash → JSON response. Keccak256 of immutable
+    /// content — once stored, never evicted. A config that exists will never change.
+    pub config_hash_cache: DashMap<String, serde_json::Value>,
+    /// TTL cache for /batches/recommended — (timestamp, serialized response).
+    /// Refreshed every 30s. The underlying data lives in batch_engine.configs
+    /// already, but serialization + lock acquisition add up under load.
+    pub recommended_cache: RwLock<Option<(Instant, serde_json::Value)>>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -5130,23 +5138,70 @@ async fn snapshot(
 // ---- Batch config endpoints ----
 
 /// GET /batches/recommended — latest recommended batch configs from BatchEngine.
+/// Cached for 30s — the underlying configs change as sources update, but not
+/// fast enough to justify re-serializing on every request.
 async fn batches_recommended(
     State(state): State<Arc<AppState>>,
 ) -> Json<serde_json::Value> {
+    const TTL: Duration = Duration::from_secs(30);
+
+    // Check TTL cache
+    {
+        let guard = state.recommended_cache.read().await;
+        if let Some((ts, ref val)) = *guard {
+            if ts.elapsed() < TTL {
+                return Json(val.clone());
+            }
+        }
+    }
+
+    // Cache miss or stale — rebuild
     let configs = state.batch_engine.configs.read().await;
-    Json(serde_json::json!({
+    let val = serde_json::json!({
         "generatedAt": Utc::now(),
         "batchCount": configs.len(),
         "totalMarkets": configs.iter().map(|c| c.markets.len()).sum::<usize>(),
         "batches": *configs,
-    }))
+    });
+    drop(configs);
+
+    // Store in cache
+    let mut guard = state.recommended_cache.write().await;
+    *guard = Some((Instant::now(), val.clone()));
+
+    Json(val)
 }
 
 /// GET /batches/config/:hash — fetch full batch config by keccak256 hash.
 /// Used by oracles/resolver to get the full market list for a committed hash.
+///
+/// Config hashes are keccak256 of immutable content. Once a config exists for
+/// a given hash, it will never change. The DashMap cache stores results forever
+/// with no eviction — a resolved hash is a resolved hash.
 async fn batch_config_by_hash(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(hash): axum::extract::Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Fast path: immutable cache hit — no locks, no DB, no computation
+    if let Some(cached) = state.config_hash_cache.get(&hash) {
+        return Ok(Json(cached.value().clone()));
+    }
+
+    // Slow path: resolve the config, then cache it permanently
+    let result = resolve_batch_config(&state, &hash).await;
+
+    if let Ok(Json(ref val)) = result {
+        state.config_hash_cache.insert(hash, val.clone());
+    }
+
+    result
+}
+
+/// Resolves a batch config by hash through all fallback layers:
+/// in-memory recommended → signed → DB → deploy-hash reverse lookup.
+async fn resolve_batch_config(
+    state: &AppState,
+    hash: &str,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Check in-memory recommended configs first
     let configs = state.batch_engine.configs.read().await;
@@ -5181,18 +5236,15 @@ async fn batch_config_by_hash(
     .ok()
     .flatten();
 
-    match row {
-        Some((markets, tick_dur, lock_off, source_id, created_at)) => {
-            return Ok(Json(serde_json::json!({
-                "sourceId": source_id,
-                "configHash": hash,
-                "tickDurationSecs": tick_dur,
-                "lockOffsetSecs": lock_off,
-                "markets": markets,
-                "createdAt": created_at,
-            })));
-        }
-        None => {}
+    if let Some((markets, tick_dur, lock_off, source_id, created_at)) = row {
+        return Ok(Json(serde_json::json!({
+            "sourceId": source_id,
+            "configHash": hash,
+            "tickDurationSecs": tick_dur,
+            "lockOffsetSecs": lock_off,
+            "markets": markets,
+            "createdAt": created_at,
+        })));
     }
 
     // Final fallback: reverse-compute the deploy-script placeholder hash for each
@@ -5200,10 +5252,8 @@ async fn batch_config_by_hash(
     //   sourceId = keccak256(sourceName)
     //   configHash = keccak256(abi.encode(sourceId, "default_config_v1"))
     // Match against both the batch engine source_id and known deploy aliases.
-    let hash_clean2 = hash.trim_start_matches("0x");
-    let target_bytes = hex::decode(hash_clean2).unwrap_or_default();
+    let target_bytes = hex::decode(hash_clean).unwrap_or_default();
     if target_bytes.len() == 32 {
-        // Deploy aliases: batch_engine_source_id → deploy_script_source_names
         const DEPLOY_ALIASES: &[(&str, &[&str])] = &[
             ("crypto", &["coingecko"]),
             ("defi", &["defillama"]),
@@ -5220,7 +5270,6 @@ async fn batch_config_by_hash(
 
         let configs = state.batch_engine.configs.read().await;
         for c in configs.iter() {
-            // Collect all names to try: the source_id itself + any deploy aliases
             let mut names_to_try = vec![c.source_id.as_str()];
             for &(engine_id, aliases) in DEPLOY_ALIASES {
                 if engine_id == c.source_id {
