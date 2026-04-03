@@ -17,7 +17,23 @@ export async function GET(request: Request) {
     })
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)
     const data = await res.json()
-    return NextResponse.json(data)
+
+    // Pagination — upstream returns all players, slice here
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
+    const entries: unknown[] = Array.isArray(data?.leaderboard) ? data.leaderboard : Array.isArray(data) ? data : []
+    const total = entries.length
+    const start = (page - 1) * limit
+    const paged = entries.slice(start, start + limit)
+
+    return NextResponse.json({
+      leaderboard: paged,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+      updatedAt: data?.updatedAt || new Date().toISOString(),
+    })
   } catch (err) {
     console.error('Vision leaderboard proxy error:', err)
     return NextResponse.json({ leaderboard: [], updatedAt: new Date().toISOString() }, { status: 502 })
