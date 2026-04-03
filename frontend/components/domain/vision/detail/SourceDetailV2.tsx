@@ -171,7 +171,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   }
 
   return (
-    <div className="flex justify-center">
+    <div className="flex">
       {/* Left sidebar */}
       <SourceSidebar
         currentSourceId={sourceId}
@@ -268,12 +268,8 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
 
         <div className="flex flex-col gap-6 mt-6">
           <VaultCarousel sourceId={sourceId} />
-          <SubmarketsGrid sourceId={sourceId} />
-        </div>
-
-        {/* Past rounds — always last before footer */}
-        <div className="mt-6">
           <BatchVaultResults sourceId={sourceId} />
+          <SubmarketsGrid sourceId={sourceId} />
         </div>
         </div>
       </div>
