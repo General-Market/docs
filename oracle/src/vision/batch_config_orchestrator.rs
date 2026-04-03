@@ -64,7 +64,7 @@ pub struct RecommendedMarket {
 /// so large payloads (polymarket: 33k+ markets) transfer compressed.
 fn data_node_client() -> reqwest::Client {
     reqwest::Client::builder()
-        .timeout(Duration::from_secs(15))
+        .timeout(Duration::from_secs(5))
         .gzip(true)
         .build()
         .expect("failed to build reqwest client")

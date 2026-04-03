@@ -54,7 +54,7 @@ pub async fn fetch_snapshot_data_inner_with_secret(
 ) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}/vision/snapshot?source={}&limit=10000", data_node_url, source_id);
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(15))
+        .timeout(std::time::Duration::from_secs(5))
         .gzip(true)
         .build()?;
 
@@ -207,7 +207,7 @@ pub async fn fetch_snapshot_with_retry(
 ) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
     let delays = [
         std::time::Duration::from_secs(5),
-        std::time::Duration::from_secs(15),
+        std::time::Duration::from_secs(5),
         std::time::Duration::from_secs(45),
     ];
     let mut last_err: Option<Box<dyn std::error::Error + Send + Sync>> = None;
