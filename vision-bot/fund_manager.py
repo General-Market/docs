@@ -237,12 +237,10 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         # Fallback: try all batches (market count will be resolved from data-node)
         batches = all_batches
 
-    deposit_wei = int(cfg.get("deposit_per_batch", 10) * 10**DECIMALS)
-    stake_wei = int(cfg.get("stake_per_tick", 10) * 10**DECIMALS)
-
-    # Skip vault idle pre-cache on first cycles — too many RPC calls.
-    # Assume idle = seed amount (50 USDC) if no batches active.
-    SEED = 50 * 10**DECIMALS
+    # Risk management: bet 5% of vault assets per batch, not a flat amount.
+    # stake_per_tick is the per-tick cost within a batch (usually = deposit).
+    alloc_bps = int(cfg.get("allocation_bps", 500))  # 500 = 5%
+    stake_wei = int(cfg.get("stake_per_tick", 1) * 10**DECIMALS)
 
     joined_this_cycle = 0
     log.info("Processing %d batches across %d funds...", len(batches), len(funds))
@@ -262,8 +260,17 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         if not matched_funds:
             continue
 
-        # Filter by idle capital
-        matched_funds = [f for f in matched_funds if (SEED - sum(f.active_batches.values())) >= deposit_wei]
+        # Filter by idle capital — each fund bets alloc_bps% of its total assets
+        def has_idle(f):
+            try:
+                info = f.vault.get_vault_info()
+                idle = info.get("idle_usdc", 0)
+                total = info.get("total_assets", 0)
+                deposit = (total * alloc_bps) // 10000
+                return idle >= deposit and deposit > 0
+            except Exception:
+                return False
+        matched_funds = [f for f in matched_funds if has_idle(f)]
         if not matched_funds:
             continue
 
@@ -332,10 +339,22 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
             bitmap = encode_bitmap(bets, market_count)
             bm_hash = hash_bitmap(bitmap)
 
+            # Compute deposit: alloc_bps% of current total assets
+            try:
+                info = fund.vault.get_vault_info()
+                total = info.get("total_assets", 0)
+                deposit_wei = (total * alloc_bps) // 10000
+                if deposit_wei <= 0:
+                    continue
+                # stake_per_tick = deposit (bet everything each tick within the batch)
+                stake_for_batch = min(stake_wei, deposit_wei)
+            except Exception:
+                continue
+
             # Join via vault
             try:
                 fund.vault.join_batch(
-                    batch_id, config_hash, deposit_wei, stake_wei, bm_hash,
+                    batch_id, config_hash, deposit_wei, stake_for_batch, bm_hash,
                 )
                 fund.joined_batch_ids.add(batch_id)
                 fund.active_batches[batch_id] = deposit_wei
@@ -418,8 +437,8 @@ def main():
     shared_cfg = {
         "vision_api": vision_api,
         "data_node": data_node,
-        "deposit_per_batch": manager_cfg.get("deposit_per_batch", 10.0),
-        "stake_per_tick": manager_cfg.get("stake_per_tick", 10.0),
+        "allocation_bps": manager_cfg.get("allocation_bps", 500),  # 5% of vault assets per batch
+        "stake_per_tick": manager_cfg.get("stake_per_tick", 1.0),
     }
 
     executor = Executor(

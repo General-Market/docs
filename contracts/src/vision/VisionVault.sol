@@ -16,6 +16,7 @@ contract VisionVault is IVisionVault {
     using SafeERC20 for IERC20;
 
     uint256 private constant MAX_FEE = 5000; // 50%
+    uint256 private constant MAX_BATCH_BPS = 500; // 5% of totalAssets per batch
 
     // ── ERC-20 storage (manual, since we're a clone) ─────────────────
     string private _vaultName;
@@ -329,6 +330,8 @@ contract VisionVault is IVisionVault {
 
     // ── Manager Trading ──────────────────────────────────────────────
 
+    error ExceedsMaxBatchAllocation();
+
     function joinBatch(
         uint256 batchId,
         bytes32 configHash,
@@ -337,6 +340,8 @@ contract VisionVault is IVisionVault {
         bytes32 bitmapHash
     ) external onlyManager {
         if (depositAmount > idleUSDC()) revert InsufficientIdleCapital();
+        uint256 maxAlloc = (totalAssets() * MAX_BATCH_BPS) / 10000;
+        if (maxAlloc > 0 && depositAmount > maxAlloc) revert ExceedsMaxBatchAllocation();
 
         IVision(vision).joinBatchDirect(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
 
