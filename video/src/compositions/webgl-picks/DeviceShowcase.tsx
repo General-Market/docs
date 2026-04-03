@@ -10,7 +10,7 @@ import {
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { useGLTF, ContactShadows } from "@react-three/drei";
+import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
@@ -197,6 +197,11 @@ const DeviceScene: React.FC<{ frame: number }> = ({ frame }) => {
   return (
     <>
       <primitive object={gltf.scene} />
+      <Environment preset="studio" environmentIntensity={1.5} />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 8, 3]} intensity={2.0} castShadow />
+      <directionalLight position={[-3, 4, -2]} intensity={0.8} color="#b0c4de" />
+      <pointLight position={[0, 3, 2]} intensity={1.5} decay={1} />
       <ContactShadows
         position={[0, -0.01, 0]}
         opacity={0.5}
