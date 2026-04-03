@@ -45,7 +45,9 @@ export function useBatches() {
       }
       return Array.from(bySource.values())
     },
-    refetchInterval: 30_000,
-    staleTime: 20_000,
+    // TODO: Add a vision-batches SSE topic to data-node for instant updates
+    // (new batch created, player joined, batch settled). Until then, 10s polling.
+    refetchInterval: 10_000,
+    staleTime: 8_000,
   })
 }

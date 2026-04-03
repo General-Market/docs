@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
+import { useSettlementSSE } from '@/hooks/vision/useSettlementSSE'
 import { BatchCard } from './BatchCard'
 import { CreateBatchModal } from './CreateBatchModal'
 import { VisionLeaderboard } from './VisionLeaderboard'
@@ -15,6 +16,7 @@ export function VisionPage() {
   const t = useTranslations('vision')
   const { capture } = usePostHogTracker()
   const { data: batches, isLoading } = useBatches()
+  useSettlementSSE() // invalidates batch + leaderboard queries on settlement events
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {

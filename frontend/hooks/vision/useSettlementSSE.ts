@@ -42,6 +42,7 @@ export function useSettlementSSE(options: UseSettlementSSEOptions = {}) {
     (event: MessageEvent) => {
       try {
         const data: SettlementEvent = JSON.parse(event.data)
+        queryClient.invalidateQueries({ queryKey: ['vision-batches'] })
         queryClient.invalidateQueries({ queryKey: ['vision-source-history', data.sourceId] })
         queryClient.invalidateQueries({ queryKey: ['vision-batch-ratios', data.batchId] })
         queryClient.invalidateQueries({ queryKey: ['vision-leaderboard'] })
