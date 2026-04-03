@@ -1,18 +1,10 @@
 /**
  * Scene 02: Dark Pulse
  * Concentric glowing rings expanding from center. Brand green on void.
- * Institutional, like a radar or heartbeat. Pure shader — no 3D geometry.
+ * Institutional, like a radar or heartbeat.
  */
-import React, { useMemo, useRef, useEffect } from "react";
-import { useCurrentFrame, useVideoConfig, AbsoluteFill } from "remotion";
-
-const VERTEX = /* glsl */ `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position.xy, 0.0, 1.0);
-  }
-`;
+import React from "react";
+import { ShaderScene } from "./ShaderScene";
 
 const FRAGMENT = /* glsl */ `
   precision highp float;
@@ -25,28 +17,40 @@ const FRAGMENT = /* glsl */ `
     float aspect = uResolution.x / uResolution.y;
     vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
     float d = length(p);
+    float t = uTime;
 
     // Concentric expanding rings
     float rings = 0.0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 8; i++) {
       float fi = float(i);
-      float radius = mod(uTime * 0.15 + fi * 0.18, 1.2);
-      float ring = smoothstep(0.015, 0.0, abs(d - radius)) * (1.0 - radius / 1.2);
+      float radius = mod(t * 0.15 + fi * 0.15, 1.2);
+      float ring = smoothstep(0.012, 0.0, abs(d - radius)) * (1.0 - radius / 1.2);
       rings += ring;
     }
 
     // Breathing center glow
-    float breath = 0.5 + 0.5 * sin(uTime * 0.8);
+    float breath = 0.5 + 0.5 * sin(t * 0.8);
     float centerGlow = exp(-d * 4.0) * breath * 0.6;
 
-    // Brand green: #00A36C = (0.0, 0.639, 0.424)
+    // Secondary pulse wave
+    float pulse = smoothstep(0.02, 0.0, abs(d - mod(t * 0.3, 1.5))) * 0.5;
+
+    // Brand green: #00A36C
     vec3 brandGreen = vec3(0.0, 0.639, 0.424);
     vec3 mintGreen = vec3(0.133, 1.0, 0.667);
+    vec3 darkGreen = vec3(0.0, 0.2, 0.13);
 
-    vec3 color = brandGreen * rings * 1.5 + mintGreen * centerGlow;
+    vec3 color = brandGreen * rings * 1.5;
+    color += mintGreen * centerGlow;
+    color += brandGreen * pulse;
 
-    // Subtle radial gradient in background
-    color += vec3(0.0, 0.04, 0.03) * (1.0 - d * 0.8);
+    // Radial gradient background
+    color += darkGreen * (1.0 - d * 0.8) * 0.15;
+
+    // Subtle grid lines
+    vec2 grid = abs(fract(p * 8.0) - 0.5);
+    float gridLine = smoothstep(0.48, 0.5, max(grid.x, grid.y));
+    color += vec3(0.0, 0.05, 0.03) * gridLine * (1.0 - d * 0.7);
 
     // Vignette
     color *= 1.0 - 0.4 * d;
@@ -55,63 +59,7 @@ const FRAGMENT = /* glsl */ `
   }
 `;
 
-export const DarkPulse: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const glRef = useRef<WebGLRenderingContext | null>(null);
-  const programRef = useRef<WebGLProgram | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
-    if (!gl) return;
-    glRef.current = gl;
-
-    const vs = gl.createShader(gl.VERTEX_SHADER)!;
-    gl.shaderSource(vs, VERTEX);
-    gl.compileShader(vs);
-
-    const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-    gl.shaderSource(fs, FRAGMENT);
-    gl.compileShader(fs);
-
-    const prog = gl.createProgram()!;
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    programRef.current = prog;
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,0,0, 1,-1,1,0, -1,1,0,1, 1,1,1,1]), gl.STATIC_DRAW);
-    const pos = gl.getAttribLocation(prog, "position");
-    const uv = gl.getAttribLocation(prog, "uv");
-    gl.enableVertexAttribArray(pos);
-    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 16, 0);
-    gl.enableVertexAttribArray(uv);
-    gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 16, 8);
-  }, []);
-
-  useEffect(() => {
-    const gl = glRef.current;
-    const prog = programRef.current;
-    if (!gl || !prog) return;
-
-    gl.viewport(0, 0, width, height);
-    gl.useProgram(prog);
-    gl.uniform1f(gl.getUniformLocation(prog, "uTime"), frame / fps);
-    gl.uniform2f(gl.getUniformLocation(prog, "uResolution"), width, height);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  }, [frame, fps, width, height]);
-
-  return (
-    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
-      <canvas ref={canvasRef} width={width} height={height} style={{ width: "100%", height: "100%" }} />
-    </AbsoluteFill>
-  );
-};
+export const DarkPulse: React.FC = () => <ShaderScene fragmentShader={FRAGMENT} />;
 
 export const scene02Meta = {
   id: "GMLaunch-02-DarkPulse",
