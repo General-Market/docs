@@ -1,32 +1,24 @@
 // Source: https://codepen.io/soju22/full/wvyBorP
 //
-// 1:1 Remotion reproduction of Kevin Levron's "ThreeJS Toys — Neon Cursor"
-// from the threejs-toys library (packages/toys/src/cursors/neon/index.js).
-//
-// The original draws a glowing neon trail that follows the mouse cursor,
-// using a spline curve sampled into quadratic bezier segments evaluated
-// in a fragment shader via signed-distance. When idle (no hover), the
-// trail drifts in a sinusoidal orbit and cycles between magenta and blue.
-//
-// Here, mouse input is replaced by a Lissajous path that simulates both
-// the idle drift and occasional "hover" sweeps across the viewport.
+// Remotion reproduction of Kevin Levron's "Neon Cursor" from threejs-toys
+// (packages/toys/src/cursors/neon/index.js). A glowing bezier trail drifts
+// in a sinusoidal orbit, cycling between magenta and blue.
 
 import React, { useMemo, useRef } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import * as THREE from "three";
 
-// ── Config — matches the CodePen invocation, not the library defaults ──
-
+// Config — exact library defaults (the CodePen passes no overrides)
 const CONFIG = {
-  shaderPoints: 16,
+  shaderPoints: 8,
   curvePoints: 80,
-  curveLerp: 0.5,
-  radius1: 5,
-  radius2: 30,
+  curveLerp: 0.75,
+  radius1: 3,
+  radius2: 5,
   velocityTreshold: 10,
-  sleepRadiusX: 100,
-  sleepRadiusY: 100,
+  sleepRadiusX: 150,
+  sleepRadiusY: 150,
   sleepTimeCoefX: 0.0025,
   sleepTimeCoefY: 0.0025,
 };
@@ -124,79 +116,43 @@ void main() {
 }
 `;
 
-// ── Spline simulation — reproduces the original's per-frame lerp chain ──
-//
-// The original maintains an array of `curvePoints` Vector2s. Each frame,
-// point[0] is set to the cursor (or the idle sinusoidal position), then
-// each subsequent point lerps toward its predecessor. A SplineCurve is
-// built from those points, and `shaderPoints` evenly-spaced samples are
-// sent to the GPU as uniform vec2 array.
-//
-// Because Remotion is deterministic (frame N always produces the same image),
-// we can't accumulate state across frames. Instead, we simulate the full
-// lerp chain from a cold start up to the current frame. To keep this tractable,
-// we pre-simulate the entire timeline once and cache it.
+// Spline simulation — deterministic replay of the original's per-frame lerp chain.
+// Pre-simulates the full timeline so frame N is always reproducible.
 
 function simulateSpline(
   totalFrames: number,
-  fps: number,
+  _fps: number,
   width: number,
-  height: number,
+  _height: number,
 ): THREE.Vector2[][] {
   const { curvePoints, curveLerp, shaderPoints, sleepRadiusX, sleepRadiusY, sleepTimeCoefX, sleepTimeCoefY } = CONFIG;
 
-  // The original uses `wWidth` which is the world-width of the camera frustum.
-  // For an orthographic camera the ratio is just 1, so the scaling factor
-  // `wWidth / width` simplifies. In the original code the ortho camera has no
-  // explicit bounds set, which means the default [-1,1] range.
-  // The idle radius is `sleepRadiusX * wWidth / width`.
-  // With an ortho camera of width=2 ([-1,1]), wWidth=2, so the factor is 2/width.
-  const wWidthFactor = 2.0 / width;
+  // OrthographicCamera default bounds are [-1,1], so wWidth = top - bottom = 2.
+  // The original idle radius: sleepRadiusX * wWidth / width
+  const wWidth = 2.0;
+  const r1 = sleepRadiusX * wWidth / width;
+  const r2 = sleepRadiusY * wWidth / width;
 
-  const r1 = sleepRadiusX * wWidthFactor;
-  const r2 = sleepRadiusY * wWidthFactor;
-
-  // Initialize all curve points at center
-  const pts: [number, number][] = new Array(curvePoints).fill(null).map(() => [0, 0]);
-
-  // We'll store the sampled shader points per frame
-  const result: THREE.Vector2[][] = [];
-
-  // We also need a SplineCurve each frame. Build a reusable set of Vector2s.
-  const splineVecs = pts.map(() => new THREE.Vector2());
+  const splineVecs = new Array(curvePoints).fill(null).map(() => new THREE.Vector2());
   const spline = new THREE.SplineCurve(splineVecs);
 
-  // Simulate the Lissajous "mouse" path that blends idle drift with sweeping arcs.
-  // The original idle uses `clock.time` which is the raw timestamp in ms.
-  // We convert frame to an equivalent ms-like time. The original runs at ~60fps
-  // with requestAnimationFrame, so each frame ≈ 16.67ms. We match that cadence.
-  const msPerFrame = 1000 / 60; // simulate at 60fps tick rate for visual fidelity
+  const result: THREE.Vector2[][] = [];
+
+  // The original runs at ~60fps via requestAnimationFrame.
+  // clock.time is the raw performance.now() timestamp, but since it starts
+  // from 0 effectively (first frame), we simulate with 60fps ticks.
+  const msPerFrame = 1000 / 60;
 
   for (let frame = 0; frame < totalFrames; frame++) {
     const clockTime = frame * msPerFrame;
 
-    // --- Idle position (sinusoidal orbit) ---
-    const t1 = clockTime * sleepTimeCoefX;
-    const t2 = clockTime * sleepTimeCoefY;
-    const headX = r1 * Math.cos(t1);
-    const headY = r2 * Math.sin(t2);
-
-    // Set the lead point
-    pts[0][0] = headX;
-    pts[0][1] = headY;
-
-    // Lerp chain — each point chases its predecessor
+    // Original beforeRender order:
+    // 1) Lerp chain — each point chases its predecessor
     for (let i = 1; i < curvePoints; i++) {
-      pts[i][0] += (pts[i - 1][0] - pts[i][0]) * curveLerp;
-      pts[i][1] += (pts[i - 1][1] - pts[i][1]) * curveLerp;
+      splineVecs[i].lerp(splineVecs[i - 1], curveLerp);
     }
 
-    // Update spline vectors
-    for (let i = 0; i < curvePoints; i++) {
-      splineVecs[i].set(pts[i][0], pts[i][1]);
-    }
-
-    // Sample shaderPoints evenly along the spline
+    // 2) Sample shaderPoints evenly along the spline
     const sampled: THREE.Vector2[] = [];
     for (let i = 0; i < shaderPoints; i++) {
       const v = new THREE.Vector2();
@@ -204,15 +160,15 @@ function simulateSpline(
       sampled.push(v);
     }
     result.push(sampled);
+
+    // 3) Set head point for NEXT frame (matches original's post-sample update)
+    const t1 = clockTime * sleepTimeCoefX;
+    const t2 = clockTime * sleepTimeCoefY;
+    splineVecs[0].set(r1 * Math.cos(t1), r2 * Math.sin(t2));
   }
 
   return result;
 }
-
-// ── Synthetic mouse velocity for color modulation ──
-// The original shifts color toward red when the mouse moves fast and toward
-// blue when slow. In idle mode it cycles: r = 0.5 + 0.5*cos(t*0.0015), b = 1-r.
-// We reproduce only the idle color cycle since we have no real mouse events.
 
 function idleColor(clockTimeMs: number): [number, number, number] {
   const r = 0.5 + 0.5 * Math.cos(clockTimeMs * 0.0015);

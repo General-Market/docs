@@ -24,8 +24,8 @@ import { OpeningSequence } from "./OpeningSequence";
 import { TextHighlight } from "./TextHighlight";
 import { TextTrail } from "./TextTrail";
 
-const SCENE_DURATION = 300; // 10s at 30fps
-const FPS = 30;
+const SCENE_DURATION = 600; // 10s at 60fps
+const FPS = 60;
 const W = 1920;
 const H = 1080;
 

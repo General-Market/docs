@@ -106,7 +106,6 @@ function createSSSMaterial(): THREE.MeshPhysicalMaterial {
     clearcoat: CLEARCOAT,
     clearcoatRoughness: CLEARCOAT_ROUGHNESS,
     side: THREE.FrontSide,
-    vertexColors: true,
   });
 
   mat.defines = mat.defines || {};
@@ -293,7 +292,7 @@ const HexGridScene: React.FC<{ time: number; pointerX: number; pointerY: number 
     meshRef.current.instanceMatrix.needsUpdate = true;
 
     // Apply grid scale and tilt rotation
-    meshRef.current.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    meshRef.current.scale.set(scaleFactor, scaleFactor, 1);
     meshRef.current.rotation.set(
       lerpedTilt.current.x * TILT_ROTATION_X,
       lerpedTilt.current.y * TILT_ROTATION_Y,
@@ -311,10 +310,6 @@ const HexGridScene: React.FC<{ time: number; pointerX: number; pointerY: number 
 
   return (
     <>
-      <perspectiveCamera
-        args={[fov, aspect, 0.1, 1000]}
-        position={[0, 0, cameraZ]}
-      />
       <pointLight
         ref={light1Ref}
         color={LIGHT1_COLOR}
