@@ -89,6 +89,8 @@ const heroVertexShader = /* glsl */ `
   }
 `;
 
+// Matches the original's shadow = 0.4 + 0.6 * shadowMask pattern with
+// analytical sphere-proximity shadows standing in for the shadow map.
 const heroFragmentShader = /* glsl */ `
   varying vec3 v_worldPosition;
   varying vec2 v_uv;
@@ -100,6 +102,10 @@ const heroFragmentShader = /* glsl */ `
 
   uniform vec3 u_lightPosition;
   uniform vec3 u_color;
+  uniform vec3 u_sphere1Position;
+  uniform vec3 u_sphere2Position;
+  uniform vec3 u_sphere3Position;
+  uniform vec3 u_sphere4Position;
 
   float linearStep(float edge0, float edge1, float x) {
     return clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -116,17 +122,34 @@ const heroFragmentShader = /* glsl */ `
 
     float ao = linearStep(-0.5, -3.0, v_modelPosition.y);
 
+    // Analytical shadow from orbiting spheres — approximates the original's
+    // shadow map with the 0.4 + 0.6 * shadow range.
+    float sphereShadow = 1.0;
+    float sd1 = length(v_instancePos - u_sphere1Position);
+    float sd2 = length(v_instancePos - u_sphere2Position);
+    float sd3 = length(v_instancePos - u_sphere3Position);
+    float sd4 = length(v_instancePos - u_sphere4Position);
+    sphereShadow *= smoothstep(0.15, 0.8, sd1);
+    sphereShadow *= smoothstep(0.15, 0.8, sd2);
+    sphereShadow *= smoothstep(0.15, 0.8, sd3);
+    sphereShadow *= smoothstep(0.15, 0.8, sd4);
+    float shadow = 0.4 + 0.6 * sphereShadow;
+
     vec3 color = u_color;
     color *= clamp(attenuation + smoothstep(-0.05, 1.0, NdL), 0.0, 1.0);
     color = pow(color, vec3(0.8));
     color *= ao * ao;
-    color *= 0.7;
+    color *= shadow;
 
     gl_FragColor = vec4(color, 1.0);
     gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0 / 2.2));
   }
 `;
 
+// The original sphere shader uses real scene-texture refraction through
+// a blurred render target. Without useFrame / render-target blurring in
+// Remotion, we approximate the effect: fresnel-based environment blend
+// (sampling the gradient background colors), strong specular, and matcap.
 const sphereFragmentShader = /* glsl */ `
   varying vec3 v_viewNormal;
   varying vec3 v_viewPosition;
@@ -134,6 +157,8 @@ const sphereFragmentShader = /* glsl */ `
 
   uniform vec3 u_lightPosition;
   uniform sampler2D u_matcap;
+  uniform vec3 u_bgColor0;
+  uniform vec3 u_bgColor1;
 
   vec3 inverseTransformDirection(in vec3 dir, in mat4 matrix) {
     return normalize((vec4(dir, 0.0) * matrix).xyz);
@@ -151,17 +176,29 @@ const sphereFragmentShader = /* glsl */ `
     float NdV = max(0.0, dot(N, V));
     float fresnel = pow(1.0 - NdV, 5.0);
 
+    // Approximate refraction: bend the view through the sphere and sample
+    // the background gradient in the refracted direction.
+    float ior = 1.45;
+    vec3 refracted = refract(-V, N, 1.0 / ior);
+    float refractionU = refracted.x * 0.5 + 0.5;
+    vec3 refractionColor = pow(mix(u_bgColor0, u_bgColor1, clamp(refractionU, 0.0, 1.0)), vec3(2.2));
+
+    // Matcap for environment reflections
     vec3 viewDir = normalize(v_viewPosition);
     vec3 x = normalize(vec3(viewDir.z, 0.0, -viewDir.x));
     vec3 y = cross(viewDir, x);
     vec2 uv = vec2(dot(x, v_viewNormal), dot(y, v_viewNormal)) * 0.495 + 0.5;
     vec4 matcapColor = texture2D(u_matcap, uv);
 
-    vec3 color = vec3(0.02);
+    // Blend: refraction base + specular + matcap reflection + fresnel rim
+    vec3 color = refractionColor * 0.7;
     color += 0.2 * pow(spec, 500.0);
     color += 0.03 * pow(matcapColor.rgb, vec3(2.2));
     color += 0.005 * fresnel;
     color += 0.05 * NdL;
+
+    // Mix refraction and reflection via fresnel (more reflection at edges)
+    color = mix(color, 0.04 * pow(matcapColor.rgb, vec3(2.2)) + 0.01 * fresnel, fresnel * 0.5);
 
     gl_FragColor = vec4(0.8 * color, 1.0);
     gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0 / 2.2));
@@ -185,6 +222,8 @@ const sphereVertexShader = /* glsl */ `
   }
 `;
 
+// The original floor reads the shadow map. We approximate with distance
+// falloff from the core sphere + orbiting spheres.
 const floorVertexShader = /* glsl */ `
   varying vec3 v_viewNormal;
   varying vec3 v_worldPosition;
@@ -217,6 +256,7 @@ const floorFragmentShader = /* glsl */ `
     vec3 L = normalize(u_lightPosition - v_worldPosition);
     float NdL = max(0.0, dot(N, L));
 
+    // Orbiting sphere contact shadows
     float shadow = 1.0;
     float d1 = length(v_worldPosition.xz - u_sphere1Position.xz);
     float d2 = length(v_worldPosition.xz - u_sphere2Position.xz);
@@ -227,10 +267,16 @@ const floorFragmentShader = /* glsl */ `
     shadow *= smoothstep(0.2, 1.5, d3);
     shadow *= smoothstep(0.2, 1.5, d4);
 
+    // Core capsule-ball shadow — matches the original's
+    // directional shadow map projection
     float coreShadow = smoothstep(0.5, 2.5, length(v_worldPosition.xz));
 
-    float combined = min(shadow, coreShadow) * NdL;
-    gl_FragColor = vec4(vec3(0.0, 0.02, 0.0), 0.3 * (1.0 - combined));
+    // Two-pass shadow blend like the original floor
+    // (0.75 + 0.25 * shadow) * shadow
+    float combined = min(shadow, coreShadow);
+    float floorShadow = (0.75 + 0.25 * combined) * combined * NdL;
+
+    gl_FragColor = vec4(vec3(0.0, 0.02, 0.0), 0.3 * (1.0 - floorShadow));
   }
 `;
 
@@ -332,6 +378,11 @@ function useMatcapTexture(): THREE.Texture | null {
   return tex;
 }
 
+// ── Background colors (shared between BG shader and sphere refraction) ──
+
+const BG_COLOR_0 = new THREE.Color("#AEB2B5");
+const BG_COLOR_1 = new THREE.Color("#939A9D");
+
 // ── Scene internals ─────────────────────────────────────────────────────
 
 const lightPosition = new THREE.Vector3(-1, 0.8, 0.25).normalize().multiplyScalar(5);
@@ -385,6 +436,8 @@ function GlassSpheres({ time, matcap }: { time: number; matcap: THREE.Texture | 
     () => ({
       u_lightPosition: { value: lightPosition },
       u_matcap: { value: matcap },
+      u_bgColor0: { value: BG_COLOR_0 },
+      u_bgColor1: { value: BG_COLOR_1 },
     }),
     [],
   );
@@ -443,8 +496,8 @@ function Floor({ time }: { time: number }) {
 function Background() {
   const uniforms = useMemo(
     () => ({
-      u_color0: { value: new THREE.Color("#AEB2B5") },
-      u_color1: { value: new THREE.Color("#939A9D") },
+      u_color0: { value: BG_COLOR_0 },
+      u_color1: { value: BG_COLOR_1 },
     }),
     [],
   );
@@ -510,20 +563,41 @@ export const ThreeChallenge: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#9FA5A8" }}>
-      <ThreeCanvas
-        camera={{ position: [0, 0, 5], near: 0.1, far: 30, fov: 75 }}
-        gl={{
-          powerPreference: "high-performance",
-          antialias: false,
-          stencil: false,
-          alpha: false,
+      {/* Canvas with bloom approximation via CSS */}
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          filter: "contrast(1.08) brightness(1.04)",
         }}
-        width={1920}
-        height={1080}
-        style={{ width: "100%", height: "100%" }}
       >
-        <Scene time={time} />
-      </ThreeCanvas>
+        <ThreeCanvas
+          camera={{ position: [0, 0, 5], near: 0.1, far: 30, fov: 75 }}
+          gl={{
+            powerPreference: "high-performance",
+            antialias: false,
+            stencil: false,
+            alpha: false,
+          }}
+          width={1920}
+          height={1080}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Scene time={time} />
+        </ThreeCanvas>
+      </div>
+
+      {/* Vignette overlay — matches postprocessing VignetteEffect
+          darkness: 0.6, offset: 0.3 */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.35) 100%)",
+        }}
+      />
     </AbsoluteFill>
   );
 };

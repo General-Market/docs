@@ -12,7 +12,7 @@
 //   4. content--lines    — text rows with inline images, ONE element in first row
 //   5. content--sides    — left image + right text, ONE element is the left image
 //   6. content--center-tall — centered portrait with large overlay text
-//   7. content--grid     — 3x3 image grid, ONE element in center cell
+//   7. content--grid     — 3x3 image grid, ONE element in top-center cell
 
 import React from "react";
 import {
@@ -94,40 +94,64 @@ interface FlipKeyframe {
   borderRadius?: number;
 }
 
+// Grid constants for the final grid section (matches CSS: width 120%, left -10%, gap 1rem)
+const GRID_W = W * 1.2;       // 2304
+const GRID_LEFT = -W * 0.1;   // -192
+const GRID_GAP = 16;           // 1rem
+const GRID_CELL_W = (GRID_W - 2 * GRID_GAP) / 3;   // ~757
+const GRID_CELL_H = (H - 2 * GRID_GAP) / 3;         // ~349
+
+// Lines section: font-size clamp(2rem,12vw,6rem) at 1920px = 96px
+// Image: height 0.725em = 69.6px, aspect-ratio 16/9 → width ~124px
+const LINES_IMG_H = Math.round(0.725 * 96);  // 70
+const LINES_IMG_W = Math.round(LINES_IMG_H * (16 / 9)); // 124
+
+// Center-tall: height 30vh, aspect-ratio 0.8, padding-top 20vh
+const CT_IMG_H = Math.round(H * 0.3);  // 324
+const CT_IMG_W = Math.round(CT_IMG_H * 0.8); // 259
+const CT_PAD_TOP = Math.round(H * 0.2); // 216
+// Text block ~175px tall, gap 1.5rem = 24px. Total content = 324+24+175 = 523
+// Available after padding = 1080-216 = 864. Centered: top = 216 + (864-523)/2 ≈ 387
+const CT_CONTENT_H = CT_IMG_H + 24 + 175;
+const CT_AVAIL = H - CT_PAD_TOP;
+const CT_IMG_Y = CT_PAD_TOP + Math.round((CT_AVAIL - CT_CONTENT_H) / 2);
+
 const FLIP_STEPS: FlipKeyframe[] = [
   // Step 0: Hero — full screen
   { x: 0, y: 0, w: W, h: H },
-  // Step 1: content--center — centered portrait (aspect 0.8, height 38vh)
+  // Step 1: content--center — centered portrait (height 38vh, aspect-ratio 0.8)
   { x: W / 2 - 164, y: H / 2 - 205, w: 328, h: 410 },
-  // Step 2: content--column — middle of 5 columns
-  { x: W / 2 - 75, y: H / 2 - 100, w: 150, h: 188 },
-  // Step 3: content--lines — inline image in first text row
-  { x: W / 2 - 80, y: H / 2 - 30, w: 160, h: 65 },
-  // Step 4: content--sides — left half image
+  // Step 2: content--column — middle of 5 columns (max-width 150px, aspect-ratio 0.8)
+  { x: W / 2 - 75, y: Math.round((H - 188) / 2), w: 150, h: 188 },
+  // Step 3: content--lines — inline image in first text row (0.725em at 96px, 16:9)
+  { x: W / 2 - Math.round(LINES_IMG_W / 2), y: H / 2 - Math.round(LINES_IMG_H / 2), w: LINES_IMG_W, h: LINES_IMG_H },
+  // Step 4: content--sides — left image (grid-template-columns 40% 1fr, height 50vh)
   { x: 0, y: H * 0.25, w: W * 0.4, h: H * 0.5 },
-  // Step 5: content--center-tall — centered portrait
-  { x: W / 2 - 130, y: H * 0.2, w: 260, h: 324 },
-  // Step 6: content--grid — center cell of 3x3
-  { x: W / 3, y: H / 3, w: W / 3, h: H / 3 },
+  // Step 5: content--center-tall — centered portrait (30vh, aspect 0.8, padding-top 20vh)
+  { x: W / 2 - Math.round(CT_IMG_W / 2), y: CT_IMG_Y, w: CT_IMG_W, h: CT_IMG_H },
+  // Step 6: content--grid — TOP-CENTER cell (row 0, col 1) of 3x3
+  { x: GRID_LEFT + GRID_CELL_W + GRID_GAP, y: 0, w: Math.round(GRID_CELL_W), h: Math.round(GRID_CELL_H) },
 ];
 
 // ── Section frame ranges (480 total) ────────────────────────────────────────
-// 7 steps = 6 transitions + initial hold + final hold
-
-// Frame budget per section (approximate):
-// Hold hero (0-30), morph to center (30-90), hold center, morph to column (90-150),
-// morph to lines (150-210), morph to sides (210-270), morph to center-tall (270-340),
-// morph to grid (340-420), hold grid (420-480)
-
+// 6 morphs + 7 holds = 13 sections. Each morph is ~52 frames, each hold ~24 frames.
+// Original GSAP timeline: 6 Flip.fit() calls each with duration 1, separated by
+// +=0.5 gaps. Total = 8.5 units. The gaps create brief holds at each landed
+// position before the next morph begins — essential to the original's rhythm.
 const SECTION_FRAMES = [
-  { start: 0, end: 40 },     // Hold hero
-  { start: 40, end: 100 },   // Morph hero -> center
-  { start: 100, end: 160 },  // Morph center -> column
-  { start: 160, end: 220 },  // Morph column -> lines
-  { start: 220, end: 290 },  // Morph lines -> sides
-  { start: 290, end: 360 },  // Morph sides -> center-tall
-  { start: 360, end: 430 },  // Morph center-tall -> grid
-  { start: 430, end: 480 },  // Hold grid
+  { start: 0, end: 30 },     // Hold hero
+  { start: 30, end: 82 },    // Morph hero -> center
+  { start: 82, end: 106 },   // Hold center
+  { start: 106, end: 158 },  // Morph center -> column
+  { start: 158, end: 182 },  // Hold column
+  { start: 182, end: 234 },  // Morph column -> lines
+  { start: 234, end: 258 },  // Hold lines
+  { start: 258, end: 310 },  // Morph lines -> sides
+  { start: 310, end: 334 },  // Hold sides
+  { start: 334, end: 386 },  // Morph sides -> center-tall
+  { start: 386, end: 410 },  // Hold center-tall
+  { start: 410, end: 462 },  // Morph center-tall -> grid
+  { start: 462, end: 480 },  // Hold grid
 ];
 
 // ── Interpolation helper ────────────────────────────────────────────────────
@@ -137,14 +161,15 @@ function lerpKeyframe(
   fromStep: number,
   toStep: number,
   startFrame: number,
-  endFrame: number
+  endFrame: number,
+  easing: (t: number) => number = sineInOut
 ): FlipKeyframe {
   const a = FLIP_STEPS[fromStep];
   const b = FLIP_STEPS[toStep];
   const t = interpolate(frame, [startFrame, endFrame], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: sineInOut,
+    easing,
   });
   return {
     x: a.x + (b.x - a.x) * t,
@@ -155,27 +180,37 @@ function lerpKeyframe(
 }
 
 function getOneElementRect(frame: number): FlipKeyframe {
-  // Hold hero
+  // [0] Hold hero
   if (frame <= SECTION_FRAMES[0].end) return FLIP_STEPS[0];
-  // Morph hero -> center
+  // [1] Morph hero -> center (original: ease 'none')
   if (frame <= SECTION_FRAMES[1].end)
-    return lerpKeyframe(frame, 0, 1, SECTION_FRAMES[1].start, SECTION_FRAMES[1].end);
-  // Morph center -> column
-  if (frame <= SECTION_FRAMES[2].end)
-    return lerpKeyframe(frame, 1, 2, SECTION_FRAMES[2].start, SECTION_FRAMES[2].end);
-  // Morph column -> lines
+    return lerpKeyframe(frame, 0, 1, SECTION_FRAMES[1].start, SECTION_FRAMES[1].end, (t) => t);
+  // [2] Hold center
+  if (frame <= SECTION_FRAMES[2].end) return FLIP_STEPS[1];
+  // [3] Morph center -> column
   if (frame <= SECTION_FRAMES[3].end)
-    return lerpKeyframe(frame, 2, 3, SECTION_FRAMES[3].start, SECTION_FRAMES[3].end);
-  // Morph lines -> sides
-  if (frame <= SECTION_FRAMES[4].end)
-    return lerpKeyframe(frame, 3, 4, SECTION_FRAMES[4].start, SECTION_FRAMES[4].end);
-  // Morph sides -> center-tall
+    return lerpKeyframe(frame, 1, 2, SECTION_FRAMES[3].start, SECTION_FRAMES[3].end);
+  // [4] Hold column
+  if (frame <= SECTION_FRAMES[4].end) return FLIP_STEPS[2];
+  // [5] Morph column -> lines
   if (frame <= SECTION_FRAMES[5].end)
-    return lerpKeyframe(frame, 4, 5, SECTION_FRAMES[5].start, SECTION_FRAMES[5].end);
-  // Morph center-tall -> grid
-  if (frame <= SECTION_FRAMES[6].end)
-    return lerpKeyframe(frame, 5, 6, SECTION_FRAMES[6].start, SECTION_FRAMES[6].end);
-  // Hold grid
+    return lerpKeyframe(frame, 2, 3, SECTION_FRAMES[5].start, SECTION_FRAMES[5].end);
+  // [6] Hold lines
+  if (frame <= SECTION_FRAMES[6].end) return FLIP_STEPS[3];
+  // [7] Morph lines -> sides
+  if (frame <= SECTION_FRAMES[7].end)
+    return lerpKeyframe(frame, 3, 4, SECTION_FRAMES[7].start, SECTION_FRAMES[7].end);
+  // [8] Hold sides
+  if (frame <= SECTION_FRAMES[8].end) return FLIP_STEPS[4];
+  // [9] Morph sides -> center-tall
+  if (frame <= SECTION_FRAMES[9].end)
+    return lerpKeyframe(frame, 4, 5, SECTION_FRAMES[9].start, SECTION_FRAMES[9].end);
+  // [10] Hold center-tall
+  if (frame <= SECTION_FRAMES[10].end) return FLIP_STEPS[5];
+  // [11] Morph center-tall -> grid
+  if (frame <= SECTION_FRAMES[11].end)
+    return lerpKeyframe(frame, 5, 6, SECTION_FRAMES[11].start, SECTION_FRAMES[11].end);
+  // [12] Hold grid
   return FLIP_STEPS[6];
 }
 
@@ -185,8 +220,8 @@ function getOneElementRect(frame: number): FlipKeyframe {
 const OneElement: React.FC<{ frame: number }> = ({ frame }) => {
   const rect = getOneElementRect(frame);
 
-  // Brightness filter: starts at 80%, goes to 100% during first morph
-  const brightness = interpolate(frame, [0, 100], [80, 100], {
+  // Brightness filter: starts at 80%, goes to 100% over the first morph region
+  const brightness = interpolate(frame, [0, 82], [80, 100], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: sineOut,
@@ -213,19 +248,20 @@ const OneElement: React.FC<{ frame: number }> = ({ frame }) => {
 
 // Title "Seraph Kamos" — appears during center section with span sliding
 const HeroTitle: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [50, 70, 130, 150], [0, 1, 1, 0], {
+  // Visible during center section: fade in during morph, hold, fade out as column morph begins
+  const opacity = interpolate(frame, [40, 60, 106, 130], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // "Seraph" slides from left, "Kamos" from right
-  const seraphX = interpolate(frame, [40, 90], [-150, 0], {
+  // "Seraph" slides from left, "Kamos" from right — during hero->center morph
+  const seraphX = interpolate(frame, [30, 82], [-150, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: sineOut,
   });
 
-  const kamosX = interpolate(frame, [40, 90], [150, 0], {
+  const kamosX = interpolate(frame, [30, 82], [150, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: sineOut,
@@ -280,7 +316,8 @@ const HeroTitle: React.FC<{ frame: number }> = ({ frame }) => {
 // 5-column image row — appears during column section
 const ColumnImages: React.FC<{ frame: number }> = ({ frame }) => {
   const columnImgs = [IMAGES[1], IMAGES[2], null, IMAGES[3], IMAGES[4]];
-  const opacity = interpolate(frame, [90, 110, 160, 175], [0, 1, 1, 0], {
+  // Visible during column section (morph 106-158, hold 158-182)
+  const opacity = interpolate(frame, [106, 125, 182, 200], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -296,7 +333,7 @@ const ColumnImages: React.FC<{ frame: number }> = ({ frame }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 40,
+        gap: 32,
         zIndex: 5,
         opacity,
       }}
@@ -306,21 +343,21 @@ const ColumnImages: React.FC<{ frame: number }> = ({ frame }) => {
 
         // Parallax: outer images move more
         const middleIndex = 2;
-        const intensity = Math.abs(i - middleIndex) * 30;
-        const parallaxY = interpolate(frame, [90, 170], [intensity, -intensity], {
+        const intensity = Math.abs(i - middleIndex) * 75;
+        const parallaxY = interpolate(frame, [106, 195], [intensity, -intensity], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: sineOut,
         });
 
         // Scale-in animation
-        const scale = interpolate(frame, [95 + i * 5, 115 + i * 5], [0, 1], {
+        const scale = interpolate(frame, [110 + i * 5, 130 + i * 5], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: sineOut,
         });
 
-        const imgOpacity = interpolate(frame, [95 + i * 5, 115 + i * 5], [0, 1], {
+        const imgOpacity = interpolate(frame, [110 + i * 5, 130 + i * 5], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
@@ -347,7 +384,8 @@ const ColumnImages: React.FC<{ frame: number }> = ({ frame }) => {
 
 // Text lines section — "Natural [img] Garments", "Crafted with [img] love", etc.
 const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [155, 170, 220, 235], [0, 1, 1, 0], {
+  // Visible during lines section (morph 182-234, hold 234-258)
+  const opacity = interpolate(frame, [182, 200, 258, 278], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -376,19 +414,19 @@ const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
       }}
     >
       {lines.map((line, i) => {
-        const leftX = interpolate(frame, [160 + i * 8, 200 + i * 8], [-150, 0], {
+        const leftX = interpolate(frame, [185 + i * 8, 225 + i * 8], [-150, 0], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: sineOut,
         });
-        const rightX = interpolate(frame, [160 + i * 8, 200 + i * 8], [150, 0], {
+        const rightX = interpolate(frame, [185 + i * 8, 225 + i * 8], [150, 0], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: sineOut,
         });
 
         const imgScale = line.img
-          ? interpolate(frame, [165 + i * 8, 195 + i * 8], [0, 1], {
+          ? interpolate(frame, [190 + i * 8, 220 + i * 8], [0, 1], {
               extrapolateLeft: "clamp",
               extrapolateRight: "clamp",
               easing: sineOut,
@@ -401,9 +439,9 @@ const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: 10,
               ...FONT_ALT,
-              fontSize: 72,
+              fontSize: 96,
               lineHeight: 1.1,
               textTransform: "uppercase",
               color: COLORS.title,
@@ -416,8 +454,8 @@ const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
             {line.img ? (
               <div
                 style={{
-                  width: 180,
-                  height: 52,
+                  width: LINES_IMG_W,
+                  height: LINES_IMG_H,
                   backgroundImage: `url(${line.img})`,
                   backgroundSize: "cover",
                   backgroundPosition: "50% 50%",
@@ -427,7 +465,7 @@ const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
               />
             ) : (
               // First row: the ONE element occupies this spot (data-step)
-              <div style={{ width: 160, height: 52 }} />
+              <div style={{ width: LINES_IMG_W, height: LINES_IMG_H }} />
             )}
             <span style={{ transform: `translateX(${rightX}px)` }}>
               {line.right}
@@ -441,13 +479,14 @@ const TextLines: React.FC<{ frame: number }> = ({ frame }) => {
 
 // Side layout: left image + right text paragraph
 const SidesSection: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [220, 240, 290, 305], [0, 1, 1, 0], {
+  // Visible during sides section (morph 258-310, hold 310-334)
+  const opacity = interpolate(frame, [258, 278, 334, 355], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
   // Text parallax: starts 250px below, moves to -250px above
-  const textY = interpolate(frame, [220, 290], [250, -250], {
+  const textY = interpolate(frame, [258, 334], [250, -250], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: sineOut,
@@ -495,7 +534,8 @@ const SidesSection: React.FC<{ frame: number }> = ({ frame }) => {
 
 // Center-tall section: centered image + large overlay text
 const CenterTallSection: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [290, 310, 365, 380], [0, 1, 1, 0], {
+  // Visible during center-tall section (morph 334-386, hold 386-410)
+  const opacity = interpolate(frame, [334, 355, 410, 430], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -513,13 +553,15 @@ const CenterTallSection: React.FC<{ frame: number }> = ({ frame }) => {
         justifyContent: "center",
         zIndex: 5,
         opacity,
-        padding: "0 120px",
+        paddingTop: CT_PAD_TOP,
+        paddingLeft: 120,
+        paddingRight: 120,
       }}
     >
       <p
         style={{
           ...FONT_BODY,
-          fontSize: 36,
+          fontSize: 32,
           lineHeight: 1.5,
           color: COLORS.text,
           textAlign: "center",
@@ -535,12 +577,13 @@ const CenterTallSection: React.FC<{ frame: number }> = ({ frame }) => {
 
 // 3x3 image grid — final section
 const GridSection: React.FC<{ frame: number }> = ({ frame }) => {
-  const opacity = interpolate(frame, [360, 380, 470, 480], [0, 1, 1, 1], {
+  // Visible during grid section (morph 410-462, hold 462-480)
+  const opacity = interpolate(frame, [410, 430, 475, 480], [0, 1, 1, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Grid images: positions match original (center is the ONE element)
+  // Grid images: positions match original HTML (top-center is the ONE element)
   const gridImgs = [
     IMAGES[13], null,       IMAGES[12],
     IMAGES[9],  IMAGES[7],  IMAGES[11],
@@ -558,26 +601,26 @@ const GridSection: React.FC<{ frame: number }> = ({ frame }) => {
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
         gridTemplateRows: "repeat(3, 1fr)",
-        gap: 12,
+        gap: GRID_GAP,
         zIndex: 5,
         opacity,
       }}
     >
       {gridImgs.map((src, i) => {
         if (!src) {
-          // Center cell: the ONE element fills this
+          // Top-center cell: the ONE element fills this
           return <div key={i} />;
         }
 
         const stagger = i * 4;
-        const scale = interpolate(frame, [370 + stagger, 400 + stagger], [0, 1], {
+        const scale = interpolate(frame, [415 + stagger, 445 + stagger], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
           easing: sineOut,
         });
         const cellOpacity = interpolate(
           frame,
-          [370 + stagger, 400 + stagger],
+          [415 + stagger, 445 + stagger],
           [0, 1],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
         );
@@ -642,7 +685,7 @@ export const OneElementScroll: React.FC = () => {
           fontSize: 11,
           letterSpacing: 1,
           color: COLORS.text,
-          opacity: interpolate(frame, [0, 30, 40, 60], [0, 0, 1, 1], {
+          opacity: interpolate(frame, [0, 20, 30, 50], [0, 0, 1, 1], {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           }),
