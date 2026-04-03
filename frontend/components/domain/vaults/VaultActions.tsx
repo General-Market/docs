@@ -566,14 +566,28 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             )}
           </div>
 
-          {/* Interactive NAV chart — only when real history exists */}
+          {/* Interactive NAV chart when history exists, otherwise show NAV highlight */}
           {navHistory && navHistory.length >= 2 ? (
             <div className="mt-4 mb-5 -mx-1">
               <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
             </div>
           ) : (
-            <div className="mt-4 mb-5 flex items-center justify-center py-8 border border-dashed border-border-light rounded-md">
-              <p className="text-xs text-text-muted font-mono">No performance history yet</p>
+            <div className="mt-4 mb-5 rounded-md bg-black/[0.02] px-5 py-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">NAV / Share</p>
+                <p className="text-[28px] font-black font-mono tabular-nums text-text-primary leading-none">
+                  ${vault.navPerShare.toFixed(4)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Since Inception</p>
+                <p className={cn(
+                  'text-[28px] font-black font-mono tabular-nums leading-none',
+                  isPositive ? 'text-color-up' : 'text-color-down',
+                )}>
+                  {isPositive ? '+' : ''}{perfPercent}%
+                </p>
+              </div>
             </div>
           )}
 
