@@ -6,7 +6,6 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
-  staticFile,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
@@ -14,22 +13,24 @@ import {
   Environment,
   Lightformer,
   ContactShadows,
-  useGLTF,
 } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 
 type Vec3 = [number, number, number];
 
-// ── Animation timeline ──
+// ── Animation timeline (600 frames @ 60fps = 10s) ──
 
 const PHASE = {
-  intro: [0, 45] as const,
-  hoverMac: [45, 70] as const,
-  focusMac: [70, 135] as const,
-  unfocusMac: [135, 160] as const,
-  focusPhone: [160, 235] as const,
-  outro: [235, 300] as const,
+  establish: [0, 90] as const,
+  descend: [90, 150] as const,
+  macOpen: [150, 240] as const,
+  macGlow: [240, 300] as const,
+  panToPhone: [300, 360] as const,
+  phoneLift: [360, 440] as const,
+  phoneShow: [440, 500] as const,
+  settle: [500, 540] as const,
+  outro: [540, 600] as const,
 };
 
 function phaseProgress(
@@ -63,21 +64,32 @@ const MAC = {
   lidH: 2.0,
   lidThick: 0.04,
   screenInset: 0.1,
-  bezelW: 0.04,
   keyRows: 5,
   keyCols: 13,
   trackpadW: 1.1,
   trackpadD: 0.7,
 };
 
+// ── iPhone dimensions ──
+
+const PHONE = {
+  w: 0.72,
+  h: 1.48,
+  d: 0.08,
+  cornerRadius: 0.12,
+  screenInset: 0.04,
+  cameraSize: 0.22,
+  dynamicIslandW: 0.22,
+  dynamicIslandH: 0.06,
+};
+
 // ── MacBook Base ──
 
 const MacBookBase: React.FC = () => {
-  const bodyGeo = useMemo(() => {
-    const geo = new THREE.BoxGeometry(MAC.baseW, MAC.baseH, MAC.baseD, 2, 1, 2);
-    return geo;
-  }, []);
-
+  const bodyGeo = useMemo(
+    () => new THREE.BoxGeometry(MAC.baseW, MAC.baseH, MAC.baseD, 2, 1, 2),
+    [],
+  );
   const keyGeo = useMemo(() => new THREE.BoxGeometry(0.17, 0.015, 0.17), []);
   const trackpadGeo = useMemo(
     () => new THREE.BoxGeometry(MAC.trackpadW, 0.005, MAC.trackpadD),
@@ -98,7 +110,6 @@ const MacBookBase: React.FC = () => {
 
   return (
     <group>
-      {/* Main body — aluminum */}
       <mesh geometry={bodyGeo} position={[0, MAC.baseH / 2, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
           color="#b8b8c0"
@@ -110,7 +121,6 @@ const MacBookBase: React.FC = () => {
         />
       </mesh>
 
-      {/* Top surface — slightly darker for depth */}
       <mesh position={[0, MAC.baseH + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[MAC.baseW - 0.04, MAC.baseD - 0.04]} />
         <meshPhysicalMaterial
@@ -122,19 +132,13 @@ const MacBookBase: React.FC = () => {
         />
       </mesh>
 
-      {/* Keys */}
       {keys.map((k, i) => (
         <mesh key={i} geometry={keyGeo} position={[k.x, MAC.baseH + 0.008, k.z]} castShadow>
           <meshStandardMaterial color="#2a2a30" metalness={0.15} roughness={0.85} />
         </mesh>
       ))}
 
-      {/* Trackpad — glass-like inset */}
-      <mesh
-        geometry={trackpadGeo}
-        position={[0, MAC.baseH + 0.003, MAC.baseD * 0.28]}
-        castShadow
-      >
+      <mesh geometry={trackpadGeo} position={[0, MAC.baseH + 0.003, MAC.baseD * 0.28]} castShadow>
         <meshPhysicalMaterial
           color="#a0a0a8"
           metalness={0.7}
@@ -145,7 +149,6 @@ const MacBookBase: React.FC = () => {
         />
       </mesh>
 
-      {/* Front edge — thin chamfer line */}
       <mesh position={[0, MAC.baseH * 0.4, MAC.baseD / 2 - 0.01]}>
         <boxGeometry args={[MAC.baseW * 0.95, MAC.baseH * 0.3, 0.01]} />
         <meshStandardMaterial color="#999" metalness={0.9} roughness={0.1} />
@@ -154,14 +157,13 @@ const MacBookBase: React.FC = () => {
   );
 };
 
-// ── MacBook Lid — pivots at hinge (back edge) ──
+// ── MacBook Lid ──
 
 const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
   const lidGeo = useMemo(
     () => new THREE.BoxGeometry(MAC.lidW, MAC.lidH, MAC.lidThick),
     [],
   );
-
   const screenW = MAC.lidW - MAC.screenInset * 2;
   const screenH = MAC.lidH - MAC.screenInset * 2;
   const screenGeo = useMemo(() => new THREE.PlaneGeometry(screenW, screenH), []);
@@ -179,14 +181,12 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
         })
       : 0;
 
-  // Screen content — gradient texture
   const screenTexture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 320;
     const ctx = canvas.getContext("2d")!;
 
-    // Dark gradient background
     const grad = ctx.createLinearGradient(0, 0, 512, 320);
     grad.addColorStop(0, "#0a1628");
     grad.addColorStop(0.5, "#142040");
@@ -194,13 +194,11 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 320);
 
-    // Fake dock bar at bottom
     ctx.fillStyle = "rgba(255,255,255,0.06)";
     ctx.beginPath();
     ctx.roundRect(130, 285, 252, 28, 8);
     ctx.fill();
 
-    // Fake app icons in dock
     const iconColors = ["#3478f6", "#34c759", "#ff9500", "#ff3b30", "#af52de", "#5ac8fa"];
     iconColors.forEach((c, i) => {
       ctx.fillStyle = c;
@@ -209,21 +207,17 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
       ctx.fill();
     });
 
-    // Menu bar at top
     ctx.fillStyle = "rgba(255,255,255,0.04)";
     ctx.fillRect(0, 0, 512, 18);
 
-    // Fake window
     ctx.fillStyle = "rgba(255,255,255,0.03)";
     ctx.beginPath();
     ctx.roundRect(80, 40, 352, 230, 8);
     ctx.fill();
 
-    // Window title bar
     ctx.fillStyle = "rgba(255,255,255,0.06)";
     ctx.fillRect(80, 40, 352, 24);
 
-    // Traffic lights
     const lights = ["#ff5f57", "#febc2e", "#28c840"];
     lights.forEach((c, i) => {
       ctx.fillStyle = c;
@@ -240,7 +234,6 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
   return (
     <group position={[0, MAC.baseH, -MAC.baseD / 2]}>
       <group rotation={[angleRad, 0, 0]}>
-        {/* Lid back — aluminum */}
         <mesh geometry={lidGeo} position={[0, MAC.lidH / 2, 0]} castShadow>
           <meshPhysicalMaterial
             color="#c0c0c8"
@@ -252,16 +245,11 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
           />
         </mesh>
 
-        {/* Bezel — dark frame around screen */}
         <mesh geometry={bezelGeo} position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.001]}>
           <meshStandardMaterial color="#111115" metalness={0.1} roughness={0.95} />
         </mesh>
 
-        {/* Screen — emissive display */}
-        <mesh
-          geometry={screenGeo}
-          position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.004]}
-        >
+        <mesh geometry={screenGeo} position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.004]}>
           <meshStandardMaterial
             map={screenTexture}
             emissiveMap={screenTexture}
@@ -273,13 +261,11 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
           />
         </mesh>
 
-        {/* Webcam notch area */}
         <mesh position={[0, MAC.lidH - 0.04, MAC.lidThick / 2 + 0.003]}>
           <circleGeometry args={[0.025, 16]} />
           <meshStandardMaterial color="#0a0a0e" metalness={0.3} roughness={0.6} />
         </mesh>
 
-        {/* Apple logo on back */}
         <mesh position={[0, MAC.lidH / 2, -MAC.lidThick / 2 - 0.001]}>
           <circleGeometry args={[0.15, 24]} />
           <meshPhysicalMaterial
@@ -307,80 +293,273 @@ const MacBook: React.FC<{ lidAngle: number; position: Vec3 }> = ({
   </group>
 );
 
-// ── iPhone — loaded from GLB ──
+// ── iPhone (procedural geometry) ──
 
-const IPHONE_URL = staticFile("models/iphone.glb");
-useGLTF.preload(IPHONE_URL);
+const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) => {
+  const bodyShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    const w = PHONE.w / 2;
+    const h = PHONE.h / 2;
+    const r = PHONE.cornerRadius;
+    shape.moveTo(-w + r, -h);
+    shape.lineTo(w - r, -h);
+    shape.quadraticCurveTo(w, -h, w, -h + r);
+    shape.lineTo(w, h - r);
+    shape.quadraticCurveTo(w, h, w - r, h);
+    shape.lineTo(-w + r, h);
+    shape.quadraticCurveTo(-w, h, -w, h - r);
+    shape.lineTo(-w, -h + r);
+    shape.quadraticCurveTo(-w, -h, -w + r, -h);
+    return shape;
+  }, []);
+
+  const bodyGeo = useMemo(() => {
+    const settings: THREE.ExtrudeGeometryOptions = {
+      depth: PHONE.d,
+      bevelEnabled: true,
+      bevelThickness: 0.008,
+      bevelSize: 0.008,
+      bevelSegments: 3,
+    };
+    return new THREE.ExtrudeGeometry(bodyShape, settings);
+  }, [bodyShape]);
+
+  const screenShape = useMemo(() => {
+    const inset = PHONE.screenInset;
+    const w = PHONE.w / 2 - inset;
+    const h = PHONE.h / 2 - inset;
+    const r = PHONE.cornerRadius - inset * 0.5;
+    const shape = new THREE.Shape();
+    shape.moveTo(-w + r, -h);
+    shape.lineTo(w - r, -h);
+    shape.quadraticCurveTo(w, -h, w, -h + r);
+    shape.lineTo(w, h - r);
+    shape.quadraticCurveTo(w, h, w - r, h);
+    shape.lineTo(-w + r, h);
+    shape.quadraticCurveTo(-w, h, -w, h - r);
+    shape.lineTo(-w, -h + r);
+    shape.quadraticCurveTo(-w, -h, -w + r, -h);
+    return shape;
+  }, []);
+
+  const screenGeo = useMemo(() => new THREE.ShapeGeometry(screenShape), [screenShape]);
+
+  const screenTexture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 390;
+    canvas.height = 844;
+    const ctx = canvas.getContext("2d")!;
+
+    const grad = ctx.createLinearGradient(0, 0, 0, 844);
+    grad.addColorStop(0, "#1a0a30");
+    grad.addColorStop(0.4, "#0a1a38");
+    grad.addColorStop(1, "#0a0a1a");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 390, 844);
+
+    // Status bar
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillText("9:41", 30, 55);
+    ctx.fillText("100%", 320, 55);
+
+    // Dynamic island
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.roundRect(130, 18, 130, 32, 16);
+    ctx.fill();
+
+    // Large time
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = "bold 72px sans-serif";
+    ctx.fillText("9:41", 60, 250);
+
+    // Date
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "16px sans-serif";
+    ctx.fillText("Wednesday, April 2", 60, 280);
+
+    // Notification cards
+    const cardColors = [
+      { bg: "rgba(40,60,120,0.6)", accent: "#5ac8fa" },
+      { bg: "rgba(60,30,80,0.5)", accent: "#bf5af2" },
+    ];
+    cardColors.forEach((card, i) => {
+      const y = 340 + i * 90;
+      ctx.fillStyle = card.bg;
+      ctx.beginPath();
+      ctx.roundRect(20, y, 350, 72, 16);
+      ctx.fill();
+      ctx.fillStyle = card.accent;
+      ctx.beginPath();
+      ctx.arc(48, y + 36, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "bold 14px sans-serif";
+      ctx.fillText(i === 0 ? "Messages" : "Calendar", 72, y + 30);
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(i === 0 ? "2 new messages" : "Meeting in 30 min", 72, y + 50);
+    });
+
+    // Bottom dock
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    ctx.beginPath();
+    ctx.roundRect(100, 790, 190, 5, 3);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
+
+  // Camera module — back side
+  const cameraRingGeo = useMemo(() => new THREE.RingGeometry(0.04, 0.055, 24), []);
+  const lensGeo = useMemo(() => new THREE.CircleGeometry(0.038, 24), []);
+
+  return (
+    <group rotation={[0, 0, 0]}>
+      {/* Body — centered so extrude goes from 0 to depth along Z */}
+      <mesh geometry={bodyGeo} position={[0, 0, -PHONE.d / 2]} castShadow receiveShadow>
+        <meshPhysicalMaterial
+          color="#2a2a30"
+          metalness={0.85}
+          roughness={0.1}
+          clearcoat={0.3}
+          clearcoatRoughness={0.12}
+          envMapIntensity={1.4}
+        />
+      </mesh>
+
+      {/* Side band — titanium frame */}
+      <mesh geometry={bodyGeo} position={[0, 0, -PHONE.d / 2]} castShadow>
+        <meshPhysicalMaterial
+          color="#8a8a90"
+          metalness={0.95}
+          roughness={0.08}
+          clearcoat={0.5}
+          envMapIntensity={1.8}
+          wireframe={false}
+        />
+      </mesh>
+
+      {/* Screen — front face */}
+      <mesh geometry={screenGeo} position={[0, 0, PHONE.d / 2 + 0.002]}>
+        <meshStandardMaterial
+          map={screenTexture}
+          emissiveMap={screenTexture}
+          emissive="#ffffff"
+          emissiveIntensity={screenEmissive}
+          metalness={0.0}
+          roughness={0.12}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* Screen glass overlay */}
+      <mesh geometry={screenGeo} position={[0, 0, PHONE.d / 2 + 0.003]}>
+        <meshPhysicalMaterial
+          color="#000000"
+          transparent
+          opacity={0.04}
+          metalness={0.0}
+          roughness={0.05}
+          clearcoat={1}
+          clearcoatRoughness={0.02}
+          envMapIntensity={2.5}
+        />
+      </mesh>
+
+      {/* Camera module bump — back */}
+      <mesh position={[-0.14, 0.42, -PHONE.d / 2 - 0.012]} castShadow>
+        <boxGeometry args={[PHONE.cameraSize + 0.06, PHONE.cameraSize + 0.06, 0.02]} />
+        <meshPhysicalMaterial
+          color="#2a2a30"
+          metalness={0.85}
+          roughness={0.12}
+          clearcoat={0.3}
+          envMapIntensity={1.2}
+        />
+      </mesh>
+
+      {/* Camera lenses (3 in triangle) */}
+      {[
+        [-0.19, 0.47],
+        [-0.09, 0.47],
+        [-0.14, 0.37],
+      ].map(([x, y], i) => (
+        <group key={i} position={[x, y, -PHONE.d / 2 - 0.023]}>
+          <mesh geometry={cameraRingGeo}>
+            <meshPhysicalMaterial color="#555" metalness={0.95} roughness={0.05} envMapIntensity={2} />
+          </mesh>
+          <mesh geometry={lensGeo}>
+            <meshPhysicalMaterial
+              color="#0a0a1a"
+              metalness={0.3}
+              roughness={0.02}
+              clearcoat={1}
+              clearcoatRoughness={0.01}
+              envMapIntensity={3}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Power button — right side */}
+      <mesh position={[PHONE.w / 2 + 0.005, 0.2, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <boxGeometry args={[0.15, 0.015, 0.025]} />
+        <meshPhysicalMaterial color="#666" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
+      </mesh>
+
+      {/* Volume buttons — left side */}
+      {[0.25, 0.1].map((y, i) => (
+        <mesh key={i} position={[-PHONE.w / 2 - 0.005, y, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <boxGeometry args={[0.1, 0.015, 0.025]} />
+          <meshPhysicalMaterial color="#666" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
+        </mesh>
+      ))}
+    </group>
+  );
+};
 
 const IPhone: React.FC<{
   position: Vec3;
   rotation: Vec3;
   screenEmissive: number;
-}> = ({ position, rotation, screenEmissive }) => {
-  const gltf = useGLTF(IPHONE_URL);
-  const cloned = useMemo(() => {
-    const scene = gltf.scene.clone(true);
-    // Set screen emission on the emissive material (mat index 10 in the GLB)
-    scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        if (mat && mat.emissive && mat.emissiveIntensity > 0) {
-          // This is the screen material — boost its emission
-          mat.emissiveIntensity = screenEmissive;
-          mat.emissive.set(0.4, 0.6, 1.0);
-          mat.toneMapped = false;
-        }
-        if (mat) {
-          mat.envMapIntensity = 1.5;
-        }
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-      }
-    });
-    return scene;
-  }, [gltf.scene, screenEmissive]);
+}> = ({ position, rotation, screenEmissive }) => (
+  <group position={position} rotation={rotation}>
+    <IPhoneBody screenEmissive={screenEmissive} />
+  </group>
+);
 
-  return (
-    <group position={position} rotation={rotation} scale={[0.6, 0.6, 0.6]}>
-      <primitive object={cloned} />
-    </group>
-  );
-};
+// ── Tabletop ──
 
-// ── Tabletop — large reflective dark surface ──
-
-const Tabletop: React.FC = () => {
-  return (
-    <group>
-      {/* Main surface */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
-        <planeGeometry args={[25, 25]} />
-        <meshPhysicalMaterial
-          color="#1a1a20"
-          metalness={0.05}
-          roughness={0.35}
-          clearcoat={0.6}
-          clearcoatRoughness={0.15}
-          envMapIntensity={0.8}
-        />
-      </mesh>
-
-      {/* Subtle reflection plane — slightly above to catch reflections */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.019, 0]}>
-        <planeGeometry args={[25, 25]} />
-        <meshPhysicalMaterial
-          color="#000000"
-          metalness={0.0}
-          roughness={0.2}
-          transparent
-          opacity={0.15}
-          envMapIntensity={1.2}
-        />
-      </mesh>
-    </group>
-  );
-};
+const Tabletop: React.FC = () => (
+  <group>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+      <planeGeometry args={[25, 25]} />
+      <meshPhysicalMaterial
+        color="#1a1a20"
+        metalness={0.05}
+        roughness={0.35}
+        clearcoat={0.6}
+        clearcoatRoughness={0.15}
+        envMapIntensity={0.8}
+      />
+    </mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.019, 0]}>
+      <planeGeometry args={[25, 25]} />
+      <meshPhysicalMaterial
+        color="#000000"
+        metalness={0.0}
+        roughness={0.2}
+        transparent
+        opacity={0.15}
+        envMapIntensity={1.2}
+      />
+    </mesh>
+  </group>
+);
 
 // ── Camera updater ──
 
@@ -402,20 +581,21 @@ const CameraUpdater: React.FC<{ position: Vec3; target: Vec3; fov: number }> = (
 // ── Animation hooks ──
 
 function useMacLidAngle(frame: number): number {
-  if (frame >= PHASE.focusPhone[0]) return 0;
-  if (frame >= PHASE.unfocusMac[0]) {
-    const p = phaseProgress(frame, PHASE.unfocusMac[0], PHASE.unfocusMac[1]);
-    return interpolate(p, [0, 1], [110, 0]);
+  if (frame < PHASE.macOpen[0]) return 0;
+  if (frame < PHASE.macOpen[0] + 10) {
+    const p = phaseProgress(frame, PHASE.macOpen[0], PHASE.macOpen[0] + 10);
+    return interpolate(p, [0, 1], [0, 8]);
   }
-  if (frame >= PHASE.focusMac[0]) {
-    const p = phaseProgress(frame, PHASE.focusMac[0], PHASE.focusMac[0] + 25);
-    return interpolate(p, [0, 1], [15, 110]);
+  if (frame < PHASE.macOpen[1]) {
+    const p = phaseProgress(frame, PHASE.macOpen[0] + 10, PHASE.macOpen[1]);
+    return interpolate(p, [0, 1], [8, 115]);
   }
-  if (frame >= PHASE.hoverMac[0]) {
-    const p = phaseProgress(frame, PHASE.hoverMac[0], PHASE.hoverMac[0] + 15);
-    return interpolate(p, [0, 1], [0, 15]);
+  if (frame < PHASE.settle[0]) return 115;
+  if (frame < PHASE.settle[1]) {
+    const p = phaseProgress(frame, PHASE.settle[0], PHASE.settle[1]);
+    return interpolate(p, [0, 1], [115, 105]);
   }
-  return 0;
+  return 105;
 }
 
 function usePhoneTransform(frame: number): {
@@ -423,40 +603,49 @@ function usePhoneTransform(frame: number): {
   rotation: Vec3;
   screenEmissive: number;
 } {
-  // Phone rests face-down to the right of the MacBook
-  const basePos: Vec3 = [2.2, 0.05, 0.4];
-  const baseFacedown: Vec3 = [Math.PI, 0, 0.15];
+  // Phone lies face-down to the right of the MacBook
+  const restPos: Vec3 = [2.4, 0.05, 0.3];
+  const restRot: Vec3 = [Math.PI / 2, 0, 0.1]; // face-down, lying flat
+  const liftedPos: Vec3 = [2.4, 1.2, 0.1];
+  const liftedRot: Vec3 = [-0.15, -0.2, 0.05]; // face toward camera, slight tilt
 
-  let position: Vec3;
-  let rotation: Vec3;
-  let screenEmissive = 0;
-
-  if (frame >= PHASE.focusPhone[1] - 10) {
-    // Settling back down
-    const p = phaseProgress(frame, PHASE.focusPhone[1] - 10, PHASE.outro[0] + 15);
-    position = [basePos[0], interpolate(p, [0, 1], [basePos[1] + 0.9, basePos[1]]), basePos[2]];
-    rotation = [
-      interpolate(p, [0, 1], [-0.3, Math.PI]),
-      interpolate(p, [0, 1], [-0.15, 0]),
-      interpolate(p, [0, 1], [0.05, 0.15]),
-    ];
-    screenEmissive = interpolate(p, [0, 1], [2.5, 0]);
-  } else if (frame >= PHASE.focusPhone[0]) {
-    // Lifting and flipping to show screen
-    const p = phaseProgress(frame, PHASE.focusPhone[0], PHASE.focusPhone[0] + 35);
-    position = [basePos[0], basePos[1] + p * 0.9, basePos[2] - p * 0.15];
-    rotation = [
-      interpolate(p, [0, 1], [Math.PI, -0.3]),
-      interpolate(p, [0, 1], [0, -0.15]),
-      interpolate(p, [0, 1], [0.15, 0.05]),
-    ];
-    screenEmissive = interpolate(p, [0, 1], [0, 2.5]);
-  } else {
-    position = basePos;
-    rotation = baseFacedown;
+  if (frame < PHASE.phoneLift[0]) {
+    return { position: restPos, rotation: restRot, screenEmissive: 0 };
   }
 
-  return { position, rotation, screenEmissive };
+  if (frame < PHASE.phoneLift[1]) {
+    const p = phaseProgress(frame, PHASE.phoneLift[0], PHASE.phoneLift[1]);
+    return {
+      position: lerpVec3(restPos, liftedPos, p),
+      rotation: lerpVec3(restRot, liftedRot, p),
+      screenEmissive: interpolate(p, [0, 1], [0, 2.8]),
+    };
+  }
+
+  if (frame < PHASE.settle[0]) {
+    return { position: liftedPos, rotation: liftedRot, screenEmissive: 2.8 };
+  }
+
+  if (frame < PHASE.settle[1]) {
+    const p = phaseProgress(frame, PHASE.settle[0], PHASE.settle[1]);
+    const settlePos: Vec3 = [2.4, 0.7, 0.2];
+    const settleRot: Vec3 = [-0.1, -0.15, 0.03];
+    return {
+      position: lerpVec3(liftedPos, settlePos, p),
+      rotation: lerpVec3(liftedRot, settleRot, p),
+      screenEmissive: interpolate(p, [0, 1], [2.8, 2.0]),
+    };
+  }
+
+  // Outro — phone settles back to rest
+  const p = phaseProgress(frame, PHASE.outro[0], PHASE.outro[1]);
+  const settlePos: Vec3 = [2.4, 0.7, 0.2];
+  const settleRot: Vec3 = [-0.1, -0.15, 0.03];
+  return {
+    position: lerpVec3(settlePos, restPos, p),
+    rotation: lerpVec3(settleRot, restRot, p),
+    screenEmissive: interpolate(p, [0, 1], [2.0, 0]),
+  };
 }
 
 function useCameraAnimation(frame: number): {
@@ -464,61 +653,103 @@ function useCameraAnimation(frame: number): {
   target: Vec3;
   fov: number;
 } {
-  // Wider establishing shot → intimate device close-ups
-  const startPos: Vec3 = [0, 6.0, 7.0];
-  const frontPos: Vec3 = [0.3, 3.8, 5.8];
-  const macPos: Vec3 = [-0.5, 2.5, 3.2];
-  const phoneCamPos: Vec3 = [3.0, 2.2, 2.8];
+  // Establishing: high overhead, wide FOV, both devices visible
+  const overheadPos: Vec3 = [0.5, 10, 8];
+  const overheadTarget: Vec3 = [0.5, 0, -0.2];
 
-  const tableCenter: Vec3 = [0.5, 0.1, 0];
-  const macTarget: Vec3 = [-0.3, 0.8, -0.5];
-  const phoneTarget: Vec3 = [2.2, 0.5, 0.4];
+  // Descended: comfortable 3/4 view, both devices in frame
+  const frontPos: Vec3 = [0.5, 5.5, 6.5];
+  const frontTarget: Vec3 = [0.5, 0.2, -0.3];
 
-  let position: Vec3;
-  let target: Vec3;
-  let fov = 35;
+  // MacBook close-up
+  const macPos: Vec3 = [-0.3, 3.0, 3.5];
+  const macTarget: Vec3 = [-0.5, 0.8, -0.5];
 
-  if (frame <= PHASE.intro[1]) {
-    const t = phaseProgress(frame, PHASE.intro[0], PHASE.intro[1]);
-    position = lerpVec3(startPos, frontPos, t);
-    target = tableCenter;
-    fov = interpolate(t, [0, 1], [30, 35]);
-  } else if (frame <= PHASE.hoverMac[1]) {
-    const hoverEnd: Vec3 = [frontPos[0] - 0.2, frontPos[1] - 0.15, frontPos[2] - 0.3];
-    const t = phaseProgress(frame, PHASE.hoverMac[0], PHASE.hoverMac[1]);
-    position = lerpVec3(frontPos, hoverEnd, t);
-    target = tableCenter;
-  } else if (frame <= PHASE.unfocusMac[0]) {
-    const from: Vec3 = [frontPos[0] - 0.2, frontPos[1] - 0.15, frontPos[2] - 0.3];
-    const t = phaseProgress(frame, PHASE.focusMac[0], PHASE.focusMac[0] + 30);
-    position = lerpVec3(from, macPos, t);
-    target = lerpVec3(tableCenter, macTarget, t);
-    fov = interpolate(t, [0, 1], [35, 32]);
-  } else if (frame <= PHASE.focusPhone[0]) {
-    const t = phaseProgress(frame, PHASE.unfocusMac[0], PHASE.unfocusMac[1]);
-    position = lerpVec3(macPos, frontPos, t);
-    target = lerpVec3(macTarget, tableCenter, t);
-    fov = interpolate(t, [0, 1], [32, 35]);
-  } else if (frame <= PHASE.outro[0]) {
-    const t = phaseProgress(frame, PHASE.focusPhone[0], PHASE.focusPhone[0] + 30);
-    position = lerpVec3(frontPos, phoneCamPos, t);
-    target = lerpVec3(tableCenter, phoneTarget, t);
-    fov = interpolate(t, [0, 1], [35, 30]);
-  } else {
-    const t = phaseProgress(frame, PHASE.outro[0], PHASE.outro[1]);
-    position = lerpVec3(phoneCamPos, startPos, t);
-    target = lerpVec3(phoneTarget, tableCenter, t);
-    fov = interpolate(t, [0, 1], [30, 35]);
+  // Phone close-up
+  const phonePos: Vec3 = [3.2, 2.5, 2.8];
+  const phoneTarget: Vec3 = [2.4, 0.8, 0.2];
+
+  // Final pullback — wider than start
+  const finalPos: Vec3 = [0.5, 7, 8.5];
+  const finalTarget: Vec3 = [0.5, 0.3, -0.2];
+
+  if (frame <= PHASE.establish[1]) {
+    const t = phaseProgress(frame, PHASE.establish[0], PHASE.establish[1]);
+    return {
+      position: lerpVec3(overheadPos, frontPos, t),
+      target: lerpVec3(overheadTarget, frontTarget, t),
+      fov: interpolate(t, [0, 1], [28, 32]),
+    };
   }
 
-  return { position, target, fov };
+  if (frame <= PHASE.descend[1]) {
+    const t = phaseProgress(frame, PHASE.descend[0], PHASE.descend[1]);
+    return {
+      position: lerpVec3(frontPos, macPos, t * 0.5),
+      target: lerpVec3(frontTarget, macTarget, t * 0.3),
+      fov: interpolate(t, [0, 1], [32, 33]),
+    };
+  }
+
+  if (frame <= PHASE.macGlow[1]) {
+    const enterT = phaseProgress(frame, PHASE.macOpen[0], PHASE.macOpen[0] + 40);
+    return {
+      position: lerpVec3(
+        lerpVec3(frontPos, macPos, 0.5),
+        macPos,
+        enterT,
+      ),
+      target: lerpVec3(
+        lerpVec3(frontTarget, macTarget, 0.3),
+        macTarget,
+        enterT,
+      ),
+      fov: interpolate(enterT, [0, 1], [33, 30]),
+    };
+  }
+
+  if (frame <= PHASE.panToPhone[1]) {
+    const t = phaseProgress(frame, PHASE.panToPhone[0], PHASE.panToPhone[1]);
+    return {
+      position: lerpVec3(macPos, frontPos, t),
+      target: lerpVec3(macTarget, frontTarget, t),
+      fov: interpolate(t, [0, 1], [30, 33]),
+    };
+  }
+
+  if (frame <= PHASE.phoneShow[1]) {
+    const t = phaseProgress(frame, PHASE.phoneLift[0], PHASE.phoneShow[0]);
+    return {
+      position: lerpVec3(frontPos, phonePos, t),
+      target: lerpVec3(frontTarget, phoneTarget, t),
+      fov: interpolate(t, [0, 1], [33, 28]),
+    };
+  }
+
+  if (frame <= PHASE.settle[1]) {
+    const t = phaseProgress(frame, PHASE.settle[0], PHASE.settle[1]);
+    return {
+      position: lerpVec3(phonePos, finalPos, t * 0.5),
+      target: lerpVec3(phoneTarget, finalTarget, t * 0.5),
+      fov: interpolate(t, [0, 1], [28, 30]),
+    };
+  }
+
+  // Outro — smooth pullback to establishing
+  const t = phaseProgress(frame, PHASE.outro[0], PHASE.outro[1]);
+  const midPos = lerpVec3(phonePos, finalPos, 0.5);
+  const midTarget = lerpVec3(phoneTarget, finalTarget, 0.5);
+  return {
+    position: lerpVec3(midPos, finalPos, t),
+    target: lerpVec3(midTarget, finalTarget, t),
+    fov: interpolate(t, [0, 1], [30, 28]),
+  };
 }
 
 // ── Studio lighting environment ──
 
 const StudioLighting: React.FC = () => (
   <>
-    {/* Key light — warm, upper-right */}
     <directionalLight
       position={[5, 8, 4]}
       intensity={2.0}
@@ -534,22 +765,12 @@ const StudioLighting: React.FC = () => (
       shadow-camera-bottom={-6}
       shadow-bias={-0.0005}
     />
-
-    {/* Fill light — cool blue, left side */}
     <directionalLight position={[-4, 5, 2]} intensity={0.8} color="#c8d8f0" />
-
-    {/* Rim light — from behind, creates edge definition */}
     <directionalLight position={[0, 3, -5]} intensity={0.6} color="#e0e0ff" />
-
-    {/* Under-fill — bounced light from table */}
     <pointLight position={[0, 0.5, 2]} intensity={0.3} color="#ffffff" distance={8} />
-
-    {/* Ambient fill — very low, keeps shadows from going pure black */}
     <ambientLight intensity={0.15} color="#b0b8c8" />
 
-    {/* HDR Environment for reflections */}
     <Environment resolution={256}>
-      {/* Main area light from above */}
       <Lightformer
         form="rect"
         intensity={3}
@@ -558,7 +779,6 @@ const StudioLighting: React.FC = () => (
         scale={[10, 4, 1]}
         color="#ffffff"
       />
-      {/* Right accent */}
       <Lightformer
         form="rect"
         intensity={1.5}
@@ -567,7 +787,6 @@ const StudioLighting: React.FC = () => (
         scale={[6, 3, 1]}
         color="#e8e0ff"
       />
-      {/* Left fill */}
       <Lightformer
         form="rect"
         intensity={1.0}
@@ -576,7 +795,6 @@ const StudioLighting: React.FC = () => (
         scale={[6, 3, 1]}
         color="#ffe8d0"
       />
-      {/* Back rim */}
       <Lightformer
         form="rect"
         intensity={0.8}
@@ -585,7 +803,6 @@ const StudioLighting: React.FC = () => (
         scale={[8, 2, 1]}
         color="#d0d8ff"
       />
-      {/* Ground bounce */}
       <Lightformer
         form="rect"
         intensity={0.3}
@@ -609,10 +826,8 @@ const Scene: React.FC<{ frame: number }> = ({ frame }) => {
     <>
       <CameraUpdater position={cam.position} target={cam.target} fov={cam.fov} />
       <StudioLighting />
-
       <Tabletop />
 
-      {/* Contact shadows on ground plane */}
       <ContactShadows
         position={[0, -0.015, 0]}
         opacity={0.5}
@@ -631,7 +846,6 @@ const Scene: React.FC<{ frame: number }> = ({ frame }) => {
         screenEmissive={phone.screenEmissive}
       />
 
-      {/* Post-processing: bloom for screen glow */}
       <EffectComposer>
         <Bloom
           intensity={0.4}
@@ -655,7 +869,7 @@ export const DeviceShowcase: React.FC = () => {
       <ThreeCanvas
         width={width}
         height={height}
-        camera={{ fov: 30, near: 0.1, far: 100, position: [0, 6.0, 7.0] }}
+        camera={{ fov: 28, near: 0.1, far: 100, position: [0.5, 10, 8] }}
         style={{ width: "100%", height: "100%" }}
       >
         <Scene frame={frame} />

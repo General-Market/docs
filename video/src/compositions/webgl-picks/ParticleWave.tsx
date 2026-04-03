@@ -96,74 +96,25 @@ function computeHexPositions(): CellPos[] {
   return positions;
 }
 
-// ── Custom MeshPhysicalMaterial with subsurface scattering ──
-// The original injects a scattering function into the lights_fragment_begin chunk.
+// ── Material — no onBeforeCompile, no shader chunk surgery ──
+// MeshPhysicalMaterial with clearcoat + sheen + iridescence gives the
+// subsurface glow the original achieved via SSS injection, without
+// relying on internal chunk names that break across Three.js versions.
 
-function createSSSMaterial(): THREE.MeshPhysicalMaterial {
-  const mat = new THREE.MeshPhysicalMaterial({
+function createHexMaterial(): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({
     metalness: METALNESS,
     roughness: ROUGHNESS,
     clearcoat: CLEARCOAT,
     clearcoatRoughness: CLEARCOAT_ROUGHNESS,
+    sheen: 1.0,
+    sheenRoughness: 0.4,
+    sheenColor: new THREE.Color(0x4444ff),
+    iridescence: 0.3,
+    iridescenceIOR: 1.3,
+    vertexColors: true,
     side: THREE.FrontSide,
   });
-
-  mat.defines = mat.defines || {};
-  mat.defines.USE_UV = "";
-
-  mat.onBeforeCompile = (shader) => {
-    // Add SSS uniforms
-    shader.uniforms.thicknessPower = { value: 2 };
-    shader.uniforms.thicknessScale = { value: 10 };
-    shader.uniforms.thicknessDistortion = { value: 0.1 };
-    shader.uniforms.thicknessAmbient = { value: 0 };
-    shader.uniforms.thicknessAttenuation = { value: 0.1 };
-
-    // Prepend SSS uniforms to fragment shader
-    shader.fragmentShader =
-      `
-      uniform float thicknessPower;
-      uniform float thicknessScale;
-      uniform float thicknessDistortion;
-      uniform float thicknessAmbient;
-      uniform float thicknessAttenuation;
-      ` + shader.fragmentShader;
-
-    // Inject SSS function before main()
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "void main() {",
-      `
-      void RE_Direct_Scattering(
-        const in IncidentLight directLight,
-        const in vec2 uv,
-        const in vec3 geometryPosition,
-        const in vec3 geometryNormal,
-        const in vec3 geometryViewDir,
-        const in vec3 geometryClearcoatNormal,
-        inout ReflectedLight reflectedLight
-      ) {
-        vec3 scatteringHalf = normalize(directLight.direction + (geometryNormal * thicknessDistortion));
-        float scatteringDot = pow(saturate(dot(geometryViewDir, -scatteringHalf)), thicknessPower) * thicknessScale;
-        vec3 scatteringIllu = (scatteringDot + thicknessAmbient) * vColor;
-        reflectedLight.directDiffuse += scatteringIllu * thicknessAttenuation * directLight.color;
-      }
-
-      void main() {
-      `
-    );
-
-    // Inject SSS call after each RE_Direct call in the lights loop
-    const lightsChunk = THREE.ShaderChunk.lights_fragment_begin;
-    const reDirectCall = "RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );";
-    const replacement = reDirectCall + "\n       RE_Direct_Scattering(directLight, vUv, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, reflectedLight);";
-    const modifiedChunk = lightsChunk.split(reDirectCall).join(replacement);
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <lights_fragment_begin>",
-      modifiedChunk
-    );
-  };
-
-  return mat;
 }
 
 // ── Color gradient helper ──
@@ -210,7 +161,7 @@ const HexGridScene: React.FC<{ time: number; pointerX: number; pointerY: number 
   const vec2 = useRef(new THREE.Vector2());
 
   const hexGeo = useMemo(() => createHexGeometry(), []);
-  const hexMat = useMemo(() => createSSSMaterial(), []);
+  const hexMat = useMemo(() => createHexMaterial(), []);
   const positions = useMemo(() => computeHexPositions(), []);
   const phaseOffsets = useMemo(() => {
     const rng = seededRandom(42);
