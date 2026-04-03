@@ -133,10 +133,11 @@ def main():
     stagger = float(os.environ.get("STAGGER_SECS", "3"))
     pnl_dir = os.environ.get("PNL_DIR", "/app/pnl-data")
 
-    # Parse keys
+    # Parse keys — BOT_KEYS csv takes priority, falls back to SWARM_BOT_{i}_KEY
     keys_csv = os.environ.get("BOT_KEYS", "")
-    if keys_csv:
-        keys = [k.strip() for k in keys_csv.split(",")]
+    parsed = [k.strip() for k in keys_csv.split(",") if k.strip()] if keys_csv else []
+    if len(parsed) >= bot_count:
+        keys = parsed
     else:
         keys = [os.environ.get(f"SWARM_BOT_{i}_KEY", "") for i in range(bot_count)]
 
