@@ -16,6 +16,8 @@ import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandCompos
 import { solanaBgMeta } from "./compositions/solana-bg/SolanaBgComposition";
 import { webglPicksMeta, webglSceneMetas } from "./compositions/webgl-picks/WebGLPicksComposition";
 import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm-launch-bg/GMLaunchBgComposition";
+import { visionVsMeta } from "./compositions/vision-vs/VisionVsComposition";
+import { gmQuantsMeta } from "./compositions/vision-vs/GMQuantsComposition";
 
 // remotion-scenes showcases
 import {
@@ -244,6 +246,24 @@ export const RemotionRoot: React.FC = () => {
           />
         ))}
       </Folder>
+
+      {/* ═══ VISION VS — split-screen comparison ═══ */}
+      <Composition
+        id={visionVsMeta.id}
+        component={visionVsMeta.component}
+        durationInFrames={visionVsMeta.durationInFrames}
+        fps={visionVsMeta.fps}
+        width={visionVsMeta.width}
+        height={visionVsMeta.height}
+      />
+      <Composition
+        id={gmQuantsMeta.id}
+        component={gmQuantsMeta.component}
+        durationInFrames={gmQuantsMeta.durationInFrames}
+        fps={gmQuantsMeta.fps}
+        width={gmQuantsMeta.width}
+        height={gmQuantsMeta.height}
+      />
 
       {/* ═══ Other shorts ═══ */}
       <Folder name="Other">
