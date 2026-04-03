@@ -185,7 +185,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
                 }
               }}
               className={cn(
-                'shrink-0 w-[280px] rounded-lg border bg-gradient-to-br overflow-hidden cursor-pointer hover:shadow-lg transition-shadow',
+                'shrink-0 w-[280px] rounded-lg border border-border-light bg-gradient-to-br overflow-hidden cursor-pointer hover:shadow-sm transition-shadow',
                 gradientClass,
               )}
               style={{ scrollSnapAlign: 'start' }}
@@ -211,7 +211,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
                   {fund.tagline}
                 </p>
 
-                <div className="flex items-end justify-between pt-2 border-t border-black/[0.06]">
+                <div className="flex items-end justify-between pt-2 border-t border-border-light">
                   <div>
                     <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">TVL</div>
                     <div className="text-[14px] font-bold font-mono text-black tabular-nums">
@@ -222,7 +222,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
                     <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">Performance</div>
                     <div className={cn(
                       'text-[16px] font-black font-mono tabular-nums',
-                      perf >= 0 ? 'text-green-600' : 'text-red-600',
+                      perf >= 0 ? 'text-color-up' : 'text-color-down',
                     )}>
                       {perf >= 0 ? '+' : ''}{(perf * 100).toFixed(2)}%
                     </div>
@@ -261,9 +261,9 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
             </p>
             <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              Claude Code
+              Get Started
             </button>
           </div>
         </div>

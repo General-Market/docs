@@ -44,7 +44,7 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
       </span>
     )
   }
-  return <span className="w-[22px] h-[22px] rounded-full bg-white/10 shrink-0" />
+  return <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] shrink-0" />
 }
 
 interface RatiosResponse {
@@ -133,14 +133,16 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
       {/* Header */}
       <div className="bg-terminal-dark px-5 py-3 flex items-center justify-between flex-wrap gap-2">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
-            Submarkets
+          <div className="text-micro font-semibold uppercase tracking-[0.1em] text-text-inverse-muted/50">
+            Markets
           </div>
-          <div className="text-[15px] font-bold text-white">
+          <div className="text-[15px] font-bold text-text-inverse">
             {sourceEntry?.name ?? sourceId}
-            <span className="text-[11px] font-normal text-white/30 ml-2">
-              {markets.length.toLocaleString()}
-            </span>
+            {markets.length > 0 && (
+              <span className="text-label font-normal text-text-inverse-muted/45 ml-2">
+                {markets.length.toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
         <input
@@ -149,22 +151,40 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           aria-label="Search submarkets"
-          className="px-2.5 py-1 rounded text-[11px] bg-white/[0.04] border border-white/10 text-white placeholder:text-white/20 outline-none focus:border-white/20 w-[140px]"
+          className="px-2.5 py-1 rounded text-label bg-white/[0.05] border border-white/10 text-text-inverse placeholder:text-text-inverse-muted/30 outline-none focus:border-white/25 focus:ring-1 focus:ring-white/15 w-[140px] transition-colors"
         />
       </div>
 
       {/* Grid */}
       <div className="bg-terminal px-4 py-4">
         {isLoading ? (
-          <div className="py-12 text-center text-[12px] text-white/20 animate-pulse">
+          <div className="py-12 text-center text-caption text-text-inverse-muted/30 animate-pulse">
             Loading markets...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-[12px] text-white/20">
-            {search ? `No markets matching "${search}"` : 'No markets yet for this source'}
+          <div className="py-16 text-center">
+            {search ? (
+              <div className="text-caption text-text-inverse-muted/30">
+                No markets matching &ldquo;{search}&rdquo;
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center animate-pulse">
+                  <svg className="w-5 h-5 text-text-inverse-muted/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+                  </svg>
+                </div>
+                <div className="text-caption text-text-inverse-muted/35 font-medium">
+                  No markets yet
+                </div>
+                <div className="text-micro text-text-inverse-muted/25 max-w-[240px] leading-relaxed">
+                  Markets appear when a new round opens. Check back shortly.
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {filtered.map((market) => {
               const name = market.name || market.symbol
               const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
@@ -178,7 +198,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
               return (
                 <div
                   key={market.assetId}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03] hover:bg-white/[0.07] transition-colors"
                 >
                   <MarketIcon
                     sourceId={sourceId}
@@ -186,20 +206,20 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                     prefixes={sourceEntry?.prefixes}
                     imageUrl={market.imageUrl}
                   />
-                  <span className="text-[11px] text-white/60 truncate flex-1 font-medium leading-tight">
+                  <span className="text-label text-text-inverse-muted truncate flex-1 font-medium leading-tight">
                     {truncated}
                   </span>
                   {/* GG.bet-style decimal odds buttons */}
                   <div className="flex gap-1 shrink-0">
                     <span className="px-2 py-[3px] rounded bg-color-up/15 border border-color-up/20">
-                      <div className="text-[8px] font-semibold text-emerald-400/50 leading-none">UP</div>
-                      <div className="text-[11px] font-bold font-mono tabular-nums text-emerald-400 leading-tight">
+                      <div className="text-[8px] font-semibold text-color-up/50 leading-none">UP</div>
+                      <div className="text-label font-bold font-mono tabular-nums text-color-up leading-tight">
                         {upOdds}
                       </div>
                     </span>
                     <span className="px-2 py-[3px] rounded bg-color-down/15 border border-color-down/20">
-                      <div className="text-[8px] font-semibold text-red-400/50 leading-none">DOWN</div>
-                      <div className="text-[11px] font-bold font-mono tabular-nums text-red-400 leading-tight">
+                      <div className="text-[8px] font-semibold text-color-down/50 leading-none">DOWN</div>
+                      <div className="text-label font-bold font-mono tabular-nums text-color-down leading-tight">
                         {downOdds}
                       </div>
                     </span>

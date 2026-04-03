@@ -103,27 +103,27 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
       {/* ── Recent Batches — HLTV "Recent results" style ── */}
       {(settled.length > 0 || isLoading) && (
         <div>
-          <div className="flex items-center justify-between px-4 py-3 bg-white border border-border-light">
+          <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
             <div>
-              <h3 className="text-[14px] font-black text-black">
-                {t('batch_results.recent_batches')}
-              </h3>
-              <div className="text-[11px] text-text-muted">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
                 {t('batch_results.past_rounds_desc')}
               </div>
-            </div>
-            <div className="text-[11px] font-mono text-text-muted">
-              {historyData?.totalSettled ?? 0} {t('batch_results.total')}
+              <h3 className="text-[15px] font-bold text-white">
+                {t('batch_results.recent_batches')}
+                <span className="text-[11px] font-normal text-white/30 ml-2">
+                  {historyData?.totalSettled ?? 0} {t('batch_results.total')}
+                </span>
+              </h3>
             </div>
           </div>
 
           {/* Column headers */}
-          <div className="hidden md:grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2 bg-white border-x border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+          <div className="hidden md:grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
             <div>Date</div>
             <div className="text-center">Round</div>
             <div className="text-right">Players</div>
             <div className="text-right">Pool</div>
-            <div className="text-right">Top P&L</div>
+            <div className="text-right">Top Return</div>
             <div />
           </div>
 
@@ -137,7 +137,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
             {groups.map(group => (
               <div key={group.label}>
                 {/* Group header — like HLTV tournament name */}
-                <div className="px-4 py-2.5 bg-surface/40 border-y border-border-light">
+                <div className="px-4 py-2.5 bg-[var(--surface)] border-y border-border-light">
                   <span className="text-[13px] font-black text-black">
                     {group.label}
                   </span>
@@ -151,7 +151,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                   return (
                     <div
                       key={batch.batchId}
-                      className="grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-surface/30 transition-colors"
+                      className="grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
                     >
                       {/* Date */}
                       <div className="text-[11px] text-text-muted font-mono">
@@ -198,9 +198,9 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                         className={cn(
                           'text-right text-[12px] font-mono tabular-nums font-bold',
                           pnlPositive
-                            ? 'text-green-600'
+                            ? 'text-color-up'
                             : pnl < 0
-                              ? 'text-red-600'
+                              ? 'text-color-down'
                               : 'text-text-muted',
                         )}
                       >
@@ -211,7 +211,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
 
                       {/* "Match" button — HLTV style */}
                       <div className="text-right">
-                        <span className="inline-block px-2.5 py-1 rounded bg-[#4a89dc]/10 text-[10px] font-bold text-[#4a89dc] cursor-default">
+                        <span className="inline-block px-2.5 py-1 rounded bg-black/[0.06] text-[10px] font-bold text-text-secondary cursor-default">
                           {t('batch_results.batch')}
                         </span>
                       </div>
@@ -223,7 +223,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-surface/20">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-[var(--surface)]">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page <= 1}
