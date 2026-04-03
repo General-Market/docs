@@ -1298,28 +1298,13 @@ for name, b in vb.get('batches', {}).items():
     done
     echo -e "  ${GREEN}Funded 6 accounts with 0.5 S each on Sonic${NC}"
 
-    # Fund swarm bot wallets with gas + Vision USDC (if addresses.json exists)
-    if [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
-        echo -e "  Funding swarm bot wallets with gas + Vision USDC..."
-        # Vision contract uses its own USDC (may differ from L3_WUSDC)
-        local VISION_CONTRACT=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
-        local SWARM_USDC=""
-        if [ -n "$VISION_CONTRACT" ]; then
-            SWARM_USDC=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
-        fi
-        [ -z "$SWARM_USDC" ] && SWARM_USDC=$(read_deployment_addr "L3_WUSDC")
-        local SWARM_FUND="100000000000000000000000"  # 100k USDC
-        while IFS= read -r addr; do
-            addr=$(echo "$addr" | tr -d '", ')
-            [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
-            [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
-            cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-                "$addr" --value 1ether > /dev/null 2>&1 || true
-            cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-                "$SWARM_USDC" "mint(address,uint256)" "$addr" "$SWARM_FUND" \
-                > /dev/null 2>&1 || true
-        done < "docker/testnet/vision-swarm/addresses.json"
-        echo -e "  ${GREEN}Funded swarm bot wallets with 1 GM + 10K USDC each${NC}"
+    # Fund fund-manager wallet with gas (vaults get USDC via VisionVaultFactory seed)
+    local FM_ADDR=$(cast wallet address "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537" 2>/dev/null || echo "")
+    if [ -n "$FM_ADDR" ]; then
+        echo -e "  Funding fund-manager wallet with gas..."
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            "$FM_ADDR" --value 10ether > /dev/null 2>&1 || true
+        echo -e "  ${GREEN}Funded fund-manager ($FM_ADDR) with 10 GM${NC}"
     fi
 
     # Verify funded accounts have non-zero balances
@@ -1429,9 +1414,10 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         echo -e "  ${GREEN}vision-batches.json synced with active-deployment.json${NC}"
     fi
 
-    # Wipe bot PnL files — positions from the old contract are now invalid
+    # Wipe bot state/PnL files — positions from the old contract are now invalid
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/fund-manager/pnl-data/*.json" 2>/dev/null || true
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data/pnl-*.json" 2>/dev/null || true
-    echo -e "  ${GREEN}Cleared stale bot PnL files${NC}"
+    echo -e "  ${GREEN}Cleared stale bot state/PnL files${NC}"
 
     # Fund test accounts with L3 USDC (FUNDER_KEY — mint is unrestricted on MockERC20)
     echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
@@ -2238,67 +2224,42 @@ cmd_start() {
     echo -e "${BLUE}[7/8] Starting itp-bot...${NC}"
     _start_itp_bot_docker
 
-    # Start vision swarm (optional — requires swarm.env)
-    echo -e "${BLUE}[8/8] Starting vision swarm...${NC}"
-    if [ -f "docker/testnet/vision-swarm/swarm.env" ]; then
-        # Stop existing swarm (prevents stale containers during rebuild)
-        vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/vision-swarm && docker compose down 2>/dev/null; true"
+    # Start fund-manager (vault-based Vision bot — single process, 183 vaults)
+    echo -e "${BLUE}[8/8] Starting fund-manager...${NC}"
+    # Stop existing (prevents stale containers during rebuild)
+    vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/fund-manager && docker compose down 2>/dev/null; true"
+    # Kill legacy vision-swarm if still running
+    vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/vision-swarm && docker compose down 2>/dev/null; true"
 
-        # Sync vision-bot source (not under docker/testnet/, needs explicit sync)
-        rsync -az --delete \
-            --exclude='.venv' --exclude='__pycache__' --exclude='tests' \
-            -e "$RSYNC_SSH_BE" \
-            "$SCRIPT_DIR/vision-bot/" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/vision-bot/"
-        # docker/testnet/vision-swarm/ already synced by _sync_docker_files in step [2/8]
-        # Sync deployment files
-        rsync -az -e "$RSYNC_SSH_BE" \
-            "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/deployments/vision-batches.json" \
-            "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/"
+    # Sync vision-bot source (not under docker/testnet/, needs explicit sync)
+    rsync -az --delete \
+        --exclude='.venv' --exclude='__pycache__' --exclude='tests' \
+        -e "$RSYNC_SSH_BE" \
+        "$SCRIPT_DIR/vision-bot/" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/vision-bot/"
+    # Sync deployment files
+    rsync -az -e "$RSYNC_SSH_BE" \
+        "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/deployments/vision-batches.json" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/"
 
-        # Create pnl-data dir
-        vps_be_ssh "mkdir -p $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data && chmod 777 $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data"
+    # Writable volume for state persistence
+    vps_be_ssh "mkdir -p $VPS_BE_DIR/docker/testnet/fund-manager/pnl-data && chmod 777 $VPS_BE_DIR/docker/testnet/fund-manager/pnl-data"
 
-        # Build
-        vps_be_ssh "cd $VPS_BE_DIR && docker compose -f docker/testnet/vision-swarm/docker-compose.yml build" \
-            || { echo -e "  ${YELLOW}Swarm build failed — skipping${NC}"; }
+    # Build
+    vps_be_ssh "cd $VPS_BE_DIR && docker compose -f docker/testnet/fund-manager/docker-compose.yml build" \
+        || { echo -e "  ${YELLOW}Fund-manager build failed — skipping${NC}"; }
 
-        # Fund bot wallets with gas + Vision USDC (Vision contract uses its own USDC, NOT L3_WUSDC)
-        VISION_CONTRACT=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
-        if [ -n "$VISION_CONTRACT" ]; then
-            USDC_ADDR=$(cast call "$VISION_CONTRACT" "USDC()(address)" --rpc-url "$RPC_URL" 2>/dev/null || echo "")
-        fi
-        [ -z "$USDC_ADDR" ] && USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
-        FUND_AMOUNT="100000000000000000000000"  # 100k USDC, 18 decimals
-        FUND_FAILURES=0
-        if [ -n "$USDC_ADDR" ] && [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
-            while IFS= read -r addr; do
-                addr=$(echo "$addr" | tr -d '", ')
-                [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
-                [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
-                # Gas (1 GM)
-                cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-                    "$addr" --value 1ether > /dev/null 2>&1 || true
-                # USDC
-                if ! cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-                    "$USDC_ADDR" "mint(address,uint256)" "$addr" "$FUND_AMOUNT" \
-                    > /dev/null 2>&1; then
-                    FUND_FAILURES=$((FUND_FAILURES + 1))
-                fi
-            done < "docker/testnet/vision-swarm/addresses.json"
-            if [ "$FUND_FAILURES" -gt 2 ]; then
-                echo -e "  ${YELLOW}WARNING: $FUND_FAILURES bot wallets failed to fund${NC}"
-            else
-                echo -e "  ${GREEN}Funded swarm wallets with gas + USDC${NC}"
-            fi
-        fi
-
-        # Start swarm
-        vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/vision-swarm && set -a && source swarm.env && set +a && docker compose up -d" \
-            && echo -e "  ${GREEN}Vision swarm started (10 bots)${NC}" \
-            || echo -e "  ${YELLOW}Vision swarm failed to start${NC}"
-    else
-        echo -e "  ${YELLOW}Swarm skipped — docker/testnet/vision-swarm/swarm.env not found${NC}"
+    # Fund manager wallet with gas (vaults are funded via VisionVaultFactory at deploy time)
+    FUND_MANAGER_ADDR=$(cast wallet address "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537" 2>/dev/null || echo "")
+    if [ -n "$FUND_MANAGER_ADDR" ]; then
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            "$FUND_MANAGER_ADDR" --value 10ether > /dev/null 2>&1 || true
+        echo -e "  ${GREEN}Funded manager wallet ($FUND_MANAGER_ADDR) with 10 GM${NC}"
     fi
+
+    # Start fund-manager
+    vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/fund-manager && docker compose up -d" \
+        && echo -e "  ${GREEN}Fund-manager started (183 vaults)${NC}" \
+        || echo -e "  ${YELLOW}Fund-manager failed to start${NC}"
 
     # Rebuild symbol-map from on-chain ITP assets (catches address drift between deploys)
     _rebuild_symbol_map_from_chain
@@ -2837,7 +2798,7 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
-    for svc in vision-swarm itp-bot curator oracle data-node sonic-proxy; do
+    for svc in fund-manager vision-swarm itp-bot curator oracle data-node sonic-proxy; do
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
