@@ -101,14 +101,36 @@ export async function prefetchLeaderboard() {
 }
 
 // ── Per-Source Detail Prefetch ───────────────────────────
-/** Prefetch source snapshot server-side (same data useSourceSnapshot fetches client-side) */
+/** Prefetch source snapshot server-side (same data useSourceSnapshot fetches client-side).
+ *  Must return the same shape as /api/vision/snapshot — client reads `prices`, not `snapshots`. */
 export async function prefetchSourceSnapshot(sourceId: string) {
   const res = await fetch(
     `${getAaDataNodeUrl()}/vision/snapshot?source=${encodeURIComponent(sourceId)}&limit=10000`,
     { next: { revalidate: 30 }, signal: AbortSignal.timeout(8_000) }
   )
   if (!res.ok) throw new Error(`Snapshot HTTP ${res.status}`)
-  return res.json()
+  const raw = await res.json()
+  const snapshots: Array<Record<string, unknown>> = raw.snapshots ?? []
+  return {
+    generatedAt: new Date().toISOString(),
+    maxAgeSecs: null,
+    totalAssets: snapshots.length,
+    sources: [],
+    prices: snapshots.map((s) => ({
+      source: s.source,
+      assetId: s.assetId,
+      symbol: s.symbol,
+      name: s.name,
+      category: s.category ?? null,
+      value: s.value,
+      prevClose: null,
+      changePct: s.changePct ?? null,
+      volume24h: s.volume24h ?? null,
+      marketCap: s.marketCap ?? null,
+      fetchedAt: s.fetchedAt,
+      imageUrl: (s.imageUrl as string) ?? null,
+    })),
+  }
 }
 
 /** Prefetch batch config for a source server-side */
