@@ -10,6 +10,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
+import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass, ModalClose } from '@/components/ui/spring'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
@@ -140,7 +141,7 @@ const CHART_PLOT_H = CHART_H - CHART_PAD_T - CHART_PAD_B
 const DRAW_DURATION = 900
 const MONO_FONT = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 
-function NavChart({ data, vaultAddr }: { data: number[]; vaultAddr: string }) {
+function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaultAddr: string; timestamps?: number[] }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const hoverGroupRef = useRef<SVGGElement>(null)
   const endpointRef = useRef<SVGGElement>(null)
@@ -181,9 +182,15 @@ function NavChart({ data, vaultAddr }: { data: number[]; vaultAddr: string }) {
       (frac) => CHART_PAD_T + CHART_PLOT_H * (1 - frac),
     )
 
-    // X-axis time labels — synthetic relative dates (last 7 days)
+    // X-axis time labels — real timestamps if available, synthetic otherwise
     const xLabels = [0, 1, 2, 3].map(i => {
-      const d = new Date(Date.now() - (3 - i) * 2 * 24 * 60 * 60 * 1000)
+      let d: Date
+      if (timestamps && timestamps.length > 0) {
+        const idx = Math.round((i / 3) * (timestamps.length - 1))
+        d = new Date(timestamps[idx])
+      } else {
+        d = new Date(Date.now() - (3 - i) * 2 * 24 * 60 * 60 * 1000)
+      }
       return {
         label: d.toLocaleDateString('en', { weekday: 'short', day: 'numeric' }),
         x: CHART_PAD_L + (CHART_PLOT_W / 3) * i,
@@ -483,10 +490,12 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
   const isPositive = vault.performanceSinceInception >= 0
   const feePercent = Number(vault.performanceFeeRate) / 1e16
 
-  const navHistory = useMemo(
-    () => generateNavHistory(vault.navPerShare, vault.address),
-    [vault.navPerShare, vault.address],
-  )
+  const { snapshots, hasHistory } = useVaultHistory(vault.address)
+
+  const navHistory = useMemo(() => {
+    if (hasHistory) return snapshots.map(s => s.nav)
+    return generateNavHistory(vault.navPerShare, vault.address)
+  }, [hasHistory, snapshots, vault.navPerShare, vault.address])
 
   const accentColor = branding?.color ?? '#000'
   const strategyKey = branding?.strategy ?? ''
@@ -559,7 +568,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
           {/* Interactive NAV chart */}
           <div className="mt-4 mb-5 -mx-1">
-            <NavChart data={navHistory} vaultAddr={vault.address} />
+            <NavChart data={navHistory} vaultAddr={vault.address} timestamps={hasHistory ? snapshots.map(s => s.ts) : undefined} />
           </div>
 
           {/* Stats grid */}

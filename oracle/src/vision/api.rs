@@ -138,6 +138,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/activity", get(vision_activity))
         .route("/vision/explorer/tie-rate-history", get(tie_rate_history))
         .route("/vision/batch/:id/ratios", get(batch_ratios))
+        .route("/vision/vault/:address/history", get(vault_history))
         .route("/vision/sse/settlements", get(sse_settlements))
         .with_state(state)
 }
@@ -621,6 +622,46 @@ async fn batch_ratios(
                 "batchId": id,
                 "markets": Vec::<()>::new(),
             }))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/vault/:address/history — TVL + NAV snapshots for a vault
+// ---------------------------------------------------------------------------
+
+async fn vault_history(
+    State(state): State<Arc<VisionState>>,
+    Path(address): Path<String>,
+) -> impl IntoResponse {
+    let rows = sqlx::query_as::<_, (f64, f64, chrono::DateTime<chrono::Utc>)>(
+        "SELECT nav_per_share, tvl_usd, created_at
+         FROM vault_snapshots
+         WHERE vault_address = $1
+         ORDER BY created_at ASC
+         LIMIT 200",
+    )
+    .bind(&address.to_lowercase())
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(rows) => {
+            let snapshots: Vec<serde_json::Value> = rows
+                .into_iter()
+                .map(|(nav, tvl, ts)| {
+                    serde_json::json!({
+                        "nav": nav,
+                        "tvl": tvl,
+                        "ts": ts.timestamp_millis(),
+                    })
+                })
+                .collect();
+            (StatusCode::OK, Json(serde_json::json!({ "snapshots": snapshots }))).into_response()
+        }
+        Err(e) => {
+            warn!("Failed to query vault snapshots for {address}: {e}");
+            (StatusCode::OK, Json(serde_json::json!({ "snapshots": Vec::<()>::new() }))).into_response()
         }
     }
 }
