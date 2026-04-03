@@ -178,7 +178,7 @@
     "collateral_value": "Collateral",
     "debt_value": "Debt",
     "health_factor": "Health Factor",
-    "connect_wallet": "Connect wallet to manage positions"
+    "connect_wallet": "Log in to manage positions"
   },
   "vault_supply": {
     "title": "USDC Vault",
@@ -211,7 +211,7 @@
   "lend_modal": {
     "title": "Borrow against {name}",
     "description": "Borrow USDC against your {symbol} collateral via Morpho",
-    "connect_wallet": "Connect your wallet to access lending",
+    "connect_wallet": "Log in to access lending",
     "tab_borrow": "Borrow",
     "tab_repay": "Repay",
     "no_position": "No active position to repay or withdraw",

@@ -69,7 +69,7 @@
     "zh": "中文"
   },
   "actions": {
-    "connect_wallet": "连接钱包",
+    "connect_wallet": "登录",
     "disconnect": "断开连接",
     "close": "关闭",
     "cancel": "取消",
@@ -95,7 +95,7 @@
     "how_it_works": "运作方式"
   },
   "wallet": {
-    "login": "连接钱包",
+    "login": "登录",
     "connecting": "连接中...",
     "switching": "切换中...",
     "switch_network": "切换到 Index Settlement",

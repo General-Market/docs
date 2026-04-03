@@ -69,7 +69,7 @@
     "zh": "中文"
   },
   "actions": {
-    "connect_wallet": "ウォレットを接続",
+    "connect_wallet": "ログイン",
     "disconnect": "切断",
     "close": "閉じる",
     "cancel": "キャンセル",
@@ -95,7 +95,7 @@
     "how_it_works": "仕組み"
   },
   "wallet": {
-    "login": "ウォレットを接続",
+    "login": "ログイン",
     "connecting": "接続中...",
     "switching": "切り替え中...",
     "switch_network": "Index Settlementに切り替え",

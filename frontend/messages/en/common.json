@@ -69,7 +69,7 @@
     "zh": "中文"
   },
   "actions": {
-    "connect_wallet": "Connect Wallet",
+    "connect_wallet": "Login",
     "disconnect": "Disconnect",
     "close": "Close",
     "cancel": "Cancel",
@@ -95,7 +95,7 @@
     "how_it_works": "How It Works"
   },
   "wallet": {
-    "login": "Connect Wallet",
+    "login": "Login",
     "connecting": "Connecting...",
     "switching": "Switching...",
     "switch_network": "Switch to Index Settlement",
@@ -321,7 +321,7 @@
   "view_details_arrow": "View Details →",
   "retry": "Retry",
   "showing_of": "Showing {shown} of {total}",
-  "connect_wallet_to_view": "Connect wallet to view balance",
+  "connect_wallet_to_view": "Log in to view balance",
   "failed_to_load_balance": "Failed to load balance. Retrying...",
   "callout_note": "Note",
   "callout_warning": "Warning",

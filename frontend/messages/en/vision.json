@@ -31,7 +31,7 @@
       "preview": "Preview",
       "confirm": "Confirm"
     },
-    "connect_wallet": "Connect your wallet to create a batch",
+    "connect_wallet": "Log in to create a batch",
     "step_markets": {
       "source_label": "Source",
       "all_sources": "All Sources",
@@ -189,13 +189,13 @@
   "lending_section": {
     "title": "USDC Vault",
     "description": "Earn yield by lending USDC to borrowers",
-    "connect_wallet": "Connect your wallet to access vault features",
+    "connect_wallet": "Log in to access vault features",
     "error_title": "Something went wrong",
     "error_description": "Please refresh the page."
   },
   "deposit_modal": {
     "title": "Deposit to Batch #{id}",
-    "connect_wallet": "Connect your wallet to deposit",
+    "connect_wallet": "Log in to deposit",
     "success_title": "Deposit Successful",
     "success_description": "{amount} USDC deposited to batch #{id}",
     "deposit_more": "Deposit More",
@@ -215,7 +215,7 @@
     "title_withdraw": "Withdraw from Batch #{id}",
     "title_claim": "Claim Rewards from Batch #{id}",
     "title_choose": "Withdraw / Claim Batch #{id}",
-    "connect_wallet": "Connect your wallet",
+    "connect_wallet": "Log in",
     "withdrawal_successful": "Withdrawal Successful",
     "claim_successful": "Claim Successful",
     "usdc_returned": "{amount} USDC returned",
@@ -271,7 +271,7 @@
   },
   "balance_deposit_modal": {
     "title": "Deposit to Vision",
-    "connect_wallet": "Connect your wallet to deposit",
+    "connect_wallet": "Log in to deposit",
     "deposit_successful": "Deposit Successful",
     "deposited_description": "{amount} USDC deposited to your Vision balance",
     "deposited_via_settlement": " (via Settlement)",
@@ -313,7 +313,7 @@
   },
   "balance_withdraw_modal": {
     "title": "Withdraw from Vision",
-    "connect_wallet": "Connect your wallet to withdraw",
+    "connect_wallet": "Log in to withdraw",
     "withdrawal_successful": "Withdrawal Successful",
     "withdrawn_description": "{amount} USDC withdrawn",
     "withdrawn_to_settlement": " to Settlement",
@@ -448,14 +448,14 @@
     "bets_carry_forward": "Bets carry forward from previous tick",
     "bets_carry_forward_detail": "Change predictions below, or deposit more to continue with current bets.",
     "sitting_out": "Sitting out this tick — no bets set",
-    "connect_wallet": "Connect Wallet",
-    "connect_wallet_prompt": "Connect your wallet to start playing",
+    "connect_wallet": "Login",
+    "connect_wallet_prompt": "Log in to start playing",
     "no_vision_balance": "No Vision balance",
     "deposit_to_play": "Deposit USDC to start playing",
     "deposit_usdc": "Deposit USDC",
     "players": "{count} players",
     "markets": "{count} markets",
-    "connect_wallet_button": "Connect Wallet",
+    "connect_wallet_button": "Login",
     "submitting": "Submitting...",
     "confirming": "Confirming...",
     "waiting_for_wallet": "Waiting for wallet...",
@@ -799,7 +799,7 @@
     "request_redeem": "Request Redeem",
     "redeem_success": "Redeem request submitted. USDC will be claimable after reconciliation.",
     "withdraw_usdc": "Withdraw All",
-    "connect_to_deposit": "Connect wallet to deposit",
-    "connect_to_withdraw": "Connect wallet to withdraw"
+    "connect_to_deposit": "Log in to deposit",
+    "connect_to_withdraw": "Log in to withdraw"
   }
 }
