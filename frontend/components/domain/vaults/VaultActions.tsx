@@ -132,7 +132,7 @@ function useChartId() {
 const CHART_W = 400
 const CHART_H = 160
 const CHART_PAD_T = 16
-const CHART_PAD_B = 16
+const CHART_PAD_B = 28
 const CHART_PAD_L = 40
 const CHART_PAD_R = 8
 const CHART_PLOT_W = CHART_W - CHART_PAD_L - CHART_PAD_R
@@ -181,10 +181,19 @@ function NavChart({ data, vaultAddr }: { data: number[]; vaultAddr: string }) {
       (frac) => CHART_PAD_T + CHART_PLOT_H * (1 - frac),
     )
 
+    // X-axis time labels — synthetic relative dates (last 7 days)
+    const xLabels = [0, 1, 2, 3].map(i => {
+      const d = new Date(Date.now() - (3 - i) * 2 * 24 * 60 * 60 * 1000)
+      return {
+        label: d.toLocaleDateString('en', { weekday: 'short', day: 'numeric' }),
+        x: CHART_PAD_L + (CHART_PLOT_W / 3) * i,
+      }
+    })
+
     return {
       min, max, range, isPositive, strokeColor,
       pts, linePath, fillPath, pathLength, endPt,
-      gridYs, POINTS: data.length,
+      gridYs, xLabels, POINTS: data.length,
     }
   }, [data])
 
@@ -399,6 +408,25 @@ function NavChart({ data, vaultAddr }: { data: number[]; vaultAddr: string }) {
       >
         {chart.min.toFixed(4)}
       </text>
+
+      {/* X-axis time labels */}
+      {chart.xLabels.map((xl, i) => (
+        <text
+          key={i}
+          x={xl.x}
+          y={CHART_H - 4}
+          textAnchor={i === 0 ? 'start' : i === chart.xLabels.length - 1 ? 'end' : 'middle'}
+          fill="#9CA3AF"
+          fontSize={9}
+          fontFamily={MONO_FONT}
+          style={{
+            opacity: entered ? 1 : 0,
+            transition: reduced ? 'none' : `opacity 400ms ease ${400 + i * 60}ms`,
+          }}
+        >
+          {xl.label}
+        </text>
+      ))}
     </svg>
   )
 }

@@ -7,6 +7,8 @@ import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'
 import fundData from '@/data/fund-branding.json'
 import { cn } from '@/lib/utils/cn'
+import { VaultActions } from '@/components/domain/vaults/VaultActions'
+import type { VaultInfo } from '@/hooks/vaults/useVaults'
 
 interface VaultCarouselProps {
   sourceId: string
@@ -42,6 +44,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const [selectedVault, setSelectedVault] = useState<VaultInfo | null>(null)
 
   const funds = useMemo(
     () => (fundData as any).funds.filter((f: any) => f.source === sourceId && f.vault),
@@ -154,8 +157,26 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
           return (
             <div
               key={fund.symbol}
+              onClick={() => {
+                const vaultInfo: VaultInfo = {
+                  address: fund.vault as `0x${string}`,
+                  name: fund.name,
+                  symbol: fund.symbol,
+                  manager: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+                  performanceFeeRate: BigInt(fund.fee) * 10n ** 14n,
+                  highWaterMark: 10n ** 18n,
+                  totalAssets: totalAssets,
+                  totalSupply: totalSupply,
+                  totalActiveCapital: 0n,
+                  navPerShare: nav,
+                  performanceSinceInception: perf,
+                  tvlFormatted: tvl > 0 ? tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0',
+                  deployedRatio: 0,
+                }
+                setSelectedVault(vaultInfo)
+              }}
               className={cn(
-                'shrink-0 w-[280px] rounded-lg border bg-gradient-to-br overflow-hidden',
+                'shrink-0 w-[280px] rounded-lg border bg-gradient-to-br overflow-hidden cursor-pointer hover:shadow-lg transition-shadow',
                 gradientClass,
               )}
               style={{ scrollSnapAlign: 'start' }}
@@ -211,28 +232,40 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
         </div>
 
         {/* CTA card — fixed on right */}
-        <div className="shrink-0 w-[240px] rounded-lg border border-dashed border-black/20 bg-gradient-to-br from-black/[0.03] to-black/[0.01] overflow-hidden flex flex-col hidden md:flex">
-          <div className="flex-1 p-5 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-xl bg-black/[0.06] flex items-center justify-center mb-3">
-              <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="shrink-0 w-[260px] hidden md:block relative">
+          {/* Purple glow behind */}
+          <div
+            className="absolute inset-0 rounded-[20px] pointer-events-none"
+            style={{ filter: 'blur(24px)', transform: 'scale(1.08)', opacity: 0.3, background: 'linear-gradient(-30deg, #6348dd, transparent 40%, transparent 60%, #6348dd)' }}
+          />
+          <div className="relative rounded-[20px] bg-[#141414] border border-[#6348dd]/20 h-full flex flex-col items-center justify-center text-center p-6">
+            <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+              <svg className="w-5 h-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
             </div>
-            <div className="text-[14px] font-black text-black leading-tight mb-1.5">
-              Deploy Your Own Bot
+            <div className="text-[14px] font-black text-white/90 leading-tight mb-1.5">
+              Deploy Your Bot
             </div>
-            <p className="text-[10px] text-text-muted leading-relaxed mb-4">
-              Build a custom trading strategy with Claude Code. Deploys as a managed vault in minutes.
+            <p className="text-[10px] text-white/30 leading-relaxed mb-5">
+              Build a custom strategy with Claude Code. Deploys as a vault in minutes.
             </p>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-black text-white text-[11px] font-bold">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
               Claude Code
-            </div>
+            </button>
           </div>
         </div>
       </div>
+
+      {selectedVault && (
+        <VaultActions
+          vault={selectedVault}
+          onClose={() => setSelectedVault(null)}
+        />
+      )}
     </div>
   )
 }
