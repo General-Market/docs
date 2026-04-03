@@ -19,7 +19,8 @@
   "tabs": {
     "positions": "Positions",
     "trades": "Trades",
-    "orders": "Orders"
+    "orders": "Orders",
+    "vaults": "Vaults"
   },
   "orders_banner": {
     "active_orders": "{count} active order{plural} in progress"
@@ -96,6 +97,22 @@
     "fee_bridge": "Bridge",
     "fee_gas": "Gas",
     "fee_total": "Total Fees"
+  },
+  "vaults": {
+    "tab": "Vaults",
+    "section_title": "Vision Vaults",
+    "section_subtitle": "Managed Vault Deposits",
+    "vault": "Vault",
+    "shares": "Shares",
+    "nav": "NAV/Share",
+    "value": "Value",
+    "performance": "Perf",
+    "fee": "Fee",
+    "total_value": "Vault Value",
+    "empty_title": "No vault deposits",
+    "empty_description": "Deposit into a Vision Vault to have a managed strategy trade on your behalf.",
+    "explore_vaults": "Explore Vaults",
+    "withdraw": "Withdraw"
   },
   "side": {
     "buy": "BUY",

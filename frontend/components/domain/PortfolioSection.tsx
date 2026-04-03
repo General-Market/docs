@@ -29,10 +29,12 @@ import { getAddressUrl, getExplorerBaseUrl } from '@/lib/utils/explorer'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { useUserVaultPositions, UserVaultPosition } from '@/hooks/vaults/useUserVaultPositions'
+import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 
 const PAGE_SIZE = 10
 
-type Tab = 'value' | 'positions' | 'trades' | 'orders'
+type Tab = 'value' | 'positions' | 'trades' | 'orders' | 'vaults'
 
 interface PortfolioSectionProps {
   expanded: boolean
@@ -108,6 +110,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const [activeTab, setActiveTab] = useState<Tab>('positions')
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
+
+  // --- Vision Vault positions ---
+  const vaultSummary = useUserVaultPositions(address)
 
   // --- SSE balances & nav for real-time on-chain positions ---
   const sseBalances = useSSEBalances()
@@ -295,13 +300,14 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const activeCount = orders.filter(o => o.status < 2).length
   // Only count completed fills in Trades tab — pending ones are tracked in Orders tab
   const filledTradeCount = trades.filter(tr => tr.status === 'filled').length
-  const totalPnl = mergedSummary ? parseFloat(mergedSummary.total_pnl) : 0
+  const itpPnl = mergedSummary ? parseFloat(mergedSummary.total_pnl) : 0
+  const totalPnl = itpPnl // Vault PnL requires deposit history — shown per-position only
   const positionsValue = mergedSummary ? parseFloat(mergedSummary.total_value) : 0
   // Include pending/batched order amounts in total value
   const pendingOrderValue = orders
     .filter(o => o.status < 2) // Pending or Batched
     .reduce((sum, o) => sum + parseFloat(formatUnits(o.amount, 18)), 0)
-  const totalValue = positionsValue + usdcNum + pendingOrderValue
+  const totalValue = positionsValue + usdcNum + pendingOrderValue + vaultSummary.totalValue
   const hasAnyBalance = totalValue > 0.01 || (mergedSummary && mergedSummary.positions.length > 0)
   const subtitle = mergedSummary
     ? t('heading.subtitle_with_data', { count: mergedSummary.positions.length, plural: mergedSummary.positions.length !== 1 ? 's' : '', value: mergedSummary.total_value })
@@ -392,7 +398,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
         <>
           {/* Stats strip */}
           <div className="py-4 border-b border-border-light">
-            <div className="grid grid-cols-3 gap-0">
+            <div className="grid grid-cols-4 gap-0">
               <div className="py-2 pr-6">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_invested')}</div>
                 <SpringNumber
@@ -403,7 +409,15 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               </div>
               <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.positions')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
+                <div className="text-title font-extrabold font-mono tabular-nums text-black">{(mergedSummary?.positions.length || 0) + vaultSummary.positions.length}</div>
+              </div>
+              <div className="py-2 px-6 border-l border-border-light">
+                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.total_value')}</div>
+                <SpringNumber
+                  value={vaultSummary.totalValue}
+                  format={n => `$${n.toFixed(2)}`}
+                  className="text-title font-extrabold font-mono tabular-nums text-black"
+                />
               </div>
               <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
@@ -426,9 +440,10 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           </div>
           <div className="border-b border-border-light mb-0 mt-5">
             <SpringTabs className="flex gap-6">
-              {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
+              {(['positions', 'vaults', 'trades', 'orders'] as Tab[]).map(tab => {
                 const label = t(`tabs.${tab}`)
                 const count = tab === 'positions' ? (mergedSummary?.positions.length || 0)
+                  : tab === 'vaults' ? vaultSummary.positions.length
                   : tab === 'trades' ? filledTradeCount
                   : activeCount
                 return (
@@ -494,6 +509,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               <div className="mt-4" />
               <PositionsTab summary={mergedSummary} itpNameMap={itpNameMap} onBuy={setBuyModal} onSell={setSellModal} />
             </>
+          )}
+          {activeTab === 'vaults' && (
+            <VaultsTab positions={vaultSummary.positions} isLoading={vaultSummary.isLoading} />
           )}
           {activeTab === 'trades' && <TradesTab trades={trades} itpNameMap={itpNameMap} />}
           {activeTab === 'orders' && (
@@ -944,6 +962,138 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
         onPrev={() => setPage(p => Math.max(1, p - 1))}
         onNext={() => setPage(p => Math.min(totalPages, p + 1))}
       />
+    </div>
+  )
+}
+
+// --- Vaults Tab ---
+function VaultPositionRow({ position, idx }: { position: UserVaultPosition; idx: number }) {
+  const branding = useFundBranding(position.vault.address)
+  const perfPercent = (position.vaultPerformance * 100).toFixed(2)
+  const isPositive = position.vaultPerformance >= 0
+  const sharesFormatted = parseFloat(formatUnits(position.shares, 18)).toFixed(4)
+  const feePercent = (Number(position.vault.performanceFeeRate) / 100).toFixed(1)
+
+  return (
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
+      className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
+    >
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          {branding?.color && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: branding.color }} />
+          )}
+          <span className="text-text-primary text-sm font-semibold truncate">
+            {branding?.name ?? position.vault.name}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-right text-text-primary font-mono text-sm tabular-nums">
+        {sharesFormatted}
+      </td>
+      <td className="px-4 py-3 text-right text-text-secondary font-mono text-sm tabular-nums">
+        ${position.vault.navPerShare.toFixed(4)}
+      </td>
+      <td className="px-4 py-3 text-right text-text-primary font-mono text-sm tabular-nums">
+        ${position.currentValue.toFixed(2)}
+      </td>
+      <td className={`px-4 py-3 text-right font-mono text-sm tabular-nums ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+        {isPositive ? '+' : ''}{perfPercent}%
+      </td>
+      <td className="px-4 py-3 text-right text-text-muted font-mono text-sm tabular-nums">
+        {feePercent}%
+      </td>
+    </motion.tr>
+  )
+}
+
+function VaultsTab({ positions, isLoading }: { positions: UserVaultPosition[]; isLoading: boolean }) {
+  const t = useTranslations('portfolio')
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(positions.length / PAGE_SIZE))
+  const clampedPage = Math.min(page, totalPages)
+
+  if (isLoading) {
+    return (
+      <div className="bg-card rounded-md border border-border-light p-8 text-center text-text-muted">
+        Loading vault positions...
+      </div>
+    )
+  }
+
+  if (positions.length === 0) {
+    return (
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
+        <div className="max-w-sm mx-auto">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-text-primary mb-1.5">{t('vaults.empty_title')}</h3>
+          <p className="text-sm text-text-muted leading-relaxed mb-5">
+            {t('vaults.empty_description')}
+          </p>
+          <a
+            href="/vaults"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors fluid-press"
+          >
+            {t('vaults.explore_vaults')}
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const totalValue = positions.reduce((sum, p) => sum + p.currentValue, 0)
+
+  return (
+    <div>
+      {/* Vault summary bar */}
+      <div className="section-bar mt-5">
+        <div>
+          <div className="section-bar-title">{t('vaults.section_title')}</div>
+          <div className="section-bar-value">{t('vaults.section_subtitle')}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vaults.total_value')}</div>
+          <div className="text-title font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-md border border-border-light overflow-hidden mt-4">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+                <th className="text-left px-4 py-3">{t('vaults.vault')}</th>
+                <th className="text-right px-4 py-3">{t('vaults.shares')}</th>
+                <th className="text-right px-4 py-3">{t('vaults.nav')}</th>
+                <th className="text-right px-4 py-3">{t('vaults.value')}</th>
+                <th className="text-right px-4 py-3">{t('vaults.performance')}</th>
+                <th className="text-right px-4 py-3">{t('vaults.fee')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {positions.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((pos, idx) => (
+                <VaultPositionRow key={pos.vault.address} position={pos} idx={idx} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={clampedPage}
+          totalPages={totalPages}
+          onPrev={() => setPage(p => Math.max(1, p - 1))}
+          onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+        />
+      </div>
     </div>
   )
 }

@@ -19,7 +19,8 @@
   "tabs": {
     "positions": "ポジション",
     "trades": "取引",
-    "orders": "注文"
+    "orders": "注文",
+    "vaults": "ヴォールト"
   },
   "orders_banner": {
     "active_orders": "{count}件のアクティブな注文が処理中です"
@@ -96,6 +97,22 @@
     "fee_bridge": "ブリッジ",
     "fee_gas": "ガス",
     "fee_total": "手数料合計"
+  },
+  "vaults": {
+    "tab": "ヴォールト",
+    "section_title": "Vision ヴォールト",
+    "section_subtitle": "マネージドヴォールト預金",
+    "vault": "ヴォールト",
+    "shares": "シェア",
+    "nav": "NAV/シェア",
+    "value": "価値",
+    "performance": "パフォーマンス",
+    "fee": "手数料",
+    "total_value": "ヴォールト価値",
+    "empty_title": "ヴォールト預金なし",
+    "empty_description": "Vision ヴォールトに預けて、マネージド戦略で取引しましょう。",
+    "explore_vaults": "ヴォールトを探す",
+    "withdraw": "引き出す"
   },
   "side": {
     "buy": "買い",

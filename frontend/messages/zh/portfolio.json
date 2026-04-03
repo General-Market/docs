@@ -19,7 +19,8 @@
   "tabs": {
     "positions": "持仓",
     "trades": "交易",
-    "orders": "订单"
+    "orders": "订单",
+    "vaults": "金库"
   },
   "orders_banner": {
     "active_orders": "{count} 个活跃订单{plural}正在处理中"
@@ -96,6 +97,22 @@
     "fee_bridge": "跨链费",
     "fee_gas": "Gas 费",
     "fee_total": "费用总计"
+  },
+  "vaults": {
+    "tab": "金库",
+    "section_title": "Vision 金库",
+    "section_subtitle": "托管金库存款",
+    "vault": "金库",
+    "shares": "份额",
+    "nav": "NAV/份额",
+    "value": "价值",
+    "performance": "表现",
+    "fee": "费率",
+    "total_value": "金库价值",
+    "empty_title": "暂无金库存款",
+    "empty_description": "存入 Vision 金库，由托管策略为您交易。",
+    "explore_vaults": "浏览金库",
+    "withdraw": "赎回"
   },
   "side": {
     "buy": "买入",

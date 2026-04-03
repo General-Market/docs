@@ -19,7 +19,8 @@
   "tabs": {
     "positions": "포지션",
     "trades": "거래",
-    "orders": "주문"
+    "orders": "주문",
+    "vaults": "볼트"
   },
   "orders_banner": {
     "active_orders": "진행 중인 주문 {count}건"
@@ -96,6 +97,22 @@
     "fee_bridge": "브릿지",
     "fee_gas": "가스",
     "fee_total": "총 수수료"
+  },
+  "vaults": {
+    "tab": "볼트",
+    "section_title": "Vision 볼트",
+    "section_subtitle": "관리형 볼트 예금",
+    "vault": "볼트",
+    "shares": "지분",
+    "nav": "NAV/지분",
+    "value": "가치",
+    "performance": "성과",
+    "fee": "수수료",
+    "total_value": "볼트 가치",
+    "empty_title": "볼트 예금 없음",
+    "empty_description": "Vision 볼트에 예치하여 관리형 전략으로 거래하세요.",
+    "explore_vaults": "볼트 탐색",
+    "withdraw": "출금"
   },
   "side": {
     "buy": "매수",
