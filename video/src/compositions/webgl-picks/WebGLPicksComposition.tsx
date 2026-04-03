@@ -31,6 +31,11 @@ import { OneElementScroll } from "./OneElementScroll";
 import { ThreeChallenge } from "./ThreeChallenge";
 import { NeonSwitch } from "./NeonSwitch";
 import { GooeySearch } from "./GooeySearch";
+import { Scene19 } from "./Scene19";
+import { RingShader } from "./RingShader";
+import { Carousel3D } from "./Carousel3D";
+import { SvgMorph } from "./SvgMorph";
+import { VortexGallery } from "./VortexGallery";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -69,6 +74,11 @@ const ALL_SCENES = [
   { id: "WP-ThreeChallenge", component: ThreeChallenge },
   { id: "WP-NeonSwitch", component: NeonSwitch },
   { id: "WP-GooeySearch", component: GooeySearch },
+  { id: "WP-Scene19", component: Scene19 },
+  { id: "WP-RingShader", component: RingShader },
+  { id: "WP-Carousel3D", component: Carousel3D },
+  { id: "WP-SvgMorph", component: SvgMorph },
+  { id: "WP-VortexGallery", component: VortexGallery },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
