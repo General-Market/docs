@@ -15,6 +15,7 @@ import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop
 import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandComposition";
 import { solanaBgMeta } from "./compositions/solana-bg/SolanaBgComposition";
 import { webglPicksMeta, webglSceneMetas } from "./compositions/webgl-picks/WebGLPicksComposition";
+import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm-launch-bg/GMLaunchBgComposition";
 
 // remotion-scenes showcases
 import {
@@ -209,6 +210,29 @@ export const RemotionRoot: React.FC = () => {
       />
       <Folder name="WebGL-Picks">
         {webglSceneMetas.map((meta) => (
+          <Composition
+            key={meta.id}
+            id={meta.id}
+            component={meta.component}
+            durationInFrames={meta.durationInFrames}
+            fps={meta.fps}
+            width={meta.width}
+            height={meta.height}
+          />
+        ))}
+      </Folder>
+
+      {/* ═══ GM LAUNCH BACKGROUNDS — 5 branded propositions ═══ */}
+      <Composition
+        id={gmLaunchBgMeta.id}
+        component={gmLaunchBgMeta.component}
+        durationInFrames={gmLaunchBgMeta.durationInFrames}
+        fps={gmLaunchBgMeta.fps}
+        width={gmLaunchBgMeta.width}
+        height={gmLaunchBgMeta.height}
+      />
+      <Folder name="GMLaunch-Scenes">
+        {gmLaunchSceneMetas.map((meta) => (
           <Composition
             key={meta.id}
             id={meta.id}
