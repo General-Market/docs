@@ -488,6 +488,10 @@ def fetch_batches(api_url: str, executor=None) -> list[dict]:
 
 # ── Batch config fetching ─────────────────────────────────────
 
+# Config hashes are keccak256 of immutable content — they never change.
+# Cache eliminates redundant HTTP fetches across repeated batch cycles.
+_config_cache: dict[str, dict] = {}
+
 
 def fetch_batch_config(data_node_url: str, config_hash: str):
     """
@@ -498,12 +502,16 @@ def fetch_batch_config(data_node_url: str, config_hash: str):
         return None
     if not config_hash.startswith("0x"):
         config_hash = "0x" + config_hash
+    if config_hash in _config_cache:
+        return _config_cache[config_hash]
     try:
         resp = requests.get(
             f"{data_node_url}/batches/config/{config_hash}", timeout=10
         )
         if resp.ok:
-            return resp.json()
+            result = resp.json()
+            _config_cache[config_hash] = result
+            return result
     except requests.RequestException as e:
         logger.debug("Failed to fetch config %s: %s", config_hash[:18], e)
     return None
