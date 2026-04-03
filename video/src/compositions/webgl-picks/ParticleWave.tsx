@@ -1,5 +1,5 @@
 // Source: https://codepen.io/soju22/full/MYgbRwg
-import React, { useRef, useMemo, useEffect } from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
@@ -9,9 +9,10 @@ import {
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
 import * as THREE from "three";
 
-// ── Config — mirrors the original's default params ──
+// ── Config ──
 
 const HEX_N = 20;
 const LIGHT1_COLOR = 0xffffff;
@@ -30,16 +31,11 @@ const DEPTH_SCALE = 1;
 const TILT_ROTATION_X = 0.15;
 const TILT_ROTATION_Y = 0.15;
 
-// ── Hex geometry params ──
-
 const RADIUS = 50 / HEX_N;
 const NX = HEX_N;
 const NY = HEX_N;
-const COUNT = NX * NY;
 
-// ── Build the rounded hexagonal lathe geometry ──
-// The original uses a LatheGeometry with 6 segments, creating a hexagonal prism
-// with rounded edges via cosine/sine interpolation on the corners.
+// ── Hex lathe geometry (6-segment = hexagonal prism) ──
 
 function createHexGeometry(): THREE.LatheGeometry {
   const segments = 6;
@@ -49,75 +45,37 @@ function createHexGeometry(): THREE.LatheGeometry {
   const cornerSteps = 6;
 
   const points: THREE.Vector2[] = [];
-  // Bottom edge
   points.push(new THREE.Vector2(RADIUS, -height / 2));
-  // Bottom-right corner (rounded)
   for (let i = 0; i < cornerSteps; i++) {
     const t = i / (cornerSteps - 1);
-    const x = RADIUS - cornerR + Math.cos(t * Math.PI / 2) * cornerR;
-    const z = height / 2 - cornerRZ + Math.sin(t * Math.PI / 2) * cornerRZ;
+    const x = RADIUS - cornerR + Math.cos((t * Math.PI) / 2) * cornerR;
+    const z = height / 2 - cornerRZ + Math.sin((t * Math.PI) / 2) * cornerRZ;
     points.push(new THREE.Vector2(x, z));
   }
-  // Top center
   points.push(new THREE.Vector2(0, height / 2));
 
   const geo = new THREE.LatheGeometry(points, segments);
   geo.translate(0, -height / 2, 0);
   geo.rotateX(Math.PI / 2);
-
   return geo;
 }
 
-// ── Compute hex grid positions ──
+// ── Precomputed tile data ──
 
-interface CellPos {
+interface TileData {
   x: number;
   y: number;
-  rotZ: number;
+  color: THREE.Color;
+  phase: number;
 }
 
-function computeHexPositions(): CellPos[] {
-  const spacing = Math.cos(Math.PI / 6) * RADIUS * 2;
-  const rowH = 1.5 * RADIUS;
-  const ox = (-NX / 2) * spacing + spacing / 4;
-  const oy = (-NY / 2) * rowH + rowH / 2;
-
-  const positions: CellPos[] = new Array(COUNT);
-  for (let col = 0; col < NX; col++) {
-    for (let row = 0; row < NY; row++) {
-      const idx = col * NY + row;
-      positions[idx] = {
-        x: ox + col * spacing + (row % 2) / 2 * spacing,
-        y: oy + row * rowH,
-        rotZ: 0,
-      };
-    }
-  }
-  return positions;
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
 }
-
-// ── Material — no onBeforeCompile, no shader chunk surgery ──
-// MeshPhysicalMaterial with clearcoat + sheen + iridescence gives the
-// subsurface glow the original achieved via SSS injection, without
-// relying on internal chunk names that break across Three.js versions.
-
-function createHexMaterial(): THREE.MeshPhysicalMaterial {
-  return new THREE.MeshPhysicalMaterial({
-    metalness: METALNESS,
-    roughness: ROUGHNESS,
-    clearcoat: CLEARCOAT,
-    clearcoatRoughness: CLEARCOAT_ROUGHNESS,
-    sheen: 1.0,
-    sheenRoughness: 0.4,
-    sheenColor: new THREE.Color(0x4444ff),
-    iridescence: 0.3,
-    iridescenceIOR: 1.3,
-    vertexColors: true,
-    side: THREE.FrontSide,
-  });
-}
-
-// ── Color gradient helper ──
 
 function getColorAt(colors: number[], t: number): THREE.Color {
   const cArr = colors.map((c) => new THREE.Color(c));
@@ -130,45 +88,111 @@ function getColorAt(colors: number[], t: number): THREE.Color {
   return new THREE.Color(
     a.r + f * (b.r - a.r),
     a.g + f * (b.g - a.g),
-    a.b + f * (b.b - a.b)
+    a.b + f * (b.b - a.b),
   );
 }
 
-// ── Seeded random for deterministic colors ──
+function computeTiles(): TileData[] {
+  const spacing = Math.cos(Math.PI / 6) * RADIUS * 2;
+  const rowH = 1.5 * RADIUS;
+  const ox = (-NX / 2) * spacing + spacing / 4;
+  const oy = (-NY / 2) * rowH + rowH / 2;
 
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
+  const colorRng = seededRandom(123);
+  const phaseRng = seededRandom(42);
+  const tiles: TileData[] = [];
+
+  for (let col = 0; col < NX; col++) {
+    for (let row = 0; row < NY; row++) {
+      tiles.push({
+        x: ox + col * spacing + ((row % 2) / 2) * spacing,
+        y: oy + row * rowH,
+        color: getColorAt(COLORS, colorRng()),
+        phase: (phaseRng() - 0.5) * 2 * Math.PI,
+      });
+    }
+  }
+  return tiles;
 }
 
-// ── The Three.js scene ──
+// ── Individual hex tile ──
 
-const HexGridScene: React.FC<{ time: number; pointerX: number; pointerY: number }> = ({
-  time,
-  pointerX,
-  pointerY,
-}) => {
+const HexTile: React.FC<{
+  tile: TileData;
+  geometry: THREE.LatheGeometry;
+  material: THREE.MeshPhysicalMaterial;
+  time: number;
+  cursorX: number;
+  cursorY: number;
+  scaleFactor: number;
+}> = ({ tile, geometry, material, time, cursorX, cursorY, scaleFactor }) => {
+  const worldX = tile.x * scaleFactor;
+  const worldY = tile.y * scaleFactor;
+  const dx = worldX - cursorX;
+  const dy = worldY - cursorY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  const maxDist = 20 * RADIUS * scaleFactor;
+  const t = Math.max(0, Math.min(1, dist / maxDist));
+  const proximity = 1 - t * t * (3 - 2 * t);
+
+  const depth =
+    0.5 *
+    (Math.cos(tile.phase + time * TIME_COEF) - 1) *
+    RADIUS *
+    DEPTH_SCALE *
+    proximity;
+
+  return (
+    <mesh
+      geometry={geometry}
+      material={material}
+      position={[tile.x, tile.y, depth]}
+      castShadow
+      receiveShadow
+    />
+  );
+};
+
+// ── Scene ──
+
+const HexGridScene: React.FC<{
+  time: number;
+  pointerX: number;
+  pointerY: number;
+}> = ({ time, pointerX, pointerY }) => {
   const { size: threeSize } = useThree();
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const light1Ref = useRef<THREE.PointLight>(null);
-  const light2Ref = useRef<THREE.PointLight>(null);
-  const lerpedPointer = useRef(new THREE.Vector3(0, 0, 0));
-  const lerpedTilt = useRef(new THREE.Vector3(0, 0, 0));
-  const dummy = useRef(new THREE.Object3D());
-  const vec2 = useRef(new THREE.Vector2());
 
   const hexGeo = useMemo(() => createHexGeometry(), []);
-  const hexMat = useMemo(() => createHexMaterial(), []);
-  const positions = useMemo(() => computeHexPositions(), []);
-  const phaseOffsets = useMemo(() => {
-    const rng = seededRandom(42);
-    return new Float32Array(COUNT).fill(0).map(() => (rng() - 0.5) * 2 * Math.PI);
-  }, []);
+  const tiles = useMemo(() => computeTiles(), []);
 
-  // Compute world-space dimensions for scale
+  // One material per distinct color
+  const materials = useMemo(() => {
+    const map = new Map<string, THREE.MeshPhysicalMaterial>();
+    for (const tile of tiles) {
+      const key = tile.color.getHexString();
+      if (!map.has(key)) {
+        map.set(
+          key,
+          new THREE.MeshPhysicalMaterial({
+            color: tile.color,
+            metalness: METALNESS,
+            roughness: ROUGHNESS,
+            clearcoat: CLEARCOAT,
+            clearcoatRoughness: CLEARCOAT_ROUGHNESS,
+            sheen: 1.0,
+            sheenRoughness: 0.4,
+            sheenColor: new THREE.Color(0x4444ff),
+            iridescence: 0.3,
+            iridescenceIOR: 1.3,
+            side: THREE.FrontSide,
+          }),
+        );
+      }
+    }
+    return map;
+  }, [tiles]);
+
   const aspect = threeSize.width / threeSize.height;
   const cameraZ = 100;
   const fov = 50;
@@ -176,115 +200,60 @@ const HexGridScene: React.FC<{ time: number; pointerX: number; pointerY: number 
   const wHeight = 2 * Math.tan(vFov / 2) * cameraZ;
   const wWidth = wHeight * aspect;
 
-  // Scale factor to fill viewport (matches original: wWidth/100 * 1.4)
-  const scaleFactor = aspect > 1
-    ? (wWidth / 100) * 1.4
-    : (wHeight / 100) * 1.4;
+  const scaleFactor =
+    aspect > 1 ? (wWidth / 100) * 1.4 : (wHeight / 100) * 1.4;
 
-  // Set colors once
-  useEffect(() => {
-    if (!meshRef.current) return;
-    const rng = seededRandom(123);
-    for (let i = 0; i < COUNT; i++) {
-      const color = getColorAt(COLORS, rng());
-      meshRef.current.setColorAt(i, color);
-    }
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true;
-    }
-  }, []);
+  // Pointer to world-space
+  const targetX = (pointerX * wWidth) / 2;
+  const targetY = (pointerY * wHeight) / 2;
 
-  // Convert normalized pointer to world-space target
-  const nx = pointerX;
-  const ny = pointerY;
-  const targetX = (nx * wWidth) / 2;
-  const targetY = (ny * wHeight) / 2;
-
-  // Lerp pointer and tilt
-  const lerpFactor = 0.1;
-  lerpedPointer.current.lerp(new THREE.Vector3(targetX, targetY, 0), lerpFactor);
-  const tiltTarget = new THREE.Vector3(-ny, nx, 0);
-  lerpedTilt.current.lerp(tiltTarget, lerpFactor);
-
-  const pX = lerpedPointer.current.x;
-  const pY = lerpedPointer.current.y;
-
-  // Update instance matrices
-  if (meshRef.current) {
-    for (let col = 0; col < NX; col++) {
-      for (let row = 0; row < NY; row++) {
-        const idx = col * NY + row;
-        const pos = positions[idx];
-
-        // Distance from pointer in scaled world space
-        vec2.current.set(pos.x, pos.y).multiplyScalar(scaleFactor);
-        const dist = vec2.current.sub(new THREE.Vector2(pX, pY)).length();
-
-        // Proximity falloff: smoothstep from 0 to 20*RADIUS
-        const maxDist = 20 * RADIUS;
-        const t = Math.max(0, Math.min(1, dist / maxDist));
-        // Smooth hermite interpolation (smoothstep)
-        const proximity = 1 - (t * t * (3 - 2 * t));
-
-        // Depth oscillation — cosine wave with per-cell phase offset
-        const depth =
-          0.5 *
-          (Math.cos(phaseOffsets[idx] + time * TIME_COEF) - 1) *
-          RADIUS *
-          DEPTH_SCALE *
-          proximity;
-
-        dummy.current.position.set(pos.x, pos.y, depth);
-        dummy.current.rotation.set(0, 0, pos.rotZ);
-        dummy.current.updateMatrix();
-        meshRef.current.setMatrixAt(idx, dummy.current.matrix);
-      }
-    }
-    meshRef.current.instanceMatrix.needsUpdate = true;
-
-    // Apply grid scale and tilt rotation
-    meshRef.current.scale.set(scaleFactor, scaleFactor, 1);
-    meshRef.current.rotation.set(
-      lerpedTilt.current.x * TILT_ROTATION_X,
-      lerpedTilt.current.y * TILT_ROTATION_Y,
-      0
-    );
-  }
-
-  // Position lights at pointer
-  if (light1Ref.current) {
-    light1Ref.current.position.set(pX, pY, LIGHT1_Z);
-  }
-  if (light2Ref.current) {
-    light2Ref.current.position.set(pX, pY, LIGHT2_Z);
-  }
+  // Tilt toward cursor
+  const tiltX = -pointerY * TILT_ROTATION_X;
+  const tiltY = pointerX * TILT_ROTATION_Y;
 
   return (
     <>
       <pointLight
-        ref={light1Ref}
         color={LIGHT1_COLOR}
-        intensity={LIGHT1_INTENSITY}
+        intensity={LIGHT1_INTENSITY * 50}
+        decay={1}
+        position={[targetX, targetY, LIGHT1_Z]}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
       <pointLight
-        ref={light2Ref}
         color={LIGHT2_COLOR}
-        intensity={LIGHT2_INTENSITY}
+        intensity={LIGHT2_INTENSITY * 50}
+        decay={1}
+        position={[targetX, targetY, LIGHT2_Z]}
       />
-      <instancedMesh
-        ref={meshRef}
-        args={[hexGeo, hexMat, COUNT]}
-        castShadow
-        receiveShadow
-      />
+      <ambientLight intensity={0.15} />
+
+      <group
+        scale={[scaleFactor, scaleFactor, 1]}
+        rotation={[tiltX, tiltY, 0]}
+      >
+        {tiles.map((tile, i) => (
+          <HexTile
+            key={i}
+            tile={tile}
+            geometry={hexGeo}
+            material={materials.get(tile.color.getHexString())!}
+            time={time}
+            cursorX={targetX}
+            cursorY={targetY}
+            scaleFactor={scaleFactor}
+          />
+        ))}
+      </group>
+
+      <Environment preset="studio" environmentIntensity={0.8} />
     </>
   );
 };
 
-// ── Main Remotion component ──
+// ── Main ──
 
 export const ParticleWave: React.FC = () => {
   const frame = useCurrentFrame();
@@ -292,12 +261,9 @@ export const ParticleWave: React.FC = () => {
 
   const time = frame / fps;
 
-  // Synthetic pointer movement — replaces mouse interaction.
-  // Smooth figure-8 lemniscate traversal across the grid.
   const pointerX = Math.sin(time * 0.4) * Math.cos(time * 0.25) * 0.6;
   const pointerY = Math.sin(time * 0.3) * 0.5;
 
-  // Gentle intro: fade from black over 1.5s
   const introOpacity = interpolate(frame, [0, Math.floor(fps * 1.5)], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
