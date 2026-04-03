@@ -31,7 +31,7 @@ logging.basicConfig(
 log = logging.getLogger("fund-manager")
 DECIMALS = 18
 
-STATE_FILE = "fund-manager-state.json"
+STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 
 
 # ── Config ─────────────────────────────────────────────────────
@@ -185,7 +185,9 @@ def reconcile_settled_batches(fund, executor):
             log.info("[%s] Reconciled batch %d", fund.name, bid)
             fund.reconciled_total += 1
         except Exception as e:
-            if "BatchAlreadyReconciled" in str(e):
+            err = str(e)
+            # 0x4c03a47b = BatchAlreadyReconciled()
+            if "BatchAlreadyReconciled" in err or "4c03a47b" in err:
                 fund.reconciled_total += 1  # already done, count it
             else:
                 log.warning("[%s] Reconcile %d failed: %s", fund.name, bid, e)
@@ -249,12 +251,16 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         if batch_id is None or batch.get("paused"):
             continue
 
-        # Source name: try direct name first (from vision-batches.json fallback),
-        # then try keccak256 hash lookup (from API)
+        # Source name: try direct name first, then hash lookup for hex source IDs.
+        # The API returns plain-text source_ids (e.g. "crypto") for round-based
+        # batches — only legacy batches use keccak256 hashes.
         source_name = batch.get("source_name") or batch.get("sourceName") or ""
         if not source_name:
             raw_sid = batch.get("source_id") or batch.get("sourceId") or ""
-            source_name = source_id_map.get(raw_sid, "")
+            if raw_sid.startswith("0x"):
+                source_name = source_id_map.get(raw_sid, "")
+            else:
+                source_name = raw_sid
 
         matched_funds = [f for f in funds if f.matches_source(source_name) and batch_id not in f.joined_batch_ids]
         if not matched_funds:

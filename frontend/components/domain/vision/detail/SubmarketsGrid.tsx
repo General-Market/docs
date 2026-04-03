@@ -18,8 +18,6 @@ interface SubmarketsGridProps {
   sourceId: string
 }
 
-type FilterTab = 'all' | 'up' | 'down' | 'flat'
-
 function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
   sourceId: string; assetId: string; prefixes?: string[]; imageUrl?: string | null
 }) {
@@ -30,11 +28,9 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
   if (src && !err) {
     return (
       <img
-        src={src}
-        alt=""
-        className="w-[20px] h-[20px] rounded-full object-cover shrink-0"
-        loading="lazy"
-        onError={() => setErr(true)}
+        src={src} alt=""
+        className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
+        loading="lazy" onError={() => setErr(true)}
       />
     )
   }
@@ -42,24 +38,13 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
     return (
       <span
         className="shrink-0 inline-flex items-center justify-center rounded-full font-black text-[7px] leading-none"
-        style={{ background: lineStyle.bg, color: lineStyle.fg, width: 20, height: 20 }}
+        style={{ background: lineStyle.bg, color: lineStyle.fg, width: 22, height: 22 }}
       >
         {lineStyle.label.slice(0, 3)}
       </span>
     )
   }
-  return <span className="w-[20px] h-[20px] rounded-full bg-white/10 shrink-0" />
-}
-
-function formatCompact(value: string, isPrice: boolean): string {
-  const num = parseFloat(value)
-  if (isNaN(num)) return '--'
-  const p = isPrice ? '$' : ''
-  if (num >= 1e9) return `${p}${(num / 1e9).toFixed(1)}B`
-  if (num >= 1e6) return `${p}${(num / 1e6).toFixed(1)}M`
-  if (num >= 1e3) return `${p}${(num / 1e3).toFixed(1)}K`
-  if (num >= 1) return `${p}${num.toFixed(2)}`
-  return `${p}${num.toFixed(4)}`
+  return <span className="w-[22px] h-[22px] rounded-full bg-white/10 shrink-0" />
 }
 
 interface RatiosResponse {
@@ -67,29 +52,35 @@ interface RatiosResponse {
   markets: MarketRatio[]
 }
 
+/** Convert implied probability (0-100) to decimal odds (min 1.01) */
+function toOdds(pct: number): string {
+  if (pct <= 0) return '99.00'
+  if (pct >= 100) return '1.01'
+  return (100 / pct).toFixed(2)
+}
+
+/** Derive implied Up/Down % from 24h change when oracle ratios unavailable */
+function impliedRates(changePct: string | null): { upPct: number; downPct: number } {
+  const pct = parseFloat(changePct ?? '0')
+  if (isNaN(pct) || Math.abs(pct) < 0.01) return { upPct: 50, downPct: 50 }
+  const strength = Math.min(Math.abs(pct) / 10, 0.4)
+  if (pct > 0) {
+    const up = 50 + strength * 100
+    return { upPct: Math.round(up), downPct: Math.round(100 - up) }
+  }
+  const down = 50 + strength * 100
+  return { upPct: Math.round(100 - down), downPct: Math.round(down) }
+}
+
 export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
-  const [filter, setFilter] = useState<FilterTab>('all')
   const [search, setSearch] = useState('')
   const { sources } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
-  const isPrice = sourceEntry?.isPrice ?? true
 
   const { data, isLoading } = useSourceSnapshot(sourceId)
   const markets: SnapshotPrice[] = data?.prices ?? []
 
-  // Batch config for resolution types
-  const { data: batchConfig } = useQuery<{ markets: { assetId: string; resolutionType: string; thresholdBps: number }[] }>({
-    queryKey: ['batch-config-source', sourceId],
-    queryFn: async () => {
-      const res = await fetch(`/api/vision/config/${sourceId}`)
-      if (!res.ok) return { markets: [] }
-      return res.json()
-    },
-    enabled: !!sourceId,
-    staleTime: 300_000,
-  })
-
-  // Fetch last settled batch to get parimutuel ratios
+  // Try real parimutuel ratios from last settled batch
   const { data: historyData } = useQuery<{ batches: { batchId: number; status: string }[] }>({
     queryKey: ['source-history', sourceId, 1],
     queryFn: async () => {
@@ -105,7 +96,6 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
     return settled?.batchId ?? null
   }, [historyData])
 
-  // Fetch ratios for last settled batch
   const { data: ratiosData } = useQuery<RatiosResponse>({
     queryKey: ['vision-batch-ratios', lastSettledBatchId],
     queryFn: async () => {
@@ -117,72 +107,26 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
     staleTime: 60_000,
   })
 
-  // Map assetId → ratios for quick lookup
   const ratioMap = useMemo(() => {
     const map = new Map<string, MarketRatio>()
     if (ratiosData?.markets) {
       for (const r of ratiosData.markets) {
+        // Skip cancelled/flat markets with no real stakes — their 50/50 ratios are meaningless
+        if (r.outcome === 'Cancelled' || r.outcome === 'Flat' || (r.upStake === '0' && r.downStake === '0')) continue
         map.set(r.assetId, r)
       }
     }
     return map
   }, [ratiosData])
 
-  const resMap = useMemo(() => {
-    const map = new Map<string, string>()
-    if (batchConfig?.markets) {
-      for (const m of batchConfig.markets) {
-        if (m.assetId && m.resolutionType) {
-          const rt = m.resolutionType.toUpperCase()
-          if (rt.startsWith('UP')) map.set(m.assetId, 'up')
-          else if (rt.startsWith('DOWN')) map.set(m.assetId, 'down')
-          else map.set(m.assetId, 'flat')
-        }
-      }
-    }
-    return map
-  }, [batchConfig])
-
-  const getDirection = (m: SnapshotPrice): string => {
-    const dir = resMap.get(m.assetId)
-    if (dir) return dir
-    const pct = parseFloat(m.changePct ?? '0')
-    if (Math.abs(pct) < 0.3) return 'flat'
-    return pct > 0 ? 'up' : 'down'
-  }
-
-  const counts = useMemo(() => {
-    let up = 0, down = 0, flat = 0
-    for (const m of markets) {
-      const d = getDirection(m)
-      if (d === 'up') up++
-      else if (d === 'down') down++
-      else flat++
-    }
-    return { all: markets.length, up, down, flat }
-  }, [markets, resMap])
-
   const filtered = useMemo(() => {
-    let list = markets
-    if (filter !== 'all') {
-      list = list.filter(m => getDirection(m) === filter)
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(m =>
-        (m.name || '').toLowerCase().includes(q) ||
-        m.symbol.toLowerCase().includes(q),
-      )
-    }
-    return list
-  }, [markets, filter, search, resMap])
-
-  const tabs: [FilterTab, string][] = [
-    ['all', `All (${counts.all})`],
-    ['up', `Up (${counts.up})`],
-    ['down', `Dn (${counts.down})`],
-    ['flat', `Flat (${counts.flat})`],
-  ]
+    if (!search.trim()) return markets
+    const q = search.toLowerCase()
+    return markets.filter(m =>
+      (m.name || '').toLowerCase().includes(q) ||
+      m.symbol.toLowerCase().includes(q),
+    )
+  }, [markets, search])
 
   return (
     <div>
@@ -194,32 +138,18 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           </div>
           <div className="text-[15px] font-bold text-white">
             {sourceEntry?.name ?? sourceId}
+            <span className="text-[11px] font-normal text-white/30 ml-2">
+              {markets.length.toLocaleString()}
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="px-2.5 py-1 rounded text-[11px] bg-white/[0.04] border border-white/10 text-white placeholder:text-white/20 outline-none focus:border-white/20 w-[120px]"
-          />
-          <div className="flex gap-0.5">
-            {tabs.map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
-                  filter === key
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/30 hover:text-white/50'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <input
+          type="text"
+          placeholder="Search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="px-2.5 py-1 rounded text-[11px] bg-white/[0.04] border border-white/10 text-white placeholder:text-white/20 outline-none focus:border-white/20 w-[140px]"
+        />
       </div>
 
       {/* Grid */}
@@ -230,25 +160,24 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-[12px] text-white/20">
-            {search ? 'No matches' : 'No markets available'}
+            {search ? `No markets matching "${search}"` : 'No markets yet for this source'}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5">
             {filtered.map((market) => {
-              const pct = parseFloat(market.changePct ?? '0')
-              const valColor = Math.abs(pct) < 0.1
-                ? 'text-white/25'
-                : pct > 0
-                  ? 'text-emerald-400'
-                  : 'text-red-400'
               const name = market.name || market.symbol
-              const truncated = name.length > 18 ? name.slice(0, 16) + '\u2026' : name
-              const ratio = ratioMap.get(market.assetId)
+              const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
+              const realRatio = ratioMap.get(market.assetId)
+              const rates = realRatio
+                ? { upPct: realRatio.upPct, downPct: realRatio.downPct }
+                : impliedRates(market.changePct)
+              const upOdds = toOdds(rates.upPct)
+              const downOdds = toOdds(rates.downPct)
 
               return (
                 <div
                   key={market.assetId}
-                  className="flex items-center gap-1.5 px-2.5 py-[7px] rounded bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
+                  className="flex items-center gap-2 px-2 py-[5px] rounded bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
                 >
                   <MarketIcon
                     sourceId={sourceId}
@@ -256,25 +185,24 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                     prefixes={sourceEntry?.prefixes}
                     imageUrl={market.imageUrl}
                   />
-                  <span className="text-[11px] text-white/65 truncate flex-1 font-medium leading-tight">
+                  <span className="text-[11px] text-white/60 truncate flex-1 font-medium leading-tight">
                     {truncated}
                   </span>
-                  {/* Parimutuel rates from last settled round */}
-                  {ratio ? (
-                    <span className="flex items-center gap-1 shrink-0">
-                      <span className="text-[9px] font-mono tabular-nums text-emerald-400/70">
-                        {ratio.upPct.toFixed(0)}%
-                      </span>
-                      <span className="text-[8px] text-white/15">/</span>
-                      <span className="text-[9px] font-mono tabular-nums text-red-400/70">
-                        {ratio.downPct.toFixed(0)}%
-                      </span>
-                    </span>
-                  ) : (
-                    <span className={`text-[10px] font-mono tabular-nums shrink-0 ${valColor}`}>
-                      ({formatCompact(market.value, isPrice)})
-                    </span>
-                  )}
+                  {/* GG.bet-style decimal odds buttons */}
+                  <div className="flex gap-1 shrink-0">
+                    <button className="px-2 py-[3px] rounded bg-emerald-500/15 border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors group">
+                      <div className="text-[8px] font-semibold text-emerald-400/50 group-hover:text-emerald-400/70 leading-none">UP</div>
+                      <div className="text-[11px] font-bold font-mono tabular-nums text-emerald-400 leading-tight">
+                        {upOdds}
+                      </div>
+                    </button>
+                    <button className="px-2 py-[3px] rounded bg-red-500/15 border border-red-500/20 hover:bg-red-500/25 transition-colors group">
+                      <div className="text-[8px] font-semibold text-red-400/50 group-hover:text-red-400/70 leading-none">DOWN</div>
+                      <div className="text-[11px] font-bold font-mono tabular-nums text-red-400 leading-tight">
+                        {downOdds}
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )
             })}
