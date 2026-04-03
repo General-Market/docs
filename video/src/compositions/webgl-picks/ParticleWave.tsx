@@ -232,7 +232,8 @@ const HexGridScene: React.FC<{
         decay={1}
         position={[targetX, targetY, LIGHT2_Z]}
       />
-      <ambientLight intensity={0.15} />
+      <ambientLight intensity={0.6} />
+      <hemisphereLight args={["#ffffff", "#444488", 0.8]} />
 
       <group
         scale={[scaleFactor, scaleFactor, 1]}
