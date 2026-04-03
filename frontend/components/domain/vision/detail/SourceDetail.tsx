@@ -1,7 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
-import { useSharedCountdown } from '@/hooks/useSharedCountdown'
+import { useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useQuery } from '@tanstack/react-query'
@@ -11,7 +10,6 @@ import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
-import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
@@ -19,9 +17,10 @@ import BatchEntryPanel from './BatchEntryPanel'
 import { PendingPositions } from './PendingPositions'
 import { BatchHistory } from './BatchHistory'
 import { BatchProgressBar } from '../CountdownRing'
+import { WalletSourceStats, TripleTimer, formatTvl } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
-import { useAccount, useReadContract } from 'wagmi'
+import { useReadContract } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
@@ -29,118 +28,9 @@ import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { FirstTradeCTA } from '../FirstTradeCTA'
 import { SourceFunds } from '@/components/domain/vaults/SourceFunds'
 
-function WalletSourceStats({ sourceId }: { sourceId: string }) {
-  const { address } = useAccount()
-  const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
-  const entry = useMemo(() => {
-    if (!address || !leaderboard?.length) return null
-    return leaderboard.find(p => p.walletAddress.toLowerCase() === address.toLowerCase()) ?? null
-  }, [address, leaderboard])
-
-  if (!address || !entry) return null
-
-  const pnlColor = entry.pnl > 0 ? 'text-green-600' : entry.pnl < 0 ? 'text-red-600' : 'text-text-muted'
-  const pnlSign = entry.pnl > 0 ? '+' : ''
-
-  return (
-    <div className="mt-3 bg-black text-white px-5 py-3 flex items-center gap-8">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Your Stats</div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Rounds</div>
-        <div className="text-[15px] font-bold font-mono">{entry.roundsPlayed}</div>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">ROI</div>
-        <div className={`text-[15px] font-bold font-mono ${entry.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>{entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%</div>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Volume</div>
-        <div className="text-[15px] font-bold font-mono">${entry.totalVolume.toFixed(2)}</div>
-      </div>
-      <div className="flex-1" />
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">P&L</div>
-        <div className={`text-[18px] font-black font-mono ${pnlColor}`}>
-          {pnlSign}${Math.abs(entry.pnl).toFixed(2)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function fmt(secs: number): string {
-  const m = Math.floor(secs / 60)
-  const s = secs % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-interface TripleTimerProps {
-  bettingEnd: string | null
-  tickDuration: number
-  prevBettingEnd: string | null
-  prevTickDuration: number
-}
-
-function TripleTimer({ bettingEnd, tickDuration, prevBettingEnd, prevTickDuration }: TripleTimerProps) {
-  const closeRemaining = useSharedCountdown(bettingEnd)
-
-  const now = Date.now()
-
-  // Current round settle
-  const curEnd = bettingEnd ? new Date(bettingEnd).getTime() : 0
-  const curSettleRemaining = bettingEnd ? Math.max(0, Math.floor((curEnd + tickDuration * 1000 - now) / 1000)) : 0
-
-  // Previous round settle
-  const prevEnd = prevBettingEnd ? new Date(prevBettingEnd).getTime() : 0
-  const prevSettleRemaining = prevBettingEnd ? Math.max(0, Math.floor((prevEnd + prevTickDuration * 1000 - now) / 1000)) : 0
-
-  if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
-
-  return (
-    <div className="flex items-center gap-3">
-      {/* Prev settle — only if a previous round is resolving */}
-      {prevBettingEnd && prevSettleRemaining > 0 && (
-        <>
-          <div className="text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Prev Settle</div>
-            <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-color-warning">
-              {fmt(prevSettleRemaining)}
-            </div>
-          </div>
-          <div className="w-px h-8 bg-border-light" />
-        </>
-      )}
-      {/* Close */}
-      <div className="text-right">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
-        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-text-muted line-through text-[14px] font-bold' : closeRemaining < 60 ? 'text-[20px] font-black text-color-down' : 'text-[20px] font-black text-black'}`}>
-          {fmt(Math.max(0, closeRemaining))}
-        </div>
-      </div>
-      <div className="w-px h-8 bg-border-light" />
-      {/* Settle */}
-      <div className="text-right">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-[20px] font-black text-color-warning' : 'text-[14px] font-bold text-text-secondary'}`}>
-          {fmt(curSettleRemaining)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 interface SourceDetailProps {
   sourceId: string
   initialSource?: SourceDisplayServer
-}
-
-function formatTvl(tvl: string): string {
-  const raw = parseFloat(tvl)
-  if (isNaN(raw) || raw === 0) return '$0'
-  const num = raw / 1e18
-  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
-  if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
-  return `$${num.toFixed(2)}`
 }
 
 export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {

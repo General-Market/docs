@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
 import { useAccount } from 'wagmi'
+import { useTranslations } from 'next-intl'
 import { usePlayerPositions } from '@/hooks/vision/usePlayerPositions'
 import type { RoundInfo } from '@/hooks/vision/useRounds'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
@@ -13,6 +14,7 @@ interface PendingPositionsProps {
 }
 
 export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProps) {
+  const t = useTranslations('vision')
   const { isConnected } = useAccount()
 
   const settlingBatchIds = useMemo(
@@ -48,14 +50,14 @@ export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProp
             Pending Results
           </span>
           <span className="text-[10px] font-mono text-text-muted">
-            {positions.length} {positions.length === 1 ? 'position' : 'positions'}
+            {t('pending_positions.positions_count', { count: positions.length })}
           </span>
         </div>
         <div className="flex items-baseline gap-1">
           <span className="text-[18px] font-black font-mono tabular-nums text-black tracking-tight">
             {totalAtStake.toFixed(2)}
           </span>
-          <span className="text-[10px] font-bold text-text-muted">USDC at stake</span>
+          <span className="text-[10px] font-bold text-text-muted">{t('pending_positions.usdc_pending')}</span>
         </div>
       </div>
 
@@ -86,11 +88,11 @@ export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProp
               <div className="flex items-center gap-3 shrink-0">
                 {round && (
                   <span className="text-micro font-mono text-text-muted tabular-nums">
-                    {round.playerCount} players
+                    {round.playerCount} {t('pending_positions.players')}
                   </span>
                 )}
                 <span className="text-micro font-black font-mono text-color-warning uppercase tracking-wider">
-                  Settling
+                  {t('pending_positions.awaiting_results')}
                 </span>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils/cn'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
@@ -25,6 +26,7 @@ interface VaultCardProps {
 }
 
 export function VaultCard({ vault, onClick }: VaultCardProps) {
+  const t = useTranslations('vision')
   const branding = useFundBranding(vault.address)
   const reduced = useReducedMotion()
   const cardRef = useRef<HTMLDivElement>(null)
@@ -91,7 +93,7 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
         <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
           <div className="flex flex-col">
             <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">
-              TVL
+              {t('vaults.tvl_label')}
             </span>
             <span className="font-bold text-black">
               ${vault.tvlFormatted}
@@ -99,7 +101,7 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
           </div>
           <div className="flex flex-col items-end">
             <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-text-muted leading-tight">
-              Perf
+              {t('vaults.perf_label')}
             </span>
             <span
               className={cn(

@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
 import { ExplorerChartCard } from '@/components/domain/explorer'
+import { chartColors, chartTooltipStyle, chartLabelStyle } from '@/lib/charts/tokens'
 
 interface FillSpeedEntry {
   order_id: number
@@ -26,7 +27,16 @@ const BUCKETS = [
   { label: '2m+', min: 120, max: Infinity },
 ]
 
-const COLORS = ['#10b981', '#34d399', '#fbbf24', '#f59e0b', '#ef4444', '#dc2626']
+/** Fast → slow latency gradient, derived from design-system tokens */
+const LATENCY_COLORS = [
+  chartColors.up,      // 0–5s   — fast
+  '#34d399',           // 5–15s  — good (up-light)
+  chartColors.warning, // 15–30s — caution
+  '#F59E0B',           // 30–60s — slow (warning-light)
+  chartColors.down,    // 1–2m   — bad
+  '#991B1B',           // 2m+    — critical (down-dark)
+]
+const LATENCY_OVERFLOW = chartColors.textMuted
 
 export function FillLatencyChart() {
   const t = useTranslations('pages')
@@ -76,16 +86,16 @@ export function FillLatencyChart() {
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} stroke="#ccc" />
-          <YAxis tick={{ fontSize: 10, fill: '#999' }} stroke="#ccc" allowDecimals={false} />
+          <XAxis dataKey="label" tick={chartLabelStyle} stroke={chartColors.border} />
+          <YAxis tick={chartLabelStyle} stroke={chartColors.border} allowDecimals={false} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 6, background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }}
-            labelStyle={{ color: '#fff' }}
-            itemStyle={{ color: '#ccc' }}
+            contentStyle={chartTooltipStyle}
+            labelStyle={{ color: chartColors.tooltipText }}
+            itemStyle={{ color: chartColors.textMuted }}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={36} name={t('explorer.orders_section.orders')}>
             {histogram.map((_, i) => (
-              <Cell key={i} fill={i < COLORS.length ? COLORS[i] : '#6b7280'} />
+              <Cell key={i} fill={i < LATENCY_COLORS.length ? LATENCY_COLORS[i] : LATENCY_OVERFLOW} />
             ))}
           </Bar>
         </BarChart>

@@ -1,7 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, useCallback, useEffect } from 'react'
-import { useSharedCountdown } from '@/hooks/useSharedCountdown'
+import { useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useQuery } from '@tanstack/react-query'
@@ -10,7 +9,6 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
-import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
 import { BatchProgressBar } from '../CountdownRing'
@@ -18,131 +16,15 @@ import { SubmarketsGrid } from './SubmarketsGrid'
 import { SourceSidebar } from './SourceSidebar'
 import { BatchVaultResults } from './BatchVaultResults'
 import { VaultCarousel } from './VaultCarousel'
+import { WalletSourceStats, TripleTimer, formatTvl } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
-import { useAccount, useReadContract } from 'wagmi'
+import { useReadContract } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { FirstTradeCTA } from '../FirstTradeCTA'
-
-// ── Wallet stats bar (same as SourceDetail) ──
-
-function WalletSourceStats({ sourceId }: { sourceId: string }) {
-  const { address } = useAccount()
-  const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
-  const entry = useMemo(() => {
-    if (!address || !leaderboard?.length) return null
-    return leaderboard.find(p => p.walletAddress.toLowerCase() === address.toLowerCase()) ?? null
-  }, [address, leaderboard])
-
-  if (!address || !entry) return null
-
-  const pnlColor = entry.pnl > 0 ? 'text-green-600' : entry.pnl < 0 ? 'text-red-600' : 'text-text-muted'
-  const pnlSign = entry.pnl > 0 ? '+' : ''
-
-  return (
-    <div className="mt-3 bg-black text-white px-5 py-3 flex items-center gap-8">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Your Stats</div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Rounds</div>
-        <div className="text-[15px] font-bold font-mono">{entry.roundsPlayed}</div>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">ROI</div>
-        <div className={`text-[15px] font-bold font-mono ${entry.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
-        </div>
-      </div>
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">Volume</div>
-        <div className="text-[15px] font-bold font-mono">${entry.totalVolume.toFixed(2)}</div>
-      </div>
-      <div className="flex-1" />
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">P&L</div>
-        <div className={`text-[18px] font-black font-mono ${pnlColor}`}>
-          {pnlSign}${Math.abs(entry.pnl).toFixed(2)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Triple timer — prev settle | close | settle ──
-
-function fmt(secs: number): string {
-  const m = Math.floor(secs / 60)
-  const s = secs % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
-interface TripleTimerProps {
-  bettingEnd: string | null
-  tickDuration: number
-  prevBettingEnd: string | null
-  prevTickDuration: number
-}
-
-function TripleTimer({ bettingEnd, tickDuration, prevBettingEnd, prevTickDuration }: TripleTimerProps) {
-  const closeRemaining = useSharedCountdown(bettingEnd)
-
-  const now = Date.now()
-
-  // Current round settle
-  const curEnd = bettingEnd ? new Date(bettingEnd).getTime() : 0
-  const curSettleRemaining = bettingEnd ? Math.max(0, Math.floor((curEnd + tickDuration * 1000 - now) / 1000)) : 0
-
-  // Previous round settle
-  const prevEnd = prevBettingEnd ? new Date(prevBettingEnd).getTime() : 0
-  const prevSettleRemaining = prevBettingEnd ? Math.max(0, Math.floor((prevEnd + prevTickDuration * 1000 - now) / 1000)) : 0
-
-  if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
-
-  return (
-    <div className="flex items-center gap-3">
-      {/* Prev settle — only if a previous round is resolving */}
-      {prevBettingEnd && prevSettleRemaining > 0 && (
-        <>
-          <div className="text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-color-warning">Prev Settle</div>
-            <div className="text-[14px] font-bold font-mono tabular-nums leading-none text-color-warning">
-              {fmt(prevSettleRemaining)}
-            </div>
-          </div>
-          <div className="w-px h-8 bg-border-light" />
-        </>
-      )}
-      {/* Close */}
-      <div className="text-right">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Close</div>
-        <div className={`text-[20px] font-black font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-text-muted line-through text-[14px]' : closeRemaining < 60 ? 'text-color-down' : 'text-black'}`}>
-          {fmt(Math.max(0, closeRemaining))}
-        </div>
-      </div>
-      <div className="w-px h-8 bg-border-light" />
-      {/* Settle */}
-      <div className="text-right">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">Settle</div>
-        <div className={`font-mono tabular-nums leading-none ${closeRemaining <= 0 ? 'text-[20px] font-black text-color-warning' : 'text-[14px] font-bold text-text-secondary'}`}>
-          {fmt(curSettleRemaining)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Helpers ──
-
-function formatTvl(tvl: string): string {
-  const raw = parseFloat(tvl)
-  if (isNaN(raw) || raw === 0) return '$0'
-  const num = raw / 1e18
-  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
-  if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
-  return `$${num.toFixed(2)}`
-}
 
 // ── Side banners — HLTV-style fixed border images ──
 // Fixed position, outside the content flow, only on very wide screens (>1700px)
@@ -206,8 +88,8 @@ function SideBanner({ position }: { position: 'left' | 'right' }) {
         <div className="mt-6 w-px h-12 bg-white/[0.06]" />
         <p className="mt-3 text-[7px] text-white/10 text-center leading-relaxed px-1">
           {isLeft
-            ? '93 data sources. Thousands of markets. Settles on-chain.'
-            : 'AI-native. Build bots, deploy vaults, earn fees.'}
+            ? '93 data sources. Thousands of markets. Results resolve automatically.'
+            : 'Build strategies. Attract depositors. Earn performance fees.'}
         </p>
       </div>
     </div>
@@ -364,29 +246,25 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
       <SideBanner position="left" />
       <SideBanner position="right" />
 
-      <div className="max-w-[1440px] mx-auto px-4 lg:px-8 py-6">
-        {/* Source Hero */}
-        <SourceHero
-          source={source}
-          sourceSchedule={sourceSchedule}
-          marketCount={marketCount}
-          tickRemaining={0}
-          tickDuration={0}
-          sourceId={sourceId}
-          urgency="normal"
-        />
-
-        {/* Wallet stats */}
-        <WalletSourceStats sourceId={sourceId} />
-
-        {/* First-trade CTA */}
-        <div className="mt-4">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-8 py-8">
+        {/* ── Context zone: hero + stats + CTA grouped tight ── */}
+        <div className="flex flex-col gap-0">
+          <SourceHero
+            source={source}
+            sourceSchedule={sourceSchedule}
+            marketCount={marketCount}
+            tickRemaining={0}
+            tickDuration={0}
+            sourceId={sourceId}
+            urgency="normal"
+          />
+          <WalletSourceStats sourceId={sourceId} />
           <FirstTradeCTA />
         </div>
 
-        {/* Batch bar — single line with all three timers */}
+        {/* Batch bar — separated from context zone, transition element */}
         {verifiedBatch ? (
-          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
+          <div className="mt-6 border border-border-light bg-[var(--surface)] overflow-hidden">
             <BatchProgressBar
               bettingEnd={bettingEnd}
               tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
@@ -427,10 +305,10 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             </div>
           </div>
         ) : (
-          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
+          <div className="mt-6 border border-border-light bg-[var(--surface)] overflow-hidden">
             <div className="px-5 py-3 text-center">
               <span className="text-[13px] font-mono text-text-muted animate-pulse">
-                Next round starting...
+                Preparing next round — bets open shortly
               </span>
             </div>
           </div>
@@ -445,7 +323,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
         )}
 
         {/* ── 2-Column HLTV Layout (sidebar + content) ── */}
-        <div className="flex gap-5 mt-5">
+        <div className="flex gap-8 mt-10">
           {/* Left sidebar — banner + related sources */}
           <SourceSidebar
             currentSourceId={sourceId}
@@ -453,16 +331,9 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           />
 
           {/* Center content */}
-          <div className="flex-1 min-w-0">
-            {/* Vault carousel — above submarkets */}
+          <div className="flex-1 min-w-0 flex flex-col gap-6">
             <VaultCarousel sourceId={sourceId} />
-
-            {/* Submarkets grid — HLTV "Top streams" style */}
-            <div className="mt-5">
-              <SubmarketsGrid sourceId={sourceId} />
-            </div>
-
-            {/* Vault results + batch history — HLTV "Recent results" style */}
+            <SubmarketsGrid sourceId={sourceId} />
             <BatchVaultResults sourceId={sourceId} />
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { useRounds, type RoundInfo } from '@/hooks/vision/useRounds'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
+import { useTranslations } from 'next-intl'
 
 interface SourceBatch {
   batchId: number
@@ -146,6 +147,7 @@ function truncAddr(addr: string): string {
 
 /** Renders the timer cell for an active round showing close + settle phases */
 function ActiveTimers({ bettingEnd, settlementEnd, playerCount }: { bettingEnd: string | null; settlementEnd: string | null; playerCount?: number }) {
+  const t = useTranslations('vision')
   const closeRemaining = useCountdown(bettingEnd)
   const settleRemaining = useCountdown(settlementEnd)
 
@@ -154,10 +156,10 @@ function ActiveTimers({ bettingEnd, settlementEnd, playerCount }: { bettingEnd: 
     return (
       <div className="flex flex-col items-end gap-0.5">
         <span className={`font-mono text-[10px] tabular-nums ${closeRemaining < 60 ? 'text-color-down font-bold' : 'text-text-secondary'}`}>
-          <span className="text-text-muted">Close</span> {formatTimer(closeRemaining)}
+          <span className="text-text-muted">{t('batch_detail.close')}</span> {formatTimer(closeRemaining)}
         </span>
         <span className="font-mono text-[10px] tabular-nums text-text-muted">
-          Settle {formatTimer(settleRemaining)}
+          {t('batch_detail.settle')} {formatTimer(settleRemaining)}
         </span>
       </div>
     )
@@ -170,16 +172,16 @@ function ActiveTimers({ bettingEnd, settlementEnd, playerCount }: { bettingEnd: 
     if (playerCount === 0) {
       return (
         <div className="flex flex-col items-end gap-0.5">
-          <span className="font-mono text-[10px] text-text-muted">Closed</span>
-          <span className="font-mono text-[10px] text-text-muted">No players</span>
+          <span className="font-mono text-[10px] text-text-muted">{t('batch_detail.closed')}</span>
+          <span className="font-mono text-[10px] text-text-muted">{t('batch_detail.no_players')}</span>
         </div>
       )
     }
     return (
       <div className="flex flex-col items-end gap-0.5">
-        <span className="font-mono text-[10px] text-color-warning font-bold">Closed</span>
+        <span className="font-mono text-[10px] text-color-warning font-bold">{t('batch_detail.closed')}</span>
         <span className={`font-mono text-[10px] tabular-nums ${settleRemaining < 30 ? 'text-color-down font-bold' : 'text-text-secondary'}`}>
-          Settle {formatTimer(settleRemaining)}
+          {t('batch_detail.settle')} {formatTimer(settleRemaining)}
         </span>
       </div>
     )
@@ -187,15 +189,16 @@ function ActiveTimers({ bettingEnd, settlementEnd, playerCount }: { bettingEnd: 
 
   // Phase 3: Both expired — empty rounds just vanish, populated rounds show settling
   if (playerCount === 0) {
-    return <span className="font-mono text-[10px] text-text-muted">Skipped</span>
+    return <span className="font-mono text-[10px] text-text-muted">{t('batch_detail.skipped')}</span>
   }
   return (
-    <span className="font-mono text-[10px] text-text-muted">Settling...</span>
+    <span className="font-mono text-[10px] text-text-muted">{t('batch_detail.settling')}</span>
   )
 }
 
 /** Status badge for active rounds */
 function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
+  const t = useTranslations('vision')
   const closeRemaining = useCountdown(bettingEnd)
   if (closeRemaining > 0) {
     return (
@@ -204,7 +207,7 @@ function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-up opacity-50" />
           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-up" />
         </span>
-        <span className="text-[10px] font-bold text-color-up uppercase tracking-wider">Open</span>
+        <span className="text-[10px] font-bold text-color-up uppercase tracking-wider">{t('batch_detail.open')}</span>
       </div>
     )
   }
@@ -213,7 +216,7 @@ function ActiveStatus({ bettingEnd }: { bettingEnd: string | null }) {
       <span className="relative flex h-1.5 w-1.5">
         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-color-warning" />
       </span>
-      <span className="text-[10px] font-bold text-color-warning uppercase tracking-wider">Closed</span>
+      <span className="text-[10px] font-bold text-color-warning uppercase tracking-wider">{t('batch_detail.closed')}</span>
     </div>
   )
 }
@@ -235,6 +238,7 @@ interface BatchHistoryProps {
 }
 
 export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount, tvl, tickDuration, isJoinedOnChain }: BatchHistoryProps) {
+  const t = useTranslations('vision')
   const [page, setPage] = useState(1)
   const { address } = useAccount()
   const { profile } = usePlayerProfile(address ?? '')
@@ -311,9 +315,9 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
     <div className="mt-6">
       <div className="section-bar">
         <div>
-          <div className="section-bar-title">Round History</div>
+          <div className="section-bar-title">{t('batch_detail.round_history')}</div>
           <div className="section-bar-value">
-            {totalSettled} settled{activeBatch ? ' \u00b7 1 open' : ''}
+            {t('batch_detail.settled_count', { count: totalSettled })}{activeBatch ? ` \u00b7 ${t('batch_detail.open_count', { count: 1 })}` : ''}
           </div>
         </div>
       </div>
@@ -321,12 +325,12 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
       <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
         <div className={`grid ${GRID_COLS} items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted`}>
-          <div>Round</div>
-          <div>Status</div>
-          <div className="text-right">Players</div>
-          <div className="text-right">Pool</div>
-          <div className="text-right">Result</div>
-          <div className="text-right">Time</div>
+          <div>{t('batch_detail.round')}</div>
+          <div>{t('batch_detail.status')}</div>
+          <div className="text-right">{t('batch_detail.players')}</div>
+          <div className="text-right">{t('batch_detail.pool')}</div>
+          <div className="text-right">{t('batch_detail.result')}</div>
+          <div className="text-right">{t('batch_detail.time')}</div>
         </div>
 
         {/* ── Current round: single row that transitions through phases ──
@@ -452,7 +456,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
                 #{batch.batchId}
               </div>
               <div className={`text-[10px] font-mono ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
-                Settled
+                {t('batch_detail.settled')}
               </div>
               <div className={`text-right font-mono text-[12px] tabular-nums ${participated ? 'text-text-secondary' : 'text-text-muted'}`}>
                 {batch.playerCount}
@@ -485,7 +489,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               disabled={page <= 1}
               className="text-[11px] font-mono font-bold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Prev
+              {t('batch_detail.prev')}
             </button>
             <span className="text-[10px] font-mono text-text-muted tabular-nums">
               {page} / {totalPages}
@@ -495,7 +499,7 @@ export function BatchHistory({ sourceId, activeBatchId, bettingEnd, playerCount,
               disabled={page >= totalPages}
               className="text-[11px] font-mono font-bold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Next
+              {t('batch_detail.next')}
             </button>
           </div>
         )}

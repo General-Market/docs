@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useVaults } from '@/hooks/vaults/useVaults'
@@ -114,6 +115,7 @@ function SourceSection({ sourceId, sourceName, sourceLogo, vaults, onSelect }: S
 }
 
 export function VaultsPage() {
+  const t = useTranslations('vision')
   const { vaults, totalTvlFormatted, isLoading, refetch } = useVaults()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedVault, setSelectedVault] = useState<VaultInfo | null>(null)
@@ -156,10 +158,10 @@ export function VaultsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
             <div>
               <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">
-                Managed Vaults
+                {t('vaults.label')}
               </p>
               <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">
-                Vaults
+                {t('vaults.title')}
               </h2>
               <p className="text-body text-text-secondary mt-1.5">
                 {vaults.length} vault{vaults.length !== 1 ? 's' : ''} &middot; ${totalTvlFormatted} TVL
@@ -170,7 +172,7 @@ export function VaultsPage() {
               className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold
                          hover:bg-brand-dark transition-colors shrink-0 self-start sm:self-auto fluid-press"
             >
-              Create Vault
+              {t('vaults.create_vault')}
             </button>
           </div>
 
@@ -195,7 +197,7 @@ export function VaultsPage() {
                 <section>
                   <div className="flex items-center gap-2 mb-3">
                     <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
-                      Other
+                      {t('vaults.other_section')}
                     </h3>
                     <span className="text-[10px] text-text-muted font-mono tabular-nums bg-black/[0.04] px-1.5 py-0.5 rounded">
                       {otherVaults.length}
@@ -220,7 +222,7 @@ export function VaultsPage() {
                   onClick={() => setShowCreateModal(true)}
                   className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold hover:bg-brand-dark transition-colors fluid-press"
                 >
-                  Create Vault
+                  {t('vaults.create_vault')}
                 </button>
               }
             />

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useReducedMotion } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
 import { useAccount, useReadContract } from 'wagmi'
 import { cn } from '@/lib/utils/cn'
@@ -448,6 +449,7 @@ interface VaultActionsProps {
 }
 
 export function VaultActions({ vault, onClose }: VaultActionsProps) {
+  const t = useTranslations('vision')
   const { address } = useAccount()
   const [tab, setTab] = useState<'deposit' | 'withdraw'>('deposit')
   const [depositInput, setDepositInput] = useState('')
@@ -576,13 +578,13 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
           ) : (
             <div className="mt-4 mb-5 rounded-md bg-black/[0.02] px-5 py-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">NAV / Share</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.nav_per_share')}</p>
                 <p className="text-[28px] font-black font-mono tabular-nums text-text-primary leading-none">
                   ${vault.navPerShare.toFixed(4)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Since Inception</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.since_inception')}</p>
                 <p className={cn(
                   'text-[28px] font-black font-mono tabular-nums leading-none',
                   isPositive ? 'text-color-up' : 'text-color-down',
@@ -595,27 +597,27 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3 mb-5">
-            <StatBox label="TVL" value={`$${vault.tvlFormatted}`} />
+            <StatBox label={t('vaults.tvl_label')} value={`$${vault.tvlFormatted}`} />
             <StatBox
-              label="NAV / Share"
+              label={t('vaults.nav_per_share')}
               value={`$${vault.navPerShare.toFixed(4)}`}
             />
             <StatBox
-              label="Performance"
+              label={t('vaults.performance')}
               value={`${isPositive ? '+' : ''}${perfPercent}%`}
               valueColor={isPositive ? 'text-color-up' : 'text-color-down'}
             />
-            <StatBox label="Fee" value={`${feePercent.toFixed(0)}% perf`} />
+            <StatBox label={t('vaults.fee')} value={`${feePercent.toFixed(0)}% perf`} />
           </div>
 
           {/* User position */}
           {shares > 0n && (
             <div className="border border-border-light rounded-md p-4 mb-5">
               <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">
-                Your Position
+                {t('vaults.your_position')}
               </p>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-text-secondary">Value</span>
+                <span className="text-text-secondary">{t('vaults.value')}</span>
                 <span className="font-mono tabular-nums text-text-primary font-semibold">
                   $
                   {userValue.toLocaleString(undefined, {
@@ -625,7 +627,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">Shares</span>
+                <span className="text-text-secondary">{t('vaults.shares')}</span>
                 <span className="font-mono tabular-nums text-text-secondary">
                   {sharesFloat.toLocaleString(undefined, {
                     maximumFractionDigits: 4,
@@ -652,7 +654,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   : 'text-text-muted hover:text-text-secondary',
               )}
             >
-              Deposit
+              {t('vaults.deposit')}
             </button>
             <button
               role="tab"
@@ -669,7 +671,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   : 'text-text-muted hover:text-text-secondary',
               )}
             >
-              Withdraw
+              {t('vaults.withdraw')}
             </button>
           </div>
 
@@ -678,14 +680,14 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             <div className="space-y-3" role="tabpanel">
               <div>
                 <label htmlFor="deposit-amount" className="text-xs text-text-muted block mb-1">
-                  Amount (USDC)
+                  {t('vaults.amount_usdc')}
                 </label>
                 <input
                   id="deposit-amount"
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="0.00"
+                  placeholder={t('vaults.amount_placeholder')}
                   value={depositInput}
                   onChange={(e) => setDepositInput(e.target.value)}
                   className="w-full px-3 py-2 border border-border-light rounded-md bg-card text-text-primary
@@ -699,22 +701,21 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                            hover:bg-brand-dark transition-colors disabled:opacity-50"
               >
                 {depositStep === 'approving'
-                  ? 'Approving...'
+                  ? t('vaults.approving')
                   : depositStep === 'depositing'
-                    ? 'Depositing...'
+                    ? t('vaults.depositing')
                     : depositConfirming
-                      ? 'Confirming...'
+                      ? t('vaults.confirming')
                       : depositStep === 'done'
-                        ? 'Deposit requested'
-                        : 'Deposit'}
+                        ? t('vaults.deposit_requested')
+                        : t('vaults.deposit_usdc')}
               </WalletActionButton>
               {depositError && (
                 <p className="text-xs text-color-down">{depositError}</p>
               )}
               {depositStep === 'done' && (
                 <p className="text-xs text-color-up">
-                  Deposit request submitted. Shares will be claimable after
-                  reconciliation.
+                  {t('vaults.deposit_success')}
                 </p>
               )}
             </div>
@@ -726,14 +727,14 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
               <div>
                 <div className="flex justify-between mb-1">
                   <label htmlFor="withdraw-amount" className="text-xs text-text-muted">
-                    Shares to redeem
+                    {t('vaults.shares_to_redeem')}
                   </label>
                   {shares > 0n && (
                     <button
                       onClick={() => setWithdrawInput(formatUnits(shares, 18))}
                       className="text-xs text-brand hover:text-brand-dark transition-colors"
                     >
-                      Max
+                      {t('vaults.max')}
                     </button>
                   )}
                 </div>
@@ -742,7 +743,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   type="number"
                   min="0"
                   step="0.0001"
-                  placeholder="0.00"
+                  placeholder={t('vaults.amount_placeholder')}
                   value={withdrawInput}
                   onChange={(e) => setWithdrawInput(e.target.value)}
                   className="w-full px-3 py-2 border border-border-light rounded-md bg-card text-text-primary
@@ -756,20 +757,19 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                            hover:bg-zinc-900 hover:text-white transition-colors disabled:opacity-50"
               >
                 {redeemStep === 'requesting'
-                  ? 'Requesting...'
+                  ? t('vaults.requesting')
                   : redeemConfirming
-                    ? 'Confirming...'
+                    ? t('vaults.confirming')
                     : redeemStep === 'done'
-                      ? 'Redeem requested'
-                      : 'Request Redeem'}
+                      ? t('vaults.redeem_requested')
+                      : t('vaults.request_redeem')}
               </WalletActionButton>
               {redeemError && (
                 <p className="text-xs text-color-down">{redeemError}</p>
               )}
               {redeemStep === 'done' && (
                 <p className="text-xs text-color-up">
-                  Redeem request submitted. USDC will be claimable after
-                  reconciliation.
+                  {t('vaults.redeem_success')}
                 </p>
               )}
             </div>

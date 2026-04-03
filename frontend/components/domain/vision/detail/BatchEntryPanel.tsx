@@ -286,12 +286,12 @@ export default function BatchEntryPanel({
 
   const buttonLabel = useMemo(() => {
     if (!isConnected) return t('batch_entry_panel.connect_wallet_button')
-    if (isJoined || joinStep === 'done') return 'In Round'
-    if (!isBettingOpen) return 'Round Closed'
+    if (isJoined || joinStep === 'done') return t('batch_detail.in_round')
+    if (!isBettingOpen) return t('batch_detail.round_closed')
     if (isSubmitting) return t('batch_entry_panel.submitting')
     if (isJoinConfirming) return t('batch_entry_panel.confirming')
     if (isJoinPending) return t('batch_entry_panel.waiting_for_wallet')
-    if (joinStep === 'approving') return 'Approving USDC...'
+    if (joinStep === 'approving') return t('batch_detail.approving_usdc')
     if (joinStep === 'joining') return t('batch_entry_panel.joining_batch')
     if (stakeValue > 0) return t('batch_entry_panel.enter_batch_amount', { amount: stakeValue.toString() })
     return t('batch_entry_panel.enter_batch')
@@ -328,7 +328,7 @@ export default function BatchEntryPanel({
             </div>
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Deposit</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">{t('deposit_modal.button_deposit')}</div>
                 <div className="text-[22px] font-black font-mono text-neutral-900 tabular-nums leading-tight">
                   {depositNum.toFixed(2)}
                   <span className="text-[11px] font-medium text-neutral-400 ml-1">USDC</span>
@@ -363,7 +363,7 @@ export default function BatchEntryPanel({
               {isJoined ? t('batch_entry_panel.update_predictions') : t('batch_entry_panel.set_predictions')}
             </h2>
             <p className="text-[10px] text-text-muted">
-              {activeBatch && batchExistsOnChain ? `Batch #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
+              {activeBatch && batchExistsOnChain ? `${t('batch_detail.batch')} #${activeBatch.id}` : t('batch_entry_panel.waiting_for_batch')}
             </p>
           </div>
         </div>
@@ -372,8 +372,8 @@ export default function BatchEntryPanel({
         {roundPhase === 'closed' && (
           <div className="py-6 text-center">
             <div className="inline-block w-3 h-3 rounded-full bg-amber-400 mb-2" />
-            <p className="text-[13px] font-bold text-neutral-700">Round closed</p>
-            <p className="text-[11px] text-neutral-500 mt-1">Awaiting settlement</p>
+            <p className="text-[13px] font-bold text-neutral-700">{t('batch_detail.round_closed')}</p>
+            <p className="text-[11px] text-neutral-500 mt-1">{t('batch_detail.awaiting_settlement')}</p>
             {settlementCountdown && (
               <p className="text-[20px] font-black font-mono text-neutral-900 mt-3 tabular-nums">
                 {settlementCountdown}
@@ -386,8 +386,8 @@ export default function BatchEntryPanel({
         {roundPhase === 'settling' && (
           <div className="py-6 text-center">
             <div className="inline-block w-3 h-3 rounded-full bg-neutral-400 animate-pulse mb-2" />
-            <p className="text-[13px] font-bold text-neutral-700">Settling...</p>
-            <p className="text-[11px] text-neutral-500 mt-1">Results incoming</p>
+            <p className="text-[13px] font-bold text-neutral-700">{t('batch_detail.settling')}</p>
+            <p className="text-[11px] text-neutral-500 mt-1">{t('batch_detail.results_incoming')}</p>
           </div>
         )}
 
@@ -432,10 +432,10 @@ export default function BatchEntryPanel({
             {/* Wallet USDC balance hint when zero + faucet */}
             {isConnected && hasZeroBalance && !isJoined && (
               <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
-                <p className="text-[11px] font-bold text-yellow-700">No USDC in wallet</p>
-                <p className="text-[10px] text-yellow-600 mt-0.5">You need USDC on L3 to enter a round.</p>
+                <p className="text-[11px] font-bold text-yellow-700">{t('batch_detail.no_usdc')}</p>
+                <p className="text-[10px] text-yellow-600 mt-0.5">{t('batch_detail.no_usdc_detail')}</p>
                 {faucetSuccess ? (
-                  <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">1,000 USDC + gas minted. Refresh in a moment.</p>
+                  <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">{t('batch_detail.usdc_minted')}</p>
                 ) : (
                   <button
                     type="button"
@@ -443,7 +443,7 @@ export default function BatchEntryPanel({
                     disabled={faucetLoading}
                     className="mt-1.5 w-full rounded border border-yellow-500 bg-yellow-100 py-1 text-[11px] font-semibold text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
                   >
-                    {faucetLoading ? 'Minting...' : 'Get Test USDC'}
+                    {faucetLoading ? 'Minting...' : t('batch_detail.get_test_usdc')}
                   </button>
                 )}
                 {faucetError && (
