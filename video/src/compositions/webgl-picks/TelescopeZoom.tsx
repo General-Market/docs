@@ -11,27 +11,71 @@ import {
 
 // --- Constants ---
 
-const HERO_GRADIENT =
-  "linear-gradient(135deg, #0f0c29 0%, #302b63 40%, #24243e 70%, #e94560 100%)";
-
 const MASK_URL = staticFile("compositions/webgl-picks/mask.png");
 
+// Original front-layer initial scales (CSS: front-1=1, front-2=0.85, etc.)
 const FRONT_INITIAL_SCALES = [1.0, 0.85, 0.6, 0.45, 0.3, 0.15];
 
-const SMALL_IMAGE_COLORS = [
-  "#e74c3c",
-  "#3498db",
-  "#2ecc71",
-  "#f39c12",
-  "#9b59b6",
-  "#1abc9c",
-  "#e67e22",
-  "#2980b9",
-  "#e84393",
-  "#00cec9",
+// 10 gradient "thumbnail" cards with varied aspect ratios and rich gradients
+// to approximate scattered photograph thumbnails from the original
+const SMALL_IMAGES: Array<{
+  w: number; // width in vw
+  aspect: number; // height / width ratio
+  gradient: string;
+}> = [
+  {
+    w: 10,
+    aspect: 0.75, // landscape
+    gradient: "linear-gradient(145deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+  },
+  {
+    w: 10,
+    aspect: 1.3, // portrait
+    gradient: "linear-gradient(160deg, #2d1b69 0%, #6b3fa0 50%, #c77dff 100%)",
+  },
+  {
+    w: 10,
+    aspect: 0.65, // wide landscape
+    gradient: "linear-gradient(135deg, #134e5e 0%, #71b280 100%)",
+  },
+  {
+    w: 10,
+    aspect: 1.4, // tall portrait
+    gradient: "linear-gradient(150deg, #0c0c0c 0%, #3a3a3a 40%, #8e7c68 100%)",
+  },
+  {
+    w: 10,
+    aspect: 0.7, // landscape
+    gradient: "linear-gradient(140deg, #1f1c2c 0%, #928dab 100%)",
+  },
+  {
+    w: 10,
+    aspect: 1.2, // portrait
+    gradient: "linear-gradient(155deg, #2c3e50 0%, #4ca1af 50%, #c4e0e5 100%)",
+  },
+  {
+    w: 10,
+    aspect: 0.6, // wide landscape
+    gradient: "linear-gradient(130deg, #0f2027 0%, #203a43 40%, #2c5364 100%)",
+  },
+  {
+    w: 10,
+    aspect: 1.1, // slightly tall
+    gradient: "linear-gradient(145deg, #232526 0%, #414345 50%, #636363 100%)",
+  },
+  {
+    w: 10,
+    aspect: 0.75, // landscape
+    gradient: "linear-gradient(160deg, #1e3c72 0%, #2a5298 50%, #4a77b4 100%)",
+  },
+  {
+    w: 10,
+    aspect: 1.35, // portrait
+    gradient: "linear-gradient(135deg, #141e30 0%, #243b55 50%, #4b6584 100%)",
+  },
 ];
 
-// Positions in vw units — replicated from the Codrops source
+// Positions in vw — exact match of original CSS
 const SMALL_IMAGE_POSITIONS: Array<{
   top?: string;
   bottom?: string;
@@ -50,22 +94,39 @@ const SMALL_IMAGE_POSITIONS: Array<{
   { bottom: "9vw", right: "7vw" },
 ];
 
-// --- GSAP Timeline → Remotion Frame Mapping ---
-// Total effective timeline duration: 1.6
-// frameAt(pos) = (pos / 1.6) * durationInFrames
+// Hero gradient — rich, deep, full-bleed reveal
+const HERO_GRADIENT =
+  "linear-gradient(135deg, #0f0c29 0%, #302b63 30%, #24243e 55%, #6b2fa0 75%, #e94560 100%)";
 
-const TIMELINE_TOTAL = 1.6;
+// --- GSAP Timeline → Remotion frame mapping ---
+//
+// Original timeline (all positions relative to GSAP timeline cursor):
+//   Tween 1 @ pos=0:   smallImages z→100vh,  dur=1, stagger=0.2 from center
+//   Tween 2 @ pos=0.6: frontLayers scale→1,  dur=1, delay=0.1  → eff 0.7..1.7
+//   Tween 3 @ pos=0.6: frontLayers blur→0px, dur=1, delay=0.4, stagger=0.2 from end → eff 1.0..2.2
+//
+// Max timeline end = 1.0 + 1.0 + 0.2 (stagger) = 2.2
+const TIMELINE_TOTAL = 2.2;
 
-// Stagger "from: center" — center indices get earliest offset, edges get latest
-function staggerFromCenter(index: number, total: number, amount: number): number {
+// Stagger "from: center" — center indices offset 0, edges offset most
+function staggerFromCenter(
+  index: number,
+  total: number,
+  amount: number,
+): number {
   const center = (total - 1) / 2;
   const maxDist = center;
   const dist = Math.abs(index - center);
   return maxDist === 0 ? 0 : (dist / maxDist) * amount;
 }
 
-// Stagger "from: end" — last element starts first (offset 0), first starts last
-function staggerFromEnd(index: number, total: number, amount: number): number {
+// Stagger "from: end" — last index offset 0, first index offset most
+function staggerFromEnd(
+  index: number,
+  total: number,
+  amount: number,
+): number {
+  if (total <= 1) return 0;
   return ((total - 1 - index) / (total - 1)) * amount;
 }
 
@@ -75,38 +136,45 @@ export const TelescopeZoom: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height, durationInFrames } = useVideoConfig();
 
-  // Global progress (0 to 1), eased — drives --progress variable
+  // Raw progress 0→1 over all frames
   const rawProgress = frame / durationInFrames;
+
+  // Eased global progress — drives --progress (text split + media scale)
+  // Original uses power1.inOut on ScrollTrigger self.progress
   const progress = easeInOut(Math.min(Math.max(rawProgress, 0), 1));
 
-  // --- Tween 1: Small images fly toward camera ---
-  // Timeline position 0 to 1, duration 1, ease power1.inOut
-  // Stagger: amount 0.2, from "center"
-  const tween1Start = 0 / TIMELINE_TOTAL; // 0
-  const tween1End = 1 / TIMELINE_TOTAL; // 0.625
+  const vw = width / 100;
 
-  // --- Tween 2: Front layers scale to 1 ---
-  // Position 0.6, duration 1, delay 0.1 → effective start 0.7, end 1.7
-  const tween2EffStart = 0.7 / TIMELINE_TOTAL; // 0.4375
-  const tween2EffEnd = 1.7 / TIMELINE_TOTAL; // 1.0625 → clamped to 1
+  // --- Tween 1: small images fly toward camera ---
+  // Timeline pos 0, duration 1, power1.inOut, stagger 0.2 from center
+  const tween1Start = 0 / TIMELINE_TOTAL;
+  const tween1End = 1 / TIMELINE_TOTAL;
 
-  // --- Tween 3: Front layers unblur ---
-  // Position 0.6, duration 1, delay 0.4 → effective start 1.0, end 2.0
-  // Stagger: amount 0.2, from "end"
-  const tween3EffStart = 1.0 / TIMELINE_TOTAL; // 0.625
-  const tween3EffEnd = 2.0 / TIMELINE_TOTAL; // 1.25 → clamped to 1
+  // --- Tween 2: front layers scale → 1 ---
+  // Timeline pos 0.6, duration 1, delay 0.1 → effective 0.7..1.7
+  const tween2Start = 0.7 / TIMELINE_TOTAL;
+  const tween2End = 1.7 / TIMELINE_TOTAL;
 
-  // --- Text transforms driven by progress ---
-  // .left: translate3d(calc(progress * (-66vw + 100%) - 0.5vw), 0, 0)
-  // At 1920w, vw = 19.2px. 66vw = 1267.2. "100%" of the text element ~= its width.
-  // For Remotion with absolute px: approximate the translation.
-  // -66vw ≈ -1267.2px, 100% ≈ text width (~200px), -0.5vw ≈ -9.6px
-  const leftTextX = progress * (-66 * (width / 100) + 200 - 0.5 * (width / 100));
-  const rightTextX = progress * (66 * (width / 100) - 200);
+  // --- Tween 3: front layers blur → 0px ---
+  // Timeline pos 0.6, duration 1, delay 0.4, stagger 0.2 from end → effective 1.0..2.2
+  const tween3Start = 1.0 / TIMELINE_TOTAL;
+  const tween3End = 2.2 / TIMELINE_TOTAL; // = 1.0
+
+  // --- Text split ---
+  // Original CSS: .left  → translate3d(calc(--progress * (-66vw + 100%) - 0.5vw), 0, 0)
+  //               .right → translate3d(calc(--progress * (66vw - 100%)), 0, 0)
+  // 100% = the span's own width. We estimate each span's width from font metrics.
+  // At 3vw font-size with weight 600: "for the" ~ 7ch, "planet" ~ 6ch → approximate.
+  const fontSize = 3 * vw;
+  const leftSpanWidth = fontSize * 3.8; // "for the" approximate width
+  const rightSpanWidth = fontSize * 3.2; // "planet" approximate width
+
+  const leftTextX = progress * (-66 * vw + leftSpanWidth - 0.5 * vw);
+  const rightTextX = progress * (66 * vw - rightSpanWidth);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff", overflow: "hidden" }}>
-      {/* --- Text layer (below media, visible at start) --- */}
+      {/* --- Text layer (below media, visible at start, splits apart) --- */}
       <div
         style={{
           position: "absolute",
@@ -121,11 +189,12 @@ export const TelescopeZoom: React.FC = () => {
         <span
           style={{
             fontFamily: "system-ui, sans-serif",
-            fontSize: `${3 * (width / 100)}px`,
+            fontSize: `${fontSize}px`,
             fontWeight: 600,
             color: "#000",
             whiteSpace: "nowrap",
-            transform: `translate3d(${leftTextX}px, 0, 0)`,
+            display: "inline-block",
+            transform: `translate3d(${leftTextX}px, 0px, 0px)`,
           }}
         >
           for the
@@ -133,19 +202,19 @@ export const TelescopeZoom: React.FC = () => {
         <span
           style={{
             fontFamily: "system-ui, sans-serif",
-            fontSize: `${3 * (width / 100)}px`,
+            fontSize: `${fontSize}px`,
             fontWeight: 600,
             color: "#000",
             whiteSpace: "nowrap",
-            marginLeft: "0.5em",
-            transform: `translate3d(${rightTextX}px, 0, 0)`,
+            display: "inline-block",
+            transform: `translate3d(${rightTextX}px, 0px, 0px)`,
           }}
         >
           planet
         </span>
       </div>
 
-      {/* --- section__media container: scales from 0 to 1 via progress --- */}
+      {/* --- section__media: scales from 0→1 via eased progress, reveals hero --- */}
       <div
         style={{
           position: "absolute",
@@ -155,7 +224,7 @@ export const TelescopeZoom: React.FC = () => {
           transformOrigin: "center center",
         }}
       >
-        {/* Back layer — base image, no mask */}
+        {/* Back layer — full hero image, no mask */}
         <div
           style={{
             position: "absolute",
@@ -165,25 +234,29 @@ export const TelescopeZoom: React.FC = () => {
           }}
         />
 
-        {/* 6 front mask layers */}
+        {/* 6 front mask layers — staggered scale + blur-to-clear */}
         {FRONT_INITIAL_SCALES.map((initScale, i) => {
           // Tween 2: scale from initScale → 1
+          // All 6 layers share the same timing (no stagger on scale tween)
           const scaleT = interpolate(
             rawProgress,
-            [tween2EffStart, Math.min(tween2EffEnd, 1)],
+            [tween2Start, Math.min(tween2End, 1)],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           );
-          const easedScaleT = easeInOut(scaleT);
-          const scale = interpolate(easedScaleT, [0, 1], [initScale, 1]);
+          const scale = interpolate(easeInOut(scaleT), [0, 1], [initScale, 1]);
 
           // Tween 3: blur from 2px → 0px, stagger from end
-          const staggerOffset = staggerFromEnd(i, FRONT_INITIAL_SCALES.length, 0.2);
-          // Each layer's effective range within the tween3 window
-          const layerBlurStart =
-            tween3EffStart +
-            staggerOffset * (Math.min(tween3EffEnd, 1) - tween3EffStart);
-          const layerBlurEnd = Math.min(tween3EffEnd, 1);
+          // Each layer has its own delay within the stagger window
+          const layerStagger = staggerFromEnd(
+            i,
+            FRONT_INITIAL_SCALES.length,
+            0.2,
+          );
+          // Map stagger offset into the tween3 progress range
+          const tween3Duration = tween3End - tween3Start;
+          const layerBlurStart = tween3Start + layerStagger * tween3Duration;
+          const layerBlurEnd = Math.min(tween3End, 1);
 
           const blurT = interpolate(
             rawProgress,
@@ -191,35 +264,36 @@ export const TelescopeZoom: React.FC = () => {
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           );
-          const easedBlurT = easeInOut(blurT);
-          const blur = interpolate(easedBlurT, [0, 1], [2, 0]);
+          const blur = interpolate(easeInOut(blurT), [0, 1], [2, 0]);
 
           return (
             <div
               key={i}
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                background: HERO_GRADIENT,
-                transform: `scale(${scale})`,
-                transformOrigin: "center center",
-                filter: `blur(${blur}px)`,
-                WebkitMaskImage: `url(${MASK_URL})`,
-                maskImage: `url(${MASK_URL})`,
-                WebkitMaskPosition: "50% 50%",
-                maskPosition: "50% 50%",
-                WebkitMaskSize: "cover",
-                maskSize: "cover",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-              } as React.CSSProperties}
+              style={
+                {
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  background: HERO_GRADIENT,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "center center",
+                  filter: `blur(${blur}px)`,
+                  WebkitMaskImage: `url(${MASK_URL})`,
+                  maskImage: `url(${MASK_URL})`,
+                  WebkitMaskPosition: "50% 50%",
+                  maskPosition: "50% 50%",
+                  WebkitMaskSize: "cover",
+                  maskSize: "cover",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                } as React.CSSProperties
+              }
             />
           );
         })}
       </div>
 
-      {/* --- section__images: 10 small images in perspective --- */}
+      {/* --- section__images: 10 scattered thumbnails in perspective --- */}
       <div
         style={{
           position: "absolute",
@@ -229,12 +303,15 @@ export const TelescopeZoom: React.FC = () => {
           pointerEvents: "none",
         }}
       >
-        {SMALL_IMAGE_COLORS.map((color, i) => {
-          // Tween 1: z from 0 to height (100vh in perspective space)
-          // Stagger from center, amount 0.2 over duration 1.0
-          const staggerOffset = staggerFromCenter(i, SMALL_IMAGE_COLORS.length, 0.2);
-          // Each image's effective start within the tween range
-          const imgStart = tween1Start + staggerOffset * (tween1End - tween1Start);
+        {SMALL_IMAGES.map((img, i) => {
+          // Tween 1: z from 0 → 100vh (height), power1.inOut, stagger from center
+          const staggerOffset = staggerFromCenter(
+            i,
+            SMALL_IMAGES.length,
+            0.2,
+          );
+          const imgStart =
+            tween1Start + staggerOffset * (tween1End - tween1Start);
           const imgEnd = tween1End;
 
           const flyT = interpolate(rawProgress, [imgStart, imgEnd], [0, 1], {
@@ -244,27 +321,44 @@ export const TelescopeZoom: React.FC = () => {
           const easedFlyT = easeInOut(flyT);
           const z = easedFlyT * height;
 
-          // Fade out as images fly past camera
+          // Fade out as images fly past the camera plane
           const opacity = interpolate(easedFlyT, [0, 0.7, 1], [1, 1, 0]);
 
           const pos = SMALL_IMAGE_POSITIONS[i];
+          const imgW = img.w * vw;
+          const imgH = imgW * img.aspect;
 
           return (
             <div
               key={i}
-              style={{
-                position: "absolute",
-                width: `${10 * (width / 100)}px`,
-                height: `${7 * (width / 100)}px`,
-                backgroundColor: color,
-                borderRadius: 4,
-                transformStyle: "preserve-3d",
-                backfaceVisibility: "hidden",
-                transform: `translate3d(0, 0, ${z}px)`,
-                opacity,
-                ...pos,
-              } as React.CSSProperties}
-            />
+              style={
+                {
+                  position: "absolute",
+                  width: `${imgW}px`,
+                  height: `${imgH}px`,
+                  background: img.gradient,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  boxShadow: "0 2px 16px rgba(0,0,0,0.18)",
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                  transform: `translate3d(0, 0, ${z}px)`,
+                  opacity,
+                  ...pos,
+                } as React.CSSProperties
+              }
+            >
+              {/* Inner sheen to sell the photograph illusion */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 40%, rgba(0,0,0,0.15) 100%)",
+                  pointerEvents: "none",
+                }}
+              />
+            </div>
           );
         })}
       </div>

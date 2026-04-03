@@ -190,6 +190,7 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform vec3 uColorC;
 uniform float uTime;
+uniform float uOpacity;
 
 float random(vec2 co) {
   return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -214,7 +215,7 @@ void main() {
   color += grain * 0.03;
   color = clamp(color, 0.0, 1.0);
 
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = vec4(color, uOpacity);
 }
 `;
 
@@ -311,6 +312,7 @@ const GradientPlane: React.FC<{
       uColorB: { value: new THREE.Color(colorB) },
       uColorC: { value: new THREE.Color(colorC) },
       uTime: { value: time },
+      uOpacity: { value: opacity },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -318,6 +320,7 @@ const GradientPlane: React.FC<{
 
   if (matRef.current) {
     matRef.current.uniforms.uTime.value = time;
+    matRef.current.uniforms.uOpacity.value = opacity;
   }
 
   return (
@@ -333,7 +336,6 @@ const GradientPlane: React.FC<{
         fragmentShader={PLANE_GRAD_FRAGMENT}
         uniforms={uniforms}
         transparent
-        opacity={opacity}
         depthWrite={false}
         side={THREE.DoubleSide}
       />
@@ -487,18 +489,17 @@ const TrailTube: React.FC = () => {
   }, []);
 
   return (
-    <mesh geometry={geometry} renderOrder={1200}>
+    <mesh geometry={geometry} renderOrder={10}>
       <meshStandardMaterial
-        color="#f6f9ff"
-        emissive="#ffffff"
-        emissiveIntensity={1.35}
-        roughness={0.2}
+        color="#f0f4ff"
+        emissive="#e8ecf8"
+        emissiveIntensity={0.4}
+        roughness={0.35}
         metalness={0.05}
         transparent
-        opacity={0.84}
-        blending={THREE.AdditiveBlending}
+        opacity={0.55}
+        blending={THREE.NormalBlending}
         depthWrite={false}
-        depthTest={false}
         toneMapped={false}
       />
     </mesh>
@@ -547,14 +548,14 @@ const HeadParticles: React.FC<{
   const sphereGeo = useMemo(() => new THREE.SphereGeometry(1, 5, 4), []);
 
   return (
-    <group renderOrder={1300}>
+    <group renderOrder={20}>
       {particles.map((p, i) => {
         // Drift using speed for variety
         const drift = Math.sin(time * 0.4 + p.phase) * p.speed * 0.4;
         const driftY = Math.cos(time * 0.35 + p.phase * 1.3) * p.speed * 0.25;
         // Life cycle: opacity fades based on a repeating cycle
         const life = ((time * 0.8 + p.phase * 0.3) % 0.6) / 0.6;
-        const lifeOpacity = (1 - life) * 0.4 * trailOpacity * 0.75;
+        const lifeOpacity = (1 - life) * 0.3 * trailOpacity * 0.6;
 
         return (
           <mesh
@@ -568,11 +569,10 @@ const HeadParticles: React.FC<{
             scale={[p.size, p.size, p.size]}
           >
             <meshBasicMaterial
-              color="#f6f9ff"
+              color="#e8ecf8"
               transparent
               opacity={Math.max(0, lifeOpacity)}
               depthWrite={false}
-              depthTest={false}
               toneMapped={false}
             />
           </mesh>

@@ -13,6 +13,7 @@ import {
   Environment,
   Lightformer,
   ContactShadows,
+  RoundedBox,
 } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
@@ -63,11 +64,12 @@ const MAC = {
   lidW: 3.0,
   lidH: 2.0,
   lidThick: 0.04,
-  screenInset: 0.1,
-  keyRows: 5,
-  keyCols: 13,
+  screenInset: 0.08,
+  keyRows: 6,
+  keyCols: 14,
   trackpadW: 1.1,
   trackpadD: 0.7,
+  cornerRadius: 0.06,
 };
 
 // ── iPhone dimensions ──
@@ -83,75 +85,210 @@ const PHONE = {
   dynamicIslandH: 0.06,
 };
 
+// ── Rounded rectangle shape helper ──
+
+function makeRoundedRectShape(
+  width: number,
+  height: number,
+  radius: number,
+): THREE.Shape {
+  const w = width / 2;
+  const h = height / 2;
+  const r = Math.min(radius, w, h);
+  const shape = new THREE.Shape();
+  shape.moveTo(-w + r, -h);
+  shape.lineTo(w - r, -h);
+  shape.quadraticCurveTo(w, -h, w, -h + r);
+  shape.lineTo(w, h - r);
+  shape.quadraticCurveTo(w, h, w - r, h);
+  shape.lineTo(-w + r, h);
+  shape.quadraticCurveTo(-w, h, -w, h - r);
+  shape.lineTo(-w, -h + r);
+  shape.quadraticCurveTo(-w, -h, -w + r, -h);
+  return shape;
+}
+
+// ── Keycap geometry: each key is a small rounded box ──
+
+const KeyCap: React.FC<{
+  x: number;
+  z: number;
+  width?: number;
+  depth?: number;
+  y: number;
+}> = ({ x, z, width = 0.155, depth = 0.155, y }) => (
+  <RoundedBox
+    args={[width, 0.018, depth]}
+    radius={0.02}
+    smoothness={2}
+    position={[x, y, z]}
+    castShadow
+  >
+    <meshStandardMaterial color="#1e1e24" metalness={0.12} roughness={0.88} />
+  </RoundedBox>
+);
+
 // ── MacBook Base ──
 
 const MacBookBase: React.FC = () => {
-  const bodyGeo = useMemo(
-    () => new THREE.BoxGeometry(MAC.baseW, MAC.baseH, MAC.baseD, 2, 1, 2),
+  const trackpadShape = useMemo(
+    () => makeRoundedRectShape(MAC.trackpadW, MAC.trackpadD, 0.06),
     [],
   );
-  const keyGeo = useMemo(() => new THREE.BoxGeometry(0.17, 0.015, 0.17), []);
   const trackpadGeo = useMemo(
-    () => new THREE.BoxGeometry(MAC.trackpadW, 0.005, MAC.trackpadD),
-    [],
+    () => new THREE.ShapeGeometry(trackpadShape, 8),
+    [trackpadShape],
   );
 
   const keys = useMemo(() => {
-    const result: { x: number; z: number }[] = [];
-    const startX = -MAC.baseW * 0.37;
-    const startZ = -MAC.baseD * 0.12;
-    for (let row = 0; row < MAC.keyRows; row++) {
-      for (let col = 0; col < MAC.keyCols; col++) {
-        result.push({ x: startX + col * 0.21, z: startZ - row * 0.21 });
+    const result: { x: number; z: number; w: number }[] = [];
+    const keyW = 0.155;
+    const gap = 0.02;
+    const stride = keyW + gap;
+    const totalW = MAC.keyCols * stride - gap;
+    const startX = -totalW / 2 + keyW / 2;
+    const totalRows = MAC.keyRows;
+    const startZ = -MAC.baseD * 0.18;
+
+    for (let row = 0; row < totalRows; row++) {
+      const cols = row === totalRows - 1 ? 12 : MAC.keyCols;
+      for (let col = 0; col < cols; col++) {
+        const w =
+          row === totalRows - 1 && col === 5 ? keyW * 3.5 + gap * 2.5 : keyW;
+        result.push({
+          x: startX + col * stride + (w - keyW) / 2,
+          z: startZ - row * stride,
+          w,
+        });
       }
+      // Skip duplicates for spacebar row
+      if (row === totalRows - 1) break;
     }
     return result;
   }, []);
 
+  const topY = MAC.baseH;
+
   return (
     <group>
-      <mesh geometry={bodyGeo} position={[0, MAC.baseH / 2, 0]} castShadow receiveShadow>
+      {/* Main body — rounded edges */}
+      <RoundedBox
+        args={[MAC.baseW, MAC.baseH, MAC.baseD]}
+        radius={MAC.cornerRadius}
+        smoothness={4}
+        position={[0, MAC.baseH / 2, 0]}
+        castShadow
+        receiveShadow
+      >
         <meshPhysicalMaterial
-          color="#b8b8c0"
+          color="#c0c0c8"
           metalness={0.95}
-          roughness={0.08}
-          clearcoat={0.3}
-          clearcoatRoughness={0.1}
-          envMapIntensity={1.5}
+          roughness={0.07}
+          clearcoat={0.35}
+          clearcoatRoughness={0.08}
+          envMapIntensity={1.6}
         />
-      </mesh>
+      </RoundedBox>
 
-      <mesh position={[0, MAC.baseH + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MAC.baseW - 0.04, MAC.baseD - 0.04]} />
+      {/* Top deck surface — slightly darker, inset for palm rest feel */}
+      <mesh
+        position={[0, topY + 0.001, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[MAC.baseW - 0.06, MAC.baseD - 0.06]} />
         <meshPhysicalMaterial
-          color="#a8a8b0"
-          metalness={0.9}
-          roughness={0.12}
-          clearcoat={0.2}
-          envMapIntensity={1.2}
+          color="#b0b0b8"
+          metalness={0.88}
+          roughness={0.1}
+          clearcoat={0.25}
+          envMapIntensity={1.3}
         />
       </mesh>
 
+      {/* Keyboard well — recessed area */}
+      <mesh position={[0, topY - 0.002, -MAC.baseD * 0.12]} castShadow>
+        <boxGeometry
+          args={[
+            MAC.keyCols * 0.175 + 0.08,
+            0.004,
+            MAC.keyRows * 0.175 + 0.06,
+          ]}
+        />
+        <meshStandardMaterial
+          color="#1a1a20"
+          metalness={0.15}
+          roughness={0.9}
+        />
+      </mesh>
+
+      {/* Individual keycaps with rounded geometry */}
       {keys.map((k, i) => (
-        <mesh key={i} geometry={keyGeo} position={[k.x, MAC.baseH + 0.008, k.z]} castShadow>
-          <meshStandardMaterial color="#2a2a30" metalness={0.15} roughness={0.85} />
-        </mesh>
+        <KeyCap
+          key={i}
+          x={k.x}
+          z={k.z}
+          y={topY + 0.007}
+          width={k.w}
+        />
       ))}
 
-      <mesh geometry={trackpadGeo} position={[0, MAC.baseH + 0.003, MAC.baseD * 0.28]} castShadow>
+      {/* Trackpad — recessed into surface */}
+      <mesh
+        position={[0, topY - 0.001, MAC.baseD * 0.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[MAC.trackpadW + 0.02, MAC.trackpadD + 0.02, 0.003]}
+        />
+        <meshStandardMaterial
+          color="#888890"
+          metalness={0.5}
+          roughness={0.4}
+        />
+      </mesh>
+
+      {/* Trackpad glass surface */}
+      <mesh
+        geometry={trackpadGeo}
+        position={[0, topY + 0.0005, MAC.baseD * 0.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
         <meshPhysicalMaterial
-          color="#a0a0a8"
-          metalness={0.7}
-          roughness={0.05}
-          clearcoat={0.8}
-          clearcoatRoughness={0.05}
+          color="#a8a8b0"
+          metalness={0.6}
+          roughness={0.03}
+          clearcoat={0.9}
+          clearcoatRoughness={0.03}
+          envMapIntensity={2.0}
+        />
+      </mesh>
+
+      {/* Hinge cylinder */}
+      <mesh
+        position={[0, MAC.baseH * 0.55, -MAC.baseD / 2 + 0.02]}
+        rotation={[0, 0, Math.PI / 2]}
+        castShadow
+      >
+        <cylinderGeometry args={[0.032, 0.032, MAC.baseW * 0.92, 24]} />
+        <meshPhysicalMaterial
+          color="#909098"
+          metalness={0.95}
+          roughness={0.06}
+          clearcoat={0.4}
           envMapIntensity={1.8}
         />
       </mesh>
 
-      <mesh position={[0, MAC.baseH * 0.4, MAC.baseD / 2 - 0.01]}>
-        <boxGeometry args={[MAC.baseW * 0.95, MAC.baseH * 0.3, 0.01]} />
-        <meshStandardMaterial color="#999" metalness={0.9} roughness={0.1} />
+      {/* Front edge chamfer accent */}
+      <mesh position={[0, MAC.baseH * 0.35, MAC.baseD / 2 - 0.015]}>
+        <boxGeometry args={[MAC.baseW * 0.97, MAC.baseH * 0.15, 0.008]} />
+        <meshPhysicalMaterial
+          color="#a0a0a8"
+          metalness={0.92}
+          roughness={0.04}
+          envMapIntensity={1.8}
+        />
       </mesh>
     </group>
   );
@@ -160,16 +297,24 @@ const MacBookBase: React.FC = () => {
 // ── MacBook Lid ──
 
 const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
-  const lidGeo = useMemo(
-    () => new THREE.BoxGeometry(MAC.lidW, MAC.lidH, MAC.lidThick),
-    [],
-  );
   const screenW = MAC.lidW - MAC.screenInset * 2;
   const screenH = MAC.lidH - MAC.screenInset * 2;
-  const screenGeo = useMemo(() => new THREE.PlaneGeometry(screenW, screenH), []);
-  const bezelGeo = useMemo(
-    () => new THREE.BoxGeometry(MAC.lidW - 0.01, MAC.lidH - 0.01, MAC.lidThick + 0.002),
+  const screenGeo = useMemo(
+    () => new THREE.PlaneGeometry(screenW, screenH),
     [],
+  );
+
+  const bezelShape = useMemo(
+    () => makeRoundedRectShape(MAC.lidW - 0.02, MAC.lidH - 0.02, 0.04),
+    [],
+  );
+  const bezelGeo = useMemo(
+    () =>
+      new THREE.ExtrudeGeometry(bezelShape, {
+        depth: MAC.lidThick + 0.003,
+        bevelEnabled: false,
+      }),
+    [bezelShape],
   );
 
   const angleRad = (openAngle * Math.PI) / 180;
@@ -199,7 +344,14 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
     ctx.roundRect(130, 285, 252, 28, 8);
     ctx.fill();
 
-    const iconColors = ["#3478f6", "#34c759", "#ff9500", "#ff3b30", "#af52de", "#5ac8fa"];
+    const iconColors = [
+      "#3478f6",
+      "#34c759",
+      "#ff9500",
+      "#ff3b30",
+      "#af52de",
+      "#5ac8fa",
+    ];
     iconColors.forEach((c, i) => {
       ctx.fillStyle = c;
       ctx.beginPath();
@@ -232,24 +384,43 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
   }, []);
 
   return (
-    <group position={[0, MAC.baseH, -MAC.baseD / 2]}>
+    <group position={[0, MAC.baseH, -MAC.baseD / 2 + 0.02]}>
       <group rotation={[angleRad, 0, 0]}>
-        <mesh geometry={lidGeo} position={[0, MAC.lidH / 2, 0]} castShadow>
+        {/* Lid back panel — rounded */}
+        <RoundedBox
+          args={[MAC.lidW, MAC.lidH, MAC.lidThick]}
+          radius={0.03}
+          smoothness={4}
+          position={[0, MAC.lidH / 2, 0]}
+          castShadow
+        >
           <meshPhysicalMaterial
-            color="#c0c0c8"
+            color="#c4c4cc"
             metalness={0.95}
-            roughness={0.06}
-            clearcoat={0.4}
-            clearcoatRoughness={0.08}
-            envMapIntensity={1.5}
+            roughness={0.05}
+            clearcoat={0.45}
+            clearcoatRoughness={0.06}
+            envMapIntensity={1.6}
+          />
+        </RoundedBox>
+
+        {/* Bezel — thin dark frame around screen */}
+        <mesh
+          geometry={bezelGeo}
+          position={[0, MAC.lidH / 2, -0.001]}
+        >
+          <meshStandardMaterial
+            color="#0c0c10"
+            metalness={0.08}
+            roughness={0.95}
           />
         </mesh>
 
-        <mesh geometry={bezelGeo} position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.001]}>
-          <meshStandardMaterial color="#111115" metalness={0.1} roughness={0.95} />
-        </mesh>
-
-        <mesh geometry={screenGeo} position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.004]}>
+        {/* Screen */}
+        <mesh
+          geometry={screenGeo}
+          position={[0, MAC.lidH / 2, MAC.lidThick / 2 + 0.004]}
+        >
           <meshStandardMaterial
             map={screenTexture}
             emissiveMap={screenTexture}
@@ -261,19 +432,29 @@ const MacBookLid: React.FC<{ openAngle: number }> = ({ openAngle }) => {
           />
         </mesh>
 
-        <mesh position={[0, MAC.lidH - 0.04, MAC.lidThick / 2 + 0.003]}>
-          <circleGeometry args={[0.025, 16]} />
-          <meshStandardMaterial color="#0a0a0e" metalness={0.3} roughness={0.6} />
+        {/* Webcam */}
+        <mesh
+          position={[0, MAC.lidH - MAC.screenInset * 0.5, MAC.lidThick / 2 + 0.003]}
+        >
+          <circleGeometry args={[0.02, 16]} />
+          <meshStandardMaterial
+            color="#0a0a0e"
+            metalness={0.3}
+            roughness={0.6}
+          />
         </mesh>
 
-        <mesh position={[0, MAC.lidH / 2, -MAC.lidThick / 2 - 0.001]}>
-          <circleGeometry args={[0.15, 24]} />
+        {/* Apple logo (back of lid) */}
+        <mesh
+          position={[0, MAC.lidH / 2, -MAC.lidThick / 2 - 0.001]}
+        >
+          <circleGeometry args={[0.14, 24]} />
           <meshPhysicalMaterial
-            color="#d0d0d8"
+            color="#d4d4dc"
             metalness={0.98}
-            roughness={0.03}
+            roughness={0.02}
             clearcoat={1}
-            envMapIntensity={2}
+            envMapIntensity={2.5}
           />
         </mesh>
       </group>
@@ -293,56 +474,40 @@ const MacBook: React.FC<{ lidAngle: number; position: Vec3 }> = ({
   </group>
 );
 
-// ── iPhone (procedural geometry) ──
+// ── iPhone (procedural rounded body) ──
 
-const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) => {
-  const bodyShape = useMemo(() => {
-    const shape = new THREE.Shape();
-    const w = PHONE.w / 2;
-    const h = PHONE.h / 2;
-    const r = PHONE.cornerRadius;
-    shape.moveTo(-w + r, -h);
-    shape.lineTo(w - r, -h);
-    shape.quadraticCurveTo(w, -h, w, -h + r);
-    shape.lineTo(w, h - r);
-    shape.quadraticCurveTo(w, h, w - r, h);
-    shape.lineTo(-w + r, h);
-    shape.quadraticCurveTo(-w, h, -w, h - r);
-    shape.lineTo(-w, -h + r);
-    shape.quadraticCurveTo(-w, -h, -w + r, -h);
-    return shape;
-  }, []);
+const IPhoneBody: React.FC<{ screenEmissive: number }> = ({
+  screenEmissive,
+}) => {
+  const bodyShape = useMemo(
+    () => makeRoundedRectShape(PHONE.w, PHONE.h, PHONE.cornerRadius),
+    [],
+  );
 
   const bodyGeo = useMemo(() => {
     const settings: THREE.ExtrudeGeometryOptions = {
       depth: PHONE.d,
       bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.008,
-      bevelSegments: 3,
+      bevelThickness: 0.01,
+      bevelSize: 0.01,
+      bevelSegments: 4,
     };
     return new THREE.ExtrudeGeometry(bodyShape, settings);
   }, [bodyShape]);
 
   const screenShape = useMemo(() => {
     const inset = PHONE.screenInset;
-    const w = PHONE.w / 2 - inset;
-    const h = PHONE.h / 2 - inset;
-    const r = PHONE.cornerRadius - inset * 0.5;
-    const shape = new THREE.Shape();
-    shape.moveTo(-w + r, -h);
-    shape.lineTo(w - r, -h);
-    shape.quadraticCurveTo(w, -h, w, -h + r);
-    shape.lineTo(w, h - r);
-    shape.quadraticCurveTo(w, h, w - r, h);
-    shape.lineTo(-w + r, h);
-    shape.quadraticCurveTo(-w, h, -w, h - r);
-    shape.lineTo(-w, -h + r);
-    shape.quadraticCurveTo(-w, -h, -w + r, -h);
-    return shape;
+    return makeRoundedRectShape(
+      PHONE.w - inset * 2,
+      PHONE.h - inset * 2,
+      PHONE.cornerRadius - inset * 0.5,
+    );
   }, []);
 
-  const screenGeo = useMemo(() => new THREE.ShapeGeometry(screenShape), [screenShape]);
+  const screenGeo = useMemo(
+    () => new THREE.ShapeGeometry(screenShape),
+    [screenShape],
+  );
 
   const screenTexture = useMemo(() => {
     const canvas = document.createElement("canvas");
@@ -357,29 +522,24 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 390, 844);
 
-    // Status bar
     ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "bold 13px sans-serif";
     ctx.fillText("9:41", 30, 55);
     ctx.fillText("100%", 320, 55);
 
-    // Dynamic island
     ctx.fillStyle = "#000";
     ctx.beginPath();
     ctx.roundRect(130, 18, 130, 32, 16);
     ctx.fill();
 
-    // Large time
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.font = "bold 72px sans-serif";
     ctx.fillText("9:41", 60, 250);
 
-    // Date
     ctx.fillStyle = "rgba(255,255,255,0.5)";
     ctx.font = "16px sans-serif";
     ctx.fillText("Wednesday, April 2", 60, 280);
 
-    // Notification cards
     const cardColors = [
       { bg: "rgba(40,60,120,0.6)", accent: "#5ac8fa" },
       { bg: "rgba(60,30,80,0.5)", accent: "#bf5af2" },
@@ -399,10 +559,13 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
       ctx.fillText(i === 0 ? "Messages" : "Calendar", 72, y + 30);
       ctx.fillStyle = "rgba(255,255,255,0.4)";
       ctx.font = "12px sans-serif";
-      ctx.fillText(i === 0 ? "2 new messages" : "Meeting in 30 min", 72, y + 50);
+      ctx.fillText(
+        i === 0 ? "2 new messages" : "Meeting in 30 min",
+        72,
+        y + 50,
+      );
     });
 
-    // Bottom dock
     ctx.fillStyle = "rgba(255,255,255,0.05)";
     ctx.beginPath();
     ctx.roundRect(100, 790, 190, 5, 3);
@@ -413,14 +576,37 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
     return tex;
   }, []);
 
-  // Camera module — back side
-  const cameraRingGeo = useMemo(() => new THREE.RingGeometry(0.04, 0.055, 24), []);
+  const cameraRingGeo = useMemo(
+    () => new THREE.RingGeometry(0.04, 0.055, 24),
+    [],
+  );
   const lensGeo = useMemo(() => new THREE.CircleGeometry(0.038, 24), []);
 
+  const cameraBumpShape = useMemo(
+    () => makeRoundedRectShape(PHONE.cameraSize + 0.06, PHONE.cameraSize + 0.06, 0.06),
+    [],
+  );
+  const cameraBumpGeo = useMemo(
+    () =>
+      new THREE.ExtrudeGeometry(cameraBumpShape, {
+        depth: 0.02,
+        bevelEnabled: true,
+        bevelThickness: 0.005,
+        bevelSize: 0.005,
+        bevelSegments: 3,
+      }),
+    [cameraBumpShape],
+  );
+
   return (
-    <group rotation={[0, 0, 0]}>
-      {/* Body — centered so extrude goes from 0 to depth along Z */}
-      <mesh geometry={bodyGeo} position={[0, 0, -PHONE.d / 2]} castShadow receiveShadow>
+    <group>
+      {/* Body */}
+      <mesh
+        geometry={bodyGeo}
+        position={[0, 0, -PHONE.d / 2]}
+        castShadow
+        receiveShadow
+      >
         <meshPhysicalMaterial
           color="#2a2a30"
           metalness={0.85}
@@ -431,20 +617,24 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
         />
       </mesh>
 
-      {/* Side band — titanium frame */}
-      <mesh geometry={bodyGeo} position={[0, 0, -PHONE.d / 2]} castShadow>
+      {/* Titanium frame band — slightly different tone */}
+      <mesh geometry={bodyGeo} position={[0, 0, -PHONE.d / 2]}>
         <meshPhysicalMaterial
-          color="#8a8a90"
-          metalness={0.95}
-          roughness={0.08}
+          color="#8a8a94"
+          metalness={0.96}
+          roughness={0.06}
           clearcoat={0.5}
-          envMapIntensity={1.8}
-          wireframe={false}
+          envMapIntensity={1.9}
+          transparent
+          opacity={0.3}
         />
       </mesh>
 
-      {/* Screen — front face */}
-      <mesh geometry={screenGeo} position={[0, 0, PHONE.d / 2 + 0.002]}>
+      {/* Screen face */}
+      <mesh
+        geometry={screenGeo}
+        position={[0, 0, PHONE.d / 2 + 0.002]}
+      >
         <meshStandardMaterial
           map={screenTexture}
           emissiveMap={screenTexture}
@@ -457,44 +647,57 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
       </mesh>
 
       {/* Screen glass overlay */}
-      <mesh geometry={screenGeo} position={[0, 0, PHONE.d / 2 + 0.003]}>
+      <mesh
+        geometry={screenGeo}
+        position={[0, 0, PHONE.d / 2 + 0.003]}
+      >
         <meshPhysicalMaterial
           color="#000000"
           transparent
           opacity={0.04}
           metalness={0.0}
-          roughness={0.05}
+          roughness={0.04}
           clearcoat={1}
           clearcoatRoughness={0.02}
-          envMapIntensity={2.5}
+          envMapIntensity={2.8}
         />
       </mesh>
 
-      {/* Camera module bump — back */}
-      <mesh position={[-0.14, 0.42, -PHONE.d / 2 - 0.012]} castShadow>
-        <boxGeometry args={[PHONE.cameraSize + 0.06, PHONE.cameraSize + 0.06, 0.02]} />
+      {/* Camera bump — rounded rectangle, back face */}
+      <mesh
+        geometry={cameraBumpGeo}
+        position={[-0.14, 0.42, -PHONE.d / 2 - 0.025]}
+        castShadow
+      >
         <meshPhysicalMaterial
           color="#2a2a30"
-          metalness={0.85}
-          roughness={0.12}
-          clearcoat={0.3}
-          envMapIntensity={1.2}
+          metalness={0.88}
+          roughness={0.1}
+          clearcoat={0.35}
+          envMapIntensity={1.3}
         />
       </mesh>
 
       {/* Camera lenses (3 in triangle) */}
-      {[
-        [-0.19, 0.47],
-        [-0.09, 0.47],
-        [-0.14, 0.37],
-      ].map(([x, y], i) => (
-        <group key={i} position={[x, y, -PHONE.d / 2 - 0.023]}>
+      {(
+        [
+          [-0.19, 0.47],
+          [-0.09, 0.47],
+          [-0.14, 0.37],
+        ] as [number, number][]
+      ).map(([x, y], i) => (
+        <group key={i} position={[x, y, -PHONE.d / 2 - 0.028]}>
           <mesh geometry={cameraRingGeo}>
-            <meshPhysicalMaterial color="#555" metalness={0.95} roughness={0.05} envMapIntensity={2} />
+            <meshPhysicalMaterial
+              color="#555"
+              metalness={0.95}
+              roughness={0.04}
+              envMapIntensity={2.2}
+            />
           </mesh>
           <mesh geometry={lensGeo}>
             <meshPhysicalMaterial
-              color="#0a0a1a"
+              color="#080818"
               metalness={0.3}
               roughness={0.02}
               clearcoat={1}
@@ -505,18 +708,37 @@ const IPhoneBody: React.FC<{ screenEmissive: number }> = ({ screenEmissive }) =>
         </group>
       ))}
 
-      {/* Power button — right side */}
-      <mesh position={[PHONE.w / 2 + 0.005, 0.2, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <boxGeometry args={[0.15, 0.015, 0.025]} />
-        <meshPhysicalMaterial color="#666" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
-      </mesh>
+      {/* Power button */}
+      <RoundedBox
+        args={[0.015, 0.15, 0.025]}
+        radius={0.005}
+        smoothness={2}
+        position={[PHONE.w / 2 + 0.006, 0.2, 0]}
+      >
+        <meshPhysicalMaterial
+          color="#777"
+          metalness={0.95}
+          roughness={0.06}
+          envMapIntensity={1.6}
+        />
+      </RoundedBox>
 
-      {/* Volume buttons — left side */}
+      {/* Volume buttons */}
       {[0.25, 0.1].map((y, i) => (
-        <mesh key={i} position={[-PHONE.w / 2 - 0.005, y, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <boxGeometry args={[0.1, 0.015, 0.025]} />
-          <meshPhysicalMaterial color="#666" metalness={0.95} roughness={0.08} envMapIntensity={1.5} />
-        </mesh>
+        <RoundedBox
+          key={i}
+          args={[0.015, 0.1, 0.025]}
+          radius={0.005}
+          smoothness={2}
+          position={[-PHONE.w / 2 - 0.006, y, 0]}
+        >
+          <meshPhysicalMaterial
+            color="#777"
+            metalness={0.95}
+            roughness={0.06}
+            envMapIntensity={1.6}
+          />
+        </RoundedBox>
       ))}
     </group>
   );
@@ -536,7 +758,11 @@ const IPhone: React.FC<{
 
 const Tabletop: React.FC = () => (
   <group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.02, 0]}
+      receiveShadow
+    >
       <planeGeometry args={[25, 25]} />
       <meshPhysicalMaterial
         color="#1a1a20"
@@ -547,7 +773,10 @@ const Tabletop: React.FC = () => (
         envMapIntensity={0.8}
       />
     </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.019, 0]}>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.019, 0]}
+    >
       <planeGeometry args={[25, 25]} />
       <meshPhysicalMaterial
         color="#000000"
@@ -563,11 +792,11 @@ const Tabletop: React.FC = () => (
 
 // ── Camera updater ──
 
-const CameraUpdater: React.FC<{ position: Vec3; target: Vec3; fov: number }> = ({
-  position,
-  target,
-  fov,
-}) => {
+const CameraUpdater: React.FC<{
+  position: Vec3;
+  target: Vec3;
+  fov: number;
+}> = ({ position, target, fov }) => {
   const { camera } = useThree();
   if (camera) {
     camera.position.set(...position);
@@ -603,14 +832,34 @@ function usePhoneTransform(frame: number): {
   rotation: Vec3;
   screenEmissive: number;
 } {
-  // Phone lies face-down to the right of the MacBook
-  const restPos: Vec3 = [2.4, 0.05, 0.3];
-  const restRot: Vec3 = [Math.PI / 2, 0, 0.1]; // face-down, lying flat
-  const liftedPos: Vec3 = [2.4, 1.2, 0.1];
-  const liftedRot: Vec3 = [-0.15, -0.2, 0.05]; // face toward camera, slight tilt
+  // Phone starts visible next to the MacBook, face-up, screen off
+  const restPos: Vec3 = [2.2, 0.06, 0.5];
+  const restRot: Vec3 = [-Math.PI / 2, 0, 0.08];
+
+  // Lifted position: face toward camera
+  const liftedPos: Vec3 = [2.2, 1.3, 0.3];
+  const liftedRot: Vec3 = [-0.15, -0.2, 0.05];
+
+  // Settle position
+  const settlePos: Vec3 = [2.2, 0.8, 0.4];
+  const settleRot: Vec3 = [-0.1, -0.15, 0.03];
 
   if (frame < PHASE.phoneLift[0]) {
-    return { position: restPos, rotation: restRot, screenEmissive: 0 };
+    // Before lift: phone lies face-up, screen dim glow
+    const earlyGlow =
+      frame > PHASE.macGlow[0]
+        ? interpolate(
+            frame,
+            [PHASE.macGlow[0], PHASE.macGlow[1]],
+            [0, 0.4],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+          )
+        : 0;
+    return {
+      position: restPos,
+      rotation: restRot,
+      screenEmissive: earlyGlow,
+    };
   }
 
   if (frame < PHASE.phoneLift[1]) {
@@ -618,18 +867,20 @@ function usePhoneTransform(frame: number): {
     return {
       position: lerpVec3(restPos, liftedPos, p),
       rotation: lerpVec3(restRot, liftedRot, p),
-      screenEmissive: interpolate(p, [0, 1], [0, 2.8]),
+      screenEmissive: interpolate(p, [0, 1], [0.4, 2.8]),
     };
   }
 
   if (frame < PHASE.settle[0]) {
-    return { position: liftedPos, rotation: liftedRot, screenEmissive: 2.8 };
+    return {
+      position: liftedPos,
+      rotation: liftedRot,
+      screenEmissive: 2.8,
+    };
   }
 
   if (frame < PHASE.settle[1]) {
     const p = phaseProgress(frame, PHASE.settle[0], PHASE.settle[1]);
-    const settlePos: Vec3 = [2.4, 0.7, 0.2];
-    const settleRot: Vec3 = [-0.1, -0.15, 0.03];
     return {
       position: lerpVec3(liftedPos, settlePos, p),
       rotation: lerpVec3(liftedRot, settleRot, p),
@@ -637,14 +888,14 @@ function usePhoneTransform(frame: number): {
     };
   }
 
-  // Outro — phone settles back to rest
+  // Outro: gentle drift back but stay visible — do NOT go face-down
   const p = phaseProgress(frame, PHASE.outro[0], PHASE.outro[1]);
-  const settlePos: Vec3 = [2.4, 0.7, 0.2];
-  const settleRot: Vec3 = [-0.1, -0.15, 0.03];
+  const outroPos: Vec3 = [2.2, 0.5, 0.5];
+  const outroRot: Vec3 = [-0.3, -0.1, 0.03];
   return {
-    position: lerpVec3(settlePos, restPos, p),
-    rotation: lerpVec3(settleRot, restRot, p),
-    screenEmissive: interpolate(p, [0, 1], [2.0, 0]),
+    position: lerpVec3(settlePos, outroPos, p),
+    rotation: lerpVec3(settleRot, outroRot, p),
+    screenEmissive: interpolate(p, [0, 1], [2.0, 0.8]),
   };
 }
 
@@ -653,46 +904,58 @@ function useCameraAnimation(frame: number): {
   target: Vec3;
   fov: number;
 } {
-  // Establishing: high overhead, wide FOV, both devices visible
-  const overheadPos: Vec3 = [0.5, 10, 8];
-  const overheadTarget: Vec3 = [0.5, 0, -0.2];
+  // Establishing: high 3/4 view, both devices clearly visible
+  const overheadPos: Vec3 = [1.0, 8, 7];
+  const overheadTarget: Vec3 = [0.8, 0, 0.1];
 
-  // Descended: comfortable 3/4 view, both devices in frame
-  const frontPos: Vec3 = [0.5, 5.5, 6.5];
-  const frontTarget: Vec3 = [0.5, 0.2, -0.3];
+  // Descended: comfortable eye-level, both in frame
+  const frontPos: Vec3 = [0.8, 5, 6];
+  const frontTarget: Vec3 = [0.5, 0.2, -0.1];
 
   // MacBook close-up
-  const macPos: Vec3 = [-0.3, 3.0, 3.5];
-  const macTarget: Vec3 = [-0.5, 0.8, -0.5];
+  const macPos: Vec3 = [-0.2, 2.8, 3.2];
+  const macTarget: Vec3 = [-0.5, 0.7, -0.4];
 
-  // Phone close-up
-  const phonePos: Vec3 = [3.2, 2.5, 2.8];
-  const phoneTarget: Vec3 = [2.4, 0.8, 0.2];
+  // Phone close-up — offset to where the phone actually is
+  const phonePos: Vec3 = [3.0, 2.2, 2.5];
+  const phoneTarget: Vec3 = [2.2, 0.9, 0.3];
 
-  // Final pullback — wider than start
-  const finalPos: Vec3 = [0.5, 7, 8.5];
-  const finalTarget: Vec3 = [0.5, 0.3, -0.2];
+  // Final pullback — wide hero shot, both devices
+  const finalPos: Vec3 = [0.8, 6, 7.5];
+  const finalTarget: Vec3 = [0.8, 0.3, 0.0];
 
   if (frame <= PHASE.establish[1]) {
-    const t = phaseProgress(frame, PHASE.establish[0], PHASE.establish[1]);
+    const t = phaseProgress(
+      frame,
+      PHASE.establish[0],
+      PHASE.establish[1],
+    );
     return {
       position: lerpVec3(overheadPos, frontPos, t),
       target: lerpVec3(overheadTarget, frontTarget, t),
-      fov: interpolate(t, [0, 1], [28, 32]),
+      fov: interpolate(t, [0, 1], [30, 33]),
     };
   }
 
   if (frame <= PHASE.descend[1]) {
-    const t = phaseProgress(frame, PHASE.descend[0], PHASE.descend[1]);
+    const t = phaseProgress(
+      frame,
+      PHASE.descend[0],
+      PHASE.descend[1],
+    );
     return {
       position: lerpVec3(frontPos, macPos, t * 0.5),
       target: lerpVec3(frontTarget, macTarget, t * 0.3),
-      fov: interpolate(t, [0, 1], [32, 33]),
+      fov: interpolate(t, [0, 1], [33, 34]),
     };
   }
 
   if (frame <= PHASE.macGlow[1]) {
-    const enterT = phaseProgress(frame, PHASE.macOpen[0], PHASE.macOpen[0] + 40);
+    const enterT = phaseProgress(
+      frame,
+      PHASE.macOpen[0],
+      PHASE.macOpen[0] + 40,
+    );
     return {
       position: lerpVec3(
         lerpVec3(frontPos, macPos, 0.5),
@@ -704,12 +967,16 @@ function useCameraAnimation(frame: number): {
         macTarget,
         enterT,
       ),
-      fov: interpolate(enterT, [0, 1], [33, 30]),
+      fov: interpolate(enterT, [0, 1], [34, 30]),
     };
   }
 
   if (frame <= PHASE.panToPhone[1]) {
-    const t = phaseProgress(frame, PHASE.panToPhone[0], PHASE.panToPhone[1]);
+    const t = phaseProgress(
+      frame,
+      PHASE.panToPhone[0],
+      PHASE.panToPhone[1],
+    );
     return {
       position: lerpVec3(macPos, frontPos, t),
       target: lerpVec3(macTarget, frontTarget, t),
@@ -718,7 +985,11 @@ function useCameraAnimation(frame: number): {
   }
 
   if (frame <= PHASE.phoneShow[1]) {
-    const t = phaseProgress(frame, PHASE.phoneLift[0], PHASE.phoneShow[0]);
+    const t = phaseProgress(
+      frame,
+      PHASE.phoneLift[0],
+      PHASE.phoneShow[0],
+    );
     return {
       position: lerpVec3(frontPos, phonePos, t),
       target: lerpVec3(frontTarget, phoneTarget, t),
@@ -727,18 +998,22 @@ function useCameraAnimation(frame: number): {
   }
 
   if (frame <= PHASE.settle[1]) {
-    const t = phaseProgress(frame, PHASE.settle[0], PHASE.settle[1]);
+    const t = phaseProgress(
+      frame,
+      PHASE.settle[0],
+      PHASE.settle[1],
+    );
     return {
-      position: lerpVec3(phonePos, finalPos, t * 0.5),
-      target: lerpVec3(phoneTarget, finalTarget, t * 0.5),
+      position: lerpVec3(phonePos, finalPos, t * 0.6),
+      target: lerpVec3(phoneTarget, finalTarget, t * 0.6),
       fov: interpolate(t, [0, 1], [28, 30]),
     };
   }
 
-  // Outro — smooth pullback to establishing
+  // Outro — smooth pullback to wide hero
   const t = phaseProgress(frame, PHASE.outro[0], PHASE.outro[1]);
-  const midPos = lerpVec3(phonePos, finalPos, 0.5);
-  const midTarget = lerpVec3(phoneTarget, finalTarget, 0.5);
+  const midPos = lerpVec3(phonePos, finalPos, 0.6);
+  const midTarget = lerpVec3(phoneTarget, finalTarget, 0.6);
   return {
     position: lerpVec3(midPos, finalPos, t),
     target: lerpVec3(midTarget, finalTarget, t),
@@ -750,62 +1025,88 @@ function useCameraAnimation(frame: number): {
 
 const StudioLighting: React.FC = () => (
   <>
+    {/* Key light — warm, high, casting shadows */}
     <directionalLight
       position={[5, 8, 4]}
-      intensity={2.0}
+      intensity={2.2}
       color="#fff5e6"
       castShadow
-      shadow-mapSize-width={1024}
-      shadow-mapSize-height={1024}
+      shadow-mapSize-width={2048}
+      shadow-mapSize-height={2048}
       shadow-camera-far={20}
       shadow-camera-near={0.1}
       shadow-camera-left={-6}
       shadow-camera-right={6}
       shadow-camera-top={6}
       shadow-camera-bottom={-6}
-      shadow-bias={-0.0005}
+      shadow-bias={-0.0004}
     />
-    <directionalLight position={[-4, 5, 2]} intensity={0.8} color="#c8d8f0" />
-    <directionalLight position={[0, 3, -5]} intensity={0.6} color="#e0e0ff" />
-    <pointLight position={[0, 0.5, 2]} intensity={0.3} color="#ffffff" distance={8} />
-    <ambientLight intensity={0.15} color="#b0b8c8" />
+
+    {/* Fill light — cool, softer, from left */}
+    <directionalLight
+      position={[-4, 5, 2]}
+      intensity={0.9}
+      color="#c8d8f0"
+    />
+
+    {/* Rim/back light — defines edges */}
+    <directionalLight
+      position={[0, 3, -5]}
+      intensity={0.7}
+      color="#e0e0ff"
+    />
+
+    {/* Low fill to lift shadows under devices */}
+    <pointLight
+      position={[0, 0.5, 3]}
+      intensity={0.4}
+      color="#ffffff"
+      distance={10}
+    />
+
+    <ambientLight intensity={0.12} color="#b0b8c8" />
 
     <Environment resolution={256}>
+      {/* Top softbox — main reflection source */}
       <Lightformer
         form="rect"
-        intensity={3}
+        intensity={3.5}
         position={[0, 5, 0]}
         rotation={[Math.PI / 2, 0, 0]}
         scale={[10, 4, 1]}
         color="#ffffff"
       />
+      {/* Right panel — subtle warm */}
       <Lightformer
         form="rect"
-        intensity={1.5}
+        intensity={1.8}
         position={[5, 2, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         scale={[6, 3, 1]}
-        color="#e8e0ff"
+        color="#ece0ff"
       />
+      {/* Left panel — subtle cool */}
       <Lightformer
         form="rect"
-        intensity={1.0}
+        intensity={1.2}
         position={[-5, 2, 0]}
         rotation={[0, Math.PI / 2, 0]}
         scale={[6, 3, 1]}
         color="#ffe8d0"
       />
+      {/* Back panel */}
       <Lightformer
         form="rect"
-        intensity={0.8}
+        intensity={1.0}
         position={[0, 3, -5]}
         rotation={[0, 0, 0]}
         scale={[8, 2, 1]}
         color="#d0d8ff"
       />
+      {/* Floor bounce */}
       <Lightformer
         form="rect"
-        intensity={0.3}
+        intensity={0.35}
         position={[0, -1, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         scale={[10, 10, 1]}
@@ -824,17 +1125,21 @@ const Scene: React.FC<{ frame: number }> = ({ frame }) => {
 
   return (
     <>
-      <CameraUpdater position={cam.position} target={cam.target} fov={cam.fov} />
+      <CameraUpdater
+        position={cam.position}
+        target={cam.target}
+        fov={cam.fov}
+      />
       <StudioLighting />
       <Tabletop />
 
       <ContactShadows
         position={[0, -0.015, 0]}
-        opacity={0.5}
+        opacity={0.55}
         scale={12}
         blur={2.5}
         far={4}
-        resolution={256}
+        resolution={512}
         color="#000000"
       />
 
@@ -848,9 +1153,9 @@ const Scene: React.FC<{ frame: number }> = ({ frame }) => {
 
       <EffectComposer>
         <Bloom
-          intensity={0.4}
-          luminanceThreshold={0.8}
-          luminanceSmoothing={0.3}
+          intensity={0.45}
+          luminanceThreshold={0.75}
+          luminanceSmoothing={0.25}
           mipmapBlur
         />
       </EffectComposer>
@@ -869,7 +1174,12 @@ export const DeviceShowcase: React.FC = () => {
       <ThreeCanvas
         width={width}
         height={height}
-        camera={{ fov: 28, near: 0.1, far: 100, position: [0.5, 10, 8] }}
+        camera={{
+          fov: 30,
+          near: 0.1,
+          far: 100,
+          position: [1.0, 8, 7],
+        }}
         style={{ width: "100%", height: "100%" }}
       >
         <Scene frame={frame} />

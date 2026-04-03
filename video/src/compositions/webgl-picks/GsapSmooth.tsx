@@ -6,7 +6,6 @@
 // Timeline labels: "explode" @ 1s, "flight" @ 1.3s. Click replays.
 //
 // Ported to Remotion: frame-based interpolation replaces GSAP timeline.
-// All timing, easing, and positional values match the original.
 
 import React from "react";
 import {
@@ -17,17 +16,18 @@ import {
   Easing,
 } from "remotion";
 
-// ── Timing (seconds in original, converted to frames at runtime) ────────────
+// ── Timing (seconds into the composition) ──────────────────────────────────
+// Original has 1s delay then "explode" at 1s into the timeline = 2s absolute.
+// For a 600-frame (10s) Remotion comp, we compress: text at 0.3s, explode at 1s.
 
-const DELAY = 1; // tl delay: 1s
-const EXPLODE = 1; // label "explode" at 1s (absolute, so 2s from start with delay)
-const FLIGHT = 1.3;
+const EXPLODE = 1.0;
+const FLIGHT = 1.4;
 
 // ── Easing helpers ──────────────────────────────────────────────────────────
 
 function backOut(t: number, overshoot = 1.70158): number {
-  const s = overshoot;
-  return (t = t - 1) * t * ((s + 1) * t + s) + 1;
+  const c = t - 1;
+  return c * c * ((overshoot + 1) * c + overshoot) + 1;
 }
 
 function backOutStrong(t: number): number {
@@ -35,7 +35,8 @@ function backOutStrong(t: number): number {
 }
 
 function elasticOut(t: number, amplitude = 1, period = 0.3): number {
-  if (t === 0 || t === 1) return t;
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
   const s = (period / (2 * Math.PI)) * Math.asin(1 / amplitude);
   return (
     amplitude *
@@ -54,22 +55,23 @@ function customBounce(t: number): number {
   if (t < 1 / 2.75) {
     return 7.5625 * t * t;
   } else if (t < 2 / 2.75) {
-    return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+    const adj = t - 1.5 / 2.75;
+    return 7.5625 * adj * adj + 0.75;
   } else if (t < 2.5 / 2.75) {
-    return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+    const adj = t - 2.25 / 2.75;
+    return 7.5625 * adj * adj + 0.9375;
   }
-  return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
+  const adj = t - 2.625 / 2.75;
+  return 7.5625 * adj * adj + 0.984375;
 }
 
-// Squash companion (inverted bounce for scale deformation)
 function customBounceSquash(t: number): number {
   const b = customBounce(t);
-  // squash factor: deforms at bounce contact points
   const squashAmount = 0.4;
   return 1 + (1 - b) * squashAmount * Math.sin(t * Math.PI * 6);
 }
 
-// ── Seeded random (deterministic for frame-by-frame consistency) ────────────
+// ── Seeded random ──────────────────────────────────────────────────────────
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
@@ -80,7 +82,7 @@ function randomRange(seed: number, min: number, max: number): number {
   return min + seededRandom(seed) * (max - min);
 }
 
-// ── Progress helper: maps frame to 0→1 for a given start/duration ──────────
+// ── Progress helper ────────────────────────────────────────────────────────
 
 function progress(
   frame: number,
@@ -88,22 +90,30 @@ function progress(
   startSec: number,
   durationSec: number,
 ): number {
-  const startFrame = (DELAY + startSec) * fps;
+  const startFrame = startSec * fps;
   const durFrames = durationSec * fps;
+  if (durFrames === 0) return frame >= startFrame ? 1 : 0;
   return Math.max(0, Math.min(1, (frame - startFrame) / durFrames));
 }
 
-// ── SVG starburst (simplified — the original has complex gradient paths) ────
+// ── SVG Starburst ──────────────────────────────────────────────────────────
 
 const Starburst: React.FC<{ progress: number }> = ({ progress: p }) => {
-  const scale = p > 0 ? interpolate(p, [0, 1], [0, 1]) : 0;
+  if (p <= 0) return null;
+  const scale = interpolate(p, [0, 1], [0, 1.1]);
   const rotation = interpolate(p, [0, 1], [-60, 0]);
+  const points = Array.from({ length: 24 }, (_, i) => {
+    const angle = (i * Math.PI * 2) / 24 - Math.PI / 2;
+    const r = i % 2 === 0 ? 280 : 120;
+    return `${300 + r * Math.cos(angle)},${300 + r * Math.sin(angle)}`;
+  }).join(" ");
+
   return (
     <svg
       viewBox="0 0 600 600"
       style={{
-        width: 500,
-        height: 500,
+        width: 600,
+        height: 600,
         transform: `scale(${scale}) rotate(${rotation}deg)`,
         transformOrigin: "center center",
       }}
@@ -114,74 +124,49 @@ const Starburst: React.FC<{ progress: number }> = ({ progress: p }) => {
           <stop offset="79%" stopColor="#F7BDF8" />
         </linearGradient>
       </defs>
-      {/* 12-point starburst */}
-      <polygon
-        points={Array.from({ length: 24 }, (_, i) => {
-          const angle = (i * Math.PI * 2) / 24 - Math.PI / 2;
-          const r = i % 2 === 0 ? 280 : 140;
-          return `${300 + r * Math.cos(angle)},${300 + r * Math.sin(angle)}`;
-        }).join(" ")}
-        fill="url(#bangGrad)"
-      />
+      <polygon points={points} fill="url(#bangGrad)" />
     </svg>
   );
 };
 
-// ── "free for all" text with per-character animation ────────────────────────
+// ── Animated text with per-character fly-in ────────────────────────────────
 
 const AnimatedText: React.FC<{
   text: string;
   charProgress: (index: number) => number;
   style?: React.CSSProperties;
-}> = ({ text, charProgress, style }) => {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        overflow: "hidden",
-        ...style,
-      }}
-    >
-      {text.split("").map((char, i) => {
-        const p = charProgress(i);
-        const seed = i * 73 + text.charCodeAt(0);
-        const fromY = seededRandom(seed) > 0.5 ? -500 : 500;
-        const fromRot = randomRange(seed + 1, -30, 30);
-        const y = interpolate(p, [0, 1], [fromY, 0]);
-        const rotation = interpolate(p, [0, 1], [fromRot, 0]);
+}> = ({ text, charProgress, style }) => (
+  <span style={{ display: "inline-flex", ...style }}>
+    {text.split("").map((char, i) => {
+      const p = charProgress(i);
+      const seed = i * 73 + text.charCodeAt(0);
+      const fromY = seededRandom(seed) > 0.5 ? -400 : 400;
+      const fromRot = randomRange(seed + 1, -30, 30);
+      const y = interpolate(p, [0, 1], [fromY, 0]);
+      const rotation = interpolate(p, [0, 1], [fromRot, 0]);
+      const opacity = interpolate(p, [0, 0.2, 1], [0, 1, 1]);
+      return (
+        <span
+          key={i}
+          style={{
+            display: "inline-block",
+            transform: `translateY(${y}px) rotate(${rotation}deg)`,
+            opacity,
+            whiteSpace: char === " " ? "pre" : undefined,
+          }}
+        >
+          {char === " " ? "\u00A0" : char}
+        </span>
+      );
+    })}
+  </span>
+);
 
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              transform: `translateY(${y}px) rotate(${rotation}deg)`,
-              whiteSpace: char === " " ? "pre" : undefined,
-            }}
-          >
-            {char === " " ? "\u00A0" : char}
-          </span>
-        );
-      })}
-    </span>
-  );
-};
-
-// ── Confetti particle ───────────────────────────────────────────────────────
+// ── Confetti ───────────────────────────────────────────────────────────────
 
 const CONFETTI_COLORS = [
-  "#FF8709",
-  "#F7BDF8",
-  "#05F34A",
-  "#397DFF",
-  "#FAF005",
-  "#FEC5FB",
-  "#BAA5F5",
-  "#FF783E",
-  "#A6CFE7",
-  "#B82C6F",
-  "#00BAE2",
-  "#9D95FF",
+  "#FF8709", "#F7BDF8", "#05F34A", "#397DFF", "#FAF005", "#FEC5FB",
+  "#BAA5F5", "#FF783E", "#A6CFE7", "#B82C6F", "#00BAE2", "#9D95FF",
 ];
 
 const CONFETTI_SHAPES = ["circle", "rect", "triangle"] as const;
@@ -190,90 +175,88 @@ interface ConfettiPiece {
   id: number;
   color: string;
   shape: (typeof CONFETTI_SHAPES)[number];
-  velocityMag: number;
-  angle: number; // radians
-  rotStart: number;
+  vx: number;
+  vy: number;
   rotEnd: number;
   scale: number;
   size: number;
 }
 
 function generateConfetti(count: number): ConfettiPiece[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-    shape: CONFETTI_SHAPES[i % CONFETTI_SHAPES.length],
-    // Original: velocity "random(800, 2000)", angle "random(150, 360)"
-    velocityMag: randomRange(i * 3, 800, 2000),
-    angle: (randomRange(i * 7, 150, 360) * Math.PI) / 180,
-    rotStart: 0,
-    rotEnd: randomRange(i * 11, -360, 360),
-    scale: randomRange(i * 13, 0.5, 1),
-    size: randomRange(i * 17, 12, 28),
-  }));
+  return Array.from({ length: count }, (_, i) => {
+    // Radiate outward from center — full 360 spread, mostly upward bias
+    const angleDeg = randomRange(i * 7, 200, 520);
+    const angleRad = (angleDeg * Math.PI) / 180;
+    const speed = randomRange(i * 3, 400, 1200);
+    return {
+      id: i,
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      shape: CONFETTI_SHAPES[i % CONFETTI_SHAPES.length],
+      vx: speed * Math.cos(angleRad),
+      vy: speed * Math.sin(angleRad),
+      rotEnd: randomRange(i * 11, -540, 540),
+      scale: randomRange(i * 13, 0.6, 1.2),
+      size: randomRange(i * 17, 14, 32),
+    };
+  });
 }
 
-const CONFETTI_PIECES = generateConfetti(22); // Original has 22 confetti images
-const GRAVITY = 3000; // Original: gravity: 3000
+const CONFETTI = generateConfetti(22);
+const GRAVITY = 1800;
 
 const ConfettiField: React.FC<{
   progress: number;
   durationSec: number;
-  centerX: number;
-  centerY: number;
-}> = ({ progress: p, durationSec, centerX, centerY }) => {
+}> = ({ progress: p, durationSec }) => {
   if (p <= 0) return null;
-  const t = p * durationSec; // elapsed seconds
+  const t = p * durationSec;
 
   return (
     <>
-      {CONFETTI_PIECES.map((piece) => {
-        const vx = piece.velocityMag * Math.cos(piece.angle);
-        const vy = piece.velocityMag * Math.sin(piece.angle);
-        // Physics2D: position = v*t + 0.5*g*t^2
-        const x = centerX + vx * t;
-        const y = centerY + vy * t + 0.5 * GRAVITY * t * t;
-        const rotation = interpolate(p, [0, 1], [piece.rotStart, piece.rotEnd]);
-        const opacity = interpolate(p, [0, 0.7, 1], [1, 1, 0], {
+      {CONFETTI.map((pc) => {
+        const x = 960 + pc.vx * t;
+        const y = 540 + pc.vy * t + 0.5 * GRAVITY * t * t;
+        const rotation = interpolate(p, [0, 1], [0, pc.rotEnd]);
+        const opacity = interpolate(p, [0, 0.6, 1], [1, 1, 0], {
           extrapolateRight: "clamp",
         });
 
         return (
           <div
-            key={piece.id}
+            key={pc.id}
             style={{
               position: "absolute",
               left: x,
               top: y,
-              width: piece.size,
-              height: piece.size,
-              transform: `rotate(${rotation}deg) scale(${piece.scale})`,
+              width: pc.size,
+              height: pc.size,
+              transform: `rotate(${rotation}deg) scale(${pc.scale})`,
               opacity,
             }}
           >
-            {piece.shape === "circle" && (
+            {pc.shape === "circle" && (
               <div
                 style={{
                   width: "100%",
                   height: "100%",
                   borderRadius: "50%",
-                  background: piece.color,
+                  background: pc.color,
                 }}
               />
             )}
-            {piece.shape === "rect" && (
+            {pc.shape === "rect" && (
               <div
                 style={{
                   width: "100%",
                   height: "60%",
-                  background: piece.color,
+                  background: pc.color,
                   borderRadius: 2,
                 }}
               />
             )}
-            {piece.shape === "triangle" && (
+            {pc.shape === "triangle" && (
               <svg viewBox="0 0 20 20" style={{ width: "100%", height: "100%" }}>
-                <polygon points="10,0 20,20 0,20" fill={piece.color} />
+                <polygon points="10,0 20,20 0,20" fill={pc.color} />
               </svg>
             )}
           </div>
@@ -283,7 +266,7 @@ const ConfettiField: React.FC<{
   );
 };
 
-// ── Wiggle text path (the "ffa" lettering with complex SVG) ─────────────────
+// ── Wiggle shape (the "ffa" lettering SVG) ─────────────────────────────────
 
 const WiggleShape: React.FC<{ progress: number }> = ({ progress: p }) => {
   if (p <= 0) return null;
@@ -291,15 +274,18 @@ const WiggleShape: React.FC<{ progress: number }> = ({ progress: p }) => {
   const rotation = interpolate(p, [0, 1], [60, 0]);
   return (
     <svg
-      viewBox="700 230 550 520"
+      viewBox="690 220 570 540"
       style={{
         position: "absolute",
-        width: 380,
-        height: 360,
-        left: "32%",
-        top: "15%",
+        width: 440,
+        height: 420,
+        left: "50%",
+        top: "50%",
+        marginLeft: -220,
+        marginTop: -260,
         transform: `scale(${scale}) rotate(${rotation}deg)`,
         transformOrigin: "center center",
+        opacity: interpolate(p, [0, 0.1], [0, 0.85]),
       }}
     >
       <defs>
@@ -316,21 +302,21 @@ const WiggleShape: React.FC<{ progress: number }> = ({ progress: p }) => {
   );
 };
 
-// ── Spinning C-shape ────────────────────────────────────────────────────────
+// ── Spinning C-shape ───────────────────────────────────────────────────────
 
 const SpinShape: React.FC<{ progress: number }> = ({ progress: p }) => {
   if (p <= 0) return null;
   const scale = interpolate(p, [0, 1], [0, 1]);
-  const rotation = interpolate(p, [0, 1], [-60, 0]);
+  const rotation = interpolate(p, [0, 1], [-360, 0]);
   return (
     <svg
-      viewBox="1050 250 120 160"
+      viewBox="1040 240 140 180"
       style={{
         position: "absolute",
-        width: 80,
-        height: 110,
-        right: "18%",
-        top: "22%",
+        width: 120,
+        height: 155,
+        right: "14%",
+        top: "16%",
         transform: `scale(${scale}) rotate(${rotation}deg)`,
         transformOrigin: "center center",
       }}
@@ -349,23 +335,22 @@ const SpinShape: React.FC<{ progress: number }> = ({ progress: p }) => {
   );
 };
 
-// ── Fast-forward icon ───────────────────────────────────────────────────────
+// ── Fast-forward icon ──────────────────────────────────────────────────────
 
 const FFDIcon: React.FC<{ progress: number }> = ({ progress: p }) => {
   if (p <= 0) return null;
-  // Original: xPercent: -800, opacity: 0, ease: "back.out"
-  const x = interpolate(p, [0, 1], [-800, 0]);
-  const opacity = interpolate(p, [0, 0.3, 1], [0, 0.5, 1]);
+  const x = interpolate(backOut(p), [0, 1], [-600, 0]);
+  const opacity = interpolate(p, [0, 0.3, 1], [0, 0.7, 1]);
   return (
     <svg
-      viewBox="870 755 80 70"
+      viewBox="860 750 100 80"
       style={{
         position: "absolute",
-        width: 50,
-        height: 44,
+        width: 70,
+        height: 56,
         left: "44%",
-        bottom: "20%",
-        transform: `translateX(${x}%)`,
+        bottom: "16%",
+        transform: `translateX(${x}px)`,
         opacity,
       }}
     >
@@ -377,7 +362,7 @@ const FFDIcon: React.FC<{ progress: number }> = ({ progress: p }) => {
   );
 };
 
-// ── Sprinkle dots (small colored shapes from the original) ──────────────────
+// ── Sprinkle dots ──────────────────────────────────────────────────────────
 
 interface SprinkleData {
   x: number;
@@ -388,44 +373,44 @@ interface SprinkleData {
 }
 
 const SPRINKLES: SprinkleData[] = [
-  { x: 783, y: 240, size: 34, color: "#FAF005", shape: "circle" },
-  { x: 1207, y: 337, size: 57, color: "#FAF005", shape: "circle" },
-  { x: 1178, y: 60, size: 20, color: "#BAA5F5", shape: "pill" },
-  { x: 820, y: 185, size: 16, color: "#BAA5F5", shape: "pill" },
-  { x: 950, y: 718, size: 16, color: "#B82C6F", shape: "pill" },
-  { x: 826, y: 778, size: 16, color: "#FF783E", shape: "pill" },
-  { x: 1152, y: 515, size: 16, color: "#FF783E", shape: "pill" },
-  { x: 822, y: 235, size: 16, color: "#FF783E", shape: "pill" },
-  { x: 1150, y: 590, size: 16, color: "#A6CFE7", shape: "pill" },
-  { x: 1209, y: 523, size: 16, color: "#BAA5F5", shape: "pill" },
-  { x: 1172, y: 119, size: 16, color: "#FF783E", shape: "arc" },
+  { x: 783, y: 240, size: 38, color: "#FAF005", shape: "circle" },
+  { x: 1207, y: 337, size: 60, color: "#FAF005", shape: "circle" },
+  { x: 1178, y: 60, size: 24, color: "#BAA5F5", shape: "pill" },
+  { x: 820, y: 185, size: 20, color: "#BAA5F5", shape: "pill" },
+  { x: 950, y: 718, size: 20, color: "#B82C6F", shape: "pill" },
+  { x: 826, y: 778, size: 20, color: "#FF783E", shape: "pill" },
+  { x: 1152, y: 515, size: 20, color: "#FF783E", shape: "pill" },
+  { x: 822, y: 235, size: 20, color: "#FF783E", shape: "pill" },
+  { x: 1150, y: 590, size: 20, color: "#A6CFE7", shape: "pill" },
+  { x: 1209, y: 523, size: 20, color: "#BAA5F5", shape: "pill" },
+  { x: 1172, y: 119, size: 20, color: "#FF783E", shape: "arc" },
 ];
+
+// Map from original ~2058x871 space into 1920x1080 percentages
+function normX(x: number): number {
+  return (x / 2058) * 100;
+}
+function normY(y: number): number {
+  return (y / 871) * 100;
+}
 
 const Sprinkles: React.FC<{ progress: number }> = ({ progress: p }) => {
   if (p <= 0) return null;
-  // Original: scale: 0, rotation: 360, transformOrigin: "center center", ease: "back.out"
   return (
     <>
       {SPRINKLES.map((s, i) => {
-        // Stagger the sprinkles slightly
-        const staggeredP = Math.max(
-          0,
-          Math.min(1, (p - i * 0.03) / (1 - i * 0.03)),
-        );
-        const appliedP = backOut(staggeredP);
+        const staggeredP = Math.max(0, Math.min(1, (p - i * 0.04) / (1 - SPRINKLES.length * 0.04 + 0.01)));
+        const appliedP = backOut(Math.max(0, Math.min(1, staggeredP)));
         const scale = interpolate(appliedP, [0, 1], [0, 1]);
         const rotation = interpolate(appliedP, [0, 1], [360, 0]);
-        // Normalize positions from original 2058x871 viewBox to 1920x1080
-        const nx = (s.x / 2058) * 100;
-        const ny = (s.y / 871) * 100;
 
         return (
           <div
             key={i}
             style={{
               position: "absolute",
-              left: `${nx}%`,
-              top: `${ny}%`,
+              left: `${normX(s.x)}%`,
+              top: `${normY(s.y)}%`,
               width: s.size,
               height: s.size,
               transform: `scale(${scale}) rotate(${rotation}deg)`,
@@ -433,32 +418,18 @@ const Sprinkles: React.FC<{ progress: number }> = ({ progress: p }) => {
             }}
           >
             {s.shape === "circle" && (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "50%",
-                  background: s.color,
-                }}
-              />
+              <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: s.color }} />
             )}
             {s.shape === "pill" && (
-              <div
-                style={{
-                  width: "100%",
-                  height: "40%",
-                  borderRadius: 999,
-                  background: s.color,
-                }}
-              />
+              <div style={{ width: "100%", height: "40%", borderRadius: 999, background: s.color }} />
             )}
             {s.shape === "arc" && (
               <div
                 style={{
                   width: "100%",
                   height: "100%",
-                  borderTop: `3px solid ${s.color}`,
-                  borderRight: `3px solid ${s.color}`,
+                  borderTop: `4px solid ${s.color}`,
+                  borderRight: `4px solid ${s.color}`,
                   borderRadius: "0 50% 0 0",
                 }}
               />
@@ -470,7 +441,7 @@ const Sprinkles: React.FC<{ progress: number }> = ({ progress: p }) => {
   );
 };
 
-// ── DrawSVG path (stroke-dashoffset animation) ──────────────────────────────
+// ── DrawSVG path (stroke-dashoffset reveal) ────────────────────────────────
 
 const DrawnPath: React.FC<{
   d: string;
@@ -480,10 +451,9 @@ const DrawnPath: React.FC<{
   viewBox: string;
   style?: React.CSSProperties;
 }> = ({ d, stroke, strokeWidth, progress: p, viewBox, style }) => {
-  // Approximate path length — works for visual purposes
+  if (p <= 0) return null;
   const pathLength = 2000;
   const dashOffset = interpolate(p, [0, 1], [pathLength, 0]);
-
   return (
     <svg viewBox={viewBox} style={{ position: "absolute", ...style }}>
       <path
@@ -500,51 +470,41 @@ const DrawnPath: React.FC<{
   );
 };
 
-// ── Plane on motion path ────────────────────────────────────────────────────
+// ── Paper plane on motion path ─────────────────────────────────────────────
 
 const Plane: React.FC<{ progress: number }> = ({ progress: p }) => {
   if (p <= 0) return null;
 
-  // Simplified plane path sampling (the original uses MotionPathPlugin)
-  // We sample a few keyframes along the path and interpolate
   const keyframes = [
-    { x: 1458, y: 132, rot: -30 },
-    { x: 1300, y: 170, rot: -15 },
-    { x: 1100, y: 130, rot: 10 },
-    { x: 1000, y: 200, rot: 30 },
-    { x: 973, y: 227, rot: 45 },
+    { x: 85, y: 8, rot: -30 },
+    { x: 70, y: 14, rot: -15 },
+    { x: 55, y: 10, rot: 10 },
+    { x: 48, y: 18, rot: 30 },
+    { x: 44, y: 24, rot: 45 },
   ];
 
-  // Reverse path (start: 1, end: 0 in original)
+  // Plane travels from end to start (reverse path)
   const rp = 1 - p;
   const segment = rp * (keyframes.length - 1);
   const idx = Math.min(Math.floor(segment), keyframes.length - 2);
   const frac = segment - idx;
 
-  const x =
-    keyframes[idx].x + (keyframes[idx + 1].x - keyframes[idx].x) * frac;
-  const y =
-    keyframes[idx].y + (keyframes[idx + 1].y - keyframes[idx].y) * frac;
-  const rot =
-    keyframes[idx].rot + (keyframes[idx + 1].rot - keyframes[idx].rot) * frac;
+  const xPct = keyframes[idx].x + (keyframes[idx + 1].x - keyframes[idx].x) * frac;
+  const yPct = keyframes[idx].y + (keyframes[idx + 1].y - keyframes[idx].y) * frac;
+  const rot = keyframes[idx].rot + (keyframes[idx + 1].rot - keyframes[idx].rot) * frac;
 
-  const scale = interpolate(p, [0, 1], [0.2, 1]);
-  // Fade out at frame 2s (original: .to(".innerplane", { duration: 0.2, opacity: 0 }, 2))
+  const scale = interpolate(p, [0, 1], [0.3, 1]);
   const opacity = p > 0.85 ? interpolate(p, [0.85, 1], [1, 0]) : 1;
-
-  // Normalize from 2058x871 to percentages
-  const nx = (x / 2058) * 100;
-  const ny = (y / 871) * 100;
 
   return (
     <svg
-      viewBox="1220 90 250 140"
+      viewBox="1210 80 260 150"
       style={{
         position: "absolute",
-        width: 120,
-        height: 70,
-        left: `${nx}%`,
-        top: `${ny}%`,
+        width: 180,
+        height: 100,
+        left: `${xPct}%`,
+        top: `${yPct}%`,
         transform: `scale(${scale}) rotate(${rot + 180}deg)`,
         transformOrigin: "center center",
         opacity,
@@ -572,20 +532,15 @@ const Plane: React.FC<{ progress: number }> = ({ progress: p }) => {
   );
 };
 
-// ── Hand (waving, entering from below) ──────────────────────────────────────
+// ── Waving hand ────────────────────────────────────────────────────────────
 
 const Hand: React.FC<{
   enterProgress: number;
   wiggleProgress: number;
 }> = ({ enterProgress, wiggleProgress }) => {
   if (enterProgress <= 0) return null;
-
-  // Original: from #hand { opacity: 0, duration: 0.2, yPercent: 100 } at 1.3s
   const opacity = interpolate(enterProgress, [0, 1], [0, 1]);
   const yPct = interpolate(enterProgress, [0, 1], [100, 0]);
-
-  // Original: from #hand { duration: 0.4, rotation: "+=30", ease: "myWiggle" } at 1.5s
-  // CustomWiggle { wiggles: 6 }: oscillate 6 times then settle
   const wiggleAngle =
     wiggleProgress > 0
       ? 30 * Math.sin(wiggleProgress * Math.PI * 12) * (1 - wiggleProgress)
@@ -593,19 +548,18 @@ const Hand: React.FC<{
 
   return (
     <svg
-      viewBox="1050 650 140 150"
+      viewBox="1040 640 160 170"
       style={{
         position: "absolute",
-        width: 100,
-        height: 110,
-        right: "22%",
-        bottom: "18%",
+        width: 140,
+        height: 150,
+        right: "16%",
+        bottom: "10%",
         transform: `translateY(${yPct}%) rotate(${wiggleAngle}deg)`,
-        transformOrigin: "center center",
+        transformOrigin: "center bottom",
         opacity,
       }}
     >
-      {/* Simplified hand shape */}
       <path
         d="M1162.52 666.144L1176.06 718.388C1177.72 724.799 1178.06 731.516 1176.85 738.115C1176.09 742.292 1174.65 746.79 1172.06 750.769C1172.76 751.621 1173.29 752.621 1173.58 753.738L1175.28 760.084C1176.48 764.609 1173.51 769.333 1168.64 770.633L1117.65 784.237C1112.77 785.537 1107.84 782.921 1106.63 778.396L1104.94 772.05C1104.59 770.737 1104.59 769.402 1104.89 768.145C1098.39 765.431 1093.48 760.261 1091.36 752.35L1089.73 746.166L1064.68 740.226C1058.44 738.717 1053.8 735.175 1054.22 729.35C1054.56 724.65 1056.69 721.15 1061.3 719.919L1066.26 719.826L1083.68 723.457L1083.9 723.462C1083.77 723.132 1071.39 676.788 1071.39 676.788C1069.9 671.215 1073.37 665.234 1079.35 663.543C1082.43 662.673 1085.53 663.068 1088.05 664.403C1090.51 665.709 1092.41 667.918 1093.16 670.718L1101.74 701.364L1106.88 720.624C1107.2 721.82 1107.73 722.905 1108.42 723.86C1109.35 725.147 1110.58 726.191 1111.99 726.941C1114.46 728.247 1117.49 728.654 1120.5 727.85C1122.6 727.29 1124.42 726.216 1125.83 724.819C1128.47 722.2 1129.69 718.45 1128.72 714.799L1122.34 690.885C1121.59 688.086 1119.69 685.877 1117.23 684.567C1114.76 683.262 1111.73 682.854 1108.72 683.659C1102.69 685.267 1099.01 691.111 1100.5 696.71L1106.88 720.624"
         fill="#FFFCE1"
@@ -617,7 +571,7 @@ const Hand: React.FC<{
   );
 };
 
-// ── 3D poly (center hero image — rendered as gradient shape) ────────────────
+// ── 3D polyhedron (hero center piece) ──────────────────────────────────────
 
 const HeroPoly: React.FC<{
   bounceProgress: number;
@@ -625,15 +579,8 @@ const HeroPoly: React.FC<{
 }> = ({ bounceProgress, squashProgress }) => {
   if (bounceProgress <= 0) return null;
 
-  // Original: from { opacity: 0, y: -2000, ease: "myBounce" }, duration 2s
-  const y = interpolate(
-    customBounce(bounceProgress),
-    [0, 1],
-    [-2000, 0],
-  );
-  const opacity = interpolate(bounceProgress, [0, 0.05, 1], [0, 1, 1]);
-
-  // Original squash: scaleX 1→1.4→1, scaleY 1→0.6→1, ease: "myBounce-squash"
+  const y = interpolate(customBounce(bounceProgress), [0, 1], [-1200, 0]);
+  const opacity = interpolate(bounceProgress, [0, 0.03, 1], [0, 1, 1]);
   const squashFactor = customBounceSquash(squashProgress);
   const scaleX = 1 + (squashFactor - 1) * 0.4;
   const scaleY = 1 - (squashFactor - 1) * 0.4;
@@ -644,14 +591,13 @@ const HeroPoly: React.FC<{
         position: "absolute",
         left: "50%",
         top: "50%",
-        width: 250,
-        height: 270,
+        width: 280,
+        height: 300,
         transform: `translate(-50%, -50%) translateY(${y}px) scaleX(${scaleX}) scaleY(${scaleY})`,
         transformOrigin: "center bottom",
         opacity,
       }}
     >
-      {/* Gradient polyhedron shape */}
       <svg viewBox="0 0 344 370" style={{ width: "100%", height: "100%" }}>
         <defs>
           <linearGradient id="polyGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -664,7 +610,6 @@ const HeroPoly: React.FC<{
             <stop offset="100%" stopColor="#00BAE2" />
           </linearGradient>
         </defs>
-        {/* Low-poly crystal shape */}
         <polygon
           points="172,10 300,100 320,250 250,350 94,350 24,250 44,100"
           fill="url(#polyGrad1)"
@@ -676,97 +621,68 @@ const HeroPoly: React.FC<{
           fill="url(#polyGrad2)"
           opacity={0.5}
         />
-        <line
-          x1={172}
-          y1={180}
-          x2={172}
-          y2={350}
-          stroke="#1B1E1A"
-          strokeWidth={1.5}
-          opacity={0.3}
-        />
-        <line
-          x1={172}
-          y1={180}
-          x2={320}
-          y2={250}
-          stroke="#1B1E1A"
-          strokeWidth={1.5}
-          opacity={0.3}
-        />
-        <line
-          x1={172}
-          y1={180}
-          x2={24}
-          y2={250}
-          stroke="#1B1E1A"
-          strokeWidth={1.5}
-          opacity={0.3}
-        />
+        <line x1={172} y1={180} x2={172} y2={350} stroke="#1B1E1A" strokeWidth={1.5} opacity={0.3} />
+        <line x1={172} y1={180} x2={320} y2={250} stroke="#1B1E1A" strokeWidth={1.5} opacity={0.3} />
+        <line x1={172} y1={180} x2={24} y2={250} stroke="#1B1E1A" strokeWidth={1.5} opacity={0.3} />
       </svg>
     </div>
   );
 };
 
-// ── Main component ──────────────────────────────────────────────────────────
+// ── Main composition ───────────────────────────────────────────────────────
 
 export const GsapSmooth: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // ── Timeline progress calculations ──
-  // All times relative to the 1s delay, matching original
+  // Text fly-in: starts at 0.3s, duration 0.7s, stagger 0.3s
+  const textP = progress(frame, fps, 0.3, 0.7);
+  const textStaggerTotal = 0.3;
 
-  // Text: from [free.chars, all.chars] { duration: 0.7, ... stagger amount: 0.3 }, starts at 0
-  const textP = progress(frame, fps, 0, 0.7);
-  const textStaggerTotal = 0.3; // seconds
-
-  // Main 3D poly: from { duration: 2, y: -2000, ease: "myBounce" } at 0.5
+  // 3D polyhedron bounce: starts at 0.5s, 2s duration
   const polyBounceP = progress(frame, fps, 0.5, 2);
   const polySquashP = progress(frame, fps, 0.5, 2);
 
-  // "free" text: to { duration: 2, xPercent: -20, ease: "elastic.out" } at "explode"
+  // "free" slides left, "all" slides right at explode
   const freeSlideP = progress(frame, fps, EXPLODE, 2);
-  // "all" text: to { duration: 2, xPercent: 50, ease: "elastic.out" } at "explode"
   const allSlideP = progress(frame, fps, EXPLODE, 2);
 
-  // Starburst (#bang): from { duration: 0.7, scale: 0, rotation: -60, ease: "back.out(4)" } at "explode+=.1"
+  // Starburst: 0.7s after explode+0.1
   const bangP = progress(frame, fps, EXPLODE + 0.1, 0.7);
 
-  // Wiggle shape: from { duration: 0.7, scale: 0, rotation: 60, ease: "back.out(4)" } at "explode+=.4"
+  // Wiggle shape: 0.7s after explode+0.4
   const wiggleP = progress(frame, fps, EXPLODE + 0.4, 0.7);
 
-  // Spin shape: same timing as bang
+  // Spin: same as bang
   const spinP = bangP;
 
-  // Sprinkles: from { scale: 0, rotation: 360, ease: "back.out" } at "explode"
+  // Sprinkles at explode, 1s
   const sprinklesP = progress(frame, fps, EXPLODE, 1);
 
-  // FFD icon: from { xPercent: -800, opacity: 0, ease: "back.out" } at "explode"
+  // FFD icon at explode, 1s
   const ffdP = progress(frame, fps, EXPLODE, 1);
 
-  // Confetti: set opacity 1 at "explode+=.2", then physics2D duration 2s
-  const confettiP = progress(frame, fps, EXPLODE + 0.2, 2);
+  // Confetti at explode+0.2, 3s
+  const confettiP = progress(frame, fps, EXPLODE + 0.2, 3);
 
-  // DrawSVG #path: from { duration: 0.5, drawSVG: 0 } at "explode"
-  const drawPath1P = progress(frame, fps, EXPLODE, 0.5);
+  // DrawSVG pink curve at explode, 0.8s
+  const drawPath1P = progress(frame, fps, EXPLODE, 0.8);
 
-  // DrawSVG #path_2: from { duration: 0.8, drawSVG: 0 } at "flight"
-  const drawPath2P = progress(frame, fps, FLIGHT, 0.8);
+  // DrawSVG green squiggle at flight, 1s
+  const drawPath2P = progress(frame, fps, FLIGHT, 1);
 
-  // Plane: from { duration: 1, ... } at "flight"
-  const planeP = progress(frame, fps, FLIGHT, 1);
+  // Plane at flight, 1.2s
+  const planeP = progress(frame, fps, FLIGHT, 1.2);
 
-  // Hand enter: from { opacity: 0, duration: 0.2, yPercent: 100 } at 1.3
-  const handEnterP = progress(frame, fps, 1.3, 0.2);
-  // Hand wiggle: from { duration: 0.4, rotation: "+=30", ease: "myWiggle" } at 1.5
-  const handWiggleP = progress(frame, fps, 1.5, 0.4);
+  // Hand enter at 1.4s, 0.3s; wiggle at 1.7s, 0.5s
+  const handEnterP = progress(frame, fps, 1.4, 0.3);
+  const handWiggleP = progress(frame, fps, 1.7, 0.5);
 
-  // ── Apply easings ──
+  // Apply easings to text slide
   const freeSlideEased = elasticOut(freeSlideP);
   const allSlideEased = elasticOut(allSlideP);
-  const freeX = interpolate(freeSlideEased, [0, 1], [0, -20]); // xPercent
-  const allX = interpolate(allSlideEased, [0, 1], [0, 50]); // xPercent
+  const freeX = interpolate(freeSlideEased, [0, 1], [0, -20]);
+  const allX = interpolate(allSlideEased, [0, 1], [0, 50]);
 
   return (
     <AbsoluteFill
@@ -776,40 +692,39 @@ export const GsapSmooth: React.FC = () => {
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
-        fontFamily:
-          "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
         color: "#FFFCE1",
       }}
     >
-      {/* ── Drawn paths ── */}
+      {/* Drawn paths (behind everything) */}
       <DrawnPath
         d="M538.5 556.481C565.165 497.803 621.326 446.333 685.817 449.897C742.695 453.011 791.23 499.923 807.851 554.295C822.28 601.485 806.483 665.329 758.267 675.637C710.051 685.944 669.808 635.984 657.212 588.396C638.16 517.04 652.243 437.987 694.679 377.68C737.115 317.374 806.881 277.006 880.5 270.501"
         stroke="#FEC5FB"
         strokeWidth={12}
         progress={drawPath1P}
-        viewBox="520 260 400 430"
+        viewBox="520 250 400 450"
         style={{
-          width: 280,
-          height: 300,
-          left: "20%",
-          top: "25%",
+          width: 380,
+          height: 430,
+          left: "12%",
+          top: "18%",
         }}
       />
       <DrawnPath
         d="M973.861 226.794C1015.92 240.459 1041.39 136.212 1005.93 135.899C977.513 135.649 990.28 214.204 1046.61 229.17C1089.82 240.65 1168.88 147.886 1092.89 84.6262C1022.57 26.0944 1052.01 288.336 1197.12 209.704"
         stroke="#0AE448"
-        strokeWidth={3}
+        strokeWidth={4}
         progress={drawPath2P}
-        viewBox="960 20 260 280"
+        viewBox="955 15 270 290"
         style={{
-          width: 180,
-          height: 200,
-          left: "48%",
-          top: "5%",
+          width: 260,
+          height: 280,
+          left: "50%",
+          top: "2%",
         }}
       />
 
-      {/* ── Background starburst ── */}
+      {/* Starburst (behind text/poly, above paths) */}
       <div
         style={{
           position: "absolute",
@@ -821,60 +736,54 @@ export const GsapSmooth: React.FC = () => {
         <Starburst progress={backOutStrong(bangP)} />
       </div>
 
-      {/* ── Wiggle shape ── */}
+      {/* Wiggle shape */}
       <WiggleShape progress={backOutStrong(wiggleP)} />
 
-      {/* ── Spin shape ── */}
+      {/* Spin shape */}
       <SpinShape progress={backOutStrong(spinP)} />
 
-      {/* ── FFD icon ── */}
-      <FFDIcon progress={backOut(ffdP)} />
+      {/* FFD icon */}
+      <FFDIcon progress={ffdP} />
 
-      {/* ── Sprinkles ── */}
+      {/* Sprinkles */}
       <Sprinkles progress={sprinklesP} />
 
-      {/* ── 3D Hero poly ── */}
-      <HeroPoly
-        bounceProgress={polyBounceP}
-        squashProgress={polySquashP}
-      />
+      {/* 3D polyhedron */}
+      <HeroPoly bounceProgress={polyBounceP} squashProgress={polySquashP} />
 
-      {/* ── "free" text ── */}
+      {/* "free" text */}
       <div
         style={{
           position: "absolute",
           left: "10%",
-          top: "45%",
-          fontSize: "8vw",
+          top: "42%",
+          fontSize: 140,
           fontWeight: 800,
+          letterSpacing: -2,
           transform: `translateX(${freeX}%)`,
         }}
       >
         <AnimatedText
           text="free "
           charProgress={(i) => {
-            // Stagger from random, amount 0.3s over 0.7s duration
             const stagger = seededRandom(i * 31 + 7) * textStaggerTotal;
             const charDur = 0.7;
-            const charStart = stagger;
-            const totalDur = 0.7 + textStaggerTotal;
-            const charP = Math.max(
-              0,
-              Math.min(1, (textP * totalDur - charStart) / charDur),
-            );
+            const totalDur = charDur + textStaggerTotal;
+            const charP = Math.max(0, Math.min(1, (textP * totalDur - stagger) / charDur));
             return expoOut(charP);
           }}
         />
       </div>
 
-      {/* ── "for all" text ── */}
+      {/* "for all" text */}
       <div
         style={{
           position: "absolute",
           left: "41%",
-          top: "45%",
-          fontSize: "8vw",
+          top: "42%",
+          fontSize: 140,
           fontWeight: 800,
+          letterSpacing: -2,
           transform: `translateX(${allX}%)`,
         }}
       >
@@ -883,29 +792,20 @@ export const GsapSmooth: React.FC = () => {
           charProgress={(i) => {
             const stagger = seededRandom(i * 53 + 13) * textStaggerTotal;
             const charDur = 0.7;
-            const charStart = stagger;
-            const totalDur = 0.7 + textStaggerTotal;
-            const charP = Math.max(
-              0,
-              Math.min(1, (textP * totalDur - charStart) / charDur),
-            );
+            const totalDur = charDur + textStaggerTotal;
+            const charP = Math.max(0, Math.min(1, (textP * totalDur - stagger) / charDur));
             return expoOut(charP);
           }}
         />
       </div>
 
-      {/* ── Confetti ── */}
-      <ConfettiField
-        progress={confettiP}
-        durationSec={2}
-        centerX={960}
-        centerY={540}
-      />
+      {/* Confetti */}
+      <ConfettiField progress={confettiP} durationSec={3} />
 
-      {/* ── Plane ── */}
+      {/* Plane */}
       <Plane progress={planeP > 0 ? Easing.inOut(Easing.sin)(planeP) : 0} />
 
-      {/* ── Hand ── */}
+      {/* Hand */}
       <Hand enterProgress={handEnterP} wiggleProgress={handWiggleP} />
     </AbsoluteFill>
   );
