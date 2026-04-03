@@ -22,7 +22,8 @@ const SOURCES_WITH_IDENTITY = new Set([
 const PRIORITY_SOURCES = ['coingecko', 'finnhub', 'nasdaq', 'defillama', 'polymarket', 'pumpfun']
 
 // ── In-Memory Search Index ──────────────────────────────
-// Built once, refreshed every 2 minutes. Turns O(n) per-query fetches into O(1) lookups.
+// Built once, refreshed every 5 minutes. Turns O(n) per-query fetches into O(1) lookups.
+// Stale index is returned while rebuild runs in the background (non-blocking).
 
 interface IndexEntry {
   assetId: string
@@ -53,7 +54,7 @@ interface SearchIndex {
 
 let searchIndex: SearchIndex | null = null
 let indexBuildPromise: Promise<SearchIndex> | null = null
-const INDEX_TTL = 120_000 // 2 minutes
+const INDEX_TTL = 300_000 // 5 minutes — market metadata changes slowly
 
 function resolveImage(displaySource: string, assetId: string, snapshotImg: string | null): string | null {
   if (snapshotImg) return snapshotImg
