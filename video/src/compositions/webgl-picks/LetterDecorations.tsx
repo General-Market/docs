@@ -689,7 +689,7 @@ const AnimatedLetter: React.FC<{
           const adjustedT = Math.max(0, Math.min(1, shapeT - perShapeOffset));
           const adjustedOpacity = Math.max(
             0,
-            shapeOpacity * interpolate(si, [0, shapes.length - 1], [1, 0.4])
+            shapeOpacity * (shapes.length <= 1 ? 1 : interpolate(si, [0, shapes.length - 1], [1, 0.4]))
           );
           return (
             <SvgShape
