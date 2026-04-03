@@ -19,10 +19,12 @@ use super::tick_scheduler::TickScheduler;
 use super::types::{Batch, PlayerPosition};
 
 /// Poll interval when caught up to chain tip (milliseconds).
-/// Only used when cursor == tip — the listener sleeps this long before
-/// checking for new blocks.  On fast L3 chains (~0.25s block time) this
-/// keeps latency under 1 second while avoiding busy-spinning.
-const POLL_INTERVAL_MS: u64 = 250;
+/// On fast L3 chains (~0.25s block time) this keeps latency under 1 second
+/// while avoiding busy-spinning.
+const POLL_INTERVAL_AT_TIP_MS: u64 = 250;
+
+/// Faster poll interval when behind the tip — catch up quickly.
+const POLL_INTERVAL_BEHIND_MS: u64 = 50;
 
 /// Maximum number of blocks to query per eth_getLogs call.
 const MAX_BLOCK_RANGE: u64 = 2000;
@@ -143,14 +145,14 @@ impl ChainListener {
                 Ok(n) => n.as_u64(),
                 Err(e) => {
                     warn!(error = %e, "Failed to get block number, retrying...");
-                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_AT_TIP_MS)).await;
                     continue;
                 }
             };
 
             if cursor > tip {
                 // Caught up — short sleep then re-check
-                tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_AT_TIP_MS)).await;
                 continue;
             }
 
@@ -177,10 +179,12 @@ impl ChainListener {
 
                     cursor = to_block + 1;
 
-                    // If we consumed up to the tip, brief pause for new blocks.
-                    // If still behind, loop immediately — no sleep during catch-up.
+                    // At tip: normal pause. Behind: short pause to avoid busy-spin
+                    // but still catch up fast.
                     if to_block >= tip {
-                        tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+                        tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_AT_TIP_MS)).await;
+                    } else {
+                        tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_BEHIND_MS)).await;
                     }
                 }
                 Err(e) => {
@@ -190,7 +194,7 @@ impl ChainListener {
                         to = to_block,
                         "Failed to process block range, retrying..."
                     );
-                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_AT_TIP_MS)).await;
                 }
             }
         }
