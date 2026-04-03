@@ -118,16 +118,20 @@ function getLetterStyle(
 
   const fontSize = largeFontSize ? 150 : 70;
 
+  // Original CSS: color is transparent (hsla(0,0%,0%,0)), all visible text
+  // comes from the white text-shadow glow. text-shadow uses full #fff —
+  // opacity on the element controls overall visibility.
   return {
     display: "inline-block",
     fontFamily,
     fontSize,
     fontWeight: isBold ? 600 : 200,
     textTransform: "uppercase" as const,
-    color: `rgba(255,255,255,${opacity})`,
+    color: "hsla(0,0%,0%,0)",
+    opacity,
     letterSpacing,
-    textShadow: `0 0 ${shadowBlur}px rgba(255,255,255,${opacity})`,
-    transform: `perspective(1000px) rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
+    textShadow: `0 0 ${shadowBlur}px #fff`,
+    transform: `rotateY(${rotateY}deg) translateZ(${translateZ}px)`,
     transformStyle: "preserve-3d" as const,
     transformOrigin: "50% 50%",
     whiteSpace: "nowrap" as const,
@@ -156,9 +160,10 @@ function getFinalLetterStyle(progress: number): React.CSSProperties {
     fontSize: 30,
     fontWeight: 200,
     textTransform: "uppercase" as const,
-    color: `rgba(255,255,255,${opacity})`,
+    color: "hsla(0,0%,0%,0)",
+    opacity,
     letterSpacing: 14,
-    textShadow: `0 0 ${shadowBlur}px rgba(255,255,255,${opacity})`,
+    textShadow: `0 0 ${shadowBlur}px #fff`,
     whiteSpace: "nowrap" as const,
   };
 }
@@ -195,22 +200,14 @@ const AnimatedPhrase: React.FC<{
 
   const words = phrase.text.split(" ");
 
-  // Flatten all characters with word/char indices for staggering
-  const allChars: { char: string; wordIdx: number; globalIdx: number }[] = [];
-  let globalIdx = 0;
-  words.forEach((word, wordIdx) => {
-    for (const c of word) {
-      allChars.push({ char: c, wordIdx, globalIdx });
-      globalIdx++;
-    }
-    // Space between words (not after last)
-    if (wordIdx < words.length - 1) {
-      allChars.push({ char: "\u00A0", wordIdx, globalIdx });
-      globalIdx++;
-    }
-  });
-
-  const totalChars = allChars.length;
+  // Original: all letters share the same animation — no per-letter stagger.
+  // Uniform progress for every character in the phrase.
+  const progress = interpolate(
+    localFrame,
+    [0, durationFrames],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   return (
     <div
@@ -224,41 +221,41 @@ const AnimatedPhrase: React.FC<{
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        gap: 0,
         overflow: "hidden",
       }}
     >
-      {allChars.map((entry, i) => {
-        // Stagger: each character starts slightly later
-        // In original CSS, all letters in a phrase share the same animation
-        // but the 3D perspective on each letter's parent creates a stagger effect.
-        // We add a small per-character stagger for the cinematic feel.
-        const staggerOffset = (i / Math.max(totalChars - 1, 1)) * 0.1; // 10% stagger spread
-        const charProgress = interpolate(
-          localFrame,
-          [0, durationFrames],
-          [0 - staggerOffset, 1 - staggerOffset],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        );
-
-        const isBold = phrase.boldIndices.includes(entry.wordIdx);
+      {words.map((word, wordIdx) => {
+        const isBold = phrase.boldIndices.includes(wordIdx);
 
         return (
           <span
-            key={i}
+            key={wordIdx}
             style={{
-              display: "inline-block",
-              perspective: 1000,
-              transformOrigin: "50% 50%",
+              // Original: h2 > span { margin: 0 15px }
+              margin: "0 15px",
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
             }}
           >
-            <AnimatedLetter
-              char={entry.char}
-              progress={charProgress}
-              isBold={isBold}
-              largeFontSize={phrase.largeFontSize ?? false}
-              isFinal={phrase.isFinal ?? false}
-            />
+            {Array.from(word).map((char, charIdx) => (
+              <span
+                key={charIdx}
+                style={{
+                  display: "inline-block",
+                  perspective: 1000,
+                  transformOrigin: "50% 50%",
+                }}
+              >
+                <AnimatedLetter
+                  char={char}
+                  progress={progress}
+                  isBold={isBold}
+                  largeFontSize={phrase.largeFontSize ?? false}
+                  isFinal={phrase.isFinal ?? false}
+                />
+              </span>
+            ))}
           </span>
         );
       })}

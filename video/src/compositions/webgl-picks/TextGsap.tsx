@@ -1,394 +1,197 @@
 // Source: https://codepen.io/GreenSock/full/gagNeR
 import React, { useMemo } from "react";
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  interpolate,
-} from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
+import { interpolate as flubberInterpolate } from "flubber";
 
 /**
- * 1:1 reproduction of GreenSock's SplitText character animation demo (gagNeR).
+ * 1:1 reproduction of GreenSock's MorphSVG : convertToPath() demo (gagNeR).
  *
- * The original: a dark canvas with centered quote text. SplitText splits each
- * quote into individual characters. A TimelineMax cycles through 4 quotes in
- * an infinite loop. Each quote animates IN with per-character stagger —
- * characters fly up from below with opacity: 0, rotationX: 80deg, y: 80,
- * using Back.easeOut. After a hold, characters animate OUT — opacity: 0,
- * rotationX: 80deg, y: -80, Back.easeIn. The next quote follows immediately.
+ * The original: dark background (#0e100f), three SVG shapes — orange-gradient
+ * triangle, square, and circle — centered in an SVG viewBox 0 0 760 400.
+ * MorphSVGPlugin.convertToPath() turns <polygon>, <rect>, <circle> into <path>,
+ * then a GSAP timeline morphs them sequentially into the letters A, B, C.
+ * Timeline yoyos with power2.inOut easing. repeat: 20, repeatDelay: 0.5s,
+ * initial delay: 0.5s. Default tween duration: 0.5s.
  *
- * Font: bold sans-serif, white on near-black (#0e100f). Perspective on the
- * container gives the rotationX its 3D depth. Each character is display:
- * inline-block for independent transforms. Stagger: 0.01s per character in,
- * 0.008s per character out. The cycle repeats seamlessly.
+ * Gradients: two linear (grad-1 for triangle, grad-2 for square) and one radial
+ * (grad-3 for circle), all orange-toned (#f8dbb9 → #fb8305).
  */
 
-// ── Quotes (matching the original pen) ────────────────────────────────────────
+// ── SVG Shape paths (convertToPath equivalents) ─────────────────────────────
 
-const QUOTES = [
-  "SplitText makes it easy to break apart the text in an HTML element so that each character, word, and/or line is wrapped in its own <div>.",
-  "That means you can create all sorts of interesting animations using the stagger property in GSAP.",
-  "Now you can easily animate text in ways that used to be extremely difficult.",
-  "SplitText is a membership benefit of Club GreenSock.",
-];
+const TRIANGLE_PATH = "M241,242 L283,157 L326,242 Z";
+const RECT_PATH = "M363,157 L448,157 L448,242 L363,242 Z";
+const CIRCLE_PATH = [
+  "M487.5,200",
+  "C487.5,176.528 506.528,157.5 530,157.5",
+  "C553.472,157.5 572.5,176.528 572.5,200",
+  "C572.5,223.472 553.472,242.5 530,242.5",
+  "C506.528,242.5 487.5,223.472 487.5,200 Z",
+].join(" ");
 
-// ── Timing (frames at 30fps) ──────────────────────────────────────────────────
+// ── Letter paths (exact from original pen's <defs>) ─────────────────────────
 
-const CHAR_IN_DURATION = 18; // frames for each char to complete its entrance
-const CHAR_OUT_DURATION = 14; // frames for each char to complete its exit
-const STAGGER_IN = 0.6; // frames between each char start (entrance)
-const STAGGER_OUT = 0.5; // frames between each char start (exit)
-const HOLD_DURATION = 60; // frames to hold the fully visible text
+const LETTER_A =
+  "M222.8 264.5c0-.7.2-1.6.6-2.8l48.4-134.1c.7-2.2 3.4-3.3 8.2-3.3h6c4.7 0 7.4 1.1 8 3.3l48.4 134.3c.5 1 .7 1.8.7 2.6 0 2.3-3 3.5-8.8 3.5h-1.7c-4.7 0-7.4-1-8.1-3.3l-12-33.4h-60l-11.7 33.4c-.7 2.2-3.4 3.3-8.2 3.3h-1c-5.8 0-8.8-1.2-8.8-3.5zm35.3-48.8H307L285.5 155l-2.7-11.8-3.2 11.8-21.5 60.8z";
 
-// ── Colors & Typography ───────────────────────────────────────────────────────
+const LETTER_B =
+  "M364.6 262.9V132.3c0-4.1 2-6.2 6-6.2h36.6c14.9 0 26.2 3.3 34 9.8a32.5 32.5 0 0 1 11.7 26.4c0 6.8-2.2 13.2-6.7 19.4a29 29 0 0 1-15.7 11.6v.8a53.3 53.3 0 0 1 18.7 10.3c2.5 2.3 4.8 5.5 6.8 9.7s3 8.9 3 13.9c0 27.3-17.7 41-53.2 41h-35.1c-4 0-6.1-2-6.1-6.1zm18-75.1h23.6c8.2 0 15-2.3 20.2-7 5.3-4.6 8-10.5 8-17.6 0-7.2-2.3-12.5-7-16.1-4.6-3.6-12-5.4-22-5.4h-22.9v46zm0 65.7h29.7c9 0 16-2.3 20.8-7a25 25 0 0 0 7.4-19c0-7.8-2.7-13.8-8-18a38 38 0 0 0-23.6-6.2h-26.4v50.2z";
 
-const BG_COLOR = "#0e100f";
-const TEXT_COLOR = "#ffffff";
-const FONT_FAMILY = "'Signika Negative', 'Signika', Helvetica, Arial, sans-serif";
-const FONT_SIZE = 50;
-const LINE_HEIGHT = 1.4;
-const MAX_TEXT_WIDTH = 960;
-const PERSPECTIVE = 400;
+const LETTER_C =
+  "M471.7 197.7c0-48.5 22-72.7 66.2-72.7a82 82 0 0 1 26.8 4.2c8.1 2.8 12.1 5.6 12.1 8.5 0 1.9-.8 4.3-2.5 7.3s-3.2 4.5-4.4 4.5c-.3 0-1.7-.8-4.4-2.3a59.3 59.3 0 0 0-27.2-6.7c-16.5 0-28.6 4.6-36.4 13.7-7.7 9.1-11.6 23.6-11.6 43.4s3.9 34.2 11.5 43.4c7.7 9.2 19.6 13.8 35.7 13.8a66.6 66.6 0 0 0 30-7.7 25 25 0 0 1 5-2.5c1.3 0 2.8 1.5 4.6 4.5 1.7 3 2.6 5.2 2.6 6.5 0 3.2-4.2 6.4-12.7 9.7-8.6 3.4-18.4 5-29.5 5-22.5 0-39-5.9-49.7-17.6-10.7-11.8-16-30.1-16-55z";
 
-// ── Easing functions matching GSAP ────────────────────────────────────────────
+// ── Timing (at 30fps) ───────────────────────────────────────────────────────
+// GSAP 3 default tween duration = 0.5s = 15 frames
+// Timeline: sequential — triangle->A, then square->B, then circle->C
 
-/** GSAP Back.easeOut: overshoot of 1.70158 */
-function backEaseOut(t: number): number {
-  const s = 1.70158;
-  return (t = t - 1) * t * ((s + 1) * t + s) + 1;
+const FPS = 30;
+const MORPH_DURATION = Math.round(0.5 * FPS); // 15 frames per morph
+const INITIAL_DELAY = Math.round(0.5 * FPS); // 15 frames
+const REPEAT_DELAY = Math.round(0.5 * FPS); // 15 frames
+const FORWARD_DURATION = 3 * MORPH_DURATION; // 45 frames (1.5s)
+
+// ── Easing: GSAP power2.inOut ────────────────────────────────────────────────
+
+function power2InOut(t: number): number {
+  if (t < 0.5) return 2 * t * t;
+  return 1 - (-2 * t + 2) ** 2 / 2;
 }
 
-/** GSAP Back.easeIn: overshoot of 1.70158 */
-function backEaseIn(t: number): number {
-  const s = 1.70158;
-  return t * t * ((s + 1) * t - s);
+// ── Build flubber interpolators (memoized) ───────────────────────────────────
+
+interface MorphSet {
+  triangleToA: (t: number) => string;
+  rectToB: (t: number) => string;
+  circleToC: (t: number) => string;
 }
 
-// ── Character layout: split text into chars with word-break awareness ─────────
-
-interface CharData {
-  char: string;
-  index: number;
-  isSpace: boolean;
-  wordIndex: number;
-}
-
-function splitIntoChars(text: string): CharData[] {
-  const chars: CharData[] = [];
-  let wordIndex = 0;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const isSpace = ch === " ";
-    if (isSpace && i > 0 && text[i - 1] !== " ") {
-      wordIndex++;
-    }
-    chars.push({ char: ch, index: i, isSpace, wordIndex });
-  }
-  return chars;
-}
-
-// ── Compute phase timings for a given quote ───────────────────────────────────
-
-interface QuoteTiming {
-  totalFrames: number;
-  chars: CharData[];
-  inEnd: number; // frame when all chars have finished entering
-  outStart: number; // frame when exit animation begins
-}
-
-function computeTiming(text: string): QuoteTiming {
-  const chars = splitIntoChars(text);
-  const nonSpaceCount = chars.filter((c) => !c.isSpace).length;
-
-  // Entrance: last char starts at (nonSpaceCount - 1) * STAGGER_IN, finishes CHAR_IN_DURATION later
-  const inEnd = Math.ceil(
-    (nonSpaceCount - 1) * STAGGER_IN + CHAR_IN_DURATION,
-  );
-
-  // Hold
-  const outStart = inEnd + HOLD_DURATION;
-
-  // Exit: last char starts at (nonSpaceCount - 1) * STAGGER_OUT, finishes CHAR_OUT_DURATION later
-  const outEnd = Math.ceil(
-    outStart + (nonSpaceCount - 1) * STAGGER_OUT + CHAR_OUT_DURATION,
-  );
-
-  // Small gap between quotes
-  const totalFrames = outEnd + 8;
-
-  return { totalFrames, chars, inEnd, outStart };
-}
-
-// ── Per-character animation state ─────────────────────────────────────────────
-
-interface CharAnimState {
-  opacity: number;
-  y: number;
-  rotateX: number;
-  scale: number;
-}
-
-function getCharState(
-  charNonSpaceIndex: number,
-  localFrame: number,
-  timing: QuoteTiming,
-): CharAnimState {
-  // ── Entrance ──
-  const inStart = charNonSpaceIndex * STAGGER_IN;
-  const inProgress = Math.min(
-    1,
-    Math.max(0, (localFrame - inStart) / CHAR_IN_DURATION),
-  );
-  const inEased = backEaseOut(inProgress);
-
-  // ── Exit ──
-  const outStart =
-    timing.outStart + charNonSpaceIndex * STAGGER_OUT;
-  const outProgress = Math.min(
-    1,
-    Math.max(0, (localFrame - outStart) / CHAR_OUT_DURATION),
-  );
-  const outEased = backEaseIn(outProgress);
-
-  // ── Compose ──
-  // Entrance: from { opacity: 0, y: 80, rotateX: 80, scale: 0.8 } to { opacity: 1, y: 0, rotateX: 0, scale: 1 }
-  // Exit: from { opacity: 1, y: 0, rotateX: 0, scale: 1 } to { opacity: 0, y: -80, rotateX: -80, scale: 0.8 }
-
-  if (localFrame < inStart) {
-    // Before entrance
-    return { opacity: 0, y: 80, rotateX: 80, scale: 0.8 };
-  }
-
-  if (localFrame < timing.outStart) {
-    // During or after entrance, before exit
-    return {
-      opacity: inEased,
-      y: 80 * (1 - inEased),
-      rotateX: 80 * (1 - inEased),
-      scale: 0.8 + 0.2 * inEased,
-    };
-  }
-
-  // During exit
+function buildInterpolators(): MorphSet {
   return {
-    opacity: 1 - outEased,
-    y: -80 * outEased,
-    rotateX: -80 * outEased,
-    scale: 1 - 0.2 * outEased,
+    triangleToA: flubberInterpolate(TRIANGLE_PATH, LETTER_A, {
+      maxSegmentLength: 10,
+    }),
+    rectToB: flubberInterpolate(RECT_PATH, LETTER_B, {
+      maxSegmentLength: 10,
+    }),
+    circleToC: flubberInterpolate(CIRCLE_PATH, LETTER_C, {
+      maxSegmentLength: 10,
+    }),
   };
 }
 
-// ── Subtitle text animation ───────────────────────────────────────────────────
-
-const SUBTITLE = "Animate text like a pro.";
-
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Main component ───────────────────────────────────────────────────────────
 
 export const TextGsap: React.FC = () => {
   const frame = useCurrentFrame();
+  const morphs = useMemo(() => buildInterpolators(), []);
 
-  // Pre-compute all quote timings
-  const quoteTimings = useMemo(
-    () => QUOTES.map((q) => computeTiming(q)),
-    [],
-  );
+  // Compute progress within the yoyo cycle
+  // Structure: [delay] [forward] [repeatDelay] [backward] [repeatDelay] [forward] ...
+  const effectiveFrame = frame - INITIAL_DELAY;
 
-  // Total frames for one full cycle of all quotes
-  const cycleDuration = useMemo(
-    () => quoteTimings.reduce((sum, t) => sum + t.totalFrames, 0),
-    [quoteTimings],
-  );
+  // One full yoyo iteration = forward + repeatDelay + backward + repeatDelay
+  const cycleLength = FORWARD_DURATION + REPEAT_DELAY + FORWARD_DURATION + REPEAT_DELAY;
 
-  // Current position within the cycle (loops)
-  const cycleFrame = frame % cycleDuration;
+  let timelineProgress = 0; // 0 = shapes, 1 = letters
 
-  // Determine which quote is active and the local frame within it
-  let accumulated = 0;
-  let activeQuoteIndex = 0;
-  let localFrame = 0;
-  for (let i = 0; i < quoteTimings.length; i++) {
-    if (cycleFrame < accumulated + quoteTimings[i].totalFrames) {
-      activeQuoteIndex = i;
-      localFrame = cycleFrame - accumulated;
-      break;
+  if (effectiveFrame < 0) {
+    // In initial delay — show shapes
+    timelineProgress = 0;
+  } else {
+    const cycleFrame = effectiveFrame % cycleLength;
+
+    if (cycleFrame < FORWARD_DURATION) {
+      // Forward pass: shapes -> letters
+      timelineProgress = cycleFrame / FORWARD_DURATION;
+    } else if (cycleFrame < FORWARD_DURATION + REPEAT_DELAY) {
+      // Hold at letters
+      timelineProgress = 1;
+    } else if (cycleFrame < FORWARD_DURATION + REPEAT_DELAY + FORWARD_DURATION) {
+      // Backward pass (yoyo): letters -> shapes
+      const backFrame = cycleFrame - FORWARD_DURATION - REPEAT_DELAY;
+      timelineProgress = 1 - backFrame / FORWARD_DURATION;
+    } else {
+      // Hold at shapes (repeatDelay before next cycle)
+      timelineProgress = 0;
     }
-    accumulated += quoteTimings[i].totalFrames;
   }
 
-  const activeTiming = quoteTimings[activeQuoteIndex];
-  const activeChars = activeTiming.chars;
+  // The timeline is sequential: 3 morphs, each taking 1/3 of the forward duration.
+  // Map overall timelineProgress to per-shape progress with power2.inOut easing.
+  const morphProgress = (shapeIndex: number): number => {
+    const segmentStart = shapeIndex / 3;
+    const segmentEnd = (shapeIndex + 1) / 3;
+    const raw = interpolate(
+      timelineProgress,
+      [segmentStart, segmentEnd],
+      [0, 1],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    );
+    return power2InOut(raw);
+  };
 
-  // Track non-space character index for stagger
-  let nonSpaceIdx = 0;
+  const progressA = morphProgress(0);
+  const progressB = morphProgress(1);
+  const progressC = morphProgress(2);
 
-  // ── Subtitle: gentle fade in at the start, stays visible ──
-  const subtitleOpacity = interpolate(frame, [0, 30], [0, 0.4], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-  });
-
-  // ── Quote counter indicator ──
-  const counterOpacity = interpolate(frame, [0, 20], [0, 0.3], {
-    extrapolateRight: "clamp",
-  });
+  const pathA = morphs.triangleToA(progressA);
+  const pathB = morphs.rectToB(progressB);
+  const pathC = morphs.circleToC(progressC);
 
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: BG_COLOR,
+        backgroundColor: "#0e100f",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        overflow: "hidden",
       }}
     >
-      {/* Subtle radial gradient overlay for depth */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse at center, rgba(30, 35, 30, 0.3) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Quote counter dots */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 80,
-          left: "50%",
-          transform: "translateX(-50%)",
-          display: "flex",
-          gap: 12,
-          opacity: counterOpacity,
-        }}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 760 400"
+        style={{ maxWidth: 1200, width: "100%" }}
       >
-        {QUOTES.map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i === activeQuoteIndex ? 24 : 8,
-              height: 8,
-              borderRadius: 4,
-              background:
-                i === activeQuoteIndex
-                  ? "rgba(255,255,255,0.6)"
-                  : "rgba(255,255,255,0.15)",
-              transition: "width 0.3s",
-            }}
-          />
-        ))}
-      </div>
+        <defs>
+          <linearGradient
+            id="grad-1"
+            x1="200"
+            y1="300"
+            x2="255"
+            y2="0"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopColor="#f8dbb9" />
+            <stop offset="0.5" stopColor="#fb8305" />
+          </linearGradient>
 
-      {/* GreenSock branding nod — top left */}
-      <div
-        style={{
-          position: "absolute",
-          top: 40,
-          left: 50,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          opacity: 0.25,
-        }}
-      >
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            background: "linear-gradient(135deg, #88ce02, #6ab700)",
-          }}
-        />
-        <span
-          style={{
-            color: "#88ce02",
-            fontFamily: "'Signika Negative', sans-serif",
-            fontSize: 14,
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-          }}
-        >
-          GSAP SplitText
-        </span>
-      </div>
+          <linearGradient
+            id="grad-2"
+            x1="340"
+            y1="42"
+            x2="240"
+            y2="125"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0.1" stopColor="#f8dbb9" />
+            <stop offset="0.5" stopColor="#fb8305" />
+          </linearGradient>
 
-      {/* Main text container with 3D perspective */}
-      <div
-        style={{
-          perspective: PERSPECTIVE,
-          perspectiveOrigin: "50% 50%",
-          maxWidth: MAX_TEXT_WIDTH,
-          textAlign: "center",
-          padding: "0 60px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            lineHeight: LINE_HEIGHT,
-          }}
-        >
-          {activeChars.map((charData, i) => {
-            if (charData.isSpace) {
-              return (
-                <span
-                  key={`${activeQuoteIndex}-${i}`}
-                  style={{
-                    display: "inline-block",
-                    width: FONT_SIZE * 0.3,
-                  }}
-                />
-              );
-            }
+          <radialGradient
+            id="grad-3"
+            cx="460"
+            cy="280"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0.1" stopColor="#f8dbb9" />
+            <stop offset="0.35" stopColor="#fb8305" />
+          </radialGradient>
+        </defs>
 
-            const state = getCharState(nonSpaceIdx, localFrame, activeTiming);
-            nonSpaceIdx++;
-
-            return (
-              <span
-                key={`${activeQuoteIndex}-${i}`}
-                style={{
-                  display: "inline-block",
-                  color: TEXT_COLOR,
-                  fontFamily: FONT_FAMILY,
-                  fontSize: FONT_SIZE,
-                  fontWeight: 300,
-                  opacity: state.opacity,
-                  transform: `translateY(${state.y}px) rotateX(${state.rotateX}deg) scale(${state.scale})`,
-                  transformStyle: "preserve-3d",
-                  backfaceVisibility: "hidden",
-                  willChange: "transform, opacity",
-                }}
-              >
-                {charData.char}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Subtitle */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 130,
-          left: "50%",
-          transform: "translateX(-50%)",
-          opacity: subtitleOpacity,
-          color: "#88ce02",
-          fontFamily: "'Signika Negative', sans-serif",
-          fontSize: 16,
-          fontWeight: 400,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-        }}
-      >
-        {SUBTITLE}
-      </div>
+        <path d={pathA} fill="url(#grad-1)" />
+        <path d={pathB} fill="url(#grad-2)" />
+        <path d={pathC} fill="url(#grad-3)" />
+      </svg>
     </AbsoluteFill>
   );
 };

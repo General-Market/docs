@@ -7,7 +7,7 @@ import {
   interpolate,
 } from 'remotion';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// -- Types --------------------------------------------------------------------
 
 type ShapeType = 'circle' | 'rect' | 'polygon';
 
@@ -27,13 +27,28 @@ interface ShapeInstance {
   seed: number;
 }
 
+type LetterTransform =
+  | 'translateY'       // from +100% to 0% (effect 1)
+  | 'translateYNeg'    // from -100% to 0% (effect 4)
+  | 'translateYNeg50'  // from -50% to 0% (effect 5)
+  | 'translateYAlt'    // alternating +/-350px (effects 3, 7)
+  | 'scale'            // from 0 to 1 (effect 6)
+  | 'rotate'           // alternating Y + rotation (effect 8)
+  | 'translateYRotate';// from -300% + random rotation (effect 9)
+
+type StaggerMode =
+  | 'linear'        // delay = i * stagger
+  | 'centerOut'     // delay = |total/2 - i| * stagger
+  | 'reverse'       // delay = (total - i - 1) * stagger
+  | 'random';       // delay = random(0, stagger)
+
 interface SlideEffect {
   word: string;
   bgColor: string;
   fontFamily: string;
   fontWeight: number;
   textTransform: 'none' | 'uppercase' | 'lowercase';
-  fontSize: number; // vw-ish units mapped to pixels
+  fontSize: number;
   letterSpacing: number;
   textColor: string;
   shapeColors: string[];
@@ -45,18 +60,20 @@ interface SlideEffect {
   // Animation config
   showLetterEasing: (t: number) => number;
   showLetterDuration: number; // frames
-  showLetterStagger: number; // frames per letter
-  showLetterTransform: 'translateY' | 'scale' | 'translateYAlt' | 'rotate';
+  showLetterStagger: number; // frames per letter (interpretation depends on staggerMode)
+  showLetterStaggerMode: StaggerMode;
+  showLetterTransform: LetterTransform;
   showShapeDuration: number;
   showShapeStagger: number;
-  showShapeSpread: number; // how far shapes travel
+  showShapeSpread: number;
   hideLetterDuration: number;
   hideLetterStagger: number;
-  // Special per-letter color overrides
+  hideLetterStaggerMode: StaggerMode;
+  // Special per-letter color overrides (0-indexed)
   letterColorOverrides?: Record<number, string>;
 }
 
-// ── Seeded random ────────────────────────────────────────────────────────────
+// -- Seeded random ------------------------------------------------------------
 
 function seededRandom(seed: number): number {
   const x = Math.sin(seed * 9301 + 49297) * 49297;
@@ -75,7 +92,7 @@ function seededPick<T>(seed: number, arr: T[]): T {
   return arr[seededInt(seed, 0, arr.length - 1)];
 }
 
-// ── Easing helpers ───────────────────────────────────────────────────────────
+// -- Easing helpers -----------------------------------------------------------
 
 const easeOutElastic = (t: number): number => {
   if (t === 0 || t === 1) return t;
@@ -99,10 +116,32 @@ const easeInOutExpo = (t: number): number => {
   return (2 - Math.pow(2, -20 * t + 10)) / 2;
 };
 
-// ── Slide definitions ────────────────────────────────────────────────────────
+// -- Stagger delay computation ------------------------------------------------
+
+function computeStaggerDelay(
+  index: number,
+  total: number,
+  stagger: number,
+  mode: StaggerMode,
+  seed: number
+): number {
+  switch (mode) {
+    case 'centerOut':
+      return Math.abs(total / 2 - index) * stagger;
+    case 'reverse':
+      return (total - index - 1) * stagger;
+    case 'random':
+      return seededRange(seed + index * 7, 0, stagger);
+    case 'linear':
+    default:
+      return index * stagger;
+  }
+}
+
+// -- Slide definitions --------------------------------------------------------
 
 const SLIDES: SlideEffect[] = [
-  // 1. Eurhythmic — Josefin Sans, blue bg, colorful shapes, elastic letters
+  // 1. Eurhythmic -- Josefin Sans 700, blue bg, colorful filled shapes, elastic translateY from below
   {
     word: 'Eurhythmic',
     bgColor: '#4cabef',
@@ -121,14 +160,16 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeOutElastic,
     showLetterDuration: 24,
     showLetterStagger: 1.2,
+    showLetterStaggerMode: 'linear',
     showLetterTransform: 'translateY',
     showShapeDuration: 10,
     showShapeStagger: 1,
     showShapeSpread: 200,
     hideLetterDuration: 24,
     hideLetterStagger: 1.2,
+    hideLetterStaggerMode: 'linear',
   },
-  // 2. Aquarius — Arbutus Slab, deep blue bg, blue circle outlines
+  // 2. Aquarius -- Arbutus Slab 400, deep blue bg, blue circle outlines, center-out stagger
   {
     word: 'Aquarius',
     bgColor: '#0406e6',
@@ -146,15 +187,17 @@ const SLIDES: SlideEffect[] = [
     totalShapes: 10,
     showLetterEasing: easeOutElastic,
     showLetterDuration: 24,
-    showLetterStagger: 1.8,
+    showLetterStagger: 1.8, // |total/2-i|*60 => center-out
+    showLetterStaggerMode: 'centerOut',
     showLetterTransform: 'translateY',
     showShapeDuration: 21,
     showShapeStagger: 1.8,
     showShapeSpread: 100,
     hideLetterDuration: 10,
     hideLetterStagger: 0.8,
+    hideLetterStaggerMode: 'linear',
   },
-  // 3. Lycanthropy — Questrial, dark bg, black shapes, alternating Y entry
+  // 3. Lycanthropy -- Questrial 400, dark bg, black shapes, alternating Y entry
   {
     word: 'Lycanthropy',
     bgColor: '#272526',
@@ -173,14 +216,16 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeOutExpo,
     showLetterDuration: 15,
     showLetterStagger: 1.8,
+    showLetterStaggerMode: 'linear',
     showLetterTransform: 'translateYAlt',
     showShapeDuration: 60,
     showShapeStagger: 0.6,
     showShapeSpread: 300,
     hideLetterDuration: 6,
     hideLetterStagger: 0.6,
+    hideLetterStaggerMode: 'linear',
   },
-  // 4. Wonderland — Poppins, grey bg, colorful filled shapes on top
+  // 4. Wonderland -- Poppins 800, grey bg, colorful filled shapes on top, enters from ABOVE
   {
     word: 'Wonderland',
     bgColor: '#b9b9b9',
@@ -199,14 +244,16 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeInOutExpo,
     showLetterDuration: 12,
     showLetterStagger: 1.8,
-    showLetterTransform: 'translateY',
+    showLetterStaggerMode: 'linear',
+    showLetterTransform: 'translateYNeg',
     showShapeDuration: 12,
     showShapeStagger: 0.6,
     showShapeSpread: 400,
     hideLetterDuration: 6,
     hideLetterStagger: 0.6,
+    hideLetterStaggerMode: 'reverse',
   },
-  // 5. Screenager — Bungee Outline, purple bg, colorful stroke shapes on top
+  // 5. Screenager -- Bungee Outline 400, purple bg, colorful stroke shapes on top, enters from -50%
   {
     word: 'Screenager',
     bgColor: '#5900ce',
@@ -225,14 +272,17 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeInExpo,
     showLetterDuration: 10,
     showLetterStagger: 3,
-    showLetterTransform: 'translateY',
+    showLetterStaggerMode: 'linear',
+    showLetterTransform: 'translateYNeg50',
     showShapeDuration: 12,
     showShapeStagger: 0.15,
     showShapeSpread: 150,
     hideLetterDuration: 10,
     hideLetterStagger: 0.6,
+    hideLetterStaggerMode: 'linear',
   },
-  // 6. Callipygian — Hammersmith One, near-black bg, grey/white/red shapes
+  // 6. Callipygian -- Hammersmith One 400, near-black bg, grey/white/red shapes, scale entry
+  //    char5 and char9 (1-indexed) = both 'i' letters in red
   {
     word: 'Callipygian',
     bgColor: '#1b1a1a',
@@ -251,15 +301,17 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeInExpo,
     showLetterDuration: 12,
     showLetterStagger: 1.8,
+    showLetterStaggerMode: 'linear',
     showLetterTransform: 'scale',
     showShapeDuration: 21,
     showShapeStagger: 1.2,
     showShapeSpread: 400,
     hideLetterDuration: 6,
     hideLetterStagger: 0.6,
-    letterColorOverrides: { 4: '#dc2e2e', 8: '#dc2e2e' }, // 'p' and 'a' in red
+    hideLetterStaggerMode: 'reverse',
+    letterColorOverrides: { 4: '#dc2e2e', 8: '#dc2e2e' }, // 0-indexed: 'i' at positions 4 and 8
   },
-  // 7. Eviternity — Volkhov, red bg, red/black/white stroke shapes
+  // 7. Eviternity -- Volkhov 700, red bg, red/black/white stroke shapes, alternating Y
   {
     word: 'Eviternity',
     bgColor: '#bf2525',
@@ -278,14 +330,16 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeOutExpo,
     showLetterDuration: 12,
     showLetterStagger: 1.8,
+    showLetterStaggerMode: 'linear',
     showLetterTransform: 'translateYAlt',
     showShapeDuration: 15,
     showShapeStagger: 0.9,
     showShapeSpread: 200,
     hideLetterDuration: 8,
     hideLetterStagger: 0.6,
+    hideLetterStaggerMode: 'linear',
   },
-  // 8. Jumbuck — Josefin Sans lowercase, light bg, colorful shapes on top, elastic
+  // 8. Jumbuck -- Josefin Sans 700 lowercase, light bg, colorful shapes on top, reverse stagger + rotation
   {
     word: 'Jumbuck',
     bgColor: '#d6d1d1',
@@ -304,14 +358,16 @@ const SLIDES: SlideEffect[] = [
     showLetterEasing: easeOutElastic,
     showLetterDuration: 12,
     showLetterStagger: 2.4,
+    showLetterStaggerMode: 'reverse',
     showLetterTransform: 'rotate',
     showShapeDuration: 60,
     showShapeStagger: 0.6,
     showShapeSpread: 250,
     hideLetterDuration: 10,
     hideLetterStagger: 0.9,
+    hideLetterStaggerMode: 'reverse',
   },
-  // 9. Babooner — Montserrat Alternates, black bg, pink/blue/purple shapes
+  // 9. Babooner -- Montserrat Alternates 700, black bg, pink/blue/purple rects+polygons, random stagger + translateY+rotate
   {
     word: 'Babooner',
     bgColor: '#000000',
@@ -329,25 +385,26 @@ const SLIDES: SlideEffect[] = [
     totalShapes: 1,
     showLetterEasing: easeInOutExpo,
     showLetterDuration: 24,
-    showLetterStagger: 0,
-    showLetterTransform: 'translateY',
+    showLetterStagger: 2.4, // used as max for random delay
+    showLetterStaggerMode: 'random',
+    showLetterTransform: 'translateYRotate',
     showShapeDuration: 60,
     showShapeStagger: 0.6,
     showShapeSpread: 300,
     hideLetterDuration: 24,
-    hideLetterStagger: 0,
+    hideLetterStagger: 2.4,
+    hideLetterStaggerMode: 'random',
   },
 ];
 
 const SLIDE_COUNT = SLIDES.length;
-// Each slide gets ~33 frames visible (300 / 9), with transition overlap
 const TRANSITION_FRAMES = 6;
 
-// ── Google Fonts (loaded as @font-face) ──────────────────────────────────────
+// -- Google Fonts -------------------------------------------------------------
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@700&family=Volkhov:wght@700&family=Hammersmith+One&family=Arbutus+Slab&family=Poppins:wght@800&family=Questrial&family=Bungee+Outline&family=Josefin+Sans:wght@700&display=swap');`;
 
-// ── Generate shapes per letter ───────────────────────────────────────────────
+// -- Generate shapes per letter -----------------------------------------------
 
 function generateLetterShapes(
   slideIndex: number,
@@ -368,7 +425,9 @@ function generateLetterShapes(
       offsetY: seededRange(s + 3, -10, 10),
       targetX: seededRange(s + 4, -slide.showShapeSpread, slide.showShapeSpread),
       targetY: seededRange(s + 5, -slide.showShapeSpread, slide.showShapeSpread),
-      targetScale: seededRange(s + 6, 0.15, 0.7),
+      targetScale: slideIndex === 8
+        ? seededRange(s + 6, 1.5, 2.0) // Effect 9: large shapes
+        : seededRange(s + 6, 0.15, 0.7),
       targetRotate: seededRange(s + 7, -90, 90),
       seed: s,
     });
@@ -376,11 +435,11 @@ function generateLetterShapes(
   return shapes;
 }
 
-// ── SVG Shape component ──────────────────────────────────────────────────────
+// -- SVG Shape component ------------------------------------------------------
 
 const SvgShape: React.FC<{
   shape: ShapeInstance;
-  progress: number; // 0 → 1 for show animation
+  progress: number;
   opacity: number;
   letterCenterX: number;
   letterCenterY: number;
@@ -397,8 +456,9 @@ const SvgShape: React.FC<{
   const strokeAttr = shape.filled ? 'none' : shape.color;
 
   const r = letterWidth * 0.5;
-  const w = letterWidth * seededRange(shape.seed + 10, 0.3, 0.8);
-  const h = letterHeight * seededRange(shape.seed + 11, 0.3, 0.8);
+  // Source: randomBetween(0.05, 0.5) for both w and h
+  const w = letterWidth * seededRange(shape.seed + 10, 0.05, 0.5);
+  const h = letterHeight * seededRange(shape.seed + 11, 0.05, 0.5);
 
   if (shape.type === 'circle') {
     return (
@@ -431,7 +491,7 @@ const SvgShape: React.FC<{
     );
   }
 
-  // polygon (triangle)
+  // polygon (triangle) -- matches source: top vertex, bottom-right, bottom-left
   const triSize = letterWidth * 0.5;
   const points = `0,${-triSize} ${triSize * 0.866},${triSize * 0.5} ${-triSize * 0.866},${triSize * 0.5}`;
   return (
@@ -446,7 +506,7 @@ const SvgShape: React.FC<{
   );
 };
 
-// ── Single letter with shapes ────────────────────────────────────────────────
+// -- Single letter with shapes ------------------------------------------------
 
 const AnimatedLetter: React.FC<{
   char: string;
@@ -454,8 +514,8 @@ const AnimatedLetter: React.FC<{
   total: number;
   slide: SlideEffect;
   slideIndex: number;
-  showProgress: number; // 0..1 for the whole slide
-  hideProgress: number; // 0..1 for hide phase
+  showProgress: number;
+  hideProgress: number;
   phase: 'show' | 'visible' | 'hide';
 }> = ({ char, index, total, slide, slideIndex, showProgress, hideProgress, phase }) => {
   const shapes = useMemo(
@@ -463,9 +523,19 @@ const AnimatedLetter: React.FC<{
     [slideIndex, index, slide]
   );
 
-  // Letter animation timing (staggered)
-  const letterDelay = index * slide.showLetterStagger;
-  const totalLetterFrames = slide.showLetterDuration + (total - 1) * slide.showLetterStagger;
+  // Letter animation timing (staggered per mode)
+  const letterDelay = computeStaggerDelay(
+    index, total, slide.showLetterStagger, slide.showLetterStaggerMode, slideIndex * 1000
+  );
+  const maxDelay = (() => {
+    let max = 0;
+    for (let i = 0; i < total; i++) {
+      const d = computeStaggerDelay(i, total, slide.showLetterStagger, slide.showLetterStaggerMode, slideIndex * 1000);
+      if (d > max) max = d;
+    }
+    return max;
+  })();
+  const totalLetterFrames = slide.showLetterDuration + maxDelay;
   const letterStart = letterDelay / Math.max(totalLetterFrames, 1);
   const letterEnd = (letterDelay + slide.showLetterDuration) / Math.max(totalLetterFrames, 1);
 
@@ -480,8 +550,18 @@ const AnimatedLetter: React.FC<{
     letterT = 1;
   } else {
     // hide
-    const hideDelay = index * slide.hideLetterStagger;
-    const totalHideFrames = slide.hideLetterDuration + (total - 1) * slide.hideLetterStagger;
+    const hideDelay = computeStaggerDelay(
+      index, total, slide.hideLetterStagger, slide.hideLetterStaggerMode, slideIndex * 2000
+    );
+    const maxHideDelay = (() => {
+      let max = 0;
+      for (let i = 0; i < total; i++) {
+        const d = computeStaggerDelay(i, total, slide.hideLetterStagger, slide.hideLetterStaggerMode, slideIndex * 2000);
+        if (d > max) max = d;
+      }
+      return max;
+    })();
+    const totalHideFrames = slide.hideLetterDuration + maxHideDelay;
     const hStart = hideDelay / Math.max(totalHideFrames, 1);
     const hEnd = (hideDelay + slide.hideLetterDuration) / Math.max(totalHideFrames, 1);
     const raw = interpolate(hideProgress, [hStart, hEnd], [1, 0], {
@@ -491,29 +571,60 @@ const AnimatedLetter: React.FC<{
     letterT = raw;
   }
 
-  // Letter transform
+  // Letter transform per type
   let letterTransform = '';
   let letterOpacity = letterT;
 
-  if (slide.showLetterTransform === 'translateY') {
-    const yOffset = interpolate(letterT, [0, 1], [100, 0]);
-    letterTransform = `translateY(${yOffset}%)`;
-    letterOpacity = letterT;
-  } else if (slide.showLetterTransform === 'translateYAlt') {
-    // Alternating direction per letter index
-    const direction = index % 2 === 0 ? -1 : 1;
-    const yOffset = interpolate(letterT, [0, 1], [direction * 350, 0]);
-    letterTransform = `translateY(${yOffset}px)`;
-    letterOpacity = letterT > 0.05 ? 1 : 0;
-  } else if (slide.showLetterTransform === 'scale') {
-    const s = interpolate(letterT, [0, 1], [0, 1]);
-    letterTransform = `scale(${s})`;
-  } else if (slide.showLetterTransform === 'rotate') {
-    // Alternating entry direction + rotation (effect 8)
-    const direction = index % 2 === 0 ? -1 : 1;
-    const yOffset = interpolate(letterT, [0, 1], [direction * 80, 0]);
-    const rot = interpolate(letterT, [0, 1], [90, 0]);
-    letterTransform = `translateY(${yOffset}%) rotate(${rot}deg)`;
+  switch (slide.showLetterTransform) {
+    case 'translateY': {
+      // From +100% to 0% (below to center)
+      const yOffset = interpolate(letterT, [0, 1], [100, 0]);
+      letterTransform = `translateY(${yOffset}%)`;
+      break;
+    }
+    case 'translateYNeg': {
+      // From -100% to 0% (above to center) -- effect 4
+      const yOffset = interpolate(letterT, [0, 1], [-100, 0]);
+      letterTransform = `translateY(${yOffset}%)`;
+      break;
+    }
+    case 'translateYNeg50': {
+      // From -50% to 0% (slightly above) -- effect 5
+      const yOffset = interpolate(letterT, [0, 1], [-50, 0]);
+      letterTransform = `translateY(${yOffset}%)`;
+      break;
+    }
+    case 'translateYAlt': {
+      // Alternating direction per letter index -- effects 3, 7
+      const direction = index % 2 === 0 ? -1 : 1;
+      const yOffset = interpolate(letterT, [0, 1], [direction * 350, 0]);
+      letterTransform = `translateY(${yOffset}px)`;
+      letterOpacity = letterT > 0.05 ? 1 : 0;
+      break;
+    }
+    case 'scale': {
+      // Scale from 0 to 1 -- effect 6
+      const s = interpolate(letterT, [0, 1], [0, 1]);
+      letterTransform = `scale(${s})`;
+      break;
+    }
+    case 'rotate': {
+      // Alternating Y + rotation -- effect 8
+      // Source: translateY: i%2===0 ? ['-80%','0%'] : ['80%','0%'], rotate: [90,0]
+      const direction = index % 2 === 0 ? -1 : 1;
+      const yOffset = interpolate(letterT, [0, 1], [direction * 80, 0]);
+      const rot = interpolate(letterT, [0, 1], [90, 0]);
+      letterTransform = `translateY(${yOffset}%) rotate(${rot}deg)`;
+      break;
+    }
+    case 'translateYRotate': {
+      // From -300% + random rotation to 0 -- effect 9
+      const initRotate = seededRange(slideIndex * 500 + index * 37, -50, 50);
+      const yOffset = interpolate(letterT, [0, 1], [-300, 0]);
+      const rot = interpolate(letterT, [0, 1], [initRotate, 0]);
+      letterTransform = `translateY(${yOffset}%) rotate(${rot}deg)`;
+      break;
+    }
   }
 
   // Shape animation timing
@@ -530,7 +641,6 @@ const AnimatedLetter: React.FC<{
       extrapolateRight: 'clamp',
     });
     shapeT = easeOutExpo(raw);
-    // Shapes fade in then out
     if (raw < 0.1) {
       shapeOpacity = interpolate(raw, [0, 0.1], [0, 0.8]);
     } else {
@@ -541,7 +651,6 @@ const AnimatedLetter: React.FC<{
     }
   }
 
-  // Approximate letter metrics for shape positioning
   const charWidth = slide.fontSize * 0.6;
   const charHeight = slide.fontSize * 0.85;
   const letterColor =
@@ -561,7 +670,6 @@ const AnimatedLetter: React.FC<{
         willChange: 'transform, opacity',
       }}
     >
-      {/* SVG shapes behind letter (or on top if shapesOnTop) */}
       <svg
         style={{
           position: 'absolute',
@@ -577,7 +685,6 @@ const AnimatedLetter: React.FC<{
         viewBox={`${-(slide.showShapeSpread + charWidth / 2)} ${-(slide.showShapeSpread + charHeight / 2)} ${slide.showShapeSpread * 2 + charWidth} ${slide.showShapeSpread * 2 + charHeight}`}
       >
         {shapes.map((shape, si) => {
-          // Per-shape stagger within the letter
           const perShapeOffset = si * 0.05;
           const adjustedT = Math.max(0, Math.min(1, shapeT - perShapeOffset));
           const adjustedOpacity = Math.max(
@@ -603,7 +710,7 @@ const AnimatedLetter: React.FC<{
   );
 };
 
-// ── Single slide ─────────────────────────────────────────────────────────────
+// -- Single slide -------------------------------------------------------------
 
 const Slide: React.FC<{
   slide: SlideEffect;
@@ -628,7 +735,6 @@ const Slide: React.FC<{
 
   return (
     <AbsoluteFill>
-      {/* Background with slide transition */}
       <div
         style={{
           position: 'absolute',
@@ -639,7 +745,6 @@ const Slide: React.FC<{
           willChange: 'transform',
         }}
       />
-      {/* Word */}
       <div
         style={{
           position: 'absolute',
@@ -689,13 +794,12 @@ const Slide: React.FC<{
   );
 };
 
-// ── Main composition ─────────────────────────────────────────────────────────
+// -- Main composition ---------------------------------------------------------
 
 export const LetterDecorations: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  // Total frames available per slide
   const totalSlideDuration = durationInFrames / SLIDE_COUNT;
   const showDuration = totalSlideDuration * 0.35;
   const holdDuration = totalSlideDuration * 0.35;
@@ -710,11 +814,9 @@ export const LetterDecorations: React.FC = () => {
         const slideEnd = slideStart + totalSlideDuration;
         const localFrame = frame - slideStart;
 
-        // Determine if this slide is visible (with some overlap for transitions)
         const isVisible = frame >= slideStart - TRANSITION_FRAMES && frame < slideEnd + TRANSITION_FRAMES;
         if (!isVisible) return null;
 
-        // Phase determination
         let phase: 'show' | 'visible' | 'hide' = 'show';
         let showProgress = 0;
         let hideProgress = 0;
@@ -735,7 +837,6 @@ export const LetterDecorations: React.FC = () => {
           );
         }
 
-        // Background slide transition (incoming from below for "next")
         if (localFrame < 0) {
           bgTranslateY = 100;
         } else if (phase === 'hide') {
@@ -760,7 +861,6 @@ export const LetterDecorations: React.FC = () => {
         );
       })}
 
-      {/* Header overlay */}
       <div
         style={{
           position: 'absolute',
@@ -777,7 +877,6 @@ export const LetterDecorations: React.FC = () => {
         Decorative Letter Animations
       </div>
 
-      {/* Navigation arrows (decorative, matching original) */}
       <div
         style={{
           position: 'absolute',
@@ -789,28 +888,14 @@ export const LetterDecorations: React.FC = () => {
           zIndex: 10000,
         }}
       >
-        <svg
-          viewBox="0 0 90 64"
-          width={36}
-          height={26}
-          fill="#fff"
-          opacity={0.5}
-        >
+        <svg viewBox="0 0 90 64" width={36} height={26} fill="#fff" opacity={0.5}>
           <path d="M88.148 30.124H6.404L33.208 3.32a1.877 1.877 0 0 0 0-2.652 1.877 1.877 0 0 0-2.652 0L.552 30.67a1.942 1.942 0 0 0-.409.612 1.86 1.86 0 0 0 0 1.432c.094.233.233.44.41.612L30.555 63.33c.367.368.847.552 1.328.552.48 0 .96-.184 1.327-.548a1.877 1.877 0 0 0 0-2.652L6.404 33.874h81.743a1.876 1.876 0 0 0 0-3.75z" />
         </svg>
-        <svg
-          viewBox="0 0 90 64"
-          width={36}
-          height={26}
-          fill="#fff"
-          opacity={0.5}
-          style={{ transform: 'rotate(180deg)' }}
-        >
+        <svg viewBox="0 0 90 64" width={36} height={26} fill="#fff" opacity={0.5} style={{ transform: 'rotate(180deg)' }}>
           <path d="M88.148 30.124H6.404L33.208 3.32a1.877 1.877 0 0 0 0-2.652 1.877 1.877 0 0 0-2.652 0L.552 30.67a1.942 1.942 0 0 0-.409.612 1.86 1.86 0 0 0 0 1.432c.094.233.233.44.41.612L30.555 63.33c.367.368.847.552 1.328.552.48 0 .96-.184 1.327-.548a1.877 1.877 0 0 0 0-2.652L6.404 33.874h81.743a1.876 1.876 0 0 0 0-3.75z" />
         </svg>
       </div>
 
-      {/* Slide counter */}
       <div
         style={{
           position: 'absolute',

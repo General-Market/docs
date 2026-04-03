@@ -104,11 +104,8 @@ export const ScrollReveal: React.FC = () => {
     easing: Easing.out(Easing.cubic),
   });
 
-  // Radial gradient overlay opacity — subtle vignette
-  const vignetteOpacity = interpolate(progress, [0, 0.3], [0.3, 0.5], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Radial gradient overlay — static 0.5 opacity in the original
+  const vignetteOpacity = 0.5;
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000", overflow: "hidden" }}>
@@ -217,7 +214,7 @@ export const ScrollReveal: React.FC = () => {
                   textAlign: "center",
                   color: "#fff",
                   margin: 0,
-                  marginRight: `${width * 0.00075}em`,
+                  marginRight: "0.075em",
                   marginBottom: "0.1em",
                   textTransform: "none",
                   pointerEvents: "auto",

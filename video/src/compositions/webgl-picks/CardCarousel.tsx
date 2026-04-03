@@ -1,4 +1,5 @@
 // Source: https://codepen.io/ecemgo/full/vYPadZz
+// Original repo: https://github.com/ecemgo/mini-samples-great-tricks/tree/main/music-player-with-slider
 import React, { useMemo } from "react";
 import {
   AbsoluteFill,
@@ -6,225 +7,102 @@ import {
   useVideoConfig,
   interpolate,
   Easing,
+  Img,
+  staticFile,
 } from "remotion";
 
-/* ─── Song data (matches original CodePen) ─── */
+/* ── Song data (verbatim from original app.js) ── */
 
 interface Song {
   title: string;
-  artist: string;
-  /** Gradient used to generate album art procedurally */
-  coverGradient: [string, string];
-  /** Accent shape for the album art */
-  accent: "circle" | "triangle" | "diamond" | "lines" | "burst" | "wave" | "flame";
+  name: string;
+  img: string;
 }
 
 const SONGS: Song[] = [
   {
     title: "Symphony",
-    artist: "Clean Bandit ft. Zara Larsson",
-    coverGradient: ["#1a0a2e", "#e8451c"],
-    accent: "flame",
+    name: "Clean Bandit ft. Zara Larsson",
+    img: staticFile("compositions/card-carousel/img-1.jpg"),
   },
   {
     title: "Pawn It All",
-    artist: "Alicia Keys",
-    coverGradient: ["#0d1b2a", "#c850c0"],
-    accent: "triangle",
+    name: "Alicia Keys",
+    img: staticFile("compositions/card-carousel/img-2.jpg"),
   },
   {
     title: "Seni Dert Etmeler",
-    artist: "Madrigal",
-    coverGradient: ["#1a0a14", "#e87420"],
-    accent: "lines",
+    name: "Madrigal",
+    img: staticFile("compositions/card-carousel/img-3.jpg"),
   },
   {
     title: "Instant Crush",
-    artist: "Daft Punk ft. Julian Casablancas",
-    coverGradient: ["#0a0a1a", "#00d4ff"],
-    accent: "circle",
+    name: "Daft Punk ft. Julian Casablancas",
+    img: staticFile("compositions/card-carousel/img-4.jpg"),
   },
   {
     title: "As It Was",
-    artist: "Harry Styles",
-    coverGradient: ["#1a1a1a", "#ff4444"],
-    accent: "diamond",
+    name: "Harry Styles",
+    img: staticFile("compositions/card-carousel/img-5.jpg"),
   },
   {
     title: "Physical",
-    artist: "Dua Lipa",
-    coverGradient: ["#1a0820", "#a855f7"],
-    accent: "burst",
+    name: "Dua Lipa",
+    img: staticFile("compositions/card-carousel/img-6.jpg"),
   },
   {
     title: "Delicate",
-    artist: "Taylor Swift",
-    coverGradient: ["#001428", "#3b82f6"],
-    accent: "wave",
+    name: "Taylor Swift",
+    img: staticFile("compositions/card-carousel/img-7.jpg"),
   },
 ];
 
-/* ─── Coverflow geometry (matching Swiper config) ─── */
+/* ── Swiper coverflow config (verbatim from original app.js) ── */
 
+const INITIAL_SLIDE = 3;
 const CARD_SIZE = 200; // max-width: 200px, aspect-ratio: 1/1
-const CARD_RADIUS = 10;
-const SPACE_BETWEEN = 40;
+const CARD_RADIUS = 10; // border-radius: 10px
+const SPACE_BETWEEN = 40; // spaceBetween: 40
 
-/** Swiper coverflowEffect parameters */
-const COVERFLOW_ROTATE = 25; // degrees
-const COVERFLOW_DEPTH = 50; // px
-const COVERFLOW_STRETCH = 0;
-const COVERFLOW_MODIFIER = 1;
+const COVERFLOW_ROTATE = 25; // rotate: 25
+const COVERFLOW_STRETCH = 0; // stretch: 0
+const COVERFLOW_DEPTH = 50; // depth: 50
+const COVERFLOW_MODIFIER = 1; // modifier: 1
 
-/* ─── Background animation (matches @keyframes slidein) ─── */
+/* ── Background animation (from @keyframes slidein, 120s) ── */
 
-const BG_CYCLE_FRAMES = 3600; // 120s at 30fps, full cycle
+const BG_CYCLE_FRAMES = 3600; // 120s at 30fps
 
-/* ─── Timing ─── */
+/* ── CSS values (verbatim from original style.css) ── */
 
-const SLIDE_HOLD = 75; // frames per slide (2.5s at 30fps)
-const TRANSITION_FRAMES = 24; // 0.8s smooth slide transition
-const ENTRY_FRAMES = 20; // initial fade-in duration
-const PROGRESS_SPEED = 0.7; // how fast the progress bar fills per slide
-
-/* ─── Colors ─── */
-
-const PRIMARY_CLR = "rgba(228, 228, 229, 1)";
-const PRIMARY_CLR_DIM = "rgba(228, 228, 229, 0.6)";
+const PRIMARY_CLR = "rgba(228, 228, 229, 1)"; // --primary-clr
+const SWIPER_PADDING_TOP = 40; // .swiper padding: 40px 0 100px
+const SWIPER_PADDING_BOTTOM = 100;
+const MUSIC_PLAYER_WIDTH = 380; // .music-player width: 380px
+const PROGRESS_HEIGHT = 7; // #progress height: 7px
+const PROGRESS_BG = "rgba(163, 162, 164, 0.4)";
+const PROGRESS_THUMB_BG = "rgba(163, 162, 164, 0.9)";
+const PROGRESS_THUMB_SIZE = 16;
+const CONTROL_SIZE = 50; // .controls button width: 50px
 const CONTROL_BG = "rgba(163, 162, 164, 0.3)";
 const CONTROL_BORDER = "rgba(255, 255, 255, 0.3)";
-const PROGRESS_BG = "rgba(163, 162, 164, 0.4)";
-const PROGRESS_THUMB = "rgba(163, 162, 164, 0.9)";
+const CONTROL_SHADOW = "0 10px 20px rgba(5, 36, 28, 0.3)";
+const CONTROL_MARGIN = 20; // .controls button margin: 20px
+const CENTER_BUTTON_SCALE = 1.3; // .controls button:nth-child(2) scale(1.3)
 
-/* ─── Helpers ─── */
+/* ── Timing ── */
+
+const SLIDE_HOLD = 75; // frames per slide (~2.5s at 30fps)
+const TRANSITION_FRAMES = 24;
+const ENTRY_FRAMES = 20;
+const PROGRESS_SPEED = 0.7;
+
+/* ── Helpers ── */
 
 const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v));
 
-/* ─── Album art generator (procedural covers) ─── */
-
-const AlbumArt: React.FC<{
-  song: Song;
-  size: number;
-}> = ({ song, size }) => {
-  const [c1, c2] = song.coverGradient;
-
-  const accentElement = useMemo(() => {
-    const cx = size / 2;
-    const cy = size / 2;
-
-    switch (song.accent) {
-      case "circle":
-        return (
-          <circle
-            cx={cx}
-            cy={cy}
-            r={size * 0.3}
-            fill="none"
-            stroke={c2}
-            strokeWidth={3}
-            opacity={0.9}
-          />
-        );
-      case "triangle":
-        return (
-          <polygon
-            points={`${cx},${cy - size * 0.3} ${cx - size * 0.26},${cy + size * 0.2} ${cx + size * 0.26},${cy + size * 0.2}`}
-            fill="none"
-            stroke={c2}
-            strokeWidth={2.5}
-            opacity={0.85}
-          />
-        );
-      case "diamond":
-        return (
-          <polygon
-            points={`${cx},${cy - size * 0.28} ${cx + size * 0.2},${cy} ${cx},${cy + size * 0.28} ${cx - size * 0.2},${cy}`}
-            fill={c2}
-            opacity={0.4}
-          />
-        );
-      case "lines":
-        return (
-          <g opacity={0.6}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <line
-                key={i}
-                x1={size * 0.2}
-                y1={cy - size * 0.2 + i * (size * 0.1)}
-                x2={size * 0.8}
-                y2={cy - size * 0.2 + i * (size * 0.1)}
-                stroke={c2}
-                strokeWidth={2}
-              />
-            ))}
-          </g>
-        );
-      case "burst": {
-        const rays = 8;
-        return (
-          <g opacity={0.7}>
-            {Array.from({ length: rays }).map((_, i) => {
-              const angle = (i / rays) * Math.PI * 2;
-              return (
-                <line
-                  key={i}
-                  x1={cx + Math.cos(angle) * size * 0.1}
-                  y1={cy + Math.sin(angle) * size * 0.1}
-                  x2={cx + Math.cos(angle) * size * 0.35}
-                  y2={cy + Math.sin(angle) * size * 0.35}
-                  stroke={c2}
-                  strokeWidth={2}
-                />
-              );
-            })}
-          </g>
-        );
-      }
-      case "wave":
-        return (
-          <path
-            d={`M ${size * 0.15} ${cy} Q ${size * 0.35} ${cy - size * 0.2} ${cx} ${cy} Q ${size * 0.65} ${cy + size * 0.2} ${size * 0.85} ${cy}`}
-            fill="none"
-            stroke={c2}
-            strokeWidth={3}
-            opacity={0.7}
-          />
-        );
-      case "flame":
-        return (
-          <ellipse
-            cx={cx}
-            cy={cy - size * 0.05}
-            rx={size * 0.15}
-            ry={size * 0.25}
-            fill={c2}
-            opacity={0.5}
-          />
-        );
-    }
-  }, [song.accent, size, c2]);
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      style={{ borderRadius: CARD_RADIUS }}
-    >
-      <defs>
-        <radialGradient id={`bg-${song.title}`} cx="50%" cy="50%" r="80%">
-          <stop offset="0%" stopColor={c2} stopOpacity={0.3} />
-          <stop offset="100%" stopColor={c1} stopOpacity={1} />
-        </radialGradient>
-      </defs>
-      <rect width={size} height={size} fill={`url(#bg-${song.title})`} />
-      {accentElement}
-    </svg>
-  );
-};
-
-/* ─── Play icon SVG ─── */
+/* ── Play/control icon SVGs (matching Font Awesome solid icons from original) ── */
 
 const PlayIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={PRIMARY_CLR}>
@@ -244,13 +122,13 @@ const ForwardIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   </svg>
 );
 
-/* ─── Main component ─── */
+/* ── Main component ── */
 
 export const CardCarousel: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
 
-  /* ─── Entry fade ─── */
+  /* Entry fade */
   const entryOpacity = interpolate(frame, [0, ENTRY_FRAMES], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
@@ -261,27 +139,22 @@ export const CardCarousel: React.FC = () => {
     easing: Easing.out(Easing.cubic),
   });
 
-  /* ─── Background pan (matches @keyframes slidein) ─── */
+  /* Background animation (matches @keyframes slidein exactly)
+     0%,100%: background-position: 20% 0%; background-size: 3400px
+     50%:     background-position: 100% 0%; background-size: 2400px
+     animation: slidein 120s forwards infinite alternate */
   const bgProgress = (frame % BG_CYCLE_FRAMES) / BG_CYCLE_FRAMES;
-  const bgX = interpolate(
-    bgProgress < 0.5 ? bgProgress * 2 : 2 - bgProgress * 2,
-    [0, 1],
-    [20, 100],
-  );
-  const bgSize = interpolate(
-    bgProgress < 0.5 ? bgProgress * 2 : 2 - bgProgress * 2,
-    [0, 1],
-    [3400, 2400],
-  );
+  const bgT = bgProgress < 0.5 ? bgProgress * 2 : 2 - bgProgress * 2;
+  const bgX = interpolate(bgT, [0, 1], [20, 100]);
+  const bgSize = interpolate(bgT, [0, 1], [3400, 2400]);
 
-  /* ─── Current slide index (auto-advance with smooth transitions) ─── */
+  /* Current slide index (auto-advance, matching initialSlide: 3) */
   const totalCycleFrames = SLIDE_HOLD * SONGS.length;
   const cycleFrame = frame % totalCycleFrames;
   const rawSlideIndex = cycleFrame / SLIDE_HOLD;
   const currentSlideInt = Math.floor(rawSlideIndex);
   const slideTransitionProgress = rawSlideIndex - currentSlideInt;
 
-  // Smooth transition: ease the last portion of each slide hold
   const transitionT = clamp(
     (slideTransitionProgress * SLIDE_HOLD - (SLIDE_HOLD - TRANSITION_FRAMES)) /
       TRANSITION_FRAMES,
@@ -290,46 +163,38 @@ export const CardCarousel: React.FC = () => {
   );
   const easedT = Easing.inOut(Easing.cubic)(transitionT);
 
-  // The initial slide is index 3 (matching initialSlide: 3 in Swiper config)
-  const baseIndex = 3;
   const activeSlideFloat =
-    ((baseIndex + currentSlideInt + easedT) % SONGS.length);
+    (INITIAL_SLIDE + currentSlideInt + easedT) % SONGS.length;
   const activeSlideIndex =
-    (baseIndex + currentSlideInt) % SONGS.length;
+    (INITIAL_SLIDE + currentSlideInt) % SONGS.length;
   const nextSlideIndex =
-    (baseIndex + currentSlideInt + 1) % SONGS.length;
+    (INITIAL_SLIDE + currentSlideInt + 1) % SONGS.length;
 
-  /* ─── Current song info (for music player) ─── */
+  /* Song info for music player (original: songName.textContent / artistName.textContent) */
   const currentSong = SONGS[activeSlideIndex];
   const nextSong = SONGS[nextSlideIndex];
 
-  // Text crossfade during transition
-  const textSwapT = clamp(easedT * 3 - 1, 0, 1); // starts fading at ~33% of transition
+  const textSwapT = clamp(easedT * 3 - 1, 0, 1);
   const displayTitle = textSwapT > 0.5 ? nextSong.title : currentSong.title;
-  const displayArtist = textSwapT > 0.5 ? nextSong.artist : currentSong.artist;
+  const displayArtist = textSwapT > 0.5 ? nextSong.name : currentSong.name;
   const textOpacity = textSwapT > 0.5
     ? interpolate(textSwapT, [0.5, 1], [0, 1])
     : interpolate(textSwapT, [0, 0.5], [1, 0.3]);
 
-  /* ─── Progress bar ─── */
-  const progressInSlide = slideTransitionProgress;
-  const progressValue = interpolate(progressInSlide, [0, 0.85], [0, PROGRESS_SPEED], {
+  /* Progress bar */
+  const progressValue = interpolate(slideTransitionProgress, [0, 0.85], [0, PROGRESS_SPEED], {
     extrapolateRight: "clamp",
   });
 
-  /* ─── Play button pulse ─── */
-  const pulseScale = 1.3 + Math.sin(frame * 0.08) * 0.02;
-
-  /* ─── Carousel card layout ─── */
-
+  /* Layout: cards positioned to match .swiper { padding: 40px 0 100px } */
   const centerX = width / 2;
-  const centerY = height * 0.38; // cards sit in upper portion, player below
+  const swiperTop = (height - CARD_SIZE - SWIPER_PADDING_TOP - SWIPER_PADDING_BOTTOM - 260) / 2 + SWIPER_PADDING_TOP;
+  const centerY = swiperTop + CARD_SIZE / 2;
 
+  /* Carousel card geometry */
   const cards = useMemo(() => {
     return SONGS.map((song, i) => {
-      // Distance from center in slide units
       const offset = i - activeSlideFloat;
-      // Wrap around for infinite feel
       const wrappedOffset =
         offset > SONGS.length / 2
           ? offset - SONGS.length
@@ -337,35 +202,27 @@ export const CardCarousel: React.FC = () => {
             ? offset + SONGS.length
             : offset;
 
-      /* ─── Coverflow transforms (matching Swiper coverflow parameters) ─── */
-      const normalizedOffset = wrappedOffset;
-      const absOffset = Math.abs(normalizedOffset);
+      const absOffset = Math.abs(wrappedOffset);
 
-      // Rotation: cards rotate away from center
+      // Swiper coverflow transforms (matching coverflowEffect config exactly)
       const rotateY =
-        -normalizedOffset *
-        COVERFLOW_ROTATE *
-        COVERFLOW_MODIFIER;
+        -wrappedOffset * COVERFLOW_ROTATE * COVERFLOW_MODIFIER;
 
-      // Depth: cards pushed back from center
-      const translateZ = -absOffset * COVERFLOW_DEPTH * COVERFLOW_MODIFIER;
+      const translateZ =
+        -absOffset * COVERFLOW_DEPTH * COVERFLOW_MODIFIER;
 
-      // X translation: spacing between cards
       const translateX =
-        normalizedOffset * (CARD_SIZE + SPACE_BETWEEN) +
-        normalizedOffset * COVERFLOW_STRETCH * COVERFLOW_MODIFIER;
+        wrappedOffset * (CARD_SIZE + SPACE_BETWEEN) +
+        wrappedOffset * COVERFLOW_STRETCH * COVERFLOW_MODIFIER;
 
-      // Scale: center card slightly larger
       const scale = interpolate(absOffset, [0, 1, 3], [1, 0.92, 0.85], {
         extrapolateRight: "clamp",
       });
 
-      // Opacity: fade distant cards
       const opacity = interpolate(absOffset, [0, 2.5, 4], [1, 0.7, 0.3], {
         extrapolateRight: "clamp",
       });
 
-      // Z-index: center card on top
       const zIndex = Math.round((10 - absOffset) * 10);
 
       return {
@@ -382,33 +239,6 @@ export const CardCarousel: React.FC = () => {
     });
   }, [activeSlideFloat]);
 
-  /* ─── Wavy background streaks ─── */
-  const wavePath1 = useMemo(() => {
-    const t = frame * 0.005;
-    const points: string[] = [];
-    for (let x = -100; x <= width + 100; x += 40) {
-      const y =
-        height * 0.65 +
-        Math.sin(x * 0.003 + t) * 60 +
-        Math.sin(x * 0.007 + t * 1.5) * 30;
-      points.push(`${x},${y}`);
-    }
-    return `M ${points[0]} ${points.slice(1).map((p) => `L ${p}`).join(" ")}`;
-  }, [frame, width, height]);
-
-  const wavePath2 = useMemo(() => {
-    const t = frame * 0.004 + 2;
-    const points: string[] = [];
-    for (let x = -100; x <= width + 100; x += 40) {
-      const y =
-        height * 0.7 +
-        Math.sin(x * 0.004 + t) * 50 +
-        Math.cos(x * 0.006 + t * 0.8) * 25;
-      points.push(`${x},${y}`);
-    }
-    return `M ${points[0]} ${points.slice(1).map((p) => `L ${p}`).join(" ")}`;
-  }, [frame, width, height]);
-
   return (
     <AbsoluteFill
       style={{
@@ -416,55 +246,19 @@ export const CardCarousel: React.FC = () => {
         transform: `scale(${entryScale})`,
       }}
     >
-      {/* ─── Background: dark purple gradient with slow pan ─── */}
+      {/* Background: original bg.jpg with @keyframes slidein animation */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: `
-            radial-gradient(ellipse at ${bgX}% 30%, rgba(40, 15, 60, 1) 0%, transparent 60%),
-            radial-gradient(ellipse at ${100 - bgX}% 70%, rgba(20, 8, 40, 0.8) 0%, transparent 50%),
-            linear-gradient(180deg, #0d0415 0%, #150a28 40%, #0a0612 100%)
-          `,
-          backgroundSize: `${bgSize}px auto`,
+          backgroundImage: `url(${staticFile("compositions/card-carousel/bg.jpg")})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: `${bgX}% 0%`,
+          backgroundSize: `${bgSize}px`,
         }}
       />
 
-      {/* ─── Subtle wavy light streaks ─── */}
-      <svg
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-        viewBox={`0 0 ${width} ${height}`}
-      >
-        <defs>
-          <linearGradient id="streak-grad-1" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="30%" stopColor="rgba(160, 120, 200, 0.08)" />
-            <stop offset="50%" stopColor="rgba(180, 140, 220, 0.12)" />
-            <stop offset="70%" stopColor="rgba(160, 120, 200, 0.08)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-          <linearGradient id="streak-grad-2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="40%" stopColor="rgba(140, 100, 180, 0.06)" />
-            <stop offset="60%" stopColor="rgba(140, 100, 180, 0.09)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-        </defs>
-        <path
-          d={wavePath1}
-          fill="none"
-          stroke="url(#streak-grad-1)"
-          strokeWidth={2}
-        />
-        <path
-          d={wavePath2}
-          fill="none"
-          stroke="url(#streak-grad-2)"
-          strokeWidth={1.5}
-        />
-      </svg>
-
-      {/* ─── Backdrop blur overlay ─── */}
+      {/* Backdrop blur (original: backdrop-filter: blur(8px) on body) */}
       <div
         style={{
           position: "absolute",
@@ -474,7 +268,7 @@ export const CardCarousel: React.FC = () => {
         }}
       />
 
-      {/* ─── Card carousel ─── */}
+      {/* Card carousel */}
       <div
         style={{
           position: "absolute",
@@ -488,7 +282,7 @@ export const CardCarousel: React.FC = () => {
         {cards
           .sort((a, b) => a.zIndex - b.zIndex)
           .map((card) => {
-            const { song, index, translateX, translateZ, rotateY, scale, opacity, zIndex, absOffset } = card;
+            const { song, index, translateX, translateZ, rotateY, scale, opacity, zIndex } = card;
 
             return (
               <div
@@ -498,6 +292,7 @@ export const CardCarousel: React.FC = () => {
                   left: centerX - CARD_SIZE / 2,
                   top: centerY - CARD_SIZE / 2,
                   width: CARD_SIZE,
+                  height: CARD_SIZE,
                   zIndex,
                   transformStyle: "preserve-3d",
                   transform: [
@@ -509,101 +304,115 @@ export const CardCarousel: React.FC = () => {
                   opacity,
                 }}
               >
-                {/* ─── Card image ─── */}
-                <div
+                {/* Album cover image (original: .swiper-slide img) */}
+                <Img
+                  src={song.img}
                   style={{
                     width: CARD_SIZE,
                     height: CARD_SIZE,
+                    objectFit: "cover",
                     borderRadius: CARD_RADIUS,
-                    overflow: "hidden",
-                    boxShadow:
-                      absOffset < 0.5
-                        ? "0 20px 60px rgba(0, 0, 0, 0.5)"
-                        : "0 10px 30px rgba(0, 0, 0, 0.3)",
+                    userSelect: "none",
+                    pointerEvents: "none",
                   }}
-                >
-                  <AlbumArt song={song} size={CARD_SIZE} />
-                </div>
+                />
 
-                {/* ─── Reflection (CSS box-reflect simulation) ─── */}
+                {/* Reflection: original uses -webkit-box-reflect: below -5px
+                    linear-gradient(transparent, transparent, rgba(0, 0, 0, 0.4))
+                    Remotion renders via Puppeteer/Chrome so box-reflect works,
+                    but for safety we simulate it with a flipped duplicate. */}
                 <div
                   style={{
+                    position: "relative",
                     width: CARD_SIZE,
                     height: CARD_SIZE * 0.5,
-                    marginTop: -5, // -5px gap matching original
-                    borderRadius: CARD_RADIUS,
+                    marginTop: -5, // -5px gap from original box-reflect
                     overflow: "hidden",
                     transform: "scaleY(-1)",
                     transformOrigin: "top center",
+                    borderRadius: CARD_RADIUS,
+                    // Original gradient: linear-gradient(transparent, transparent, rgba(0, 0, 0, 0.4))
+                    // Two transparent stops then 0.4 opacity black
                     maskImage:
-                      "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 60%)",
+                      "linear-gradient(to bottom, transparent 0%, transparent 33%, rgba(0, 0, 0, 0.4) 100%)",
                     WebkitMaskImage:
-                      "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 60%)",
+                      "linear-gradient(to bottom, transparent 0%, transparent 33%, rgba(0, 0, 0, 0.4) 100%)",
                   }}
                 >
-                  <AlbumArt song={song} size={CARD_SIZE} />
+                  <Img
+                    src={song.img}
+                    style={{
+                      width: CARD_SIZE,
+                      height: CARD_SIZE,
+                      objectFit: "cover",
+                      borderRadius: CARD_RADIUS,
+                    }}
+                  />
                 </div>
               </div>
             );
           })}
       </div>
 
-      {/* ─── Music player ─── */}
+      {/* Music player (original: .music-player) */}
       <div
         style={{
           position: "absolute",
           left: "50%",
-          top: centerY + CARD_SIZE / 2 + CARD_SIZE * 0.5 + 30,
+          top: centerY + CARD_SIZE / 2 + SWIPER_PADDING_BOTTOM - 20,
           transform: "translateX(-50%)",
           display: "flex",
           flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          width: 380,
+          color: PRIMARY_CLR,
+          width: MUSIC_PLAYER_WIDTH,
           padding: "10px 30px",
+          borderRadius: 20, // border-radius: 20px
         }}
       >
-        {/* ─── Title ─── */}
+        {/* Title: original .music-player h1 — font-size: 1.5rem, font-weight: 600, line-height: 1.6 */}
         <div
           style={{
-            fontSize: 24,
+            fontSize: 24, // 1.5rem
             fontWeight: 600,
             color: PRIMARY_CLR,
-            fontFamily: "'Nunito', system-ui, sans-serif",
+            fontFamily: "'Nunito', sans-serif",
             lineHeight: 1.6,
             textAlign: "center",
             opacity: interpolate(textOpacity, [0.3, 1], [0.7, 1]),
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            maxWidth: 360,
+            maxWidth: MUSIC_PLAYER_WIDTH - 60,
           }}
         >
           {displayTitle}
         </div>
 
-        {/* ─── Artist ─── */}
+        {/* Artist: original .music-player p — font-size: 1rem, font-weight: 400, opacity: 0.6 */}
         <div
           style={{
-            fontSize: 16,
+            fontSize: 16, // 1rem
             fontWeight: 400,
-            color: PRIMARY_CLR_DIM,
-            fontFamily: "'Nunito', system-ui, sans-serif",
+            color: PRIMARY_CLR,
+            fontFamily: "'Nunito', sans-serif",
+            opacity: 0.6 * interpolate(textOpacity, [0.3, 1], [0.6, 1]),
             textAlign: "center",
-            opacity: interpolate(textOpacity, [0.3, 1], [0.6, 1]),
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            maxWidth: 360,
+            maxWidth: MUSIC_PLAYER_WIDTH - 60,
           }}
         >
           {displayArtist}
         </div>
 
-        {/* ─── Progress bar ─── */}
+        {/* Progress bar: original #progress — height: 7px, bg: rgba(163,162,164,0.4), margin: 32px 0 24px */}
         <div
           style={{
             width: "100%",
-            height: 7,
+            height: PROGRESS_HEIGHT,
             background: PROGRESS_BG,
             borderRadius: 4,
             marginTop: 32,
@@ -611,7 +420,6 @@ export const CardCarousel: React.FC = () => {
             position: "relative",
           }}
         >
-          {/* ─── Filled portion ─── */}
           <div
             style={{
               position: "absolute",
@@ -623,63 +431,65 @@ export const CardCarousel: React.FC = () => {
               borderRadius: 4,
             }}
           />
-          {/* ─── Thumb ─── */}
+          {/* Thumb: original 16px, rgba(163,162,164,0.9), outline: 4px solid var(--primary-clr) */}
           <div
             style={{
               position: "absolute",
               left: `${progressValue * 100}%`,
               top: "50%",
               transform: "translate(-50%, -50%)",
-              width: 16,
-              height: 16,
+              width: PROGRESS_THUMB_SIZE,
+              height: PROGRESS_THUMB_SIZE,
               borderRadius: "50%",
-              background: PROGRESS_THUMB,
+              background: PROGRESS_THUMB_BG,
               outline: `4px solid ${PRIMARY_CLR}`,
               boxShadow: "0 6px 10px rgba(5, 36, 28, 0.3)",
             }}
           />
         </div>
 
-        {/* ─── Controls ─── */}
+        {/* Controls: original .controls button — 50px, margin: 20px, center button scale(1.3) */}
         <div
           style={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            gap: 40,
-            marginTop: 20,
           }}
         >
           {/* Backward */}
           <div
             style={{
-              width: 50,
-              height: 50,
+              width: CONTROL_SIZE,
+              height: CONTROL_SIZE,
+              margin: CONTROL_MARGIN,
               borderRadius: "50%",
               background: CONTROL_BG,
               border: `1px solid ${CONTROL_BORDER}`,
-              boxShadow: "0 10px 20px rgba(5, 36, 28, 0.3)",
+              boxShadow: CONTROL_SHADOW,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              fontSize: "1.1rem",
             }}
           >
             <BackwardIcon />
           </div>
 
-          {/* Play/Pause (1.3x scale) */}
+          {/* Play/Pause — original: transform: scale(1.3), no animation */}
           <div
             style={{
-              width: 50,
-              height: 50,
+              width: CONTROL_SIZE,
+              height: CONTROL_SIZE,
+              margin: CONTROL_MARGIN,
               borderRadius: "50%",
               background: CONTROL_BG,
               border: `1px solid ${CONTROL_BORDER}`,
-              boxShadow: "0 10px 20px rgba(5, 36, 28, 0.3)",
+              boxShadow: CONTROL_SHADOW,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              transform: `scale(${pulseScale})`,
+              transform: `scale(${CENTER_BUTTON_SCALE})`,
+              fontSize: "1.1rem",
             }}
           >
             <PlayIcon size={20} />
@@ -688,15 +498,17 @@ export const CardCarousel: React.FC = () => {
           {/* Forward */}
           <div
             style={{
-              width: 50,
-              height: 50,
+              width: CONTROL_SIZE,
+              height: CONTROL_SIZE,
+              margin: CONTROL_MARGIN,
               borderRadius: "50%",
               background: CONTROL_BG,
               border: `1px solid ${CONTROL_BORDER}`,
-              boxShadow: "0 10px 20px rgba(5, 36, 28, 0.3)",
+              boxShadow: CONTROL_SHADOW,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              fontSize: "1.1rem",
             }}
           >
             <ForwardIcon />

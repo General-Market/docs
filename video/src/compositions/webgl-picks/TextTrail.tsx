@@ -11,19 +11,27 @@ import {
 /**
  * 1:1 reproduction of Codrops "Text Trail Effect" (Demo 1).
  *
- * Original: A slideshow of 3 slides. Each slide has a centered image and ~11
- * copies of a word stacked vertically in a flex column. Text copies are styled
- * as either filled (white), stroked (transparent fill + white stroke), or
- * bottom-offset. On slide transition, text copies hide sequentially from center
- * outward (80ms stagger), then the image parallax-slides out/in, then the new
- * slide's text copies reveal from outer edges inward to center (80ms stagger).
+ * Original: 3 slides, each with 11 stacked text copies in a flex column.
+ * Font: Kanit 900, uppercase, 17vh, line-height 0.75.
+ * Colors: #1c1423 bg, #fff slide text, #ff00c4 accent.
  *
- * Font: Kanit 900, uppercase, ~17vh, line-height 0.75.
- * Colors: #1c1423 background, #fff text, #ff00c4 accent.
+ * Default state: only the 6th child (index 5, center) has opacity 1. All
+ * others start at opacity 0.
  *
- * Here: slide transitions driven by frame count. 3 slides cycle through the
- * 300-frame duration. Each transition occupies ~90 frames. Mouse interaction
- * doesn't exist in the original (it's prev/next buttons) — we auto-advance.
+ * show() animation (reveals incoming slide text):
+ *   Phase 1 — loopShow: show copies from outside inward (pos 5→0), 80ms stagger.
+ *   Phase 2 — loopHide: hide copies from outside inward (pos 5→1), 80ms stagger.
+ *   Result: a wave converges to center, leaves only center copy visible.
+ *
+ * hide() animation (hides current slide text):
+ *   Phase 1 — loopShow: show copies from center outward (pos 1→5), 80ms stagger.
+ *   Phase 2 — loopHide: hide copies from center outward (pos 0→5), 80ms stagger.
+ *   Halfway callback (between phases): triggers image swap.
+ *   Result: a wave expands from center, then everything disappears.
+ *
+ * Image parallax: wrap and inner slide in opposite directions.
+ *   Hide: 0.3s Quint.easeOut, wrap → ±110%, inner → ∓100%.
+ *   Show: 0.7s Quint.easeOut, wrap from ±110% → 0, inner from ∓100% → 0.
  */
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -32,17 +40,17 @@ type TextStyle = "filled" | "stroke" | "stroke-bottom" | "filled-bottom";
 
 interface TextCopy {
   style: TextStyle;
-  isFull: boolean; // flex: none (takes natural height) vs flex: 1
+  isFull: boolean; // true = flex: none (content-sized), false = flex: 1
 }
 
 interface SlideData {
   word: string;
-  imageGradient: string; // CSS gradient standing in for the photo
+  imageGradient: string;
   copies: TextCopy[];
 }
 
 // ── Slide configuration ────────────────────────────────────────────────────
-// Replicates the exact 11-copy structure from the HTML for each slide.
+// Exact 11-copy structure from the HTML. Each slide is identical in layout.
 
 const SLIDES: SlideData[] = [
   {
@@ -55,7 +63,7 @@ const SLIDES: SlideData[] = [
       { style: "stroke", isFull: true },
       { style: "stroke", isFull: false },
       { style: "filled", isFull: false },
-      { style: "filled", isFull: true }, // middle (index 5)
+      { style: "filled", isFull: true }, // center (index 5)
       { style: "filled-bottom", isFull: false },
       { style: "filled", isFull: false },
       { style: "stroke", isFull: true },
@@ -101,125 +109,135 @@ const SLIDES: SlideData[] = [
   },
 ];
 
-// ── Animation timing ───────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────
 
 const TOTAL_COPIES = 11;
 const MIDDLE_IDX = Math.floor(TOTAL_COPIES / 2); // 5
-const STAGGER_FRAMES = 2.4; // ~80ms at 30fps
-const SLIDE_HOLD_FRAMES = 60; // frames a slide is fully visible before transitioning
-
-// Image parallax slide duration in frames
-const IMAGE_SLIDE_FRAMES = 21; // 0.7s show, 9 frames (0.3s) hide — we use 21 for show
-
-// ── Color constants ────────────────────────────────────────────────────────
 
 const BG_COLOR = "#1c1423";
 const TEXT_COLOR = "#ffffff";
 const STROKE_WIDTH = 2;
 
-// ── Helper: compute per-copy opacity during a trail animation ──────────────
+// Timing in frames (at 30fps, 80ms ≈ 2.4 frames)
+const STAGGER_FRAMES = 2.4;
+
+// Original idle time after trail completes: loopEndIddleTime = 80ms = 1 stagger
+const IDLE_FRAMES = STAGGER_FRAMES;
+
+// show() has 6 show steps + 5 hide steps + idle
+// hide() has 5 show steps + 6 hide steps + idle
+const SHOW_STEPS = MIDDLE_IDX + 1; // 6 (pos 5→0)
+const HIDE_SHOW_STEPS = MIDDLE_IDX; // 5 (pos 1→5)
+const SHOW_HIDE_STEPS = MIDDLE_IDX; // 5 (pos 5→1, center excluded)
+const HIDE_HIDE_STEPS = MIDDLE_IDX + 1; // 6 (pos 0→5)
+
+const SHOW_DURATION = (SHOW_STEPS + SHOW_HIDE_STEPS) * STAGGER_FRAMES + IDLE_FRAMES;
+const HIDE_DURATION = (HIDE_SHOW_STEPS + HIDE_HIDE_STEPS) * STAGGER_FRAMES + IDLE_FRAMES;
+
+// Image animation durations (original: hide 0.3s, show 0.7s at 30fps)
+const IMAGE_HIDE_FRAMES = 9; // 0.3s
+const IMAGE_SHOW_FRAMES = 21; // 0.7s
+
+const SLIDE_HOLD_FRAMES = 60;
+
+// Quint.easeOut equivalent
+const quintOut = Easing.out(Easing.poly(5));
+
+// ── Trail opacity computation ──────────────────────────────────────────────
 
 /**
- * Computes the opacity of each text copy during the show/hide trail animation.
+ * Replicates the original show() two-phase trail:
+ *   Phase 1: loopShow — show copies from outside in (pos middleIdx→0).
+ *   Phase 2: loopHide — hide copies from outside in (pos middleIdx→1). Center stays.
  *
- * Show: copies appear from outer edges toward center.
- *   - Position 5 (furthest from center, both up and down) appears first,
- *     then 4, 3, 2, 1, 0 (center). Each separated by STAGGER_FRAMES.
- *
- * Hide: copies disappear from center outward.
- *   - Position 1 (nearest to center on each side) hides first,
- *     then 2, 3, 4, 5. Center (0) stays visible until the end.
- *
- * @param progress 0..1 through the trail phase
- * @param phase "show" or "hide"
- * @returns opacity for each of the 11 copies
+ * @param frameInPhase frames elapsed since show() started
+ * @returns opacity array for all 11 copies
  */
-function computeTrailOpacities(
-  progress: number,
-  phase: "show" | "hide",
-): number[] {
+function computeShowTrail(frameInPhase: number): number[] {
   const opacities = new Array(TOTAL_COPIES).fill(0);
-  const totalSteps = MIDDLE_IDX + 1; // 6 steps (positions 0..5)
 
-  if (phase === "show") {
-    // Show from outside in: position MIDDLE_IDX first, then MIDDLE_IDX-1, ..., 0
-    for (let pos = MIDDLE_IDX; pos >= 0; pos--) {
-      const stepIndex = MIDDLE_IDX - pos; // 0, 1, 2, 3, 4, 5
-      const stepStart = stepIndex / totalSteps;
-      const stepEnd = (stepIndex + 1) / totalSteps;
-      const vis = interpolate(progress, [stepStart, stepEnd], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      });
-
-      // "up" side
+  // Phase 1: show from outside in — pos goes 5, 4, 3, 2, 1, 0
+  for (let step = 0; step < SHOW_STEPS; step++) {
+    const pos = MIDDLE_IDX - step; // 5, 4, 3, 2, 1, 0
+    const stepFrame = step * STAGGER_FRAMES;
+    if (frameInPhase >= stepFrame) {
       const upIdx = MIDDLE_IDX - pos;
-      if (upIdx >= 0 && upIdx < TOTAL_COPIES) {
-        opacities[upIdx] = Math.max(opacities[upIdx], vis);
-      }
-      // "down" side
       const downIdx = MIDDLE_IDX + pos;
-      if (downIdx >= 0 && downIdx < TOTAL_COPIES) {
-        opacities[downIdx] = Math.max(opacities[downIdx], vis);
-      }
+      if (upIdx >= 0 && upIdx < TOTAL_COPIES) opacities[upIdx] = 1;
+      if (downIdx >= 0 && downIdx < TOTAL_COPIES) opacities[downIdx] = 1;
     }
-  } else {
-    // Hide from center outward: position MIDDLE_IDX (center) hides last.
-    // First: show all copies (they start visible), then hide them one by one.
-    // The sequence: pos 1 hides first, then 2, 3, 4, 5.
-    // Then after all outer copies hidden, center (pos 0) hides.
+  }
 
-    // First half of hide: show copies from pos=1 outward (this is the "show" part
-    // of the hide animation in the original — it shows copies before hiding them)
-    // Actually in the original hide():
-    //   loopShow starts at pos=1, increments to MIDDLE_IDX (shows outer copies)
-    //   Then loopHide from pos=0 to MIDDLE_IDX (hides from center outward)
-
-    const showPhaseEnd = 0.45;
-    const hidePhaseStart = 0.45;
-
-    // Show phase of hide: pos=1..5 appear sequentially
-    for (let pos = 1; pos <= MIDDLE_IDX; pos++) {
-      const stepIndex = pos - 1;
-      const steps = MIDDLE_IDX;
-      const stepStart = (stepIndex / steps) * showPhaseEnd;
-      const stepEnd = ((stepIndex + 1) / steps) * showPhaseEnd;
-      const vis = interpolate(progress, [stepStart, stepEnd], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      });
-
+  // Phase 2: hide from outside in — pos goes 5, 4, 3, 2, 1 (center excluded)
+  const phase2Start = SHOW_STEPS * STAGGER_FRAMES;
+  for (let step = 0; step < SHOW_HIDE_STEPS; step++) {
+    const pos = MIDDLE_IDX - step; // 5, 4, 3, 2, 1
+    const stepFrame = phase2Start + step * STAGGER_FRAMES;
+    if (frameInPhase >= stepFrame) {
       const upIdx = MIDDLE_IDX - pos;
-      if (upIdx >= 0) opacities[upIdx] = vis;
       const downIdx = MIDDLE_IDX + pos;
-      if (downIdx < TOTAL_COPIES) opacities[downIdx] = vis;
+      if (upIdx >= 0 && upIdx < TOTAL_COPIES) opacities[upIdx] = 0;
+      if (downIdx >= 0 && downIdx < TOTAL_COPIES) opacities[downIdx] = 0;
     }
+  }
 
-    // Center always visible during show phase
-    if (progress < hidePhaseStart + 0.1) {
-      opacities[MIDDLE_IDX] = 1;
-    }
+  // Center always stays visible once shown (step=5 in phase 1, pos=0)
+  const centerShownAt = (SHOW_STEPS - 1) * STAGGER_FRAMES;
+  if (frameInPhase >= centerShownAt) {
+    opacities[MIDDLE_IDX] = 1;
+  }
 
-    // Hide phase: pos=0 (center) first, then 1, 2, 3, 4, 5
-    for (let pos = 0; pos <= MIDDLE_IDX; pos++) {
-      const steps = MIDDLE_IDX + 1;
-      const stepStart = hidePhaseStart + (pos / steps) * (1 - hidePhaseStart);
-      const stepEnd =
-        hidePhaseStart + ((pos + 1) / steps) * (1 - hidePhaseStart);
-      const fadeOut = interpolate(progress, [stepStart, stepEnd], [1, 0], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      });
+  return opacities;
+}
 
+/**
+ * Replicates the original hide() two-phase trail:
+ *   Phase 1: loopShow — show copies from center outward (pos 1→5).
+ *   Phase 2: loopHide — hide ALL from center outward (pos 0→5).
+ *
+ * @param frameInPhase frames elapsed since hide() started
+ * @returns opacity array for all 11 copies
+ */
+function computeHideTrail(frameInPhase: number): number[] {
+  // Start: only center visible (default resting state)
+  const opacities = new Array(TOTAL_COPIES).fill(0);
+  opacities[MIDDLE_IDX] = 1;
+
+  // Phase 1: show from center outward — pos goes 1, 2, 3, 4, 5
+  for (let step = 0; step < HIDE_SHOW_STEPS; step++) {
+    const pos = step + 1; // 1, 2, 3, 4, 5
+    const stepFrame = step * STAGGER_FRAMES;
+    if (frameInPhase >= stepFrame) {
       const upIdx = MIDDLE_IDX - pos;
-      if (upIdx >= 0) opacities[upIdx] = Math.min(opacities[upIdx], fadeOut);
       const downIdx = MIDDLE_IDX + pos;
-      if (downIdx < TOTAL_COPIES)
-        opacities[downIdx] = Math.min(opacities[downIdx], fadeOut);
+      if (upIdx >= 0 && upIdx < TOTAL_COPIES) opacities[upIdx] = 1;
+      if (downIdx >= 0 && downIdx < TOTAL_COPIES) opacities[downIdx] = 1;
+    }
+  }
+
+  // Phase 2: hide ALL from center outward — pos goes 0, 1, 2, 3, 4, 5
+  const phase2Start = HIDE_SHOW_STEPS * STAGGER_FRAMES;
+  for (let step = 0; step < HIDE_HIDE_STEPS; step++) {
+    const pos = step; // 0, 1, 2, 3, 4, 5
+    const stepFrame = phase2Start + step * STAGGER_FRAMES;
+    if (frameInPhase >= stepFrame) {
+      const upIdx = MIDDLE_IDX - pos;
+      const downIdx = MIDDLE_IDX + pos;
+      if (upIdx >= 0 && upIdx < TOTAL_COPIES) opacities[upIdx] = 0;
+      if (downIdx >= 0 && downIdx < TOTAL_COPIES) opacities[downIdx] = 0;
     }
   }
 
   return opacities;
+}
+
+/**
+ * Returns the fractional progress through the hide() animation at which
+ * the halfwayCallback fires. In the original, this happens when phase 1
+ * (loopShow) completes — after HIDE_SHOW_STEPS * stagger time.
+ */
+function hideHalfwayProgress(): number {
+  return (HIDE_SHOW_STEPS * STAGGER_FRAMES) / HIDE_DURATION;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -230,8 +248,7 @@ const TextCopyElement: React.FC<{
   opacity: number;
   fontSize: number;
 }> = ({ copy, word, opacity, fontSize }) => {
-  const isStroke =
-    copy.style === "stroke" || copy.style === "stroke-bottom";
+  const isStroke = copy.style === "stroke" || copy.style === "stroke-bottom";
   const isBottom =
     copy.style === "filled-bottom" || copy.style === "stroke-bottom";
 
@@ -268,51 +285,46 @@ const TextCopyElement: React.FC<{
   );
 };
 
-// ── Image component with parallax ──────────────────────────────────────────
+// ── Image with parallax ────────────────────────────────────────────────────
 
 const SlideImage: React.FC<{
   gradient: string;
-  slideProgress: number; // -1 (entering from left) to 0 (centered) to 1 (exiting right)
-  entering: boolean;
-  exiting: boolean;
+  progress: number; // 0..1 through the image animation
+  action: "idle" | "hiding" | "showing";
   width: number;
   height: number;
-}> = ({ gradient, slideProgress, entering, exiting, width, height }) => {
-  const imgWidth = Math.min(width * 0.7, 1000 - 176); // ~(90% - 11rem) capped
+}> = ({ gradient, progress, action, width, height }) => {
+  // Original: width calc(90% - 11rem), max-width calc(1000px - 11rem), max-height 600px, height 60vh
+  const imgWidth = Math.min(width * 0.9 - 176, 1000 - 176);
   const imgHeight = Math.min(height * 0.6, 600);
 
-  // Parallax: wrap moves in direction, inner moves opposite for reveal effect
   let wrapX = 0;
   let innerX = 0;
-  let opacity = 1;
 
-  if (entering) {
-    // Slide in from offscreen
-    wrapX = interpolate(slideProgress, [-1, 0], [width * 1.1, 0], {
+  if (action === "hiding") {
+    // Wrap slides out to -110%, inner slides opposite to 100%
+    wrapX = interpolate(progress, [0, 1], [0, -width * 1.1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.poly(5)),
+      easing: quintOut,
     });
-    innerX = interpolate(slideProgress, [-1, 0], [-width, 0], {
+    innerX = interpolate(progress, [0, 1], [0, width], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.poly(5)),
+      easing: quintOut,
     });
-  } else if (exiting) {
-    wrapX = interpolate(slideProgress, [0, 1], [0, -width * 1.1], {
+  } else if (action === "showing") {
+    // Wrap slides in from 110%, inner from -100%
+    wrapX = interpolate(progress, [0, 1], [width * 1.1, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.poly(5)),
+      easing: quintOut,
     });
-    innerX = interpolate(slideProgress, [0, 1], [0, width], {
+    innerX = interpolate(progress, [0, 1], [-width, 0], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
-      easing: Easing.out(Easing.poly(5)),
+      easing: quintOut,
     });
-  }
-
-  if (!entering && !exiting) {
-    opacity = 1;
   }
 
   return (
@@ -328,7 +340,6 @@ const SlideImage: React.FC<{
         overflow: "hidden",
         zIndex: -1,
         transform: `translateX(${wrapX}px)`,
-        opacity,
       }}
     >
       <div
@@ -346,104 +357,123 @@ const SlideImage: React.FC<{
 };
 
 // ── Transition state machine ───────────────────────────────────────────────
+//
+// The full transition from slide A → B:
+//   1. hide() on A's text trail (HIDE_DURATION frames)
+//      - At halfwayCallback: A's image hides, B's image shows, B's center text set to 0
+//   2. show() on B's text trail (SHOW_DURATION frames)
+//
+// Image swap happens mid-hide. The image hide (0.3s) and show (0.7s) overlap
+// with the text trail — they start at the halfway point of the hide animation.
 
-interface TransitionState {
-  currentSlide: number;
-  phase: "hold" | "hiding" | "image-swap" | "showing";
-  phaseProgress: number; // 0..1 within the current phase
-  imageEntering: boolean;
-  imageExiting: boolean;
-  imageSlideProgress: number;
-  nextSlide: number;
+interface FrameState {
+  /** Which slide's text to render */
+  textSlide: number;
+  /** Opacity array for the 11 text copies */
+  textOpacities: number[];
+  /** Current image slide index */
+  currentImageSlide: number;
+  /** Image animation state for current image */
+  currentImageAction: "idle" | "hiding" | "showing";
+  currentImageProgress: number;
+  /** Incoming image slide index (only during swap) */
+  incomingImageSlide: number | null;
+  incomingImageAction: "idle" | "hiding" | "showing";
+  incomingImageProgress: number;
+  /** Which slide index is "current" for the dot indicator */
+  dotSlide: number;
 }
 
-function computeTransitionState(
-  frame: number,
-  totalFrames: number,
-): TransitionState {
+function computeFrameState(frame: number): FrameState {
   const numSlides = SLIDES.length;
-  const trailDuration = (MIDDLE_IDX + 1) * STAGGER_FRAMES * 2; // frames for full trail show/hide
-  const hideFrames = trailDuration + 4;
-  const showFrames = trailDuration + 4;
-  const imageSwapFrames = IMAGE_SLIDE_FRAMES;
-  const transitionFrames = hideFrames + imageSwapFrames + showFrames;
-  const cycleFrames = SLIDE_HOLD_FRAMES + transitionFrames;
+  const transitionDuration = HIDE_DURATION + SHOW_DURATION;
+  const cycleDuration = SLIDE_HOLD_FRAMES + transitionDuration;
 
-  // Where are we in the overall cycle?
-  const cyclePos = frame % cycleFrames;
-  const slideIndex =
-    Math.floor(frame / cycleFrames) % numSlides;
-  const nextSlideIndex = (slideIndex + 1) % numSlides;
+  const cyclePos = frame % cycleDuration;
+  const slideIdx = Math.floor(frame / cycleDuration) % numSlides;
+  const nextIdx = (slideIdx + 1) % numSlides;
+
+  // Halfway point in the hide animation (in frames from transition start)
+  const halfwayFrame = hideHalfwayProgress() * HIDE_DURATION;
 
   if (cyclePos < SLIDE_HOLD_FRAMES) {
-    // Holding — slide is fully visible
+    // Holding — only center copy visible
+    const ops = new Array(TOTAL_COPIES).fill(0);
+    ops[MIDDLE_IDX] = 1;
     return {
-      currentSlide: slideIndex,
-      phase: "hold",
-      phaseProgress: cyclePos / SLIDE_HOLD_FRAMES,
-      imageEntering: false,
-      imageExiting: false,
-      imageSlideProgress: 0,
-      nextSlide: nextSlideIndex,
+      textSlide: slideIdx,
+      textOpacities: ops,
+      currentImageSlide: slideIdx,
+      currentImageAction: "idle",
+      currentImageProgress: 0,
+      incomingImageSlide: null,
+      incomingImageAction: "idle",
+      incomingImageProgress: 0,
+      dotSlide: slideIdx,
     };
   }
 
-  const transPos = cyclePos - SLIDE_HOLD_FRAMES;
+  const transFrame = cyclePos - SLIDE_HOLD_FRAMES;
 
-  if (transPos < hideFrames) {
-    // Hiding current slide's text trail
-    const prog = transPos / hideFrames;
-    // Image starts exiting at the halfway point of the hide
-    const imageExiting = prog > 0.4;
-    const imgProg = imageExiting
-      ? interpolate(prog, [0.4, 1], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        })
-      : 0;
+  if (transFrame < HIDE_DURATION) {
+    // In the hide() phase of current slide
+    const textOpacities = computeHideTrail(transFrame);
+
+    // Image swap starts at halfway callback
+    let curImgAction: "idle" | "hiding" = "idle";
+    let curImgProgress = 0;
+    let incImgSlide: number | null = null;
+    let incImgAction: "idle" | "showing" = "idle";
+    let incImgProgress = 0;
+
+    if (transFrame >= halfwayFrame) {
+      const imgElapsed = transFrame - halfwayFrame;
+
+      // Current image hides (0.3s = IMAGE_HIDE_FRAMES)
+      curImgAction = "hiding";
+      curImgProgress = Math.min(imgElapsed / IMAGE_HIDE_FRAMES, 1);
+
+      // Incoming image shows (0.7s = IMAGE_SHOW_FRAMES), starts simultaneously
+      incImgSlide = nextIdx;
+      incImgAction = "showing";
+      incImgProgress = Math.min(imgElapsed / IMAGE_SHOW_FRAMES, 1);
+    }
 
     return {
-      currentSlide: slideIndex,
-      phase: "hiding",
-      phaseProgress: prog,
-      imageEntering: false,
-      imageExiting,
-      imageSlideProgress: imgProg,
-      nextSlide: nextSlideIndex,
+      textSlide: slideIdx,
+      textOpacities,
+      currentImageSlide: slideIdx,
+      currentImageAction: curImgAction,
+      currentImageProgress: curImgProgress,
+      incomingImageSlide: incImgSlide,
+      incomingImageAction: incImgAction,
+      incomingImageProgress: incImgProgress,
+      dotSlide: transFrame >= halfwayFrame ? nextIdx : slideIdx,
     };
   }
 
-  if (transPos < hideFrames + imageSwapFrames) {
-    // Image is swapping — old exits, new enters
-    const imgPos = transPos - hideFrames;
-    const imgProg = imgPos / imageSwapFrames;
+  // In the show() phase of the incoming slide
+  const showFrame = transFrame - HIDE_DURATION;
+  const textOpacities = computeShowTrail(showFrame);
 
-    return {
-      currentSlide: slideIndex,
-      phase: "image-swap",
-      phaseProgress: imgProg,
-      imageEntering: true,
-      imageExiting: false,
-      imageSlideProgress: interpolate(imgProg, [0, 1], [-1, 0], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      }),
-      nextSlide: nextSlideIndex,
-    };
-  }
-
-  // Showing next slide's text trail
-  const showPos = transPos - hideFrames - imageSwapFrames;
-  const showProg = showPos / showFrames;
+  // By now the image swap is complete — incoming image is in place
+  // Continue the incoming image show if it hasn't finished
+  const imgElapsedSinceHalfway =
+    (HIDE_DURATION - halfwayFrame) + showFrame;
 
   return {
-    currentSlide: nextSlideIndex,
-    phase: "showing",
-    phaseProgress: showProg,
-    imageEntering: false,
-    imageExiting: false,
-    imageSlideProgress: 0,
-    nextSlide: (nextSlideIndex + 1) % numSlides,
+    textSlide: nextIdx,
+    textOpacities,
+    currentImageSlide: slideIdx,
+    currentImageAction: "hiding",
+    currentImageProgress: 1, // fully hidden
+    incomingImageSlide: nextIdx,
+    incomingImageAction: "showing",
+    incomingImageProgress: Math.min(
+      imgElapsedSinceHalfway / IMAGE_SHOW_FRAMES,
+      1,
+    ),
+    dotSlide: nextIdx,
   };
 }
 
@@ -453,59 +483,22 @@ export const TextTrail: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height, durationInFrames } = useVideoConfig();
 
-  // Font size: ~17vh equivalent
-  const fontSize = height * 0.17;
+  const fontSize = height * 0.17; // 17vh
 
-  const state = useMemo(
-    () => computeTransitionState(frame, durationInFrames),
-    [frame, durationInFrames],
-  );
+  const state = useMemo(() => computeFrameState(frame), [frame]);
 
-  // Compute text copy opacities
-  const opacities = useMemo(() => {
-    if (state.phase === "hold") {
-      // All visible: center copy at full, others hidden except the
-      // standard visible state. In the original, only the 6th child
-      // (index 5, the middle) has opacity: 1 by default.
-      // After a show() animation, all copies are visible.
-      // We'll show all copies during hold for visual richness.
-      return new Array(TOTAL_COPIES).fill(1);
-    }
-    if (state.phase === "hiding") {
-      return computeTrailOpacities(state.phaseProgress, "hide");
-    }
-    if (state.phase === "showing") {
-      return computeTrailOpacities(state.phaseProgress, "show");
-    }
-    // image-swap: text is hidden
-    return new Array(TOTAL_COPIES).fill(0);
-  }, [state.phase, state.phaseProgress]);
+  const slideData = SLIDES[state.textSlide];
 
-  // Determine which slide's text + image to show
-  const slideData = SLIDES[state.currentSlide];
-
-  // During image-swap, show the incoming slide's image
-  const imageSlide =
-    state.phase === "image-swap"
-      ? SLIDES[state.nextSlide]
-      : slideData;
-
-  // Entrance fade for the whole composition
+  // Entrance/exit fades for the composition
   const masterOpacity = interpolate(frame, [0, 20], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.ease,
   });
-
-  // Exit fade
   const exitOpacity = interpolate(
     frame,
     [durationInFrames - 20, durationInFrames],
     [1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.ease,
-    },
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.ease },
   );
 
   return (
@@ -517,21 +510,25 @@ export const TextTrail: React.FC = () => {
         fontFamily: "Kanit, sans-serif",
       }}
     >
-      {/* Image layer */}
+      {/* Current image layer */}
       <SlideImage
-        gradient={imageSlide.imageGradient}
-        slideProgress={
-          state.phase === "hiding" && state.imageExiting
-            ? state.imageSlideProgress
-            : state.phase === "image-swap"
-              ? state.imageSlideProgress
-              : 0
-        }
-        entering={state.phase === "image-swap"}
-        exiting={state.phase === "hiding" && state.imageExiting}
+        gradient={SLIDES[state.currentImageSlide].imageGradient}
+        progress={state.currentImageProgress}
+        action={state.currentImageAction}
         width={width}
         height={height}
       />
+
+      {/* Incoming image layer (only during swap) */}
+      {state.incomingImageSlide !== null && (
+        <SlideImage
+          gradient={SLIDES[state.incomingImageSlide].imageGradient}
+          progress={state.incomingImageProgress}
+          action={state.incomingImageAction}
+          width={width}
+          height={height}
+        />
+      )}
 
       {/* Text copies layer */}
       <div
@@ -549,16 +546,16 @@ export const TextTrail: React.FC = () => {
       >
         {slideData.copies.map((copy, i) => (
           <TextCopyElement
-            key={`${state.currentSlide}-${i}`}
+            key={`${state.textSlide}-${i}`}
             copy={copy}
             word={slideData.word}
-            opacity={opacities[i]}
+            opacity={state.textOpacities[i]}
             fontSize={fontSize}
           />
         ))}
       </div>
 
-      {/* Frame overlay — subtle nav hint at bottom */}
+      {/* Navigation dot indicator */}
       <div
         style={{
           position: "absolute",
@@ -578,16 +575,15 @@ export const TextTrail: React.FC = () => {
               height: 8,
               borderRadius: "50%",
               backgroundColor:
-                i === state.currentSlide
+                i === state.dotSlide
                   ? "#ff00c4"
                   : "rgba(255, 255, 255, 0.2)",
-              transition: "none",
             }}
           />
         ))}
       </div>
 
-      {/* Title overlay — top left, matching original frame */}
+      {/* Frame title — top left, matching original */}
       <div
         style={{
           position: "absolute",

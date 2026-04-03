@@ -1,4 +1,19 @@
 // Source: https://codepen.io/kirilbt/full/XWZojKG
+//
+// Original by kirilbt (2022-06-12). Extracted from Wayback Machine snapshot
+// 20260225192721. The pen has exactly 5 `.text` divs inside a `.cursor`
+// wrapper — the last one contains a <span> that fills it solid white while
+// the other four are stroked outlines. GSAP animates all five to the mouse
+// position with stagger: { each: -0.02, ease: "power2.inOut" }, so the last
+// element (filled) leads and the first (stroked) trails.
+//
+// External resources:
+//   JS:  https://unpkg.co/gsap@3/dist/gsap.min.js
+//   CSS: https://use.typekit.net/kfu3rpe.css (venn-extended font)
+//
+// Remotion adaptation: Lissajous curve replaces mousemove. Per-element
+// phase offsets reproduce the GSAP stagger. No requestAnimationFrame.
+
 import React, { useMemo } from "react";
 import {
   AbsoluteFill,
@@ -8,43 +23,23 @@ import {
   Easing,
 } from "remotion";
 
-/**
- * 1:1 reproduction of kirilbt's "Text Trail Effect on Mousemove" CodePen.
- *
- * Original: ~20 copies of the word "move" in a bold extended font, stroked
- * white on black, all position: absolute. A mousemove listener feeds GSAP
- * `.to()` with stagger: { each: -0.02, ease: "power2.inOut" }, animating
- * every copy toward (clientX, clientY). The negative stagger means the last
- * element leads and the first trails — producing a ghostly cascading wake
- * of hollow text chasing the cursor.
- *
- * Here: mouse position replaced by a Lissajous curve driven by frame count.
- * GSAP stagger delay reproduced via per-element phase offsets in the trail.
- * All animation derived from useCurrentFrame(). No requestAnimationFrame.
- */
-
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Original constants ─────────────────────────────────────────────────────
 
 const TEXT = "move";
-const COPY_COUNT = 20;
-const BG = "#0a0a0a";
-const STROKE_COLOR = "#ffffff";
-const STROKE_WIDTH = 1;
-const FONT_SIZE_VW = 12; // vw-ish — percentage of width
+const COPY_COUNT = 5; // original has exactly 5 .text divs
+const BG = "#161616";
+const STROKE_COLOR = "#fff";
+const STROKE_WIDTH = 1; // -webkit-text-stroke: 1px #fff
+const FONT_FAMILY = "venn-extended, sans-serif";
 const FONT_WEIGHT = 700;
-const FONT_FAMILY =
-  '"Venn Extended", "DM Sans", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif';
-
-// Original GSAP stagger: each: -0.02 with power2.inOut on ~20 elements.
-// Total stagger spread: 0.02 * 19 = 0.38 seconds. The negative sign means
-// the last element in DOM order arrives first; the first element trails most.
-const STAGGER_SECONDS = 0.02;
+// GSAP stagger config from original
+const STAGGER_EACH = 0.02; // seconds between elements
+// Negative `each` → last element (index 4) arrives first, index 0 trails most.
+// Total spread: 0.02 * (5-1) = 0.08 seconds.
 
 // ── Lissajous cursor path ──────────────────────────────────────────────────
-// Two irrational-ratio frequencies → non-repeating, organic-feeling path.
-// Stays within the central region where text movement looks natural.
 
-function lissajousMouse(
+function cursorPosition(
   t: number,
   w: number,
   h: number,
@@ -54,19 +49,14 @@ function lissajousMouse(
   return { x, y };
 }
 
-// ── Simulate GSAP stagger trail ─────────────────────────────────────────────
-// Each copy has a phase delay. When the "cursor" moves, the first copy
-// (i=0) reacts last (most trailing), the last copy (i=COPY_COUNT-1) reacts
-// first. This mirrors the negative stagger direction.
-//
-// We sample the cursor path at (time - delay_i) for each copy. Because the
-// path is continuous, sampling at offset times produces the exact visual:
-// a smooth trailing cascade — no explicit easing function needed.
+// ── Stagger trail ──────────────────────────────────────────────────────────
+// Negative stagger: element 0 has the MOST delay, element 4 has ZERO delay.
+// We sample the cursor path at (time - delay_i) for each element.
 
 interface TrailElement {
   x: number;
   y: number;
-  opacity: number;
+  isFilled: boolean; // last element has <span> = solid white fill
 }
 
 function computeTrail(
@@ -75,44 +65,35 @@ function computeTrail(
   h: number,
 ): TrailElement[] {
   const elements: TrailElement[] = [];
-
   for (let i = 0; i < COPY_COUNT; i++) {
-    // Negative stagger: element 0 has maximum delay, element N-1 has zero.
-    // This means the last DOM element snaps to cursor first.
-    const delay = (COPY_COUNT - 1 - i) * STAGGER_SECONDS;
-    const delayedTime = time - delay;
-
-    // Sample the cursor position at the delayed time
-    const pos = lissajousMouse(Math.max(0, delayedTime), w, h);
-
-    // Opacity: front elements (near cursor) are brightest, trailing ones fade.
-    // The original has uniform opacity (all stroked white), but the visual
-    // perception is that trailing copies overlap creating depth. We keep
-    // opacity uniform to match — the layering does the rest.
-    const opacity = 1.0;
-
-    elements.push({ x: pos.x, y: pos.y, opacity });
+    // Element 0 gets max delay, element (N-1) gets zero delay
+    const delay = (COPY_COUNT - 1 - i) * STAGGER_EACH;
+    const pos = cursorPosition(Math.max(0, time - delay), w, h);
+    elements.push({
+      x: pos.x,
+      y: pos.y,
+      isFilled: i === COPY_COUNT - 1,
+    });
   }
-
   return elements;
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const MouseTrail: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const time = frame / fps;
 
-  const fontSize = (FONT_SIZE_VW / 100) * width;
+  // Original uses 6em which in a typical viewport (~16px base) is ~96px.
+  // Scale proportionally to composition width for video.
+  const fontSize = width * 0.07;
 
-  // Compute trail positions for all copies
   const trail = useMemo(
     () => computeTrail(time, width, height),
     [time, width, height],
   );
 
-  // Entrance: fade in over the first 15 frames
   const masterOpacity = interpolate(frame, [0, 15], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.ease,
@@ -133,15 +114,20 @@ export const MouseTrail: React.FC = () => {
             position: "absolute",
             left: 0,
             top: 0,
-            transform: `translate(${el.x - fontSize * 1.2}px, ${el.y - fontSize * 0.5}px)`,
+            // GSAP sets transform: translate(Xpx, Ypx) on each .text element
+            transform: `translate(${el.x}px, ${el.y}px)`,
             pointerEvents: "none",
             fontFamily: FONT_FAMILY,
             fontWeight: FONT_WEIGHT,
-            fontSize: `${fontSize}px`,
+            fontStyle: "normal",
+            fontSize,
             lineHeight: 1,
-            color: "transparent",
-            WebkitTextStroke: `${STROKE_WIDTH}px ${STROKE_COLOR}`,
-            opacity: el.opacity,
+            // Stroked outline: text color matches background, stroke is white.
+            // Last element (isFilled): the <span> overrides color to white.
+            color: el.isFilled ? "#fff" : BG,
+            WebkitTextStroke: el.isFilled
+              ? undefined
+              : `${STROKE_WIDTH}px ${STROKE_COLOR}`,
             whiteSpace: "nowrap",
             userSelect: "none",
           }}

@@ -38,6 +38,41 @@ const SECTIONS: VerbSection[] = [
 ];
 
 
+// ── Cubic-bezier helper ──────────────────────────────────────────────────
+// Attempt to solve the cubic bezier for t given x, using Newton-Raphson.
+// CSS cubic-bezier(x1, y1, x2, y2) maps input time to output progress.
+
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  return (t: number): number => {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+
+    // Bernstein basis for the x(t) and y(t) parametric curves
+    const sampleCurveX = (s: number) =>
+      ((1 - 3 * x2 + 3 * x1) * s + (3 * x2 - 6 * x1)) * s + 3 * x1 * s;
+    const sampleCurveY = (s: number) =>
+      ((1 - 3 * y2 + 3 * y1) * s + (3 * y2 - 6 * y1)) * s + 3 * y1 * s;
+    const sampleCurveDerivativeX = (s: number) =>
+      (3 * (1 - 3 * x2 + 3 * x1)) * s * s +
+      2 * (3 * x2 - 6 * x1) * s +
+      3 * x1;
+
+    // Newton-Raphson to find parameter s where x(s) = t
+    let s = t;
+    for (let i = 0; i < 8; i++) {
+      const currentX = sampleCurveX(s) - t;
+      if (Math.abs(currentX) < 1e-6) break;
+      const dx = sampleCurveDerivativeX(s);
+      if (Math.abs(dx) < 1e-6) break;
+      s -= currentX / dx;
+    }
+    return sampleCurveY(s);
+  };
+}
+
+// The easing used by jump and fall: cubic-bezier(0.165, 0.44, 0.64, 1)
+const jumpFallEasing = cubicBezier(0.165, 0.44, 0.64, 1);
+
 // ── Animation functions — each returns a CSS transform string ──────────────
 // All accept:
 //   charIndex: the character's position in the word (0-based)
@@ -54,7 +89,7 @@ function animateFall(charIndex: number, sectionFrame: number, fps: number) {
   const effectiveFrame = sectionFrame - (delayMs / 1000) * fps;
   const cycleProgress =
     ((effectiveFrame % durationFrames) + durationFrames) % durationFrames;
-  const t = cycleProgress / durationFrames;
+  const t = jumpFallEasing(cycleProgress / durationFrames);
 
   // Keyframes: 0% rotateY(-25), 25% translateY(2%) rotateY(25),
   //            50% rotateY(-25), 75% translateY(4%) rotateY(25), 100% rotateY(-25)
@@ -175,7 +210,7 @@ function animateJump(charIndex: number, sectionFrame: number, fps: number) {
   const effectiveFrame = sectionFrame - (delayMs / 1000) * fps;
   const cycleProgress =
     ((effectiveFrame % durationFrames) + durationFrames) % durationFrames;
-  const t = cycleProgress / durationFrames;
+  const t = jumpFallEasing(cycleProgress / durationFrames);
 
   // 0% identity, 20% translateY(2%) scaleY(0.9), 40% translateY(-100%) scaleY(1.2),
   // 50% translateY(10%) scaleY(0.8), 70% translateY(-5%) scaleY(1), 80-100% identity

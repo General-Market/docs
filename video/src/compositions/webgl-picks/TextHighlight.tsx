@@ -8,103 +8,101 @@ import {
   Easing,
 } from "remotion";
 
-// ─── Text content (inspired by the page's crowd-psychology theme) ───
+// ─── Text content (from the original Codrops demo — Gustave Le Bon quotes) ───
+
+interface HighlightedWord {
+  text: string;
+  effect: number;
+}
 
 interface Section {
   before: string;
-  highlight: string;
+  highlights: HighlightedWord[];
   after: string;
-  effect: number;
 }
 
 const SECTIONS: Section[] = [
   {
     before: "Organised crowds have always played an",
-    highlight: "important",
+    highlights: [{ text: "important", effect: 1 }],
     after: "part in the life of peoples, but this part has never been of such moment as at present.",
-    effect: 1,
   },
   {
     before: "The substitution of the",
-    highlight: "unconscious",
+    highlights: [{ text: "unconscious", effect: 2 }],
     after: "action of crowds for the conscious activity of individuals is one of the principal characteristics of the present age.",
-    effect: 2,
   },
   {
     before: "The key features of an individual in a crowd are the",
-    highlight: "vanishing",
-    after: "conscious personality, the rise of the unconscious, and the swift conversion of suggested ideas into actions.",
-    effect: 3,
+    highlights: [{ text: "vanishing", effect: 3 }],
+    after: "conscious personality, the rise of the unconscious, and the swift conversion of suggested ideas into actions through suggestion and contagion.",
   },
   {
     before: "He is no longer himself, but has",
-    highlight: "become an automaton",
+    highlights: [{ text: "become an automaton", effect: 4 }],
     after: "who has ceased to be guided by his will.",
-    effect: 4,
   },
   {
     before: "In the midst of the crowd,",
-    highlight: "individual",
+    highlights: [{ text: "individual", effect: 5 }],
     after: "judgment is swamped by the overwhelming force of the group\u2019s influence.",
-    effect: 5,
   },
   {
     before: "Once submerged in a crowd, the individual becomes more susceptible to the",
-    highlight: "dynamics",
+    highlights: [{ text: "dynamics", effect: 6 }],
     after: "of group think, losing his personal ethical moorings.",
-    effect: 6,
   },
   {
     before: "As part of the crowd, he is swept away by a",
-    highlight: "collective",
+    highlights: [{ text: "collective", effect: 7 }],
     after: "stream, often adopting extreme ideas or measures that he alone might not consider.",
-    effect: 7,
   },
   {
+    // Section 8: two highlighted words, both effect 8
     before: "In this",
-    highlight: "transformed state",
+    highlights: [{ text: "transformed state", effect: 8 }],
     after: ", the crowd member experiences a diminishing of personal fear as anonymity provides a comforting shield.",
-    effect: 8,
   },
   {
+    // Section 9: two highlighted words, both effect 9
     before: "Crowd",
-    highlight: "psychology",
+    highlights: [{ text: "psychology", effect: 9 }],
     after: "facilitates a bizarre unity, melding disparate individuals into a single entity with a common focus.",
-    effect: 9,
   },
   {
     before: "This unity is often directed by",
-    highlight: "charismatic",
+    highlights: [{ text: "charismatic", effect: 10 }],
     after: "or influential figures who can steer the crowd\u2019s emotions and actions with alarming ease.",
-    effect: 10,
   },
   {
-    before: "Without the anchor of personal convictions, they drift,",
-    highlight: "vulnerable",
-    after: "to whoever steers the crowd\u2019s will. It is here, in the pulse of the crowd, where manipulation goes unnoticed.",
-    effect: 11,
+    // Section 11: Flip-style effect — large word shrinks into inline position
+    before:
+      "In this sea of sameness, the individual becomes startlingly easy to manipulate. Without the anchor of personal convictions, they drift,",
+    highlights: [{ text: "vulnerable", effect: 11 }],
+    after: "to whoever steers the crowd\u2019s will. It is here, in the pulse of the crowd, where manipulation is not only easy but often goes unnoticed.",
   },
   {
-    before: "Within the collective consciousness, moral responsibility becomes diffuse, diluted among the",
-    highlight: "multitude",
-    after: ".",
-    effect: 12,
+    // Section 12: highlighted word is "manipulation"
+    before:
+      "The vulnerability of individuals within crowds extends beyond mere",
+    highlights: [{ text: "manipulation", effect: 12 }],
+    after: ". Within the collective consciousness, moral responsibility becomes diffuse, diluted among the multitude.",
   },
   {
-    before: "Actions deemed",
-    highlight: "reprehensible",
+    before: "Actions that would be deemed unethical or",
+    highlights: [{ text: "reprehensible", effect: 13 }],
     after: "on an individual level can be rationalized and justified within the context of the crowd.",
-    effect: 13,
   },
 ];
 
-// ─── Color palette (from the original CSS variables) ───
+// ─── Color palette (from the original CSS custom properties) ───
 
 const COLORS = {
   bg: "#000",
   text: "#b8afaa",
+  link: "#968a84",
   highlightStart: "#968a84",
-  // per-effect end colors
+  // per-effect CSS variables
   hx3End: "#d686c1",
   hx4End: "#49af42",
   hx4EndAlt: "#4252af",
@@ -115,34 +113,33 @@ const COLORS = {
   hx7Bg: "#437745",
   hx7Text: "#d2f2d3",
   hx8End: "#c3c58c",
+  hx9Start: "rgb(84,77,73)", // 61% opacity in original
+  hx9End: "#b8afaa", // --color-text
+  hx10Start: "#b8afaa", // --color-text
+  hx12Start: "rgb(84,77,73)", // 61% opacity
   hx12End: "#fff",
+  hx13Start: "#b8afaa", // --color-text
   glowPink: "#ffdbf5",
 };
 
 // ─── Helpers ───
 
-/** Split a word into characters */
 const splitChars = (word: string): string[] => word.split("");
 
-/** Compute per-section local progress (0..1) from global scroll progress */
 const sectionProgress = (
   globalProgress: number,
   sectionIndex: number,
   totalSections: number
 ): number => {
-  // Each section occupies an equal slice of the total scroll
-  // with a 30% overlap so animations start before the section is fully centered
   const sliceSize = 1 / totalSections;
   const start = sectionIndex * sliceSize;
   const end = start + sliceSize;
   return Math.max(0, Math.min(1, (globalProgress - start) / (end - start)));
 };
 
-/** Clamp */
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
 
-/** Remotion-safe interpolation shorthand */
 const lerp = (
   progress: number,
   inputRange: [number, number],
@@ -155,36 +152,95 @@ const lerp = (
     easing,
   });
 
+// ─── Utility: color interpolation ───
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  // Handle rgb(r,g,b) strings
+  const rgbMatch = hex.match(/rgb\((\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  if (rgbMatch) {
+    return [
+      parseInt(rgbMatch[1]),
+      parseInt(rgbMatch[2]),
+      parseInt(rgbMatch[3]),
+    ];
+  }
+  const h = hex.replace("#", "");
+  return [
+    parseInt(h.substring(0, 2), 16),
+    parseInt(h.substring(2, 4), 16),
+    parseInt(h.substring(4, 6), 16),
+  ];
+};
+
+const rgbToHex = (r: number, g: number, b: number): string =>
+  `#${[r, g, b]
+    .map((v) =>
+      Math.round(clamp(v, 0, 255))
+        .toString(16)
+        .padStart(2, "0")
+    )
+    .join("")}`;
+
+const lerpColor = (from: string, to: string, t: number): string => {
+  const [r1, g1, b1] = hexToRgb(from);
+  const [r2, g2, b2] = hexToRgb(to);
+  return rgbToHex(
+    r1 + (r2 - r1) * t,
+    g1 + (g2 - g1) * t,
+    b1 + (b2 - b1) * t
+  );
+};
+
+/** Elastic-out easing matching GSAP elastic.out(0.7) */
+const elasticOut = (t: number, amplitude: number = 0.7): number => {
+  if (t === 0 || t === 1) return t;
+  const p = 0.3;
+  const s = (p / (2 * Math.PI)) * Math.asin(1 / amplitude);
+  return (
+    amplitude *
+      Math.pow(2, -10 * t) *
+      Math.sin(((t - s) * (2 * Math.PI)) / p) +
+    1
+  );
+};
+
 // ─── Effect renderers ───
 // Each returns a React node for the highlighted word(s).
 // `p` is local animation progress 0..1
 
-/** Effect 1: 3D flip-in per character (rotationX + z-depth + opacity, staggered) */
+/**
+ * Effect 1: 3D flip-in per character
+ * GSAP: perspective 500, preserve-3d on words
+ * fromTo chars: opacity 0→1, z 300→0, rotationX -45→0
+ * duration 0.8, ease power2, stagger 0.04
+ */
 const renderEffect1 = (word: string, p: number) => {
   const chars = splitChars(word);
-  const staggerDur = 0.04 * 30; // 0.04s stagger at notional 30 char-steps
-  const totalStagger = chars.length * staggerDur;
-  const animDur = 0.8; // normalized
+  const stagger = 0.04;
+  const duration = 0.8;
+  const totalTime = duration + stagger * (chars.length - 1);
 
   return (
-    <span style={{ display: "inline-block", perspective: 500, color: COLORS.highlightStart }}>
+    <span
+      style={{
+        display: "inline-block",
+        perspective: 500,
+        color: COLORS.highlightStart,
+      }}
+    >
       {chars.map((ch, i) => {
-        const charStart = (i * staggerDur) / (totalStagger + animDur);
-        const charEnd = charStart + animDur / (totalStagger + animDur);
+        const charStart = (i * stagger) / totalTime;
+        const charEnd = charStart + duration / totalTime;
         const cp = clamp((p - charStart) / (charEnd - charStart), 0, 1);
         const eased = Easing.out(Easing.quad)(cp);
-
-        const opacity = lerp(eased, [0, 1], [0, 1]);
-        const z = lerp(eased, [0, 1], [300, 0]);
-        const rotX = lerp(eased, [0, 1], [-45, 0]);
 
         return (
           <span
             key={i}
             style={{
               display: "inline-block",
-              opacity,
-              transform: `translateZ(${z}px) rotateX(${rotX}deg)`,
+              opacity: eased,
+              transform: `translateZ(${300 * (1 - eased)}px) rotateX(${-45 * (1 - eased)}deg)`,
               transformStyle: "preserve-3d",
             }}
           >
@@ -196,24 +252,43 @@ const renderEffect1 = (word: string, p: number) => {
   );
 };
 
-/** Effect 2: Blink per character (opacity 1->0->1->0->1, staggered) */
+/**
+ * Effect 2: Blink per character
+ * GSAP: per-char timeline, delay position*0.05, opacity→0 repeat:2 yoyo:true, then opacity→1
+ * duration 0.6, ease power1
+ */
 const renderEffect2 = (word: string, p: number) => {
   const chars = splitChars(word);
+  // Each char: delay = i * 0.05, then opacity to 0 with repeat:2 yoyo
+  // repeat:2 yoyo means: 1→0, 0→1, 1→0, 0→1 (2 extra repeats)
+  // Total per-char: delay + 3*duration (3 yoyo cycles) + final tween
+  // duration 0.6, then final .to opacity:1 with duration 0.6
+  const charDuration = 0.6;
+  const totalPerChar = 3 * charDuration + charDuration; // yoyo 3 half-cycles + final
+  const maxDelay = (chars.length - 1) * 0.05;
+  const totalTime = maxDelay + totalPerChar;
 
   return (
     <span style={{ display: "inline-block", color: COLORS.highlightStart }}>
       {chars.map((ch, i) => {
         const charDelay = i * 0.05;
-        const totalCycleDur = 0.6 * 3 + 0.6; // 3 half-blinks + final settle
-        const cp = clamp((p * 2.4 - charDelay) / (totalCycleDur * 0.3), 0, 1);
+        const charLocalTime = clamp(
+          (p * totalTime - charDelay) / totalPerChar,
+          0,
+          1
+        );
 
-        // Simulate repeat:2 yoyo: opacity goes 1->0->1->0->1
+        // repeat:2 yoyo: goes 1→0 (0-0.25), 0→1 (0.25-0.5), 1→0 (0.5-0.75), then final →1 (0.75-1.0)
         let opacity: number;
-        if (cp < 0.2) opacity = lerp(cp, [0, 0.2], [1, 0]);
-        else if (cp < 0.4) opacity = lerp(cp, [0.2, 0.4], [0, 1]);
-        else if (cp < 0.6) opacity = lerp(cp, [0.4, 0.6], [1, 0]);
-        else if (cp < 0.8) opacity = lerp(cp, [0.6, 0.8], [0, 1]);
-        else opacity = lerp(cp, [0.8, 1], [1, 1]);
+        if (charLocalTime < 0.25) {
+          opacity = lerp(charLocalTime, [0, 0.25], [1, 0]);
+        } else if (charLocalTime < 0.5) {
+          opacity = lerp(charLocalTime, [0.25, 0.5], [0, 1]);
+        } else if (charLocalTime < 0.75) {
+          opacity = lerp(charLocalTime, [0.5, 0.75], [1, 0]);
+        } else {
+          opacity = lerp(charLocalTime, [0.75, 1], [0, 1]);
+        }
 
         return (
           <span key={i} style={{ display: "inline-block", opacity }}>
@@ -225,40 +300,64 @@ const renderEffect2 = (word: string, p: number) => {
   );
 };
 
-/** Effect 3: Scale down + fade out, then reappear in pink with glow */
+/**
+ * Effect 3: Scale down + fade out, then reappear in pink with glow
+ * GSAP: timeline, stagger 0.06
+ * Phase 1: chars to opacity 0, scale 0.8 (duration 0.5, ease power1)
+ * Phase 2: chars to opacity 1, scale 1, color #d686c1,
+ *   startAt filter drop-shadow(0 0 0 #ffdbf5), filter drop-shadow(0 0 20px #ffdbf5)
+ * Phase 2 starts at duration offset (0.5)
+ */
 const renderEffect3 = (word: string, p: number) => {
   const chars = splitChars(word);
   const stagger = 0.06;
+  const phaseDur = 0.5;
+  const totalStagger = stagger * (chars.length - 1);
+  // Phase 1: 0 to phaseDur + totalStagger
+  // Phase 2: starts at phaseDur, lasts phaseDur + totalStagger
+  const totalTime = phaseDur * 2 + totalStagger;
 
   return (
     <span style={{ display: "inline-block", color: COLORS.highlightStart }}>
       {chars.map((ch, i) => {
-        const phase1Start = i * stagger * 0.5;
-        const phase1End = phase1Start + 0.35;
-        const phase2Start = phase1End;
-        const phase2End = phase2Start + 0.35;
+        const normalizedTime = p * totalTime;
+
+        // Phase 1: fade out + scale down
+        const p1Start = i * stagger;
+        const p1End = p1Start + phaseDur;
+        // Phase 2: fade in with color + glow
+        const p2Start = phaseDur + i * stagger;
+        const p2End = p2Start + phaseDur;
 
         let opacity = 1;
         let scale = 1;
         let color = COLORS.highlightStart;
-        let textShadow = "none";
+        let filter = "drop-shadow(0px 0px 0px #ffdbf5)";
 
-        if (p >= phase1Start && p < phase1End) {
-          const cp = clamp((p - phase1Start) / (phase1End - phase1Start), 0, 1);
-          const eased = Easing.in(Easing.quad)(cp);
-          opacity = 1 - eased;
-          scale = 1 - 0.2 * eased;
-        } else if (p >= phase2Start) {
+        if (normalizedTime >= p1Start && normalizedTime < p1End) {
           const cp = clamp(
-            (p - phase2Start) / (phase2End - phase2Start),
+            (normalizedTime - p1Start) / (p1End - p1Start),
             0,
             1
           );
-          const eased = Easing.out(Easing.quad)(cp);
-          opacity = eased;
+          opacity = 1 - cp;
+          scale = 1 - 0.2 * cp;
+        } else if (
+          normalizedTime >= p1End &&
+          normalizedTime < p2Start
+        ) {
+          opacity = 0;
+          scale = 0.8;
+        } else if (normalizedTime >= p2Start) {
+          const cp = clamp(
+            (normalizedTime - p2Start) / (p2End - p2Start),
+            0,
+            1
+          );
+          opacity = cp;
           scale = 1;
           color = COLORS.hx3End;
-          textShadow = `0 0 ${20 * eased}px ${COLORS.glowPink}`;
+          filter = `drop-shadow(0px 0px ${20 * cp}px #ffdbf5)`;
         }
 
         return (
@@ -269,7 +368,8 @@ const renderEffect3 = (word: string, p: number) => {
               opacity,
               transform: `scale(${scale})`,
               color,
-              textShadow,
+              filter,
+              willChange: "transform, opacity, color, filter",
             }}
           >
             {ch}
@@ -280,34 +380,54 @@ const renderEffect3 = (word: string, p: number) => {
   );
 };
 
-/** Effect 4: Scale up to 1.45x in green, then settle to 1x in blue */
+/**
+ * Effect 4: Scale up to 1.45x in green, then settle to 1x in blue
+ * GSAP: Phase 1: duration 0.3, ease power3.in, stagger 0.05, scale→1.45, color→#49af42
+ *        Phase 2: duration 0.4, ease sine, stagger 0.05, scale→1, color→#4252af
+ *        Phase 2 starts at offset 0.3 (= phase 1 duration)
+ */
 const renderEffect4 = (word: string, p: number) => {
   const chars = splitChars(word);
   const stagger = 0.05;
+  const phase1Dur = 0.3;
+  const phase2Dur = 0.4;
+  const totalStagger = stagger * (chars.length - 1);
+  const totalTime = phase1Dur + phase2Dur + totalStagger;
 
   return (
     <span style={{ display: "inline-block", color: COLORS.highlightStart }}>
       {chars.map((ch, i) => {
-        const phase1Start = i * stagger * 0.3;
-        const phase1End = phase1Start + 0.3;
-        const phase2Start = phase1End;
-        const phase2End = phase2Start + 0.4;
+        const normalizedTime = p * totalTime;
+
+        const p1Start = i * stagger;
+        const p1End = p1Start + phase1Dur;
+        const p2Start = phase1Dur + i * stagger;
+        const p2End = p2Start + phase2Dur;
 
         let scale = 1;
         let color = COLORS.highlightStart;
 
-        if (p >= phase1Start && p < phase1End) {
-          const cp = clamp((p - phase1Start) / (phase1End - phase1Start), 0, 1);
-          const eased = Easing.in(Easing.cubic)(cp);
-          scale = 1 + 0.45 * eased;
-          color = lerpColor(COLORS.highlightStart, COLORS.hx4End, eased);
-        } else if (p >= phase2Start) {
+        if (normalizedTime >= p1Start && normalizedTime < p1End) {
           const cp = clamp(
-            (p - phase2Start) / (phase2End - phase2Start),
+            (normalizedTime - p1Start) / (p1End - p1Start),
             0,
             1
           );
-          const eased = Easing.out(Easing.sin)(cp);
+          // ease power3.in
+          const eased = cp * cp * cp;
+          scale = 1 + 0.45 * eased;
+          color = lerpColor(COLORS.highlightStart, COLORS.hx4End, eased);
+        } else if (normalizedTime >= p1End && normalizedTime < p2Start) {
+          scale = 1.45;
+          color = COLORS.hx4End;
+        } else if (normalizedTime >= p2Start) {
+          const cp = clamp(
+            (normalizedTime - p2Start) / (p2End - p2Start),
+            0,
+            1
+          );
+          // ease sine (sine.out in GSAP default context)
+          const eased = Math.sin((cp * Math.PI) / 2);
           scale = 1.45 - 0.45 * eased;
           color = lerpColor(COLORS.hx4End, COLORS.hx4EndAlt, eased);
         }
@@ -319,7 +439,7 @@ const renderEffect4 = (word: string, p: number) => {
               display: "inline-block",
               transform: `scale(${scale})`,
               color,
-              willChange: "transform",
+              willChange: "transform, color",
             }}
           >
             {ch}
@@ -330,12 +450,25 @@ const renderEffect4 = (word: string, p: number) => {
   );
 };
 
-/** Effect 5: Scale+fade in chars with purple background box scaling in */
+/**
+ * Effect 5: Scale+fade in chars with purple background box scaling in
+ * GSAP: chars fromTo scale 1.3→1, opacity 0→1
+ *   duration 0.4, ease power1, stagger: pos => 0.1 + 0.05*pos
+ *   Background ::after scale 0→1, duration 0.8, ease expo, starts at 0
+ * CSS: hx-5 inline-flex, --color-highlight-start #e1def4, --color-bg-highlight #6a5ace
+ */
 const renderEffect5 = (word: string, p: number) => {
   const chars = splitChars(word);
+  const charDur = 0.4;
+  // Stagger: 0.1 + 0.05*pos — each char starts later
+  const lastCharStart = 0.1 + 0.05 * (chars.length - 1);
+  const totalCharTime = lastCharStart + charDur;
+  const bgDur = 0.8;
+  const totalTime = Math.max(totalCharTime, bgDur);
 
-  // Background box scale
-  const boxScale = lerp(p, [0, 0.7], [0, 1], Easing.out(Easing.exp));
+  // Background box scale: duration 0.8, ease expo
+  const bgProgress = clamp(p * totalTime / bgDur, 0, 1);
+  const boxScale = Easing.out(Easing.exp)(bgProgress);
 
   return (
     <span
@@ -345,7 +478,6 @@ const renderEffect5 = (word: string, p: number) => {
         color: COLORS.hx5Text,
       }}
     >
-      {/* Background box */}
       <span
         style={{
           position: "absolute",
@@ -355,15 +487,16 @@ const renderEffect5 = (word: string, p: number) => {
           width: "105%",
           background: COLORS.hx5Bg,
           borderRadius: 8,
-          transform: `scale(${boxScale})`,
+          transform: `scale3d(${boxScale},${boxScale},${boxScale})`,
           zIndex: -1,
         }}
       />
       {chars.map((ch, i) => {
-        const charStart = 0.1 + 0.05 * i;
-        const charEnd = charStart + 0.4;
+        const charStart = (0.1 + 0.05 * i) / totalTime;
+        const charEnd = charStart + charDur / totalTime;
         const cp = clamp((p - charStart) / (charEnd - charStart), 0, 1);
-        const eased = Easing.out(Easing.quad)(cp);
+        // ease power1 (linear power)
+        const eased = cp;
 
         return (
           <span
@@ -371,7 +504,7 @@ const renderEffect5 = (word: string, p: number) => {
             style={{
               display: "inline-block",
               opacity: eased,
-              transform: `scale(${1 + 0.3 * (1 - eased)})`,
+              transform: `scale(${1.3 - 0.3 * eased})`,
             }}
           >
             {ch}
@@ -382,13 +515,34 @@ const renderEffect5 = (word: string, p: number) => {
   );
 };
 
-/** Effect 6: Chars fade out reverse, fade in forward, orange bar grows left-to-right */
+/**
+ * Effect 6: Chars fade out in reverse, fade in forward, orange bar grows left-to-right
+ * GSAP: duration 0.1, ease sine
+ *   Phase 1: chars to opacity 0, stagger (pos,_,arr) => 0.06*(arr.length-1-pos) [reverse]
+ *   Phase 2: chars to opacity 1, stagger pos => 0.2+0.05*pos
+ *   Bar: --after-width 0% → 105%, duration 1, ease power4, starts at '<' (same as phase 2)
+ * CSS: hx-6 inline-flex, --color-bg-highlight #dc764c, --color-highlight-start #fadabd
+ */
 const renderEffect6 = (word: string, p: number) => {
   const chars = splitChars(word);
   const total = chars.length;
+  const fadeDur = 0.1;
 
-  // Bar width animation
-  const barWidth = lerp(p, [0.3, 1], [0, 105], Easing.out(Easing.poly(4)));
+  // Phase 1 total: last reverse stagger + duration
+  const phase1MaxStagger = 0.06 * (total - 1);
+  const phase1Total = phase1MaxStagger + fadeDur;
+  // Phase 2 total: last forward stagger + duration
+  const phase2MaxStagger = 0.2 + 0.05 * (total - 1);
+  const phase2Total = phase2MaxStagger + fadeDur;
+  // Bar: duration 1
+  const barDur = 1;
+  const totalTime = phase1Total + Math.max(phase2Total, barDur);
+
+  // Bar width: starts when phase 2 starts (at phase1Total), duration 1, ease power4
+  const barStart = phase1Total / totalTime;
+  const barEnd = barStart + barDur / totalTime;
+  const barP = clamp((p - barStart) / (barEnd - barStart), 0, 1);
+  const barWidth = Easing.out(Easing.poly(4))(barP) * 105;
 
   return (
     <span
@@ -398,7 +552,6 @@ const renderEffect6 = (word: string, p: number) => {
         color: COLORS.hx6Text,
       }}
     >
-      {/* Background bar */}
       <span
         style={{
           position: "absolute",
@@ -412,26 +565,32 @@ const renderEffect6 = (word: string, p: number) => {
         }}
       />
       {chars.map((ch, i) => {
-        // Phase 1: fade out in reverse order
-        const revDelay = 0.06 * (total - 1 - i);
-        const fadeOutStart = revDelay * 0.15;
-        const fadeOutEnd = fadeOutStart + 0.1;
-        // Phase 2: fade in forward
-        const fadeInStart = 0.3 + 0.05 * i;
-        const fadeInEnd = fadeInStart + 0.2;
+        const normalizedTime = p * totalTime;
+
+        // Phase 1: fade out, reverse stagger
+        const revStagger = 0.06 * (total - 1 - i);
+        const p1Start = revStagger;
+        const p1End = p1Start + fadeDur;
+        // Phase 2: fade in, forward stagger
+        const fwdStagger = 0.2 + 0.05 * i;
+        const p2Start = phase1Total + fwdStagger;
+        const p2End = p2Start + fadeDur;
 
         let opacity = 1;
-        if (p < 0.3) {
-          if (p >= fadeOutStart && p < fadeOutEnd) {
-            opacity = lerp(p, [fadeOutStart, fadeOutEnd], [1, 0]);
-          } else if (p >= fadeOutEnd) {
+        if (normalizedTime < phase1Total) {
+          if (normalizedTime >= p1Start && normalizedTime < p1End) {
+            opacity = 1 - (normalizedTime - p1Start) / fadeDur;
+          } else if (normalizedTime >= p1End) {
             opacity = 0;
           }
         } else {
-          if (p < fadeInStart) opacity = 0;
-          else if (p < fadeInEnd)
-            opacity = lerp(p, [fadeInStart, fadeInEnd], [0, 1]);
-          else opacity = 1;
+          if (normalizedTime < p2Start) {
+            opacity = 0;
+          } else if (normalizedTime < p2End) {
+            opacity = (normalizedTime - p2Start) / fadeDur;
+          } else {
+            opacity = 1;
+          }
         }
 
         return (
@@ -444,11 +603,24 @@ const renderEffect6 = (word: string, p: number) => {
   );
 };
 
-/** Effect 7: Chars scale in from bottom (scaleY 0->1), green background grows in height */
+/**
+ * Effect 7: Chars scaleY from 0 to 1 (origin 50% 80%), green background grows in height
+ * GSAP: duration 0.2, ease sine
+ *   chars fromTo scaleY 0→1, stagger pos => 0.2+0.05*pos
+ *   Bar: --after-height 0%→100%, duration 0.7, ease sine.inOut, starts at '<' (same time)
+ * CSS: hx-7, --color-bg-highlight #437745, --color-highlight-start #d2f2d3
+ */
 const renderEffect7 = (word: string, p: number) => {
   const chars = splitChars(word);
+  const charDur = 0.2;
+  const lastCharStagger = 0.2 + 0.05 * (chars.length - 1);
+  const totalCharTime = lastCharStagger + charDur;
+  const barDur = 0.7;
+  const totalTime = Math.max(totalCharTime, barDur);
 
-  const barHeight = lerp(p, [0.1, 0.8], [0, 100], Easing.inOut(Easing.sin));
+  // Bar height: starts at 0, grows over 0.7 with sine.inOut
+  const barP = clamp(p * totalTime / barDur, 0, 1);
+  const barHeight = Easing.inOut(Easing.sin)(barP) * 100;
 
   return (
     <span
@@ -458,7 +630,6 @@ const renderEffect7 = (word: string, p: number) => {
         color: COLORS.hx7Text,
       }}
     >
-      {/* Background box that grows in height */}
       <span
         style={{
           position: "absolute",
@@ -472,10 +643,11 @@ const renderEffect7 = (word: string, p: number) => {
         }}
       />
       {chars.map((ch, i) => {
-        const charStart = 0.2 + 0.05 * i;
-        const charEnd = charStart + 0.2;
+        const charStart = (0.2 + 0.05 * i) / totalTime;
+        const charEnd = charStart + charDur / totalTime;
         const cp = clamp((p - charStart) / (charEnd - charStart), 0, 1);
-        const eased = Easing.out(Easing.sin)(cp);
+        // ease sine (sine.out in gsap default)
+        const eased = Math.sin((cp * Math.PI) / 2);
 
         return (
           <span
@@ -494,21 +666,27 @@ const renderEffect7 = (word: string, p: number) => {
   );
 };
 
-/** Effect 8: Words rotate in from -30deg with elastic ease, color to gold */
+/**
+ * Effect 8: WORD-based rotation with elastic ease + color change
+ * GSAP: duration 1.2, ease elastic.out(0.7), transformOrigin '0% 50%'
+ *   words fromTo: opacity 0→1, rotationZ -30→0, stagger 0.2
+ *   color → --color-highlight-end (#c3c58c)
+ */
 const renderEffect8 = (word: string, p: number) => {
   const words = word.split(" ");
+  const stagger = 0.2;
+  const duration = 1.2;
+  const totalTime = duration + stagger * (words.length - 1);
 
   return (
     <span style={{ display: "inline-block", color: COLORS.highlightStart }}>
       {words.map((w, i) => {
-        const wordStart = i * 0.2;
-        const wordEnd = wordStart + 0.8;
+        const wordStart = (i * stagger) / totalTime;
+        const wordEnd = wordStart + duration / totalTime;
         const cp = clamp((p - wordStart) / (wordEnd - wordStart), 0, 1);
 
-        // Simulate elastic.out(0.7) with a spring-like overshoot
         const eased = elasticOut(cp, 0.7);
-
-        const opacity = lerp(cp, [0, 0.3], [0, 1]);
+        const opacity = clamp(cp * 4, 0, 1); // fast fade in
         const rotation = -30 * (1 - eased);
         const color = lerpColor(COLORS.highlightStart, COLORS.hx8End, cp);
 
@@ -532,15 +710,40 @@ const renderEffect8 = (word: string, p: number) => {
   );
 };
 
-/** Effect 9: Chars tumble in with random rotation, clone chars explode upward and fade */
+/**
+ * Effect 9: Chars tumble in with random rotation, clone chars explode upward and fade
+ * GSAP: duration 0.2, ease sine
+ *   Main chars fromTo: opacity 0→1, yPercent 80→0, rotation random→0, stagger pos => 0.06*pos
+ *   Clone chars: to duration 1, ease expo, stagger pos => 0.06*pos
+ *     xPercent random(-15,15), yPercent random(-130,-50), rotation -1*original, scale random(1,2), opacity 0
+ *   Both start at time 0
+ */
 const renderEffect9 = (word: string, p: number) => {
   const chars = splitChars(word);
 
-  // Deterministic "random" rotations per character
+  // Deterministic pseudo-random rotations per character (replacing gsap.utils.random)
   const rotations = useMemo(
-    () => chars.map((_, i) => ((i * 137.5) % 90) - 45),
+    () => chars.map((_, i) => ((i * 137.5 + 23) % 90) - 45),
     [chars.length]
   );
+  // Deterministic clone explosion params
+  const cloneXs = useMemo(
+    () => chars.map((_, i) => ((i * 47 + 11) % 30) - 15),
+    [chars.length]
+  );
+  const cloneYs = useMemo(
+    () => chars.map((_, i) => -130 + ((i * 71 + 3) % 80)),
+    [chars.length]
+  );
+  const cloneScales = useMemo(
+    () => chars.map((_, i) => 1 + ((i * 31 + 7) % 10) / 10),
+    [chars.length]
+  );
+
+  const mainDur = 0.2;
+  const cloneDur = 1;
+  const lastStagger = 0.06 * (chars.length - 1);
+  const totalTime = Math.max(lastStagger + mainDur, lastStagger + cloneDur);
 
   return (
     <span
@@ -550,14 +753,12 @@ const renderEffect9 = (word: string, p: number) => {
         color: COLORS.highlightStart,
       }}
     >
-      {/* Exploding clones (behind) */}
+      {/* Exploding clones (behind) — start at time 0 */}
       {chars.map((ch, i) => {
-        const cp = clamp(p * 1.5 - i * 0.06, 0, 1);
+        const cloneStart = (0.06 * i) / totalTime;
+        const cloneEnd = cloneStart + cloneDur / totalTime;
+        const cp = clamp((p - cloneStart) / (cloneEnd - cloneStart), 0, 1);
         const eased = Easing.out(Easing.exp)(cp);
-
-        const xOff = ((i * 37) % 30) - 15;
-        const yOff = -50 - ((i * 53) % 80);
-        const scl = 1 + ((i * 29) % 10) / 10;
 
         return (
           <span
@@ -567,7 +768,7 @@ const renderEffect9 = (word: string, p: number) => {
               position: "absolute",
               left: `${i * 0.62}em`,
               opacity: 1 - eased,
-              transform: `translate(${xOff * eased}%, ${yOff * eased}%) rotate(${-rotations[i] * eased}deg) scale(${1 + (scl - 1) * eased})`,
+              transform: `translate(${cloneXs[i] * eased}%, ${cloneYs[i] * eased}%) rotate(${-rotations[i] * eased}deg) scale(${1 + (cloneScales[i] - 1) * eased})`,
               color: COLORS.highlightStart,
               pointerEvents: "none",
             }}
@@ -578,13 +779,11 @@ const renderEffect9 = (word: string, p: number) => {
       })}
       {/* Main chars tumbling in */}
       {chars.map((ch, i) => {
-        const charStart = i * 0.06 * 0.5;
-        const charEnd = charStart + 0.5;
+        const charStart = (0.06 * i) / totalTime;
+        const charEnd = charStart + mainDur / totalTime;
         const cp = clamp((p - charStart) / (charEnd - charStart), 0, 1);
-        const eased = Easing.out(Easing.quad)(cp);
-
-        const yPct = 80 * (1 - eased);
-        const rot = rotations[i] * (1 - eased);
+        // ease sine
+        const eased = Math.sin((cp * Math.PI) / 2);
 
         return (
           <span
@@ -592,7 +791,7 @@ const renderEffect9 = (word: string, p: number) => {
             style={{
               display: "inline-block",
               opacity: eased,
-              transform: `translateY(${yPct}%) rotate(${rot}deg)`,
+              transform: `translateY(${80 * (1 - eased)}%) rotate(${rotations[i] * (1 - eased)}deg)`,
             }}
           >
             {ch}
@@ -603,34 +802,50 @@ const renderEffect9 = (word: string, p: number) => {
   );
 };
 
-/** Effect 10: Chars randomly brighten with red glow, then settle */
+/**
+ * Effect 10: Chars randomly brighten with red glow, then settle
+ * GSAP: duration 0.2, ease power2.in
+ *   Per-char: fromTo filter brightness(100%) drop-shadow(0 0 0 red)
+ *     → brightness(300%) drop-shadow(0 0 50px red)
+ *     delay gsap.utils.random(0,1), repeat:1, yoyo:true
+ */
 const renderEffect10 = (word: string, p: number) => {
   const chars = splitChars(word);
 
-  // Deterministic "random" delays per character
+  // Deterministic "random" delays per character (0..1)
   const delays = useMemo(
     () => chars.map((_, i) => ((i * 73 + 17) % 100) / 100),
     [chars.length]
   );
 
+  // Per-char: delay + duration*2 (repeat:1 yoyo means one forward + one reverse)
+  const duration = 0.2;
+  const maxDelay = 1;
+  const totalTime = maxDelay + duration * 2; // delay + forward + reverse
+
   return (
-    <span style={{ display: "inline-block", color: COLORS.highlightStart }}>
+    <span style={{ display: "inline-block", color: COLORS.hx10Start }}>
       {chars.map((ch, i) => {
-        const charStart = delays[i] * 0.5;
-        const charMid = charStart + 0.2;
-        const charEnd = charMid + 0.2;
+        const normalizedTime = p * totalTime;
+        const charStart = delays[i];
+        const charMid = charStart + duration; // peak brightness
+        const charEnd = charMid + duration; // back to normal
 
         let brightness = 100;
         let glowSize = 0;
 
-        if (p >= charStart && p < charMid) {
-          const cp = (p - charStart) / (charMid - charStart);
-          brightness = 100 + 200 * Easing.in(Easing.quad)(cp);
-          glowSize = 50 * Easing.in(Easing.quad)(cp);
-        } else if (p >= charMid && p < charEnd) {
-          const cp = (p - charMid) / (charEnd - charMid);
-          brightness = 300 - 200 * cp;
-          glowSize = 50 * (1 - cp);
+        if (normalizedTime >= charStart && normalizedTime < charMid) {
+          const cp = (normalizedTime - charStart) / duration;
+          // ease power2.in
+          const eased = cp * cp;
+          brightness = 100 + 200 * eased;
+          glowSize = 50 * eased;
+        } else if (normalizedTime >= charMid && normalizedTime < charEnd) {
+          const cp = (normalizedTime - charMid) / duration;
+          // yoyo reverses with same ease
+          const eased = cp * cp;
+          brightness = 300 - 200 * eased;
+          glowSize = 50 * (1 - eased);
         }
 
         return (
@@ -650,14 +865,20 @@ const renderEffect10 = (word: string, p: number) => {
   );
 };
 
-/** Effect 11: Large word scales down and deblurs into inline position (Flip-style) */
+/**
+ * Effect 11: Flip-style — large word shrinks and deblurs into inline position
+ * Original: uses GSAP Flip plugin with scrub-based ScrollTrigger
+ *   Large heading "vulnarable" (hx-flip__inner) Flips into the inline <mark> position
+ *   filter blur(6px) → blur(0px), font-size shrinks, position moves
+ *   Paragraph: scale 0.9 + blur(3px) → scale 1 + blur(0px), ease sine.inOut
+ */
 const renderEffect11 = (word: string, p: number) => {
   const eased = Easing.inOut(Easing.sin)(p);
 
-  // Simulate Flip: large blurred word shrinks to inline highlighted word
-  const fontSize = lerp(eased, [0, 1], [4, 1]); // 4x -> 1x scale
+  // Simulate Flip: large word shrinks to inline size
+  const fontSize = lerp(eased, [0, 1], [4, 1]);
   const blur = lerp(eased, [0, 1], [6, 0]);
-  const yOffset = lerp(eased, [0, 1], [-60, 0]); // slides down into position
+  const yOffset = lerp(eased, [0, 1], [-60, 0]);
 
   return (
     <span
@@ -675,30 +896,63 @@ const renderEffect11 = (word: string, p: number) => {
   );
 };
 
-/** Effect 12: 8 ghost clones slide up and vanish sequentially, then word gets bright */
+/**
+ * Effect 12: 8 word clones slide up and vanish, then word gets bright
+ * GSAP: duration 1.2, ease expo
+ *   8 clones: fromTo yPercent 150→0, opacity 0→1, stagger 0.15
+ *   Then clones to opacity 0 (duration 0.01, stagger 0.15)
+ *   Then main word color → #fff
+ * CSS: --color-highlight-start: rgb(84 77 73 / 61%), --color-highlight-end: #fff
+ *   Clone words positioned absolute
+ */
 const renderEffect12 = (word: string, p: number) => {
   const cloneCount = 8;
-  const cloneDur = 0.6;
-  const stagger = 0.15 * 0.5;
+  const duration = 1.2;
+  const stagger = 0.15;
+  // Phase 1: clones slide in. Total = duration + stagger * (cloneCount - 1)
+  const phase1Total = duration + stagger * (cloneCount - 1);
+  // Phase 2: clones vanish (0.01 duration, staggered)
+  const phase2Start = duration; // starts at animationDefaults.duration
+  const phase2Total = 0.01 + stagger * (cloneCount - 1);
+  // Phase 3: word color change. Starts at phase2Start + stagger * cloneCount - 1
+  const phase3Start = duration + stagger * cloneCount - 1;
+  const totalTime = Math.max(phase1Total, phase2Start + phase2Total, phase3Start + duration);
 
   return (
     <span
       style={{
         display: "inline-block",
         position: "relative",
-        color: COLORS.highlightStart,
+        color: COLORS.hx12Start,
       }}
     >
       {/* Ghost clones */}
       {Array.from({ length: cloneCount }).map((_, i) => {
-        const cloneStart = i * stagger;
-        const cloneEnd = cloneStart + cloneDur;
-        const cp = clamp((p - cloneStart) / (cloneEnd - cloneStart), 0, 1);
-        const eased = Easing.out(Easing.exp)(cp);
+        const normalizedTime = p * totalTime;
 
-        // Slide in from below and vanish
-        const yPct = 150 * (1 - eased);
-        const opacity = cp < 0.9 ? eased : lerp(cp, [0.9, 1], [1, 0]);
+        // Phase 1: slide in from below
+        const cloneStart = i * stagger;
+        const cloneEnd = cloneStart + duration;
+        const slideP = clamp(
+          (normalizedTime - cloneStart) / (cloneEnd - cloneStart),
+          0,
+          1
+        );
+        const slideEased = Easing.out(Easing.exp)(slideP);
+        const yPct = 150 * (1 - slideEased);
+
+        // Phase 2: vanish
+        const vanishStart = phase2Start + i * stagger;
+        const vanishEnd = vanishStart + 0.01;
+        let opacity = slideP > 0 ? slideEased : 0;
+        if (normalizedTime >= vanishStart) {
+          const vanishP = clamp(
+            (normalizedTime - vanishStart) / (vanishEnd - vanishStart),
+            0,
+            1
+          );
+          opacity = 1 - vanishP;
+        }
 
         return (
           <span
@@ -710,7 +964,7 @@ const renderEffect12 = (word: string, p: number) => {
               left: 0,
               opacity,
               transform: `translateY(${yPct}%)`,
-              color: `rgba(150,138,132,${0.3 + 0.1 * i})`,
+              color: COLORS.hx12End,
               pointerEvents: "none",
             }}
           >
@@ -723,9 +977,9 @@ const renderEffect12 = (word: string, p: number) => {
         style={{
           display: "inline-block",
           color: lerpColor(
-            COLORS.highlightStart,
+            COLORS.hx12Start,
             COLORS.hx12End,
-            clamp((p - 0.7) / 0.3, 0, 1)
+            clamp((p * totalTime - phase3Start) / duration, 0, 1)
           ),
           position: "relative",
         }}
@@ -736,19 +990,32 @@ const renderEffect12 = (word: string, p: number) => {
   );
 };
 
-/** Effect 13: Chars get pink glow + selection highlight bar grows */
+/**
+ * Effect 13: Chars get pink glow + selection highlight bar grows
+ * GSAP: duration 0.4, ease power1.inOut
+ *   chars fromTo: filter drop-shadow(0 0 0 #ffdbf5) → drop-shadow(0 0 20px #ffdbf5), stagger 0.03
+ *   selectMarker: --select-width 0% → 103%, duration 0.8, ease expo, starts at 0
+ * CSS: --color-highlight-start: var(--color-text), selection bg rgb(109 215 230 / 14%) mix-blend-mode plus-lighter
+ *   select marker has ::before/::after SVG decorators
+ */
 const renderEffect13 = (word: string, p: number) => {
   const chars = splitChars(word);
+  const charDur = 0.4;
+  const lastCharStagger = 0.03 * (chars.length - 1);
+  const totalCharTime = lastCharStagger + charDur;
+  const selectDur = 0.8;
+  const totalTime = Math.max(totalCharTime, selectDur);
 
-  // Selection bar width
-  const selectWidth = lerp(p, [0, 0.8], [0, 103], Easing.out(Easing.exp));
+  // Selection bar width: duration 0.8, ease expo, starts at 0
+  const selectP = clamp(p * totalTime / selectDur, 0, 1);
+  const selectWidth = Easing.out(Easing.exp)(selectP) * 103;
 
   return (
     <span
       style={{
         display: "inline-block",
         position: "relative",
-        color: COLORS.text,
+        color: COLORS.hx13Start,
       }}
     >
       {/* Selection highlight bar */}
@@ -765,10 +1032,12 @@ const renderEffect13 = (word: string, p: number) => {
         }}
       />
       {chars.map((ch, i) => {
-        const glowStart = i * 0.03;
-        const glowEnd = glowStart + 0.4;
-        const cp = clamp((p - glowStart) / (glowEnd - glowStart), 0, 1);
-        const glowSize = 20 * Easing.out(Easing.quad)(cp);
+        const charStart = (0.03 * i) / totalTime;
+        const charEnd = charStart + charDur / totalTime;
+        const cp = clamp((p - charStart) / (charEnd - charStart), 0, 1);
+        // ease power1.inOut
+        const eased = Easing.inOut(Easing.linear)(cp);
+        const glowSize = 20 * eased;
 
         return (
           <span
@@ -784,43 +1053,6 @@ const renderEffect13 = (word: string, p: number) => {
         );
       })}
     </span>
-  );
-};
-
-// ─── Utility: color interpolation ───
-
-const hexToRgb = (hex: string): [number, number, number] => {
-  const h = hex.replace("#", "");
-  return [
-    parseInt(h.substring(0, 2), 16),
-    parseInt(h.substring(2, 4), 16),
-    parseInt(h.substring(4, 6), 16),
-  ];
-};
-
-const rgbToHex = (r: number, g: number, b: number): string =>
-  `#${[r, g, b].map((v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, "0")).join("")}`;
-
-const lerpColor = (from: string, to: string, t: number): string => {
-  const [r1, g1, b1] = hexToRgb(from);
-  const [r2, g2, b2] = hexToRgb(to);
-  return rgbToHex(
-    r1 + (r2 - r1) * t,
-    g1 + (g2 - g1) * t,
-    b1 + (b2 - b1) * t
-  );
-};
-
-/** Elastic-out easing with configurable amplitude */
-const elasticOut = (t: number, amplitude: number = 1): number => {
-  if (t === 0 || t === 1) return t;
-  const p = 0.3;
-  const s = (p / (2 * Math.PI)) * Math.asin(1 / amplitude);
-  return (
-    amplitude *
-      Math.pow(2, -10 * t) *
-      Math.sin(((t - s) * (2 * Math.PI)) / p) +
-    1
   );
 };
 
@@ -862,13 +1094,11 @@ const SectionBlock: React.FC<SectionBlockProps> = ({
 }) => {
   const sp = sectionProgress(progress, index, totalSections);
 
-  // Fade in/out for the entire block
   const blockOpacity = interpolate(sp, [0, 0.15, 0.85, 1], [0, 1, 1, 0.3], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Slide up as scroll progresses
   const yOffset = interpolate(sp, [0, 0.15, 1], [80, 0, -30], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -877,8 +1107,6 @@ const SectionBlock: React.FC<SectionBlockProps> = ({
 
   // Highlight animation starts at 15% of section progress and runs until 85%
   const highlightP = clamp((sp - 0.15) / 0.7, 0, 1);
-
-  const renderer = EFFECT_RENDERERS[section.effect];
 
   return (
     <div
@@ -899,17 +1127,25 @@ const SectionBlock: React.FC<SectionBlockProps> = ({
       <p
         style={{
           fontSize: 52,
-          lineHeight: 1.25,
-          letterSpacing: "-0.025em",
+          lineHeight: 1.2,
+          letterSpacing: "-0.0225em",
           color: COLORS.text,
-          maxWidth: 1200,
+          maxWidth: 900,
           textWrap: "balance" as never,
           fontWeight: 300,
           margin: 0,
         }}
       >
         {section.before}{" "}
-        {renderer ? renderer(section.highlight, highlightP) : section.highlight}{" "}
+        {section.highlights.map((hl, hlIdx) => {
+          const renderer = EFFECT_RENDERERS[hl.effect];
+          return (
+            <React.Fragment key={hlIdx}>
+              {renderer ? renderer(hl.text, highlightP) : hl.text}
+              {hlIdx < section.highlights.length - 1 ? " " : ""}
+            </React.Fragment>
+          );
+        })}{" "}
         {section.after}
       </p>
     </div>
@@ -922,12 +1158,9 @@ export const TextHighlight: React.FC = () => {
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
-  // Global scroll progress 0..1
   const progress = frame / durationInFrames;
 
-  // Determine which sections are "visible" (render ~3 at a time for overlap)
-  const currentSectionFloat =
-    progress * SECTIONS.length;
+  const currentSectionFloat = progress * SECTIONS.length;
   const visibleIndices: number[] = [];
   for (let i = 0; i < SECTIONS.length; i++) {
     const dist = Math.abs(i + 0.5 - currentSectionFloat);
@@ -940,11 +1173,11 @@ export const TextHighlight: React.FC = () => {
     <AbsoluteFill
       style={{
         backgroundColor: COLORS.bg,
-        fontFamily: '"Georgia", "Times New Roman", serif',
+        fontFamily: '"parabolica", "Georgia", serif',
         overflow: "hidden",
       }}
     >
-      {/* Subtle radial gradient background matching the original */}
+      {/* Background: radial gradients + noise texture matching original CSS */}
       <div
         style={{
           position: "absolute",
@@ -987,7 +1220,7 @@ export const TextHighlight: React.FC = () => {
         </span>
       </div>
 
-      {/* Intro title — visible at the very beginning */}
+      {/* Intro title — matching original HTML structure */}
       <div
         style={{
           position: "absolute",
@@ -996,19 +1229,25 @@ export const TextHighlight: React.FC = () => {
           alignItems: "flex-end",
           justifyContent: "flex-start",
           padding: "0 60px 160px 60px",
-          opacity: interpolate(progress, [0, 0.02, 0.06, 0.1], [0, 1, 1, 0], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          }),
+          opacity: interpolate(
+            progress,
+            [0, 0.02, 0.06, 0.1],
+            [0, 1, 1, 0],
+            {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            }
+          ),
           zIndex: 5,
         }}
       >
         <h2
           style={{
             fontSize: clamp(width * 0.06, 60, 120),
-            lineHeight: 0.85,
+            lineHeight: 0.8,
             margin: 0,
             textTransform: "uppercase",
+            fontFamily: '"the-seasons", "Georgia", serif',
             fontWeight: 300,
             color: COLORS.text,
             letterSpacing: "-0.02em",
@@ -1028,7 +1267,7 @@ export const TextHighlight: React.FC = () => {
         </h2>
       </div>
 
-      {/* Content sections — rendered as overlapping layers */}
+      {/* Content sections */}
       {visibleIndices.map((i) => (
         <SectionBlock
           key={i}
@@ -1039,7 +1278,7 @@ export const TextHighlight: React.FC = () => {
         />
       ))}
 
-      {/* Subtle noise overlay */}
+      {/* Noise overlay (original uses img/noise.png tiled at 200px) */}
       <div
         style={{
           position: "absolute",
