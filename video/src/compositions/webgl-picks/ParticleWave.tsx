@@ -9,8 +9,17 @@ import {
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
 import * as THREE from "three";
+
+const loadMontserrat = () => {
+  const link = document.createElement("link");
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap";
+  link.rel = "stylesheet";
+  if (!document.head.querySelector('link[href*="Montserrat"]')) {
+    document.head.appendChild(link);
+  }
+};
 
 // ── Config ──
 
@@ -180,11 +189,6 @@ const HexGridScene: React.FC<{
             roughness: ROUGHNESS,
             clearcoat: CLEARCOAT,
             clearcoatRoughness: CLEARCOAT_ROUGHNESS,
-            sheen: 1.0,
-            sheenRoughness: 0.4,
-            sheenColor: new THREE.Color(0x4444ff),
-            iridescence: 0.3,
-            iridescenceIOR: 1.3,
             side: THREE.FrontSide,
           }),
         );
@@ -215,7 +219,7 @@ const HexGridScene: React.FC<{
     <>
       <pointLight
         color={LIGHT1_COLOR}
-        intensity={LIGHT1_INTENSITY * 50}
+        intensity={LIGHT1_INTENSITY}
         decay={1}
         position={[targetX, targetY, LIGHT1_Z]}
         castShadow
@@ -224,7 +228,7 @@ const HexGridScene: React.FC<{
       />
       <pointLight
         color={LIGHT2_COLOR}
-        intensity={LIGHT2_INTENSITY * 50}
+        intensity={LIGHT2_INTENSITY}
         decay={1}
         position={[targetX, targetY, LIGHT2_Z]}
       />
@@ -248,7 +252,7 @@ const HexGridScene: React.FC<{
         ))}
       </group>
 
-      <Environment preset="studio" environmentIntensity={0.8} />
+      {/* No environment — original uses point lights only, alpha shows CSS gradient */}
     </>
   );
 };
@@ -258,6 +262,10 @@ const HexGridScene: React.FC<{
 export const ParticleWave: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+
+  useMemo(() => {
+    if (typeof document !== "undefined") loadMontserrat();
+  }, []);
 
   const time = frame / fps;
 
@@ -270,8 +278,19 @@ export const ParticleWave: React.FC = () => {
     easing: Easing.out(Easing.cubic),
   });
 
+  const textOpacity = interpolate(frame, [30, 60], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+    <AbsoluteFill
+      style={{
+        background:
+          "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,0,0,0.5) 200%)",
+      }}
+    >
       <div style={{ width: "100%", height: "100%", opacity: introOpacity }}>
         <ThreeCanvas
           width={width}
@@ -279,7 +298,9 @@ export const ParticleWave: React.FC = () => {
           camera={{ position: [0, 0, 100], fov: 50 }}
           gl={{
             antialias: true,
+            alpha: true,
             powerPreference: "high-performance",
+            toneMapping: THREE.NoToneMapping,
           }}
           shadows
           style={{ width: "100%", height: "100%" }}
@@ -290,6 +311,54 @@ export const ParticleWave: React.FC = () => {
             pointerY={pointerY}
           />
         </ThreeCanvas>
+      </div>
+
+      {/* Text overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          opacity: textOpacity,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "Montserrat, sans-serif",
+            fontWeight: 900,
+            fontSize: 72,
+            color: "#ffffff",
+            textTransform: "uppercase" as const,
+            letterSpacing: 8,
+            textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+            lineHeight: 1.1,
+            textAlign: "center" as const,
+          }}
+        >
+          Hexagonal
+        </div>
+        <div
+          style={{
+            fontFamily: "Montserrat, sans-serif",
+            fontWeight: 700,
+            fontSize: 72,
+            color: "#ffffff",
+            textTransform: "uppercase" as const,
+            letterSpacing: 8,
+            textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+            lineHeight: 1.1,
+            textAlign: "center" as const,
+          }}
+        >
+          Grid
+        </div>
       </div>
     </AbsoluteFill>
   );
