@@ -219,21 +219,17 @@ const HexGridScene: React.FC<{
     <>
       <pointLight
         color={LIGHT1_COLOR}
-        intensity={LIGHT1_INTENSITY}
-        decay={1}
+        intensity={8}
+        decay={0}
         position={[targetX, targetY, LIGHT1_Z]}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
       />
       <pointLight
         color={LIGHT2_COLOR}
-        intensity={LIGHT2_INTENSITY}
-        decay={1}
+        intensity={3}
+        decay={0}
         position={[targetX, targetY, LIGHT2_Z]}
       />
-      <ambientLight intensity={0.6} />
-      <hemisphereLight args={["#ffffff", "#444488", 0.8]} />
+      <ambientLight intensity={0.3} />
 
       <group
         scale={[scaleFactor, scaleFactor, 1]}
