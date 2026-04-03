@@ -7,8 +7,10 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock, RwLock as StdRwLock};
+use std::time::Instant;
 
 use chrono::{DateTime, Utc};
+use dashmap::DashMap;
 use ethers::abi::{encode, Token};
 use ethers::core::utils::keccak256;
 use ethers::types::U256;
@@ -67,6 +69,114 @@ const MAX_MARKETS_PER_BATCH: usize = 8192;
 /// Source metadata tuple: (source_id, display_name, sync_interval_secs).
 /// Built at startup from the source registry (sources-display.json).
 pub type SourceMeta = (String, String, u64);
+
+// ── Source health tracking ──────────────────────────────────────────────
+// Tracks per-source failures so chronically broken sources get temporarily
+// excluded from batch generation instead of poisoning every cycle.
+
+/// Default: exclude after 10 consecutive failures.
+const DEFAULT_MAX_CONSECUTIVE_FAILURES: u32 = 10;
+
+/// Auto-recover excluded sources after 30 minutes of exile.
+const RECOVERY_WINDOW_SECS: u64 = 30 * 60;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceHealth {
+    pub consecutive_failures: u32,
+    pub total_failures: u64,
+    pub total_successes: u64,
+    #[serde(skip)]
+    pub last_success: Option<Instant>,
+    #[serde(skip)]
+    pub excluded_since: Option<Instant>,
+    pub excluded: bool,
+}
+
+impl Default for SourceHealth {
+    fn default() -> Self {
+        Self {
+            consecutive_failures: 0,
+            total_failures: 0,
+            total_successes: 0,
+            last_success: None,
+            excluded_since: None,
+            excluded: false,
+        }
+    }
+}
+
+pub struct SourceHealthTracker {
+    health: DashMap<String, SourceHealth>,
+    max_consecutive_failures: u32,
+}
+
+impl SourceHealthTracker {
+    pub fn new(max_consecutive_failures: u32) -> Self {
+        Self {
+            health: DashMap::new(),
+            max_consecutive_failures,
+        }
+    }
+
+    /// Record a successful config generation for this source.
+    pub fn record_success(&self, source_id: &str) {
+        let mut entry = self.health.entry(source_id.to_string()).or_default();
+        entry.consecutive_failures = 0;
+        entry.total_successes += 1;
+        entry.last_success = Some(Instant::now());
+        entry.excluded = false;
+        entry.excluded_since = None;
+    }
+
+    /// Record a failed config generation (None result or zero healthy assets).
+    pub fn record_failure(&self, source_id: &str) {
+        let mut entry = self.health.entry(source_id.to_string()).or_default();
+        entry.consecutive_failures += 1;
+        entry.total_failures += 1;
+        if entry.consecutive_failures >= self.max_consecutive_failures && !entry.excluded {
+            entry.excluded = true;
+            entry.excluded_since = Some(Instant::now());
+            warn!(
+                source = source_id,
+                failures = entry.consecutive_failures,
+                "Source excluded from batch generation"
+            );
+        }
+    }
+
+    /// Returns true if this source should be skipped this cycle.
+    /// Auto-recovers sources excluded for longer than RECOVERY_WINDOW_SECS.
+    pub fn should_skip(&self, source_id: &str) -> bool {
+        let mut entry = match self.health.get_mut(source_id) {
+            Some(e) => e,
+            None => return false,
+        };
+        if !entry.excluded {
+            return false;
+        }
+        // Auto-recover: try again after the exile window
+        if let Some(since) = entry.excluded_since {
+            if since.elapsed().as_secs() >= RECOVERY_WINDOW_SECS {
+                info!(
+                    source = source_id,
+                    exile_secs = since.elapsed().as_secs(),
+                    "Source re-admitted for retry after recovery window"
+                );
+                entry.excluded = false;
+                entry.excluded_since = None;
+                entry.consecutive_failures = 0;
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Snapshot of all tracked sources for the API.
+    pub fn snapshot(&self) -> HashMap<String, SourceHealth> {
+        self.health.iter().map(|e| (e.key().clone(), e.value().clone())).collect()
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -537,6 +647,8 @@ pub struct BatchEngineState {
     pub configs: RwLock<Vec<BatchConfig>>,
     /// Latest BLS-signed configs (loaded from DB on startup, updated on POST)
     pub signed_configs: RwLock<Vec<SignedBatchConfig>>,
+    /// Per-source health tracking for auto-exclusion
+    pub health_tracker: SourceHealthTracker,
 }
 
 impl BatchEngineState {
@@ -544,6 +656,7 @@ impl BatchEngineState {
         Self {
             configs: RwLock::new(Vec::new()),
             signed_configs: RwLock::new(Vec::new()),
+            health_tracker: SourceHealthTracker::new(DEFAULT_MAX_CONSECUTIVE_FAILURES),
         }
     }
 
@@ -697,13 +810,27 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: Vec<Source
             if is_source_disabled(source_id) {
                 continue;
             }
-            if let Some(config) =
-                generate_batch_config(&pool, source_id, display_name, *sync_interval).await
-            {
-                if let Err(e) = store_batch_config(&pool, &config).await {
-                    warn!(source = %source_id, %e, "Failed to store batch config");
+            if state.health_tracker.should_skip(source_id) {
+                let h = state.health_tracker.health.get(source_id);
+                let failures = h.as_ref().map(|e| e.consecutive_failures).unwrap_or(0);
+                info!(
+                    source = %source_id,
+                    consecutive_failures = failures,
+                    "Source temporarily excluded — {} consecutive failures", failures
+                );
+                continue;
+            }
+            match generate_batch_config(&pool, source_id, display_name, *sync_interval).await {
+                Some(config) => {
+                    if let Err(e) = store_batch_config(&pool, &config).await {
+                        warn!(source = %source_id, %e, "Failed to store batch config");
+                    }
+                    state.health_tracker.record_success(source_id);
+                    configs.push(config);
                 }
-                configs.push(config);
+                None => {
+                    state.health_tracker.record_failure(source_id);
+                }
             }
         }
 

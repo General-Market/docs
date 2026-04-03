@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use axum::extract::{Path as AxumPath, Query, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::Json;
+use axum::response::{IntoResponse, Json};
 use axum::routing::get;
 use axum::Router;
 use chrono::{DateTime, Utc};
@@ -417,6 +418,69 @@ pub fn load_symbol_map(
     Ok(map)
 }
 
+// ── Global rate limiter ────────────────────────────────────────────────
+// Sliding-window counter: rejects with 503 when requests/sec exceed the cap.
+// No new dependencies — just atomics and epoch arithmetic.
+
+const RATE_LIMIT_PER_SECOND: u64 = 1000;
+
+struct RateLimiterState {
+    /// Requests counted in the current window
+    count: AtomicU64,
+    /// Window start as milliseconds since UNIX epoch
+    window_start_ms: AtomicU64,
+}
+
+impl RateLimiterState {
+    fn new() -> Self {
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        Self {
+            count: AtomicU64::new(0),
+            window_start_ms: AtomicU64::new(now_ms),
+        }
+    }
+
+    /// Returns true if the request is allowed, false if rate-limited.
+    fn check_and_increment(&self) -> bool {
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
+        let window = self.window_start_ms.load(Ordering::Relaxed);
+
+        // Window expired — reset (benign race: worst case we allow a few extra requests)
+        if now_ms.saturating_sub(window) >= 1000 {
+            self.count.store(1, Ordering::Relaxed);
+            self.window_start_ms.store(now_ms, Ordering::Relaxed);
+            return true;
+        }
+
+        let prev = self.count.fetch_add(1, Ordering::Relaxed);
+        prev < RATE_LIMIT_PER_SECOND
+    }
+}
+
+async fn rate_limit_middleware(
+    State(limiter): State<Arc<RateLimiterState>>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    if limiter.check_and_increment() {
+        next.run(request).await
+    } else {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [("Retry-After", "1")],
+            "Rate limit exceeded — try again shortly",
+        )
+            .into_response()
+    }
+}
+
 pub fn router(state: Arc<AppState>) -> Router {
     // P2.8: Restrict CORS origins when configured
     let cors = if state.cors_origins.is_empty() {
@@ -518,6 +582,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
+        // Source batch health tracking (per-source failure/exclusion stats)
+        .route("/health/sources", get(health_sources))
         // Source monitoring endpoints (read-only, public)
         .route("/sources/health", get(admin_sources_health))
         .route("/sources/:source_id/assets", get(admin_source_assets))
@@ -552,6 +618,10 @@ pub fn router(state: Arc<AppState>) -> Router {
         .layer(CompressionLayer::new())
         .layer(cors)
         .with_state(state)
+        .layer(axum::middleware::from_fn_with_state(
+            Arc::new(RateLimiterState::new()),
+            rate_limit_middleware,
+        ))
 }
 
 // ---- /health ----
@@ -595,6 +665,36 @@ async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, 
         symbols_tracked,
         chain_event_lag_total,
     }))
+}
+
+// ---- /health/sources ----
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchSourceHealthEntry {
+    source_id: String,
+    consecutive_failures: u32,
+    total_failures: u64,
+    total_successes: u64,
+    excluded: bool,
+}
+
+async fn health_sources(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<BatchSourceHealthEntry>> {
+    let snapshot = state.batch_engine.health_tracker.snapshot();
+    let mut entries: Vec<BatchSourceHealthEntry> = snapshot
+        .into_iter()
+        .map(|(source_id, h)| BatchSourceHealthEntry {
+            source_id,
+            consecutive_failures: h.consecutive_failures,
+            total_failures: h.total_failures,
+            total_successes: h.total_successes,
+            excluded: h.excluded,
+        })
+        .collect();
+    entries.sort_by(|a, b| a.source_id.cmp(&b.source_id));
+    Json(entries)
 }
 
 // ---- /price ----
