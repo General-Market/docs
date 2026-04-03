@@ -1,11 +1,14 @@
 // Source: https://tympanus.net/Tutorials/DeviceShowcase/
 // GLB: https://github.com/repalash/threepipe-device-mockup-codrops
+//
+// Camera views and transform animations extracted from the WEBGI_viewer
+// extension baked into the GLB. Quaternion slerp matches the original
+// threepipe CameraViewPlugin with interpolateMode: "spherical".
 import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
   useVideoConfig,
-  interpolate,
   staticFile,
 } from "remotion";
 import { ThreeCanvas } from "@remotion/three";
@@ -14,58 +17,110 @@ import { useGLTF, ContactShadows, Environment } from "@react-three/drei";
 import * as THREE from "three";
 
 const MODEL_URL = staticFile("models/tabletop_macbook_iphone.glb");
-
-// Pre-load so Remotion doesn't timeout
 useGLTF.preload(MODEL_URL);
 
-// ── Timeline phases (600 frames at 60fps = 10s) ──
-
-const PHASES = {
-  start: [0, 60] as const, // Camera at start view, both devices closed/facedown
-  hoverMac: [60, 150] as const, // Hover macbook — lid cracks open
-  focusMac: [150, 300] as const, // Click macbook — lid fully open, camera orbits
-  unfocus: [300, 360] as const, // Return to front
-  hoverPhone: [360, 420] as const, // Hover iphone — tilts up
-  focusPhone: [420, 540] as const, // Click iphone — floats up, camera orbits
-  outro: [540, 600] as const, // Return to start
-} as const;
-
-function phaseProgress(
-  frame: number,
-  phase: readonly [number, number],
-): number {
-  return Math.max(
-    0,
-    Math.min(
-      1,
-      (frame - phase[0]) / (phase[1] - phase[0]),
-    ),
-  );
-}
-
-function easeIO(t: number): number {
-  return t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-}
-
-// ── Camera positions (approximating the threepipe CameraView presets) ──
+// ── Camera views extracted from GLB WEBGI_viewer.CameraViews ──
 
 const CAM = {
-  start: { pos: [0.5, 3.5, 5.0] as const, target: [0, 0.3, 0] as const, fov: 35 },
-  front: { pos: [0.3, 2.0, 4.0] as const, target: [0, 0.3, 0] as const, fov: 32 },
-  macbook: { pos: [-0.8, 2.2, 2.8] as const, target: [-0.3, 0.6, 0] as const, fov: 30 },
-  iphone: { pos: [1.5, 1.8, 2.5] as const, target: [1.0, 0.5, 0] as const, fov: 30 },
+  start: {
+    pos: new THREE.Vector3(7.859, 2.544, -9.431),
+    target: new THREE.Vector3(2.056, 1.385, 0.641),
+    zoom: 1.0,
+  },
+  front: {
+    pos: new THREE.Vector3(2.053, 3.712, -11.446),
+    target: new THREE.Vector3(1.869, 1.087, 0.518),
+    zoom: 1.0,
+  },
+  macbook: {
+    pos: new THREE.Vector3(3.031, 4.096, -6.179),
+    target: new THREE.Vector3(3.001, 2.780, 0.829),
+    zoom: 1.2,
+  },
+  iphone: {
+    pos: new THREE.Vector3(-2.800, 2.375, -4.440),
+    target: new THREE.Vector3(-2.921, 2.475, -1.564),
+    zoom: 1.0,
+  },
 };
 
-function lerpVec3(
-  a: readonly [number, number, number],
-  b: readonly [number, number, number],
+// ── Transform animations extracted from GLB node extras ──
+// Bevels_2 (macbook lid) — quaternion around X axis only
+const LID_CLOSED = new THREE.Quaternion(0, 0, 0, 1);
+const LID_HOVER = new THREE.Quaternion(-0.03499, 0, 0, 0.99939);
+const LID_OPEN = new THREE.Quaternion(-0.78333, 0, 0, 0.62161);
+
+// iPhone — full quaternion + position
+const IPHONE_FACEDOWN = {
+  pos: new THREE.Vector3(-3, 0, 0),
+  quat: new THREE.Quaternion(0.00056, 0.70739, 0.70682, 0.00056),
+};
+const IPHONE_TILTED = {
+  pos: new THREE.Vector3(-3, 0.13, 0),
+  quat: new THREE.Quaternion(-0.05300, 0.70484, 0.70540, -0.05296),
+};
+const IPHONE_FLOATING = {
+  pos: new THREE.Vector3(-3, 2.5, 0),
+  quat: new THREE.Quaternion(0, 0, 0, 1),
+};
+
+// iPhone scale is constant across all transforms
+const IPHONE_SCALE = new THREE.Vector3(22.486, 22.486, 22.486);
+
+// Bevels_2 position/scale are constant across all transforms
+const BEVELS_POS = new THREE.Vector3(-0.00012, 0.00824, -0.10401);
+const BEVELS_SCALE = new THREE.Vector3(0.27471, 0.27471, 0.27471);
+
+// ── Timeline (600 frames @ 60fps = 10s) ──
+// Matches the original interaction flow:
+//   start → front (hover) → macbook (click) → front (unhover) → iphone (click) → start
+
+const PHASES = {
+  establish: [0, 60],     // Hold at start view
+  toFront: [60, 120],     // Drift to front view (simulates initial hover)
+  hoverMac: [120, 180],   // Macbook lid cracks open (hover state)
+  toMacbook: [180, 300],  // Camera moves to macbook, lid opens fully
+  toFront2: [300, 360],   // Back to front, lid closes
+  hoverPhone: [360, 420], // iPhone tilts (hover state)
+  toIphone: [420, 540],   // Camera to iphone, phone floats up
+  toStart: [540, 600],    // Return to start, phone goes back down
+} as const;
+
+function progress(frame: number, phase: readonly [number, number]): number {
+  if (frame <= phase[0]) return 0;
+  if (frame >= phase[1]) return 1;
+  return (frame - phase[0]) / (phase[1] - phase[0]);
+}
+
+// easeInOutSine — matches the original animEase
+function ease(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+// Helpers for slerp-based camera interpolation
+const _tmpPos = new THREE.Vector3();
+const _tmpTarget = new THREE.Vector3();
+
+function lerpCam(
+  from: { pos: THREE.Vector3; target: THREE.Vector3; zoom: number },
+  to: { pos: THREE.Vector3; target: THREE.Vector3; zoom: number },
   t: number,
-): [number, number, number] {
-  return [
-    a[0] + (b[0] - a[0]) * t,
-    a[1] + (b[1] - a[1]) * t,
-    a[2] + (b[2] - a[2]) * t,
-  ];
+) {
+  return {
+    pos: _tmpPos.copy(from.pos).lerp(to.pos, t).clone(),
+    target: _tmpTarget.copy(from.target).lerp(to.target, t).clone(),
+    zoom: from.zoom + (to.zoom - from.zoom) * t,
+  };
+}
+
+const _tmpQuat = new THREE.Quaternion();
+
+function slerpQuat(a: THREE.Quaternion, b: THREE.Quaternion, t: number): THREE.Quaternion {
+  return _tmpQuat.copy(a).slerp(b, t).clone();
+}
+
+function lerpVec3(a: THREE.Vector3, b: THREE.Vector3, t: number): THREE.Vector3 {
+  return a.clone().lerp(b, t);
 }
 
 // ── Scene ──
@@ -74,140 +129,102 @@ const DeviceScene: React.FC<{ frame: number }> = ({ frame }) => {
   const { camera } = useThree();
   const gltf = useGLTF(MODEL_URL);
 
-  // Find named objects from the GLB (names from the threepipe source)
-  const { iphone, macbookScreen } = useMemo(() => {
+  const { iphone, bevels } = useMemo(() => {
     const scene = gltf.scene;
-    const _mb = scene.getObjectByName("macbook");
-    const ip = scene.getObjectByName("iphone");
-    // The lid/screen pivot — named 'Bevels_2' in the original source
-    const mbs =
-      _mb?.getObjectByName("Bevels_2") ||
-      _mb?.getObjectByName("screen") ||
-      _mb?.getObjectByName("lid");
-    return { iphone: ip, macbookScreen: mbs };
+    return {
+      iphone: scene.getObjectByName("iphone") ?? null,
+      bevels: scene.getObjectByName("Bevels_2") ?? null,
+    };
   }, [gltf]);
 
-  // ── Compute device transforms from frame ──
-
-  // MacBook lid angle (rotation around X at hinge)
-  // closed=0, hover=~15deg, open=~110deg
-  const macLidAngle = useMemo(() => {
-    const hoverP = easeIO(phaseProgress(frame, PHASES.hoverMac));
-    const focusP = easeIO(phaseProgress(frame, PHASES.focusMac));
-    const unfocusP = easeIO(phaseProgress(frame, PHASES.unfocus));
-    const hoverPhoneP = easeIO(phaseProgress(frame, PHASES.hoverPhone));
-    const focusPhoneP = easeIO(phaseProgress(frame, PHASES.focusPhone));
-    const outroP = easeIO(phaseProgress(frame, PHASES.outro));
-
-    if (frame < PHASES.hoverMac[0]) return 0; // closed
-    if (frame < PHASES.focusMac[0])
-      return interpolate(hoverP, [0, 1], [0, 15]); // hover
-    if (frame < PHASES.unfocus[0])
-      return interpolate(focusP, [0, 1], [15, 110]); // open
-    if (frame < PHASES.hoverPhone[0])
-      return interpolate(unfocusP, [0, 1], [110, 0]); // closing
-    if (frame < PHASES.focusPhone[0])
-      return interpolate(hoverPhoneP, [0, 1], [0, 0]); // stays closed
-    if (frame < PHASES.outro[0])
-      return interpolate(focusPhoneP, [0, 1], [0, 0]);
-    return interpolate(outroP, [0, 1], [0, 0]);
-  }, [frame]);
-
-  // iPhone: facedown → tilted → floating
-  // facedown = rotated face-down on table
-  // tilted = slight tilt toward camera
-  // floating = lifted off table, face toward camera
-  const iphoneState = useMemo(() => {
-    const hoverPhoneP = easeIO(phaseProgress(frame, PHASES.hoverPhone));
-    const focusPhoneP = easeIO(phaseProgress(frame, PHASES.focusPhone));
-    const outroP = easeIO(phaseProgress(frame, PHASES.outro));
-
-    if (frame < PHASES.hoverPhone[0])
-      return { rotX: Math.PI, y: 0 }; // facedown
-    if (frame < PHASES.focusPhone[0])
-      return {
-        rotX: interpolate(hoverPhoneP, [0, 1], [Math.PI, Math.PI * 0.85]),
-        y: interpolate(hoverPhoneP, [0, 1], [0, 0.1]),
-      }; // tilted
-    if (frame < PHASES.outro[0])
-      return {
-        rotX: interpolate(focusPhoneP, [0, 1], [Math.PI * 0.85, Math.PI * 0.5]),
-        y: interpolate(focusPhoneP, [0, 1], [0.1, 0.8]),
-      }; // floating
-    return {
-      rotX: interpolate(outroP, [0, 1], [Math.PI * 0.5, Math.PI]),
-      y: interpolate(outroP, [0, 1], [0.8, 0]),
-    }; // back to facedown
-  }, [frame]);
-
-  // ── Camera animation ──
+  // ── Camera state ──
   const camState = useMemo(() => {
-    const hoverP = easeIO(phaseProgress(frame, PHASES.hoverMac));
-    const focusP = easeIO(phaseProgress(frame, PHASES.focusMac));
-    const unfocusP = easeIO(phaseProgress(frame, PHASES.unfocus));
-    const hoverPhoneP = easeIO(phaseProgress(frame, PHASES.hoverPhone));
-    const outroP = easeIO(phaseProgress(frame, PHASES.outro));
+    const t1 = ease(progress(frame, PHASES.toFront));
+    const t3 = ease(progress(frame, PHASES.toMacbook));
+    const t4 = ease(progress(frame, PHASES.toFront2));
+    const t6 = ease(progress(frame, PHASES.toIphone));
+    const t7 = ease(progress(frame, PHASES.toStart));
 
-    if (frame < PHASES.hoverMac[0])
-      return { pos: CAM.start.pos, target: CAM.start.target };
-    if (frame < PHASES.focusMac[0])
-      return {
-        pos: lerpVec3(CAM.start.pos, CAM.front.pos, hoverP),
-        target: lerpVec3(CAM.start.target, CAM.front.target, hoverP),
-      };
-    if (frame < PHASES.unfocus[0])
-      return {
-        pos: lerpVec3(CAM.front.pos, CAM.macbook.pos, focusP),
-        target: lerpVec3(CAM.front.target, CAM.macbook.target, focusP),
-      };
-    if (frame < PHASES.hoverPhone[0])
-      return {
-        pos: lerpVec3(CAM.macbook.pos, CAM.front.pos, unfocusP),
-        target: lerpVec3(CAM.macbook.target, CAM.front.target, unfocusP),
-      };
-    if (frame < PHASES.focusPhone[0])
-      return {
-        pos: lerpVec3(CAM.front.pos, CAM.iphone.pos, hoverPhoneP),
-        target: lerpVec3(CAM.front.target, CAM.iphone.target, hoverPhoneP),
-      };
-    if (frame < PHASES.outro[0])
-      return { pos: CAM.iphone.pos, target: CAM.iphone.target };
+    if (frame < PHASES.toFront[0]) return CAM.start;
+    if (frame < PHASES.hoverMac[0]) return lerpCam(CAM.start, CAM.front, t1);
+    if (frame < PHASES.toMacbook[0]) return CAM.front; // Hold at front during lid hover
+    if (frame < PHASES.toFront2[0]) return lerpCam(CAM.front, CAM.macbook, t3);
+    if (frame < PHASES.hoverPhone[0]) return lerpCam(CAM.macbook, CAM.front, t4);
+    if (frame < PHASES.toIphone[0]) return CAM.front; // Hold at front during phone hover
+    if (frame < PHASES.toStart[0]) return lerpCam(CAM.front, CAM.iphone, t6);
+    return lerpCam(CAM.iphone, CAM.start, t7);
+  }, [frame]);
+
+  // ── MacBook lid quaternion ──
+  const lidQuat = useMemo(() => {
+    const tHover = ease(progress(frame, PHASES.hoverMac));
+    const tOpen = ease(progress(frame, PHASES.toMacbook));
+    const tClose = ease(progress(frame, PHASES.toFront2));
+
+    if (frame < PHASES.hoverMac[0]) return LID_CLOSED;
+    if (frame < PHASES.toMacbook[0]) return slerpQuat(LID_CLOSED, LID_HOVER, tHover);
+    if (frame < PHASES.toFront2[0]) return slerpQuat(LID_HOVER, LID_OPEN, tOpen);
+    if (frame < PHASES.hoverPhone[0]) return slerpQuat(LID_OPEN, LID_CLOSED, tClose);
+    return LID_CLOSED;
+  }, [frame]);
+
+  // ── iPhone transform ──
+  const iphoneTransform = useMemo(() => {
+    const tTilt = ease(progress(frame, PHASES.hoverPhone));
+    const tFloat = ease(progress(frame, PHASES.toIphone));
+    const tReturn = ease(progress(frame, PHASES.toStart));
+
+    if (frame < PHASES.hoverPhone[0]) return IPHONE_FACEDOWN;
+    if (frame < PHASES.toIphone[0]) return {
+      pos: lerpVec3(IPHONE_FACEDOWN.pos, IPHONE_TILTED.pos, tTilt),
+      quat: slerpQuat(IPHONE_FACEDOWN.quat, IPHONE_TILTED.quat, tTilt),
+    };
+    if (frame < PHASES.toStart[0]) return {
+      pos: lerpVec3(IPHONE_TILTED.pos, IPHONE_FLOATING.pos, tFloat),
+      quat: slerpQuat(IPHONE_TILTED.quat, IPHONE_FLOATING.quat, tFloat),
+    };
     return {
-      pos: lerpVec3(CAM.iphone.pos, CAM.start.pos, outroP),
-      target: lerpVec3(CAM.iphone.target, CAM.start.target, outroP),
+      pos: lerpVec3(IPHONE_FLOATING.pos, IPHONE_FACEDOWN.pos, tReturn),
+      quat: slerpQuat(IPHONE_FLOATING.quat, IPHONE_FACEDOWN.quat, tReturn),
     };
   }, [frame]);
 
   // Apply camera
-  camera.position.set(camState.pos[0], camState.pos[1], camState.pos[2]);
-  camera.lookAt(new THREE.Vector3(camState.target[0], camState.target[1], camState.target[2]));
-
-  // Apply macbook lid rotation
-  if (macbookScreen) {
-    const rad = (macLidAngle * Math.PI) / 180;
-    macbookScreen.rotation.x = -rad; // negative because lid opens upward
+  const perspCam = camera as THREE.PerspectiveCamera;
+  perspCam.position.copy(camState.pos);
+  perspCam.lookAt(camState.target);
+  if ("zoom" in camState) {
+    perspCam.zoom = camState.zoom;
+    perspCam.updateProjectionMatrix();
   }
 
-  // Apply iphone transform
+  // Apply lid rotation (Bevels_2 is a child deep in the macbook hierarchy)
+  if (bevels) {
+    bevels.position.copy(BEVELS_POS);
+    bevels.quaternion.copy(lidQuat);
+    bevels.scale.copy(BEVELS_SCALE);
+  }
+
+  // Apply iPhone transform
   if (iphone) {
-    iphone.rotation.x = iphoneState.rotX;
-    iphone.position.y = iphoneState.y;
+    iphone.position.copy(iphoneTransform.pos);
+    iphone.quaternion.copy(iphoneTransform.quat);
+    iphone.scale.copy(IPHONE_SCALE);
   }
 
   return (
     <>
       <primitive object={gltf.scene} />
-      <Environment preset="studio" environmentIntensity={1.5} />
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[5, 8, 3]} intensity={2.0} castShadow />
-      <directionalLight position={[-3, 4, -2]} intensity={0.8} color="#b0c4de" />
-      <pointLight position={[0, 3, 2]} intensity={1.5} decay={1} />
+      <Environment preset="studio" environmentIntensity={1.8} />
+      <ambientLight intensity={0.3} />
+      <directionalLight position={[5, 8, -5]} intensity={2.5} castShadow />
+      <directionalLight position={[-4, 4, 3]} intensity={0.6} color="#c0d0e8" />
       <ContactShadows
         position={[0, -0.01, 0]}
-        opacity={0.5}
-        scale={10}
-        blur={2}
-        far={4}
+        opacity={0.4}
+        scale={14}
+        blur={1.5}
+        far={5}
       />
     </>
   );
@@ -220,16 +237,21 @@ export const DeviceShowcase: React.FC = () => {
   const { width, height } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#242424" }}>
+    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
       <ThreeCanvas
         width={width}
         height={height}
-        camera={{ fov: 35, near: 0.01, far: 100, position: [0.5, 3.5, 5] }}
+        camera={{
+          fov: 50,
+          near: 0.5,
+          far: 1000,
+          position: [CAM.start.pos.x, CAM.start.pos.y, CAM.start.pos.z],
+        }}
         gl={{
           antialias: true,
           powerPreference: "high-performance",
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
+          toneMappingExposure: 1.0,
         }}
       >
         <React.Suspense fallback={null}>
