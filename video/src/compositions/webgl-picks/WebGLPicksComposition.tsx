@@ -23,7 +23,14 @@ import { TextGsap } from "./TextGsap";
 import { OpeningSequence } from "./OpeningSequence";
 import { TextHighlight } from "./TextHighlight";
 import { TextTrail } from "./TextTrail";
+import { ParticleButtons } from "./ParticleButtons";
+import { Helmet3D } from "./Helmet3D";
 import { LenticularBackground } from "../solana-bg/LenticularShader";
+import { FlightsTracker } from "./FlightsTracker";
+import { OneElementScroll } from "./OneElementScroll";
+import { ThreeChallenge } from "./ThreeChallenge";
+import { NeonSwitch } from "./NeonSwitch";
+import { GooeySearch } from "./GooeySearch";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -54,7 +61,14 @@ const ALL_SCENES = [
   { id: "WP-OpeningSequence", component: OpeningSequence },
   { id: "WP-TextSplit", component: TextSplit },
   { id: "WP-TextTrail", component: TextTrail },
+  { id: "WP-ParticleButtons", component: ParticleButtons },
+  { id: "WP-Helmet3D", component: Helmet3D },
   { id: "WP-LenticularMetal", component: LenticularBackground },
+  { id: "WP-FlightsTracker", component: FlightsTracker },
+  { id: "WP-OneElementScroll", component: OneElementScroll },
+  { id: "WP-ThreeChallenge", component: ThreeChallenge },
+  { id: "WP-NeonSwitch", component: NeonSwitch },
+  { id: "WP-GooeySearch", component: GooeySearch },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
