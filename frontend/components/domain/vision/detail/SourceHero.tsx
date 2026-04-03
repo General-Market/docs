@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { VisionSource } from '@/lib/vision/sources'
 import type { SourceSchedule } from '@/hooks/vision/useMarketSnapshot'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -29,11 +30,12 @@ function formatCountdown(seconds: number): string {
 
 export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration, sourceId, urgency }: SourceHeroProps) {
   const t = useTranslations('vision')
+  const [logoLoaded, setLogoLoaded] = useState(false)
   const isLive = sourceSchedule?.status === 'healthy'
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="border border-border-light overflow-hidden bg-white flex">
+    <div className="sticky top-0 z-0 border border-border-light overflow-hidden bg-white flex">
       {/* Left half — info */}
       <div className="flex-1 px-6 py-4 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-1.5">
@@ -98,13 +100,19 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
           tickRemaining={tickRemaining}
           tickDuration={tickDuration}
         />
+        {!logoLoaded && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center">
+            <div className="w-16 h-8 rounded bg-white/10 animate-pulse" />
+          </div>
+        )}
         <Image
           src={source.logo}
           alt={source.name}
           width={128}
           height={64}
-          className="relative z-10 max-h-[64px] max-w-[80%] object-contain"
+          className={`relative z-10 max-h-[64px] max-w-[80%] object-contain transition-opacity duration-300 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
           priority
+          onLoad={() => setLogoLoaded(true)}
         />
       </div>
     </div>

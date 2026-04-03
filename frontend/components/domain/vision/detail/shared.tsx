@@ -87,7 +87,17 @@ export function TripleTimer({ bettingEnd, tickDuration, prevBettingEnd, prevTick
   const prevEnd = prevBettingEnd ? new Date(prevBettingEnd).getTime() : 0
   const prevSettleRemaining = prevBettingEnd ? Math.max(0, Math.floor((prevEnd + prevTickDuration * 1000 - now) / 1000)) : 0
 
-  if (!bettingEnd) return <span className="text-text-muted font-mono">--:--</span>
+  if (!bettingEnd) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-text-muted/40 opacity-40" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-text-muted/25" />
+        </span>
+        <span className="text-[12px] text-text-muted font-medium">Awaiting round</span>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-center gap-3">

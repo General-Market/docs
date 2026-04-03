@@ -107,7 +107,7 @@ export function BatchProgressBar({ bettingEnd, tickDuration }: ProgressBarProps)
   const remaining = useSharedCountdown(bettingEnd)
 
   if (!bettingEnd || tickDuration <= 0) {
-    return <div className="h-[2px] w-full bg-border-light" />
+    return <div className="h-[3px] w-full bg-border-light" />
   }
 
   // Betting phase
@@ -122,7 +122,7 @@ export function BatchProgressBar({ bettingEnd, tickDuration }: ProgressBarProps)
         : 'bg-color-up'
 
     return (
-      <div className="h-[2px] w-full bg-border-light/50 overflow-hidden">
+      <div className="h-[3px] w-full bg-border-light/50 overflow-hidden">
         <div
           className={`h-full ${barColor} motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-linear`}
           style={{ width: `${progress * 100}%` }}
@@ -139,7 +139,7 @@ export function BatchProgressBar({ bettingEnd, tickDuration }: ProgressBarProps)
   if (settleRemaining > 0) {
     const progress = Math.min(1, settleRemaining / tickDuration)
     return (
-      <div className="h-[2px] w-full bg-border-light/50 overflow-hidden">
+      <div className="h-[3px] w-full bg-border-light/50 overflow-hidden">
         <div
           className={`h-full bg-color-warning motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-linear`}
           style={{ width: `${progress * 100}%` }}

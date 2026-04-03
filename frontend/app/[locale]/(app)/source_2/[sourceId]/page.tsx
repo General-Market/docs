@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const category = getCategoryLabel(source.category)
   const prefixCount = source.prefixes?.length ?? 0
-  const description = `${source.name} — live market data feed with ${prefixCount} market series. Category: ${category}. Trade predictions on Vision.`
+  const description = `${source.name} — ${prefixCount} prediction markets across ${category}. Place bets, track results, deploy strategies on Vision.`
   const path = `/source_2/${sourceId}`
 
   return {
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     },
     openGraph: {
-      title: `${source.name} — Vision Data Source`,
+      title: `${source.name} — Prediction Markets | Vision`,
       description,
     },
     twitter: {
@@ -88,8 +88,8 @@ export default async function SourceV2Page({ params }: Props) {
     {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
-      name: `${source.name} — Vision Market Data`,
-      description: `Live prediction market data feed for ${source.name}. ${source.prefixes?.length ?? 0} market series in the ${category} category.`,
+      name: `${source.name} — Vision Prediction Markets`,
+      description: `${source.prefixes?.length ?? 0} prediction markets for ${source.name} in the ${category} category. Bet on real outcomes, track results live.`,
       creator: {
         '@type': 'Organization',
         name: 'General Market',
