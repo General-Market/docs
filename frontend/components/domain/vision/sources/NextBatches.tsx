@@ -36,7 +36,7 @@ interface BatchDisplay {
 }
 
 function BatchCard({ item }: { item: BatchDisplay }) {
-  const catColors = CATEGORY_COLORS[item.category] ?? 'bg-zinc-600/8 text-zinc-700'
+  const catColors = CATEGORY_COLORS[item.category] ?? 'bg-zinc-600/8 text-text-secondary'
 
   if (item.isBettingOpen) {
     return (
@@ -50,7 +50,7 @@ function BatchCard({ item }: { item: BatchDisplay }) {
         <div className="px-4 pt-3.5 pb-1">
           <div className="flex items-center gap-2 min-w-0">
             {item.logo && (
-              <Image src={item.logo} alt="" width={14} height={14} className="rounded-sm object-contain shrink-0" />
+              <Image src={item.logo} alt={item.displayName} width={14} height={14} className="rounded-sm object-contain shrink-0" />
             )}
             <span className="text-label font-semibold text-text-secondary truncate leading-tight">
               {item.displayName}
@@ -102,7 +102,7 @@ function BatchCard({ item }: { item: BatchDisplay }) {
         <div className="px-4 pt-3.5 pb-1">
           <div className="flex items-center gap-2 min-w-0">
             {item.logo && (
-              <Image src={item.logo} alt="" width={14} height={14} className="rounded-sm object-contain shrink-0 opacity-60" />
+              <Image src={item.logo} alt={item.displayName} width={14} height={14} className="rounded-sm object-contain shrink-0 opacity-60" />
             )}
             <span className="text-label font-semibold text-text-muted truncate leading-tight">
               {item.displayName}
@@ -144,7 +144,7 @@ function BatchCard({ item }: { item: BatchDisplay }) {
       <div className="px-4 pt-3.5 pb-1">
         <div className="flex items-center gap-2 min-w-0">
           {item.logo && (
-            <Image src={item.logo} alt="" width={14} height={14} className="rounded-sm object-contain shrink-0" />
+            <Image src={item.logo} alt={item.displayName} width={14} height={14} className="rounded-sm object-contain shrink-0" />
           )}
           <span className="text-label font-semibold text-text-secondary truncate leading-tight">
             {item.displayName}

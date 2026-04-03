@@ -214,11 +214,11 @@ export function SourcesGrid() {
           <div className="max-w-site mx-auto px-6 lg:px-12 py-5 flex items-end">
             <div className="flex items-end gap-10">
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.sources')}</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.sources')}</span>
                 <AnimatedNumber value={sourceCount} decimals={0} duration={1200} className="text-stat font-black font-mono tabular-nums" />
               </div>
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.assets')}</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.assets')}</span>
                 {statsLoading ? (
                   <span className="inline-block w-20 h-8 bg-white/10 rounded animate-pulse" />
                 ) : (
@@ -232,7 +232,7 @@ export function SourcesGrid() {
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.categories')}</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/70 mb-1">{t('sources_grid.categories')}</span>
                 <AnimatedNumber value={categoryCount} decimals={0} duration={1000} className="text-stat font-black font-mono tabular-nums" />
               </div>
             </div>
@@ -241,17 +241,17 @@ export function SourcesGrid() {
             <div className="ml-auto flex items-center gap-3 live-ambient-pulse">
               <a href="/explorer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-up opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-color-up" />
                 </span>
-                <span className="text-label font-semibold text-green-400 uppercase">{t('sources_grid.live')}</span>
-                <span className="text-label font-mono font-bold text-white/50 tabular-nums">
+                <span className="text-label font-semibold text-color-up uppercase">{t('sources_grid.live')}</span>
+                <span className="text-label font-mono font-bold text-white/70 tabular-nums">
                   {uptimePercent !== null ? `${uptimePercent}%` : '—'}
                 </span>
               </a>
               <button
                 onClick={() => setShowSectionBar(false)}
-                className="text-white/30 hover:text-white transition-colors text-title leading-none ml-1"
+                className="text-white/60 hover:text-white transition-colors text-title leading-none ml-1"
                 aria-label={t('sources_grid.dismiss')}
               >
                 &times;

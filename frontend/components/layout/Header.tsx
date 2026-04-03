@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -40,6 +40,13 @@ type PageId = typeof PRIMARY_NAV[number]['id']
 // Pages whose mood darkens the header
 const DARK_PAGES = new Set<string>(['vision'])
 
+/** Renders nothing — exists solely to call useAccount() inside the provider boundary and lift wallet state up. */
+function WalletStateBridge({ onState }: { onState: (address: string | undefined, connected: boolean) => void }) {
+  const { address, isConnected } = useAccount()
+  useEffect(() => { onState(address, isConnected) }, [address, isConnected, onState])
+  return null
+}
+
 function resolveActivePage(pathname: string): PageId | null {
   if (pathname === '/explorer' || pathname.startsWith('/explorer/')) return 'explorer'
   if (pathname === '/index' || pathname.startsWith('/index/')) return 'index'
@@ -60,10 +67,11 @@ export function Header() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasWeb3 = useWeb3Available()
-  // useAccount crashes outside WagmiProvider (marketing pages). Catch gracefully.
-  let address: string | undefined
-  let isConnected = false
-  try { const acct = useAccount(); address = acct.address; isConnected = acct.isConnected } catch {}
+  const [walletState, setWalletState] = useState<{ address: string | undefined; isConnected: boolean }>({ address: undefined, isConnected: false })
+  const onWalletState = useCallback((address: string | undefined, connected: boolean) => {
+    setWalletState({ address, isConnected: connected })
+  }, [])
+  const { address, isConnected } = walletState
 
   // ── PostHog ─────────────────────────────────────────────
   const { capture } = usePostHogTracker()
@@ -86,6 +94,7 @@ export function Header() {
 
   return (
     <>
+      {hasWeb3 && <WalletStateBridge onState={onWalletState} />}
       {/* Topbar — thin black strip (scrolls away) */}
       <div className="bg-black text-white text-label font-medium text-center py-1.5">
         <TopbarStats /> <span className="text-zinc-600 mx-1.5">·</span> <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Testnet v0.93</span>
@@ -121,7 +130,7 @@ export function Header() {
               </Link>
 
               {/* Desktop: 4 equal tabs with spring underline */}
-              <nav className="hidden md:flex items-center">
+              <nav className="hidden md:flex items-center" aria-label="Main navigation">
                 <AnimatePresence>
                   {PRIMARY_NAV.filter(item => item.id !== 'portfolio' || isConnected).map((item) => (
                     <motion.button
@@ -132,6 +141,7 @@ export function Header() {
                       exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
                       transition={reduced ? { duration: 0 } : springs.entrance}
                       onClick={() => { const h = navHref(item); if (h) router.push(h) }}
+                      aria-current={activePage === item.id ? 'page' : undefined}
                       className={`relative px-5 py-5 text-[14px] font-semibold transition-colors duration-300 ${
                         activePage === item.id
                           ? isDark ? 'text-white' : 'text-black'
@@ -174,6 +184,7 @@ export function Header() {
                     }`}
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     aria-label={t('aria.toggle_menu')}
+                    aria-expanded={mobileMenuOpen}
                   >
                     <div className="w-[18px] h-[14px] flex flex-col justify-between items-center">
                       <motion.span
@@ -211,6 +222,8 @@ export function Header() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -4 }}
                         transition={reduced ? { duration: 0 } : springs.entrance}
+                        role="navigation"
+                        aria-label="Mobile navigation"
                         className={`absolute right-0 top-full mt-2 w-64 rounded-2xl py-2 z-50 origin-top-right ${
                           isDark
                             ? 'glass-popover-dark'

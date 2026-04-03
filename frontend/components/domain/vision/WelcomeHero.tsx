@@ -126,6 +126,7 @@ function ResultRow({ market, onClick }: { market: SearchMarket; onClick: () => v
   const change = formatChange(market.changePct)
   return (
     <button
+      role="option"
       onClick={onClick}
       className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-zinc-50 transition-colors text-left"
     >
@@ -1442,6 +1443,7 @@ export function WelcomeHero() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [isSticky, setIsSticky] = useState(false)
 
+  const router = useRouter()
   const { results, loading, total } = useMarketSearch(query)
   const { data: meta } = useMarketSnapshotMeta()
   const reduced = useReducedMotion()
@@ -1495,10 +1497,9 @@ export function WelcomeHero() {
 
 
   const handleSelectMarket = useCallback((market: SearchMarket) => {
-    // Navigate to source detail page for this market
-    window.location.href = `/source/${market.source}`
+    router.push(`/source/${market.source}`)
     setShowResults(false)
-  }, [])
+  }, [router])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -1555,6 +1556,7 @@ export function WelcomeHero() {
                 onChange={handleInputChange}
                 onFocus={() => query.trim() && setShowResults(true)}
                 placeholder={placeholder}
+                aria-label="Search prediction markets"
                 className="w-full h-[56px] pl-[52px] pr-14 rounded-2xl border-2 border-zinc-300 bg-white text-[16px] text-black placeholder:text-zinc-400 focus:outline-none focus:border-black focus:shadow-[0_0_0_4px_rgba(0,0,0,0.06)] transition-all duration-200"
               />
               {loading && (
@@ -1575,7 +1577,7 @@ export function WelcomeHero() {
                 transition={springs.entrance}
                 className="absolute top-full mt-1.5 left-0 right-0 bg-white rounded-xl border border-zinc-200 shadow-lg overflow-hidden z-50"
               >
-                <div className="max-h-[360px] overflow-y-auto py-1">
+                <div role="listbox" className="max-h-[360px] overflow-y-auto py-1">
                   {results.map((market) => (
                     <ResultRow
                       key={market.assetId}
@@ -1658,6 +1660,7 @@ export function WelcomeHero() {
                   onChange={handleInputChange}
                   onFocus={() => query.trim() && setShowResults(true)}
                   placeholder="Search markets, sources, predictions..."
+                  aria-label="Search prediction markets"
                   className="w-full h-[40px] pl-9 pr-10 rounded-lg border border-zinc-200 bg-white/90 text-[14px] text-black placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all duration-200"
                 />
                 {loading && (
@@ -1678,7 +1681,7 @@ export function WelcomeHero() {
                   transition={springs.entrance}
                   className="absolute top-full left-4 right-4 mt-1 bg-white rounded-xl border border-zinc-200 shadow-lg overflow-hidden z-50"
                 >
-                  <div className="max-h-[320px] overflow-y-auto py-1">
+                  <div role="listbox" className="max-h-[320px] overflow-y-auto py-1">
                     {results.map((market) => (
                       <ResultRow
                         key={market.assetId}

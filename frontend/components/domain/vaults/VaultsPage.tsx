@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useVaults } from '@/hooks/vaults/useVaults'
 import {
@@ -54,7 +55,7 @@ function SourceSection({ sourceId, sourceName, sourceLogo, vaults, onSelect }: S
   const brandedFunds = getFundsBySource(sourceId)
 
   // Build ordered list: branded funds first (in catalog order), then unbranded vaults
-  const allBranded = getAllFundsBranded()
+  const allBranded = useMemo(() => getAllFundsBranded(), [])
   const ordered = useMemo(() => {
     const byAddr = new Map(vaults.map(v => [v.address.toLowerCase(), v]))
     const result: VaultInfo[] = []
@@ -118,7 +119,7 @@ export function VaultsPage() {
   const [selectedVault, setSelectedVault] = useState<VaultInfo | null>(null)
 
   const allSources = getAllFundSources()
-  const allBranded = getAllFundsBranded()
+  const allBranded = useMemo(() => getAllFundsBranded(), [])
 
   // Map vault address → primary source
   const vaultsBySource = useMemo(() => {
@@ -227,16 +228,20 @@ export function VaultsPage() {
         </div>
       </section>
 
-      {selectedVault && (
-        <VaultActions
-          vault={selectedVault}
-          onClose={() => { setSelectedVault(null); refetch() }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedVault && (
+          <VaultActions
+            vault={selectedVault}
+            onClose={() => { setSelectedVault(null); refetch() }}
+          />
+        )}
+      </AnimatePresence>
 
-      {showCreateModal && (
-        <CreateVaultModal onClose={() => { setShowCreateModal(false); refetch() }} />
-      )}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateVaultModal onClose={() => { setShowCreateModal(false); refetch() }} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

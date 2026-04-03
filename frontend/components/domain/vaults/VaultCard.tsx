@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils/cn'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
@@ -19,118 +19,6 @@ const STRATEGY_COLORS: Record<string, string> = {
   volatility_fade: 'bg-zinc-500/10 text-zinc-700',
 }
 
-const POINTS = 30
-const W = 200
-const H = 48
-
-function seedFromAddress(addr: string): number {
-  let h = 0
-  for (let i = 0; i < addr.length; i++) h = ((h << 5) - h + addr.charCodeAt(i)) | 0
-  return Math.abs(h)
-}
-
-function generateSparklineData(seed: number, perf: number): number[] {
-  let s = seed
-  const rand = () => {
-    s = (s * 16807 + 0) % 2147483647
-    return (s & 0x7fffffff) / 0x7fffffff
-  }
-
-  const endNav = 1 + perf
-  const values: number[] = []
-  for (let i = 0; i < POINTS; i++) {
-    const t = i / (POINTS - 1)
-    const trend = 1 + perf * t
-    const noise = (rand() - 0.5) * 0.03 + (rand() - 0.5) * 0.015
-    values.push(trend + noise)
-  }
-  values[POINTS - 1] = endNav
-  return values
-}
-
-function monotonePath(pts: { x: number; y: number }[]): string {
-  if (pts.length < 2) return ''
-  if (pts.length === 2) return `M${pts[0].x},${pts[0].y}L${pts[1].x},${pts[1].y}`
-  const n = pts.length
-  const dx: number[] = []
-  const dy: number[] = []
-  const m: number[] = []
-  for (let i = 0; i < n - 1; i++) {
-    dx.push(pts[i + 1].x - pts[i].x)
-    dy.push(pts[i + 1].y - pts[i].y)
-    m.push(dy[i] / dx[i])
-  }
-  const tg: number[] = [m[0]]
-  for (let i = 1; i < n - 1; i++)
-    tg.push(m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2)
-  tg.push(m[n - 2])
-  for (let i = 0; i < n - 1; i++) {
-    if (Math.abs(m[i]) < 1e-6) {
-      tg[i] = 0
-      tg[i + 1] = 0
-      continue
-    }
-    const a = tg[i] / m[i]
-    const b = tg[i + 1] / m[i]
-    const s = a * a + b * b
-    if (s > 9) {
-      const t = 3 / Math.sqrt(s)
-      tg[i] = t * a * m[i]
-      tg[i + 1] = t * b * m[i]
-    }
-  }
-  const parts = [`M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`]
-  for (let i = 0; i < n - 1; i++) {
-    const d = dx[i] / 3
-    parts.push(
-      `C${(pts[i].x + d).toFixed(2)},${(pts[i].y + tg[i] * d).toFixed(2)} ${(pts[i + 1].x - d).toFixed(2)},${(pts[i + 1].y - tg[i + 1] * d).toFixed(2)} ${pts[i + 1].x.toFixed(2)},${pts[i + 1].y.toFixed(2)}`,
-    )
-  }
-  return parts.join(' ')
-}
-
-function estimatePathLength(pts: { x: number; y: number }[]): number {
-  let len = 0
-  for (let i = 1; i < pts.length; i++) {
-    const dxSeg = pts[i].x - pts[i - 1].x
-    const dySeg = pts[i].y - pts[i - 1].y
-    len += Math.sqrt(dxSeg * dxSeg + dySeg * dySeg)
-  }
-  return len * 1.12
-}
-
-interface SparklineData {
-  linePath: string
-  fillPath: string
-  pathLength: number
-  endPt: { x: number; y: number }
-}
-
-function computeSparkline(values: number[]): SparklineData {
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min || 0.01
-  const pad = range * 0.15
-
-  const pts = values.map((v, i) => ({
-    x: (i / (POINTS - 1)) * W,
-    y: H - ((v - (min - pad)) / (range + 2 * pad)) * H,
-  }))
-
-  const linePath = monotonePath(pts)
-  const fillPath = `${linePath}L${W.toFixed(2)},${H.toFixed(2)}L${pts[0].x.toFixed(2)},${H.toFixed(2)}Z`
-  const pathLength = estimatePathLength(pts)
-  const endPt = pts[pts.length - 1]
-
-  return { linePath, fillPath, pathLength, endPt }
-}
-
-const DRAW_MS = 700
-const DOT_DELAY_MS = DRAW_MS
-const DOT_MS = 300
-const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
-const BOUNCE = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-
 interface VaultCardProps {
   vault: VaultInfo
   onClick: () => void
@@ -144,13 +32,6 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
 
   const perfPercent = (vault.performanceSinceInception * 100).toFixed(2)
   const isPositive = vault.performanceSinceInception >= 0
-  const color = isPositive ? 'var(--color-up)' : 'var(--color-down)'
-  const gradientId = `spark-${vault.address.slice(2, 8)}`
-  const clipId = `clip-${vault.address.slice(2, 8)}`
-
-  // Sparkline disabled until real historical data is available
-  // TODO: wire useVaultHistory here once the oracle snapshot task is running
-  const sparkline = null as SparklineData | null
 
   useEffect(() => {
     if (reduced) {
@@ -177,6 +58,9 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
     <div
       ref={cardRef}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      tabIndex={0}
+      role="button"
       className="bg-card border border-border-light rounded-md cursor-pointer
                  hover:bg-card-hover hover:shadow-card-hover transition-all overflow-hidden
                  w-full"
@@ -203,75 +87,6 @@ export function VaultCard({ vault, onClick }: VaultCardProps) {
             </span>
           )}
         </div>
-
-        {/* Sparkline — only rendered when real history data is available */}
-        {sparkline && (
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full mb-2.5"
-          style={{ height: H }}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.15} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-            <clipPath id={clipId}>
-              <rect
-                x={0}
-                y={0}
-                width={entered ? W : 0}
-                height={H}
-                style={{
-                  transition: reduced
-                    ? 'none'
-                    : `width ${DRAW_MS}ms ${EASE}`,
-                }}
-              />
-            </clipPath>
-          </defs>
-
-          <path
-            d={sparkline.fillPath}
-            fill={`url(#${gradientId})`}
-            clipPath={`url(#${clipId})`}
-            style={{
-              opacity: entered ? 1 : 0,
-              transition: reduced ? 'none' : 'opacity 400ms ease 200ms',
-            }}
-          />
-
-          <path
-            d={sparkline.linePath}
-            fill="none"
-            stroke={color}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray={sparkline.pathLength}
-            strokeDashoffset={entered ? 0 : sparkline.pathLength}
-            style={{
-              transition: reduced
-                ? 'none'
-                : `stroke-dashoffset ${DRAW_MS}ms ${EASE}`,
-            }}
-          />
-
-          <circle
-            cx={sparkline.endPt.x}
-            cy={sparkline.endPt.y}
-            r={entered ? 2.5 : 0}
-            fill={color}
-            style={{
-              transition: reduced
-                ? 'none'
-                : `r ${DOT_MS}ms ${BOUNCE} ${DOT_DELAY_MS}ms`,
-            }}
-          />
-        </svg>
-        )}
 
         <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
           <div className="flex flex-col">

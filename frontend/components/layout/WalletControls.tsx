@@ -172,15 +172,15 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
             <span
               className={`group/bal hidden sm:inline-flex items-center text-[12px] font-semibold font-mono tabular-nums tracking-tight ${
                 isFaucetEnabled && usdcBalance === 0 ? 'cursor-pointer' : ''
-              } ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}
+              } ${isDark ? 'text-text-inverse-muted' : 'text-text-secondary'}`}
               onClick={isFaucetEnabled && usdcBalance === 0 ? handleFaucet : undefined}
             >
               {isFaucetEnabled && usdcBalance === 0 ? (
                 <span className={`text-[11px] font-semibold ${
-                  faucetState === 'loading' ? 'text-zinc-400'
-                    : faucetState === 'done' ? (isDark ? 'text-emerald-300' : 'text-emerald-600')
-                    : faucetState === 'error' ? 'text-red-400'
-                    : (isDark ? 'text-emerald-300' : 'text-emerald-600')
+                  faucetState === 'loading' ? 'text-text-muted'
+                    : faucetState === 'done' ? 'text-color-up'
+                    : faucetState === 'error' ? 'text-color-down'
+                    : 'text-color-up'
                 }`}>
                   {faucetState === 'loading' ? 'Minting...'
                     : faucetState === 'done' ? '1K sent'
@@ -193,7 +193,7 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
                     : usdcBalance >= 1_000_000 ? `${(usdcBalance / 1_000_000).toFixed(2)}M`
                     : usdcBalance >= 1_000 ? `${(usdcBalance / 1_000).toFixed(1)}K`
                     : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  <span className={`ml-0.5 font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>USDC</span>
+                  <span className="ml-0.5 font-medium text-text-muted">USDC</span>
                 </>
               ) : (
                 <a
@@ -202,8 +202,8 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
                   rel="noopener noreferrer"
                   className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
                     isDark
-                      ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      ? 'bg-color-up/20 text-color-up hover:bg-color-up/30'
+                      : 'bg-surface-up text-color-up hover:bg-surface-up/80'
                   }`}
                 >
                   {t('wallet.deposit')}
@@ -217,8 +217,8 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
             onClick={handleLogout}
             className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-mono font-medium rounded-lg transition-all duration-200 fluid-press ${
               isDark
-                ? 'bg-white/10 text-zinc-300 hover:bg-red-500/20 hover:text-red-300'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-red-50 hover:text-red-600'
+                ? 'bg-white/10 text-text-inverse-muted hover:bg-red-500/20 hover:text-red-300'
+                : 'bg-zinc-100 text-text-secondary hover:bg-red-50 hover:text-red-600'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 group-hover:bg-red-400 transition-colors" />
@@ -255,23 +255,13 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
         >
           <button
             onClick={handleLogin}
-            className={`inline-flex items-center px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press ${
+            className={`inline-flex items-center px-4 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
               isDark
-                ? 'text-zinc-400 hover:text-white'
-                : 'text-zinc-500 hover:text-black'
+                ? 'border-white/20 text-white hover:bg-white/10'
+                : 'border-zinc-300 text-text-secondary hover:border-zinc-900 hover:text-zinc-900'
             }`}
           >
             {t('wallet.login')}
-          </button>
-          <button
-            onClick={handleLogin}
-            className={`inline-flex items-center px-3 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
-              isDark
-                ? 'border-white/20 text-white hover:bg-white/10'
-                : 'border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900'
-            }`}
-          >
-            {t('wallet.sign_up')}
           </button>
         </motion.div>
       )}

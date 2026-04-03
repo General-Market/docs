@@ -27,7 +27,7 @@ export function SourceSidebar({ currentSourceId, category }: SourceSidebarProps)
   return (
     <div className="w-[220px] shrink-0 hidden xl:block">
       {/* Banner — gradient with grid overlay, mimics HLTV sponsor sidebar */}
-      <div className="relative h-[320px] overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#162d50] to-[#0a1628]">
+      <div aria-hidden="true" className="relative h-[320px] overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#162d50] to-[#0a1628]">
         {/* Grid pattern */}
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -38,12 +38,12 @@ export function SourceSidebar({ currentSourceId, category }: SourceSidebarProps)
           }}
         />
         {/* Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] rounded-full bg-blue-500/[0.06] blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] rounded-full bg-color-info/[0.06] blur-3xl" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center px-5">
           <div className="w-14 h-14 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-4">
             <svg
-              className="w-7 h-7 text-blue-400/60"
+              className="w-7 h-7 text-color-info/60"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -64,18 +64,18 @@ export function SourceSidebar({ currentSourceId, category }: SourceSidebarProps)
           <div className="text-[22px] font-black text-white/80 tracking-[-0.03em]">
             VISION
           </div>
-          <div className="text-[9px] font-bold text-blue-400/50 uppercase tracking-[0.2em] mt-1">
+          <div className="text-[9px] font-bold text-color-info/50 uppercase tracking-[0.2em] mt-1">
             Prediction Markets
           </div>
           <p className="mt-5 text-[10px] text-white/15 text-center leading-relaxed">
-            Trade on real-world data feeds. Every market settles automatically via BLS oracle consensus.
+            Predict real-world outcomes. Every market resolves automatically — no counterparty, no dispute.
           </p>
         </div>
       </div>
 
       {/* Related sources — like HLTV match odds sidebar */}
-      <div className="bg-[#0d1117]">
-        <div className="px-3 py-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-white/20 border-t border-white/[0.04]">
+      <div className="bg-terminal-dark">
+        <div className="px-3 py-2.5 text-micro font-bold uppercase tracking-[0.12em] text-white/20 border-t border-white/[0.04]">
           More {categoryLabel}
         </div>
         <div className="divide-y divide-white/[0.03]">
@@ -89,7 +89,7 @@ export function SourceSidebar({ currentSourceId, category }: SourceSidebarProps)
               >
                 <img
                   src={source.logo}
-                  alt=""
+                  alt={source.name}
                   className="w-7 h-7 rounded object-contain bg-white/[0.05] p-0.5 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
@@ -108,14 +108,14 @@ export function SourceSidebar({ currentSourceId, category }: SourceSidebarProps)
 
           {otherSources.length === 0 && (
             <div className="px-3 py-4 text-[10px] text-white/15 text-center">
-              No related sources
+              No other sources in this category yet
             </div>
           )}
         </div>
 
         <Link
           href="/sources"
-          className="block px-3 py-3 text-center text-[11px] font-bold text-blue-400/60 hover:text-blue-400 transition-colors border-t border-white/[0.04]"
+          className="block px-3 py-3 text-center text-[11px] font-bold text-color-info/60 hover:text-color-info transition-colors border-t border-white/[0.04]"
         >
           All Sources &rarr;
         </Link>

@@ -63,7 +63,7 @@ function formatChangePct(pct: string | null): { text: string; color: string } {
   const num = parseFloat(pct)
   if (isNaN(num)) return { text: '--', color: 'text-text-muted' }
   const sign = num >= 0 ? '+' : ''
-  const color = num > 0 ? 'text-green-600' : num < 0 ? 'text-red-600' : 'text-text-muted'
+  const color = num > 0 ? 'text-color-up' : num < 0 ? 'text-color-down' : 'text-text-muted'
   return { text: `${sign}${num.toFixed(2)}%`, color }
 }
 
@@ -106,12 +106,12 @@ function resolutionBadge(resType: string | undefined, thresholdBps?: number) {
   const isDown = resType.startsWith('DOWN')
   const isFlat = resType.startsWith('FLAT')
   const bg = isUp
-    ? 'bg-green-100 text-green-700 border-green-200'
+    ? 'bg-surface-up text-color-up border-color-up/20'
     : isDown
-      ? 'bg-red-100 text-red-700 border-red-200'
+      ? 'bg-surface-down text-color-down border-color-down/20'
       : isFlat
-        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-        : 'bg-gray-100 text-gray-600 border-gray-200'
+        ? 'bg-surface-warning text-color-warning border-color-warning/20'
+        : 'bg-muted text-text-secondary border-border-light'
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
       {label}
@@ -224,7 +224,7 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
             {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
           </span>
           {changePct !== null && (
-            <span className={`text-label font-mono font-bold ${changePct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`text-label font-mono font-bold ${changePct >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
             </span>
           )}
@@ -457,6 +457,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
           <input
             type="text"
             placeholder={t('markets_table.search_placeholder')}
+            aria-label="Search markets"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[120px] md:w-[180px]"
@@ -465,14 +466,14 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
+      <div role="table" aria-label={t('markets_table.markets_title')} className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers — mobile: name + bet only; desktop: full 5-col */}
-        <div className="grid grid-cols-[1fr_100px] md:grid-cols-[1fr_80px_100px_80px_100px] items-center px-3 md:px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
-          <div>{t('markets_table.name')}</div>
-          <div className="hidden md:block text-center">{t('markets_table.type')}</div>
-          <div className="hidden md:block text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
-          <div className="hidden md:block text-right">{t('markets_table.one_day')}</div>
-          <div className="text-center">{t('markets_table.bet')}</div>
+        <div role="row" className="grid grid-cols-[1fr_100px] md:grid-cols-[1fr_80px_100px_80px_100px] items-center px-3 md:px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+          <div role="columnheader">{t('markets_table.name')}</div>
+          <div role="columnheader" className="hidden md:block text-center">{t('markets_table.type')}</div>
+          <div role="columnheader" className="hidden md:block text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
+          <div role="columnheader" className="hidden md:block text-right">{t('markets_table.one_day')}</div>
+          <div role="columnheader" className="text-center">{t('markets_table.bet')}</div>
         </div>
 
         {/* Loading state — Bloomberg terminal boot (also shown when meta says markets exist but snapshot is empty) */}
@@ -512,13 +513,21 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             return (
               <div key={market.assetId} data-row className={isExpanded ? '' : 'cv-row'} style={{ '--row-i': idx } as React.CSSProperties}>
                 <SpringRow
+                  role="row"
+                  tabIndex={0}
                   className={`grid grid-cols-[1fr_100px] md:grid-cols-[1fr_80px_100px_80px_100px] items-center px-3 md:px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
+                  onKeyDown={(e: React.KeyboardEvent) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleRowClick(market.assetId)
+                    }
+                  }}
                 >
                   {/* Name + mobile inline value/change */}
-                  <div className="min-w-0 flex items-center gap-2">
+                  <div role="cell" className="min-w-0 flex items-center gap-2">
                     <AssetIcon
                       sourceId={sourceId}
                       assetId={market.assetId}
@@ -546,7 +555,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                   </div>
 
                   {/* Resolution type — desktop only */}
-                  <div className="hidden md:block text-center">
+                  <div role="cell" className="hidden md:block text-center">
                     {resolutionBadge(
                       resInfo?.resType ?? (() => {
                         const pct = parseFloat(market.changePct ?? '0')
@@ -561,17 +570,17 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                   </div>
 
                   {/* Value — desktop only */}
-                  <div className="hidden md:block text-right font-mono tabular-nums text-black font-semibold" style={momentumStyle}>
+                  <div role="cell" className="hidden md:block text-right font-mono tabular-nums text-black font-semibold" style={momentumStyle}>
                     {formatPrice(market.value, isPriceSource)}
                   </div>
 
                   {/* 1d change — desktop only */}
-                  <div className={`hidden md:block text-right font-mono tabular-nums font-semibold ${change1d.color}`}>
+                  <div role="cell" className={`hidden md:block text-right font-mono tabular-nums font-semibold ${change1d.color}`}>
                     {change1d.text}
                   </div>
 
                   {/* Bet UP/DN */}
-                  <div className="flex items-center justify-center gap-1.5">
+                  <div role="cell" className="flex items-center justify-center gap-1.5">
                     <SpringPress><button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'up') }}
                       className={`px-2.5 py-1 rounded text-micro font-bold uppercase transition-colors ${

@@ -75,6 +75,16 @@ function shortTypeLabel(label: string): string {
   return SHORT_TYPE_LABELS[label] ?? label
 }
 
+/** Perceived luminance from a hex color (0–255 scale, ITU-R BT.601) */
+function hexLuminance(hex: string): number {
+  const h = hex.replace('#', '')
+  if (h.length !== 6) return 128
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return r * 0.299 + g * 0.587 + b * 0.114
+}
+
 export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, metaStatus }: SourceCardProps) {
   const t = useTranslations('vision')
   const router = useRouter()
@@ -105,11 +115,11 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
 
   // Status from admin health, fall back to meta-based check
   const statusLabel = metaStatus === 'healthy' ? t('source_card.status_live') : metaStatus === 'stale' ? t('source_card.status_stale') : metaStatus === 'dead' ? t('source_card.status_dead') : displayMarketCount > 0 ? t('source_card.status_live') : t('source_card.status_pending')
-  const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
-  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
+  const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-color-warning' : 'bg-text-muted'
+  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-color-warning' : 'text-text-muted'
 
   // Settlement quality derived from source health status
-  const settlementDotColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-red-500'
+  const settlementDotColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-color-warning' : 'bg-color-down'
   const settlementLabel = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0)
     ? t('source_card.settlement_healthy')
     : metaStatus === 'stale'
@@ -119,17 +129,9 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
   const metricsRef = useRef<HTMLDivElement>(null)
 
   // Accent color for the Live dot — use brandBg unless it's too light
-  const accentColor = (() => {
-    const bg = source.brandBg
-    if (bg.startsWith('linear')) return '#00A36C'
-    const hex = bg.replace('#', '')
-    if (hex.length !== 6) return '#00A36C'
-    const r = parseInt(hex.slice(0, 2), 16)
-    const g = parseInt(hex.slice(2, 4), 16)
-    const b = parseInt(hex.slice(4, 6), 16)
-    const lum = r * 0.299 + g * 0.587 + b * 0.114
-    return lum > 200 ? '#00A36C' : bg
-  })()
+  const accentColor = source.brandBg.startsWith('linear') || hexLuminance(source.brandBg) > 200
+    ? '#00A36C'
+    : source.brandBg
   const isLive = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0)
 
   // Determine brand background style
@@ -138,14 +140,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
     : { backgroundColor: source.brandBg }
 
   // Detect light backgrounds — logos need a subtle vignette to stay visible
-  const isLightBg = (() => {
-    const hex = source.brandBg.replace('#', '')
-    if (hex.length !== 6) return false
-    const r = parseInt(hex.slice(0, 2), 16)
-    const g = parseInt(hex.slice(2, 4), 16)
-    const b = parseInt(hex.slice(4, 6), 16)
-    return (r * 0.299 + g * 0.587 + b * 0.114) > 200
-  })()
+  const isLightBg = hexLuminance(source.brandBg) > 200
 
   // Per-source logo size overrides (2x for circular/seal logos)
   const LARGE_LOGOS = new Set(['nwps', 'wildfire', 'parking', 'mta_subway', 'queue_times'])
@@ -206,7 +201,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
       <div className="px-3 pt-2.5 pb-0 sm:px-5 sm:pt-4">
         <div className="flex justify-between items-start mb-1">
           <div className="min-w-0 flex-1 mr-2">
-            <h3 className="text-subhead font-extrabold text-black tracking-[-0.01em]">{source.name}</h3>
+            <h3 className="text-subhead font-extrabold text-text-primary tracking-[-0.01em]">{source.name}</h3>
             <p className="text-caption text-text-muted leading-snug mt-0.5 line-clamp-2">{source.description}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -237,7 +232,7 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
         <div ref={metricsRef} className="grid grid-cols-2 sm:grid-cols-4 border-t border-b border-border-light -mx-3 px-3 sm:-mx-5 sm:px-5 mt-2 sm:mt-3">
           <div className="py-2.5 pr-3">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.markets')}</div>
-            <span className="text-body font-bold text-black font-mono tabular-nums">
+            <span className="text-body font-bold text-text-primary font-mono tabular-nums">
               {displayMarketCount ? (
                 <AnimatedNumber
                   value={displayMarketCount}
@@ -250,17 +245,17 @@ export function SourceCard({ source, bitmapEditor, index = 99, metaAssetCount, m
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.type')}</div>
-            <span className="text-caption font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
+            <span className="text-caption font-bold text-text-primary truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
           <div className="py-2.5 px-3 border-l border-border-light hidden sm:block">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.updated')}</div>
-            <span className="text-caption font-bold text-black"><LiveAge iso={sourceSnapshot?.generatedAt} /></span>
+            <span className="text-caption font-bold text-text-primary"><LiveAge iso={sourceSnapshot?.generatedAt} /></span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light hidden sm:block">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.settlement')}</div>
             <span className="flex items-center gap-1">
               <span className={`w-[5px] h-[5px] rounded-full ${settlementDotColor}`} />
-              <span className="text-caption font-bold text-black truncate">{settlementLabel}</span>
+              <span className="text-caption font-bold text-text-primary truncate">{settlementLabel}</span>
             </span>
           </div>
         </div>

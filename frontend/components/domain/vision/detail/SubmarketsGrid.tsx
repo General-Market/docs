@@ -131,7 +131,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
   return (
     <div>
       {/* Header */}
-      <div className="bg-[#0d1117] px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+      <div className="bg-terminal-dark px-5 py-3 flex items-center justify-between flex-wrap gap-2">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
             Submarkets
@@ -148,12 +148,13 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           placeholder="Search..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          aria-label="Search submarkets"
           className="px-2.5 py-1 rounded text-[11px] bg-white/[0.04] border border-white/10 text-white placeholder:text-white/20 outline-none focus:border-white/20 w-[140px]"
         />
       </div>
 
       {/* Grid */}
-      <div className="bg-[#161b22] px-3 py-3">
+      <div className="bg-terminal px-4 py-4">
         {isLoading ? (
           <div className="py-12 text-center text-[12px] text-white/20 animate-pulse">
             Loading markets...
@@ -163,7 +164,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
             {search ? `No markets matching "${search}"` : 'No markets yet for this source'}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
             {filtered.map((market) => {
               const name = market.name || market.symbol
               const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name
@@ -177,7 +178,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
               return (
                 <div
                   key={market.assetId}
-                  className="flex items-center gap-2 px-2 py-[5px] rounded bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
                 >
                   <MarketIcon
                     sourceId={sourceId}
@@ -190,18 +191,18 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
                   </span>
                   {/* GG.bet-style decimal odds buttons */}
                   <div className="flex gap-1 shrink-0">
-                    <button className="px-2 py-[3px] rounded bg-emerald-500/15 border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors group">
-                      <div className="text-[8px] font-semibold text-emerald-400/50 group-hover:text-emerald-400/70 leading-none">UP</div>
+                    <span className="px-2 py-[3px] rounded bg-color-up/15 border border-color-up/20">
+                      <div className="text-[8px] font-semibold text-emerald-400/50 leading-none">UP</div>
                       <div className="text-[11px] font-bold font-mono tabular-nums text-emerald-400 leading-tight">
                         {upOdds}
                       </div>
-                    </button>
-                    <button className="px-2 py-[3px] rounded bg-red-500/15 border border-red-500/20 hover:bg-red-500/25 transition-colors group">
-                      <div className="text-[8px] font-semibold text-red-400/50 group-hover:text-red-400/70 leading-none">DOWN</div>
+                    </span>
+                    <span className="px-2 py-[3px] rounded bg-color-down/15 border border-color-down/20">
+                      <div className="text-[8px] font-semibold text-red-400/50 leading-none">DOWN</div>
                       <div className="text-[11px] font-bold font-mono tabular-nums text-red-400 leading-tight">
                         {downOdds}
                       </div>
-                    </button>
+                    </span>
                   </div>
                 </div>
               )

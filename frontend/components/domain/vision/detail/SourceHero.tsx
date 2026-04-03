@@ -5,6 +5,7 @@ import type { SourceSchedule } from '@/hooks/vision/useMarketSnapshot'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import { GeometricPulse } from './GeometricPulse'
 import { useTranslations, useLocale } from 'next-intl'
+import Image from 'next/image'
 
 interface SourceHeroProps {
   source: VisionSource
@@ -44,7 +45,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
   return (
     <div className="border border-border-light overflow-hidden bg-white flex">
       {/* Left half — info */}
-      <div className="flex-1 px-5 py-4 flex flex-col justify-center">
+      <div className="flex-1 px-6 py-5 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.08em] bg-black/5 text-text-secondary">
             {categoryLabel}
@@ -53,8 +54,8 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.08em] ${
                 isLive
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-600'
+                  ? 'bg-surface-up text-color-up'
+                  : 'bg-surface-down text-color-down'
               }`}
             >
               <span
@@ -107,10 +108,13 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
           tickRemaining={tickRemaining}
           tickDuration={tickDuration}
         />
-        <img
+        <Image
           src={source.logo}
           alt={source.name}
+          width={128}
+          height={64}
           className="relative z-10 max-h-[64px] max-w-[80%] object-contain"
+          priority
         />
       </div>
     </div>

@@ -274,6 +274,8 @@ function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaultAddr: 
       viewBox={`0 0 ${CHART_W} ${CHART_H}`}
       className="w-full"
       preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="NAV performance chart"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -357,7 +359,7 @@ function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaultAddr: 
           style={{
             transition: reduced
               ? 'none'
-              : `r 300ms cubic-bezier(0.34, 1.56, 0.64, 1) ${DRAW_DURATION}ms`,
+              : `r 300ms cubic-bezier(0.16, 1, 0.3, 1) ${DRAW_DURATION}ms`,
           }}
         />
       </g>
@@ -634,8 +636,10 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
           )}
 
           {/* Tabs */}
-          <div className="flex border-b border-border-light mb-4">
+          <div className="flex border-b border-border-light mb-4" role="tablist">
             <button
+              role="tab"
+              aria-selected={tab === 'deposit'}
               onClick={() => {
                 setTab('deposit')
                 resetDeposit()
@@ -651,6 +655,8 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
               Deposit
             </button>
             <button
+              role="tab"
+              aria-selected={tab === 'withdraw'}
               onClick={() => {
                 setTab('withdraw')
                 resetDeposit()
@@ -669,12 +675,13 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
           {/* Deposit form */}
           {tab === 'deposit' && (
-            <div className="space-y-3">
+            <div className="space-y-3" role="tabpanel">
               <div>
-                <label className="text-xs text-text-muted block mb-1">
+                <label htmlFor="deposit-amount" className="text-xs text-text-muted block mb-1">
                   Amount (USDC)
                 </label>
                 <input
+                  id="deposit-amount"
                   type="number"
                   min="0"
                   step="0.01"
@@ -715,10 +722,10 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
           {/* Withdraw form */}
           {tab === 'withdraw' && (
-            <div className="space-y-3">
+            <div className="space-y-3" role="tabpanel">
               <div>
                 <div className="flex justify-between mb-1">
-                  <label className="text-xs text-text-muted">
+                  <label htmlFor="withdraw-amount" className="text-xs text-text-muted">
                     Shares to redeem
                   </label>
                   {shares > 0n && (
@@ -731,6 +738,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   )}
                 </div>
                 <input
+                  id="withdraw-amount"
                   type="number"
                   min="0"
                   step="0.0001"

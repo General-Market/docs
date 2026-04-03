@@ -103,7 +103,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
   }, [funds, results])
 
   return (
-    <div className="mt-5">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -116,6 +116,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
         </div>
         <div className="flex gap-1">
           <button
+            aria-label="Scroll left"
             onClick={() => scroll('left')}
             disabled={!canScrollLeft}
             className="w-7 h-7 flex items-center justify-center rounded border border-border-light bg-white text-text-muted hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
@@ -125,6 +126,7 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
             </svg>
           </button>
           <button
+            aria-label="Scroll right"
             onClick={() => scroll('right')}
             disabled={!canScrollRight}
             className="w-7 h-7 flex items-center justify-center rounded border border-border-light bg-white text-text-muted hover:text-black disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
@@ -154,26 +156,33 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
           const tvl = parseFloat(formatUnits(totalAssets, 18))
           const gradientClass = STRATEGY_COLORS[fund.strategy] || 'from-gray-500/20 to-gray-600/5 border-gray-500/20'
 
+          const vaultInfo: VaultInfo = {
+            address: fund.vault as `0x${string}`,
+            name: fund.name,
+            symbol: fund.symbol,
+            manager: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+            performanceFeeRate: BigInt(fund.fee) * 10n ** 14n,
+            highWaterMark: 10n ** 18n,
+            totalAssets: totalAssets,
+            totalSupply: totalSupply,
+            totalActiveCapital: 0n,
+            navPerShare: nav,
+            performanceSinceInception: perf,
+            tvlFormatted: tvl > 0 ? tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0',
+            deployedRatio: 0,
+          }
+
           return (
             <div
               key={fund.symbol}
-              onClick={() => {
-                const vaultInfo: VaultInfo = {
-                  address: fund.vault as `0x${string}`,
-                  name: fund.name,
-                  symbol: fund.symbol,
-                  manager: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-                  performanceFeeRate: BigInt(fund.fee) * 10n ** 14n,
-                  highWaterMark: 10n ** 18n,
-                  totalAssets: totalAssets,
-                  totalSupply: totalSupply,
-                  totalActiveCapital: 0n,
-                  navPerShare: nav,
-                  performanceSinceInception: perf,
-                  tvlFormatted: tvl > 0 ? tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0',
-                  deployedRatio: 0,
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedVault(vaultInfo)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setSelectedVault(vaultInfo)
                 }
-                setSelectedVault(vaultInfo)
               }}
               className={cn(
                 'shrink-0 w-[280px] rounded-lg border bg-gradient-to-br overflow-hidden cursor-pointer hover:shadow-lg transition-shadow',
@@ -238,17 +247,17 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
             className="absolute inset-0 rounded-[20px] pointer-events-none"
             style={{ filter: 'blur(24px)', transform: 'scale(1.08)', opacity: 0.3, background: 'linear-gradient(-30deg, #6348dd, transparent 40%, transparent 60%, #6348dd)' }}
           />
-          <div className="relative rounded-[20px] bg-[#141414] border border-[#6348dd]/20 h-full flex flex-col items-center justify-center text-center p-6">
+          <div className="relative rounded-[20px] bg-terminal-dark border border-[#6348dd]/20 h-full flex flex-col items-center justify-center text-center p-6">
             <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
             </div>
             <div className="text-[14px] font-black text-white/90 leading-tight mb-1.5">
-              Deploy Your Bot
+              Create a Strategy
             </div>
             <p className="text-[10px] text-white/30 leading-relaxed mb-5">
-              Build a custom strategy with Claude Code. Deploys as a vault in minutes.
+              Build your own automated trading strategy. Goes live in minutes — others can deposit into it.
             </p>
             <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

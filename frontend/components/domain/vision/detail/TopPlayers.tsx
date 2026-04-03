@@ -13,7 +13,7 @@ function truncateAddress(address: string): string {
 function formatPnl(pnl: number): { text: string; color: string } {
   if (pnl === 0) return { text: '$0.00', color: 'text-text-muted' }
   const sign = pnl > 0 ? '+' : ''
-  const color = pnl > 0 ? 'text-green-600' : 'text-red-600'
+  const color = pnl > 0 ? 'text-color-up' : 'text-color-down'
   return { text: `${sign}$${Math.abs(pnl).toFixed(2)}`, color }
 }
 
@@ -40,55 +40,58 @@ export function TopPlayers({ sourceId }: { sourceId?: string }) {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-t-0 border-border-light overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-          <div>{t('top_players.rank')}</div>
-          <div>{t('top_players.player')}</div>
-          <div className="text-right">{t('top_players.batches')}</div>
-          <div className="text-right">{t('top_players.volume')}</div>
-          <div className="text-right">{t('top_players.roi')}</div>
-          <div className="text-right">{t('top_players.pnl')}</div>
-        </div>
-
-        {isLoading && <TopPlayersSkeleton />}
-
-        {!isLoading && top5.length === 0 && (
-          <div className="px-4 py-6 text-center text-[13px] text-text-muted">
-            {t('common_labels.no_players_yet')}
+      <div className="overflow-x-auto">
+        <div role="table" className="bg-white border border-t-0 border-border-light overflow-hidden">
+          {/* Header */}
+          <div role="row" className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+            <div role="columnheader">{t('top_players.rank')}</div>
+            <div role="columnheader">{t('top_players.player')}</div>
+            <div role="columnheader" className="text-right">{t('top_players.batches')}</div>
+            <div role="columnheader" className="text-right">{t('top_players.volume')}</div>
+            <div role="columnheader" className="text-right">{t('top_players.roi')}</div>
+            <div role="columnheader" className="text-right">{t('top_players.pnl')}</div>
           </div>
-        )}
 
-        {top5.map((player, i) => {
-          const pnl = formatPnl(player.pnl)
-          return (
-            <SpringRow
-              key={player.walletAddress}
-              className={`grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-border-light text-[13px] ${
-                i % 2 === 1 ? 'bg-surface/40' : ''
-              }`}
-            >
-              <div className="font-bold text-text-muted">
-                {player.rank || i + 1}
-              </div>
-              <div className="font-mono text-[12px] text-black font-medium truncate">
-                {truncateAddress(player.walletAddress)}
-              </div>
-              <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
-                {player.portfolioBets || player.totalBets || 0}
-              </div>
-              <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
-                {formatVolume(player.totalVolume || player.volume || 0)}
-              </div>
-              <div className={`text-right font-mono tabular-nums font-semibold ${player.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                {player.roi >= 0 ? '+' : ''}{player.roi.toFixed(1)}%
-              </div>
-              <div className={`text-right font-mono tabular-nums font-semibold ${pnl.color}`}>
-                {pnl.text}
-              </div>
-            </SpringRow>
-          )
-        })}
+          {isLoading && <TopPlayersSkeleton />}
+
+          {!isLoading && top5.length === 0 && (
+            <div className="px-4 py-6 text-center text-[13px] text-text-muted">
+              {t('common_labels.no_players_yet')}
+            </div>
+          )}
+
+          {top5.map((player, i) => {
+            const pnl = formatPnl(player.pnl)
+            return (
+              <SpringRow
+                key={player.walletAddress}
+                role="row"
+                className={`grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-border-light text-[13px] ${
+                  i % 2 === 1 ? 'bg-surface/40' : ''
+                }`}
+              >
+                <div role="cell" className="font-bold text-text-muted">
+                  {player.rank || i + 1}
+                </div>
+                <div role="cell" className="font-mono text-[12px] text-black font-medium truncate">
+                  {truncateAddress(player.walletAddress)}
+                </div>
+                <div role="cell" className="text-right font-mono tabular-nums text-[12px] text-text-muted">
+                  {player.portfolioBets || player.totalBets || 0}
+                </div>
+                <div role="cell" className="text-right font-mono tabular-nums text-[12px] text-text-muted">
+                  {formatVolume(player.totalVolume || player.volume || 0)}
+                </div>
+                <div role="cell" className={`text-right font-mono tabular-nums font-semibold ${player.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                  {player.roi >= 0 ? '+' : ''}{player.roi.toFixed(1)}%
+                </div>
+                <div role="cell" className={`text-right font-mono tabular-nums font-semibold ${pnl.color}`}>
+                  {pnl.text}
+                </div>
+              </SpringRow>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

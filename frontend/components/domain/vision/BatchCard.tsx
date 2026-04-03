@@ -52,7 +52,15 @@ export function BatchCard({ batch, onClick }: BatchCardProps) {
   return (
     <SpringCard
       data-testid="batch-card"
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
       className="bg-card border border-border-light rounded-card p-4 cursor-pointer
                  hover:bg-card-hover hover:shadow-card-hover transition-all"
     >

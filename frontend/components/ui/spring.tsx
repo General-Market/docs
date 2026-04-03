@@ -127,7 +127,15 @@ export function SpringRow({ children, className, ...rest }: SpringRowProps) {
   const reduced = useReducedMotion()
 
   if (reduced) {
-    return <div className={className}>{children}</div>
+    // Strip motion-specific props so a plain <div> receives only valid HTML attributes
+    const {
+      initial: _, animate: _a, exit: _e, variants: _v, layout: _l,
+      layoutId: _li, onAnimationStart: _oas, onAnimationComplete: _oac,
+      style: motionStyle, ...htmlProps
+    } = rest as Record<string, unknown>
+    // Convert MotionStyle to CSSProperties (safe: values are plain in reduced-motion)
+    const style = motionStyle as React.CSSProperties | undefined
+    return <div className={className} style={style} {...htmlProps}>{children}</div>
   }
 
   return (
@@ -202,8 +210,8 @@ export const glass = {
   modal: 'glass-panel rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto',
   /** Subtle section surface */
   section: 'glass-surface rounded-xl',
-  input: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/5 focus:outline-none transition-colors disabled:opacity-50',
-  inputSm: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/5 focus:outline-none transition-colors',
+  input: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/20 focus:outline-none transition-colors disabled:opacity-50',
+  inputSm: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/20 focus:outline-none transition-colors',
   success: 'bg-emerald-50/80 border border-emerald-200/60 rounded-xl',
   error: 'bg-red-50/80 border border-red-200/60 rounded-xl',
   warning: 'bg-amber-50/80 border border-amber-200/60 rounded-xl',
@@ -258,11 +266,14 @@ export function SpringModal({ children, className, ...rest }: SpringModalProps) 
 
   return (
     <motion.div
+      role="dialog"
+      aria-modal="true"
       className={className}
       initial={reduced ? false : { opacity: 0, scale: 0.95, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={reduced ? undefined : { opacity: 0, scale: 0.95, y: 10 }}
       transition={springs.entrance}
+      onClick={(e) => e.stopPropagation()}
       {...rest}
     >
       {children}
