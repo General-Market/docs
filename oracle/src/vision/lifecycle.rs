@@ -1306,6 +1306,11 @@ impl BatchLifecycleManager {
                             .bind(batch_id as i64)
                             .execute(&self.pool)
                             .await?;
+
+                        // Reconcile vaults — call reconcile(batchId) on each player address.
+                        // Vaults update their NAV; non-vault addresses revert harmlessly.
+                        info!(batch_id, players = settlement.players.len(), "Reconciling vaults post-settlement");
+                        writer.reconcile_vaults(batch_id, &settlement.players).await;
                     }
                     Err(e) => {
                         let err_str = e.to_string();
@@ -1956,6 +1961,7 @@ impl BatchLifecycleManager {
                     "Settlement recovery: retrying settleBatch"
                 );
 
+                let players_for_reconcile = players.clone();
                 match writer.settle_batch(
                     batch_id_u64,
                     players,
@@ -1983,6 +1989,8 @@ impl BatchLifecycleManager {
                         if let Err(e) = self.bitmap_store.purge_batch_from_db(&self.pool, batch_id_u64).await {
                             error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: purge_batch_from_db failed");
                         }
+                        // Reconcile vaults post-recovery settlement
+                        writer.reconcile_vaults(batch_id_u64, &players_for_reconcile).await;
                     }
                     Err(e) => {
                         let err_str = format!("{}", e);
@@ -2002,6 +2010,8 @@ impl BatchLifecycleManager {
                             if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
                                 error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: mark_settled failed (already-settled path)");
                             }
+                            // Still reconcile vaults — batch was settled but vaults may not have been reconciled
+                            writer.reconcile_vaults(batch_id_u64, &players_for_reconcile).await;
                         } else {
                             warn!(
                                 batch_id = batch_id_u64,

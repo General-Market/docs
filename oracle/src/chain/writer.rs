@@ -669,6 +669,44 @@ impl EthersChainWriter {
         self.submit_tx(tx, "settle_batch").await
     }
 
+    /// Call `VisionVault.reconcile(batchId)` on each player address.
+    /// Vaults update their NAV/TVL accounting; non-vault addresses revert harmlessly.
+    pub async fn reconcile_vaults(&self, batch_id: u64, players: &[Address]) {
+        // reconcile(uint256) selector = keccak256("reconcile(uint256)")[:4] = 0xf68b84f7
+        let selector: [u8; 4] = [0xf6, 0x8b, 0x84, 0xf7];
+        let batch_token = ethers::abi::Token::Uint(U256::from(batch_id));
+        let encoded_arg = ethers::abi::encode(&[batch_token]);
+        let mut calldata = selector.to_vec();
+        calldata.extend_from_slice(&encoded_arg);
+
+        for player in players {
+            let tx: TypedTransaction = Eip1559TransactionRequest::new()
+                .to(*player)
+                .data(calldata.clone())
+                .into();
+
+            match self.submit_tx(tx, "vault_reconcile").await {
+                Ok(tx_hash) => {
+                    info!(
+                        batch_id,
+                        vault = %player,
+                        tx = %tx_hash,
+                        "Vault reconciled"
+                    );
+                }
+                Err(e) => {
+                    // Expected for non-vault addresses or already-reconciled vaults
+                    let err_str = e.to_string().to_lowercase();
+                    if err_str.contains("revert") || err_str.contains("already") {
+                        debug!(batch_id, address = %player, "Not a vault or already reconciled — skipping");
+                    } else {
+                        warn!(batch_id, address = %player, error = %e, "Vault reconcile failed unexpectedly");
+                    }
+                }
+            }
+        }
+    }
+
     /// Submit a transaction with nonce management, gas estimation, and retry logic.
     ///
     /// Includes nonce-level retry: when concurrent L3 operations cause "nonce too low",
