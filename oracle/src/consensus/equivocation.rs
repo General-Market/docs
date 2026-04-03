@@ -1323,7 +1323,11 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::VisionCompleteDepositSign { .. }
             | P2PMessage::VisionRefundDepositSign { .. }
             | P2PMessage::VisionCompleteWithdrawSign { .. }
-            | P2PMessage::VisionCreateBatchSign { .. }
+            // VisionCreateBatchSign excluded: multiple sources send co-signs
+            // per cycle, each with different content (source_id, config_hash).
+            // The detector key lacks source_id, so the first co-sign passes
+            // and all subsequent ones from the same peer are false-positive
+            // equivocations. These use per-source channel routing instead.
     )
 }
 

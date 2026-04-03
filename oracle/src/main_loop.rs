@@ -741,6 +741,31 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
 
                     // Vision ops consensus task deleted (round-only purge)
 
+                    // ── Independent L3 OracleRegistry snapshot refresh ──
+                    // Decoupled from mirror_sync_task: if settlement is unreachable,
+                    // mirror sync fails and the refresh inside it never fires.
+                    // Without periodic refresh, BLSVerifier__SnapshotTooOld bricks
+                    // ALL BLS-verified calls (createBatch, settleBatch) after ~6h.
+                    // Fire every 10,000 cycles (~2.7h) — well within the 86,400-block window.
+                    if is_sync_leader && current_cycle % 10_000 == 0 {
+                        if let (Some(ref l3w), Some(reg_addr)) = (&consensus_chain_writer_for_task, oracle_registry_for_sync_task) {
+                            let writer = Arc::clone(l3w);
+                            let cycle = current_cycle;
+                            tokio::spawn(async move {
+                                use common::traits::ChainWriter as _;
+                                let refresh_sel = &ethers::utils::keccak256(b"refreshSnapshot()")[..4];
+                                match writer.send_transaction(reg_addr, refresh_sel.to_vec(), ethers::types::U256::zero()).await {
+                                    Ok(tx_hash) => {
+                                        info!(cycle, ?tx_hash, "L3 snapshot refresh (independent): submitted");
+                                    }
+                                    Err(e) => {
+                                        warn!(cycle, error = %e, "L3 snapshot refresh (independent) failed");
+                                    }
+                                }
+                            });
+                        }
+                    }
+
                     // Stale order watchdog: ONLY on heartbeat cycles, check every 50
                     // Non-blocking: skip if orchestrator lock is held by spawned tasks
                     if is_heartbeat && current_cycle % 50 == 0 {
