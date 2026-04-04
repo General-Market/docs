@@ -18,10 +18,10 @@ const client = createPublicClient({
 })
 
 const playerJoinedEvent = parseAbiItem(
-  'event PlayerJoined(uint256 indexed batchId, address indexed player, uint256 deposit, bytes32 bitmapHash)'
+  'event PlayerJoined(uint256 indexed batchId, address indexed player, uint256 deposit, bytes32 bitmapHash, bytes32 configHash)'
 )
 const playerSettledEvent = parseAbiItem(
-  'event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout)'
+  'event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout, uint256 fee)'
 )
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const blockNumber = await client.getBlockNumber()
-    const fromBlock = blockNumber > 150n ? blockNumber - 150n : 0n
+    const fromBlock = blockNumber > 500n ? blockNumber - 500n : 0n
     const nowMs = Date.now()
 
     const [joinedLogs, settledLogs] = await Promise.all([
