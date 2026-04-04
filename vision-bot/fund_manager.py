@@ -245,6 +245,7 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
     stake_wei = int(cfg.get("stake_per_tick", 1) * 10**DECIMALS)
 
     joined_this_cycle = 0
+    matched_any_source = False
     log.info("Processing %d batches across %d funds...", len(batches), len(funds))
     for batch in batches:
         batch_id = batch.get("id", batch.get("batch_id"))
@@ -263,7 +264,9 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
                 source_name = raw_sid
 
         matched_funds = [f for f in funds if f.matches_source(source_name) and batch_id not in f.joined_batch_ids]
-        if not matched_funds:
+        if matched_funds:
+            matched_any_source = True
+        else:
             continue
 
         # Filter by idle capital — each fund bets alloc_bps% of its total assets
@@ -412,6 +415,32 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
     if cycle_number % 10 == 0:
         log_nav_table(funds)
 
+    # Health summary — detect silent failures
+    log.info("Cycle %d: %d joined, source_match=%s", cycle_number, joined_this_cycle, matched_any_source)
+    if len(batches) > 0 and not matched_any_source:
+        log.error(
+            "HEALTH ALERT: %d batches processed, ZERO source matches. "
+            "Source matching is broken — no funds will ever join. "
+            "Check batch API source_id format vs fund sources in funds.toml.",
+            len(batches),
+        )
+
+    # Write heartbeat for Docker HEALTHCHECK
+    heartbeat_path = os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
+    try:
+        import json as _json
+        _json.dump({
+            "cycle": cycle_number,
+            "ts": time.time(),
+            "joined": joined_this_cycle,
+            "source_match": matched_any_source,
+            "batches": len(batches),
+        }, open(heartbeat_path, "w"))
+    except Exception:
+        pass
+
+    return joined_this_cycle
+
 
 # ── Main ───────────────────────────────────────────────────────
 
@@ -514,6 +543,35 @@ def main():
     if all_known_batch_ids:
         feed.subscribe(list(all_known_batch_ids))
         log.info("Pre-subscribed to %d known batch feeds", len(all_known_batch_ids))
+
+    # ── Startup self-test: verify source matching works ──
+    # If this fails, the fund-manager would run forever joining nothing.
+    try:
+        test_batches = fetch_batches(shared_cfg["vision_api"], executor=executor)
+        if test_batches:
+            test_matched = 0
+            for b in test_batches[:20]:
+                sname = b.get("source_name") or b.get("sourceName") or ""
+                if not sname:
+                    raw = b.get("source_id") or b.get("sourceId") or ""
+                    sname = source_id_map.get(raw, "") if raw.startswith("0x") else raw
+                if any(f.matches_source(sname) for f in funds):
+                    test_matched += 1
+            if test_matched == 0:
+                log.error(
+                    "STARTUP FAIL: sampled %d batches, ZERO matched any fund. "
+                    "Source IDs from API: %s. Fund sources: %s. "
+                    "Source matching is broken — fix before continuing.",
+                    min(20, len(test_batches)),
+                    [b.get("source_id", "?") for b in test_batches[:5]],
+                    sorted(all_source_names)[:10],
+                )
+                sys.exit(1)
+            log.info("Startup self-test: %d/%d sampled batches match funds ✓", test_matched, min(20, len(test_batches)))
+    except SystemExit:
+        raise
+    except Exception as e:
+        log.warning("Startup self-test skipped (API unavailable): %s", e)
 
     log.info("Fund Manager started: %d funds", len(funds))
 

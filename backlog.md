@@ -1,5 +1,20 @@
 # Design Decision Backlog
 
+## Session: 20260403-1400-vldr (Vision leaderboard dead — silent failure chain)
+
+- [FAILED] Vision swarm: Docker Compose `${VAR}` in `environment:` interpolates from HOST shell, not `env_file`. Without `source swarm.env`, BOT_KEYS became 11 commas. Runner treated commas-only as truthy. 10 bots → 0 bots. No alert, container kept running.
+- [FAILED] Fund-manager source matching: batch API returns plain-text source_ids ("crypto"). Fund-manager ran keccak256 hash lookup on them. Every source missed silently. 183 vaults joined zero batches across weeks. No alert.
+- [FAILED] Oracle settled every round with players=0. The leaderboard showed stale data from earlier rounds where players existed but got full refunds (all markets Cancelled — zero start prices).
+- [FAILED] SubmarketsGrid consumed cancelled market ratios (upPct:50/downPct:50) as real odds, showing 2.00/2.00 everywhere instead of falling back to price-derived implied odds.
+- [DECISION] Removed BOT_KEYS shell interpolation from docker-compose. Runner now reads SWARM_BOT_{i}_KEY from env_file directly. Also hardened runner to reject empty-key CSV.
+- [DECISION] Fund-manager: plain-text source_ids used directly (not hash-looked-up). Startup self-test fetches batches and verifies ≥1 source match before entering main loop — exits with error if source matching is broken.
+- [DECISION] Per-cycle health log reports joins count + source_match boolean. HEALTH ALERT logged if batches > 0 but source_match = false. Heartbeat JSON written for Docker HEALTHCHECK.
+- [DECISION] Docker HEALTHCHECK on fund-manager: verifies heartbeat freshness (< 120s) and source_match after cycle 3. Three consecutive failures → unhealthy container.
+- [DECISION] SubmarketsGrid filters out Cancelled/Flat/zero-stake market ratios from the ratios map, forcing fallback to price-derived implied odds.
+- [DECISION] Replaced vision-swarm with fund-manager in testnet.sh deploy pipeline (step [8/8], stop, seed funding).
+- [DECISION] Fund-manager reconciliation recognizes BatchAlreadyReconciled selector (0x4c03a47b) and silently marks done instead of infinite retry.
+- [DECISION] Fund-manager state file writes to writable volume (/app/pnl-data/) instead of read-only root filesystem.
+
 ## Session: 20260329-1145-msyn (Mirror sync deadlock + deployment file corruption)
 
 - [DECISION] Root cause: VPS active-deployment.json was overwritten with envs/testnet/deployment.json which contained Anvil-local addresses (0xe3516..., 0x5195...) that don't exist on Sonic. The oracle was talking to a bricked MirrorOracleRegistry (0x5195..., registryNonce=3, admin slot zero from storage layout mismatch after upgrade).

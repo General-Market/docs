@@ -1,0 +1,36 @@
+services:
+  fund-manager:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/fund-manager/Dockerfile
+    container_name: fund-manager
+    entrypoint: ["python", "fund_manager.py", "/app/funds.toml"]
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./pnl-data:/app/pnl-data
+      - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
+    tmpfs:
+      - /tmp
+    environment:
+      FUND_MANAGER_KEY: "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537"
+      L3_RPC_URL: "http://142.132.164.24/"
+      VISION_API_URL: "http://localhost:10001"
+      DATA_NODE_URL: "http://localhost:8200"
+      ORACLE_URLS: "http://localhost:10001,http://localhost:10002,http://localhost:10003"
+    healthcheck:
+      # Heartbeat file written every cycle (~30s). Stale > 120s = unhealthy.
+      test: ["CMD-SHELL", "python3 -c \"import json,time; d=json.load(open('/app/pnl-data/heartbeat.json')); assert time.time()-d['ts']<120, 'stale'; assert d.get('source_match',False) or d['cycle']<3, 'no source match'\""]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "2.0"
