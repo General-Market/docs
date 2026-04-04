@@ -7,15 +7,14 @@ import { useQuery } from '@tanstack/react-query'
 import type { BatchConfigResponse } from '@/hooks/vision/useBatchConfig'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useRounds } from '@/hooks/vision/useRounds'
-import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
 import { SourceSidebar } from './SourceSidebar'
 import { FeaturedVault } from './FeaturedVault'
 import { SubmarketsGrid } from './SubmarketsGrid'
-import { SourceDashboard } from './SourceDashboard'
 import { WalletSourceStats } from './shared'
+import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { useReadContract } from 'wagmi'
@@ -30,6 +29,45 @@ import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 interface SourceDetailV2Props {
   sourceId: string
   initialSource?: SourceDisplayServer
+}
+
+function truncAddr(addr: string) {
+  return `${addr.slice(0, 6)}..${addr.slice(-4)}`
+}
+
+function SourceLeaderboard({ sourceId }: { sourceId: string }) {
+  const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
+  const top5 = leaderboard.slice(0, 5)
+
+  if (top5.length === 0) return null
+
+  return (
+    <div className="border border-border-light bg-[var(--surface)] p-5">
+      <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-3">
+        Leaderboard
+      </h3>
+      <div className="space-y-2">
+        {top5.map((entry, i) => (
+          <div key={entry.walletAddress} className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-muted w-4">{i + 1}</span>
+              <span className="font-mono text-[13px] text-black">
+                {truncAddr(entry.walletAddress)}
+              </span>
+            </div>
+            <span
+              className={`font-mono text-[13px] font-bold ${
+                entry.roi >= 0 ? 'text-color-up' : 'text-color-down'
+              }`}
+            >
+              {entry.roi >= 0 ? '+' : ''}
+              {entry.roi.toFixed(1)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props) {
@@ -91,7 +129,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   // On-chain batch verification
   const { getAddress } = useDeployment()
   const visionAddress = getAddress('Vision')
-  const { data: onChainBatch, isError: batchOnChainError, error: batchError } = useReadContract({
+  const { isError: batchOnChainError, error: batchError } = useReadContract({
     address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getBatch',
@@ -126,22 +164,6 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   }, [batchConfig?.markets, sourceMarkets])
 
   const marketCount = marketIds.length || undefined
-
-  // Player position
-  const { isJoined: isJoinedOnChain } = usePlayerPosition(verifiedBatch?.id)
-
-  // Betting round (current) + settling round (previous)
-  const bettingRound = useMemo(() => {
-    if (!rounds || rounds.length === 0) return null
-    return rounds.find(r => r.status === 'betting') ?? null
-  }, [rounds])
-
-  const settlingRound = useMemo(() => {
-    if (!rounds || rounds.length === 0) return null
-    return rounds.find(r => r.status === 'settling' || r.status === 'locked') ?? null
-  }, [rounds])
-
-  const bettingEnd = bettingRound?.bettingEnd ?? null
 
   // Loading / not-found states
   if (isRegistryLoading && !initialSource) {
@@ -209,21 +231,13 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             />
           )}
 
-          {/* Featured vault */}
+          {/* Featured vault + leaderboard */}
           <div className="mt-6">
             <FeaturedVault sourceId={sourceId} />
           </div>
 
-          {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
-          <div className="mt-6">
-            <SourceDashboard
-              sourceId={sourceId}
-              verifiedBatch={verifiedBatch}
-              bettingEnd={bettingEnd}
-              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
-              settlingRound={settlingRound}
-              rounds={rounds}
-            />
+          <div className="mt-4">
+            <SourceLeaderboard sourceId={sourceId} />
           </div>
         </div>
 
