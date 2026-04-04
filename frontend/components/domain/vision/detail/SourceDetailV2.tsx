@@ -12,7 +12,7 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
 import { SourceSidebar } from './SourceSidebar'
-import { VaultCarousel } from './VaultCarousel'
+import { FeaturedVault } from './FeaturedVault'
 import { SubmarketsGrid } from './SubmarketsGrid'
 import { SourceDashboard } from './SourceDashboard'
 import { WalletSourceStats } from './shared'
@@ -209,9 +209,9 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             />
           )}
 
-          {/* Vault carousel */}
+          {/* Featured vault */}
           <div className="mt-6">
-            <VaultCarousel sourceId={sourceId} />
+            <FeaturedVault sourceId={sourceId} />
           </div>
 
           {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
