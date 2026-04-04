@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer'
 import { SourceDetailV2 } from '@/components/domain/vision/detail/SourceDetailV2'
 import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
-import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds } from '@/lib/vision/prefetch'
+import { prefetchSourceSnapshot, prefetchBatchConfigBySource, prefetchSnapshotMeta, prefetchBatches, prefetchRounds, prefetchSourceHistory } from '@/lib/vision/prefetch'
 import { toInternalId } from '@/lib/vision/source-ids'
 
 export const revalidate = 60
@@ -79,6 +79,10 @@ export default async function SourceV2Page({ params }: Props) {
     queryClient.prefetchQuery({
       queryKey: ['vision-rounds', sourceId],
       queryFn: () => prefetchRounds(sourceId),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ['source-history', sourceId, 1],
+      queryFn: () => prefetchSourceHistory(sourceId),
     }),
   ])
 

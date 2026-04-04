@@ -194,13 +194,6 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
         <div className="relative z-[1] bg-page">
           <WalletSourceStats sourceId={sourceId} />
 
-          {/* Source presentation — one-liner */}
-          <div className="mt-4 px-1">
-            <p className="text-[13px] text-text-secondary leading-relaxed">
-              {source.description}
-            </p>
-          </div>
-
           {/* Pending positions */}
           {rounds && rounds.length > 0 && (
             <PendingPositions

@@ -35,7 +35,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="sticky top-0 z-10 border border-border-light overflow-hidden bg-white flex">
+    <div className="sticky top-14 sm:top-16 z-10 border border-border-light overflow-hidden bg-white flex">
       {/* Left half — info */}
       <div className="flex-1 px-6 py-4 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-1.5">
