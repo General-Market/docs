@@ -14,6 +14,12 @@ services:
     container_name: testnet-curator
     network_mode: host
     restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep curator || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     logging:
       driver: json-file
       options:
