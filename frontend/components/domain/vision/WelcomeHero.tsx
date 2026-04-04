@@ -377,20 +377,47 @@ function MultiLineChart({ marketIds, markets, valueLabel, historyData }: {
     let rawSeries: { id: string; values: number[]; color: string; timestamps: number[] }[]
 
     if (hasReal) {
-      // Downsample real data to POINTS evenly-spaced buckets
+      // Find global time range across all series for time-based downsampling
+      let globalMinTs = Infinity, globalMaxTs = -Infinity
+      for (const id of marketIds.slice(0, 4)) {
+        const pts = historyData![id]
+        if (!pts || pts.length < 2) continue
+        globalMinTs = Math.min(globalMinTs, pts[0].ts)
+        globalMaxTs = Math.max(globalMaxTs, pts[pts.length - 1].ts)
+      }
+
       rawSeries = marketIds.slice(0, 4).map((id, i) => {
         const pts = historyData![id]
         if (!pts || pts.length < 2) {
-          // Not enough data for this asset — generate placeholder
           return { id, values: generateSeriesData(hashStr(id), POINTS), color: CHART_COLORS[i], timestamps: [] }
         }
-        // Downsample: pick POINTS evenly spaced samples
+        // Time-based downsampling: evenly spaced across the full time range.
+        // If no data point exists within GAP_THRESHOLD of a bucket, value = 0
+        // (e.g. Twitch streamer offline). This prevents interpolation across gaps.
+        const GAP_THRESHOLD = 30 * 60 * 1000 // 30 minutes
+        const tMin = isFinite(globalMinTs) ? globalMinTs : pts[0].ts
+        const tMax = isFinite(globalMaxTs) ? globalMaxTs : pts[pts.length - 1].ts
+        const tRange = tMax - tMin || 1
         const values: number[] = []
         const timestamps: number[] = []
+        let cursor = 0
         for (let j = 0; j < POINTS; j++) {
-          const srcIdx = Math.round((j / (POINTS - 1)) * (pts.length - 1))
-          values.push(pts[srcIdx].value)
-          timestamps.push(pts[srcIdx].ts)
+          const targetTs = tMin + (j / (POINTS - 1)) * tRange
+          // Advance cursor to nearest point
+          while (cursor < pts.length - 1 && pts[cursor + 1].ts <= targetTs) cursor++
+          const nearest = pts[cursor]
+          const dist = Math.abs(nearest.ts - targetTs)
+          // If next point is closer, use it instead
+          if (cursor < pts.length - 1 && Math.abs(pts[cursor + 1].ts - targetTs) < dist) {
+            values.push(pts[cursor + 1].value)
+            timestamps.push(targetTs)
+          } else if (dist <= GAP_THRESHOLD) {
+            values.push(nearest.value)
+            timestamps.push(targetTs)
+          } else {
+            values.push(0)
+            timestamps.push(targetTs)
+          }
         }
         return { id, values, color: CHART_COLORS[i], timestamps }
       })
@@ -403,13 +430,17 @@ function MultiLineChart({ marketIds, markets, valueLabel, historyData }: {
       }))
     }
 
-    // Normalize all series to span 15%-85% — ensures charts align across cards
+    // Normalize all series — if data contains zeros (gap-filled offline periods),
+    // map to 0%-85% so zeros sit at chart bottom; otherwise 15%-85%
     const allVals = rawSeries.flatMap(s => s.values)
     const gMin = Math.min(...allVals)
     const gMax = Math.max(...allVals)
     const gRange = gMax - gMin || 1
+    const hasZeros = gMin === 0
+    const normFloor = hasZeros ? 0 : 0.15
+    const normSpan = 0.85 - normFloor
     for (const s of rawSeries) {
-      s.values = s.values.map(v => 0.15 + 0.7 * (v - gMin) / gRange)
+      s.values = s.values.map(v => normFloor + normSpan * (v - gMin) / gRange)
     }
 
     // Fixed y-axis: 0-100% with 25% ticks — consistent across all cards
