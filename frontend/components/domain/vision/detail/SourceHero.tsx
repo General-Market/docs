@@ -8,6 +8,11 @@ import { GeometricPulse } from './GeometricPulse'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 
+/** Map sourceId → b-roll video path in /public/source-video/ */
+const SOURCE_BROLL: Record<string, string> = {
+  twitch: '/source-video/twitch-broll.mp4',
+}
+
 interface SourceHeroProps {
   source: VisionSource
   sourceSchedule?: SourceSchedule
@@ -33,6 +38,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
   const [logoLoaded, setLogoLoaded] = useState(false)
   const isLive = sourceSchedule?.status === 'healthy'
   const categoryLabel = getCategoryLabel(source.category)
+  const brollSrc = sourceId ? SOURCE_BROLL[sourceId] : undefined
 
   return (
     <div className="sticky top-0 z-0 border border-border-light overflow-hidden bg-white flex">
@@ -90,16 +96,32 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
         )}
       </div>
 
-      {/* Right half — brand logo with geometric pulse */}
+      {/* Right half — brand panel with optional b-roll */}
       <div
-        className="relative w-2/5 min-h-[100px] flex items-center justify-center"
+        className="relative w-2/5 min-h-[100px] flex items-center justify-center overflow-hidden"
         style={{ background: source.brandBg, viewTransitionName: sourceId ? `source-brand-${sourceId}` : undefined } as React.CSSProperties}
       >
-        <GeometricPulse
-          brandBg={source.brandBg}
-          tickRemaining={tickRemaining}
-          tickDuration={tickDuration}
-        />
+        {/* B-roll video — loops behind logo */}
+        {brollSrc && (
+          <video
+            src={brollSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-70"
+          />
+        )}
+
+        {/* Geometric pulse — sits between video and logo */}
+        {!brollSrc && (
+          <GeometricPulse
+            brandBg={source.brandBg}
+            tickRemaining={tickRemaining}
+            tickDuration={tickDuration}
+          />
+        )}
+
         {!logoLoaded && (
           <div className="absolute inset-0 z-10 flex items-center justify-center">
             <div className="w-16 h-8 rounded bg-white/10 animate-pulse" />
@@ -110,7 +132,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
           alt={source.name}
           width={128}
           height={64}
-          className={`relative z-10 max-h-[64px] max-w-[80%] object-contain transition-opacity duration-300 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`relative z-10 max-h-[64px] max-w-[80%] object-contain transition-opacity duration-300 drop-shadow-lg ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
           priority
           onLoad={() => setLogoLoaded(true)}
         />
