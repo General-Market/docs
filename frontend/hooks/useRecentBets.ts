@@ -87,8 +87,9 @@ export function useRecentBets(limit: number = 20): UseRecentBetsReturn {
   } = useQuery({
     queryKey: ['recent-bets', limit],
     queryFn: () => fetchRecentBets(limit),
-    refetchInterval: 60000, // 60 seconds - SSE handles real-time updates
-    staleTime: 30000 // Consider data stale after 30 seconds
+    retry: false,
+    refetchInterval: 60000,
+    staleTime: 30000
   })
 
   return {
