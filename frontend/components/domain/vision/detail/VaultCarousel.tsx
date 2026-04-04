@@ -6,7 +6,7 @@ import { useReadContracts } from 'wagmi'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'
 import fundData from '@/data/fund-branding.json'
-import { cn } from '@/lib/utils/cn'
+import { VaultCard } from '@/components/domain/vaults/VaultCard'
 import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
 
@@ -14,31 +14,6 @@ interface VaultCarouselProps {
   sourceId: string
 }
 
-const STRATEGY_LABELS: Record<string, string> = {
-  momentum: 'Momentum',
-  contrarian: 'Contrarian',
-  bullish: 'Bullish',
-  bearish: 'Bearish',
-  momentum_threshold: 'Selective',
-  home_field: 'Home Field',
-  regime: 'Regime',
-  mean_reversion: 'Mean Reversion',
-  adoption_curve: 'Adoption Curve',
-  cluster: 'Cluster',
-}
-
-const STRATEGY_COLORS: Record<string, string> = {
-  momentum: 'from-blue-500/20 to-blue-600/5 border-blue-500/20',
-  contrarian: 'from-orange-500/20 to-orange-600/5 border-orange-500/20',
-  bullish: 'from-green-500/20 to-green-600/5 border-green-500/20',
-  bearish: 'from-red-500/20 to-red-600/5 border-red-500/20',
-  momentum_threshold: 'from-purple-500/20 to-purple-600/5 border-purple-500/20',
-  home_field: 'from-yellow-500/20 to-yellow-600/5 border-yellow-500/20',
-  regime: 'from-cyan-500/20 to-cyan-600/5 border-cyan-500/20',
-  mean_reversion: 'from-pink-500/20 to-pink-600/5 border-pink-500/20',
-  adoption_curve: 'from-teal-500/20 to-teal-600/5 border-teal-500/20',
-  cluster: 'from-indigo-500/20 to-indigo-600/5 border-indigo-500/20',
-}
 
 export function VaultCarousel({ sourceId }: VaultCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -154,7 +129,6 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
           const nav = totalSupply > 0n ? Number(totalAssets) / Number(totalSupply) : 1.0
           const perf = nav - 1.0
           const tvl = parseFloat(formatUnits(totalAssets, 18))
-          const gradientClass = STRATEGY_COLORS[fund.strategy] || 'from-gray-500/20 to-gray-600/5 border-gray-500/20'
 
           const vaultInfo: VaultInfo = {
             address: fund.vault as `0x${string}`,
@@ -173,68 +147,8 @@ export function VaultCarousel({ sourceId }: VaultCarouselProps) {
           }
 
           return (
-            <div
-              key={fund.symbol}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelectedVault(vaultInfo)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setSelectedVault(vaultInfo)
-                }
-              }}
-              className={cn(
-                'shrink-0 w-[280px] rounded-lg border border-border-light bg-gradient-to-br overflow-hidden cursor-pointer hover:shadow-sm transition-shadow',
-                gradientClass,
-              )}
-              style={{ scrollSnapAlign: 'start' }}
-            >
-              <div className="h-1" style={{ backgroundColor: fund.color }} />
-
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="text-[15px] font-black text-black leading-tight">
-                      {fund.name}
-                    </div>
-                    <div className="text-[10px] font-mono text-text-muted mt-0.5">
-                      {fund.symbol}
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-bold uppercase tracking-[0.06em] px-1.5 py-0.5 rounded bg-black/[0.06] text-text-secondary shrink-0 mt-0.5">
-                    {STRATEGY_LABELS[fund.strategy] || fund.strategy}
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-text-secondary leading-[1.5] line-clamp-3 mb-3 min-h-[50px]">
-                  {fund.tagline}
-                </p>
-
-                <div className="flex items-end justify-between pt-2 border-t border-border-light">
-                  <div>
-                    <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">TVL</div>
-                    <div className="text-[14px] font-bold font-mono text-black tabular-nums">
-                      ${tvl > 0 ? tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">Performance</div>
-                    <div className={cn(
-                      'text-[16px] font-black font-mono tabular-nums',
-                      perf >= 0 ? 'text-color-up' : 'text-color-down',
-                    )}>
-                      {perf >= 0 ? '+' : ''}{(perf * 100).toFixed(2)}%
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted">Fee</div>
-                    <div className="text-[12px] font-mono text-text-secondary tabular-nums">
-                      {fund.fee / 100}%
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div key={fund.symbol} className="shrink-0 w-[240px]" style={{ scrollSnapAlign: 'start' }}>
+              <VaultCard vault={vaultInfo} onClick={() => setSelectedVault(vaultInfo)} />
             </div>
           )
         })}
