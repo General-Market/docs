@@ -11,12 +11,11 @@ import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
-import { BatchProgressBar } from '../CountdownRing'
-import { SubmarketsGrid } from './SubmarketsGrid'
 import { SourceSidebar } from './SourceSidebar'
-import { BatchVaultResults } from './BatchVaultResults'
 import { VaultCarousel } from './VaultCarousel'
-import { WalletSourceStats, TripleTimer, formatTvl } from './shared'
+import { SubmarketsGrid } from './SubmarketsGrid'
+import { SourceDashboard } from './SourceDashboard'
+import { WalletSourceStats } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { useReadContract } from 'wagmi'
@@ -24,7 +23,7 @@ import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
-import { FirstTradeCTA } from '../FirstTradeCTA'
+// import { FirstTradeCTA } from '../FirstTradeCTA'
 
 // ── Main component ──
 
@@ -180,7 +179,8 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
       />
 
       {/* Center content */}
-      <div className="flex-1 min-w-0 max-w-[1000px] px-4 lg:px-8 py-5">
+      <div className="flex-1 min-w-0 px-2 lg:px-4 py-5">
+        {/* Source hero banner */}
         <SourceHero
           source={source}
           sourceSchedule={sourceSchedule}
@@ -191,86 +191,45 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           urgency="normal"
         />
 
-        {/* Everything below the hero scrolls above it */}
         <div className="relative z-[1] bg-page">
           <WalletSourceStats sourceId={sourceId} />
-          <FirstTradeCTA />
 
-        {verifiedBatch ? (
-          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
-            <BatchProgressBar
-              bettingEnd={bettingEnd}
-              tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+          {/* Source presentation — one-liner */}
+          <div className="mt-4 px-1">
+            <p className="text-[13px] text-text-secondary leading-relaxed">
+              {source.description}
+            </p>
+          </div>
+
+          {/* Pending positions */}
+          {rounds && rounds.length > 0 && (
+            <PendingPositions
+              rounds={rounds}
+              activeBatchId={verifiedBatch?.id}
             />
-            <div className="flex items-center px-5 py-3">
-              <div className="mr-5">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  {t('source_detail.round')}
-                </div>
-                <div className="text-[15px] font-bold font-mono text-black">
-                  #{verifiedBatch.id}
-                </div>
-              </div>
-              <div className="mr-5">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  {t('source_detail.players')}
-                </div>
-                <div className="text-[15px] font-bold font-mono text-black">
-                  {verifiedBatch.playerCount}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-                  {t('source_detail.pool')}
-                </div>
-                <div className="text-[15px] font-bold font-mono text-color-up">
-                  {formatTvl(verifiedBatch.tvl)}
-                </div>
-              </div>
-              <div className="ml-auto pl-5">
-                <TripleTimer
-                  bettingEnd={bettingEnd}
-                  tickDuration={verifiedBatch.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
-                  prevBettingEnd={settlingRound?.bettingEnd ?? null}
-                  prevTickDuration={settlingRound?.timeframeSecs ?? 300}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 border border-border-light bg-[var(--surface)] overflow-hidden">
-            <div className="h-[3px] w-full bg-border-light/30 overflow-hidden">
-              <div className="h-full w-1/3 bg-text-muted/20 animate-pulse rounded-r" />
-            </div>
-            <div className="flex items-center justify-between px-5 py-3">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-text-muted/40 opacity-50" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-text-muted/30" />
-                </span>
-                <span className="text-[12px] font-semibold text-text-secondary">
-                  Between rounds
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-text-muted">
-                Bets open shortly
-              </span>
-            </div>
-          </div>
-        )}
+          )}
 
-        {rounds && rounds.length > 0 && (
-          <PendingPositions
-            rounds={rounds}
-            activeBatchId={verifiedBatch?.id}
-          />
-        )}
+          {/* Vault carousel */}
+          <div className="mt-6">
+            <VaultCarousel sourceId={sourceId} />
+          </div>
 
-        <div className="flex flex-col gap-6 mt-6">
-          <VaultCarousel sourceId={sourceId} />
-          <BatchVaultResults sourceId={sourceId} />
-          <SubmarketsGrid sourceId={sourceId} />
+          {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
+          <div className="mt-6">
+            <SourceDashboard
+              sourceId={sourceId}
+              verifiedBatch={verifiedBatch}
+              bettingEnd={bettingEnd}
+              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+              settlingRound={settlingRound}
+              rounds={rounds}
+            />
+          </div>
         </div>
+
+        {/* Submarkets grid — full width, no side margins, last on page */}
+        <div className="-mx-2 lg:-mx-4">
+          <SubmarketsGrid sourceId={sourceId} />
         </div>
       </div>
 
