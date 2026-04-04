@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const blockNumber = await client.getBlockNumber()
-    const fromBlock = blockNumber > 500n ? blockNumber - 500n : 0n
+    const fromBlock = blockNumber > 100n ? blockNumber - 100n : 0n
     const nowMs = Date.now()
 
     const [joinedLogs, settledLogs] = await Promise.all([
