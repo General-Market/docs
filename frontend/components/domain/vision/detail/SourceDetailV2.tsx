@@ -12,7 +12,7 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
 import { SourceSidebar } from './SourceSidebar'
-import { VaultCarousel } from './VaultCarousel'
+import { VaultShowcase } from './VaultShowcase'
 import { SubmarketsGrid } from './SubmarketsGrid'
 import { SourceDashboard } from './SourceDashboard'
 import { WalletSourceStats } from './shared'
@@ -191,7 +191,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           urgency="normal"
         />
 
-        <div className="relative z-[1] bg-page">
+        <div className="bg-page">
           <WalletSourceStats sourceId={sourceId} />
 
           {/* Pending positions */}
@@ -202,9 +202,9 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             />
           )}
 
-          {/* Vault carousel */}
+          {/* Vault showcase */}
           <div className="mt-6">
-            <VaultCarousel sourceId={sourceId} />
+            <VaultShowcase sourceId={sourceId} />
           </div>
 
           {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
