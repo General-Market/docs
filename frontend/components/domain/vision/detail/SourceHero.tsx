@@ -39,72 +39,103 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickDuration, 
       className="relative overflow-hidden border border-white/[0.06]"
       style={{ viewTransitionName: sourceId ? `source-brand-${sourceId}` : undefined } as React.CSSProperties}
     >
-      {/* Dark background with brand accent */}
-      <div className="absolute inset-0 bg-[#1a1a2e]" />
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{ background: `linear-gradient(135deg, transparent 40%, ${source.brandBg})` }}
-      />
-      {/* Subtle noise texture */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")' }} />
+      {/* Noise texture across entire banner */}
+      <div className="absolute inset-0 opacity-[0.035] z-[1] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'1\'/%3E%3C/svg%3E")' }} />
 
-      <div className="relative flex items-center gap-6 px-6 py-5">
-        {/* Logo */}
-        <div className="shrink-0 w-[72px] h-[72px] rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center overflow-hidden">
+      <div className="relative flex min-h-[140px]">
+        {/* ── Left column: info, stats, everything ── */}
+        <div className="relative flex-1 bg-[#0f0f1a]">
+          {/* Diagonal brand bleed from right */}
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{ background: `linear-gradient(105deg, transparent 60%, ${source.brandBg})` }}
+          />
+
+          <div className="relative z-[2] flex flex-col justify-center h-full px-6 py-5">
+            {/* Top row: category + status */}
+            <div className="flex items-center gap-2.5 mb-2">
+              <span className="px-2 py-0.5 bg-white/[0.06] border border-white/[0.06] text-[9px] font-bold uppercase tracking-[0.12em] text-white/40">
+                {categoryLabel}
+              </span>
+              {sourceSchedule && (
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${
+                  isLive
+                    ? 'bg-color-up/10 border border-color-up/20 text-color-up'
+                    : 'bg-white/[0.04] border border-white/[0.06] text-white/30'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-color-up animate-pulse' : 'bg-white/20'}`} />
+                  {isLive ? t('source_hero.live') : t('source_hero.offline')}
+                </span>
+              )}
+            </div>
+
+            {/* Source name */}
+            <h1 className="text-[26px] font-black text-white leading-none tracking-[-0.02em] mb-1">
+              {source.name}
+            </h1>
+
+            {source.description && (
+              <p className="text-[11px] text-white/30 leading-relaxed max-w-md mb-4">
+                {source.description}
+              </p>
+            )}
+
+            {/* Stat boxes row */}
+            <div className="flex items-center gap-px">
+              {stats.map((s) => (
+                <div key={s.label} className="bg-white/[0.04] border border-white/[0.07] px-4 py-2 first:rounded-l last:rounded-r">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.16em] text-white/20 leading-none mb-1">
+                    {s.label}
+                  </div>
+                  <div className="text-[18px] font-mono font-black text-white leading-none tabular-nums">
+                    {s.value}
+                  </div>
+                </div>
+              ))}
+              {stats.length > 0 && (
+                <div className="bg-white/[0.04] border border-white/[0.07] px-4 py-2 rounded-r">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.16em] text-white/20 leading-none mb-1">
+                    STATUS
+                  </div>
+                  <div className={`text-[18px] font-mono font-black leading-none tabular-nums ${isLive ? 'text-color-up' : 'text-white/30'}`}>
+                    {isLive ? 'ON' : 'OFF'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right column: brand logo zone ── */}
+        <div
+          className="relative w-[38%] shrink-0 flex items-center justify-center"
+          style={{ background: source.brandBg }}
+        >
+          {/* Dark vignette from left edge for blending */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f1a] via-transparent to-transparent opacity-40" />
+          {/* Inner shadow for depth */}
+          <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.3)]" />
+
+          {/* Radial glow behind logo */}
+          <div
+            className="absolute w-[200px] h-[200px] rounded-full opacity-20 blur-[60px]"
+            style={{ background: source.brandBg }}
+          />
+
+          {/* Logo */}
           {!logoLoaded && (
-            <div className="w-10 h-5 rounded bg-white/10 animate-pulse" />
+            <div className="absolute z-10 w-20 h-10 rounded bg-white/10 animate-pulse" />
           )}
           <Image
             src={source.logo}
             alt={source.name}
-            width={56}
-            height={56}
-            className={`max-h-[48px] max-w-[48px] object-contain transition-opacity duration-200 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
+            width={160}
+            height={80}
+            className={`relative z-10 max-h-[72px] max-w-[75%] object-contain drop-shadow-[0_2px_20px_rgba(0,0,0,0.4)] transition-opacity duration-300 ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
             priority
             onLoad={() => setLogoLoaded(true)}
           />
         </div>
-
-        {/* Name + meta */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/30">
-              {categoryLabel}
-            </span>
-            {sourceSchedule && (
-              <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.1em] ${isLive ? 'text-color-up' : 'text-white/25'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-color-up animate-pulse' : 'bg-white/20'}`} />
-                {isLive ? t('source_hero.live') : t('source_hero.offline')}
-              </span>
-            )}
-          </div>
-
-          <h1 className="text-[22px] font-black text-white leading-tight tracking-[-0.01em]">
-            {source.name}
-          </h1>
-
-          {source.description && (
-            <p className="text-[11px] text-white/35 mt-1 leading-relaxed max-w-lg truncate">
-              {source.description}
-            </p>
-          )}
-        </div>
-
-        {/* Stat boxes — HLTV-style */}
-        {stats.length > 0 && (
-          <div className="hidden sm:flex items-center gap-px shrink-0">
-            {stats.map((s) => (
-              <div key={s.label} className="bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 first:rounded-l last:rounded-r">
-                <div className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/25 leading-none mb-1">
-                  {s.label}
-                </div>
-                <div className="text-[16px] font-mono font-black text-white/90 leading-none tabular-nums">
-                  {s.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
