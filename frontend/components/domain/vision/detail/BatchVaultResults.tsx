@@ -118,12 +118,11 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
           </div>
 
           {/* Column headers */}
-          <div className="hidden md:grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+          <div className="hidden md:grid grid-cols-[80px_1fr_70px_90px_64px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
             <div>Date</div>
             <div className="text-center">Round</div>
             <div className="text-right">Players</div>
-            <div className="text-right">Pool</div>
-            <div className="text-right">Top Return</div>
+            <div className="text-right">Top Payout</div>
             <div />
           </div>
 
@@ -151,14 +150,14 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                   return (
                     <div
                       key={batch.batchId}
-                      className="grid grid-cols-[80px_1fr_70px_80px_90px_64px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
+                      className="grid grid-cols-[80px_1fr_70px_90px_64px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
                     >
                       {/* Date */}
                       <div className="text-[11px] text-text-muted font-mono">
                         {formatDate(batch.settledAt ?? batch.timestamp)}
                       </div>
 
-                      {/* Batch info — center, like match result */}
+                      {/* Batch info */}
                       <div className="flex items-center justify-center gap-3">
                         <span className="text-[12px] font-bold text-black font-mono">
                           {t('batch_results.batch')} #{batch.batchId}
@@ -188,12 +187,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                         {batch.playerCount}
                       </div>
 
-                      {/* Pool */}
-                      <div className="text-right text-[12px] font-mono tabular-nums text-text-secondary">
-                        ${batch.totalPool.toFixed(2)}
-                      </div>
-
-                      {/* Top P&L */}
+                      {/* Top Payout */}
                       <div
                         className={cn(
                           'text-right text-[12px] font-mono tabular-nums font-bold',
@@ -209,7 +203,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                           : '\u2014'}
                       </div>
 
-                      {/* "Match" button — HLTV style */}
+                      {/* Detail button */}
                       <div className="text-right">
                         <span className="inline-block px-2.5 py-1 rounded bg-black/[0.06] text-[10px] font-bold text-text-secondary cursor-default">
                           {t('batch_results.batch')}
