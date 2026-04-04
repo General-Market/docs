@@ -1,7 +1,6 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { getBackendUrl } from '@/lib/contracts/addresses'
 
 /**
  * Event types for recent bet feed
@@ -52,9 +51,7 @@ interface UseRecentBetsReturn {
  * Throws error if backend is unavailable - NO MOCK FALLBACKS IN PRODUCTION
  */
 async function fetchRecentBets(limit: number = 20): Promise<RecentBetsResponse> {
-  const backendUrl = getBackendUrl() // Throws if not configured
-
-  const response = await fetch(`${backendUrl}/api/bets/recent?limit=${limit}`)
+  const response = await fetch(`/api/bets/recent?limit=${limit}`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch recent bets: ${response.status} ${response.statusText}`)
