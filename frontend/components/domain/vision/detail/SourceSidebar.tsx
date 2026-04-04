@@ -6,11 +6,7 @@ import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 
 const SIDEBAR_EXCLUDED = new Set(['chaturbate', 'fourchan'])
-
-/** Map sourceId → sidebar b-roll video in /public/source-video/ */
-const SIDEBAR_BROLL: Record<string, string> = {
-  twitch: '/source-video/twitch-sidebar.mp4',
-}
+const SIDEBAR_VIDEO = '/source-video/mountains-sidebar.mp4'
 
 interface SourceSidebarProps {
   currentSourceId: string
@@ -21,8 +17,6 @@ interface SourceSidebarProps {
 export function SourceSidebar({ currentSourceId, category, side }: SourceSidebarProps) {
   const { sources } = useSourceRegistry()
   const { data: meta } = useMarketSnapshotMeta()
-  const brollSrc = SIDEBAR_BROLL[currentSourceId]
-
   const sidebarSources = useMemo(() => {
     if (!sources) return []
     const eligible = sources.filter(
@@ -42,29 +36,18 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
   return (
     <div className="w-[250px] shrink-0 hidden xl:block">
       <div className="relative">
-        {/* Background — video b-roll or static image */}
-        {brollSrc ? (
-          <video
-            src={brollSrc}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full block"
-            style={{
-              transform: side === 'right' ? 'scaleX(-1)' : undefined,
-            }}
-          />
-        ) : (
-          <img
-            src="/sidebar-bg.jpg"
-            alt=""
-            className="w-full block"
-            style={{
-              transform: side === 'right' ? 'scaleX(-1)' : undefined,
-            }}
-          />
-        )}
+        {/* Background — looping mountain b-roll, mirrored on right sidebar */}
+        <video
+          src={SIDEBAR_VIDEO}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full block"
+          style={{
+            transform: side === 'right' ? 'scaleX(-1)' : undefined,
+          }}
+        />
 
         {/* White fade at bottom */}
         <div
