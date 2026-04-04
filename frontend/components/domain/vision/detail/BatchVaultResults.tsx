@@ -30,12 +30,13 @@ interface HistoryResponse {
   totalPages: number
 }
 
-function formatDate(iso: string): string {
+function formatTime(iso: string): string {
   const d = new Date(iso)
-  return d.toLocaleDateString(undefined, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+  return d.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
   })
 }
 
@@ -90,6 +91,8 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
       return res.json()
     },
     refetchInterval: 30_000,
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 
   const settled = historyData?.batches?.filter(b => b.status === 'settled') ?? []
@@ -118,12 +121,11 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
           </div>
 
           {/* Column headers */}
-          <div className="hidden md:grid grid-cols-[80px_1fr_70px_90px_64px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
-            <div>Date</div>
+          <div className="hidden md:grid grid-cols-[64px_1fr_60px_90px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+            <div>Time</div>
             <div className="text-center">Round</div>
             <div className="text-right">Players</div>
             <div className="text-right">Top Payout</div>
-            <div />
           </div>
 
           <div className="bg-white border border-t-0 border-border-light">
@@ -133,6 +135,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
               </div>
             )}
 
+            <div className="max-h-[500px] overflow-y-auto">
             {groups.map(group => (
               <div key={group.label}>
                 {/* Group header — like HLTV tournament name */}
@@ -150,11 +153,11 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                   return (
                     <div
                       key={batch.batchId}
-                      className="grid grid-cols-[80px_1fr_70px_90px_64px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
+                      className="grid grid-cols-[64px_1fr_60px_90px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
                     >
-                      {/* Date */}
-                      <div className="text-[11px] text-text-muted font-mono">
-                        {formatDate(batch.settledAt ?? batch.timestamp)}
+                      {/* Time */}
+                      <div className="text-[11px] text-text-muted font-mono tabular-nums">
+                        {formatTime(batch.settledAt ?? batch.timestamp)}
                       </div>
 
                       {/* Batch info */}
@@ -163,17 +166,12 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                           {t('batch_results.batch')} #{batch.batchId}
                         </span>
                         {addr && (
-                          <>
-                            <span className="text-[10px] text-text-muted">
-                              &mdash;
-                            </span>
-                            <span
-                              className="text-[10px] font-mono text-text-muted"
-                              title={addr}
-                            >
-                              {truncAddr(addr)}
-                            </span>
-                          </>
+                          <span
+                            className="text-[10px] font-mono text-text-muted"
+                            title={addr}
+                          >
+                            {truncAddr(addr)}
+                          </span>
                         )}
                         {batch.marketCount != null && (
                           <span className="text-[9px] text-text-muted ml-1">
@@ -190,7 +188,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                       {/* Top Payout */}
                       <div
                         className={cn(
-                          'text-right text-[12px] font-mono tabular-nums font-bold',
+                          'text-right text-[12px] font-mono tabular-nums font-bold truncate',
                           pnlPositive
                             ? 'text-color-up'
                             : pnl < 0
@@ -202,19 +200,13 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                           ? `${pnlPositive ? '+' : ''}$${Math.abs(pnl).toFixed(2)}`
                           : '\u2014'}
                       </div>
-
-                      {/* Detail button */}
-                      <div className="text-right">
-                        <span className="inline-block px-2.5 py-1 rounded bg-black/[0.06] text-[10px] font-bold text-text-secondary cursor-default">
-                          {t('batch_results.batch')}
-                        </span>
-                      </div>
                     </div>
                   )
                 })}
               </div>
             ))}
 
+            </div>
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-[var(--surface)]">

@@ -226,6 +226,16 @@ function sanitizeSource(s: Record<string, unknown>) {
   }
 }
 
+/** Prefetch settled batch history for a source — first page only. */
+export async function prefetchSourceHistory(sourceId: string) {
+  const res = await fetch(
+    `${getIssuerVisionUrl()}/vision/source/${encodeURIComponent(sourceId)}/history?page=1&per_page=20`,
+    { next: { revalidate: 30 }, signal: AbortSignal.timeout(5_000) },
+  )
+  if (!res.ok) return { batches: [], page: 1, perPage: 20, totalSettled: 0, totalPages: 0 }
+  return res.json()
+}
+
 export async function prefetchSourceRegistry() {
   const res = await fetch(`${getDataNodeServer()}/sources/registry`, {
     next: { revalidate: 120 },
