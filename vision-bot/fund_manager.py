@@ -32,6 +32,8 @@ log = logging.getLogger("fund-manager")
 DECIMALS = 18
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
+VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
+SNAPSHOT_INTERVAL = 10  # write snapshots every N cycles
 
 
 # ── Config ─────────────────────────────────────────────────────
@@ -265,6 +267,41 @@ def log_nav_table(funds):
     log.info("\n".join(lines))
 
 
+# ── Vault snapshots ───────────────────────────────────────────
+
+
+def write_vault_snapshots(funds):
+    """Write NAV snapshots to oracle postgres for historical charts."""
+    if not VISION_DB_URL:
+        return
+    try:
+        import psycopg2
+        conn = psycopg2.connect(VISION_DB_URL)
+        cur = conn.cursor()
+        rows = 0
+        for fund in funds:
+            try:
+                info = fund.vault.get_vault_info()
+                total_assets = info.get("total_assets", 0)
+                total_supply = max(info.get("total_supply", 1), 1)
+                nav = total_assets / total_supply
+                tvl = total_assets / 1e18
+                cur.execute(
+                    "INSERT INTO vault_snapshots (vault_address, total_assets, total_supply, nav_per_share, tvl_usd) "
+                    "VALUES (%s, %s, %s, %s, %s)",
+                    (fund.vault_addr.lower(), str(total_assets), str(total_supply), nav, tvl),
+                )
+                rows += 1
+            except Exception:
+                pass
+        conn.commit()
+        cur.close()
+        conn.close()
+        log.info("Vault snapshots: %d rows written", rows)
+    except Exception as e:
+        log.warning("Vault snapshot write failed: %s", e)
+
+
 # ── Main cycle ─────────────────────────────────────────────────
 
 
@@ -449,9 +486,10 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         except Exception:
             pass
 
-    # Periodic NAV table every 10 cycles
-    if cycle_number % 10 == 0:
+    # Periodic NAV table + vault snapshots every 10 cycles
+    if cycle_number % SNAPSHOT_INTERVAL == 0:
         log_nav_table(funds)
+        write_vault_snapshots(funds)
 
     # Health summary — detect silent failures
     log.info("Cycle %d: %d joined, source_match=%s", cycle_number, joined_this_cycle, matched_any_source)

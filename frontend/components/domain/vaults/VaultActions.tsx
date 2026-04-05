@@ -11,7 +11,6 @@ import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
-import { useVaultTrades } from '@/hooks/useVaultTrades'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -213,8 +212,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const sortino = useMemo(() => navHistory ? computeSortino(navHistory) : null, [navHistory])
   const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 24) : null, [hasHistory, snapshots])
   const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 168) : null, [hasHistory, snapshots])
+  const perf30d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 720) : null, [hasHistory, snapshots])
 
-  const { totalCount: tradeCount } = useVaultTrades()
+  const tradeCount = 0 // Vision vaults track batch participation, not individual trades
 
   const strategyKey = branding?.strategy ?? fund.strategy ?? ''
   const strategyColor = STRATEGY_COLOR[strategyKey] ?? '#999'
@@ -418,7 +418,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
                 {[
                   { label: '24h', value: fmtPct(perf24h), up: perf24h !== null && perf24h >= 0 },
                   { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
-                  { label: '30d', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
+                  { label: '30d', value: fmtPct(perf30d), up: perf30d !== null && perf30d >= 0 },
                   { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
                 ].map(({ label, value, up }) => (
                   <div key={label} className="px-3 py-2 border-r border-[#F0F0F0] last:border-r-0">
@@ -432,7 +432,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
                 <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Fee Structure</div>
                 <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Performance Fee</span><span className="font-mono text-[13px] font-bold">{feePercent.toFixed(0)}%</span></div>
                 <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Management Fee</span><span className="font-mono text-[13px] font-bold">0%</span></div>
-                <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">High Water Mark</span><span className="font-mono text-[13px] font-bold text-color-up">${vault.navPerShare.toFixed(4)}</span></div>
+                <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">High Water Mark</span><span className="font-mono text-[13px] font-bold text-color-up">${parseFloat(formatUnits(vault.highWaterMark, 18)).toFixed(4)}</span></div>
               </div>
 
               <div className="px-4 py-3 border-t border-[#F0F0F0]">
@@ -465,7 +465,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             {[
               { label: '24h', value: fmtPct(perf24h), up: perf24h !== null && perf24h >= 0 },
               { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
-              { label: '30d', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
+              { label: '30d', value: fmtPct(perf30d), up: perf30d !== null && perf30d >= 0 },
               { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
               { label: 'Win Rate', value: '—' },
               { label: 'Avg Win', value: '—' },
@@ -520,7 +520,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Fee Structure</div>
           <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Performance Fee</span><span className="font-mono text-[13px] font-bold">{feePercent.toFixed(0)}%</span></div>
           <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Management Fee</span><span className="font-mono text-[13px] font-bold">0%</span></div>
-          <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">High Water Mark</span><span className="font-mono text-[13px] font-bold text-color-up">${vault.navPerShare.toFixed(4)}</span></div>
+          <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">High Water Mark</span><span className="font-mono text-[13px] font-bold text-color-up">${parseFloat(formatUnits(vault.highWaterMark, 18)).toFixed(4)}</span></div>
         </div>
 
         {/* Position */}
