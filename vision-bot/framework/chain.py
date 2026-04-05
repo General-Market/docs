@@ -215,11 +215,15 @@ class Executor:
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
         if receipt["status"] == 0:
+            revert_reason = ""
             try:
                 self.w3.eth.call(tx, receipt["blockNumber"])
             except Exception as e:
+                revert_reason = str(e)
                 logger.error("Revert reason: %s", e)
-            raise RuntimeError(f"Transaction reverted: {tx_hash.hex()}")
+            raise RuntimeError(
+                f"Transaction reverted: {tx_hash.hex()} reason={revert_reason}"
+            )
         return tx_hash
 
     # ── read methods ──

@@ -71,6 +71,9 @@ def build_source_id_map(fund_sources):
 # ── Fund state ─────────────────────────────────────────────────
 
 
+MAX_RECONCILE_RETRIES = 5
+
+
 class FundState:
     """Per-fund runtime state."""
 
@@ -85,6 +88,7 @@ class FundState:
         self.joined_batch_ids: set[int] = set()
         self.joined_total: int = 0
         self.reconciled_total: int = 0
+        self.reconcile_retries: dict[int, int] = {}  # batch_id -> failure count
 
     def matches_source(self, source_name):
         if not self.sources:
@@ -165,9 +169,20 @@ def reconcile_settled_batches(fund, executor):
         try:
             batch_info = executor.get_batch_info(bid)
             if batch_info.get("paused"):
-                # Paused is not settled — skip.
                 continue
         except Exception:
+            # Batch doesn't exist on-chain (likely from previous deployment).
+            # Count retries — evict after MAX_RECONCILE_RETRIES.
+            retries = fund.reconcile_retries.get(bid, 0) + 1
+            fund.reconcile_retries[bid] = retries
+            if retries >= MAX_RECONCILE_RETRIES:
+                log.warning(
+                    "[%s] Evicting stale batch %d — not found on-chain after %d attempts",
+                    fund.name, bid, retries,
+                )
+                fund.active_batches.pop(bid, None)
+                fund.joined_batch_ids.discard(bid)
+                fund.reconcile_retries.pop(bid, None)
             continue
 
         # get_active_deposit == 0 means either settled or was never joined.
@@ -198,13 +213,26 @@ def reconcile_settled_batches(fund, executor):
             err = str(e)
             # 0x4c03a47b = BatchAlreadyReconciled()
             if "BatchAlreadyReconciled" in err or "4c03a47b" in err:
-                fund.reconciled_total += 1  # already done, count it
+                log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
+                fund.reconciled_total += 1
             else:
-                log.warning("[%s] Reconcile %d failed: %s", fund.name, bid, e)
-                continue  # leave in active_batches, retry next cycle
+                retries = fund.reconcile_retries.get(bid, 0) + 1
+                fund.reconcile_retries[bid] = retries
+                if retries >= MAX_RECONCILE_RETRIES:
+                    log.warning(
+                        "[%s] Evicting batch %d after %d failed reconcile attempts: %s",
+                        fund.name, bid, retries, e,
+                    )
+                else:
+                    log.warning(
+                        "[%s] Reconcile %d failed (attempt %d/%d): %s",
+                        fund.name, bid, retries, MAX_RECONCILE_RETRIES, e,
+                    )
+                    continue  # leave in active_batches, retry next cycle
 
         fund.active_batches.pop(bid, None)
         fund.joined_batch_ids.discard(bid)
+        fund.reconcile_retries.pop(bid, None)
 
 
 # ── NAV table ──────────────────────────────────────────────────
@@ -547,6 +575,28 @@ def main():
 
     # Subscribe to any batch IDs we already know about from persisted state
     load_state(funds, STATE_FILE)
+
+    # Purge stale batch IDs from previous vault deployments.
+    # If the vault was redeployed, old batch IDs have no active deposit.
+    for fund in funds:
+        stale = []
+        for bid in list(fund.active_batches.keys()):
+            try:
+                dep = fund.vault.get_active_deposit(bid)
+                if dep == 0:
+                    stale.append(bid)
+            except Exception:
+                stale.append(bid)
+        for bid in stale:
+            log.warning(
+                "[%s] Purging batch %d — no active deposit (stale from previous vault)",
+                fund.name, bid,
+            )
+            fund.active_batches.pop(bid, None)
+            fund.joined_batch_ids.discard(bid)
+        if stale:
+            log.info("[%s] Purged %d stale batches on startup", fund.name, len(stale))
+
     all_known_batch_ids = set()
     for fund in funds:
         all_known_batch_ids.update(str(bid) for bid in fund.active_batches)
