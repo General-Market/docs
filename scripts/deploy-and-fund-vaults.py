@@ -19,7 +19,7 @@ log = logging.getLogger("deploy-fund")
 # ── Constants ────────────────────────────────────────────────────────
 
 SEED_AMOUNT = 50 * 10**18  # 50 USDC (18 decimals on L3)
-FACTORY = Web3.to_checksum_address("0xbc418956A20DB5C343b56b6AE947AF4896b23A1e")
+FACTORY = Web3.to_checksum_address("0xf81b62cC88367C8b6a7A8f9743b2Fe1ebD51947d")
 USDC = Web3.to_checksum_address("0x2710e49EBb807A0cB9369F13Ba24Bd809809a827")
 RPC = "http://142.132.164.24/"
 
