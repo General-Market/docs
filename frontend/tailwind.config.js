@@ -65,6 +65,15 @@ module.exports = {
       borderRadius: {
         card: '6px',
       },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '40%, 100%': { transform: 'translateX(150%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 3s ease infinite',
+      },
     },
   },
   plugins: [
