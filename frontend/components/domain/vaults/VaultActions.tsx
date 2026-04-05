@@ -264,7 +264,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               ))}
             </div>
           </div>
-          <div className="h-[180px] lg:h-[180px] h-[120px]">
+          <div className="h-[120px] lg:h-[180px] overflow-hidden">
             <NavChart data={navHistory} vaultAddr={vault.address} timestamps={hasHistory ? snapshots.map(s => s.ts) : undefined} />
           </div>
         </div>
@@ -481,7 +481,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
                 value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
               />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-muted">GM</span>
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-muted">USDC</span>
             </div>
           ) : (
             <div className="relative">

@@ -245,7 +245,7 @@ export function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaul
     <svg
       ref={svgRef}
       viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-      className="w-full"
+      className="w-full h-full"
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="NAV performance chart"
