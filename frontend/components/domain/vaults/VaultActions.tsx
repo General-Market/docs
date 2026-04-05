@@ -10,7 +10,8 @@ import { indexL3 } from '@/lib/wagmi'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
-import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
+import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
+import { useVaultTrades } from '@/hooks/useVaultTrades'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -61,6 +62,63 @@ function computeVolatility(navs: number[]): number | null {
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length
   const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length
   return Math.sqrt(variance) * Math.sqrt(252)
+}
+
+function computeSharpe(navs: number[]): number | null {
+  if (navs.length < 5) return null
+  const returns: number[] = []
+  for (let i = 1; i < navs.length; i++) {
+    returns.push((navs[i] - navs[i - 1]) / navs[i - 1])
+  }
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+  const variance = returns.reduce((a, r) => a + (r - mean) ** 2, 0) / returns.length
+  const std = Math.sqrt(variance)
+  if (std === 0) return null
+  return (mean / std) * Math.sqrt(252)
+}
+
+function computeSortino(navs: number[]): number | null {
+  if (navs.length < 5) return null
+  const returns: number[] = []
+  for (let i = 1; i < navs.length; i++) {
+    returns.push((navs[i] - navs[i - 1]) / navs[i - 1])
+  }
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+  const downside = returns.filter(r => r < 0)
+  if (downside.length === 0) return null
+  const downsideVar = downside.reduce((a, r) => a + r * r, 0) / downside.length
+  const downsideStd = Math.sqrt(downsideVar)
+  if (downsideStd === 0) return null
+  return (mean / downsideStd) * Math.sqrt(252)
+}
+
+function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): number | null {
+  if (snapshots.length < 2) return null
+  const cutoff = Date.now() - hoursAgo * 3600 * 1000
+  const currentNav = snapshots[snapshots.length - 1].nav
+  // Find closest snapshot to the cutoff
+  let closest = snapshots[0]
+  let closestDist = Math.abs(closest.ts - cutoff)
+  for (const s of snapshots) {
+    const dist = Math.abs(s.ts - cutoff)
+    if (dist < closestDist) {
+      closest = s
+      closestDist = dist
+    }
+  }
+  if (closest.nav === 0 || closest === snapshots[snapshots.length - 1]) return null
+  return (currentNav - closest.nav) / closest.nav
+}
+
+function fmtPct(v: number | null): string {
+  if (v === null) return '—'
+  const pct = v * 100
+  return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
+}
+
+function fmtRatio(v: number | null): string {
+  if (v === null) return '—'
+  return v.toFixed(2)
 }
 
 // ── Sparkline SVG ─────────────────────────────────────────
@@ -151,6 +209,12 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
   const maxDd = useMemo(() => computeMaxDrawdown(navHistory), [navHistory])
   const vol = useMemo(() => computeVolatility(navHistory), [navHistory])
+  const sharpe = useMemo(() => computeSharpe(navHistory), [navHistory])
+  const sortino = useMemo(() => computeSortino(navHistory), [navHistory])
+  const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 24) : null, [hasHistory, snapshots])
+  const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 168) : null, [hasHistory, snapshots])
+
+  const { totalCount: tradeCount } = useVaultTrades()
 
   const strategyKey = branding?.strategy ?? fund.strategy ?? ''
   const strategyColor = STRATEGY_COLOR[strategyKey] ?? '#999'
@@ -236,7 +300,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
           <div className="px-3.5 py-2.5 border-r border-[#F0F0F0] border-t lg:border-t-0 border-t-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Sharpe</div>
-            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">—</div>
+            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">{fmtRatio(sharpe)}</div>
           </div>
           <div className="px-3.5 py-2.5 border-t lg:border-t-0 border-t-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Max DD</div>
@@ -303,10 +367,10 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         {/* Mobile risk strip */}
         <div className="grid grid-cols-4 border-b border-[#F0F0F0] lg:hidden">
           {[
-            { label: 'Sharpe', value: '—' },
+            { label: 'Sharpe', value: fmtRatio(sharpe) },
             { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—', down: maxDd !== null },
             { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : '—' },
-            { label: 'Win', value: '—' },
+            { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
           ].map(({ label, value, down }) => (
             <div key={label} className="px-2.5 py-2 border-r border-[#F0F0F0] last:border-r-0 text-center">
               <div className="text-[8px] font-bold tracking-[0.06em] uppercase text-text-muted mb-0.5">{label}</div>
@@ -346,8 +410,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               </div>
               <div className="grid grid-cols-4">
                 {[
-                  { label: '24h', value: '—' },
-                  { label: '7d', value: '—' },
+                  { label: '24h', value: fmtPct(perf24h), up: perf24h !== null && perf24h >= 0 },
+                  { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
                   { label: '30d', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
                   { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
                 ].map(({ label, value, up }) => (
@@ -393,14 +457,14 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
           <div className="grid grid-cols-4">
             {[
-              { label: '24h', value: '—' },
-              { label: '7d', value: '—' },
+              { label: '24h', value: fmtPct(perf24h), up: perf24h !== null && perf24h >= 0 },
+              { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
               { label: '30d', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
               { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
               { label: 'Win Rate', value: '—' },
               { label: 'Avg Win', value: '—' },
               { label: 'Avg Loss', value: '—' },
-              { label: 'Trades', value: '—' },
+              { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
             ].map(({ label, value, up }) => (
               <div key={label} className="px-3 py-2 border-r border-b border-[#F0F0F0] [&:nth-child(4n)]:border-r-0 last:[&:nth-last-child(-n+4)]:border-b-0">
                 <div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">{label}</div>
@@ -425,10 +489,10 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         </div>
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="grid grid-cols-2 gap-2">
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sharpe Ratio</div><div className="font-mono text-sm font-bold">—</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sharpe Ratio</div><div className="font-mono text-sm font-bold">{fmtRatio(sharpe)}</div></div>
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Max Drawdown</div><div className={cn('font-mono text-sm font-bold', maxDd !== null ? 'text-color-down' : '')}>{maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}</div></div>
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Volatility</div><div className="font-mono text-sm font-bold">{vol !== null ? `${(vol * 100).toFixed(1)}%` : '—'}</div></div>
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sortino</div><div className="font-mono text-sm font-bold">—</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sortino</div><div className="font-mono text-sm font-bold">{fmtRatio(sortino)}</div></div>
           </div>
         </div>
 
