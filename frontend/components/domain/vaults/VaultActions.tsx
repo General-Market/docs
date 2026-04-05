@@ -230,8 +230,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <div className="px-3.5 py-2.5 border-r border-[#F0F0F0] border-t lg:border-t-0 border-t-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Deployed</div>
             <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">{deployedPct}%</div>
-            <div className="h-[3px] bg-[#F0F0F0] rounded-sm overflow-hidden mt-1">
-              <div className="h-full rounded-sm bg-[#00A36C]" style={{ width: `${deployedPct}%` }} />
+            <div className="h-[3px] bg-[#F0F0F0] rounded-none overflow-hidden mt-1">
+              <div className="h-full rounded-none bg-[#00A36C]" style={{ width: `${deployedPct}%` }} />
             </div>
           </div>
           <div className="px-3.5 py-2.5 border-r border-[#F0F0F0] border-t lg:border-t-0 border-t-[#F0F0F0]">
@@ -250,12 +250,12 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">NAV History</span>
-            <div className="flex gap-0.5 bg-[#FAFAFA] p-0.5 rounded-[5px]">
+            <div className="flex gap-0.5 bg-[#FAFAFA] p-0.5 rounded-none">
               {['1D', '1W', '1M', 'ALL'].map((p) => (
                 <button
                   key={p}
                   className={cn(
-                    'font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded-[3px] border-0 transition-colors',
+                    'font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded-none border-0 transition-colors',
                     p === '1M' ? 'bg-[#1A1A1A] text-white' : 'bg-transparent text-text-muted hover:text-text-primary',
                   )}
                 >
@@ -271,7 +271,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
         {/* Mobile CTA card */}
         <div className="flex flex-col gap-2.5 px-4 py-4 border-b border-[#E0E0E0] lg:hidden">
-          <button className="w-full py-4 rounded-xl border-2 border-dashed border-[rgba(0,163,108,0.4)] bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-sm font-black flex items-center justify-center gap-2 transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
+          <button className="w-full py-4 rounded-none border-2 border-dashed border-[rgba(0,163,108,0.4)] bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-sm font-black flex items-center justify-center gap-2 transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -288,7 +288,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <WalletActionButton
             onClick={() => { setTab('deposit'); if (tab === 'deposit') handleDeposit() }}
             disabled={tab === 'deposit' && (depositBusy || depositConfirming || !depositInput)}
-            className="w-full py-4 bg-[#00A36C] text-white text-base font-black rounded-xl shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
+            className="w-full py-4 bg-[#00A36C] text-white text-base font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
           >
             <span className="relative z-10">
               {depositStep === 'approving' ? t('vaults.approving')
@@ -367,7 +367,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
               <div className="px-4 py-3 border-t border-[#F0F0F0]">
                 <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Capital Allocation</div>
-                <div className="flex h-1.5 rounded bg-[#F0F0F0] overflow-hidden mb-2">
+                <div className="flex h-1.5 bg-[#F0F0F0] overflow-hidden mb-2">
                   <div className="h-full bg-[#00A36C]" style={{ width: `${deployedPct}%` }} />
                   <div className="h-full bg-[#D1D5DB]" style={{ width: `${100 - deployedPct}%` }} />
                 </div>
@@ -435,7 +435,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         {/* Allocation */}
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Capital Allocation</div>
-          <div className="flex h-1.5 rounded bg-[#F0F0F0] overflow-hidden mb-2">
+          <div className="flex h-1.5 bg-[#F0F0F0] overflow-hidden mb-2">
             <div className="h-full bg-[#00A36C]" style={{ width: `${deployedPct}%` }} />
             <div className="h-full bg-[#D1D5DB]" style={{ width: `${100 - deployedPct}%` }} />
           </div>
@@ -465,7 +465,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
         {/* CTA zone */}
         <div className="px-4 py-4 flex flex-col gap-2 flex-1 justify-end">
-          <div className="flex border border-[#E0E0E0] rounded-md overflow-hidden">
+          <div className="flex border border-[#E0E0E0] rounded-none overflow-hidden">
             <button onClick={() => { setTab('deposit'); resetRedeem?.() }} className={cn('flex-1 py-2 text-[11px] font-bold text-center transition-colors', tab === 'deposit' ? 'bg-[#1A1A1A] text-white' : 'bg-white text-text-muted')}>
               Deposit
             </button>
@@ -479,7 +479,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               <input
                 type="number" min="0" step="0.01" placeholder="0.00"
                 value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
-                className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-lg font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
+                className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-muted">GM</span>
             </div>
@@ -488,7 +488,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               <input
                 type="number" min="0" step="0.0001" placeholder="0.00"
                 value={withdrawInput} onChange={(e) => setWithdrawInput(e.target.value)}
-                className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-lg font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
+                className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
               />
               {shares > 0n && (
                 <button onClick={() => setWithdrawInput(formatUnits(shares, 18))} className="absolute right-[44px] top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-[#00A36C] tracking-[0.04em]">
@@ -505,7 +505,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <WalletActionButton
             onClick={() => tab === 'deposit' ? handleDeposit() : handleWithdraw()}
             disabled={tab === 'deposit' ? (depositBusy || depositConfirming || !depositInput) : (redeemBusy || redeemConfirming || !withdrawInput)}
-            className="w-full py-3.5 bg-[#00A36C] text-white text-sm font-black rounded-[9px] shadow-[0_2px_8px_rgba(0,163,108,0.25)] relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,163,108,0.25)] disabled:opacity-50 disabled:hover:translate-y-0"
+            className="w-full py-3.5 bg-[#00A36C] text-white text-sm font-black rounded-none shadow-[0_2px_8px_rgba(0,163,108,0.25)] relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,163,108,0.25)] disabled:opacity-50 disabled:hover:translate-y-0"
           >
             <span className="relative z-10">
               {tab === 'deposit'
@@ -529,7 +529,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             <div className="flex-1 h-px bg-[#F0F0F0]" />
           </div>
 
-          <button className="w-full py-3 border-2 border-dashed border-[rgba(0,163,108,0.35)] rounded-[9px] bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-[13px] font-extrabold flex items-center justify-center gap-1.5 transition-all hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C] hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(0,163,108,0.25)]">
+          <button className="w-full py-3 border-2 border-dashed border-[rgba(0,163,108,0.35)] rounded-none bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-[13px] font-extrabold flex items-center justify-center gap-1.5 transition-all hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C] hover:-translate-y-0.5 hover:shadow-[0_6px_24px_rgba(0,163,108,0.25)]">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -560,7 +560,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
   return (
     <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-white rounded-xl shadow-2xl w-[95vw] max-w-[1120px] max-h-[90vh] lg:max-h-[720px] overflow-hidden flex flex-col"
+        className="bg-white rounded-none shadow-2xl w-[95vw] max-w-[1120px] max-h-[90vh] lg:max-h-[720px] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top bar */}
@@ -568,7 +568,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           <div className="flex items-center gap-2.5">
             <span className="text-sm font-extrabold text-white tracking-[-0.01em]">{vaultName}</span>
             <span
-              className="text-[9px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-[3px]"
+              className="text-[9px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded-none"
               style={{ backgroundColor: strategyColor + '24', color: strategyColor }}
             >
               {strategyKey.replace(/_/g, ' ')}
@@ -589,7 +589,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           </div>
           <button
             onClick={onClose}
-            className="w-6 h-6 rounded flex items-center justify-center bg-white/[0.08] text-white/50 hover:bg-white/[0.15] hover:text-white transition-colors ml-4"
+            className="w-6 h-6 flex items-center justify-center bg-white/[0.08] text-white/50 hover:bg-white/[0.15] hover:text-white transition-colors ml-4"
             aria-label="Close"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -640,7 +640,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
               })}
             </div>
             <div className="border-t border-[#E0E0E0] px-4 py-3">
-              <button className="flex items-center justify-center gap-1.5 w-full py-2.5 border-2 border-dashed border-[#00A36C] rounded-lg bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-xs font-extrabold transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
+              <button className="flex items-center justify-center gap-1.5 w-full py-2.5 border-2 border-dashed border-[#00A36C] rounded-none bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-xs font-extrabold transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
