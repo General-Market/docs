@@ -233,7 +233,8 @@ export function VaultsPage() {
       <AnimatePresence>
         {selectedVault && (
           <VaultActions
-            vault={selectedVault}
+            vaults={[{ fund: { name: selectedVault.name, strategy: '', tagline: '' }, vault: selectedVault }]}
+            initialIndex={0}
             onClose={() => { setSelectedVault(null); refetch() }}
           />
         )}

@@ -249,7 +249,8 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
       {/* Vault deposit/withdraw modal */}
       {selectedVault && (
         <VaultActions
-          vault={selectedVault}
+          vaults={[{ fund: { name: selectedVault.name, strategy: '', tagline: '' }, vault: selectedVault }]}
+          initialIndex={0}
           onClose={() => setSelectedVault(null)}
         />
       )}

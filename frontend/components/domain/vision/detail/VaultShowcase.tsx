@@ -441,7 +441,7 @@ interface VaultShowcaseProps {
 
 export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
   const reduced = !!useReducedMotion()
-  const [selectedVault, setSelectedVault] = useState<VaultInfo | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const funds = useMemo(
     () => (fundData as any).funds.filter((f: any) => f.source === sourceId && f.vault),
@@ -492,7 +492,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
         fund={featured}
         vault={getVaultData(featured)}
         brandColor={brandColor}
-        onDeposit={() => setSelectedVault(getVaultData(featured))}
+        onDeposit={() => setSelectedIndex(0)}
       />
 
       {rest.length > 0 && (
@@ -513,7 +513,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                 fund={fund}
                 vault={getVaultData(fund)}
                 index={i}
-                onDeposit={() => setSelectedVault(getVaultData(fund))}
+                onDeposit={() => setSelectedIndex(i + 1)}
               />
             ))}
 
@@ -544,10 +544,11 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
         </div>
       )}
 
-      {selectedVault && (
+      {selectedIndex !== null && (
         <VaultActions
-          vault={selectedVault}
-          onClose={() => setSelectedVault(null)}
+          vaults={sortedFunds.map((f: any) => ({ fund: f, vault: getVaultData(f) }))}
+          initialIndex={selectedIndex}
+          onClose={() => setSelectedIndex(null)}
         />
       )}
     </div>
