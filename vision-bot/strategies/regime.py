@@ -1,8 +1,16 @@
-"""Regime detection — trends persist until they don't.
+"""Regime detection — conditional contrarian.
 
 Macro data, energy prices, stock indices, interest rates.
 When the world picks a direction, it keeps walking that way
 until something breaks. Then it picks a new one.
+
+With rich history, detect regime via consecutive-direction streaks.
+With thin history, infer the regime from move magnitude:
+  - Large move (abs > 3%) = trending regime -> follow momentum direction
+  - Small move (abs < 3%) = mean-reverting regime -> bet OPPOSITE (contrarian)
+
+This diverges from momentum, which always follows sign.
+Regime cares about whether the market is trending or reverting.
 """
 
 import logging
@@ -12,14 +20,16 @@ from framework.core import Strategy
 
 log = logging.getLogger(__name__)
 
+# Above this absolute change, assume a trending regime (follow direction).
+# Below it, assume mean-reversion (oppose direction).
+TRENDING_THRESHOLD_PCT = 3.0
+
 
 class RegimeStrategy(Strategy):
-    """Bet that the current regime persists.
+    """Conditional contrarian — contrarian in quiet markets, momentum in volatile ones.
 
-    Count consecutive same-direction ticks from history.
-    If N+ ticks in the same direction -> momentum (regime holds).
-    If the direction just flipped -> momentum on the NEW direction.
-    The regime is the message. The flip is the message too.
+    Diverges from momentum: a small positive change triggers DOWN (mean-reversion),
+    a small negative change triggers UP. Only large moves align with momentum.
     """
 
     name = "regime"
@@ -27,17 +37,30 @@ class RegimeStrategy(Strategy):
     def __init__(self, params=None):
         super().__init__(params)
         self._rng = random.Random()
+        self._trending_pct = (params or {}).get(
+            "trending_threshold_pct", TRENDING_THRESHOLD_PCT,
+        )
+
+    def _regime_signal(self, change):
+        """Infer regime from a single change value.
+
+        Returns the same direction for large moves (trending regime),
+        opposite direction for small moves (mean-reverting regime).
+        Momentum says UP for change=+1%. Regime says DOWN — quiet market reverts.
+        """
+        if change is None or change == 0:
+            return self._rng.choice(["UP", "DOWN"])
+
+        if abs(change) >= self._trending_pct:
+            # Large move — trending regime, follow direction
+            return "UP" if change > 0 else "DOWN"
+        else:
+            # Small move — mean-reverting regime, oppose direction
+            return "DOWN" if change > 0 else "UP"
 
     def predict(self, markets):
-        """Fallback: momentum (coin flip when change is None or 0)."""
-        results = []
-        for m in markets:
-            c = m.get("change")
-            if c is None or c == 0:
-                results.append(self._rng.choice(["UP", "DOWN"]))
-            else:
-                results.append("UP" if c > 0 else "DOWN")
-        return results
+        """Regime inference from change magnitude alone. Never momentum."""
+        return [self._regime_signal(m.get("change")) for m in markets]
 
     def predict_with_context(self, markets, feed=None, batch_id=None):
         if not feed or not batch_id:
@@ -51,11 +74,7 @@ class RegimeStrategy(Strategy):
             history = feed.history(batch_id, asset_id)
 
             if len(history) < 2:
-                c = m.get("change")
-                if c is None or c == 0:
-                    results.append(self._rng.choice(["UP", "DOWN"]))
-                else:
-                    results.append("UP" if c > 0 else "DOWN")
+                results.append(self._regime_signal(m.get("change")))
                 continue
 
             # Count consecutive direction from the tail of history

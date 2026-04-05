@@ -8,7 +8,7 @@ oracle_registry_address = "0x2F12F19a111cc25b114C2bcc535519854fcf83c7"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 poll_interval = 30
-deposit_per_batch = 10.0
+allocation_bps = 100
 stake_per_tick = 10.0
 oracle_discovery = "static"
 oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
@@ -619,13 +619,13 @@ sources = ["earthquake"]
 strategy = "momentum"
 [funds.params]
 
-# 64. Richter — earthquake momentum_threshold
+# 64. Richter — earthquake contrarian
 [[funds]]
 name = "Richter"
 symbol = "RCTR"
 vault = "0x8C963749a980ac79d819F3bE76051E94aC66e5bd"
 sources = ["earthquake"]
-strategy = "momentum_threshold"
+strategy = "contrarian"
 [funds.params]
 min_change_pct = 4.0
 
@@ -888,13 +888,13 @@ sources = ["iss"]
 strategy = "cluster"
 [funds.params]
 
-# 92. Docking — iss momentum_threshold
+# 92. Docking — iss contrarian
 [[funds]]
 name = "Docking"
 symbol = "DOCK"
 vault = "0x66c4945A187b43816bf40eBFAA700dAeFc564CC1"
 sources = ["iss"]
-strategy = "momentum_threshold"
+strategy = "contrarian"
 [funds.params]
 min_change_pct = 3.0
 
@@ -927,13 +927,13 @@ sources = ["mil_aircraft"]
 strategy = "cluster"
 [funds.params]
 
-# 96. Scramble — mil_aircraft momentum_threshold
+# 96. Scramble — mil_aircraft contrarian
 [[funds]]
 name = "Scramble"
 symbol = "SCRM"
 vault = "0x29728A34d059cfe1cF4E16d74BF1B1503191aE2F"
 sources = ["mil_aircraft"]
-strategy = "momentum_threshold"
+strategy = "contrarian"
 [funds.params]
 min_change_pct = 5.0
 
@@ -1024,13 +1024,13 @@ sources = ["noaa_met"]
 strategy = "mean_reversion"
 [funds.params]
 
-# 106. Barometer — noaa_met momentum_threshold
+# 106. Barometer — noaa_met contrarian
 [[funds]]
 name = "Barometer"
 symbol = "BARO"
 vault = "0xc64FEE2e1De23f904CC6C8be8ad0455384d8b9Bf"
 sources = ["noaa_met"]
-strategy = "momentum_threshold"
+strategy = "contrarian"
 [funds.params]
 min_change_pct = 2.0
 
@@ -1263,7 +1263,7 @@ name = "Rush"
 symbol = "RUSH"
 vault = "0xD0834D84694Fb431cBE9bA5c18fF7e9f026E62a5"
 sources = ["queue_times"]
-strategy = "time_of_day"
+strategy = "momentum"
 [funds.params]
 
 # 131. Cluster — queue_times cluster
@@ -1611,13 +1611,13 @@ sources = ["weather"]
 strategy = "regime"
 [funds.params]
 
-# 167. Heatwave — weather momentum_threshold
+# 167. Heatwave — weather contrarian
 [[funds]]
 name = "Heatwave"
 symbol = "HEAT"
 vault = "0x33Cd3b57cB88Ed31f4c55fb12169E6a491D0C8D0"
 sources = ["weather"]
-strategy = "momentum_threshold"
+strategy = "contrarian"
 [funds.params]
 min_change_pct = 3.0
 
