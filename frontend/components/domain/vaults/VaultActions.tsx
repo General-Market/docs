@@ -13,22 +13,23 @@ import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { SpringBackdrop, SpringModal, glass, ModalClose } from '@/components/ui/spring'
+import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
 
 // ── Strategy pill colors ───────────────────────────────────
 
-const STRATEGY_COLORS: Record<string, string> = {
-  momentum: 'bg-emerald-500/10 text-emerald-700',
-  contrarian: 'bg-rose-500/10 text-rose-700',
-  bullish: 'bg-sky-500/10 text-sky-700',
-  bearish: 'bg-red-500/10 text-red-700',
-  mean_reversion: 'bg-violet-500/10 text-violet-700',
-  regime: 'bg-amber-500/10 text-amber-700',
-  cluster: 'bg-cyan-500/10 text-cyan-700',
-  momentum_threshold: 'bg-emerald-500/10 text-emerald-700',
-  time_of_day: 'bg-orange-500/10 text-orange-700',
-  volatility_fade: 'bg-zinc-500/10 text-zinc-700',
+const STRATEGY_COLOR_HEX: Record<string, string> = {
+  momentum: '#059669',
+  contrarian: '#e11d48',
+  bullish: '#0284c7',
+  bearish: '#dc2626',
+  mean_reversion: '#7c3aed',
+  regime: '#d97706',
+  cluster: '#0891b2',
+  momentum_threshold: '#059669',
+  time_of_day: '#ea580c',
+  volatility_fade: '#71717a',
+  adoption_curve: '#7c3aed',
 }
 
 // ── Deterministic PRNG ─────────────────────────────────────
@@ -501,10 +502,8 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
     return null // No synthetic data — show nothing until real history exists
   }, [hasHistory, snapshots])
 
-  const accentColor = branding?.color ?? '#000'
   const strategyKey = branding?.strategy ?? ''
-  const strategyPill =
-    STRATEGY_COLORS[strategyKey] ?? 'bg-zinc-500/10 text-zinc-700'
+  const strategyColor = STRATEGY_COLOR_HEX[strategyKey] ?? '#999'
 
   const handleDeposit = () => {
     const amount = parseUnits(depositInput || '0', 18)
@@ -529,62 +528,88 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
   return (
     <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className={`${glass.modal} max-w-lg w-full relative`}
+        className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Color accent bar */}
-        <div
-          className="h-[3px] rounded-t-2xl"
-          style={{ backgroundColor: accentColor }}
-        />
+        {/* Dark header bar */}
+        <div className="bg-[#1A1A1A] px-4 py-2 flex items-center justify-between rounded-t-lg">
+          <span className="text-[10px] font-bold tracking-[0.12em] text-white/80 uppercase">
+            Strategy Detail
+          </span>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-        <div className="px-5 pb-6">
-          <ModalClose onClick={onClose} className="absolute top-4 right-4" />
-
-          {/* Header */}
-          <div className="pt-6 mb-1">
-            <div className="flex items-start justify-between gap-3 pr-8">
-              <h2 className="text-title font-bold text-text-primary leading-tight">
-                {branding?.name ?? vault.name}
-              </h2>
-              {strategyKey && (
-                <span
-                  className={cn(
-                    'text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap',
-                    strategyPill,
-                  )}
-                >
-                  {strategyKey.replace(/_/g, ' ')}
-                </span>
-              )}
-            </div>
-            {branding?.tagline && (
-              <p className="text-xs text-text-secondary mt-1 line-clamp-1">
-                {branding.tagline}
-              </p>
+        <div className="px-5 pb-5">
+          {/* Name + Strategy + Tagline */}
+          <div className="pt-5 mb-4">
+            <h2 className="text-[20px] font-extrabold text-text-primary leading-tight">
+              {branding?.name ?? vault.name}
+            </h2>
+            {strategyKey && (
+              <div
+                className="text-[10px] font-bold tracking-[0.06em] uppercase mt-1"
+                style={{ color: strategyColor }}
+              >
+                {strategyKey.replace(/_/g, ' ')}
+              </div>
             )}
             {branding?.source && (
               <p className="text-[10px] text-text-muted font-mono mt-0.5">
                 {branding.source}
               </p>
             )}
+            {branding?.tagline && (
+              <p className="text-[12px] text-text-secondary leading-relaxed mt-2">
+                {branding.tagline}
+              </p>
+            )}
           </div>
 
-          {/* Interactive NAV chart when history exists, otherwise show NAV highlight */}
+          {/* Stats row — 4 columns between hairlines */}
+          <div className="grid grid-cols-4 gap-4 py-4 border-y border-border-light mb-5">
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">TVL</div>
+              <div className="font-mono text-[15px] font-bold tabular-nums text-text-primary">${vault.tvlFormatted}</div>
+            </div>
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">NAV</div>
+              <div className="font-mono text-[15px] font-bold tabular-nums text-text-primary">${vault.navPerShare.toFixed(4)}</div>
+            </div>
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Perf</div>
+              <div className={cn('font-mono text-[15px] font-bold tabular-nums', isPositive ? 'text-color-up' : 'text-color-down')}>
+                {isPositive ? '+' : ''}{perfPercent}%
+              </div>
+            </div>
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Fee</div>
+              <div className="font-mono text-[15px] font-bold tabular-nums text-text-primary">{feePercent.toFixed(0)}%</div>
+            </div>
+          </div>
+
+          {/* NAV Chart */}
           {navHistory && navHistory.length >= 2 ? (
-            <div className="mt-4 mb-5 -mx-1">
+            <div className="mb-5 -mx-1">
               <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
             </div>
           ) : (
-            <div className="mt-4 mb-5 rounded-md bg-black/[0.02] px-5 py-5 flex items-center justify-between">
+            <div className="mb-5 rounded bg-[#FAFAFA] px-5 py-6 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.nav_per_share')}</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">NAV / Share</p>
                 <p className="text-[28px] font-black font-mono tabular-nums text-text-primary leading-none">
                   ${vault.navPerShare.toFixed(4)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.since_inception')}</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Since Inception</p>
                 <p className={cn(
                   'text-[28px] font-black font-mono tabular-nums leading-none',
                   isPositive ? 'text-color-up' : 'text-color-down',
@@ -595,62 +620,37 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             </div>
           )}
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <StatBox label={t('vaults.tvl_label')} value={`$${vault.tvlFormatted}`} />
-            <StatBox
-              label={t('vaults.nav_per_share')}
-              value={`$${vault.navPerShare.toFixed(4)}`}
-            />
-            <StatBox
-              label={t('vaults.performance')}
-              value={`${isPositive ? '+' : ''}${perfPercent}%`}
-              valueColor={isPositive ? 'text-color-up' : 'text-color-down'}
-            />
-            <StatBox label={t('vaults.fee')} value={`${feePercent.toFixed(0)}% perf`} />
-          </div>
-
           {/* User position */}
           {shares > 0n && (
-            <div className="border border-border-light rounded-md p-4 mb-5">
-              <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">
+            <div className="border-y border-border-light py-3 mb-5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">
                 {t('vaults.your_position')}
               </p>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-text-secondary">{t('vaults.value')}</span>
                 <span className="font-mono tabular-nums text-text-primary font-semibold">
-                  $
-                  {userValue.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  ${userValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">{t('vaults.shares')}</span>
                 <span className="font-mono tabular-nums text-text-secondary">
-                  {sharesFloat.toLocaleString(undefined, {
-                    maximumFractionDigits: 4,
-                  })}
+                  {sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 </span>
               </div>
             </div>
           )}
 
-          {/* Tabs */}
+          {/* Deposit / Withdraw */}
           <div className="flex border-b border-border-light mb-4" role="tablist">
             <button
               role="tab"
               aria-selected={tab === 'deposit'}
-              onClick={() => {
-                setTab('deposit')
-                resetDeposit()
-                resetRedeem()
-              }}
+              onClick={() => { setTab('deposit'); resetDeposit(); resetRedeem() }}
               className={cn(
-                'flex-1 py-2 text-sm font-semibold transition-colors',
+                'flex-1 py-2 text-[12px] font-bold uppercase tracking-[0.04em] transition-colors',
                 tab === 'deposit'
-                  ? 'text-text-primary border-b-2 border-brand'
+                  ? 'text-text-primary border-b-2 border-[#1A1A1A]'
                   : 'text-text-muted hover:text-text-secondary',
               )}
             >
@@ -659,15 +659,11 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             <button
               role="tab"
               aria-selected={tab === 'withdraw'}
-              onClick={() => {
-                setTab('withdraw')
-                resetDeposit()
-                resetRedeem()
-              }}
+              onClick={() => { setTab('withdraw'); resetDeposit(); resetRedeem() }}
               className={cn(
-                'flex-1 py-2 text-sm font-semibold transition-colors',
+                'flex-1 py-2 text-[12px] font-bold uppercase tracking-[0.04em] transition-colors',
                 tab === 'withdraw'
-                  ? 'text-text-primary border-b-2 border-brand'
+                  ? 'text-text-primary border-b-2 border-[#1A1A1A]'
                   : 'text-text-muted hover:text-text-secondary',
               )}
             >
@@ -675,11 +671,10 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
             </button>
           </div>
 
-          {/* Deposit form */}
           {tab === 'deposit' && (
             <div className="space-y-3" role="tabpanel">
               <div>
-                <label htmlFor="deposit-amount" className="text-xs text-text-muted block mb-1">
+                <label htmlFor="deposit-amount" className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-muted block mb-1">
                   {t('vaults.amount_usdc')}
                 </label>
                 <input
@@ -690,15 +685,15 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   placeholder={t('vaults.amount_placeholder')}
                   value={depositInput}
                   onChange={(e) => setDepositInput(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-light rounded-md bg-card text-text-primary
-                             font-mono tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                  className="w-full px-3 py-2 border border-border-light rounded bg-white text-text-primary
+                             font-mono tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-[#1A1A1A]"
                 />
               </div>
               <WalletActionButton
                 onClick={handleDeposit}
                 disabled={depositBusy || depositConfirming || !depositInput}
-                className="w-full py-2.5 bg-brand text-white text-sm font-bold rounded-md
-                           hover:bg-brand-dark transition-colors disabled:opacity-50"
+                className="w-full py-2.5 bg-[#00A36C] text-white text-[12px] font-bold rounded
+                           hover:bg-[#008f5d] transition-colors disabled:opacity-50"
               >
                 {depositStep === 'approving'
                   ? t('vaults.approving')
@@ -710,29 +705,22 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                         ? t('vaults.deposit_requested')
                         : t('vaults.deposit_usdc')}
               </WalletActionButton>
-              {depositError && (
-                <p className="text-xs text-color-down">{depositError}</p>
-              )}
-              {depositStep === 'done' && (
-                <p className="text-xs text-color-up">
-                  {t('vaults.deposit_success')}
-                </p>
-              )}
+              {depositError && <p className="text-xs text-color-down">{depositError}</p>}
+              {depositStep === 'done' && <p className="text-xs text-color-up">{t('vaults.deposit_success')}</p>}
             </div>
           )}
 
-          {/* Withdraw form */}
           {tab === 'withdraw' && (
             <div className="space-y-3" role="tabpanel">
               <div>
                 <div className="flex justify-between mb-1">
-                  <label htmlFor="withdraw-amount" className="text-xs text-text-muted">
+                  <label htmlFor="withdraw-amount" className="text-[10px] font-semibold uppercase tracking-[0.06em] text-text-muted">
                     {t('vaults.shares_to_redeem')}
                   </label>
                   {shares > 0n && (
                     <button
                       onClick={() => setWithdrawInput(formatUnits(shares, 18))}
-                      className="text-xs text-brand hover:text-brand-dark transition-colors"
+                      className="text-xs text-[#00A36C] hover:text-[#008f5d] transition-colors"
                     >
                       {t('vaults.max')}
                     </button>
@@ -746,15 +734,15 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                   placeholder={t('vaults.amount_placeholder')}
                   value={withdrawInput}
                   onChange={(e) => setWithdrawInput(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-light rounded-md bg-card text-text-primary
-                             font-mono tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                  className="w-full px-3 py-2 border border-border-light rounded bg-white text-text-primary
+                             font-mono tabular-nums text-sm focus:outline-none focus:ring-1 focus:ring-[#1A1A1A]"
                 />
               </div>
               <WalletActionButton
                 onClick={handleWithdraw}
                 disabled={redeemBusy || redeemConfirming || !withdrawInput}
-                className="w-full py-2.5 border-2 border-zinc-900 text-text-primary text-sm font-bold rounded-md
-                           hover:bg-zinc-900 hover:text-white transition-colors disabled:opacity-50"
+                className="w-full py-2.5 border border-[#1A1A1A] text-text-primary text-[12px] font-bold rounded
+                           hover:bg-[#1A1A1A] hover:text-white transition-colors disabled:opacity-50"
               >
                 {redeemStep === 'requesting'
                   ? t('vaults.requesting')
@@ -764,44 +752,12 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
                       ? t('vaults.redeem_requested')
                       : t('vaults.request_redeem')}
               </WalletActionButton>
-              {redeemError && (
-                <p className="text-xs text-color-down">{redeemError}</p>
-              )}
-              {redeemStep === 'done' && (
-                <p className="text-xs text-color-up">
-                  {t('vaults.redeem_success')}
-                </p>
-              )}
+              {redeemError && <p className="text-xs text-color-down">{redeemError}</p>}
+              {redeemStep === 'done' && <p className="text-xs text-color-up">{t('vaults.redeem_success')}</p>}
             </div>
           )}
         </div>
       </SpringModal>
     </SpringBackdrop>
-  )
-}
-
-function StatBox({
-  label,
-  value,
-  valueColor,
-}: {
-  label: string
-  value: string
-  valueColor?: string
-}) {
-  return (
-    <div className="border border-border-light rounded-md px-3 py-2">
-      <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
-        {label}
-      </p>
-      <p
-        className={cn(
-          'text-sm font-bold font-mono tabular-nums',
-          valueColor || 'text-text-primary',
-        )}
-      >
-        {value}
-      </p>
-    </div>
   )
 }
