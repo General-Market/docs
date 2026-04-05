@@ -499,8 +499,8 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
 
   const navHistory = useMemo(() => {
     if (hasHistory) return snapshots.map(s => s.nav)
-    return null // No synthetic data — show nothing until real history exists
-  }, [hasHistory, snapshots])
+    return generateNavHistory(vault.navPerShare, vault.address)
+  }, [hasHistory, snapshots, vault.navPerShare, vault.address])
 
   const strategyKey = branding?.strategy ?? ''
   const strategyColor = STRATEGY_COLOR_HEX[strategyKey] ?? '#999'
@@ -528,7 +528,7 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
   return (
     <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Dark header bar */}
@@ -596,29 +596,9 @@ export function VaultActions({ vault, onClose }: VaultActionsProps) {
           </div>
 
           {/* NAV Chart */}
-          {navHistory && navHistory.length >= 2 ? (
-            <div className="mb-5 -mx-1">
-              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
-            </div>
-          ) : (
-            <div className="mb-5 rounded bg-[#FAFAFA] px-5 py-6 flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">NAV / Share</p>
-                <p className="text-[28px] font-black font-mono tabular-nums text-text-primary leading-none">
-                  ${vault.navPerShare.toFixed(4)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Since Inception</p>
-                <p className={cn(
-                  'text-[28px] font-black font-mono tabular-nums leading-none',
-                  isPositive ? 'text-color-up' : 'text-color-down',
-                )}>
-                  {isPositive ? '+' : ''}{perfPercent}%
-                </p>
-              </div>
-            </div>
-          )}
+          <div className="mb-5 -mx-1 min-h-[200px]">
+            <NavChart data={navHistory} vaultAddr={vault.address} timestamps={hasHistory ? snapshots.map(s => s.ts) : undefined} />
+          </div>
 
           {/* User position */}
           {shares > 0n && (
