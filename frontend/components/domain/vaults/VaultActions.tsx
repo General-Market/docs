@@ -203,14 +203,14 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
   const { snapshots, hasHistory } = useVaultHistory(vault.address)
   const navHistory = useMemo(() => {
-    if (hasHistory) return snapshots.map(s => s.nav)
-    return generateNavHistory(vault.navPerShare, vault.address)
-  }, [hasHistory, snapshots, vault.navPerShare, vault.address])
+    if (hasHistory && snapshots.length >= 2) return snapshots.map(s => s.nav)
+    return null
+  }, [hasHistory, snapshots])
 
-  const maxDd = useMemo(() => computeMaxDrawdown(navHistory), [navHistory])
-  const vol = useMemo(() => computeVolatility(navHistory), [navHistory])
-  const sharpe = useMemo(() => computeSharpe(navHistory), [navHistory])
-  const sortino = useMemo(() => computeSortino(navHistory), [navHistory])
+  const maxDd = useMemo(() => navHistory ? computeMaxDrawdown(navHistory) : null, [navHistory])
+  const vol = useMemo(() => navHistory ? computeVolatility(navHistory) : null, [navHistory])
+  const sharpe = useMemo(() => navHistory ? computeSharpe(navHistory) : null, [navHistory])
+  const sortino = useMemo(() => navHistory ? computeSortino(navHistory) : null, [navHistory])
   const perf24h = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 24) : null, [hasHistory, snapshots])
   const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 168) : null, [hasHistory, snapshots])
 
@@ -329,7 +329,13 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             </div>
           </div>
           <div className="h-[120px] lg:h-[180px] overflow-hidden">
-            <NavChart data={navHistory} vaultAddr={vault.address} timestamps={hasHistory ? snapshots.map(s => s.ts) : undefined} />
+            {navHistory ? (
+              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-text-muted text-[12px] font-mono">
+                Awaiting first trade
+              </div>
+            )}
           </div>
         </div>
 
@@ -676,7 +682,9 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
                 const ePos = ep >= 0
                 const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
                 const navs = entry.vault.navPerShare
-                const sparkData = generateNavHistory(navs, entry.vault.address, 12)
+                const sparkData = Math.abs(navs - 1.0) > 0.005
+                  ? generateNavHistory(navs, entry.vault.address, 12)
+                  : [1, 1]
                 return (
                   <div
                     key={entry.vault.address}
