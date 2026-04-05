@@ -73,7 +73,9 @@ for VAULT in $VAULTS; do
     fi
 
     echo "  Reconciling batch $BID (deposit: $DEP)..."
-    TX=$(cast send "$VAULT" "reconcile(uint256)" "$BID" \
+    # Pass 0 as settlementPayout — PnL in the event will be approximate (-deposited)
+    # but the accounting (fee math, HWM, NAV) is correct regardless.
+    TX=$(cast send "$VAULT" "reconcile(uint256,uint256)" "$BID" "0" \
       --private-key "$KEY" \
       --rpc-url "$RPC" \
       --gas-limit 200000 \

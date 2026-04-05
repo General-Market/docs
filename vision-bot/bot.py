@@ -72,7 +72,8 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             risk.record_exit(bid)
             if vault_mode and cfg.get("vault_auto_reconcile", True):
                 try:
-                    vault_executor.reconcile(bid)
+                    payout = executor.get_settlement_payout(bid, vault_executor.vault_addr)
+                    vault_executor.reconcile(bid, payout)
                 except Exception as e:
                     log.warning("Vault reconcile batch %d failed: %s", bid, e)
         if vault_mode:
@@ -227,7 +228,8 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
         risk.record_exit(bid)
         if vault_mode and cfg.get("vault_auto_reconcile", True):
             try:
-                vault_executor.reconcile(bid)
+                payout = executor.get_settlement_payout(bid, vault_executor.vault_addr)
+                vault_executor.reconcile(bid, payout)
             except Exception as e:
                 log.warning("Vault reconcile batch %d failed: %s", bid, e)
 

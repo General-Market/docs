@@ -295,8 +295,8 @@ contract VisionVaultTest is TestHelper {
         // USDC is back in the vault
         assertEq(usdc.balanceOf(address(vault)), DEPOSIT);
 
-        // Reconcile
-        vault.reconcile(batchId);
+        // Reconcile — break-even: payout == deposit, no fee
+        vault.reconcile(batchId, DEPOSIT);
 
         assertEq(vault.activeBatchDeposits(batchId), 0);
         assertEq(vault.totalActiveCapital(), 0);
@@ -348,7 +348,7 @@ contract VisionVaultTest is TestHelper {
         uint256 supplyBefore = vault.totalSupply();
         uint256 managerSharesBefore = vault.balanceOf(manager);
 
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, expectedVaultBalance);
 
         uint256 supplyAfter = vault.totalSupply();
         uint256 managerSharesAfter = vault.balanceOf(manager);
@@ -375,10 +375,10 @@ contract VisionVaultTest is TestHelper {
         payouts[0] = DEPOSIT;
         _settleBatch(batchId, players, payouts);
 
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, DEPOSIT);
 
         vm.expectRevert(IVisionVault.BatchAlreadyReconciled.selector);
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, DEPOSIT);
     }
 
     // ── Test 10: Queued withdrawal + sweep on reconcile ──────────────
@@ -414,7 +414,7 @@ contract VisionVaultTest is TestHelper {
         _settleBatch(batchId, players, payouts);
 
         // Reconcile — should sweep the redeem queue
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, DEPOSIT);
 
         // Now depositor can claim
         assertEq(vault.pendingRedeemRequest(0, depositor1), 0, "Pending should be cleared");
@@ -516,7 +516,7 @@ contract VisionVaultTest is TestHelper {
         _settleBatch(batchId, players, payouts);
 
         uint256 managerBefore = vault.balanceOf(manager);
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, DEPOSIT);
 
         assertEq(vault.balanceOf(manager), managerBefore, "No fee shares on break-even");
     }
@@ -553,8 +553,9 @@ contract VisionVaultTest is TestHelper {
 
         _settleBatch(batchId, players, payouts);
 
+        // Vault lost: gross payout=70, no profit so no fee, net=70
         uint256 hwmBefore = vault.highWaterMark();
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, 70 ether);
 
         assertEq(vault.highWaterMark(), hwmBefore, "HWM should not decrease on loss");
         assertEq(vault.balanceOf(manager), 0, "No fee shares on loss");

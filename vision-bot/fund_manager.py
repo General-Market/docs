@@ -179,10 +179,20 @@ def reconcile_settled_batches(fund, executor):
         except Exception:
             continue
 
+        # Fetch settlement payout from PlayerSettled event for accurate PnL
+        payout = 0
+        try:
+            payout = executor.get_settlement_payout(bid, fund.vault_addr)
+        except Exception as e:
+            log.debug("[%s] Could not read payout for batch %d: %s", fund.name, bid, e)
+
         # Settled. Try to reconcile.
         try:
-            fund.vault.reconcile(bid)
-            log.info("[%s] Reconciled batch %d", fund.name, bid)
+            fund.vault.reconcile(bid, payout)
+            deposited = fund.active_batches.get(bid, 0)
+            pnl = (payout - deposited) / 1e18 if deposited else 0
+            log.info("[%s] Reconciled batch %d — payout=%.4f deposited=%.4f pnl=%.4f",
+                     fund.name, bid, payout / 1e18, deposited / 1e18, pnl)
             fund.reconciled_total += 1
         except Exception as e:
             err = str(e)

@@ -669,20 +669,25 @@ impl EthersChainWriter {
         self.submit_tx(tx, "settle_batch").await
     }
 
-    /// Call `VisionVault.reconcile(batchId)` on each player address.
+    /// Call `VisionVault.reconcile(batchId, settlementPayout)` on each player address.
     /// Vaults update their NAV/TVL accounting; non-vault addresses revert harmlessly.
-    pub async fn reconcile_vaults(&self, batch_id: u64, players: &[Address]) {
-        // reconcile(uint256) selector = keccak256("reconcile(uint256)")[:4] = 0xf68b84f7
-        let selector: [u8; 4] = [0xf6, 0x8b, 0x84, 0xf7];
-        let batch_token = ethers::abi::Token::Uint(U256::from(batch_id));
-        let encoded_arg = ethers::abi::encode(&[batch_token]);
-        let mut calldata = selector.to_vec();
-        calldata.extend_from_slice(&encoded_arg);
+    /// Payouts are the GROSS amounts from settleBatch — net payout after Vision's
+    /// protocol fee is slightly lower, but close enough for PnL reporting.
+    pub async fn reconcile_vaults(&self, batch_id: u64, players: &[Address], payouts: &[U256]) {
+        // reconcile(uint256,uint256) selector = keccak256("reconcile(uint256,uint256)")[:4]
+        let selector: [u8; 4] = [0x49, 0xe2, 0x7d, 0x69];
 
-        for player in players {
+        for (i, player) in players.iter().enumerate() {
+            let payout = if i < payouts.len() { payouts[i] } else { U256::zero() };
+            let batch_token = ethers::abi::Token::Uint(U256::from(batch_id));
+            let payout_token = ethers::abi::Token::Uint(payout);
+            let encoded_args = ethers::abi::encode(&[batch_token, payout_token]);
+            let mut calldata = selector.to_vec();
+            calldata.extend_from_slice(&encoded_args);
+
             let tx: TypedTransaction = Eip1559TransactionRequest::new()
                 .to(*player)
-                .data(calldata.clone())
+                .data(calldata)
                 .into();
 
             match self.submit_tx(tx, "vault_reconcile").await {

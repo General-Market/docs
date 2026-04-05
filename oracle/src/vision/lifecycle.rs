@@ -1307,10 +1307,10 @@ impl BatchLifecycleManager {
                             .execute(&self.pool)
                             .await?;
 
-                        // Reconcile vaults — call reconcile(batchId) on each player address.
+                        // Reconcile vaults — call reconcile(batchId, payout) on each player.
                         // Vaults update their NAV; non-vault addresses revert harmlessly.
                         info!(batch_id, players = settlement.players.len(), "Reconciling vaults post-settlement");
-                        writer.reconcile_vaults(batch_id, &settlement.players).await;
+                        writer.reconcile_vaults(batch_id, &settlement.players, &settlement.payouts).await;
                     }
                     Err(e) => {
                         let err_str = e.to_string();
@@ -1962,6 +1962,7 @@ impl BatchLifecycleManager {
                 );
 
                 let players_for_reconcile = players.clone();
+                let payouts_for_reconcile = payouts.clone();
                 match writer.settle_batch(
                     batch_id_u64,
                     players,
@@ -1990,7 +1991,7 @@ impl BatchLifecycleManager {
                             error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: purge_batch_from_db failed");
                         }
                         // Reconcile vaults post-recovery settlement
-                        writer.reconcile_vaults(batch_id_u64, &players_for_reconcile).await;
+                        writer.reconcile_vaults(batch_id_u64, &players_for_reconcile, &payouts_for_reconcile).await;
                     }
                     Err(e) => {
                         let err_str = format!("{}", e);
@@ -2010,8 +2011,9 @@ impl BatchLifecycleManager {
                             if let Err(e) = self.scheduler.mark_settled(&self.pool, batch_id_u64).await {
                                 error!(batch_id = batch_id_u64, error = %e, "Settlement recovery: mark_settled failed (already-settled path)");
                             }
-                            // Still reconcile vaults — batch was settled but vaults may not have been reconciled
-                            writer.reconcile_vaults(batch_id_u64, &players_for_reconcile).await;
+                            // Still reconcile vaults — batch was settled but vaults may not have been reconciled.
+                            // Pass payouts for PnL accuracy (we have them from the proof DB even if we didn't submit).
+                            writer.reconcile_vaults(batch_id_u64, &players_for_reconcile, &payouts_for_reconcile).await;
                         } else {
                             warn!(
                                 batch_id = batch_id_u64,

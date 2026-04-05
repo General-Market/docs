@@ -27,7 +27,7 @@ interface IVisionVault is IERC4626, IERC7540Deposit, IERC7540Redeem {
     function updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newBitmapHash) external;
 
     // ── Reconciliation (permissionless) ─────────────────────────────
-    function reconcile(uint256 batchId) external;
+    function reconcile(uint256 batchId, uint256 settlementPayout) external;
 
     // ── View ────────────────────────────────────────────────────────
     function manager() external view returns (address);

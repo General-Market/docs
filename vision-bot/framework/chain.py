@@ -122,6 +122,16 @@ VISION_ABI = [
         ],
         "outputs": [],
     },
+    {
+        "name": "PlayerSettled",
+        "type": "event",
+        "inputs": [
+            {"name": "batchId", "type": "uint256", "indexed": True},
+            {"name": "player", "type": "address", "indexed": True},
+            {"name": "payout", "type": "uint256", "indexed": False},
+            {"name": "fee", "type": "uint256", "indexed": False},
+        ],
+    },
 ]
 
 ORACLE_REGISTRY_ABI = [
@@ -309,6 +319,27 @@ class Executor:
         logger.info(
             "Bitmap updated batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16]
         )
+
+    # ── read: settlement events ──
+
+    def get_settlement_payout(self, batch_id: int, player: str) -> int:
+        """Query PlayerSettled event to find the net payout for a player in a batch.
+
+        Returns the payout amount (uint256) or 0 if no event found.
+        """
+        try:
+            logs = self.vision.events.PlayerSettled.get_logs(
+                argument_filters={
+                    "batchId": batch_id,
+                    "player": Web3.to_checksum_address(player),
+                },
+                fromBlock=0,
+            )
+            if logs:
+                return logs[-1]["args"]["payout"]
+        except Exception as e:
+            logger.debug("Failed to read PlayerSettled for batch %d: %s", batch_id, e)
+        return 0
 
 
 # ── Oracle discovery ───────────────────────────────────────────
@@ -610,7 +641,7 @@ VAULT_ABI = [
     {"type": "function", "name": "claimRedeem", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
     {"type": "function", "name": "joinBatch", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "uint256"}, {"type": "uint256"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
     {"type": "function", "name": "updateBitmap", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
-    {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}, {"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
 ]
 
 FACTORY_ABI = [
@@ -729,13 +760,18 @@ class VaultExecutor:
         tx_hash = self._sign_and_send(tx)
         logger.info("Vault bitmap updated batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16])
 
-    def reconcile(self, batch_id: int):
-        """Call vault.reconcile after settlement."""
+    def reconcile(self, batch_id: int, settlement_payout: int = 0):
+        """Call vault.reconcile after settlement.
+
+        settlement_payout: the net USDC the vault received from Vision.settleBatch.
+        Used for accurate PnL reporting in the Reconciled event.
+        Pass 0 if unknown — PnL will show as -deposited (conservative).
+        """
         tx = self.vault.functions.reconcile(
-            batch_id
+            batch_id, settlement_payout
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
-        logger.info("Vault reconciled batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
+        logger.info("Vault reconciled batch %d payout=%d (tx: %s)", batch_id, settlement_payout, tx_hash.hex()[:16])
 
     # ── reads ──
 

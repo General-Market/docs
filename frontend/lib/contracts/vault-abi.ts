@@ -150,7 +150,10 @@ export const VISION_VAULT_ABI = [
   {
     type: 'function',
     name: 'reconcile',
-    inputs: [{ name: 'batchId', type: 'uint256' }],
+    inputs: [
+      { name: 'batchId', type: 'uint256' },
+      { name: 'settlementPayout', type: 'uint256' },
+    ],
     outputs: [],
     stateMutability: 'nonpayable',
   },

@@ -200,7 +200,7 @@ contract E2EVisionVault is TestHelper {
         uint256 hwmBefore = vault.highWaterMark();
         uint256 managerSharesBefore = vault.balanceOf(vaultManager);
 
-        vault.reconcile(batchId);
+        vault.reconcile(batchId, expectedVaultUsdc);
 
         // ── 12. Verify fee crystallization ──
         uint256 managerSharesAfter = vault.balanceOf(vaultManager);
@@ -303,7 +303,8 @@ contract E2EVisionVault is TestHelper {
         uint256 hwmBefore = vault.highWaterMark();
         uint256 managerSharesBefore = vault.balanceOf(vaultManager);
 
-        vault.reconcile(batchId);
+        // Vault got 150 gross, no profit so no fee, net = 150
+        vault.reconcile(batchId, 150 ether);
 
         // No fee shares minted on loss
         assertEq(vault.balanceOf(vaultManager), managerSharesBefore, "No fee shares on loss");

@@ -358,19 +358,21 @@ contract VisionVault is IVisionVault {
 
     // ── Reconciliation ───────────────────────────────────────────────
 
-    function reconcile(uint256 batchId) external {
+    function reconcile(uint256 batchId, uint256 settlementPayout) external {
         uint256 deposited = activeBatchDeposits[batchId];
         if (deposited == 0) revert BatchAlreadyReconciled();
-
-        // Snapshot pre-reconcile assets for PnL calc
-        uint256 preAssets = totalAssets();
 
         // Clear active tracking
         activeBatchDeposits[batchId] = 0;
         totalActiveCapital -= deposited;
 
+        // PnL = what settlement returned minus what we put in.
+        // The old formula (postAssets - preAssets) always yielded -deposited
+        // because the payout was already in usdc.balanceOf while deposited
+        // was still counted in totalActiveCapital — double-booking made
+        // every batch look like a total loss.
         uint256 postAssets = totalAssets();
-        int256 pnl = int256(postAssets) - int256(preAssets);
+        int256 pnl = int256(settlementPayout) - int256(deposited);
 
         uint256 feeSharesMinted = 0;
         if (_totalSupply > 0) {
