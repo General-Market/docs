@@ -137,8 +137,19 @@ if [ "$SKIP_DEPLOY" = false ]; then
 
     # Copy forge deploy output to active-deployment.json (used by start-oracles.sh / start-ap.sh)
     if [ -f "deployments/e2e-full-system.json" ]; then
-        # Reshape forge output → active-deployment format (add rpc field)
-        jq --arg rpc "$RPC" '. + {rpc: $rpc}' deployments/e2e-full-system.json > "$DEPLOYMENT_FILE"
+        # Reshape forge output → active-deployment format.
+        # Inject chainId/deployer/timestamp because the oracle's RuntimeConfig
+        # parser (common/src/adapters/deployment_config.rs) requires them as
+        # top-level fields. Without these, oracle startup panics with
+        # "missing field `chainId`". The forge script doesn't write them.
+        DEPLOYER_ADDR="${DEPLOYER_ADDR:-0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4}"
+        CHAIN_ID="${CHAIN_ID:-111222333}"
+        jq --arg rpc "$RPC" \
+           --argjson chainId "$CHAIN_ID" \
+           --arg deployer "$DEPLOYER_ADDR" \
+           --argjson timestamp "$(date +%s)" \
+           '. + {rpc: $rpc, chainId: $chainId, deployer: $deployer, timestamp: $timestamp}' \
+           deployments/e2e-full-system.json > "$DEPLOYMENT_FILE"
         echo "Deployment synced to $DEPLOYMENT_FILE"
     else
         echo -e "${RED}ERROR: deployments/e2e-full-system.json not created by forge script${NC}"
