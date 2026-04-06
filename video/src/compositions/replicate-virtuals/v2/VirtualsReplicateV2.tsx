@@ -803,6 +803,7 @@ export const VirtualsReplicateV2: React.FC = () => {
           centerY={68}
           color="#888"
           fontSize={36}
+          align="center"
         />
       </Sequence>
 
@@ -810,6 +811,7 @@ export const VirtualsReplicateV2: React.FC = () => {
       <Sequence from={270} durationInFrames={30}>
         <WordReveal
           text="in profits"
+          align="center"
           startFrame={0}
           centerY={50}
           color="#1a1a1a"
@@ -850,6 +852,7 @@ export const VirtualsReplicateV2: React.FC = () => {
           <GlobeIcon size={80} />
           <WordReveal
             text="the smartest money on the planet"
+            align="center"
             startFrame={0}
             centerY={55}
             color="#1a1a1a"
@@ -900,9 +903,10 @@ export const VirtualsReplicateV2: React.FC = () => {
         <WordReveal
           text="and landed on the exact same number"
           startFrame={45}
-          centerY={85}
+          centerY={52}
           color="#1a1a1a"
           fontSize={32}
+          highlightWords={{ exact: "#1a1a1a", same: "#1a1a1a" }}
         />
       </Sequence>
 
@@ -955,6 +959,7 @@ export const VirtualsReplicateV2: React.FC = () => {
         </div>
         <WordReveal
           text="What if it wasn't you"
+          align="center"
           startFrame={0}
           centerY={58}
           color="#1a1a1a"
@@ -968,6 +973,7 @@ export const VirtualsReplicateV2: React.FC = () => {
         <VirtualsLogo startFrame={0} />
         <WordReveal
           text="What if it was your AI Agent?"
+          align="center"
           startFrame={15}
           centerY={62}
           color="#1a1a1a"
@@ -985,6 +991,7 @@ export const VirtualsReplicateV2: React.FC = () => {
       <Sequence from={1485} durationInFrames={150}>
         <WordReveal
           text="Can AI actually make money"
+          align="center"
           startFrame={0}
           centerY={45}
           color="#1a1a1a"
@@ -997,6 +1004,7 @@ export const VirtualsReplicateV2: React.FC = () => {
       <Sequence from={1635} durationInFrames={150}>
         <WordReveal
           text="Most AI trading bots fail too."
+          align="center"
           startFrame={0}
           centerY={45}
           color="#1a1a1a"
@@ -1026,6 +1034,7 @@ export const VirtualsReplicateV2: React.FC = () => {
           centerY={68}
           color={TEAL}
           fontSize={52}
+          align="center"
         />
       </Sequence>
 
@@ -1095,6 +1104,7 @@ export const VirtualsReplicateV2: React.FC = () => {
           centerY={68}
           color={TEAL}
           fontSize={52}
+          align="center"
         />
       </Sequence>
 
