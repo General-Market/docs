@@ -30,6 +30,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("fund-manager")
 DECIMALS = 18
+# Mirror of Vision.MIN_STAKE_PER_TICK — joins below this revert.
+MIN_STAKE_WEI = 10**17  # 0.1 USDC
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
@@ -349,14 +351,15 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         else:
             continue
 
-        # Filter by idle capital — each fund bets alloc_bps% of its total assets
+        # Filter by idle capital — each fund bets alloc_bps% of its total assets,
+        # floored at MIN_STAKE_WEI so the contract doesn't reject the deposit.
         def has_idle(f):
             try:
                 info = f.vault.get_vault_info()
                 idle = info.get("idle_usdc", 0)
                 total = info.get("total_assets", 0)
-                deposit = (total * alloc_bps) // 10000
-                return idle >= deposit and deposit > 0
+                deposit = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
+                return idle >= deposit
             except Exception:
                 return False
         matched_funds = [f for f in matched_funds if has_idle(f)]
@@ -428,15 +431,18 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
             bitmap = encode_bitmap(bets, market_count)
             bm_hash = hash_bitmap(bitmap)
 
-            # Compute deposit: alloc_bps% of current total assets
+            # Compute deposit: alloc_bps% of current total assets, floored at the
+            # contract minimum stake so tiny vaults still meet MIN_STAKE_PER_TICK.
             try:
                 info = fund.vault.get_vault_info()
                 total = info.get("total_assets", 0)
-                deposit_wei = (total * alloc_bps) // 10000
+                deposit_wei = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
                 if deposit_wei <= 0:
                     continue
                 # stake_per_tick = deposit (bet everything each tick within the batch)
                 stake_for_batch = min(stake_wei, deposit_wei)
+                if stake_for_batch < MIN_STAKE_WEI:
+                    stake_for_batch = MIN_STAKE_WEI
             except Exception:
                 continue
 
