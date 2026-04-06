@@ -495,7 +495,7 @@ function claimRewards(
 
 **On-chain effect:**
 - BLS signature is verified against the oracle registry's aggregated public key.
-- If `newBalance > oldBalance`, the difference (minus 0.3% fee on profit) is transferred to the player.
+- If `newBalance > oldBalance`, the difference (minus 0.05% fee on profit) is transferred to the player.
 - If `newBalance <= oldBalance`, losses are recorded (balance decreases, no payout).
 - `lastClaimedTick` is updated to `toTick`.
 
@@ -549,7 +549,7 @@ function withdraw(
 
 **On-chain effect:**
 - BLS signature verified.
-- Fee (0.3%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
+- Fee (0.05%) charged on profit only: if `finalBalance > totalDeposited`, fee is on the difference.
 - Remaining balance (after fee) transferred to player.
 - Position is deleted (`delete _positions[batchId][player]`).
 

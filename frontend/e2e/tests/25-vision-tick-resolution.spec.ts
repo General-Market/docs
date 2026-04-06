@@ -208,7 +208,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     //    If deposited == full depositAmount (multi-round balance), payouts will be
     //    much smaller than deposits (only one round's worth was settled).
     //
-    //    The contract also takes a 0.3% fee on profit (payout > totalDeposited),
+    //    The contract also takes a 0.05% fee on profit (payout > totalDeposited),
     //    but this only affects the on-chain USDC transfer, not the DB values.
     //
     //    Robust checks:

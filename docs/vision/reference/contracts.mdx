@@ -58,7 +58,7 @@ The main contract inherits from `ReentrancyGuard` and `BLSVerifier`. It manages 
 
 | Constant | Value | Description |
 |---|---|---|
-| `PROTOCOL_FEE_BPS` | `30` | 0.3% fee on winnings |
+| `PROTOCOL_FEE_BPS` | `5` | 0.05% fee on winnings |
 | `MIN_STAKE_PER_TICK` | `1e5` | Minimum stake per tick (0.1 USDC at 6 decimals) |
 | `BPS_DENOMINATOR` | `10000` | Basis points denominator |
 | `MAX_TICK_DURATION` | `30 days` | Maximum tick duration (2,592,000 seconds) |
@@ -277,7 +277,7 @@ function claimRewards(
 
 ```
   Claim flow:
-                                          0.3% fee
+                                          0.05% fee
   +----------+    BLS proof    +------+  on profit   +----------+
   | Oracle   | -------------> | claim| -----------> | accum.   |
   | computes |  newBalance    | Rewards()           | Fees     |

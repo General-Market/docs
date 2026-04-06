@@ -71,7 +71,7 @@ The resolved result of a single market within a tick. Each market resolves to on
 
 ### Parimutuel
 
-The betting model used by Vision. All stakes for a given tick are pooled together, and winners split the losers' stakes proportionally based on their `stakePerTick`. There is no counterparty or market maker -- the protocol is zero-sum (minus the 0.3% fee on profits). Winners receive a share of the pool proportional to their stake relative to the total winning stake.
+The betting model used by Vision. All stakes for a given tick are pooled together, and winners split the losers' stakes proportionally based on their `stakePerTick`. There is no counterparty or market maker -- the protocol is zero-sum (minus the 0.05% fee on profits). Winners receive a share of the pool proportional to their stake relative to the total winning stake.
 
 ### Points
 
@@ -111,6 +111,6 @@ The total amount of USDC deposited across all active player positions in a Visio
 
 ### Vision
 
-The sealed parimutuel prediction market built on Arbitrum. Traders bet on whether asset prices move UP or DOWN over fixed time intervals (ticks). All bets within a tick share a common pool -- winners split the losers' stakes, minus a 0.3% protocol fee on profits. The smart contract is `Vision.sol` and the internal technical name used in some code paths is "P2Pool."
+The sealed parimutuel prediction market built on Arbitrum. Traders bet on whether asset prices move UP or DOWN over fixed time intervals (ticks). All bets within a tick share a common pool -- winners split the losers' stakes, minus a 0.05% protocol fee on profits. The smart contract is `Vision.sol` and the internal technical name used in some code paths is "P2Pool."
 
 </dl>

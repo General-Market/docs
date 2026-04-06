@@ -225,11 +225,11 @@
     "on_chain_balance": "链上余额",
     "total_deposited": "总存入",
     "profit": "利润",
-    "est_fee": "预估费用 (利润的 0.3%)",
+    "est_fee": "预估费用 (利润的 0.05%)",
     "error_title": "错误",
     "try_again": "重试",
     "withdraw_all": "全部提取",
-    "withdraw_description": "完全退出批次。仅对利润收取 0.3% 费用。",
+    "withdraw_description": "完全退出批次。仅对利润收取 0.05% 费用。",
     "claim_rewards": "领取奖励",
     "claim_description": "领取已结算 Tick 的奖励，不退出批次。",
     "cancel": "取消"

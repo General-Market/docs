@@ -5,7 +5,7 @@ description: "Sealed parimutuel prediction market for binary price bets"
 
 # Vision (Prediction Market)
 
-Vision is a sealed parimutuel prediction market built on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals called ticks. All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.3% protocol fee on profits.
+Vision is a sealed parimutuel prediction market built on the General Market L3 chain. Traders bet on whether asset prices move UP or DOWN over fixed time intervals called ticks. All bets within a tick share a common pool — winners split the losers' stakes, minus a 0.05% protocol fee on profits.
 
 <Info>
 Vision uses the internal technical name "P2Pool" in contract code and API endpoints. User-facing references use "Vision."
@@ -82,10 +82,10 @@ BLS verification is never bypassed in Vision. Every claim and withdrawal require
 
 ## Fee Structure
 
-Vision charges a **0.3% fee (30 basis points) on profits only**. Players who lose a tick pay no fee. The fee is deducted from winnings before payout.
+Vision charges a **0.05% fee (5 basis points) on profits only**. Players who lose a tick pay no fee. The fee is deducted from winnings before payout.
 
 ```
-fee = (winnings * 30) / 10000
+fee = (winnings * 5) / 10000
 payout = winnings - fee
 ```
 
