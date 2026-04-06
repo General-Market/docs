@@ -318,7 +318,7 @@ export function SourceDashboard({
       <div className="flex flex-col gap-4">
         <CurrentRound
           verifiedBatch={verifiedBatch}
-          bettingRound={bettingRound}
+          bettingRound={bettingRound ?? null}
           bettingEnd={bettingEnd}
           tickDuration={tickDuration}
         />
