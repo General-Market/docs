@@ -812,7 +812,8 @@ export const VirtualsReplicateV2: React.FC = () => {
         <WordReveal
           text="in profits"
           align="center"
-          startFrame={0}
+          startFrame={-5}
+          framesPerWord={4}
           centerY={50}
           color="#1a1a1a"
           fontSize={65}
@@ -824,10 +825,12 @@ export const VirtualsReplicateV2: React.FC = () => {
         <AbsoluteFill style={{ backgroundColor: "#d0d0d0" }} />
         <WordReveal
           text="hedge funds"
-          startFrame={0}
+          startFrame={-5}
+          framesPerWord={4}
           centerY={50}
           color={TEAL}
           fontSize={52}
+          align="center"
         />
       </Sequence>
 
@@ -1049,6 +1052,7 @@ export const VirtualsReplicateV2: React.FC = () => {
         <WordReveal
           text="profitability, and consistency"
           startFrame={30}
+          align="center"
           centerY={88}
           color={TEAL}
           fontSize={24}
