@@ -50,8 +50,8 @@ export const PersonGrid: React.FC<PersonGridProps> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const rows = Math.ceil(count / columns);
-  const iconSize = showStatOverlay ? 42 : 32;
-  const gap = showStatOverlay ? 4 : 6;
+  const iconSize = showStatOverlay ? 52 : 32;
+  const gap = showStatOverlay ? 6 : 6;
   const gridWidth = columns * (iconSize + gap);
   const gridHeight = rows * (iconSize + gap + 8);
   const centerIdx = Math.floor(count / 2);
@@ -146,7 +146,7 @@ export const PersonGrid: React.FC<PersonGridProps> = ({
             fontSize: 380,
             fontWeight: 700,
             color: failColor,
-            opacity: 0.25,
+            opacity: 0.35,
             letterSpacing: -8,
             lineHeight: 1,
             pointerEvents: "none",
