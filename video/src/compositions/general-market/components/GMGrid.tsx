@@ -209,8 +209,8 @@ export const GMGrid: React.FC<GMGridProps> = ({
     };
   }, [activeColor, inactiveColor, categoryIndex, cols]);
 
-  // Resolve which material each tile uses. We derive col from the tile index
-  // since tiles are generated col-major above.
+  // Resolve which material each tile uses. Tiles are generated col-major in
+  // computeTiles, so col = floor(i / rows).
   const tilesWithMaterial = useMemo(() => {
     return tiles.map((tile, i) => {
       const col = Math.floor(i / rows);
