@@ -37,7 +37,7 @@ You are about to bet on whether German trains will be late. They will be. The qu
 
 Vision is a **sealed parimutuel prediction market**. Players bet on whether values move UP or DOWN over fixed time intervals. The subject matter is almost comically vast -- **90+ real-world data sources** spanning earthquakes, ice cream machines, train delays, npm downloads, Twitch viewership, nuclear reactor output, and hundreds more. The universe reduced to a binary wager, repeated every ten minutes, across four hundred thousand markets.
 
-Winners split the losers' stakes, minus a 0.3% fee. All commitments are sealed on-chain to prevent front-running. Every claim is verified with BLS aggregate signatures. The mechanism is elegant. Whether the participants deserve elegance is another question entirely.
+Winners split the losers' stakes, minus a 0.05% fee. All commitments are sealed on-chain to prevent front-running. Every claim is verified with BLS aggregate signatures. The mechanism is elegant. Whether the participants deserve elegance is another question entirely.
 
 ## How It Works
 
@@ -108,7 +108,7 @@ Most prediction markets let you bet on elections and football. Vision lets you b
     │                                                                         │
     │                                          Bot framework included        │
     │                                                                         │
-    │                                          0.3% fee on profits only      │
+    │                                          0.05% fee on profits only     │
     │                                                                         │
     └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -124,7 +124,7 @@ Most prediction markets let you bet on elections and football. Vision lets you b
     Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically. Delegate your hubris to a machine -- it will lose money faster and without complaint.
   </Card>
   <Card title="Low Fees" icon="percent">
-    0.3% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
+    0.05% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
   </Card>
   <Card title="BLS-Verified Claims" icon="shield-check">
     Every claim and withdrawal requires a valid aggregated BLS signature from the oracle network. Trust is a threshold, not an emotion.

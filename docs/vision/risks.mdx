@@ -19,10 +19,10 @@ Vision is zero-sum minus fees. For every dollar someone wins, someone else loses
 
 ### House Edge
 
-The protocol takes 0.3% of profits. Even a perfectly calibrated coin flip loses money over time. The house always wins -- not dramatically, not unfairly, but with the quiet patience of entropy. You need a win rate above 50.15% to break even.
+The protocol takes 0.05% of profits. Even a perfectly calibrated coin flip loses money over time. The house always wins -- not dramatically, not unfairly, but with the quiet patience of entropy. You need a win rate of essentially 50% to break even. The edge is barely there -- which is the point.
 
 ```
-Break-even win rate ≈ 50.15% (with 0.3% fee on profits)
+Break-even win rate ≈ 50.025% (with 0.05% fee on profits)
 ```
 
 ### Stake Burn Rate
@@ -200,7 +200,7 @@ Everything that can go wrong, ranked by how much it will cost you. Read the seve
 | Risk | Severity | Mitigation |
 |------|----------|------------|
 | Losing deposit | **High** | Start small, validate strategy with backtests |
-| Fee drag | Low | Maintain win rate above 50.15% |
+| Fee drag | Low | Maintain win rate above 50.025% |
 | Bitmap failure | **High** | Verify `accepted: true`, retry logic |
 | RPC downtime | Medium | Retry with backoff, check state on restart |
 | Gas exhaustion | Medium | Monitor ETH balance, set alerts |

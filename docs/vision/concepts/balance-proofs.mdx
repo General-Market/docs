@@ -120,7 +120,7 @@ The contract performs its final duty -- verification followed by payment, or ver
 2. Verifies the aggregated BLS signature against the oracle registry's aggregated public key.
 3. If valid:
    - Compares `newBalance` to `oldBalance`.
-   - If `newBalance > oldBalance`: computes winnings, deducts the 0.3% fee, and transfers the payout.
+   - If `newBalance > oldBalance`: computes winnings, deducts the 0.05% fee, and transfers the payout.
    - If `newBalance <= oldBalance`: records the loss (balance decreased), no payout.
 4. Updates `position.lastClaimedTick = toTick`.
 
