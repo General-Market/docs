@@ -103,11 +103,15 @@ def main():
     factory = w3.eth.contract(address=Web3.to_checksum_address(FACTORY_ADDR), abi=FACTORY_ABI)
     usdc = w3.eth.contract(address=Web3.to_checksum_address(USDC_ADDR), abi=ERC20_ABI)
 
+    funded_path = Path(__file__).resolve().parent.parent / "deployments" / "funded-vaults.json"
+    funded = json.loads(funded_path.read_text()) if funded_path.exists() else {}
+
     bal = usdc.functions.balanceOf(addr).call()
-    needed = len(funds) * DEPOSIT_AMOUNT
+    unfunded = [f for f in funds if f["symbol"] not in funded]
+    needed = len(unfunded) * DEPOSIT_AMOUNT
     print(f"Operator: {addr}", flush=True)
     print(f"USDC balance: {bal/1e18:,.2f}", flush=True)
-    print(f"Funds to deploy: {len(funds)}", flush=True)
+    print(f"Funds total: {len(funds)} (unfunded: {len(unfunded)})", flush=True)
     print(f"USDC needed: {needed/1e18:,.0f}", flush=True)
     if bal < needed:
         print(f"ERROR: insufficient USDC. Need {needed/1e18:,.0f}, have {bal/1e18:,.0f}", flush=True)
@@ -147,8 +151,6 @@ def main():
 
     # ── Phase 2: fund each vault with 10K USDC ──
     print("\n=== PHASE 2: FUND VAULTS (10,000 USDC EACH) ===", flush=True)
-    funded_path = Path(__file__).resolve().parent.parent / "deployments" / "funded-vaults.json"
-    funded = json.loads(funded_path.read_text()) if funded_path.exists() else {}
 
     for i, fund in enumerate(funds, 1):
         symbol = fund["symbol"]
