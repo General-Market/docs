@@ -1,20 +1,23 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from '@/i18n/routing'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { useRecentBets } from '@/hooks/useRecentBets'
 import { useBetsSSE } from '@/hooks/useBetsSSE'
+import type { RoundInfo } from '@/hooks/vision/useRounds'
 import { BatchVaultResults } from './BatchVaultResults'
 
 interface SourceDashboardProps {
   sourceId: string
   verifiedBatch: { id: number; playerCount: number; tvl: string; tickDuration?: number } | null
+  bettingRound?: RoundInfo | null
   bettingEnd: string | null
   tickDuration: number
   settlingRound: { bettingEnd?: string | null; timeframeSecs?: number } | null
-  rounds: any[] | undefined
+  rounds: RoundInfo[] | undefined
 }
 
 function formatPool(tvl: string): string {
@@ -26,12 +29,25 @@ function formatPool(tvl: string): string {
   return `$${num.toFixed(2)}`
 }
 
-function timeAgo(timestamp: string): string {
-  const diff = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000)
-  if (diff < 60) return 'now'
+function timeAgo(timestamp: string, nowMs: number): string {
+  const t = new Date(timestamp).getTime()
+  if (isNaN(t)) return '—'
+  const diff = Math.max(0, Math.floor((nowMs - t) / 1000))
+  if (diff < 5) return 'now'
+  if (diff < 60) return `${diff}s`
   if (diff < 3600) return `${Math.floor(diff / 60)}m`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h`
   return `${Math.floor(diff / 86400)}d`
+}
+
+/** Re-renders the calling component every `intervalMs` milliseconds. */
+function useNow(intervalMs: number = 1000): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs)
+    return () => clearInterval(id)
+  }, [intervalMs])
+  return now
 }
 
 function truncAddr(addr: string): string {
@@ -61,20 +77,36 @@ function BotCta({ text }: { text: string }) {
 
 function CurrentRound({
   verifiedBatch,
+  bettingRound,
   bettingEnd,
   tickDuration,
 }: {
   verifiedBatch: SourceDashboardProps['verifiedBatch']
+  bettingRound: RoundInfo | null
   bettingEnd: string | null
   tickDuration: number
 }) {
   const secsLeft = useSharedCountdown(bettingEnd)
 
+  // Pick the best display source for round metadata. The rounds API
+  // (bettingRound) is authoritative for live state — it carries the real
+  // playerCount/tvl/bettingEnd. verifiedBatch is the fallback.
+  const roundId = bettingRound?.batchId ?? verifiedBatch?.id ?? null
+  const playerCount =
+    bettingRound?.playerCount ?? verifiedBatch?.playerCount ?? 0
+  const tvl = bettingRound?.tvl ?? verifiedBatch?.tvl ?? '0'
+
+  // The window is "open" only while the countdown to bettingEnd hasn't elapsed.
+  // Without a bettingEnd we cannot prove the round is live — fall through to
+  // the inter-round placeholder.
+  const hasLiveBettingWindow = !!bettingEnd && secsLeft > 0
+  const hasRound = roundId !== null && hasLiveBettingWindow
+
   const settleSecsLeft = useMemo(() => {
     if (!bettingEnd) return 0
     const settleMs = new Date(bettingEnd).getTime() + tickDuration * 1000 - Date.now()
     return Math.max(0, Math.floor(settleMs / 1000))
-  }, [bettingEnd, tickDuration])
+  }, [bettingEnd, tickDuration, secsLeft])
 
   const formatTimer = (secs: number) => {
     const m = Math.floor(secs / 60)
@@ -86,21 +118,21 @@ function CurrentRound({
     <div className={CARD}>
       <h3 className={HEADER}>Current Round</h3>
 
-      {verifiedBatch ? (
+      {hasRound ? (
         <div className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <span className={VALUE}>#{verifiedBatch.id}</span>
+            <span className={VALUE}>#{roundId}</span>
             <span className={`${VALUE} tabular-nums`}>{formatTimer(secsLeft)}</span>
           </div>
 
           <div className="flex gap-6">
             <div>
               <p className={LABEL}>Players</p>
-              <p className={VALUE}>{verifiedBatch.playerCount}</p>
+              <p className={VALUE}>{playerCount}</p>
             </div>
             <div>
               <p className={LABEL}>Pool</p>
-              <p className={VALUE}>{formatPool(verifiedBatch.tvl)}</p>
+              <p className={VALUE}>{formatPool(tvl)}</p>
             </div>
             <div>
               <p className={LABEL}>Settles in</p>
@@ -170,14 +202,44 @@ function RecentBets() {
   const { events, isLoading, isError } = useRecentBets(20)
   // SSE for live updates — automatically pushes new events into the query cache
   useBetsSSE()
+  const now = useNow(1000)
 
-  const showEmpty = !isLoading && (isError || !events.length)
+  // Sort newest-first so freshly-arrived bets land at the top of the list.
+  const sorted = useMemo(
+    () =>
+      [...events].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      ),
+    [events],
+  )
+
+  // Track which row keys we've already rendered so only genuinely new entries
+  // animate in. The first batch after mount is treated as "already seen" so
+  // the entire feed doesn't animate on initial load.
+  const seenKeysRef = useRef<Set<string> | null>(null)
+  const newKeys = useMemo(() => {
+    const keys = sorted.map((e) => `${e.betId}-${e.eventType}`)
+    if (seenKeysRef.current === null) {
+      seenKeysRef.current = new Set(keys)
+      return new Set<string>()
+    }
+    const fresh = new Set<string>()
+    for (const k of keys) {
+      if (!seenKeysRef.current.has(k)) {
+        fresh.add(k)
+        seenKeysRef.current.add(k)
+      }
+    }
+    return fresh
+  }, [sorted])
+
+  const showEmpty = !isLoading && (isError || !sorted.length)
 
   return (
     <div className={CARD}>
       <h3 className={HEADER}>Recent Bets</h3>
 
-      {isLoading && !events.length ? (
+      {isLoading && !sorted.length ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-5 bg-border-light animate-pulse" />
@@ -187,32 +249,57 @@ function RecentBets() {
         <p className="py-4 text-[13px] text-text-muted">No bets yet</p>
       ) : (
         <div className="space-y-2">
-          {events.map((event) => (
-            <div key={event.betId} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] text-black">
-                  {truncAddr(event.walletAddress)}
-                </span>
-                <span
-                  className={`text-[10px] font-semibold uppercase ${
-                    event.eventType === 'won'
-                      ? 'text-color-up'
-                      : event.eventType === 'lost'
-                        ? 'text-color-down'
-                        : 'text-text-muted'
-                  }`}
+          <AnimatePresence initial={false}>
+            {sorted.map((event) => {
+              const key = `${event.betId}-${event.eventType}`
+              const isNew = newKeys.has(key)
+              return (
+                <motion.div
+                  key={key}
+                  layout
+                  initial={isNew ? { opacity: 0, y: -8 } : false}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    backgroundColor: isNew
+                      ? ['rgba(34,197,94,0.18)', 'rgba(34,197,94,0)']
+                      : 'rgba(34,197,94,0)',
+                  }}
+                  transition={{
+                    duration: 0.3,
+                    ease: 'easeOut',
+                    backgroundColor: { duration: 1.2, ease: 'easeOut' },
+                  }}
+                  className="flex items-center justify-between"
                 >
-                  {event.eventType}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-[12px] font-bold text-black">
-                  ${parseFloat(event.amount).toFixed(2)}
-                </span>
-                <span className="text-[10px] text-text-muted">{timeAgo(event.timestamp)}</span>
-              </div>
-            </div>
-          ))}
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[12px] text-black">
+                      {truncAddr(event.walletAddress)}
+                    </span>
+                    <span
+                      className={`text-[10px] font-semibold uppercase ${
+                        event.eventType === 'won'
+                          ? 'text-color-up'
+                          : event.eventType === 'lost'
+                            ? 'text-color-down'
+                            : 'text-text-muted'
+                      }`}
+                    >
+                      {event.eventType}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[12px] font-bold text-black">
+                      ${parseFloat(event.amount).toFixed(2)}
+                    </span>
+                    <span className="font-mono text-[10px] text-text-muted tabular-nums w-[28px] text-right">
+                      {timeAgo(event.timestamp, now)}
+                    </span>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </div>
       )}
     </div>
@@ -222,15 +309,16 @@ function RecentBets() {
 export function SourceDashboard({
   sourceId,
   verifiedBatch,
+  bettingRound,
   bettingEnd,
   tickDuration,
-  rounds,
 }: SourceDashboardProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="flex flex-col gap-4">
         <CurrentRound
           verifiedBatch={verifiedBatch}
+          bettingRound={bettingRound}
           bettingEnd={bettingEnd}
           tickDuration={tickDuration}
         />

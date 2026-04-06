@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useQuery } from '@tanstack/react-query'
@@ -18,12 +18,10 @@ import { SourceDashboard } from './SourceDashboard'
 import { WalletSourceStats } from './shared'
 import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
-import { useReadContract } from 'wagmi'
-import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { indexL3 } from '@/lib/wagmi'
-import { useDeployment } from '@/hooks/useDeployment'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
-// import { FirstTradeCTA } from '../FirstTradeCTA'
+import { useOnboarding } from '@/hooks/useOnboarding'
+import { OnboardingGuide, OnboardingGate, FloatingReminder } from './OnboardingGuide'
+import DeployAgentModal from './DeployAgentModal'
 
 // ── Main component ──
 
@@ -82,28 +80,17 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
 
   const sourceMarkets = snapshotData?.prices ?? []
 
-  // Active batch
+  // Active batch — `useBatches()` already returns multicall-verified batches
+  // from `/api/vision/batches`. The previous client-side `useReadContract`
+  // waterfall added a 5-8s delay to first paint and turned a single bad RPC
+  // into a permanent "Between rounds" failure. The server multicall is
+  // sufficient.
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // On-chain batch verification
-  const { getAddress } = useDeployment()
-  const visionAddress = getAddress('Vision')
-  const { data: onChainBatch, isError: batchOnChainError, error: batchError } = useReadContract({
-    address: visionAddress,
-    abi: VISION_ABI,
-    functionName: 'getBatch',
-    args: activeBatch ? [BigInt(activeBatch.id)] : undefined,
-    chainId: indexL3.id,
-    query: {
-      enabled: !!activeBatch && visionAddress !== '0x0000000000000000000000000000000000000000',
-      retry: false,
-    },
-  })
-  const batchRpcFailed = !!activeBatch && (batchOnChainError || batchError !== null)
-  const verifiedBatch = batchRpcFailed ? null : activeBatch
+  const verifiedBatch = activeBatch
 
   // Batch config
   const { data: batchConfig } = useQuery<BatchConfigResponse>({
@@ -142,6 +129,19 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   }, [rounds])
 
   const bettingEnd = bettingRound?.bettingEnd ?? null
+
+  // ── Onboarding ──
+  const onboarding = useOnboarding(sourceId)
+  const [showDeployModal, setShowDeployModal] = useState(false)
+  const vaultShowcaseRef = useRef<HTMLDivElement>(null)
+
+  const handleOnboardingVaultDeposit = useCallback(() => {
+    vaultShowcaseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [])
+
+  const handleOnboardingBotDeploy = useCallback(() => {
+    setShowDeployModal(true)
+  }, [])
 
   // Loading / not-found states
   if (isRegistryLoading && !initialSource) {
@@ -191,39 +191,74 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           urgency="normal"
         />
 
+        {/* Onboarding guide — sticky so it stays visible while scrolling.
+            Top offset clears the sticky stack above this widget:
+              header  h-14 sm:h-16        → 56 / 64 px
+              hero    sticky top-14/16, min-h-[100px] but typical ~110px
+                      (badges row + h1 + description, sometimes a countdown)
+            Total ≈ 56+114 = 170 mobile, 64+116 = 180 desktop. A small buffer
+            absorbs a slightly taller hero (longer description or countdown row)
+            without clipping the step pills. scroll-mt mirrors the top offset so
+            programmatic scrollIntoView lands the card fully in view. */}
+        {onboarding.isActive && (
+          <div className="sticky top-[170px] sm:top-[180px] z-30 mb-4 scroll-mt-[170px] sm:scroll-mt-[180px]">
+            <OnboardingGuide
+              state={onboarding}
+              onVaultDeposit={handleOnboardingVaultDeposit}
+              onBotDeploy={handleOnboardingBotDeploy}
+            />
+          </div>
+        )}
+
         <div className="bg-page">
-          <WalletSourceStats sourceId={sourceId} />
+          <OnboardingGate requiredStep="faucet" state={onboarding}>
+            <WalletSourceStats sourceId={sourceId} />
+          </OnboardingGate>
 
           {/* Pending positions */}
           {rounds && rounds.length > 0 && (
-            <PendingPositions
-              rounds={rounds}
-              activeBatchId={verifiedBatch?.id}
-            />
+            <OnboardingGate requiredStep="vault" state={onboarding}>
+              <PendingPositions
+                rounds={rounds}
+                activeBatchId={verifiedBatch?.id}
+              />
+            </OnboardingGate>
           )}
 
           {/* Vault showcase */}
-          <div className="mt-6">
-            <VaultShowcase sourceId={sourceId} />
+          <div className="mt-6" ref={vaultShowcaseRef}>
+            <OnboardingGate requiredStep="vault" state={onboarding}>
+              <VaultShowcase sourceId={sourceId} />
+            </OnboardingGate>
           </div>
 
           {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
           <div className="mt-6">
-            <SourceDashboard
-              sourceId={sourceId}
-              verifiedBatch={verifiedBatch}
-              bettingEnd={bettingEnd}
-              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
-              settlingRound={settlingRound}
-              rounds={rounds}
-            />
+            <OnboardingGate requiredStep="bot" state={onboarding}>
+              <SourceDashboard
+                sourceId={sourceId}
+                verifiedBatch={verifiedBatch}
+                bettingRound={bettingRound}
+                bettingEnd={bettingEnd}
+                tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+                settlingRound={settlingRound}
+                rounds={rounds}
+              />
+            </OnboardingGate>
           </div>
         </div>
 
         {/* Submarkets grid — full width, no side margins, last on page */}
         <div className="-mx-2 lg:-mx-4">
-          <SubmarketsGrid sourceId={sourceId} />
+          <OnboardingGate requiredStep="bot" state={onboarding}>
+            <SubmarketsGrid sourceId={sourceId} />
+          </OnboardingGate>
         </div>
+
+        {/* Deploy bot modal — triggered by onboarding step 4 */}
+        {showDeployModal && (
+          <DeployAgentModal agentId="claude-code" onClose={() => setShowDeployModal(false)} />
+        )}
       </div>
 
       {/* Right sidebar */}
@@ -232,6 +267,9 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
         category={source.category}
         side="right"
       />
+
+      {/* Floating multilingual reminder — fixed to viewport */}
+      <FloatingReminder state={onboarding} />
     </div>
   )
 }
