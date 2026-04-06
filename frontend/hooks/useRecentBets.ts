@@ -51,7 +51,10 @@ interface UseRecentBetsReturn {
  * Throws error if backend is unavailable - NO MOCK FALLBACKS IN PRODUCTION
  */
 async function fetchRecentBets(limit: number = 20): Promise<RecentBetsResponse> {
-  const response = await fetch(`/api/bets/recent?limit=${limit}`)
+  // Read from /api/vision/recent-bets — the /api/bets/recent path returns 404
+  // on Vercel even though the file is in the deployed tree. Mirroring under
+  // /api/vision/* dodges whatever build pass is dropping the original.
+  const response = await fetch(`/api/vision/recent-bets?limit=${limit}`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch recent bets: ${response.status} ${response.statusText}`)
