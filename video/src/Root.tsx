@@ -6,18 +6,37 @@ import { short01Meta } from "./shorts/short-01/Short01Composition";
 import { short02Meta } from "./shorts/short-02/StonecutterComposition";
 import { short03Meta } from "./shorts/short-03/FebNewTop500Composition";
 import { short04Meta } from "./shorts/short-04/Short04Composition";
-import { visionVCMeta } from "./compositions/vision-vc/VisionVCComposition";
-import { visionVC2Meta } from "./compositions/vision-vc2/VisionVC2Composition";
-import { visionVC3Meta } from "./compositions/vision-vc3/VisionVC3Composition";
-import { replicateMeta, sceneMetas } from "./compositions/replicate/ReplicateComposition";
-import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicate-ordinaryfolk/OFReplicateComposition";
-import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicate-whop/WhopReplicateComposition";
-import { gmBrandMeta, gmSceneMetas } from "./compositions/gm-brand/GMBrandComposition";
-import { solanaBgMeta } from "./compositions/solana-bg/SolanaBgComposition";
-import { webglPicksMeta, webglSceneMetas } from "./compositions/webgl-picks/WebGLPicksComposition";
-import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm-launch-bg/GMLaunchBgComposition";
-import { visionVsMeta } from "./compositions/vision-vs/VisionVsComposition";
-import { gmQuantsMeta } from "./compositions/vision-vs/GMQuantsComposition";
+import { visionVCMeta } from "./compositions/vision/vc/VisionVCComposition";
+import { visionVC2Meta } from "./compositions/vision/vc2/VisionVC2Composition";
+import { visionVC3Meta } from "./compositions/vision/vc3/VisionVC3Composition";
+import { replicateMeta, sceneMetas } from "./compositions/replicates/original/ReplicateComposition";
+import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicates/ordinaryfolk/OFReplicateComposition";
+import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicates/whop/WhopReplicateComposition";
+import { gmBrandMeta, gmSceneMetas } from "./compositions/gm/brand/GMBrandComposition";
+import { solanaBgMeta } from "./compositions/backgrounds/solana/SolanaBgComposition";
+import { webglPicksMeta, webglSceneMetas } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
+import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm/launch-bg/GMLaunchBgComposition";
+import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
+import { gmQuantsMeta } from "./compositions/vision/vs/GMQuantsComposition";
+import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
+import { kalshiSideBySideMeta } from "./compositions/replicates/kalshi/KalshiSideBySide";
+import { flashblocksMeta } from "./compositions/replicates/standrew/FlashblocksComposition";
+import { flashblocksSideBySideMeta } from "./compositions/replicates/standrew/FlashblocksSideBySide";
+import { sceneAMetas as flashblocksSceneAMetas } from "./compositions/replicates/standrew/ScenesA";
+import { sceneBMetas as flashblocksSceneBMetas } from "./compositions/replicates/standrew/ScenesB";
+import { sceneCMetas as flashblocksSceneCMetas } from "./compositions/replicates/standrew/ScenesC";
+import { virtualsReplicateV2Meta } from "./compositions/replicates/virtuals/v2/VirtualsReplicateV2";
+import { sideBySideV2Meta as virtualsSideBySideV2Meta } from "./compositions/replicates/virtuals/v2/SideBySide";
+import {
+  councilReplicateMeta,
+  councilSideBySideMeta,
+  councilSceneMetas,
+} from "./compositions/replicates/council/VirtualsReplicateComposition";
+
+// Per-scene compositions are hidden from the studio sidebar by default.
+// Set REMOTION_SHOW_SCENES=1 in the environment to register them — needed
+// only when running parallel-scene autoresearch renders by composition id.
+const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
 // remotion-scenes showcases
 import {
@@ -107,20 +126,22 @@ export const RemotionRoot: React.FC = () => {
         width={replicateMeta.width}
         height={replicateMeta.height}
       />
-      {/* Per-scene compositions for parallel autoresearch */}
-      <Folder name="Replicate-Scenes">
-        {sceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {/* Per-scene compositions — hidden unless REMOTION_SHOW_SCENES=1 */}
+      {SHOW_SCENES && (
+        <Folder name="Replicate-Scenes">
+          {sceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ ORDINARY FOLK — replicate ═══ */}
       <Composition
@@ -131,19 +152,21 @@ export const RemotionRoot: React.FC = () => {
         width={ofReplicateMeta.width}
         height={ofReplicateMeta.height}
       />
-      <Folder name="OF-Scenes">
-        {ofSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {SHOW_SCENES && (
+        <Folder name="OF-Scenes">
+          {ofSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ GM BRAND — rebranded OF ═══ */}
       <Composition
@@ -154,19 +177,21 @@ export const RemotionRoot: React.FC = () => {
         width={gmBrandMeta.width}
         height={gmBrandMeta.height}
       />
-      <Folder name="GM-Scenes">
-        {gmSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {SHOW_SCENES && (
+        <Folder name="GM-Scenes">
+          {gmSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ SOLANA BG — lenticular prismatic background ═══ */}
       <Composition
@@ -187,19 +212,21 @@ export const RemotionRoot: React.FC = () => {
         width={whopReplicateMeta.width}
         height={whopReplicateMeta.height}
       />
-      <Folder name="Whop-Scenes">
-        {whopSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {SHOW_SCENES && (
+        <Folder name="Whop-Scenes">
+          {whopSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ WEBGL PICKS — Codrops / shader references ═══ */}
       <Composition
@@ -210,19 +237,21 @@ export const RemotionRoot: React.FC = () => {
         width={webglPicksMeta.width}
         height={webglPicksMeta.height}
       />
-      <Folder name="WebGL-Picks">
-        {webglSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {SHOW_SCENES && (
+        <Folder name="WebGL-Picks">
+          {webglSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ GM LAUNCH BACKGROUNDS — 5 branded propositions ═══ */}
       <Composition
@@ -233,19 +262,21 @@ export const RemotionRoot: React.FC = () => {
         width={gmLaunchBgMeta.width}
         height={gmLaunchBgMeta.height}
       />
-      <Folder name="GMLaunch-Scenes">
-        {gmLaunchSceneMetas.map((meta) => (
-          <Composition
-            key={meta.id}
-            id={meta.id}
-            component={meta.component}
-            durationInFrames={meta.durationInFrames}
-            fps={meta.fps}
-            width={meta.width}
-            height={meta.height}
-          />
-        ))}
-      </Folder>
+      {SHOW_SCENES && (
+        <Folder name="GMLaunch-Scenes">
+          {gmLaunchSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ VISION VS — split-screen comparison ═══ */}
       <Composition
@@ -264,6 +295,112 @@ export const RemotionRoot: React.FC = () => {
         width={gmQuantsMeta.width}
         height={gmQuantsMeta.height}
       />
+
+      {/* ═══ KALSHI — replicate ═══ */}
+      <Composition
+        id={kalshiMeta.id}
+        component={kalshiMeta.component}
+        durationInFrames={kalshiMeta.durationInFrames}
+        fps={kalshiMeta.fps}
+        width={kalshiMeta.width}
+        height={kalshiMeta.height}
+      />
+      <Composition
+        id={kalshiSideBySideMeta.id}
+        component={kalshiSideBySideMeta.component}
+        durationInFrames={kalshiSideBySideMeta.durationInFrames}
+        fps={kalshiSideBySideMeta.fps}
+        width={kalshiSideBySideMeta.width}
+        height={kalshiSideBySideMeta.height}
+      />
+
+      {/* ═══ STANDREW / FLASHBLOCKS — replicate ═══ */}
+      <Composition
+        id={flashblocksMeta.id}
+        component={flashblocksMeta.component}
+        durationInFrames={flashblocksMeta.durationInFrames}
+        fps={flashblocksMeta.fps}
+        width={flashblocksMeta.width}
+        height={flashblocksMeta.height}
+      />
+      <Composition
+        id={flashblocksSideBySideMeta.id}
+        component={flashblocksSideBySideMeta.component}
+        durationInFrames={flashblocksSideBySideMeta.durationInFrames}
+        fps={flashblocksSideBySideMeta.fps}
+        width={flashblocksSideBySideMeta.width}
+        height={flashblocksSideBySideMeta.height}
+      />
+      {SHOW_SCENES && (
+        <Folder name="Flashblocks-Scenes">
+          {[
+            ...flashblocksSceneAMetas,
+            ...flashblocksSceneBMetas,
+            ...flashblocksSceneCMetas,
+          ].map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={flashblocksMeta.fps}
+              width={flashblocksMeta.width}
+              height={flashblocksMeta.height}
+            />
+          ))}
+        </Folder>
+      )}
+
+      {/* ═══ VIRTUALS V2 — replicate ═══ */}
+      <Composition
+        id={virtualsReplicateV2Meta.id}
+        component={virtualsReplicateV2Meta.component}
+        durationInFrames={virtualsReplicateV2Meta.durationInFrames}
+        fps={virtualsReplicateV2Meta.fps}
+        width={virtualsReplicateV2Meta.width}
+        height={virtualsReplicateV2Meta.height}
+      />
+      <Composition
+        id={virtualsSideBySideV2Meta.id}
+        component={virtualsSideBySideV2Meta.component}
+        durationInFrames={virtualsSideBySideV2Meta.durationInFrames}
+        fps={virtualsSideBySideV2Meta.fps}
+        width={virtualsSideBySideV2Meta.width}
+        height={virtualsSideBySideV2Meta.height}
+      />
+
+      {/* ═══ VIRTUALS COUNCIL — replicate ═══ */}
+      <Composition
+        id={councilReplicateMeta.id}
+        component={councilReplicateMeta.component}
+        durationInFrames={councilReplicateMeta.durationInFrames}
+        fps={councilReplicateMeta.fps}
+        width={councilReplicateMeta.width}
+        height={councilReplicateMeta.height}
+      />
+      <Composition
+        id={councilSideBySideMeta.id}
+        component={councilSideBySideMeta.component}
+        durationInFrames={councilSideBySideMeta.durationInFrames}
+        fps={councilSideBySideMeta.fps}
+        width={councilSideBySideMeta.width}
+        height={councilSideBySideMeta.height}
+      />
+      {SHOW_SCENES && (
+        <Folder name="Council-Scenes">
+          {councilSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
 
       {/* ═══ Other shorts ═══ */}
       <Folder name="Other">

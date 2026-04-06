@@ -22,7 +22,7 @@ ANALYSIS_DIR="$(cd "$ANALYSIS_DIR" && pwd)"
 ANALYSIS_JSON="$ANALYSIS_DIR/analysis.json"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VIDEO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMP_DIR="$VIDEO_DIR/src/compositions/replicate"
+COMP_DIR="$VIDEO_DIR/src/compositions/replicates/original"
 
 if [ ! -f "$ANALYSIS_JSON" ]; then
   echo "ERROR: analysis.json not found at $ANALYSIS_JSON" >&2
@@ -555,12 +555,12 @@ AGENT INSTRUCTIONS:
 1. Read ALL frames in {analysis_dir}/scene_frames/scene_{idx:02d}/ — LOOK at every frame to understand what happens in this scene.
 2. Read {analysis_dir}/scenes_split.json for timing data.
 3. Read {analysis_dir}/scene_{idx:02d}_breakdown.json after each verify to see which component is weakest.
-4. Edit ONLY video/src/compositions/replicate/Scene{idx:02d}.tsx
+4. Edit ONLY video/src/compositions/replicates/original/Scene{idx:02d}.tsx
 5. Sequential attack: structure → timing → easing → color → polish
 6. When stuck: re-read the reference frames. Visually compare your rendered output (use npx remotion still) to the reference.
 7. DO NOT STOP until score exceeds 90 or interrupted.
 
-Scope: video/src/compositions/replicate/Scene{idx:02d}.tsx
+Scope: video/src/compositions/replicates/original/Scene{idx:02d}.tsx
 Metric: SSIM score (0-100, higher is better)
 Direction: Maximize
 Verify: cd {index_dir} && bash video/scripts/scene-verify/verify-scene-{idx:02d}.sh
