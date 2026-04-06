@@ -321,10 +321,10 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         # Fallback: try all batches (market count will be resolved from data-node)
         batches = all_batches
 
-    # Risk management: bet 5% of vault assets per batch, not a flat amount.
-    # stake_per_tick is the per-tick cost within a batch (usually = deposit).
+    # Risk management: bet alloc_bps of vault assets per batch.
+    # Each join is a single-tick bet (deposit == stake) to avoid the unused
+    # deposit getting permanently locked in Vision.
     alloc_bps = int(cfg.get("allocation_bps", 500))  # 500 = 5%
-    stake_wei = int(cfg.get("stake_per_tick", 1) * 10**DECIMALS)
 
     joined_this_cycle = 0
     matched_any_source = False
@@ -432,17 +432,16 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
             bm_hash = hash_bitmap(bitmap)
 
             # Compute deposit: alloc_bps% of current total assets, floored at the
-            # contract minimum stake so tiny vaults still meet MIN_STAKE_PER_TICK.
+            # contract minimum. Match deposit == stake — Vision permanently locks
+            # any deposit > stake_per_tick × actual_ticks, so over-depositing burns
+            # capital. Single-tick bet keeps the math closed.
             try:
                 info = fund.vault.get_vault_info()
                 total = info.get("total_assets", 0)
                 deposit_wei = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
                 if deposit_wei <= 0:
                     continue
-                # stake_per_tick = deposit (bet everything each tick within the batch)
-                stake_for_batch = min(stake_wei, deposit_wei)
-                if stake_for_batch < MIN_STAKE_WEI:
-                    stake_for_batch = MIN_STAKE_WEI
+                stake_for_batch = deposit_wei
             except Exception:
                 continue
 
