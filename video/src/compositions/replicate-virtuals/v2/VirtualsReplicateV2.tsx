@@ -858,9 +858,18 @@ export const VirtualsReplicateV2: React.FC = () => {
         </div>
       </Sequence>
 
-      {/* ──── S08: Counting stat 0%→97% (rf420–495) ──── */}
+      {/* ──── S08: Person grid with counting stat overlay (rf420–495) ──── */}
+      {/* Original: red/pink grid of ~100 icons, ~3 green survivors at bottom, */}
+      {/* huge semi-transparent "97%" counting up overlaid on the grid */}
       <Sequence from={420} durationInFrames={75}>
-        <CountingStat startFrame={0} endValue={97} duration={75} />
+        <PersonGrid
+          count={100}
+          columns={13}
+          showStatOverlay
+          statValue={97}
+          statDuration={60}
+          survivorCount={3}
+        />
       </Sequence>
 
       {/* ──── S09: "That's not an estimate" — estimate teal+underline (rf495–570) ──── */}
