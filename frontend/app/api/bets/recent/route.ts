@@ -4,6 +4,10 @@ import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem'
 const L3_RPC = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://142.132.164.24/'
 const VISION_ADDRESS = '0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649' as const
 const BLOCK_TIME_MS = 1000 // ~1s per block on Orbit L3
+// Look back ~30 minutes. Long enough to capture both the join and the
+// settle for any source — even the 600s tick rounds (~20 min total cycle).
+// At ~1s/block, 1800 blocks = 30 min.
+const LOOKBACK_BLOCKS = 1800n
 
 const l3Chain = {
   id: 111222333,
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const blockNumber = await client.getBlockNumber()
-    const fromBlock = blockNumber > 100n ? blockNumber - 100n : 0n
+    const fromBlock = blockNumber > LOOKBACK_BLOCKS ? blockNumber - LOOKBACK_BLOCKS : 0n
     const nowMs = Date.now()
 
     const [joinedLogs, settledLogs] = await Promise.all([
@@ -95,13 +99,23 @@ export async function GET(request: NextRequest) {
       const payout = log.args.payout ?? 0n
       const key = `${log.args.batchId}-${log.args.player?.toLowerCase()}`
       const deposit = depositByKey.get(key) ?? 0n
+      const won = payout > deposit
+      // Display amount per event type:
+      //   won  → gross payout (the headline number a winner cares about)
+      //   lost → the stake committed; if the join is outside our lookback
+      //          window, fall back to a positive payout slice instead of $0.
+      const displayAmount = won
+        ? payout
+        : deposit > 0n
+          ? deposit
+          : payout
 
       events.push({
         betId: String(log.args.batchId),
         walletAddress: log.args.player ?? '0x0',
-        eventType: payout > deposit ? 'won' : 'lost',
+        eventType: won ? 'won' : 'lost',
         portfolioSize: 0,
-        amount: formatUnits(deposit, 18),
+        amount: formatUnits(displayAmount, 18),
         result: formatUnits(payout, 18),
         timestamp: estimateTs(bn),
         _sort: bn * 10000n + BigInt(log.logIndex ?? 0),

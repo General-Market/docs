@@ -119,10 +119,39 @@ export async function GET(request: Request) {
       })
     }
 
-    // No on-chain filtering for rounds — they are ephemeral and start with
-    // playerCount=0 before bots join. The oracle is authoritative for live
-    // round state. Zombie filtering belongs in /api/vision/batches (source cards)
-    // and /api/vision/source/*/history (round history), not here.
+    // Enrich each round with fresh on-chain playerCount and totalDeposited.
+    // The oracle's lifecycle table lags behind the chain by tens of seconds,
+    // so a freshly-created round (especially short-tick sources like twitch)
+    // shows playerCount=0 and tvl="0" even when bots have already joined.
+    // Reading getBatch() directly from the Vision contract is the source of
+    // truth and always fresh. Done in parallel; one RPC call per round.
+    const visionAddress = (deployment as any).contracts?.Vision
+    if (visionAddress && rounds.length > 0) {
+      const client = createPublicClient({
+        chain: indexL3,
+        transport: http(indexL3.rpcUrls.default.http[0]),
+      })
+      await Promise.all(
+        rounds.map(async (r: any) => {
+          try {
+            const onchain = await client.readContract({
+              address: visionAddress as `0x${string}`,
+              abi: GET_BATCH_ABI,
+              functionName: 'getBatch',
+              args: [BigInt(r.batchId ?? r.batch_id ?? r.id)],
+            })
+            const players = Number(onchain.playerCount ?? 0)
+            const deposited = BigInt(onchain.totalDeposited ?? 0n)
+            // Only overwrite when on-chain is non-zero — preserves oracle's
+            // value for batches the RPC node hasn't synced yet.
+            if (players > 0) r.playerCount = players
+            if (deposited > 0n) r.tvl = deposited.toString()
+          } catch {
+            // RPC failure → keep oracle's stale-but-best-effort value.
+          }
+        }),
+      )
+    }
 
     return Response.json({ rounds })
   } catch (e) {
