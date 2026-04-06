@@ -1,8 +1,19 @@
-import { keccak256, toHex, createPublicClient, http } from 'viem'
+import { keccak256, toHex, createPublicClient, http, parseAbiItem } from 'viem'
 import { getIssuerVisionUrl } from '@/lib/config'
 import sourcesDisplay from '@/data/sources-display.json'
 import deployment from '@/lib/contracts/deployment.json'
 import { indexL3 } from '@/lib/wagmi'
+
+// PlayerJoined event — the source of truth for player count and TVL.
+// The Vision contract's Batch struct does NOT expose playerCount or totalDeposited,
+// so the only way to count players is to count PlayerJoined events for a batchId.
+const playerJoinedEvent = parseAbiItem(
+  'event PlayerJoined(uint256 indexed batchId, address indexed player, uint256 deposit, bytes32 bitmapHash, bytes32 configHash)'
+)
+// Look back ~30 minutes — covers join + tick window for every source
+// (twitch's 60s tick to ECB's 86400s tick still has joins land within the
+// first few minutes of round creation).
+const ENRICH_LOOKBACK_BLOCKS = 1800n
 
 // Build reverse mapping: internal sourceId → display sourceId, and keccak hashes
 const INTERNAL_TO_DISPLAY: Record<string, string> = {}
@@ -119,38 +130,55 @@ export async function GET(request: Request) {
       })
     }
 
-    // Enrich each round with fresh on-chain playerCount and totalDeposited.
-    // The oracle's lifecycle table lags behind the chain by tens of seconds,
-    // so a freshly-created round (especially short-tick sources like twitch)
-    // shows playerCount=0 and tvl="0" even when bots have already joined.
-    // Reading getBatch() directly from the Vision contract is the source of
-    // truth and always fresh. Done in parallel; one RPC call per round.
+    // Enrich each round with fresh on-chain player count and TVL by counting
+    // PlayerJoined events directly. The oracle's lifecycle table lags behind
+    // the chain by tens of seconds, so a freshly-joined round (especially for
+    // short-tick sources like twitch) shows playerCount=0 and tvl="0" until
+    // the oracle catches up. The Vision contract has no playerCount getter,
+    // so events are the only fresh source. ONE getLogs call covers all rounds.
     const visionAddress = (deployment as any).contracts?.Vision
     if (visionAddress && rounds.length > 0) {
-      const client = createPublicClient({
-        chain: indexL3,
-        transport: http(indexL3.rpcUrls.default.http[0]),
-      })
-      await Promise.all(
-        rounds.map(async (r: any) => {
-          try {
-            const onchain = await client.readContract({
-              address: visionAddress as `0x${string}`,
-              abi: GET_BATCH_ABI,
-              functionName: 'getBatch',
-              args: [BigInt(r.batchId ?? r.batch_id ?? r.id)],
-            })
-            const players = Number(onchain.playerCount ?? 0)
-            const deposited = BigInt(onchain.totalDeposited ?? 0n)
-            // Only overwrite when on-chain is non-zero — preserves oracle's
-            // value for batches the RPC node hasn't synced yet.
-            if (players > 0) r.playerCount = players
-            if (deposited > 0n) r.tvl = deposited.toString()
-          } catch {
-            // RPC failure → keep oracle's stale-but-best-effort value.
+      try {
+        const client = createPublicClient({
+          chain: indexL3,
+          transport: http(indexL3.rpcUrls.default.http[0]),
+        })
+        const blockNumber = await client.getBlockNumber()
+        const fromBlock =
+          blockNumber > ENRICH_LOOKBACK_BLOCKS ? blockNumber - ENRICH_LOOKBACK_BLOCKS : 0n
+        const logs = await client.getLogs({
+          address: visionAddress as `0x${string}`,
+          event: playerJoinedEvent,
+          fromBlock,
+          toBlock: blockNumber,
+        })
+        // Group joins by batchId: count unique players, sum deposits.
+        const stats = new Map<string, { players: Set<string>; deposit: bigint }>()
+        for (const log of logs) {
+          const bid = String(log.args.batchId ?? '')
+          if (!bid) continue
+          const player = (log.args.player ?? '0x0').toLowerCase()
+          let entry = stats.get(bid)
+          if (!entry) {
+            entry = { players: new Set(), deposit: 0n }
+            stats.set(bid, entry)
           }
-        }),
-      )
+          entry.players.add(player)
+          entry.deposit += log.args.deposit ?? 0n
+        }
+        for (const r of rounds) {
+          const bid = String(r.batchId ?? r.batch_id ?? r.id ?? '')
+          const entry = stats.get(bid)
+          if (!entry) continue
+          // Only overwrite when on-chain is non-zero — preserves oracle's
+          // value for batches whose joins are outside our lookback window.
+          if (entry.players.size > 0) r.playerCount = entry.players.size
+          if (entry.deposit > 0n) r.tvl = entry.deposit.toString()
+        }
+      } catch (e) {
+        // RPC failure → keep oracle's stale-but-best-effort values.
+        console.warn('Round enrichment via getLogs failed:', e)
+      }
     }
 
     return Response.json({ rounds })
