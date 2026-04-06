@@ -427,6 +427,68 @@ const HFTChart: React.FC<{ startFrame?: number }> = ({ startFrame = 0 }) => {
       >
         HFT VOLUME — 10Y
       </div>
+      {/* Timestamp axis */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 60,
+          left: 16,
+          right: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          fontFamily: FONT,
+          fontSize: 10,
+          color: "#555",
+        }}
+      >
+        {["11:30:13", "11:30:17", "11:30:20", "11:30:23", "11:30:28", "11:30:31", "11:30:34", "11:30:37", "11:30:41", "11:30:44"].map((t) => (
+          <span key={t}>{t}</span>
+        ))}
+      </div>
+      {/* Exchange stats table */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 8,
+          left: 16,
+          fontFamily: FONT,
+          fontSize: 10,
+          color: "#777",
+          display: "grid",
+          gridTemplateColumns: "50px 50px 50px",
+          gap: "1px 12px",
+          lineHeight: 1.5,
+        }}
+      >
+        {[
+          ["NSDQ", "2,821", "10,691"],
+          ["BOST", "855", "251"],
+          ["PACF", "2,644", "3,715"],
+          ["BATS", "2,713", "2,050"],
+          ["EDGX", "1,300", "970"],
+        ].map(([ex, q, t]) => (
+          <React.Fragment key={ex}>
+            <span style={{ color: "#3a7" }}>{ex}</span>
+            <span>{q}</span>
+            <span>{t}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      {/* Composite/NBBO legend */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 8,
+          right: 16,
+          fontFamily: FONT,
+          fontSize: 10,
+          color: "#888",
+        }}
+      >
+        <div>Composite/NBBO</div>
+        <div style={{ color: "#7a7a7a" }}>○ National Best Bid</div>
+        <div style={{ color: "#7a7a7a" }}>○ National Best Ask</div>
+      </div>
     </div>
   );
 };
@@ -1072,18 +1134,37 @@ export const VirtualsReplicateV2: React.FC = () => {
         />
       </Sequence>
 
-      {/* ──── S26: "you share / TOP 10" + leaderboard (rf2685–2835) ──── */}
+      {/* ──── S26: "you share / TOP 10" + leaderboard — split layout (rf2685–2835) ──── */}
       <Sequence from={2685} durationInFrames={150}>
-        <Leaderboard rowCount={5} startFrame={0} highlightTop={1} />
-        <WordReveal
-          text="you share in their profits"
-          startFrame={10}
-          centerY={10}
-          color="#fff"
-          fontSize={32}
-          highlightWords={{ share: TEAL, profits: TEAL }}
-        />
-        <Top10Badge />
+        {/* Left side: text stack */}
+        <div style={{ position: "absolute", left: "8%", top: "25%", maxWidth: 500 }}>
+          <WordReveal
+            text="you share"
+            startFrame={0}
+            centerY={0}
+            color="#fff"
+            fontSize={36}
+            highlightWords={{ share: TEAL }}
+            leftOffset={0}
+          />
+          <div style={{ marginTop: 80 }}>
+            <WordReveal
+              text="If they finish"
+              startFrame={15}
+              centerY={0}
+              color="#888"
+              fontSize={28}
+              leftOffset={0}
+            />
+          </div>
+          <div style={{ marginTop: 130, fontFamily: FONT, fontSize: 72, fontWeight: 700, color: TEAL }}>
+            TOP 10
+          </div>
+        </div>
+        {/* Right side: leaderboard */}
+        <div style={{ position: "absolute", right: "5%", top: "15%", width: 550 }}>
+          <Leaderboard rowCount={5} startFrame={0} highlightTop={3} />
+        </div>
       </Sequence>
 
       {/* ──── S27: Wireframe + "Agent Commerce" (rf2835–2985) ──── */}
