@@ -35,7 +35,10 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
 
   return (
     <div className="w-[250px] shrink-0 hidden xl:block">
-      <div className="relative">
+      {/* Fixed aspect ratio prevents layout shift when the video metadata loads
+          (without it the box height jumps from 0 to natural video height,
+          making the centered CTA visibly snap into place mid-scroll). */}
+      <div className="relative aspect-[250/700] overflow-hidden">
         {/* Background — looping mountain b-roll, mirrored on right sidebar */}
         <video
           src={SIDEBAR_VIDEO}
@@ -43,7 +46,7 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
           loop
           muted
           playsInline
-          className="w-full block"
+          className="absolute inset-0 w-full h-full object-cover"
           style={{
             transform: side === 'right' ? 'scaleX(-1)' : undefined,
           }}
@@ -55,40 +58,42 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
           style={{ background: 'linear-gradient(to bottom, transparent, white)' }}
         />
 
-        {/* Source cards — centered on image */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4">
-          {sidebarSources.map(source => {
-            const count = meta?.assetCounts?.[source.sourceId] ?? 0
-            return (
-              <Link
-                key={source.sourceId}
-                href={`/source_2/${source.sourceId}`}
-                className="group w-full bg-[#0d1117]/80 backdrop-blur-sm rounded-lg py-4 flex flex-col items-center gap-2 hover:bg-[#0d1117]/90 transition-colors"
-              >
-                <img
-                  src={`/source-imgs/icons/${source.sourceId}.png`}
-                  alt={source.name}
-                  className="w-12 h-12 rounded-full object-contain"
-                />
-                <div className="text-[13px] font-bold text-white text-center truncate max-w-full px-2">
-                  {source.name}
-                </div>
-                {count > 0 && (
-                  <div className="text-[10px] font-mono text-white/40 tabular-nums">
-                    {count} markets
+        {/* Source cards + CTA — single contiguous block, centered, no dead space */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-6">
+          <div className="flex flex-col items-center gap-3 w-full">
+            {sidebarSources.map(source => {
+              const count = meta?.assetCounts?.[source.sourceId] ?? 0
+              return (
+                <Link
+                  key={source.sourceId}
+                  href={`/source/${source.sourceId}`}
+                  className="group w-full bg-[#0d1117]/80 backdrop-blur-sm rounded-lg py-4 flex flex-col items-center gap-2 hover:bg-[#0d1117]/90 transition-colors"
+                >
+                  <img
+                    src={`/source-imgs/icons/${source.sourceId}.png`}
+                    alt={source.name}
+                    className="w-12 h-12 rounded-full object-contain"
+                  />
+                  <div className="text-[13px] font-bold text-white text-center truncate max-w-full px-2">
+                    {source.name}
                   </div>
-                )}
-              </Link>
-            )
-          })}
+                  {count > 0 && (
+                    <div className="text-[10px] font-mono text-white/40 tabular-nums">
+                      {count} markets
+                    </div>
+                  )}
+                </Link>
+              )
+            })}
 
-          {/* CTA */}
-          <Link
-            href="/vision"
-            className="w-full bg-white/90 hover:bg-white rounded-lg py-3 text-center text-[12px] font-black uppercase tracking-wider text-black transition-colors"
-          >
-            Explore Markets
-          </Link>
+            {/* CTA — sits directly beneath the source cards, never orphaned */}
+            <Link
+              href="/vision"
+              className="w-full bg-white/90 hover:bg-white rounded-lg py-3 text-center text-[12px] font-black uppercase tracking-wider text-black transition-colors mt-1"
+            >
+              Explore Markets
+            </Link>
+          </div>
         </div>
       </div>
     </div>
