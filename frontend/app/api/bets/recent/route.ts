@@ -1,5 +1,3 @@
-// Recent bets feed — reads PlayerJoined / PlayerSettled events from L3 directly.
-// Forced rebuild marker to bypass Vercel deploy cache: 2026-04-07.
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem'
 
