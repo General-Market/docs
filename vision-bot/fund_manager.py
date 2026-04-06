@@ -164,10 +164,7 @@ def load_state(funds, state_file=STATE_FILE):
 def reconcile_settled_batches(fund, executor):
     """Check all tracked batches and reconcile any that have settled on-chain."""
     for bid in list(fund.active_batches.keys()):
-        # First check: is the batch settled? The contract marks it via activeDeposits=0.
-        # The old approach checked get_active_deposit()==0 and tried to reconcile,
-        # but that fires too early (batch is still live, just empty). Now we ask the
-        # chain directly for batch state, then confirm via active deposit.
+        # Check batch exists on-chain and read its settled flag.
         try:
             batch_info = executor.get_batch_info(bid)
             if batch_info.get("paused"):
@@ -187,12 +184,20 @@ def reconcile_settled_batches(fund, executor):
                 fund.reconcile_retries.pop(bid, None)
             continue
 
-        # get_active_deposit == 0 means either settled or was never joined.
-        # We only track batches we joined, so 0 means settled.
+        # Only reconcile batches that Vision has actually settled.
+        if not batch_info.get("settled", False):
+            continue
+
+        # Verify vault still has an active deposit to reconcile
         try:
             dep = fund.vault.get_active_deposit(bid)
-            if dep > 0:
-                continue  # still active
+            if dep == 0:
+                # Already reconciled — clean up tracking
+                log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
+                fund.active_batches.pop(bid, None)
+                fund.joined_batch_ids.discard(bid)
+                fund.reconcile_retries.pop(bid, None)
+                continue
         except Exception:
             continue
 
@@ -203,7 +208,7 @@ def reconcile_settled_batches(fund, executor):
         except Exception as e:
             log.debug("[%s] Could not read payout for batch %d: %s", fund.name, bid, e)
 
-        # Settled. Try to reconcile.
+        # Settled on-chain, vault has active deposit — reconcile now.
         try:
             fund.vault.reconcile(bid, payout)
             deposited = fund.active_batches.get(bid, 0)

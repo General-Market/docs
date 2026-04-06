@@ -100,6 +100,7 @@ VISION_ABI = [
                     {"name": "lockOffset", "type": "uint256"},
                     {"name": "createdAtTick", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
+                    {"name": "settled", "type": "bool"},
                 ],
             }
         ],
@@ -260,6 +261,7 @@ class Executor:
             "lockOffset": info[4],
             "createdAtTick": info[5],
             "paused": info[6],
+            "settled": info[7],
         }
 
     def next_batch_id(self) -> int:
