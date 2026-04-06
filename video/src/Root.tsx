@@ -32,6 +32,8 @@ import {
   councilSideBySideMeta,
   councilSceneMetas,
 } from "./compositions/replicates/council/VirtualsReplicateComposition";
+import { GeneralMarket } from "./compositions/general-market/GeneralMarket";
+import { TOTAL_DURATION as GENERAL_MARKET_DURATION } from "./compositions/general-market/theme";
 
 // Per-scene compositions are hidden from the studio sidebar by default.
 // Set REMOTION_SHOW_SCENES=1 in the environment to register them — needed
@@ -87,6 +89,16 @@ const shorts: ShortConfig[] = [];
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ═══ GENERAL MARKET — explainer video ═══ */}
+      <Composition
+        id="GeneralMarket"
+        component={GeneralMarket}
+        durationInFrames={GENERAL_MARKET_DURATION}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+
       {/* ═══ VISION VC — main composition ═══ */}
       <Composition
         id={visionVCMeta.id}
