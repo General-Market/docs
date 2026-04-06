@@ -14,7 +14,10 @@ interface SourceBatch {
   playerCount: number
   totalPool: number
   avgPnl: number
+  /** Top earner's net P&L (signed). */
   topEarnerPnl?: number
+  /** Largest gross payout in the round (>= 0). */
+  topPayout?: number
   topEarnerAddress?: string | null
   timestamp: string
   bettingStart?: string | null

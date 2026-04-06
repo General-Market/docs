@@ -2271,7 +2271,13 @@ struct SourceBatchHistoryEntry {
     player_count: i64,
     total_pool: f64,
     avg_pnl: f64,
+    /// Top earner's net P&L (payout minus deposit). Can be 0 or negative.
     top_earner_pnl: f64,
+    /// Largest gross payout any player received in this round. Always >= 0.
+    /// Distinct from top_earner_pnl: a player who deposited $1 and was paid
+    /// $1 has payout = $1 but pnl = $0. The "TOP PAYOUT" UI column reads
+    /// this field, not top_earner_pnl.
+    top_payout: f64,
     top_earner_address: Option<String>,
     timestamp: String,
     betting_start: Option<String>,
@@ -2297,6 +2303,8 @@ struct SettledHistoryRow {
     total_deposited: Option<String>,
     avg_abs_pnl: Option<String>,
     max_pnl: Option<String>,
+    /// MAX(payout) across all players in the round — gross winnings, not pnl.
+    max_payout: Option<String>,
     top_earner_address: Option<String>,
 }
 
@@ -2337,9 +2345,10 @@ async fn source_batch_history(
                 SUM(vrp.deposited::numeric)::text AS total_deposited,
                 AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
                 MAX(vrp.pnl::numeric)::text AS max_pnl,
+                MAX(vrp.payout::numeric)::text AS max_payout,
                 (SELECT sub.player FROM vision_round_players sub
                  WHERE sub.batch_id = vrp.batch_id
-                 ORDER BY sub.pnl::numeric DESC LIMIT 1) AS top_earner_address
+                 ORDER BY sub.payout::numeric DESC LIMIT 1) AS top_earner_address
          FROM vision_round_players vrp
          JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
          LEFT JOIN vision_batches vb ON vrp.batch_id = vb.id
@@ -2364,6 +2373,9 @@ async fn source_batch_history(
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
         let top_pnl = r.max_pnl.as_deref()
+            .and_then(|s| s.parse::<f64>().ok())
+            .unwrap_or(0.0) / decimals;
+        let top_payout = r.max_payout.as_deref()
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
 
@@ -2391,6 +2403,7 @@ async fn source_batch_history(
             total_pool: (total_dep * 100.0).round() / 100.0,
             avg_pnl: (avg_abs_pnl * 100.0).round() / 100.0,
             top_earner_pnl: (top_pnl * 100.0).round() / 100.0,
+            top_payout: (top_payout * 100.0).round() / 100.0,
             top_earner_address: r.top_earner_address,
             timestamp: r.settled_at.to_rfc3339(),
             betting_start: computed_start,

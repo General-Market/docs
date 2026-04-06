@@ -15,7 +15,12 @@ interface SourceBatch {
   playerCount: number
   totalPool: number
   avgPnl: number
+  /** Top earner's net P&L. Can be 0 or negative. */
   topEarnerPnl?: number
+  /** Largest gross payout any player received. Always >= 0. The "TOP PAYOUT"
+   *  column reads this — distinct from PnL. A round can have $0 PnL for the
+   *  top earner but still a real payout if everyone got their stake back. */
+  topPayout?: number
   topEarnerAddress?: string | null
   timestamp: string
   settledAt?: string | null
@@ -146,8 +151,18 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                 </div>
 
                 {group.batches.map(batch => {
-                  const pnl = batch.topEarnerPnl ?? 0
-                  const pnlPositive = pnl > 0
+                  // Top payout = largest gross winnings paid to any player.
+                  // The backend exposes `topPayout` (>= 0). Fall back to deriving
+                  // it from PnL + average deposit per player if the field is
+                  // missing — for any oracle still on the old shape.
+                  const rawPayout = batch.topPayout
+                  const fallbackPayout =
+                    batch.topEarnerPnl != null && batch.playerCount > 0
+                      ? batch.topEarnerPnl + batch.totalPool / batch.playerCount
+                      : undefined
+                  const payout = rawPayout ?? fallbackPayout
+                  const hasPlayers = batch.playerCount > 0
+                  const showPayout = hasPlayers && payout != null && payout > 0
                   const addr = batch.topEarnerAddress
 
                   return (
@@ -185,20 +200,15 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                         {batch.playerCount}
                       </div>
 
-                      {/* Top Payout */}
+                      {/* Top Payout — gross winnings for the top player.
+                          Em-dash only when nobody played the round. */}
                       <div
                         className={cn(
                           'text-right text-[12px] font-mono tabular-nums font-bold truncate',
-                          pnlPositive
-                            ? 'text-color-up'
-                            : pnl < 0
-                              ? 'text-color-down'
-                              : 'text-text-muted',
+                          showPayout ? 'text-color-up' : 'text-text-muted',
                         )}
                       >
-                        {pnl !== 0
-                          ? `${pnlPositive ? '+' : ''}$${Math.abs(pnl).toFixed(2)}`
-                          : '\u2014'}
+                        {showPayout ? `$${payout!.toFixed(2)}` : '\u2014'}
                       </div>
                     </div>
                   )
