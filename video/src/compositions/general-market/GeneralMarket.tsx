@@ -8,6 +8,7 @@ import { Scene04Categories } from './scenes/Scene04Categories';
 import { Scene05Settlement } from './scenes/Scene05Settlement';
 import { Scene06Formula } from './scenes/Scene06Formula';
 import { SceneOutro } from './scenes/SceneOutro';
+import { AudioTrack } from './AudioTrack';
 
 export const GeneralMarket: React.FC = () => {
   const b1 = LAYOUT.beat1Duration;
@@ -49,6 +50,7 @@ export const GeneralMarket: React.FC = () => {
       <Sequence from={startOutro} durationInFrames={outro}>
         <SceneOutro />
       </Sequence>
+      <AudioTrack />
     </AbsoluteFill>
   );
 };
