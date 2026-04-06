@@ -647,7 +647,7 @@ VAULT_ABI = [
     {"type": "function", "name": "claimRedeem", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
     {"type": "function", "name": "joinBatch", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "uint256"}, {"type": "uint256"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
     {"type": "function", "name": "updateBitmap", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
-    {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}, {"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
 ]
 
 FACTORY_ABI = [
@@ -769,15 +769,15 @@ class VaultExecutor:
     def reconcile(self, batch_id: int, settlement_payout: int = 0):
         """Call vault.reconcile after settlement.
 
-        settlement_payout: the net USDC the vault received from Vision.settleBatch.
-        Used for accurate PnL reporting in the Reconciled event.
-        Pass 0 if unknown — PnL will show as -deposited (conservative).
+        The deployed VisionVault uses the single-arg signature reconcile(uint256).
+        settlement_payout is accepted for backwards compatibility but ignored —
+        the contract derives PnL from totalAssets() before/after the decrement.
         """
         tx = self.vault.functions.reconcile(
-            batch_id, settlement_payout
+            batch_id
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
-        logger.info("Vault reconciled batch %d payout=%d (tx: %s)", batch_id, settlement_payout, tx_hash.hex()[:16])
+        logger.info("Vault reconciled batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
 
     # ── reads ──
 
