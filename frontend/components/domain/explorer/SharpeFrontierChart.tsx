@@ -77,6 +77,7 @@ export function SharpeFrontierChart() {
       subtitle={`${scatterData.length} ${t('explorer.itp_section.simulations_plotted')}`}
       loading={loading}
       className="md:col-span-2"
+      bodyClassName="min-h-[260px]"
     >
       {scatterData.length > 0 ? (
         <div>

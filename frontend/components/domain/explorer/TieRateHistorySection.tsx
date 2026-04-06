@@ -141,6 +141,7 @@ export function TieRateHistorySection() {
           : `${summary.hours} hours · ${summary.totalRounds.toLocaleString()} rounds · ${summary.avgTie.toFixed(1)}% avg`
       }
       loading={loading}
+      bodyClassName="min-h-[200px]"
     >
       {noData ? (
         <div className="h-[260px] flex items-center justify-center">

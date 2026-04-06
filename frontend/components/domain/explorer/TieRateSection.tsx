@@ -30,6 +30,7 @@ export function TieRateSection() {
     <ExplorerChartCard
       title="Tie Rate by Source"
       subtitle={`${data.length} sources \u00b7 ${totalRounds.toLocaleString()} rounds \u00b7 ${avgTie.toFixed(1)}% avg tie rate`}
+      bodyClassName="min-h-[200px]"
     >
       <div className="p-4 space-y-0.5 max-h-[500px] overflow-y-auto" style={{ overflowY: 'auto' }}>
         {[...data].sort((a, b) => a.pct - b.pct).map(d => (

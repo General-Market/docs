@@ -41,11 +41,11 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
   const t = useTranslations('pages')
   const navList = useSSENav()
 
-  // Top 10 by AUM
+  // Top 5 by AUM — keeps ITP Overview table within the 200px card body
   const topItps = useMemo(() => {
     return [...navList]
       .sort((a, b) => (b.aum_usd || 0) - (a.aum_usd || 0))
-      .slice(0, 10)
+      .slice(0, 5)
   }, [navList])
 
   // Summary stats
@@ -106,7 +106,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
               </div>
             </div>
             {/* Top ITPs table */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border-light">

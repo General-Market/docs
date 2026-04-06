@@ -8,9 +8,16 @@ interface ExplorerChartCardProps {
   loading?: boolean
   children: ReactNode
   className?: string
+  /**
+   * Tailwind classes applied to the body wrapper around `children`.
+   * Default `h-[200px]` gives Recharts ResponsiveContainer (`height="100%"`)
+   * a definite parent height. Pass `min-h-[200px]` (or similar) for cards
+   * that contain natural-flow content like scrollable lists or grids.
+   */
+  bodyClassName?: string
 }
 
-export function ExplorerChartCard({ title, subtitle, loading, children, className = '' }: ExplorerChartCardProps) {
+export function ExplorerChartCard({ title, subtitle, loading, children, className = '', bodyClassName = 'h-[200px]' }: ExplorerChartCardProps) {
   return (
     <div
       className={`
@@ -38,7 +45,7 @@ export function ExplorerChartCard({ title, subtitle, loading, children, classNam
             <div className="w-6 h-6 border-2 border-white/10 border-t-white/50 rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="min-h-[200px]">{children}</div>
+          <div className={bodyClassName}>{children}</div>
         )}
       </div>
     </div>
