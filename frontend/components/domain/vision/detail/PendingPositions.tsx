@@ -33,7 +33,7 @@ export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProp
 
   const roundMap = new Map(rounds.map((r) => [r.batchId, r]))
   const totalAtStake = positions.reduce(
-    (sum, p) => sum + parseFloat(formatUnits(p.deposit, VISION_USDC_DECIMALS)),
+    (sum, p) => sum + parseFloat(formatUnits(p.totalDeposited, VISION_USDC_DECIMALS)),
     0,
   )
 
@@ -65,18 +65,18 @@ export function PendingPositions({ rounds, activeBatchId }: PendingPositionsProp
       <div className="flex flex-col gap-px bg-color-warning/10 border border-color-warning/20">
         {positions.map((pos) => {
           const round = roundMap.get(pos.batchId)
-          const deposit = parseFloat(formatUnits(pos.deposit, VISION_USDC_DECIMALS))
+          const deposit = parseFloat(formatUnits(pos.totalDeposited, VISION_USDC_DECIMALS))
           return (
             <div
               key={pos.batchId}
               className="flex items-center gap-3 bg-white px-4 py-3"
             >
-              {/* Batch ID — subdued */}
+              {/* Batch ID, subdued */}
               <span className="text-caption font-mono font-bold text-text-muted tabular-nums w-16 shrink-0">
                 #{pos.batchId}
               </span>
 
-              {/* Deposit — the hero number */}
+              {/* Deposit, the hero number */}
               <div className="flex items-baseline gap-1 flex-1 min-w-0">
                 <span className="text-[20px] font-black font-mono tabular-nums text-black tracking-tight leading-none">
                   {deposit.toFixed(2)}

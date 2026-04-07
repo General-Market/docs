@@ -48,7 +48,7 @@ export function FeesCollectedChart() {
   const { data: rawFees, isLoading: feesLoading } = useReadContract({
     address: visionAddress,
     abi: VISION_ABI,
-    functionName: 'accumulatedFees',
+    functionName: 'accumulatedRealFees',
     chainId: indexL3.id,
     query: {
       enabled: visionAddress !== '0x0000000000000000000000000000000000000000',

@@ -38,13 +38,12 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   const pos = position as {
     bitmapHash: string
-    deposit: bigint
+    configHash: string
     joinTimestamp: bigint
     totalDeposited: bigint
   } | undefined
 
   const totalDeposited = pos?.totalDeposited ?? 0n
-  const deposit = pos?.deposit ?? 0n
 
   return (
     <SpringBackdrop className={glass.backdrop} onClick={onClose}>
@@ -67,14 +66,8 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
               {/* Position overview */}
               <div className={`${glass.section} p-4 space-y-3`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Deposit</span>
-                  <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                    {deposit > 0n ? parseFloat(formatUnits(deposit, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
-                  <span className="text-sm text-text-secondary tabular-nums font-mono">
+                  <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                     {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>

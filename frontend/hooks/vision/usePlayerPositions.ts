@@ -8,7 +8,6 @@ import { useDeployment } from '@/hooks/useDeployment'
 
 export interface PositionEntry {
   batchId: number
-  deposit: bigint
   totalDeposited: bigint
   joinTimestamp: bigint
   bitmapHash: string
@@ -50,10 +49,9 @@ export function usePlayerPositions(batchIds: number[]) {
       const res = data[i]
       if (res.status !== 'success') continue
       const pos = res.result as any
-      if (!pos || pos.deposit === 0n) continue
+      if (!pos || pos.totalDeposited === 0n) continue
       result.push({
         batchId: batchIds[i],
-        deposit: pos.deposit,
         totalDeposited: pos.totalDeposited,
         joinTimestamp: pos.joinTimestamp,
         bitmapHash: pos.bitmapHash,

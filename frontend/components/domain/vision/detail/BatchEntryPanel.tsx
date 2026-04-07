@@ -249,7 +249,6 @@ export default function BatchEntryPanel({
       batchId: BigInt(activeBatch.id),
       configHash: liveConfigHash!,
       depositAmount,
-      stakePerTick: depositAmount, // round-based: deposit = stake
       bets,
       marketCount: bitmapMarketCount,
     })
@@ -321,7 +320,7 @@ export default function BatchEntryPanel({
     <div>
       {/* -- Active Position Banner (round-based) -- */}
       {batchExistsOnChain && isJoined && position && (() => {
-        const deposit = position.deposit
+        const deposit = position.totalDeposited
         const depositNum = parseFloat(formatUnits(deposit, VISION_USDC_DECIMALS))
         return (
           <div className="border-2 border-emerald-400 bg-emerald-50 px-4 py-3 mb-1">

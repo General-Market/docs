@@ -6,7 +6,6 @@ import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'
 
 export interface PlayerPosition {
-  deposit: bigint
   totalDeposited: bigint
   joinTimestamp: bigint
   bitmapHash: string
@@ -33,7 +32,7 @@ export function usePlayerPosition(batchId: number | undefined) {
 
   const pos = data as {
     bitmapHash: string
-    deposit: bigint
+    configHash: string
     joinTimestamp: bigint
     totalDeposited: bigint
   } | undefined
@@ -42,11 +41,10 @@ export function usePlayerPosition(batchId: number | undefined) {
   // Check both isError (query-level) AND error (set on background refetch failure
   // even when TanStack Query keeps stale data with status: 'success').
   const hasError = isError || error !== null
-  const isJoined = !hasError && pos !== undefined && pos.deposit > 0n
+  const isJoined = !hasError && pos !== undefined && pos.totalDeposited > 0n
 
   return {
     position: isJoined ? {
-      deposit: pos!.deposit,
       totalDeposited: pos!.totalDeposited,
       joinTimestamp: pos!.joinTimestamp,
       bitmapHash: pos!.bitmapHash,

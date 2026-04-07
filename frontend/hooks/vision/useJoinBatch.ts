@@ -15,8 +15,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   BatchPaused: 'This batch is paused.',
   AlreadyJoined: 'You already joined this round.',
   TickLocked: 'Round is locked — predictions close before settlement.',
-  StakeBelowMinimum: 'Stake too low. Minimum is 0.1 USDC.',
-  InsufficientDeposit: 'Deposit must be at least equal to your stake.',
+  DepositBelowMinimum: 'Deposit too low. Minimum is 0.1 USDC.',
+  NonZeroSum: 'Player count incompatible with payout split.',
   Unauthorized: 'Not authorized for this action.',
   BatchAlreadySettled: 'This batch has already been settled.',
 }
@@ -45,7 +45,6 @@ export interface UseJoinBatchParams {
   batchId: bigint
   configHash: `0x${string}`
   depositAmount: bigint
-  stakePerTick: bigint
   bets: BetDirection[]
   marketCount: number
 }
@@ -100,7 +99,7 @@ const ERC20_ABI = [
  * Flow:
  * 1. Encode bets into bitmap, compute keccak256 hash
  * 2. Approve USDC to Vision contract (if needed)
- * 3. Call Vision.joinBatchDirect(batchId, configHash, depositAmount, depositAmount, bitmapHash)
+ * 3. Call Vision.joinBatchDirect(batchId, configHash, depositAmount, bitmapHash)
  *
  * After joinBatchDirect succeeds, the caller should use useSubmitBitmap to reveal
  * the actual bitmap bytes to the oracle nodes.
@@ -217,7 +216,7 @@ export function useJoinBatch(): UseJoinBatchReturn {
       address: visionAddress,
       abi: VISION_ABI,
       functionName: 'joinBatchDirect',
-      args: [params.batchId, params.configHash, params.depositAmount, params.depositAmount, hash],
+      args: [params.batchId, params.configHash, params.depositAmount, hash],
     })
   }, [address, currentChainId, switchChainAsync, allowance, writeApprove, writeJoin, usdcAddress, visionAddress])
 
@@ -231,10 +230,10 @@ export function useJoinBatch(): UseJoinBatchReturn {
       address: visionAddress,
       abi: VISION_ABI,
       functionName: 'joinBatchDirect',
-      args: [pendingParams.batchId, pendingParams.configHash, pendingParams.depositAmount, pendingParams.depositAmount, bitmapHash],
+      args: [pendingParams.batchId, pendingParams.configHash, pendingParams.depositAmount, bitmapHash],
     })
     setPendingParams(null)
-  }, [isApproveSuccess, pendingParams, bitmapHash, writeJoin, resetApprove])
+  }, [isApproveSuccess, pendingParams, bitmapHash, writeJoin, resetApprove, visionAddress])
 
   // JoinBatchDirect success -> done
   useEffect(() => {

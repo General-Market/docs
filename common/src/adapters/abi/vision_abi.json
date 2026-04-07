@@ -246,11 +246,6 @@
             "internalType": "bytes32"
           },
           {
-            "name": "deposit",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
             "name": "joinTimestamp",
             "type": "uint256",
             "internalType": "uint256"
@@ -281,11 +276,6 @@
       },
       {
         "name": "depositAmount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "stakePerTick",
         "type": "uint256",
         "internalType": "uint256"
       },
@@ -744,16 +734,6 @@
   },
   {
     "type": "error",
-    "name": "InsolventPayout",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InsufficientDeposit",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidArrayLength",
     "inputs": []
   },
@@ -784,7 +764,12 @@
   },
   {
     "type": "error",
-    "name": "StakeBelowMinimum",
+    "name": "DepositBelowMinimum",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NonZeroSum",
     "inputs": []
   },
   {
