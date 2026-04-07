@@ -8,7 +8,7 @@ import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
-import type { VaultInfo } from '@/hooks/vaults/useVaults'
+import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
 
 const STRATEGY_META: Record<string, { label: string; color: string }> = {
@@ -491,13 +491,24 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     [sourceId],
   )
 
-  // Global vault state comes from data-node SSE (`vision-vaults` topic).
-  // Per-user position comes from the same provider (`vault-positions` topic).
-  const visionVaults = useSSEVisionVaults()
+  // Wagmi is the source of truth for vault state — reads the chain via the
+  // factory address in deployment.json. SSE is kept as a secondary signal so
+  // live user positions and the inter-cycle refresh still work, and so the
+  // display resolver has something to fall back on while the first multicall
+  // settles on a cold page load.
+  const { vaults: chainVaults } = useVaults()
   const vaultPositions = useSSEUserVaultPositions()
+  const visionVaults = useSSEVisionVaults()
 
-  // Index vault snapshot by lowercased address for O(1) lookup.
-  const visionVaultByAddress = useMemo(() => {
+  // Wagmi vault info indexed by lowercased address.
+  const chainVaultByAddress = useMemo(() => {
+    const map: Record<string, VaultInfo> = {}
+    for (const v of chainVaults) map[v.address.toLowerCase()] = v
+    return map
+  }, [chainVaults])
+
+  // SSE fallback snapshots — only used when wagmi hasn't returned yet.
+  const sseVaultByAddress = useMemo(() => {
     const map: Record<string, { totalAssets: bigint; totalSupply: bigint }> = {}
     for (const v of visionVaults) {
       map[v.address.toLowerCase()] = {
@@ -520,22 +531,28 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     [vaultPositions],
   )
 
-  const getVaultData = useCallback((fund: any) => {
-    const snapshot = visionVaultByAddress[(fund.vault as string).toLowerCase()]
-    const totalAssets = snapshot?.totalAssets ?? 0n
-    const totalSupply = snapshot?.totalSupply ?? 0n
-    return buildVaultInfo(fund, totalAssets, totalSupply)
-  }, [visionVaultByAddress])
+  const getVaultData = useCallback((fund: any): VaultInfo => {
+    const key = (fund.vault as string).toLowerCase()
+    const chain = chainVaultByAddress[key]
+    if (chain) return chain
+    const sse = sseVaultByAddress[key]
+    if (sse) return buildVaultInfo(fund, sse.totalAssets, sse.totalSupply)
+    return buildVaultInfo(fund, 0n, 0n)
+  }, [chainVaultByAddress, sseVaultByAddress])
 
   const sortedFunds = useMemo(() => {
     return [...funds].sort((a: any, b: any) => {
-      const snapA = visionVaultByAddress[(a.vault as string).toLowerCase()]
-      const snapB = visionVaultByAddress[(b.vault as string).toLowerCase()]
-      const tvlA = snapA ? Number(snapA.totalAssets) : 0
-      const tvlB = snapB ? Number(snapB.totalAssets) : 0
-      return tvlB - tvlA
+      const aKey = (a.vault as string).toLowerCase()
+      const bKey = (b.vault as string).toLowerCase()
+      const tvlA = chainVaultByAddress[aKey]?.totalAssets
+        ?? sseVaultByAddress[aKey]?.totalAssets
+        ?? 0n
+      const tvlB = chainVaultByAddress[bKey]?.totalAssets
+        ?? sseVaultByAddress[bKey]?.totalAssets
+        ?? 0n
+      return tvlB > tvlA ? 1 : tvlB < tvlA ? -1 : 0
     })
-  }, [funds, visionVaultByAddress])
+  }, [funds, chainVaultByAddress, sseVaultByAddress])
 
   if (sortedFunds.length === 0) return null
 
