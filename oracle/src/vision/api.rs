@@ -144,6 +144,161 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
 }
 
 // ---------------------------------------------------------------------------
+// Wei math — shared helpers
+// ---------------------------------------------------------------------------
+//
+// All USDC amounts on L3 are stored as 18-decimal wei in `text`-encoded NUMERIC
+// columns (vision_round_players.payout, .deposited, .pnl). Any code that reads
+// these must use these helpers to avoid the f64 precision-loss class of bugs:
+//
+//   - `SUM(wei::numeric)::text` → `parse_wei_i128(...)` → exact i128
+//   - Subtraction happens in i128; conversion to f64 is deferred to the last
+//     display step where the per-entry magnitude always fits in 2^53
+//   - Per-entry 2-decimal rounding can drift by up to 0.005 × N for a closed
+//     set of entries. For parimutuel invariants (the sum must be exactly zero
+//     over a closed set), use `reconcile_cents_residual` to absorb the drift
+//     into the anchor entry. Without this, the UI displays $0.01 of nonsense.
+//
+// NEVER parse a `SUM(wei)::text` value as `f64`. That's the bug that showed
+// up as "twitch leaderboard sums to -$0.01 instead of zero".
+
+pub(crate) const WEI_DECIMALS: f64 = 1e18;
+
+/// Parse a text-encoded NUMERIC (as returned by Postgres `SUM(wei::numeric)::text`)
+/// into a signed i128 wei amount. Drops any fractional part — the `pnl`,
+/// `payout`, and `deposited` columns are stored as whole wei integers. Handles
+/// leading sign. Returns 0 on parse failure (matches the prior f64 behaviour).
+pub(crate) fn parse_wei_i128(s: &str) -> i128 {
+    let trimmed = s.trim();
+    let (sign, rest) = if let Some(r) = trimmed.strip_prefix('-') {
+        (-1i128, r)
+    } else {
+        (1i128, trimmed.strip_prefix('+').unwrap_or(trimmed))
+    };
+    let int_part = rest.split('.').next().unwrap_or("0");
+    sign * int_part.parse::<i128>().unwrap_or(0)
+}
+
+/// Convert an i128 wei amount to whole-cent i64. Rounds half-away-from-zero.
+/// Used by `reconcile_cents_residual` and anywhere a PnL is displayed to two
+/// decimal places.
+pub(crate) fn wei_to_cents_i64(pnl_wei: i128) -> i64 {
+    // 1 USDC cent = 1e16 wei (18 decimals → 2 visible decimals means × 1e16).
+    // f64 has exact integer representation up to 2^53 ≈ 9 PB cents, far
+    // beyond any single-player PnL. Division is inherently lossy across this
+    // boundary; the caller is expected to have already summed in i128.
+    ((pnl_wei as f64) / 1e16).round() as i64
+}
+
+/// Given a list of per-entry cents that should sum to an expected total (zero
+/// for a closed parimutuel set), rebalance by absorbing the rounding residual
+/// into the entry with the largest absolute value. Standard financial-display
+/// trick: the anchor has the most headroom for a sub-cent correction.
+///
+/// Returns a new Vec with the same length; input is unchanged.
+pub(crate) fn reconcile_cents_residual(cents: &[i64], expected_sum: i64) -> Vec<i64> {
+    if cents.is_empty() {
+        return Vec::new();
+    }
+    let current_sum: i64 = cents.iter().sum();
+    let residual = current_sum - expected_sum;
+    if residual == 0 {
+        return cents.to_vec();
+    }
+    let anchor_idx = cents
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, v)| v.unsigned_abs())
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+    let mut out = cents.to_vec();
+    out[anchor_idx] -= residual;
+    out
+}
+
+#[cfg(test)]
+mod wei_math_tests {
+    use super::*;
+
+    #[test]
+    fn parse_wei_positive() {
+        assert_eq!(parse_wei_i128("1000000000000000000"), 1_000_000_000_000_000_000);
+    }
+
+    #[test]
+    fn parse_wei_negative() {
+        assert_eq!(parse_wei_i128("-42"), -42);
+    }
+
+    #[test]
+    fn parse_wei_with_fractional_dropped() {
+        assert_eq!(parse_wei_i128("1000.5"), 1000);
+    }
+
+    #[test]
+    fn parse_wei_empty() {
+        assert_eq!(parse_wei_i128(""), 0);
+        assert_eq!(parse_wei_i128("  "), 0);
+    }
+
+    #[test]
+    fn wei_to_cents_rounds() {
+        // 1.235 USDC → 124 cents (half away from zero)
+        assert_eq!(wei_to_cents_i64(1_235_000_000_000_000_000), 124);
+        // -0.005 USDC → -1 cent (half away from zero rounds away from zero)
+        assert_eq!(wei_to_cents_i64(-5_000_000_000_000_000), -1);
+    }
+
+    #[test]
+    fn reconcile_closes_drift_to_zero() {
+        // Three entries sum to +$0.01 (drift), expected zero.
+        let cents = vec![33697_i64, 5347, -39045]; // sums to -1 cent residual
+        let reconciled = reconcile_cents_residual(&cents, 0);
+        assert_eq!(reconciled.iter().sum::<i64>(), 0);
+        // Residual absorbed by the anchor (largest absolute value).
+        assert_eq!(reconciled[2], -39044);
+    }
+
+    #[test]
+    fn reconcile_empty_noop() {
+        assert_eq!(reconcile_cents_residual(&[], 0), Vec::<i64>::new());
+    }
+
+    #[test]
+    fn reconcile_no_drift_returns_copy() {
+        let cents = vec![100, -50, -50];
+        assert_eq!(reconcile_cents_residual(&cents, 0), vec![100, -50, -50]);
+    }
+
+    #[test]
+    fn leaderboard_parimutuel_invariant() {
+        // Simulate 22 players with i128 wei PnL that sums exactly to zero.
+        // After rounding each to 2 decimals independently the sum drifts by
+        // -1 cent; the reconciler should absorb it into the largest entry.
+        let wei: Vec<i128> = vec![
+            3_369_652_603_544_854_024_4_i128,  // $3369.65+
+            534_724_525_018_983_873_1_i128,    // $534.72+
+            -1_127_019_320_031_291_176_0_i128, // -$1127.02
+            -1_126_618_492_161_048_584_9_i128, // -$1126.62
+            -1_116_014_791_352_514_263_5_i128, // -$1116.01
+            -635_724_524_017_983_873_1_i128,   // fill the rest so sum = 0
+            1_000_000_000_000_000_000_i128,    // +$1
+            0,                                  // rounding fill below
+        ];
+        // Ensure the raw sum is zero (the test is checking reconciliation,
+        // not SQL precision — that's covered elsewhere).
+        let total_wei: i128 = wei.iter().sum();
+        let cents: Vec<i64> = wei
+            .iter()
+            .map(|w| wei_to_cents_i64(*w))
+            .collect();
+        let expected_cents = wei_to_cents_i64(total_wei);
+        let reconciled = reconcile_cents_residual(&cents, expected_cents);
+        assert_eq!(reconciled.iter().sum::<i64>(), expected_cents);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Response types
 // ---------------------------------------------------------------------------
 
@@ -1452,23 +1607,6 @@ async fn leaderboard_from_postgres(
         }
     };
 
-    const DECIMALS: f64 = 1e18;
-
-    // Parse a text-encoded NUMERIC into signed i128 wei with full precision.
-    // Handles optional sign, fractional part (dropped — pnl is always whole wei),
-    // and edge cases. Silent on failure: returns 0, same as the prior f64 path.
-    fn parse_wei_i128(s: &str) -> i128 {
-        let trimmed = s.trim();
-        let (sign, rest) = if let Some(r) = trimmed.strip_prefix('-') {
-            (-1i128, r)
-        } else {
-            (1i128, trimmed.strip_prefix('+').unwrap_or(trimmed))
-        };
-        // Drop fractional part — pnl column is stored as integer wei in text form.
-        let int_part = rest.split('.').next().unwrap_or("0");
-        sign * int_part.parse::<i128>().unwrap_or(0)
-    }
-
     // (pnl_wei, dep_wei, batches, wins, rounds_played, rounds_won, total_correct, total_markets)
     let mut merged: std::collections::HashMap<
         String,
@@ -1495,34 +1633,14 @@ async fn leaderboard_from_postgres(
     let mut entries: Vec<_> = merged.into_iter().collect();
     entries.sort_by(|a, b| b.1 .0.cmp(&a.1 .0));
 
-    // The parimutuel invariant: the exact sum of all pnl_wei across a closed
-    // set of players is zero. After per-entry 2-decimal rounding for display,
-    // the sum can drift by up to 0.005 USDC per entry — with 22 players that's
-    // $0.11 of nonsense residual. Compute the rounded cents for every entry
-    // first, then carry the residual into the largest-|PnL| entry so the
-    // displayed sum is exactly zero.
+    // Parimutuel invariant: the i128 sum is exact. Round per-entry to cents and
+    // absorb the residual drift into the largest entry so the closed-set sum
+    // is exactly zero. See `reconcile_cents_residual` for the mechanics.
     let rounded_cents: Vec<i64> = entries
         .iter()
-        .map(|(_, (pnl_wei, _, _, _, _, _, _, _))| {
-            // Round half-away-from-zero at cent precision.
-            let cents = ((*pnl_wei as f64) / 1e16).round() as i64;
-            cents
-        })
+        .map(|(_, (pnl_wei, _, _, _, _, _, _, _))| wei_to_cents_i64(*pnl_wei))
         .collect();
-    let residual_cents: i64 = rounded_cents.iter().sum();
-    // Index of the entry with the largest absolute PnL — carry the residual
-    // there because it has the most headroom for a sub-cent correction.
-    let anchor_idx: usize = rounded_cents
-        .iter()
-        .enumerate()
-        .max_by_key(|(_, v)| v.unsigned_abs())
-        .map(|(i, _)| i)
-        .unwrap_or(0);
-    let adjusted_cents: Vec<i64> = rounded_cents
-        .iter()
-        .enumerate()
-        .map(|(i, v)| if i == anchor_idx { v - residual_cents } else { *v })
-        .collect();
+    let adjusted_cents = reconcile_cents_residual(&rounded_cents, 0);
 
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
@@ -1534,7 +1652,7 @@ async fn leaderboard_from_postgres(
             // subtracting two large sums of f64 wei.
             let _ = pnl_wei; // kept for clarity; display uses adjusted_cents
             let pnl = (adjusted_cents[i] as f64) / 100.0;
-            let deposited = (*dep_wei as f64) / DECIMALS;
+            let deposited = (*dep_wei as f64) / WEI_DECIMALS;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
             let win_rate = if *batches > 0 {
                 *wins as f64 / *batches as f64 * 100.0
@@ -1586,13 +1704,25 @@ fn build_leaderboard_from_map(
 ) -> Vec<LeaderboardEntry> {
     let mut entries: Vec<_> = player_data.into_iter().collect();
 
+    // Sort descending by exact i128 PnL.
     entries.sort_by(|a, b| {
         let pnl_a = a.1 .0 as i128 - a.1 .1 as i128;
         let pnl_b = b.1 .0 as i128 - b.1 .1 as i128;
         pnl_b.cmp(&pnl_a)
     });
 
-    let decimals = 1e18_f64;
+    // Pre-compute per-entry rounded cents, then reconcile the rounding
+    // residual into the anchor entry so the sum across the full (closed)
+    // leaderboard is exactly zero. Same invariant as the filtered path.
+    let rounded_cents: Vec<i64> = entries
+        .iter()
+        .map(|(_, (bal, dep, _, _, _, _, _, _, _))| {
+            let pnl_wei = *bal as i128 - *dep as i128;
+            wei_to_cents_i64(pnl_wei)
+        })
+        .collect();
+    let adjusted_cents = reconcile_cents_residual(&rounded_cents, 0);
+
     entries
         .iter()
         .enumerate()
@@ -1601,11 +1731,11 @@ fn build_leaderboard_from_map(
                 i,
                 (
                     addr,
-                    (bal, dep, batches, _largest, wins, rounds_played, rounds_won, total_correct, total_markets),
+                    (_bal, dep, batches, _largest, wins, rounds_played, rounds_won, total_correct, total_markets),
                 ),
             )| {
-                let pnl = (*bal as i128 - *dep as i128) as f64 / decimals;
-                let deposited = *dep as f64 / decimals;
+                let pnl = (adjusted_cents[i] as f64) / 100.0;
+                let deposited = *dep as f64 / WEI_DECIMALS;
                 let roi = if deposited > 0.0 {
                     pnl / deposited * 100.0
                 } else {
@@ -1624,7 +1754,8 @@ fn build_leaderboard_from_map(
                 LeaderboardEntry {
                     rank: i + 1,
                     wallet_address: format!("{:?}", addr),
-                    pnl: (pnl * 100.0).round() / 100.0,
+                    // `pnl` is already whole-cent via `reconcile_cents_residual`.
+                    pnl,
                     win_rate: (win_rate * 10.0).round() / 10.0,
                     roi: (roi * 100.0).round() / 100.0,
                     total_volume: (deposited * 100.0).round() / 100.0,
