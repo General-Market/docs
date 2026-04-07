@@ -1,16 +1,14 @@
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { MetallicScene } from "./shared";
-import { WovenMetallicScene } from "./woven";
 import { silverIso, emeraldBrand, obsidianGold, frost, prismatic } from "./configs";
 import { pearl, frostedAcrylic, holoWhite, porcelain, neonEdge } from "./configs-white";
 import {
-  wovenSilver,
-  wovenGoldDome,
-  wovenHoloDiamond,
-  wovenNeonEdge,
-  wovenFrostCage,
-} from "./configs-woven";
+  RoundedT1Cylinder,
+  RoundedT2Capsule,
+  RoundedT3RoundedBox,
+  RoundedT4Lathe,
+} from "./rounded";
 
 const D = 240; // 8 seconds each at 30fps
 
@@ -24,11 +22,10 @@ const W2 = () => <MetallicScene config={frostedAcrylic} />;
 const W3 = () => <MetallicScene config={holoWhite} />;
 const W4 = () => <MetallicScene config={porcelain} />;
 const W5 = () => <MetallicScene config={neonEdge} />;
-const X1 = () => <WovenMetallicScene config={wovenSilver} />;
-const X2 = () => <WovenMetallicScene config={wovenGoldDome} />;
-const X3 = () => <WovenMetallicScene config={wovenHoloDiamond} />;
-const X4 = () => <WovenMetallicScene config={wovenNeonEdge} />;
-const X5 = () => <WovenMetallicScene config={wovenFrostCage} />;
+const T1 = () => <RoundedT1Cylinder />;
+const T2 = () => <RoundedT2Capsule />;
+const T3 = () => <RoundedT3RoundedBox />;
+const T4 = () => <RoundedT4Lathe />;
 
 export const GMLaunchBgComposition: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "#000000" }}>
@@ -42,11 +39,10 @@ export const GMLaunchBgComposition: React.FC = () => (
     <Sequence from={D*7} durationInFrames={D} name="W3 — Holo White"><W3 /></Sequence>
     <Sequence from={D*8} durationInFrames={D} name="W4 — Porcelain"><W4 /></Sequence>
     <Sequence from={D*9} durationInFrames={D} name="W5 — Neon Edge"><W5 /></Sequence>
-    <Sequence from={D*10} durationInFrames={D} name="X1 — Woven Silver"><X1 /></Sequence>
-    <Sequence from={D*11} durationInFrames={D} name="X2 — Woven Gold Dome"><X2 /></Sequence>
-    <Sequence from={D*12} durationInFrames={D} name="X3 — Woven Holo Diamond"><X3 /></Sequence>
-    <Sequence from={D*13} durationInFrames={D} name="X4 — Woven Neon Edge"><X4 /></Sequence>
-    <Sequence from={D*14} durationInFrames={D} name="X5 — Woven Frost Cage"><X5 /></Sequence>
+    <Sequence from={D*10} durationInFrames={D} name="T1 — Rounded Cylinder"><T1 /></Sequence>
+    <Sequence from={D*11} durationInFrames={D} name="T2 — Rounded Capsule"><T2 /></Sequence>
+    <Sequence from={D*12} durationInFrames={D} name="T3 — Rounded Box"><T3 /></Sequence>
+    <Sequence from={D*13} durationInFrames={D} name="T4 — Rounded Lathe"><T4 /></Sequence>
   </AbsoluteFill>
 );
 
@@ -54,7 +50,7 @@ export const gmLaunchBgMeta = {
   id: "GMLaunchBg",
   component: GMLaunchBgComposition,
   width: 1920, height: 1080, fps: 30,
-  durationInFrames: D * 15,
+  durationInFrames: D * 14,
 };
 
 export const gmLaunchSceneMetas = [
@@ -68,9 +64,8 @@ export const gmLaunchSceneMetas = [
   { id: "GMLaunch-W3-HoloWhite", component: W3, width: 1920, height: 1080, fps: 30, durationInFrames: D },
   { id: "GMLaunch-W4-Porcelain", component: W4, width: 1920, height: 1080, fps: 30, durationInFrames: D },
   { id: "GMLaunch-W5-NeonEdge", component: W5, width: 1920, height: 1080, fps: 30, durationInFrames: D },
-  { id: "GMLaunch-X1-WovenSilver", component: X1, width: 1920, height: 1080, fps: 30, durationInFrames: D },
-  { id: "GMLaunch-X2-WovenGoldDome", component: X2, width: 1920, height: 1080, fps: 30, durationInFrames: D },
-  { id: "GMLaunch-X3-WovenHoloDiamond", component: X3, width: 1920, height: 1080, fps: 30, durationInFrames: D },
-  { id: "GMLaunch-X4-WovenNeonEdge", component: X4, width: 1920, height: 1080, fps: 30, durationInFrames: D },
-  { id: "GMLaunch-X5-WovenFrostCage", component: X5, width: 1920, height: 1080, fps: 30, durationInFrames: D },
+  { id: "GMLaunch-T1-RoundedCylinder", component: T1, width: 1920, height: 1080, fps: 30, durationInFrames: D },
+  { id: "GMLaunch-T2-RoundedCapsule", component: T2, width: 1920, height: 1080, fps: 30, durationInFrames: D },
+  { id: "GMLaunch-T3-RoundedBox", component: T3, width: 1920, height: 1080, fps: 30, durationInFrames: D },
+  { id: "GMLaunch-T4-RoundedLathe", component: T4, width: 1920, height: 1080, fps: 30, durationInFrames: D },
 ];
