@@ -86,7 +86,7 @@ export interface SceneConfig {
 
 // ── Scene implementation ──
 
-const Lights: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
+export const Lights: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
   <>
     {config.pointLights.map((l, i) => {
       const wave = Math.sin(time * l.speed * 1.5 + l.phase + i * 0.4) * 0.3;
@@ -106,7 +106,7 @@ const Lights: React.FC<{ config: SceneConfig; time: number }> = ({ config, time 
   </>
 );
 
-const EnvFormers: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
+export const EnvFormers: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
   <>
     {config.lightformers.map((lf, i) => (
       <Lightformer
@@ -180,7 +180,7 @@ const Slats: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }
   );
 };
 
-const Backdrop: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
+export const Backdrop: React.FC<{ config: SceneConfig; time: number }> = ({ config, time }) => (
   <group position={[0, 0, -1.5]}>
     {config.ribbons.map((r, i) => (
       <mesh key={i} position={[Math.sin(time * 0.18 + i * 1.1) * 2, r.y + Math.cos(time * 0.13 + i * 0.8) * 0.6 + Math.sin(time * 0.22 + i * 0.6) * 0.3, -i * 0.04]} rotation={[0, 0, Math.sin(time * 0.09 + i * 0.5) * 0.3]}>
@@ -191,7 +191,7 @@ const Backdrop: React.FC<{ config: SceneConfig; time: number }> = ({ config, tim
   </group>
 );
 
-const Camera: React.FC<{ config: SceneConfig; time: number; progress: number }> = ({ config, time, progress }) => {
+export const Camera: React.FC<{ config: SceneConfig; time: number; progress: number }> = ({ config, time, progress }) => {
   const { camera } = useThree();
   const x = Math.sin(time * 0.07) * config.cameraDriftX;
   const y = Math.cos(time * 0.05) * config.cameraDriftY;
