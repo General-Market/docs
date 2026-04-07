@@ -59,10 +59,11 @@ class TestDiscoverOracles:
 
     def test_dynamic_mode_falls_back_on_error(self):
         """Dynamic mode with w3=None falls back to static URLs."""
+        from framework import chain as chain_mod
         static = ["http://fallback:10001"]
-        # Clear any cached state from previous test runs
-        # __defaults__ = (w3=None, registry_addr='', _cache={})
-        discover_oracles.__defaults__[2].clear()
+        # Clear the module-level cache so prior tests can't bleed in.
+        chain_mod._ORACLE_DISCOVERY_CACHE["urls"] = []
+        chain_mod._ORACLE_DISCOVERY_CACHE["ts"] = 0.0
         result = discover_oracles(
             mode="dynamic",
             static_urls=static,
@@ -110,16 +111,15 @@ class TestSubmitBitmap:
     @patch("framework.chain.requests.post")
     @patch("framework.chain.time.sleep")
     def test_retry_on_failure(self, mock_sleep, mock_post):
-        """First attempt fails, second succeeds -- still counts as accepted."""
+        """First attempt fails (transient), second succeeds — still counts as accepted."""
         import requests as req
 
-        fail_resp = MagicMock()
-        fail_resp.ok = False
         ok_resp = MagicMock()
         ok_resp.ok = True
 
-        # First call fails (RequestException), second call succeeds
-        mock_post.side_effect = [req.RequestException("timeout"), ok_resp]
+        # First call: a transient connection error. Second: success.
+        # ConnectionError is in our retry-eligible list; bare RequestException is not.
+        mock_post.side_effect = [req.ConnectionError("network blip"), ok_resp]
 
         count = submit_bitmap(
             oracle_urls=["http://oracle1:10001"],
@@ -128,12 +128,13 @@ class TestSubmitBitmap:
             bitmap=b"\xff",
             bitmap_hash=b"\x00" * 32,
             retries=3,
+            enforce_quorum=False,
         )
 
         assert count == 1
         assert mock_post.call_count == 2
-        # sleep should have been called once between retries
-        mock_sleep.assert_called_once_with(1)
+        # Sleep is exponential + jitter; we only check it ran at least once.
+        assert mock_sleep.call_count >= 1
 
 
 # ── fetch_batches ───────────────────────────────────────────────
