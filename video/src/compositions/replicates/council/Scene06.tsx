@@ -334,7 +334,7 @@ export const Scene06: React.FC = () => {
         style={{
           fontSize: 22,
           fontFamily,
-          color: "#1A1A2E",
+          color: "#000000",
           opacity: overlayOpacity,
           transform: `translateY(${overlayY}px)`,
           marginBottom: 22,
