@@ -2,95 +2,51 @@ import React from "react";
 import {
   AbsoluteFill,
   interpolate,
-  spring,
   useCurrentFrame,
   useVideoConfig,
   Easing,
 } from "remotion";
-import { ThreeCanvas } from "@remotion/three";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import * as THREE from "three";
 import { THEME } from "../theme";
-import { GMGrid } from "../components/GMGrid";
+import { SquareGrid } from "../components/SquareGrid";
+import { TextTrailTitle } from "../components/TextTrailTitle";
+import { SvgWipe } from "../components/SvgWipe";
 import { Counter } from "../components/Counter";
 
 const { fontFamily } = loadFont();
 
-const TITLE_TEXT = "Infinite markets. All liquid.";
 const SUBTITLE_TEXT = "Because it's parimutuel.";
 
-const SceneLights: React.FC = () => {
-  return (
-    <>
-      <ambientLight intensity={0.4} />
-      <pointLight
-        color={0xffffff}
-        intensity={6}
-        decay={0}
-        position={[0, 20, 60]}
-      />
-      <pointLight
-        color={0x00c853}
-        intensity={4}
-        decay={0}
-        position={[40, 0, 30]}
-      />
-      <pointLight
-        color={0x6b7280}
-        intensity={2}
-        decay={0}
-        position={[-40, 0, 30]}
-      />
-    </>
-  );
-};
+const LEFT_GRID_W = 520;
+const LEFT_GRID_H = 420;
+const RIGHT_GRID_W = 820;
+const RIGHT_GRID_H = 580;
 
 export const Scene03GridExpands: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps } = useVideoConfig();
+  const time = frame / fps;
 
-  // Grid fade-in
-  const gridOpacity = interpolate(frame, [0, 20], [0, 1], {
+  const gridOpacity = interpolate(frame, [5, 25], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
-  // Right grid expands cols/rows from frame 20 to frame 80.
-  // GMGrid memoizes geometry per (cols, rows) — stepping by 1 each frame
-  // would build 60 geometries; we round to a coarser step instead.
+  // Right grid expands from 10x8 to 28x20 over frames 20-80. Integer steps
+  // keep the layout from recomputing every frame.
   const expandT = interpolate(frame, [20, 80], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  // Cap expansion target so OTHERS keeps relative presence in frame.
   const colsRaw = 10 + expandT * 18;
   const rowsRaw = 8 + expandT * 12;
-  // Snap to even integers — fewer recomputes, smoother visual
   const rightCols = Math.round(colsRaw / 2) * 2;
   const rightRows = Math.round(rowsRaw / 2) * 2;
-  const rightScale = interpolate(frame, [20, 80], [1.0, 1.5], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.inOut(Easing.cubic),
-  });
-
-  // Title spring-slam at frame 5
-  const titleSpring = spring({
-    frame: frame - 5,
-    fps,
-    config: { damping: 12, stiffness: 180, mass: 0.7 },
-    durationInFrames: 25,
-  });
-  const titleScale = 0.8 + titleSpring * 0.2;
-  const titleOpacity = interpolate(frame, [5, 22], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
   // Typewriter subtitle
-  const subtitleStart = 28;
+  const subtitleStart = 30;
   const charsPerFrame = 0.6;
   const visibleChars = Math.max(
     0,
@@ -98,98 +54,107 @@ export const Scene03GridExpands: React.FC = () => {
   );
   const subtitleText = SUBTITLE_TEXT.slice(0, visibleChars);
 
-  // Radial pulse over frames 85–115
-  const pulseT = interpolate(frame, [85, 100, 115], [0, 1, 0], {
+  // Rainbow ray-marched-ish background — simplified to a moving multi-stop
+  // radial gradient behind the counter. Matches the spirit of MouseLight
+  // without the shader budget.
+  const cx = 70 + Math.sin(time * 0.7 + 0.3) * 12;
+  const cy = 70 + Math.cos(time * 1.1 + 1.7) * 12;
+  const hueA = Math.round((time * 30) % 360);
+  const hueB = (hueA + 60) % 360;
+  const hueC = (hueA + 180) % 360;
+  const rainbowOpacity = interpolate(frame, [30, 60, 130, 150], [0, 0.6, 0.6, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.inOut(Easing.cubic),
   });
 
   return (
     <AbsoluteFill style={{ backgroundColor: THEME.bgDark }}>
-      {/* 3D grids */}
+      {/* Rainbow ray-marched-inspired background — sits behind the right grid */}
       <div
         style={{
           position: "absolute",
           inset: 0,
+          opacity: rainbowOpacity,
+          background: `radial-gradient(circle at ${cx}% ${cy}%, hsla(${hueA}, 85%, 55%, 0.35) 0%, hsla(${hueB}, 85%, 50%, 0.22) 22%, hsla(${hueC}, 85%, 45%, 0.1) 45%, rgba(11,20,38,0) 70%)`,
+          mixBlendMode: "screen",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Grids */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-around",
           opacity: gridOpacity,
+          paddingTop: 100,
+          paddingBottom: 140,
         }}
       >
-        <ThreeCanvas
-          width={width}
-          height={height}
-          camera={{ position: [0, 0, 100], fov: 50 }}
-          gl={{
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance",
-            toneMapping: THREE.NoToneMapping,
-          }}
-          shadows
-          style={{ width: "100%", height: "100%" }}
-        >
-          <SceneLights />
-          <GMGrid
-            cols={10}
-            rows={8}
-            fillRatio={0.5}
-            activeColor={THEME.gmGreen}
-            inactiveColor={THEME.grey}
-            pulseFreq={0}
-            position={[-45, 0, 0]}
-            scale={0.9}
-            seed={1}
-          />
-          <GMGrid
-            cols={rightCols}
-            rows={rightRows}
-            fillRatio={1.0}
-            activeColor={THEME.gmGreen}
-            inactiveColor={THEME.grey}
-            pulseFreq={0}
-            position={[30, 0, 0]}
-            scale={rightScale}
-            seed={2}
-          />
-        </ThreeCanvas>
+        <SquareGrid
+          cols={10}
+          rows={8}
+          fillRatio={0.5}
+          activeColor={THEME.grey}
+          inactiveColor={THEME.divider}
+          width={LEFT_GRID_W}
+          height={LEFT_GRID_H}
+          seed={1}
+          startFrame={10}
+          fillDurationFrames={30}
+        />
+        <SquareGrid
+          cols={rightCols}
+          rows={rightRows}
+          fillRatio={1.0}
+          activeColor={THEME.gmGreen}
+          inactiveColor={THEME.divider}
+          width={RIGHT_GRID_W}
+          height={RIGHT_GRID_H}
+          seed={2}
+          startFrame={10}
+          fillDurationFrames={40}
+        />
       </div>
 
       {/* Title */}
       <div
         style={{
           position: "absolute",
-          top: 80,
+          top: 50,
           left: 0,
           width: "100%",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          justifyContent: "center",
           pointerEvents: "none",
+        }}
+      >
+        <TextTrailTitle
+          text="Infinite markets."
+          startFrame={5}
+          fontSize={84}
+        />
+      </div>
+
+      {/* Subtitle */}
+      <div
+        style={{
+          position: "absolute",
+          top: 180,
+          left: 0,
+          width: "100%",
+          textAlign: "center",
         }}
       >
         <div
           style={{
             fontFamily,
-            fontWeight: 700,
-            fontSize: 72,
-            color: THEME.textLight,
-            letterSpacing: -1,
-            transform: `scale(${titleScale})`,
-            opacity: titleOpacity,
-            textAlign: "center",
-          }}
-        >
-          {TITLE_TEXT}
-        </div>
-        <div
-          style={{
-            marginTop: 18,
-            fontFamily,
             fontWeight: 400,
-            fontSize: 32,
+            fontSize: 30,
             color: THEME.muted,
-            letterSpacing: 0,
-            textAlign: "center",
             minHeight: 40,
           }}
         >
@@ -205,11 +170,11 @@ export const Scene03GridExpands: React.FC = () => {
         </div>
       </div>
 
-      {/* Counter under right grid — white with soft green glow for contrast */}
+      {/* Counter under right grid */}
       <div
         style={{
           position: "absolute",
-          bottom: 100,
+          bottom: 30,
           right: 0,
           width: "50%",
           display: "flex",
@@ -224,21 +189,11 @@ export const Scene03GridExpands: React.FC = () => {
           startFrame={40}
           label="markets"
           color={THEME.textLight}
-          fontSize={96}
+          fontSize={80}
         />
       </div>
 
-      {/* Radial pulse */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(circle, rgba(0,200,83,0.18) 0%, rgba(0,200,83,0) 70%)",
-          opacity: pulseT,
-          pointerEvents: "none",
-        }}
-      />
+      <SvgWipe startFrame={0} durationFrames={20} direction="down" />
     </AbsoluteFill>
   );
 };

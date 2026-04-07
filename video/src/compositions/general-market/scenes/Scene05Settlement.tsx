@@ -2,60 +2,29 @@ import React from "react";
 import {
   AbsoluteFill,
   useCurrentFrame,
-  useVideoConfig,
   interpolate,
-  spring,
+  Easing,
 } from "remotion";
-import { ThreeCanvas } from "@remotion/three";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import * as THREE from "three";
 import { THEME } from "../theme";
-import { GMGrid } from "../components/GMGrid";
+import { SquareGrid } from "../components/SquareGrid";
+import { TextTrailTitle } from "../components/TextTrailTitle";
+import { SvgWipe } from "../components/SvgWipe";
 import { Counter } from "../components/Counter";
 
 const { fontFamily } = loadFont();
 
-const SceneLights: React.FC = () => (
-  <>
-    <pointLight
-      color={0xffffff}
-      intensity={8}
-      decay={0}
-      position={[0, 0, 5]}
-    />
-    <pointLight
-      color={0x00c853}
-      intensity={3}
-      decay={0}
-      position={[0, 0, -20]}
-    />
-    <ambientLight intensity={0.3} />
-  </>
-);
+const GRID_W = 620;
+const GRID_H = 500;
 
 export const Scene05Settlement: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
 
-  // Title spring entry from frame 5
-  const titleSpring = spring({
-    frame: frame - 5,
-    fps,
-    config: { damping: 18, stiffness: 160, mass: 0.6 },
-    durationInFrames: 20,
+  const gridOpacity = interpolate(frame, [5, 25], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
   });
-  const titleY = interpolate(titleSpring, [0, 1], [-30, 0]);
-  const titleOpacity = interpolate(titleSpring, [0, 1], [0, 1]);
-
-  // Subtitle entry slightly delayed
-  const subtitleSpring = spring({
-    frame: frame - 12,
-    fps,
-    config: { damping: 18, stiffness: 160, mass: 0.6 },
-    durationInFrames: 20,
-  });
-  const subtitleY = interpolate(subtitleSpring, [0, 1], [-20, 0]);
-  const subtitleOpacity = interpolate(subtitleSpring, [0, 1], [0, 1]);
 
   return (
     <AbsoluteFill
@@ -65,104 +34,72 @@ export const Scene05Settlement: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Three.js layer — both grids share one canvas */}
-      <AbsoluteFill>
-        <ThreeCanvas
-          width={width}
-          height={height}
-          camera={{ position: [0, 0, 100], fov: 50 }}
-          gl={{
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance",
-            toneMapping: THREE.NoToneMapping,
-          }}
-          shadows
-          style={{ width: "100%", height: "100%" }}
-        >
-          <SceneLights />
-          {/* LEFT — slow ceremonial pulse, the old way */}
-          <GMGrid
-            cols={10}
-            rows={8}
-            fillRatio={1.0}
-            activeColor={THEME.muted}
-            inactiveColor={THEME.divider}
-            pulseFreq={0.5}
-            pulseAmplitude={0.4}
-            position={[-35, 0, 0]}
-            seed={1}
-          />
-          {/* RIGHT — rapid flicker, the new way */}
-          <GMGrid
-            cols={10}
-            rows={8}
-            fillRatio={1.0}
-            activeColor={THEME.gmGreen}
-            inactiveColor={THEME.divider}
-            pulseFreq={12}
-            pulseAmplitude={0.3}
-            position={[35, 0, 0]}
-            seed={2}
-          />
-        </ThreeCanvas>
-      </AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-evenly",
+          opacity: gridOpacity,
+          paddingTop: 100,
+          paddingBottom: 160,
+        }}
+      >
+        <SquareGrid
+          cols={10}
+          rows={8}
+          fillRatio={1.0}
+          activeColor={THEME.muted}
+          inactiveColor={THEME.divider}
+          pulseFreq={0.5}
+          pulseAmplitude={0.25}
+          width={GRID_W}
+          height={GRID_H}
+          seed={1}
+          startFrame={10}
+          fillDurationFrames={30}
+        />
+        <SquareGrid
+          cols={10}
+          rows={8}
+          fillRatio={1.0}
+          activeColor={THEME.gmGreen}
+          inactiveColor={THEME.divider}
+          pulseFreq={8}
+          pulseAmplitude={0.22}
+          width={GRID_W}
+          height={GRID_H}
+          seed={2}
+          startFrame={10}
+          fillDurationFrames={30}
+        />
+      </div>
 
       {/* Title */}
       <div
         style={{
           position: "absolute",
-          top: 80,
+          top: 50,
           left: 0,
           width: "100%",
-          textAlign: "center",
-          transform: `translateY(${titleY}px)`,
-          opacity: titleOpacity,
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none",
         }}
       >
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 700,
-            color: THEME.textLight,
-            letterSpacing: -1,
-            lineHeight: 1.1,
-          }}
-        >
-          30x faster to settle.
-        </div>
-      </div>
-
-      {/* Subtitle */}
-      <div
-        style={{
-          position: "absolute",
-          top: 180,
-          left: 0,
-          width: "100%",
-          textAlign: "center",
-          transform: `translateY(${subtitleY}px)`,
-          opacity: subtitleOpacity,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 32,
-            fontWeight: 400,
-            color: THEME.muted,
-            letterSpacing: 2,
-            textTransform: "uppercase",
-          }}
-        >
-          Because it&apos;s parimutuel.
-        </div>
+        <TextTrailTitle
+          text="30x faster to settle."
+          startFrame={5}
+          fontSize={84}
+        />
       </div>
 
       {/* LEFT counter — static "1 / week" */}
       <div
         style={{
           position: "absolute",
-          bottom: 120,
+          bottom: 60,
           left: 0,
           width: "50%",
           display: "flex",
@@ -175,16 +112,16 @@ export const Scene05Settlement: React.FC = () => {
           startFrame={20}
           label="/ week"
           color={THEME.muted}
-          fontSize={80}
+          fontSize={72}
           formatWithCommas={false}
         />
       </div>
 
-      {/* RIGHT counter — ticks 0 to 144 / day */}
+      {/* RIGHT counter — 0 → 144 / day */}
       <div
         style={{
           position: "absolute",
-          bottom: 120,
+          bottom: 60,
           left: "50%",
           width: "50%",
           display: "flex",
@@ -197,10 +134,12 @@ export const Scene05Settlement: React.FC = () => {
           startFrame={20}
           label="/ day"
           color={THEME.gmGreen}
-          fontSize={80}
+          fontSize={72}
           formatWithCommas={false}
         />
       </div>
+
+      <SvgWipe startFrame={0} durationFrames={20} direction="down" />
     </AbsoluteFill>
   );
 };

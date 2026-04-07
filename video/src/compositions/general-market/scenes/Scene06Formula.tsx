@@ -11,6 +11,8 @@ import { loadFont } from '@remotion/google-fonts/SpaceMono';
 import { THEME } from '../theme';
 import { FormulaBar } from '../components/FormulaBar';
 import { Strikethrough } from '../components/Strikethrough';
+import { TextTrailTitle } from '../components/TextTrailTitle';
+import { SvgWipe } from '../components/SvgWipe';
 
 const { fontFamily } = loadFont();
 
@@ -93,11 +95,30 @@ export const Scene06Formula: React.FC = () => {
         fontFamily,
       }}
     >
+      {/* Scene title */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 80,
+          left: 0,
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <TextTrailTitle
+          text="What you're really paid."
+          startFrame={5}
+          fontSize={48}
+        />
+      </div>
+
       {/* Formula expression — top */}
       <div
         style={{
           position: 'absolute',
-          top: 140,
+          top: 320,
           left: 0,
           width: '100%',
           display: 'flex',
@@ -172,7 +193,7 @@ export const Scene06Formula: React.FC = () => {
         />
       </div>
 
-      {/* Bars — centered vertically */}
+      {/* Bars — centered vertically, shifted down to clear the formula row */}
       <div
         style={{
           position: 'absolute',
@@ -182,6 +203,7 @@ export const Scene06Formula: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 80,
+          paddingTop: 220,
         }}
       >
         <FormulaBar
@@ -224,6 +246,8 @@ export const Scene06Formula: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <SvgWipe startFrame={0} durationFrames={20} direction="down" />
     </AbsoluteFill>
   );
 };
