@@ -135,13 +135,14 @@ export const CoinBracket: React.FC<CoinBracketProps> = ({
         {label ? (
           <div
             style={{
-              fontSize: 22,
+              fontSize: 30,
               color,
               textTransform: "uppercase",
               letterSpacing: 3,
-              marginBottom: 10,
+              marginBottom: 12,
               opacity: labelOpacity,
-              fontWeight: 500,
+              fontWeight: 700,
+              textShadow: "0 2px 8px rgba(0,0,0,0.65)",
             }}
           >
             {label}

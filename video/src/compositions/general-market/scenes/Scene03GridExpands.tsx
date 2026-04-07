@@ -64,8 +64,9 @@ export const Scene03GridExpands: React.FC = () => {
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
-  const colsRaw = 10 + expandT * 30;
-  const rowsRaw = 8 + expandT * 22;
+  // Cap expansion target so OTHERS keeps relative presence in frame.
+  const colsRaw = 10 + expandT * 18;
+  const rowsRaw = 8 + expandT * 12;
   // Snap to even integers — fewer recomputes, smoother visual
   const rightCols = Math.round(colsRaw / 2) * 2;
   const rightRows = Math.round(rowsRaw / 2) * 2;
@@ -204,7 +205,7 @@ export const Scene03GridExpands: React.FC = () => {
         </div>
       </div>
 
-      {/* Counter under right grid */}
+      {/* Counter under right grid — white with soft green glow for contrast */}
       <div
         style={{
           position: "absolute",
@@ -214,6 +215,7 @@ export const Scene03GridExpands: React.FC = () => {
           display: "flex",
           justifyContent: "center",
           pointerEvents: "none",
+          textShadow: `0 0 28px ${THEME.gmGreen}cc, 0 2px 6px rgba(0,0,0,0.7)`,
         }}
       >
         <Counter
@@ -221,7 +223,7 @@ export const Scene03GridExpands: React.FC = () => {
           durationFrames={60}
           startFrame={40}
           label="markets"
-          color={THEME.gmGreen}
+          color={THEME.textLight}
           fontSize={96}
         />
       </div>

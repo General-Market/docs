@@ -17,7 +17,6 @@ import { CoinBracket } from "../components/CoinBracket";
 const { fontFamily } = loadFont();
 
 const TITLE_TEXT = "$1 covers every market.";
-const SUBTITLE_TEXT = "Because it's parimutuel.";
 
 const SceneLights: React.FC = () => {
   return (
@@ -68,15 +67,6 @@ export const Scene02Coins: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  // Typewriter subtitle
-  const subtitleStart = 28;
-  const charsPerFrame = 0.6;
-  const visibleChars = Math.max(
-    0,
-    Math.floor((frame - subtitleStart) * charsPerFrame),
-  );
-  const subtitleText = SUBTITLE_TEXT.slice(0, visibleChars);
 
   return (
     <AbsoluteFill style={{ backgroundColor: THEME.bgDark }}>
@@ -152,28 +142,6 @@ export const Scene02Coins: React.FC = () => {
         >
           {TITLE_TEXT}
         </div>
-        <div
-          style={{
-            marginTop: 18,
-            fontFamily,
-            fontWeight: 400,
-            fontSize: 32,
-            color: THEME.muted,
-            letterSpacing: 0,
-            textAlign: "center",
-            minHeight: 40,
-          }}
-        >
-          {subtitleText}
-          <span
-            style={{
-              opacity: visibleChars < SUBTITLE_TEXT.length ? 1 : 0,
-              color: THEME.gmGreen,
-            }}
-          >
-            _
-          </span>
-        </div>
       </div>
 
       {/* CoinBrackets under each grid */}
@@ -193,7 +161,7 @@ export const Scene02Coins: React.FC = () => {
           span={80}
           durationFrames={30}
           label="covers 1 market"
-          color={THEME.muted}
+          color="#B8C4D1"
         />
       </div>
       <div

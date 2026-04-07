@@ -56,13 +56,14 @@ export const Scene06Formula: React.FC = () => {
     ),
   );
 
-  // Formula row entry — fade + slight rise.
-  const formulaOpacity = interpolate(frame, [30, 50], [0, 1], {
+  // Formula row entry — fade + slight rise. Appears immediately so the
+  // top half of the frame is never empty.
+  const formulaOpacity = interpolate(frame, [0, 15], [0, 1], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.out(Easing.cubic),
   });
-  const formulaTranslateY = interpolate(frame, [30, 50], [16, 0], {
+  const formulaTranslateY = interpolate(frame, [0, 15], [16, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: Easing.out(Easing.cubic),
@@ -126,8 +127,8 @@ export const Scene06Formula: React.FC = () => {
 
         <Strikethrough
           text="fee"
-          startFrame={30}
-          strikeFrame={20}
+          startFrame={5}
+          strikeFrame={45}
           strikeDurationFrames={10}
           fontSize={FORMULA_FONT_SIZE}
           textColor={THEME.textLight}
@@ -138,8 +139,8 @@ export const Scene06Formula: React.FC = () => {
 
         <Strikethrough
           text="spread"
-          startFrame={30}
-          strikeFrame={40}
+          startFrame={5}
+          strikeFrame={65}
           strikeDurationFrames={10}
           fontSize={FORMULA_FONT_SIZE}
           textColor={THEME.textLight}
@@ -150,8 +151,8 @@ export const Scene06Formula: React.FC = () => {
 
         <Strikethrough
           text="variance"
-          startFrame={30}
-          strikeFrame={60}
+          startFrame={5}
+          strikeFrame={85}
           strikeDurationFrames={10}
           fontSize={FORMULA_FONT_SIZE}
           textColor={THEME.textLight}
@@ -162,8 +163,8 @@ export const Scene06Formula: React.FC = () => {
 
         <Strikethrough
           text="knowledge"
-          startFrame={30}
-          strikeFrame={80}
+          startFrame={5}
+          strikeFrame={105}
           strikeDurationFrames={10}
           fontSize={FORMULA_FONT_SIZE}
           textColor={THEME.textLight}
