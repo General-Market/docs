@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import fundData from '@/data/fund-branding.json'
 import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
+import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
@@ -237,8 +238,11 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
   onDeposit: () => void
 }) {
   const reduced = !!useReducedMotion()
-  const tvl = parseFloat(formatUnits(vault.totalAssets, 18))
-  const perf = vault.performanceSinceInception
+  const resolveDisplay = useVaultDisplayResolver()
+  const display = resolveDisplay(vault)
+  const tvl = display.tvl
+  const nav = display.nav
+  const perf = display.perf
   const perfAbs = Math.abs(perf * 100)
   const isPositive = perf >= 0
   const strategy = STRATEGY_META[fund.strategy]
@@ -295,7 +299,7 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
                 <div className="w-px h-8 bg-white/[0.06]" />
                 <div>
                   <div className="text-[9px] font-bold tracking-[0.12em] text-white/25 uppercase mb-0.5">NAV</div>
-                  <div className="text-[16px] font-mono font-bold text-white/90">${vault.navPerShare.toFixed(4)}</div>
+                  <div className="text-[16px] font-mono font-bold text-white/90">${nav.toFixed(4)}</div>
                 </div>
                 {hasPosition && (
                   <>
@@ -367,8 +371,10 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
   const reduced = !!useReducedMotion()
   const [transform, setTransform] = useState('')
 
-  const tvl = parseFloat(formatUnits(vault.totalAssets, 18))
-  const perf = vault.performanceSinceInception
+  const resolveDisplay = useVaultDisplayResolver()
+  const display = resolveDisplay(vault)
+  const tvl = display.tvl
+  const perf = display.perf
   const isPositive = perf >= 0
   const strategy = STRATEGY_META[fund.strategy]
 

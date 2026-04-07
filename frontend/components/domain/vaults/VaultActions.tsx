@@ -9,7 +9,8 @@ import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
-import { useSSEUserVaultPosition, useSSEVisionVault, useSSEVisionVaults } from '@/hooks/useSSE'
+import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
+import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -32,49 +33,6 @@ const STRATEGY_COLOR: Record<string, string> = {
 }
 
 // ── Helpers ───────────────────────────────────────────────
-
-interface DisplayVitals {
-  tvl: number
-  nav: number
-  perf: number
-}
-
-/** Resolve TVL/NAV/perf for a vault by preferring wagmi, then SSE, then zeros.
- *  Returns a memoized resolver tied to the SSE context so the header strip,
- *  the desktop sidebar list, and the mobile pill row all read from the same
- *  truth. Without this they'd disagree whenever the wagmi multicall returns 0n
- *  on a freshly-chunked vault. */
-function useVaultDisplayResolver(): (vault: VaultInfo) => DisplayVitals {
-  const sseVaults = useSSEVisionVaults()
-  const sseByAddress = useMemo(
-    () => new Map(sseVaults.map(v => [v.address.toLowerCase(), v])),
-    [sseVaults],
-  )
-  return (vault: VaultInfo) => {
-    if (vault.totalSupply > 0n && vault.totalAssets > 0n) {
-      return {
-        tvl: parseFloat(formatUnits(vault.totalAssets, 18)),
-        nav: vault.navPerShare,
-        perf: vault.performanceSinceInception,
-      }
-    }
-    const sse = sseByAddress.get(vault.address.toLowerCase())
-    if (sse) {
-      let assets = 0n
-      try { assets = BigInt(sse.total_assets) } catch {}
-      return {
-        tvl: parseFloat(formatUnits(assets, 18)),
-        nav: sse.nav_per_share,
-        perf: sse.nav_per_share - 1.0,
-      }
-    }
-    return {
-      tvl: parseFloat(formatUnits(vault.totalAssets, 18)),
-      nav: vault.navPerShare,
-      perf: vault.performanceSinceInception,
-    }
-  }
-}
 
 function formatTvlCompact(tvl: number) {
   if (tvl >= 1_000_000) return `$${(tvl / 1_000_000).toFixed(2)}M`
