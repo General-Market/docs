@@ -9,75 +9,87 @@ import {
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
 
 const { fontFamily } = loadFont();
-const TEAL = "#4ECDC4";
-const DARK = "#1A1A2E";
+const TEAL = "#0FE8AE";
+const DARK = "#000000";
 
 export const Scene05: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Phase 0 (0-8): White bg fades in
-  const bgOpacity = interpolate(frame, [0, 8], [0, 1], {
+  // Phase 1 (0-55): "Rationales feed into consensus metric"
+  // 0-15:  "Rationales feed into" types in (3 words across 15 frames)
+  // 15-30: "consensus metric" types in (2 teal words across 15 frames)
+  // 30-50: hold
+  // 50-55: fade
+  const darkWords = ["Rationales", "feed", "into"];
+  const tealWords = ["consensus", "metric"];
+
+  const darkWordStart = 0;
+  const darkWordSpan = 15;
+  const darkWordGap = darkWordSpan / darkWords.length; // 5 frames per word
+
+  const tealWordStart = 15;
+  const tealWordSpan = 15;
+  const tealWordGap = tealWordSpan / tealWords.length; // 7.5 frames per word
+
+  const phase1Opacity = interpolate(frame, [0, 1, 50, 55], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Phase 1 (8-26): "Rationales feed into" — words appear sequentially
-  const words = ["Rationales", "feed", "into"];
-  const tealWord = "consensus";
-  const wordStartFrame = 8;
-  const wordGap = 6;
-  const tealWordStart = wordStartFrame + words.length * wordGap; // frame 26
+  // Blank: 55-60 — both phases hidden
 
-  // "consensus" teal word animation
-  const tealWordY = spring({
-    frame: Math.max(0, frame - tealWordStart),
-    fps,
-    from: 12,
-    to: 0,
-    durationInFrames: 12,
-  });
-  const tealWordOpacity = interpolate(frame, [tealWordStart, tealWordStart + 3], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Phase 2 (60-110): "Scores converge"
+  // 60-70:  "Scores" types in
+  // 70-78:  "converge" types in
+  // 78-100: hold
+  // 100-110: fade
+  const scoresStart = 60;
+  const convergeStart = 70;
 
-  // Phase 1 fade out (36-45)
-  const phase1Opacity = interpolate(frame, [36, 45], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Phase 2 (45-90): "Scores" then "converge"
   const scoresY = spring({
-    frame: Math.max(0, frame - 45),
+    frame: Math.max(0, frame - scoresStart),
     fps,
     from: 12,
     to: 0,
     durationInFrames: 16,
   });
-  const scoresOpacity = interpolate(frame, [45, 48], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const scoresOpacity = interpolate(
+    frame,
+    [scoresStart, scoresStart + 4],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
+  );
 
   const convergeY = spring({
-    frame: Math.max(0, frame - 53),
+    frame: Math.max(0, frame - convergeStart),
     fps,
     from: 12,
     to: 0,
     durationInFrames: 16,
   });
-  const convergeOpacity = interpolate(frame, [53, 56], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const convergeOpacity = interpolate(
+    frame,
+    [convergeStart, convergeStart + 4],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
+  );
 
-  // Hold "Scores converge" visible, then fade out at the end
-  const phase2Opacity = interpolate(frame, [45, 48, 78, 90], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const phase2Opacity = interpolate(
+    frame,
+    [60, 61, 100, 110],
+    [0, 1, 1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    }
+  );
 
   return (
     <AbsoluteFill
@@ -86,10 +98,9 @@ export const Scene05: React.FC = () => {
         justifyContent: "center",
         alignItems: "center",
         fontFamily,
-        opacity: bgOpacity,
       }}
     >
-      {/* Phase 1: "Rationales feed into consensus" — single line */}
+      {/* Phase 1: "Rationales feed into consensus metric" — single line */}
       <div
         style={{
           display: "flex",
@@ -100,8 +111,8 @@ export const Scene05: React.FC = () => {
           flexWrap: "nowrap",
         }}
       >
-        {words.map((word, i) => {
-          const start = wordStartFrame + i * wordGap;
+        {darkWords.map((word, i) => {
+          const start = darkWordStart + i * darkWordGap;
           const y = spring({
             frame: Math.max(0, frame - start),
             fps,
@@ -130,19 +141,36 @@ export const Scene05: React.FC = () => {
             </span>
           );
         })}
-        <span
-          style={{
-            fontSize: 36,
-            color: TEAL,
-            fontWeight: 700,
-            transform: `translateY(${tealWordY}px)`,
-            opacity: tealWordOpacity,
-            display: "inline-block",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {tealWord}
-        </span>
+        {tealWords.map((word, i) => {
+          const start = tealWordStart + i * tealWordGap;
+          const y = spring({
+            frame: Math.max(0, frame - start),
+            fps,
+            from: 12,
+            to: 0,
+            durationInFrames: 12,
+          });
+          const opacity = interpolate(frame, [start, start + 3], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          });
+          return (
+            <span
+              key={word}
+              style={{
+                fontSize: 36,
+                color: TEAL,
+                fontWeight: 700,
+                transform: `translateY(${y}px)`,
+                opacity,
+                display: "inline-block",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
       </div>
 
       {/* Phase 2: "Scores converge" — single line */}
@@ -193,5 +221,5 @@ export const scene05Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 90,
+  durationInFrames: 110,
 };
