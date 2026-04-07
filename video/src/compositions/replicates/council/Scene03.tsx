@@ -85,19 +85,19 @@ const CARDS = [
     color: GPT_GREEN,
     Icon: OpenAIIcon,
     label: "GPT 5.4",
-    enterFrame: 55,
+    enterFrame: 60,
   },
   {
     color: GEMINI_BLUE,
     Icon: GeminiStar,
-    label: "Gemini\n3.1 Pro",
-    enterFrame: 63,
+    label: "Gemini 3.1 Pro",
+    enterFrame: 64,
   },
   {
     color: OPUS_ORANGE,
     Icon: OpusSunburst,
     label: "Opus 4.6",
-    enterFrame: 71,
+    enterFrame: 68,
   },
 ];
 
@@ -105,40 +105,35 @@ export const Scene03: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Phase 1: "We built" typewriter (0-30)
-  const builtText = useTypewriter("We built", 0, 0.5);
+  // Phase 1: "We built" typewriter (8-22)
+  const builtText = useTypewriter("We built", 8, 0.6);
 
-  // Phase 2: "AI" slide up + fade (30-50)
-  const aiOpacity = interpolate(frame, [30, 38], [0, 1], {
+  // Phase 2: "AI Council" fade-in (20-32)
+  const aiOpacity = interpolate(frame, [20, 30], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const aiY = interpolate(frame, [30, 42], [20, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Phase 3: hold then fade out (50-55)
-  const textOpacity = interpolate(frame, [50, 55], [1, 0], {
+  const aiY = interpolate(frame, [20, 32], [16, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Card label fade — appears ~12 frames after each card lands
-  const labelDelay = 12;
+  // Phase 3: hold then fade out (32-52)
+  const textOpacity = interpolate(frame, [48, 54], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
-  // Subtitle: "Each model processing independently" (65-160)
+  // Card label fade — appears ~10 frames after each card lands
+  const labelDelay = 10;
+
+  // Subtitle: "Each model processing independently" (78-110)
   const wordEntries: { text: string; start: number; color: string }[] = [
-    { text: "Each", start: 65, color: DARK },
-    { text: "model", start: 72, color: DARK },
-    { text: "processing", start: 79, color: DARK },
-    { text: "independently", start: 86, color: TEAL },
+    { text: "Each", start: 80, color: DARK },
+    { text: "model", start: 86, color: DARK },
+    { text: "processing", start: 92, color: DARK },
+    { text: "independently", start: 100, color: TEAL },
   ];
-
-  const subtitleFadeOut = interpolate(frame, [150, 160], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
   return (
     <AbsoluteFill
@@ -149,7 +144,7 @@ export const Scene03: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Text phase: "We built AI" */}
+      {/* Text phase: "We built AI Council" — single line */}
       <div
         style={{
           position: "absolute",
@@ -160,6 +155,7 @@ export const Scene03: React.FC = () => {
           alignItems: "baseline",
           gap: 14,
           opacity: textOpacity,
+          whiteSpace: "nowrap",
         }}
       >
         <span
@@ -180,21 +176,22 @@ export const Scene03: React.FC = () => {
             opacity: aiOpacity,
             transform: `translateY(${aiY}px)`,
             display: "inline-block",
+            whiteSpace: "nowrap",
           }}
         >
           AI Council
         </span>
       </div>
 
-      {/* Cards phase (70-135) */}
+      {/* Cards phase */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-50%, calc(-50% - 40px))",
           display: "flex",
-          gap: 40,
+          gap: 36,
           alignItems: "flex-start",
         }}
       >
@@ -202,14 +199,14 @@ export const Scene03: React.FC = () => {
           const cardScale = spring({
             frame: frame - enterFrame,
             fps,
-            from: 0.5,
+            from: 0.15,
             to: 1,
-            config: { damping: 12, stiffness: 120, mass: 0.8 },
+            config: { damping: 13, stiffness: 130, mass: 0.85 },
           });
 
           const labelOpacity = interpolate(
             frame,
-            [enterFrame + labelDelay, enterFrame + labelDelay + 10],
+            [enterFrame + labelDelay, enterFrame + labelDelay + 8],
             [0, 1],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           );
@@ -221,30 +218,30 @@ export const Scene03: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 12,
+                gap: 14,
                 transform: `scale(${frame >= enterFrame ? cardScale : 0})`,
               }}
             >
               <div
                 style={{
-                  width: 140,
-                  height: 140,
-                  borderRadius: 16,
+                  width: 124,
+                  height: 124,
+                  borderRadius: 18,
                   backgroundColor: color,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Icon size={60} />
+                <Icon size={64} />
               </div>
               <span
                 style={{
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: 700,
                   color,
                   textAlign: "center",
-                  whiteSpace: "pre-line",
+                  whiteSpace: "nowrap",
                   opacity: labelOpacity,
                   lineHeight: 1.3,
                 }}
@@ -256,23 +253,23 @@ export const Scene03: React.FC = () => {
         })}
       </div>
 
-      {/* Subtitle: "Each model processing independently" */}
+      {/* Subtitle: "Each model processing independently" — single line */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, 120px)",
+          transform: "translate(-50%, 130px)",
           display: "flex",
-          gap: 8,
-          opacity: subtitleFadeOut,
+          gap: 10,
+          whiteSpace: "nowrap",
         }}
       >
         {wordEntries.map(({ text, start, color }, i) => {
           const wordY = spring({
             frame: frame - start,
             fps,
-            from: 14,
+            from: 12,
             to: 0,
             config: { damping: 14, stiffness: 140, mass: 0.6 },
           });
@@ -284,12 +281,13 @@ export const Scene03: React.FC = () => {
             <span
               key={i}
               style={{
-                fontSize: 28,
+                fontSize: 30,
                 fontWeight: 700,
                 color,
                 opacity: frame >= start ? wordOpacity : 0,
-                transform: `translateY(${frame >= start ? wordY : 14}px)`,
+                transform: `translateY(${frame >= start ? wordY : 12}px)`,
                 display: "inline-block",
+                whiteSpace: "nowrap",
               }}
             >
               {text}
@@ -307,5 +305,5 @@ export const scene03Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 160,
+  durationInFrames: 138,
 };
