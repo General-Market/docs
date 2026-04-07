@@ -12,6 +12,7 @@ import {
   type VisionVaultPositionSSE,
 } from '@/hooks/useSSE'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
+import { useAutoClaimPendingDeposits } from '@/hooks/vaults/useAutoClaimPendingDeposits'
 import { cn } from '@/lib/utils/cn'
 
 interface VaultsTabProps {
@@ -105,6 +106,10 @@ export function VaultsTab({ address }: VaultsTabProps) {
   const totals = useVaultsTotals(isSelf)
   const pnlColor = totals.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
+  // Self-healing: any pending deposit the initial flow failed to claim gets
+  // cleaned up here. Enabled only for the user's own profile.
+  const autoClaim = useAutoClaimPendingDeposits(isSelf)
+
   if (!isSelf) {
     return (
       <div className="py-16 text-center text-caption text-text-muted">
@@ -187,11 +192,26 @@ export function VaultsTab({ address }: VaultsTabProps) {
               <div className="col-span-2 text-right">
                 <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-text-muted">Value</div>
                 <div className="font-mono text-[13px] font-bold tabular-nums">${row.value.toFixed(2)}</div>
-                {pendingFloat > 0 && (
-                  <div className="text-[9px] font-mono text-emerald-600">
-                    ${pendingFloat.toFixed(2)} pending
-                  </div>
-                )}
+                {pendingFloat > 0 && (() => {
+                  const isClaiming =
+                    autoClaim.claiming?.toLowerCase() === row.vaultAddress.toLowerCase()
+                  const hasFailed = autoClaim.failedVaults.has(row.vaultAddress.toLowerCase())
+                  return (
+                    <div
+                      className={cn(
+                        'text-[9px] font-mono',
+                        isClaiming
+                          ? 'text-amber-600'
+                          : hasFailed
+                            ? 'text-color-down'
+                            : 'text-emerald-600',
+                      )}
+                    >
+                      ${pendingFloat.toFixed(2)}{' '}
+                      {isClaiming ? 'claiming…' : hasFailed ? 'claim failed' : 'pending'}
+                    </div>
+                  )
+                })()}
               </div>
 
               <div className="col-span-2 text-right">

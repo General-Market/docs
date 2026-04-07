@@ -96,20 +96,22 @@ export function useOnboarding(sourceId: string): OnboardingState {
 
   // ── Vault step — read user positions from the SSE context ──
   // The data-node emits `user-vault-positions` whenever the user's shares or
-  // pending deposit changes. Any non-zero entry counts as "joined a vault".
-  const vaultAddresses = useMemo(
+  // pending deposit changes. Any non-zero entry across ANY vault counts as
+  // "joined a vault" — the onboarding step isn't source-scoped. A deposit into
+  // a Twitch vault satisfies "Join a Vault" on the Steam source page too.
+  const allVaultAddresses = useMemo(
     () =>
-      (fundData as any).funds
-        .filter((f: any) => f.source === sourceId && f.vault)
-        .map((f: any) => (f.vault as `0x${string}`).toLowerCase()),
-    [sourceId],
+      (fundData as { funds: Array<{ vault?: string }> }).funds
+        .filter((f) => !!f.vault)
+        .map((f) => (f.vault as `0x${string}`).toLowerCase()),
+    [],
   )
 
   const vaultPositions = useSSEUserVaultPositions()
 
   const vaultDone = useMemo(() => {
     if (!address) return false
-    for (const addr of vaultAddresses) {
+    for (const addr of allVaultAddresses) {
       const pos = vaultPositions[addr]
       if (!pos) continue
       try {
@@ -117,7 +119,9 @@ export function useOnboarding(sourceId: string): OnboardingState {
       } catch { /* ignore malformed */ }
     }
     return false
-  }, [address, vaultAddresses, vaultPositions])
+  }, [address, allVaultAddresses, vaultPositions])
+  // sourceId is retained for future per-source logic; currently unused here.
+  void sourceId
 
   // ── Bot step — considered done once vault is done (it's a CTA, not gated) ──
   // We track it separately so the UI can show the final step
