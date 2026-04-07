@@ -12,6 +12,7 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { SourceHero } from './SourceHero'
 import { PendingPositions } from './PendingPositions'
 import { SourceSidebar } from './SourceSidebar'
+import { SourceSidebarMobile } from './SourceSidebarMobile'
 import { VaultShowcase } from './VaultShowcase'
 import { SubmarketsGrid } from './SubmarketsGrid'
 import { SourceDashboard } from './SourceDashboard'
@@ -20,7 +21,7 @@ import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 import { useTranslations } from 'next-intl'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { useOnboarding } from '@/hooks/useOnboarding'
-import { OnboardingGuide, OnboardingGate, FloatingReminder } from './OnboardingGuide'
+import { OnboardingGuide, OnboardingGate } from './OnboardingGuide'
 
 // ── Main component ──
 
@@ -79,7 +80,7 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
 
   const sourceMarkets = snapshotData?.prices ?? []
 
-  // Active batch — `useBatches()` already returns multicall-verified batches
+  // Active batch, `useBatches()` already returns multicall-verified batches
   // from `/api/vision/batches`. The previous client-side `useReadContract`
   // waterfall added a 5-8s delay to first paint and turned a single bad RPC
   // into a permanent "Between rounds" failure. The server multicall is
@@ -169,46 +170,43 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
 
   return (
     <div className="flex">
-      {/* Left sidebar */}
+      {/* Left sidebar — flush to viewport edge, never inset */}
       <SourceSidebar
         currentSourceId={sourceId}
         category={source.category}
         side="left"
       />
 
-      {/* Center content */}
-      <div className="flex-1 min-w-0 px-2 lg:px-4 py-5">
-        {/* Source hero banner */}
-        <SourceHero
-          source={source}
-          sourceSchedule={sourceSchedule}
-          marketCount={marketCount}
-          tickRemaining={0}
-          tickDuration={0}
-          sourceId={sourceId}
-          urgency="normal"
-        />
+      {/* Center content. Internal padding gives the column breathing room
+          without pushing the sidebars away from the viewport edge. The
+          vertical rhythm is one scale: gap-8 between every top-level
+          section, no more mt-* chain. */}
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 lg:py-10 flex flex-col gap-8">
+          {/* Source hero banner */}
+          <SourceHero
+            source={source}
+            sourceSchedule={sourceSchedule}
+            marketCount={marketCount}
+            tickRemaining={0}
+            tickDuration={0}
+            sourceId={sourceId}
+            urgency="normal"
+          />
 
-        {/* Onboarding guide — sticky so it stays visible while scrolling.
-            Top offset clears the sticky stack above this widget:
-              header  h-14 sm:h-16        → 56 / 64 px
-              hero    sticky top-14/16, min-h-[100px] but typical ~110px
-                      (badges row + h1 + description, sometimes a countdown)
-            Total ≈ 56+114 = 170 mobile, 64+116 = 180 desktop. A small buffer
-            absorbs a slightly taller hero (longer description or countdown row)
-            without clipping the step pills. scroll-mt mirrors the top offset so
-            programmatic scrollIntoView lands the card fully in view. */}
-        {onboarding.isActive && (
-          <div className="sticky top-[170px] sm:top-[180px] z-30 mb-4 scroll-mt-[170px] sm:scroll-mt-[180px]">
-            <OnboardingGuide
-              state={onboarding}
-              onVaultDeposit={handleOnboardingVaultDeposit}
-              onBotDeploy={handleOnboardingBotDeploy}
-            />
-          </div>
-        )}
+          {/* Onboarding guide, sticky so it stays visible while scrolling.
+              Top offset clears the site header: h-14 sm:h-16 → 56 / 64 px.
+              scroll-mt mirrors the top offset so programmatic scrollIntoView
+              lands fully in view. */}
+          {onboarding.isActive && (
+            <div className="sticky top-14 sm:top-16 z-30 scroll-mt-14 sm:scroll-mt-16">
+              <OnboardingGuide
+                state={onboarding}
+                onVaultDeposit={handleOnboardingVaultDeposit}
+                onBotDeploy={handleOnboardingBotDeploy}
+              />
+            </div>
+          )}
 
-        <div className="bg-page">
           <OnboardingGate requiredStep="faucet" state={onboarding}>
             <WalletSourceStats sourceId={sourceId} />
           </OnboardingGate>
@@ -224,45 +222,41 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
           )}
 
           {/* Vault showcase */}
-          <div className="mt-6" ref={vaultShowcaseRef}>
+          <div ref={vaultShowcaseRef}>
             <OnboardingGate requiredStep="vault" state={onboarding}>
               <VaultShowcase sourceId={sourceId} />
             </OnboardingGate>
           </div>
 
-          {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
-          <div className="mt-6">
-            <OnboardingGate requiredStep="bot" state={onboarding}>
-              <SourceDashboard
-                sourceId={sourceId}
-                verifiedBatch={verifiedBatch}
-                bettingRound={bettingRound}
-                bettingEnd={bettingEnd}
-                tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
-                settlingRound={settlingRound}
-                rounds={rounds}
-              />
-            </OnboardingGate>
-          </div>
-        </div>
+          {/* Mobile-only "More Sources" strip, mirrors desktop sidebars,
+              sits right beneath the vault section. */}
+          <SourceSidebarMobile currentSourceId={sourceId} category={source.category} />
 
-        {/* Submarkets grid — full width, no side margins, last on page */}
-        <div className="-mx-2 lg:-mx-4">
+          {/* Dashboard: current round, round spotlight (with past rounds), leaderboard, recent bets */}
+          <OnboardingGate requiredStep="bot" state={onboarding}>
+            <SourceDashboard
+              sourceId={sourceId}
+              verifiedBatch={verifiedBatch}
+              bettingRound={bettingRound}
+              bettingEnd={bettingEnd}
+              tickDuration={verifiedBatch?.tickDuration ?? bettingRound?.timeframeSecs ?? 300}
+              settlingRound={settlingRound}
+              rounds={rounds}
+            />
+          </OnboardingGate>
+
+          {/* Submarkets grid, sits at the same edge as every other section */}
           <OnboardingGate requiredStep="bot" state={onboarding}>
             <SubmarketsGrid sourceId={sourceId} />
           </OnboardingGate>
-        </div>
       </div>
 
-      {/* Right sidebar */}
+      {/* Right sidebar — flush to viewport edge, never inset */}
       <SourceSidebar
         currentSourceId={sourceId}
         category={source.category}
         side="right"
       />
-
-      {/* Floating multilingual reminder — fixed to viewport */}
-      <FloatingReminder state={onboarding} />
     </div>
   )
 }

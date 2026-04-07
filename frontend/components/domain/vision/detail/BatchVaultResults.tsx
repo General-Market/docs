@@ -18,7 +18,7 @@ interface SourceBatch {
   /** Top earner's net P&L. Can be 0 or negative. */
   topEarnerPnl?: number
   /** Largest gross payout any player received. Always >= 0. The "TOP PAYOUT"
-   *  column reads this — distinct from PnL. A round can have $0 PnL for the
+   *  column reads this, distinct from PnL. A round can have $0 PnL for the
    *  top earner but still a real payout if everyone got their stake back. */
   topPayout?: number
   topEarnerAddress?: string | null
@@ -77,6 +77,7 @@ function groupBatchesByDate(
 export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
   const t = useTranslations('vision')
   const [page, setPage] = useState(1)
+  const [mobileExpanded, setMobileExpanded] = useState(false)
 
   // Batch history
   const { data: historyData, isLoading } = useQuery<HistoryResponse>({
@@ -108,7 +109,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
 
   return (
     <div>
-      {/* ── Recent Batches — HLTV "Recent results" style ── */}
+      {/* ── Recent Batches, HLTV "Recent results" style ── */}
       {(settled.length > 0 || isLoading) && (
         <div>
           <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
@@ -125,8 +126,8 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
             </div>
           </div>
 
-          {/* Column headers */}
-          <div className="hidden md:grid grid-cols-[64px_1fr_60px_90px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+          {/* Column headers — desktop only, matches the desktop row grid */}
+          <div className="hidden md:grid grid-cols-[56px_1fr_56px_96px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
             <div>Time</div>
             <div className="text-center">Round</div>
             <div className="text-right">Players</div>
@@ -140,10 +141,13 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
               </div>
             )}
 
-            <div className="max-h-[500px] overflow-y-auto">
+            <div className={cn(
+              'overflow-y-auto sm:max-h-[500px]',
+              mobileExpanded ? 'max-h-[500px]' : 'max-h-[280px]',
+            )}>
             {groups.map(group => (
               <div key={group.label}>
-                {/* Group header — like HLTV tournament name */}
+                {/* Group header, like HLTV tournament name */}
                 <div className="px-4 py-2.5 bg-[var(--surface)] border-y border-border-light">
                   <span className="text-[13px] font-black text-black">
                     {group.label}
@@ -154,7 +158,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                   // Top payout = largest gross winnings paid to any player.
                   // The backend exposes `topPayout` (>= 0). Fall back to deriving
                   // it from PnL + average deposit per player if the field is
-                  // missing — for any oracle still on the old shape.
+                  // missing, for any oracle still on the old shape.
                   const rawPayout = batch.topPayout
                   const fallbackPayout =
                     batch.topEarnerPnl != null && batch.playerCount > 0
@@ -168,43 +172,46 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                   return (
                     <div
                       key={batch.batchId}
-                      className="grid grid-cols-[64px_1fr_60px_90px] items-center px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
+                      className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[56px_1fr_56px_96px] items-center gap-2 px-4 py-2.5 border-b border-border-light last:border-b-0 hover:bg-[var(--surface)] transition-colors"
                     >
                       {/* Time */}
                       <div className="text-[11px] text-text-muted font-mono tabular-nums">
                         {formatTime(batch.settledAt ?? batch.timestamp)}
                       </div>
 
-                      {/* Batch info */}
-                      <div className="flex items-center justify-center gap-3">
-                        <span className="text-[12px] font-bold text-black font-mono">
+                      {/* Batch info — secondary metadata is desktop-only so the
+                          mobile cell never overflows the row */}
+                      <div className="flex items-center md:justify-center gap-3 min-w-0">
+                        <span className="text-[12px] font-bold text-black font-mono shrink-0">
                           {t('batch_results.batch')} #{batch.batchId}
                         </span>
                         {addr && (
                           <span
-                            className="text-[10px] font-mono text-text-muted"
+                            className="hidden md:inline text-[10px] font-mono text-text-muted truncate"
                             title={addr}
                           >
                             {truncAddr(addr)}
                           </span>
                         )}
                         {batch.marketCount != null && (
-                          <span className="text-[9px] text-text-muted ml-1">
+                          <span className="hidden md:inline text-[9px] text-text-muted ml-1">
                             {t('batch_card.markets_count', { count: batch.marketCount })}
                           </span>
                         )}
                       </div>
 
-                      {/* Players */}
-                      <div className="text-right text-[12px] font-mono tabular-nums text-text-secondary font-bold">
+                      {/* Players — desktop only, mobile drops it to make room
+                          for the dollar value, which is the column users care
+                          about most */}
+                      <div className="hidden md:block text-right text-[12px] font-mono tabular-nums text-text-secondary font-bold">
                         {batch.playerCount}
                       </div>
 
-                      {/* Top Payout — gross winnings for the top player.
+                      {/* Top Payout, gross winnings for the top player.
                           Em-dash only when nobody played the round. */}
                       <div
                         className={cn(
-                          'text-right text-[12px] font-mono tabular-nums font-bold truncate',
+                          'text-right text-[12px] font-mono tabular-nums font-bold tabular-nums',
                           showPayout ? 'text-color-up' : 'text-text-muted',
                         )}
                       >
@@ -217,6 +224,18 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
             ))}
 
             </div>
+
+            {/* Mobile-only expand/collapse. Desktop keeps the fixed 500px
+                scroll box; mobile starts shorter and reveals on tap. */}
+            {settled.length > 4 && (
+              <button
+                onClick={() => setMobileExpanded(v => !v)}
+                className="sm:hidden w-full py-2.5 border-t border-border-light text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted hover:text-black transition-colors"
+              >
+                {mobileExpanded ? t('batch_results.show_less') : t('batch_results.show_more')}
+              </button>
+            )}
+
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-border-light bg-[var(--surface)]">
