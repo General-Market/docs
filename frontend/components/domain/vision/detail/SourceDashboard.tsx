@@ -67,7 +67,7 @@ function BotCta({ text }: { text: string }) {
     <div className={CTA_BOX}>
       <p className={CTA_TEXT}>
         {text}{' '}
-        <Link href="/vision/create-strategy" className={CTA_LINK}>
+        <Link href="/build-bot" className={CTA_LINK}>
           BUILD YOUR BOT &rarr;
         </Link>
       </p>

@@ -108,7 +108,7 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
           This source has no automated strategies. Be the first.
         </p>
         <Link
-          href="/vision/create-strategy"
+          href="/build-bot"
           className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[12px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
         >
           BUILD YOUR BOT
@@ -184,7 +184,7 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
             {' '}Build your own strategy.
           </p>
           <Link
-            href="/vision/create-strategy"
+            href="/build-bot"
             className="shrink-0 ml-4 px-4 py-1.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
           >
             START &rarr;
@@ -236,7 +236,7 @@ export function FeaturedVault({ sourceId }: FeaturedVaultProps) {
                 You have an edge?<br />Prove it.
               </div>
               <Link
-                href="/vision/create-strategy"
+                href="/build-bot"
                 className="px-4 py-1.5 rounded-none bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/80 hover:bg-white/[0.1] hover:text-white transition-colors"
               >
                 BUILD YOUR BOT
