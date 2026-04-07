@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http, parseAbiItem, formatUnits } from 'viem'
+import deployment from '@/lib/contracts/deployment.json'
 
 const L3_RPC = process.env['L3_RPC_URL'] || process.env['NEXT_PUBLIC_L3_RPC_URL'] || 'http://142.132.164.24/'
-const VISION_ADDRESS = '0x821D7c212344dd4E5EB837B01B0FFfE3BcAc1649' as const
+// Read the Vision address from deployment.json rather than hardcoding. The
+// prior hardcoded value survived a redeploy; the endpoint was quietly polling
+// a dead contract and returning an empty array forever.
+const VISION_ADDRESS = (deployment as any).contracts?.Vision as `0x${string}`
 const BLOCK_TIME_MS = 1000 // ~1s per block on Orbit L3
 // Look back ~30 minutes. Long enough to capture both the join and the
 // settle for any source — even the 600s tick rounds (~20 min total cycle).

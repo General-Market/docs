@@ -21,7 +21,12 @@ export function useVaultHistory(vaultAddress: string) {
       return res.json()
     },
     enabled: !!vaultAddress,
-    staleTime: 60_000,
+    // Snapshots are written by the fund-manager once per cycle. Refetch every
+    // 30s so the chart picks up new points without a reload; keep a short
+    // staleTime so cross-component reads don't hammer the API in between.
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   })
 
   return {
