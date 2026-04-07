@@ -4,7 +4,6 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
 
@@ -14,9 +13,10 @@ const CARD_BG = "#111C2E";
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
-const TEAL = "#4ECDC4";
+const TEAL = "#0FE8AE";
+const TITLE_TEAL = "rgba(15,232,174,0.5)";
 const MUTED = "#6B7B8D";
-const ROW_HEIGHT = 32;
+const ROW_HEIGHT = 30;
 
 interface AgentRow {
   rank: number;
@@ -80,199 +80,127 @@ const CellValue: React.FC<{ value: string; color?: string }> = ({ value, color }
   );
 };
 
-const DataRow: React.FC<{
-  agent: AgentRow;
-  frame: number;
-  fps: number;
-  enterFrame: number;
-  expandProgress: number;
-}> = ({ agent, frame, fps, enterFrame, expandProgress }) => {
-  const slideX = spring({
-    frame: frame - enterFrame,
-    fps,
-    from: 80,
-    to: 0,
-    config: { damping: 14, stiffness: 100, mass: 0.6 },
-  });
-  const rowOpacity = interpolate(frame, [enterFrame, enterFrame + 8], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
+const DataRow: React.FC<{ agent: AgentRow }> = ({ agent }) => {
   const isFirst = agent.rank === 1;
-
   return (
     <div
       style={{
-        opacity: frame >= enterFrame ? rowOpacity : 0,
-        transform: `translateX(${frame >= enterFrame ? slideX : 80}px)`,
+        display: "flex",
+        gap: 0,
+        height: ROW_HEIGHT,
+        alignItems: "center",
+        borderRadius: 6,
+        paddingLeft: 4,
+        paddingRight: 4,
+        background: isFirst ? "rgba(15,232,174,0.06)" : "transparent",
+        boxShadow: isFirst ? `0 0 20px rgba(15,232,174,0.08), inset 0 0 12px rgba(15,232,174,0.04)` : "none",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: 0,
-          height: ROW_HEIGHT,
-          alignItems: "center",
-          borderRadius: 6,
-          paddingLeft: 4,
-          paddingRight: 4,
-          background: isFirst ? "rgba(78,205,196,0.06)" : "transparent",
-          boxShadow: isFirst ? `0 0 20px rgba(78,205,196,0.08), inset 0 0 12px rgba(78,205,196,0.04)` : "none",
-        }}
-      >
-        {/* Rank */}
-        <div style={{ width: COL_WIDTHS[0], display: "flex", alignItems: "center" }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              backgroundColor: isFirst ? TEAL : "rgba(107,123,141,0.15)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              fontWeight: 700,
-              color: isFirst ? DARK_BG : MUTED,
-            }}
-          >
-            {agent.rank}
-          </div>
-        </div>
-        {/* Name */}
-        <div style={{ width: COL_WIDTHS[1], fontSize: 11, color: "#fff", fontWeight: isFirst ? 700 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {agent.name}
-        </div>
-        {/* GPT */}
-        <div style={{ width: COL_WIDTHS[2], fontSize: 11, textAlign: "right" }}>
-          <CellValue value={agent.gpt} color={GPT_GREEN} />
-        </div>
-        {/* Gemini */}
-        <div style={{ width: COL_WIDTHS[3], fontSize: 11, textAlign: "right" }}>
-          <CellValue value={agent.gemini} color={GEMINI_BLUE} />
-        </div>
-        {/* Opus */}
-        <div style={{ width: COL_WIDTHS[4], fontSize: 11, textAlign: "right" }}>
-          <CellValue value={agent.opus} color={OPUS_ORANGE} />
-        </div>
-        {/* Blend */}
-        <div style={{ width: COL_WIDTHS[5], fontSize: 11, textAlign: "right", color: "#fff", fontWeight: 600 }}>
-          {agent.blend}
-        </div>
-        {/* Allocation */}
-        <div style={{ width: COL_WIDTHS[6], fontSize: 11, textAlign: "right" }}>
-          <CellValue value={agent.allocation} color={GPT_GREEN} />
-        </div>
-      </div>
-
-      {/* Expanded analysis cards for row #1 */}
-      {isFirst && expandProgress > 0 && (
+      {/* Rank */}
+      <div style={{ width: COL_WIDTHS[0], display: "flex", alignItems: "center" }}>
         <div
           style={{
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            backgroundColor: isFirst ? TEAL : "rgba(107,123,141,0.15)",
             display: "flex",
-            gap: 10,
-            marginTop: 8,
-            marginBottom: 8,
-            overflow: "hidden",
-            maxHeight: expandProgress * 100,
-            opacity: expandProgress,
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            fontWeight: 700,
+            color: isFirst ? DARK_BG : MUTED,
           }}
         >
-          {ANALYSIS_CARDS.map((card) => (
-            <div
-              key={card.label}
-              style={{
-                flex: 1,
-                backgroundColor: CARD_BG,
-                borderRadius: 8,
-                padding: "10px 12px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: card.color }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: card.color, letterSpacing: 0.5 }}>
-                  {card.label}
-                </span>
-              </div>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, margin: 0 }}>
-                {card.text}
-              </p>
-            </div>
-          ))}
+          {agent.rank}
         </div>
-      )}
+      </div>
+      {/* Name */}
+      <div style={{ width: COL_WIDTHS[1], fontSize: 11, color: "#fff", fontWeight: isFirst ? 700 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {agent.name}
+      </div>
+      {/* GPT */}
+      <div style={{ width: COL_WIDTHS[2], fontSize: 11, textAlign: "right" }}>
+        <CellValue value={agent.gpt} color={GPT_GREEN} />
+      </div>
+      {/* Gemini */}
+      <div style={{ width: COL_WIDTHS[3], fontSize: 11, textAlign: "right" }}>
+        <CellValue value={agent.gemini} color={GEMINI_BLUE} />
+      </div>
+      {/* Opus */}
+      <div style={{ width: COL_WIDTHS[4], fontSize: 11, textAlign: "right" }}>
+        <CellValue value={agent.opus} color={OPUS_ORANGE} />
+      </div>
+      {/* Blend */}
+      <div style={{ width: COL_WIDTHS[5], fontSize: 11, textAlign: "right", color: "#fff", fontWeight: 600 }}>
+        {agent.blend}
+      </div>
+      {/* Allocation */}
+      <div style={{ width: COL_WIDTHS[6], fontSize: 11, textAlign: "right" }}>
+        <CellValue value={agent.allocation} color={GPT_GREEN} />
+      </div>
     </div>
   );
 };
 
-// Overlay schedule (120-frame budget):
-//   0-30   leaderboard slides in
-//   30-45  row #1 expands with analysis cards
-//   45-65  overlay #1: "Each model's rationale displayed per agent"
-//   65-80  overlay #2: "Why they scored high"
-//   80-95  overlay #3: "Why they got flagged"
-//   95-110 overlay #4: "Full transparency."
-//  110-120 fade out
+// Scene04 — 220-frame budget (frames 0-219)
+//   0-15    leaderboard fade in (no row stagger — all rows instant)
+//   30-70   overlay #1: "Each model's rationale displayed per agent"
+//   65      row #1 collapses; analysis cards appear in its place
+//   70-110  overlay #2: "Why they scored high"
+//  110-160  overlay #3: "Why they got flagged"
+//  160-210  overlay #4: "Full transparency."
+//  210-220  fade out
 const OVERLAY_TEXTS: { text: string; start: number; end: number }[] = [
-  { text: "Each model's rationale displayed per agent", start: 45, end: 65 },
-  { text: "Why they scored high", start: 65, end: 80 },
-  { text: "Why they got flagged", start: 80, end: 95 },
-  { text: "Full transparency.", start: 95, end: 110 },
+  { text: "Each model's rationale displayed per agent", start: 30, end: 70 },
+  { text: "Why they scored high", start: 70, end: 110 },
+  { text: "Why they got flagged", start: 110, end: 160 },
+  { text: "Full transparency.", start: 160, end: 210 },
 ];
+
+const EXPAND_FRAME = 65;
 
 export const Scene04: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  useVideoConfig();
 
-  // Title slide down (0-10)
-  const titleY = interpolate(frame, [0, 10], [-30, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const titleOpacity = interpolate(frame, [0, 10], [0, 1], {
+  // Card + leaderboard fade in (0-15)
+  const cardOpacity = interpolate(frame, [0, 15], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Row stagger: each row 2 frames apart, starting at frame 10 — 10 rows in by frame 30
-  const rowEnterFrame = (idx: number) => 10 + idx * 2;
-
-  // Row #1 expansion (30-45)
-  const expandProgress = interpolate(frame, [30, 45], [0, 1], {
+  // Row #1 expansion: appears at frame 65
+  const expandProgress = interpolate(frame, [EXPAND_FRAME, EXPAND_FRAME + 10], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  const expanded = frame >= EXPAND_FRAME;
 
   // Active overlay
   const activeOverlay = OVERLAY_TEXTS.find((o) => frame >= o.start && frame < o.end);
   const overlayOpacity = activeOverlay
     ? interpolate(
         frame,
-        [activeOverlay.start, activeOverlay.start + 4, activeOverlay.end - 4, activeOverlay.end],
+        [activeOverlay.start, activeOverlay.start + 5, activeOverlay.end - 5, activeOverlay.end],
         [0, 1, 1, 0],
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
       )
     : 0;
-  const overlayBgOpacity = activeOverlay
-    ? interpolate(
-        frame,
-        [activeOverlay.start, activeOverlay.start + 4, activeOverlay.end - 4, activeOverlay.end],
-        [0, 0.78, 0.78, 0],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-      )
-    : 0;
 
-  // Final fade out (110-120)
-  const fadeOut = interpolate(frame, [110, 120], [1, 0], {
+  // Final fade out (210-220)
+  const fadeOut = interpolate(frame, [210, 220], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
+  // Visible rows: when expanded, hide row #1
+  const visibleRows = expanded ? AGENTS.slice(1) : AGENTS;
+
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#f0f2f5",
+        backgroundColor: "#FFFFFF",
         fontFamily,
         opacity: fadeOut,
       }}
@@ -285,12 +213,27 @@ export const Scene04: React.FC = () => {
           left: "8%",
           width: "84%",
           height: "90%",
-          backgroundColor: "#0B1426",
+          backgroundColor: DARK_BG,
           borderRadius: 20,
           padding: "20px 24px",
           overflow: "hidden",
+          opacity: cardOpacity,
         }}
       >
+        {/* Title — small monospace, top-left, muted teal */}
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: TITLE_TEAL,
+            textAlign: "left",
+            letterSpacing: 0.5,
+            marginBottom: 18,
+          }}
+        >
+          AI Council Top 10
+        </div>
+
         {/* Content container */}
         <div
           style={{
@@ -298,38 +241,54 @@ export const Scene04: React.FC = () => {
             margin: "0 auto",
           }}
         >
-          {/* Title */}
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "#fff",
-              textAlign: "center",
-              marginBottom: 24,
-              opacity: titleOpacity,
-              transform: `translateY(${titleY}px)`,
-            }}
-          >
-            AI Council Top 10
-          </div>
+          {/* Analysis cards — replace row #1 when expanded */}
+          {expanded && (
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginBottom: 10,
+                opacity: expandProgress,
+                transform: `translateY(${(1 - expandProgress) * -6}px)`,
+              }}
+            >
+              {ANALYSIS_CARDS.map((card) => (
+                <div
+                  key={card.label}
+                  style={{
+                    flex: 1,
+                    backgroundColor: CARD_BG,
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    border: "1px solid rgba(107,123,141,0.15)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: card.color }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: card.color, letterSpacing: 0.5 }}>
+                      {card.label}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, margin: 0 }}>
+                    {card.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* Table */}
+          {/* Header */}
           <HeaderRow />
+
+          {/* Rows — instant entry, no stagger */}
           <div style={{ marginTop: 6 }}>
-            {AGENTS.map((agent, idx) => (
-              <DataRow
-                key={agent.rank}
-                agent={agent}
-                frame={frame}
-                fps={fps}
-                enterFrame={rowEnterFrame(idx)}
-                expandProgress={agent.rank === 1 ? expandProgress : 0}
-              />
+            {visibleRows.map((agent) => (
+              <DataRow key={agent.rank} agent={agent} />
             ))}
           </div>
         </div>
 
-        {/* Overlay — single line, above leaderboard */}
+        {/* Overlay text — NO backdrop, white on top of leaderboard */}
         {activeOverlay && (
           <div
             style={{
@@ -338,23 +297,24 @@ export const Scene04: React.FC = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: `rgba(11,20,38,${overlayBgOpacity})`,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              borderRadius: 20,
               padding: "0 24px",
+              pointerEvents: "none",
             }}
           >
             <span
               style={{
-                fontSize: 22,
+                fontSize: 28,
                 fontWeight: 700,
-                color: "#fff",
+                color: "#FFFFFF",
                 opacity: overlayOpacity,
                 letterSpacing: -0.4,
                 whiteSpace: "nowrap",
                 textAlign: "center",
+                fontFamily,
+                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
               }}
             >
               {activeOverlay.text}
@@ -372,5 +332,5 @@ export const scene04Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 120,
+  durationInFrames: 220,
 };
