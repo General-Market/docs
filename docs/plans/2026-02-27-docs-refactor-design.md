@@ -26,7 +26,7 @@ Create two files:
 | `vision/concepts/bitmaps.mdx` | flowchart | Bitmap flow: predict → encode → hash → commit on-chain → reveal to oracles |
 | `vision/concepts/ticks.mdx` | flowchart | Resolution cycle (replace ASCII): check due → filter players → fetch prices → match → BLS sign → submit |
 | `vision/concepts/balance-proofs.mdx` | sequence | BLS verification: oracle compute → sign → aggregate → on-chain verify → claim |
-| `vision/concepts/fees.mdx` | flowchart | Fee flow: gross profit → 0.3% fee → net payout |
+| `vision/concepts/fees.mdx` | flowchart | Fee flow: gross profit → 0.05% fee → net payout |
 | `vision/bots/overview.mdx` | flowchart | Bot architecture (replace ASCII): on-chain vs off-chain separation |
 
 ### Index Diagrams (5)

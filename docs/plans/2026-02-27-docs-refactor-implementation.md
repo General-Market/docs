@@ -258,11 +258,11 @@ Keep all existing content below, but move "Why Off-Chain Balance Tracking?" afte
 
 | What | Amount |
 |------|--------|
-| Fee rate | **0.3%** on profits only |
+| Fee rate | **0.05%** on profits only |
 | Losers pay | **Nothing** |
 | Min stake | 0.1 USDC per tick |
 
-**Example:** You win 20 USDC → fee is 0.06 USDC → you receive 19.94 USDC.
+**Example:** You win 20 USDC → fee is 0.01 USDC → you receive 19.99 USDC.
 ```
 
 **Add Mermaid diagram after the summary:**
@@ -272,7 +272,7 @@ Keep all existing content below, but move "Why Off-Chain Balance Tracking?" afte
 flowchart LR
     A[Tick Resolves] --> B{Won?}
     B -->|Yes| C[Gross Profit]
-    C --> D[0.3% Fee Deducted]
+    C --> D[0.05% Fee Deducted]
     D --> E[Net Payout]
     B -->|No| F[No Fee — Loss Only]
 ```

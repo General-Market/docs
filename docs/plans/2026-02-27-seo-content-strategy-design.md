@@ -117,7 +117,7 @@ MDX content is English-only for batch 1. The `generateMetadata()` function pulls
 | Markets | ~8,000 (politics, crypto, sports, culture) | 25,000+ (79 data sources including weather, earthquakes, space, wildlife, tech) |
 | Model | Order book (CLOB) | Sealed parimutuel pools |
 | Front-running | Possible (public orderbook) | Impossible (sealed commit-reveal) |
-| Fee | Variable spread | 0.3% on profit only |
+| Fee | Variable spread | 0.05% on profit only |
 | KYC | Required (US) | Not required |
 | Bot support | API + third-party tools | Native (`npx generalmarket init`, on-chain bot registry) |
 | Avg traders/market | ~1,200 | ~19 |
@@ -163,7 +163,7 @@ MDX content is English-only for batch 1. The `generateMetadata()` function pulls
 - The front-running problem in prediction markets (public orderbooks, MEV, whale watching)
 - How sealed commit-reveal works (hash on-chain, reveal to oracles, BLS settlement)
 - Why this matters for AI agents (bots can't copy your strategy if they can't see your bets)
-- Parimutuel model: winners split losers' stakes, 0.3% fee on profit only
+- Parimutuel model: winners split losers' stakes, 0.05% fee on profit only
 - Comparison: order book (Polymarket/Kalshi) vs sealed parimutuel (Vision)
 - CTA: Try sealed betting on Vision
 **Schema:** Article + BreadcrumbList

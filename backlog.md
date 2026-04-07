@@ -4794,7 +4794,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Solvency check includes fee — changed all solvency checks from `< payout + accumulatedFees` to `< payout + accumulatedFees + fee`. The fee is added to accumulatedFees after the check, so it must be included in the pre-check.
 
-[DECISION] forceWithdraw fee on profit only — added totalDeposited param (BLS-signed). Fee computed as `0.3% × max(0, finalBalance - totalDeposited)`, consistent with withdraw. Prevents penalizing players who lost money.
+[DECISION] forceWithdraw fee on profit only — added totalDeposited param (BLS-signed). Fee computed as `0.05% × max(0, finalBalance - totalDeposited)`, consistent with withdraw. Prevents penalizing players who lost money.
 
 [DECISION] API response camelCase — added `#[serde(rename_all = "camelCase")]` to all REST response structs. Frontend expects camelCase, Rust convention is snake_case.
 

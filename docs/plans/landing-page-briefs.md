@@ -67,7 +67,7 @@ Convert 20% of visitors into making their first trade on Vision (sealed parimutu
 - The Problem: 3 columns exposing CEX, Polymarket, and Robinhood flaws
 - 3 Pillars: Sealed Commitments, Parimutuel, BLS Verification
 - "Built for Bots" with Python code examples (MomentumStrategy backtest)
-- Performance metrics (5min resolution, 0.3% fee, 0.1 USDC min)
+- Performance metrics (5min resolution, 0.05% fee, 0.1 USDC min)
 - Trader testimonials (The Quant, The Degen, The Developer)
 
 **Why it might work:** Builds trust through technical transparency. Code snippets signal "this is real." Addresses real pain points that serious traders feel daily. The "bots welcome" angle is unique — most platforms ban bots.

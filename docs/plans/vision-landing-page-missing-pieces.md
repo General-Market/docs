@@ -92,7 +92,7 @@ The product demo does the audience segmentation automatically. No need for split
 **Decision: 1 line, not a section**
 
 ```
-Pick markets → Predict up/down (sealed) → Winners split the pot · 0.3% on profit only
+Pick markets → Predict up/down (sealed) → Winners split the pot · 0.05% on profit only
 ```
 
 Appears as a caption under the interactive demo, not as its own section. Technical users figure it out by browsing the grid. Non-technical users need 1 sentence, not 3 boxes.
