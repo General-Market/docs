@@ -18,8 +18,10 @@ log = logging.getLogger("deploy-fund")
 
 # ── Constants ────────────────────────────────────────────────────────
 
-SEED_AMOUNT = 50 * 10**18  # 50 USDC (18 decimals on L3)
-FACTORY = Web3.to_checksum_address("0xf81b62cC88367C8b6a7A8f9743b2Fe1ebD51947d")
+SEED_AMOUNT = 10_000 * 10**18  # 10,000 USDC. Must match the bot's allocation_bps math.
+# With allocation_bps=10 (0.1%), 10K × 0.001 = $10 per join — above MIN_DEPOSIT (0.10).
+# Smaller seeds round to MIN_DEPOSIT and every batch becomes a $0.10 parimutuel.
+FACTORY = Web3.to_checksum_address("0xA0FD597A1Bf2b5A4f6B283f09DC512F6F8B4589e")
 USDC = Web3.to_checksum_address("0x2710e49EBb807A0cB9369F13Ba24Bd809809a827")
 RPC = "http://142.132.164.24/"
 
