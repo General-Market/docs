@@ -422,8 +422,16 @@ def write_vault_snapshots(funds, vault_info_cache=None):
                             continue
                     try:
                         total_assets = info.get("total_assets", 0)
-                        total_supply = max(info.get("total_supply", 1), 1)
-                        nav = total_assets / total_supply
+                        total_supply = info.get("total_supply", 0)
+                        # NAV is a float in USDC. Both totalAssets and totalSupply
+                        # are 18-decimal wei integers, so the ratio is unitless.
+                        # If totalSupply is zero (no shares minted yet) NAV is
+                        # undefined — write 1.0 as the canonical genesis value
+                        # rather than dividing by 1 wei and storing 1e22.
+                        if total_supply > 0:
+                            nav = total_assets / total_supply
+                        else:
+                            nav = 1.0
                         tvl = total_assets / 1e18
                         cur.execute(
                             "INSERT INTO vault_snapshots "
