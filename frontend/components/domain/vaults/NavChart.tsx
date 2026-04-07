@@ -156,19 +156,36 @@ export function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaul
       (frac) => CHART_PAD_T + CHART_PLOT_H * (1 - frac),
     )
 
-    const xLabels = [0, 1, 2, 3].map(i => {
+    // Pick label format based on the actual time span. Sub-day spans show
+    // hour:minute, multi-day spans show weekday + day. Adjacent duplicate
+    // labels (e.g. four "7 Tue" stamps within one day) get blanked so the
+    // axis reads honestly.
+    const tsArr: number[] | null = timestamps && timestamps.length > 0 ? timestamps : null
+    const spanMs = tsArr ? tsArr[tsArr.length - 1] - tsArr[0] : 6 * 24 * 3_600_000
+    const useTimeFormat = spanMs < 24 * 3_600_000
+    const formatLabel = (d: Date): string =>
+      useTimeFormat
+        ? d.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false })
+        : d.toLocaleDateString('en', { weekday: 'short', day: 'numeric' })
+
+    const rawXLabels = [0, 1, 2, 3].map(i => {
       let d: Date
-      if (timestamps && timestamps.length > 0) {
-        const idx = Math.round((i / 3) * (timestamps.length - 1))
-        d = new Date(timestamps[idx])
+      if (tsArr) {
+        const idx = Math.round((i / 3) * (tsArr.length - 1))
+        d = new Date(tsArr[idx])
       } else {
         d = new Date(Date.now() - (3 - i) * 2 * 24 * 60 * 60 * 1000)
       }
       return {
-        label: d.toLocaleDateString('en', { weekday: 'short', day: 'numeric' }),
+        label: formatLabel(d),
         x: CHART_PAD_L + (CHART_PLOT_W / 3) * i,
       }
     })
+    // Drop adjacent duplicates so the axis doesn't read "7 Tue 7 Tue 7 Tue".
+    const xLabels = rawXLabels.map((entry, i) => ({
+      ...entry,
+      label: i > 0 && entry.label === rawXLabels[i - 1].label ? '' : entry.label,
+    }))
 
     return {
       min, max, range, isPositive, strokeColor,

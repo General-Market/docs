@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
 import { Link } from '@/i18n/routing'
@@ -219,10 +219,45 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const perfPercent = (effectivePerf * 100).toFixed(2)
   const isPositive = effectivePerf >= 0
   const deployedPct = effectiveDeployedPct
-  const navHistory = useMemo(() => {
-    if (hasHistory && snapshots.length >= 2) return snapshots.map(s => s.nav)
-    return null
+
+  // Time-range filter for the NAV chart. The buttons used to be cosmetic.
+  // Default to ALL but auto-snap to a smaller window if there's enough data.
+  type NavRange = '1D' | '1W' | '1M' | 'ALL'
+  const RANGE_HOURS: Record<NavRange, number | null> = {
+    '1D': 24,
+    '1W': 24 * 7,
+    '1M': 24 * 30,
+    ALL: null,
+  }
+  const defaultRange: NavRange = useMemo(() => {
+    if (!hasHistory || snapshots.length < 2) return 'ALL'
+    const spanHours = (snapshots[snapshots.length - 1].ts - snapshots[0].ts) / 3_600_000
+    if (spanHours <= 24) return '1D'
+    if (spanHours <= 24 * 7) return '1W'
+    if (spanHours <= 24 * 30) return '1M'
+    return 'ALL'
   }, [hasHistory, snapshots])
+  const [navRange, setNavRange] = useState<NavRange>(defaultRange)
+  // Snap range to default whenever the underlying data span changes — covers
+  // the case where snapshots arrive after the first render.
+  useEffect(() => {
+    setNavRange(defaultRange)
+  }, [defaultRange])
+
+  const filteredSnapshots = useMemo(() => {
+    const cutoffHours = RANGE_HOURS[navRange]
+    if (cutoffHours === null) return snapshots
+    if (snapshots.length === 0) return snapshots
+    const cutoffMs = Date.now() - cutoffHours * 3_600_000
+    const windowed = snapshots.filter(s => s.ts >= cutoffMs)
+    // Always keep at least the last two points so the chart can draw a line.
+    return windowed.length >= 2 ? windowed : snapshots.slice(-2)
+  }, [snapshots, navRange])
+
+  const navHistory = useMemo(() => {
+    if (filteredSnapshots.length >= 2) return filteredSnapshots.map(s => s.nav)
+    return null
+  }, [filteredSnapshots])
 
   const maxDd = useMemo(() => navHistory ? computeMaxDrawdown(navHistory) : null, [navHistory])
   const vol = useMemo(() => navHistory ? computeVolatility(navHistory) : null, [navHistory])
@@ -337,12 +372,14 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">NAV History</span>
             <div className="flex gap-0.5 bg-[#FAFAFA] p-0.5 rounded-none">
-              {['1D', '1W', '1M', 'ALL'].map((p) => (
+              {(['1D', '1W', '1M', 'ALL'] as const).map((p) => (
                 <button
                   key={p}
+                  type="button"
+                  onClick={() => setNavRange(p)}
                   className={cn(
                     'font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded-none border-0 transition-colors',
-                    p === '1M' ? 'bg-[#1A1A1A] text-white' : 'bg-transparent text-text-muted hover:text-text-primary',
+                    p === navRange ? 'bg-[#1A1A1A] text-white' : 'bg-transparent text-text-muted hover:text-text-primary',
                   )}
                 >
                   {p}
@@ -352,7 +389,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
           <div className="h-[120px] lg:h-[180px] overflow-hidden">
             {navHistory ? (
-              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={snapshots.map(s => s.ts)} />
+              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={filteredSnapshots.map(s => s.ts)} />
             ) : (
               <div className="h-full flex items-center justify-center text-text-muted text-[12px] font-mono">
                 Awaiting first trade
