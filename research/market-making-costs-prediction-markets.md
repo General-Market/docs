@@ -217,7 +217,7 @@ Spread = market maker's profit          No spread. No market maker. No cost.
 
 4. **Settlement is oracle-driven.** BLS-signed oracle consensus resolves outcomes every tick (2 minutes to 24 hours depending on the batch). No human market maker adjudicates prices.
 
-5. **Protocol fee: 0.3% on profits only.** Not on deposits, not on volume -- only on net wins. A player who breaks even pays nothing.
+5. **Protocol fee: 0.05% on profits only.** Not on deposits, not on volume -- only on net wins. A player who breaks even pays nothing.
 
 ### Why This Scales Where Order Books Can't
 

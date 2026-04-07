@@ -40,7 +40,7 @@ Min stake per tick: 100000 (0.1 USDC).
 - **Address:** 0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
 - **Chain ID:** 421611337
 - **USDC:** 6 decimals
-- **Fee:** 0.3% on profits
+- **Fee:** 0.05% on profits
 
 ## Dependencies
 

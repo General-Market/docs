@@ -265,7 +265,7 @@ Response:
 
 Chain ID: 421611337
 Collateral: USDC (6 decimals)
-Fee: 0.3% on profits (30 bps)
+Fee: 0.05% on profits (5 bps)
 Min stake: 100000 (0.1 USDC)
 
 ### createBatch(bytes32[] marketIds, uint8[] resolutionTypes, uint256 tickDuration, uint256[] customThresholds) returns (uint256 batchId)

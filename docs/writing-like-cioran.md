@@ -713,7 +713,7 @@ Every example is drawn from General Market — prediction markets, ITPs, DeFi le
  │                 │   sources"             │   them measure what   │
  │                 │                        │   matters."           │
  ├─────────────────┼────────────────────────┼───────────────────────┤
- │  Fees           │  "A competitive 0.3%   │  "0.3% on profits     │
+ │  Fees           │  "A competitive 0.05%  │  "0.05% on profits    │
  │                 │   fee on profits only" │   only. Losers pay    │
  │                 │                        │   nothing. The closest│
  │                 │                        │   thing to justice."  │

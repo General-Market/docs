@@ -49,7 +49,7 @@
 - [Ticks](https://generalmarket.io/docs/vision/concepts/ticks): Resolution cycle, outcomes, payouts
 - [Resolution Types](https://generalmarket.io/docs/vision/concepts/resolution-types): UP_0 through FLAT_X threshold definitions
 - [Balance Proofs](https://generalmarket.io/docs/vision/concepts/balance-proofs): BLS-signed claim flow
-- [Fees](https://generalmarket.io/docs/vision/concepts/fees): 0.3% on profits only
+- [Fees](https://generalmarket.io/docs/vision/concepts/fees): 0.05% on profits only
 - [Data Sources](https://generalmarket.io/docs/vision/concepts/sources): 98+ real-world data sources powering prediction markets
 - [Points & Rewards](https://generalmarket.io/docs/vision/concepts/points): Earn points through trading activity, commitment multipliers, reward tiers
 

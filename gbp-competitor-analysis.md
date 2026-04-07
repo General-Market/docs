@@ -12,7 +12,7 @@
 - Key differentiator: niche markets with single-digit traders (vs Polymarket's 1,200+/market)
 - AI/bot-native design — portfolio bets spanning 100-1000+ markets
 - Sealed bitmap commitments (no front-running)
-- 0.3% fee on profits only
+- 0.05% fee on profits only
 - **No physical location** — internet-native, remote-only protocol
 
 ### Step 2: Competitor Analysis
@@ -202,7 +202,7 @@ On Vision, a single trade is a bitmap — your position across every market in a
 
 This isn't gambling. It's portfolio construction for prediction markets.
 
-Winners split the losers' pool (parimutuel). No house edge. 0.3% fee on profits only.
+Winners split the losers' pool (parimutuel). No house edge. 0.05% fee on profits only.
 
 **CTA:** Build your first multi-market portfolio → generalmarket.io/vision
 Minimum position: $0.10.
@@ -279,18 +279,18 @@ Free bot registration. No collateral.
 ### POST 10: "Parimutuel Beats the House"
 **Target keyword:** parimutuel prediction market, no house edge trading, fair prediction market
 
-**Title:** Polymarket Takes a Spread. Kalshi Takes a Fee Per Contract. Vision Takes 0.3% on Your Profits — Only If You Win.
+**Title:** Polymarket Takes a Spread. Kalshi Takes a Fee Per Contract. Vision Takes 0.05% on Your Profits — Only If You Win.
 
 **Body:**
 Most prediction markets make money whether you win or lose. Polymarket's AMM has an inherent spread. Kalshi charges per contract.
 
-Vision uses parimutuel payouts: winners split the losers' pool, minus a 0.3% fee on net profits. If you lose, you pay zero fees.
+Vision uses parimutuel payouts: winners split the losers' pool, minus a 0.05% fee on net profits. If you lose, you pay zero fees.
 
 No market makers taking the other side. No house edge. No spread. Just traders competing against other traders, with the protocol taking a thin cut of the winners' profits.
 
 It's the fairest payout model in prediction markets. And the simplest to understand:
 
-Win → collect proportional share of the pool (minus 0.3%)
+Win → collect proportional share of the pool (minus 0.05%)
 Lose → lose your stake, pay nothing else
 
 **CTA:** Trade with the fairest fee structure in prediction markets → generalmarket.io/vision
