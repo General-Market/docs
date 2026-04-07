@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
 import { useAccount } from 'wagmi'
 import { Link } from '@/i18n/routing'
@@ -13,6 +13,8 @@ import {
 } from '@/hooks/useSSE'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
 import { useAutoClaimPendingDeposits } from '@/hooks/vaults/useAutoClaimPendingDeposits'
+import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
+import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { cn } from '@/lib/utils/cn'
 
 interface VaultsTabProps {
@@ -110,6 +112,20 @@ export function VaultsTab({ address }: VaultsTabProps) {
   // cleaned up here. Enabled only for the user's own profile.
   const autoClaim = useAutoClaimPendingDeposits(isSelf)
 
+  // Full on-chain vault metadata for the modal. Indexed by lowercased address.
+  const { vaults: allVaultInfos } = useVaults()
+  const vaultInfoByAddr = useMemo(() => {
+    const map = new Map<string, VaultInfo>()
+    for (const v of allVaultInfos) map.set(v.address.toLowerCase(), v)
+    return map
+  }, [allVaultInfos])
+
+  // Modal state: which row the user opened, if any.
+  const [selectedVault, setSelectedVault] = useState<{
+    info: VaultInfo
+    fund: { name: string; strategy: string; tagline: string }
+  } | null>(null)
+
   if (!isSelf) {
     return (
       <div className="py-16 text-center text-caption text-text-muted">
@@ -162,11 +178,30 @@ export function VaultsTab({ address }: VaultsTabProps) {
           const pendingFloat = parseFloat(formatUnits(row.pendingBigInt, 18))
           const rowPnlColor = row.pnl >= 0 ? 'text-color-up' : 'text-color-down'
 
+          const info = vaultInfoByAddr.get(row.vaultAddress.toLowerCase())
+          const canOpenModal = !!info
           return (
-            <Link
+            <button
               key={row.vaultAddress}
-              href={`/source/${row.source}`}
-              className="grid grid-cols-12 items-center gap-3 px-4 py-3 hover:bg-surface/40 transition-colors"
+              type="button"
+              disabled={!canOpenModal}
+              onClick={() => {
+                if (!info) return
+                setSelectedVault({
+                  info,
+                  fund: {
+                    name: row.name,
+                    strategy: row.strategy,
+                    tagline: '',
+                  },
+                })
+              }}
+              className={cn(
+                'grid grid-cols-12 items-center gap-3 px-4 py-3 text-left w-full transition-colors',
+                canOpenModal
+                  ? 'hover:bg-surface/40 cursor-pointer'
+                  : 'opacity-70 cursor-wait',
+              )}
             >
               <div className="col-span-4 min-w-0">
                 <div className="text-[13px] font-bold text-text-primary truncate">{row.name}</div>
@@ -220,10 +255,19 @@ export function VaultsTab({ address }: VaultsTabProps) {
                   {row.pnl >= 0 ? '+' : ''}${row.pnl.toFixed(2)}
                 </div>
               </div>
-            </Link>
+            </button>
           )
         })}
       </div>
+
+      {/* Vault detail modal — same component the source page uses */}
+      {selectedVault && (
+        <VaultActions
+          vaults={[{ fund: selectedVault.fund, vault: selectedVault.info }]}
+          initialIndex={0}
+          onClose={() => setSelectedVault(null)}
+        />
+      )}
     </div>
   )
 }
