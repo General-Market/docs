@@ -6,6 +6,7 @@ import {
   interpolate,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
+import { AnimatedText } from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 const DARK_BG = "#0B1426";
@@ -149,16 +150,13 @@ const DataRow: React.FC<{ agent: AgentRow }> = ({ agent }) => {
 //   65      row #1 collapses; analysis cards appear in its place
 //   70-110  overlay #2: "Why they scored high"
 //  110-160  overlay #3: "Why they got flagged"
-//  160-210  overlay #4: "Full transparency."
+//  160-220  overlay #4: "Full transparency."
 //  210-220  fade out
-const OVERLAY_TEXTS: { text: string; start: number; end: number }[] = [
-  { text: "Each model's rationale displayed per agent", start: 30, end: 70 },
-  { text: "Why they scored high", start: 70, end: 110 },
-  { text: "Why they got flagged", start: 110, end: 160 },
-  { text: "Full transparency.", start: 160, end: 210 },
-];
-
 const EXPAND_FRAME = 65;
+
+const OVERLAY_TEXT_SHADOW: React.CSSProperties = {
+  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+};
 
 export const Scene04: React.FC = () => {
   const frame = useCurrentFrame();
@@ -176,17 +174,6 @@ export const Scene04: React.FC = () => {
     extrapolateRight: "clamp",
   });
   const expanded = frame >= EXPAND_FRAME;
-
-  // Active overlay
-  const activeOverlay = OVERLAY_TEXTS.find((o) => frame >= o.start && frame < o.end);
-  const overlayOpacity = activeOverlay
-    ? interpolate(
-        frame,
-        [activeOverlay.start, activeOverlay.start + 5, activeOverlay.end - 5, activeOverlay.end],
-        [0, 1, 1, 0],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-      )
-    : 0;
 
   // Final fade out (210-220)
   const fadeOut = interpolate(frame, [210, 220], [1, 0], {
@@ -288,39 +275,47 @@ export const Scene04: React.FC = () => {
           </div>
         </div>
 
-        {/* Overlay text — NO backdrop, white on top of leaderboard */}
-        {activeOverlay && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "0 24px",
-              pointerEvents: "none",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: "#FFFFFF",
-                opacity: overlayOpacity,
-                letterSpacing: -0.4,
-                whiteSpace: "nowrap",
-                textAlign: "center",
-                fontFamily,
-                textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-              }}
-            >
-              {activeOverlay.text}
-            </span>
-          </div>
-        )}
+        {/* Overlay texts — AnimatedText, word-by-word rise, no backdrop */}
+        <AnimatedText
+          text="Each model's rationale displayed per agent"
+          startFrame={30}
+          fadeOutAt={62}
+          fontSize={38}
+          color="#FFFFFF"
+          highlightColor="#FFFFFF"
+          highlightLastN={0}
+          style={OVERLAY_TEXT_SHADOW}
+        />
+        <AnimatedText
+          text="Why they scored high"
+          startFrame={70}
+          fadeOutAt={102}
+          fontSize={38}
+          color="#FFFFFF"
+          highlightColor="#FFFFFF"
+          highlightLastN={0}
+          style={OVERLAY_TEXT_SHADOW}
+        />
+        <AnimatedText
+          text="Why they got flagged"
+          startFrame={110}
+          fadeOutAt={152}
+          fontSize={38}
+          color="#FFFFFF"
+          highlightColor="#FFFFFF"
+          highlightLastN={0}
+          style={OVERLAY_TEXT_SHADOW}
+        />
+        <AnimatedText
+          text="Full transparency."
+          startFrame={160}
+          fadeOutAt={212}
+          fontSize={38}
+          color="#FFFFFF"
+          highlightColor="#FFFFFF"
+          highlightLastN={0}
+          style={OVERLAY_TEXT_SHADOW}
+        />
       </div>
     </AbsoluteFill>
   );
