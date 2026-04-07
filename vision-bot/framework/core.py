@@ -5,30 +5,56 @@ Provides bitmap encoding/hashing, the Strategy ABC, risk management,
 and dynamic strategy loading.
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 import importlib
 import os
 import pkgutil
+import random
 
 from web3 import Web3
 
 
 # ── Bitmap helpers ───────────────────────────────────────────────
 
+# Fixed bitmap ceiling. The bot fetches market_count at time T; the oracle
+# may record market_count = T+1 by the time the join lands. An exact-length
+# bitmap loses that race and the join is rejected. A padded bitmap does not.
+#
+# 1024 bytes covers 8192 markets. No source approaches this in any horizon
+# we will live to see. The on-chain commitment is keccak256(padded_bytes);
+# the oracle's resolver iterates only [0, market_count), so trailing zero
+# bits are inert. The hash and the submitted bytes match exactly because
+# both sides handle the same padded buffer.
+MAX_BITMAP_BYTES = 1024
+MAX_BITMAP_BITS = MAX_BITMAP_BYTES * 8
+
 
 def encode_bitmap(bets: list[str], count: int) -> bytes:
-    """["UP","DOWN",...] -> packed bytes. 1=UP, 0=DOWN, big-endian.
+    """["UP","DOWN",...] -> packed bytes, padded to MAX_BITMAP_BYTES.
+
+    1=UP, 0=DOWN, big-endian. The buffer is always MAX_BITMAP_BYTES long
+    so the on-chain commitment survives the inevitable race with the
+    oracle's view of market_count. Trailing zero bits are inert — the
+    resolver only walks [0, market_count).
 
     Raises ValueError if bets is shorter than count — a short bitmap
     means uncovered markets, concentrated risk, and silent losses.
+
+    Raises ValueError if count exceeds MAX_BITMAP_BITS — the ceiling
+    must rise before the world does.
     """
     if len(bets) < count:
         raise ValueError(
             f"Bitmap underflow: {len(bets)} bets for {count} markets. "
             f"Refusing to encode — a short bitmap is a quiet catastrophe."
         )
-    byte_count = (count + 7) // 8
-    bitmap = bytearray(byte_count)
+    if count > MAX_BITMAP_BITS:
+        raise ValueError(
+            f"Bitmap overflow: {count} markets exceeds ceiling of "
+            f"{MAX_BITMAP_BITS}. Raise MAX_BITMAP_BYTES before the bot "
+            f"silently truncates the world."
+        )
+    bitmap = bytearray(MAX_BITMAP_BYTES)
     for i in range(count):
         if bets[i] == "UP":
             byte_idx = i // 8
@@ -38,22 +64,58 @@ def encode_bitmap(bets: list[str], count: int) -> bytes:
 
 
 def hash_bitmap(bitmap: bytes) -> bytes:
-    """keccak256 of bitmap."""
+    """keccak256 of bitmap. Hashes whatever bytes you give it; pad first."""
     return Web3.keccak(bitmap)
+
+
+# ── Strategy RNG ─────────────────────────────────────────────────
+
+
+def make_strategy_rng(strategy_name: str) -> random.Random:
+    """Return a per-strategy RNG seeded from BOT_PRIVATE_KEY + strategy_name.
+
+    The seed is keccak256(private_key_bytes || strategy_name_bytes), passed
+    to random.Random as a full 256-bit integer. Python's Mersenne Twister
+    accepts arbitrary integer seeds and uses every bit it is given.
+
+    The previous derivation truncated to 32 bits — a search space an
+    adversary watching a few bitmaps could exhaust before lunch. The
+    private key would not leak, but the bitmap stream would. Predicting
+    a bot's bets is a good way to drain a bot.
+
+    If BOT_PRIVATE_KEY is unset, falls back to os.urandom(32). The bot
+    that runs without a key is a bot that runs without a memory; that is
+    a separate problem this helper does not pretend to solve.
+    """
+    pk_hex = os.environ.get("BOT_PRIVATE_KEY", "")
+    if pk_hex:
+        pk_bytes = bytes.fromhex(pk_hex.removeprefix("0x"))
+    else:
+        pk_bytes = os.urandom(32)
+    seed_bytes = Web3.keccak(pk_bytes + strategy_name.encode("utf-8"))
+    seed_int = int.from_bytes(seed_bytes, "big")
+    return random.Random(seed_int)
 
 
 # ── Strategy ABC ─────────────────────────────────────────────────
 
 
 class Strategy(ABC):
-    """Base class for all Vision prediction strategies."""
+    """Base class for all Vision prediction strategies.
+
+    Subclasses MUST implement at least one of `predict` or
+    `predict_with_context`. The canonical entry point is
+    `predict_with_context` — callers should always invoke that. Its
+    default body delegates to `predict`, so simple strategies only need
+    `predict`; history-aware strategies override `predict_with_context`
+    and may ignore `predict` entirely.
+    """
 
     name: str = ""
 
     def __init__(self, params: dict = None):
         self.params = params or {}
 
-    @abstractmethod
     def predict(self, markets: list[dict]) -> list[str]:
         """
         Given market data, return UP/DOWN for each.
@@ -67,15 +129,22 @@ class Strategy(ABC):
         }
 
         Return: ["UP", "DOWN", "UP", ...] -- one per market.
+
+        Default raises NotImplementedError. Override this OR
+        `predict_with_context`. Implementing neither is a strategy
+        that has nothing to say; refuse it loudly.
         """
-        ...
+        raise NotImplementedError(
+            f"Strategy {type(self).__name__} implements neither "
+            f"predict() nor predict_with_context()."
+        )
 
     def predict_with_context(
         self, markets: list[dict], feed=None, batch_id=None,
     ) -> list[str]:
-        """Override for strategies that need historical context.
+        """Canonical strategy hook. Override for history-aware strategies.
 
-        Default: ignore context, call predict().
+        Default: ignore context, delegate to predict().
         """
         return self.predict(markets)
 
@@ -216,25 +285,40 @@ def load_config(path=None):
         if env_key in os.environ:
             val = os.environ[env_key]
             default_type = type(defaults[conf_key])
-            if default_type == bool:
-                defaults[conf_key] = val.lower() in ("true", "1", "yes")
-            elif default_type == float:
-                defaults[conf_key] = float(val)
-            elif default_type == int:
-                defaults[conf_key] = int(float(val))
-            else:
-                defaults[conf_key] = val
+            try:
+                if default_type == bool:
+                    defaults[conf_key] = val.lower() in ("true", "1", "yes")
+                elif default_type == float:
+                    defaults[conf_key] = float(val)
+                elif default_type == int:
+                    defaults[conf_key] = int(float(val))
+                else:
+                    defaults[conf_key] = val
+            except (ValueError, TypeError):
+                # Bad input survives the bot. The default holds. A
+                # crash on startup over a typo is the least dignified
+                # death a long-running process can suffer.
+                pass
     # ORACLE_URLS: comma-separated list of URLs
     if "ORACLE_URLS" in os.environ:
         defaults["oracle_urls"] = [u.strip() for u in os.environ["ORACLE_URLS"].split(",") if u.strip()]
     # BATCH_IDS: comma-separated list of ints
     if "BATCH_IDS" in os.environ:
-        defaults["batch_ids"] = [int(x.strip()) for x in os.environ["BATCH_IDS"].split(",") if x.strip()]
+        try:
+            defaults["batch_ids"] = [
+                int(x.strip())
+                for x in os.environ["BATCH_IDS"].split(",")
+                if x.strip()
+            ]
+        except (ValueError, TypeError):
+            defaults["batch_ids"] = []
     # MIN_BATCH_ID: skip batches below this ID (useful after redeployments)
+    defaults["min_batch_id"] = 0
     if "MIN_BATCH_ID" in os.environ:
-        defaults["min_batch_id"] = int(os.environ["MIN_BATCH_ID"])
-    else:
-        defaults["min_batch_id"] = 0
+        try:
+            defaults["min_batch_id"] = int(os.environ["MIN_BATCH_ID"])
+        except (ValueError, TypeError):
+            pass
     # Vault env var overrides
     vault_env_map = {
         "VAULT_MODE": ("vault_mode", bool),
@@ -249,12 +333,15 @@ def load_config(path=None):
     for env_key, (conf_key, typ) in vault_env_map.items():
         if env_key in os.environ:
             val = os.environ[env_key]
-            if typ == bool:
-                defaults[conf_key] = val.lower() in ("true", "1", "yes")
-            elif typ == float:
-                defaults[conf_key] = float(val)
-            elif typ == int:
-                defaults[conf_key] = int(float(val))
-            else:
-                defaults[conf_key] = val
+            try:
+                if typ == bool:
+                    defaults[conf_key] = val.lower() in ("true", "1", "yes")
+                elif typ == float:
+                    defaults[conf_key] = float(val)
+                elif typ == int:
+                    defaults[conf_key] = int(float(val))
+                else:
+                    defaults[conf_key] = val
+            except (ValueError, TypeError):
+                pass
     return defaults
