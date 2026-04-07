@@ -9,7 +9,7 @@ import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
-import { useSSEUserVaultPosition } from '@/hooks/useSSE'
+import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -254,10 +254,35 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     return windowed.length >= 2 ? windowed : snapshots.slice(-2)
   }, [snapshots, navRange])
 
+  // Live SSE pulse — the data-node broadcasts vault NAV/TVL on every cycle.
+  // Append it as a synthetic "now" point so the chart's right edge tracks
+  // reality instead of waiting for the next 60s REST poll.
+  const sseVault = useSSEVisionVault(vault.address)
+  const liveSnapshot: VaultSnapshot | null = useMemo(() => {
+    if (!sseVault) return null
+    let totalAssetsWei: bigint
+    try { totalAssetsWei = BigInt(sseVault.total_assets) } catch { return null }
+    return {
+      nav: sseVault.nav_per_share,
+      tvl: parseFloat(formatUnits(totalAssetsWei, 18)),
+      ts: Date.now(),
+    }
+    // ts captures "when SSE last delivered a value"; recompute when those change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sseVault?.nav_per_share, sseVault?.total_assets])
+
+  const displaySnapshots = useMemo(() => {
+    if (!liveSnapshot) return filteredSnapshots
+    if (filteredSnapshots.length === 0) return [liveSnapshot]
+    const last = filteredSnapshots[filteredSnapshots.length - 1]
+    if (liveSnapshot.ts <= last.ts) return filteredSnapshots
+    return [...filteredSnapshots, liveSnapshot]
+  }, [filteredSnapshots, liveSnapshot])
+
   const navHistory = useMemo(() => {
-    if (filteredSnapshots.length >= 2) return filteredSnapshots.map(s => s.nav)
+    if (displaySnapshots.length >= 2) return displaySnapshots.map(s => s.nav)
     return null
-  }, [filteredSnapshots])
+  }, [displaySnapshots])
 
   const maxDd = useMemo(() => navHistory ? computeMaxDrawdown(navHistory) : null, [navHistory])
   const vol = useMemo(() => navHistory ? computeVolatility(navHistory) : null, [navHistory])
@@ -389,7 +414,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
           <div className="h-[clamp(180px,30vh,420px)] overflow-hidden">
             {navHistory ? (
-              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={filteredSnapshots.map(s => s.ts)} />
+              <NavChart data={navHistory} vaultAddr={vault.address} timestamps={displaySnapshots.map(s => s.ts)} />
             ) : (
               <div className="h-full flex items-center justify-center text-text-muted text-[12px] font-mono">
                 Awaiting first trade
