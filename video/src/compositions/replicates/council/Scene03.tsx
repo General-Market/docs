@@ -1,7 +1,12 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { AnimatedText, COUNCIL_DARK, COUNCIL_TEAL } from "./AnimatedText";
+import {
+  AnimatedText,
+  COUNCIL_DARK,
+  COUNCIL_TEAL,
+  COUNCIL_TITLE_FONT_SIZE,
+} from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 const GPT_GREEN = "#10A37F";
@@ -90,7 +95,7 @@ const CardRow: React.FC<{ frame: number; labelStartFrame: number }> = ({
       style={{
         display: "flex",
         flexDirection: "row",
-        gap: 56,
+        gap: 60,
         alignItems: "flex-start",
       }}
     >
@@ -108,32 +113,32 @@ const CardRow: React.FC<{ frame: number; labelStartFrame: number }> = ({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 12,
+              gap: 14,
             }}
           >
             <div
               style={{
-                width: 96,
-                height: 96,
-                borderRadius: 18,
+                width: 140,
+                height: 140,
+                borderRadius: 24,
                 backgroundColor: color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Icon size={52} />
+              <Icon size={72} />
             </div>
             <span
               style={{
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: 700,
                 color,
                 textAlign: "center",
                 whiteSpace: allowWrap ? "normal" : "nowrap",
                 opacity: labelOpacity,
                 lineHeight: 1.3,
-                maxWidth: allowWrap ? 80 : undefined,
+                maxWidth: allowWrap ? 120 : undefined,
               }}
             >
               {label}
@@ -151,18 +156,28 @@ export const Scene03: React.FC = () => {
   /*
    * 200-frame budget
    * 0-100  : "We built AI Council" — AnimatedText reveal, hold, fade out
-   * 110    : card row springs in centered (AnimatedText icon)
-   * 146    : card row rises upward to make room
-   * 150    : "Each model processing independently" — AnimatedText reveal below cards
+   * 110    : card row fades in at top: 40%
+   * 150    : "Each model processing independently" — AnimatedText reveal at top: 75%
    * 195-200: whole block fades
    */
+
+  const cardsOpacity = interpolate(frame, [108, 124], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cardsRise = interpolate(frame, [108, 124], [24, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cardsFadeOut = interpolate(frame, [195, 200], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
       style={{
         backgroundColor: "#fff",
-        justifyContent: "center",
-        alignItems: "center",
         fontFamily,
       }}
     >
@@ -172,11 +187,23 @@ export const Scene03: React.FC = () => {
         startFrame={0}
         fadeOutAt={90}
         fadeOutFrames={10}
-        fontSize={54}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
         fontWeight={700}
         color={COUNCIL_DARK}
         highlightColor={COUNCIL_TEAL}
       />
+
+      <div
+        style={{
+          position: "absolute",
+          top: "40%",
+          left: "50%",
+          transform: `translate(-50%, calc(-50% + ${cardsRise}px))`,
+          opacity: cardsOpacity * cardsFadeOut,
+        }}
+      >
+        <CardRow frame={frame} labelStartFrame={124} />
+      </div>
 
       <AnimatedText
         text="Each model processing independently"
@@ -185,17 +212,11 @@ export const Scene03: React.FC = () => {
         fadeOutAt={195}
         fadeOutFrames={5}
         framesPerWord={6}
-        fontSize={32}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
         fontWeight={700}
         color={COUNCIL_DARK}
         highlightColor={COUNCIL_TEAL}
-        icon={<CardRow frame={frame} labelStartFrame={124} />}
-        iconStartFrame={110}
-        iconRiseFrame={140}
-        iconRisePx={90}
-        style={{
-          paddingTop: 40,
-        }}
+        style={{ top: "50%" }}
       />
     </AbsoluteFill>
   );
