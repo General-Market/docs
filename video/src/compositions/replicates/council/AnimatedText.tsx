@@ -6,6 +6,8 @@ const { fontFamily: monoFont } = loadFont();
 
 export const COUNCIL_TEAL = "#0FE8AE";
 export const COUNCIL_DARK = "#000000";
+/** Single source of truth for every title-style text reveal in the council video. */
+export const COUNCIL_TITLE_FONT_SIZE = 56;
 
 export interface AnimatedTextProps {
   /** Full text to reveal, words separated by whitespace. */
@@ -67,7 +69,7 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
   iconStartFrame = 0,
   iconRiseFrame,
   iconRisePx = 110,
-  fontSize = 54,
+  fontSize = COUNCIL_TITLE_FONT_SIZE,
   fontWeight = 600,
   color = COUNCIL_DARK,
   highlightColor = COUNCIL_TEAL,
