@@ -8,9 +8,12 @@ import { loadFont } from "@remotion/google-fonts/SpaceMono";
 
 const { fontFamily } = loadFont();
 
-// Teal sampled from the original frames (avg ~#5BB3A8, core darker).
-const TEAL = "#4DB3A6";
-const TEAL_LIGHT = "#A8DDD5";
+// Canonical palette sampled from the original frames.
+// Green-leaning mint, not cyan. DARK is exported for sibling scenes
+// that paint over a white background — Scene01 itself stays in TEAL.
+export const TEAL = "#0FE8AE";
+export const TEAL_LIGHT = "#B4F0D7";
+export const DARK = "#000000";
 
 const VirtualsIcon: React.FC<{ size?: number }> = ({ size = 44 }) => (
   <svg width={size} height={size} viewBox="0 0 32 32">
@@ -49,8 +52,8 @@ export const Scene01: React.FC = () => {
   });
 
   // ── Stage 2: circle morphs to pill, "Virtuals" types (12-40) ────────
-  const PILL_WIDTH_FULL = 530;
-  const PILL_HEIGHT = 120;
+  const PILL_WIDTH_FULL = 580;
+  const PILL_HEIGHT = 125;
   const CIRCLE_SIZE = 130;
 
   const pillWidth = interpolate(
@@ -66,15 +69,14 @@ export const Scene01: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Icon slides from center toward left edge of pill while it expands
-  const iconX = interpolate(frame, [12, 28], [0, -190], {
+  // Icon slides from center toward left edge of pill while it expands.
+  // It stays visible the entire pill phase (frames 12-68) — the original
+  // never lets the V mark dissolve while "Virtuals Protocol" is on screen.
+  const iconX = interpolate(frame, [12, 28], [0, -210], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const iconOpacity = interpolate(frame, [60, 70], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const iconOpacity = 1;
 
   // "Virtuals Protocol" — types 18-40, holds 40-58, fades 58-68
   const protocolText = useTypewriter("Virtuals Protocol", 18, 40);
@@ -86,49 +88,32 @@ export const Scene01: React.FC = () => {
   );
 
   // ── Stage 3: pill empties, "Introducing" + "Virtuals AI Council" ────
-  // "Introducing" appears 75-82, holds, fades at 150
+  // Both elements hold solid until 175, then fade 175-190.
   const introducingOpacity = interpolate(
     frame,
-    [75, 82, 150, 158],
+    [75, 82, 175, 190],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // "Virtuals AI Council" types 78-100, holds, fades at 150
-  const councilText = useTypewriter("Virtuals AI Council", 78, 100);
+  // "Virtuals AI Council" — 19 chars, ~12 frames of typing.
+  const councilText = useTypewriter("Virtuals AI Council", 78, 90);
   const councilOpacity = interpolate(
     frame,
-    [78, 82, 145, 155],
-    [0, 1, 1, 0.35],
+    [78, 82, 175, 190],
+    [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
-  // After 150 the council text drifts toward the lighter shade seen in f016.
-  const councilColor =
-    frame < 145 ? TEAL : frame < 165 ? TEAL_LIGHT : TEAL_LIGHT;
+  // No drift to the lighter shade — the council text holds solid teal.
+  const councilColor = TEAL;
 
-  // ── Stage 4: hand-off — pill morphs taller toward card (155-198) ────
-  const pillTransitionWidth = interpolate(
-    frame,
-    [155, 190],
-    [PILL_WIDTH_FULL, 860],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const pillTransitionHeight = interpolate(
-    frame,
-    [155, 190],
-    [PILL_HEIGHT, 560],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-  const pillRadius = interpolate(frame, [155, 190], [999, 32], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const finalPillWidth = frame < 155 ? pillWidth : pillTransitionWidth;
-  const finalPillHeight = frame < 155 ? pillHeight : pillTransitionHeight;
+  // No pill→card morph. Scene02 starts fresh from f020.
+  const finalPillWidth = pillWidth;
+  const finalPillHeight = pillHeight;
+  const pillRadius = 999;
 
   // Whole-scene fade out at the very end so Scene02 picks up cleanly.
-  const sceneOpacity = interpolate(frame, [188, 198], [1, 0], {
+  const sceneOpacity = interpolate(frame, [180, 190], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -143,13 +128,15 @@ export const Scene01: React.FC = () => {
         opacity: sceneOpacity,
       }}
     >
-      {/* "Introducing" label above pill */}
+      {/* "Introducing" label, ~30px above pill top edge.
+          Pill is 125px tall, centered on 50%, so its top edge sits at -62.5.
+          Place the label baseline ~30px above that → translateY ~ -95px. */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, -130px)",
+          transform: "translate(-50%, -95px)",
           fontSize: 20,
           color: TEAL,
           opacity: introducingOpacity,
@@ -215,7 +202,7 @@ export const Scene01: React.FC = () => {
             left: "50%",
             top: "50%",
             transform: "translate(-50%, -50%)",
-            fontSize: 36,
+            fontSize: 38,
             color: councilColor,
             whiteSpace: "nowrap",
             opacity: councilOpacity,
@@ -236,5 +223,5 @@ export const scene01Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 198,
+  durationInFrames: 190,
 };
