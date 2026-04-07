@@ -24,16 +24,24 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
   sourceId: string; assetId: string; prefixes?: string[]; imageUrl?: string | null
 }) {
   const [err, setErr] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const src = imageUrl || getAssetImageUrl(sourceId, assetId, prefixes ?? [])
   const lineStyle = getLineStyle(sourceId, assetId, prefixes)
 
   if (src && !err) {
     return (
-      <img
-        src={src} alt=""
-        className="w-[22px] h-[22px] rounded-full object-cover shrink-0"
-        loading="lazy" onError={() => setErr(true)}
-      />
+      <span className="relative inline-block w-[22px] h-[22px] shrink-0">
+        {!loaded && (
+          <span className="absolute inset-0 rounded-full bg-white/[0.08] animate-pulse" />
+        )}
+        <img
+          src={src} alt=""
+          className={`absolute inset-0 w-[22px] h-[22px] rounded-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => setErr(true)}
+        />
+      </span>
     )
   }
   if (lineStyle) {
@@ -46,7 +54,8 @@ function MarketIcon({ sourceId, assetId, prefixes, imageUrl }: {
       </span>
     )
   }
-  return <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] shrink-0" />
+  // No src and no badge — keep the shimmer so the slot reads as "still resolving"
+  return <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] animate-pulse shrink-0" />
 }
 
 interface RatiosResponse {
