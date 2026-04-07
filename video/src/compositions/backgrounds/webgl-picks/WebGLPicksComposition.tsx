@@ -36,6 +36,9 @@ import { RingShader } from "./RingShader";
 import { Carousel3D } from "./Carousel3D";
 import { SvgMorph } from "./SvgMorph";
 import { VortexGallery } from "./VortexGallery";
+import { WaveTide } from "./WaveTide";
+import { NoiseBloom } from "./NoiseBloom";
+import { InkPour } from "./InkPour";
 
 const SCENE_DURATION = 600; // 10s at 60fps
 const FPS = 60;
@@ -79,6 +82,9 @@ const ALL_SCENES = [
   { id: "WP-Carousel3D", component: Carousel3D },
   { id: "WP-SvgMorph", component: SvgMorph },
   { id: "WP-VortexGallery", component: VortexGallery },
+  { id: "WP-WaveTide", component: WaveTide },
+  { id: "WP-NoiseBloom", component: NoiseBloom },
+  { id: "WP-InkPour", component: InkPour },
 ];
 
 export const WebGLPicksComposition: React.FC = () => {
