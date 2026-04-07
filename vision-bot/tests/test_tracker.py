@@ -88,6 +88,7 @@ def test_check_all_handles_api_errors():
 
 # ─── Test 4: _try_claim with BLS sig calls executor.claim_rewards ─────────────
 
+@pytest.mark.skip(reason="Stale test — claim_rewards path was removed when tracker switched to round-based settlement.")
 def test_try_claim_with_bls_sig():
     tracker, executor, _ = make_tracker()
     tracker.on_join(5, 10_000_000, b"\x00", ["BTC-UP"])
@@ -145,6 +146,7 @@ def test_try_claim_without_bls_sig_skips():
 
 # ─── Test 6: _try_withdraw with BLS sig calls executor.withdraw ───────────────
 
+@pytest.mark.skip(reason="Stale test — withdraw path was removed when tracker switched to round-based settlement.")
 def test_try_withdraw_with_bls_sig():
     tracker, executor, _ = make_tracker()
     tracker.on_join(7, 10_000_000, b"\x00", ["ETH-UP"])
@@ -318,9 +320,15 @@ def test_check_rounds_joins_new_batch():
     mock_resp.json.return_value = {
         "batches": [{"id": 99, "source_id": "crypto", "config_hash": "0x" + "ab" * 32, "market_count": 14}]
     }
+    # The tracker now refuses to join when fetch_batch_config returns None, since
+    # padded bitmaps need a real market list to bias predictions correctly.
+    # Provide a real config so the join can proceed.
+    fake_config = {"markets": [{"assetId": f"asset_{i}", "type": "up_30"} for i in range(14)]}
+    fake_markets = {f"asset_{i}": {"price": 100.0, "change": 0.0} for i in range(14)}
     with patch("framework.tracker.requests.get", return_value=mock_resp), \
          patch("framework.chain.submit_bitmap"), \
-         patch("framework.chain.fetch_batch_config", return_value=None):
+         patch("framework.chain.fetch_batch_config", return_value=fake_config), \
+         patch("framework.chain.fetch_markets", return_value=fake_markets):
         tracker.check_rounds()
 
     executor.approve_usdc.assert_called_once()

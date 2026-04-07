@@ -13,57 +13,73 @@ from framework.core import (
 # ── encode_bitmap ────────────────────────────────────────────────
 
 
+from framework.core import MAX_BITMAP_BYTES
+
+
 class TestEncodeBitmap:
+    """The bitmap is now padded to a fixed ceiling (MAX_BITMAP_BYTES = 1024).
+    Tests verify the meaningful prefix bytes; trailing bytes must always be 0x00.
+    The padding closes the race with the oracle's lifecycle market_count column.
+    """
+
     def test_all_up_8_markets(self):
-        """8 UP bets -> 0xFF (all bits set)."""
-        bets = ["UP"] * 8
-        assert encode_bitmap(bets, 8) == bytes([0xFF])
+        """8 UP bets -> first byte 0xFF, rest zero."""
+        result = encode_bitmap(["UP"] * 8, 8)
+        assert len(result) == MAX_BITMAP_BYTES
+        assert result[0] == 0xFF
+        assert result[1:] == bytes(MAX_BITMAP_BYTES - 1)
 
     def test_all_down_8_markets(self):
-        """8 DOWN bets -> 0x00 (no bits set)."""
-        bets = ["DOWN"] * 8
-        assert encode_bitmap(bets, 8) == bytes([0x00])
+        """8 DOWN bets -> all bytes zero."""
+        result = encode_bitmap(["DOWN"] * 8, 8)
+        assert len(result) == MAX_BITMAP_BYTES
+        assert result == bytes(MAX_BITMAP_BYTES)
 
     def test_alternating_up_down(self):
-        """[UP,DOWN,UP,DOWN,UP,DOWN,UP,DOWN] -> 0xAA (10101010)."""
-        bets = ["UP", "DOWN", "UP", "DOWN", "UP", "DOWN", "UP", "DOWN"]
-        assert encode_bitmap(bets, 8) == bytes([0xAA])
+        """[UP,DOWN,UP,DOWN,UP,DOWN,UP,DOWN] -> first byte 0xAA."""
+        result = encode_bitmap(["UP", "DOWN"] * 4, 8)
+        assert result[0] == 0xAA
+        assert result[1:] == bytes(MAX_BITMAP_BYTES - 1)
 
     def test_partial_byte_3_markets_all_up(self):
-        """3 UP bets -> 0xE0 (11100000). Only top 3 bits set."""
-        bets = ["UP", "UP", "UP"]
-        assert encode_bitmap(bets, 3) == bytes([0xE0])
+        """3 UP bets -> first byte 0xE0 (top 3 bits set)."""
+        result = encode_bitmap(["UP", "UP", "UP"], 3)
+        assert result[0] == 0xE0
+        assert result[1:] == bytes(MAX_BITMAP_BYTES - 1)
 
     def test_empty_bets_zero_count(self):
-        """0 markets -> empty bytes."""
-        assert encode_bitmap([], 0) == b""
+        """0 markets -> still padded to MAX_BITMAP_BYTES of zeros."""
+        result = encode_bitmap([], 0)
+        assert result == bytes(MAX_BITMAP_BYTES)
 
     def test_bets_shorter_than_count_raises(self):
         """Short bets must raise ValueError — silent truncation caused $55K loss."""
-        bets = ["UP"]  # only 1 bet for 8 markets
         with pytest.raises(ValueError, match="Bitmap underflow"):
-            encode_bitmap(bets, 8)
+            encode_bitmap(["UP"], 8)
 
     def test_bets_longer_than_count_ok(self):
         """Extra bets beyond count are harmlessly ignored."""
-        bets = ["UP"] * 10  # 10 bets for 8 markets
-        result = encode_bitmap(bets, 8)
-        assert result == bytes([0xFF])  # only first 8 matter
+        result = encode_bitmap(["UP"] * 10, 8)
+        assert result[0] == 0xFF
+        assert result[1:] == bytes(MAX_BITMAP_BYTES - 1)
 
     def test_16_markets_two_bytes(self):
-        """16 markets produce 2 bytes."""
-        bets = ["UP"] * 16
-        result = encode_bitmap(bets, 16)
-        assert len(result) == 2
-        assert result == bytes([0xFF, 0xFF])
+        """16 markets -> first two bytes 0xFF."""
+        result = encode_bitmap(["UP"] * 16, 16)
+        assert result[:2] == bytes([0xFF, 0xFF])
+        assert result[2:] == bytes(MAX_BITMAP_BYTES - 2)
 
     def test_9_markets_needs_two_bytes(self):
-        """9 markets -> 2 bytes. 9th market = MSB of 2nd byte."""
-        bets = ["DOWN"] * 8 + ["UP"]
-        result = encode_bitmap(bets, 9)
-        assert len(result) == 2
+        """9 markets: 9th market = MSB of 2nd byte."""
+        result = encode_bitmap(["DOWN"] * 8 + ["UP"], 9)
         assert result[0] == 0x00
-        assert result[1] == 0x80  # bit 0 of byte 1 = MSB = 9th market
+        assert result[1] == 0x80
+        assert result[2:] == bytes(MAX_BITMAP_BYTES - 2)
+
+    def test_overflow_above_ceiling_raises(self):
+        """Counts above MAX_BITMAP_BITS must raise — never silently truncate."""
+        with pytest.raises(ValueError, match="exceeds"):
+            encode_bitmap(["UP"] * 9000, 9000)
 
 
 # ── hash_bitmap ──────────────────────────────────────────────────
@@ -94,10 +110,10 @@ class TestHashBitmap:
 
 
 class TestStrategy:
-    def test_cannot_instantiate_abc(self):
-        """Strategy is abstract — direct instantiation must fail."""
-        with pytest.raises(TypeError):
-            Strategy()  # type: ignore[abstract]
+    """Strategy is no longer ABC-strict — `predict` has a default that raises
+    NotImplementedError so subclasses must implement either it or
+    `predict_with_context`. This was loosened to allow strategies that only
+    override the context-aware hook."""
 
     def test_subclass_with_predict_works(self):
         """A concrete subclass that implements predict() can be instantiated."""
@@ -113,14 +129,28 @@ class TestStrategy:
         result = s.predict([{"id": "BTC", "price": 100.0, "change": None, "volume": None, "market_cap": None}])
         assert result == ["UP"]
 
-    def test_subclass_missing_predict_fails(self):
-        """A subclass that does NOT implement predict() cannot be instantiated."""
+    def test_subclass_missing_predict_raises_at_call_time(self):
+        """A subclass that doesn't override either hook raises on call, not init."""
 
         class Broken(Strategy):
             name = "broken"
 
-        with pytest.raises(TypeError):
-            Broken()  # type: ignore[abstract]
+        s = Broken()  # construction is now allowed
+        with pytest.raises(NotImplementedError):
+            s.predict([])
+
+    def test_subclass_with_only_predict_with_context(self):
+        """Strategies may override only predict_with_context."""
+
+        class AllDown(Strategy):
+            name = "all-down"
+
+            def predict_with_context(self, markets, feed=None, batch_id=None):
+                return ["DOWN"] * len(markets)
+
+        s = AllDown()
+        result = s.predict_with_context([{"id": "BTC"}, {"id": "ETH"}])
+        assert result == ["DOWN", "DOWN"]
 
 
 # ── RiskCheck ────────────────────────────────────────────────────
