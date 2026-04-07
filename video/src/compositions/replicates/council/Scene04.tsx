@@ -4,9 +4,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
+  spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { AnimatedText } from "./AnimatedText";
+import { AnimatedText, COUNCIL_TITLE_FONT_SIZE } from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 const DARK_BG = "#0B1426";
@@ -160,13 +161,17 @@ const OVERLAY_TEXT_SHADOW: React.CSSProperties = {
 
 export const Scene04: React.FC = () => {
   const frame = useCurrentFrame();
-  useVideoConfig();
+  const { fps } = useVideoConfig();
 
-  // Card + leaderboard fade in (0-15)
-  const cardOpacity = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+  // Card slide-in (0-15) — mirrors AnimatedText word entry: rises from below + fades in.
+  const cardEnterProgress = spring({
+    frame,
+    fps,
+    config: { damping: 22, stiffness: 120, mass: 0.8, overshootClamping: true },
+    durationInFrames: 14,
   });
+  const cardTranslateY = (1 - cardEnterProgress) * 60;
+  const cardOpacity = cardEnterProgress;
 
   // Row #1 expansion: appears at frame 65
   const expandProgress = interpolate(frame, [EXPAND_FRAME, EXPAND_FRAME + 10], [0, 1], {
@@ -192,7 +197,7 @@ export const Scene04: React.FC = () => {
         opacity: fadeOut,
       }}
     >
-      {/* Dark card container */}
+      {/* Dark card container — slides in from below, like text reveals */}
       <div
         style={{
           position: "absolute",
@@ -205,6 +210,8 @@ export const Scene04: React.FC = () => {
           padding: "20px 24px",
           overflow: "hidden",
           opacity: cardOpacity,
+          transform: `translateY(${cardTranslateY}px)`,
+          willChange: "transform, opacity",
         }}
       >
         {/* Title — small monospace, top-left, muted teal */}
@@ -274,49 +281,53 @@ export const Scene04: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Overlay texts — AnimatedText, word-by-word rise, no backdrop */}
-        <AnimatedText
-          text="Each model's rationale displayed per agent"
-          startFrame={30}
-          fadeOutAt={62}
-          fontSize={38}
-          color="#FFFFFF"
-          highlightColor="#FFFFFF"
-          highlightLastN={0}
-          style={OVERLAY_TEXT_SHADOW}
-        />
-        <AnimatedText
-          text="Why they scored high"
-          startFrame={70}
-          fadeOutAt={102}
-          fontSize={38}
-          color="#FFFFFF"
-          highlightColor="#FFFFFF"
-          highlightLastN={0}
-          style={OVERLAY_TEXT_SHADOW}
-        />
-        <AnimatedText
-          text="Why they got flagged"
-          startFrame={110}
-          fadeOutAt={152}
-          fontSize={38}
-          color="#FFFFFF"
-          highlightColor="#FFFFFF"
-          highlightLastN={0}
-          style={OVERLAY_TEXT_SHADOW}
-        />
-        <AnimatedText
-          text="Full transparency."
-          startFrame={160}
-          fadeOutAt={212}
-          fontSize={38}
-          color="#FFFFFF"
-          highlightColor="#FFFFFF"
-          highlightLastN={0}
-          style={OVERLAY_TEXT_SHADOW}
-        />
       </div>
+
+      {/*
+        Overlay texts live OUTSIDE the sliding card so the slide-in transition
+        only moves the leaderboard. Overlays appear later (frames 30+), once
+        the card has settled, and rest on top of it without sliding themselves.
+      */}
+      <AnimatedText
+        text="Each model's rationale displayed per agent"
+        startFrame={30}
+        fadeOutAt={62}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
+        color="#FFFFFF"
+        highlightColor="#FFFFFF"
+        highlightLastN={0}
+        style={OVERLAY_TEXT_SHADOW}
+      />
+      <AnimatedText
+        text="Why they scored high"
+        startFrame={70}
+        fadeOutAt={102}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
+        color="#FFFFFF"
+        highlightColor="#FFFFFF"
+        highlightLastN={0}
+        style={OVERLAY_TEXT_SHADOW}
+      />
+      <AnimatedText
+        text="Why they got flagged"
+        startFrame={110}
+        fadeOutAt={152}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
+        color="#FFFFFF"
+        highlightColor="#FFFFFF"
+        highlightLastN={0}
+        style={OVERLAY_TEXT_SHADOW}
+      />
+      <AnimatedText
+        text="Full transparency."
+        startFrame={160}
+        fadeOutAt={212}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
+        color="#FFFFFF"
+        highlightColor="#FFFFFF"
+        highlightLastN={0}
+        style={OVERLAY_TEXT_SHADOW}
+      />
     </AbsoluteFill>
   );
 };
