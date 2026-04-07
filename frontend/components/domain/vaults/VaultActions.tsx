@@ -9,7 +9,7 @@ import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
-import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
+import { useSSEUserVaultPosition, useSSEVisionVault, useSSEVisionVaults } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -32,6 +32,49 @@ const STRATEGY_COLOR: Record<string, string> = {
 }
 
 // ── Helpers ───────────────────────────────────────────────
+
+interface DisplayVitals {
+  tvl: number
+  nav: number
+  perf: number
+}
+
+/** Resolve TVL/NAV/perf for a vault by preferring wagmi, then SSE, then zeros.
+ *  Returns a memoized resolver tied to the SSE context so the header strip,
+ *  the desktop sidebar list, and the mobile pill row all read from the same
+ *  truth. Without this they'd disagree whenever the wagmi multicall returns 0n
+ *  on a freshly-chunked vault. */
+function useVaultDisplayResolver(): (vault: VaultInfo) => DisplayVitals {
+  const sseVaults = useSSEVisionVaults()
+  const sseByAddress = useMemo(
+    () => new Map(sseVaults.map(v => [v.address.toLowerCase(), v])),
+    [sseVaults],
+  )
+  return (vault: VaultInfo) => {
+    if (vault.totalSupply > 0n && vault.totalAssets > 0n) {
+      return {
+        tvl: parseFloat(formatUnits(vault.totalAssets, 18)),
+        nav: vault.navPerShare,
+        perf: vault.performanceSinceInception,
+      }
+    }
+    const sse = sseByAddress.get(vault.address.toLowerCase())
+    if (sse) {
+      let assets = 0n
+      try { assets = BigInt(sse.total_assets) } catch {}
+      return {
+        tvl: parseFloat(formatUnits(assets, 18)),
+        nav: sse.nav_per_share,
+        perf: sse.nav_per_share - 1.0,
+      }
+    }
+    return {
+      tvl: parseFloat(formatUnits(vault.totalAssets, 18)),
+      nav: vault.navPerShare,
+      perf: vault.performanceSinceInception,
+    }
+  }
+}
 
 function formatTvlCompact(tvl: number) {
   if (tvl >= 1_000_000) return `$${(tvl / 1_000_000).toFixed(2)}M`
@@ -166,6 +209,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false)
 
   const branding = useFundBranding(vault.address)
+  const resolveDisplay = useVaultDisplayResolver()
 
   const {
     deposit, step: depositStep, isPending: depositPending,
@@ -331,7 +375,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           >
             {allVaults.map((entry, i) => {
               const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
-              const perf = entry.vault.performanceSinceInception
+              const perf = resolveDisplay(entry.vault).perf
               const isPos = perf >= 0
               const isActive = entry.vault.address === vault.address
               return (
@@ -705,8 +749,12 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
   const vaultName = branding?.name ?? current.fund.name
   const strategyKey = branding?.strategy ?? current.fund.strategy ?? ''
   const strategyColor = STRATEGY_COLOR[strategyKey] ?? '#999'
-  const tvl = parseFloat(formatUnits(current.vault.totalAssets, 18))
-  const perf = current.vault.performanceSinceInception
+
+  const resolveDisplay = useVaultDisplayResolver()
+  const headerDisplay = resolveDisplay(current.vault)
+  const tvl = headerDisplay.tvl
+  const nav = headerDisplay.nav
+  const perf = headerDisplay.perf
   const isPos = perf >= 0
   const feePercent = Number(current.vault.performanceFeeRate) / 1e16
 
@@ -730,7 +778,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           <div className="hidden lg:flex items-center gap-4">
             {[
               { label: 'TVL', value: formatTvlCompact(tvl) },
-              { label: 'NAV', value: `$${current.vault.navPerShare.toFixed(4)}` },
+              { label: 'NAV', value: `$${nav.toFixed(4)}` },
               { label: 'Perf', value: `${isPos ? '+' : ''}${(perf * 100).toFixed(2)}%`, className: isPos ? 'text-[#00c483]' : 'text-[#e11d48]' },
               { label: 'Fee', value: `${feePercent.toFixed(0)}%` },
             ].map(({ label, value, className }) => (
@@ -772,10 +820,11 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-[#E0E0E0]">
             <div className="flex-1 overflow-y-auto">
               {vaults.map((entry, i) => {
-                const ep = entry.vault.performanceSinceInception
+                const display = resolveDisplay(entry.vault)
+                const ep = display.perf
                 const ePos = ep >= 0
                 const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
-                const navs = entry.vault.navPerShare
+                const navs = display.nav
                 const sparkData = Math.abs(navs - 1.0) > 0.005
                   ? generateNavHistory(navs, entry.vault.address, 12)
                   : [1, 1]
