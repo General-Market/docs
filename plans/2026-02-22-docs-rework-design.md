@@ -75,7 +75,7 @@ docs/
 │   │   ├── ticks.mdx                 # NEW — resolution cycle
 │   │   ├── resolution-types.mdx      # NEW — UP_0, UP_30, DOWN_0, FLAT_X
 │   │   ├── balance-proofs.mdx        # NEW — BLS signed claims on Arbitrum
-│   │   └── fees.mdx                  # NEW — 0.3% on profits only
+│   │   └── fees.mdx                  # NEW — 0.05% on profits only
 │   ├── bots/
 │   │   ├── overview.mdx              # NEW — bot architecture diagram
 │   │   ├── quickstart.mdx            # NEW — register + first tick (Python + TS)

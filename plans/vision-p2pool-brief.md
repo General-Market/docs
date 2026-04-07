@@ -185,7 +185,7 @@ If both win same market:
 
 ## Protocol Fee
 
-0.3% on all withdrawals (claims + early exits). Deducted at the contract level
+0.05% on all withdrawals (claims + early exits). Deducted at the contract level
 when USDC leaves the PoolVault. No fee on deposits, no fee on internal
 balance updates between ticks.
 
@@ -687,7 +687,7 @@ User lands on page
 | **Stale prices** | Oracle cancels sub-market for that tick, bettors refunded per market |
 | **All losers** | Everyone refunded their share for that sub-market |
 | **Claim** | Verified against oracle BLS aggregated signature |
-| **Protocol fee** | 0.3% on all withdrawals (claims + exits) |
+| **Protocol fee** | 0.05% on all withdrawals (claims + exits) |
 | **Exit** | `withdraw()` anytime; `pause()` + `forceWithdraw()` by oracles |
 | **Target users** | Quant funds, market makers, bots — with strategy preset UX for humans |
 
@@ -707,10 +707,10 @@ PoolVault (on-chain)
   - claimRewards(batchId, tickRange, oracleBLSSig)
       ^ player collects BLS sigs from oracles, aggregates, submits tx
       ^ verified against oracle BLS aggregated pubkey
-      ^ 0.3% protocol fee deducted on withdrawal
+      ^ 0.05% protocol fee deducted on withdrawal
   - withdraw(batchId)
       ^ player exits, claims remaining balance
-      ^ 0.3% protocol fee deducted
+      ^ 0.05% protocol fee deducted
   - pause(batchId) — oracle-only
       ^ freezes all activity on a batch
   - forceWithdraw(batchId, player) — oracle-only

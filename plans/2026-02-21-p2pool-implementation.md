@@ -144,7 +144,7 @@ contract Vision is IVision, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
-    uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
+    uint256 public constant PROTOCOL_FEE_BPS = 5; // 0.05%
     uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
     uint256 public constant BOT_MIN_STAKE = 1e18; // 1 WIND (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;

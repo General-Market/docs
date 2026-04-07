@@ -822,7 +822,7 @@ function creditBalance(address user, uint256 amount, ...) external {
 // This maintains: USDC.balanceOf(Vision) >= totalRealBalance always.
 ```
 
-**SOL-3: Double fee on same profit** — `claimRewards` charges 0.3%, then `withdraw` charges again on same profit.
+**SOL-3: Double fee on same profit** — `claimRewards` charges 0.05%, then `withdraw` charges again on same profit.
 
 ```solidity
 // contracts/src/vision/Vision.sol — withdraw()

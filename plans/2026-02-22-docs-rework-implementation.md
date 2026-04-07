@@ -305,7 +305,7 @@ mkdir -p docs/vision/{concepts,bots,api,reference}
 Content should cover:
 - What Vision is: sealed parimutuel prediction market on Arbitrum
 - How it works (30-second version): pick batch → place bets (UP/DOWN bitmap) → tick resolves → winners split pool
-- Key features: sealed commitments (no front-running), BLS-verified claims, bot-friendly, 0.3% fee on profits only
+- Key features: sealed commitments (no front-running), BLS-verified claims, bot-friendly, 0.05% fee on profits only
 - Vision contract address: `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` on chain 421611337
 - Use `<CardGroup>` for feature cards and quick links to concepts/bots/API
 - Do NOT reference Index product — Vision tab is fully independent
@@ -397,8 +397,8 @@ Content from Vision.sol claimRewards/withdraw:
 **Step 6: Write `docs/vision/concepts/fees.mdx`**
 
 Content from Vision.sol:
-- 0.3% (30 bps) on profits only via `PROTOCOL_FEE_BPS = 30`
-- Formula: `fee = (winnings * 30) / 10000`, payout = winnings - fee
+- 0.05% (5 bps) on profits only via `PROTOCOL_FEE_BPS = 5`
+- Formula: `fee = (winnings * 5) / 10000`, payout = winnings - fee
 - Losers pay nothing
 - Fee collection: `collectFees()` on Vision contract
 - Minimum stake: `MIN_STAKE_PER_TICK = 1e5` (0.1 USDC with 6 decimals)

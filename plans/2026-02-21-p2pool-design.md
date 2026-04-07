@@ -14,7 +14,7 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 │   - Crypto       │     │   - Resolution        │     │   - Positions    │
 │   - Polymarket   │     │   - Side matching     │     │   - Claims       │
 │   - Twitch       │     │   - BLS signing       │     │   - Bot registry │
-│   - HackerNews   │     │   - Bitmap store      │     │   - 0.3% fee     │
+│   - HackerNews   │     │   - Bitmap store      │     │   - 0.05% fee    │
 │   - Weather      │     │   - Reveal            │     │                  │
 │                  │     │                       │     │   OracleRegistry │
 │   Market catalog │     │   Chain indexer:      │     │   (BLS verify)   │
@@ -77,8 +77,8 @@ Single Solidity contract handling all P2Pool logic. External deps: `OracleRegist
   - Minimum stake: 0.1 USDC per tick
   - Stores: bitmapHash (32B), stakePerTick, startTick, balance, joinTimestamp
 - `deposit(batchId)` — top up existing position
-- `claimRewards(batchId, tickRange, balance, blsSig)` — BLS-verified via OracleRegistry, 0.3% fee
-- `withdraw(batchId, balance, blsSig)` — exit with BLS-signed balance proof, 0.3% fee
+- `claimRewards(batchId, tickRange, balance, blsSig)` — BLS-verified via OracleRegistry, 0.05% fee
+- `withdraw(batchId, balance, blsSig)` — exit with BLS-signed balance proof, 0.05% fee
 
 ### Oracle Operations
 - `pause(batchId)` — freeze batch (oracle-only, BLS-verified)

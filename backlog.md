@@ -1415,7 +1415,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 ## Session: 20260221-2300-r2fx (P2Pool Plan Review Round 2)
 
 - [DECISION] Replay attack fix: monotonic tick enforcement in claimRewards (fromTick > lastClaimedTick). BLS sigs include tick range, contract rejects stale ranges.
-- [DECISION] Fee model: 0.3% on profit only for both claimRewards and withdraw. Principal never taxed. withdraw() now takes totalDeposited param (BLS-signed) to compute profit.
+- [DECISION] Fee model: 0.05% on profit only for both claimRewards and withdraw. Principal never taxed. withdraw() now takes totalDeposited param (BLS-signed) to compute profit.
 - [DECISION] Solvency invariant: all payout functions (claim, withdraw, forceWithdraw) check USDC.balanceOf(this) >= payout + accumulatedFees before transferring.
 - [DECISION] Flat outcome: separate match arm in side_matching that refunds all players. Was silently dropping via empty vec return.
 - [DECISION] Tick progression: NOT tracked on-chain. Ticks are deterministic (createdAtTick + n). Oracle attests tick ranges via BLS. Contract validates monotonic progression via lastClaimedTick.
