@@ -1,7 +1,12 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { AnimatedText, COUNCIL_TEAL, COUNCIL_DARK } from "./AnimatedText";
+import {
+  AnimatedText,
+  COUNCIL_TEAL,
+  COUNCIL_DARK,
+  COUNCIL_TITLE_FONT_SIZE,
+} from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 
@@ -121,7 +126,7 @@ export const Scene01: React.FC = () => {
           lastWordSpringFrames={22}
           fadeOutAt={58}
           fadeOutFrames={10}
-          fontSize={34}
+          fontSize={COUNCIL_TITLE_FONT_SIZE}
           fontWeight={500}
           color={COUNCIL_TEAL}
           highlightColor={COUNCIL_TEAL}
@@ -138,7 +143,7 @@ export const Scene01: React.FC = () => {
           lastWordSpringFrames={26}
           fadeOutAt={175}
           fadeOutFrames={15}
-          fontSize={38}
+          fontSize={COUNCIL_TITLE_FONT_SIZE}
           fontWeight={500}
           color={COUNCIL_TEAL}
           highlightColor={COUNCIL_TEAL}
@@ -155,7 +160,7 @@ export const Scene01: React.FC = () => {
         riseFromPx={20}
         fadeOutAt={175}
         fadeOutFrames={15}
-        fontSize={20}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
         fontWeight={500}
         color={COUNCIL_TEAL}
         letterSpacing={0.5}

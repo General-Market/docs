@@ -8,7 +8,12 @@ import {
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import { loadFont as loadPacifico } from "@remotion/google-fonts/Pacifico";
-import { AnimatedText, COUNCIL_TEAL, COUNCIL_DARK } from "./AnimatedText";
+import {
+  AnimatedText,
+  COUNCIL_TEAL,
+  COUNCIL_DARK,
+  COUNCIL_TITLE_FONT_SIZE,
+} from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 const { fontFamily: pacificoFamily } = loadPacifico();
@@ -67,7 +72,7 @@ export const Scene07: React.FC = () => {
         lastWordSpringFrames={26}
         fadeOutAt={25}
         fadeOutFrames={10}
-        fontSize={64}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
         color={COUNCIL_DARK}
         highlightColor={COUNCIL_TEAL}
       />
@@ -84,7 +89,7 @@ export const Scene07: React.FC = () => {
         lastWordSpringFrames={26}
         fadeOutAt={75}
         fadeOutFrames={10}
-        fontSize={64}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
         color={COUNCIL_DARK}
         highlightColor={COUNCIL_TEAL}
       />

@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { AnimatedText } from "./AnimatedText";
+import { AnimatedText, COUNCIL_TITLE_FONT_SIZE } from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 
@@ -22,7 +22,7 @@ export const Scene05: React.FC = () => {
         framesPerWord={6}
         fadeOutAt={50}
         fadeOutFrames={5}
-        fontSize={56}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
       />
 
       <AnimatedText
@@ -32,7 +32,7 @@ export const Scene05: React.FC = () => {
         framesPerWord={8}
         fadeOutAt={100}
         fadeOutFrames={10}
-        fontSize={56}
+        fontSize={COUNCIL_TITLE_FONT_SIZE}
       />
     </AbsoluteFill>
   );
