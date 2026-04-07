@@ -35,8 +35,8 @@ export const SETTLEMENT_USDC_ADDRESS = (
 /** Settlement chain ID */
 export const SETTLEMENT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337
 
-/** Low gas threshold for L3 (GM native token) — 0.001 GM */
-export const LOW_GAS_THRESHOLD = 1_000_000_000_000_000n // 0.001 ether in wei
+/** Low gas threshold for L3 (GM native token) — 0.05 GM, roughly one tx of buffer */
+export const LOW_GAS_THRESHOLD = 50_000_000_000_000_000n // 0.05 ether in wei
 
 // ---------------------------------------------------------------------------
 // Runtime address getters (async) — for non-React contexts migrating away

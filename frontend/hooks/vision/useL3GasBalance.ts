@@ -11,6 +11,8 @@ export interface UseL3GasBalanceReturn {
   isLow: boolean
   /** Whether data is loading */
   isLoading: boolean
+  /** Force a refetch (e.g. right after a faucet drip) */
+  refetch: () => void
 }
 
 /**
@@ -20,10 +22,10 @@ export interface UseL3GasBalanceReturn {
 export function useL3GasBalance(): UseL3GasBalanceReturn {
   const { address } = useAccount()
 
-  const { data, isLoading } = useBalance({
+  const { data, isLoading, refetch } = useBalance({
     address,
     chainId: indexL3.id,
-    query: { enabled: !!address },
+    query: { enabled: !!address, refetchInterval: 10_000 },
   })
 
   const balance = data?.value ?? 0n
@@ -32,5 +34,6 @@ export function useL3GasBalance(): UseL3GasBalanceReturn {
     balance,
     isLow: balance < LOW_GAS_THRESHOLD,
     isLoading,
+    refetch: () => { refetch() },
   }
 }

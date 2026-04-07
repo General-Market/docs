@@ -8,6 +8,7 @@ import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
+import { useL3GasBalance } from '@/hooks/vision/useL3GasBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
@@ -47,7 +48,7 @@ function useRoundPhase(bettingEnd: string | null | undefined, tickDuration: numb
   if (!bettingEnd || tickDuration <= 0) return 'betting'
   if (remaining > 0) return 'betting'
 
-  // Past bettingEnd — check if within settlement window
+  // Past bettingEnd, check if within settlement window
   const now = Date.now()
   const end = new Date(bettingEnd).getTime()
   const settlementStart = end + tickDuration * 1000
@@ -132,6 +133,9 @@ export default function BatchEntryPanel({
   })
   const walletUsdc = (walletUsdcRaw as bigint | undefined) ?? 0n
   const hasZeroBalance = !isBalanceLoading && walletUsdc === 0n
+
+  // -- Wallet L3 GM gas balance — guards the Sign step from running out of gas --
+  const { isLow: hasLowGas, refetch: refetchGas } = useL3GasBalance()
 
   // -- Join + submit hooks --
   const {
@@ -266,9 +270,12 @@ export default function BatchEntryPanel({
       const data = await res.json()
       if (!res.ok || data.error) {
         setFaucetError(data.error || 'Faucet request failed')
+      } else if (data.l3Gas?.error) {
+        // Faucet minted USDC but the gas drip silently failed — surface it
+        setFaucetError(`Gas drip failed: ${data.l3Gas.error}`)
       } else {
         setFaucetSuccess(true)
-        setTimeout(() => refetchBalance(), 2000)
+        setTimeout(() => { refetchBalance(); refetchGas() }, 2000)
         setTimeout(() => setFaucetSuccess(false), 4000)
       }
     } catch (e: any) {
@@ -276,7 +283,7 @@ export default function BatchEntryPanel({
     } finally {
       setFaucetLoading(false)
     }
-  }, [address, faucetLoading, refetchBalance])
+  }, [address, faucetLoading, refetchBalance, refetchGas])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
@@ -429,11 +436,15 @@ export default function BatchEntryPanel({
               </button>
             )}
 
-            {/* Wallet USDC balance hint when zero + faucet */}
-            {isConnected && hasZeroBalance && !isJoined && (
+            {/* Wallet hint when USDC is empty OR L3 gas is too low to sign */}
+            {isConnected && (hasZeroBalance || hasLowGas) && !isJoined && (
               <div className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2">
-                <p className="text-[11px] font-bold text-yellow-700">{t('batch_detail.no_usdc')}</p>
-                <p className="text-[10px] text-yellow-600 mt-0.5">{t('batch_detail.no_usdc_detail')}</p>
+                <p className="text-[11px] font-bold text-yellow-700">
+                  {hasZeroBalance ? t('batch_detail.no_usdc') : t('batch_detail.no_gas')}
+                </p>
+                <p className="text-[10px] text-yellow-600 mt-0.5">
+                  {hasZeroBalance ? t('batch_detail.no_usdc_detail') : t('batch_detail.no_gas_detail')}
+                </p>
                 {faucetSuccess ? (
                   <p className="text-[10px] font-semibold text-emerald-600 mt-1.5">{t('batch_detail.usdc_minted')}</p>
                 ) : (
@@ -443,7 +454,11 @@ export default function BatchEntryPanel({
                     disabled={faucetLoading}
                     className="mt-1.5 w-full rounded border border-yellow-500 bg-yellow-100 py-1 text-[11px] font-semibold text-yellow-800 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-wait transition-colors"
                   >
-                    {faucetLoading ? 'Minting...' : t('batch_detail.get_test_usdc')}
+                    {faucetLoading
+                      ? 'Minting...'
+                      : hasZeroBalance
+                        ? t('batch_detail.get_test_usdc')
+                        : t('batch_detail.get_test_gas')}
                   </button>
                 )}
                 {faucetError && (
@@ -506,7 +521,7 @@ export default function BatchEntryPanel({
                 )}
                 {marketCountMismatch && (
                   <p className="text-[10px] text-amber-600 mt-1">
-                    Market data out of sync — batch expects {activeBatch?.marketCount} markets but only {marketIds.length} loaded. Refresh the page.
+                    Market data out of sync, batch expects {activeBatch?.marketCount} markets but only {marketIds.length} loaded. Refresh the page.
                   </p>
                 )}
               </div>
