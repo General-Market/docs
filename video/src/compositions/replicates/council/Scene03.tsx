@@ -9,8 +9,8 @@ import {
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
 
 const { fontFamily } = loadFont();
-const TEAL = "#4ECDC4";
-const DARK = "#1A1A2E";
+const TEAL = "#0FE8AE";
+const DARK = "#000000";
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
@@ -22,18 +22,28 @@ const useTypewriter = (text: string, startFrame: number, charsPerFrame = 0.6) =>
   return text.slice(0, charCount);
 };
 
-/* Simplified OpenAI knot icon */
+/* OpenAI woven knot — interlocking ring composed of six arcs */
 const OpenAIIcon: React.FC<{ size?: number }> = ({ size = 60 }) => (
   <svg width={size} height={size} viewBox="0 0 60 60" fill="none">
-    <path
-      d="M30 10C22 10 16 16 16 24C16 28 18 31 21 33L21 42C21 44.2 22.8 46 25 46H35C37.2 46 39 44.2 39 42L39 33C42 31 44 28 44 24C44 16 38 10 30 10Z"
+    <g
       stroke="white"
-      strokeWidth="3"
+      strokeWidth="3.2"
       strokeLinecap="round"
       strokeLinejoin="round"
-    />
-    <path d="M25 33L25 22L35 28L25 33Z" fill="white" opacity={0.8} />
-    <line x1="25" y1="38" x2="35" y2="38" stroke="white" strokeWidth="2" />
+      fill="none"
+    >
+      {/* Top arc */}
+      <path d="M19 20 A13 13 0 0 1 41 20" />
+      {/* Upper-right arc */}
+      <path d="M44 22 A13 13 0 0 1 41 44" />
+      {/* Lower-right arc */}
+      <path d="M41 47 A13 13 0 0 1 19 47" />
+      {/* Bottom arc */}
+      <path d="M16 44 A13 13 0 0 1 19 22" />
+      {/* Inner interlock — two short bars echoing the knot crossings */}
+      <path d="M30 17 L30 28" />
+      <path d="M30 32 L30 43" />
+    </g>
   </svg>
 );
 
@@ -85,19 +95,22 @@ const CARDS = [
     color: GPT_GREEN,
     Icon: OpenAIIcon,
     label: "GPT 5.4",
-    enterFrame: 60,
+    allowWrap: false,
+    enterFrame: 110,
   },
   {
     color: GEMINI_BLUE,
     Icon: GeminiStar,
     label: "Gemini 3.1 Pro",
-    enterFrame: 64,
+    allowWrap: true,
+    enterFrame: 114,
   },
   {
     color: OPUS_ORANGE,
     Icon: OpusSunburst,
     label: "Opus 4.6",
-    enterFrame: 68,
+    allowWrap: false,
+    enterFrame: 118,
   },
 ];
 
@@ -105,21 +118,34 @@ export const Scene03: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Phase 1: "We built" typewriter (8-22)
-  const builtText = useTypewriter("We built", 8, 0.6);
+  /*
+   * 200-frame budget
+   * 0-30   : "We built AI Council" typewriter
+   * 30-90  : hold
+   * 90-100 : fade out
+   * 100-110: blank
+   * 110-130: cards spring in
+   * 130-150: cards full size, hold
+   * 150-180: subtitle word-by-word
+   * 180-195: hold
+   * 195-200: fade
+   */
 
-  // Phase 2: "AI Council" fade-in (20-32)
-  const aiOpacity = interpolate(frame, [20, 30], [0, 1], {
+  // Phase 1: "We built" typewriter (0-14)
+  const builtText = useTypewriter("We built", 0, 0.6);
+
+  // Phase 2: "AI Council" fade-in (14-30)
+  const aiOpacity = interpolate(frame, [14, 26], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const aiY = interpolate(frame, [20, 32], [16, 0], {
+  const aiY = interpolate(frame, [14, 26], [16, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Phase 3: hold then fade out (32-52)
-  const textOpacity = interpolate(frame, [48, 54], [1, 0], {
+  // Phase 3: hold then fade (30-100)
+  const textOpacity = interpolate(frame, [90, 100], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -127,13 +153,19 @@ export const Scene03: React.FC = () => {
   // Card label fade — appears ~10 frames after each card lands
   const labelDelay = 10;
 
-  // Subtitle: "Each model processing independently" (78-110)
+  // Subtitle word entries (start after cards full at 150)
   const wordEntries: { text: string; start: number; color: string }[] = [
-    { text: "Each", start: 80, color: DARK },
-    { text: "model", start: 86, color: DARK },
-    { text: "processing", start: 92, color: DARK },
-    { text: "independently", start: 100, color: TEAL },
+    { text: "Each", start: 150, color: DARK },
+    { text: "model", start: 156, color: DARK },
+    { text: "processing", start: 162, color: DARK },
+    { text: "independently", start: 172, color: TEAL },
   ];
+
+  // Whole-row fade at the end (195-200)
+  const tailFade = interpolate(frame, [195, 200], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
@@ -144,7 +176,7 @@ export const Scene03: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Text phase: "We built AI Council" — single line */}
+      {/* Phase 1-3: "We built AI Council" — single line, centered */}
       <div
         style={{
           position: "absolute",
@@ -183,117 +215,130 @@ export const Scene03: React.FC = () => {
         </span>
       </div>
 
-      {/* Cards phase */}
+      {/* Phase 4-7: cards + inline subtitle as a single horizontal row */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
-          transform: "translate(-50%, calc(-50% - 40px))",
+          transform: "translate(-50%, -50%)",
           display: "flex",
-          gap: 36,
-          alignItems: "flex-start",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 56,
+          opacity: tailFade,
         }}
       >
-        {CARDS.map(({ color, Icon, label, enterFrame }, idx) => {
-          const cardScale = spring({
-            frame: frame - enterFrame,
-            fps,
-            from: 0.15,
-            to: 1,
-            config: { damping: 13, stiffness: 130, mass: 0.85 },
-          });
-
-          const labelOpacity = interpolate(
-            frame,
-            [enterFrame + labelDelay, enterFrame + labelDelay + 8],
-            [0, 1],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          );
-
-          return (
-            <div
-              key={idx}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 14,
-                transform: `scale(${frame >= enterFrame ? cardScale : 0})`,
-              }}
-            >
-              <div
-                style={{
-                  width: 124,
-                  height: 124,
-                  borderRadius: 18,
-                  backgroundColor: color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon size={64} />
-              </div>
+        {/* Inline subtitle, left of the cards */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            maxWidth: 280,
+            columnGap: 10,
+            rowGap: 4,
+            alignItems: "baseline",
+          }}
+        >
+          {wordEntries.map(({ text, start, color }, i) => {
+            const wordY = spring({
+              frame: frame - start,
+              fps,
+              from: 12,
+              to: 0,
+              config: { damping: 14, stiffness: 140, mass: 0.6 },
+            });
+            const wordOpacity = interpolate(frame, [start, start + 6], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            return (
               <span
+                key={i}
                 style={{
-                  fontSize: 16,
+                  fontSize: 26,
                   fontWeight: 700,
                   color,
-                  textAlign: "center",
+                  opacity: frame >= start ? wordOpacity : 0,
+                  transform: `translateY(${frame >= start ? wordY : 12}px)`,
+                  display: "inline-block",
                   whiteSpace: "nowrap",
-                  opacity: labelOpacity,
-                  lineHeight: 1.3,
+                  lineHeight: 1.25,
                 }}
               >
-                {label}
+                {text}
               </span>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
 
-      {/* Subtitle: "Each model processing independently" — single line */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, 130px)",
-          display: "flex",
-          gap: 10,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {wordEntries.map(({ text, start, color }, i) => {
-          const wordY = spring({
-            frame: frame - start,
-            fps,
-            from: 12,
-            to: 0,
-            config: { damping: 14, stiffness: 140, mass: 0.6 },
-          });
-          const wordOpacity = interpolate(frame, [start, start + 6], [0, 1], {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-          });
-          return (
-            <span
-              key={i}
-              style={{
-                fontSize: 30,
-                fontWeight: 700,
-                color,
-                opacity: frame >= start ? wordOpacity : 0,
-                transform: `translateY(${frame >= start ? wordY : 12}px)`,
-                display: "inline-block",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {text}
-            </span>
-          );
-        })}
+        {/* Three cards */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 78,
+            alignItems: "flex-start",
+          }}
+        >
+          {CARDS.map(({ color, Icon, label, allowWrap, enterFrame }, idx) => {
+            const cardScale = spring({
+              frame: frame - enterFrame,
+              fps,
+              from: 0.15,
+              to: 1,
+              config: { damping: 13, stiffness: 130, mass: 0.85 },
+            });
+
+            const labelOpacity = interpolate(
+              frame,
+              [enterFrame + labelDelay, enterFrame + labelDelay + 8],
+              [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+
+            return (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 14,
+                  transform: `scale(${frame >= enterFrame ? cardScale : 0})`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 108,
+                    height: 108,
+                    borderRadius: 18,
+                    backgroundColor: color,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={56} />
+                </div>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color,
+                    textAlign: "center",
+                    whiteSpace: allowWrap ? "normal" : "nowrap",
+                    opacity: labelOpacity,
+                    lineHeight: 1.3,
+                    maxWidth: allowWrap ? 80 : undefined,
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -305,5 +350,5 @@ export const scene03Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 138,
+  durationInFrames: 200,
 };
