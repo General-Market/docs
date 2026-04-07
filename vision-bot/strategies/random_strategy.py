@@ -1,8 +1,4 @@
-import hashlib
-import os
-import random
-
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 
 class RandomStrategy(Strategy):
@@ -10,11 +6,9 @@ class RandomStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        # Seed per-bot using the private key so bots starting within seconds
-        # of each other on the same machine produce different bitmaps.
-        key = os.environ.get("BOT_PRIVATE_KEY", str(id(self)))
-        seed = int(hashlib.sha256(key.encode()).hexdigest(), 16) % (2**32)
-        self._rng = random.Random(seed)
+        # Per-strategy RNG seeded from BOT_PRIVATE_KEY via keccak256.
+        # Reproducible across restarts. Not brute-forceable from a few bitmaps.
+        self._rng = make_strategy_rng(self.name)
 
     def predict(self, markets):
         return [self._rng.choice(["UP", "DOWN"]) for _ in markets]

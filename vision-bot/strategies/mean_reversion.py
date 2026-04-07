@@ -5,9 +5,8 @@ Things that wander but always return. The strategy simply trusts the average.
 """
 
 import logging
-import random
 
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 log = logging.getLogger(__name__)
 
@@ -24,15 +23,18 @@ class MeanReversionStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = random.Random()
+        self._rng = make_strategy_rng(self.name)
 
     def predict(self, markets):
         """Fallback without history: simple contrarian on last change."""
         results = []
         for m in markets:
             c = m.get("change")
-            if c is None or c == 0:
+            if c is None:
                 results.append(self._rng.choice(["UP", "DOWN"]))
+            elif c == 0.0:
+                # Zero change: nothing to revert toward. Default DOWN.
+                results.append("DOWN")
             else:
                 results.append("DOWN" if c > 0 else "UP")
         return results
@@ -51,8 +53,10 @@ class MeanReversionStrategy(Strategy):
 
             if len(history) < 3:
                 c = m.get("change")
-                if c is None or c == 0:
+                if c is None:
                     results.append(self._rng.choice(["UP", "DOWN"]))
+                elif c == 0.0:
+                    results.append("DOWN")
                 else:
                     results.append("DOWN" if c > 0 else "UP")
                 continue

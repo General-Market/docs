@@ -20,6 +20,7 @@ Falls back to SWARM_BOT_{i}_KEY env vars if BOT_KEYS is not set.
 import logging
 import multiprocessing
 import os
+import signal
 import sys
 import time
 
@@ -29,13 +30,24 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
+# Restart-storm guards. Backoff doubles per restart, capped. After enough
+# restarts in a window, the bot is declared dead and left alone.
+_RESTART_BACKOFF_CAP_SECS = 600
+_RESTART_DEAD_THRESHOLD = 10
+_RESTART_DEAD_WINDOW_SECS = 3600
+
+# Status file the orchestrator can read to see which bots have been quarantined.
+_STATUS_DIR_ENV = "SWARM_STATUS_DIR"
+
 
 def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, pnl_file: str, base_env: dict):
     """Run a single bot in its own process. Each process gets its own Python
     interpreter, web3 instance, HTTP pool, and WebSocket connection."""
     # With 'spawn' start method the child is a fresh interpreter.
-    # Populate its environment from the parent snapshot + per-bot key.
-    os.environ.clear()
+    # Layer the parent's environment on top of whatever the child started
+    # with. Do NOT clear os.environ — spawn-mode Python relies on internal
+    # variables (PYTHONPATH, PYTHONHOME, PYTHONHASHSEED, PYTHONIOENCODING)
+    # which clearing would obliterate. Update is enough.
     os.environ.update(base_env)
     os.environ["BOT_PRIVATE_KEY"] = private_key
 
@@ -165,7 +177,21 @@ def main():
     log = logging.getLogger("swarm")
     log.info("Starting %d bots as separate processes", bot_count)
 
-    # Each entry: (bot_id, key, strategy, stake, pnl_file, process)
+    status_dir = os.environ.get(_STATUS_DIR_ENV, "")
+    if status_dir:
+        os.makedirs(status_dir, exist_ok=True)
+
+    def _write_status(bot_id: int, state: str, detail: str = ""):
+        if not status_dir:
+            return
+        try:
+            path = os.path.join(status_dir, f"bot-{bot_id}.status")
+            with open(path, "w") as f:
+                f.write(f"{state}\n{detail}\n{time.time()}\n")
+        except Exception as e:
+            log.warning("Status write failed for bot %d: %s", bot_id, e)
+
+    # Each entry is a dict so we can mutate fields in place without unpacking.
     children = []
     for i in range(bot_count):
         if not keys[i]:
@@ -174,8 +200,20 @@ def main():
 
         pnl_file = os.path.join(pnl_dir, f"pnl-{i}.json")
         p = _spawn(i, keys[i], strategies[i], stakes[i], pnl_file, base_env)
-        children.append((i, keys[i], strategies[i], stakes[i], pnl_file, p))
+        children.append({
+            "bot_id": i,
+            "key": keys[i],
+            "strategy": strategies[i],
+            "stake": stakes[i],
+            "pnl_file": pnl_file,
+            "proc": p,
+            "restart_count": 0,
+            "restart_history": [],  # timestamps of recent restarts
+            "dead": False,
+            "next_restart_at": 0.0,
+        })
         log.info("Bot %d started (pid=%d, strategy=%s)", i, p.pid, strategies[i])
+        _write_status(i, "running")
 
         if i < bot_count - 1:
             time.sleep(stagger)
@@ -184,35 +222,123 @@ def main():
     sys.stdout.flush()
     sys.stderr.flush()
 
-    # Monitor loop: restart dead children.
+    # Shutdown handlers — flip a local flag instead of dying mid-iteration.
+    shutdown = {"flag": False}
+    def _shutdown_handler(signum, _frame):
+        log.info("swarm received signal %d — shutting down", signum)
+        shutdown["flag"] = True
+    signal.signal(signal.SIGTERM, _shutdown_handler)
+    signal.signal(signal.SIGINT, _shutdown_handler)
+
+    # Monitor loop: restart dead children, with backoff and a quarantine.
     try:
-        while True:
-            time.sleep(30)
+        while not shutdown["flag"]:
+            # Sleep in 1s chunks so SIGTERM during the wait is honoured fast.
+            for _ in range(30):
+                if shutdown["flag"]:
+                    break
+                time.sleep(1)
+            if shutdown["flag"]:
+                break
+
             alive = 0
-            for idx, (bot_id, key, strategy, stake, pnl_file, proc) in enumerate(children):
+            now = time.time()
+            for child in children:
+                if child["dead"]:
+                    continue
+                proc = child["proc"]
                 if proc.is_alive():
                     alive += 1
-                else:
-                    exit_code = proc.exitcode
-                    log.warning("Bot %d (pid=%d) died with exit code %s — restarting", bot_id, proc.pid, exit_code)
-                    new_proc = _spawn(bot_id, key, strategy, stake, pnl_file, base_env)
-                    children[idx] = (bot_id, key, strategy, stake, pnl_file, new_proc)
-                    log.info("Bot %d restarted (new pid=%d)", bot_id, new_proc.pid)
-                    alive += 1
+                    continue
 
-            log.info("Alive check: %d/%d processes", alive, len(children))
+                # Process is dead. Decide whether to restart.
+                exit_code = proc.exitcode
+                bot_id = child["bot_id"]
+
+                # Trim restart history to the last hour.
+                cutoff = now - _RESTART_DEAD_WINDOW_SECS
+                child["restart_history"] = [
+                    t for t in child["restart_history"] if t >= cutoff
+                ]
+
+                if len(child["restart_history"]) >= _RESTART_DEAD_THRESHOLD:
+                    log.warning(
+                        "Bot %d crossed %d restarts in %ds — quarantined, will not restart",
+                        bot_id, _RESTART_DEAD_THRESHOLD, _RESTART_DEAD_WINDOW_SECS,
+                    )
+                    child["dead"] = True
+                    _write_status(bot_id, "quarantined", f"exit={exit_code}")
+                    continue
+
+                # Backoff: 1, 2, 4, 8, ... seconds, capped.
+                if now < child["next_restart_at"]:
+                    # Still in backoff window — skip this tick, try again later.
+                    continue
+
+                backoff = min(2 ** child["restart_count"], _RESTART_BACKOFF_CAP_SECS)
+                log.warning(
+                    "Bot %d (pid=%s) died with exit code %s — restart #%d after %ds backoff",
+                    bot_id, proc.pid, exit_code, child["restart_count"] + 1, backoff,
+                )
+                child["next_restart_at"] = now + backoff
+                child["restart_count"] += 1
+                child["restart_history"].append(now)
+
+                new_proc = _spawn(
+                    bot_id, child["key"], child["strategy"],
+                    child["stake"], child["pnl_file"], base_env,
+                )
+                child["proc"] = new_proc
+                log.info("Bot %d restarted (new pid=%d)", bot_id, new_proc.pid)
+                _write_status(bot_id, "restarted", f"count={child['restart_count']}")
+                alive += 1
+
+            log.info(
+                "Alive check: %d/%d processes (quarantined: %d)",
+                alive, len(children),
+                sum(1 for c in children if c["dead"]),
+            )
             sys.stdout.flush()
 
             if len(children) == 0:
                 log.error("No bots configured — exiting")
                 sys.exit(1)
     except KeyboardInterrupt:
-        log.info("Shutting down — terminating children")
-        for _, _, _, _, _, proc in children:
+        log.info("KeyboardInterrupt — shutting down")
+    finally:
+        # Drain children. Send SIGTERM, give each up to 30s to exit cleanly
+        # (the bots now install their own SIGTERM handlers and flush state),
+        # then SIGKILL the survivors.
+        log.info("Sending SIGTERM to all children")
+        for child in children:
+            proc = child["proc"]
             if proc.is_alive():
-                proc.terminate()
-        for _, _, _, _, _, proc in children:
-            proc.join(timeout=5)
+                try:
+                    proc.terminate()
+                except Exception as e:
+                    log.warning("Bot %d terminate failed: %s", child["bot_id"], e)
+
+        deadline = time.time() + 30
+        for child in children:
+            proc = child["proc"]
+            if not proc.is_alive():
+                continue
+            remaining = max(0, deadline - time.time())
+            proc.join(timeout=remaining)
+
+        for child in children:
+            proc = child["proc"]
+            if proc.is_alive():
+                log.warning(
+                    "Bot %d did not exit cleanly within 30s — sending SIGKILL",
+                    child["bot_id"],
+                )
+                try:
+                    proc.kill()
+                    proc.join(timeout=5)
+                except Exception as e:
+                    log.warning("Bot %d kill failed: %s", child["bot_id"], e)
+
         log.info("All children stopped")
 
 

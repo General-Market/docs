@@ -2,13 +2,17 @@
 
 Transport delays, streaming activity, gaming concurrency, power demand.
 The hour dictates the outcome more than any chart pattern.
+
+LIMITATION: All hours are interpreted in UTC. Per-market timezone metadata
+does not exist in the data, so a "morning rush" prediction will be wrong
+for any market whose underlying schedule lives in JST or PST. The clock is
+the oracle — but only the oracle's clock. This is a known approximation.
 """
 
 import logging
-import random
 from datetime import datetime, timezone
 
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +32,7 @@ class TimeOfDayStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = random.Random()
+        self._rng = make_strategy_rng(self.name)
         self._peak_hours = set(
             self.params.get("peak_hours", self.DEFAULT_PEAK_HOURS)
         )

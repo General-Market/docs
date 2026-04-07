@@ -61,12 +61,16 @@ class TestMomentumStrategy:
         markets = [{"id": "btc", "price": 50000, "change": -3.0, "volume": 1e9, "market_cap": 1e12}]
         assert strategy.predict(markets) == ["DOWN"]
 
-    def test_none_change_is_up(self):
+    def test_none_change_is_random(self):
+        """Missing data must coin-flip — neither UP nor DOWN can be claimed
+        with a straight face when the data simply isn't there."""
         strategy = load_strategy("momentum")
         markets = [{"id": "btc", "price": 50000, "change": None, "volume": None, "market_cap": None}]
-        assert strategy.predict(markets) == ["UP"]
+        result = strategy.predict(markets)
+        assert result[0] in ("UP", "DOWN")
 
-    def test_zero_change_is_up(self):
+    def test_zero_change_is_down(self):
+        """Zero change is data, not absence. The momentum of stillness is DOWN."""
         strategy = load_strategy("momentum")
         markets = [{"id": "btc", "price": 50000, "change": 0.0, "volume": None, "market_cap": None}]
-        assert strategy.predict(markets) == ["UP"]
+        assert strategy.predict(markets) == ["DOWN"]

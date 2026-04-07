@@ -14,9 +14,8 @@ Regime cares about whether the market is trending or reverting.
 """
 
 import logging
-import random
 
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class RegimeStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = random.Random()
+        self._rng = make_strategy_rng(self.name)
         self._trending_pct = (params or {}).get(
             "trending_threshold_pct", TRENDING_THRESHOLD_PCT,
         )
@@ -48,8 +47,11 @@ class RegimeStrategy(Strategy):
         opposite direction for small moves (mean-reverting regime).
         Momentum says UP for change=+1%. Regime says DOWN — quiet market reverts.
         """
-        if change is None or change == 0:
+        if change is None:
             return self._rng.choice(["UP", "DOWN"])
+        if change == 0.0:
+            # Zero change: a regime of stillness. DOWN.
+            return "DOWN"
 
         if abs(change) >= self._trending_pct:
             # Large move — trending regime, follow direction
@@ -101,7 +103,8 @@ class RegimeStrategy(Strategy):
                 # Regime established — follow it
                 results.append(last_dir)
             else:
-                # Recent flip or no regime — follow the newest direction
-                results.append(last_dir)
+                # No regime — coin flip. The market hasn't picked a side yet,
+                # and following the most recent flip is just lag in disguise.
+                results.append(self._rng.choice(["UP", "DOWN"]))
 
         return results

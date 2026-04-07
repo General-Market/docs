@@ -12,9 +12,8 @@ Cluster ignores small positives entirely and bets DOWN on them.
 """
 
 import logging
-import random
 
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class ClusterStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = random.Random()
+        self._rng = make_strategy_rng(self.name)
         self._spike_pct = (params or {}).get(
             "spike_threshold_pct", SPIKE_THRESHOLD_PCT,
         )
@@ -52,6 +51,9 @@ class ClusterStrategy(Strategy):
         """
         if change is None:
             return self._rng.choice(["UP", "DOWN"])
+        if change == 0.0:
+            # Zero change is data: no spike, no cluster. DOWN.
+            return "DOWN"
 
         if change >= self._spike_pct:
             # Large spike — cluster event detected, cascade incoming

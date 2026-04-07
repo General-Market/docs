@@ -14,9 +14,8 @@ Vol fade opposes large moves and follows small ones.
 """
 
 import logging
-import random
 
-from framework.core import Strategy
+from framework.core import Strategy, make_strategy_rng
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class VolatilityFadeStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = random.Random()
+        self._rng = make_strategy_rng(self.name)
         self._spike_pct = (params or {}).get(
             "spike_threshold_pct", SPIKE_THRESHOLD_PCT,
         )
@@ -48,8 +47,11 @@ class VolatilityFadeStrategy(Strategy):
         same direction for small moves (low-vol trend following).
         Momentum says UP for change=+6%. Vol fade says DOWN — spike will revert.
         """
-        if change is None or change == 0:
+        if change is None:
             return self._rng.choice(["UP", "DOWN"])
+        if change == 0.0:
+            # Zero volatility — nothing to fade. DOWN.
+            return "DOWN"
 
         if abs(change) >= self._spike_pct:
             # Large move — vol spike, fade it (bet on reversion)
@@ -75,8 +77,12 @@ class VolatilityFadeStrategy(Strategy):
             change = m.get("change")
             history = feed.history(batch_id, asset_id)
 
-            if len(history) < 3 or change is None or change == 0:
+            if len(history) < 3 or change is None:
                 results.append(self._fade_signal(change))
+                continue
+            if change == 0.0:
+                # Zero change: no spike. DOWN — quiet markets stay quiet.
+                results.append("DOWN")
                 continue
 
             recent = history[-lookback:]

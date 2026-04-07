@@ -1,14 +1,4 @@
-import hashlib
-import os
-import random
-
-from framework.core import Strategy
-
-
-def _rng(salt: str) -> random.Random:
-    key = os.environ.get("BOT_PRIVATE_KEY", str(os.getpid()))
-    seed = int(hashlib.sha256(f"{key}:{salt}".encode()).hexdigest(), 16) % (2**32)
-    return random.Random(seed)
+from framework.core import Strategy, make_strategy_rng
 
 
 class MomentumStrategy(Strategy):
@@ -17,7 +7,7 @@ class MomentumStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = _rng("momentum")
+        self._rng = make_strategy_rng(self.name)
 
     def predict(self, markets):
         threshold = self.params.get("min_change_pct", 0)
@@ -25,15 +15,18 @@ class MomentumStrategy(Strategy):
         for m in markets:
             change = m.get("change")
             if change is None:
+                # No data — coin flip is the only honest answer.
                 results.append(self._rng.choice(["UP", "DOWN"]))
+            elif change == 0.0:
+                # Zero change is data, not absence. Bias toward DOWN —
+                # nothing moved, the absence of movement is the prediction.
+                results.append("DOWN")
             elif threshold and abs(change) < threshold:
                 results.append(self._rng.choice(["UP", "DOWN"]))
             elif change > 0:
                 results.append("UP")
-            elif change < 0:
-                results.append("DOWN")
             else:
-                results.append(self._rng.choice(["UP", "DOWN"]))
+                results.append("DOWN")
         return results
 
 
@@ -43,14 +36,16 @@ class MomentumNoiseStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = _rng("noise")
+        self._rng = make_strategy_rng(self.name)
 
     def predict(self, markets):
         out = []
         for m in markets:
             change = m.get("change")
-            if change is None or change == 0:
+            if change is None:
                 d = self._rng.choice(["UP", "DOWN"])
+            elif change == 0.0:
+                d = "DOWN"
             else:
                 d = "UP" if change > 0 else "DOWN"
             if self._rng.random() < 0.10:
@@ -65,7 +60,7 @@ class MomentumThresholdStrategy(Strategy):
 
     def __init__(self, params=None):
         super().__init__(params)
-        self._rng = _rng("thresh")
+        self._rng = make_strategy_rng(self.name)
 
     def predict(self, markets):
         results = []
@@ -73,6 +68,8 @@ class MomentumThresholdStrategy(Strategy):
             change = m.get("change")
             if change is None:
                 results.append(self._rng.choice(["UP", "DOWN"]))
+            elif change == 0.0:
+                results.append("DOWN")
             elif abs(change) > 1.0:
                 results.append("UP" if change > 0 else "DOWN")
             else:

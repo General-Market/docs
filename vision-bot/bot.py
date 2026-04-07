@@ -3,6 +3,7 @@
 
 import logging
 import os
+import signal
 import sys
 import time
 
@@ -14,6 +15,7 @@ from framework.core import (
     load_strategy,
 )
 from framework.chain import (
+    BitmapSubmitError,
     Executor,
     VaultExecutor,
     discover_oracles,
@@ -26,6 +28,15 @@ from framework.chain import (
 from framework.feed import VisionFeed
 from framework.tracker import Tracker
 
+# Global shutdown flag set by signal handlers. Checked between cycles so the
+# main loop exits cleanly instead of being killed mid-bitmap-submit.
+_shutdown_flag = False
+
+# How long an oracle ack is considered fresh before we re-submit. Five minutes
+# is enough to survive an oracle restart and short enough that a partial
+# acceptance gets repaired before settlement.
+_BITMAP_REFRESH_SECS = 300
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -34,6 +45,52 @@ logging.basicConfig(
 log = logging.getLogger("vision-bot")
 
 DECIMALS = 18
+
+
+def _resubmit_if_stale(pos, oracle_urls, player, bid, refresh_secs=_BITMAP_REFRESH_SECS):
+    """Re-submit a bitmap iff it has gone stale or its last submission failed.
+
+    Without this gate, every poll cycle hammered every oracle for every active
+    position — five POSTs per second at scale, for no benefit. The oracle
+    remembers an accepted bitmap; the resubmit only matters when the oracle
+    forgot (restart) or never knew (prior failure).
+    """
+    if not pos or not pos.get("bitmap") or pos.get("poisoned"):
+        return
+    last_ack = pos.get("last_oracle_ack_at", 0)
+    needs_refresh = (time.time() - last_ack) > refresh_secs
+    failed_last = pos.get("bitmap_submit_failed", False)
+    if not (needs_refresh or failed_last):
+        return
+    bm = pos["bitmap"]
+    bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
+    pos["bitmap_hash"] = bm_hash
+    try:
+        submit_bitmap(oracle_urls, player, bid, bm, bm_hash, retries=1)
+        pos["last_oracle_ack_at"] = time.time()
+        pos["bitmap_submit_failed"] = False
+    except BitmapSubmitError as e:
+        log.warning("Batch %d: bitmap resubmit below quorum: %s", bid, e)
+        pos["bitmap_submit_failed"] = True
+    except Exception as e:
+        log.warning("Batch %d: bitmap resubmit error: %s", bid, e)
+        pos["bitmap_submit_failed"] = True
+
+
+def _wait_for_join(executor, batch_id, timeout=10):
+    """Poll on-chain getPosition until the join is visible. Returns True on
+    success. False after timeout — caller should continue regardless; the
+    bitmap retry path is the safety net."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            pos = executor.get_position(batch_id)
+            if pos.get("joinTimestamp", 0) > 0:
+                return True
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return False
 
 
 def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor=None):
@@ -49,23 +106,13 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             tracker._usdc_approved = True
         tracker.check_rounds(strategy=strategy)
 
-        # Re-submit bitmaps only for RECENT positions (joined in last 10 min).
-        # Old positions already have their bitmaps accepted by oracles.
+        # Re-submit bitmaps only when stale or last submission failed.
+        # The oracle holds accepted bitmaps; we hammer it only when memory
+        # was lost or never written.
         round_player = vault_executor.vault_addr if vault_mode else executor.bot_addr
-        cutoff = time.time() - 600
-        recent_ids = [bid for bid in tracker.active_ids
-                      if tracker.positions.get(bid, {}).get("joined_at", 0) > cutoff]
-        for bid in recent_ids:
+        for bid in list(tracker.active_ids):
             pos = tracker.positions.get(bid)
-            if not pos or not pos.get("bitmap") or pos.get("poisoned"):
-                continue
-            bm = pos["bitmap"]
-            bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
-            pos["bitmap_hash"] = bm_hash
-            submit_bitmap(
-                oracle_urls, round_player, bid,
-                bm, bm_hash, retries=1,
-            )
+            _resubmit_if_stale(pos, oracle_urls, round_player, bid)
 
         exited = tracker.check_all()
         for bid in exited:
@@ -124,15 +171,42 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             log.warning("Batch %d: cannot read configHash from chain: %s", batch_id, e)
             continue
 
-        # Fetch real market config from data-node to get actual market count.
-        # The config_hash is immutable per batch — the data-node response is
-        # the ONLY authoritative source for bitmap sizing.
+        # Skip batches in lock window BEFORE doing the expensive market fetch
+        # and strategy work. A locked tick wastes a data-node round-trip and a
+        # CPU spike for nothing — the join will revert.
+        try:
+            if executor.is_tick_locked(batch_id):
+                log.debug("Batch %d: tick locked, skipping", batch_id)
+                continue
+        except Exception:
+            pass  # proceed if check fails
+
+        # Validate config_hash byte width. A 31-byte hash from a malformed
+        # JSON cache will collide with a 32-byte buffer in the contract and
+        # the join will revert in a way that costs gas and tells you nothing.
         if isinstance(config_hash, bytes):
+            if len(config_hash) != 32:
+                log.error(
+                    "Batch %d: configHash is %d bytes, expected 32 — skipping",
+                    batch_id, len(config_hash),
+                )
+                continue
             config_hash_hex = "0x" + config_hash.hex()
         elif isinstance(config_hash, str):
             config_hash_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
+            if len(config_hash_hex) != 66:  # 0x + 64 hex chars = 32 bytes
+                log.error(
+                    "Batch %d: configHash hex is %d chars, expected 66 — skipping",
+                    batch_id, len(config_hash_hex),
+                )
+                continue
         else:
-            config_hash_hex = ""
+            log.error("Batch %d: configHash type unrecognised — skipping", batch_id)
+            continue
+
+        # Fetch real market config from data-node to get actual market count.
+        # The config_hash is immutable per batch — the data-node response is
+        # the ONLY authoritative source for bitmap sizing.
         batch_cfg = fetch_batch_config(cfg["data_node"], config_hash_hex)
         if batch_cfg and batch_cfg.get("markets"):
             market_ids = [m["assetId"] for m in batch_cfg["markets"]]
@@ -150,6 +224,18 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
         # market_ids is always populated here (early continue above if not)
         # Subscribe to batch if not already subscribed
         feed.subscribe([str(batch_id)], history_days=7)
+
+        # Freshness gate: refuse to bet on a stale feed. A bot that joins on
+        # a frozen WebSocket is a bot that joins on yesterday's prices —
+        # a quiet way to bleed. Two ticks of slack covers reconnect jitter.
+        tick_duration = info.get("tickDuration") or cfg.get("poll_interval", 30)
+        if not feed.is_fresh(str(batch_id), max_age_secs=2 * tick_duration):
+            log.warning(
+                "Batch %d: feed not fresh (>%ds since last message) — skipping join",
+                batch_id, 2 * tick_duration,
+            )
+            continue
+
         # Get latest prices from live feed
         raw_prices = feed.prices(str(batch_id))
         if raw_prices:
@@ -166,12 +252,21 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
         else:
             # Fallback to HTTP if WS hasn't received data yet
             markets = fetch_markets(cfg["data_node"], market_ids)
-        bets = strategy.predict(markets)
+        # Canonical strategy hook — predict_with_context delegates to predict
+        # for simple strategies and uses feed history for the history-aware ones.
+        bets = strategy.predict_with_context(
+            markets, feed=feed, batch_id=str(batch_id),
+        )
 
-        # Defensive: pad bets if strategy returned fewer than market_count
-        import random as _rng
+        # Defensive: pad bets if strategy returned fewer than market_count.
+        # Use the strategy's own RNG so the padding is reproducible across
+        # restarts and not seeded from process state.
+        pad_rng = getattr(strategy, "_rng", None)
         while len(bets) < market_count:
-            bets.append(_rng.choice(["UP", "DOWN"]))
+            if pad_rng is not None:
+                bets.append(pad_rng.choice(["UP", "DOWN"]))
+            else:
+                bets.append("DOWN")  # last-resort default
 
         bitmap = encode_bitmap(bets, market_count)
         bm_hash = hash_bitmap(bitmap)
@@ -181,14 +276,6 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             batch_id, market_count, bets.count("UP"), bets.count("DOWN"),
         )
 
-        # Skip batches in lock window to avoid TickLocked() reverts
-        try:
-            if executor.is_tick_locked(batch_id):
-                log.debug("Batch %d: tick locked, skipping", batch_id)
-                continue
-        except Exception:
-            pass  # proceed if check fails
-
         stake_wei = int(cfg["stake"] * 10**DECIMALS)
         if vault_mode:
             vault_executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
@@ -196,27 +283,46 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             executor.approve_usdc(deposit_wei)
             executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
-        time.sleep(2)  # initial wait for block confirmation
+        # Wait for the join to be visible on-chain instead of guessing with
+        # a fixed sleep. The bitmap submission below depends on the oracle
+        # seeing the join; submitting before then is wasted retries.
+        if not _wait_for_join(executor, batch_id, timeout=10):
+            log.warning(
+                "Batch %d: join not visible on-chain after 10s — proceeding "
+                "anyway, bitmap retry will catch up",
+                batch_id,
+            )
+
         # In vault mode the player address is the vault, not the bot EOA
         player_addr = vault_executor.vault_addr if vault_mode else executor.bot_addr
-        submit_bitmap(oracle_urls, player_addr, batch_id, bitmap, bm_hash, retries=5)
+        bitmap_ack_at = 0.0
+        bitmap_failed = False
+        try:
+            submit_bitmap(oracle_urls, player_addr, batch_id, bitmap, bm_hash, retries=5)
+            bitmap_ack_at = time.time()
+        except BitmapSubmitError as e:
+            log.warning(
+                "Batch %d: bitmap submission below quorum (%s) — will retry next cycle",
+                batch_id, e,
+            )
+            bitmap_failed = True
+        except Exception as e:
+            log.warning("Batch %d: bitmap submission error: %s — will retry", batch_id, e)
+            bitmap_failed = True
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets, bitmap_hash=bm_hash)
         risk.record_join(batch_id, deposit_wei)
+        # Stamp the position so the resubmit gate knows when to re-fire.
+        new_pos = tracker.positions.get(batch_id)
+        if new_pos is not None:
+            new_pos["last_oracle_ack_at"] = bitmap_ack_at
+            new_pos["bitmap_submit_failed"] = bitmap_failed
 
-    # Re-submit bitmaps for all active positions (survives oracle restarts)
+    # Re-submit bitmaps only when stale or previously failed (survives oracle restarts).
     player_for_bitmap = vault_executor.vault_addr if vault_mode else executor.bot_addr
     for bid in list(tracker.active_ids):
         pos = tracker.positions.get(bid)
-        if not pos or not pos.get("bitmap") or pos.get("poisoned"):
-            continue
-        bm = pos["bitmap"]
-        bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
-        pos["bitmap_hash"] = bm_hash
-        submit_bitmap(
-            oracle_urls, player_for_bitmap, bid,
-            bm, bm_hash, retries=1,
-        )
+        _resubmit_if_stale(pos, oracle_urls, player_for_bitmap, bid)
 
     # Round-based mode: poll oracle for active rounds, join new ones
     if cfg.get("round_based", False):
@@ -240,7 +346,25 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             tracker.save_vault_state(info)
 
 
+def _install_signal_handlers():
+    """Set SIGTERM and SIGINT to flip the shutdown flag.
+
+    Children killed mid-cycle drop in-flight state — pnl files unflushed,
+    feeds half-disconnected, futures abandoned. The flag lets the main loop
+    exit between cycles, after the current bitmap submission has settled.
+    """
+    def _handler(signum, _frame):
+        global _shutdown_flag
+        log.info("Received signal %d — draining current cycle then exiting", signum)
+        _shutdown_flag = True
+
+    signal.signal(signal.SIGTERM, _handler)
+    signal.signal(signal.SIGINT, _handler)
+
+
 def main():
+    _install_signal_handlers()
+
     # Parse --config flag
     config_path = None
     if "--config" in sys.argv:
@@ -368,23 +492,36 @@ def main():
             len(poisoned),
         )
 
-    # Run
-    if "--once" in sys.argv:
-        run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor)
-        feed.close()
-        return
-
+    # Run. The try/finally guarantees state is flushed regardless of how the
+    # loop exits — KeyboardInterrupt, SIGTERM, an unrecoverable error, or
+    # the once-only path. Save the history first; the feed close is best-effort.
     try:
-        while True:
+        if "--once" in sys.argv:
+            run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor)
+            return
+
+        while not _shutdown_flag:
             try:
                 run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vault_executor)
             except Exception as e:
                 log.error("Cycle error: %s", e)
-            time.sleep(cfg["poll_interval"])
+            # Sleep in small chunks so a SIGTERM during sleep is honoured promptly.
+            slept = 0
+            while slept < cfg["poll_interval"] and not _shutdown_flag:
+                time.sleep(min(1, cfg["poll_interval"] - slept))
+                slept += 1
+        log.info("Shutdown flag set — exiting main loop")
     except KeyboardInterrupt:
-        log.info("Shutting down...")
+        log.info("KeyboardInterrupt — shutting down")
     finally:
-        feed.close()
+        try:
+            tracker._save_history()
+        except Exception as e:
+            log.warning("Final history save failed: %s", e)
+        try:
+            feed.close()
+        except Exception as e:
+            log.warning("Feed close failed: %s", e)
 
 
 if __name__ == "__main__":
