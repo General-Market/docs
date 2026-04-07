@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
+import { Link } from '@/i18n/routing'
 import { cn } from '@/lib/utils/cn'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
@@ -108,13 +109,13 @@ function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): num
 }
 
 function fmtPct(v: number | null): string {
-  if (v === null) return '—'
+  if (v === null) return ', '
   const pct = v * 100
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
 }
 
 function fmtRatio(v: number | null): string {
-  if (v === null) return '—'
+  if (v === null) return ', '
   return v.toFixed(2)
 }
 
@@ -175,7 +176,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     isConfirming: redeemConfirming, error: redeemError, reset: resetRedeem,
   } = useVaultRedeem()
 
-  // Position lives in the SSE context — updated every few seconds by data-node.
+  // Position lives in the SSE context, updated every few seconds by data-node.
   const ssePosition = useSSEUserVaultPosition(vault.address)
   const shares = ssePosition ? (() => { try { return BigInt(ssePosition.shares) } catch { return 0n } })() : 0n
   const pendingAssets = ssePosition ? (() => { try { return BigInt(ssePosition.pending_deposit) } catch { return 0n } })() : 0n
@@ -188,13 +189,36 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const userPnl = shares > 0n ? userValue - sharesFloat : 0
   const hasPosition = shares > 0n || pendingAssets > 0n
 
-  const perfPercent = (vault.performanceSinceInception * 100).toFixed(2)
-  const isPositive = vault.performanceSinceInception >= 0
   const feePercent = Number(vault.performanceFeeRate) / 1e16
-  const tvl = parseFloat(formatUnits(vault.totalAssets, 18))
-  const deployedPct = Math.round(vault.deployedRatio * 100)
+  const liveTvl = parseFloat(formatUnits(vault.totalAssets, 18))
 
   const { snapshots, hasHistory } = useVaultHistory(vault.address)
+
+  // When the live wagmi read is empty (totalSupply == 0n) but the historical
+  // snapshot exists, prefer the snapshot. Otherwise the modal contradicts itself:
+  // TVL $0 sits next to NAV $1.0000 sits next to a -12% headline. The chart and
+  // the headline must speak about the same vault.
+  const latestSnapshot: VaultSnapshot | null =
+    snapshots.length > 0 ? snapshots[snapshots.length - 1] : null
+  const fallbackNav = latestSnapshot?.nav ?? null
+  const fallbackTvl = latestSnapshot?.tvl ?? null
+
+  const liveHasSupply = vault.totalSupply > 0n
+  const liveHasAssets = vault.totalAssets > 0n
+
+  const effectiveNav = liveHasSupply ? vault.navPerShare : (fallbackNav ?? 1.0)
+  const effectiveTvl = liveHasAssets ? liveTvl : (fallbackTvl ?? 0)
+  const effectivePerf = liveHasSupply
+    ? vault.performanceSinceInception
+    : (fallbackNav !== null ? fallbackNav - 1.0 : 0)
+  const effectiveDeployedPct = liveHasAssets ? Math.round(vault.deployedRatio * 100) : 0
+  const effectiveSharesDisplay = liveHasSupply
+    ? Number(formatUnits(vault.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : '0'
+
+  const perfPercent = (effectivePerf * 100).toFixed(2)
+  const isPositive = effectivePerf >= 0
+  const deployedPct = effectiveDeployedPct
   const navHistory = useMemo(() => {
     if (hasHistory && snapshots.length >= 2) return snapshots.map(s => s.nav)
     return null
@@ -239,7 +263,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
       {/* Left column: stats + chart + thesis + performance */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
-        {/* Mobile pills — shrink-0 prevents flex-col parent from squashing height */}
+        {/* Mobile pills, shrink-0 prevents flex-col parent from squashing height */}
         {allVaults.length > 1 && (
           <div
             className="flex shrink-0 items-center gap-1.5 overflow-x-auto px-3.5 py-2.5 border-b border-[#F0F0F0] lg:hidden [&::-webkit-scrollbar]:hidden"
@@ -272,16 +296,16 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         )}
 
-        {/* Stats strip — 3 cells on mobile, 6 on desktop */}
+        {/* Stats strip, 3 cells on mobile, 6 on desktop */}
         <div className="grid grid-cols-3 lg:grid-cols-6 shrink-0 border-b border-[#E0E0E0]">
           <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">TVL</div>
-            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">{formatTvlCompact(tvl)}</div>
-            <div className="font-mono text-[9px] text-text-muted mt-0.5 truncate">{vault.totalSupply > 0n ? Number(formatUnits(vault.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'} shares</div>
+            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">{formatTvlCompact(effectiveTvl)}</div>
+            <div className="font-mono text-[9px] text-text-muted mt-0.5 truncate">{effectiveSharesDisplay} shares</div>
           </div>
           <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">NAV</div>
-            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">${vault.navPerShare.toFixed(4)}</div>
+            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">${effectiveNav.toFixed(4)}</div>
           </div>
           <div className="px-3 py-2.5 lg:px-3.5 lg:border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Performance</div>
@@ -303,7 +327,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <div className="hidden lg:block px-3.5 py-2.5">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Max DD</div>
             <div className={cn('font-mono text-[15px] font-bold tabular-nums', maxDd !== null ? 'text-color-down' : 'text-text-primary')}>
-              {maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}
+              {maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', '}
             </div>
           </div>
         </div>
@@ -337,12 +361,12 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         </div>
 
-        {/* Mobile risk strip — 4 additional metrics under the chart */}
+        {/* Mobile risk strip, 4 additional metrics under the chart */}
         <div className="grid grid-cols-4 shrink-0 border-b border-[#F0F0F0] lg:hidden">
           {[
             { label: 'Sharpe', value: fmtRatio(sharpe) },
-            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—', down: maxDd !== null },
-            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : '—' },
+            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', ', down: maxDd !== null },
+            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : ', ' },
             { label: 'Deployed', value: `${deployedPct}%` },
           ].map(({ label, value, down }) => (
             <div key={label} className="px-2.5 py-2 border-r border-[#F0F0F0] last:border-r-0 text-center">
@@ -352,7 +376,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           ))}
         </div>
 
-        {/* Mobile CTA — Deposit is primary, Build-your-own is secondary */}
+        {/* Mobile CTA, Deposit is primary, Build-your-own is secondary */}
         <div className="flex flex-col gap-2.5 px-4 py-3.5 shrink-0 border-b border-[#E0E0E0] lg:hidden">
           <WalletActionButton
             onClick={() => { setTab('deposit'); if (tab === 'deposit') handleDeposit() }}
@@ -458,10 +482,10 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
               { label: '30d', value: fmtPct(perf30d), up: perf30d !== null && perf30d >= 0 },
               { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
-              { label: 'Win Rate', value: '—' },
-              { label: 'Avg Win', value: '—' },
-              { label: 'Avg Loss', value: '—' },
-              { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
+              { label: 'Win Rate', value: ', ' },
+              { label: 'Avg Win', value: ', ' },
+              { label: 'Avg Loss', value: ', ' },
+              { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : ', ' },
             ].map(({ label, value, up }) => (
               <div key={label} className="px-3 py-2 border-r border-b border-[#F0F0F0] [&:nth-child(4n)]:border-r-0 last:[&:nth-last-child(-n+4)]:border-b-0">
                 <div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">{label}</div>
@@ -487,8 +511,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="grid grid-cols-2 gap-2">
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sharpe Ratio</div><div className="font-mono text-sm font-bold">{fmtRatio(sharpe)}</div></div>
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Max Drawdown</div><div className={cn('font-mono text-sm font-bold', maxDd !== null ? 'text-color-down' : '')}>{maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}</div></div>
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Volatility</div><div className="font-mono text-sm font-bold">{vol !== null ? `${(vol * 100).toFixed(1)}%` : '—'}</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Max Drawdown</div><div className={cn('font-mono text-sm font-bold', maxDd !== null ? 'text-color-down' : '')}>{maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', '}</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Volatility</div><div className="font-mono text-sm font-bold">{vol !== null ? `${(vol * 100).toFixed(1)}%` : ', '}</div></div>
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sortino</div><div className="font-mono text-sm font-bold">{fmtRatio(sortino)}</div></div>
           </div>
         </div>
@@ -713,12 +737,15 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
               })}
             </div>
             <div className="border-t border-[#E0E0E0] px-4 py-3">
-              <button className="flex items-center justify-center gap-1.5 w-full py-2.5 border-2 border-dashed border-[#00A36C] rounded-none bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-xs font-extrabold transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
+              <Link
+                href="/build-bot"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 border-2 border-dashed border-[#00A36C] rounded-none bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-xs font-extrabold transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]"
+              >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
                 Create Your Own Vault
-              </button>
+              </Link>
             </div>
           </div>
 
