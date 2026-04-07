@@ -7,7 +7,11 @@ import {
   spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { AnimatedText, COUNCIL_TEAL } from "./AnimatedText";
+import {
+  AnimatedText,
+  COUNCIL_TEAL,
+  COUNCIL_TITLE_FONT_SIZE,
+} from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 const TEAL = COUNCIL_TEAL;
@@ -286,6 +290,73 @@ const BrainHeadIcon: React.FC<{ headOpacity: number; brainScale: number }> = ({
   </div>
 );
 
+/* ── Scatter Icon Helper ────────────────────────────────── */
+
+interface ScatterIconProps {
+  enterFrame: number;
+  finalX: number;
+  finalY: number;
+  fadeOutStart?: number;
+  fadeOutEnd?: number;
+  children: React.ReactNode;
+}
+
+/**
+ * Each icon springs in at the canvas centre, translates outward to its
+ * final scattered position, and stays there until the brain phase fades
+ * the whole pile out together.
+ */
+const ScatterIcon: React.FC<ScatterIconProps> = ({
+  enterFrame,
+  finalX,
+  finalY,
+  fadeOutStart = 145,
+  fadeOutEnd = 175,
+  children,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const elapsed = Math.max(0, frame - enterFrame);
+
+  const scale = spring({
+    frame: elapsed,
+    fps,
+    config: { damping: 14, stiffness: 130, mass: 0.7 },
+    durationInFrames: 12,
+  });
+
+  const moveProgress = spring({
+    frame: Math.max(0, elapsed - 6),
+    fps,
+    config: { damping: 18, stiffness: 110, mass: 0.8 },
+    durationInFrames: 16,
+  });
+
+  const x = (1 - moveProgress) * 50 + moveProgress * finalX;
+  const y = (1 - moveProgress) * 50 + moveProgress * finalY;
+
+  const enterOpacity = elapsed <= 0 ? 0 : 1;
+  const fadeOut = interpolate(frame, [fadeOutStart, fadeOutEnd], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: `${y}%`,
+        left: `${x}%`,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+        opacity: enterOpacity * fadeOut,
+        pointerEvents: "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 /* ── Main Scene ──────────────────────────────────────────── */
 
 export const Scene02: React.FC = () => {
@@ -307,37 +378,38 @@ export const Scene02: React.FC = () => {
 
   /* Brain phase. The cloud arrives first, the head fills in last. */
   const brainSpring = spring({
-    frame: Math.max(0, frame - 160),
+    frame: Math.max(0, frame - 150),
     fps,
     from: 0.5,
     to: 1,
     durationInFrames: 16,
   });
-  const brainOpacity = interpolate(frame, [160, 168], [0, 1], {
+  const brainOpacity = interpolate(frame, [150, 162], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const headOpacity = interpolate(frame, [178, 184], [0, 1], {
+  const headOpacity = interpolate(frame, [168, 176], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const brainDriftY = interpolate(frame, [180, 188], [0, 60], {
+  const brainDriftY = interpolate(frame, [170, 184], [0, 60], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const brainEndOpacity = interpolate(frame, [184, 190], [1, 0], {
+  const brainEndOpacity = interpolate(frame, [180, 190], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const overallBrainOpacity = brainOpacity * brainEndOpacity;
 
-  /* All AnimatedText reveals share the same feature anchor inside the card. */
-  const featureAnchor: React.CSSProperties = {
+  /* The text reveals live in the lower portion of the card so the icons
+     can accumulate above them. */
+  const textAnchor: React.CSSProperties = {
     position: "absolute",
-    top: "50%",
+    top: "70%",
     left: "50%",
-    width: 720,
-    height: 260,
+    width: 900,
+    height: 120,
     transform: "translate(-50%, -50%)",
   };
 
@@ -364,91 +436,77 @@ export const Scene02: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        {/* Every feature lives inside this anchor. Icons and their text enter and leave together. */}
-        <div style={featureAnchor}>
-          {/* 1 — Thousands of trades */}
+        {/* Icon layer. Each icon springs in at the centre, scatters to its
+            home, and stays there until the brain phase wipes the slate. */}
+        <ScatterIcon enterFrame={10} finalX={22} finalY={28}>
+          <CandlestickIcon size={90} />
+        </ScatterIcon>
+        <ScatterIcon enterFrame={50} finalX={78} finalY={26}>
+          <ModelCircles />
+        </ScatterIcon>
+        <ScatterIcon enterFrame={70} finalX={20} finalY={56}>
+          <NetworkNodes />
+        </ScatterIcon>
+        <ScatterIcon enterFrame={95} finalX={50} finalY={20}>
+          <StopwatchIcon />
+        </ScatterIcon>
+        <ScatterIcon enterFrame={115} finalX={80} finalY={56}>
+          <MoneyBagIcon />
+        </ScatterIcon>
+        <ScatterIcon enterFrame={140} finalX={50} finalY={48}>
+          <AlertCircleIcon />
+        </ScatterIcon>
+
+        {/* Text layer — labels rotate through the lower portion of the card,
+            independent of the icons that accumulate above. */}
+        <div style={textAnchor}>
           <AnimatedText
             text="Thousands of trades"
             highlightLastN={1}
-            iconStartFrame={4}
-            iconRiseFrame={12}
-            startFrame={18}
-            framesPerWord={6}
-            fadeOutAt={42}
+            startFrame={10}
+            fadeOutAt={45}
             fadeOutFrames={6}
-            fontSize={50}
-            icon={<CandlestickIcon size={90} />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
-
-          {/* 2 — Hundreds of agents */}
           <AnimatedText
             text="Hundreds of agents"
             highlightLastN={1}
-            iconStartFrame={50}
-            iconRiseFrame={58}
-            startFrame={64}
-            framesPerWord={6}
-            fadeOutAt={86}
+            startFrame={50}
+            fadeOutAt={85}
             fadeOutFrames={6}
-            fontSize={50}
-            iconRisePx={120}
-            icon={<ModelCircles />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
-
-          {/* 3 — Patterns */}
           <AnimatedText
             text="Patterns"
             highlightLastN={1}
-            iconStartFrame={94}
-            iconRiseFrame={102}
-            startFrame={108}
-            framesPerWord={6}
-            fadeOutAt={124}
+            startFrame={70}
+            fadeOutAt={100}
             fadeOutFrames={6}
-            fontSize={54}
-            icon={<NetworkNodes />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
-
-          {/* 4 — Timing */}
           <AnimatedText
             text="Timing"
             highlightLastN={1}
-            iconStartFrame={128}
-            iconRiseFrame={134}
-            startFrame={140}
-            framesPerWord={6}
-            fadeOutAt={154}
+            startFrame={95}
+            fadeOutAt={130}
             fadeOutFrames={6}
-            fontSize={54}
-            icon={<StopwatchIcon />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
-
-          {/* 5 — Position Sizing */}
           <AnimatedText
             text="Position Sizing"
             highlightLastN={1}
-            iconStartFrame={158}
-            iconRiseFrame={164}
-            startFrame={170}
-            framesPerWord={6}
-            fadeOutAt={186}
+            startFrame={115}
+            fadeOutAt={145}
             fadeOutFrames={6}
-            fontSize={50}
-            icon={<MoneyBagIcon />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
-
-          {/* 6 — Manipulation Signals */}
           <AnimatedText
             text="Manipulation Signals"
             highlightLastN={1}
-            iconStartFrame={190}
-            iconRiseFrame={196}
-            startFrame={202}
-            framesPerWord={6}
-            fadeOutAt={220}
+            startFrame={140}
+            fadeOutAt={175}
             fadeOutFrames={6}
-            fontSize={50}
-            icon={<AlertCircleIcon />}
+            fontSize={COUNCIL_TITLE_FONT_SIZE}
           />
         </div>
 
