@@ -21,6 +21,9 @@ interface VaultsTabProps {
   address: string
 }
 
+type SortKey = 'name' | 'shares' | 'nav' | 'value' | 'pnl'
+type SortDir = 'asc' | 'desc'
+
 interface VaultRow {
   vaultAddress: string
   name: string
@@ -104,7 +107,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
     return result
   }, [isSelf, vaultByAddr, vaultPositions])
 
-  // Shared hook with the profile page hero — keeps the two in perfect sync.
+  // Shared hook with the profile page hero, keeps the two in perfect sync.
   const totals = useVaultsTotals(isSelf)
   const pnlColor = totals.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
@@ -126,6 +129,10 @@ export function VaultsTab({ address }: VaultsTabProps) {
     fund: { name: string; strategy: string; tagline: string }
   } | null>(null)
 
+  // Sort state — defaults to value desc (largest position first).
+  const [sortKey, setSortKey] = useState<SortKey>('value')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
   if (!isSelf) {
     return (
       <div className="py-16 text-center text-caption text-text-muted">
@@ -139,7 +146,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
       <div className="border border-border-light p-8 text-center">
         <div className="text-[14px] font-black text-text-primary mb-2">No vault positions</div>
         <p className="text-[12px] text-text-muted mb-5">
-          Deposit into any Vision vault — automated strategies trade on your behalf.
+          Deposit into any Vision vault, automated strategies trade on your behalf.
         </p>
         <Link
           href="/vaults"
@@ -151,29 +158,88 @@ export function VaultsTab({ address }: VaultsTabProps) {
     )
   }
 
+  const sortedRows = useMemo(() => {
+    const list = [...rows]
+    list.sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case 'name': cmp = a.name.localeCompare(b.name); break
+        case 'shares': cmp = Number(a.sharesBigInt - b.sharesBigInt); break
+        case 'nav': cmp = a.navPerShare - b.navPerShare; break
+        case 'value': cmp = a.value - b.value; break
+        case 'pnl': cmp = a.pnl - b.pnl; break
+      }
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+    return list
+  }, [rows, sortKey, sortDir])
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'name' ? 'asc' : 'desc')
+    }
+  }
+
+  const SortArrow = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return null
+    return (
+      <span className="ml-0.5 text-[8px] text-text-primary">
+        {sortDir === 'asc' ? '▲' : '▼'}
+      </span>
+    )
+  }
+
+  const COLS = 'grid grid-cols-[24px_minmax(0,4fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,2fr)] items-center gap-2 px-3'
+
   return (
-    <div className="space-y-4">
-      {/* Totals strip */}
-      <div className="grid grid-cols-3 border border-border-light bg-white">
-        <div className="px-4 py-3 border-r border-border-light">
-          <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Vaults</div>
-          <div className="font-mono text-[16px] font-bold tabular-nums">{totals.count}</div>
+    <div className="space-y-1.5">
+      {/* Compact totals strip — single horizontal bar */}
+      <div className="flex items-center gap-6 px-3 py-1.5 border border-border-light bg-[#fafafa] text-[11px]">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-bold uppercase tracking-[0.08em] text-text-muted text-[9px]">Vaults</span>
+          <span className="font-mono font-bold tabular-nums text-text-primary">{totals.count}</span>
         </div>
-        <div className="px-4 py-3 border-r border-border-light">
-          <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Total Value</div>
-          <div className="font-mono text-[16px] font-bold tabular-nums">${totals.totalValue.toFixed(2)}</div>
+        <div className="h-3 w-px bg-border-light" />
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-bold uppercase tracking-[0.08em] text-text-muted text-[9px]">Value</span>
+          <span className="font-mono font-bold tabular-nums text-text-primary">${totals.totalValue.toFixed(2)}</span>
         </div>
-        <div className="px-4 py-3">
-          <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Total P&amp;L</div>
-          <div className={cn('font-mono text-[16px] font-bold tabular-nums', pnlColor)}>
+        <div className="h-3 w-px bg-border-light" />
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-bold uppercase tracking-[0.08em] text-text-muted text-[9px]">P&amp;L</span>
+          <span className={cn('font-mono font-bold tabular-nums', pnlColor)}>
             {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)}
-          </div>
+          </span>
         </div>
       </div>
 
-      {/* Rows */}
-      <div className="border border-border-light bg-white divide-y divide-border-light">
-        {rows.map((row) => {
+      {/* Data table */}
+      <div className="border border-border-light bg-white">
+        {/* Sortable column header */}
+        <div className={cn(COLS, 'py-1.5 bg-[#f0f0f0] border-b border-border-light text-[9px] font-bold uppercase tracking-[0.08em] text-text-muted select-none')}>
+          <div className="text-center">#</div>
+          <button type="button" onClick={() => handleSort('name')} className="text-left hover:text-text-primary transition-colors">
+            Vault<SortArrow col="name" />
+          </button>
+          <button type="button" onClick={() => handleSort('shares')} className="text-right hover:text-text-primary transition-colors">
+            Shares<SortArrow col="shares" />
+          </button>
+          <button type="button" onClick={() => handleSort('nav')} className="text-right hover:text-text-primary transition-colors">
+            NAV<SortArrow col="nav" />
+          </button>
+          <button type="button" onClick={() => handleSort('value')} className="text-right hover:text-text-primary transition-colors">
+            Value<SortArrow col="value" />
+          </button>
+          <button type="button" onClick={() => handleSort('pnl')} className="text-right hover:text-text-primary transition-colors">
+            P&amp;L<SortArrow col="pnl" />
+          </button>
+        </div>
+
+        {/* Body rows */}
+        {sortedRows.map((row, idx) => {
           const sharesFloat = parseFloat(formatUnits(row.sharesBigInt, 18))
           const pendingFloat = parseFloat(formatUnits(row.pendingBigInt, 18))
           const rowPnlColor = row.pnl >= 0 ? 'text-color-up' : 'text-color-down'
@@ -197,36 +263,37 @@ export function VaultsTab({ address }: VaultsTabProps) {
                 })
               }}
               className={cn(
-                'grid grid-cols-12 items-center gap-3 px-4 py-3 text-left w-full transition-colors',
+                COLS,
+                'py-1.5 text-left w-full border-b border-border-light/60 last:border-b-0 transition-colors',
+                idx % 2 === 1 && 'bg-[#fafafa]',
                 canOpenModal
-                  ? 'hover:bg-surface/40 cursor-pointer'
+                  ? 'hover:bg-[#eaf3ff] cursor-pointer'
                   : 'opacity-70 cursor-wait',
               )}
             >
-              <div className="col-span-4 min-w-0">
-                <div className="text-[13px] font-bold text-text-primary truncate">{row.name}</div>
-                <div className="text-[10px] font-mono text-text-muted uppercase tracking-wide">
+              <div className="text-center text-[10px] font-mono text-text-muted tabular-nums">
+                {idx + 1}
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-[12px] font-bold text-text-primary truncate leading-tight">{row.name}</div>
+                <div className="text-[9px] font-mono text-text-muted uppercase tracking-wide truncate leading-tight">
                   {row.symbol} · {row.source} · {row.strategy.replace(/_/g, ' ')}
                 </div>
               </div>
 
-              <div className="col-span-2 text-right">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-text-muted">Shares</div>
-                <div className="font-mono text-[12px] font-bold tabular-nums">
-                  {sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                </div>
+              <div className="text-right font-mono text-[11px] font-bold tabular-nums text-text-primary">
+                {sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}
               </div>
 
-              <div className="col-span-2 text-right">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-text-muted">NAV</div>
-                <div className="font-mono text-[12px] font-bold tabular-nums">
-                  ${row.navPerShare.toFixed(4)}
-                </div>
+              <div className="text-right font-mono text-[11px] tabular-nums text-text-secondary">
+                ${row.navPerShare.toFixed(4)}
               </div>
 
-              <div className="col-span-2 text-right">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-text-muted">Value</div>
-                <div className="font-mono text-[13px] font-bold tabular-nums">${row.value.toFixed(2)}</div>
+              <div className="text-right">
+                <div className="font-mono text-[12px] font-bold tabular-nums text-text-primary leading-tight">
+                  ${row.value.toFixed(2)}
+                </div>
                 {pendingFloat > 0 && (() => {
                   const isClaiming =
                     autoClaim.claiming?.toLowerCase() === row.vaultAddress.toLowerCase()
@@ -234,7 +301,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
                   return (
                     <div
                       className={cn(
-                        'text-[9px] font-mono',
+                        'text-[9px] font-mono leading-tight',
                         isClaiming
                           ? 'text-amber-600'
                           : hasFailed
@@ -242,25 +309,21 @@ export function VaultsTab({ address }: VaultsTabProps) {
                             : 'text-emerald-600',
                       )}
                     >
-                      ${pendingFloat.toFixed(2)}{' '}
-                      {isClaiming ? 'claiming…' : hasFailed ? 'claim failed' : 'pending'}
+                      ${pendingFloat.toFixed(2)} {isClaiming ? 'claiming…' : hasFailed ? 'failed' : 'pending'}
                     </div>
                   )
                 })()}
               </div>
 
-              <div className="col-span-2 text-right">
-                <div className="text-[9px] font-bold tracking-[0.08em] uppercase text-text-muted">P&amp;L</div>
-                <div className={cn('font-mono text-[13px] font-bold tabular-nums', rowPnlColor)}>
-                  {row.pnl >= 0 ? '+' : ''}${row.pnl.toFixed(2)}
-                </div>
+              <div className={cn('text-right font-mono text-[12px] font-bold tabular-nums', rowPnlColor)}>
+                {row.pnl >= 0 ? '+' : ''}${row.pnl.toFixed(2)}
               </div>
             </button>
           )
         })}
       </div>
 
-      {/* Vault detail modal — same component the source page uses */}
+      {/* Vault detail modal, same component the source page uses */}
       {selectedVault && (
         <VaultActions
           vaults={[{ fund: selectedVault.fund, vault: selectedVault.info }]}
