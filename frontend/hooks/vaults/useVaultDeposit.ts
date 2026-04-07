@@ -41,6 +41,13 @@ export interface UseVaultDepositReturn {
   isConfirming: boolean
   error: string | null
   reset: () => void
+  /**
+   * The amount (in USDC wei, 18 decimals on L3) that was just deposited via a
+   * successful flow. Stays populated for ~10s after the claim tx confirms so
+   * the UI can render an optimistic "Your Position" row while the SSE vault
+   * position poller (3s cadence) catches up.
+   */
+  justDepositedAmount: bigint
 }
 
 function parseError(err: Error): string {
@@ -63,6 +70,9 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [pendingVault, setPendingVault] = useState<`0x${string}` | null>(null)
   const [pendingAmount, setPendingAmount] = useState<bigint>(0n)
+  // Lives ~10s past claim-success so the UI can overlay an optimistic position
+  // while SSE polls catch up. Cleared on reset() or on the next deposit().
+  const [justDepositedAmount, setJustDepositedAmount] = useState<bigint>(0n)
 
   const approveHandled = useRef(false)
   const depositHandled = useRef(false)
@@ -110,13 +120,31 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     query: { enabled: !!address && !!pendingVault },
   })
 
+  // Each of the three txs gets its own toast. Silencing approve and claim
+  // made the flow feel broken — user signs three times, gets one toast.
+  useTransactionNotification({
+    hash: approveHash,
+    isPending: isApprovePending,
+    isConfirming: isApproveConfirming,
+    isSuccess: isApproveSuccess,
+    error: approveError,
+    label: 'USDC approval',
+  })
   useTransactionNotification({
     hash: depositHash,
     isPending: isDepositPending,
     isConfirming: isDepositConfirming,
     isSuccess: isDepositSuccess,
     error: depositError,
-    label: 'Vault deposit',
+    label: 'Deposit request',
+  })
+  useTransactionNotification({
+    hash: claimHash,
+    isPending: isClaimPending,
+    isConfirming: isClaimConfirming,
+    isSuccess: isClaimSuccess,
+    error: claimError,
+    label: 'Shares minted',
   })
 
   const deposit = useCallback(
@@ -134,6 +162,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
       setPendingVault(vaultAddress)
       setPendingAmount(amount)
       setErrorMsg(null)
+      setJustDepositedAmount(0n)
       approveHandled.current = false
       depositHandled.current = false
       claimHandled.current = false
@@ -191,13 +220,33 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     })
   }, [isDepositSuccess, pendingVault, address, writeClaim, resetDeposit])
 
-  // Claim success -> done
+  // Claim success -> done. Stash the deposited amount so consumers can render
+  // an optimistic Position panel immediately, without waiting for the next
+  // 3s vault-position poll on data-node.
   useEffect(() => {
     if (!isClaimSuccess || claimHandled.current) return
     claimHandled.current = true
     setStep('done')
+    setJustDepositedAmount(pendingAmount)
     resetClaim()
-  }, [isClaimSuccess, resetClaim])
+  }, [isClaimSuccess, pendingAmount, resetClaim])
+
+  // Auto-return to idle after a short celebration window so the button becomes
+  // usable again. Keep the optimistic amount alive slightly longer — by then
+  // the 3s SSE poller has caught up with reality.
+  useEffect(() => {
+    if (step !== 'done') return
+    const idleTimer = setTimeout(() => {
+      setStep(prev => (prev === 'done' ? 'idle' : prev))
+    }, 3500)
+    const clearTimer = setTimeout(() => {
+      setJustDepositedAmount(0n)
+    }, 10_000)
+    return () => {
+      clearTimeout(idleTimer)
+      clearTimeout(clearTimer)
+    }
+  }, [step])
 
   // Error handling
   useEffect(() => {
@@ -229,6 +278,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     setErrorMsg(null)
     setPendingVault(null)
     setPendingAmount(0n)
+    setJustDepositedAmount(0n)
     approveHandled.current = false
     depositHandled.current = false
     claimHandled.current = false
@@ -244,5 +294,6 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     isConfirming: isApproveConfirming || isDepositConfirming || isClaimConfirming,
     error: errorMsg,
     reset,
+    justDepositedAmount,
   }
 }

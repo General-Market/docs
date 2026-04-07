@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
 import { Link } from '@/i18n/routing'
@@ -172,6 +172,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const {
     deposit, step: depositStep, isPending: depositPending,
     isConfirming: depositConfirming, error: depositError, reset: resetDeposit,
+    justDepositedAmount,
   } = useVaultDeposit()
   const {
     redeem, step: redeemStep, isPending: redeemPending,
@@ -180,8 +181,17 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
   // Position lives in the SSE context, updated every few seconds by data-node.
   const ssePosition = useSSEUserVaultPosition(vault.address)
-  const shares = ssePosition ? (() => { try { return BigInt(ssePosition.shares) } catch { return 0n } })() : 0n
-  const pendingAssets = ssePosition ? (() => { try { return BigInt(ssePosition.pending_deposit) } catch { return 0n } })() : 0n
+  const sseShares = ssePosition ? (() => { try { return BigInt(ssePosition.shares) } catch { return 0n } })() : 0n
+  const ssePendingAssets = ssePosition ? (() => { try { return BigInt(ssePosition.pending_deposit) } catch { return 0n } })() : 0n
+
+  // Optimistic overlay. The hook hands us the amount that was just deposited
+  // (non-zero for ~10s after claim-success). Until SSE catches up (up to 3s),
+  // render the freshly deposited amount as a provisional "Pending Deposit"
+  // row so the user sees *something* land the instant they sign the last tx.
+  const isOptimistic = justDepositedAmount > 0n && sseShares === 0n && ssePendingAssets === 0n
+  const shares = sseShares
+  const pendingAssets = isOptimistic ? justDepositedAmount : ssePendingAssets
+
   const sharesFloat = parseFloat(formatUnits(shares, 18))
   const pendingFloat = parseFloat(formatUnits(pendingAssets, 18))
   const userValue =
@@ -190,6 +200,29 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
       : 0
   const userPnl = shares > 0n ? userValue - sharesFloat : 0
   const hasPosition = shares > 0n || pendingAssets > 0n
+
+  // Pulse the position panel when a brand-new deposit lands. Triggers on the
+  // 0 -> >0 transition of justDepositedAmount, so existing positions don't
+  // flash on page load.
+  const [positionHighlight, setPositionHighlight] = useState(false)
+  const prevJustDepositedRef = useRef(0n)
+  useEffect(() => {
+    if (justDepositedAmount > 0n && prevJustDepositedRef.current === 0n) {
+      setPositionHighlight(true)
+      const t = setTimeout(() => setPositionHighlight(false), 2200)
+      prevJustDepositedRef.current = justDepositedAmount
+      return () => clearTimeout(t)
+    }
+    if (justDepositedAmount === 0n) prevJustDepositedRef.current = 0n
+  }, [justDepositedAmount])
+
+  // Clear the input and drop back to the deposit tab once the flow completes,
+  // so the button isn't permanently stuck on "Deposited ✓" with stale input.
+  useEffect(() => {
+    if (depositStep === 'done') {
+      setDepositInput('')
+    }
+  }, [depositStep])
 
   const feePercent = Number(vault.performanceFeeRate) / 1e16
   const liveTvl = parseFloat(formatUnits(vault.totalAssets, 18))
@@ -315,7 +348,13 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     redeem(vault.address, shareAmount)
   }
 
-  const depositBusy = depositStep === 'approving' || depositStep === 'depositing'
+  // 'claiming' must count as busy — the user is waiting on the third wallet
+  // popup. Forgetting it leaves the button enabled mid-flow and the user can
+  // re-trigger the whole thing.
+  const depositBusy =
+    depositStep === 'approving' ||
+    depositStep === 'depositing' ||
+    depositStep === 'claiming'
   const redeemBusy = redeemStep === 'requesting'
   void depositPending
   void redeemPending
@@ -450,7 +489,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             <span className="relative z-10">
               {depositStep === 'approving' ? t('vaults.approving')
                 : depositStep === 'depositing' ? t('vaults.depositing')
+                : depositStep === 'claiming' ? t('vaults.claiming')
                 : depositConfirming ? t('vaults.confirming')
+                : depositStep === 'done' ? t('vaults.deposited')
                 : `Deposit into ${vaultName}`}
             </span>
           </WalletActionButton>
@@ -600,8 +641,20 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
         {/* Position */}
         {hasPosition && (
-          <div className="px-4 py-3 border-b border-[#F0F0F0]">
-            <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Your Position</div>
+          <div
+            className={cn(
+              'px-4 py-3 border-b border-[#F0F0F0] transition-colors duration-700',
+              positionHighlight && 'bg-[rgba(0,163,108,0.12)] border-l-[3px] border-l-[#00A36C]',
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">Your Position</span>
+              {isOptimistic && (
+                <span className="text-[9px] font-semibold text-[#00A36C] tracking-[0.04em]">
+                  Awaiting confirmation…
+                </span>
+              )}
+            </div>
             {shares > 0n && (
               <>
                 <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Shares</span><span className="font-mono text-[13px] font-bold">{sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
@@ -611,7 +664,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             )}
             {pendingAssets > 0n && (
               <div className="flex justify-between py-1">
-                <span className="text-xs text-text-secondary">Pending Deposit</span>
+                <span className="text-xs text-text-secondary">
+                  {isOptimistic ? 'Just Deposited' : 'Pending Deposit'}
+                </span>
                 <span className="font-mono text-[13px] font-bold text-[#00A36C]">${pendingFloat.toFixed(2)}</span>
               </div>
             )}
@@ -666,8 +721,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               {tab === 'deposit'
                 ? depositStep === 'approving' ? t('vaults.approving')
                   : depositStep === 'depositing' ? t('vaults.depositing')
+                  : depositStep === 'claiming' ? t('vaults.claiming')
                   : depositConfirming ? t('vaults.confirming')
-                  : depositStep === 'done' ? t('vaults.deposit_requested')
+                  : depositStep === 'done' ? t('vaults.deposited')
                   : `Join This Vault`
                 : redeemStep === 'requesting' ? t('vaults.requesting')
                   : redeemConfirming ? t('vaults.confirming')

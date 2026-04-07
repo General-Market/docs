@@ -722,7 +722,9 @@
     "loading": "Loading past rounds...",
     "batch": "Round",
     "prev": "Prev",
-    "next": "Next"
+    "next": "Next",
+    "show_more": "Show more",
+    "show_less": "Show less"
   },
   "pending_positions": {
     "positions_count": "{count, plural, one {# position} other {# positions}}",
@@ -791,12 +793,14 @@
     "shares_to_redeem": "Shares to redeem",
     "max": "Max",
     "approve_usdc": "Approve USDC",
-    "approving": "Approving...",
-    "depositing": "Depositing...",
+    "approving": "Approving USDC...",
+    "depositing": "Requesting deposit...",
+    "claiming": "Minting shares...",
     "confirming": "Confirming...",
     "deposit_usdc": "Deposit",
+    "deposited": "Deposited ✓",
     "deposit_requested": "Deposit requested",
-    "deposit_success": "Deposit request submitted. Shares will be claimable after reconciliation.",
+    "deposit_success": "Deposited. Shares minted.",
     "requesting": "Requesting...",
     "redeem_requested": "Redeem requested",
     "request_redeem": "Request Redeem",
