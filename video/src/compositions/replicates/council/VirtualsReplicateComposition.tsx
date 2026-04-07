@@ -8,7 +8,14 @@ import { Scene05, scene05Meta } from "./Scene05";
 import { Scene06, scene06Meta } from "./Scene06";
 import { Scene07, scene07Meta } from "./Scene07";
 
-const TOTAL = 1196;
+const TOTAL =
+  scene01Meta.durationInFrames +
+  scene02Meta.durationInFrames +
+  scene03Meta.durationInFrames +
+  scene04Meta.durationInFrames +
+  scene05Meta.durationInFrames +
+  scene06Meta.durationInFrames +
+  scene07Meta.durationInFrames;
 
 const S1 = 0;
 const S2 = S1 + scene01Meta.durationInFrames;
