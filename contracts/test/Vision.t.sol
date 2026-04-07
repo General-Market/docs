@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test, console2, Vm} from "forge-std/Test.sol";
 import {Vision} from "../src/vision/Vision.sol";
 import {IVision} from "../src/interfaces/IVision.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
@@ -79,7 +79,7 @@ contract VisionTest is TestHelper {
     function _joinBatch(uint256 batchId, address player, uint256 deposit) internal {
         bytes32 bitmapHash = keccak256(abi.encode("bitmap", player));
         vm.prank(player);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, deposit, deposit, bitmapHash);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, deposit, bitmapHash);
     }
 
     function _settleBatch(
@@ -108,7 +108,6 @@ contract VisionTest is TestHelper {
         assertEq(usdc.balanceOf(address(vision)), DEPOSIT, "Vision should hold USDC");
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player1);
-        assertEq(pos.deposit, DEPOSIT, "Position deposit should match");
         assertEq(pos.totalDeposited, DEPOSIT, "totalDeposited should match");
         assertTrue(pos.joinTimestamp > 0, "joinTimestamp should be set");
     }
@@ -125,7 +124,7 @@ contract VisionTest is TestHelper {
         bytes32 bitmapHash = keccak256("bitmap_no_approval");
         vm.prank(noApproval);
         vm.expectRevert(); // SafeERC20 revert
-        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
     }
 
     // ============ TEST 3: joinBatchDirect rejects in lock window ============
@@ -141,7 +140,7 @@ contract VisionTest is TestHelper {
         bytes32 bitmapHash = keccak256("bitmap_locked");
         vm.prank(player1);
         vm.expectRevert(IVision.TickLocked.selector);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
     }
 
     // ============ TEST 4: joinBatchDirect rejects duplicate join ============
@@ -153,7 +152,7 @@ contract VisionTest is TestHelper {
         bytes32 bitmapHash = keccak256("bitmap_dup");
         vm.prank(player1);
         vm.expectRevert(IVision.AlreadyJoined.selector);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
     }
 
     // ============ TEST 5: settleBatch transfers USDC to players ============
@@ -188,9 +187,9 @@ contract VisionTest is TestHelper {
         uint256 winnerIdx = uint160(player1) < uint160(player2) ? 0 : 1;
         uint256 loserIdx = 1 - winnerIdx;
 
-        // Winner: profit = 15 - 10 = 5, fee = 5 * 30 / 10000 = 0.015, net = 14.985
+        // Winner: profit = 15 - 10 = 5, fee = 5 * 5 / 10000 = 0.0025, net = 14.9975
         uint256 profit = 5 ether;
-        uint256 fee = (profit * 30) / 10000;
+        uint256 fee = (profit * vision.PROTOCOL_FEE_BPS()) / 10000;
         uint256 expectedWinnerPayout = 15 ether - fee;
 
         // Loser: no profit, no fee, net = 5
@@ -234,8 +233,8 @@ contract VisionTest is TestHelper {
 
         _settleBatch(batchId, players, payouts);
 
-        // Winner profit = 18 - 10 = 8, fee = 8 * 30 / 10000 = 0.024 USDC
-        uint256 expectedFee = (8 ether * 30) / 10000;
+        // Winner profit = 18 - 10 = 8, fee = 8 * 5 / 10000 = 0.004 USDC
+        uint256 expectedFee = (8 ether * vision.PROTOCOL_FEE_BPS()) / 10000;
         // Loser has no profit — no fee
         assertEq(vision.accumulatedRealFees(), expectedFee, "Only winner should have fee");
     }
@@ -263,8 +262,8 @@ contract VisionTest is TestHelper {
 
         IVision.PlayerPosition memory pos1 = vision.getPosition(batchId, player1);
         IVision.PlayerPosition memory pos2 = vision.getPosition(batchId, player2);
-        assertEq(pos1.deposit, 0, "Player1 position should be deleted");
-        assertEq(pos2.deposit, 0, "Player2 position should be deleted");
+        assertEq(pos1.totalDeposited, 0, "Player1 position should be deleted");
+        assertEq(pos2.totalDeposited, 0, "Player2 position should be deleted");
     }
 
     // ============ TEST 8: settleBatch rejects double settle ============
@@ -335,7 +334,7 @@ contract VisionTest is TestHelper {
         ));
         bytes memory sig = signWithTestOracles(message);
 
-        vm.expectRevert(IVision.InsolventPayout.selector);
+        vm.expectRevert(IVision.NonZeroSum.selector);
         vision.settleBatch(batchId, players, payouts, sig, REF_NONCE, SIGNERS_BITMASK);
     }
 
@@ -396,16 +395,16 @@ contract VisionTest is TestHelper {
         for (uint256 i = 0; i < 3; i++) {
             uint256 payout = payouts[i];
             uint256 profit = payout > DEPOSIT ? payout - DEPOSIT : 0;
-            uint256 fee = (profit * 30) / 10000;
+            uint256 fee = (profit * vision.PROTOCOL_FEE_BPS()) / 10000;
             uint256 netPayout = payout - fee;
 
             uint256 received = usdc.balanceOf(sorted[i]) - balsBefore[i];
             assertEq(received, netPayout, "Player should receive net payout");
         }
 
-        // Batch should be settled (paused)
+        // Batch should be settled
         IVision.Batch memory b = vision.getBatch(batchId);
-        assertTrue(b.paused, "Batch should be paused after settlement");
+        assertTrue(b.settled, "Batch should be settled after settlement");
     }
 
     // ============ TEST 12: multiple rounds same source ============
@@ -423,8 +422,8 @@ contract VisionTest is TestHelper {
 
         IVision.PlayerPosition memory pos1 = vision.getPosition(batchId1, player1);
         IVision.PlayerPosition memory pos2 = vision.getPosition(batchId2, player2);
-        assertEq(pos1.deposit, DEPOSIT);
-        assertEq(pos2.deposit, DEPOSIT);
+        assertEq(pos1.totalDeposited, DEPOSIT);
+        assertEq(pos2.totalDeposited, DEPOSIT);
     }
 
     // ============ TEST 13: updateBitmap works before lock ============
@@ -456,5 +455,73 @@ contract VisionTest is TestHelper {
         vm.prank(player1);
         vm.expectRevert(IVision.TickLocked.selector);
         vision.updateBitmap(batchId, CONFIG_HASH, newBitmap);
+    }
+
+    // ============ TEST 15: settleBatch reverts on non-zero-sum payouts ============
+
+    /// @notice The fund-leak bug guard. Settlement must distribute exactly
+    ///         what was deposited — no more, no less. Underflow leaks USDC
+    ///         into nowhere; overflow drains the contract.
+    function test_settleBatch_revertsOnNonZeroSum() public {
+        uint256 batchId = _createBatch();
+        _joinBatch(batchId, player1, DEPOSIT);
+        _joinBatch(batchId, player2, DEPOSIT);
+
+        // Sort ascending
+        address[] memory players = new address[](2);
+        uint256[] memory payouts = new uint256[](2);
+        if (uint160(player1) < uint160(player2)) {
+            players[0] = player1;
+            players[1] = player2;
+        } else {
+            players[0] = player2;
+            players[1] = player1;
+        }
+
+        // Total deposits = 20 ether. Pay out only 19 ether (1 ether vanishes).
+        payouts[0] = 10 ether;
+        payouts[1] = 9 ether;
+
+        bytes32 payoutsHash = keccak256(abi.encode(players, payouts));
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "SETTLE_BATCH", batchId, payoutsHash
+        ));
+        bytes memory sig = signWithTestOracles(message);
+
+        vm.expectRevert(IVision.NonZeroSum.selector);
+        vision.settleBatch(batchId, players, payouts, sig, REF_NONCE, SIGNERS_BITMASK);
+    }
+
+    // ============ TEST 16: PlayerJoined emits the full deposit ============
+
+    /// @notice Regression for the original bug: the event must carry the full
+    ///         deposit amount, not a smaller "stake" parameter the oracle would
+    ///         have used to compute payouts against.
+    function test_joinBatchDirect_emitsFullDepositInEvent() public {
+        uint256 batchId = _createBatch();
+
+        bytes32 bitmapHash = keccak256(abi.encode("bitmap", player1));
+
+        vm.recordLogs();
+        vm.prank(player1);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        bytes32 sig = keccak256("PlayerJoined(uint256,address,uint256,bytes32,bytes32)");
+        bool found;
+        for (uint256 i = 0; i < entries.length; i++) {
+            if (entries[i].topics.length > 0 && entries[i].topics[0] == sig) {
+                // topics: [sig, batchId, player]; data: deposit, bitmapHash, configHash
+                (uint256 depositArg, bytes32 bmHash, bytes32 cfgHash) =
+                    abi.decode(entries[i].data, (uint256, bytes32, bytes32));
+                assertEq(depositArg, DEPOSIT, "Event must carry full depositAmount");
+                assertEq(bmHash, bitmapHash, "Event bitmapHash must match");
+                assertEq(cfgHash, CONFIG_HASH, "Event configHash must match");
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "PlayerJoined event must be emitted");
     }
 }

@@ -143,7 +143,7 @@ contract E2EVisionVault is TestHelper {
         // ── 6. Manager joins batch with 250 USDC ──
         bytes32 bitmapHash = keccak256("vault_bitmap");
         vm.prank(vaultManager);
-        vault.joinBatch(batchId, CONFIG_HASH, 250 ether, 250 ether, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, 250 ether, bitmapHash);
 
         assertEq(vault.totalActiveCapital(), 250 ether);
         assertEq(vault.idleUSDC(), 50 ether);
@@ -152,7 +152,7 @@ contract E2EVisionVault is TestHelper {
         // ── 7. Player2 joins same batch directly with 50 USDC ──
         bytes32 p2Bitmap = keccak256("p2_bitmap");
         vm.prank(player2);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, 50 ether, 50 ether, p2Bitmap);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, 50 ether, p2Bitmap);
 
         // ── 8. Depositor2 requests full redeem (100 shares) ──
         //       Only 50 USDC idle, so 100 shares worth ~100 USDC queues.
@@ -271,12 +271,12 @@ contract E2EVisionVault is TestHelper {
         // Manager joins with 200 USDC
         bytes32 bitmapHash = keccak256("loss_bitmap");
         vm.prank(vaultManager);
-        vault.joinBatch(batchId, CONFIG_HASH, 200 ether, 200 ether, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, 200 ether, bitmapHash);
 
         // Player2 joins with 100 USDC
         bytes32 p2Bitmap = keccak256("p2_loss_bitmap");
         vm.prank(player2);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, 100 ether, 100 ether, p2Bitmap);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, 100 ether, p2Bitmap);
 
         // Advance past tick
         uint256 currentTick = block.timestamp / TICK_DURATION;

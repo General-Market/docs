@@ -220,7 +220,7 @@ contract VisionVaultTest is TestHelper {
 
         bytes32 bitmapHash = keccak256("vault_bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         assertEq(vault.activeBatchDeposits(batchId), DEPOSIT);
         assertEq(vault.totalActiveCapital(), DEPOSIT);
@@ -237,7 +237,7 @@ contract VisionVaultTest is TestHelper {
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(depositor1);
         vm.expectRevert(IVisionVault.NotManager.selector);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
     }
 
     function test_joinBatch_revertsInsufficientIdle() public {
@@ -247,7 +247,7 @@ contract VisionVaultTest is TestHelper {
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
         vm.expectRevert(IVisionVault.InsufficientIdleCapital.selector);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT + 1, DEPOSIT + 1, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT + 1, bitmapHash);
     }
 
     // ── Test 6: updateBitmap ─────────────────────────────────────────
@@ -258,7 +258,7 @@ contract VisionVaultTest is TestHelper {
 
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         bytes32 newBitmapHash = keccak256("new_bitmap");
         vm.prank(depositor1);
@@ -282,7 +282,7 @@ contract VisionVaultTest is TestHelper {
         // Manager joins batch
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         // Settle: single player gets back exactly what they deposited
         address[] memory players = new address[](1);
@@ -312,12 +312,12 @@ contract VisionVaultTest is TestHelper {
         // Vault joins
         bytes32 bitmapHash = keccak256("vault_bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         // Player2 joins directly
         bytes32 p2Bitmap = keccak256("p2_bitmap");
         vm.prank(player2);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, p2Bitmap);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, p2Bitmap);
 
         // Settle: vault wins, player2 loses. Total = 200, must sum to <= 200.
         // Vault gets 130, player2 gets 70.
@@ -367,7 +367,7 @@ contract VisionVaultTest is TestHelper {
 
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         address[] memory players = new address[](1);
         uint256[] memory payouts = new uint256[](1);
@@ -390,7 +390,7 @@ contract VisionVaultTest is TestHelper {
         // Manager deploys all capital
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         // Depositor requests redeem — no idle USDC, so it queues
         uint256 shares = vault.balanceOf(depositor1);
@@ -462,7 +462,7 @@ contract VisionVaultTest is TestHelper {
         uint256 batchId = _createBatch();
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         // USDC left the vault balance, but totalActiveCapital compensates
         assertEq(vault.totalAssets(), DEPOSIT);
@@ -507,7 +507,7 @@ contract VisionVaultTest is TestHelper {
         // Vault joins and breaks even
         bytes32 bitmapHash = keccak256("bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         address[] memory players = new address[](1);
         uint256[] memory payouts = new uint256[](1);
@@ -529,12 +529,12 @@ contract VisionVaultTest is TestHelper {
 
         bytes32 bitmapHash = keccak256("vault_bitmap");
         vm.prank(manager);
-        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, bitmapHash);
+        vault.joinBatch(batchId, CONFIG_HASH, DEPOSIT, bitmapHash);
 
         // Player2 joins
         bytes32 p2Bitmap = keccak256("p2_bitmap");
         vm.prank(player2);
-        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, DEPOSIT, p2Bitmap);
+        vision.joinBatchDirect(batchId, CONFIG_HASH, DEPOSIT, p2Bitmap);
 
         // Vault loses: gets 70, player2 gets 130
         (address first, address second) = _sortTwoAddresses(address(vault), player2);
@@ -590,13 +590,13 @@ contract VisionVaultTest is TestHelper {
         bytes32 bitmap = keccak256("bitmap");
 
         vm.prank(manager);
-        vault.joinBatch(batchId1, CONFIG_HASH, 200 ether, 200 ether, bitmap);
+        vault.joinBatch(batchId1, CONFIG_HASH, 200 ether, bitmap);
 
         // Need a fresh bitmap hash since Vision tracks per-player per-batch
         // but configHash is same. Actually joinBatch calls Vision as msg.sender=vault
         // so vault joins both batches. Vision requires AlreadyJoined per batch, not globally.
         vm.prank(manager);
-        vault.joinBatch(batchId2, CONFIG_HASH, 100 ether, 100 ether, bitmap);
+        vault.joinBatch(batchId2, CONFIG_HASH, 100 ether, bitmap);
 
         assertEq(vault.activeBatchDeposits(batchId1), 200 ether);
         assertEq(vault.activeBatchDeposits(batchId2), 100 ether);

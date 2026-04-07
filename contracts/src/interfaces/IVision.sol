@@ -24,13 +24,12 @@ interface IVision {
     }
 
     /// @notice Player position within a batch.
-    /// @dev Sentinel: deposit != 0 means player is joined.
+    /// @dev Sentinel: totalDeposited != 0 means player is joined.
     struct PlayerPosition {
         bytes32 bitmapHash;              // keccak256 of the player's bitmap
         bytes32 configHash;              // config hash active when bitmap was last set
-        uint256 deposit;                 // USDC deposited for this round
         uint256 joinTimestamp;
-        uint256 totalDeposited;
+        uint256 totalDeposited;          // USDC deposited for this round
     }
 
     struct Bot {
@@ -45,14 +44,13 @@ interface IVision {
     error BatchNotFound();
     error BatchPaused();
     error Unauthorized();
-    error InsufficientDeposit();
-    error StakeBelowMinimum();
+    error DepositBelowMinimum();
     error AlreadyJoined();
     error NotJoined();
     error InvalidTickDuration();
     error InvalidLockOffset();
     error LockOffsetTooLarge();
-    error InsolventPayout();
+    error NonZeroSum();
     error BotAlreadyRegistered();
     error BotNotRegistered();
     error TickLocked();
@@ -74,6 +72,10 @@ interface IVision {
     event BatchPausedEvent(uint256 indexed batchId);
     event BatchUnpaused(uint256 indexed batchId);
 
+    /// @notice Emitted when a player joins a batch.
+    /// @dev `deposit` is the full USDC amount transferred from the player. The
+    ///      parameter name is preserved for ABI/indexer compatibility but no
+    ///      longer represents a per-tick stake — there are no ticks.
     event PlayerJoined(
         uint256 indexed batchId,
         address indexed player,
@@ -124,13 +126,11 @@ interface IVision {
     /// @param batchId        the batch to join
     /// @param configHash     active configHash the player's bitmap is built against
     /// @param depositAmount  USDC amount to deposit (transferred from player wallet)
-    /// @param stakePerTick   USDC staked (equals depositAmount for round-based)
     /// @param bitmapHash     keccak256 of the player's prediction bitmap
     function joinBatchDirect(
         uint256 batchId,
         bytes32 configHash,
         uint256 depositAmount,
-        uint256 stakePerTick,
         bytes32 bitmapHash
     ) external;
 

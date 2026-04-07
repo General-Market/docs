@@ -336,14 +336,13 @@ contract VisionVault is IVisionVault {
         uint256 batchId,
         bytes32 configHash,
         uint256 depositAmount,
-        uint256 stakePerTick,
         bytes32 bitmapHash
     ) external onlyManager {
         if (depositAmount > idleUSDC()) revert InsufficientIdleCapital();
         uint256 maxAlloc = (totalAssets() * MAX_BATCH_BPS) / 10000;
         if (maxAlloc > 0 && depositAmount > maxAlloc) revert ExceedsMaxBatchAllocation();
 
-        IVision(vision).joinBatchDirect(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
+        IVision(vision).joinBatchDirect(batchId, configHash, depositAmount, bitmapHash);
 
         activeBatchDeposits[batchId] += depositAmount;
         totalActiveCapital += depositAmount;

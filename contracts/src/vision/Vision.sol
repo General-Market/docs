@@ -18,7 +18,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ CONSTANTS ============
 
     uint256 public constant PROTOCOL_FEE_BPS = 5; // 0.05%
-    uint256 public constant MIN_STAKE_PER_TICK = 1e17; // 0.1 USDC (18 decimals)
+    uint256 public constant MIN_DEPOSIT = 1e17; // 0.1 USDC (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
     uint256 public constant MAX_TICK_DURATION = 604800;   // 1 week maximum
@@ -166,7 +166,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 batchId,
         bytes32 configHash,
         uint256 depositAmount,
-        uint256 stakePerTick,
         bytes32 bitmapHash
     ) external nonReentrant {
         _requireBatchExists(batchId);
@@ -177,9 +176,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
         if (b.configHash != configHash) revert BatchNotFound();
 
-        if (_positions[batchId][msg.sender].deposit != 0) revert AlreadyJoined();
-        if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
-        if (depositAmount < stakePerTick) revert InsufficientDeposit();
+        if (_positions[batchId][msg.sender].totalDeposited != 0) revert AlreadyJoined();
+        if (depositAmount < MIN_DEPOSIT) revert DepositBelowMinimum();
 
         // Transfer USDC directly from player wallet
         USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
@@ -187,12 +185,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         _positions[batchId][msg.sender] = PlayerPosition({
             bitmapHash: bitmapHash,
             configHash: configHash,
-            deposit: stakePerTick,
             joinTimestamp: block.timestamp,
             totalDeposited: depositAmount
         });
 
-        emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash, configHash);
+        emit PlayerJoined(batchId, msg.sender, depositAmount, bitmapHash, configHash);
     }
 
     /// @inheritdoc IVision
@@ -201,7 +198,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         bytes32 configHash,
         bytes32 newBitmapHash
     ) external {
-        if (_positions[batchId][msg.sender].deposit == 0) revert NotJoined();
+        if (_positions[batchId][msg.sender].totalDeposited == 0) revert NotJoined();
 
         _requireNotLocked(batchId);
 
@@ -376,11 +373,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         for (uint256 i = 0; i < players.length; i++) {
             if (i > 0 && uint160(players[i]) <= uint160(players[i - 1])) revert InvalidArrayLength();
             PlayerPosition storage pos = _positions[batchId][players[i]];
-            if (pos.deposit == 0) revert NotJoined();
+            if (pos.totalDeposited == 0) revert NotJoined();
             totalPayouts += payouts[i];
             totalDeposits += pos.totalDeposited;
         }
-        if (totalPayouts > totalDeposits) revert InsolventPayout();
+        if (totalPayouts != totalDeposits) revert NonZeroSum();
 
         // Pass 2: settle each player — transfer USDC directly
         for (uint256 i = 0; i < players.length; i++) {

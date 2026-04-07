@@ -23,7 +23,7 @@ interface IVisionVault is IERC4626, IERC7540Deposit, IERC7540Redeem {
     error FeeTooHigh();
 
     // ── Manager Trading ─────────────────────────────────────────────
-    function joinBatch(uint256 batchId, bytes32 configHash, uint256 depositAmount, uint256 stakePerTick, bytes32 bitmapHash) external;
+    function joinBatch(uint256 batchId, bytes32 configHash, uint256 depositAmount, bytes32 bitmapHash) external;
     function updateBitmap(uint256 batchId, bytes32 configHash, bytes32 newBitmapHash) external;
 
     // ── Reconciliation (permissionless) ─────────────────────────────
