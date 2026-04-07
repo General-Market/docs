@@ -7,42 +7,46 @@ import {
   spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
+import { loadFont as loadPacifico } from "@remotion/google-fonts/Pacifico";
 
 const { fontFamily } = loadFont();
-const TEAL = "#4ECDC4";
-const TEAL_DEEP = "#2A9D96";
-const DARK = "#1A1A2E";
+const { fontFamily: pacificoFamily } = loadPacifico();
+const TEAL = "#0FE8AE";
+const TEAL_DEEP = "#3FA8A0";
+const DARK = "#000000";
 
-// Timeline (159 frames @ 30fps ≈ 5.30s)
-//   0-15   Season 1 typing in
-//  15-30   "Season 1 judged." hold
-//  30-40   Season 1 fade out
-//  40-45   Blank
-//  45-60   Season 2 typing in
-//  60-90   "Season 2 loading." hold + period blink
-//  90-100  Season 2 fade out
-// 100-110  Blank
-// 110-130  Logo in
-// 130-159  Logo hold
+// Timeline (130 frames @ 30fps ≈ 4.33s)
+//   0-12   Season 1 typing in
+//  12-25   "Season 1 judged." hold
+//  25-35   Season 1 fade out (overlaps with Season 2 ghost-in at 30)
+//  30-40   Season 2 ghosts in (5-frame overlap)
+//  40-50   "Season 2 loading." complete
+//  50-75   Hold + period blink (12-frame toggle)
+//  75-85   Season 2 fade
+//  85-95   Blank
+//  95-110  Logo fades in
+// 110-130  Logo hold
 const SEASON1_IN = 0;
-const SEASON1_HOLD = 15;
-const SEASON1_FADE = 30;
-const SEASON1_OUT = 40;
-const SEASON2_IN = 45;
-const SEASON2_HOLD = 60;
-const SEASON2_FADE = 90;
-const SEASON2_OUT = 100;
-const LOGO_IN = 110;
-const END = 159;
+const SEASON1_TYPED = 12;
+const SEASON1_HOLD = 25;
+const SEASON1_OUT = 35;
+const SEASON2_IN = 30;
+const SEASON2_TYPED = 40;
+const SEASON2_HOLD = 50;
+const SEASON2_FADE = 75;
+const SEASON2_OUT = 85;
+const LOGO_IN = 95;
+const LOGO_HOLD = 110;
+const END = 130;
 
 export const Scene07: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // === Phase 1 (0-40): "Season 1 judged." ===
+  // === Phase 1 (0-35): "Season 1 judged." ===
   const s1Text = "Season 1";
   const s1CharsVisible = Math.floor(
-    interpolate(frame, [SEASON1_IN, SEASON1_IN + 12], [0, s1Text.length], {
+    interpolate(frame, [SEASON1_IN, SEASON1_TYPED], [0, s1Text.length], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     })
@@ -51,7 +55,7 @@ export const Scene07: React.FC = () => {
 
   const judgedOpacity = interpolate(
     frame,
-    [SEASON1_IN + 12, SEASON1_HOLD],
+    [SEASON1_TYPED, SEASON1_HOLD],
     [0, 1],
     {
       extrapolateLeft: "clamp",
@@ -61,7 +65,7 @@ export const Scene07: React.FC = () => {
 
   const phase1Opacity = interpolate(
     frame,
-    [SEASON1_IN, SEASON1_IN + 3, SEASON1_FADE, SEASON1_OUT],
+    [SEASON1_IN, SEASON1_IN + 3, SEASON1_HOLD, SEASON1_OUT],
     [0, 1, 1, 0],
     {
       extrapolateLeft: "clamp",
@@ -69,10 +73,10 @@ export const Scene07: React.FC = () => {
     }
   );
 
-  // === Phase 2 (45-100): "Season 2 loading." ===
+  // === Phase 2 (30-85): "Season 2 loading." with 5-frame overlap ===
   const s2Text = "Season 2";
   const s2CharsVisible = Math.floor(
-    interpolate(frame, [SEASON2_IN, SEASON2_IN + 12], [0, s2Text.length], {
+    interpolate(frame, [SEASON2_IN, SEASON2_TYPED], [0, s2Text.length], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     })
@@ -81,7 +85,7 @@ export const Scene07: React.FC = () => {
 
   const loadingOpacity = interpolate(
     frame,
-    [SEASON2_IN + 12, SEASON2_HOLD],
+    [SEASON2_TYPED, SEASON2_HOLD],
     [0, 1],
     {
       extrapolateLeft: "clamp",
@@ -89,14 +93,14 @@ export const Scene07: React.FC = () => {
     }
   );
 
-  // Period blinks once "loading" is on screen — toggle every 8 frames.
+  // Period blinks once "loading" is on screen — toggle every 12 frames (2.5 Hz).
   const blinkStart = SEASON2_HOLD;
   const periodVisible =
-    frame >= blinkStart && Math.floor((frame - blinkStart) / 8) % 2 === 0;
+    frame < blinkStart || Math.floor((frame - blinkStart) / 12) % 2 === 0;
 
   const phase2Opacity = interpolate(
     frame,
-    [SEASON2_IN, SEASON2_IN + 3, SEASON2_FADE, SEASON2_OUT],
+    [SEASON2_IN, SEASON2_IN + 5, SEASON2_FADE, SEASON2_OUT],
     [0, 1, 1, 0],
     {
       extrapolateLeft: "clamp",
@@ -104,8 +108,8 @@ export const Scene07: React.FC = () => {
     }
   );
 
-  // === Phase 3 (110-159): Virtuals Protocol logo ===
-  const logoOpacity = interpolate(frame, [LOGO_IN, LOGO_IN + 14], [0, 1], {
+  // === Phase 3 (95-130): Virtuals Protocol logo ===
+  const logoOpacity = interpolate(frame, [LOGO_IN, LOGO_HOLD], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -137,7 +141,7 @@ export const Scene07: React.FC = () => {
       }}
     >
       {/* Phase 1: "Season 1 judged." — single line */}
-      {frame >= SEASON1_IN && frame < SEASON1_OUT && (
+      {frame >= SEASON1_IN && frame <= SEASON1_OUT && (
         <div
           style={{
             opacity: phase1Opacity,
@@ -177,7 +181,7 @@ export const Scene07: React.FC = () => {
       )}
 
       {/* Phase 2: "Season 2 loading." — single line, period blinks */}
-      {frame >= SEASON2_IN && frame < SEASON2_OUT && (
+      {frame >= SEASON2_IN && frame <= SEASON2_OUT && (
         <div
           style={{
             opacity: phase2Opacity,
@@ -230,17 +234,16 @@ export const Scene07: React.FC = () => {
             position: "absolute",
           }}
         >
-          {/* "Virtuals" — script/cursive wordmark */}
+          {/* "Virtuals" — Pacifico cursive wordmark, closest readily-available
+              approximation of the original hand-drawn SVG path */}
           <div
             style={{
-              fontFamily:
-                "'Brush Script MT', 'Lucida Handwriting', 'Segoe Script', cursive",
-              fontSize: 56,
+              fontFamily: pacificoFamily,
+              fontSize: 40,
               fontWeight: 400,
               color: TEAL_DEEP,
               letterSpacing: -1,
               lineHeight: 1,
-              fontStyle: "italic",
             }}
           >
             Virtuals
@@ -252,9 +255,10 @@ export const Scene07: React.FC = () => {
               fontSize: 14,
               fontWeight: 700,
               color: TEAL_DEEP,
-              letterSpacing: "0.3em",
+              letterSpacing: "0.35em",
               textAlign: "center",
-              paddingLeft: "0.3em",
+              paddingLeft: "0.35em",
+              marginTop: 8,
             }}
           >
             PROTOCOL
