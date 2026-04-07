@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useRef } from 'react'
+import { useMemo, useCallback, useRef } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useQuery } from '@tanstack/react-query'
@@ -21,7 +21,6 @@ import { useTranslations } from 'next-intl'
 import { SourceDetailSkeleton } from '@/components/ui/VisionLoader'
 import { useOnboarding } from '@/hooks/useOnboarding'
 import { OnboardingGuide, OnboardingGate, FloatingReminder } from './OnboardingGuide'
-import DeployAgentModal from './DeployAgentModal'
 
 // ── Main component ──
 
@@ -132,7 +131,6 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
 
   // ── Onboarding ──
   const onboarding = useOnboarding(sourceId)
-  const [showDeployModal, setShowDeployModal] = useState(false)
   const vaultShowcaseRef = useRef<HTMLDivElement>(null)
 
   const handleOnboardingVaultDeposit = useCallback(() => {
@@ -140,8 +138,8 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
   }, [])
 
   const handleOnboardingBotDeploy = useCallback(() => {
-    setShowDeployModal(true)
-  }, [])
+    router.push('/build-bot')
+  }, [router])
 
   // Loading / not-found states
   if (isRegistryLoading && !initialSource) {
@@ -254,11 +252,6 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             <SubmarketsGrid sourceId={sourceId} />
           </OnboardingGate>
         </div>
-
-        {/* Deploy bot modal — triggered by onboarding step 4 */}
-        {showDeployModal && (
-          <DeployAgentModal agentId="claude-code" onClose={() => setShowDeployModal(false)} />
-        )}
       </div>
 
       {/* Right sidebar */}
