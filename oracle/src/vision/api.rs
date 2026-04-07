@@ -1495,6 +1495,35 @@ async fn leaderboard_from_postgres(
     let mut entries: Vec<_> = merged.into_iter().collect();
     entries.sort_by(|a, b| b.1 .0.cmp(&a.1 .0));
 
+    // The parimutuel invariant: the exact sum of all pnl_wei across a closed
+    // set of players is zero. After per-entry 2-decimal rounding for display,
+    // the sum can drift by up to 0.005 USDC per entry — with 22 players that's
+    // $0.11 of nonsense residual. Compute the rounded cents for every entry
+    // first, then carry the residual into the largest-|PnL| entry so the
+    // displayed sum is exactly zero.
+    let rounded_cents: Vec<i64> = entries
+        .iter()
+        .map(|(_, (pnl_wei, _, _, _, _, _, _, _))| {
+            // Round half-away-from-zero at cent precision.
+            let cents = ((*pnl_wei as f64) / 1e16).round() as i64;
+            cents
+        })
+        .collect();
+    let residual_cents: i64 = rounded_cents.iter().sum();
+    // Index of the entry with the largest absolute PnL — carry the residual
+    // there because it has the most headroom for a sub-cent correction.
+    let anchor_idx: usize = rounded_cents
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, v)| v.unsigned_abs())
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+    let adjusted_cents: Vec<i64> = rounded_cents
+        .iter()
+        .enumerate()
+        .map(|(i, v)| if i == anchor_idx { v - residual_cents } else { *v })
+        .collect();
+
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
         .enumerate()
@@ -1503,7 +1532,8 @@ async fn leaderboard_from_postgres(
             // values up to 2^53 ≈ 9 PB cents exactly, so a single-player pnl in
             // USDC always fits — the loss-of-precision bug was specifically in
             // subtracting two large sums of f64 wei.
-            let pnl = (*pnl_wei as f64) / DECIMALS;
+            let _ = pnl_wei; // kept for clarity; display uses adjusted_cents
+            let pnl = (adjusted_cents[i] as f64) / 100.0;
             let deposited = (*dep_wei as f64) / DECIMALS;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
             let win_rate = if *batches > 0 {
@@ -1519,7 +1549,8 @@ async fn leaderboard_from_postgres(
             LeaderboardEntry {
                 rank: i + 1,
                 wallet_address: addr.clone(),
-                pnl: (pnl * 100.0).round() / 100.0,
+                // `pnl` is already whole-cent — no further rounding.
+                pnl,
                 win_rate: (win_rate * 10.0).round() / 10.0,
                 roi: (roi * 100.0).round() / 100.0,
                 total_volume: (deposited * 100.0).round() / 100.0,
