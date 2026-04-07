@@ -9,8 +9,8 @@ import {
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
 
 const { fontFamily } = loadFont();
-const TEAL = "#4ECDC4";
-const TEXT_DARK = "#1a1a1a";
+const TEAL = "#0FE8AE";
+const TEXT_DARK = "#000000";
 
 /* ── Inline SVG Icons ───────────────────────────────────── */
 
@@ -64,14 +64,14 @@ const ModelCircle: React.FC<{ kind: "openai" | "sparkle" | "gemini" }> = ({
 }) => (
   <div
     style={{
-      width: 50,
-      height: 50,
+      width: 58,
+      height: 58,
       borderRadius: "50%",
       backgroundColor: TEAL,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      boxShadow: "0 2px 6px rgba(78,205,196,0.25)",
+      boxShadow: "0 2px 6px rgba(15,232,174,0.25)",
     }}
   >
     {kind === "openai" && <OpenAIKnotIcon />}
@@ -81,7 +81,7 @@ const ModelCircle: React.FC<{ kind: "openai" | "sparkle" | "gemini" }> = ({
 );
 
 const StopwatchIcon: React.FC = () => (
-  <svg width="60" height="60" viewBox="0 0 48 48">
+  <svg width="75" height="75" viewBox="0 0 48 48">
     <rect x="20" y="3" width="8" height="5" rx="1" fill={TEAL} />
     <line x1="24" y1="8" x2="24" y2="11" stroke={TEAL} strokeWidth="2.5" />
     <circle
@@ -124,7 +124,7 @@ const NetworkIcon: React.FC = () => (
 );
 
 const MoneyBagIcon: React.FC = () => (
-  <svg width="70" height="70" viewBox="0 0 48 48">
+  <svg width="90" height="90" viewBox="0 0 48 48">
     <path
       d="M18 12 Q20 9 24 9 Q28 9 30 12 L33 14 Q26 16 24 16 Q22 16 15 14 Z"
       fill={TEAL}
@@ -304,203 +304,216 @@ export const Scene02: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  /* Card morph: starts as pill (matching Scene01 end), expands to card */
-  const cardWidthPct = interpolate(frame, [0, 12], [25, 84], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+  /* Clean card pop-in. No pill inheritance. Spring from 0.85 → 1. */
+  const cardPop = spring({
+    frame,
+    fps,
+    from: 0.85,
+    to: 1,
+    durationInFrames: 14,
   });
-  const cardHeightPct = interpolate(frame, [0, 12], [10, 80], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const cardRadius = interpolate(frame, [0, 12], [40, 28], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* Card fade-out at end → blank white */
-  const cardOpacity = interpolate(frame, [0, 4, 155, 165], [0, 1, 1, 0], {
+  const cardEnter = interpolate(frame, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Phase 1 (frames 9-22): "Thousands of trades" + candlestick center ── */
-  const candleSpringFrame = Math.max(0, frame - 9);
+  /* Card fades out near the end so the brain can be left alone on white. */
+  const cardOpacity = interpolate(frame, [0, 6, 178, 188], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  /* ── Phase 1: "Thousands of trades" + candlestick center → top-left ── */
+  const candleSpringFrame = Math.max(0, frame - 8);
   const candleScale = spring({
     frame: candleSpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-
-  /* Candlestick position: center → top-left */
-  const candleX = interpolate(frame, [22, 30], [50, 28], {
+  const candleX = interpolate(frame, [30, 42], [50, 28], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const candleY = interpolate(frame, [22, 30], [42, 24], {
+  const candleY = interpolate(frame, [30, 42], [42, 24], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  /* Trades text */
-  const tradesText = useTypewriter("Thousands of trades", 14);
-  const tradesOpacity = interpolate(frame, [14, 18, 30, 36], [0, 1, 1, 0], {
+  const tradesText = useTypewriter("Thousands of trades", 12, 0.7);
+  const tradesOpacity = interpolate(frame, [12, 18, 42, 50], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Phase 2 (frames 28-46): "Hundreds of agents" + AI circles center ── */
-  const aiCircleSpringFrame = Math.max(0, frame - 28);
+  /* ── Phase 2: "Hundreds of agents" + AI circles center → top-right ── */
+  const aiCircleSpringFrame = Math.max(0, frame - 48);
   const aiCircleScale = spring({
     frame: aiCircleSpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-
-  /* AI circles position: center → top-right */
-  const aiX = interpolate(frame, [40, 48], [50, 72], {
+  const aiX = interpolate(frame, [62, 74], [50, 72], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const aiY = interpolate(frame, [40, 48], [42, 28], {
+  const aiY = interpolate(frame, [62, 74], [42, 28], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  const agentsText = useTypewriter("Hundreds of agents", 32);
-  const agentsOpacity = interpolate(frame, [32, 36, 48, 54], [0, 1, 1, 0], {
+  const agentsText = useTypewriter("Hundreds of agents", 52, 0.7);
+  const agentsOpacity = interpolate(frame, [52, 58, 82, 90], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Phase 3 (frames 48-66): Patterns + network nodes ── */
-  const networkSpringFrame = Math.max(0, frame - 48);
+  /* ── Phase 3: Patterns + network nodes (CENTER first, then bottom-left) ── */
+  const networkSpringFrame = Math.max(0, frame - 70);
   const networkScale = spring({
     frame: networkSpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-  const networkOpacity = interpolate(frame, [48, 52], [0, 1], {
+  const networkOpacity = interpolate(frame, [70, 76], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  /* Network appears center then translates to bottom-left between f025 and f027 */
+  const networkX = interpolate(frame, [82, 96], [50, 28], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const networkY = interpolate(frame, [82, 96], [50, 68], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const patternsText = useTypewriter("Patterns", 72, 0.8);
+  const patternsOpacity = interpolate(frame, [72, 78, 96, 104], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const patternsText = useTypewriter("Patterns", 50);
-  const patternsOpacity = interpolate(frame, [50, 54, 64, 70], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 4 (frames 64-82): Timing + stopwatch ── */
-  const stopwatchSpringFrame = Math.max(0, frame - 64);
+  /* ── Phase 4: Timing + stopwatch (CENTER first, then top-center) ── */
+  const stopwatchSpringFrame = Math.max(0, frame - 92);
   const stopwatchScale = spring({
     frame: stopwatchSpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-  const stopwatchOpacity = interpolate(frame, [64, 68], [0, 1], {
+  const stopwatchOpacity = interpolate(frame, [92, 98], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const stopwatchX = 50;
+  const stopwatchY = interpolate(frame, [104, 116], [42, 22], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const timingText = useTypewriter("Timing", 96, 0.8);
+  const timingOpacity = interpolate(frame, [96, 102, 116, 124], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const timingText = useTypewriter("Timing", 68);
-  const timingOpacity = interpolate(frame, [68, 72, 82, 88], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 5 (frames 82-104): Position Sizing + money bag ── */
-  const moneySpringFrame = Math.max(0, frame - 86);
+  /* ── Phase 5: Position Sizing + money bag (CENTER above text → bottom-right) ── */
+  const moneySpringFrame = Math.max(0, frame - 116);
   const moneyScale = spring({
     frame: moneySpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-  const moneyOpacity = interpolate(frame, [86, 90], [0, 1], {
+  const moneyOpacity = interpolate(frame, [116, 122], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  /* Money bag starts center-above-text and travels to bottom-right (f029→f031) */
+  const moneyX = interpolate(frame, [128, 142], [50, 73], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const moneyY = interpolate(frame, [128, 142], [40, 71], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const positionOpacity = interpolate(frame, [118, 124, 142, 150], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const sizingOpacity = interpolate(frame, [126, 132, 142, 150], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const positionOpacity = interpolate(frame, [84, 88, 102, 108], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const sizingOpacity = interpolate(frame, [92, 96, 102, 108], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 6 (frames 102-128): Manipulation Signals + alert circle ── */
-  const alertSpringFrame = Math.max(0, frame - 104);
+  /* ── Phase 6: Manipulation Signals + alert circle ── */
+  const alertSpringFrame = Math.max(0, frame - 142);
   const alertScale = spring({
     frame: alertSpringFrame,
     fps,
     from: 0,
     to: 1,
-    durationInFrames: 10,
+    durationInFrames: 12,
   });
-  const alertOpacity = interpolate(frame, [104, 108], [0, 1], {
+  const alertOpacity = interpolate(frame, [142, 148], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
+  /* "Manipulation" enters at 144, "Signals" 12 frames later at 156. Both hold to 174. */
   const manipulationOpacity = interpolate(
     frame,
-    [102, 106, 128, 134],
+    [144, 150, 174, 180],
     [0, 1, 1, 0],
     {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     },
   );
-  const signalsOpacity = interpolate(frame, [114, 118, 128, 134], [0, 1, 1, 0], {
+  const signalsOpacity = interpolate(frame, [156, 162, 174, 180], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Phase 7 (frames 128-160): Brain transition ── */
-  /* Brain outline appears center f034 → frame 132. Head silhouette fills f035→f036 (frame ~138). */
-  const brainOpacity = interpolate(frame, [128, 138], [0, 1], {
+  /* ── Phase 7: Brain transition. Cloud alone first (f036), head fills last (f038). ── */
+  /* Brain cloud appears at frame ~160 (= f036 = (36-20)*10 = 160) */
+  const brainOpacity = interpolate(frame, [160, 168], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const brainSpringFrame = Math.max(0, frame - 128);
+  const brainSpringFrame = Math.max(0, frame - 160);
   const brainSpring = spring({
     frame: brainSpringFrame,
     fps,
     from: 0.5,
     to: 1,
-    durationInFrames: 14,
+    durationInFrames: 16,
   });
 
-  /* Head fills in slightly after brain outline */
-  const headOpacity = interpolate(frame, [136, 146], [0, 1], {
+  /* Head silhouette only fills in at the very last reference frame (f038 = frame 180) */
+  const headOpacity = interpolate(frame, [178, 184], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* All scattered icons fade out as brain takes over */
-  const iconsFadeOut = interpolate(frame, [128, 145], [1, 0], {
+  /* All scattered icons fade out as the brain takes over */
+  const iconsFadeOut = interpolate(frame, [160, 175], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* Brain drifts down + shrinks at very end while card incinerates */
-  const brainDriftY = interpolate(frame, [150, 165], [0, 80], {
+  /* Brain drifts down + shrinks at the very end while the card incinerates */
+  const brainDriftY = interpolate(frame, [180, 188], [0, 60], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const brainEndOpacity = interpolate(frame, [160, 175], [1, 0], {
+  const brainEndOpacity = interpolate(frame, [184, 190], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -516,15 +529,16 @@ export const Scene02: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Card (morphs from pill) */}
+      {/* Card — clean pop-in, no pill inheritance */}
       <div
         style={{
-          width: `${cardWidthPct}%`,
-          height: `${cardHeightPct}%`,
-          borderRadius: cardRadius,
+          width: "84%",
+          height: "80%",
+          borderRadius: 28,
           backgroundColor: "#fff",
           boxShadow: "0 12px 60px rgba(0,0,0,0.08)",
-          opacity: cardOpacity,
+          opacity: cardOpacity * cardEnter,
+          transform: `scale(${cardPop})`,
           position: "relative",
           overflow: "hidden",
         }}
@@ -535,7 +549,7 @@ export const Scene02: React.FC = () => {
           <FloatingIcon
             x={candleX}
             y={candleY}
-            opacity={frame >= 9 ? 1 : 0}
+            opacity={frame >= 8 ? 1 : 0}
             scale={candleScale}
           >
             <CandlestickIcon />
@@ -545,7 +559,7 @@ export const Scene02: React.FC = () => {
           <FloatingIcon
             x={aiX - 5}
             y={aiY + 3}
-            opacity={frame >= 28 ? aiCircleScale : 0}
+            opacity={frame >= 48 ? aiCircleScale : 0}
             scale={aiCircleScale}
           >
             <ModelCircle kind="sparkle" />
@@ -553,7 +567,7 @@ export const Scene02: React.FC = () => {
           <FloatingIcon
             x={aiX}
             y={aiY - 5}
-            opacity={frame >= 30 ? aiCircleScale : 0}
+            opacity={frame >= 50 ? aiCircleScale : 0}
             scale={aiCircleScale}
           >
             <ModelCircle kind="openai" />
@@ -561,24 +575,39 @@ export const Scene02: React.FC = () => {
           <FloatingIcon
             x={aiX + 5}
             y={aiY + 3}
-            opacity={frame >= 32 ? aiCircleScale : 0}
+            opacity={frame >= 52 ? aiCircleScale : 0}
             scale={aiCircleScale}
           >
             <ModelCircle kind="gemini" />
           </FloatingIcon>
 
-          {/* Network nodes (bottom-left, fixed) */}
-          <FloatingIcon x={28} y={64} opacity={networkOpacity} scale={networkScale}>
+          {/* Network nodes — appear CENTER first, then translate to bottom-left */}
+          <FloatingIcon
+            x={networkX}
+            y={networkY}
+            opacity={networkOpacity}
+            scale={networkScale}
+          >
             <NetworkIcon />
           </FloatingIcon>
 
-          {/* Stopwatch (top-center, fixed) */}
-          <FloatingIcon x={50} y={22} opacity={stopwatchOpacity} scale={stopwatchScale}>
+          {/* Stopwatch — appears CENTER then translates to top-center */}
+          <FloatingIcon
+            x={stopwatchX}
+            y={stopwatchY}
+            opacity={stopwatchOpacity}
+            scale={stopwatchScale}
+          >
             <StopwatchIcon />
           </FloatingIcon>
 
-          {/* Money bag (bottom-right, fixed) */}
-          <FloatingIcon x={73} y={71} opacity={moneyOpacity} scale={moneyScale}>
+          {/* Money bag — appears center-above-text, travels to bottom-right */}
+          <FloatingIcon
+            x={moneyX}
+            y={moneyY}
+            opacity={moneyOpacity}
+            scale={moneyScale}
+          >
             <MoneyBagIcon />
           </FloatingIcon>
 
@@ -727,5 +756,5 @@ export const scene02Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 183,
+  durationInFrames: 190,
 };
