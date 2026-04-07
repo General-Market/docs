@@ -127,15 +127,21 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
         </div>
       ) : null}
 
+      {/*
+        Layout note: we use inline-block + text-align center, not flex.
+        Flex with gap was causing the first word to appear to drift right
+        when subsequent words entered. Inline layout with real space
+        characters between spans is layout-stable from frame 0 because
+        the browser's text engine reserves space for every span at mount,
+        regardless of opacity or transform.
+      */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          display: "flex",
-          alignItems: "baseline",
-          gap: `${Math.round(fontSize * 0.3)}px`,
+          textAlign: "center",
           whiteSpace: "nowrap",
           fontFamily,
           fontSize,
@@ -150,28 +156,31 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
           const wordStart = startFrame + i * framesPerWord;
           const elapsed = frame - wordStart;
           const dur = isLast ? lastWordSpringFrames : wordSpringFrames;
-          const stiffness = isLast ? 70 : 140;
+          const stiffness = isLast ? 60 : 120;
+          const damping = isLast ? 20 : 22;
           const progress = spring({
             frame: Math.max(0, elapsed),
             fps,
-            config: { damping: 16, stiffness, mass: 0.7 },
+            config: { damping, stiffness, mass: 0.8, overshootClamping: true },
             durationInFrames: dur,
           });
           const opacity = elapsed < 0 ? 0 : progress;
           const translateY = (1 - progress) * riseFromPx;
           return (
-            <span
-              key={i}
-              style={{
-                display: "inline-block",
-                opacity,
-                transform: `translateY(${translateY}px)`,
-                color: isHighlight ? highlightColor : color,
-                willChange: "transform, opacity",
-              }}
-            >
-              {word}
-            </span>
+            <React.Fragment key={i}>
+              {i > 0 ? " " : null}
+              <span
+                style={{
+                  display: "inline-block",
+                  opacity,
+                  transform: `translate3d(0, ${translateY}px, 0)`,
+                  color: isHighlight ? highlightColor : color,
+                  willChange: "transform, opacity",
+                }}
+              >
+                {word}
+              </span>
+            </React.Fragment>
           );
         })}
       </div>
