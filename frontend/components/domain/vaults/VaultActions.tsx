@@ -331,6 +331,12 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         )}
 
+        {/* Section header — aligns with VAULTS (left) and RISK (right) */}
+        <div className="hidden lg:flex shrink-0 bg-[#1A1A1A] px-4 py-1.5 items-center justify-between">
+          <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Overview</span>
+          <span className="font-mono text-[9px] text-white/35 uppercase tracking-[0.08em]">{(branding?.strategy ?? fund.strategy ?? '').replace(/_/g, ' ')}</span>
+        </div>
+
         {/* Stats strip, 3 cells on mobile, 6 on desktop */}
         <div className="grid grid-cols-3 lg:grid-cols-6 shrink-0 border-b border-[#E0E0E0]">
           <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
@@ -370,7 +376,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         {/* Chart */}
         <div className="px-4 py-3 shrink-0 border-b border-[#F0F0F0]">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">NAV History</span>
+            <span className="text-[10px] font-bold tracking-[0.1em] uppercase text-text-muted">NAV History</span>
             <div className="flex gap-0.5 bg-[#FAFAFA] p-0.5 rounded-none">
               {(['1D', '1W', '1M', 'ALL'] as const).map((p) => (
                 <button
@@ -378,7 +384,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
                   type="button"
                   onClick={() => setNavRange(p)}
                   className={cn(
-                    'font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded-none border-0 transition-colors',
+                    'font-mono text-[10px] font-semibold px-2 py-0.5 rounded-none border-0 transition-colors',
                     p === navRange ? 'bg-[#1A1A1A] text-white' : 'bg-transparent text-text-muted hover:text-text-primary',
                   )}
                 >
@@ -387,7 +393,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               ))}
             </div>
           </div>
-          <div className="h-[120px] lg:h-[180px] overflow-hidden">
+          <div className="h-[clamp(180px,30vh,420px)] overflow-hidden">
             {navHistory ? (
               <NavChart data={navHistory} vaultAddr={vault.address} timestamps={filteredSnapshots.map(s => s.ts)} />
             ) : (
@@ -696,7 +702,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top bar */}
-        <div className="shrink-0 bg-[#1A1A1A] px-5 py-2 flex items-center justify-between rounded-t-xl">
+        <div className="shrink-0 bg-[#1A1A1A] px-5 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="text-sm font-extrabold text-white tracking-[-0.01em]">{vaultName}</span>
             <span

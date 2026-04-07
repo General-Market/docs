@@ -104,10 +104,10 @@ function useChartId() {
 
 const CHART_W = 500
 const CHART_H = 300
-const CHART_PAD_T = 16
-const CHART_PAD_B = 32
-const CHART_PAD_L = 40
-const CHART_PAD_R = 8
+const CHART_PAD_T = 20
+const CHART_PAD_B = 42
+const CHART_PAD_L = 60
+const CHART_PAD_R = 16
 const CHART_PLOT_W = CHART_W - CHART_PAD_L - CHART_PAD_R
 const CHART_PLOT_H = CHART_H - CHART_PAD_T - CHART_PAD_B
 const DRAW_DURATION = 900
@@ -367,18 +367,18 @@ export function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaul
           y={0}
           textAnchor="middle"
           fill={chart.strokeColor}
-          fontSize={10}
+          fontSize={14}
           fontWeight={700}
           fontFamily={MONO_FONT}
         />
       </g>
 
       <text
-        x={CHART_PAD_L - 4}
-        y={CHART_PAD_T + 3}
+        x={CHART_PAD_L - 6}
+        y={CHART_PAD_T + 5}
         textAnchor="end"
-        fill="#9CA3AF"
-        fontSize={9}
+        fill="#6B7280"
+        fontSize={13}
         fontFamily={MONO_FONT}
         style={{
           opacity: entered ? 1 : 0,
@@ -388,11 +388,11 @@ export function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaul
         {chart.max.toFixed(4)}
       </text>
       <text
-        x={CHART_PAD_L - 4}
-        y={CHART_PAD_T + CHART_PLOT_H + 3}
+        x={CHART_PAD_L - 6}
+        y={CHART_PAD_T + CHART_PLOT_H + 5}
         textAnchor="end"
-        fill="#9CA3AF"
-        fontSize={9}
+        fill="#6B7280"
+        fontSize={13}
         fontFamily={MONO_FONT}
         style={{
           opacity: entered ? 1 : 0,
@@ -406,10 +406,10 @@ export function NavChart({ data, vaultAddr, timestamps }: { data: number[]; vaul
         <text
           key={i}
           x={xl.x}
-          y={CHART_H - 4}
+          y={CHART_H - 6}
           textAnchor={i === 0 ? 'start' : i === chart.xLabels.length - 1 ? 'end' : 'middle'}
-          fill="#9CA3AF"
-          fontSize={9}
+          fill="#6B7280"
+          fontSize={13}
           fontFamily={MONO_FONT}
           style={{
             opacity: entered ? 1 : 0,
