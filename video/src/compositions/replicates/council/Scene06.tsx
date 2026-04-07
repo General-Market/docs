@@ -7,13 +7,13 @@ import {
   spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
+import { AnimatedText, COUNCIL_DARK, COUNCIL_TEAL } from "./AnimatedText";
 
 const { fontFamily } = loadFont();
 
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
-const TEAL = "#0FE8AE";
 
 const BG = "#F5F5F7";
 const PANEL_BG = "#1A2332";
@@ -307,19 +307,6 @@ export const Scene06: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Overlay fades in alongside the panels — not delayed.
-  const overlayOpacity = interpolate(frame, [0, 15, 60, 70], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const overlayY = spring({
-    frame,
-    fps,
-    from: 6,
-    to: 0,
-    durationInFrames: 14,
-  });
-
   return (
     <AbsoluteFill
       style={{
@@ -329,23 +316,7 @@ export const Scene06: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Overlay headline above panels */}
-      <div
-        style={{
-          fontSize: 22,
-          fontFamily,
-          color: "#000000",
-          opacity: overlayOpacity,
-          transform: `translateY(${overlayY}px)`,
-          marginBottom: 22,
-          whiteSpace: "nowrap",
-          letterSpacing: 0.5,
-        }}
-      >
-        Final <span style={{ color: TEAL, fontWeight: 700 }}>leaderboard</span>{" "}
-        renders
-      </div>
-
+      {/* Panels centered in the scene. */}
       <div
         style={{
           display: "flex",
@@ -358,6 +329,27 @@ export const Scene06: React.FC = () => {
           <Panel key={panel.id} config={panel} frame={frame} fps={fps} />
         ))}
       </div>
+
+      {/*
+        Overlay headline above the panels.
+        Wrapper highlights TRAILING words — so with highlightLastN=2 both
+        "leaderboard renders" read teal. The original painted only
+        "leaderboard" teal; we accept the drift in exchange for one wrapper
+        everywhere.
+      */}
+      <AnimatedText
+        text="Final leaderboard renders"
+        highlightLastN={2}
+        startFrame={0}
+        framesPerWord={5}
+        fadeOutAt={55}
+        fadeOutFrames={6}
+        fontSize={22}
+        color={COUNCIL_DARK}
+        highlightColor={COUNCIL_TEAL}
+        letterSpacing={0.5}
+        style={{ inset: "auto", top: "15%", left: 0, right: 0, height: 40 }}
+      />
     </AbsoluteFill>
   );
 };
