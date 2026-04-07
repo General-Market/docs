@@ -3,14 +3,12 @@
 import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
-import { useAccount, useReadContract } from 'wagmi'
 import { cn } from '@/lib/utils/cn'
-import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
-import { indexL3 } from '@/lib/wagmi'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
+import { useSSEUserVaultPosition } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { NavChart, generateNavHistory } from './NavChart'
@@ -161,7 +159,6 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   onSelectVault: (i: number) => void
 }) {
   const t = useTranslations('vision')
-  const { address } = useAccount()
   const [tab, setTab] = useState<'deposit' | 'withdraw'>('deposit')
   const [depositInput, setDepositInput] = useState('')
   const [withdrawInput, setWithdrawInput] = useState('')
@@ -178,21 +175,18 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     isConfirming: redeemConfirming, error: redeemError, reset: resetRedeem,
   } = useVaultRedeem()
 
-  const { data: userShares } = useReadContract({
-    address: vault.address,
-    abi: VISION_VAULT_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: indexL3.id,
-    query: { enabled: !!address },
-  })
-  const shares = (userShares as bigint | undefined) ?? 0n
+  // Position lives in the SSE context — updated every few seconds by data-node.
+  const ssePosition = useSSEUserVaultPosition(vault.address)
+  const shares = ssePosition ? (() => { try { return BigInt(ssePosition.shares) } catch { return 0n } })() : 0n
+  const pendingAssets = ssePosition ? (() => { try { return BigInt(ssePosition.pending_deposit) } catch { return 0n } })() : 0n
   const sharesFloat = parseFloat(formatUnits(shares, 18))
+  const pendingFloat = parseFloat(formatUnits(pendingAssets, 18))
   const userValue =
     vault.totalSupply > 0n && shares > 0n
       ? (Number(shares) / Number(vault.totalSupply)) * parseFloat(formatUnits(vault.totalAssets, 18))
       : 0
   const userPnl = shares > 0n ? userValue - sharesFloat : 0
+  const hasPosition = shares > 0n || pendingAssets > 0n
 
   const perfPercent = (vault.performanceSinceInception * 100).toFixed(2)
   const isPositive = vault.performanceSinceInception >= 0
@@ -524,12 +518,22 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         </div>
 
         {/* Position */}
-        {shares > 0n && (
+        {hasPosition && (
           <div className="px-4 py-3 border-b border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-2">Your Position</div>
-            <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Shares</span><span className="font-mono text-[13px] font-bold">{sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-            <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Value</span><span className="font-mono text-[13px] font-bold">${userValue.toFixed(2)}</span></div>
-            <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">P&L</span><span className={cn('font-mono text-[13px] font-bold', userPnl >= 0 ? 'text-color-up' : 'text-color-down')}>{userPnl >= 0 ? '+' : ''}${userPnl.toFixed(2)}</span></div>
+            {shares > 0n && (
+              <>
+                <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Shares</span><span className="font-mono text-[13px] font-bold">{sharesFloat.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
+                <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">Value</span><span className="font-mono text-[13px] font-bold">${userValue.toFixed(2)}</span></div>
+                <div className="flex justify-between py-1"><span className="text-xs text-text-secondary">P&L</span><span className={cn('font-mono text-[13px] font-bold', userPnl >= 0 ? 'text-color-up' : 'text-color-down')}>{userPnl >= 0 ? '+' : ''}${userPnl.toFixed(2)}</span></div>
+              </>
+            )}
+            {pendingAssets > 0n && (
+              <div className="flex justify-between py-1">
+                <span className="text-xs text-text-secondary">Pending Deposit</span>
+                <span className="font-mono text-[13px] font-bold text-[#00A36C]">${pendingFloat.toFixed(2)}</span>
+              </div>
+            )}
           </div>
         )}
 

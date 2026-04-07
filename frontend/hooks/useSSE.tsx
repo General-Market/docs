@@ -140,6 +140,25 @@ export interface MorphoVaultSSE {
   decimals: number
 }
 
+export interface VisionVaultSSE {
+  address: string
+  name: string
+  symbol: string
+  source: string
+  strategy: string
+  total_assets: string
+  total_supply: string
+  nav_per_share: number
+  performance_fee_rate: string
+  high_water_mark: string
+}
+
+export interface VisionVaultPositionSSE {
+  vault: string
+  shares: string
+  pending_deposit: string
+}
+
 export interface FillRecord {
   order_id: number
   side: number
@@ -168,11 +187,13 @@ export interface SSEData {
   systemStatus: SystemSnapshot | null
   morphoMarkets: MorphoMarketSSE[]
   morphoVault: MorphoVaultSSE | null
+  visionVaults: VisionVaultSSE[]
   userBalances: UserBalances | null
   userAllowances: UserAllowances | null
   userOrders: UserOrder[]
   userPositions: Record<string, MorphoPositionSnapshot> | null
   userCostBasis: UserCostBasis | null
+  userVaultPositions: Record<string, VisionVaultPositionSSE>
 }
 
 export interface SSEContextValue {
@@ -187,11 +208,13 @@ const SSEOracleContext = createContext<OracleSnapshot | null>(null)
 const SSESystemContext = createContext<SystemSnapshot | null>(null)
 const SSEMorphoMarketsContext = createContext<MorphoMarketSSE[]>([])
 const SSEMorphoVaultContext = createContext<MorphoVaultSSE | null>(null)
+const SSEVisionVaultsContext = createContext<VisionVaultSSE[]>([])
 const SSEUserBalancesContext = createContext<UserBalances | null>(null)
 const SSEUserAllowancesContext = createContext<UserAllowances | null>(null)
 const SSEUserOrdersContext = createContext<UserOrder[]>([])
 const SSEUserPositionsContext = createContext<Record<string, MorphoPositionSnapshot> | null>(null)
 const SSEUserCostBasisContext = createContext<UserCostBasis | null>(null)
+const SSEUserVaultPositionsContext = createContext<Record<string, VisionVaultPositionSSE>>({})
 const SSEConnectionContext = createContext<SSEConnectionState>('disconnected')
 
 // ── SSEProvider ──
@@ -211,11 +234,13 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
   const [systemStatus, setSystemStatus] = useState<SystemSnapshot | null>(null)
   const [morphoMarkets, setMorphoMarkets] = useState<MorphoMarketSSE[]>([])
   const [morphoVault, setMorphoVault] = useState<MorphoVaultSSE | null>(null)
+  const [visionVaults, setVisionVaults] = useState<VisionVaultSSE[]>([])
   const [userBalances, setUserBalances] = useState<UserBalances | null>(null)
   const [userAllowances, setUserAllowances] = useState<UserAllowances | null>(null)
   const [userOrders, setUserOrders] = useState<UserOrder[]>([])
   const [userPositions, setUserPositions] = useState<Record<string, MorphoPositionSnapshot> | null>(null)
   const [userCostBasis, setUserCostBasis] = useState<UserCostBasis | null>(null)
+  const [userVaultPositions, setUserVaultPositions] = useState<Record<string, VisionVaultPositionSSE>>({})
   const [connectionState, setConnectionState] = useState<SSEConnectionState>('disconnected')
 
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -235,6 +260,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
       setUserOrders([])
       setUserPositions(null)
       setUserCostBasis(null)
+      setUserVaultPositions({})
     }
   }, [address])
 
@@ -339,6 +365,26 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
           } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
+        es.addEventListener('vision-vaults', (event: MessageEvent) => {
+          try {
+            const parsed: VisionVaultSSE[] = JSON.parse(event.data)
+            setVisionVaults(parsed)
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
+        })
+
+        es.addEventListener('user-vault-positions', (event: MessageEvent) => {
+          try {
+            const parsed: Record<string, VisionVaultPositionSSE> = JSON.parse(event.data)
+            setUserVaultPositions(parsed)
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
+        })
+
         es.addEventListener('user-balances', (event: MessageEvent) => {
           try {
             const parsed: UserBalances = JSON.parse(event.data)
@@ -435,17 +481,21 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
     <SSESystemContext.Provider value={systemStatus}>
     <SSEMorphoMarketsContext.Provider value={morphoMarkets}>
     <SSEMorphoVaultContext.Provider value={morphoVault}>
+    <SSEVisionVaultsContext.Provider value={visionVaults}>
     <SSEUserBalancesContext.Provider value={userBalances}>
     <SSEUserAllowancesContext.Provider value={userAllowances}>
     <SSEUserOrdersContext.Provider value={userOrders}>
     <SSEUserPositionsContext.Provider value={userPositions}>
     <SSEUserCostBasisContext.Provider value={userCostBasis}>
+    <SSEUserVaultPositionsContext.Provider value={userVaultPositions}>
       {children}
+    </SSEUserVaultPositionsContext.Provider>
     </SSEUserCostBasisContext.Provider>
     </SSEUserPositionsContext.Provider>
     </SSEUserOrdersContext.Provider>
     </SSEUserAllowancesContext.Provider>
     </SSEUserBalancesContext.Provider>
+    </SSEVisionVaultsContext.Provider>
     </SSEMorphoVaultContext.Provider>
     </SSEMorphoMarketsContext.Provider>
     </SSESystemContext.Provider>
@@ -463,14 +513,16 @@ export function useSSE(): SSEContextValue {
   const systemStatus = useContext(SSESystemContext)
   const morphoMarkets = useContext(SSEMorphoMarketsContext)
   const morphoVault = useContext(SSEMorphoVaultContext)
+  const visionVaults = useContext(SSEVisionVaultsContext)
   const userBalances = useContext(SSEUserBalancesContext)
   const userAllowances = useContext(SSEUserAllowancesContext)
   const userOrders = useContext(SSEUserOrdersContext)
   const userPositions = useContext(SSEUserPositionsContext)
   const userCostBasis = useContext(SSEUserCostBasisContext)
+  const userVaultPositions = useContext(SSEUserVaultPositionsContext)
   const connectionState = useContext(SSEConnectionContext)
   return {
-    data: { itpNav, oraclePrices, systemStatus, morphoMarkets, morphoVault, userBalances, userAllowances, userOrders, userPositions, userCostBasis },
+    data: { itpNav, oraclePrices, systemStatus, morphoMarkets, morphoVault, visionVaults, userBalances, userAllowances, userOrders, userPositions, userCostBasis, userVaultPositions },
     connectionState,
   }
 }
@@ -520,6 +572,29 @@ export function useSSEMorphoMarkets(): MorphoMarketSSE[] {
 
 export function useSSEMorphoVault(): MorphoVaultSSE | null {
   return useContext(SSEMorphoVaultContext)
+}
+
+export function useSSEVisionVaults(): VisionVaultSSE[] {
+  return useContext(SSEVisionVaultsContext)
+}
+
+/** Look up a single vault by its lowercased address. */
+export function useSSEVisionVault(address: string | undefined): VisionVaultSSE | null {
+  const vaults = useContext(SSEVisionVaultsContext)
+  if (!address) return null
+  const lower = address.toLowerCase()
+  return vaults.find(v => v.address.toLowerCase() === lower) ?? null
+}
+
+export function useSSEUserVaultPositions(): Record<string, VisionVaultPositionSSE> {
+  return useContext(SSEUserVaultPositionsContext)
+}
+
+/** Look up the user's position in a single vault by its lowercased address. */
+export function useSSEUserVaultPosition(address: string | undefined): VisionVaultPositionSSE | null {
+  const positions = useContext(SSEUserVaultPositionsContext)
+  if (!address) return null
+  return positions[address.toLowerCase()] ?? null
 }
 
 export function useSSEConnectionState(): SSEConnectionState {

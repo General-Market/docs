@@ -307,6 +307,54 @@ pub fn load_batch_markets(path: &str) -> Vec<BatchMarketEntry> {
         .unwrap_or_default()
 }
 
+/// Metadata for a VisionVault loaded from fund-branding.json. Only the fields
+/// the data-node needs — the full branding lives in the frontend.
+#[derive(Clone, Debug)]
+pub struct VisionVaultInfo {
+    pub address: ethers::types::Address,
+    pub name: String,
+    pub symbol: String,
+    pub source: String,
+    pub strategy: String,
+}
+
+/// Load vision vault definitions from fund-branding.json. Only funds with a
+/// non-null `vault` field are returned.
+pub fn load_vision_vaults(path: &str) -> Vec<VisionVaultInfo> {
+    let data = match std::fs::read_to_string(path) {
+        Ok(d) => d,
+        Err(e) => {
+            tracing::warn!(path = %path, error = %e, "fund-branding.json unreadable; vision vaults disabled");
+            return Vec::new();
+        }
+    };
+    let json: serde_json::Value = match serde_json::from_str(&data) {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!(error = %e, "fund-branding.json parse error");
+            return Vec::new();
+        }
+    };
+    let funds = match json.get("funds").and_then(|v| v.as_array()) {
+        Some(f) => f,
+        None => return Vec::new(),
+    };
+    funds
+        .iter()
+        .filter_map(|f| {
+            let addr_str = f.get("vault")?.as_str()?;
+            let address: ethers::types::Address = addr_str.parse().ok()?;
+            Some(VisionVaultInfo {
+                address,
+                name: f.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                symbol: f.get("symbol").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                source: f.get("source").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                strategy: f.get("strategy").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+            })
+        })
+        .collect()
+}
+
 pub struct AppState {
     pub pool: PgPool,
     pub collector: Arc<CollectorState>,
@@ -360,6 +408,9 @@ pub struct AppState {
     pub batch_markets: tokio::sync::RwLock<Vec<BatchMarketEntry>>,
     /// Path to batch-markets.json for hot-reload
     pub batch_markets_path: String,
+    /// Vision vault definitions loaded from fund-branding.json at startup.
+    /// Immutable during process lifetime — restart data-node when funds change.
+    pub vision_vaults_info: Vec<VisionVaultInfo>,
     /// Cumulative count of lagged events across all SSE chain-event consumers
     pub chain_event_lag_total: std::sync::atomic::AtomicU64,
     /// Immutable config cache: config_hash → JSON response. Keccak256 of immutable
@@ -6393,7 +6444,7 @@ async fn sse_stream(
     // Register user in cache if address-dependent topics requested
     let user_cache = if let Some(ref addr) = address {
         let has_user_topic = topics.iter().any(|t|
-            matches!(t.as_str(), "balances" | "allowances" | "orders" | "positions" | "cost-basis")
+            matches!(t.as_str(), "balances" | "allowances" | "orders" | "positions" | "cost-basis" | "vault-positions")
         );
         if has_user_topic {
             let (cache, is_new) = state.chain_cache.get_or_create_user(addr).await;
@@ -6408,6 +6459,7 @@ async fn sse_stream(
                     let _ = crate::chain_pollers::poll_user_allowances_once(&state_clone).await;
                     let _ = crate::chain_pollers::poll_user_orders_once(&state_clone).await;
                     let _ = crate::chain_pollers::poll_user_positions_once(&state_clone).await;
+                    let _ = crate::chain_pollers::poll_user_vault_positions_once(&state_clone).await;
                 });
             }
             Some(cache)
@@ -6433,6 +6485,8 @@ async fn sse_stream(
         let mut last_system_gen: u64 = 0;
         let mut last_morpho_markets_gen: u64 = 0;
         let mut last_morpho_vault_gen: u64 = 0;
+        let mut last_vision_vaults_gen: u64 = 0;
+        let mut last_vault_positions_gen: u64 = 0;
 
         // Delta tracking: what NAV each client last received per ITP
         let mut last_sent_nav: HashMap<String, f64> = HashMap::new();
@@ -6558,6 +6612,18 @@ async fn sse_stream(
                 }
             }
 
+            if topics.contains(&"vision-vaults".to_string()) {
+                let gen = cache.vision_vaults_gen.get();
+                if gen != last_vision_vaults_gen {
+                    let data = cache.vision_vaults.read().await;
+                    let json = serde_json::to_string(&*data).unwrap_or_default();
+                    match tx.try_send(Ok(Event::default().event("vision-vaults").data(json))) {
+                        Ok(_) => { consecutive_drops = 0; last_vision_vaults_gen = gen; }
+                        Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                    }
+                }
+            }
+
             // User topics — only if we have a user cache
             if let Some(ref uc) = user_cache {
                 let u = uc.read().await;
@@ -6612,6 +6678,17 @@ async fn sse_stream(
                         let json = serde_json::to_string(&u.cost_basis).unwrap_or_default();
                         match tx.try_send(Ok(Event::default().event("user-cost-basis").data(json))) {
                             Ok(_) => { consecutive_drops = 0; last_cb_gen = gen; }
+                            Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
+                        }
+                    }
+                }
+
+                if topics.contains(&"vault-positions".to_string()) {
+                    let gen = u.vault_positions_gen.get();
+                    if gen != last_vault_positions_gen {
+                        let json = serde_json::to_string(&u.vault_positions).unwrap_or_default();
+                        match tx.try_send(Ok(Event::default().event("user-vault-positions").data(json))) {
+                            Ok(_) => { consecutive_drops = 0; last_vault_positions_gen = gen; }
                             Err(_) => { consecutive_drops += 1; if consecutive_drops >= 10 { break; } }
                         }
                     }

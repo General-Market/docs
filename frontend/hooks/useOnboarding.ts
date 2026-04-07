@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo, useCallback, useEffect, useState } from 'react'
-import { useAccount, useConnect, useReadContracts } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
-import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
+import { useSSEUserVaultPositions } from '@/hooks/useSSE'
 import fundData from '@/data/fund-branding.json'
 
 export type OnboardingStep = 'wallet' | 'faucet' | 'vault' | 'bot'
@@ -94,41 +94,30 @@ export function useOnboarding(sourceId: string): OnboardingState {
     }
   }, [address, faucetDone, faucetLoading, faucetKey])
 
-  // ── Vault step — check balanceOf on all vaults for this source ──
+  // ── Vault step — read user positions from the SSE context ──
+  // The data-node emits `user-vault-positions` whenever the user's shares or
+  // pending deposit changes. Any non-zero entry counts as "joined a vault".
   const vaultAddresses = useMemo(
     () =>
       (fundData as any).funds
         .filter((f: any) => f.source === sourceId && f.vault)
-        .map((f: any) => f.vault as `0x${string}`),
+        .map((f: any) => (f.vault as `0x${string}`).toLowerCase()),
     [sourceId],
   )
 
-  const balanceCalls = useMemo(
-    () =>
-      address
-        ? vaultAddresses.map((addr: `0x${string}`) => ({
-            address: addr,
-            abi: VISION_VAULT_ABI,
-            functionName: 'balanceOf' as const,
-            args: [address],
-            chainId: indexL3.id,
-          }))
-        : [],
-    [address, vaultAddresses],
-  )
-
-  const { data: balanceResults } = useReadContracts({
-    contracts: balanceCalls as any,
-    allowFailure: true,
-    query: { enabled: balanceCalls.length > 0, refetchInterval: 10_000 },
-  })
+  const vaultPositions = useSSEUserVaultPositions()
 
   const vaultDone = useMemo(() => {
-    if (!balanceResults) return false
-    return balanceResults.some(
-      (r: any) => r.status === 'success' && (r.result as bigint) > 0n,
-    )
-  }, [balanceResults])
+    if (!address) return false
+    for (const addr of vaultAddresses) {
+      const pos = vaultPositions[addr]
+      if (!pos) continue
+      try {
+        if (BigInt(pos.shares) > 0n || BigInt(pos.pending_deposit) > 0n) return true
+      } catch { /* ignore malformed */ }
+    }
+    return false
+  }, [address, vaultAddresses, vaultPositions])
 
   // ── Bot step — considered done once vault is done (it's a CTA, not gated) ──
   // We track it separately so the UI can show the final step

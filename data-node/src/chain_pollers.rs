@@ -7,7 +7,7 @@ use crate::api::AppState;
 use crate::chain_cache::{
     NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
     UserCostBasis, FillRecord, CachedLimitOrder, CachedOracle, CachedMorphoMarket,
-    MorphoVaultState,
+    MorphoVaultState, VisionVaultSnapshot, VisionVaultPosition,
 };
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
@@ -156,6 +156,18 @@ abigen!(
     ]"#
 );
 
+abigen!(
+    VisionVaultReader,
+    r#"[
+        function totalAssets() external view returns (uint256)
+        function totalSupply() external view returns (uint256)
+        function performanceFeeRate() external view returns (uint256)
+        function highWaterMark() external view returns (uint256)
+        function balanceOf(address account) external view returns (uint256)
+        function pendingDepositRequest(uint256, address controller) external view returns (uint256)
+    ]"#
+);
+
 pub async fn poll_morpho_vault_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let vault_addr = match crate::api::deployment_addr(&state.morpho_deployment, "METAMORPHO_VAULT") {
         Ok(a) => a,
@@ -180,6 +192,132 @@ pub async fn poll_morpho_vault_once(state: &AppState) -> Result<(), Box<dyn std:
         decimals,
     };
     state.chain_cache.morpho_vault_gen.bump();
+    Ok(())
+}
+
+/// Polls per-vault global state (totalAssets, totalSupply, fees) for every
+/// VisionVault defined in fund-branding.json. Runs every 10s.
+pub async fn poll_vision_vaults_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let vault_infos = &state.vision_vaults_info;
+    if vault_infos.is_empty() { return Ok(()); }
+
+    let provider = Arc::clone(&state.l3_provider);
+
+    let futs: Vec<_> = vault_infos.iter().map(|info| {
+        let provider = Arc::clone(&provider);
+        let info = info.clone();
+        async move {
+            let reader = VisionVaultReader::new(info.address, provider);
+            let total_assets = reader.total_assets().call().await.unwrap_or_default();
+            let total_supply = reader.total_supply().call().await.unwrap_or_default();
+            let fee = reader.performance_fee_rate().call().await.unwrap_or_default();
+            let hwm = reader.high_water_mark().call().await.unwrap_or_default();
+
+            // NAV = totalAssets / totalSupply as f64. 1.0 when empty.
+            let nav = if total_supply.is_zero() {
+                1.0
+            } else {
+                let ta_str = total_assets.to_string();
+                let ts_str = total_supply.to_string();
+                let ta = ta_str.parse::<f64>().unwrap_or(0.0);
+                let ts = ts_str.parse::<f64>().unwrap_or(1.0);
+                if ts > 0.0 { ta / ts } else { 1.0 }
+            };
+
+            VisionVaultSnapshot {
+                address: format!("0x{:x}", info.address),
+                name: info.name,
+                symbol: info.symbol,
+                source: info.source,
+                strategy: info.strategy,
+                total_assets: total_assets.to_string(),
+                total_supply: total_supply.to_string(),
+                nav_per_share: nav,
+                performance_fee_rate: fee.to_string(),
+                high_water_mark: hwm.to_string(),
+            }
+        }
+    }).collect();
+
+    let snapshots = futures::future::join_all(futs).await;
+
+    let mut cache = state.chain_cache.vision_vaults.write().await;
+    *cache = snapshots;
+    state.chain_cache.vision_vaults_gen.bump();
+    Ok(())
+}
+
+/// Polls per-user vault positions (balanceOf + pendingDepositRequest) for every
+/// VisionVault × every registered user. Runs every 3s. Mirrors the Morpho
+/// positions poller shape.
+pub async fn poll_user_vault_positions_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let vault_infos = &state.vision_vaults_info;
+    if vault_infos.is_empty() { return Ok(()); }
+
+    let users = state.chain_cache.users.read().await;
+    if users.is_empty() { return Ok(()); }
+    let user_list: Vec<(Address, Arc<tokio::sync::RwLock<crate::chain_cache::UserCache>>)> = users
+        .iter()
+        .filter_map(|(addr_str, cache)| {
+            addr_str.parse::<Address>().ok().map(|a| (a, Arc::clone(cache)))
+        })
+        .collect();
+    drop(users);
+
+    let provider = Arc::clone(&state.l3_provider);
+
+    // Build futures for every (user × vault) pair and run them concurrently.
+    let futs: Vec<_> = user_list.iter().flat_map(|(user_addr, _cache)| {
+        let provider = Arc::clone(&provider);
+        let user = *user_addr;
+        vault_infos.iter().map(move |info| {
+            let provider = Arc::clone(&provider);
+            let info = info.clone();
+            async move {
+                let reader = VisionVaultReader::new(info.address, provider);
+                let shares = reader.balance_of(user).call().await.unwrap_or_default();
+                let pending = reader
+                    .pending_deposit_request(U256::zero(), user)
+                    .call()
+                    .await
+                    .unwrap_or_default();
+                (user, info.address, shares, pending)
+            }
+        }).collect::<Vec<_>>()
+    }).collect();
+
+    let results = futures::future::join_all(futs).await;
+
+    // Group per user — only keep non-zero positions to minimize payload.
+    let mut by_user: std::collections::HashMap<Address, std::collections::HashMap<String, VisionVaultPosition>> =
+        std::collections::HashMap::new();
+    for (user, vault, shares, pending) in results {
+        if shares.is_zero() && pending.is_zero() { continue; }
+        let key = format!("0x{:x}", vault);
+        by_user.entry(user).or_default().insert(key.clone(), VisionVaultPosition {
+            vault: key,
+            shares: shares.to_string(),
+            pending_deposit: pending.to_string(),
+        });
+    }
+
+    for (user_addr, user_cache) in &user_list {
+        let positions = by_user.remove(user_addr).unwrap_or_default();
+        let mut uc = user_cache.write().await;
+        // Only bump the generation if the map actually changed — prevents
+        // pointless SSE re-emissions when nothing moved.
+        let changed = uc.vault_positions.len() != positions.len()
+            || uc.vault_positions.iter().any(|(k, v)| {
+                positions.get(k).map_or(true, |p| {
+                    p.shares != v.shares || p.pending_deposit != v.pending_deposit
+                })
+            });
+        uc.vault_positions = positions;
+        if changed {
+            uc.vault_positions_gen.bump();
+        }
+    }
+
     Ok(())
 }
 

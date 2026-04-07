@@ -6,9 +6,10 @@ import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ProfileHero } from '@/components/domain/profile/ProfileHero'
-import { ProfileTabs } from '@/components/domain/profile/ProfileTabs'
+import { ProfileTabs, type ProfileTabId } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
 import { IndexTab } from '@/components/domain/profile/IndexTab'
+import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePoints } from '@/hooks/usePoints'
 import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
@@ -24,11 +25,13 @@ function ProfileContent({ address }: { address: string }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const t = useTranslations('pages.profile')
-  const tab = (searchParams.get('tab') === 'index' ? 'index' : 'vision') as 'vision' | 'index'
+  const tabParam = searchParams.get('tab')
+  const tab: ProfileTabId =
+    tabParam === 'index' ? 'index' : tabParam === 'vaults' ? 'vaults' : 'vision'
   const { profile, isLoading } = usePlayerProfile(address)
   const { points } = usePoints(address)
 
-  const handleTabChange = (newTab: 'vision' | 'index') => {
+  const handleTabChange = (newTab: ProfileTabId) => {
     router.replace(`?tab=${newTab}`)
   }
 
@@ -96,6 +99,8 @@ function ProfileContent({ address }: { address: string }) {
             <div className="py-16 text-center text-caption text-text-muted">
               {t('no_profile')}
             </div>
+          ) : tab === 'vaults' ? (
+            <VaultsTab address={address} />
           ) : (
             <IndexTab address={address} />
           )}

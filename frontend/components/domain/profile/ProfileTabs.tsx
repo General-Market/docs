@@ -3,9 +3,11 @@
 import { useTranslations } from 'next-intl'
 import { SpringTabs, SpringTab } from '@/components/ui/spring'
 
+export type ProfileTabId = 'vision' | 'index' | 'vaults'
+
 interface ProfileTabsProps {
-  activeTab: 'vision' | 'index'
-  onTabChange: (tab: 'vision' | 'index') => void
+  activeTab: ProfileTabId
+  onTabChange: (tab: ProfileTabId) => void
 }
 
 export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
@@ -14,6 +16,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   const tabs = [
     { id: 'vision' as const, label: t('profile.tab_vision') },
     { id: 'index' as const, label: t('profile.tab_index') },
+    { id: 'vaults' as const, label: t('profile.tab_vaults') },
   ]
 
   return (

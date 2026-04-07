@@ -2,13 +2,11 @@
 
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { formatUnits } from 'viem'
-import { useReadContracts } from 'wagmi'
 import { motion, useReducedMotion } from 'framer-motion'
-import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
-import { indexL3 } from '@/lib/wagmi'
 import fundData from '@/data/fund-branding.json'
 import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { useVaultHistory } from '@/hooks/vaults/useVaultHistory'
+import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
 
@@ -39,6 +37,11 @@ function formatTvl(tvl: number) {
   return `$${tvl.toFixed(0)}`
 }
 
+function safeBigInt(v: string | undefined): bigint {
+  if (!v) return 0n
+  try { return BigInt(v) } catch { return 0n }
+}
+
 function buildVaultInfo(fund: any, totalAssets: bigint, totalSupply: bigint): VaultInfo {
   const nav = totalSupply > 0n ? Number(totalAssets) / Number(totalSupply) : 1.0
   const perf = nav - 1.0
@@ -58,6 +61,22 @@ function buildVaultInfo(fund: any, totalAssets: bigint, totalSupply: bigint): Va
     tvlFormatted: tvl > 0 ? tvl.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0',
     deployedRatio: 0,
   }
+}
+
+interface UserPosition {
+  shares: bigint
+  pending: bigint
+}
+
+function computeUserValue(pos: UserPosition | undefined, vault: VaultInfo): number {
+  if (!pos) return 0
+  const sharesValue =
+    vault.totalSupply > 0n && pos.shares > 0n
+      ? (Number(pos.shares) / Number(vault.totalSupply)) *
+        parseFloat(formatUnits(vault.totalAssets, 18))
+      : 0
+  const pendingValue = pos.pending > 0n ? parseFloat(formatUnits(pos.pending, 18)) : 0
+  return sharesValue + pendingValue
 }
 
 /* ─────────────────────────────────────────────
@@ -183,10 +202,10 @@ function useCountUp(target: number, duration = 1200, skip = false) {
    Featured Vault — the hero
    ───────────────────────────────────────────── */
 
-function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
+function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
   fund: any
   vault: VaultInfo
-  brandColor: string
+  userPosition?: UserPosition
   onDeposit: () => void
 }) {
   const reduced = !!useReducedMotion()
@@ -201,38 +220,17 @@ function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
   const { snapshots } = useVaultHistory(vault.address)
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
 
+  const userValue = computeUserValue(userPosition, vault)
+  const hasPosition = !!userPosition && (userPosition.shares > 0n || userPosition.pending > 0n)
+  const pendingOnly = hasPosition && userPosition!.shares === 0n && userPosition!.pending > 0n
+
   return (
-    <div className="relative">
-      {/* ambient glow — outer */}
-      <div
-        className="absolute -inset-6 rounded-3xl pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 70% 50% at 30% 50%, ${brandColor}12, transparent 60%)`,
-          filter: 'blur(50px)',
-        }}
-      />
-      {/* ambient glow — inner */}
-      <div
-        className="absolute inset-0 rounded-2xl pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 80% 60% at 50% 30%, ${brandColor}1a, transparent 70%)`,
-          filter: 'blur(30px)',
-          transform: 'scale(1.1)',
-        }}
-      />
-
-      <motion.div
-        initial={reduced ? false : { opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
-        className="relative rounded-2xl bg-terminal-dark border border-white/[0.08] overflow-hidden"
-      >
-        {/* strategy accent line */}
-        <div
-          className="h-[2px]"
-          style={{ background: `linear-gradient(90deg, ${strategy?.color ?? brandColor}, transparent 70%)` }}
-        />
-
+    <motion.div
+      initial={reduced ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: EASE_OUT_EXPO }}
+      className="relative bg-terminal-dark border border-white/[0.08] overflow-hidden"
+    >
         <div className="p-6 sm:p-8">
           {/* label row */}
           <div className="flex items-center gap-3 mb-5">
@@ -240,10 +238,7 @@ function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
               Featured Vault
             </span>
             {strategy && (
-              <span
-                className="text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded-full uppercase"
-                style={{ backgroundColor: strategy.color + '18', color: strategy.color }}
-              >
+              <span className="text-[9px] font-bold tracking-[0.1em] px-2 py-0.5 rounded uppercase bg-white/[0.08] text-white/60">
                 {strategy.label}
               </span>
             )}
@@ -274,18 +269,31 @@ function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
                   <div className="text-[9px] font-bold tracking-[0.12em] text-white/25 uppercase mb-0.5">NAV</div>
                   <div className="text-[16px] font-mono font-bold text-white/90">${vault.navPerShare.toFixed(4)}</div>
                 </div>
+                {hasPosition && (
+                  <>
+                    <div className="w-px h-8 bg-white/[0.06]" />
+                    <div>
+                      <div className="text-[9px] font-bold tracking-[0.12em] text-emerald-300/60 uppercase mb-0.5">
+                        {pendingOnly ? 'Pending' : 'Your Position'}
+                      </div>
+                      <div className="text-[16px] font-mono font-bold text-emerald-300">
+                        ${userValue.toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-3">
                 <button
                   onClick={onDeposit}
-                  className="px-6 py-2.5 bg-white text-black text-[12px] font-black tracking-[0.04em] rounded-lg hover:bg-white/90 transition-colors"
+                  className="px-6 py-2.5 bg-white text-black text-[12px] font-black tracking-[0.04em] hover:bg-white/90 transition-colors"
                 >
-                  DEPOSIT
+                  {hasPosition ? 'ADD / WITHDRAW' : 'DEPOSIT'}
                 </button>
                 <button
                   onClick={onDeposit}
-                  className="px-5 py-2.5 border border-white/[0.1] text-[12px] font-bold text-white/50 rounded-lg hover:border-white/20 hover:text-white/80 transition-colors"
+                  className="px-5 py-2.5 border border-white/[0.1] text-[12px] font-bold text-white/50 hover:border-white/20 hover:text-white/80 transition-colors"
                 >
                   DETAILS
                 </button>
@@ -307,14 +315,13 @@ function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
               <Sparkline
                 data={navData}
                 height={52}
-                color={isPositive ? '#16A34A' : '#DC2626'}
+                color="#FFFFFF"
                 className="mt-4 w-full sm:w-[200px] sm:ml-auto"
               />
             </div>
           </div>
         </div>
       </motion.div>
-    </div>
   )
 }
 
@@ -322,10 +329,11 @@ function FeaturedHero({ fund, vault, brandColor, onDeposit }: {
    Vault Tilt Card — 3D perspective hover
    ───────────────────────────────────────────── */
 
-function VaultTiltCard({ fund, vault, index, onDeposit }: {
+function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
   fund: any
   vault: VaultInfo
   index: number
+  userPosition?: UserPosition
   onDeposit: () => void
 }) {
   const reduced = !!useReducedMotion()
@@ -335,6 +343,10 @@ function VaultTiltCard({ fund, vault, index, onDeposit }: {
   const perf = vault.performanceSinceInception
   const isPositive = perf >= 0
   const strategy = STRATEGY_META[fund.strategy]
+
+  const userValue = computeUserValue(userPosition, vault)
+  const hasPosition = !!userPosition && (userPosition.shares > 0n || userPosition.pending > 0n)
+  const pendingOnly = hasPosition && userPosition!.shares === 0n && userPosition!.pending > 0n
 
   const { snapshots } = useVaultHistory(vault.address)
   const navData = useMemo(() => snapshots.map(s => s.nav), [snapshots])
@@ -362,7 +374,7 @@ function VaultTiltCard({ fund, vault, index, onDeposit }: {
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDeposit() } }}
-        className="group relative rounded-xl border border-border-light bg-white cursor-pointer overflow-hidden transition-shadow duration-300 hover:shadow-lg"
+        className="group relative border border-border-light bg-white cursor-pointer overflow-hidden transition-shadow duration-300 hover:shadow-lg hover:border-black/40"
         style={{
           transform: transform || undefined,
           transition: transform
@@ -371,19 +383,13 @@ function VaultTiltCard({ fund, vault, index, onDeposit }: {
           willChange: transform ? 'transform' : undefined,
         }}
       >
-        {/* strategy accent */}
-        <div className="h-[2px]" style={{ backgroundColor: strategy?.color ?? '#9146FF' }} />
-
         <div className="p-4">
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="font-black text-[14px] text-text-primary leading-tight truncate">
               {fund.name}
             </span>
             {strategy && (
-              <span
-                className="shrink-0 text-[8px] font-bold tracking-[0.08em] px-1.5 py-0.5 rounded-full uppercase whitespace-nowrap"
-                style={{ backgroundColor: strategy.color + '14', color: strategy.color }}
-              >
+              <span className="shrink-0 text-[8px] font-bold tracking-[0.08em] px-1.5 py-0.5 rounded uppercase whitespace-nowrap bg-black/5 text-text-muted">
                 {strategy.label}
               </span>
             )}
@@ -396,7 +402,7 @@ function VaultTiltCard({ fund, vault, index, onDeposit }: {
           <Sparkline
             data={navData}
             height={36}
-            color={isPositive ? '#16A34A' : '#DC2626'}
+            color="#000000"
             className="mb-3"
           />
 
@@ -413,19 +419,22 @@ function VaultTiltCard({ fund, vault, index, onDeposit }: {
             </div>
           </div>
 
+          {hasPosition && (
+            <div className="mt-2.5 pt-2.5 border-t border-black/5 flex items-center justify-between font-mono text-[11px] tabular-nums">
+              <div className="text-[8px] font-bold tracking-[0.08em] text-emerald-700/70 uppercase">
+                {pendingOnly ? 'Pending' : 'Your Position'}
+              </div>
+              <div className="font-bold text-emerald-700">${userValue.toFixed(2)}</div>
+            </div>
+          )}
+
           {/* deposit — reveals on hover */}
           <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button className="w-full py-1.5 bg-black text-white text-[10px] font-bold rounded-md hover:bg-black/80 transition-colors">
-              DEPOSIT
+            <button className="w-full py-1.5 bg-black text-white text-[10px] font-bold hover:bg-black/80 transition-colors">
+              {hasPosition ? 'MANAGE' : 'DEPOSIT'}
             </button>
           </div>
         </div>
-
-        {/* hover glow ring */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-xl"
-          style={{ boxShadow: `inset 0 0 0 1px ${strategy?.color ?? '#9146FF'}25, 0 0 24px ${strategy?.color ?? '#9146FF'}0a` }}
-        />
       </div>
     </motion.div>
   )
@@ -448,50 +457,63 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
     [sourceId],
   )
 
-  const vaultAddresses = funds.map((f: any) => f.vault as `0x${string}`).filter(Boolean)
+  // Global vault state comes from data-node SSE (`vision-vaults` topic).
+  // Per-user position comes from the same provider (`vault-positions` topic).
+  const visionVaults = useSSEVisionVaults()
+  const vaultPositions = useSSEUserVaultPositions()
 
-  const calls = vaultAddresses.flatMap((addr: `0x${string}`) => [
-    { address: addr, abi: VISION_VAULT_ABI, functionName: 'totalAssets' as const, chainId: indexL3.id },
-    { address: addr, abi: VISION_VAULT_ABI, functionName: 'totalSupply' as const, chainId: indexL3.id },
-  ])
+  // Index vault snapshot by lowercased address for O(1) lookup.
+  const visionVaultByAddress = useMemo(() => {
+    const map: Record<string, { totalAssets: bigint; totalSupply: bigint }> = {}
+    for (const v of visionVaults) {
+      map[v.address.toLowerCase()] = {
+        totalAssets: safeBigInt(v.total_assets),
+        totalSupply: safeBigInt(v.total_supply),
+      }
+    }
+    return map
+  }, [visionVaults])
 
-  const { data: results } = useReadContracts({
-    contracts: calls as any,
-    allowFailure: true,
-    query: { enabled: vaultAddresses.length > 0 },
-  })
-
-  const sortedFunds = useMemo(() => {
-    if (!results) return funds
-    return [...funds].sort((a: any, b: any) => {
-      const idxA = funds.indexOf(a)
-      const idxB = funds.indexOf(b)
-      const tvlA = results?.[idxA * 2]?.status === 'success' ? Number(results[idxA * 2].result as bigint) : 0
-      const tvlB = results?.[idxB * 2]?.status === 'success' ? Number(results[idxB * 2].result as bigint) : 0
-      return tvlB - tvlA
-    })
-  }, [funds, results])
+  const getUserPosition = useCallback(
+    (addr: `0x${string}`): UserPosition | undefined => {
+      const entry = vaultPositions[addr.toLowerCase()]
+      if (!entry) return undefined
+      return {
+        shares: safeBigInt(entry.shares),
+        pending: safeBigInt(entry.pending_deposit),
+      }
+    },
+    [vaultPositions],
+  )
 
   const getVaultData = useCallback((fund: any) => {
-    const i = funds.indexOf(fund)
-    const base = i * 2
-    const totalAssets = results?.[base]?.status === 'success' ? (results[base].result as bigint) : 0n
-    const totalSupply = results?.[base + 1]?.status === 'success' ? (results[base + 1].result as bigint) : 0n
+    const snapshot = visionVaultByAddress[(fund.vault as string).toLowerCase()]
+    const totalAssets = snapshot?.totalAssets ?? 0n
+    const totalSupply = snapshot?.totalSupply ?? 0n
     return buildVaultInfo(fund, totalAssets, totalSupply)
-  }, [funds, results])
+  }, [visionVaultByAddress])
+
+  const sortedFunds = useMemo(() => {
+    return [...funds].sort((a: any, b: any) => {
+      const snapA = visionVaultByAddress[(a.vault as string).toLowerCase()]
+      const snapB = visionVaultByAddress[(b.vault as string).toLowerCase()]
+      const tvlA = snapA ? Number(snapA.totalAssets) : 0
+      const tvlB = snapB ? Number(snapB.totalAssets) : 0
+      return tvlB - tvlA
+    })
+  }, [funds, visionVaultByAddress])
 
   if (sortedFunds.length === 0) return null
 
   const featured = sortedFunds[0]
   const rest = sortedFunds.slice(1)
-  const brandColor = featured.color || '#9146FF'
 
   return (
     <div className="space-y-6">
       <FeaturedHero
         fund={featured}
         vault={getVaultData(featured)}
-        brandColor={brandColor}
+        userPosition={getUserPosition(featured.vault)}
         onDeposit={() => setSelectedIndex(0)}
       />
 
@@ -506,15 +528,25 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Mobile: horizontal carousel showing 2 cards at a time (snap-scroll).
+              Desktop (sm+): reverts to a normal responsive grid. */}
+          <div
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:pb-0"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {rest.map((fund: any, i: number) => (
-              <VaultTiltCard
+              <div
                 key={fund.symbol}
-                fund={fund}
-                vault={getVaultData(fund)}
-                index={i}
-                onDeposit={() => setSelectedIndex(i + 1)}
-              />
+                className="shrink-0 basis-[calc(50%-0.5rem)] snap-start sm:basis-auto sm:shrink"
+              >
+                <VaultTiltCard
+                  fund={fund}
+                  vault={getVaultData(fund)}
+                  index={i}
+                  userPosition={getUserPosition(fund.vault)}
+                  onDeposit={() => setSelectedIndex(i + 1)}
+                />
+              </div>
             ))}
 
             {/* create strategy CTA */}
@@ -522,9 +554,10 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
               initial={reduced ? false : { opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15 + rest.length * 0.08, ease: EASE_OUT_EXPO }}
+              className="shrink-0 basis-[calc(50%-0.5rem)] snap-start sm:basis-auto sm:shrink"
             >
-              <div className="relative rounded-xl bg-terminal-dark border border-white/[0.06] h-full flex flex-col items-center justify-center text-center p-6 min-h-[200px]">
-                <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
+              <div className="relative bg-terminal-dark border border-white/[0.06] h-full flex flex-col items-center justify-center text-center p-6 min-h-[200px]">
+                <div className="w-10 h-10 bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
                   <svg className="w-4.5 h-4.5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" />
                   </svg>
@@ -535,7 +568,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                 <p className="text-[10px] text-white/25 leading-relaxed mb-4 max-w-[200px]">
                   Automated strategy. Live in minutes. Others deposit into it.
                 </p>
-                <button className="px-5 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
+                <button className="px-5 py-2 bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
                   CREATE STRATEGY
                 </button>
               </div>

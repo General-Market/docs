@@ -103,6 +103,26 @@ export const VISION_VAULT_ABI = [
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
+  {
+    type: 'function',
+    name: 'pendingDepositRequest',
+    inputs: [
+      { name: '', type: 'uint256' },
+      { name: 'controller', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'pendingRedeemRequest',
+    inputs: [
+      { name: '', type: 'uint256' },
+      { name: 'controller', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
 
   // ── Write ──
   {

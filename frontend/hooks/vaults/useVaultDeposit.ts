@@ -66,6 +66,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
 
   const approveHandled = useRef(false)
   const depositHandled = useRef(false)
+  const claimHandled = useRef(false)
 
   // Approve tx
   const {
@@ -88,6 +89,17 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   } = useChainWriteContract()
   const { isLoading: isDepositConfirming, isSuccess: isDepositSuccess } =
     useWaitForTransactionReceipt({ hash: depositHash, chainId: indexL3.id })
+
+  // ClaimDeposit tx — mints shares for the pending request
+  const {
+    writeContract: writeClaim,
+    data: claimHash,
+    isPending: isClaimPending,
+    error: claimError,
+    reset: resetClaim,
+  } = useChainWriteContract()
+  const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
+    useWaitForTransactionReceipt({ hash: claimHash, chainId: indexL3.id })
 
   // Read allowance for the pending vault
   const { data: allowance } = useReadContract({
@@ -124,6 +136,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
       setErrorMsg(null)
       approveHandled.current = false
       depositHandled.current = false
+      claimHandled.current = false
 
       // Check allowance
       const currentAllowance = (allowance as bigint | undefined) ?? 0n
@@ -164,13 +177,27 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     })
   }, [isApproveSuccess, pendingVault, pendingAmount, address, writeDeposit, resetApprove])
 
-  // Deposit success -> done
+  // RequestDeposit success -> claimDeposit (mints shares)
   useEffect(() => {
-    if (!isDepositSuccess || depositHandled.current) return
+    if (!isDepositSuccess || depositHandled.current || !pendingVault || !address) return
     depositHandled.current = true
-    setStep('done')
+    setStep('claiming')
     resetDeposit()
-  }, [isDepositSuccess, resetDeposit])
+    writeClaim({
+      address: pendingVault,
+      abi: VISION_VAULT_ABI,
+      functionName: 'claimDeposit',
+      args: [address, address],
+    })
+  }, [isDepositSuccess, pendingVault, address, writeClaim, resetDeposit])
+
+  // Claim success -> done
+  useEffect(() => {
+    if (!isClaimSuccess || claimHandled.current) return
+    claimHandled.current = true
+    setStep('done')
+    resetClaim()
+  }, [isClaimSuccess, resetClaim])
 
   // Error handling
   useEffect(() => {
@@ -189,20 +216,32 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     }
   }, [depositError, resetDeposit])
 
+  useEffect(() => {
+    if (claimError) {
+      setErrorMsg(parseError(claimError))
+      setStep('error')
+      resetClaim()
+    }
+  }, [claimError, resetClaim])
+
   const reset = useCallback(() => {
     setStep('idle')
     setErrorMsg(null)
     setPendingVault(null)
     setPendingAmount(0n)
+    approveHandled.current = false
+    depositHandled.current = false
+    claimHandled.current = false
     resetApprove()
     resetDeposit()
-  }, [resetApprove, resetDeposit])
+    resetClaim()
+  }, [resetApprove, resetDeposit, resetClaim])
 
   return {
     deposit,
     step,
-    isPending: isApprovePending || isDepositPending,
-    isConfirming: isApproveConfirming || isDepositConfirming,
+    isPending: isApprovePending || isDepositPending || isClaimPending,
+    isConfirming: isApproveConfirming || isDepositConfirming || isClaimConfirming,
     error: errorMsg,
     reset,
   }

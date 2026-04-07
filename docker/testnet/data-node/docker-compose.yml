@@ -22,6 +22,7 @@ services:
       - ../../../data/symbol-map.json:/app/data/symbol-map.json:ro
       - ../../../assets.json:/app/assets.json:ro
       - ../../../frontend/data/sources-display.json:/app/config/sources-display.json:ro
+      - ../../../frontend/data/fund-branding.json:/app/config/fund-branding.json:ro
       - ../../../deployments/batch-markets.json:/app/deployments/batch-markets.json:ro
     deploy:
       resources:

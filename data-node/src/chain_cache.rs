@@ -98,6 +98,30 @@ pub struct MorphoVaultState {
     pub decimals: u8,
 }
 
+/// Cached VisionVault global state — same for every client.
+/// `nav_per_share` is derived from totalAssets / totalSupply.
+#[derive(Clone, Serialize, Default)]
+pub struct VisionVaultSnapshot {
+    pub address: String,
+    pub symbol: String,
+    pub name: String,
+    pub source: String,
+    pub strategy: String,
+    pub total_assets: String,
+    pub total_supply: String,
+    pub nav_per_share: f64,
+    pub performance_fee_rate: String,
+    pub high_water_mark: String,
+}
+
+/// Per-user position in a single VisionVault. Keyed by vault address in UserCache.
+#[derive(Clone, Serialize, Default)]
+pub struct VisionVaultPosition {
+    pub vault: String,
+    pub shares: String,
+    pub pending_deposit: String,
+}
+
 /// Cached Morpho market state (polled every 30s)
 #[derive(Clone, Serialize, Default)]
 pub struct CachedMorphoMarket {
@@ -204,6 +228,9 @@ pub struct UserCache {
     pub positions_gen: Generation,
     pub cost_basis: UserCostBasis,
     pub cost_basis_gen: Generation,
+    /// vault address (lowercased hex) → position; only non-zero positions stored
+    pub vault_positions: HashMap<String, VisionVaultPosition>,
+    pub vault_positions_gen: Generation,
     pub last_scanned_block: u64, // for incremental event scanning (cost basis)
     pub last_activity: Instant,
 }
@@ -221,6 +248,8 @@ impl Default for UserCache {
             positions_gen: Generation::default(),
             cost_basis: UserCostBasis::default(),
             cost_basis_gen: Generation::default(),
+            vault_positions: HashMap::new(),
+            vault_positions_gen: Generation::default(),
             last_scanned_block: 0,
             last_activity: Instant::now(),
         }
@@ -284,6 +313,10 @@ pub struct ChainCache {
     // MetaMorpho vault state (polled every 30s)
     pub morpho_vault: RwLock<MorphoVaultState>,
     pub morpho_vault_gen: Generation,
+
+    // VisionVault global state (polled every 10s)
+    pub vision_vaults: RwLock<Vec<VisionVaultSnapshot>>,
+    pub vision_vaults_gen: Generation,
 }
 
 impl ChainCache {
@@ -337,6 +370,9 @@ impl ChainCache {
 
             morpho_vault: RwLock::new(MorphoVaultState::default()),
             morpho_vault_gen: Generation::default(),
+
+            vision_vaults: RwLock::new(Vec::new()),
+            vision_vaults_gen: Generation::default(),
         }
     }
 

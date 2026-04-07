@@ -2462,6 +2462,12 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     let batch_markets = crate::api::load_batch_markets(&batch_markets_path);
     info!(count = batch_markets.len(), "Loaded batch markets");
 
+    // Load fund-branding.json (VisionVault registry). Immutable — restart to pick up changes.
+    let fund_branding_path = std::env::var("FUND_BRANDING_FILE")
+        .unwrap_or_else(|_| "config/fund-branding.json".to_string());
+    let vision_vaults_info = crate::api::load_vision_vaults(&fund_branding_path);
+    info!(count = vision_vaults_info.len(), path = %fund_branding_path, "Loaded vision vaults");
+
     let oracle_url = std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string());
     let app_state = Arc::new(AppState {
         pool,
@@ -2498,6 +2504,7 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(sse_max, sse_per_ip)),
         batch_markets: tokio::sync::RwLock::new(batch_markets),
         batch_markets_path: batch_markets_path.clone(),
+        vision_vaults_info,
         chain_event_lag_total: std::sync::atomic::AtomicU64::new(0),
         config_hash_cache: dashmap::DashMap::new(),
         recommended_cache: tokio::sync::RwLock::new(None),
@@ -2540,6 +2547,8 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
     spawn_poller!("user_cache_eviction", 300, crate::chain_pollers::poll_user_cache_eviction_once);
     spawn_poller!("morpho_markets", 30, crate::chain_pollers::poll_morpho_markets_once);
     spawn_poller!("morpho_vault",   30, crate::chain_pollers::poll_morpho_vault_once);
+    spawn_poller!("vision_vaults",  10, crate::chain_pollers::poll_vision_vaults_once);
+    spawn_poller!("vault_positions", 3, crate::chain_pollers::poll_user_vault_positions_once);
     spawn_poller!("batch_markets_reload", 15, crate::chain_pollers::poll_batch_markets_reload);
     info!("Chain pollers started (NAV=10s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, OracleRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=10s, UserCacheEviction=300s, MorphoMarkets=30s, MorphoVault=30s)");
 
