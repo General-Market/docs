@@ -190,10 +190,10 @@ contract E2EVisionVault is TestHelper {
 
         _settleBatch(batchId, players, payouts);
 
-        // Vision takes 0.3% on vault's profit (270 - 250 = 20 profit)
-        // fee = 20e18 * 30 / 10000 = 0.06e18
-        uint256 visionFee = (20 ether * 30) / 10000;
-        uint256 expectedVaultUsdc = 270 ether - visionFee; // 269.94e18
+        // Vision takes 0.05% on vault's profit (270 - 250 = 20 profit)
+        // fee = 20e18 * 5 / 10000 = 0.01e18
+        uint256 visionFee = (20 ether * 5) / 10000;
+        uint256 expectedVaultUsdc = 270 ether - visionFee; // 269.99e18
         assertEq(usdc.balanceOf(vaultAddr), expectedVaultUsdc + 50 ether, "Vault USDC: settlement + idle");
 
         // ── 11. Reconcile ──

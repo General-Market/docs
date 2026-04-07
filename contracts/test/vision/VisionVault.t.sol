@@ -337,10 +337,10 @@ contract VisionVaultTest is TestHelper {
 
         _settleBatch(batchId, players, payouts);
 
-        // Vision deducts 0.3% fee on vault's profit of 30 USDC
-        // fee = 30e18 * 30 / 10000 = 0.09e18
-        // net payout to vault = 130e18 - 0.09e18 = 129.91e18
-        uint256 visionFee = (30 ether * 30) / 10000;
+        // Vision deducts 0.05% fee on vault's profit of 30 USDC
+        // fee = 30e18 * 5 / 10000 = 0.015e18
+        // net payout to vault = 130e18 - 0.015e18 = 129.985e18
+        uint256 visionFee = (30 ether * 5) / 10000;
         uint256 expectedVaultBalance = 130 ether - visionFee;
 
         assertEq(usdc.balanceOf(address(vault)), expectedVaultBalance, "Vault balance after settlement");

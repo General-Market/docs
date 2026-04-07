@@ -17,7 +17,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ CONSTANTS ============
 
-    uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
+    uint256 public constant PROTOCOL_FEE_BPS = 5; // 0.05%
     uint256 public constant MIN_STAKE_PER_TICK = 1e17; // 0.1 USDC (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
