@@ -129,63 +129,96 @@ export const AnimatedText: React.FC<AnimatedTextProps> = ({
         </div>
       ) : null}
 
-      {/*
-        Layout note: we use inline-block + text-align center, not flex.
-        Flex with gap was causing the first word to appear to drift right
-        when subsequent words entered. Inline layout with real space
-        characters between spans is layout-stable from frame 0 because
-        the browser's text engine reserves space for every span at mount,
-        regardless of opacity or transform.
-      */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          textAlign: "center",
-          whiteSpace: "nowrap",
-          fontFamily,
-          fontSize,
-          fontWeight,
-          letterSpacing,
-          lineHeight: 1,
-        }}
-      >
-        {words.map((word, i) => {
+      {(() => {
+        /*
+          Layout: explicit fixed-width container, never shrink-to-fit.
+          The container slides LEFT as words materialize so the visible
+          content's centroid stays glued to canvas center. Without this
+          shift, hidden trailing words still reserve their slot to the
+          right of the visible content, and the visible block appears
+          to drift right with every word reveal — anchored to the last
+          word, exactly as the user described.
+
+          We assume Space Mono (council font) where every character is
+          ~0.6em wide. Word widths and spaces are computed from this.
+        */
+        const charW = fontSize * 0.6;
+        const spaceW = charW;
+        const wordWidths = words.map((w) => w.length * charW);
+        const totalW =
+          wordWidths.reduce((a, b) => a + b, 0) +
+          spaceW * Math.max(0, words.length - 1);
+
+        // Per-word progress (also used by the spans below).
+        const progresses = words.map((_w, i) => {
           const isLast = i === total - 1;
-          const isHighlight = i >= total - highlightLastN;
           const wordStart = startFrame + i * framesPerWord;
           const elapsed = frame - wordStart;
           const dur = isLast ? lastWordSpringFrames : wordSpringFrames;
           const stiffness = isLast ? 60 : 120;
           const damping = isLast ? 20 : 22;
-          const progress = spring({
+          return spring({
             frame: Math.max(0, elapsed),
             fps,
             config: { damping, stiffness, mass: 0.8, overshootClamping: true },
             durationInFrames: dur,
           });
-          const opacity = elapsed < 0 ? 0 : progress;
-          const translateY = (1 - progress) * riseFromPx;
-          return (
-            <React.Fragment key={i}>
-              {i > 0 ? " " : null}
-              <span
-                style={{
-                  display: "inline-block",
-                  opacity,
-                  transform: `translate3d(0, ${translateY}px, 0)`,
-                  color: isHighlight ? highlightColor : color,
-                  willChange: "transform, opacity",
-                }}
-              >
-                {word}
-              </span>
-            </React.Fragment>
-          );
-        })}
-      </div>
+        });
+
+        // Width of trailing not-yet-fully-visible content. The container
+        // shifts right by half this amount so the visible centroid stays
+        // centered on canvas.
+        let hiddenTrailingW = 0;
+        for (let i = 0; i < words.length; i++) {
+          const slotW = wordWidths[i] + (i > 0 ? spaceW : 0);
+          hiddenTrailingW += (1 - progresses[i]) * slotW;
+        }
+        const offsetX = hiddenTrailingW / 2;
+
+        return (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: totalW,
+              transform: `translate(calc(-50% + ${offsetX}px), -50%)`,
+              textAlign: "left",
+              whiteSpace: "nowrap",
+              fontFamily,
+              fontSize,
+              fontWeight,
+              letterSpacing,
+              lineHeight: 1,
+            }}
+          >
+            {words.map((word, i) => {
+              const isHighlight = i >= total - highlightLastN;
+              const progress = progresses[i];
+              const wordStart = startFrame + i * framesPerWord;
+              const elapsed = frame - wordStart;
+              const opacity = elapsed < 0 ? 0 : progress;
+              const translateY = (1 - progress) * riseFromPx;
+              return (
+                <React.Fragment key={i}>
+                  {i > 0 ? " " : null}
+                  <span
+                    style={{
+                      display: "inline-block",
+                      opacity,
+                      transform: `translate3d(0, ${translateY}px, 0)`,
+                      color: isHighlight ? highlightColor : color,
+                      willChange: "transform, opacity",
+                    }}
+                  >
+                    {word}
+                  </span>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 };
