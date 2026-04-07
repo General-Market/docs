@@ -13,7 +13,7 @@ const { fontFamily } = loadFont();
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
-const TEAL = "#4ECDC4";
+const TEAL = "#0FE8AE";
 
 const BG = "#F5F5F7";
 const PANEL_BG = "#1A2332";
@@ -66,71 +66,53 @@ const OPUS_LIST: RankEntry[] = [
 ];
 
 interface PanelConfig {
+  id: "gpt" | "gemini" | "opus";
   label: string;
   color: string;
   list: RankEntry[];
-  stagger: number;
 }
 
 const PANELS: PanelConfig[] = [
-  {
-    label: "GPT-5.4",
-    color: GPT_GREEN,
-    list: GPT_LIST,
-    stagger: 0,
-  },
-  {
-    label: "Gemini 3.1 Pro",
-    color: GEMINI_BLUE,
-    list: GEMINI_LIST,
-    stagger: 4,
-  },
-  {
-    label: "Claude Opus 4.6",
-    color: OPUS_ORANGE,
-    list: OPUS_LIST,
-    stagger: 8,
-  },
+  { id: "gpt", label: "GPT-5.4", color: GPT_GREEN, list: GPT_LIST },
+  { id: "gemini", label: "Gemini 3.1 Pro", color: GEMINI_BLUE, list: GEMINI_LIST },
+  { id: "opus", label: "Claude Opus 4.6", color: OPUS_ORANGE, list: OPUS_LIST },
 ];
 
-// Timing budget (222 frames total)
-// 0-22:    panels spring in
-// 22-90:   rows fill staggered
-// 90-130:  section markers fade in (Overall Rationale +, Notable Exclusions +)
-// 130-180: hold
-// 180-200: overlay "Final leaderboard renders" fades in
-// 200-222: hold + soft fade out into Scene07
+// Timing budget — 70 frames total. The original is 2.3 seconds, no more.
+// 0-12:  panels spring in side-by-side, all three at once
+// 0-15:  "Final leaderboard renders" overlay fades in with the panels
+// 12-25: rows fill in, fast staggered
+// 25-35: "Overall Rationale +" / "Notable Exclusions +" sections appear
+// 35-55: hold
+// 55-65: GPT and Gemini fade out, Opus holds alone
+// 65-70: Opus fades, hand-off to Scene07
 
-const ROW_BASE = 22;
-const ROW_STEP = 2;
-const SECTION_START = 90;
-const OVERLAY_IN_START = 180;
+const ROW_BASE = 12;
+const ROW_STEP = 1;
+const SECTION_START = 25;
 
 const Panel: React.FC<{
   config: PanelConfig;
   frame: number;
   fps: number;
 }> = ({ config, frame, fps }) => {
-  const { label, color, list, stagger } = config;
+  const { id, label, color, list } = config;
 
-  // Card springs in
-  const localFrame = Math.max(0, frame - stagger);
   const cardScale = spring({
-    frame: localFrame,
+    frame,
     fps,
-    from: 0.88,
+    from: 0.9,
     to: 1,
-    durationInFrames: 22,
+    durationInFrames: 12,
   });
-  const cardOpacity = interpolate(frame, [stagger, stagger + 10], [0, 1], {
+  const cardOpacity = interpolate(frame, [0, 10], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Section markers fade in
   const sectionOpacity = interpolate(
     frame,
-    [SECTION_START + stagger, SECTION_START + stagger + 14],
+    [SECTION_START, SECTION_START + 8],
     [0, 1],
     {
       extrapolateLeft: "clamp",
@@ -138,25 +120,31 @@ const Panel: React.FC<{
     }
   );
 
-  // Final fade out — soft, overlapping with overlay text
-  const fadeOut = interpolate(frame, [205, 222], [1, 0.55], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Staggered collapse — GPT and Gemini exit first, Opus lingers.
+  const fadeOut =
+    id === "opus"
+      ? interpolate(frame, [65, 70], [1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        })
+      : interpolate(frame, [55, 65], [1, 0], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
 
   return (
     <div
       style={{
-        width: 240,
+        width: 130,
         backgroundColor: PANEL_BG,
         border: `1px solid ${color}`,
-        borderRadius: 10,
+        borderRadius: 6,
         transform: `scale(${cardScale})`,
         opacity: cardOpacity * fadeOut,
         display: "flex",
         flexDirection: "column",
-        padding: "14px 14px 12px",
-        boxShadow: `0 4px 24px rgba(0,0,0,0.18)`,
+        padding: "8px 8px 7px",
+        boxShadow: `0 3px 16px rgba(0,0,0,0.18)`,
       }}
     >
       {/* Header */}
@@ -164,16 +152,16 @@ const Panel: React.FC<{
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 7,
-          marginBottom: 10,
-          paddingBottom: 8,
+          gap: 5,
+          marginBottom: 6,
+          paddingBottom: 5,
           borderBottom: `1px solid ${PANEL_BORDER}`,
         }}
       >
         <div
           style={{
-            width: 8,
-            height: 8,
+            width: 5,
+            height: 5,
             borderRadius: "50%",
             backgroundColor: color,
             flexShrink: 0,
@@ -181,7 +169,7 @@ const Panel: React.FC<{
         />
         <span
           style={{
-            fontSize: 12,
+            fontSize: 7,
             fontWeight: 700,
             color,
             fontFamily,
@@ -193,12 +181,12 @@ const Panel: React.FC<{
       </div>
 
       {/* Ranked list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {list.map((entry, i) => {
-          const rowStart = ROW_BASE + i * ROW_STEP + stagger;
+          const rowStart = ROW_BASE + i * ROW_STEP;
           const rowOpacity = interpolate(
             frame,
-            [rowStart, rowStart + 5],
+            [rowStart, rowStart + 4],
             [0, 1],
             {
               extrapolateLeft: "clamp",
@@ -208,12 +196,11 @@ const Panel: React.FC<{
           const rowY = spring({
             frame: Math.max(0, frame - rowStart),
             fps,
-            from: 6,
+            from: 4,
             to: 0,
-            durationInFrames: 12,
+            durationInFrames: 8,
           });
 
-          // Color-code percentages — high green, mid white, low dim
           const pctNum = parseInt(entry.pct, 10);
           const pctColor =
             pctNum >= 15 ? color : pctNum >= 10 ? "#FFFFFF" : "rgba(255,255,255,0.55)";
@@ -224,7 +211,7 @@ const Panel: React.FC<{
               style={{
                 display: "flex",
                 alignItems: "center",
-                fontSize: 8,
+                fontSize: 5,
                 fontFamily,
                 color: "#FFFFFF",
                 opacity: rowOpacity,
@@ -235,8 +222,8 @@ const Panel: React.FC<{
               <span
                 style={{
                   opacity: 0.45,
-                  marginRight: 6,
-                  minWidth: 12,
+                  marginRight: 4,
+                  minWidth: 8,
                   textAlign: "right",
                 }}
               >
@@ -259,7 +246,7 @@ const Panel: React.FC<{
               <span
                 style={{
                   color: pctColor,
-                  marginLeft: 6,
+                  marginLeft: 4,
                   flexShrink: 0,
                   fontWeight: pctNum >= 15 ? 700 : 500,
                 }}
@@ -274,11 +261,11 @@ const Panel: React.FC<{
       {/* Section markers */}
       <div
         style={{
-          marginTop: 12,
+          marginTop: 7,
           opacity: sectionOpacity,
           display: "flex",
           flexDirection: "column",
-          gap: 6,
+          gap: 4,
         }}
       >
         <div
@@ -286,9 +273,9 @@ const Panel: React.FC<{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingTop: 8,
+            paddingTop: 5,
             borderTop: `1px solid ${PANEL_BORDER}`,
-            fontSize: 9,
+            fontSize: 6,
             fontFamily,
             color: "rgba(255,255,255,0.78)",
           }}
@@ -301,9 +288,9 @@ const Panel: React.FC<{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingTop: 8,
+            paddingTop: 5,
             borderTop: `1px solid ${PANEL_BORDER}`,
-            fontSize: 9,
+            fontSize: 6,
             fontFamily,
             color: "rgba(255,255,255,0.78)",
           }}
@@ -320,22 +307,17 @@ export const Scene06: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Overlay text "Final leaderboard renders"
-  const overlayOpacity = interpolate(
-    frame,
-    [OVERLAY_IN_START, OVERLAY_IN_START + 14, 215, 222],
-    [0, 1, 1, 0.6],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    }
-  );
+  // Overlay fades in alongside the panels — not delayed.
+  const overlayOpacity = interpolate(frame, [0, 15, 60, 70], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const overlayY = spring({
-    frame: Math.max(0, frame - OVERLAY_IN_START),
+    frame,
     fps,
-    from: 8,
+    from: 6,
     to: 0,
-    durationInFrames: 16,
+    durationInFrames: 14,
   });
 
   return (
@@ -350,12 +332,12 @@ export const Scene06: React.FC = () => {
       {/* Overlay headline above panels */}
       <div
         style={{
-          fontSize: 30,
+          fontSize: 22,
           fontFamily,
           color: "#1A1A2E",
           opacity: overlayOpacity,
           transform: `translateY(${overlayY}px)`,
-          marginBottom: 36,
+          marginBottom: 22,
           whiteSpace: "nowrap",
           letterSpacing: 0.5,
         }}
@@ -367,13 +349,13 @@ export const Scene06: React.FC = () => {
       <div
         style={{
           display: "flex",
-          gap: 24,
+          gap: 14,
           justifyContent: "center",
           alignItems: "flex-start",
         }}
       >
         {PANELS.map((panel) => (
-          <Panel key={panel.label} config={panel} frame={frame} fps={fps} />
+          <Panel key={panel.id} config={panel} frame={frame} fps={fps} />
         ))}
       </div>
     </AbsoluteFill>
@@ -386,5 +368,5 @@ export const scene06Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 222,
+  durationInFrames: 70,
 };
