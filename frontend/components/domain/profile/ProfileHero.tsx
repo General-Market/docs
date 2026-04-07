@@ -21,6 +21,9 @@ interface ProfileHeroProps {
   lastActiveAt?: string
   stats: ProfileStat[]
   pnlHistory: PnlPoint[]
+  /** Optional override for the headline P&L figure — used by tabs (e.g. vaults)
+   *  that compute totals outside the time-series history. */
+  pnlOverride?: number
 }
 
 function GradientAvatar({ address }: { address: string }) {
@@ -54,7 +57,13 @@ function StatCell({ stat }: { stat: ProfileStat }) {
   )
 }
 
-export function ProfileHero({ address, lastActiveAt, stats, pnlHistory }: ProfileHeroProps) {
+export function ProfileHero({
+  address,
+  lastActiveAt,
+  stats,
+  pnlHistory,
+  pnlOverride,
+}: ProfileHeroProps) {
   const t = useTranslations('common')
   const reduced = useReducedMotion()
 
@@ -115,7 +124,7 @@ export function ProfileHero({ address, lastActiveAt, stats, pnlHistory }: Profil
               variants={item}
               transition={springs.page}
             >
-              <PnlChart history={pnlHistory} hero />
+              <PnlChart history={pnlHistory} hero currentPnlOverride={pnlOverride} />
             </motion.div>
           </div>
         </motion.div>

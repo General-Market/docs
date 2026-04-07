@@ -2,6 +2,7 @@
 
 import { use, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -12,6 +13,7 @@ import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { VaultsTab } from '@/components/domain/profile/VaultsTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { usePoints } from '@/hooks/usePoints'
+import { useVaultsTotals } from '@/hooks/useVaultsTotals'
 import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
 
 function formatPoints(n: number): string {
@@ -26,23 +28,47 @@ function ProfileContent({ address }: { address: string }) {
   const router = useRouter()
   const t = useTranslations('pages.profile')
   const tabParam = searchParams.get('tab')
+  // Vaults is the primary surface — default to it when no tab query is set.
   const tab: ProfileTabId =
-    tabParam === 'index' ? 'index' : tabParam === 'vaults' ? 'vaults' : 'vision'
+    tabParam === 'vision' ? 'vision' : tabParam === 'index' ? 'index' : 'vaults'
   const { profile, isLoading } = usePlayerProfile(address)
   const { points } = usePoints(address)
+  const { address: connectedAddress } = useAccount()
+  const isSelf =
+    !!connectedAddress && connectedAddress.toLowerCase() === address.toLowerCase()
+  // Only aggregate vault totals when we're showing the vaults tab for the user's
+  // own profile — the SSE streams scope to the connected wallet.
+  const vaultTotals = useVaultsTotals(isSelf && tab === 'vaults')
 
   const handleTabChange = (newTab: ProfileTabId) => {
     router.replace(`?tab=${newTab}`)
   }
 
-  const pnl = profile?.stats.pnl ?? 0
-  const pnlColor = pnl >= 0 ? 'text-color-up' : 'text-color-down'
+  // On the vaults tab we show the vault aggregate instead of the player's
+  // vision P&L — different accounting, same hero slot.
+  const showingVaults = tab === 'vaults' && isSelf
+  const displayPnl = showingVaults ? vaultTotals.totalPnl : profile?.stats.pnl ?? 0
+  const displayVolume = showingVaults
+    ? vaultTotals.totalValue
+    : profile?.stats.totalDeposited ?? 0
+  const displayRoi = showingVaults
+    ? vaultTotals.totalValue > 0
+      ? (vaultTotals.totalPnl / vaultTotals.totalValue) * 100
+      : 0
+    : profile?.stats.roi ?? 0
+  const displayCount = showingVaults
+    ? vaultTotals.count
+    : profile?.stats.totalBatches ?? 0
+  const pnlColor = displayPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   const stats = [
-    { label: t('pnl'), value: formatPnL(profile?.stats.pnl ?? 0), color: pnlColor },
-    { label: t('roi'), value: formatROI(profile?.stats.roi ?? 0) },
-    { label: t('rounds'), value: String(profile?.stats.totalBatches ?? 0) },
-    { label: t('volume'), value: formatVolume(profile?.stats.totalDeposited ?? 0) },
+    { label: t('pnl'), value: formatPnL(displayPnl), color: pnlColor },
+    { label: t('roi'), value: formatROI(displayRoi) },
+    {
+      label: showingVaults ? t('vaults') : t('rounds'),
+      value: String(displayCount),
+    },
+    { label: t('volume'), value: formatVolume(displayVolume) },
     { label: t('points'), value: formatPoints(points.total), color: 'text-color-up' },
   ]
 
@@ -88,7 +114,8 @@ function ProfileContent({ address }: { address: string }) {
         address={address}
         lastActiveAt={profile?.stats.lastActiveAt ?? undefined}
         stats={stats}
-        pnlHistory={profile?.pnlHistory ?? []}
+        pnlHistory={showingVaults ? [] : profile?.pnlHistory ?? []}
+        pnlOverride={showingVaults ? vaultTotals.totalPnl : undefined}
       />
       <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
       <div className="px-6 lg:px-12">

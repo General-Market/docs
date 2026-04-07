@@ -11,6 +11,7 @@ import {
   type VisionVaultSSE,
   type VisionVaultPositionSSE,
 } from '@/hooks/useSSE'
+import { useVaultsTotals } from '@/hooks/useVaultsTotals'
 import { cn } from '@/lib/utils/cn'
 
 interface VaultsTabProps {
@@ -100,9 +101,9 @@ export function VaultsTab({ address }: VaultsTabProps) {
     return result
   }, [isSelf, vaultByAddr, vaultPositions])
 
-  const totalValue = useMemo(() => rows.reduce((s, r) => s + r.value, 0), [rows])
-  const totalPnl = useMemo(() => rows.reduce((s, r) => s + r.pnl, 0), [rows])
-  const pnlColor = totalPnl >= 0 ? 'text-color-up' : 'text-color-down'
+  // Shared hook with the profile page hero — keeps the two in perfect sync.
+  const totals = useVaultsTotals(isSelf)
+  const pnlColor = totals.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'
 
   if (!isSelf) {
     return (
@@ -135,16 +136,16 @@ export function VaultsTab({ address }: VaultsTabProps) {
       <div className="grid grid-cols-3 border border-border-light bg-white">
         <div className="px-4 py-3 border-r border-border-light">
           <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Vaults</div>
-          <div className="font-mono text-[16px] font-bold tabular-nums">{rows.length}</div>
+          <div className="font-mono text-[16px] font-bold tabular-nums">{totals.count}</div>
         </div>
         <div className="px-4 py-3 border-r border-border-light">
           <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Total Value</div>
-          <div className="font-mono text-[16px] font-bold tabular-nums">${totalValue.toFixed(2)}</div>
+          <div className="font-mono text-[16px] font-bold tabular-nums">${totals.totalValue.toFixed(2)}</div>
         </div>
         <div className="px-4 py-3">
           <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Total P&amp;L</div>
           <div className={cn('font-mono text-[16px] font-bold tabular-nums', pnlColor)}>
-            {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+            {totals.totalPnl >= 0 ? '+' : ''}${totals.totalPnl.toFixed(2)}
           </div>
         </div>
       </div>

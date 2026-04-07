@@ -887,10 +887,11 @@
   "profile": {
     "pnl": "P&L",
     "roi": "ROI",
-    "win_rate": "Win Rate",
-    "rounds": "Rounds",
-    "volume": "Volume",
-    "points": "Points",
-    "no_profile": "No profile data found for this address."
+    "win_rate": "勝率",
+    "rounds": "ラウンド",
+    "vaults": "ボールト",
+    "volume": "取引量",
+    "points": "ポイント",
+    "no_profile": "このアドレスのプロフィールデータが見つかりません。"
   }
 }

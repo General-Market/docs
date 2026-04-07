@@ -14,9 +14,9 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   const t = useTranslations('common')
 
   const tabs = [
+    { id: 'vaults' as const, label: t('profile.tab_vaults') },
     { id: 'vision' as const, label: t('profile.tab_vision') },
     { id: 'index' as const, label: t('profile.tab_index') },
-    { id: 'vaults' as const, label: t('profile.tab_vaults') },
   ]
 
   return (

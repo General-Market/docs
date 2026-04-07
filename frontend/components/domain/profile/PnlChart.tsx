@@ -18,30 +18,44 @@ interface PnlChartProps {
   history: PnlPoint[]
   /** Hero mode — taller chart, prominent P&L figure, label header */
   hero?: boolean
+  /** Override the headline PnL value (for tabs that compute PnL outside the history series). */
+  currentPnlOverride?: number
 }
 
-export function PnlChart({ history, hero }: PnlChartProps) {
+export function PnlChart({ history, hero, currentPnlOverride }: PnlChartProps) {
   const t = useTranslations('common')
   const locale = useLocale()
   const [range, setRange] = useState<TimeRange>('ALL')
 
+  // Empty history → render a two-point flat line at the override value (or zero),
+  // so the chart shape reads "nothing yet" without looking broken.
+  const baseHistory = useMemo<PnlPoint[]>(() => {
+    if (history.length > 0) return history
+    const flatValue = currentPnlOverride ?? 0
+    const now = Date.now()
+    return [
+      { timestamp: new Date(now - 24 * 60 * 60 * 1000).toISOString(), pnl: flatValue } as PnlPoint,
+      { timestamp: new Date(now).toISOString(), pnl: flatValue } as PnlPoint,
+    ]
+  }, [history, currentPnlOverride])
+
   const filtered = useMemo(() => {
     const cutoff = RANGE_MS[range]
-    if (!cutoff) return history
+    if (!cutoff) return baseHistory
     const now = Date.now()
-    return history.filter((p) => now - new Date(p.timestamp).getTime() <= cutoff)
-  }, [history, range])
-
-  if (history.length === 0) {
-    const emptyHeight = hero ? 'h-[200px]' : 'h-[140px]'
-    return (
-      <div className={`${hero ? '' : 'border border-border-light rounded'} p-6 ${emptyHeight} flex items-center justify-center`}>
-        <span className="text-caption text-text-muted">{t('profile.no_pnl_data')}</span>
-      </div>
+    const windowed = baseHistory.filter(
+      (p) => now - new Date(p.timestamp).getTime() <= cutoff,
     )
-  }
+    // A single point doesn't draw a line — keep at least two.
+    return windowed.length >= 2 ? windowed : baseHistory.slice(-2)
+  }, [baseHistory, range])
 
-  const currentPnl = filtered.length > 0 ? filtered[filtered.length - 1].pnl : 0
+  const currentPnl =
+    currentPnlOverride !== undefined
+      ? currentPnlOverride
+      : filtered.length > 0
+        ? filtered[filtered.length - 1].pnl
+        : 0
   const isPositive = currentPnl >= 0
   const strokeColor = isPositive ? '#22c55e' : '#ef4444'
   const fillColor = isPositive ? '#22c55e' : '#ef4444'
@@ -95,7 +109,17 @@ export function PnlChart({ history, hero }: PnlChartProps) {
               </linearGradient>
             </defs>
             <XAxis dataKey="timestamp" hide />
-            <YAxis hide domain={['dataMin', 'dataMax']} />
+            <YAxis
+              hide
+              domain={([dataMin, dataMax]: [number, number]) => {
+                // Guarantee visible amplitude even on a flat line.
+                if (dataMin === dataMax) {
+                  const pad = Math.max(1, Math.abs(dataMin) * 0.1)
+                  return [dataMin - pad, dataMax + pad]
+                }
+                return [dataMin, dataMax]
+              }}
+            />
             <Tooltip
               contentStyle={{
                 background: '#fff',
