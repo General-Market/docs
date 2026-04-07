@@ -1370,6 +1370,10 @@ struct LeaderboardRow {
     player: String,
     total_balance: Option<String>,
     total_deposited: Option<String>,
+    /// Signed SUM of the vision_round_players.pnl column as text. Read directly
+    /// instead of subtracting two large wei sums in f64 — that path loses ~0.01
+    /// USDC of precision at ~$13k volume because f64 mantissa is only 53 bits.
+    total_pnl_wei: Option<String>,
     batches_joined: Option<i64>,
     wins: Option<i64>,
     total_correct: Option<i64>,
@@ -1393,6 +1397,7 @@ async fn leaderboard_from_postgres(
             "SELECT vrp.player,
                     SUM(vrp.payout::numeric)::text as total_balance,
                     SUM(vrp.deposited::numeric)::text as total_deposited,
+                    SUM(vrp.pnl::numeric)::text as total_pnl_wei,
                     COUNT(*)::bigint as batches_joined,
                     SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins,
                     SUM(vrp.correct_count)::bigint as total_correct,
@@ -1408,6 +1413,7 @@ async fn leaderboard_from_postgres(
             "SELECT player,
                     SUM(payout::numeric)::text as total_balance,
                     SUM(deposited::numeric)::text as total_deposited,
+                    SUM(pnl::numeric)::text as total_pnl_wei,
                     COUNT(*)::bigint as batches_joined,
                     SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::bigint as wins,
                     SUM(correct_count)::bigint as total_correct,
@@ -1446,20 +1452,37 @@ async fn leaderboard_from_postgres(
         }
     };
 
-    let decimals = 1e18_f64;
+    const DECIMALS: f64 = 1e18;
 
-    // (bal, dep, batches, wins, rounds_played, rounds_won, total_correct, total_markets)
-    let mut merged: std::collections::HashMap<String, (f64, f64, usize, usize, u64, u64, u64, u64)> =
-        std::collections::HashMap::new();
+    // Parse a text-encoded NUMERIC into signed i128 wei with full precision.
+    // Handles optional sign, fractional part (dropped — pnl is always whole wei),
+    // and edge cases. Silent on failure: returns 0, same as the prior f64 path.
+    fn parse_wei_i128(s: &str) -> i128 {
+        let trimmed = s.trim();
+        let (sign, rest) = if let Some(r) = trimmed.strip_prefix('-') {
+            (-1i128, r)
+        } else {
+            (1i128, trimmed.strip_prefix('+').unwrap_or(trimmed))
+        };
+        // Drop fractional part — pnl column is stored as integer wei in text form.
+        let int_part = rest.split('.').next().unwrap_or("0");
+        sign * int_part.parse::<i128>().unwrap_or(0)
+    }
+
+    // (pnl_wei, dep_wei, batches, wins, rounds_played, rounds_won, total_correct, total_markets)
+    let mut merged: std::collections::HashMap<
+        String,
+        (i128, i128, usize, usize, u64, u64, u64, u64),
+    > = std::collections::HashMap::new();
 
     for r in rows {
-        let bal: f64 = r.total_balance.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
-        let dep: f64 = r.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+        let pnl_wei = parse_wei_i128(r.total_pnl_wei.as_deref().unwrap_or("0"));
+        let dep_wei = parse_wei_i128(r.total_deposited.as_deref().unwrap_or("0"));
         let batches = r.batches_joined.unwrap_or(0) as usize;
         let wins = r.wins.unwrap_or(0) as usize;
-        let entry = merged.entry(r.player).or_insert((0.0, 0.0, 0, 0, 0, 0, 0, 0));
-        entry.0 += bal;
-        entry.1 += dep;
+        let entry = merged.entry(r.player).or_insert((0, 0, 0, 0, 0, 0, 0, 0));
+        entry.0 += pnl_wei;
+        entry.1 += dep_wei;
         entry.2 += batches;
         entry.3 += wins;
         entry.4 += batches as u64;   // rounds_played
@@ -1468,20 +1491,20 @@ async fn leaderboard_from_postgres(
         entry.7 += r.total_markets.unwrap_or(0) as u64;
     }
 
-    // Sort by PnL descending
+    // Sort by PnL descending — i128 comparison is exact.
     let mut entries: Vec<_> = merged.into_iter().collect();
-    entries.sort_by(|a, b| {
-        let pnl_a = a.1 .0 - a.1 .1;
-        let pnl_b = b.1 .0 - b.1 .1;
-        pnl_b.partial_cmp(&pnl_a).unwrap_or(std::cmp::Ordering::Equal)
-    });
+    entries.sort_by(|a, b| b.1 .0.cmp(&a.1 .0));
 
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
         .enumerate()
-        .map(|(i, (addr, (bal, dep, batches, wins, rounds_played, rounds_won, total_correct, total_markets)))| {
-            let pnl = (bal - dep) / decimals;
-            let deposited = dep / decimals;
+        .map(|(i, (addr, (pnl_wei, dep_wei, batches, wins, rounds_played, rounds_won, total_correct, total_markets)))| {
+            // Convert to USDC only at the final display step. f64 can represent
+            // values up to 2^53 ≈ 9 PB cents exactly, so a single-player pnl in
+            // USDC always fits — the loss-of-precision bug was specifically in
+            // subtracting two large sums of f64 wei.
+            let pnl = (*pnl_wei as f64) / DECIMALS;
+            let deposited = (*dep_wei as f64) / DECIMALS;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
             let win_rate = if *batches > 0 {
                 *wins as f64 / *batches as f64 * 100.0
