@@ -83,6 +83,45 @@ const EnvLightformers: React.FC<{ time: number }> = ({ time }) => (
   </>
 );
 
+// ── Twist field for the curtain ──
+// Each slat is a thin ribbon. We twist its vertices around the Y axis so
+// the visible rotation varies with the vertex's Y position. The twist
+// amount also depends on the slat's X position. Result is a saddle/
+// hyperbolic surface where opposite-sign quadrants (BR/TL) lie flat to
+// the camera and same-sign quadrants (BL/TR) read edge-on, with smooth
+// tension linking the two. The diagonals of the curtain pull against
+// each other.
+const SLAT_HEIGHT = 5.0;
+const TWIST_SHARPNESS = 2.4; // higher = corners snap harder to flat/edge
+
+const twistAt = (slatX: number, vertexY: number) => {
+  const xn = slatX / (TOTAL_WIDTH / 2); // -1..1
+  const yn = vertexY / (SLAT_HEIGHT / 2); // -1..1
+  // tanh maps R → (-1, 1). product xn*yn carries the diagonal sign.
+  // Output is in (0, π/2). At BR / TL → 0 (flat). At BL / TR → π/2 (edge-on).
+  return (Math.PI / 4) * (1 + Math.tanh(xn * yn * TWIST_SHARPNESS));
+};
+
+const buildTwistedSlatGeometry = (slatX: number) => {
+  const segments = 36;
+  const geom = new THREE.PlaneGeometry(SLAT_WIDTH, SLAT_HEIGHT, 1, segments);
+  const positions = geom.attributes.position;
+  for (let i = 0; i < positions.count; i++) {
+    const px = positions.getX(i);
+    const py = positions.getY(i);
+    const pz = positions.getZ(i);
+    const angle = twistAt(slatX, py);
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    // Rotate (x, z) around the Y axis through the slat's center.
+    positions.setX(i, px * c - pz * s);
+    positions.setZ(i, px * s + pz * c);
+  }
+  positions.needsUpdate = true;
+  geom.computeVertexNormals();
+  return geom;
+};
+
 // ── Iridescent metallic slats ──
 const SlatArray: React.FC<{ time: number }> = ({ time }) => {
   const slats = useMemo(() => {
@@ -91,49 +130,43 @@ const SlatArray: React.FC<{ time: number }> = ({ time }) => {
       roughness: number;
       thMin: number;
       thMax: number;
+      geometry: THREE.PlaneGeometry;
     }[] = [];
     for (let i = 0; i < SLAT_COUNT; i++) {
+      const x = -TOTAL_WIDTH / 2 + i * SLAT_SPACING + SLAT_WIDTH / 2;
       arr.push({
-        x: -TOTAL_WIDTH / 2 + i * SLAT_SPACING + SLAT_WIDTH / 2,
+        x,
         roughness: 0.2 + (i % 7) * 0.025,
-        // Per-slat thin-film thickness — different prismatic hues per slat
         thMin: 80 + (i % 5) * 50,
         thMax: 350 + (i % 3) * 180,
+        geometry: buildTwistedSlatGeometry(x),
       });
     }
     return arr;
   }, []);
 
-  const angle = SLAT_ANGLE + Math.sin(time * 0.15) * 0.05;
+  // Slow global oscillation — the whole field breathes
+  const breathe = Math.sin(time * 0.12) * 0.02;
 
   return (
-    <group>
-      {slats.map((s, i) => {
-        const dir = i % 2 === 0 ? 1 : -1;
-        const slatAngle =
-          angle * dir + Math.sin(time * 0.1 + i * 0.2) * 0.03;
-        return (
-          <mesh
-            key={i}
-            position={[s.x, 0, 0]}
-            rotation={[0, slatAngle, 0]}
-          >
-            <boxGeometry args={[SLAT_WIDTH, 5.0, 0.006]} />
-            <meshPhysicalMaterial
-              color="#0a0a14"
-              metalness={0.85}
-              roughness={s.roughness}
-              clearcoat={0.8}
-              clearcoatRoughness={0.08}
-              reflectivity={0.95}
-              envMapIntensity={3.0}
-              iridescence={0.9}
-              iridescenceIOR={2.0}
-              iridescenceThicknessRange={[s.thMin, s.thMax]}
-            />
-          </mesh>
-        );
-      })}
+    <group rotation={[0, breathe, 0]}>
+      {slats.map((s, i) => (
+        <mesh key={i} position={[s.x, 0, 0]} geometry={s.geometry}>
+          <meshPhysicalMaterial
+            color="#0a0a14"
+            metalness={0.85}
+            roughness={s.roughness}
+            clearcoat={0.8}
+            clearcoatRoughness={0.08}
+            reflectivity={0.95}
+            envMapIntensity={3.0}
+            iridescence={0.9}
+            iridescenceIOR={2.0}
+            iridescenceThicknessRange={[s.thMin, s.thMax]}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
     </group>
   );
 };
