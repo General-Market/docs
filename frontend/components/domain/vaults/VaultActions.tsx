@@ -109,13 +109,13 @@ function computePerfForPeriod(snapshots: VaultSnapshot[], hoursAgo: number): num
 }
 
 function fmtPct(v: number | null): string {
-  if (v === null) return ', '
+  if (v === null) return '—'
   const pct = v * 100
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
 }
 
 function fmtRatio(v: number | null): string {
-  if (v === null) return ', '
+  if (v === null) return '—'
   return v.toFixed(2)
 }
 
@@ -327,7 +327,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           <div className="hidden lg:block px-3.5 py-2.5">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Max DD</div>
             <div className={cn('font-mono text-[15px] font-bold tabular-nums', maxDd !== null ? 'text-color-down' : 'text-text-primary')}>
-              {maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', '}
+              {maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}
             </div>
           </div>
         </div>
@@ -365,8 +365,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         <div className="grid grid-cols-4 shrink-0 border-b border-[#F0F0F0] lg:hidden">
           {[
             { label: 'Sharpe', value: fmtRatio(sharpe) },
-            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', ', down: maxDd !== null },
-            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : ', ' },
+            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—', down: maxDd !== null },
+            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : '—' },
             { label: 'Deployed', value: `${deployedPct}%` },
           ].map(({ label, value, down }) => (
             <div key={label} className="px-2.5 py-2 border-r border-[#F0F0F0] last:border-r-0 text-center">
@@ -482,10 +482,10 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
               { label: '30d', value: fmtPct(perf30d), up: perf30d !== null && perf30d >= 0 },
               { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
-              { label: 'Win Rate', value: ', ' },
-              { label: 'Avg Win', value: ', ' },
-              { label: 'Avg Loss', value: ', ' },
-              { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : ', ' },
+              { label: 'Win Rate', value: '—' },
+              { label: 'Avg Win', value: '—' },
+              { label: 'Avg Loss', value: '—' },
+              { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
             ].map(({ label, value, up }) => (
               <div key={label} className="px-3 py-2 border-r border-b border-[#F0F0F0] [&:nth-child(4n)]:border-r-0 last:[&:nth-last-child(-n+4)]:border-b-0">
                 <div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">{label}</div>
@@ -511,8 +511,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="grid grid-cols-2 gap-2">
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sharpe Ratio</div><div className="font-mono text-sm font-bold">{fmtRatio(sharpe)}</div></div>
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Max Drawdown</div><div className={cn('font-mono text-sm font-bold', maxDd !== null ? 'text-color-down' : '')}>{maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : ', '}</div></div>
-            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Volatility</div><div className="font-mono text-sm font-bold">{vol !== null ? `${(vol * 100).toFixed(1)}%` : ', '}</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Max Drawdown</div><div className={cn('font-mono text-sm font-bold', maxDd !== null ? 'text-color-down' : '')}>{maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}</div></div>
+            <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Volatility</div><div className="font-mono text-sm font-bold">{vol !== null ? `${(vol * 100).toFixed(1)}%` : '—'}</div></div>
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sortino</div><div className="font-mono text-sm font-bold">{fmtRatio(sortino)}</div></div>
           </div>
         </div>
