@@ -37,7 +37,10 @@ MIN_DEPOSIT_WEI = 10**17  # 0.1 USDC
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
-SNAPSHOT_INTERVAL = 10  # write snapshots every N cycles
+SNAPSHOT_INTERVAL = 2  # write snapshots every N cycles. At poll_interval=30s
+# that's a snapshot per minute — enough resolution to draw a meaningful chart
+# within the first hour after deploy. The previous value of 10 (=5 min) meant
+# the chart was a single point for the first 5 minutes after a redeploy.
 
 
 # ── Config ─────────────────────────────────────────────────────
