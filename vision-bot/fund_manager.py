@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Fund Manager — one bot, many vaults, source-specific strategies."""
 
+from __future__ import annotations
+
 import json
 import logging
 import os
-import random
 import signal
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from framework.core import Strategy, encode_bitmap, hash_bitmap, load_strategy
+from framework.core import encode_bitmap, hash_bitmap, load_strategy
 from framework.chain import (
+    BitmapSubmitError,
     Executor,
     VaultExecutor,
     discover_oracles,
@@ -26,7 +28,7 @@ from framework.feed import VisionFeed
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 log = logging.getLogger("fund-manager")
 DECIMALS = 18
@@ -93,6 +95,16 @@ class FundState:
         self.joined_total: int = 0
         self.reconciled_total: int = 0
         self.reconcile_retries: dict[int, int] = {}  # batch_id -> failure count
+        # Static vault metadata, read once at startup and cached forever.
+        self.static_meta: dict = {}
+        # Per-cycle pending join total (wei). The cycle loop tracks how much
+        # idle balance has already been earmarked so two batches in the same
+        # cycle don't both pass has_idle() against the same balance.
+        self._pending_join_amount: int = 0
+        # Map of batch_id -> block number at which the join was sent.
+        # Used as the from_block when reading PlayerSettled events so we
+        # don't scan the entire chain or miss the event.
+        self.join_blocks: dict[int, int] = {}
 
     def matches_source(self, source_name):
         if not self.sources:
@@ -103,32 +115,72 @@ class FundState:
 # ── State persistence ──────────────────────────────────────────
 
 
-def save_state(funds, state_file=STATE_FILE):
+def _atomic_write_json(path: str, payload: dict) -> None:
+    """Atomic JSON write: tmp file + fsync + os.replace.
+
+    A bot that runs for months will eventually be killed mid-write. The
+    half-flushed JSON it leaves behind is then unparseable on the next
+    boot, and we lose all batch tracking. Atomic replace removes that
+    failure mode entirely.
+    """
+    tmp = path + ".tmp"
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    with open(tmp, "w") as f:
+        json.dump(payload, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def save_state(funds, vault_info_cache=None, state_file=STATE_FILE):
+    """Persist fund state atomically.
+
+    ``vault_info_cache`` (optional): per-cycle dict[fund.name] -> info, so
+    we don't re-issue 9 RPC reads per fund just to write a snapshot.
+    """
     state = {
         "last_cycle": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "funds": {},
     }
     for fund in funds:
-        try:
-            info = fund.vault.get_vault_info()
-            total_assets = info.get("total_assets", 0)
-            total_supply = max(info.get("total_supply", 1), 1)
-            nav = total_assets / total_supply
-        except Exception:
-            nav = 0.0
-            total_assets = 0
+        info = None
+        if vault_info_cache is not None:
+            info = vault_info_cache.get(fund.name)
+        if info is None:
+            try:
+                info = fund.vault.get_vault_info()
+            except Exception:
+                info = {}
+        total_assets = info.get("total_assets", 0) if info else 0
+        total_supply = max(info.get("total_supply", 1) if info else 1, 1)
+        nav = (total_assets / total_supply) if total_supply else 0.0
+
+        # Persist active_batches as full {batch_id_str: deposit_wei_str}
+        # so deposit values survive restarts. JSON can't key by int, so
+        # we coerce to string here and back to int on load.
+        active_batches_serialized = {
+            str(bid): str(dep) for bid, dep in fund.active_batches.items()
+        }
+        reconcile_retries_serialized = {
+            str(bid): n for bid, n in fund.reconcile_retries.items()
+        }
+        join_blocks_serialized = {
+            str(bid): blk for bid, blk in fund.join_blocks.items()
+        }
 
         state["funds"][fund.name] = {
             "vault": fund.vault_addr,
-            "active_batches": list(fund.active_batches.keys()),
+            "active_batches": active_batches_serialized,
+            "reconcile_retries": reconcile_retries_serialized,
+            "join_blocks": join_blocks_serialized,
             "joined_total": fund.joined_total,
             "reconciled_total": fund.reconciled_total,
             "total_assets_usdc": round(total_assets / 1e18, 4),
             "nav": round(nav, 6),
         }
     try:
-        with open(state_file, "w") as f:
-            json.dump(state, f, indent=2)
+        _atomic_write_json(state_file, state)
     except Exception as e:
         log.warning("State save failed: %s", e)
 
@@ -147,9 +199,42 @@ def load_state(funds, state_file=STATE_FILE):
         fund_state = state.get("funds", {}).get(fund.name)
         if not fund_state:
             continue
-        for bid in fund_state.get("active_batches", []):
-            fund.joined_batch_ids.add(bid)
-            fund.active_batches.setdefault(bid, 0)
+
+        raw_active = fund_state.get("active_batches", {})
+        # Backward-compat: old state files stored a list of ids without
+        # deposits. Coerce both shapes into the int->int dict we want.
+        if isinstance(raw_active, list):
+            for bid in raw_active:
+                try:
+                    bid_int = int(bid)
+                except (TypeError, ValueError):
+                    continue
+                fund.active_batches[bid_int] = 0
+                fund.joined_batch_ids.add(bid_int)
+        elif isinstance(raw_active, dict):
+            for bid_str, dep in raw_active.items():
+                try:
+                    bid_int = int(bid_str)
+                    dep_int = int(dep) if dep is not None else 0
+                except (TypeError, ValueError):
+                    continue
+                fund.active_batches[bid_int] = dep_int
+                fund.joined_batch_ids.add(bid_int)
+
+        raw_retries = fund_state.get("reconcile_retries", {}) or {}
+        for bid_str, n in raw_retries.items():
+            try:
+                fund.reconcile_retries[int(bid_str)] = int(n)
+            except (TypeError, ValueError):
+                continue
+
+        raw_blocks = fund_state.get("join_blocks", {}) or {}
+        for bid_str, blk in raw_blocks.items():
+            try:
+                fund.join_blocks[int(bid_str)] = int(blk)
+            except (TypeError, ValueError):
+                continue
+
         fund.joined_total = fund_state.get("joined_total", 0)
         fund.reconciled_total = fund_state.get("reconciled_total", 0)
         log.info(
@@ -163,8 +248,23 @@ def load_state(funds, state_file=STATE_FILE):
 # ── Reconciliation ─────────────────────────────────────────────
 
 
+def _remove_from_active(fund, bid: int) -> None:
+    """Drop a batch from all tracking structures. Idempotent."""
+    fund.active_batches.pop(bid, None)
+    fund.joined_batch_ids.discard(bid)
+    fund.reconcile_retries.pop(bid, None)
+    fund.join_blocks.pop(bid, None)
+
+
 def reconcile_settled_batches(fund, executor):
     """Check all tracked batches and reconcile any that have settled on-chain."""
+    # Read latest block once per call so the from_block fallback for
+    # get_settlement_payout doesn't issue an extra RPC per batch.
+    try:
+        latest_block = executor.w3.eth.block_number
+    except Exception:
+        latest_block = 0
+
     for bid in list(fund.active_batches.keys()):
         # Check batch exists on-chain and read its settled flag.
         try:
@@ -181,32 +281,32 @@ def reconcile_settled_batches(fund, executor):
                     "[%s] Evicting stale batch %d — not found on-chain after %d attempts",
                     fund.name, bid, retries,
                 )
-                fund.active_batches.pop(bid, None)
-                fund.joined_batch_ids.discard(bid)
-                fund.reconcile_retries.pop(bid, None)
+                _remove_from_active(fund, bid)
             continue
 
         # Only reconcile batches that Vision has actually settled.
         if not batch_info.get("settled", False):
             continue
 
-        # Verify vault still has an active deposit to reconcile
+        # Verify vault still has an active deposit to reconcile.
         try:
             dep = fund.vault.get_active_deposit(bid)
-            if dep == 0:
-                # Already reconciled — clean up tracking
-                log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
-                fund.active_batches.pop(bid, None)
-                fund.joined_batch_ids.discard(bid)
-                fund.reconcile_retries.pop(bid, None)
-                continue
         except Exception:
             continue
+        if dep == 0:
+            log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
+            _remove_from_active(fund, bid)
+            continue
 
-        # Fetch settlement payout from PlayerSettled event for accurate PnL
+        # Fetch settlement payout from PlayerSettled event for accurate PnL.
+        # The new chain.py refuses to scan from block 0; pass either the join
+        # block (if we tracked it) or a sensible recent window.
+        from_block = fund.join_blocks.get(bid)
+        if from_block is None:
+            from_block = max(0, latest_block - 100_000) if latest_block else None
         payout = 0
         try:
-            payout = executor.get_settlement_payout(bid, fund.vault_addr)
+            payout = executor.get_settlement_payout(bid, fund.vault_addr, from_block=from_block)
         except Exception as e:
             log.debug("[%s] Could not read payout for batch %d: %s", fund.name, bid, e)
 
@@ -215,44 +315,61 @@ def reconcile_settled_batches(fund, executor):
             fund.vault.reconcile(bid, payout)
             deposited = fund.active_batches.get(bid, 0)
             pnl = (payout - deposited) / 1e18 if deposited else 0
-            log.info("[%s] Reconciled batch %d — payout=%.4f deposited=%.4f pnl=%.4f",
-                     fund.name, bid, payout / 1e18, deposited / 1e18, pnl)
+            log.info(
+                "[%s] Reconciled batch %d — payout=%.4f deposited=%.4f pnl=%.4f",
+                fund.name, bid, payout / 1e18, deposited / 1e18, pnl,
+            )
             fund.reconciled_total += 1
+            _remove_from_active(fund, bid)
+            continue
         except Exception as e:
             err = str(e)
             # 0x4c03a47b = BatchAlreadyReconciled()
             if "BatchAlreadyReconciled" in err or "4c03a47b" in err:
                 log.info("[%s] Batch %d already reconciled — clearing", fund.name, bid)
                 fund.reconciled_total += 1
-            else:
-                retries = fund.reconcile_retries.get(bid, 0) + 1
-                fund.reconcile_retries[bid] = retries
-                if retries >= MAX_RECONCILE_RETRIES:
-                    log.warning(
-                        "[%s] Evicting batch %d after %d failed reconcile attempts: %s",
-                        fund.name, bid, retries, e,
-                    )
-                else:
-                    log.warning(
-                        "[%s] Reconcile %d failed (attempt %d/%d): %s",
-                        fund.name, bid, retries, MAX_RECONCILE_RETRIES, e,
-                    )
-                    continue  # leave in active_batches, retry next cycle
+                _remove_from_active(fund, bid)
+                continue
 
-        fund.active_batches.pop(bid, None)
-        fund.joined_batch_ids.discard(bid)
-        fund.reconcile_retries.pop(bid, None)
+            retries = fund.reconcile_retries.get(bid, 0) + 1
+            fund.reconcile_retries[bid] = retries
+            if retries >= MAX_RECONCILE_RETRIES:
+                log.warning(
+                    "[%s] Evicting batch %d after %d failed reconcile attempts: %s",
+                    fund.name, bid, retries, e,
+                )
+                _remove_from_active(fund, bid)
+                continue
+
+            log.warning(
+                "[%s] Reconcile %d failed (attempt %d/%d): %s",
+                fund.name, bid, retries, MAX_RECONCILE_RETRIES, e,
+            )
+            # Leave in active_batches, retry next cycle.
+            continue
 
 
 # ── NAV table ──────────────────────────────────────────────────
 
 
-def log_nav_table(funds):
-    """Log a compact NAV summary across all vaults."""
+def log_nav_table(funds, vault_info_cache=None):
+    """Log a compact NAV summary across all vaults.
+
+    ``vault_info_cache`` (optional): per-cycle dict[fund.name] -> info, so
+    we don't trigger another wave of reads when a cycle just finished.
+    """
     lines = ["NAV summary:"]
     for fund in funds:
+        info = None
+        if vault_info_cache is not None:
+            info = vault_info_cache.get(fund.name)
+        if info is None:
+            try:
+                info = fund.vault.get_vault_info()
+            except Exception as e:
+                lines.append("  %-20s  (read error: %s)" % (fund.name, e))
+                continue
         try:
-            info = fund.vault.get_vault_info()
             total = info.get("total_assets", 0)
             supply = max(info.get("total_supply", 1), 1)
             nav = total / supply
@@ -270,41 +387,60 @@ def log_nav_table(funds):
                 )
             )
         except Exception as e:
-            lines.append("  %-20s  (read error: %s)" % (fund.name, e))
+            lines.append("  %-20s  (format error: %s)" % (fund.name, e))
     log.info("\n".join(lines))
 
 
 # ── Vault snapshots ───────────────────────────────────────────
 
 
-def write_vault_snapshots(funds):
-    """Write NAV snapshots to oracle postgres for historical charts."""
+def write_vault_snapshots(funds, vault_info_cache=None):
+    """Write NAV snapshots to oracle postgres for historical charts.
+
+    Uses the per-cycle cache when available so 183 funds × 9 RPC reads
+    don't fire a second time just to write a row to postgres.
+    """
     if not VISION_DB_URL:
         return
     try:
         import psycopg2
-        conn = psycopg2.connect(VISION_DB_URL)
-        cur = conn.cursor()
-        rows = 0
-        for fund in funds:
-            try:
-                info = fund.vault.get_vault_info()
-                total_assets = info.get("total_assets", 0)
-                total_supply = max(info.get("total_supply", 1), 1)
-                nav = total_assets / total_supply
-                tvl = total_assets / 1e18
-                cur.execute(
-                    "INSERT INTO vault_snapshots (vault_address, total_assets, total_supply, nav_per_share, tvl_usd) "
-                    "VALUES (%s, %s, %s, %s, %s)",
-                    (fund.vault_addr.lower(), str(total_assets), str(total_supply), nav, tvl),
-                )
-                rows += 1
-            except Exception:
-                pass
-        conn.commit()
-        cur.close()
-        conn.close()
-        log.info("Vault snapshots: %d rows written", rows)
+    except Exception as e:
+        log.warning("psycopg2 import failed: %s", e)
+        return
+    try:
+        with psycopg2.connect(VISION_DB_URL) as conn:
+            with conn.cursor() as cur:
+                rows = 0
+                for fund in funds:
+                    info = None
+                    if vault_info_cache is not None:
+                        info = vault_info_cache.get(fund.name)
+                    if info is None:
+                        try:
+                            info = fund.vault.get_vault_info()
+                        except Exception:
+                            continue
+                    try:
+                        total_assets = info.get("total_assets", 0)
+                        total_supply = max(info.get("total_supply", 1), 1)
+                        nav = total_assets / total_supply
+                        tvl = total_assets / 1e18
+                        cur.execute(
+                            "INSERT INTO vault_snapshots "
+                            "(vault_address, total_assets, total_supply, nav_per_share, tvl_usd) "
+                            "VALUES (%s, %s, %s, %s, %s)",
+                            (
+                                fund.vault_addr.lower(),
+                                str(total_assets),
+                                str(total_supply),
+                                nav,
+                                tvl,
+                            ),
+                        )
+                        rows += 1
+                    except Exception:
+                        continue
+                log.info("Vault snapshots: %d rows written", rows)
     except Exception as e:
         log.warning("Vault snapshot write failed: %s", e)
 
@@ -312,14 +448,70 @@ def write_vault_snapshots(funds):
 # ── Main cycle ─────────────────────────────────────────────────
 
 
-def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_number=0):
-    """One cycle: join new batches per fund, reconcile settled ones."""
+def _read_vault_info_cached(fund, cache: dict) -> dict | None:
+    """Read vault info once per cycle. Subsequent calls return the cached copy.
+
+    Returns None on failure so callers can decide whether to skip or default.
+    Negative cache: once a read fails for a fund this cycle, we don't retry.
+    """
+    if fund.name in cache:
+        return cache[fund.name]
+    try:
+        info = fund.vault.get_vault_info()
+    except Exception as e:
+        log.debug("[%s] vault info read failed: %s", fund.name, e)
+        cache[fund.name] = None  # negative cache for the rest of the cycle
+        return None
+    cache[fund.name] = info
+    return info
+
+
+def run_cycle(
+    funds,
+    executor,
+    oracle_urls,
+    feed,
+    cfg,
+    source_id_map,
+    cycle_number=0,
+    feed_subscriptions: set | None = None,
+):
+    """One cycle: join new batches per fund, reconcile settled ones.
+
+    ``feed_subscriptions``: caller-owned set of currently-subscribed batch IDs
+    (as strings). The cycle adds to it on subscribe and prunes stale entries
+    against active_batches at the start. Passing None disables tracking.
+    """
+    # Per-cycle vault info cache. Each fund's get_vault_info issues 9 RPC
+    # reads — calling it 3+ times per fund × 183 funds gobbles minutes per
+    # cycle. Read each fund once, share the result downstream.
+    vault_info_cache: dict[str, dict | None] = {}
+
+    # Reset per-fund pending join counters at the top of every cycle.
+    for fund in funds:
+        fund._pending_join_amount = 0
+
     all_batches = fetch_batches(cfg["vision_api"], executor=executor)
     # Filter: only batches with known market count (skip legacy batches without config)
     batches = [b for b in all_batches if b.get("market_count", 0) > 0]
     if not batches:
         # Fallback: try all batches (market count will be resolved from data-node)
         batches = all_batches
+
+    # Build the set of batches we still care about, and unsubscribe any
+    # feed entries that no longer correspond to a tracked batch.
+    if feed_subscriptions is not None:
+        needed = set()
+        for fund in funds:
+            for bid in fund.active_batches:
+                needed.add(str(bid))
+        stale = feed_subscriptions - needed
+        if stale:
+            try:
+                feed.unsubscribe(list(stale))
+            except Exception as e:
+                log.warning("Feed unsubscribe failed: %s", e)
+            feed_subscriptions -= stale
 
     # Risk management: bet alloc_bps of vault assets per batch.
     # Each join is a single-tick bet (deposit == stake) to avoid the unused
@@ -345,7 +537,10 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
             else:
                 source_name = raw_sid
 
-        matched_funds = [f for f in funds if f.matches_source(source_name) and batch_id not in f.joined_batch_ids]
+        matched_funds = [
+            f for f in funds
+            if f.matches_source(source_name) and batch_id not in f.joined_batch_ids
+        ]
         if matched_funds:
             matched_any_source = True
         else:
@@ -353,15 +548,17 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
 
         # Filter by idle capital — each fund bets alloc_bps% of its total assets,
         # floored at MIN_STAKE_WEI so the contract doesn't reject the deposit.
+        # Use the per-cycle cached info AND subtract any joins already queued
+        # in the same cycle so two batches don't double-spend the same balance.
         def has_idle(f):
-            try:
-                info = f.vault.get_vault_info()
-                idle = info.get("idle_usdc", 0)
-                total = info.get("total_assets", 0)
-                deposit = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
-                return idle >= deposit
-            except Exception:
+            info = _read_vault_info_cached(f, vault_info_cache)
+            if not info:
                 return False
+            idle = info.get("idle_usdc", 0) - f._pending_join_amount
+            total = info.get("total_assets", 0)
+            deposit = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
+            return idle >= deposit
+
         matched_funds = [f for f in matched_funds if has_idle(f)]
         if not matched_funds:
             continue
@@ -390,9 +587,16 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         market_ids = [m["assetId"] for m in batch_cfg["markets"]]
         market_count = len(market_ids)
 
-        # Get prices ONCE per batch
-        feed.subscribe([str(batch_id)])
-        raw_prices = feed.prices(str(batch_id))
+        # Get prices ONCE per batch. Subscribe lazily and remember.
+        bid_str = str(batch_id)
+        if feed_subscriptions is None or bid_str not in feed_subscriptions:
+            try:
+                feed.subscribe([bid_str])
+                if feed_subscriptions is not None:
+                    feed_subscriptions.add(bid_str)
+            except Exception as e:
+                log.warning("Feed subscribe failed for %s: %s", bid_str, e)
+        raw_prices = feed.prices(bid_str)
         if raw_prices:
             markets = [
                 {
@@ -413,39 +617,53 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
         except Exception:
             pass
 
-        log.info("Batch %d source=%s: %d funds, %d markets", batch_id, source_name, len(matched_funds), market_count)
+        log.info(
+            "Batch %d source=%s: %d funds, %d markets",
+            batch_id, source_name, len(matched_funds), market_count,
+        )
 
         # Per-fund: predict, join, submit bitmap
         for fund in matched_funds:
             # Strategy predict — each fund has its own strategy
             if hasattr(fund.strategy, "predict_with_context"):
                 bets = fund.strategy.predict_with_context(
-                    markets, feed=feed, batch_id=str(batch_id),
+                    markets, feed=feed, batch_id=bid_str,
                 )
             else:
                 bets = fund.strategy.predict(markets)
 
-            while len(bets) < market_count:
-                bets.append(random.choice(["UP", "DOWN"]))
+            # If a strategy under-delivers, that's a bug in the strategy —
+            # don't paper over it with random coin flips. Pad with DOWN as
+            # a deterministic placeholder and shout about it.
+            if len(bets) < market_count:
+                log.warning(
+                    "[%s] Strategy %s returned %d bets for batch %d (expected %d) — padding with DOWN",
+                    fund.name,
+                    type(fund.strategy).__name__,
+                    len(bets),
+                    batch_id,
+                    market_count,
+                )
+                bets = list(bets) + ["DOWN"] * (market_count - len(bets))
 
             bitmap = encode_bitmap(bets, market_count)
             bm_hash = hash_bitmap(bitmap)
 
             # Compute deposit: alloc_bps% of current total assets, floored at the
-            # contract minimum. Match deposit == stake — Vision permanently locks
-            # any deposit > stake_per_tick × actual_ticks, so over-depositing burns
-            # capital. Single-tick bet keeps the math closed.
-            try:
-                info = fund.vault.get_vault_info()
-                total = info.get("total_assets", 0)
-                deposit_wei = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
-                if deposit_wei <= 0:
-                    continue
-                stake_for_batch = deposit_wei
-            except Exception:
+            # contract minimum. Reuse the cached info — no extra RPC roundtrip.
+            info = _read_vault_info_cached(fund, vault_info_cache)
+            if not info:
                 continue
+            total = info.get("total_assets", 0)
+            deposit_wei = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
+            if deposit_wei <= 0:
+                continue
+            stake_for_batch = deposit_wei
 
-            # Join via vault
+            # Join via vault. _sign_and_send waits for the receipt — by the
+            # time we return here, the tx is mined. The bitmap POST below
+            # retries on its own if oracles need a moment to catch up; the
+            # global stop-the-world sleep we used to do here was rituals.
             try:
                 fund.vault.join_batch(
                     batch_id, config_hash, deposit_wei, stake_for_batch, bm_hash,
@@ -454,6 +672,16 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
                 fund.active_batches[batch_id] = deposit_wei
                 fund.joined_total += 1
                 joined_this_cycle += 1
+                # Earmark capital so subsequent batches in the same cycle
+                # see the reduced effective idle balance.
+                fund._pending_join_amount += deposit_wei
+                # Track the join block so reconciliation can pass a precise
+                # from_block to get_settlement_payout instead of scanning
+                # the entire chain.
+                try:
+                    fund.join_blocks[batch_id] = executor.w3.eth.block_number
+                except Exception:
+                    pass
                 log.info(
                     "[%s] Joined batch %d (%s) — %d markets, %d UP / %d DOWN",
                     fund.name, batch_id, source_name, market_count,
@@ -463,13 +691,18 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
                 log.warning("[%s] Batch %d join failed: %s", fund.name, batch_id, e)
                 continue
 
-            time.sleep(1)
-
-            # Submit bitmap
+            # Submit bitmap to oracles. BitmapSubmitError is the typed quorum
+            # failure from the new chain.py — log it and move on rather than
+            # crashing the cycle.
             try:
                 submit_bitmap(
                     oracle_urls, fund.vault_addr, batch_id,
                     bitmap, bm_hash, retries=2,
+                )
+            except BitmapSubmitError as e:
+                log.warning(
+                    "[%s] Batch %d bitmap quorum failed (%d/%d): %s",
+                    fund.name, batch_id, e.accepted, e.total, e.last_error,
                 )
             except Exception as e:
                 log.warning(
@@ -481,28 +714,34 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
     for fund in funds:
         reconcile_settled_batches(fund, executor)
 
-        # Log per-fund vault state
-        try:
-            info = fund.vault.get_vault_info()
-            nav = info.get("total_assets", 0) / max(info.get("total_supply", 1), 1)
-            log.info(
-                "[%s] NAV: %.4f | Assets: %.2f | Active: %.2f | Idle: %.2f",
-                fund.name,
-                nav,
-                info.get("total_assets", 0) / 1e18,
-                info.get("active_capital", 0) / 1e18,
-                info.get("idle_usdc", 0) / 1e18,
-            )
-        except Exception:
-            pass
+        # Log per-fund vault state from the per-cycle cache. If the cache
+        # has no entry (fund had no batches matched this cycle), we accept
+        # one read here — that's still O(funds), not O(funds × batches).
+        info = _read_vault_info_cached(fund, vault_info_cache)
+        if info:
+            try:
+                nav = info.get("total_assets", 0) / max(info.get("total_supply", 1), 1)
+                log.info(
+                    "[%s] NAV: %.4f | Assets: %.2f | Active: %.2f | Idle: %.2f",
+                    fund.name,
+                    nav,
+                    info.get("total_assets", 0) / 1e18,
+                    info.get("active_capital", 0) / 1e18,
+                    info.get("idle_usdc", 0) / 1e18,
+                )
+            except Exception:
+                pass
 
     # Periodic NAV table + vault snapshots every 10 cycles
     if cycle_number % SNAPSHOT_INTERVAL == 0:
-        log_nav_table(funds)
-        write_vault_snapshots(funds)
+        log_nav_table(funds, vault_info_cache=vault_info_cache)
+        write_vault_snapshots(funds, vault_info_cache=vault_info_cache)
 
     # Health summary — detect silent failures
-    log.info("Cycle %d: %d joined, source_match=%s", cycle_number, joined_this_cycle, matched_any_source)
+    log.info(
+        "Cycle %d: %d joined, source_match=%s",
+        cycle_number, joined_this_cycle, matched_any_source,
+    )
     if len(batches) > 0 and not matched_any_source:
         log.error(
             "HEALTH ALERT: %d batches processed, ZERO source matches. "
@@ -511,19 +750,28 @@ def run_cycle(funds, executor, oracle_urls, feed, cfg, source_id_map, cycle_numb
             len(batches),
         )
 
-    # Write heartbeat for Docker HEALTHCHECK
+    # Write heartbeat for Docker HEALTHCHECK. Use a context manager so we
+    # don't leak file descriptors and log any failure instead of swallowing.
     heartbeat_path = os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
+    payload = {
+        "cycle": cycle_number,
+        "ts": time.time(),
+        "joined": joined_this_cycle,
+        "source_match": matched_any_source,
+        "batches": len(batches),
+    }
     try:
-        import json as _json
-        _json.dump({
-            "cycle": cycle_number,
-            "ts": time.time(),
-            "joined": joined_this_cycle,
-            "source_match": matched_any_source,
-            "batches": len(batches),
-        }, open(heartbeat_path, "w"))
-    except Exception:
-        pass
+        with open(heartbeat_path, "w") as hb:
+            json.dump(payload, hb)
+    except Exception as e:
+        log.warning("Heartbeat write failed: %s", e)
+
+    # Persist state at the end of the cycle, reusing the cache so we don't
+    # fire another wave of vault reads.
+    try:
+        save_state(funds, vault_info_cache=vault_info_cache)
+    except Exception as e:
+        log.warning("End-of-cycle save_state failed: %s", e)
 
     return joined_this_cycle
 
@@ -596,6 +844,20 @@ def main():
         log.error("No funds with vault addresses — nothing to manage")
         sys.exit(1)
 
+    # Cache static vault metadata once. name/manager/perf_fee_rate never
+    # change after deployment — re-reading them every cycle would be a
+    # ritual paid for in nine RPC roundtrips per fund per cycle.
+    for fund in funds:
+        try:
+            info = fund.vault.get_vault_info()
+            fund.static_meta = {
+                "name": info.get("name"),
+                "manager": info.get("manager"),
+                "perf_fee_rate": info.get("perf_fee_rate"),
+            }
+        except Exception as e:
+            log.warning("[%s] Could not read static metadata: %s", fund.name, e)
+
     # Build source name → sourceId (keccak256) reverse map
     all_source_names = set()
     for fund in funds:
@@ -606,10 +868,13 @@ def main():
     # Oracle discovery
     oracle_urls_raw = manager_cfg.get("oracle_urls", [])
     oracle_discovery = manager_cfg.get("oracle_discovery", "static")
+    oracle_registry_addr = manager_cfg.get("oracle_registry_address", "")
 
     def oracle_urls_fn():
         if oracle_discovery == "dynamic":
-            return discover_oracles("dynamic", oracle_urls_raw, executor.w3)
+            return discover_oracles(
+                "dynamic", oracle_urls_raw, executor.w3, registry_addr=oracle_registry_addr,
+            )
         return oracle_urls_raw
 
     # Feed — connect early so history accumulates before first predict
@@ -645,11 +910,15 @@ def main():
         if stale:
             log.info("[%s] Purged %d stale batches on startup", fund.name, len(stale))
 
+    # Caller-owned tracking set so run_cycle can unsubscribe stale entries
+    # without re-asking the feed for its private state.
+    feed_subscriptions: set[str] = set()
     all_known_batch_ids = set()
     for fund in funds:
         all_known_batch_ids.update(str(bid) for bid in fund.active_batches)
     if all_known_batch_ids:
         feed.subscribe(list(all_known_batch_ids))
+        feed_subscriptions.update(all_known_batch_ids)
         log.info("Pre-subscribed to %d known batch feeds", len(all_known_batch_ids))
 
     # ── Startup self-test: verify source matching works ──
@@ -675,7 +944,10 @@ def main():
                     sorted(all_source_names)[:10],
                 )
                 sys.exit(1)
-            log.info("Startup self-test: %d/%d sampled batches match funds ✓", test_matched, min(20, len(test_batches)))
+            log.info(
+                "Startup self-test: %d/%d sampled batches match funds",
+                test_matched, min(20, len(test_batches)),
+            )
     except SystemExit:
         raise
     except Exception as e:
@@ -683,38 +955,78 @@ def main():
 
     log.info("Fund Manager started: %d funds", len(funds))
 
-    def shutdown(signum=None, frame=None):
-        log.info("Shutting down...")
-        save_state(funds)
-        log_nav_table(funds)
-        feed.close()
-        log.info("Fund Manager stopped. State saved.")
-        sys.exit(0)
+    # Signal-driven shutdown. The handler MUST NOT do I/O — Python signal
+    # handlers run on whichever thread happens to be holding the GIL when
+    # the signal arrives, and a save_state() call here can deadlock against
+    # any lock the main thread is already holding (psycopg2, web3, json).
+    # Set a flag, return, let the main loop notice it at a safe point.
+    shutdown_flag = {"set": False}
 
-    signal.signal(signal.SIGTERM, shutdown)
-    signal.signal(signal.SIGINT, shutdown)
+    def _signal_handler(signum, frame):
+        shutdown_flag["set"] = True
+
+    signal.signal(signal.SIGTERM, _signal_handler)
+    signal.signal(signal.SIGINT, _signal_handler)
+
+    def _do_shutdown():
+        log.info("Shutting down...")
+        try:
+            save_state(funds)
+        except Exception as e:
+            log.warning("Final save_state failed: %s", e)
+        try:
+            log_nav_table(funds)
+        except Exception as e:
+            log.warning("Final NAV table failed: %s", e)
+        try:
+            feed.close()
+        except Exception as e:
+            log.warning("Feed close failed: %s", e)
+        log.info("Fund Manager stopped. State saved.")
 
     # One-shot mode
     if "--once" in sys.argv:
         urls = oracle_urls_fn()
-        run_cycle(funds, executor, urls, feed, shared_cfg, source_id_map, cycle_number=0)
+        run_cycle(
+            funds, executor, urls, feed, shared_cfg, source_id_map,
+            cycle_number=0, feed_subscriptions=feed_subscriptions,
+        )
         save_state(funds)
         feed.close()
         return
 
     cycle = 0
     try:
-        while True:
+        while not shutdown_flag["set"]:
+            cycle_failed = False
             try:
                 urls = oracle_urls_fn()
-                run_cycle(funds, executor, urls, feed, shared_cfg, source_id_map, cycle_number=cycle)
-                save_state(funds)
-                cycle += 1
+                run_cycle(
+                    funds, executor, urls, feed, shared_cfg, source_id_map,
+                    cycle_number=cycle, feed_subscriptions=feed_subscriptions,
+                )
             except Exception as e:
+                cycle_failed = True
                 log.error("Cycle error: %s", e, exc_info=True)
-            time.sleep(poll_interval)
+            # Increment outside the try so an exception doesn't desync the
+            # counter from the actual number of attempted cycles.
+            cycle += 1
+            if cycle_failed:
+                # Persist whatever state we managed to mutate even if the
+                # cycle blew up — better a partial snapshot than nothing.
+                try:
+                    save_state(funds)
+                except Exception as e:
+                    log.warning("Post-failure save_state failed: %s", e)
+            # Sleep in small slices so SIGTERM is honored within ~1s.
+            slept = 0.0
+            while slept < poll_interval and not shutdown_flag["set"]:
+                time.sleep(min(1.0, poll_interval - slept))
+                slept += 1.0
     except KeyboardInterrupt:
-        shutdown()
+        pass
+    finally:
+        _do_shutdown()
 
 
 if __name__ == "__main__":
