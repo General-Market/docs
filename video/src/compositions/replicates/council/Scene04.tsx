@@ -47,13 +47,6 @@ const ANALYSIS_CARDS = [
   { color: OPUS_ORANGE, label: "Opus 4.6", text: "Contrarian positions on undervalued L2s. Identified mispricings 48h before market. Highest alpha but highest variance." },
 ];
 
-const useTypewriter = (text: string, startFrame: number, charsPerFrame = 0.6) => {
-  const frame = useCurrentFrame();
-  const elapsed = Math.max(0, frame - startFrame);
-  const charCount = Math.min(Math.floor(elapsed * charsPerFrame), text.length);
-  return text.slice(0, charCount);
-};
-
 const HEADERS = ["RANK", "AGENT", "GPT-5.4", "GEMINI 3.1", "OPUS 4.6", "BLEND", "ALLOCATION"];
 const COL_WIDTHS = [50, 200, 75, 80, 75, 65, 90];
 
@@ -92,9 +85,8 @@ const DataRow: React.FC<{
   frame: number;
   fps: number;
   enterFrame: number;
-  isExpanded: boolean;
   expandProgress: number;
-}> = ({ agent, frame, fps, enterFrame, isExpanded, expandProgress }) => {
+}> = ({ agent, frame, fps, enterFrame, expandProgress }) => {
   const slideX = spring({
     frame: frame - enterFrame,
     fps,
@@ -214,42 +206,65 @@ const DataRow: React.FC<{
   );
 };
 
+// Overlay schedule (120-frame budget):
+//   0-30   leaderboard slides in
+//   30-45  row #1 expands with analysis cards
+//   45-65  overlay #1: "Each model's rationale displayed per agent"
+//   65-80  overlay #2: "Why they scored high"
+//   80-95  overlay #3: "Why they got flagged"
+//   95-110 overlay #4: "Full transparency."
+//  110-120 fade out
+const OVERLAY_TEXTS: { text: string; start: number; end: number }[] = [
+  { text: "Each model's rationale displayed per agent", start: 45, end: 65 },
+  { text: "Why they scored high", start: 65, end: 80 },
+  { text: "Why they got flagged", start: 80, end: 95 },
+  { text: "Full transparency.", start: 95, end: 110 },
+];
+
 export const Scene04: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Title slide down (0-20)
-  const titleY = interpolate(frame, [0, 20], [-30, 0], {
+  // Title slide down (0-10)
+  const titleY = interpolate(frame, [0, 10], [-30, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const titleOpacity = interpolate(frame, [0, 20], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Row stagger: each row 5 frames apart, starting at frame 20
-  const rowEnterFrame = (idx: number) => 20 + idx * 5;
-
-  // Row #1 expansion (80-140)
-  const expandProgress = interpolate(frame, [80, 110], [0, 1], {
+  const titleOpacity = interpolate(frame, [0, 10], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // "Why they got flagged" overlay (120-160)
-  const overlayOpacity = interpolate(frame, [120, 130], [0, 0.85], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const flaggedText = useTypewriter("Each model's rationale displayed per vote", 130, 0.7);
-  const flaggedTextOpacity = interpolate(frame, [128, 135], [0, 1], {
+  // Row stagger: each row 2 frames apart, starting at frame 10 — 10 rows in by frame 30
+  const rowEnterFrame = (idx: number) => 10 + idx * 2;
+
+  // Row #1 expansion (30-45)
+  const expandProgress = interpolate(frame, [30, 45], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Final fade out (200-240)
-  const fadeOut = interpolate(frame, [200, 240], [1, 0], {
+  // Active overlay
+  const activeOverlay = OVERLAY_TEXTS.find((o) => frame >= o.start && frame < o.end);
+  const overlayOpacity = activeOverlay
+    ? interpolate(
+        frame,
+        [activeOverlay.start, activeOverlay.start + 4, activeOverlay.end - 4, activeOverlay.end],
+        [0, 1, 1, 0],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      )
+    : 0;
+  const overlayBgOpacity = activeOverlay
+    ? interpolate(
+        frame,
+        [activeOverlay.start, activeOverlay.start + 4, activeOverlay.end - 4, activeOverlay.end],
+        [0, 0.78, 0.78, 0],
+        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+      )
+    : 0;
+
+  // Final fade out (110-120)
+  const fadeOut = interpolate(frame, [110, 120], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -308,15 +323,14 @@ export const Scene04: React.FC = () => {
                 frame={frame}
                 fps={fps}
                 enterFrame={rowEnterFrame(idx)}
-                isExpanded={agent.rank === 1 && frame >= 80}
                 expandProgress={agent.rank === 1 ? expandProgress : 0}
               />
             ))}
           </div>
         </div>
 
-        {/* Overlay */}
-        {frame >= 120 && (
+        {/* Overlay — single line, above leaderboard */}
+        {activeOverlay && (
           <div
             style={{
               position: "absolute",
@@ -324,23 +338,26 @@ export const Scene04: React.FC = () => {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: `rgba(11,20,38,${overlayOpacity * 0.88})`,
+              backgroundColor: `rgba(11,20,38,${overlayBgOpacity})`,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               borderRadius: 20,
+              padding: "0 24px",
             }}
           >
             <span
               style={{
-                fontSize: 28,
+                fontSize: 22,
                 fontWeight: 700,
                 color: "#fff",
-                opacity: flaggedTextOpacity,
-                letterSpacing: -0.5,
+                opacity: overlayOpacity,
+                letterSpacing: -0.4,
+                whiteSpace: "nowrap",
+                textAlign: "center",
               }}
             >
-              {flaggedText}
+              {activeOverlay.text}
             </span>
           </div>
         )}
@@ -355,5 +372,5 @@ export const scene04Meta = {
   width: 1280,
   height: 720,
   fps: 30,
-  durationInFrames: 240,
+  durationInFrames: 120,
 };
