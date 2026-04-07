@@ -2,35 +2,65 @@
 
 import { useState, useEffect } from 'react'
 
+interface GlobalStats {
+  totalMarkets: number | null
+  totalSettled: number | null
+}
+
 export function TopbarStats() {
-  const [activeMarkets, setActiveMarkets] = useState(0)
+  const [stats, setStats] = useState<GlobalStats | null>(null)
 
   useEffect(() => {
-    fetch('/api/dn/market-count')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.count > 0) { setActiveMarkets(d.count); return }
-        return fetch('/api/vision/batches')
-          .then(r => r.ok ? r.json() : { batches: [] })
-          .then(d => {
-            const batches = d.batches ?? []
-            let total = 0, missing = 0
-            for (const b of batches) {
-              const mc = b.market_count ?? 0
-              if (mc > 0) total += mc; else missing++
-            }
-            total += missing * 3000
-            if (total > 0) setActiveMarkets(total)
-          })
+    let cancelled = false
+    fetch('/api/vision/stats/global')
+      .then(r => (r.ok ? r.json() : null))
+      .then((d: GlobalStats | null) => {
+        if (cancelled || !d) return
+        setStats({
+          totalMarkets:
+            typeof d.totalMarkets === 'number' && d.totalMarkets > 0
+              ? d.totalMarkets
+              : null,
+          totalSettled:
+            typeof d.totalSettled === 'number' && d.totalSettled > 0
+              ? d.totalSettled
+              : null,
+        })
       })
       .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  if (activeMarkets === 0) return <span className="tabular-nums">&mdash;</span>
+  if (!stats || (stats.totalMarkets == null && stats.totalSettled == null)) {
+    return <span className="tabular-nums">&mdash;</span>
+  }
+
+  const segments: React.ReactNode[] = []
+  if (stats.totalMarkets != null) {
+    segments.push(
+      <span key="markets">
+        <span className="font-bold">{stats.totalMarkets.toLocaleString()}</span> markets
+      </span>,
+    )
+  }
+  if (stats.totalSettled != null) {
+    segments.push(
+      <span key="settlements">
+        <span className="font-bold">{stats.totalSettled.toLocaleString()}</span> settlements
+      </span>,
+    )
+  }
 
   return (
     <span className="tabular-nums">
-      <span className="font-bold">{activeMarkets.toLocaleString()}</span> live markets
+      {segments.map((seg, i) => (
+        <span key={i}>
+          {i > 0 && <span className="mx-2 text-text-muted/40">·</span>}
+          {seg}
+        </span>
+      ))}
     </span>
   )
 }

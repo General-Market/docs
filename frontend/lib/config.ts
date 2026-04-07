@@ -17,7 +17,15 @@ export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
 //   Before: fetch(`${ISSUER_VISION_URL}/path`)
 //   After:  fetch(`${getIssuerVisionUrl()}/path`)
 export function getAaDataNodeUrl(): string {
-  return process.env['AA_DATA_NODE_URL'] || 'http://localhost:8200'
+  // Chain through every env var that could plausibly point at the data-node.
+  // Vercel deployments historically only had DATA_NODE_URL set; without the
+  // fallback the topbar fetch hits localhost and silently returns 0.
+  return (
+    process.env['AA_DATA_NODE_URL'] ||
+    process.env['DATA_NODE_URL'] ||
+    process.env['NEXT_PUBLIC_DATA_NODE_URL'] ||
+    'http://localhost:8200'
+  )
 }
 
 export function getDataNodeServer(): string {
