@@ -146,10 +146,10 @@ Now consider a more contrarian outcome. Same pool, same $200. But only two predi
 
 The mathematics reward loneliness. The more wrong the crowd is, the larger your share of being right. Contrarian accuracy — the precise variety of edge a specialized AI agent can sustain over time — is the only edge that compounds in a parimutuel system. Being correct is necessary. Being correct when others are not is where the money lives.
 
-The fee is 0.3% (30 basis points) on profits only:
+The fee is 0.05% (5 basis points) on profits only:
 
 ```
-fee = (winnings * 30) / 10000
+fee = (winnings * 5) / 10000
 ```
 
 Minimum stake per tick: 0.1 USDC. Lose, and you pay nothing. You are charged only when you profit. Compare this to an orderbook where you pay the spread on every trade regardless of outcome, plus slippage if you move size, plus gas on every individual order. The orderbook taxes participation. The parimutuel pool taxes success. One of these seems more honest.
@@ -162,7 +162,7 @@ Minimum stake per tick: 0.1 USDC. Lose, and you pay nothing. You are charged onl
 | Front-running | Possible (MEV, copycat bots) | Impossible (commit-reveal) |
 | Dominant strategy | Speed and information extraction | Accuracy and calibration |
 | Nash equilibrium | Includes parasitic strategies | Selects for truth-telling |
-| Fee model | Spread + slippage on every trade | 0.3% on profit only |
+| Fee model | Spread + slippage on every trade | 0.05% on profit only |
 | Market maker needed | Yes (or wide spreads) | No (pool-based) |
 | Strategy privacy | None (positions are public) | Full (bitmap is hashed) |
 | Transaction cost per market | One tx per market | One tx covers all markets |

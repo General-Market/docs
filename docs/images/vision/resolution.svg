@@ -159,5 +159,5 @@
   <!-- ========== PARIMUTUEL SETTLEMENT ========== -->
   <rect x="220" y="628" width="540" height="72" rx="14" fill="#0A0A0A" fill-opacity="0.03" stroke="#0A0A0A" stroke-opacity="0.08" stroke-width="1" filter="url(#shadow)"/>
   <text x="490" y="656" text-anchor="middle" font-size="14" font-weight="600" fill="#0A0A0A">Parimutuel Settlement</text>
-  <text x="490" y="676" text-anchor="middle" font-size="11" fill="#0A0A0A" fill-opacity="0.5">Winners split losers' stakes proportionally · 0.3% fee on profits only · No multiplier</text>
+  <text x="490" y="676" text-anchor="middle" font-size="11" fill="#0A0A0A" fill-opacity="0.5">Winners split losers' stakes proportionally · 0.05% fee on profits only · No multiplier</text>
 </svg>

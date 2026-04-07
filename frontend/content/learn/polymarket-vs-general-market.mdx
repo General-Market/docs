@@ -11,7 +11,7 @@ tldr:
   - "Polymarket: <strong>~8,000 markets</strong>, deep liquidity on major events. Kalshi: <strong>CFTC-regulated</strong>, US-only. Vision: <strong>400,000+ markets</strong> across 88-98+ data sources"
   - "Vision averages <strong>~19 traders per market</strong> — thin markets are not a weakness, they are where edge lives"
   - "Three settlement models: UMA optimistic oracle (hours), centralized clearing (instant), <strong>BLS ceil(2n/3) consensus (~10 minutes)</strong>"
-  - "Vision charges <strong>0.3% on profits only</strong> — Polymarket takes spread, Kalshi takes per-contract fees on every trade"
+  - "Vision charges <strong>0.05% on profits only</strong> — Polymarket takes spread, Kalshi takes per-contract fees on every trade"
 ---
 
 Three prediction markets. Three architectures. Three different convictions about what it means to bet on the future. They share a genus and nothing else. Choosing between them is not a matter of preference — it is a matter of knowing what you actually want. Which, if you have spent any time in markets, you know is the hardest question of all.
@@ -29,7 +29,7 @@ Three prediction markets. Three architectures. Three different convictions about
 | KYC | Required (US) | Required (US-only) | Not required |
 | Min bet | ~$1 | $1 | $0.10 |
 | Bot support | API + third-party tools | API | Native CLI, on-chain registry, bitmap portfolios |
-| Fee | Variable spread | Per-contract on every trade | 0.3% on profit only |
+| Fee | Variable spread | Per-contract on every trade | 0.05% on profit only |
 | Avg traders/market | ~1,200 | Varies | ~19 |
 
 Numbers are scaffolding. The architecture beneath them is where the real divergence lives — and architecture, unlike numbers, cannot be renegotiated.
@@ -165,7 +165,7 @@ Vision's bot infrastructure differs in kind, not degree. Sealed bets protect you
 
 **Kalshi** charges per-contract fees on both sides of a trade. The exact fee depends on the contract and your volume tier, but you pay to enter and exit regardless of outcome. The house collects whether you win or lose.
 
-**Vision** charges 0.3% on profits only. Lose a bet, pay nothing. Win $100, pay $0.30. No spread, no slippage, no variable cost depending on market conditions. Losing costs you your stake and nothing more. Winning costs a small, predictable percentage.
+**Vision** charges 0.05% on profits only. Lose a bet, pay nothing. Win $100, pay $0.05. No spread, no slippage, no variable cost depending on market conditions. Losing costs you your stake and nothing more. Winning costs a small, predictable percentage.
 
 For a bot trading across dozens of markets per tick, the arithmetic matters. Polymarket's per-trade spread and Kalshi's per-contract fees compound across every position. Vision's profit-only fee is zero on losses and fixed on wins. Over hundreds of trades, the flat structure is more predictable and often cheaper for portfolio-style strategies. Fees are boring until they are the difference between profit and erosion.
 
