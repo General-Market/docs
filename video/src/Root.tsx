@@ -34,6 +34,11 @@ import {
 } from "./compositions/replicates/council/VirtualsReplicateComposition";
 import { GeneralMarket } from "./compositions/general-market/GeneralMarket";
 import { TOTAL_DURATION as GENERAL_MARKET_DURATION } from "./compositions/general-market/theme";
+import {
+  generalMarketReplicateMeta,
+  generalMarketSideBySideMeta,
+  generalMarketSceneMetas,
+} from "./compositions/replicates/general-market/GeneralMarketComposition";
 
 // Per-scene compositions are hidden from the studio sidebar by default.
 // Set REMOTION_SHOW_SCENES=1 in the environment to register them — needed
@@ -401,6 +406,39 @@ export const RemotionRoot: React.FC = () => {
       {SHOW_SCENES && (
         <Folder name="Council-Scenes">
           {councilSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
+
+      {/* ═══ GENERAL MARKET REPLICATE — explainer, council-style fork ═══ */}
+      <Composition
+        id={generalMarketReplicateMeta.id}
+        component={generalMarketReplicateMeta.component}
+        durationInFrames={generalMarketReplicateMeta.durationInFrames}
+        fps={generalMarketReplicateMeta.fps}
+        width={generalMarketReplicateMeta.width}
+        height={generalMarketReplicateMeta.height}
+      />
+      <Composition
+        id={generalMarketSideBySideMeta.id}
+        component={generalMarketSideBySideMeta.component}
+        durationInFrames={generalMarketSideBySideMeta.durationInFrames}
+        fps={generalMarketSideBySideMeta.fps}
+        width={generalMarketSideBySideMeta.width}
+        height={generalMarketSideBySideMeta.height}
+      />
+      {SHOW_SCENES && (
+        <Folder name="GeneralMarketReplicate-Scenes">
+          {generalMarketSceneMetas.map((meta) => (
             <Composition
               key={meta.id}
               id={meta.id}
