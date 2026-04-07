@@ -331,12 +331,6 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         )}
 
-        {/* Section header — aligns with VAULTS (left) and RISK (right) */}
-        <div className="hidden lg:flex shrink-0 bg-[#1A1A1A] px-4 py-1.5 items-center justify-between">
-          <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Overview</span>
-          <span className="font-mono text-[9px] text-white/35 uppercase tracking-[0.08em]">{(branding?.strategy ?? fund.strategy ?? '').replace(/_/g, ' ')}</span>
-        </div>
-
         {/* Stats strip, 3 cells on mobile, 6 on desktop */}
         <div className="grid grid-cols-3 lg:grid-cols-6 shrink-0 border-b border-[#E0E0E0]">
           <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
@@ -547,10 +541,6 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
 
       {/* Right column (desktop only) */}
       <div className="hidden lg:flex flex-col w-[300px] shrink-0 border-l border-[#E0E0E0] overflow-y-auto">
-        {/* Risk */}
-        <div className="bg-[#1A1A1A] px-4 py-1.5">
-          <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Risk</span>
-        </div>
         <div className="px-4 py-3 border-b border-[#F0F0F0]">
           <div className="grid grid-cols-2 gap-2">
             <div><div className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted mb-0.5">Sharpe Ratio</div><div className="font-mono text-sm font-bold">{fmtRatio(sharpe)}</div></div>
@@ -736,14 +726,25 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           </button>
         </div>
 
+        {/* Section header row — single continuous bar across all three columns */}
+        <div className="hidden lg:flex shrink-0 bg-[#1A1A1A]">
+          <div className="w-[260px] shrink-0 px-4 py-1.5 flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Vaults</span>
+            <span className="font-mono text-[9px] text-white/35">{vaults.length} vaults</span>
+          </div>
+          <div className="flex-1 px-4 py-1.5 flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Overview</span>
+            <span className="font-mono text-[9px] text-white/35 uppercase tracking-[0.08em]">{strategyKey.replace(/_/g, ' ')}</span>
+          </div>
+          <div className="w-[300px] shrink-0 px-4 py-1.5 flex items-center">
+            <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Risk</span>
+          </div>
+        </div>
+
         {/* Body: sidebar + detail */}
         <div className="flex flex-1 min-h-0">
           {/* Sidebar (desktop only) */}
           <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-[#E0E0E0]">
-            <div className="bg-[#1A1A1A] px-4 py-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Vaults</span>
-              <span className="font-mono text-[9px] text-white/35">{vaults.length} vaults</span>
-            </div>
             <div className="flex-1 overflow-y-auto">
               {vaults.map((entry, i) => {
                 const ep = entry.vault.performanceSinceInception
