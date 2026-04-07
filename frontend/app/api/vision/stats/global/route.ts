@@ -10,10 +10,14 @@ import sourcesDisplay from '@/data/sources-display.json'
  * - Total markets: data-node `/market/stats`. Prefers the top-level
  *   `totalAssets` field; falls back to summing per-source `totalAssets`
  *   in case an older data-node build omits the aggregate.
- * - Total settlements: sum of per-source `history?per_page=1` totalSettled
- *   across every source in sources-display.json. The oracle paginates per
- *   source, so the only way to get a global count is N small calls. Cached
- *   60s on the CDN so the fan-out runs at most once per minute.
+ * - Total settlements: we count at the *market* level, not the batch level.
+ *   Each settled batch resolves N markets simultaneously, so a single twitch
+ *   batch with 2559 markets counts as 2559 settlements. We fan out across
+ *   all sources and compute `totalSettled * marketCount` for each, using the
+ *   most recent batch's marketCount as the per-source multiplier. (Market
+ *   count drifts slowly as sources add/remove markets; the latest value is
+ *   a good enough approximation for a topbar stat.) Cached 60s on the CDN
+ *   so the fan-out runs at most once per minute.
  *
  * Both values are returned as `number | null`. `null` means "fetch failed —
  * don't display anything" (topbar hides the segment). Zero is a real
@@ -66,7 +70,11 @@ export async function GET() {
           return 0
         }
         const data = await res.json()
-        return Number(data.totalSettled ?? 0)
+        const batchCount = Number(data?.totalSettled ?? 0)
+        const latestBatch = Array.isArray(data?.batches) ? data.batches[0] : null
+        const marketCount = Number(latestBatch?.marketCount ?? 0)
+        if (!Number.isFinite(batchCount) || !Number.isFinite(marketCount)) return 0
+        return batchCount * marketCount
       } catch {
         settledFetchFailed++
         return 0
