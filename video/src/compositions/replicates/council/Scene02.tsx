@@ -7,10 +7,10 @@ import {
   spring,
 } from "remotion";
 import { loadFont } from "@remotion/google-fonts/SpaceMono";
+import { AnimatedText, COUNCIL_TEAL } from "./AnimatedText";
 
 const { fontFamily } = loadFont();
-const TEAL = "#0FE8AE";
-const TEXT_DARK = "#000000";
+const TEAL = COUNCIL_TEAL;
 
 /* ── Inline SVG Icons ───────────────────────────────────── */
 
@@ -80,6 +80,27 @@ const ModelCircle: React.FC<{ kind: "openai" | "sparkle" | "gemini" }> = ({
   </div>
 );
 
+/** A trio of model circles arranged in a small triangle. Used as the icon for "Hundreds of agents". */
+const ModelCircles: React.FC = () => (
+  <div
+    style={{
+      position: "relative",
+      width: 160,
+      height: 90,
+    }}
+  >
+    <div style={{ position: "absolute", left: 0, top: 20 }}>
+      <ModelCircle kind="sparkle" />
+    </div>
+    <div style={{ position: "absolute", left: 51, top: 0 }}>
+      <ModelCircle kind="openai" />
+    </div>
+    <div style={{ position: "absolute", left: 102, top: 20 }}>
+      <ModelCircle kind="gemini" />
+    </div>
+  </div>
+);
+
 const StopwatchIcon: React.FC = () => (
   <svg width="75" height="75" viewBox="0 0 48 48">
     <rect x="20" y="3" width="8" height="5" rx="1" fill={TEAL} />
@@ -113,8 +134,8 @@ const StopwatchIcon: React.FC = () => (
   </svg>
 );
 
-const NetworkIcon: React.FC = () => (
-  <svg width="80" height="80" viewBox="0 0 80 80">
+const NetworkNodes: React.FC = () => (
+  <svg width="90" height="90" viewBox="0 0 80 80">
     <line x1="28" y1="32" x2="48" y2="20" stroke={TEAL} strokeWidth="3" />
     <line x1="28" y1="32" x2="56" y2="50" stroke={TEAL} strokeWidth="3" />
     <rect x="42" y="14" width="12" height="12" rx="1.5" fill={TEAL} />
@@ -148,7 +169,7 @@ const MoneyBagIcon: React.FC = () => (
 );
 
 const AlertCircleIcon: React.FC = () => (
-  <svg width="48" height="48" viewBox="0 0 48 48">
+  <svg width="85" height="85" viewBox="0 0 48 48">
     <circle
       cx="24"
       cy="24"
@@ -265,46 +286,13 @@ const BrainHeadIcon: React.FC<{ headOpacity: number; brainScale: number }> = ({
   </div>
 );
 
-/* ── Helpers ─────────────────────────────────────────────── */
-
-const useTypewriter = (text: string, startFrame: number, charsPerFrame = 0.9) => {
-  const frame = useCurrentFrame();
-  const elapsed = Math.max(0, frame - startFrame);
-  const charCount = Math.min(Math.floor(elapsed * charsPerFrame), text.length);
-  return text.slice(0, charCount);
-};
-
-const TealWord: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ color: TEAL }}>{children}</span>
-);
-
-const FloatingIcon: React.FC<{
-  x: number;
-  y: number;
-  opacity: number;
-  scale: number;
-  children: React.ReactNode;
-}> = ({ x, y, opacity, scale, children }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: `${x}%`,
-      top: `${y}%`,
-      transform: `translate(-50%, -50%) scale(${scale})`,
-      opacity,
-    }}
-  >
-    {children}
-  </div>
-);
-
 /* ── Main Scene ──────────────────────────────────────────── */
 
 export const Scene02: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  /* Clean card pop-in. No pill inheritance. Spring from 0.85 → 1. */
+  /* Card pop-in. Spring 0.85 → 1. */
   const cardPop = spring({
     frame,
     fps,
@@ -312,203 +300,27 @@ export const Scene02: React.FC = () => {
     to: 1,
     durationInFrames: 14,
   });
-  const cardEnter = interpolate(frame, [0, 6], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* Card fades out near the end so the brain can be left alone on white. */
   const cardOpacity = interpolate(frame, [0, 6, 178, 188], [0, 1, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  /* ── Phase 1: "Thousands of trades" + candlestick center → top-left ── */
-  const candleSpringFrame = Math.max(0, frame - 8);
-  const candleScale = spring({
-    frame: candleSpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const candleX = interpolate(frame, [30, 42], [50, 28], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const candleY = interpolate(frame, [30, 42], [42, 24], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const tradesText = useTypewriter("Thousands of trades", 12, 0.7);
-  const tradesOpacity = interpolate(frame, [12, 18, 42, 50], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 2: "Hundreds of agents" + AI circles center → top-right ── */
-  const aiCircleSpringFrame = Math.max(0, frame - 48);
-  const aiCircleScale = spring({
-    frame: aiCircleSpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const aiX = interpolate(frame, [62, 74], [50, 72], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const aiY = interpolate(frame, [62, 74], [42, 28], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const agentsText = useTypewriter("Hundreds of agents", 52, 0.7);
-  const agentsOpacity = interpolate(frame, [52, 58, 82, 90], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 3: Patterns + network nodes (CENTER first, then bottom-left) ── */
-  const networkSpringFrame = Math.max(0, frame - 70);
-  const networkScale = spring({
-    frame: networkSpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const networkOpacity = interpolate(frame, [70, 76], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  /* Network appears center then translates to bottom-left between f025 and f027 */
-  const networkX = interpolate(frame, [82, 96], [50, 28], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const networkY = interpolate(frame, [82, 96], [50, 68], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const patternsText = useTypewriter("Patterns", 72, 0.8);
-  const patternsOpacity = interpolate(frame, [72, 78, 96, 104], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 4: Timing + stopwatch (CENTER first, then top-center) ── */
-  const stopwatchSpringFrame = Math.max(0, frame - 92);
-  const stopwatchScale = spring({
-    frame: stopwatchSpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const stopwatchOpacity = interpolate(frame, [92, 98], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const stopwatchX = 50;
-  const stopwatchY = interpolate(frame, [104, 116], [42, 22], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const timingText = useTypewriter("Timing", 96, 0.8);
-  const timingOpacity = interpolate(frame, [96, 102, 116, 124], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 5: Position Sizing + money bag (CENTER above text → bottom-right) ── */
-  const moneySpringFrame = Math.max(0, frame - 116);
-  const moneyScale = spring({
-    frame: moneySpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const moneyOpacity = interpolate(frame, [116, 122], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  /* Money bag starts center-above-text and travels to bottom-right (f029→f031) */
-  const moneyX = interpolate(frame, [128, 142], [50, 73], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const moneyY = interpolate(frame, [128, 142], [40, 71], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const positionOpacity = interpolate(frame, [118, 124, 142, 150], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const sizingOpacity = interpolate(frame, [126, 132, 142, 150], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 6: Manipulation Signals + alert circle ── */
-  const alertSpringFrame = Math.max(0, frame - 142);
-  const alertScale = spring({
-    frame: alertSpringFrame,
-    fps,
-    from: 0,
-    to: 1,
-    durationInFrames: 12,
-  });
-  const alertOpacity = interpolate(frame, [142, 148], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* "Manipulation" enters at 144, "Signals" 12 frames later at 156. Both hold to 174. */
-  const manipulationOpacity = interpolate(
-    frame,
-    [144, 150, 174, 180],
-    [0, 1, 1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    },
-  );
-  const signalsOpacity = interpolate(frame, [156, 162, 174, 180], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* ── Phase 7: Brain transition. Cloud alone first (f036), head fills last (f038). ── */
-  /* Brain cloud appears at frame ~160 (= f036 = (36-20)*10 = 160) */
-  const brainOpacity = interpolate(frame, [160, 168], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const brainSpringFrame = Math.max(0, frame - 160);
+  /* Brain phase. The cloud arrives first, the head fills in last. */
   const brainSpring = spring({
-    frame: brainSpringFrame,
+    frame: Math.max(0, frame - 160),
     fps,
     from: 0.5,
     to: 1,
     durationInFrames: 16,
   });
-
-  /* Head silhouette only fills in at the very last reference frame (f038 = frame 180) */
+  const brainOpacity = interpolate(frame, [160, 168], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
   const headOpacity = interpolate(frame, [178, 184], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  /* All scattered icons fade out as the brain takes over */
-  const iconsFadeOut = interpolate(frame, [160, 175], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  /* Brain drifts down + shrinks at the very end while the card incinerates */
   const brainDriftY = interpolate(frame, [180, 188], [0, 60], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -517,8 +329,17 @@ export const Scene02: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
   const overallBrainOpacity = brainOpacity * brainEndOpacity;
+
+  /* All AnimatedText reveals share the same feature anchor inside the card. */
+  const featureAnchor: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    width: 720,
+    height: 260,
+    transform: "translate(-50%, -50%)",
+  };
 
   return (
     <AbsoluteFill
@@ -529,7 +350,7 @@ export const Scene02: React.FC = () => {
         fontFamily,
       }}
     >
-      {/* Card — clean pop-in, no pill inheritance */}
+      {/* Card frame */}
       <div
         style={{
           width: "84%",
@@ -537,202 +358,101 @@ export const Scene02: React.FC = () => {
           borderRadius: 28,
           backgroundColor: "#fff",
           boxShadow: "0 12px 60px rgba(0,0,0,0.08)",
-          opacity: cardOpacity * cardEnter,
+          opacity: cardOpacity,
           transform: `scale(${cardPop})`,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* All accumulated icons — they NEVER disappear once placed */}
-        <div style={{ opacity: iconsFadeOut, position: "absolute", inset: 0 }}>
-          {/* Candlestick (center → TL) */}
-          <FloatingIcon
-            x={candleX}
-            y={candleY}
-            opacity={frame >= 8 ? 1 : 0}
-            scale={candleScale}
-          >
-            <CandlestickIcon />
-          </FloatingIcon>
+        {/* Every feature lives inside this anchor. Icons and their text enter and leave together. */}
+        <div style={featureAnchor}>
+          {/* 1 — Thousands of trades */}
+          <AnimatedText
+            text="Thousands of trades"
+            highlightLastN={1}
+            iconStartFrame={4}
+            iconRiseFrame={12}
+            startFrame={18}
+            framesPerWord={6}
+            fadeOutAt={42}
+            fadeOutFrames={6}
+            fontSize={50}
+            icon={<CandlestickIcon size={90} />}
+          />
 
-          {/* AI model circles (center → TR) — three in a triangle */}
-          <FloatingIcon
-            x={aiX - 5}
-            y={aiY + 3}
-            opacity={frame >= 48 ? aiCircleScale : 0}
-            scale={aiCircleScale}
-          >
-            <ModelCircle kind="sparkle" />
-          </FloatingIcon>
-          <FloatingIcon
-            x={aiX}
-            y={aiY - 5}
-            opacity={frame >= 50 ? aiCircleScale : 0}
-            scale={aiCircleScale}
-          >
-            <ModelCircle kind="openai" />
-          </FloatingIcon>
-          <FloatingIcon
-            x={aiX + 5}
-            y={aiY + 3}
-            opacity={frame >= 52 ? aiCircleScale : 0}
-            scale={aiCircleScale}
-          >
-            <ModelCircle kind="gemini" />
-          </FloatingIcon>
+          {/* 2 — Hundreds of agents */}
+          <AnimatedText
+            text="Hundreds of agents"
+            highlightLastN={1}
+            iconStartFrame={50}
+            iconRiseFrame={58}
+            startFrame={64}
+            framesPerWord={6}
+            fadeOutAt={86}
+            fadeOutFrames={6}
+            fontSize={50}
+            iconRisePx={120}
+            icon={<ModelCircles />}
+          />
 
-          {/* Network nodes — appear CENTER first, then translate to bottom-left */}
-          <FloatingIcon
-            x={networkX}
-            y={networkY}
-            opacity={networkOpacity}
-            scale={networkScale}
-          >
-            <NetworkIcon />
-          </FloatingIcon>
+          {/* 3 — Patterns */}
+          <AnimatedText
+            text="Patterns"
+            highlightLastN={1}
+            iconStartFrame={94}
+            iconRiseFrame={102}
+            startFrame={108}
+            framesPerWord={6}
+            fadeOutAt={124}
+            fadeOutFrames={6}
+            fontSize={54}
+            icon={<NetworkNodes />}
+          />
 
-          {/* Stopwatch — appears CENTER then translates to top-center */}
-          <FloatingIcon
-            x={stopwatchX}
-            y={stopwatchY}
-            opacity={stopwatchOpacity}
-            scale={stopwatchScale}
-          >
-            <StopwatchIcon />
-          </FloatingIcon>
+          {/* 4 — Timing */}
+          <AnimatedText
+            text="Timing"
+            highlightLastN={1}
+            iconStartFrame={128}
+            iconRiseFrame={134}
+            startFrame={140}
+            framesPerWord={6}
+            fadeOutAt={154}
+            fadeOutFrames={6}
+            fontSize={54}
+            icon={<StopwatchIcon />}
+          />
 
-          {/* Money bag — appears center-above-text, travels to bottom-right */}
-          <FloatingIcon
-            x={moneyX}
-            y={moneyY}
-            opacity={moneyOpacity}
-            scale={moneyScale}
-          >
-            <MoneyBagIcon />
-          </FloatingIcon>
+          {/* 5 — Position Sizing */}
+          <AnimatedText
+            text="Position Sizing"
+            highlightLastN={1}
+            iconStartFrame={158}
+            iconRiseFrame={164}
+            startFrame={170}
+            framesPerWord={6}
+            fadeOutAt={186}
+            fadeOutFrames={6}
+            fontSize={50}
+            icon={<MoneyBagIcon />}
+          />
 
-          {/* Alert/exclamation (above text, fixed) */}
-          <FloatingIcon x={50} y={37} opacity={alertOpacity} scale={alertScale}>
-            <AlertCircleIcon />
-          </FloatingIcon>
+          {/* 6 — Manipulation Signals */}
+          <AnimatedText
+            text="Manipulation Signals"
+            highlightLastN={1}
+            iconStartFrame={190}
+            iconRiseFrame={196}
+            startFrame={202}
+            framesPerWord={6}
+            fadeOutAt={220}
+            fadeOutFrames={6}
+            fontSize={50}
+            icon={<AlertCircleIcon />}
+          />
         </div>
 
-        {/* Center text — single line, positioned slightly below card center */}
-        <div
-          style={{
-            position: "absolute",
-            top: "55%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            whiteSpace: "nowrap",
-            opacity: iconsFadeOut,
-          }}
-        >
-          {/* Trades */}
-          <div
-            style={{
-              position: "absolute",
-              opacity: tradesOpacity,
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {tradesText.length <= "Thousands of ".length ? (
-              tradesText
-            ) : (
-              <>
-                Thousands of <TealWord>{tradesText.slice("Thousands of ".length)}</TealWord>
-              </>
-            )}
-          </div>
-
-          {/* Agents */}
-          <div
-            style={{
-              position: "absolute",
-              opacity: agentsOpacity,
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {agentsText.length <= "Hundreds of ".length ? (
-              agentsText
-            ) : (
-              <>
-                Hundreds of <TealWord>{agentsText.slice("Hundreds of ".length)}</TealWord>
-              </>
-            )}
-          </div>
-
-          {/* Patterns */}
-          <div
-            style={{
-              position: "absolute",
-              opacity: patternsOpacity,
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {patternsText}
-          </div>
-
-          {/* Timing */}
-          <div
-            style={{
-              position: "absolute",
-              opacity: timingOpacity,
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {timingText}
-          </div>
-
-          {/* Position Sizing */}
-          <div
-            style={{
-              position: "absolute",
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-              display: "flex",
-              gap: 14,
-            }}
-          >
-            <span style={{ opacity: positionOpacity }}>Position</span>
-            <span style={{ opacity: sizingOpacity, color: "#888" }}>Sizing</span>
-          </div>
-
-          {/* Manipulation Signals */}
-          <div
-            style={{
-              position: "absolute",
-              fontSize: 36,
-              fontWeight: 700,
-              color: TEXT_DARK,
-              whiteSpace: "nowrap",
-              display: "flex",
-              gap: 14,
-            }}
-          >
-            <span style={{ opacity: manipulationOpacity }}>Manipulation</span>
-            <span style={{ opacity: signalsOpacity, color: "#888" }}>Signals</span>
-          </div>
-        </div>
-
-        {/* Brain + head silhouette */}
+        {/* Brain + head silhouette. Its own element, outside the text flow. */}
         <div
           style={{
             position: "absolute",
