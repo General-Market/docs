@@ -230,7 +230,6 @@ VISION_ABI = [
             {"name": "batchId", "type": "uint256"},
             {"name": "configHash", "type": "bytes32"},
             {"name": "depositAmount", "type": "uint256"},
-            {"name": "stakePerTick", "type": "uint256"},
             {"name": "bitmapHash", "type": "bytes32"},
         ],
         "outputs": [],
@@ -250,7 +249,6 @@ VISION_ABI = [
                 "components": [
                     {"name": "bitmapHash", "type": "bytes32"},
                     {"name": "configHash", "type": "bytes32"},
-                    {"name": "deposit", "type": "uint256"},
                     {"name": "joinTimestamp", "type": "uint256"},
                     {"name": "totalDeposited", "type": "uint256"},
                 ],
@@ -526,7 +524,7 @@ class Executor:
 
         Raises BatchNotFoundError if the batch does not exist (creator == 0x0).
         Caller can distinguish "no batch" from "batch exists but not joined"
-        (the latter returns deposit=0 with no exception).
+        (the latter returns totalDeposited=0 with no exception).
         """
         info = self.vision.functions.getBatch(batch_id).call()
         # info[0] is `creator`. Zero address means batch doesn't exist.
@@ -536,9 +534,8 @@ class Executor:
         return {
             "bitmapHash": raw[0],
             "configHash": raw[1],
-            "deposit": raw[2],
-            "joinTimestamp": raw[3],
-            "totalDeposited": raw[4],
+            "joinTimestamp": raw[2],
+            "totalDeposited": raw[3],
         }
 
     def get_batch_info(self, batch_id: int) -> dict:
@@ -589,11 +586,17 @@ class Executor:
         logger.info("USDC approved: %d", amount)
 
     def join_batch_direct(
-        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
+        self, batch_id: int, config_hash: bytes, deposit: int, bitmap_hash: bytes
     ):
-        """Join a batch with direct USDC transfer (approve first)."""
+        """Join a batch with direct USDC transfer (approve first).
+
+        One amount per join. The previous two-amount API leaked the difference
+        between deposit and stake into a forgotten corner of the contract —
+        the parimutuel only saw the stake, the wallet only saw the deposit,
+        and the gap belonged to no one. Now there is just deposit.
+        """
         tx = self.vision.functions.joinBatchDirect(
-            batch_id, config_hash, deposit, stake, bitmap_hash
+            batch_id, config_hash, deposit, bitmap_hash
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
         logger.info("Joined batch %d direct (tx: %s)", batch_id, tx_hash.hex()[:16])
@@ -1086,7 +1089,7 @@ VAULT_ABI = [
     {"type": "function", "name": "claimDeposit", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
     {"type": "function", "name": "requestRedeem", "inputs": [{"type": "uint256"}, {"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
     {"type": "function", "name": "claimRedeem", "inputs": [{"type": "address"}, {"type": "address"}], "outputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
-    {"type": "function", "name": "joinBatch", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "uint256"}, {"type": "uint256"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
+    {"type": "function", "name": "joinBatch", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "uint256"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
     {"type": "function", "name": "updateBitmap", "inputs": [{"type": "uint256"}, {"type": "bytes32"}, {"type": "bytes32"}], "outputs": [], "stateMutability": "nonpayable"},
     {"type": "function", "name": "reconcile", "inputs": [{"type": "uint256"}], "outputs": [], "stateMutability": "nonpayable"},
 ]
@@ -1190,11 +1193,15 @@ class VaultExecutor:
     # ── trading ──
 
     def join_batch(
-        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
+        self, batch_id: int, config_hash: bytes, deposit: int, bitmap_hash: bytes
     ):
-        """Call vault.joinBatch — vault handles USDC internally."""
+        """Call vault.joinBatch — vault handles USDC internally.
+
+        One amount per join. See Executor.join_batch_direct for the autopsy
+        of the previous two-amount design.
+        """
         tx = self.vault.functions.joinBatch(
-            batch_id, config_hash, deposit, stake, bitmap_hash
+            batch_id, config_hash, deposit, bitmap_hash
         ).build_transaction(self._build_tx(gas=800_000))
         tx_hash = self._sign_and_send(tx)
         logger.info("Vault joined batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])

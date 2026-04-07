@@ -276,12 +276,11 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed, vaul
             batch_id, market_count, bets.count("UP"), bets.count("DOWN"),
         )
 
-        stake_wei = int(cfg["stake"] * 10**DECIMALS)
         if vault_mode:
-            vault_executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+            vault_executor.join_batch(batch_id, config_hash, deposit_wei, bm_hash)
         else:
             executor.approve_usdc(deposit_wei)
-            executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+            executor.join_batch_direct(batch_id, config_hash, deposit_wei, bm_hash)
 
         # Wait for the join to be visible on-chain instead of guessing with
         # a fixed sleep. The bitmap submission below depends on the oracle
@@ -408,7 +407,6 @@ def main():
     log.info("  Bot address:  %s", executor.bot_addr)
     log.info("  RPC:          %s", cfg["rpc_url"])
     log.info("  Deposit:      %d USDC", cfg["deposit"])
-    log.info("  Stake/tick:   %d USDC", cfg["stake"])
     log.info("  Max batches:  %d", cfg["max_batches"])
 
     # Check connectivity

@@ -10,7 +10,7 @@ Environment:
   BOT_COUNT          — number of bots to run (default: 10)
   BOT_KEYS           — comma-separated private keys
   BOT_STRATEGIES     — comma-separated strategies (momentum,contrarian,random,etc.)
-  BOT_STAKES         — comma-separated stake amounts per tick
+  BOT_DEPOSITS       — comma-separated deposit amounts per join (USDC)
   PNL_DIR            — directory for PNL files (default: /app/pnl-data)
   STAGGER_SECS       — delay between bot starts (default: 3)
 
@@ -40,7 +40,7 @@ _RESTART_DEAD_WINDOW_SECS = 3600
 _STATUS_DIR_ENV = "SWARM_STATUS_DIR"
 
 
-def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, pnl_file: str, base_env: dict):
+def run_single_bot(bot_id: int, private_key: str, strategy: str, deposit: float, pnl_file: str, base_env: dict):
     """Run a single bot in its own process. Each process gets its own Python
     interpreter, web3 instance, HTTP pool, and WebSocket connection."""
     # With 'spawn' start method the child is a fresh interpreter.
@@ -74,7 +74,7 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
 
         cfg = load_config()
         cfg["strategy"] = strategy
-        cfg["stake"] = stake
+        cfg["deposit"] = deposit
 
         strat = load_strategy(strategy)
 
@@ -104,7 +104,7 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
             http_url=cfg["data_node"],
         )
 
-        log.info("Running: strategy=%s, stake=%.2f, addr=%s", strategy, stake, executor.bot_addr)
+        log.info("Running: strategy=%s, deposit=%.2f, addr=%s", strategy, deposit, executor.bot_addr)
 
         try:
             executor.register_bot()
@@ -128,11 +128,11 @@ def run_single_bot(bot_id: int, private_key: str, strategy: str, stake: float, p
         log.error("Bot %d BaseException: %s", bot_id, e, exc_info=True)
 
 
-def _spawn(bot_id, key, strategy, stake, pnl_file, base_env):
+def _spawn(bot_id, key, strategy, deposit, pnl_file, base_env):
     """Create and start a Process for one bot."""
     p = multiprocessing.Process(
         target=run_single_bot,
-        args=(bot_id, key, strategy, stake, pnl_file, base_env),
+        args=(bot_id, key, strategy, deposit, pnl_file, base_env),
         daemon=False,
         name=f"bot-{bot_id}",
     )
@@ -157,15 +157,15 @@ def main():
     strategies_csv = os.environ.get("BOT_STRATEGIES", "momentum,contrarian,random,bullish,bearish,momentum,contrarian,random,bullish,bearish")
     strategies = [s.strip() for s in strategies_csv.split(",")]
 
-    # Parse stakes
-    stakes_csv = os.environ.get("BOT_STAKES", "1.5,1.3,1.2,1.4,1.6,1.1,1.7,1.8,1.9,1.15")
-    stakes = [float(s.strip()) for s in stakes_csv.split(",")]
+    # Parse per-bot deposit amounts (USDC). One join, one number.
+    deposits_csv = os.environ.get("BOT_DEPOSITS", "10,10,10,10,10,10,10,10,10,10")
+    deposits = [float(s.strip()) for s in deposits_csv.split(",")]
 
     # Pad to bot_count
     while len(strategies) < bot_count:
         strategies.append("random")
-    while len(stakes) < bot_count:
-        stakes.append(0.5)
+    while len(deposits) < bot_count:
+        deposits.append(10.0)
 
     os.makedirs(pnl_dir, exist_ok=True)
 
@@ -199,12 +199,12 @@ def main():
             continue
 
         pnl_file = os.path.join(pnl_dir, f"pnl-{i}.json")
-        p = _spawn(i, keys[i], strategies[i], stakes[i], pnl_file, base_env)
+        p = _spawn(i, keys[i], strategies[i], deposits[i], pnl_file, base_env)
         children.append({
             "bot_id": i,
             "key": keys[i],
             "strategy": strategies[i],
-            "stake": stakes[i],
+            "deposit": deposits[i],
             "pnl_file": pnl_file,
             "proc": p,
             "restart_count": 0,
@@ -286,7 +286,7 @@ def main():
 
                 new_proc = _spawn(
                     bot_id, child["key"], child["strategy"],
-                    child["stake"], child["pnl_file"], base_env,
+                    child["deposit"], child["pnl_file"], base_env,
                 )
                 child["proc"] = new_proc
                 log.info("Bot %d restarted (new pid=%d)", bot_id, new_proc.pid)

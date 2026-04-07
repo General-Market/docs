@@ -240,7 +240,6 @@ class Tracker:
         batch_id = batch.get("batchId", batch.get("id"))
         config_hash = batch.get("configHash", batch.get("config_hash", b"\x00" * 32))
         deposit = int(self._config.get("deposit", 10) * self._usdc_unit)
-        stake = int(self._config.get("stake", 1) * self._usdc_unit)
 
         # Generate predictions using real market data from data-node.
         # The ONLY trustworthy source of market count is fetch_batch_config
@@ -315,7 +314,7 @@ class Tracker:
             self._usdc_approved = True
         if isinstance(config_hash, str):
             config_hash = bytes.fromhex(config_hash.replace("0x", ""))
-        self._executor.join_batch_direct(batch_id, config_hash, deposit, stake, bitmap_hash)
+        self._executor.join_batch_direct(batch_id, config_hash, deposit, bitmap_hash)
 
         # Wait for block confirmation before submitting bitmap to oracles
         # (oracles need to index the PlayerJoined event first)

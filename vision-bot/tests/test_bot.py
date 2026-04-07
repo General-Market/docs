@@ -47,7 +47,6 @@ class TestRunCycle:
         cfg["batch_ids"] = []
         cfg["max_batches"] = 5
         cfg["deposit"] = 1
-        cfg["stake"] = 1
         executor = MagicMock()
         executor.bot_addr = "0x1234"
         executor.usdc_balance.return_value = 100 * 10**18
@@ -128,7 +127,6 @@ class TestRunCycle:
         cfg["batch_ids"] = []
         cfg["max_batches"] = 5
         cfg["deposit"] = 1
-        cfg["stake"] = 1
         executor = MagicMock()
         executor.bot_addr = "0x1234"
         executor.usdc_balance.return_value = 100 * 10**18

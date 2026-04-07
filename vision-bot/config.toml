@@ -1,6 +1,5 @@
 strategy = "random"
 deposit = 10
-stake = 1
 max_batches = 5
 max_exposure = 100
 poll_interval = 30

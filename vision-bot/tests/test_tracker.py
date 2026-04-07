@@ -15,13 +15,8 @@ def make_mock_executor():
     executor.get_position.return_value = {
         "bitmapHash": b"\x00" * 32,
         "configHash": b"\x00" * 32,
-        "stakePerTick": 100_000,
-        "startTick": 0,
-        "balance": 10_000_000,
-        "lastClaimedTick": 0,
         "joinTimestamp": 1000,
         "totalDeposited": 10_000_000,
-        "isVirtual": False,
     }
     return executor
 
@@ -94,17 +89,12 @@ def test_try_claim_with_bls_sig():
     tracker.on_join(5, 10_000_000, b"\x00", ["BTC-UP"])
     pos = tracker._positions[5]
 
-    # Mock on-chain position with startTick=0, lastClaimedTick=0 -> fromTick=1
+    # Mock on-chain position
     executor.get_position.return_value = {
         "bitmapHash": b"\x00" * 32,
         "configHash": b"\x00" * 32,
-        "stakePerTick": 100_000,
-        "startTick": 0,
-        "balance": 10_000_000,
-        "lastClaimedTick": 0,
         "joinTimestamp": 1000,
         "totalDeposited": 10_000_000,
-        "isVirtual": False,
     }
 
     mock_resp = MagicMock()
@@ -298,20 +288,14 @@ def test_check_rounds_joins_new_batch():
     tracker, executor, _ = make_tracker({
         "round_subscriptions": [("crypto", 300)],
         "deposit": 10,
-        "stake": 1,
         "data_node": "",
     })
     # get_position must return joinTimestamp=0 for the new batch (not yet joined)
     executor.get_position.return_value = {
         "bitmapHash": b"\x00" * 32,
         "configHash": b"\x00" * 32,
-        "stakePerTick": 0,
-        "startTick": 0,
-        "balance": 0,
-        "lastClaimedTick": 0,
         "joinTimestamp": 0,
         "totalDeposited": 0,
-        "isVirtual": False,
     }
     executor.is_tick_locked.return_value = False
     # Mock oracle returning active batch
@@ -342,20 +326,14 @@ def test_check_rounds_skips_already_joined_on_chain():
     """Batches already joined on-chain must be tracked silently, not re-attempted."""
     tracker, executor, _ = make_tracker({
         "deposit": 10,
-        "stake": 1,
         "data_node": "",
     })
     # On-chain: position exists (joinTimestamp > 0)
     executor.get_position.return_value = {
         "bitmapHash": b"\xab" * 32,
         "configHash": b"\xcd" * 32,
-        "stakePerTick": 1_000_000_000_000_000_000,
-        "startTick": 0,
-        "balance": 10_000_000_000_000_000_000,
-        "lastClaimedTick": 0,
         "joinTimestamp": 1774600000,
         "totalDeposited": 100_000_000_000_000_000_000,
-        "isVirtual": False,
     }
     mock_resp = MagicMock()
     mock_resp.ok = True

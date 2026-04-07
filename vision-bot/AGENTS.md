@@ -33,7 +33,7 @@ CHAIN_ID=421611337
 100  USDC =   100_000_000   (1e8)
 ```
 
-Min stake per tick: 100000 (0.1 USDC).
+Min deposit per join: 1e17 wei on L3 (0.1 USDC at 18 decimals).
 
 ## Contract Details
 
@@ -60,7 +60,7 @@ GET  /vision/markets                          -> { markets: Market[] }
 GET  /vision/batch/{id}/state                 -> BatchStateResponse
 POST /vision/bitmap                           -> { accepted, batch_id, player }
      Body: { player, batch_id, bitmap_hex, expected_hash }
-GET  /vision/balance/{batch_id}/{player}      -> { batch_id, player, balance, stake_per_tick }
+GET  /vision/balance/{batch_id}/{player}      -> { batch_id, player, balance, total_deposited }
 GET  /vision/batch/{id}/history               -> { history: TickHistoryEntry[] }
 GET  /vision/reveal/{batch_id}/{tick_id}      -> { batch_id, tick_id, bitmaps: RevealedBitmap[] }
 POST /vision/backtest                         -> { win_rate, pnl_curve, total_pnl }
@@ -102,9 +102,8 @@ BatchStateResponse {
 
 PlayerState {
   address: string
-  stake_per_tick: string          // wei
+  total_deposited: string         // wei
   balance: string                 // wei
-  start_tick: number
   has_bitmap: boolean
 }
 
@@ -146,8 +145,8 @@ LeaderboardEntry {
 
 ### Token Encoding
 
-All `balance`, `tvl`, `stake_per_tick`, `total_matched` fields are string-encoded wei.
-USDC uses 6 decimals: 1 USDC = "1000000".
+All `balance`, `tvl`, `total_deposited`, `total_matched` fields are string-encoded wei.
+L3 USDC uses 18 decimals: 1 USDC = "1000000000000000000".
 
 ### Error Format
 
@@ -176,13 +175,13 @@ API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api/vision"
 
 VISION_ABI = [
     {
-        "name": "joinBatch",
+        "name": "joinBatchDirect",
         "type": "function",
         "stateMutability": "nonpayable",
         "inputs": [
             {"name": "batchId", "type": "uint256"},
+            {"name": "configHash", "type": "bytes32"},
             {"name": "depositAmount", "type": "uint256"},
-            {"name": "stakePerTick", "type": "uint256"},
             {"name": "bitmapHash", "type": "bytes32"},
         ],
         "outputs": [],
@@ -201,13 +200,9 @@ VISION_ABI = [
                 "type": "tuple",
                 "components": [
                     {"name": "bitmapHash", "type": "bytes32"},
-                    {"name": "stakePerTick", "type": "uint256"},
-                    {"name": "startTick", "type": "uint256"},
-                    {"name": "balance", "type": "uint256"},
-                    {"name": "lastClaimedTick", "type": "uint256"},
+                    {"name": "configHash", "type": "bytes32"},
                     {"name": "joinTimestamp", "type": "uint256"},
                     {"name": "totalDeposited", "type": "uint256"},
-                    {"name": "totalClaimed", "type": "uint256"},
                 ],
             }
         ],
@@ -326,8 +321,7 @@ bitmap_hex = "0x" + bitmap.hex()
 ### Step 5: Approve USDC + Join Batch
 
 ```python
-DEPOSIT = 10_000_000   # 10 USDC (6 decimals)
-STAKE   = 1_000_000    # 1 USDC per tick per market
+DEPOSIT = 10 * 10**18  # 10 USDC (L3 = 18 decimals)
 
 def sign_and_send(tx):
     signed = account.sign_transaction(tx)
@@ -352,8 +346,8 @@ def join_batch(batch_id, market_count):
     sign_and_send(approve_tx)
 
     # 2. Join on-chain (commits bitmap hash)
-    join_tx = vision.functions.joinBatch(
-        batch_id, DEPOSIT, STAKE, bitmap_hash
+    join_tx = vision.functions.joinBatchDirect(
+        batch_id, config_hash, DEPOSIT, bitmap_hash
     ).build_transaction({
         "from": bot_address,
         "gas": 500_000,
@@ -431,7 +425,7 @@ def check_balance(batch_id):
     resp.raise_for_status()
     return resp.json()
 
-# Response: { batch_id, player, balance, stake_per_tick }
+# Response: { batch_id, player, balance, total_deposited }
 # In production, also returns bls_signature for on-chain claim.
 ```
 
@@ -481,9 +475,8 @@ while True:
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `AlreadyJoined` | Already in batch | Use `deposit()` to add funds or `updateBitmap()` to change predictions |
-| `InsufficientDeposit` | depositAmount < stakePerTick | Increase deposit amount |
-| `StakeBelowMinimum` | stakePerTick < 100000 | Set stake >= 0.1 USDC (100000) |
+| `AlreadyJoined` | Already in batch | Use `updateBitmap()` to change predictions |
+| `DepositBelowMinimum` | depositAmount < MIN_DEPOSIT (1e17) | Set deposit >= 0.1 USDC |
 | `BatchNotFound` | Invalid batch ID | Re-fetch batches from API |
 | `BatchPaused` | Batch suspended | Skip this batch, try another |
 | `BotAlreadyRegistered` | Already registered | Skip registration step |

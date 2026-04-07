@@ -211,7 +211,6 @@ def load_config(path=None):
     defaults = {
         "strategy": "random",
         "deposit": 10.0,
-        "stake": 1.0,
         "max_batches": 50,
         "max_exposure": 1000,
         "poll_interval": 30,
@@ -271,7 +270,6 @@ def load_config(path=None):
     env_map = {
         "STRATEGY": "strategy",
         "DEPOSIT_AMOUNT": "deposit",
-        "STAKE_PER_TICK": "stake",
         "MAX_BATCHES": "max_batches",
         "MAX_EXPOSURE": "max_exposure",
         "POLL_INTERVAL": "poll_interval",

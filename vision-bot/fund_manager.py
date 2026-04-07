@@ -33,7 +33,7 @@ logging.basicConfig(
 log = logging.getLogger("fund-manager")
 DECIMALS = 18
 # Mirror of Vision.MIN_STAKE_PER_TICK — joins below this revert.
-MIN_STAKE_WEI = 10**17  # 0.1 USDC
+MIN_DEPOSIT_WEI = 10**17  # 0.1 USDC
 
 STATE_FILE = os.environ.get("STATE_FILE", "/app/pnl-data/fund-manager-state.json")
 VISION_DB_URL = os.environ.get("VISION_DB_URL", "")
@@ -514,8 +514,8 @@ def run_cycle(
             feed_subscriptions -= stale
 
     # Risk management: bet alloc_bps of vault assets per batch.
-    # Each join is a single-tick bet (deposit == stake) to avoid the unused
-    # deposit getting permanently locked in Vision.
+    # One amount per join — the two-number accounting that orphaned capital
+    # in the contract is gone.
     alloc_bps = int(cfg.get("allocation_bps", 500))  # 500 = 5%
 
     joined_this_cycle = 0
@@ -547,7 +547,7 @@ def run_cycle(
             continue
 
         # Filter by idle capital — each fund bets alloc_bps% of its total assets,
-        # floored at MIN_STAKE_WEI so the contract doesn't reject the deposit.
+        # floored at MIN_DEPOSIT_WEI so the contract doesn't reject the deposit.
         # Use the per-cycle cached info AND subtract any joins already queued
         # in the same cycle so two batches don't double-spend the same balance.
         def has_idle(f):
@@ -556,7 +556,7 @@ def run_cycle(
                 return False
             idle = info.get("idle_usdc", 0) - f._pending_join_amount
             total = info.get("total_assets", 0)
-            deposit = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
+            deposit = max((total * alloc_bps) // 10000, MIN_DEPOSIT_WEI)
             return idle >= deposit
 
         matched_funds = [f for f in matched_funds if has_idle(f)]
@@ -655,10 +655,9 @@ def run_cycle(
             if not info:
                 continue
             total = info.get("total_assets", 0)
-            deposit_wei = max((total * alloc_bps) // 10000, MIN_STAKE_WEI)
+            deposit_wei = max((total * alloc_bps) // 10000, MIN_DEPOSIT_WEI)
             if deposit_wei <= 0:
                 continue
-            stake_for_batch = deposit_wei
 
             # Join via vault. _sign_and_send waits for the receipt — by the
             # time we return here, the tx is mined. The bitmap POST below
@@ -666,7 +665,7 @@ def run_cycle(
             # global stop-the-world sleep we used to do here was rituals.
             try:
                 fund.vault.join_batch(
-                    batch_id, config_hash, deposit_wei, stake_for_batch, bm_hash,
+                    batch_id, config_hash, deposit_wei, bm_hash,
                 )
                 fund.joined_batch_ids.add(batch_id)
                 fund.active_batches[batch_id] = deposit_wei
@@ -807,7 +806,6 @@ def main():
         "vision_api": vision_api,
         "data_node": data_node,
         "allocation_bps": manager_cfg.get("allocation_bps", 500),  # 5% of vault assets per batch
-        "stake_per_tick": manager_cfg.get("stake_per_tick", 1.0),
     }
 
     executor = Executor(

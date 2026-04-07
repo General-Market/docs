@@ -9,7 +9,6 @@ vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 poll_interval = 30
 allocation_bps = 10
-stake_per_tick = 0.1
 oracle_discovery = "static"
 oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
