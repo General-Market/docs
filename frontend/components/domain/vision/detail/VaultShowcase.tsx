@@ -80,7 +80,7 @@ function computeUserValue(pos: UserPosition | undefined, vault: VaultInfo): numb
 }
 
 /* ─────────────────────────────────────────────
-   Sparkline — Canvas, responsive width
+   Sparkline, Canvas, responsive width
    ───────────────────────────────────────────── */
 
 function Sparkline({ data, height, color, className }: {
@@ -159,47 +159,75 @@ function Sparkline({ data, height, color, className }: {
 }
 
 /* ─────────────────────────────────────────────
-   CountUp — animates a number on scroll-in
+   CountUp, animates a number on scroll-in
    ───────────────────────────────────────────── */
 
 function useCountUp(target: number, duration = 1200, skip = false) {
   const [value, setValue] = useState(skip ? target : 0)
   const ref = useRef<HTMLDivElement>(null)
-  const hasRun = useRef(false)
+  const hasRevealed = useRef(false)
+  // Mirror the displayed value in a ref so the animation can read the
+  // current displayed value as its starting point — even if the React
+  // state hasn't reflected the latest tween frame yet.
+  const valueRef = useRef(value)
+  valueRef.current = value
 
   useEffect(() => {
     if (skip) { setValue(target); return }
     const el = ref.current
     if (!el) return
 
+    let cancelled = false
+    let raf = 0
+
+    const runAnimation = () => {
+      const startValue = valueRef.current
+      const start = performance.now()
+      const animate = (now: number) => {
+        if (cancelled) return
+        const elapsed = now - start
+        const progress = Math.min(elapsed / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setValue(startValue + (target - startValue) * eased)
+        if (progress < 1) raf = requestAnimationFrame(animate)
+        else setValue(target)
+      }
+      raf = requestAnimationFrame(animate)
+    }
+
+    // Already-revealed path: re-animate from current value to the new
+    // target. This is the path that fires when wagmi data arrives after
+    // the first paint and the headline number needs to update.
+    if (hasRevealed.current) {
+      runAnimation()
+      return () => { cancelled = true; cancelAnimationFrame(raf) }
+    }
+
+    // First-reveal path: gate the initial count-up on intersection so the
+    // animation plays when the user scrolls the element into view.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasRun.current) {
-          hasRun.current = true
-          const start = performance.now()
-          const animate = (now: number) => {
-            const elapsed = now - start
-            const progress = Math.min(elapsed / duration, 1)
-            const eased = 1 - Math.pow(1 - progress, 3)
-            setValue(target * eased)
-            if (progress < 1) requestAnimationFrame(animate)
-            else setValue(target)
-          }
-          requestAnimationFrame(animate)
+        if (entry.isIntersecting && !hasRevealed.current) {
+          hasRevealed.current = true
+          runAnimation()
           observer.unobserve(el)
         }
       },
       { threshold: 0.3 },
     )
     observer.observe(el)
-    return () => observer.disconnect()
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
   }, [target, duration, skip])
 
   return { ref, value }
 }
 
 /* ─────────────────────────────────────────────
-   Featured Vault — the hero
+   Featured Vault, the hero
    ───────────────────────────────────────────── */
 
 function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
@@ -245,7 +273,7 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-            {/* left column — name, tagline, stats, CTA */}
+            {/* left column, name, tagline, stats, CTA */}
             <div className="min-w-0 flex-1">
               <h3 className="text-[22px] sm:text-[26px] font-black text-white leading-tight mb-2">
                 {fund.name}
@@ -300,7 +328,7 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
               </div>
             </div>
 
-            {/* right column — performance + sparkline */}
+            {/* right column, performance + sparkline */}
             <div className="shrink-0 sm:text-right">
               <div ref={countRef}>
                 <span className={cn(
@@ -326,7 +354,7 @@ function FeaturedHero({ fund, vault, userPosition, onDeposit }: {
 }
 
 /* ─────────────────────────────────────────────
-   Vault Tilt Card — 3D perspective hover
+   Vault Tilt Card, 3D perspective hover
    ───────────────────────────────────────────── */
 
 function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
@@ -428,7 +456,7 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
             </div>
           )}
 
-          {/* deposit — reveals on hover */}
+          {/* deposit, reveals on hover */}
           <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button className="w-full py-1.5 bg-black text-white text-[10px] font-bold hover:bg-black/80 transition-colors">
               {hasPosition ? 'MANAGE' : 'DEPOSIT'}
@@ -441,7 +469,7 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
 }
 
 /* ─────────────────────────────────────────────
-   VaultShowcase — orchestrator
+   VaultShowcase, orchestrator
    ───────────────────────────────────────────── */
 
 interface VaultShowcaseProps {
