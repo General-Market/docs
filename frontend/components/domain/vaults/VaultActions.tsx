@@ -239,73 +239,77 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
       {/* Left column: stats + chart + thesis + performance */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
-        {/* Mobile pills */}
-        <div className="flex overflow-x-auto gap-1.5 px-3.5 py-2 border-b border-[#F0F0F0] lg:hidden"
-             style={{ scrollbarWidth: 'none' }}>
-          {allVaults.map((entry, i) => {
-            const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
-            const perf = entry.vault.performanceSinceInception
-            const isPos = perf >= 0
-            const isActive = entry.vault.address === vault.address
-            return (
-              <button
-                key={entry.vault.address}
-                onClick={() => onSelectVault(i)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full border whitespace-nowrap shrink-0 transition-colors text-xs font-bold',
-                  isActive
-                    ? 'bg-[rgba(0,163,108,0.08)] border-[#00A36C]'
-                    : 'bg-white border-[#E0E0E0]',
-                )}
-              >
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sc }} />
-                <span className="text-text-primary">{entry.fund.name}</span>
-                <span className={cn('font-mono text-[10px] font-bold', isPos ? 'text-[#00A36C]' : 'text-[#e11d48]')}>
-                  {isPos ? '+' : ''}{(perf * 100).toFixed(2)}%
-                </span>
-              </button>
-            )
-          })}
-        </div>
+        {/* Mobile pills — shrink-0 prevents flex-col parent from squashing height */}
+        {allVaults.length > 1 && (
+          <div
+            className="flex shrink-0 items-center gap-1.5 overflow-x-auto px-3.5 py-2.5 border-b border-[#F0F0F0] lg:hidden [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {allVaults.map((entry, i) => {
+              const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
+              const perf = entry.vault.performanceSinceInception
+              const isPos = perf >= 0
+              const isActive = entry.vault.address === vault.address
+              return (
+                <button
+                  key={entry.vault.address}
+                  onClick={() => onSelectVault(i)}
+                  className={cn(
+                    'flex items-center gap-1.5 h-7 px-2.5 rounded-full border whitespace-nowrap shrink-0 transition-colors text-[11px] font-bold',
+                    isActive
+                      ? 'bg-[rgba(0,163,108,0.08)] border-[#00A36C]'
+                      : 'bg-white border-[#E0E0E0]',
+                  )}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: sc }} />
+                  <span className="text-text-primary">{entry.fund.name}</span>
+                  <span className={cn('font-mono text-[10px] font-bold', isPos ? 'text-[#00A36C]' : 'text-[#e11d48]')}>
+                    {isPos ? '+' : ''}{(perf * 100).toFixed(2)}%
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-3 lg:grid-cols-6 border-b border-[#E0E0E0]">
-          <div className="px-3.5 py-2.5 border-r border-[#F0F0F0]">
+        {/* Stats strip — 3 cells on mobile, 6 on desktop */}
+        <div className="grid grid-cols-3 lg:grid-cols-6 shrink-0 border-b border-[#E0E0E0]">
+          <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">TVL</div>
-            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">{formatTvlCompact(tvl)}</div>
-            <div className="font-mono text-[9px] text-text-muted mt-0.5">{vault.totalSupply > 0n ? Number(formatUnits(vault.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'} shares</div>
+            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">{formatTvlCompact(tvl)}</div>
+            <div className="font-mono text-[9px] text-text-muted mt-0.5 truncate">{vault.totalSupply > 0n ? Number(formatUnits(vault.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'} shares</div>
           </div>
-          <div className="px-3.5 py-2.5 border-r border-[#F0F0F0]">
-            <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">NAV / Share</div>
-            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">${vault.navPerShare.toFixed(4)}</div>
+          <div className="px-3 py-2.5 lg:px-3.5 border-r border-[#F0F0F0]">
+            <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">NAV</div>
+            <div className="font-mono text-[13px] lg:text-[15px] font-bold tabular-nums text-text-primary">${vault.navPerShare.toFixed(4)}</div>
           </div>
-          <div className="px-3.5 py-2.5 border-r-0 lg:border-r border-[#F0F0F0]">
+          <div className="px-3 py-2.5 lg:px-3.5 lg:border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Performance</div>
-            <div className={cn('font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums', isPositive ? 'text-color-up' : 'text-color-down')}>
+            <div className={cn('font-mono text-[13px] lg:text-[15px] font-bold tabular-nums', isPositive ? 'text-color-up' : 'text-color-down')}>
               {isPositive ? '+' : ''}{perfPercent}%
             </div>
           </div>
-          <div className="px-3.5 py-2.5 border-r border-[#F0F0F0] border-t lg:border-t-0 border-t-[#F0F0F0]">
+          <div className="hidden lg:block px-3.5 py-2.5 border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Deployed</div>
-            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">{deployedPct}%</div>
+            <div className="font-mono text-[15px] font-bold tabular-nums text-text-primary">{deployedPct}%</div>
             <div className="h-[3px] bg-[#F0F0F0] rounded-none overflow-hidden mt-1">
               <div className="h-full rounded-none bg-[#00A36C]" style={{ width: `${deployedPct}%` }} />
             </div>
           </div>
-          <div className="px-3.5 py-2.5 border-r border-[#F0F0F0] border-t lg:border-t-0 border-t-[#F0F0F0]">
+          <div className="hidden lg:block px-3.5 py-2.5 border-r border-[#F0F0F0]">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Sharpe</div>
-            <div className="font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums text-text-primary">{fmtRatio(sharpe)}</div>
+            <div className="font-mono text-[15px] font-bold tabular-nums text-text-primary">{fmtRatio(sharpe)}</div>
           </div>
-          <div className="px-3.5 py-2.5 border-t lg:border-t-0 border-t-[#F0F0F0]">
+          <div className="hidden lg:block px-3.5 py-2.5">
             <div className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted mb-0.5">Max DD</div>
-            <div className={cn('font-mono text-[15px] lg:text-[15px] text-[13px] font-bold tabular-nums', maxDd !== null ? 'text-color-down' : 'text-text-primary')}>
+            <div className={cn('font-mono text-[15px] font-bold tabular-nums', maxDd !== null ? 'text-color-down' : 'text-text-primary')}>
               {maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—'}
             </div>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="px-4 py-3 border-b border-[#F0F0F0]">
+        <div className="px-4 py-3 shrink-0 border-b border-[#F0F0F0]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">NAV History</span>
             <div className="flex gap-0.5 bg-[#FAFAFA] p-0.5 rounded-none">
@@ -333,26 +337,27 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
         </div>
 
-        {/* Mobile CTA card */}
-        <div className="flex flex-col gap-2.5 px-4 py-4 border-b border-[#E0E0E0] lg:hidden">
-          <button className="w-full py-4 rounded-none border-2 border-dashed border-[rgba(0,163,108,0.4)] bg-[rgba(0,163,108,0.08)] text-[#00A36C] text-sm font-black flex items-center justify-center gap-2 transition-colors hover:bg-[#00A36C] hover:text-white hover:border-[#00A36C]">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Build Your Own Vault
-          </button>
-          <p className="text-[10px] text-text-muted text-center">Pick a data source, set your strategy, deploy in minutes.</p>
+        {/* Mobile risk strip — 4 additional metrics under the chart */}
+        <div className="grid grid-cols-4 shrink-0 border-b border-[#F0F0F0] lg:hidden">
+          {[
+            { label: 'Sharpe', value: fmtRatio(sharpe) },
+            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—', down: maxDd !== null },
+            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : '—' },
+            { label: 'Deployed', value: `${deployedPct}%` },
+          ].map(({ label, value, down }) => (
+            <div key={label} className="px-2.5 py-2 border-r border-[#F0F0F0] last:border-r-0 text-center">
+              <div className="text-[8px] font-bold tracking-[0.06em] uppercase text-text-muted mb-0.5">{label}</div>
+              <div className={cn('font-mono text-[11px] font-bold text-text-primary', down && 'text-color-down')}>{value}</div>
+            </div>
+          ))}
+        </div>
 
-          <div className="flex items-center gap-2.5 my-0.5">
-            <div className="flex-1 h-px bg-[#E0E0E0]" />
-            <span className="text-[9px] font-bold tracking-[0.1em] uppercase text-text-muted">or join this vault</span>
-            <div className="flex-1 h-px bg-[#E0E0E0]" />
-          </div>
-
+        {/* Mobile CTA — Deposit is primary, Build-your-own is secondary */}
+        <div className="flex flex-col gap-2.5 px-4 py-3.5 shrink-0 border-b border-[#E0E0E0] lg:hidden">
           <WalletActionButton
             onClick={() => { setTab('deposit'); if (tab === 'deposit') handleDeposit() }}
             disabled={tab === 'deposit' && (depositBusy || depositConfirming || !depositInput)}
-            className="w-full py-4 bg-[#00A36C] text-white text-base font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
+            className="w-full py-3.5 bg-[#00A36C] text-white text-[15px] font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
           >
             <span className="relative z-10">
               {depositStep === 'approving' ? t('vaults.approving')
@@ -361,36 +366,28 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
                 : `Deposit into ${vaultName}`}
             </span>
           </WalletActionButton>
-          <p className="text-[11px] text-text-muted text-center">No lock-up. Withdraw anytime. {feePercent.toFixed(0)}% perf fee.</p>
-        </div>
+          <p className="text-[10px] text-text-muted text-center">No lock-up. Withdraw anytime. {feePercent.toFixed(0)}% perf fee.</p>
 
-        {/* Mobile risk strip */}
-        <div className="grid grid-cols-4 border-b border-[#F0F0F0] lg:hidden">
-          {[
-            { label: 'Sharpe', value: fmtRatio(sharpe) },
-            { label: 'Max DD', value: maxDd !== null ? `${(maxDd * 100).toFixed(1)}%` : '—', down: maxDd !== null },
-            { label: 'Vol', value: vol !== null ? `${(vol * 100).toFixed(1)}%` : '—' },
-            { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
-          ].map(({ label, value, down }) => (
-            <div key={label} className="px-2.5 py-2 border-r border-[#F0F0F0] last:border-r-0 text-center">
-              <div className="text-[8px] font-bold tracking-[0.06em] uppercase text-text-muted mb-0.5">{label}</div>
-              <div className={cn('font-mono text-xs font-bold text-text-primary', down && 'text-color-down')}>{value}</div>
-            </div>
-          ))}
+          <button className="mt-1 w-full py-2.5 rounded-none border border-dashed border-[rgba(0,163,108,0.45)] bg-transparent text-[#00A36C] text-[11px] font-extrabold tracking-wide flex items-center justify-center gap-1.5 transition-colors hover:bg-[rgba(0,163,108,0.08)]">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Or build your own vault
+          </button>
         </div>
 
         {/* Investment thesis */}
-        <div className="bg-[#1A1A1A] px-4 py-1.5">
+        <div className="bg-[#1A1A1A] px-4 py-1.5 shrink-0">
           <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Investment Thesis</span>
         </div>
-        <div className="px-4 py-3 border-b border-[#F0F0F0]">
-          <p className="text-[13px] lg:text-[13px] text-xs leading-relaxed text-text-primary">
+        <div className="px-4 py-3 shrink-0 border-b border-[#F0F0F0]">
+          <p className="text-[12px] lg:text-[13px] leading-relaxed text-text-primary">
             {tagline}
           </p>
         </div>
 
         {/* Mobile collapsible details */}
-        <div className="lg:hidden">
+        <div className="shrink-0 lg:hidden">
           <button
             onClick={() => setMobileDetailsOpen(!mobileDetailsOpen)}
             className="flex items-center justify-center gap-1.5 w-full px-4 py-2.5 bg-[#FAFAFA] border-b border-[#F0F0F0] text-[11px] font-bold text-text-secondary hover:bg-[#F0F0F0] transition-colors"
@@ -451,7 +448,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
         </div>
 
         {/* Desktop: Performance + meta (hidden on mobile) */}
-        <div className="hidden lg:block">
+        <div className="hidden shrink-0 lg:block">
           <div className="bg-[#1A1A1A] px-4 py-1.5">
             <span className="text-[10px] font-bold tracking-[0.12em] uppercase text-white/75">Performance</span>
           </div>
