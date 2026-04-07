@@ -1,6 +1,6 @@
 ---
 title: "Vision Is the 1920s of Prediction Markets"
-description: "Every new financial instrument crowns a different generation of winners. Tape reading in 1900. Black-Scholes in 1973. Sandwich bots in 2022. Vision is the next instrument — and the playbook has not been written yet."
+description: "Every new financial instrument crowns a different generation of winners. Tape reading in 1900. Black-Scholes in 1973. Sandwich bots in 2022. Vision is the next instrument — and the manual has not been written yet."
 keywords: ["prediction markets", "alpha decay", "new financial instruments", "Vision prediction market", "parimutuel markets", "trading 10 million markets", "history of trading edges", "black scholes options", "MEV sandwich bots", "technical analysis history"]
 date: "2026-04-07"
 author: "General Market"
@@ -14,7 +14,7 @@ tldr:
   - "Vision dilutes insiders by <strong>batching 5,000 markets into a single sealed bet</strong>. An insider cannot insider 5,000 things at once"
   - "With <strong>$1 you can place 10 million bets per tick</strong> — settling every ten minutes. More positions per day than any hedge fund on earth"
   - "There is no spread and no fee. <strong>Parimutuel pools replace orderbooks</strong> — like horse betting rebuilt with cryptography"
-  - "The moat is not technology. It is <strong>workflow</strong> — and the workflow has not been written yet"
+  - "The advantage is not technology. It is <strong>workflow</strong> — and the workflow has not been written yet"
 ---
 
 Markets are how civilizations think out loud. The price of wheat is the sum of every farmer's fear and every baker's hope, compressed into a single number that updates faster than any government statistic. Markets do not predict the future. They are the future — in the only form humans know how to read.
@@ -25,7 +25,7 @@ Then, every few decades, somebody invents a new instrument. And the winners chan
 
 ## How a New Instrument Crowns Its Winners
 
-The pattern is older than any of the people in it. A new instrument arrives — illiquid, misunderstood, slightly embarrassing to be associated with. The first generation that takes it seriously collects the rent for ten or twenty years. Then a textbook explains the trick, the rent goes to zero, and the survivors retire to give interviews about discipline.
+The pattern is older than any of the people in it. A new instrument arrives — illiquid, misunderstood, slightly embarrassing to be associated with. The first generation that takes it seriously collects the rent for ten or twenty years. Then a textbook fixes the rule in chalk, the rent goes to zero, and the survivors retire to give interviews about discipline.
 
 The names change. The mechanism does not.
 
@@ -55,9 +55,9 @@ The Securities Act passes. Companies must, for the first time, publish their fin
 
 Benjamin Graham reads them anyway.
 
-He buys companies trading below their net working capital. The trade is mathematical, almost embarrassing in its simplicity — a child could do the arithmetic. His student, a kid from Omaha, will later turn the same arithmetic into the largest fortune in the country.
+He buys companies trading below their net working capital. The trade is mathematical, almost embarrassing in its simplicity — a child could do the arithmetic. His student, a boy from Omaha, will later turn the same arithmetic into the largest fortune in the country.
 
-Today every freshman in finance has read the same chapter. The chapter is no longer worth anything. This is what happens to every chapter.
+Today every student of finance has read the same chapter. The chapter is no longer worth anything. This is what happens to every chapter.
 
 ## 1973 — The Pit
 
@@ -67,7 +67,7 @@ Joe Ritchie reads it. Walks into the pit. Starts pricing options correctly while
 
 A year later he is making millions. Within a decade every options trader on earth carries a Hewlett-Packard 12C and a Black-Scholes worksheet. The edge died exactly as fast as the formula spread — about ten years from publication to homework problem. The half-life has only shortened since.
 
-In 1975 Black-Scholes was a billion-dollar secret. In 2026 it is on a flash card in a freshman's pocket.
+In 1975 Black-Scholes was a billion-dollar secret. In 2026 it is on a flash card in an undergraduate's pocket.
 
 ## 1985 — The Sixth Floor
 
@@ -113,11 +113,11 @@ Read the eight scenes twice. The same three rules stare back.
 
 **The new winners do not look like the old winners.** Livermore could not have run Renaissance. Simons could not have run Paulson's CDS short. The MEV searchers of 2021 are children who learned Solidity in a Discord channel, and they cannot be transplanted into a Goldman bond desk. Each instrument selects for a temperament — not a person.
 
-This is the part most people miss. The lesson of history is not that quants beat traders. The lesson is that whoever takes a new instrument seriously first becomes unrecognizable from whoever was winning before — and the gap is permanent. Old kings do not adapt. They retire to give interviews about discipline.
+Most miss this. Whoever takes a new instrument seriously first becomes unrecognizable from whoever was winning before — and the gap is permanent. Old kings do not adapt. They retire to give interviews about discipline.
 
 ## The Specific Failure of Prediction Markets
 
-Prediction markets should have happened twenty years ago. Robin Hanson wrote the manifesto in 1990. DARPA tried to build one in 2003 and got shut down by senators who could not distinguish a market from a death pool. Polymarket finally made the thing work in 2021.
+Prediction markets should have happened twenty years ago. Robin Hanson wrote the manifesto in 1990. DARPA tried to build one in 2003 and got shut down by senators who could not distinguish a market from a death pool. Polymarket finally made it work in 2021.
 
 And it almost worked. Almost.
 
@@ -131,7 +131,7 @@ The instrument was real. The plumbing was wrong.
 
 ## The Batch
 
-Vision's answer is structural — not philosophical. We do not lecture insiders. We make insider trading geometrically impossible.
+Vision's answer is structural — not philosophical. Vision does not lecture insiders. It makes insider trading geometrically impossible.
 
 The mechanism: batch five thousand markets together as a single sealed bet. You do not predict whether one streamer's viewership will rise. You predict the direction for all five thousand of them at once, in a single bitmap, sealed by `keccak256`, settling on the same tick.
 
@@ -147,11 +147,11 @@ Markets nobody could build before now exist by default.
 
 ## The Arithmetic Nobody Has Done
 
-Here is the part that breaks people's intuitions when they first hear it.
+The arithmetic is uncomfortable.
 
 With one dollar, you can bet on ten million markets.
 
-Not metaphorically. Literally. The bitmap is one bit per market. A ten-million-market bitmap is 1.25 megabytes. The hash is thirty-two bytes. The minimum stake is 0.1 USDC. Place the hash on-chain, reveal the bitmap to the oracle network, and your dollar is now expressing ten million simultaneous opinions.
+Not metaphorically. The bitmap is one bit per market. A ten-million-market bitmap is 1.25 megabytes. The hash is thirty-two bytes. The minimum stake is 0.1 USDC. Place the hash on-chain, reveal the bitmap to the oracle network, and your dollar is now expressing ten million simultaneous opinions.
 
 Vision settles every ten minutes. Six ticks an hour. One hundred and forty-four ticks a day. With one dollar you can express **1.44 billion predictions per day**.
 
@@ -161,7 +161,7 @@ A single dollar on Vision exceeds Renaissance by four orders of magnitude.
 
 The numbers sound implausible because the previous instrument did not allow them. Every public orderbook charges a per-trade tax: spread, gas, slippage. At a million trades a day those costs are uneconomic for anyone except the market makers themselves. Vision charges nothing per trade. The bitmap is the trade. The tick is the settlement. Volume becomes free.
 
-The implication is not that you will outperform Renaissance with a dollar. The implication is more interesting. A category of strategy now exists that was previously priced out of existence — strategies that need a hundred thousand micro-positions to express a thesis; strategies that hedge across thousands of weakly-correlated micro-events; strategies no human mind can hold but a small model can express in a single 1.25-megabyte bitmap.
+The implication is not that you will outperform Renaissance with a dollar. The implication is stranger. A category of strategy now exists that was previously priced out of existence — strategies that need a hundred thousand micro-positions to express a thesis; strategies that hedge across thousands of weakly-correlated micro-events; strategies no human mind can hold but a small model can express in a single 1.25-megabyte bitmap.
 
 The strategy space just expanded. Nobody has mapped it yet.
 
@@ -175,19 +175,19 @@ All bets enter a shared pool. When the tick resolves, winners split losers' stak
 
 The orderbook taxes participation. The parimutuel pool taxes success. One of these is honest. The other was invented because we did not yet have the cryptography to do better.
 
-We have the cryptography now.
+The cryptography exists now.
 
 ## The Window
 
-Every previous transition crowned a small group of people who had no special advantage except that they took the new thing seriously before anybody else did. Wyckoff was a clerk. Buffett was a kid in Omaha. The first CBOE pit traders were math majors who could not get jobs at banks. jaredfromsubway is twenty-four years old and ate at Subway.
+Every previous transition crowned a small group of people who had no special advantage except that they took the new thing seriously before anybody else did. Wyckoff was a clerk. Buffett was a boy in Omaha. The first CBOE pit traders were math majors who could not get jobs at banks. jaredfromsubway is twenty-four years old and ate at Subway.
 
-The moat in a new instrument is not technology. It is workflow.
+The advantage in a new instrument is not technology. It is workflow.
 
-Nobody knows how to trade ten million markets at once. There is no playbook. There is no Bloomberg terminal for sealed parimutuel batches. There is no Goldman desk that has been doing this since 1987. The strategy space is empty because the strategy space is new.
+Nobody knows how to trade ten million markets at once. There is no manual. There is no Bloomberg terminal for sealed parimutuel batches. There is no Goldman desk that has been doing this since 1987. The strategy space is empty because the strategy space is new.
 
-Right now, the question of *what does it look like to be good at trading ten million sealed parimutuel markets per tick* has roughly zero published answers. The first person to write a serious one will have the same advantage Wyckoff had in 1905, Tartaglia had in 1985, the Flashbots searchers had in 2021. Not a permanent advantage. Just enough to matter while everyone else figures out what is happening.
+Right now, the question of *what does it look like to be good at trading ten million sealed parimutuel markets per tick* has roughly zero published answers. The first person to write a serious one will have the same advantage Wyckoff had in 1905, Tartaglia had in 1985, the Flashbots searchers had in 2021. Not a permanent advantage. Just enough to matter while the others learn the name of it.
 
-This window will close. They always do. The textbooks will be written, the YouTube tutorials will be recorded, the Medium articles will be syndicated, and within five years a new generation of traders will look at sealed parimutuel batches the way today's traders look at Black-Scholes — as something every freshman knows.
+This window will close. They always do. The textbooks will be written, the YouTube tutorials will be recorded, the Medium articles will be syndicated, and within five years a new generation of traders will look at sealed parimutuel batches the way today's traders look at Black-Scholes — as something every undergraduate knows.
 
 The window is open right now. It will not be open in 2031.
 
@@ -197,7 +197,7 @@ The instrument exists. Four hundred and eighty-two thousand assets are live. Eig
 
 What is theoretical is the strategy that wins. That part is yours.
 
-Deploy a bot in one command:
+Run one command:
 
 ```bash
 npx generalmarket init
@@ -205,7 +205,7 @@ npx generalmarket init
 
 The scaffold handles bitmap encoding, hash commitment, oracle reveal. You supply the model. The pipeline supplies the privacy and the settlement.
 
-What you build today belongs to you in a way that almost nothing on Wall Street belongs to anyone anymore — because the playbook has not been written, and the writer is whoever shows up first.
+What you build today belongs to you in a way that almost nothing on Wall Street belongs to anyone anymore — because the manual has not been written, and the writer is whoever shows up first.
 
 Markets are how civilizations think out loud. Vision is the first time in a century the instrument has changed enough to crown a new generation. The previous generations had Wyckoff, Graham, Ritchie, Tartaglia, Soros, Simons, Burry, jaredfromsubway.
 
@@ -213,7 +213,7 @@ The next one is unnamed. That is the only good news in this article.
 
 ## Further Reading
 
-- [Sealed Prediction Markets](/learn/sealed-prediction-markets) — Why your bets should be private, and how the commit-reveal cryptography actually works.
+- [Sealed Prediction Markets](/learn/sealed-prediction-markets) — Why your bets should be private, and how the commit-reveal cryptography works.
 - [AI Prediction Markets](/learn/ai-prediction-markets) — Why Vision is built for autonomous agents from the ground up.
 - [Build a Bot in 10 Minutes](/learn/build-prediction-market-bot) — From scaffold to first sealed bet.
 - [Polymarket vs General Market](/learn/polymarket-vs-general-market) — What the previous generation got right, and where the architecture broke.
