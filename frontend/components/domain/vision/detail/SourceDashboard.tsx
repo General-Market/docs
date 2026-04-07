@@ -218,7 +218,9 @@ function RecentBets() {
   // the entire feed doesn't animate on initial load.
   const seenKeysRef = useRef<Set<string> | null>(null)
   const newKeys = useMemo(() => {
-    const keys = sorted.map((e) => `${e.betId}-${e.eventType}`)
+    const keys = sorted.map(
+      (e) => `${e.betId}-${e.eventType}-${e.walletAddress}-${e.timestamp}`,
+    )
     if (seenKeysRef.current === null) {
       seenKeysRef.current = new Set(keys)
       return new Set<string>()
@@ -248,10 +250,10 @@ function RecentBets() {
       ) : showEmpty ? (
         <p className="py-4 text-[13px] text-text-muted">No bets yet</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 [&>*:nth-child(n+6)]:hidden sm:[&>*:nth-child(n+6)]:flex">
           <AnimatePresence initial={false}>
             {sorted.map((event) => {
-              const key = `${event.betId}-${event.eventType}`
+              const key = `${event.betId}-${event.eventType}-${event.walletAddress}-${event.timestamp}`
               const isNew = newKeys.has(key)
               return (
                 <motion.div
