@@ -336,7 +336,8 @@ pub struct BatchStateResponse {
 #[derive(Debug, Serialize)]
 pub struct PlayerInfo {
     pub address: String,
-    pub stake_per_tick: String,
+    /// Full deposit committed by the player for this round.
+    pub deposit: String,
     pub balance: String,
     pub start_tick: u64,
     pub has_bitmap: bool,
@@ -381,7 +382,8 @@ pub struct BalanceResponse {
     pub batch_id: u64,
     pub player: String,
     pub balance: String,
-    pub stake_per_tick: String,
+    /// Full deposit committed by the player for this round.
+    pub deposit: String,
     /// BLS signature (hex-encoded, 128 chars = 64 bytes G1 point).
     /// Empty string if proof not yet generated (oracle just started, tick not resolved).
     pub bls_sig: String,
@@ -596,7 +598,7 @@ async fn batch_state(
                     || state.bitmap_store.get_active(id, p.player).await.is_some();
                 player_infos.push(PlayerInfo {
                     address: format!("{:?}", p.player),
-                    stake_per_tick: p.deposit.to_string(),
+                    deposit: p.deposit.to_string(),
                     balance: p.deposit.to_string(),
                     start_tick: 0,
                     has_bitmap,
@@ -1227,8 +1229,8 @@ async fn get_balance(
         let signer_bitmap: String = row.get("signer_bitmap");
         let tick_id: i64 = row.get("tick_id");
 
-        // Get stake_per_tick from in-memory state
-        let stake = state.scheduler.get_batch_state(batch_id).await
+        // Get deposit from in-memory state
+        let deposit = state.scheduler.get_batch_state(batch_id).await
             .and_then(|(_, players)| {
                 players.iter().find(|p| p.player == player).map(|p| p.deposit.to_string())
             })
@@ -1238,7 +1240,7 @@ async fn get_balance(
             batch_id,
             player: player_hex,
             balance,
-            stake_per_tick: stake,
+            deposit,
             bls_sig: hex::encode(&bls_sig),
             signer_bitmap,
             tick_id: tick_id as u64,
@@ -1270,7 +1272,7 @@ async fn get_balance(
                         batch_id,
                         player: player_hex,
                         balance: pos.deposit.to_string(),
-                        stake_per_tick: pos.deposit.to_string(),
+                        deposit: pos.deposit.to_string(),
                         bls_sig: String::new(),
                         signer_bitmap: "0".to_string(),
                         tick_id: 0,
@@ -1433,7 +1435,7 @@ struct RoundStatsRow {
 
 /// Vision leaderboard — aggregates player balances across batches.
 ///
-/// Ranks players by current PnL (current_balance - initial_deposit).
+/// Ranks players by current PnL (current_balance - deposit).
 /// Supports `?batch_id=N` for a single batch or `?source_id=X` for all
 /// batches belonging to a source (including completed/paused ones).
 async fn vision_leaderboard(
@@ -1458,8 +1460,8 @@ async fn vision_leaderboard(
     > = std::collections::HashMap::new();
 
     // Round-only mode: use settled round results from Postgres as the SOLE data source.
-    // The in-memory scheduler holds unsettled positions (deposit == initial_deposit → PnL=0),
-    // which would pollute the leaderboard with phantom $0 entries.
+    // The in-memory scheduler holds unsettled positions (PnL=0 by definition until
+    // settlement runs), which would pollute the leaderboard with phantom $0 entries.
     {
         let query = "SELECT player,
                 SUM(payout::numeric)::text as total_payout,
@@ -2247,7 +2249,7 @@ async fn player_profile(
     for pos in &positions {
         let deposited_wei: i128 = pos.total_deposited.parse().unwrap_or(0);
         // vision_positions.balance is never updated after settlement — it stays
-        // at initial_deposit. Real PnL lives in vision_round_players. Use the
+        // at the original deposit. Real PnL lives in vision_round_players. Use the
         // settled round aggregate if available, otherwise fall back to position balance.
         let round_pnl_wei: i128 = round_agg_map
             .get(&pos.batch_id)
@@ -3316,7 +3318,7 @@ mod tests {
             batch_id: 1,
             player: "0x0000000000000000000000000000000000000001".into(),
             balance: "5000000000000000000".into(),
-            stake_per_tick: "100000000000000000".into(),
+            deposit: "100000000000000000".into(),
             bls_sig: String::new(),
             signer_bitmap: "0".into(),
             tick_id: 42,

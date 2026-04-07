@@ -778,7 +778,7 @@ impl BatchLifecycleManager {
         // Compute parimutuel settlement
         let player_deposits: Vec<_> = players
             .iter()
-            .map(|p| (p.player, p.initial_deposit))
+            .map(|p| (p.player, p.deposit))
             .collect();
         let settlement = compute_settlement(&tick_result, &player_deposits);
 

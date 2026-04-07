@@ -265,9 +265,9 @@ impl TickScheduler {
         info!(count = batch_rows.len(), "Loaded batches from DB");
 
         // 2. Load player positions
-        let pos_rows: Vec<(i64, String, String, String, i64, String, String)> =
+        let pos_rows: Vec<(i64, String, String, i64, String, String)> =
             sqlx::query_as(
-                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, total_deposited::text \
+                "SELECT batch_id, player, bitmap_hash, start_tick, balance::text, total_deposited::text \
                  FROM vision_positions WHERE balance > 0",
             )
             .fetch_all(pool)
@@ -275,14 +275,12 @@ impl TickScheduler {
 
         {
             let mut players = self.players.write().await;
-            for (batch_id, player, bitmap_hash, deposit_str, _start_tick, _balance, total_deposited) in &pos_rows {
-                let dep = U256::from_dec_str(total_deposited).unwrap_or_default();
-                let deposit = U256::from_dec_str(deposit_str).unwrap_or(dep);
+            for (batch_id, player, bitmap_hash, _start_tick, _balance, total_deposited) in &pos_rows {
+                let deposit = U256::from_dec_str(total_deposited).unwrap_or_default();
                 let position = PlayerPosition {
                     player: player.parse().unwrap_or_default(),
                     bitmap_hash: bitmap_hash.parse().unwrap_or_default(),
                     deposit,
-                    initial_deposit: dep,
                 };
                 players
                     .entry(*batch_id as u64)
@@ -320,7 +318,6 @@ mod tests {
             player,
             bitmap_hash: H256::random(),
             deposit: U256::from(deposit),
-            initial_deposit: U256::from(deposit),
         }
     }
 

@@ -524,7 +524,10 @@ impl ChainListener {
         );
     }
 
-    /// Handle `PlayerJoined(uint256 indexed batchId, address indexed player, uint256 stakePerTick, bytes32 bitmapHash, bytes32 configHash)`
+    /// Handle `PlayerJoined(uint256 indexed batchId, address indexed player, uint256 deposit, bytes32 bitmapHash, bytes32 configHash)`
+    ///
+    /// `deposit` carries the FULL amount the player committed for the round —
+    /// not a per-tick slice. Byte layout is unchanged; only the meaning is.
     async fn handle_player_joined(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -541,7 +544,7 @@ impl ChainListener {
             }
         };
 
-        // Data: deposit (uint256, was stakePerTick) + bitmapHash (bytes32) = 64 bytes
+        // Data: deposit (uint256, full deposit amount) + bitmapHash (bytes32) = 64 bytes
         if log.data.len() < 64 {
             warn!(batch_id, player = %player, "PlayerJoined: data too short");
             return;
@@ -553,7 +556,6 @@ impl ChainListener {
             player,
             bitmap_hash,
             deposit,
-            initial_deposit: deposit,
         };
 
         // 1. Update in-memory scheduler
@@ -561,17 +563,15 @@ impl ChainListener {
 
         // 2. Write to Postgres
         if let Err(e) = sqlx::query(
-            "INSERT INTO vision_positions (batch_id, player, stake_per_tick, bitmap_hash, start_tick, balance, join_timestamp, total_deposited)
-             VALUES ($1, $2, $3::numeric, $4, 0, $5::numeric, 0, $6::numeric)
+            "INSERT INTO vision_positions (batch_id, player, bitmap_hash, start_tick, balance, join_timestamp, total_deposited)
+             VALUES ($1, $2, $3, 0, $4::numeric, 0, $5::numeric)
              ON CONFLICT (batch_id, player) DO UPDATE SET
-                stake_per_tick = EXCLUDED.stake_per_tick,
                 bitmap_hash = EXCLUDED.bitmap_hash,
                 balance = EXCLUDED.balance,
                 total_deposited = EXCLUDED.total_deposited"
         )
         .bind(batch_id as i64)
         .bind(format!("{:?}", player))
-        .bind(deposit.to_string())
         .bind(format!("{:?}", bitmap_hash))
         .bind(deposit.to_string())
         .bind(deposit.to_string())
@@ -860,13 +860,14 @@ impl ChainListener {
         };
 
         // Decode PlayerPosition struct:
-        // (bytes32 bitmapHash, bytes32 configHash, uint256 stakePerTick, uint256 startTick,
+        // (bytes32 bitmapHash, bytes32 configHash, uint256 deposit, uint256 startTick,
         //  uint256 balance, uint256 lastClaimedTick, uint256 joinTimestamp, uint256 totalDeposited, uint256 totalClaimed)
+        // Field 2 is the full deposit (formerly stakePerTick). Byte layout unchanged.
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
                 abi::ParamType::FixedBytes(32),  // bitmapHash
                 abi::ParamType::FixedBytes(32),  // configHash
-                abi::ParamType::Uint(256),       // stakePerTick
+                abi::ParamType::Uint(256),       // deposit (formerly stakePerTick)
                 abi::ParamType::Uint(256),       // startTick
                 abi::ParamType::Uint(256),       // balance
                 abi::ParamType::Uint(256),       // lastClaimedTick

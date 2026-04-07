@@ -7,7 +7,7 @@
 //! 3. For each market:
 //!    a. Fetch start/end prices, check staleness
 //!    b. Compute % change and determine outcome
-//!    c. Decode bitmaps to player sides (flat stakePerTick split evenly across markets)
+//!    c. Decode bitmaps to player sides (full deposit split evenly across markets)
 //!    d. Run parimutuel side matching
 //! 4. Aggregate per-player balance changes
 //! 5. Return TickResult
@@ -209,9 +209,10 @@ impl TickResolver {
                 // Flat indexing: one bitmap per tick, bit_index = market position in config
                 let bit_index = market_idx;
                 let bit = get_bitmap_bit(bitmap, bit_index);
-                // Flat stake: split stake_per_tick evenly across all markets.
-                // Remainder (stake_per_tick % num_markets) is distributed one unit extra
-                // to the first N markets where N = remainder.
+                // Split the full deposit evenly across all active markets.
+                // Remainder (deposit % num_markets) is distributed one unit extra
+                // to the first N markets where N = remainder, so the entire
+                // deposit is allocated without leakage.
                 let per_market_stake = if num_markets.is_zero() {
                     U256::zero()
                 } else {
@@ -755,12 +756,12 @@ mod tests {
         address: Address,
         deposit_amount: u128,
         _join_timestamp: u64,
+        _unused: u64,
     ) -> PlayerPosition {
         PlayerPosition {
             player: address,
             bitmap_hash: H256::zero(),
             deposit: U256::from(deposit_amount),
-            initial_deposit: U256::from(balance),
         }
     }
 

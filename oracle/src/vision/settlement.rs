@@ -422,4 +422,91 @@ mod tests {
         let total_deposits: U256 = deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
         assert_eq!(total_payouts, total_deposits, "zero-sum invariant must hold");
     }
+
+    /// Parimutuel invariant — explicit form.
+    ///
+    /// For any TickResult, given Σ player_deposits = X, the resulting
+    /// Σ settlement.payouts must equal X exactly. The PlayerJoined event now
+    /// publishes the FULL deposit, so the entire X enters the resolver and the
+    /// entire X must come out — no leakage, no creation, ever.
+    #[test]
+    fn test_parimutuel_invariant_full_deposits() {
+        // Three players with very different deposit sizes — exercises rounding.
+        let deposits = vec![
+            (addr(1), U256::from(1_000_000_000_000_000_000u128)), // 1 GM
+            (addr(2), U256::from(7_777_777u128)),                 // small odd
+            (addr(3), U256::from(333_333_333_333u128)),           // large odd
+        ];
+
+        // One market resolved UP. P1 (UP) and P3 (UP) win, P2 (DOWN) loses.
+        // Per-market stake equals each player's full deposit (single market).
+        let result = TickResult {
+            batch_id: 42,
+            tick_id: 0,
+            market_results: vec![MarketResult {
+                market_id: H256::zero(),
+                asset_id: "single".to_string(),
+                outcome: MarketOutcome::Up,
+                start_price: 100.0,
+                end_price: 110.0,
+                pct_change_bps: 1000,
+                player_results: vec![
+                    // P1 UP: deposits 1 GM, matched 7_777_777 (the only opposing stake),
+                    // wins 2x matched + remainder refund.
+                    PlayerMarketResult {
+                        player: addr(1),
+                        side: Side::Up,
+                        effective_stake: U256::from(1_000_000_000_000_000_000u128),
+                        matched_stake: U256::from(7_777_777u128),
+                        // Simulate proportional split: P1 owns 1e18 / (1e18+333.3e9) of UP-side.
+                        // For test simplicity, give P1 the matched winnings in proportion 3:1
+                        // and a refund of unmatched stake.
+                        payout: U256::from(1_000_000_000_000_000_000u128) // own stake back
+                            + U256::from(7_777_777u128) * U256::from(1_000_000_000_000_000_000u128)
+                                / (U256::from(1_000_000_000_000_000_000u128)
+                                    + U256::from(333_333_333_333u128)),
+                        refund: U256::zero(),
+                    },
+                    PlayerMarketResult {
+                        player: addr(3),
+                        side: Side::Up,
+                        effective_stake: U256::from(333_333_333_333u128),
+                        matched_stake: U256::from(7_777_777u128),
+                        payout: U256::from(333_333_333_333u128) // own stake back
+                            + U256::from(7_777_777u128) * U256::from(333_333_333_333u128)
+                                / (U256::from(1_000_000_000_000_000_000u128)
+                                    + U256::from(333_333_333_333u128)),
+                        refund: U256::zero(),
+                    },
+                    PlayerMarketResult {
+                        player: addr(2),
+                        side: Side::Down,
+                        effective_stake: U256::from(7_777_777u128),
+                        matched_stake: U256::from(7_777_777u128),
+                        payout: U256::zero(),
+                        refund: U256::zero(),
+                    },
+                ],
+            }],
+            player_balances: vec![],
+            voided_players: vec![],
+        };
+
+        let settlement = compute_settlement(&result, &deposits);
+
+        let total_payouts: U256 =
+            settlement.payouts.iter().copied().fold(U256::zero(), |a, b| a + b);
+        let total_deposits: U256 =
+            deposits.iter().map(|(_, d)| *d).fold(U256::zero(), |a, b| a + b);
+
+        // The compute_settlement adjuster snaps the last player's payout to
+        // restore zero-sum if rounding leaks. Either way, the invariant must hold.
+        assert_eq!(
+            total_payouts, total_deposits,
+            "Σ payouts ({total_payouts}) must equal Σ deposits ({total_deposits})"
+        );
+
+        // And every player must appear in the settlement output.
+        assert_eq!(settlement.players.len(), deposits.len());
+    }
 }

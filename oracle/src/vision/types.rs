@@ -42,10 +42,11 @@ pub struct MarketConfig {
 pub struct PlayerPosition {
     pub player: Address,
     pub bitmap_hash: H256,
-    /// The player's deposit for this round (formerly stake_per_tick).
+    /// The full deposit committed by the player for this round.
+    /// Carried directly from `Vision.PlayerJoined.deposit` — the entire amount
+    /// the player put on the table, not a per-tick slice. The resolver splits
+    /// this evenly across active markets when settling.
     pub deposit: U256,
-    /// Total amount deposited (for PnL tracking).
-    pub initial_deposit: U256,
 }
 
 /// A bitmap in the store.
