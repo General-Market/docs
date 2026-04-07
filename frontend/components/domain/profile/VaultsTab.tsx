@@ -121,7 +121,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
           Deposit into any Vision vault — automated strategies trade on your behalf.
         </p>
         <Link
-          href="/vision"
+          href="/vaults"
           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-black text-white text-[12px] font-bold hover:bg-black/80 transition-colors"
         >
           BROWSE VAULTS →
@@ -160,7 +160,7 @@ export function VaultsTab({ address }: VaultsTabProps) {
           return (
             <Link
               key={row.vaultAddress}
-              href={`/vision/${row.source}`}
+              href={`/source/${row.source}`}
               className="grid grid-cols-12 items-center gap-3 px-4 py-3 hover:bg-surface/40 transition-colors"
             >
               <div className="col-span-4 min-w-0">
