@@ -80,7 +80,7 @@ export const VirtualsCouncil: React.FC = () => (
 );
 
 export const councilReplicateMeta = {
-  id: "VirtualsCouncil",
+  id: "VirtualsCouncil-Replicate",
   component: VirtualsCouncil,
   width: 1280,
   height: 720,
@@ -150,7 +150,7 @@ export const CouncilSideBySide: React.FC = () => (
 );
 
 export const councilSideBySideMeta = {
-  id: "CouncilSideBySide",
+  id: "VirtualsCouncil-SideBySide",
   component: CouncilSideBySide,
   width: 2562,
   height: 720,
