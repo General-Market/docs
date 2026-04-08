@@ -104,28 +104,32 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
   const settled = historyData?.batches?.filter(b => b.status === 'settled') ?? []
   const groups = useMemo(() => groupBatchesByDate(settled), [settled])
   const totalPages = historyData?.totalPages ?? 0
-
-  if (settled.length === 0 && !isLoading) return null
+  const isEmpty = !isLoading && settled.length === 0
 
   return (
     <div>
       {/* ── Recent Batches, HLTV "Recent results" style ── */}
-      {(settled.length > 0 || isLoading) && (
-        <div>
-          <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
-                {t('batch_results.past_rounds_desc')}
-              </div>
-              <h3 className="text-[15px] font-bold text-white">
-                {t('batch_results.recent_batches')}
-                <span className="text-[11px] font-normal text-white/30 ml-2">
-                  {historyData?.totalSettled ?? 0} {t('batch_results.total')}
-                </span>
-              </h3>
+      <div className="flex items-center justify-between px-5 py-3 bg-terminal-dark">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/35">
+              {t('batch_results.past_rounds_desc')}
             </div>
+            <h3 className="text-[15px] font-bold text-white">
+              {t('batch_results.recent_batches')}
+              <span className="text-[11px] font-normal text-white/30 ml-2">
+                {historyData?.totalSettled ?? 0} {t('batch_results.total')}
+              </span>
+            </h3>
           </div>
-
+        </div>
+        {isEmpty ? (
+          <div className="bg-white border border-border-light px-5 py-8 text-center">
+            <p className="text-[13px] text-text-muted">
+              No settled rounds yet. The first result will land here after the current round settles.
+            </p>
+          </div>
+        ) : (
+          <div>
           {/* Column headers — desktop only, matches the desktop row grid */}
           <div className="hidden md:grid grid-cols-[56px_1fr_56px_96px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
             <div>Time</div>
