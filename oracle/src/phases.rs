@@ -831,6 +831,14 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 let o = orchestrator.read().await;
                 o.get_submitted_bridged_orders().await.is_empty()
             };
+            // Outcome of a per-order CBO attempt. Separates transient (retryable)
+            // failures from permanent ones so we don't mark a recoverable order
+            // terminal Failed when the mirror snapshot is stale.
+            enum CboOutcome {
+                Confirmed,
+                NeedsRetry,
+                Failed,
+            }
             let cbo_confirmed_orders: Vec<ethers::types::U256> = if is_l3_direct {
                 info!(cycle = current_cycle, count = submitted_orders.len(),
                     "L3 direct orders: skipping completeBuyOrder (USDC locked atomically)");
@@ -858,7 +866,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                         let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
                                                         if success {
                                                             info!(?tx_hash, order_id = %order_id, "completeBuyOrder CONFIRMED");
-                                                            return Some(*order_id);
+                                                            return CboOutcome::Confirmed;
                                                         } else {
                                                             warn!(?tx_hash, order_id = %order_id, "completeBuyOrder REVERTED — will NOT mint");
                                                         }
@@ -872,7 +880,15 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                 let err_str = format!("{}", e);
                                                 if err_str.contains("E125") || err_str.contains("BuyOrderNotFound") {
                                                     info!(order_id = %order_id, "completeBuyOrder already done (E125) — confirmed");
-                                                    return Some(*order_id);
+                                                    return CboOutcome::Confirmed;
+                                                } else if is_snapshot_too_old_error(&err_str) {
+                                                    // Mirror snapshot is stale. Trigger immediate sync so the next
+                                                    // retry attempt will find a fresh snapshot. The order is left in
+                                                    // its current (Batched) status — the watchdog will re-drive CBO
+                                                    // after the sync lands, rather than marking it terminal Failed.
+                                                    warn!(order_id = %order_id, "completeBuyOrder hit SnapshotTooOld — requesting immediate mirror sync, order will be retried");
+                                                    mirror_sync_needed.store(true, Ordering::Release);
+                                                    return CboOutcome::NeedsRetry;
                                                 } else {
                                                     warn!(error = %e, order_id = %order_id, "completeBuyOrder failed — will NOT mint");
                                                 }
@@ -880,20 +896,26 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         }
                                     } else if !batch_am_leader {
                                         // Followers trust consensus — if consensus succeeded, CBO is confirmed
-                                        return Some(*order_id);
+                                        return CboOutcome::Confirmed;
                                     }
                                 }
                                 Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed — will NOT mint"),
                             }
-                            None
+                            CboOutcome::Failed
                         }
                     ).await;
                     match order_result {
-                        Ok(Some(id)) => {
+                        Ok(CboOutcome::Confirmed) => {
                             info!(order_id = %order_id, "Order processed successfully");
-                            confirmed.push(id);
+                            confirmed.push(*order_id);
                         }
-                        Ok(None) => {
+                        Ok(CboOutcome::NeedsRetry) => {
+                            // Transient failure (stale BLS mirror snapshot). Don't mark Failed.
+                            // The mirror_sync_needed flag will trigger an immediate sync,
+                            // and the watchdog will re-drive this order on the next cycle.
+                            info!(order_id = %order_id, "completeBuyOrder transient failure — will retry after mirror sync");
+                        }
+                        Ok(CboOutcome::Failed) => {
                             // CBO reverted/failed/timed-out — no retry path exists.
                             // Mark Failed immediately to prevent stale in-flight status
                             // from triggering a WorkDriven feedback loop.

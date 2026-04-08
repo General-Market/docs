@@ -685,9 +685,13 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                         info!(cycle = current_cycle, node_index = node_index_for_task,
                             "Leader: clearing mirror_sync_first, requesting immediate sync");
                     }
-                    // Exponential backoff: skip sync if we haven't reached the next retry cycle
+                    // Exponential backoff: skip sync if we haven't reached the next retry cycle.
+                    // Scheduled sync every 200 cycles (~3.3 min) — comfortably inside the
+                    // BLSVerifier 86_400-block staleness window on any plausible chain. Lowered
+                    // from 500 after an incident where persistent sync failures plus a large
+                    // scheduled gap let the mirror snapshot go stale for days.
                     let backoff_ready = current_cycle >= mirror_sync_next_retry.load(std::sync::atomic::Ordering::Acquire);
-                    if is_sync_leader && (snapshot_stale || current_cycle % 500 == 0) && backoff_ready && !mirror_sync_active.load(Ordering::Acquire) {
+                    if is_sync_leader && (snapshot_stale || current_cycle % 200 == 0) && backoff_ready && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
@@ -718,11 +722,22 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                                                 let prev = fail_count.fetch_add(1, Ordering::AcqRel);
                                                 let delay = std::cmp::min(2u64.saturating_pow(prev + 1), 600);
                                                 next_retry.store(cycle + delay, std::sync::atomic::Ordering::Release);
-                                                warn!(cycle, error = %e, backoff_cycles = delay, "Mirror sync failed, next retry in {} cycles", delay);
+                                                // Escalate to ERROR after 5 consecutive failures so a persistent
+                                                // sync break is visible in log scraping / alerting rather than
+                                                // silently backing off for days.
+                                                if prev + 1 >= 5 {
+                                                    error!(cycle, error = %e, consecutive_failures = prev + 1, backoff_cycles = delay,
+                                                        "Mirror sync failed for 5+ consecutive attempts — BLS calls on Settlement will eventually revert with SnapshotTooOld, investigate sync tx reverts");
+                                                } else {
+                                                    warn!(cycle, error = %e, consecutive_failures = prev + 1, backoff_cycles = delay, "Mirror sync failed, next retry in {} cycles", delay);
+                                                }
                                             },
                                             Ok(Ok(())) => {
                                                 // Reset backoff on success
-                                                fail_count.store(0, Ordering::Release);
+                                                let prev = fail_count.swap(0, Ordering::AcqRel);
+                                                if prev > 0 {
+                                                    info!(cycle, previous_failures = prev, "Mirror sync recovered after previous failures");
+                                                }
                                                 next_retry.store(0, std::sync::atomic::Ordering::Release);
                                                 msn_sync.store(false, Ordering::Release);
                                             },
@@ -730,7 +745,12 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                                                 let prev = fail_count.fetch_add(1, Ordering::AcqRel);
                                                 let delay = std::cmp::min(2u64.saturating_pow(prev + 1), 600);
                                                 next_retry.store(cycle + delay, std::sync::atomic::Ordering::Release);
-                                                warn!(cycle, backoff_cycles = delay, "Mirror sync timed out after 90s, next retry in {} cycles", delay);
+                                                if prev + 1 >= 5 {
+                                                    error!(cycle, consecutive_failures = prev + 1, backoff_cycles = delay,
+                                                        "Mirror sync timed out for 5+ consecutive attempts — BLS calls on Settlement will eventually revert with SnapshotTooOld");
+                                                } else {
+                                                    warn!(cycle, consecutive_failures = prev + 1, backoff_cycles = delay, "Mirror sync timed out after 90s, next retry in {} cycles", delay);
+                                                }
                                             },
                                         }
                                     });
