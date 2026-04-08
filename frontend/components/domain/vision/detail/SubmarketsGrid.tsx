@@ -204,7 +204,7 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5">
               {visible.map((market) => {
                 const name = market.name || market.symbol
                 const truncated = name.length > 20 ? name.slice(0, 18) + '\u2026' : name

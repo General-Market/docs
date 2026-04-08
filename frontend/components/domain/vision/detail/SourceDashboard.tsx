@@ -161,12 +161,20 @@ function RoundSpotlight({ sourceId }: { sourceId: string }) {
 }
 
 function Leaderboard({ sourceId }: { sourceId: string }) {
-  const { leaderboard } = useVisionLeaderboard(undefined, sourceId)
-  const top5 = leaderboard.slice(0, 5)
+  // Per-source leaderboard only populates after rounds settle. For fresh
+  // sources that's an empty list — fall back to the global leaderboard so
+  // the card always has someone to chase.
+  const { leaderboard: perSource } = useVisionLeaderboard(undefined, sourceId)
+  const { leaderboard: global } = useVisionLeaderboard()
+  const usingFallback = perSource.length === 0 && global.length > 0
+  const list = usingFallback ? global : perSource
+  const top5 = list.slice(0, 5)
 
   return (
     <div className={CARD}>
-      <h3 className={HEADER}>Leaderboard</h3>
+      <h3 className={HEADER}>
+        {usingFallback ? 'Top Traders' : 'Leaderboard'}
+      </h3>
 
       {top5.length > 0 ? (
         <div className="space-y-2">
@@ -188,6 +196,11 @@ function Leaderboard({ sourceId }: { sourceId: string }) {
               </span>
             </div>
           ))}
+          {usingFallback && (
+            <p className="pt-2 text-[10px] text-text-muted/70 uppercase tracking-[0.08em]">
+              Across all markets — this source has no settled rounds yet
+            </p>
+          )}
         </div>
       ) : (
         <p className="py-4 text-[13px] text-text-muted">No traders yet</p>
