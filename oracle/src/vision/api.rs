@@ -140,6 +140,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/batch/:id/ratios", get(batch_ratios))
         .route("/vision/vault/:address/history", get(vault_history))
         .route("/vision/sse/settlements", get(sse_settlements))
+        .route("/vision/stats/global", get(vision_stats_global))
         .with_state(state)
 }
 
@@ -3266,6 +3267,45 @@ async fn tie_rate_history(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/stats/global — lifetime totals for the topbar
+// ---------------------------------------------------------------------------
+
+/// Lifetime Vision counters used by the frontend topbar. A "settlement" is a
+/// single market that reached resolution inside a settled batch, so the total
+/// is `SUM(market_count)` over every settled lifecycle row — not the number
+/// of batches, and not the number of batches that happened to have players.
+/// Counting batches with players (as the old per-source history endpoint did)
+/// massively undercounts on testnet, where most rounds settle empty.
+async fn vision_stats_global(
+    State(state): State<Arc<VisionState>>,
+) -> impl IntoResponse {
+    // SUM(market_count) over settled batches. market_count is INTEGER, so
+    // cast to BIGINT to avoid overflow once the lifetime total crosses 2^31.
+    let total_settlements: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(SUM(market_count)::bigint, 0)
+         FROM vision_batch_lifecycle
+         WHERE settled_at IS NOT NULL"
+    )
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
+
+    let total_settled_batches: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint
+         FROM vision_batch_lifecycle
+         WHERE settled_at IS NOT NULL"
+    )
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
+
+    (StatusCode::OK, Json(serde_json::json!({
+        "totalSettlements": total_settlements,
+        "totalSettledBatches": total_settled_batches,
+    }))).into_response()
 }
 
 #[cfg(test)]
