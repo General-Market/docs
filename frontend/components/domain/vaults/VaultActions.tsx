@@ -11,6 +11,7 @@ import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
 import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
+import { useVaultStats } from '@/hooks/vaults/useVaultStats'
 import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
@@ -375,7 +376,14 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   const perf7d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 168) : null, [hasHistory, snapshots])
   const perf30d = useMemo(() => hasHistory ? computePerfForPeriod(snapshots, 720) : null, [hasHistory, snapshots])
 
-  const tradeCount = 0 // Vision vaults track batch participation, not individual trades
+  // Trading stats from PlayerJoined/PlayerSettled logs (last ~24h of blocks).
+  const { stats } = useVaultStats(vault.address)
+  const tradeCount = stats?.trades ?? 0
+  const winRatePct = stats?.winRate != null ? stats.winRate * 100 : null
+  const avgWinUsd = stats?.avgWin ?? null
+  const avgLossUsd = stats?.avgLoss ?? null
+  const fmtUsd = (v: number | null) =>
+    v == null ? '—' : `${v >= 0 ? '+' : ''}$${Math.abs(v).toFixed(2)}`
 
   const strategyKey = branding?.strategy ?? fund.strategy ?? ''
   const strategyColor = STRATEGY_COLOR[strategyKey] ?? '#999'
@@ -635,9 +643,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
               { label: '7d', value: fmtPct(perf7d), up: perf7d !== null && perf7d >= 0 },
               { label: '30d', value: fmtPct(perf30d), up: perf30d !== null && perf30d >= 0 },
               { label: 'Inception', value: `${isPositive ? '+' : ''}${perfPercent}%`, up: isPositive },
-              { label: 'Win Rate', value: '—' },
-              { label: 'Avg Win', value: '—' },
-              { label: 'Avg Loss', value: '—' },
+              { label: 'Win Rate', value: winRatePct != null ? `${winRatePct.toFixed(0)}%` : '—' },
+              { label: 'Avg Win', value: fmtUsd(avgWinUsd), up: avgWinUsd != null && avgWinUsd >= 0 },
+              { label: 'Avg Loss', value: fmtUsd(avgLossUsd) },
               { label: 'Trades', value: tradeCount > 0 ? String(tradeCount) : '—' },
             ].map(({ label, value, up }) => (
               <div key={label} className="px-3 py-2 border-r border-b border-[#F0F0F0] [&:nth-child(4n)]:border-r-0 last:[&:nth-last-child(-n+4)]:border-b-0">
