@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useState, useCallback, useEffect } from 'react'
+import { useAccount, useSwitchChain, usePublicClient } from 'wagmi'
 import { useChainWriteContract, ensureCorrectChain } from '@/hooks/useChainWrite'
-import { useTransactionNotification } from '@/hooks/useTransactionNotification'
+import { useToast } from '@/lib/contexts/ToastContext'
+import { getTxUrl } from '@/lib/utils/explorer'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { useDeployment } from '@/hooks/useDeployment'
 import { indexL3 } from '@/lib/wagmi'
-import { useSwitchChain } from 'wagmi'
 
 const ERC20_ABI = [
   {
@@ -42,114 +42,75 @@ export interface UseVaultDepositReturn {
   error: string | null
   reset: () => void
   /**
-   * The amount (in USDC wei, 18 decimals on L3) that was just deposited via a
-   * successful flow. Stays populated for ~10s after the claim tx confirms so
-   * the UI can render an optimistic "Your Position" row while the SSE vault
-   * position poller (3s cadence) catches up.
+   * Amount (USDC wei, 18 dec on L3) just deposited via a successful flow.
+   * Stays non-zero for ~10s post-success so the UI can render an optimistic
+   * position row while on-chain reads propagate.
    */
   justDepositedAmount: bigint
 }
 
-function parseError(err: Error): string {
-  const msg = err.message || ''
-  if (msg.includes('User rejected') || msg.includes('user rejected')) return 'Transaction rejected in wallet.'
-  if (msg.includes('ERC20InsufficientBalance') || msg.includes('transfer amount exceeds balance'))
+function parseError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err)
+  if (!msg) return 'Transaction failed.'
+  if (msg.includes('User rejected') || msg.includes('user rejected') || msg.includes('denied')) {
+    return 'Transaction rejected in wallet.'
+  }
+  if (msg.includes('ERC20InsufficientBalance') || msg.includes('transfer amount exceeds balance')) {
     return 'Insufficient USDC balance.'
-  if (msg.includes('ERC20InsufficientAllowance') || msg.includes('allowance'))
+  }
+  if (msg.includes('ERC20InsufficientAllowance') || msg.includes('allowance')) {
     return 'USDC allowance too low. Try again.'
-  return msg.replace(/^ContractFunctionRevertedError:\s*/, '').slice(0, 200) || 'Transaction reverted.'
+  }
+  if (msg.includes('timeout') || msg.includes('Timeout')) {
+    return 'Transaction timed out. Check your wallet and try again.'
+  }
+  return msg.replace(/^ContractFunctionRevertedError:\s*/, '').slice(0, 200) || 'Transaction failed.'
 }
 
+/**
+ * Three-tx vault join: approve → requestDeposit → claimDeposit.
+ *
+ * The flow runs as a single async function with try/catch error handling.
+ * The earlier effect-driven version would hang if wagmi dropped a state
+ * transition or if useWaitForTransactionReceipt stalled — either left the
+ * UI glued to "Requesting deposit…" with nothing to unstick it. This version
+ * awaits each step explicitly via publicClient.waitForTransactionReceipt and
+ * surfaces every failure mode as a state transition to 'error'.
+ */
 export function useVaultDeposit(): UseVaultDepositReturn {
   const { address, chainId: currentChainId } = useAccount()
   const { switchChainAsync } = useSwitchChain()
+  const publicClient = usePublicClient({ chainId: indexL3.id })
   const { getAddress } = useDeployment()
   const usdcAddress = getAddress('L3_WUSDC')
+  const { showSuccess, showError } = useToast()
 
   const [step, setStep] = useState<Step>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [pendingVault, setPendingVault] = useState<`0x${string}` | null>(null)
-  const [pendingAmount, setPendingAmount] = useState<bigint>(0n)
-  // Lives ~10s past claim-success so the UI can overlay an optimistic position
-  // while SSE polls catch up. Cleared on reset() or on the next deposit().
+  const [isPending, setIsPending] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
   const [justDepositedAmount, setJustDepositedAmount] = useState<bigint>(0n)
 
-  const approveHandled = useRef(false)
-  const depositHandled = useRef(false)
-  const claimHandled = useRef(false)
+  const { writeContractAsync: writeApprove } = useChainWriteContract()
+  const { writeContractAsync: writeDeposit } = useChainWriteContract()
+  const { writeContractAsync: writeClaim } = useChainWriteContract()
 
-  // Approve tx
-  const {
-    writeContract: writeApprove,
-    data: approveHash,
-    isPending: isApprovePending,
-    error: approveError,
-    reset: resetApprove,
-  } = useChainWriteContract()
-  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } =
-    useWaitForTransactionReceipt({ hash: approveHash, chainId: indexL3.id })
-
-  // RequestDeposit tx
-  const {
-    writeContract: writeDeposit,
-    data: depositHash,
-    isPending: isDepositPending,
-    error: depositError,
-    reset: resetDeposit,
-  } = useChainWriteContract()
-  const { isLoading: isDepositConfirming, isSuccess: isDepositSuccess } =
-    useWaitForTransactionReceipt({ hash: depositHash, chainId: indexL3.id })
-
-  // ClaimDeposit tx — mints shares for the pending request
-  const {
-    writeContract: writeClaim,
-    data: claimHash,
-    isPending: isClaimPending,
-    error: claimError,
-    reset: resetClaim,
-  } = useChainWriteContract()
-  const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
-    useWaitForTransactionReceipt({ hash: claimHash, chainId: indexL3.id })
-
-  // Read allowance for the pending vault
-  const { data: allowance } = useReadContract({
-    address: usdcAddress,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address && pendingVault ? [address, pendingVault] : undefined,
-    query: { enabled: !!address && !!pendingVault },
-  })
-
-  // Each of the three txs gets its own toast. Silencing approve and claim
-  // made the flow feel broken — user signs three times, gets one toast.
-  useTransactionNotification({
-    hash: approveHash,
-    isPending: isApprovePending,
-    isConfirming: isApproveConfirming,
-    isSuccess: isApproveSuccess,
-    error: approveError,
-    label: 'USDC approval',
-  })
-  useTransactionNotification({
-    hash: depositHash,
-    isPending: isDepositPending,
-    isConfirming: isDepositConfirming,
-    isSuccess: isDepositSuccess,
-    error: depositError,
-    label: 'Deposit request',
-  })
-  useTransactionNotification({
-    hash: claimHash,
-    isPending: isClaimPending,
-    isConfirming: isClaimConfirming,
-    isSuccess: isClaimSuccess,
-    error: claimError,
-    label: 'Shares minted',
-  })
+  const toastSuccess = useCallback(
+    (label: string, hash?: `0x${string}`) => {
+      const url = hash ? getTxUrl(hash, 'l3') : undefined
+      showSuccess(`${label} confirmed`, url ? { url, text: 'View transaction' } : undefined)
+    },
+    [showSuccess],
+  )
 
   const deposit = useCallback(
     async (vaultAddress: `0x${string}`, amount: bigint) => {
-      if (!address) return
+      if (!address || !publicClient) return
+
+      setErrorMsg(null)
+      setJustDepositedAmount(0n)
+      setIsPending(false)
+      setIsConfirming(false)
 
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync)
@@ -159,81 +120,99 @@ export function useVaultDeposit(): UseVaultDepositReturn {
         return
       }
 
-      setPendingVault(vaultAddress)
-      setPendingAmount(amount)
-      setErrorMsg(null)
-      setJustDepositedAmount(0n)
-      approveHandled.current = false
-      depositHandled.current = false
-      claimHandled.current = false
-
-      // Check allowance
-      const currentAllowance = (allowance as bigint | undefined) ?? 0n
-      if (currentAllowance < amount) {
-        setStep('approving')
-        writeApprove({
+      // Always read fresh allowance right before deciding to approve — the
+      // cached useReadContract value would be stale across repeated deposits.
+      let currentAllowance: bigint
+      try {
+        currentAllowance = (await publicClient.readContract({
           address: usdcAddress,
           abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [vaultAddress, amount],
-        })
+          functionName: 'allowance',
+          args: [address, vaultAddress],
+        })) as bigint
+      } catch (err) {
+        setErrorMsg(parseError(err))
+        setStep('error')
         return
       }
 
-      // Allowance sufficient — deposit directly
-      setStep('depositing')
-      writeDeposit({
-        address: vaultAddress,
-        abi: VISION_VAULT_ABI,
-        functionName: 'requestDeposit',
-        args: [amount, address, address],
-      })
+      try {
+        // ─── 1. Approve (skipped if allowance already sufficient) ───
+        if (currentAllowance < amount) {
+          setStep('approving')
+          setIsPending(true)
+          const approveHash = await writeApprove({
+            address: usdcAddress,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [vaultAddress, amount],
+          })
+          setIsPending(false)
+          setIsConfirming(true)
+          await publicClient.waitForTransactionReceipt({ hash: approveHash })
+          setIsConfirming(false)
+          toastSuccess('USDC approval', approveHash)
+        }
+
+        // ─── 2. Request deposit ───
+        setStep('depositing')
+        setIsPending(true)
+        const depositHash = await writeDeposit({
+          address: vaultAddress,
+          abi: VISION_VAULT_ABI,
+          functionName: 'requestDeposit',
+          args: [amount, address, address],
+        })
+        setIsPending(false)
+        setIsConfirming(true)
+        await publicClient.waitForTransactionReceipt({ hash: depositHash })
+        setIsConfirming(false)
+        toastSuccess('Deposit request', depositHash)
+
+        // ─── 3. Claim deposit (mints shares) ───
+        setStep('claiming')
+        setIsPending(true)
+        const claimHash = await writeClaim({
+          address: vaultAddress,
+          abi: VISION_VAULT_ABI,
+          functionName: 'claimDeposit',
+          args: [address, address],
+        })
+        setIsPending(false)
+        setIsConfirming(true)
+        await publicClient.waitForTransactionReceipt({ hash: claimHash })
+        setIsConfirming(false)
+        toastSuccess('Shares minted', claimHash)
+
+        // ─── Done ───
+        setStep('done')
+        setJustDepositedAmount(amount)
+      } catch (err) {
+        const parsed = parseError(err)
+        setErrorMsg(parsed)
+        setStep('error')
+        setIsPending(false)
+        setIsConfirming(false)
+        showError(parsed)
+      }
     },
-    [address, currentChainId, switchChainAsync, allowance, writeApprove, writeDeposit, usdcAddress],
+    [
+      address,
+      publicClient,
+      currentChainId,
+      switchChainAsync,
+      usdcAddress,
+      writeApprove,
+      writeDeposit,
+      writeClaim,
+      toastSuccess,
+      showError,
+    ],
   )
 
-  // Approve success -> requestDeposit
-  useEffect(() => {
-    if (!isApproveSuccess || approveHandled.current || !pendingVault || !address) return
-    approveHandled.current = true
-    setStep('depositing')
-    resetApprove()
-    writeDeposit({
-      address: pendingVault,
-      abi: VISION_VAULT_ABI,
-      functionName: 'requestDeposit',
-      args: [pendingAmount, address, address],
-    })
-  }, [isApproveSuccess, pendingVault, pendingAmount, address, writeDeposit, resetApprove])
-
-  // RequestDeposit success -> claimDeposit (mints shares)
-  useEffect(() => {
-    if (!isDepositSuccess || depositHandled.current || !pendingVault || !address) return
-    depositHandled.current = true
-    setStep('claiming')
-    resetDeposit()
-    writeClaim({
-      address: pendingVault,
-      abi: VISION_VAULT_ABI,
-      functionName: 'claimDeposit',
-      args: [address, address],
-    })
-  }, [isDepositSuccess, pendingVault, address, writeClaim, resetDeposit])
-
-  // Claim success -> done. Stash the deposited amount so consumers can render
-  // an optimistic Position panel immediately, without waiting for the next
-  // 3s vault-position poll on data-node.
-  useEffect(() => {
-    if (!isClaimSuccess || claimHandled.current) return
-    claimHandled.current = true
-    setStep('done')
-    setJustDepositedAmount(pendingAmount)
-    resetClaim()
-  }, [isClaimSuccess, pendingAmount, resetClaim])
-
-  // Auto-return to idle after a short celebration window so the button becomes
-  // usable again. Keep the optimistic amount alive slightly longer — by then
-  // the 3s SSE poller has caught up with reality.
+  // Auto-return to idle a few seconds after success so the button is usable
+  // again. Keep the optimistic amount alive a little longer for the UI's
+  // position overlay.
   useEffect(() => {
     if (step !== 'done') return
     const idleTimer = setTimeout(() => {
@@ -248,50 +227,19 @@ export function useVaultDeposit(): UseVaultDepositReturn {
     }
   }, [step])
 
-  // Error handling
-  useEffect(() => {
-    if (approveError) {
-      setErrorMsg(parseError(approveError))
-      setStep('error')
-      resetApprove()
-    }
-  }, [approveError, resetApprove])
-
-  useEffect(() => {
-    if (depositError) {
-      setErrorMsg(parseError(depositError))
-      setStep('error')
-      resetDeposit()
-    }
-  }, [depositError, resetDeposit])
-
-  useEffect(() => {
-    if (claimError) {
-      setErrorMsg(parseError(claimError))
-      setStep('error')
-      resetClaim()
-    }
-  }, [claimError, resetClaim])
-
   const reset = useCallback(() => {
     setStep('idle')
     setErrorMsg(null)
-    setPendingVault(null)
-    setPendingAmount(0n)
     setJustDepositedAmount(0n)
-    approveHandled.current = false
-    depositHandled.current = false
-    claimHandled.current = false
-    resetApprove()
-    resetDeposit()
-    resetClaim()
-  }, [resetApprove, resetDeposit, resetClaim])
+    setIsPending(false)
+    setIsConfirming(false)
+  }, [])
 
   return {
     deposit,
     step,
-    isPending: isApprovePending || isDepositPending || isClaimPending,
-    isConfirming: isApproveConfirming || isDepositConfirming || isClaimConfirming,
+    isPending,
+    isConfirming,
     error: errorMsg,
     reset,
     justDepositedAmount,
