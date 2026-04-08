@@ -1,14 +1,14 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import {
   AnimatedText,
   COUNCIL_DARK,
   COUNCIL_TEAL,
   COUNCIL_TITLE_FONT_SIZE,
 } from "./AnimatedText";
+import { GM_MONO_FONT } from "./gmTheme";
 
-const { fontFamily } = loadFont();
+const fontFamily = GM_MONO_FONT;
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";

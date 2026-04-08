@@ -1,9 +1,9 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import { AnimatedText, COUNCIL_TITLE_FONT_SIZE } from "./AnimatedText";
+import { GM_MONO_FONT } from "./gmTheme";
 
-const { fontFamily } = loadFont();
+const fontFamily = GM_MONO_FONT;
 
 export const Scene05: React.FC = () => {
   return (

@@ -6,18 +6,23 @@ import {
   interpolate,
   spring,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import { AnimatedText, COUNCIL_DARK, COUNCIL_TEAL } from "./AnimatedText";
+import {
+  GM_DARK_CARD,
+  GM_DARK_BORDER,
+  GM_MONO_FONT,
+  GM_SURFACE,
+} from "./gmTheme";
 
-const { fontFamily } = loadFont();
+const fontFamily = GM_MONO_FONT;
 
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
 
-const BG = "#F5F5F7";
-const PANEL_BG = "#1A2332";
-const PANEL_BORDER = "#2A3548";
+const BG = GM_SURFACE;
+const PANEL_BG = GM_DARK_CARD;
+const PANEL_BORDER = GM_DARK_BORDER;
 
 interface RankEntry {
   rank: number;

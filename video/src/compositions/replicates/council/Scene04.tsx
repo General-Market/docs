@@ -6,17 +6,17 @@ import {
   interpolate,
   spring,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import { AnimatedText, COUNCIL_TITLE_FONT_SIZE } from "./AnimatedText";
+import { GM_BRAND, GM_DARK_BG, GM_DARK_CARD, GM_MONO_FONT } from "./gmTheme";
 
-const { fontFamily } = loadFont();
-const DARK_BG = "#0B1426";
-const CARD_BG = "#111C2E";
+const fontFamily = GM_MONO_FONT;
+const DARK_BG = GM_DARK_BG;
+const CARD_BG = GM_DARK_CARD;
 const GPT_GREEN = "#10A37F";
 const GEMINI_BLUE = "#4285F4";
 const OPUS_ORANGE = "#E07B39";
-const TEAL = "#0FE8AE";
-const TITLE_TEAL = "rgba(15,232,174,0.5)";
+const TEAL = GM_BRAND;
+const TITLE_TEAL = "rgba(0,163,108,0.6)";
 const MUTED = "#6B7B8D";
 const ROW_HEIGHT = 30;
 
@@ -94,8 +94,8 @@ const DataRow: React.FC<{ agent: AgentRow }> = ({ agent }) => {
         borderRadius: 6,
         paddingLeft: 4,
         paddingRight: 4,
-        background: isFirst ? "rgba(15,232,174,0.06)" : "transparent",
-        boxShadow: isFirst ? `0 0 20px rgba(15,232,174,0.08), inset 0 0 12px rgba(15,232,174,0.04)` : "none",
+        background: isFirst ? "rgba(0,163,108,0.06)" : "transparent",
+        boxShadow: isFirst ? `0 0 20px rgba(0,163,108,0.08), inset 0 0 12px rgba(0,163,108,0.04)` : "none",
       }}
     >
       {/* Rank */}

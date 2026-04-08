@@ -1,13 +1,21 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, spring } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
+import {
+  GM_BRAND,
+  GM_FG,
+  GM_MONO_FONT,
+  GM_TITLE_FONT_SIZE,
+} from "./gmTheme";
 
-const { fontFamily: monoFont } = loadFont();
+const monoFont = GM_MONO_FONT;
 
-export const COUNCIL_TEAL = "#0FE8AE";
-export const COUNCIL_DARK = "#000000";
+// Re-exported under the legacy council names so every scene that already
+// imports COUNCIL_TEAL / COUNCIL_DARK / COUNCIL_TITLE_FONT_SIZE picks up the
+// General Market tokens with no edit on its end.
+export const COUNCIL_TEAL = GM_BRAND;
+export const COUNCIL_DARK = GM_FG;
 /** Single source of truth for every title-style text reveal in the council video. */
-export const COUNCIL_TITLE_FONT_SIZE = 56;
+export const COUNCIL_TITLE_FONT_SIZE = GM_TITLE_FONT_SIZE;
 
 export interface AnimatedTextProps {
   /** Full text to reveal, words separated by whitespace. */

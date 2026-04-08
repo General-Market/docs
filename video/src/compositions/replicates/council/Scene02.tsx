@@ -6,14 +6,14 @@ import {
   interpolate,
   spring,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import {
   AnimatedText,
   COUNCIL_TEAL,
   COUNCIL_TITLE_FONT_SIZE,
 } from "./AnimatedText";
+import { GM_MONO_FONT } from "./gmTheme";
 
-const { fontFamily } = loadFont();
+const fontFamily = GM_MONO_FONT;
 const TEAL = COUNCIL_TEAL;
 
 /* ── Inline SVG Icons ───────────────────────────────────── */

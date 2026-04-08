@@ -6,18 +6,13 @@ import {
   interpolate,
   spring,
 } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
-import { loadFont as loadPacifico } from "@remotion/google-fonts/Pacifico";
 import {
   AnimatedText,
   COUNCIL_TEAL,
   COUNCIL_DARK,
   COUNCIL_TITLE_FONT_SIZE,
 } from "./AnimatedText";
-
-const { fontFamily } = loadFont();
-const { fontFamily: pacificoFamily } = loadPacifico();
-const TEAL_DEEP = "#3FA8A0";
+import { GM_FG, GMLogo, GMWordmark } from "./gmTheme";
 
 // Timeline (130 frames @ 30fps ≈ 4.33s)
 //   0-35   "Season 1 judged." rises, holds, fades
@@ -94,8 +89,8 @@ export const Scene07: React.FC = () => {
         highlightColor={COUNCIL_TEAL}
       />
 
-      {/* Phase 3: Virtuals Protocol end logo — kept custom. A wordmark is
-          not a text reveal and should not pretend to be one. */}
+      {/* Phase 3: General Market end logo — black square dot-matrix logo
+          stacked above the Geist Sans wordmark, mirroring the homepage Header. */}
       {frame >= LOGO_IN && (
         <div
           style={{
@@ -104,38 +99,13 @@ export const Scene07: React.FC = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 6,
+            gap: 18,
             position: "absolute",
           }}
         >
-          {/* "Virtuals" — Pacifico cursive wordmark, closest readily-available
-              approximation of the original hand-drawn SVG path */}
-          <div
-            style={{
-              fontFamily: pacificoFamily,
-              fontSize: 40,
-              fontWeight: 400,
-              color: TEAL_DEEP,
-              letterSpacing: -1,
-              lineHeight: 1,
-            }}
-          >
-            Virtuals
-          </div>
-          <div
-            style={{
-              opacity: protocolOpacity,
-              fontFamily,
-              fontSize: 14,
-              fontWeight: 700,
-              color: TEAL_DEEP,
-              letterSpacing: "0.35em",
-              textAlign: "center",
-              paddingLeft: "0.35em",
-              marginTop: 8,
-            }}
-          >
-            PROTOCOL
+          <GMLogo size={120} />
+          <div style={{ opacity: protocolOpacity }}>
+            <GMWordmark size={48} color={GM_FG} />
           </div>
         </div>
       )}

@@ -1,33 +1,19 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
-import { loadFont } from "@remotion/google-fonts/SpaceMono";
 import {
   AnimatedText,
   COUNCIL_TEAL,
   COUNCIL_DARK,
   COUNCIL_TITLE_FONT_SIZE,
 } from "./AnimatedText";
+import { GM_MONO_FONT, GMLogo } from "./gmTheme";
 
-const { fontFamily } = loadFont();
+const fontFamily = GM_MONO_FONT;
 
 // Re-exported for sibling scenes that still reach for the old names.
 export const TEAL = COUNCIL_TEAL;
 export const DARK = COUNCIL_DARK;
 export const TEAL_LIGHT = "#B4F0D7";
-
-const VirtualsIcon: React.FC<{ size?: number }> = ({ size = 44 }) => (
-  <svg width={size} height={size} viewBox="0 0 32 32">
-    <path
-      d="M5 9 C 8 9, 11 11, 14 18 L 16 24 L 18 18 C 20 13, 23 10, 26 10"
-      stroke={COUNCIL_TEAL}
-      strokeWidth="3"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="27" cy="11" r="1.4" fill={COUNCIL_TEAL} />
-  </svg>
-);
 
 export const Scene01: React.FC = () => {
   const frame = useCurrentFrame();
@@ -113,7 +99,7 @@ export const Scene01: React.FC = () => {
             opacity: iconOpacity,
           }}
         >
-          <VirtualsIcon size={48} />
+          <GMLogo size={84} />
         </div>
 
         {/* Stage 2 — "Virtuals Protocol" reveals word by word inside the pill */}
