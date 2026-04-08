@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
+import { useAccount, useReadContract } from 'wagmi'
 import { Link } from '@/i18n/routing'
 import { cn } from '@/lib/utils/cn'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
@@ -13,6 +14,8 @@ import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
+import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
+import { indexL3 } from '@/lib/wagmi'
 import { NavChart, generateNavHistory } from './NavChart'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
 
@@ -179,18 +182,63 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     isConfirming: redeemConfirming, error: redeemError, reset: resetRedeem,
   } = useVaultRedeem()
 
-  // Position lives in the SSE context, updated every few seconds by data-node.
+  // Position has two sources of truth, in priority order:
+  //   1. Direct on-chain reads — authoritative for the user's own wallet,
+  //      refetched on every new L3 block. Zero dependence on the data-node's
+  //      3s SSE poller or on fund-branding.json being in sync.
+  //   2. SSE — kept as a cheap fallback for the initial paint and for users
+  //      who land on the page without an existing position read cached.
+  // Optimistic overlay is layered on top while the claim tx is still
+  // propagating through the RPC.
+  const { address: userAddress } = useAccount()
+
+  const { data: onChainShares, refetch: refetchShares } = useReadContract({
+    address: vault.address,
+    abi: VISION_VAULT_ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!userAddress, refetchInterval: 8000 },
+  })
+
+  const { data: onChainPending, refetch: refetchPending } = useReadContract({
+    address: vault.address,
+    abi: VISION_VAULT_ABI,
+    functionName: 'pendingDepositRequest',
+    args: userAddress ? [0n, userAddress] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!userAddress, refetchInterval: 8000 },
+  })
+
+  // SSE backup. Used only if the on-chain read hasn't landed yet.
   const ssePosition = useSSEUserVaultPosition(vault.address)
   const sseShares = ssePosition ? (() => { try { return BigInt(ssePosition.shares) } catch { return 0n } })() : 0n
   const ssePendingAssets = ssePosition ? (() => { try { return BigInt(ssePosition.pending_deposit) } catch { return 0n } })() : 0n
 
-  // Optimistic overlay. The hook hands us the amount that was just deposited
-  // (non-zero for ~10s after claim-success). Until SSE catches up (up to 3s),
-  // render the freshly deposited amount as a provisional "Pending Deposit"
-  // row so the user sees *something* land the instant they sign the last tx.
-  const isOptimistic = justDepositedAmount > 0n && sseShares === 0n && ssePendingAssets === 0n
-  const shares = sseShares
-  const pendingAssets = isOptimistic ? justDepositedAmount : ssePendingAssets
+  // Resolve position using the authoritative source first.
+  const resolvedShares = (onChainShares as bigint | undefined) ?? sseShares
+  const resolvedPending = (onChainPending as bigint | undefined) ?? ssePendingAssets
+
+  // Burst-refetch after a successful deposit so the user sees their shares as
+  // fast as the RPC can return them. Three timed pokes cover the block
+  // propagation window without spamming the node.
+  useEffect(() => {
+    if (depositStep !== 'done') return
+    refetchShares()
+    refetchPending()
+    const t1 = setTimeout(() => { refetchShares(); refetchPending() }, 1200)
+    const t2 = setTimeout(() => { refetchShares(); refetchPending() }, 3500)
+    const t3 = setTimeout(() => { refetchShares(); refetchPending() }, 7000)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
+  }, [depositStep, refetchShares, refetchPending])
+
+  // Optimistic: only fill in the "Just Deposited" row if neither source shows
+  // a position yet. Clears the instant the on-chain read returns the real
+  // shares.
+  const isOptimistic =
+    justDepositedAmount > 0n && resolvedShares === 0n && resolvedPending === 0n
+  const shares = resolvedShares
+  const pendingAssets = isOptimistic ? justDepositedAmount : resolvedPending
 
   const sharesFloat = parseFloat(formatUnits(shares, 18))
   const pendingFloat = parseFloat(formatUnits(pendingAssets, 18))
