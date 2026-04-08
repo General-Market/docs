@@ -143,6 +143,79 @@ function Sparkline({ data, color, className }: { data: number[]; color: string; 
   )
 }
 
+// Short strategy labels for the cramped sidebar. Falls back to the raw
+// key with underscores replaced by spaces so new strategies still render.
+const STRATEGY_SHORT_LABEL: Record<string, string> = {
+  momentum: 'MOMENTUM',
+  contrarian: 'CONTRARIAN',
+  bullish: 'BULLISH',
+  bearish: 'BEARISH',
+  mean_reversion: 'MEAN REV',
+  regime: 'REGIME',
+  cluster: 'CLUSTER',
+  momentum_threshold: 'SELECTIVE',
+  time_of_day: 'TIME',
+  volatility_fade: 'VOL FADE',
+  adoption_curve: 'ADOPTION',
+  home_field: 'HOME',
+}
+
+function VaultSidebarRow({
+  entry, index, selected, color, display, onSelect,
+}: {
+  entry: VaultEntry
+  index: number
+  selected: boolean
+  color: string
+  display: { tvl: number; nav: number; perf: number }
+  onSelect: (i: number) => void
+}) {
+  const { snapshots } = useVaultHistory(entry.vault.address)
+  const sparkData = useMemo(() => {
+    if (snapshots.length >= 2) return snapshots.map(s => s.nav).slice(-24)
+    // Deterministic fallback so cold-loaded rows aren't blank, but only
+    // when the NAV has actually moved off $1.
+    if (Math.abs(display.nav - 1.0) > 0.0005) {
+      return generateNavHistory(display.nav, entry.vault.address, 12)
+    }
+    return [1, 1]
+  }, [snapshots, display.nav, entry.vault.address])
+
+  const strategyKey = (entry.fund.strategy ?? '') as string
+  const strategyLabel =
+    STRATEGY_SHORT_LABEL[strategyKey] ?? strategyKey.replace(/_/g, ' ').toUpperCase()
+  const perfPositive = display.perf >= 0
+
+  return (
+    <div
+      onClick={() => onSelect(index)}
+      className={cn(
+        'flex items-center gap-2 px-4 py-2.5 border-b border-[#F0F0F0] cursor-pointer transition-colors hover:bg-[#FAFAFA]',
+        selected && 'bg-[#FAFAFA] border-l-[3px] border-l-[#00A36C] pl-[13px]',
+      )}
+    >
+      <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[13px] font-bold text-text-primary truncate">{entry.fund.name}</div>
+        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+          <span className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted truncate">
+            {strategyLabel}
+          </span>
+          <span
+            className={cn(
+              'font-mono text-[11px] font-bold shrink-0',
+              perfPositive ? 'text-[#00A36C]' : 'text-[#e11d48]',
+            )}
+          >
+            {perfPositive ? '+' : ''}{(display.perf * 100).toFixed(2)}%
+          </span>
+        </div>
+      </div>
+      <Sparkline data={sparkData} color={color} />
+    </div>
+  )
+}
+
 // ── Types ─────────────────────────────────────────────────
 
 interface VaultEntry {
@@ -889,40 +962,17 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
           {/* Sidebar (desktop only) */}
           <div className="hidden lg:flex flex-col w-[260px] shrink-0 border-r border-[#E0E0E0]">
             <div className="flex-1 overflow-y-auto">
-              {vaults.map((entry, i) => {
-                const display = resolveDisplay(entry.vault)
-                const ep = display.perf
-                const ePos = ep >= 0
-                const sc = STRATEGY_COLOR[entry.fund.strategy] ?? '#999'
-                const navs = display.nav
-                const sparkData = Math.abs(navs - 1.0) > 0.005
-                  ? generateNavHistory(navs, entry.vault.address, 12)
-                  : [1, 1]
-                return (
-                  <div
-                    key={entry.vault.address}
-                    onClick={() => setSelectedIdx(i)}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-2.5 border-b border-[#F0F0F0] cursor-pointer transition-colors hover:bg-[#FAFAFA]',
-                      selectedIdx === i && 'bg-[#FAFAFA] border-l-[3px] border-l-[#00A36C] pl-[13px]',
-                    )}
-                  >
-                    <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ backgroundColor: sc }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold text-text-primary truncate">{entry.fund.name}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[9px] font-semibold tracking-[0.04em] uppercase text-text-muted">
-                          {(entry.fund.strategy ?? '').replace(/_/g, ' ')}
-                        </span>
-                        <span className={cn('font-mono text-[11px] font-bold', ePos ? 'text-[#00A36C]' : 'text-[#e11d48]')}>
-                          {ePos ? '+' : ''}{(ep * 100).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                    <Sparkline data={sparkData} color={sc} />
-                  </div>
-                )
-              })}
+              {vaults.map((entry, i) => (
+                <VaultSidebarRow
+                  key={entry.vault.address}
+                  entry={entry}
+                  index={i}
+                  selected={selectedIdx === i}
+                  color={STRATEGY_COLOR[entry.fund.strategy] ?? '#999'}
+                  display={resolveDisplay(entry.vault)}
+                  onSelect={setSelectedIdx}
+                />
+              ))}
             </div>
             <div className="border-t border-[#E0E0E0] px-4 py-3">
               <Link
