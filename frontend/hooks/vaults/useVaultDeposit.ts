@@ -187,6 +187,16 @@ export function useVaultDeposit(): UseVaultDepositReturn {
         // ─── Done ───
         setStep('done')
         setJustDepositedAmount(amount)
+        // Broadcast to any cross-component listeners (onboarding guide,
+        // portfolio widgets, etc.) so they refetch without waiting for
+        // their own poll cadence.
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('vault-deposit-success', {
+              detail: { vault: vaultAddress, amount: amount.toString() },
+            }),
+          )
+        }
       } catch (err) {
         const parsed = parseError(err)
         setErrorMsg(parsed)
