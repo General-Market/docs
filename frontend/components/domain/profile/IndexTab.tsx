@@ -23,8 +23,9 @@ export function IndexTab({ address }: IndexTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* ITP Portfolio — reuses the same component from /index page */}
-      <PortfolioSection expanded={expanded} onToggle={() => {}} />
+      {/* ITP portfolio only. Vaults have their own top-level tab in
+          ProfileTabs — we don't duplicate them inside the Index tab. */}
+      <PortfolioSection expanded={expanded} onToggle={() => {}} hideVaults />
 
       {/* Points breakdown */}
       {!isLoading && (points.indexCreator > 0 || points.indexHolder > 0) && (

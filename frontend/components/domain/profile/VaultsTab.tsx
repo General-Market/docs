@@ -7,12 +7,10 @@ import { Link } from '@/i18n/routing'
 import fundData from '@/data/fund-branding.json'
 import {
   useSSEVisionVaults,
-  useSSEUserVaultPositions,
   type VisionVaultSSE,
-  type VisionVaultPositionSSE,
 } from '@/hooks/useSSE'
 import { useVaultsTotals } from '@/hooks/useVaultsTotals'
-import { useAutoClaimPendingDeposits } from '@/hooks/vaults/useAutoClaimPendingDeposits'
+import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { VaultActions } from '@/components/domain/vaults/VaultActions'
 import { cn } from '@/lib/utils/cn'
@@ -46,10 +44,9 @@ function safeBigInt(v: string | undefined): bigint {
 function computeRow(
   fund: any,
   vault: VisionVaultSSE | undefined,
-  position: VisionVaultPositionSSE | undefined,
+  sharesBigInt: bigint,
+  pendingBigInt: bigint,
 ): VaultRow | null {
-  const sharesBigInt = safeBigInt(position?.shares)
-  const pendingBigInt = safeBigInt(position?.pending_deposit)
   if (sharesBigInt === 0n && pendingBigInt === 0n) return null
 
   const totalAssets = safeBigInt(vault?.total_assets)
@@ -81,9 +78,13 @@ function computeRow(
 export function VaultsTab({ address }: VaultsTabProps) {
   const { address: connectedAddress } = useAccount()
   const visionVaults = useSSEVisionVaults()
-  const vaultPositions = useSSEUserVaultPositions()
 
   const isSelf = !!connectedAddress && connectedAddress.toLowerCase() === address.toLowerCase()
+
+  // Authoritative on-chain positions via multicall. No dependence on SSE or
+  // on the data-node's vault-position poller.
+  const { shares: onChainShares, pending: onChainPending, isChecked } =
+    useOnChainVaultPositions(isSelf ? (connectedAddress as `0x${string}` | undefined) : undefined)
 
   const vaultByAddr = useMemo(() => {
     const map = new Map<string, VisionVaultSSE>()
@@ -98,22 +99,19 @@ export function VaultsTab({ address }: VaultsTabProps) {
     for (const fund of funds) {
       const lower = (fund.vault as string).toLowerCase()
       const vault = vaultByAddr.get(lower)
-      const position = vaultPositions[lower]
-      const row = computeRow(fund, vault, position)
+      const sharesBig = onChainShares.get(lower) ?? 0n
+      const pendingBig = onChainPending.get(lower) ?? 0n
+      const row = computeRow(fund, vault, sharesBig, pendingBig)
       if (row) result.push(row)
     }
     // Largest position first.
     result.sort((a, b) => b.value - a.value)
     return result
-  }, [isSelf, vaultByAddr, vaultPositions])
+  }, [isSelf, vaultByAddr, onChainShares, onChainPending])
 
   // Shared hook with the profile page hero, keeps the two in perfect sync.
   const totals = useVaultsTotals(isSelf)
   const pnlColor = totals.totalPnl >= 0 ? 'text-color-up' : 'text-color-down'
-
-  // Self-healing: any pending deposit the initial flow failed to claim gets
-  // cleaned up here. Enabled only for the user's own profile.
-  const autoClaim = useAutoClaimPendingDeposits(isSelf)
 
   // Full on-chain vault metadata for the modal. Indexed by lowercased address.
   const { vaults: allVaultInfos } = useVaults()
@@ -137,6 +135,16 @@ export function VaultsTab({ address }: VaultsTabProps) {
     return (
       <div className="py-16 text-center text-caption text-text-muted">
         Vault positions are only visible on your own profile.
+      </div>
+    )
+  }
+
+  // Multicall still in flight — show a quiet skeleton instead of flashing
+  // "No vault positions" at returning users whose data hasn't loaded yet.
+  if (!isChecked && rows.length === 0) {
+    return (
+      <div className="border border-border-light p-8 text-center">
+        <div className="text-[12px] font-mono text-text-muted">Loading positions…</div>
       </div>
     )
   }
@@ -294,25 +302,11 @@ export function VaultsTab({ address }: VaultsTabProps) {
                 <div className="font-mono text-[12px] font-bold tabular-nums text-text-primary leading-tight">
                   ${row.value.toFixed(2)}
                 </div>
-                {pendingFloat > 0 && (() => {
-                  const isClaiming =
-                    autoClaim.claiming?.toLowerCase() === row.vaultAddress.toLowerCase()
-                  const hasFailed = autoClaim.failedVaults.has(row.vaultAddress.toLowerCase())
-                  return (
-                    <div
-                      className={cn(
-                        'text-[9px] font-mono leading-tight',
-                        isClaiming
-                          ? 'text-amber-600'
-                          : hasFailed
-                            ? 'text-color-down'
-                            : 'text-emerald-600',
-                      )}
-                    >
-                      ${pendingFloat.toFixed(2)} {isClaiming ? 'claiming…' : hasFailed ? 'failed' : 'pending'}
-                    </div>
-                  )
-                })()}
+                {pendingFloat > 0 && (
+                  <div className="text-[9px] font-mono leading-tight text-emerald-600">
+                    ${pendingFloat.toFixed(2)} pending
+                  </div>
+                )}
               </div>
 
               <div className={cn('text-right font-mono text-[12px] font-bold tabular-nums', rowPnlColor)}>

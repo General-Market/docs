@@ -2,13 +2,10 @@
 
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
+import { useAccount } from 'wagmi'
 import fundData from '@/data/fund-branding.json'
-import {
-  useSSEVisionVaults,
-  useSSEUserVaultPositions,
-  type VisionVaultSSE,
-  type VisionVaultPositionSSE,
-} from '@/hooks/useSSE'
+import { useSSEVisionVaults, type VisionVaultSSE } from '@/hooks/useSSE'
+import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 
 export interface VaultsTotals {
   count: number
@@ -17,25 +14,15 @@ export interface VaultsTotals {
   totalPnl: number
 }
 
-function safeBigInt(v: string | undefined): bigint {
-  if (!v) return 0n
-  try {
-    return BigInt(v)
-  } catch {
-    return 0n
-  }
-}
-
 function rowValues(
   vault: VisionVaultSSE | undefined,
-  position: VisionVaultPositionSSE | undefined,
+  shares: bigint,
+  pending: bigint,
 ): { value: number; pending: number; pnl: number } | null {
-  const shares = safeBigInt(position?.shares)
-  const pending = safeBigInt(position?.pending_deposit)
   if (shares === 0n && pending === 0n) return null
 
-  const totalAssets = safeBigInt(vault?.total_assets)
-  const totalSupply = safeBigInt(vault?.total_supply)
+  const totalAssets = (() => { try { return BigInt(vault?.total_assets ?? '0') } catch { return 0n } })()
+  const totalSupply = (() => { try { return BigInt(vault?.total_supply ?? '0') } catch { return 0n } })()
   const sharesFloat = parseFloat(formatUnits(shares, 18))
   const pendingFloat = parseFloat(formatUnits(pending, 18))
   const sharesValue =
@@ -57,11 +44,14 @@ function rowValues(
 
 /**
  * Aggregates the connected wallet's vault positions into running totals.
- * Shared by `VaultsTab` (row display) and the profile page hero (headline PnL chart).
+ * Reads positions directly on-chain via useOnChainVaultPositions; vault
+ * metadata (NAV, TVL, total supply) still comes from SSE since that side of
+ * the data-node stream is reliable.
  */
 export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
+  const { address } = useAccount()
   const visionVaults = useSSEVisionVaults()
-  const vaultPositions = useSSEUserVaultPositions()
+  const { shares, pending } = useOnChainVaultPositions(enabled ? address : undefined)
 
   const vaultByAddr = useMemo(() => {
     const map = new Map<string, VisionVaultSSE>()
@@ -78,7 +68,9 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
     let totalPnl = 0
     for (const fund of funds) {
       const lower = (fund.vault as string).toLowerCase()
-      const r = rowValues(vaultByAddr.get(lower), vaultPositions[lower])
+      const sharesBig = shares.get(lower) ?? 0n
+      const pendingBig = pending.get(lower) ?? 0n
+      const r = rowValues(vaultByAddr.get(lower), sharesBig, pendingBig)
       if (!r) continue
       count += 1
       totalValue += r.value
@@ -86,5 +78,5 @@ export function useVaultsTotals(enabled: boolean = true): VaultsTotals {
       totalPnl += r.pnl
     }
     return { count, totalValue, totalPending, totalPnl }
-  }, [enabled, vaultByAddr, vaultPositions])
+  }, [enabled, vaultByAddr, shares, pending])
 }

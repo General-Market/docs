@@ -40,6 +40,13 @@ interface PortfolioSectionProps {
   expanded: boolean
   onToggle: () => void
   deployedItps?: DeployedItpRef[]
+  /**
+   * When true, suppress the internal Vaults tab entirely and drop vault
+   * positions from the position count + stats strip. Used when a parent
+   * already renders a dedicated Vaults surface (e.g. the profile page's
+   * top-level ProfileTabs), to prevent double-display.
+   */
+  hideVaults?: boolean
 }
 
 // --- Order types (from ActiveOrdersSection) ---
@@ -89,7 +96,7 @@ function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
   )
 }
 
-export function PortfolioSection({ expanded, onToggle, deployedItps }: PortfolioSectionProps) {
+export function PortfolioSection({ expanded, onToggle, deployedItps, hideVaults = false }: PortfolioSectionProps) {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
   const locale = useLocale()
@@ -110,6 +117,12 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   const [activeTab, setActiveTab] = useState<Tab>('positions')
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
+
+  // If the parent flips hideVaults while we're on the vaults sub-tab, jump
+  // back to positions so the content area isn't blank.
+  useEffect(() => {
+    if (hideVaults && activeTab === 'vaults') setActiveTab('positions')
+  }, [hideVaults, activeTab])
 
   // --- Vision Vault positions ---
   const vaultSummary = useUserVaultPositions(address)
@@ -179,7 +192,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     }
 
     // Deduplicate: merge positions that map to the same canonical ITP ID
-    // e.g., "0x000...0002" and "2" are the same ITP — keep the one with higher value
+    // e.g., "0x000...0002" and "2" are the same ITP, keep the one with higher value
     const canonMap = new Map<string, string>() // hex key → canonical numeric key
     for (const [key] of posMap) {
       try {
@@ -298,10 +311,10 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   }
 
   const activeCount = orders.filter(o => o.status < 2).length
-  // Only count completed fills in Trades tab — pending ones are tracked in Orders tab
+  // Only count completed fills in Trades tab, pending ones are tracked in Orders tab
   const filledTradeCount = trades.filter(tr => tr.status === 'filled').length
   const itpPnl = mergedSummary ? parseFloat(mergedSummary.total_pnl) : 0
-  const totalPnl = itpPnl // Vault PnL requires deposit history — shown per-position only
+  const totalPnl = itpPnl // Vault PnL requires deposit history, shown per-position only
   const positionsValue = mergedSummary ? parseFloat(mergedSummary.total_value) : 0
   // Include pending/batched order amounts in total value
   const pendingOrderValue = orders
@@ -398,7 +411,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
         <>
           {/* Stats strip */}
           <div className="py-4 border-b border-border-light">
-            <div className="grid grid-cols-4 gap-0">
+            <div className={`grid ${hideVaults ? 'grid-cols-3' : 'grid-cols-4'} gap-0`}>
               <div className="py-2 pr-6">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_invested')}</div>
                 <SpringNumber
@@ -409,16 +422,18 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               </div>
               <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.positions')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">{(mergedSummary?.positions.length || 0) + vaultSummary.positions.length}</div>
+                <div className="text-title font-extrabold font-mono tabular-nums text-black">{(mergedSummary?.positions.length || 0) + (hideVaults ? 0 : vaultSummary.positions.length)}</div>
               </div>
-              <div className="py-2 px-6 border-l border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.total_value')}</div>
-                <SpringNumber
-                  value={vaultSummary.totalValue}
-                  format={n => `$${n.toFixed(2)}`}
-                  className="text-title font-extrabold font-mono tabular-nums text-black"
-                />
-              </div>
+              {!hideVaults && (
+                <div className="py-2 px-6 border-l border-border-light">
+                  <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vaults.total_value')}</div>
+                  <SpringNumber
+                    value={vaultSummary.totalValue}
+                    format={n => `$${n.toFixed(2)}`}
+                    className="text-title font-extrabold font-mono tabular-nums text-black"
+                  />
+                </div>
+              )}
               <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
                 <SpringNumber
@@ -440,7 +455,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           </div>
           <div className="border-b border-border-light mb-0 mt-5">
             <SpringTabs className="flex gap-6">
-              {(['positions', 'vaults', 'trades', 'orders'] as Tab[]).map(tab => {
+              {((hideVaults
+                ? ['positions', 'trades', 'orders']
+                : ['positions', 'vaults', 'trades', 'orders']) as Tab[]).map(tab => {
                 const label = t(`tabs.${tab}`)
                 const count = tab === 'positions' ? (mergedSummary?.positions.length || 0)
                   : tab === 'vaults' ? vaultSummary.positions.length
@@ -510,7 +527,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               <PositionsTab summary={mergedSummary} itpNameMap={itpNameMap} onBuy={setBuyModal} onSell={setSellModal} />
             </>
           )}
-          {activeTab === 'vaults' && (
+          {activeTab === 'vaults' && !hideVaults && (
             <VaultsTab positions={vaultSummary.positions} isLoading={vaultSummary.isLoading} />
           )}
           {activeTab === 'trades' && <TradesTab trades={trades} itpNameMap={itpNameMap} />}
@@ -534,14 +551,14 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
   const t = useTranslations('portfolio')
   const locale = useLocale()
   if (history.length === 0) {
-    return null // Hide chart area entirely when no history — positions tab shows the CTA
+    return null // Hide chart area entirely when no history, positions tab shows the CTA
   }
 
   const lastPoint = history[history.length - 1]
   const isPositive = lastPoint.pnl >= 0
   const color = isPositive ? '#16a34a' : '#dc2626'
 
-  // Single data point — show value card instead of a broken chart
+  // Single data point, show value card instead of a broken chart
   if (history.length === 1) {
     return (
       <div className="bg-card rounded-md border border-border-light p-8">
@@ -717,7 +734,7 @@ function PositionsTab({ summary, itpNameMap, onBuy, onSell }: { summary: ReturnT
 function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfolio>['trades']; itpNameMap: Map<string, string> }) {
   const t = useTranslations('portfolio')
   const [page, setPage] = useState(1)
-  // Only show completed fills — pending orders belong in the Orders tab
+  // Only show completed fills, pending orders belong in the Orders tab
   const filledTrades = trades.filter(trade => trade.status === 'filled')
   const totalPages = Math.max(1, Math.ceil(filledTrades.length / PAGE_SIZE))
   const clampedPage = Math.min(page, totalPages)
@@ -780,10 +797,10 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
                   ${trade.amount}
                 </td>
                 <td className="px-4 py-3 text-right text-text-secondary font-mono text-sm tabular-nums">
-                  {trade.fill_price ? `$${trade.fill_price}` : '—'}
+                  {trade.fill_price ? `$${trade.fill_price}` : ', '}
                 </td>
                 <td className="px-4 py-3 text-right text-text-secondary font-mono text-sm tabular-nums">
-                  {trade.shares || '—'}
+                  {trade.shares || ', '}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className={`text-xs px-2 py-1 rounded-md font-medium ${
@@ -828,7 +845,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
         functionName: 'cancelOrder',
         args: [BigInt(orderId)],
       })
-      // Wait for tx to be mined — catches on-chain reverts
+      // Wait for tx to be mined, catches on-chain reverts
       if (hash) {
         const { waitForTransactionReceipt } = await import('wagmi/actions')
         const { wagmiConfig } = await import('@/lib/wagmi')
@@ -839,7 +856,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
     } catch (err: any) {
       const msg = err?.shortMessage || err?.message || 'Cancel failed'
       if (msg.includes('E138') || msg.includes('NotCancellable')) {
-        setCancelError('Order already batched — cannot cancel')
+        setCancelError('Order already batched, cannot cancel')
       } else if (msg.includes('E129') || msg.includes('NotOrderOwner')) {
         setCancelError('Only the order creator can cancel')
       } else if (msg.includes('rejected')) {
@@ -915,7 +932,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                 transition={{ duration: 0.35, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
                 className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
               >
-                <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : '—'}</td>
+                <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : ', '}</td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${order.side === 0 ? 'text-color-up' : 'text-color-down'}`}>
                     {order.side === 0 ? t('side.buy') : t('side.sell')}
