@@ -1,20 +1,13 @@
 import React from "react";
 import { AbsoluteFill, Sequence, Video, staticFile } from "remotion";
 import { TOTAL_FRAMES, SECTIONS, toFrames } from "./theme";
-import { ClaudeTerminal } from "./scenes/ClaudeTerminal";
-import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
 import { HookDiagrams } from "./diagrams/HookDiagrams";
-import { BotArchDiagram } from "./diagrams/BotArchDiagram";
-import { LiquidityDiagrams } from "./diagrams/LiquidityDiagrams";
 import { SettlementDiagrams } from "./diagrams/SettlementDiagrams";
-import { PariDiagrams } from "./diagrams/PariDiagrams";
 import { PrivacyDiagrams } from "./diagrams/PrivacyDiagrams";
-import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
 import { EraDiagrams } from "./diagrams/EraDiagrams";
-import { MoatDiagrams } from "./diagrams/MoatDiagrams";
-import { SourcesDiagrams } from "./diagrams/SourcesDiagrams";
-import { OpeningSequenceText } from "./overlays/OpeningSequenceText";
+import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
 import { SourceCardOverlays } from "./overlays/SourceCardOverlays";
+import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
 
 const seq = (key: keyof typeof SECTIONS) => ({
   from: toFrames(SECTIONS[key].start),
@@ -24,7 +17,6 @@ const seq = (key: keyof typeof SECTIONS) => ({
 export const TutorialVideo: React.FC = () => {
   return (
     <AbsoluteFill>
-      {/* Layer 0: Source talking-head video */}
       <AbsoluteFill>
         <Video
           src={staticFile("tutorial-raw.mp4")}
@@ -32,74 +24,37 @@ export const TutorialVideo: React.FC = () => {
         />
       </AbsoluteFill>
 
-      {/* ═══ DIAGRAMS — the primary visual layer ═══ */}
-
-      {/* Hook: bot pipeline, problem constellation, execution flow, audience cards */}
+      {/* Problem constellation — centered (11.3–22.2s) */}
       <Sequence {...seq("hookOverlays")}>
         <HookDiagrams />
       </Sequence>
 
-      {/* Bot trigger: terminal + 5-tier system architecture */}
-      <Sequence {...seq("claudeTerminal")}>
-        <ClaudeTerminal />
-      </Sequence>
-      <Sequence {...seq("botArchDiagram")}>
-        <BotArchDiagram />
-      </Sequence>
-
-      {/* FAQ 1: batch anatomy, mandatory fill network, coverage heatmap, bell curve */}
-      <Sequence {...seq("liquidityDiagram")}>
-        <LiquidityDiagrams />
-      </Sequence>
-
-      {/* FAQ 2: Germany rail map, 10-min cycle, oracle architecture, price comparison */}
+      {/* 10-min cycle timeline (100.4–113.8s) */}
       <Sequence {...seq("settlementTimeline")}>
         <SettlementDiagrams />
       </Sequence>
 
-      {/* FAQ 2 cont: parimutuel pool, 30x computation grid, PNL waterfall, risk cap */}
-      <Sequence from={toFrames(131.5)} durationInFrames={toFrames(161.4 - 131.5)}>
-        <PariDiagrams />
-      </Sequence>
-
-      {/* FAQ 3: order book anatomy, sealed architecture, dispute timeline */}
+      {/* Dispute timeline (181.2–194.0s) */}
       <Sequence {...seq("privacySplit")}>
         <PrivacyDiagrams />
       </Sequence>
 
-      {/* FAQ 4: market overwhelm, single-vs-all paradigm, scatter plot */}
-      <Sequence {...seq("moatTimeline")}>
-        <MoatDiagrams />
-      </Sequence>
-
-      {/* FAQ 4 cont: era timeline with mini-charts, competitive landscape, fortress */}
+      {/* Era timeline + competitive landscape (216.8–247.4s) */}
       <Sequence {...seq("moatTimeline")}>
         <EraDiagrams />
       </Sequence>
 
-      {/* FAQ 5: source selection tree, roadmap, exponential growth chart */}
-      <Sequence {...seq("sourcesDiagrams")}>
-        <SourcesDiagrams />
-      </Sequence>
-
-      {/* Closing: bot dashboard + full architecture recap + end card */}
+      {/* Bot dashboard + end card (271.0–282.9s) */}
       <Sequence {...seq("closingDiagrams")}>
         <ClosingDiagrams />
       </Sequence>
 
-      {/* ═══ ACCENT LAYERS — minimal, non-competing ═══ */}
-
-      {/* Cinematic text reveals — 3 dramatic moments only */}
-      <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
-        <OpeningSequenceText />
-      </Sequence>
-
-      {/* Source cards — frontend replicas when sources are mentioned */}
+      {/* Source cards (253.9–264.9s) */}
       <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
         <SourceCardOverlays />
       </Sequence>
 
-      {/* FAQ question cards — full-screen overlays at each FAQ transition */}
+      {/* FAQ question screens */}
       <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
         <FaqQuestionOverlay />
       </Sequence>
