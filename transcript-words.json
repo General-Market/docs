@@ -1,0 +1,4417 @@
+[
+  {
+    "start": 0.16,
+    "end": 3.44,
+    "text": "How to launch your first general market bot in only five minutes.",
+    "words": [
+      {
+        "word": "How",
+        "start": 0.16,
+        "end": 0.4
+      },
+      {
+        "word": "to",
+        "start": 0.4,
+        "end": 0.56
+      },
+      {
+        "word": "launch",
+        "start": 0.56,
+        "end": 0.88
+      },
+      {
+        "word": "your",
+        "start": 0.88,
+        "end": 1.04
+      },
+      {
+        "word": "first",
+        "start": 1.04,
+        "end": 1.36
+      },
+      {
+        "word": "general",
+        "start": 1.36,
+        "end": 1.68
+      },
+      {
+        "word": "market",
+        "start": 1.68,
+        "end": 1.84
+      },
+      {
+        "word": "bot",
+        "start": 2.0,
+        "end": 2.32
+      },
+      {
+        "word": "in",
+        "start": 2.32,
+        "end": 2.48
+      },
+      {
+        "word": "only",
+        "start": 2.48,
+        "end": 2.72
+      },
+      {
+        "word": "five",
+        "start": 2.72,
+        "end": 2.96
+      },
+      {
+        "word": "minutes.",
+        "start": 2.96,
+        "end": 3.44
+      }
+    ]
+  },
+  {
+    "start": 3.44,
+    "end": 9.36,
+    "text": "This video goal isn't showing you a strategy and telling you you will become a millionaire by clicking two buttons.",
+    "words": [
+      {
+        "word": "This",
+        "start": 3.44,
+        "end": 3.68
+      },
+      {
+        "word": "video",
+        "start": 3.68,
+        "end": 4.0
+      },
+      {
+        "word": "goal",
+        "start": 4.0,
+        "end": 4.32
+      },
+      {
+        "word": "isn't",
+        "start": 4.32,
+        "end": 4.72
+      },
+      {
+        "word": "showing",
+        "start": 4.72,
+        "end": 5.12
+      },
+      {
+        "word": "you",
+        "start": 5.12,
+        "end": 5.28
+      },
+      {
+        "word": "a",
+        "start": 5.28,
+        "end": 5.44
+      },
+      {
+        "word": "strategy",
+        "start": 5.44,
+        "end": 5.92
+      },
+      {
+        "word": "and",
+        "start": 5.92,
+        "end": 6.08
+      },
+      {
+        "word": "telling",
+        "start": 6.08,
+        "end": 6.32
+      },
+      {
+        "word": "you",
+        "start": 6.32,
+        "end": 6.56
+      },
+      {
+        "word": "you",
+        "start": 6.56,
+        "end": 6.64
+      },
+      {
+        "word": "will",
+        "start": 6.64,
+        "end": 6.88
+      },
+      {
+        "word": "become",
+        "start": 6.88,
+        "end": 7.2
+      },
+      {
+        "word": "a",
+        "start": 7.2,
+        "end": 7.36
+      },
+      {
+        "word": "millionaire",
+        "start": 7.36,
+        "end": 7.92
+      },
+      {
+        "word": "by",
+        "start": 7.92,
+        "end": 8.08
+      },
+      {
+        "word": "clicking",
+        "start": 8.08,
+        "end": 8.56
+      },
+      {
+        "word": "two",
+        "start": 8.56,
+        "end": 8.64
+      },
+      {
+        "word": "buttons.",
+        "start": 8.72,
+        "end": 9.36
+      }
+    ]
+  },
+  {
+    "start": 9.36,
+    "end": 11.28,
+    "text": "No no no, we won't talk about that.",
+    "words": [
+      {
+        "word": "No",
+        "start": 9.36,
+        "end": 9.6
+      },
+      {
+        "word": "no",
+        "start": 9.68,
+        "end": 9.76
+      },
+      {
+        "word": "no,",
+        "start": 9.84,
+        "end": 10.08
+      },
+      {
+        "word": "we",
+        "start": 10.08,
+        "end": 10.24
+      },
+      {
+        "word": "won't",
+        "start": 10.24,
+        "end": 10.48
+      },
+      {
+        "word": "talk",
+        "start": 10.48,
+        "end": 10.8
+      },
+      {
+        "word": "about",
+        "start": 10.8,
+        "end": 10.96
+      },
+      {
+        "word": "that.",
+        "start": 10.96,
+        "end": 11.28
+      }
+    ]
+  },
+  {
+    "start": 11.28,
+    "end": 22.24,
+    "text": "We will talk about no matter the prediction market or financial instruments you will trade, you will encounter some problems like liquidity, capital lock, risk management and on and on.",
+    "words": [
+      {
+        "word": "We",
+        "start": 11.28,
+        "end": 11.52
+      },
+      {
+        "word": "will",
+        "start": 11.52,
+        "end": 11.68
+      },
+      {
+        "word": "talk",
+        "start": 11.68,
+        "end": 12.08
+      },
+      {
+        "word": "about",
+        "start": 12.08,
+        "end": 12.32
+      },
+      {
+        "word": "no",
+        "start": 12.56,
+        "end": 12.8
+      },
+      {
+        "word": "matter",
+        "start": 12.8,
+        "end": 13.12
+      },
+      {
+        "word": "the",
+        "start": 13.12,
+        "end": 13.36
+      },
+      {
+        "word": "prediction",
+        "start": 13.36,
+        "end": 13.76
+      },
+      {
+        "word": "market",
+        "start": 13.92,
+        "end": 14.24
+      },
+      {
+        "word": "or",
+        "start": 14.24,
+        "end": 14.48
+      },
+      {
+        "word": "financial",
+        "start": 14.48,
+        "end": 14.96
+      },
+      {
+        "word": "instruments",
+        "start": 14.96,
+        "end": 15.44
+      },
+      {
+        "word": "you",
+        "start": 15.44,
+        "end": 15.6
+      },
+      {
+        "word": "will",
+        "start": 15.6,
+        "end": 15.76
+      },
+      {
+        "word": "trade,",
+        "start": 15.76,
+        "end": 16.32
+      },
+      {
+        "word": "you",
+        "start": 16.32,
+        "end": 16.56
+      },
+      {
+        "word": "will",
+        "start": 16.56,
+        "end": 16.72
+      },
+      {
+        "word": "encounter",
+        "start": 16.72,
+        "end": 17.28
+      },
+      {
+        "word": "some",
+        "start": 17.28,
+        "end": 17.52
+      },
+      {
+        "word": "problems",
+        "start": 17.52,
+        "end": 17.84
+      },
+      {
+        "word": "like",
+        "start": 18.0,
+        "end": 18.32
+      },
+      {
+        "word": "liquidity,",
+        "start": 18.32,
+        "end": 19.28
+      },
+      {
+        "word": "capital",
+        "start": 19.28,
+        "end": 19.68
+      },
+      {
+        "word": "lock,",
+        "start": 19.84,
+        "end": 20.32
+      },
+      {
+        "word": "risk",
+        "start": 20.32,
+        "end": 20.64
+      },
+      {
+        "word": "management",
+        "start": 20.64,
+        "end": 21.12
+      },
+      {
+        "word": "and",
+        "start": 21.28,
+        "end": 21.52
+      },
+      {
+        "word": "on",
+        "start": 21.52,
+        "end": 21.68
+      },
+      {
+        "word": "and",
+        "start": 21.68,
+        "end": 21.92
+      },
+      {
+        "word": "on.",
+        "start": 21.92,
+        "end": 22.24
+      }
+    ]
+  },
+  {
+    "start": 22.24,
+    "end": 27.92,
+    "text": "And I will show you how to escape all that under the tutorial about launching a general market bot.",
+    "words": [
+      {
+        "word": "And",
+        "start": 22.24,
+        "end": 22.4
+      },
+      {
+        "word": "I",
+        "start": 22.4,
+        "end": 22.56
+      },
+      {
+        "word": "will",
+        "start": 22.56,
+        "end": 22.72
+      },
+      {
+        "word": "show",
+        "start": 22.72,
+        "end": 22.96
+      },
+      {
+        "word": "you",
+        "start": 22.96,
+        "end": 23.12
+      },
+      {
+        "word": "how",
+        "start": 23.12,
+        "end": 23.28
+      },
+      {
+        "word": "to",
+        "start": 23.28,
+        "end": 23.44
+      },
+      {
+        "word": "escape",
+        "start": 23.44,
+        "end": 23.92
+      },
+      {
+        "word": "all",
+        "start": 23.92,
+        "end": 24.08
+      },
+      {
+        "word": "that",
+        "start": 24.08,
+        "end": 24.32
+      },
+      {
+        "word": "under",
+        "start": 24.32,
+        "end": 24.56
+      },
+      {
+        "word": "the",
+        "start": 24.56,
+        "end": 24.72
+      },
+      {
+        "word": "tutorial",
+        "start": 24.72,
+        "end": 25.36
+      },
+      {
+        "word": "about",
+        "start": 25.36,
+        "end": 25.6
+      },
+      {
+        "word": "launching",
+        "start": 25.6,
+        "end": 26.16
+      },
+      {
+        "word": "a",
+        "start": 26.16,
+        "end": 26.4
+      },
+      {
+        "word": "general",
+        "start": 26.4,
+        "end": 26.88
+      },
+      {
+        "word": "market",
+        "start": 26.88,
+        "end": 27.12
+      },
+      {
+        "word": "bot.",
+        "start": 27.36,
+        "end": 27.92
+      }
+    ]
+  },
+  {
+    "start": 27.92,
+    "end": 34.08,
+    "text": "No matter your strategies, everyone encounter problems when executing trades, no matter the level you are.",
+    "words": [
+      {
+        "word": "No",
+        "start": 27.92,
+        "end": 28.08
+      },
+      {
+        "word": "matter",
+        "start": 28.08,
+        "end": 28.4
+      },
+      {
+        "word": "your",
+        "start": 28.4,
+        "end": 28.64
+      },
+      {
+        "word": "strategies,",
+        "start": 28.64,
+        "end": 29.36
+      },
+      {
+        "word": "everyone",
+        "start": 29.36,
+        "end": 29.92
+      },
+      {
+        "word": "encounter",
+        "start": 29.92,
+        "end": 30.4
+      },
+      {
+        "word": "problems",
+        "start": 30.56,
+        "end": 31.04
+      },
+      {
+        "word": "when",
+        "start": 31.04,
+        "end": 31.28
+      },
+      {
+        "word": "executing",
+        "start": 31.28,
+        "end": 31.84
+      },
+      {
+        "word": "trades,",
+        "start": 31.84,
+        "end": 32.32
+      },
+      {
+        "word": "no",
+        "start": 32.32,
+        "end": 32.48
+      },
+      {
+        "word": "matter",
+        "start": 32.48,
+        "end": 32.8
+      },
+      {
+        "word": "the",
+        "start": 32.8,
+        "end": 33.04
+      },
+      {
+        "word": "level",
+        "start": 33.04,
+        "end": 33.36
+      },
+      {
+        "word": "you",
+        "start": 33.36,
+        "end": 33.52
+      },
+      {
+        "word": "are.",
+        "start": 33.52,
+        "end": 34.08
+      }
+    ]
+  },
+  {
+    "start": 34.08,
+    "end": 36.4,
+    "text": "This video will be important for you.",
+    "words": [
+      {
+        "word": "This",
+        "start": 34.08,
+        "end": 34.4
+      },
+      {
+        "word": "video",
+        "start": 34.4,
+        "end": 34.72
+      },
+      {
+        "word": "will",
+        "start": 34.8,
+        "end": 35.04
+      },
+      {
+        "word": "be",
+        "start": 35.04,
+        "end": 35.36
+      },
+      {
+        "word": "important",
+        "start": 35.36,
+        "end": 35.68
+      },
+      {
+        "word": "for",
+        "start": 35.68,
+        "end": 36.0
+      },
+      {
+        "word": "you.",
+        "start": 36.0,
+        "end": 36.4
+      }
+    ]
+  },
+  {
+    "start": 36.4,
+    "end": 41.76,
+    "text": "Whether you are a beginner or already a H1 manager, I hope this will be useful to you.",
+    "words": [
+      {
+        "word": "Whether",
+        "start": 36.4,
+        "end": 36.8
+      },
+      {
+        "word": "you",
+        "start": 36.8,
+        "end": 37.04
+      },
+      {
+        "word": "are",
+        "start": 37.04,
+        "end": 37.12
+      },
+      {
+        "word": "a",
+        "start": 37.12,
+        "end": 37.28
+      },
+      {
+        "word": "beginner",
+        "start": 37.28,
+        "end": 37.92
+      },
+      {
+        "word": "or",
+        "start": 37.92,
+        "end": 38.08
+      },
+      {
+        "word": "already",
+        "start": 38.08,
+        "end": 38.32
+      },
+      {
+        "word": "a",
+        "start": 38.32,
+        "end": 38.56
+      },
+      {
+        "word": "H1",
+        "start": 38.56,
+        "end": 38.88
+      },
+      {
+        "word": "manager,",
+        "start": 39.12,
+        "end": 39.68
+      },
+      {
+        "word": "I",
+        "start": 39.68,
+        "end": 39.84
+      },
+      {
+        "word": "hope",
+        "start": 39.84,
+        "end": 40.24
+      },
+      {
+        "word": "this",
+        "start": 40.24,
+        "end": 40.48
+      },
+      {
+        "word": "will",
+        "start": 40.48,
+        "end": 40.64
+      },
+      {
+        "word": "be",
+        "start": 40.64,
+        "end": 40.8
+      },
+      {
+        "word": "useful",
+        "start": 40.8,
+        "end": 41.2
+      },
+      {
+        "word": "to",
+        "start": 41.2,
+        "end": 41.44
+      },
+      {
+        "word": "you.",
+        "start": 41.44,
+        "end": 41.76
+      }
+    ]
+  },
+  {
+    "start": 41.76,
+    "end": 42.8,
+    "text": "Let's start now.",
+    "words": [
+      {
+        "word": "Let's",
+        "start": 41.76,
+        "end": 42.08
+      },
+      {
+        "word": "start",
+        "start": 42.08,
+        "end": 42.4
+      },
+      {
+        "word": "now.",
+        "start": 42.4,
+        "end": 42.8
+      }
+    ]
+  },
+  {
+    "start": 42.8,
+    "end": 48.64,
+    "text": "Hey Claude, can you build me a bot about Twitch viewer strategy for general market.io?",
+    "words": [
+      {
+        "word": "Hey",
+        "start": 42.8,
+        "end": 43.12
+      },
+      {
+        "word": "Claude,",
+        "start": 43.2,
+        "end": 43.76
+      },
+      {
+        "word": "can",
+        "start": 43.76,
+        "end": 43.92
+      },
+      {
+        "word": "you",
+        "start": 43.92,
+        "end": 44.08
+      },
+      {
+        "word": "build",
+        "start": 44.08,
+        "end": 44.4
+      },
+      {
+        "word": "me",
+        "start": 44.4,
+        "end": 44.56
+      },
+      {
+        "word": "a",
+        "start": 44.56,
+        "end": 44.64
+      },
+      {
+        "word": "bot",
+        "start": 44.64,
+        "end": 44.96
+      },
+      {
+        "word": "about",
+        "start": 44.96,
+        "end": 45.2
+      },
+      {
+        "word": "Twitch",
+        "start": 45.36,
+        "end": 45.68
+      },
+      {
+        "word": "viewer",
+        "start": 45.84,
+        "end": 46.16
+      },
+      {
+        "word": "strategy",
+        "start": 46.32,
+        "end": 46.8
+      },
+      {
+        "word": "for",
+        "start": 46.8,
+        "end": 47.04
+      },
+      {
+        "word": "general",
+        "start": 47.04,
+        "end": 47.36
+      },
+      {
+        "word": "market.io?",
+        "start": 47.44,
+        "end": 48.64
+      }
+    ]
+  },
+  {
+    "start": 48.64,
+    "end": 57.76,
+    "text": "Meanwhile, in process, let's answer question we got most often asked how general market ensures liquidity on 500,000 markets.",
+    "words": [
+      {
+        "word": "Meanwhile,",
+        "start": 48.64,
+        "end": 49.28
+      },
+      {
+        "word": "in",
+        "start": 49.28,
+        "end": 49.44
+      },
+      {
+        "word": "process,",
+        "start": 49.44,
+        "end": 49.92
+      },
+      {
+        "word": "let's",
+        "start": 49.92,
+        "end": 50.16
+      },
+      {
+        "word": "answer",
+        "start": 50.16,
+        "end": 50.48
+      },
+      {
+        "word": "question",
+        "start": 50.56,
+        "end": 50.88
+      },
+      {
+        "word": "we",
+        "start": 50.96,
+        "end": 51.2
+      },
+      {
+        "word": "got",
+        "start": 51.2,
+        "end": 51.44
+      },
+      {
+        "word": "most",
+        "start": 51.44,
+        "end": 51.6
+      },
+      {
+        "word": "often",
+        "start": 51.6,
+        "end": 52.0
+      },
+      {
+        "word": "asked",
+        "start": 52.0,
+        "end": 52.48
+      },
+      {
+        "word": "how",
+        "start": 52.64,
+        "end": 52.72
+      },
+      {
+        "word": "general",
+        "start": 53.04,
+        "end": 53.52
+      },
+      {
+        "word": "market",
+        "start": 53.52,
+        "end": 53.68
+      },
+      {
+        "word": "ensures",
+        "start": 53.92,
+        "end": 54.32
+      },
+      {
+        "word": "liquidity",
+        "start": 54.4,
+        "end": 55.2
+      },
+      {
+        "word": "on",
+        "start": 55.2,
+        "end": 55.52
+      },
+      {
+        "word": "500,000",
+        "start": 55.52,
+        "end": 56.96
+      },
+      {
+        "word": "markets.",
+        "start": 56.96,
+        "end": 57.76
+      }
+    ]
+  },
+  {
+    "start": 57.76,
+    "end": 59.2,
+    "text": "Let's take an example.",
+    "words": [
+      {
+        "word": "Let's",
+        "start": 57.76,
+        "end": 58.16
+      },
+      {
+        "word": "take",
+        "start": 58.16,
+        "end": 58.4
+      },
+      {
+        "word": "an",
+        "start": 58.4,
+        "end": 58.56
+      },
+      {
+        "word": "example.",
+        "start": 58.56,
+        "end": 59.2
+      }
+    ]
+  },
+  {
+    "start": 59.2,
+    "end": 62.4,
+    "text": "We have 5,000 Twitch streamers in a batch.",
+    "words": [
+      {
+        "word": "We",
+        "start": 59.2,
+        "end": 59.36
+      },
+      {
+        "word": "have",
+        "start": 59.36,
+        "end": 59.6
+      },
+      {
+        "word": "5,000",
+        "start": 59.6,
+        "end": 60.24
+      },
+      {
+        "word": "Twitch",
+        "start": 60.4,
+        "end": 60.88
+      },
+      {
+        "word": "streamers",
+        "start": 60.88,
+        "end": 61.44
+      },
+      {
+        "word": "in",
+        "start": 61.44,
+        "end": 61.6
+      },
+      {
+        "word": "a",
+        "start": 61.6,
+        "end": 61.76
+      },
+      {
+        "word": "batch.",
+        "start": 61.76,
+        "end": 62.4
+      }
+    ]
+  },
+  {
+    "start": 62.4,
+    "end": 67.44,
+    "text": "Every trader bets on will this Twitch streamer have more viewers in 10 minutes.",
+    "words": [
+      {
+        "word": "Every",
+        "start": 62.4,
+        "end": 62.8
+      },
+      {
+        "word": "trader",
+        "start": 62.8,
+        "end": 63.28
+      },
+      {
+        "word": "bets",
+        "start": 63.28,
+        "end": 63.68
+      },
+      {
+        "word": "on",
+        "start": 63.68,
+        "end": 63.84
+      },
+      {
+        "word": "will",
+        "start": 64.08,
+        "end": 64.16
+      },
+      {
+        "word": "this",
+        "start": 64.32,
+        "end": 64.48
+      },
+      {
+        "word": "Twitch",
+        "start": 64.48,
+        "end": 64.8
+      },
+      {
+        "word": "streamer",
+        "start": 64.88,
+        "end": 65.52
+      },
+      {
+        "word": "have",
+        "start": 65.52,
+        "end": 65.76
+      },
+      {
+        "word": "more",
+        "start": 65.76,
+        "end": 66.0
+      },
+      {
+        "word": "viewers",
+        "start": 66.0,
+        "end": 66.48
+      },
+      {
+        "word": "in",
+        "start": 66.48,
+        "end": 66.64
+      },
+      {
+        "word": "10",
+        "start": 66.64,
+        "end": 66.96
+      },
+      {
+        "word": "minutes.",
+        "start": 66.96,
+        "end": 67.44
+      }
+    ]
+  },
+  {
+    "start": 67.44,
+    "end": 72.08,
+    "text": "And the system only accepts trades where you feel that for every streamer's.",
+    "words": [
+      {
+        "word": "And",
+        "start": 67.44,
+        "end": 67.68
+      },
+      {
+        "word": "the",
+        "start": 67.68,
+        "end": 67.92
+      },
+      {
+        "word": "system",
+        "start": 67.92,
+        "end": 68.24
+      },
+      {
+        "word": "only",
+        "start": 68.24,
+        "end": 68.56
+      },
+      {
+        "word": "accepts",
+        "start": 68.56,
+        "end": 69.12
+      },
+      {
+        "word": "trades",
+        "start": 69.12,
+        "end": 69.6
+      },
+      {
+        "word": "where",
+        "start": 69.6,
+        "end": 69.92
+      },
+      {
+        "word": "you",
+        "start": 69.92,
+        "end": 70.08
+      },
+      {
+        "word": "feel",
+        "start": 70.08,
+        "end": 70.4
+      },
+      {
+        "word": "that",
+        "start": 70.4,
+        "end": 70.56
+      },
+      {
+        "word": "for",
+        "start": 70.72,
+        "end": 70.88
+      },
+      {
+        "word": "every",
+        "start": 70.88,
+        "end": 71.2
+      },
+      {
+        "word": "streamer's.",
+        "start": 71.2,
+        "end": 72.08
+      }
+    ]
+  },
+  {
+    "start": 72.08,
+    "end": 76.72,
+    "text": "This means no submarket is unleft because everyone trades on everything.",
+    "words": [
+      {
+        "word": "This",
+        "start": 72.08,
+        "end": 72.32
+      },
+      {
+        "word": "means",
+        "start": 72.32,
+        "end": 72.72
+      },
+      {
+        "word": "no",
+        "start": 72.72,
+        "end": 72.96
+      },
+      {
+        "word": "submarket",
+        "start": 72.96,
+        "end": 73.44
+      },
+      {
+        "word": "is",
+        "start": 73.44,
+        "end": 73.6
+      },
+      {
+        "word": "unleft",
+        "start": 73.6,
+        "end": 74.32
+      },
+      {
+        "word": "because",
+        "start": 74.48,
+        "end": 74.72
+      },
+      {
+        "word": "everyone",
+        "start": 74.72,
+        "end": 75.36
+      },
+      {
+        "word": "trades",
+        "start": 75.36,
+        "end": 75.84
+      },
+      {
+        "word": "on",
+        "start": 75.84,
+        "end": 76.0
+      },
+      {
+        "word": "everything.",
+        "start": 76.0,
+        "end": 76.72
+      }
+    ]
+  },
+  {
+    "start": 76.72,
+    "end": 84.8,
+    "text": "It's harder to trade, but remember everyone is on the same position, and the benefit of trading millions of exclusive markets is huge.",
+    "words": [
+      {
+        "word": "It's",
+        "start": 76.72,
+        "end": 76.96
+      },
+      {
+        "word": "harder",
+        "start": 76.96,
+        "end": 77.36
+      },
+      {
+        "word": "to",
+        "start": 77.36,
+        "end": 77.6
+      },
+      {
+        "word": "trade,",
+        "start": 77.6,
+        "end": 77.92
+      },
+      {
+        "word": "but",
+        "start": 77.92,
+        "end": 78.16
+      },
+      {
+        "word": "remember",
+        "start": 78.16,
+        "end": 78.64
+      },
+      {
+        "word": "everyone",
+        "start": 78.8,
+        "end": 79.28
+      },
+      {
+        "word": "is",
+        "start": 79.28,
+        "end": 79.44
+      },
+      {
+        "word": "on",
+        "start": 79.44,
+        "end": 79.6
+      },
+      {
+        "word": "the",
+        "start": 79.6,
+        "end": 79.76
+      },
+      {
+        "word": "same",
+        "start": 79.76,
+        "end": 80.08
+      },
+      {
+        "word": "position,",
+        "start": 80.08,
+        "end": 80.56
+      },
+      {
+        "word": "and",
+        "start": 80.56,
+        "end": 80.8
+      },
+      {
+        "word": "the",
+        "start": 80.8,
+        "end": 80.88
+      },
+      {
+        "word": "benefit",
+        "start": 80.88,
+        "end": 81.28
+      },
+      {
+        "word": "of",
+        "start": 81.28,
+        "end": 81.52
+      },
+      {
+        "word": "trading",
+        "start": 81.52,
+        "end": 81.92
+      },
+      {
+        "word": "millions",
+        "start": 81.92,
+        "end": 82.32
+      },
+      {
+        "word": "of",
+        "start": 82.32,
+        "end": 82.56
+      },
+      {
+        "word": "exclusive",
+        "start": 82.56,
+        "end": 83.36
+      },
+      {
+        "word": "markets",
+        "start": 83.36,
+        "end": 83.84
+      },
+      {
+        "word": "is",
+        "start": 83.84,
+        "end": 84.08
+      },
+      {
+        "word": "huge.",
+        "start": 84.08,
+        "end": 84.8
+      }
+    ]
+  },
+  {
+    "start": 84.8,
+    "end": 89.84,
+    "text": "Some traders will earn more because they are better at general market and some won't.",
+    "words": [
+      {
+        "word": "Some",
+        "start": 84.8,
+        "end": 85.12
+      },
+      {
+        "word": "traders",
+        "start": 85.12,
+        "end": 85.6
+      },
+      {
+        "word": "will",
+        "start": 85.6,
+        "end": 85.84
+      },
+      {
+        "word": "earn",
+        "start": 85.84,
+        "end": 86.24
+      },
+      {
+        "word": "more",
+        "start": 86.24,
+        "end": 86.48
+      },
+      {
+        "word": "because",
+        "start": 86.64,
+        "end": 86.88
+      },
+      {
+        "word": "they",
+        "start": 86.88,
+        "end": 87.04
+      },
+      {
+        "word": "are",
+        "start": 87.04,
+        "end": 87.2
+      },
+      {
+        "word": "better",
+        "start": 87.2,
+        "end": 87.52
+      },
+      {
+        "word": "at",
+        "start": 87.52,
+        "end": 87.76
+      },
+      {
+        "word": "general",
+        "start": 87.76,
+        "end": 88.24
+      },
+      {
+        "word": "market",
+        "start": 88.24,
+        "end": 88.48
+      },
+      {
+        "word": "and",
+        "start": 88.56,
+        "end": 88.8
+      },
+      {
+        "word": "some",
+        "start": 88.8,
+        "end": 89.12
+      },
+      {
+        "word": "won't.",
+        "start": 89.12,
+        "end": 89.84
+      }
+    ]
+  },
+  {
+    "start": 89.84,
+    "end": 93.28,
+    "text": "How price works if settlements are 10 minutes?",
+    "words": [
+      {
+        "word": "How",
+        "start": 89.84,
+        "end": 90.16
+      },
+      {
+        "word": "price",
+        "start": 90.24,
+        "end": 90.72
+      },
+      {
+        "word": "works",
+        "start": 90.72,
+        "end": 91.04
+      },
+      {
+        "word": "if",
+        "start": 91.04,
+        "end": 91.2
+      },
+      {
+        "word": "settlements",
+        "start": 91.36,
+        "end": 92.0
+      },
+      {
+        "word": "are",
+        "start": 92.0,
+        "end": 92.24
+      },
+      {
+        "word": "10",
+        "start": 92.24,
+        "end": 92.64
+      },
+      {
+        "word": "minutes?",
+        "start": 92.64,
+        "end": 93.28
+      }
+    ]
+  },
+  {
+    "start": 93.28,
+    "end": 94.8,
+    "text": "Let's take an example.",
+    "words": [
+      {
+        "word": "Let's",
+        "start": 93.28,
+        "end": 93.68
+      },
+      {
+        "word": "take",
+        "start": 93.68,
+        "end": 93.92
+      },
+      {
+        "word": "an",
+        "start": 93.92,
+        "end": 94.08
+      },
+      {
+        "word": "example.",
+        "start": 94.08,
+        "end": 94.8
+      }
+    ]
+  },
+  {
+    "start": 94.8,
+    "end": 96.4,
+    "text": "Trend delay batch.",
+    "words": [
+      {
+        "word": "Trend",
+        "start": 94.8,
+        "end": 95.2
+      },
+      {
+        "word": "delay",
+        "start": 95.2,
+        "end": 95.52
+      },
+      {
+        "word": "batch.",
+        "start": 95.68,
+        "end": 96.4
+      }
+    ]
+  },
+  {
+    "start": 96.4,
+    "end": 100.4,
+    "text": "There is 30 trend station delay submarket in a batch.",
+    "words": [
+      {
+        "word": "There",
+        "start": 96.4,
+        "end": 96.72
+      },
+      {
+        "word": "is",
+        "start": 96.72,
+        "end": 96.96
+      },
+      {
+        "word": "30",
+        "start": 96.96,
+        "end": 97.44
+      },
+      {
+        "word": "trend",
+        "start": 97.68,
+        "end": 97.92
+      },
+      {
+        "word": "station",
+        "start": 98.08,
+        "end": 98.4
+      },
+      {
+        "word": "delay",
+        "start": 98.4,
+        "end": 98.72
+      },
+      {
+        "word": "submarket",
+        "start": 98.88,
+        "end": 99.52
+      },
+      {
+        "word": "in",
+        "start": 99.52,
+        "end": 99.6
+      },
+      {
+        "word": "a",
+        "start": 99.6,
+        "end": 99.76
+      },
+      {
+        "word": "batch.",
+        "start": 99.76,
+        "end": 100.4
+      }
+    ]
+  },
+  {
+    "start": 100.4,
+    "end": 107.76,
+    "text": "This means 30 times the question will this trend station delay in Germany have more time delay in 10 minutes?",
+    "words": [
+      {
+        "word": "This",
+        "start": 100.4,
+        "end": 100.64
+      },
+      {
+        "word": "means",
+        "start": 100.64,
+        "end": 101.04
+      },
+      {
+        "word": "30",
+        "start": 101.04,
+        "end": 101.44
+      },
+      {
+        "word": "times",
+        "start": 101.44,
+        "end": 101.76
+      },
+      {
+        "word": "the",
+        "start": 101.76,
+        "end": 101.92
+      },
+      {
+        "word": "question",
+        "start": 101.92,
+        "end": 102.32
+      },
+      {
+        "word": "will",
+        "start": 102.48,
+        "end": 102.64
+      },
+      {
+        "word": "this",
+        "start": 102.8,
+        "end": 103.04
+      },
+      {
+        "word": "trend",
+        "start": 103.04,
+        "end": 103.28
+      },
+      {
+        "word": "station",
+        "start": 103.44,
+        "end": 103.76
+      },
+      {
+        "word": "delay",
+        "start": 103.84,
+        "end": 104.24
+      },
+      {
+        "word": "in",
+        "start": 104.24,
+        "end": 104.48
+      },
+      {
+        "word": "Germany",
+        "start": 104.48,
+        "end": 105.12
+      },
+      {
+        "word": "have",
+        "start": 105.12,
+        "end": 105.36
+      },
+      {
+        "word": "more",
+        "start": 105.36,
+        "end": 105.68
+      },
+      {
+        "word": "time",
+        "start": 105.68,
+        "end": 105.92
+      },
+      {
+        "word": "delay",
+        "start": 105.92,
+        "end": 106.24
+      },
+      {
+        "word": "in",
+        "start": 106.4,
+        "end": 106.64
+      },
+      {
+        "word": "10",
+        "start": 106.64,
+        "end": 107.04
+      },
+      {
+        "word": "minutes?",
+        "start": 107.04,
+        "end": 107.76
+      }
+    ]
+  },
+  {
+    "start": 107.76,
+    "end": 113.76,
+    "text": "While you bet yes or no to the question, everyone pushes their bets in a 10 minute window.",
+    "words": [
+      {
+        "word": "While",
+        "start": 107.76,
+        "end": 108.08
+      },
+      {
+        "word": "you",
+        "start": 108.08,
+        "end": 108.32
+      },
+      {
+        "word": "bet",
+        "start": 108.32,
+        "end": 108.56
+      },
+      {
+        "word": "yes",
+        "start": 108.64,
+        "end": 108.96
+      },
+      {
+        "word": "or",
+        "start": 108.96,
+        "end": 109.12
+      },
+      {
+        "word": "no",
+        "start": 109.12,
+        "end": 109.36
+      },
+      {
+        "word": "to",
+        "start": 109.36,
+        "end": 109.52
+      },
+      {
+        "word": "the",
+        "start": 109.52,
+        "end": 109.76
+      },
+      {
+        "word": "question,",
+        "start": 109.76,
+        "end": 110.24
+      },
+      {
+        "word": "everyone",
+        "start": 110.24,
+        "end": 110.72
+      },
+      {
+        "word": "pushes",
+        "start": 110.72,
+        "end": 111.2
+      },
+      {
+        "word": "their",
+        "start": 111.2,
+        "end": 111.44
+      },
+      {
+        "word": "bets",
+        "start": 111.44,
+        "end": 111.92
+      },
+      {
+        "word": "in",
+        "start": 111.92,
+        "end": 112.08
+      },
+      {
+        "word": "a",
+        "start": 112.08,
+        "end": 112.24
+      },
+      {
+        "word": "10",
+        "start": 112.24,
+        "end": 112.56
+      },
+      {
+        "word": "minute",
+        "start": 112.56,
+        "end": 112.96
+      },
+      {
+        "word": "window.",
+        "start": 112.96,
+        "end": 113.76
+      }
+    ]
+  },
+  {
+    "start": 113.76,
+    "end": 120.36,
+    "text": "Then they wait 10 minutes and our Oracle compute for each market who was right and who was wrong.",
+    "words": [
+      {
+        "word": "Then",
+        "start": 113.76,
+        "end": 114.16
+      },
+      {
+        "word": "they",
+        "start": 114.16,
+        "end": 114.48
+      },
+      {
+        "word": "wait",
+        "start": 114.48,
+        "end": 114.88
+      },
+      {
+        "word": "10",
+        "start": 114.88,
+        "end": 115.2
+      },
+      {
+        "word": "minutes",
+        "start": 115.2,
+        "end": 115.52
+      },
+      {
+        "word": "and",
+        "start": 115.68,
+        "end": 115.92
+      },
+      {
+        "word": "our",
+        "start": 115.92,
+        "end": 116.16
+      },
+      {
+        "word": "Oracle",
+        "start": 116.16,
+        "end": 116.72
+      },
+      {
+        "word": "compute",
+        "start": 116.72,
+        "end": 117.04
+      },
+      {
+        "word": "for",
+        "start": 117.2,
+        "end": 117.36
+      },
+      {
+        "word": "each",
+        "start": 117.36,
+        "end": 117.68
+      },
+      {
+        "word": "market",
+        "start": 117.68,
+        "end": 118.0
+      },
+      {
+        "word": "who",
+        "start": 118.16,
+        "end": 118.48
+      },
+      {
+        "word": "was",
+        "start": 118.48,
+        "end": 118.72
+      },
+      {
+        "word": "right",
+        "start": 118.72,
+        "end": 119.04
+      },
+      {
+        "word": "and",
+        "start": 119.04,
+        "end": 119.28
+      },
+      {
+        "word": "who",
+        "start": 119.28,
+        "end": 119.44
+      },
+      {
+        "word": "was",
+        "start": 119.44,
+        "end": 119.6
+      },
+      {
+        "word": "wrong.",
+        "start": 119.6,
+        "end": 120.36
+      }
+    ]
+  },
+  {
+    "start": 119.92,
+    "end": 126.12,
+    "text": "After that, each Oracle compute PL following a perimeter liquidity engine computation.",
+    "words": [
+      {
+        "word": ".",
+        "start": 119.92,
+        "end": 120.0
+      },
+      {
+        "word": "After",
+        "start": 120.36,
+        "end": 120.68
+      },
+      {
+        "word": "that,",
+        "start": 120.68,
+        "end": 121.0
+      },
+      {
+        "word": "each",
+        "start": 121.0,
+        "end": 121.4
+      },
+      {
+        "word": "Oracle",
+        "start": 121.4,
+        "end": 121.88
+      },
+      {
+        "word": "compute",
+        "start": 121.88,
+        "end": 122.28
+      },
+      {
+        "word": "PL",
+        "start": 122.44,
+        "end": 123.08
+      },
+      {
+        "word": "following",
+        "start": 123.08,
+        "end": 123.48
+      },
+      {
+        "word": "a",
+        "start": 123.48,
+        "end": 123.64
+      },
+      {
+        "word": "perimeter",
+        "start": 123.64,
+        "end": 124.04
+      },
+      {
+        "word": "liquidity",
+        "start": 124.28,
+        "end": 124.76
+      },
+      {
+        "word": "engine",
+        "start": 124.92,
+        "end": 125.4
+      },
+      {
+        "word": "computation",
+        "start": 125.56,
+        "end": 126.12
+      }
+    ]
+  },
+  {
+    "start": 126.2,
+    "end": 131.48,
+    "text": "So to answer your initial question, there is no price, quotation is revealed at the end.",
+    "words": [
+      {
+        "word": "So",
+        "start": 126.2,
+        "end": 126.44
+      },
+      {
+        "word": "to",
+        "start": 126.52,
+        "end": 126.68
+      },
+      {
+        "word": "answer",
+        "start": 126.68,
+        "end": 127.08
+      },
+      {
+        "word": "your",
+        "start": 127.08,
+        "end": 127.32
+      },
+      {
+        "word": "initial",
+        "start": 127.32,
+        "end": 127.72
+      },
+      {
+        "word": "question,",
+        "start": 127.72,
+        "end": 128.28
+      },
+      {
+        "word": "there",
+        "start": 128.28,
+        "end": 128.44
+      },
+      {
+        "word": "is",
+        "start": 128.44,
+        "end": 128.6
+      },
+      {
+        "word": "no",
+        "start": 128.6,
+        "end": 128.84
+      },
+      {
+        "word": "price,",
+        "start": 128.84,
+        "end": 129.4
+      },
+      {
+        "word": "quotation",
+        "start": 129.4,
+        "end": 130.04
+      },
+      {
+        "word": "is",
+        "start": 130.04,
+        "end": 130.2
+      },
+      {
+        "word": "revealed",
+        "start": 130.2,
+        "end": 130.76
+      },
+      {
+        "word": "at",
+        "start": 130.76,
+        "end": 130.92
+      },
+      {
+        "word": "the",
+        "start": 130.92,
+        "end": 131.16
+      },
+      {
+        "word": "end.",
+        "start": 131.16,
+        "end": 131.48
+      }
+    ]
+  },
+  {
+    "start": 131.48,
+    "end": 133.56,
+    "text": "What is parameter liquidity?",
+    "words": [
+      {
+        "word": "What",
+        "start": 131.48,
+        "end": 131.8
+      },
+      {
+        "word": "is",
+        "start": 131.8,
+        "end": 132.04
+      },
+      {
+        "word": "parameter",
+        "start": 132.04,
+        "end": 132.52
+      },
+      {
+        "word": "liquidity?",
+        "start": 132.84,
+        "end": 133.56
+      }
+    ]
+  },
+  {
+    "start": 133.56,
+    "end": 135.72,
+    "text": "It's a fancy word for something simple.",
+    "words": [
+      {
+        "word": "It's",
+        "start": 133.56,
+        "end": 133.8
+      },
+      {
+        "word": "a",
+        "start": 133.8,
+        "end": 133.88
+      },
+      {
+        "word": "fancy",
+        "start": 133.88,
+        "end": 134.36
+      },
+      {
+        "word": "word",
+        "start": 134.36,
+        "end": 134.6
+      },
+      {
+        "word": "for",
+        "start": 134.68,
+        "end": 134.84
+      },
+      {
+        "word": "something",
+        "start": 134.84,
+        "end": 135.24
+      },
+      {
+        "word": "simple.",
+        "start": 135.24,
+        "end": 135.72
+      }
+    ]
+  },
+  {
+    "start": 135.72,
+    "end": 142.44,
+    "text": "For each submarket, if traders who bet yes did win, they win the collateral of traders who bet no.",
+    "words": [
+      {
+        "word": "For",
+        "start": 135.72,
+        "end": 135.96
+      },
+      {
+        "word": "each",
+        "start": 135.96,
+        "end": 136.2
+      },
+      {
+        "word": "submarket,",
+        "start": 136.2,
+        "end": 137.16
+      },
+      {
+        "word": "if",
+        "start": 137.16,
+        "end": 137.4
+      },
+      {
+        "word": "traders",
+        "start": 137.4,
+        "end": 137.96
+      },
+      {
+        "word": "who",
+        "start": 137.96,
+        "end": 138.2
+      },
+      {
+        "word": "bet",
+        "start": 138.2,
+        "end": 138.52
+      },
+      {
+        "word": "yes",
+        "start": 138.52,
+        "end": 138.76
+      },
+      {
+        "word": "did",
+        "start": 138.92,
+        "end": 139.16
+      },
+      {
+        "word": "win,",
+        "start": 139.16,
+        "end": 139.64
+      },
+      {
+        "word": "they",
+        "start": 139.64,
+        "end": 139.88
+      },
+      {
+        "word": "win",
+        "start": 139.88,
+        "end": 140.2
+      },
+      {
+        "word": "the",
+        "start": 140.2,
+        "end": 140.36
+      },
+      {
+        "word": "collateral",
+        "start": 140.36,
+        "end": 140.92
+      },
+      {
+        "word": "of",
+        "start": 141.0,
+        "end": 141.16
+      },
+      {
+        "word": "traders",
+        "start": 141.16,
+        "end": 141.56
+      },
+      {
+        "word": "who",
+        "start": 141.56,
+        "end": 141.72
+      },
+      {
+        "word": "bet",
+        "start": 141.72,
+        "end": 141.96
+      },
+      {
+        "word": "no.",
+        "start": 142.12,
+        "end": 142.44
+      }
+    ]
+  },
+  {
+    "start": 142.44,
+    "end": 147.4,
+    "text": "And in our example, we do this computation 30 times for each trend station.",
+    "words": [
+      {
+        "word": "And",
+        "start": 142.44,
+        "end": 142.6
+      },
+      {
+        "word": "in",
+        "start": 142.6,
+        "end": 142.84
+      },
+      {
+        "word": "our",
+        "start": 142.84,
+        "end": 143.08
+      },
+      {
+        "word": "example,",
+        "start": 143.08,
+        "end": 143.8
+      },
+      {
+        "word": "we",
+        "start": 143.8,
+        "end": 144.04
+      },
+      {
+        "word": "do",
+        "start": 144.04,
+        "end": 144.28
+      },
+      {
+        "word": "this",
+        "start": 144.28,
+        "end": 144.6
+      },
+      {
+        "word": "computation",
+        "start": 144.6,
+        "end": 145.32
+      },
+      {
+        "word": "30",
+        "start": 145.32,
+        "end": 145.72
+      },
+      {
+        "word": "times",
+        "start": 145.72,
+        "end": 145.96
+      },
+      {
+        "word": "for",
+        "start": 145.96,
+        "end": 146.12
+      },
+      {
+        "word": "each",
+        "start": 146.12,
+        "end": 146.44
+      },
+      {
+        "word": "trend",
+        "start": 146.44,
+        "end": 146.92
+      },
+      {
+        "word": "station.",
+        "start": 146.92,
+        "end": 147.4
+      }
+    ]
+  },
+  {
+    "start": 147.4,
+    "end": 150.44,
+    "text": "And we make a sum getting your final PNL.",
+    "words": [
+      {
+        "word": "And",
+        "start": 147.4,
+        "end": 147.64
+      },
+      {
+        "word": "we",
+        "start": 147.64,
+        "end": 147.8
+      },
+      {
+        "word": "make",
+        "start": 147.8,
+        "end": 147.96
+      },
+      {
+        "word": "a",
+        "start": 147.96,
+        "end": 148.2
+      },
+      {
+        "word": "sum",
+        "start": 148.2,
+        "end": 148.44
+      },
+      {
+        "word": "getting",
+        "start": 148.6,
+        "end": 149.0
+      },
+      {
+        "word": "your",
+        "start": 149.0,
+        "end": 149.16
+      },
+      {
+        "word": "final",
+        "start": 149.16,
+        "end": 149.48
+      },
+      {
+        "word": "PNL.",
+        "start": 149.48,
+        "end": 150.44
+      }
+    ]
+  },
+  {
+    "start": 150.44,
+    "end": 151.88,
+    "text": "Then we do correction.",
+    "words": [
+      {
+        "word": "Then",
+        "start": 150.44,
+        "end": 150.84
+      },
+      {
+        "word": "we",
+        "start": 150.84,
+        "end": 151.08
+      },
+      {
+        "word": "do",
+        "start": 151.08,
+        "end": 151.32
+      },
+      {
+        "word": "correction.",
+        "start": 151.32,
+        "end": 151.88
+      }
+    ]
+  },
+  {
+    "start": 151.88,
+    "end": 159.72,
+    "text": "If someone did bet $1 and someone did bet 1 million dollar, the larger counterparty will only lost $1 at most.",
+    "words": [
+      {
+        "word": "If",
+        "start": 151.88,
+        "end": 152.12
+      },
+      {
+        "word": "someone",
+        "start": 152.12,
+        "end": 152.44
+      },
+      {
+        "word": "did",
+        "start": 152.44,
+        "end": 152.68
+      },
+      {
+        "word": "bet",
+        "start": 152.68,
+        "end": 152.92
+      },
+      {
+        "word": "$1",
+        "start": 153.0,
+        "end": 153.32
+      },
+      {
+        "word": "and",
+        "start": 153.56,
+        "end": 153.72
+      },
+      {
+        "word": "someone",
+        "start": 153.72,
+        "end": 154.04
+      },
+      {
+        "word": "did",
+        "start": 154.04,
+        "end": 154.28
+      },
+      {
+        "word": "bet",
+        "start": 154.28,
+        "end": 154.52
+      },
+      {
+        "word": "1",
+        "start": 154.68,
+        "end": 154.92
+      },
+      {
+        "word": "million",
+        "start": 154.92,
+        "end": 155.24
+      },
+      {
+        "word": "dollar,",
+        "start": 155.24,
+        "end": 155.8
+      },
+      {
+        "word": "the",
+        "start": 155.8,
+        "end": 155.96
+      },
+      {
+        "word": "larger",
+        "start": 155.96,
+        "end": 156.44
+      },
+      {
+        "word": "counterparty",
+        "start": 156.44,
+        "end": 157.4
+      },
+      {
+        "word": "will",
+        "start": 157.4,
+        "end": 157.64
+      },
+      {
+        "word": "only",
+        "start": 157.64,
+        "end": 157.96
+      },
+      {
+        "word": "lost",
+        "start": 157.96,
+        "end": 158.28
+      },
+      {
+        "word": "$1",
+        "start": 158.28,
+        "end": 158.52
+      },
+      {
+        "word": "at",
+        "start": 158.92,
+        "end": 159.24
+      },
+      {
+        "word": "most.",
+        "start": 159.24,
+        "end": 159.72
+      }
+    ]
+  },
+  {
+    "start": 159.72,
+    "end": 161.4,
+    "text": "I like this one a lot.",
+    "words": [
+      {
+        "word": "I",
+        "start": 159.72,
+        "end": 159.96
+      },
+      {
+        "word": "like",
+        "start": 159.96,
+        "end": 160.28
+      },
+      {
+        "word": "this",
+        "start": 160.28,
+        "end": 160.52
+      },
+      {
+        "word": "one",
+        "start": 160.52,
+        "end": 160.68
+      },
+      {
+        "word": "a",
+        "start": 160.68,
+        "end": 160.92
+      },
+      {
+        "word": "lot.",
+        "start": 160.92,
+        "end": 161.4
+      }
+    ]
+  },
+  {
+    "start": 161.4,
+    "end": 166.2,
+    "text": "How general markets be private when other prediction markets are not private?",
+    "words": [
+      {
+        "word": "How",
+        "start": 161.4,
+        "end": 161.72
+      },
+      {
+        "word": "general",
+        "start": 161.88,
+        "end": 162.36
+      },
+      {
+        "word": "markets",
+        "start": 162.36,
+        "end": 162.84
+      },
+      {
+        "word": "be",
+        "start": 162.84,
+        "end": 163.16
+      },
+      {
+        "word": "private",
+        "start": 163.16,
+        "end": 163.56
+      },
+      {
+        "word": "when",
+        "start": 163.56,
+        "end": 163.88
+      },
+      {
+        "word": "other",
+        "start": 163.88,
+        "end": 163.96
+      },
+      {
+        "word": "prediction",
+        "start": 164.2,
+        "end": 164.76
+      },
+      {
+        "word": "markets",
+        "start": 164.76,
+        "end": 165.24
+      },
+      {
+        "word": "are",
+        "start": 165.24,
+        "end": 165.48
+      },
+      {
+        "word": "not",
+        "start": 165.48,
+        "end": 165.64
+      },
+      {
+        "word": "private?",
+        "start": 165.64,
+        "end": 166.2
+      }
+    ]
+  },
+  {
+    "start": 166.2,
+    "end": 170.44,
+    "text": "Other markets are running on all the books, not parameter like us.",
+    "words": [
+      {
+        "word": "Other",
+        "start": 166.2,
+        "end": 166.6
+      },
+      {
+        "word": "markets",
+        "start": 166.6,
+        "end": 166.92
+      },
+      {
+        "word": "are",
+        "start": 166.92,
+        "end": 167.08
+      },
+      {
+        "word": "running",
+        "start": 167.08,
+        "end": 167.4
+      },
+      {
+        "word": "on",
+        "start": 167.4,
+        "end": 167.56
+      },
+      {
+        "word": "all",
+        "start": 167.56,
+        "end": 167.72
+      },
+      {
+        "word": "the",
+        "start": 167.88,
+        "end": 168.12
+      },
+      {
+        "word": "books,",
+        "start": 168.12,
+        "end": 168.6
+      },
+      {
+        "word": "not",
+        "start": 168.6,
+        "end": 168.84
+      },
+      {
+        "word": "parameter",
+        "start": 168.84,
+        "end": 169.4
+      },
+      {
+        "word": "like",
+        "start": 169.72,
+        "end": 170.04
+      },
+      {
+        "word": "us.",
+        "start": 170.04,
+        "end": 170.44
+      }
+    ]
+  },
+  {
+    "start": 170.44,
+    "end": 172.84,
+    "text": "And they are running on public oracles.",
+    "words": [
+      {
+        "word": "And",
+        "start": 170.44,
+        "end": 170.76
+      },
+      {
+        "word": "they",
+        "start": 170.76,
+        "end": 170.92
+      },
+      {
+        "word": "are",
+        "start": 170.92,
+        "end": 171.08
+      },
+      {
+        "word": "running",
+        "start": 171.08,
+        "end": 171.48
+      },
+      {
+        "word": "on",
+        "start": 171.48,
+        "end": 171.72
+      },
+      {
+        "word": "public",
+        "start": 171.72,
+        "end": 172.04
+      },
+      {
+        "word": "oracles.",
+        "start": 172.04,
+        "end": 172.84
+      }
+    ]
+  },
+  {
+    "start": 172.84,
+    "end": 181.16,
+    "text": "In our mission to launch 1 billion prediction markets in parallel, we had to build a specialized scalable oracle for this use case.",
+    "words": [
+      {
+        "word": "In",
+        "start": 172.84,
+        "end": 173.0
+      },
+      {
+        "word": "our",
+        "start": 173.0,
+        "end": 173.16
+      },
+      {
+        "word": "mission",
+        "start": 173.16,
+        "end": 173.48
+      },
+      {
+        "word": "to",
+        "start": 173.48,
+        "end": 173.64
+      },
+      {
+        "word": "launch",
+        "start": 173.64,
+        "end": 173.96
+      },
+      {
+        "word": "1",
+        "start": 173.96,
+        "end": 174.2
+      },
+      {
+        "word": "billion",
+        "start": 174.2,
+        "end": 174.68
+      },
+      {
+        "word": "prediction",
+        "start": 174.68,
+        "end": 175.16
+      },
+      {
+        "word": "markets",
+        "start": 175.16,
+        "end": 175.56
+      },
+      {
+        "word": "in",
+        "start": 175.56,
+        "end": 175.8
+      },
+      {
+        "word": "parallel,",
+        "start": 175.8,
+        "end": 176.76
+      },
+      {
+        "word": "we",
+        "start": 176.76,
+        "end": 177.08
+      },
+      {
+        "word": "had",
+        "start": 177.08,
+        "end": 177.32
+      },
+      {
+        "word": "to",
+        "start": 177.32,
+        "end": 177.56
+      },
+      {
+        "word": "build",
+        "start": 177.56,
+        "end": 177.96
+      },
+      {
+        "word": "a",
+        "start": 177.96,
+        "end": 178.2
+      },
+      {
+        "word": "specialized",
+        "start": 178.2,
+        "end": 178.92
+      },
+      {
+        "word": "scalable",
+        "start": 178.92,
+        "end": 179.56
+      },
+      {
+        "word": "oracle",
+        "start": 179.56,
+        "end": 180.12
+      },
+      {
+        "word": "for",
+        "start": 180.12,
+        "end": 180.28
+      },
+      {
+        "word": "this",
+        "start": 180.28,
+        "end": 180.44
+      },
+      {
+        "word": "use",
+        "start": 180.44,
+        "end": 180.68
+      },
+      {
+        "word": "case.",
+        "start": 180.68,
+        "end": 181.16
+      }
+    ]
+  },
+  {
+    "start": 181.16,
+    "end": 194.04,
+    "text": "The big benefit of this infrastructure for prediction market is that every market has settled instantly for more price speed and they don't need traditional dispute that you often see on other prediction markets.",
+    "words": [
+      {
+        "word": "The",
+        "start": 181.16,
+        "end": 181.32
+      },
+      {
+        "word": "big",
+        "start": 181.32,
+        "end": 181.64
+      },
+      {
+        "word": "benefit",
+        "start": 181.64,
+        "end": 182.36
+      },
+      {
+        "word": "of",
+        "start": 182.36,
+        "end": 182.68
+      },
+      {
+        "word": "this",
+        "start": 182.68,
+        "end": 183.0
+      },
+      {
+        "word": "infrastructure",
+        "start": 183.0,
+        "end": 183.8
+      },
+      {
+        "word": "for",
+        "start": 183.8,
+        "end": 183.96
+      },
+      {
+        "word": "prediction",
+        "start": 184.12,
+        "end": 184.68
+      },
+      {
+        "word": "market",
+        "start": 184.68,
+        "end": 184.92
+      },
+      {
+        "word": "is",
+        "start": 185.24,
+        "end": 185.48
+      },
+      {
+        "word": "that",
+        "start": 185.48,
+        "end": 185.8
+      },
+      {
+        "word": "every",
+        "start": 185.8,
+        "end": 186.2
+      },
+      {
+        "word": "market",
+        "start": 186.2,
+        "end": 186.52
+      },
+      {
+        "word": "has",
+        "start": 186.52,
+        "end": 186.76
+      },
+      {
+        "word": "settled",
+        "start": 186.76,
+        "end": 187.16
+      },
+      {
+        "word": "instantly",
+        "start": 187.16,
+        "end": 187.56
+      },
+      {
+        "word": "for",
+        "start": 187.56,
+        "end": 187.72
+      },
+      {
+        "word": "more",
+        "start": 187.72,
+        "end": 187.8
+      },
+      {
+        "word": "price",
+        "start": 187.96,
+        "end": 188.28
+      },
+      {
+        "word": "speed",
+        "start": 188.28,
+        "end": 188.6
+      },
+      {
+        "word": "and",
+        "start": 188.84,
+        "end": 189.08
+      },
+      {
+        "word": "they",
+        "start": 189.08,
+        "end": 189.32
+      },
+      {
+        "word": "don't",
+        "start": 189.32,
+        "end": 189.64
+      },
+      {
+        "word": "need",
+        "start": 189.64,
+        "end": 189.96
+      },
+      {
+        "word": "traditional",
+        "start": 189.96,
+        "end": 190.52
+      },
+      {
+        "word": "dispute",
+        "start": 190.52,
+        "end": 191.0
+      },
+      {
+        "word": "that",
+        "start": 191.16,
+        "end": 191.32
+      },
+      {
+        "word": "you",
+        "start": 191.32,
+        "end": 191.56
+      },
+      {
+        "word": "often",
+        "start": 191.56,
+        "end": 191.96
+      },
+      {
+        "word": "see",
+        "start": 191.96,
+        "end": 192.28
+      },
+      {
+        "word": "on",
+        "start": 192.28,
+        "end": 192.52
+      },
+      {
+        "word": "other",
+        "start": 192.52,
+        "end": 192.84
+      },
+      {
+        "word": "prediction",
+        "start": 192.84,
+        "end": 193.32
+      },
+      {
+        "word": "markets.",
+        "start": 193.32,
+        "end": 194.04
+      }
+    ]
+  },
+  {
+    "start": 194.04,
+    "end": 198.36,
+    "text": "This one is probably the most interesting one of all questions.",
+    "words": [
+      {
+        "word": "This",
+        "start": 194.04,
+        "end": 194.36
+      },
+      {
+        "word": "one",
+        "start": 194.36,
+        "end": 194.68
+      },
+      {
+        "word": "is",
+        "start": 194.68,
+        "end": 195.0
+      },
+      {
+        "word": "probably",
+        "start": 195.0,
+        "end": 195.64
+      },
+      {
+        "word": "the",
+        "start": 195.64,
+        "end": 195.96
+      },
+      {
+        "word": "most",
+        "start": 195.96,
+        "end": 196.28
+      },
+      {
+        "word": "interesting",
+        "start": 196.28,
+        "end": 196.84
+      },
+      {
+        "word": "one",
+        "start": 196.84,
+        "end": 197.08
+      },
+      {
+        "word": "of",
+        "start": 197.08,
+        "end": 197.32
+      },
+      {
+        "word": "all",
+        "start": 197.32,
+        "end": 197.64
+      },
+      {
+        "word": "questions.",
+        "start": 197.64,
+        "end": 198.36
+      }
+    ]
+  },
+  {
+    "start": 198.36,
+    "end": 202.6,
+    "text": "I have to trade everything, but there is so many markets that I don't know.",
+    "words": [
+      {
+        "word": "I",
+        "start": 198.36,
+        "end": 198.68
+      },
+      {
+        "word": "have",
+        "start": 198.68,
+        "end": 198.92
+      },
+      {
+        "word": "to",
+        "start": 198.92,
+        "end": 199.16
+      },
+      {
+        "word": "trade",
+        "start": 199.16,
+        "end": 199.48
+      },
+      {
+        "word": "everything,",
+        "start": 199.48,
+        "end": 200.12
+      },
+      {
+        "word": "but",
+        "start": 200.12,
+        "end": 200.36
+      },
+      {
+        "word": "there",
+        "start": 200.36,
+        "end": 200.52
+      },
+      {
+        "word": "is",
+        "start": 200.52,
+        "end": 200.68
+      },
+      {
+        "word": "so",
+        "start": 200.68,
+        "end": 200.92
+      },
+      {
+        "word": "many",
+        "start": 200.92,
+        "end": 201.24
+      },
+      {
+        "word": "markets",
+        "start": 201.24,
+        "end": 201.64
+      },
+      {
+        "word": "that",
+        "start": 201.64,
+        "end": 201.8
+      },
+      {
+        "word": "I",
+        "start": 201.8,
+        "end": 201.96
+      },
+      {
+        "word": "don't",
+        "start": 201.96,
+        "end": 202.2
+      },
+      {
+        "word": "know.",
+        "start": 202.2,
+        "end": 202.6
+      }
+    ]
+  },
+  {
+    "start": 202.6,
+    "end": 204.92,
+    "text": "How do I found a mot in your system?",
+    "words": [
+      {
+        "word": "How",
+        "start": 202.6,
+        "end": 202.92
+      },
+      {
+        "word": "do",
+        "start": 202.92,
+        "end": 203.08
+      },
+      {
+        "word": "I",
+        "start": 203.08,
+        "end": 203.24
+      },
+      {
+        "word": "found",
+        "start": 203.24,
+        "end": 203.64
+      },
+      {
+        "word": "a",
+        "start": 203.64,
+        "end": 203.8
+      },
+      {
+        "word": "mot",
+        "start": 203.8,
+        "end": 203.96
+      },
+      {
+        "word": "in",
+        "start": 204.2,
+        "end": 204.36
+      },
+      {
+        "word": "your",
+        "start": 204.36,
+        "end": 204.6
+      },
+      {
+        "word": "system?",
+        "start": 204.6,
+        "end": 204.92
+      }
+    ]
+  },
+  {
+    "start": 204.92,
+    "end": 212.12,
+    "text": "The mot is not anymore how good you are at predicting one market, but how good you are at predicting all markets.",
+    "words": [
+      {
+        "word": "The",
+        "start": 204.92,
+        "end": 205.08
+      },
+      {
+        "word": "mot",
+        "start": 205.08,
+        "end": 205.24
+      },
+      {
+        "word": "is",
+        "start": 205.48,
+        "end": 205.64
+      },
+      {
+        "word": "not",
+        "start": 205.64,
+        "end": 205.8
+      },
+      {
+        "word": "anymore",
+        "start": 205.8,
+        "end": 206.12
+      },
+      {
+        "word": "how",
+        "start": 206.12,
+        "end": 206.28
+      },
+      {
+        "word": "good",
+        "start": 206.28,
+        "end": 206.52
+      },
+      {
+        "word": "you",
+        "start": 206.52,
+        "end": 206.68
+      },
+      {
+        "word": "are",
+        "start": 206.68,
+        "end": 206.92
+      },
+      {
+        "word": "at",
+        "start": 206.92,
+        "end": 207.08
+      },
+      {
+        "word": "predicting",
+        "start": 207.08,
+        "end": 207.8
+      },
+      {
+        "word": "one",
+        "start": 207.8,
+        "end": 208.04
+      },
+      {
+        "word": "market,",
+        "start": 208.04,
+        "end": 208.6
+      },
+      {
+        "word": "but",
+        "start": 208.6,
+        "end": 208.92
+      },
+      {
+        "word": "how",
+        "start": 208.92,
+        "end": 209.16
+      },
+      {
+        "word": "good",
+        "start": 209.16,
+        "end": 209.4
+      },
+      {
+        "word": "you",
+        "start": 209.4,
+        "end": 209.64
+      },
+      {
+        "word": "are",
+        "start": 209.64,
+        "end": 209.88
+      },
+      {
+        "word": "at",
+        "start": 209.88,
+        "end": 210.12
+      },
+      {
+        "word": "predicting",
+        "start": 210.12,
+        "end": 210.92
+      },
+      {
+        "word": "all",
+        "start": 210.92,
+        "end": 211.24
+      },
+      {
+        "word": "markets.",
+        "start": 211.24,
+        "end": 212.12
+      }
+    ]
+  },
+  {
+    "start": 212.12,
+    "end": 216.84,
+    "text": "Quantity over quality, and everyone is on the same page in general market.",
+    "words": [
+      {
+        "word": "Quantity",
+        "start": 212.12,
+        "end": 212.76
+      },
+      {
+        "word": "over",
+        "start": 212.76,
+        "end": 213.08
+      },
+      {
+        "word": "quality,",
+        "start": 213.08,
+        "end": 213.8
+      },
+      {
+        "word": "and",
+        "start": 213.8,
+        "end": 214.04
+      },
+      {
+        "word": "everyone",
+        "start": 214.04,
+        "end": 214.52
+      },
+      {
+        "word": "is",
+        "start": 214.52,
+        "end": 214.68
+      },
+      {
+        "word": "on",
+        "start": 214.68,
+        "end": 214.84
+      },
+      {
+        "word": "the",
+        "start": 214.84,
+        "end": 215.0
+      },
+      {
+        "word": "same",
+        "start": 215.0,
+        "end": 215.32
+      },
+      {
+        "word": "page",
+        "start": 215.32,
+        "end": 215.64
+      },
+      {
+        "word": "in",
+        "start": 215.64,
+        "end": 215.8
+      },
+      {
+        "word": "general",
+        "start": 215.88,
+        "end": 216.36
+      },
+      {
+        "word": "market.",
+        "start": 216.36,
+        "end": 216.84
+      }
+    ]
+  },
+  {
+    "start": 216.84,
+    "end": 222.04,
+    "text": "In 1920s, market winners were people who discovered technical analysis.",
+    "words": [
+      {
+        "word": "In",
+        "start": 216.84,
+        "end": 217.0
+      },
+      {
+        "word": "1920s,",
+        "start": 217.08,
+        "end": 218.28
+      },
+      {
+        "word": "market",
+        "start": 218.28,
+        "end": 218.6
+      },
+      {
+        "word": "winners",
+        "start": 218.6,
+        "end": 219.24
+      },
+      {
+        "word": "were",
+        "start": 219.24,
+        "end": 219.56
+      },
+      {
+        "word": "people",
+        "start": 219.56,
+        "end": 219.88
+      },
+      {
+        "word": "who",
+        "start": 219.88,
+        "end": 220.12
+      },
+      {
+        "word": "discovered",
+        "start": 220.12,
+        "end": 220.76
+      },
+      {
+        "word": "technical",
+        "start": 220.76,
+        "end": 221.24
+      },
+      {
+        "word": "analysis.",
+        "start": 221.24,
+        "end": 222.04
+      }
+    ]
+  },
+  {
+    "start": 222.04,
+    "end": 226.88,
+    "text": "In 1970s, it was traders who make black skull model on options.",
+    "words": [
+      {
+        "word": "In",
+        "start": 222.04,
+        "end": 222.2
+      },
+      {
+        "word": "1970s,",
+        "start": 222.28,
+        "end": 223.32
+      },
+      {
+        "word": "it",
+        "start": 223.32,
+        "end": 223.48
+      },
+      {
+        "word": "was",
+        "start": 223.48,
+        "end": 223.8
+      },
+      {
+        "word": "traders",
+        "start": 223.8,
+        "end": 224.28
+      },
+      {
+        "word": "who",
+        "start": 224.28,
+        "end": 224.44
+      },
+      {
+        "word": "make",
+        "start": 224.44,
+        "end": 224.6
+      },
+      {
+        "word": "black",
+        "start": 224.96,
+        "end": 225.2
+      },
+      {
+        "word": "skull",
+        "start": 225.28,
+        "end": 225.6
+      },
+      {
+        "word": "model",
+        "start": 225.76,
+        "end": 225.92
+      },
+      {
+        "word": "on",
+        "start": 226.16,
+        "end": 226.32
+      },
+      {
+        "word": "options.",
+        "start": 226.32,
+        "end": 226.88
+      }
+    ]
+  },
+  {
+    "start": 226.88,
+    "end": 230.32,
+    "text": "And now in 2026, we start from scratch.",
+    "words": [
+      {
+        "word": "And",
+        "start": 226.88,
+        "end": 227.2
+      },
+      {
+        "word": "now",
+        "start": 227.2,
+        "end": 227.36
+      },
+      {
+        "word": "in",
+        "start": 227.44,
+        "end": 227.68
+      },
+      {
+        "word": "2026,",
+        "start": 227.68,
+        "end": 228.8
+      },
+      {
+        "word": "we",
+        "start": 228.8,
+        "end": 229.12
+      },
+      {
+        "word": "start",
+        "start": 229.12,
+        "end": 229.44
+      },
+      {
+        "word": "from",
+        "start": 229.44,
+        "end": 229.68
+      },
+      {
+        "word": "scratch.",
+        "start": 229.68,
+        "end": 230.32
+      }
+    ]
+  },
+  {
+    "start": 230.32,
+    "end": 241.52,
+    "text": "And it's easier starting from a new financial instrument than starting from an instrument with billions of hedge funds that develop instruments from 10 years, 20 years.",
+    "words": [
+      {
+        "word": "And",
+        "start": 230.32,
+        "end": 230.56
+      },
+      {
+        "word": "it's",
+        "start": 230.56,
+        "end": 230.88
+      },
+      {
+        "word": "easier",
+        "start": 230.88,
+        "end": 231.44
+      },
+      {
+        "word": "starting",
+        "start": 231.44,
+        "end": 231.84
+      },
+      {
+        "word": "from",
+        "start": 231.84,
+        "end": 232.0
+      },
+      {
+        "word": "a",
+        "start": 232.0,
+        "end": 232.16
+      },
+      {
+        "word": "new",
+        "start": 232.16,
+        "end": 232.48
+      },
+      {
+        "word": "financial",
+        "start": 232.48,
+        "end": 232.96
+      },
+      {
+        "word": "instrument",
+        "start": 232.96,
+        "end": 233.44
+      },
+      {
+        "word": "than",
+        "start": 233.68,
+        "end": 234.0
+      },
+      {
+        "word": "starting",
+        "start": 234.16,
+        "end": 234.72
+      },
+      {
+        "word": "from",
+        "start": 234.72,
+        "end": 234.88
+      },
+      {
+        "word": "an",
+        "start": 234.88,
+        "end": 235.12
+      },
+      {
+        "word": "instrument",
+        "start": 235.12,
+        "end": 235.68
+      },
+      {
+        "word": "with",
+        "start": 235.68,
+        "end": 235.84
+      },
+      {
+        "word": "billions",
+        "start": 236.0,
+        "end": 236.48
+      },
+      {
+        "word": "of",
+        "start": 236.48,
+        "end": 236.72
+      },
+      {
+        "word": "hedge",
+        "start": 236.72,
+        "end": 237.2
+      },
+      {
+        "word": "funds",
+        "start": 237.2,
+        "end": 237.6
+      },
+      {
+        "word": "that",
+        "start": 237.76,
+        "end": 238.0
+      },
+      {
+        "word": "develop",
+        "start": 238.16,
+        "end": 238.56
+      },
+      {
+        "word": "instruments",
+        "start": 238.8,
+        "end": 239.6
+      },
+      {
+        "word": "from",
+        "start": 239.6,
+        "end": 239.92
+      },
+      {
+        "word": "10",
+        "start": 239.92,
+        "end": 240.24
+      },
+      {
+        "word": "years,",
+        "start": 240.24,
+        "end": 240.64
+      },
+      {
+        "word": "20",
+        "start": 240.64,
+        "end": 241.04
+      },
+      {
+        "word": "years.",
+        "start": 241.04,
+        "end": 241.52
+      }
+    ]
+  },
+  {
+    "start": 241.52,
+    "end": 247.44,
+    "text": "Every instrument that is in the order book is concerned about this hedge fund that have a huge mod.",
+    "words": [
+      {
+        "word": "Every",
+        "start": 241.52,
+        "end": 241.92
+      },
+      {
+        "word": "instrument",
+        "start": 241.92,
+        "end": 242.4
+      },
+      {
+        "word": "that",
+        "start": 242.4,
+        "end": 242.56
+      },
+      {
+        "word": "is",
+        "start": 242.56,
+        "end": 242.8
+      },
+      {
+        "word": "in",
+        "start": 242.8,
+        "end": 243.04
+      },
+      {
+        "word": "the",
+        "start": 243.04,
+        "end": 243.28
+      },
+      {
+        "word": "order",
+        "start": 243.28,
+        "end": 243.6
+      },
+      {
+        "word": "book",
+        "start": 243.6,
+        "end": 243.92
+      },
+      {
+        "word": "is",
+        "start": 244.08,
+        "end": 244.24
+      },
+      {
+        "word": "concerned",
+        "start": 244.24,
+        "end": 244.72
+      },
+      {
+        "word": "about",
+        "start": 244.72,
+        "end": 244.96
+      },
+      {
+        "word": "this",
+        "start": 244.96,
+        "end": 245.12
+      },
+      {
+        "word": "hedge",
+        "start": 245.28,
+        "end": 245.68
+      },
+      {
+        "word": "fund",
+        "start": 245.68,
+        "end": 245.76
+      },
+      {
+        "word": "that",
+        "start": 246.0,
+        "end": 246.16
+      },
+      {
+        "word": "have",
+        "start": 246.16,
+        "end": 246.32
+      },
+      {
+        "word": "a",
+        "start": 246.32,
+        "end": 246.4
+      },
+      {
+        "word": "huge",
+        "start": 246.4,
+        "end": 246.8
+      },
+      {
+        "word": "mod.",
+        "start": 246.8,
+        "end": 247.44
+      }
+    ]
+  },
+  {
+    "start": 247.44,
+    "end": 252.0,
+    "text": "And the last question do I need to bet on every market on the platform?",
+    "words": [
+      {
+        "word": "And",
+        "start": 247.44,
+        "end": 247.76
+      },
+      {
+        "word": "the",
+        "start": 247.76,
+        "end": 248.0
+      },
+      {
+        "word": "last",
+        "start": 248.0,
+        "end": 248.32
+      },
+      {
+        "word": "question",
+        "start": 248.32,
+        "end": 248.64
+      },
+      {
+        "word": "do",
+        "start": 248.88,
+        "end": 249.12
+      },
+      {
+        "word": "I",
+        "start": 249.12,
+        "end": 249.2
+      },
+      {
+        "word": "need",
+        "start": 249.2,
+        "end": 249.36
+      },
+      {
+        "word": "to",
+        "start": 249.36,
+        "end": 249.6
+      },
+      {
+        "word": "bet",
+        "start": 249.6,
+        "end": 249.84
+      },
+      {
+        "word": "on",
+        "start": 249.84,
+        "end": 250.0
+      },
+      {
+        "word": "every",
+        "start": 250.0,
+        "end": 250.4
+      },
+      {
+        "word": "market",
+        "start": 250.4,
+        "end": 250.72
+      },
+      {
+        "word": "on",
+        "start": 250.88,
+        "end": 251.04
+      },
+      {
+        "word": "the",
+        "start": 251.04,
+        "end": 251.28
+      },
+      {
+        "word": "platform?",
+        "start": 251.28,
+        "end": 252.0
+      }
+    ]
+  },
+  {
+    "start": 252.0,
+    "end": 253.92,
+    "text": "There is one batch past sources.",
+    "words": [
+      {
+        "word": "There",
+        "start": 252.0,
+        "end": 252.16
+      },
+      {
+        "word": "is",
+        "start": 252.16,
+        "end": 252.32
+      },
+      {
+        "word": "one",
+        "start": 252.32,
+        "end": 252.56
+      },
+      {
+        "word": "batch",
+        "start": 252.56,
+        "end": 252.96
+      },
+      {
+        "word": "past",
+        "start": 252.96,
+        "end": 253.12
+      },
+      {
+        "word": "sources.",
+        "start": 253.36,
+        "end": 253.92
+      }
+    ]
+  },
+  {
+    "start": 253.92,
+    "end": 259.44,
+    "text": "This means you only trade on train, you only trade on Twitch, you only trade on Steam, etc.",
+    "words": [
+      {
+        "word": "This",
+        "start": 253.92,
+        "end": 254.08
+      },
+      {
+        "word": "means",
+        "start": 254.08,
+        "end": 254.4
+      },
+      {
+        "word": "you",
+        "start": 254.4,
+        "end": 254.56
+      },
+      {
+        "word": "only",
+        "start": 254.56,
+        "end": 254.8
+      },
+      {
+        "word": "trade",
+        "start": 254.8,
+        "end": 255.12
+      },
+      {
+        "word": "on",
+        "start": 255.12,
+        "end": 255.36
+      },
+      {
+        "word": "train,",
+        "start": 255.36,
+        "end": 256.08
+      },
+      {
+        "word": "you",
+        "start": 256.08,
+        "end": 256.24
+      },
+      {
+        "word": "only",
+        "start": 256.24,
+        "end": 256.48
+      },
+      {
+        "word": "trade",
+        "start": 256.48,
+        "end": 256.72
+      },
+      {
+        "word": "on",
+        "start": 256.72,
+        "end": 256.88
+      },
+      {
+        "word": "Twitch,",
+        "start": 256.88,
+        "end": 257.28
+      },
+      {
+        "word": "you",
+        "start": 257.28,
+        "end": 257.44
+      },
+      {
+        "word": "only",
+        "start": 257.44,
+        "end": 257.68
+      },
+      {
+        "word": "trade",
+        "start": 257.68,
+        "end": 258.0
+      },
+      {
+        "word": "on",
+        "start": 258.0,
+        "end": 258.24
+      },
+      {
+        "word": "Steam,",
+        "start": 258.24,
+        "end": 258.88
+      },
+      {
+        "word": "etc.",
+        "start": 258.88,
+        "end": 259.44
+      }
+    ]
+  },
+  {
+    "start": 259.52,
+    "end": 260.0,
+    "text": "etc.",
+    "words": [
+      {
+        "word": "etc.",
+        "start": 259.52,
+        "end": 260.0
+      }
+    ]
+  },
+  {
+    "start": 260.16,
+    "end": 264.88,
+    "text": "And if there is demand for a specific batch, you can ask and we will add it.",
+    "words": [
+      {
+        "word": "And",
+        "start": 260.16,
+        "end": 260.4
+      },
+      {
+        "word": "if",
+        "start": 260.4,
+        "end": 260.64
+      },
+      {
+        "word": "there",
+        "start": 260.64,
+        "end": 260.8
+      },
+      {
+        "word": "is",
+        "start": 260.8,
+        "end": 260.96
+      },
+      {
+        "word": "demand",
+        "start": 260.96,
+        "end": 261.36
+      },
+      {
+        "word": "for",
+        "start": 261.36,
+        "end": 261.52
+      },
+      {
+        "word": "a",
+        "start": 261.52,
+        "end": 261.6
+      },
+      {
+        "word": "specific",
+        "start": 261.6,
+        "end": 262.16
+      },
+      {
+        "word": "batch,",
+        "start": 262.16,
+        "end": 262.72
+      },
+      {
+        "word": "you",
+        "start": 262.72,
+        "end": 262.96
+      },
+      {
+        "word": "can",
+        "start": 262.96,
+        "end": 263.12
+      },
+      {
+        "word": "ask",
+        "start": 263.12,
+        "end": 263.36
+      },
+      {
+        "word": "and",
+        "start": 263.52,
+        "end": 263.68
+      },
+      {
+        "word": "we",
+        "start": 263.68,
+        "end": 263.92
+      },
+      {
+        "word": "will",
+        "start": 263.92,
+        "end": 264.24
+      },
+      {
+        "word": "add",
+        "start": 264.24,
+        "end": 264.48
+      },
+      {
+        "word": "it.",
+        "start": 264.48,
+        "end": 264.88
+      }
+    ]
+  },
+  {
+    "start": 264.88,
+    "end": 270.96,
+    "text": "Our vision is to reach 1 billion parallel markets, so you have the best tool to trade markets, no one trade.",
+    "words": [
+      {
+        "word": "Our",
+        "start": 264.88,
+        "end": 265.2
+      },
+      {
+        "word": "vision",
+        "start": 265.2,
+        "end": 265.52
+      },
+      {
+        "word": "is",
+        "start": 265.52,
+        "end": 265.6
+      },
+      {
+        "word": "to",
+        "start": 265.6,
+        "end": 265.76
+      },
+      {
+        "word": "reach",
+        "start": 265.76,
+        "end": 266.0
+      },
+      {
+        "word": "1",
+        "start": 266.0,
+        "end": 266.24
+      },
+      {
+        "word": "billion",
+        "start": 266.24,
+        "end": 266.56
+      },
+      {
+        "word": "parallel",
+        "start": 266.56,
+        "end": 267.04
+      },
+      {
+        "word": "markets,",
+        "start": 267.04,
+        "end": 267.52
+      },
+      {
+        "word": "so",
+        "start": 267.52,
+        "end": 267.68
+      },
+      {
+        "word": "you",
+        "start": 267.76,
+        "end": 267.92
+      },
+      {
+        "word": "have",
+        "start": 267.92,
+        "end": 268.08
+      },
+      {
+        "word": "the",
+        "start": 268.08,
+        "end": 268.24
+      },
+      {
+        "word": "best",
+        "start": 268.24,
+        "end": 268.4
+      },
+      {
+        "word": "tool",
+        "start": 268.4,
+        "end": 268.72
+      },
+      {
+        "word": "to",
+        "start": 268.72,
+        "end": 268.88
+      },
+      {
+        "word": "trade",
+        "start": 268.88,
+        "end": 269.2
+      },
+      {
+        "word": "markets,",
+        "start": 269.2,
+        "end": 269.76
+      },
+      {
+        "word": "no",
+        "start": 269.76,
+        "end": 270.0
+      },
+      {
+        "word": "one",
+        "start": 270.0,
+        "end": 270.16
+      },
+      {
+        "word": "trade.",
+        "start": 270.32,
+        "end": 270.96
+      }
+    ]
+  },
+  {
+    "start": 270.96,
+    "end": 273.76,
+    "text": "Oh, and our strategy seems to be ready.",
+    "words": [
+      {
+        "word": "Oh,",
+        "start": 270.96,
+        "end": 271.44
+      },
+      {
+        "word": "and",
+        "start": 271.44,
+        "end": 271.68
+      },
+      {
+        "word": "our",
+        "start": 271.68,
+        "end": 271.92
+      },
+      {
+        "word": "strategy",
+        "start": 271.92,
+        "end": 272.56
+      },
+      {
+        "word": "seems",
+        "start": 272.56,
+        "end": 272.88
+      },
+      {
+        "word": "to",
+        "start": 272.88,
+        "end": 273.04
+      },
+      {
+        "word": "be",
+        "start": 273.04,
+        "end": 273.2
+      },
+      {
+        "word": "ready.",
+        "start": 273.2,
+        "end": 273.76
+      }
+    ]
+  },
+  {
+    "start": 273.76,
+    "end": 276.88,
+    "text": "CloudCon launched it, and let's see how it goes.",
+    "words": [
+      {
+        "word": "CloudCon",
+        "start": 273.76,
+        "end": 274.48
+      },
+      {
+        "word": "launched",
+        "start": 274.64,
+        "end": 275.12
+      },
+      {
+        "word": "it,",
+        "start": 275.12,
+        "end": 275.36
+      },
+      {
+        "word": "and",
+        "start": 275.36,
+        "end": 275.6
+      },
+      {
+        "word": "let's",
+        "start": 275.6,
+        "end": 275.92
+      },
+      {
+        "word": "see",
+        "start": 275.92,
+        "end": 276.08
+      },
+      {
+        "word": "how",
+        "start": 276.08,
+        "end": 276.24
+      },
+      {
+        "word": "it",
+        "start": 276.24,
+        "end": 276.4
+      },
+      {
+        "word": "goes.",
+        "start": 276.4,
+        "end": 276.88
+      }
+    ]
+  },
+  {
+    "start": 276.88,
+    "end": 280.8,
+    "text": "Anyway, I think it's clearer to you how general market works in this video.",
+    "words": [
+      {
+        "word": "Anyway,",
+        "start": 276.88,
+        "end": 277.36
+      },
+      {
+        "word": "I",
+        "start": 277.36,
+        "end": 277.44
+      },
+      {
+        "word": "think",
+        "start": 277.44,
+        "end": 277.6
+      },
+      {
+        "word": "it's",
+        "start": 277.6,
+        "end": 277.84
+      },
+      {
+        "word": "clearer",
+        "start": 277.84,
+        "end": 278.24
+      },
+      {
+        "word": "to",
+        "start": 278.24,
+        "end": 278.32
+      },
+      {
+        "word": "you",
+        "start": 278.32,
+        "end": 278.56
+      },
+      {
+        "word": "how",
+        "start": 278.56,
+        "end": 278.72
+      },
+      {
+        "word": "general",
+        "start": 278.88,
+        "end": 279.28
+      },
+      {
+        "word": "market",
+        "start": 279.28,
+        "end": 279.52
+      },
+      {
+        "word": "works",
+        "start": 279.76,
+        "end": 280.08
+      },
+      {
+        "word": "in",
+        "start": 280.16,
+        "end": 280.32
+      },
+      {
+        "word": "this",
+        "start": 280.32,
+        "end": 280.48
+      },
+      {
+        "word": "video.",
+        "start": 280.48,
+        "end": 280.8
+      }
+    ]
+  },
+  {
+    "start": 280.8,
+    "end": 282.8,
+    "text": "It was Max, General Market Founder.",
+    "words": [
+      {
+        "word": "It",
+        "start": 280.8,
+        "end": 280.96
+      },
+      {
+        "word": "was",
+        "start": 280.96,
+        "end": 281.2
+      },
+      {
+        "word": "Max,",
+        "start": 281.2,
+        "end": 281.68
+      },
+      {
+        "word": "General",
+        "start": 281.68,
+        "end": 282.0
+      },
+      {
+        "word": "Market",
+        "start": 282.0,
+        "end": 282.24
+      },
+      {
+        "word": "Founder.",
+        "start": 282.4,
+        "end": 282.8
+      }
+    ]
+  }
+]

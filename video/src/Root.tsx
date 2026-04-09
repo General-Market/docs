@@ -16,6 +16,7 @@ import { gmBrandMeta, gmSceneMetas } from "./compositions/gm/brand/GMBrandCompos
 import { solanaBgMeta } from "./compositions/backgrounds/solana/SolanaBgComposition";
 import { webglPicksMeta, webglSceneMetas } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
 import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm/launch-bg/GMLaunchBgComposition";
+import { gmLogo3dMeta, gmLogoSceneMetas } from "./compositions/gm/logo-3d/GMLogo3D";
 import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
 import { gmQuantsMeta } from "./compositions/vision/vs/GMQuantsComposition";
 import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
@@ -32,8 +33,12 @@ import {
   councilSideBySideMeta,
   councilSceneMetas,
 } from "./compositions/replicates/council/VirtualsReplicateComposition";
+import { emberMeta } from "./compositions/replicates/ember/EmberComposition";
+import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBySide";
 import { GeneralMarket } from "./compositions/general-market/GeneralMarket";
 import { TOTAL_DURATION as GENERAL_MARKET_DURATION } from "./compositions/general-market/theme";
+import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
+import { TOTAL_FRAMES as TUTORIAL_DURATION, FPS as TUTORIAL_FPS } from "./compositions/tutorial/theme";
 
 // Per-scene compositions are hidden from the studio sidebar by default.
 // Set REMOTION_SHOW_SCENES=1 in the environment to register them — needed
@@ -95,6 +100,16 @@ export const RemotionRoot: React.FC = () => {
         component={GeneralMarket}
         durationInFrames={GENERAL_MARKET_DURATION}
         fps={30}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ TUTORIAL — overlay composition over talking-head ═══ */}
+      <Composition
+        id="Tutorial"
+        component={TutorialVideo}
+        durationInFrames={TUTORIAL_DURATION}
+        fps={TUTORIAL_FPS}
         width={1920}
         height={1080}
       />
@@ -290,6 +305,31 @@ export const RemotionRoot: React.FC = () => {
         </Folder>
       )}
 
+      {/* ═══ GM LOGO 3D — 5 FinTech scene showcase ═══ */}
+      <Composition
+        id={gmLogo3dMeta.id}
+        component={gmLogo3dMeta.component}
+        durationInFrames={gmLogo3dMeta.durationInFrames}
+        fps={gmLogo3dMeta.fps}
+        width={gmLogo3dMeta.width}
+        height={gmLogo3dMeta.height}
+      />
+      {SHOW_SCENES && (
+        <Folder name="GMLogo-Scenes">
+          {gmLogoSceneMetas.map((meta) => (
+            <Composition
+              key={meta.id}
+              id={meta.id}
+              component={meta.component}
+              durationInFrames={meta.durationInFrames}
+              fps={meta.fps}
+              width={meta.width}
+              height={meta.height}
+            />
+          ))}
+        </Folder>
+      )}
+
       {/* ═══ VISION VS — split-screen comparison ═══ */}
       <Composition
         id={visionVsMeta.id}
@@ -306,6 +346,24 @@ export const RemotionRoot: React.FC = () => {
         fps={gmQuantsMeta.fps}
         width={gmQuantsMeta.width}
         height={gmQuantsMeta.height}
+      />
+
+      {/* ═══ EMBER — replicate ═══ */}
+      <Composition
+        id={emberMeta.id}
+        component={emberMeta.component}
+        durationInFrames={emberMeta.durationInFrames}
+        fps={emberMeta.fps}
+        width={emberMeta.width}
+        height={emberMeta.height}
+      />
+      <Composition
+        id={emberSideBySideMeta.id}
+        component={emberSideBySideMeta.component}
+        durationInFrames={emberSideBySideMeta.durationInFrames}
+        fps={emberSideBySideMeta.fps}
+        width={emberSideBySideMeta.width}
+        height={emberSideBySideMeta.height}
       />
 
       {/* ═══ KALSHI — replicate ═══ */}
