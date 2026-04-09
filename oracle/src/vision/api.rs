@@ -26,7 +26,8 @@
 //! - `GET /vision/reveal/:batch_id/:tick_id` - Published bitmaps after reveal window
 //! - `GET /vision/markets` - Oracle-curated market whitelist
 
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+use std::time::Instant;
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -2494,7 +2495,18 @@ struct SettledHistoryRow {
     /// MAX(payout) across all players in the round — gross winnings, not pnl.
     max_payout: Option<String>,
     top_earner_address: Option<String>,
+    /// Total count of settled batches (from COUNT(*) OVER() — avoids separate query).
+    total_count: Option<i64>,
 }
+
+/// In-memory cache for settled batch history. Settled data is immutable — no reason
+/// to re-query Postgres on every HTTP hit.
+type HistoryCacheMap = tokio::sync::RwLock<
+    std::collections::HashMap<(String, u32, u32), (Instant, serde_json::Value)>,
+>;
+static HISTORY_CACHE: LazyLock<HistoryCacheMap> =
+    LazyLock::new(|| tokio::sync::RwLock::new(std::collections::HashMap::new()));
+const HISTORY_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(300);
 
 async fn source_batch_history(
     State(state): State<Arc<VisionState>>,
@@ -2503,46 +2515,47 @@ async fn source_batch_history(
 ) -> impl IntoResponse {
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(10).min(50);
+    let cache_key = (source_id.clone(), page, per_page);
+
+    // Check in-memory cache — settled data is immutable, no need to re-query
+    {
+        let cache = HISTORY_CACHE.read().await;
+        if let Some((ts, cached)) = cache.get(&cache_key) {
+            if ts.elapsed() < HISTORY_CACHE_TTL {
+                return (StatusCode::OK, Json(cached.clone())).into_response();
+            }
+        }
+    }
+
     let offset = ((page - 1) * per_page) as i64;
     let limit = per_page as i64;
     let decimals = 1e18_f64;
 
-    // Active batch is injected client-side from the scheduler (always accurate).
-    // This endpoint only returns settled batches, ordered by settlement time.
-    let mut entries: Vec<SourceBatchHistoryEntry> = Vec::new();
-
-    // Settled batches — from round_players aggregated, paginated
-    let total_settled: i64 = sqlx::query_scalar(
-        "SELECT COUNT(DISTINCT vrp.batch_id)::bigint
-         FROM vision_round_players vrp
-         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
-         WHERE vbl.source_id = $1"
-    )
-    .bind(&source_id)
-    .fetch_one(&state.pool)
-    .await
-    .unwrap_or(0);
-
+    // Single query: CTE aggregates per-batch, then COUNT(*) OVER() gives the
+    // total settled count without a separate round-trip. The correlated subquery
+    // for top_earner_address is replaced by array_agg inside the GROUP BY.
     let settled_rows = sqlx::query_as::<_, SettledHistoryRow>(
-        "SELECT vrp.batch_id,
-                MAX(vrp.settled_at) AS settled_at,
-                vb.created_at_tick,
-                vb.tick_duration,
-                vbl.market_count,
-                COUNT(DISTINCT vrp.player)::bigint AS player_count,
-                SUM(vrp.deposited::numeric)::text AS total_deposited,
-                AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
-                MAX(vrp.pnl::numeric)::text AS max_pnl,
-                MAX(vrp.payout::numeric)::text AS max_payout,
-                (SELECT sub.player FROM vision_round_players sub
-                 WHERE sub.batch_id = vrp.batch_id
-                 ORDER BY sub.payout::numeric DESC LIMIT 1) AS top_earner_address
-         FROM vision_round_players vrp
-         JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
-         LEFT JOIN vision_batches vb ON vrp.batch_id = vb.id
-         WHERE vbl.source_id = $1
-         GROUP BY vrp.batch_id, vb.created_at_tick, vb.tick_duration, vbl.market_count
-         ORDER BY MAX(vrp.settled_at) DESC
+        "WITH batch_agg AS (
+            SELECT vrp.batch_id,
+                   MAX(vrp.settled_at) AS settled_at,
+                   vb.created_at_tick,
+                   vb.tick_duration,
+                   vbl.market_count,
+                   COUNT(DISTINCT vrp.player)::bigint AS player_count,
+                   SUM(vrp.deposited::numeric)::text AS total_deposited,
+                   AVG(ABS(vrp.pnl::numeric))::text AS avg_abs_pnl,
+                   MAX(vrp.pnl::numeric)::text AS max_pnl,
+                   MAX(vrp.payout::numeric)::text AS max_payout,
+                   (array_agg(vrp.player ORDER BY vrp.payout::numeric DESC))[1] AS top_earner_address
+            FROM vision_round_players vrp
+            JOIN vision_batch_lifecycle vbl ON vrp.batch_id = vbl.on_chain_batch_id
+            LEFT JOIN vision_batches vb ON vrp.batch_id = vb.id
+            WHERE vbl.source_id = $1
+            GROUP BY vrp.batch_id, vb.created_at_tick, vb.tick_duration, vbl.market_count
+         )
+         SELECT *, COUNT(*) OVER()::bigint AS total_count
+         FROM batch_agg
+         ORDER BY settled_at DESC
          LIMIT $2 OFFSET $3"
     )
     .bind(&source_id)
@@ -2551,6 +2564,9 @@ async fn source_batch_history(
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
+
+    let total_settled = settled_rows.first().and_then(|r| r.total_count).unwrap_or(0);
+    let mut entries: Vec<SourceBatchHistoryEntry> = Vec::with_capacity(settled_rows.len());
 
     for r in settled_rows {
         let players = r.player_count.unwrap_or(0);
@@ -2567,11 +2583,6 @@ async fn source_batch_history(
             .and_then(|s| s.parse::<f64>().ok())
             .unwrap_or(0.0) / decimals;
 
-        // Compute round open/close from on-chain tick data instead of lifecycle
-        // timestamps (which reflect when the lifecycle row was created, not the
-        // actual round window).
-        // open  = created_at_tick * tick_duration
-        // close = (created_at_tick + 1) * tick_duration
         let (computed_start, computed_end) = match (r.created_at_tick, r.tick_duration) {
             (Some(cat), Some(td)) if td > 0 => {
                 let open_epoch = cat * td;
@@ -2603,13 +2614,21 @@ async fn source_batch_history(
 
     let total_pages = ((total_settled as f64) / per_page as f64).ceil() as u32;
 
-    (StatusCode::OK, Json(serde_json::json!({
+    let body = serde_json::json!({
         "batches": entries,
         "page": page,
         "perPage": per_page,
         "totalSettled": total_settled,
         "totalPages": total_pages,
-    }))).into_response()
+    });
+
+    // Cache the result
+    {
+        let mut cache = HISTORY_CACHE.write().await;
+        cache.insert(cache_key, (Instant::now(), body.clone()));
+    }
+
+    (StatusCode::OK, Json(body)).into_response()
 }
 
 // ---------------------------------------------------------------------------
