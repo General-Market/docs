@@ -12,11 +12,14 @@ export const BRAND = "#00A36C";
 export const SECTIONS = {
   hookOverlays: { start: 0, end: 42.8 },
   claudeTerminal: { start: 42.8, end: 57.76 },
+  botArchDiagram: { start: 42.8, end: 57.8 },
   liquidityDiagram: { start: 48.64, end: 89.84 },
   settlementTimeline: { start: 89.84, end: 161.4 },
   privacySplit: { start: 161.4, end: 194.04 },
   moatTimeline: { start: 194.04, end: 247.44 },
   sourcesClosing: { start: 247.44, end: 282.88 },
+  sourcesDiagrams: { start: 247.44, end: 271.0 },
+  closingDiagrams: { start: 271.0, end: 282.88 },
   promiseChecklist: { start: 0, end: 282.88 },
   subtitleLayer: { start: 0, end: 282.88 },
 } as const;
