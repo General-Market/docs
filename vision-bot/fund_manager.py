@@ -1009,6 +1009,14 @@ def main():
     try:
         while not shutdown_flag["set"]:
             cycle_failed = False
+            # Write heartbeat at cycle start so Docker knows we're alive
+            # even during long cycles (60-90s with 183 funds).
+            heartbeat_path = os.environ.get("HEARTBEAT_FILE", "/app/pnl-data/heartbeat.json")
+            try:
+                with open(heartbeat_path, "w") as hb:
+                    json.dump({"cycle": cycle, "ts": time.time(), "phase": "starting"}, hb)
+            except Exception:
+                pass
             try:
                 urls = oracle_urls_fn()
                 run_cycle(
@@ -1018,6 +1026,12 @@ def main():
             except Exception as e:
                 cycle_failed = True
                 log.error("Cycle error: %s", e, exc_info=True)
+                # Keep heartbeat alive even on failure
+                try:
+                    with open(heartbeat_path, "w") as hb:
+                        json.dump({"cycle": cycle, "ts": time.time(), "error": str(e)}, hb)
+                except Exception:
+                    pass
             # Increment outside the try so an exception doesn't desync the
             # counter from the actual number of attempted cycles.
             cycle += 1
