@@ -375,12 +375,11 @@ const PROBLEMS = [
   { label: "RISK MGMT", parasite: "counterparty exposure", hitSec: 9.02 },
 ];
 
-// Triangle positions — Zones B+C (left and right of face safe zone)
-// Face safe: 35%-65% horizontal. So we use 5%-30% and 70%-95%.
+// Triangle positions — centered in frame (main visual, dominates the shot)
 const TRIANGLE = [
-  { x: W * 0.5, y: H * 0.28 },  // top center (above face zone)
-  { x: W * 0.12, y: H * 0.62 }, // bottom-left (Zone B)
-  { x: W * 0.88, y: H * 0.62 }, // bottom-right (Zone C)
+  { x: 960, y: 280 },  // top center
+  { x: 580, y: 680 },  // bottom-left
+  { x: 1340, y: 680 }, // bottom-right
 ];
 
 const ProblemConstellation: React.FC = () => {
@@ -401,6 +400,16 @@ const ProblemConstellation: React.FC = () => {
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
     >
       <GlowFilter />
+
+      {/* Dark backdrop behind constellation for readability */}
+      <rect
+        x={440}
+        y={210}
+        width={1040}
+        height={680}
+        rx={24}
+        fill="rgba(10, 10, 10, 0.80)"
+      />
 
       {/* Pulsing red connection lines between triangle points */}
       {TRIANGLE.map((p, i) => {
@@ -516,7 +525,7 @@ const ProblemConstellation: React.FC = () => {
 
       {/* Solution box — appears after all three named */}
       <g
-        transform={`translate(${W * 0.5}, ${H * 0.82})`}
+        transform={`translate(960, 820)`}
         opacity={interpolate(solutionProg, [0, 0.3], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",

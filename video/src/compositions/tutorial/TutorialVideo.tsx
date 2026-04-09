@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, Sequence, Video, staticFile } from "remotion";
 import { TOTAL_FRAMES, SECTIONS, toFrames } from "./theme";
 import { ClaudeTerminal } from "./scenes/ClaudeTerminal";
-import { PromiseChecklist } from "./scenes/PromiseChecklist";
+import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
 import { HookDiagrams } from "./diagrams/HookDiagrams";
 import { BotArchDiagram } from "./diagrams/BotArchDiagram";
 import { LiquidityDiagrams } from "./diagrams/LiquidityDiagrams";
@@ -99,9 +99,9 @@ export const TutorialVideo: React.FC = () => {
         <SourceCardOverlays />
       </Sequence>
 
-      {/* Promise checklist — subtle top-left, appears at key moments */}
-      <Sequence {...seq("promiseChecklist")}>
-        <PromiseChecklist />
+      {/* FAQ question cards — full-screen overlays at each FAQ transition */}
+      <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
+        <FaqQuestionOverlay />
       </Sequence>
     </AbsoluteFill>
   );
