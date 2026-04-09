@@ -13,6 +13,7 @@ import { EASE } from "../../../common/easing";
 import { COLOR, TYPE, PANEL as PANEL_TOKENS } from "../designTokens";
 import { FPS } from "../theme";
 import { HEDGE_FUNDS, HFT, PREDICTION_MARKETS } from "../proofData";
+import { DiagramCardDark } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
 
@@ -36,57 +37,6 @@ const ERA_2026_IN = sec(10.1); // 226.9 - 216.8
 // Section 2: Competitive Landscape (230.3s → 241.5s)
 const COMP_IN = sec(36.26);
 const COMP_OUT = sec(47.46);
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PARASITE LABEL
-// ═══════════════════════════════════════════════════════════════════════════
-
-interface ParasiteLabelProps {
-  x: number;
-  y: number;
-  text: string;
-  progress: number;
-  align?: "left" | "center" | "right";
-}
-
-const ParasiteLabel: React.FC<ParasiteLabelProps> = ({
-  x,
-  y,
-  text,
-  progress,
-  align = "center",
-}) => {
-  const opacity = interpolate(progress, [0, 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const nudgeY = interpolate(progress, [0, 1], [6, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE.out,
-  });
-  // Subtle pulse on first appearance
-  const scale = progress > 0.8 ? 1 + 0.015 * Math.sin(progress * 12) : 1;
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        opacity,
-        transform: `translateY(${nudgeY}px) scale(${scale})`,
-        ...TYPE.label,
-        color: "rgba(250,250,250,0.55)",
-        textAlign: align,
-        whiteSpace: "nowrap",
-        pointerEvents: "none",
-      }}
-    >
-      {text}
-    </div>
-  );
-};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. ERA TIMELINE WITH MINI-CHARTS
@@ -273,211 +223,215 @@ const EraTimelineCharts: React.FC = () => {
 
   const cardWidth = 220;
   const highlightCardWidth = 260;
-  const positions = [180, 700, 1260]; // x positions for 3 cards across lower third
 
   return (
-    <AbsoluteFill style={{ opacity: exitOpacity }}>
-      {/* Dark lower-third panel */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 300,
-          background: COLOR.panelDark,
-          borderTop: `1px solid ${COLOR.border}22`,
-        }}
-      />
-
-      {/* Timeline bar across the lower third */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 260,
-          left: 120,
-          right: 120,
-          height: 3,
-          background: `${COLOR.border}1A`,
-          borderRadius: 2,
-          overflow: "hidden",
-        }}
-      >
+    <DiagramCardDark width={1600} padding="32px 40px" position="bottom">
+      <div style={{ opacity: exitOpacity, position: "relative", minHeight: 260 }}>
+        {/* Timeline bar across the top of card */}
         <div
           style={{
-            width: `${barProgress * 100}%`,
-            height: "100%",
-            background: `linear-gradient(90deg, ${COLOR.border}4D, ${COLOR.up})`,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            background: `${COLOR.border}1A`,
             borderRadius: 2,
+            overflow: "hidden",
           }}
-        />
-      </div>
+        >
+          <div
+            style={{
+              width: `${barProgress * 100}%`,
+              height: "100%",
+              background: `linear-gradient(90deg, ${COLOR.border}4D, ${COLOR.up})`,
+              borderRadius: 2,
+            }}
+          />
+        </div>
 
-      {/* Era cards */}
-      {ERA_CARDS.map((card, i) => {
-        const cardFrame = Math.max(frame - card.delayFrames, 0);
+        {/* Era cards row */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, gap: 32 }}>
+          {ERA_CARDS.map((card, i) => {
+            const cardFrame = Math.max(frame - card.delayFrames, 0);
 
-        const cardSpring = spring({
-          frame: cardFrame,
-          fps,
-          config: {
-            damping: card.isHighlight ? 10 : 14,
-            stiffness: card.isHighlight ? 180 : 120,
-            mass: 0.6,
-          },
-        });
+            const cardSpring = spring({
+              frame: cardFrame,
+              fps,
+              config: {
+                damping: card.isHighlight ? 10 : 14,
+                stiffness: card.isHighlight ? 180 : 120,
+                mass: 0.6,
+              },
+            });
 
-        const cardOpacity = interpolate(cardFrame, [0, 10], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
+            const cardOpacity = interpolate(cardFrame, [0, 10], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
 
-        const cardY = interpolate(cardSpring, [0, 1], [40, 0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
+            const cardY = interpolate(cardSpring, [0, 1], [40, 0], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
 
-        const cardScale = interpolate(cardSpring, [0, 1], [0.8, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
+            const cardScale = interpolate(cardSpring, [0, 1], [0.8, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
 
-        // Mini-chart progress (starts 0.5s after card appears)
-        const chartProgress = interpolate(
-          cardFrame,
-          [sec(0.5), sec(3)],
-          [0, 1],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        );
+            // Mini-chart progress (starts 0.5s after card appears)
+            const chartProgress = interpolate(
+              cardFrame,
+              [sec(0.5), sec(3)],
+              [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            );
 
-        // Parasite label progress (0.3s after card)
-        const parasiteProgress = interpolate(
-          cardFrame,
-          [sec(0.3), sec(1)],
-          [0, 1],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-        );
+            // Parasite label progress (0.3s after card)
+            const parasiteProgress = interpolate(
+              cardFrame,
+              [sec(0.3), sec(1)],
+              [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            );
 
-        // 2026 card pulse
-        const pulse =
-          card.isHighlight && cardFrame > sec(1)
-            ? 1 + 0.02 * Math.sin(cardFrame * 0.12)
-            : 1;
+            // 2026 card pulse
+            const pulse =
+              card.isHighlight && cardFrame > sec(1)
+                ? 1 + 0.02 * Math.sin(cardFrame * 0.12)
+                : 1;
 
-        const w = card.isHighlight ? highlightCardWidth : cardWidth;
+            const w = card.isHighlight ? highlightCardWidth : cardWidth;
 
-        return (
-          <React.Fragment key={card.year}>
-            {/* Dot on timeline */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: 256,
-                left: positions[i] + w / 2 - 6,
-                width: 12,
-                height: 12,
-                borderRadius: "50%",
-                background: card.isHighlight ? GREEN : "transparent",
-                border: card.isHighlight
-                  ? `2px solid ${GREEN}`
-                  : "2px solid rgba(250,250,250,0.4)",
-                boxShadow: card.isHighlight
-                  ? `0 0 12px ${GREEN}88`
-                  : "none",
-                opacity: cardOpacity,
-              }}
-            />
-
-            {/* Card */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: 50,
-                left: positions[i],
-                width: w,
-                opacity: cardOpacity,
-                transform: `translateY(${cardY}px) scale(${cardScale * pulse})`,
-                background: COLOR.panelDark,
-                borderRadius: PANEL_TOKENS.dark.borderRadius,
-                padding: "18px 20px",
-                border: card.isHighlight
-                  ? `1px solid ${GREEN}66`
-                  : "1px solid rgba(250,250,250,0.08)",
-                boxShadow: card.isHighlight
-                  ? `0 0 30px ${GREEN}22, 0 4px 24px rgba(0,0,0,0.4)`
-                  : "0 4px 20px rgba(0,0,0,0.3)",
-              }}
-            >
-              {/* Year */}
+            return (
               <div
+                key={card.year}
                 style={{
-                  ...TYPE.heading,
-                  color: card.isHighlight
-                    ? COLOR.up
-                    : "rgba(250,250,250,0.5)",
-                  marginBottom: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
-                {card.year}
-              </div>
-
-              {/* Mini-chart */}
-              <div style={{ marginBottom: 10, minHeight: 50 }}>
-                {i === 0 && <CandlestickChart progress={chartProgress} />}
-                {i === 1 && <FormulaType progress={chartProgress} />}
-                {i === 2 && <BatchGrid progress={chartProgress} />}
-              </div>
-
-              {/* Label */}
-              <div
-                style={{
-                  ...TYPE.subhead,
-                  color: card.isHighlight
-                    ? COLOR.white
-                    : "rgba(250,250,250,0.8)",
-                  marginBottom: 4,
-                }}
-              >
-                {card.label}
-              </div>
-
-              {/* Subtitle */}
-              <div
-                style={{
-                  ...TYPE.caption,
-                  color: card.isHighlight
-                    ? "rgba(250,250,250,0.85)"
-                    : "rgba(250,250,250,0.45)",
-                }}
-              >
-                {card.subtitle}
-              </div>
-
-              {/* Green glow underline for 2026 */}
-              {card.isHighlight && (
+                {/* Dot on timeline */}
                 <div
                   style={{
-                    marginTop: 10,
-                    height: 2,
-                    background: `linear-gradient(90deg, transparent, ${GREEN}, transparent)`,
-                    borderRadius: 1,
-                    opacity: 0.6 + 0.2 * Math.sin(cardFrame * 0.1),
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: card.isHighlight ? GREEN : "transparent",
+                    border: card.isHighlight
+                      ? `2px solid ${GREEN}`
+                      : "2px solid rgba(250,250,250,0.4)",
+                    boxShadow: card.isHighlight
+                      ? `0 0 12px ${GREEN}88`
+                      : "none",
+                    opacity: cardOpacity,
                   }}
                 />
-              )}
-            </div>
 
-            {/* Parasite label */}
-            <ParasiteLabel
-              x={positions[i] + w / 2 - 60}
-              y={1080 - 300 - 22}
-              text={card.parasiteLabel}
-              progress={parasiteProgress}
-            />
-          </React.Fragment>
-        );
-      })}
-    </AbsoluteFill>
+                {/* Card */}
+                <div
+                  style={{
+                    width: w,
+                    opacity: cardOpacity,
+                    transform: `translateY(${cardY}px) scale(${cardScale * pulse})`,
+                    background: "rgba(20,20,20,0.6)",
+                    borderRadius: PANEL_TOKENS.dark.borderRadius,
+                    padding: "18px 20px",
+                    border: card.isHighlight
+                      ? `1px solid ${GREEN}66`
+                      : "1px solid rgba(250,250,250,0.08)",
+                    boxShadow: card.isHighlight
+                      ? `0 0 30px ${GREEN}22, 0 4px 24px rgba(0,0,0,0.4)`
+                      : "0 4px 20px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  {/* Year */}
+                  <div
+                    style={{
+                      ...TYPE.heading,
+                      color: card.isHighlight
+                        ? COLOR.up
+                        : "rgba(250,250,250,0.5)",
+                      marginBottom: 10,
+                    }}
+                  >
+                    {card.year}
+                  </div>
+
+                  {/* Mini-chart */}
+                  <div style={{ marginBottom: 10, minHeight: 50 }}>
+                    {i === 0 && <CandlestickChart progress={chartProgress} />}
+                    {i === 1 && <FormulaType progress={chartProgress} />}
+                    {i === 2 && <BatchGrid progress={chartProgress} />}
+                  </div>
+
+                  {/* Label */}
+                  <div
+                    style={{
+                      ...TYPE.subhead,
+                      color: card.isHighlight
+                        ? COLOR.white
+                        : "rgba(250,250,250,0.8)",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {card.label}
+                  </div>
+
+                  {/* Subtitle */}
+                  <div
+                    style={{
+                      ...TYPE.caption,
+                      color: card.isHighlight
+                        ? "rgba(250,250,250,0.85)"
+                        : "rgba(250,250,250,0.45)",
+                    }}
+                  >
+                    {card.subtitle}
+                  </div>
+
+                  {/* Green glow underline for 2026 */}
+                  {card.isHighlight && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        height: 2,
+                        background: `linear-gradient(90deg, transparent, ${GREEN}, transparent)`,
+                        borderRadius: 1,
+                        opacity: 0.6 + 0.2 * Math.sin(cardFrame * 0.1),
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Parasite label */}
+                <div
+                  style={{
+                    ...TYPE.label,
+                    color: "rgba(250,250,250,0.55)",
+                    whiteSpace: "nowrap",
+                    opacity: interpolate(parasiteProgress, [0, 1], [0, 1], {
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                    }),
+                    transform: `translateY(${interpolate(parasiteProgress, [0, 1], [6, 0], {
+                      extrapolateLeft: "clamp",
+                      extrapolateRight: "clamp",
+                      easing: EASE.out,
+                    })}px)`,
+                  }}
+                >
+                  {card.parasiteLabel}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </DiagramCardDark>
   );
 };
 
@@ -563,20 +517,11 @@ const CompetitiveLandscape: React.FC = () => {
   });
 
   return (
-    <AbsoluteFill
-      style={{
-        justifyContent: "center",
-        alignItems: "center",
-        opacity: Math.min(panelOpacity, exitOpacity),
-        transform: `translateY(${panelY}px)`,
-      }}
-    >
+    <DiagramCardDark width={1400} padding="40px 48px">
       <div
         style={{
-          background: COLOR.panelDark,
-          borderRadius: PANEL_TOKENS.dark.borderRadius,
-          padding: "40px 56px",
-          width: 1100,
+          opacity: Math.min(panelOpacity, exitOpacity),
+          transform: `translateY(${panelY}px)`,
         }}
       >
         {/* Title */}
@@ -779,7 +724,7 @@ const CompetitiveLandscape: React.FC = () => {
           );
         })()}
       </div>
-    </AbsoluteFill>
+    </DiagramCardDark>
   );
 };
 

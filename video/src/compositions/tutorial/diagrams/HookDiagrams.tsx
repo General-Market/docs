@@ -10,7 +10,8 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FPS } from "../theme";
-import { COLOR, NODE, PANEL } from "../designTokens";
+import { COLOR, NODE } from "../designTokens";
+import { DiagramCardDark } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
 const W = 1920;
@@ -61,23 +62,14 @@ const ProblemConstellation: React.FC = () => {
   const { fps } = useVideoConfig();
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-    >
-      <GlowFilter />
+    <DiagramCardDark width={1100} padding="32px">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", display: "block" }}
+      >
+        <GlowFilter />
 
-      {/* Dark backdrop behind constellation for readability */}
-      <rect
-        x={440}
-        y={210}
-        width={1040}
-        height={680}
-        rx={PANEL.dark.borderRadius}
-        fill={COLOR.panelDark}
-      />
-
-      {/* Pulsing red connection lines between triangle points */}
+        {/* Pulsing red connection lines between triangle points */}
       {TRIANGLE.map((p, i) => {
         const next = TRIANGLE[(i + 1) % 3];
         const lineOpacity = interpolate(frame, [sec(0.5), sec(1.5)], [0, 1], {
@@ -172,7 +164,8 @@ const ProblemConstellation: React.FC = () => {
       })}
 
       {/* Solution box removed — not approved */}
-    </svg>
+      </svg>
+    </DiagramCardDark>
   );
 };
 

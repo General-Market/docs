@@ -9,8 +9,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import { EASE } from "../../../common/easing";
-import { COLOR, TYPE, PANEL } from "../designTokens";
+import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
+import { DiagramCardDark } from "../components/DiagramCard";
 
 // ---------------------------------------------------------------------------
 // Timing — local seconds (component starts at 0 = video 89.84s)
@@ -132,24 +133,14 @@ const CycleTimeline: React.FC = () => {
   ];
 
   return (
-    <AbsoluteFill
-      style={{
-        justifyContent: "flex-end",
-        alignItems: "center",
-        paddingBottom: 40,
-        opacity,
-        pointerEvents: "none",
-      }}
-    >
+    <DiagramCardDark width={1600} padding="32px 40px" position="bottom">
       <div
         style={{
-          ...PANEL.dark,
-          padding: "28px 48px 36px",
-          width: barWidth + 96,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: 12,
+          opacity,
         }}
       >
         {/* Current phase label */}
@@ -369,7 +360,7 @@ const CycleTimeline: React.FC = () => {
           })}
         </div>
       </div>
-    </AbsoluteFill>
+    </DiagramCardDark>
   );
 };
 

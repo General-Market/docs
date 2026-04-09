@@ -10,9 +10,10 @@ import {
   useVideoConfig,
 } from "remotion";
 import { EASE } from "../../../common/easing";
-import { COLOR, TYPE, PANEL } from "../designTokens";
+import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { COMPARISONS } from "../proofData";
+import { DiagramCardDark } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
 
@@ -102,27 +103,16 @@ const DisputeTimeline: React.FC = () => {
   );
 
   return (
-    <AbsoluteFill
-      style={{
-        opacity: Math.min(panelOpacity, exitOpacity),
-        transform: `translateY(${panelY}px)`,
-      }}
-    >
-      {/* Background panel in lower portion */}
+    <DiagramCardDark width={1500} padding="40px 48px">
       <div
         style={{
-          position: "absolute",
-          left: 40,
-          right: 40,
-          bottom: 60,
-          height: 520,
-          background: COLOR.panelDark,
-          borderRadius: PANEL.dark.borderRadius,
-          padding: "36px 48px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           gap: 48,
+          opacity: Math.min(panelOpacity, exitOpacity),
+          transform: `translateY(${panelY}px)`,
+          position: "relative",
         }}
       >
         {/* TRADITIONAL timeline */}
@@ -402,7 +392,7 @@ const DisputeTimeline: React.FC = () => {
           </div>
         </div>
       </div>
-    </AbsoluteFill>
+    </DiagramCardDark>
   );
 };
 

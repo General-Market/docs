@@ -10,12 +10,11 @@ import {
   useVideoConfig,
 } from "remotion";
 import { EASE } from "../../../common/easing";
-import { COLOR, TYPE, PANEL } from "../designTokens";
+import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
+import { DiagramCard } from "../components/DiagramCard";
 
 const s = (sec: number) => Math.round(sec * FPS);
-const W = 1920;
-const H = 1080;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DIAGRAM 1: Bot Status Dashboard (0–5.9s local = 271.0–276.9s video)
@@ -54,22 +53,6 @@ const BotDashboard: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Dashboard panel enter
-  const panelSpring = spring({
-    frame,
-    fps,
-    config: { damping: 18, stiffness: 120, mass: 0.8 },
-  });
-
-  const panelScale = interpolate(panelSpring, [0, 1], [0.92, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const panelOpacity = interpolate(panelSpring, [0, 0.4], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
   // Live dot pulse
   const livePulse = 0.5 + 0.5 * Math.sin(frame * 0.2);
 
@@ -99,33 +82,10 @@ const BotDashboard: React.FC = () => {
     });
   };
 
-  // Dashboard layout: Zones B+C (avoid face safe zone 35-65%)
-  // We place the dashboard spanning from ~5% to ~95% but the center is mostly
-  // header/stats — activity rows are below face zone
-  const dashX = W * 0.05;
-  const dashY = H * 0.12;
-  const dashW = W * 0.9;
-  const dashH = H * 0.76;
-
-  // Layout uses CSS flex — no absolute pixel offsets needed
-
   return (
-    <AbsoluteFill
-      style={{
-        opacity: panelOpacity,
-        transform: `scale(${panelScale})`,
-        transformOrigin: "center center",
-      }}
-    >
-      {/* Main dashboard panel — white bg, frontend style */}
+    <DiagramCard width={1200} padding="0">
       <div
         style={{
-          position: "absolute",
-          left: dashX,
-          top: dashY,
-          width: dashW,
-          height: dashH,
-          ...PANEL.white,
           overflow: "hidden",
         }}
       >
@@ -318,7 +278,7 @@ const BotDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </AbsoluteFill>
+    </DiagramCard>
   );
 };
 
