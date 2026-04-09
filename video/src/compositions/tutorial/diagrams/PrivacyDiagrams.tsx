@@ -9,16 +9,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../../common/fonts";
 import { EASE } from "../../../common/easing";
-import { FPS, BRAND_GREEN, PANEL } from "../theme";
+import { COLOR, TYPE, PANEL } from "../designTokens";
+import { FPS } from "../theme";
 import { COMPARISONS } from "../proofData";
 
 const sec = (s: number) => Math.round(s * FPS);
 
-const RED = "#DC2626";
-const GREEN = BRAND_GREEN;
 const AMBER = "#F59E0B";
+const DOT_SIZE = 10;
 
 // Local timing (frame 0 = 161.40s in video)
 const DISPUTE_IN = sec(19.8);
@@ -117,7 +116,8 @@ const DisputeTimeline: React.FC = () => {
           right: 40,
           bottom: 60,
           height: 520,
-          ...PANEL,
+          background: COLOR.panelDark,
+          borderRadius: PANEL.dark.borderRadius,
           padding: "36px 48px",
           display: "flex",
           flexDirection: "column",
@@ -129,12 +129,8 @@ const DisputeTimeline: React.FC = () => {
         <div>
           <div
             style={{
-              fontFamily: monoFont,
-              fontSize: 13,
-              fontWeight: 700,
-              color: RED,
-              letterSpacing: 2,
-              textTransform: "uppercase",
+              ...TYPE.subhead,
+              color: COLOR.down,
               marginBottom: 16,
             }}
           >
@@ -152,7 +148,8 @@ const DisputeTimeline: React.FC = () => {
                 top: 20,
                 height: 10,
                 borderRadius: 5,
-                background: "rgba(255,255,255,0.06)",
+                background: COLOR.border,
+                opacity: 0.15,
               }}
             />
 
@@ -165,7 +162,8 @@ const DisputeTimeline: React.FC = () => {
                 top: 16,
                 height: 18,
                 borderRadius: 9,
-                background: `rgba(220, 38, 38, ${disputePulse})`,
+                background: COLOR.down,
+                opacity: disputePulse,
               }}
             />
 
@@ -196,22 +194,21 @@ const DisputeTimeline: React.FC = () => {
                   {/* Dot */}
                   <div
                     style={{
-                      width: 10,
-                      height: 10,
+                      width: DOT_SIZE,
+                      height: DOT_SIZE,
                       borderRadius: "50%",
-                      background: m.isDispute ? RED : "rgba(255,255,255,0.5)",
+                      background: m.isDispute ? COLOR.down : COLOR.muted,
                       marginBottom: 4,
                     }}
                   />
                   {/* Label */}
                   <div
                     style={{
+                      ...TYPE.label,
                       position: "absolute",
                       top: 36,
-                      fontFamily: monoFont,
-                      fontSize: 12,
-                      fontWeight: m.isDispute ? 700 : 500,
-                      color: m.isDispute ? RED : "rgba(255,255,255,0.5)",
+                      fontWeight: m.isDispute ? 700 : TYPE.label.fontWeight,
+                      color: m.isDispute ? COLOR.down : COLOR.muted,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -239,12 +236,11 @@ const DisputeTimeline: React.FC = () => {
                 <div
                   key={i}
                   style={{
-                    fontFamily: monoFont,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: "rgba(220, 38, 38, 0.6)",
-                    letterSpacing: "0.06em",
+                    ...TYPE.caption,
+                    color: COLOR.down,
+                    opacity: 0.6,
                     textTransform: "uppercase",
+                    letterSpacing: "0.06em",
                   }}
                 >
                   {label}
@@ -258,12 +254,8 @@ const DisputeTimeline: React.FC = () => {
         <div>
           <div
             style={{
-              fontFamily: monoFont,
-              fontSize: 13,
-              fontWeight: 700,
-              color: GREEN,
-              letterSpacing: 2,
-              textTransform: "uppercase",
+              ...TYPE.subhead,
+              color: COLOR.up,
               marginBottom: 16,
             }}
           >
@@ -281,7 +273,8 @@ const DisputeTimeline: React.FC = () => {
                 top: 20,
                 height: 10,
                 borderRadius: 5,
-                background: "rgba(255,255,255,0.06)",
+                background: COLOR.border,
+                opacity: 0.15,
               }}
             />
 
@@ -294,8 +287,9 @@ const DisputeTimeline: React.FC = () => {
                 top: 16,
                 height: 18,
                 borderRadius: 9,
-                background: `rgba(0, 200, 83, ${gmGlow * 0.5})`,
-                boxShadow: `0 0 16px rgba(0, 200, 83, ${gmGlow * 0.3})`,
+                background: COLOR.up,
+                opacity: gmGlow * 0.5,
+                boxShadow: `0 0 16px ${COLOR.up}`,
               }}
             />
 
@@ -325,23 +319,22 @@ const DisputeTimeline: React.FC = () => {
                 >
                   <div
                     style={{
-                      width: 10,
-                      height: 10,
+                      width: DOT_SIZE,
+                      height: DOT_SIZE,
                       borderRadius: "50%",
-                      background: GREEN,
+                      background: COLOR.up,
                       boxShadow: m.isGreen
-                        ? `0 0 8px rgba(0, 200, 83, 0.6)`
+                        ? `0 0 8px ${COLOR.up}`
                         : undefined,
                     }}
                   />
                   <div
                     style={{
+                      ...TYPE.label,
                       position: "absolute",
                       top: 36,
-                      fontFamily: monoFont,
-                      fontSize: 12,
-                      fontWeight: m.isGreen ? 700 : 500,
-                      color: GREEN,
+                      fontWeight: m.isGreen ? 700 : TYPE.label.fontWeight,
+                      color: COLOR.up,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -368,12 +361,11 @@ const DisputeTimeline: React.FC = () => {
               <div
                 key={i}
                 style={{
-                  fontFamily: monoFont,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: `rgba(0, 200, 83, 0.7)`,
-                  letterSpacing: "0.06em",
+                  ...TYPE.caption,
+                  color: COLOR.up,
+                  opacity: 0.7,
                   textTransform: "uppercase",
+                  letterSpacing: "0.06em",
                 }}
               >
                 {label}
@@ -394,11 +386,8 @@ const DisputeTimeline: React.FC = () => {
         >
           <div
             style={{
-              fontFamily: font,
-              fontSize: 13,
-              fontWeight: 500,
-              color: "rgba(255,255,255,0.4)",
-              lineHeight: 1.5,
+              ...TYPE.caption,
+              color: COLOR.muted,
               textAlign: "right",
             }}
           >
@@ -406,7 +395,7 @@ const DisputeTimeline: React.FC = () => {
             <span style={{ color: AMBER, fontWeight: 700 }}>weeks</span>.
             <br />
             GM settles in{" "}
-            <span style={{ color: GREEN, fontWeight: 700 }}>
+            <span style={{ color: COLOR.up, fontWeight: 700 }}>
               {COMPARISONS.gmSettlement}
             </span>
             .

@@ -9,15 +9,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font } from "../../../common/fonts";
-import { C } from "../../../common/colors";
 import { FPS } from "../theme";
+import { COLOR, NODE, PANEL } from "../designTokens";
 
 const sec = (s: number) => Math.round(s * FPS);
 const W = 1920;
 const H = 1080;
-
-const RED = C.red;
 // ═══════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -76,8 +73,8 @@ const ProblemConstellation: React.FC = () => {
         y={210}
         width={1040}
         height={680}
-        rx={24}
-        fill="rgba(10, 10, 10, 0.80)"
+        rx={PANEL.dark.borderRadius}
+        fill={COLOR.panelDark}
       />
 
       {/* Pulsing red connection lines between triangle points */}
@@ -95,10 +92,10 @@ const ProblemConstellation: React.FC = () => {
             y1={p.y}
             x2={next.x}
             y2={next.y}
-            stroke={RED}
-            strokeWidth={2}
+            stroke={COLOR.down}
+            strokeWidth={NODE.connection.strokeWidth}
             opacity={lineOpacity * pulse}
-            strokeDasharray="8 4"
+            strokeDasharray={NODE.connection.dashArray}
           />
         );
       })}
@@ -123,7 +120,7 @@ const ProblemConstellation: React.FC = () => {
             })
           : 0;
         const highlightScale = 1 + highlightProg * 0.2;
-        const nodeR = 48;
+        const nodeR = NODE.circle.radius;
         const nodeOpacity = interpolate(baseProg, [0, 0.3], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
@@ -141,8 +138,8 @@ const ProblemConstellation: React.FC = () => {
                   cy={0}
                   r={nodeR + 8}
                   fill="none"
-                  stroke={RED}
-                  strokeWidth={3}
+                  stroke={COLOR.down}
+                  strokeWidth={NODE.circle.strokeWidth}
                   opacity={0.6 + 0.3 * Math.sin(frame * 0.2)}
                   filter="url(#glow)"
                 />
@@ -152,18 +149,18 @@ const ProblemConstellation: React.FC = () => {
                 cy={0}
                 r={nodeR}
                 fill="rgba(20, 20, 20, 0.9)"
-                stroke={isHighlighted ? RED : "rgba(255, 255, 255, 0.3)"}
-                strokeWidth={isHighlighted ? 2.5 : 1.5}
+                stroke={isHighlighted ? COLOR.down : COLOR.mutedLight}
+                strokeWidth={NODE.circle.strokeWidth}
               />
               <text
                 x={0}
                 y={2}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="#fafafa"
-                fontFamily={font}
-                fontWeight={700}
-                fontSize={prob.label.length > 10 ? 10 : 12}
+                fill={COLOR.white}
+                fontFamily={NODE.circle.labelFont}
+                fontWeight={NODE.circle.labelWeight}
+                fontSize={prob.label.length > 10 ? NODE.circle.labelSize - 4 : NODE.circle.labelSize}
               >
                 {prob.label}
               </text>

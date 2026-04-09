@@ -9,8 +9,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font } from "../../../common/fonts";
-import { FPS, BRAND_GREEN } from "../theme";
+import { FAQ } from "../designTokens";
+import { FPS } from "../theme";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -80,7 +80,7 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
   const backdropOpacity = interpolate(
     frame,
     [0, 6, holdFrames, totalFrames],
-    [0, 0.82, 0.82, 0],
+    [0, 0.92, 0.92, 0],
     clamp,
   );
 
@@ -102,12 +102,9 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
       >
         <div
           style={{
-            fontFamily: font,
-            fontSize: 64,
-            fontWeight: 900,
-            color: BRAND_GREEN,
+            ...FAQ.numberStyle,
             textAlign: "center",
-            marginBottom: 20,
+            marginBottom: 32,
           }}
         >
           {entry.number}
@@ -115,13 +112,7 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
 
         <div
           style={{
-            fontFamily: font,
-            fontSize: 48,
-            fontWeight: 700,
-            color: "#FFFFFF",
-            textAlign: "center",
-            lineHeight: 1.3,
-            maxWidth: 900,
+            ...FAQ.questionStyle,
             whiteSpace: "pre-line",
           }}
         >

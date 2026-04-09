@@ -9,8 +9,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../../common/fonts";
 import { FPS } from "../theme";
+import { COLOR, TYPE, PANEL } from "../designTokens";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -82,10 +82,8 @@ const OVERLAY_END = 264.88;
 // Live dot — green ping animation (CSS keyframes in Remotion via frame math)
 // ---------------------------------------------------------------------------
 
-const LiveDot: React.FC<{ color: string; frame: number }> = ({
-  color,
-  frame,
-}) => {
+const LiveDot: React.FC<{ frame: number }> = ({ frame }) => {
+  const color = COLOR.up;
   // Ping expands and fades in a ~1s cycle
   const cycle = (frame % 30) / 30;
   const pingScale = 1 + cycle * 1.5;
@@ -164,14 +162,13 @@ const SourceCard: React.FC<{
     <div
       style={{
         width: 400,
-        background: "#FFFFFF",
-        borderRight: "1px solid #E0E0E0",
-        borderBottom: "1px solid #E0E0E0",
-        borderRadius: 8,
+        background: COLOR.bg,
+        border: `1px solid ${COLOR.border}`,
+        borderRadius: 12,
         overflow: "hidden",
         opacity: Math.min(opacity, exitOpacity),
         transform: `scale(${scale})`,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        boxShadow: PANEL.white.boxShadow,
       }}
     >
       {/* Brand hero area — aspect ~16:10 */}
@@ -189,7 +186,7 @@ const SourceCard: React.FC<{
         {/* Logo text */}
         <span
           style={{
-            fontFamily: font,
+            fontFamily: TYPE.display.fontFamily,
             fontSize: spec.logoText.length > 5 ? 48 : 72,
             fontWeight: 900,
             color: heroTextColor,
@@ -206,11 +203,7 @@ const SourceCard: React.FC<{
             position: "absolute",
             top: 12,
             right: 12,
-            fontSize: 10,
-            fontFamily: font,
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
+            ...TYPE.label,
             color: "rgba(255,255,255,0.9)",
             background: "rgba(255,255,255,0.15)",
             backdropFilter: "blur(8px)",
@@ -236,11 +229,7 @@ const SourceCard: React.FC<{
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontFamily: font,
-                fontSize: 20,
-                fontWeight: 800,
-                color: "#1A1A1A",
-                letterSpacing: "-0.01em",
+                ...TYPE.subhead,
                 lineHeight: 1.2,
               }}
             >
@@ -248,12 +237,8 @@ const SourceCard: React.FC<{
             </div>
             <div
               style={{
-                fontFamily: font,
-                fontSize: 13,
-                fontWeight: 400,
-                color: "#999",
+                ...TYPE.caption,
                 marginTop: 3,
-                lineHeight: 1.3,
               }}
             >
               {spec.description}
@@ -270,13 +255,11 @@ const SourceCard: React.FC<{
               marginTop: 2,
             }}
           >
-            <LiveDot color="#16A34A" frame={frame} />
+            <LiveDot frame={frame} />
             <span
               style={{
-                fontFamily: font,
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#16A34A",
+                ...TYPE.label,
+                color: COLOR.up,
               }}
             >
               Live
@@ -289,8 +272,8 @@ const SourceCard: React.FC<{
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
-            borderTop: "1px solid #E0E0E0",
-            borderBottom: "1px solid #E0E0E0",
+            borderTop: `1px solid ${COLOR.border}`,
+            borderBottom: `1px solid ${COLOR.border}`,
             margin: "10px -20px 0",
             padding: "0 20px",
           }}
@@ -299,12 +282,7 @@ const SourceCard: React.FC<{
           <div style={{ padding: "10px 12px 10px 0" }}>
             <div
               style={{
-                fontFamily: font,
-                fontSize: 10,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "#999",
+                ...TYPE.label,
                 marginBottom: 3,
               }}
             >
@@ -312,11 +290,8 @@ const SourceCard: React.FC<{
             </div>
             <span
               style={{
-                fontFamily: monoFont,
-                fontSize: 16,
+                ...TYPE.mono,
                 fontWeight: 700,
-                color: "#1A1A1A",
-                fontVariantNumeric: "tabular-nums",
               }}
             >
               {spec.markets.toLocaleString()}
@@ -327,17 +302,12 @@ const SourceCard: React.FC<{
           <div
             style={{
               padding: "10px 0 10px 12px",
-              borderLeft: "1px solid #E0E0E0",
+              borderLeft: `1px solid ${COLOR.border}`,
             }}
           >
             <div
               style={{
-                fontFamily: font,
-                fontSize: 10,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "#999",
+                ...TYPE.label,
                 marginBottom: 3,
               }}
             >
@@ -345,10 +315,8 @@ const SourceCard: React.FC<{
             </div>
             <span
               style={{
-                fontFamily: font,
-                fontSize: 14,
+                ...TYPE.body,
                 fontWeight: 700,
-                color: "#1A1A1A",
               }}
             >
               {spec.type}

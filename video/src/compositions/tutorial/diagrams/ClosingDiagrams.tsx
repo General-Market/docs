@@ -9,16 +9,13 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { C } from "../../../common/colors";
-import { font, monoFont } from "../../../common/fonts";
 import { EASE } from "../../../common/easing";
+import { COLOR, TYPE, PANEL } from "../designTokens";
 import { FPS } from "../theme";
 
 const s = (sec: number) => Math.round(sec * FPS);
 const W = 1920;
 const H = 1080;
-
-const POSITIVE_GREEN = "#16A34A";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DIAGRAM 1: Bot Status Dashboard (0–5.9s local = 271.0–276.9s video)
@@ -36,7 +33,7 @@ interface StatData {
 const STATS: StatData[] = [
   { label: "TRADES", value: "47", targetNum: 47 },
   { label: "WIN RATE", value: "54.3%", targetNum: 54.3, suffix: "%" },
-  { label: "PNL", value: "+$12.40", targetNum: 12.4, prefix: "+$", color: POSITIVE_GREEN },
+  { label: "PNL", value: "+$12.40", targetNum: 12.4, prefix: "+$", color: COLOR.up },
   { label: "UPTIME", value: "4m 31s" },
 ];
 
@@ -128,9 +125,7 @@ const BotDashboard: React.FC = () => {
           top: dashY,
           width: dashW,
           height: dashH,
-          background: "#FFFFFF",
-          borderRadius: 16,
-          boxShadow: "0 4px 32px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.1)",
+          ...PANEL.white,
           overflow: "hidden",
         }}
       >
@@ -140,7 +135,7 @@ const BotDashboard: React.FC = () => {
             display: "flex",
             alignItems: "center",
             height: 52,
-            borderBottom: "1px solid #E0E0E0",
+            borderBottom: `1px solid ${COLOR.border}`,
             padding: "0 28px",
             gap: 12,
           }}
@@ -151,29 +146,25 @@ const BotDashboard: React.FC = () => {
               width: 10,
               height: 10,
               borderRadius: "50%",
-              background: POSITIVE_GREEN,
-              boxShadow: `0 0 ${8 + livePulse * 6}px ${POSITIVE_GREEN}`,
+              background: COLOR.up,
+              boxShadow: `0 0 ${8 + livePulse * 6}px ${COLOR.up}`,
               opacity: 0.7 + livePulse * 0.3,
             }}
           />
           <span
             style={{
-              fontFamily: monoFont,
+              ...TYPE.label,
               fontSize: 12,
               fontWeight: 700,
-              color: POSITIVE_GREEN,
+              color: COLOR.up,
               letterSpacing: 1.2,
-              textTransform: "uppercase",
             }}
           >
             LIVE
           </span>
           <span
             style={{
-              fontFamily: font,
-              fontSize: 16,
-              fontWeight: 600,
-              color: "#1A1A1A",
+              ...TYPE.subhead,
               marginLeft: 4,
             }}
           >
@@ -186,7 +177,7 @@ const BotDashboard: React.FC = () => {
           style={{
             display: "flex",
             height: 90,
-            borderBottom: "1px solid #E0E0E0",
+            borderBottom: `1px solid ${COLOR.border}`,
           }}
         >
           {STATS.map((stat, i) => {
@@ -224,7 +215,7 @@ const BotDashboard: React.FC = () => {
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRight: i < STATS.length - 1 ? "1px solid #E0E0E0" : "none",
+                  borderRight: i < STATS.length - 1 ? `1px solid ${COLOR.border}` : "none",
                   opacity: statSpring,
                   transform: `translateY(${(1 - statSpring) * 12}px)`,
                 }}
@@ -232,12 +223,7 @@ const BotDashboard: React.FC = () => {
                 {/* Micro label */}
                 <span
                   style={{
-                    fontFamily: font,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: "#999",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
+                    ...TYPE.label,
                     marginBottom: 6,
                   }}
                 >
@@ -246,11 +232,8 @@ const BotDashboard: React.FC = () => {
                 {/* Value */}
                 <span
                   style={{
-                    fontFamily: monoFont,
-                    fontSize: 32,
-                    fontWeight: 700,
-                    color: stat.color || "#1A1A1A",
-                    fontVariantNumeric: "tabular-nums",
+                    ...TYPE.statValue,
+                    color: stat.color || COLOR.fg,
                     lineHeight: 1,
                   }}
                 >
@@ -270,12 +253,7 @@ const BotDashboard: React.FC = () => {
           {/* Activity header */}
           <span
             style={{
-              fontFamily: font,
-              fontSize: 11,
-              fontWeight: 500,
-              color: "#999",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
+              ...TYPE.label,
             }}
           >
             RECENT ACTIVITY
@@ -299,19 +277,16 @@ const BotDashboard: React.FC = () => {
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "12px 16px",
-                    background: "#F8F8F8",
+                    background: COLOR.surface,
                     borderRadius: 8,
-                    border: "1px solid #E8E8E8",
+                    border: `1px solid ${COLOR.border}`,
                     opacity: rowSpring,
                     transform: `translateX(${(1 - rowSpring) * 40}px)`,
                   }}
                 >
                   <span
                     style={{
-                      fontFamily: monoFont,
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: "#444",
+                      ...TYPE.body,
                     }}
                   >
                     Batch #{row.batch}: Bet on {row.detail}
@@ -319,19 +294,19 @@ const BotDashboard: React.FC = () => {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span
                       style={{
-                        fontFamily: monoFont,
+                        ...TYPE.mono,
                         fontSize: 13,
-                        color: "#888",
+                        color: COLOR.muted,
                       }}
                     >
                       Settled
                     </span>
                     <span
                       style={{
-                        fontFamily: monoFont,
+                        ...TYPE.mono,
                         fontSize: 15,
                         fontWeight: 700,
-                        color: row.positive ? POSITIVE_GREEN : C.red,
+                        color: row.positive ? COLOR.up : COLOR.down,
                       }}
                     >
                       {row.pnl}

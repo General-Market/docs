@@ -8,9 +8,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { monoFont } from "../../../common/fonts";
 import { EASE } from "../../../common/easing";
-import { FPS, BRAND_GREEN, PANEL } from "../theme";
+import { COLOR, TYPE, PANEL } from "../designTokens";
+import { FPS } from "../theme";
 
 // ---------------------------------------------------------------------------
 // Timing — local seconds (component starts at 0 = video 89.84s)
@@ -22,12 +22,12 @@ const sec = (s: number) => Math.round(s * FPS);
 const CYCLE_IN = sec(10.56);
 const CYCLE_OUT = sec(23.96);
 
-// Colors
-const GREEN = BRAND_GREEN;
-const RED = "#DC2626";
-const ORACLE_BLUE = "#6366f1";
-const DIM = "rgba(255,255,255,0.45)";
-const BRIGHT = "#fafafa";
+// Colors — from design tokens
+const GREEN = COLOR.up;
+const RED = COLOR.down;
+const ACCENT = COLOR.brand;
+const DIM = COLOR.mutedLight;
+const BRIGHT = COLOR.white;
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -114,19 +114,19 @@ const CycleTimeline: React.FC = () => {
   });
 
   // Bar color
-  const barColor = currentPhase === 0 ? GREEN : currentPhase === 1 ? ORACLE_BLUE : BRIGHT;
+  const barColor = currentPhase === 0 ? GREEN : currentPhase === 1 ? ACCENT : BRIGHT;
 
   // Phase labels
   const phaseLabels = [
     { label: "BETTING", sub: "10 min", color: GREEN },
-    { label: "ORACLE", sub: "consensus", color: ORACLE_BLUE },
+    { label: "ORACLE", sub: "consensus", color: ACCENT },
     { label: "SETTLE", sub: "payout", color: BRIGHT },
   ];
 
   // Parasite label stagger
   const parasiteLabels = [
     { text: "SEALED BETS", delay: 0.1, color: GREEN },
-    { text: "BLS CONSENSUS", delay: 0.55, color: ORACLE_BLUE },
+    { text: "BLS CONSENSUS", delay: 0.55, color: ACCENT },
     { text: "PARIMUTUEL ENGINE", delay: 0.6, color: DIM },
     { text: "INSTANT WITHDRAWAL", delay: 0.8, color: BRIGHT },
   ];
@@ -143,7 +143,7 @@ const CycleTimeline: React.FC = () => {
     >
       <div
         style={{
-          ...PANEL,
+          ...PANEL.dark,
           padding: "28px 48px 36px",
           width: barWidth + 96,
           display: "flex",
@@ -155,11 +155,8 @@ const CycleTimeline: React.FC = () => {
         {/* Current phase label */}
         <div
           style={{
-            fontFamily: monoFont,
-            fontSize: 20,
-            fontWeight: 700,
+            ...TYPE.label,
             color: phaseLabels[currentPhase].color,
-            letterSpacing: 4,
           }}
         >
           {phaseLabels[currentPhase].label}
@@ -190,14 +187,14 @@ const CycleTimeline: React.FC = () => {
                     width: 32,
                     height: 28,
                     borderRadius: 4,
-                    background: block.color === GREEN ? "rgba(0,200,83,0.25)" : "rgba(220,38,38,0.25)",
+                    background: block.color === GREEN ? `${COLOR.up}40` : `${COLOR.down}40`,
                     border: `1.5px solid ${block.color}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontFamily: monoFont,
+                    fontFamily: TYPE.mono.fontFamily,
                     fontSize: 8,
-                    fontWeight: 700,
+                    fontWeight: TYPE.label.fontWeight,
                     color: block.color,
                   }}
                 >
@@ -225,16 +222,16 @@ const CycleTimeline: React.FC = () => {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    background: ORACLE_BLUE,
+                    background: ACCENT,
                     opacity: 0.6 + 0.4 * oraclePulse,
-                    boxShadow: `0 0 ${8 + 6 * oraclePulse}px rgba(99,102,241,${0.4 + 0.3 * oraclePulse})`,
+                    boxShadow: `0 0 ${8 + 6 * oraclePulse}px ${COLOR.brand}80`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontFamily: monoFont,
+                    fontFamily: TYPE.mono.fontFamily,
                     fontSize: 11,
-                    fontWeight: 700,
-                    color: BRIGHT,
+                    fontWeight: TYPE.label.fontWeight,
+                    color: COLOR.white,
                   }}
                 >
                   {n}
@@ -264,10 +261,10 @@ const CycleTimeline: React.FC = () => {
                     left: dollarX,
                     top: dollarY,
                     opacity: dollarOp,
-                    fontFamily: monoFont,
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: GREEN,
+                    fontFamily: TYPE.mono.fontFamily,
+                    fontSize: TYPE.mono.fontSize,
+                    fontWeight: TYPE.mono.fontWeight,
+                    color: COLOR.up,
                   }}
                 >
                   $
@@ -282,7 +279,7 @@ const CycleTimeline: React.FC = () => {
             width: barWidth,
             height: barHeight,
             borderRadius: barHeight / 2,
-            background: "rgba(255,255,255,0.06)",
+            background: `${COLOR.border}18`,
             overflow: "hidden",
             position: "relative",
           }}
@@ -304,7 +301,7 @@ const CycleTimeline: React.FC = () => {
               top: 0,
               width: 1.5,
               height: "100%",
-              background: "rgba(255,255,255,0.15)",
+              background: `${COLOR.mutedLight}26`,
             }}
           />
           <div
@@ -314,7 +311,7 @@ const CycleTimeline: React.FC = () => {
               top: 0,
               width: 1.5,
               height: "100%",
-              background: "rgba(255,255,255,0.15)",
+              background: `${COLOR.mutedLight}26`,
             }}
           />
         </div>
@@ -323,45 +320,36 @@ const CycleTimeline: React.FC = () => {
         <div style={{ width: barWidth, display: "flex", position: "relative", height: 16 }}>
           <div
             style={{
+              ...TYPE.label,
               position: "absolute",
               left: 0,
               width: `${PHASE_BETTING_END * 100}%`,
               textAlign: "center",
-              fontFamily: monoFont,
-              fontSize: 9,
-              color: GREEN,
-              letterSpacing: 2,
-              fontWeight: 700,
+              color: COLOR.up,
             }}
           >
             BETTING (10 min)
           </div>
           <div
             style={{
+              ...TYPE.label,
               position: "absolute",
               left: `${PHASE_BETTING_END * 100}%`,
               width: `${(PHASE_ORACLE_END - PHASE_BETTING_END) * 100}%`,
               textAlign: "center",
-              fontFamily: monoFont,
-              fontSize: 9,
-              color: ORACLE_BLUE,
-              letterSpacing: 2,
-              fontWeight: 700,
+              color: COLOR.brand,
             }}
           >
             ORACLE
           </div>
           <div
             style={{
+              ...TYPE.label,
               position: "absolute",
               left: `${PHASE_ORACLE_END * 100}%`,
               width: `${(1 - PHASE_ORACLE_END) * 100}%`,
               textAlign: "center",
-              fontFamily: monoFont,
-              fontSize: 9,
-              color: BRIGHT,
-              letterSpacing: 2,
-              fontWeight: 700,
+              color: COLOR.white,
             }}
           >
             SETTLE
@@ -396,12 +384,10 @@ const ParasiteLabel: React.FC<{
 }> = ({ text, color, style }) => (
   <div
     style={{
-      fontFamily: monoFont,
-      fontSize: 9,
-      fontWeight: 700,
-      color,
-      letterSpacing: 2.5,
+      ...TYPE.caption,
       textTransform: "uppercase",
+      letterSpacing: TYPE.label.letterSpacing,
+      color,
       whiteSpace: "nowrap",
       ...style,
     }}

@@ -9,18 +9,17 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../../common/fonts";
 import { EASE } from "../../../common/easing";
-import { C } from "../../../common/colors";
-import { FPS, BRAND_GREEN, PANEL } from "../theme";
+import { COLOR, TYPE, PANEL as PANEL_TOKENS } from "../designTokens";
+import { FPS } from "../theme";
 import { HEDGE_FUNDS, HFT, PREDICTION_MARKETS } from "../proofData";
 
 const sec = (s: number) => Math.round(s * FPS);
 
-const GREEN = BRAND_GREEN;
-const RED = C.red;
-const ORANGE = C.orange;
-const YELLOW = C.yellow;
+const GREEN = COLOR.up;
+const RED = COLOR.down;
+const ORANGE = "#f97316"; // gradient step — no token for orange
+const YELLOW = "#eab308"; // gradient step — no token for yellow
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Local timing — frame 0 = 194.04s in video.
@@ -77,12 +76,8 @@ const ParasiteLabel: React.FC<ParasiteLabelProps> = ({
         top: y,
         opacity,
         transform: `translateY(${nudgeY}px) scale(${scale})`,
-        fontFamily: monoFont,
-        fontSize: 11,
-        fontWeight: 500,
+        ...TYPE.label,
         color: "rgba(250,250,250,0.55)",
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
         textAlign: align,
         whiteSpace: "nowrap",
         pointerEvents: "none",
@@ -163,9 +158,7 @@ const FormulaType: React.FC<{ progress: number }> = ({ progress }) => {
   return (
     <div
       style={{
-        fontFamily: monoFont,
-        fontSize: 16,
-        fontWeight: 500,
+        ...TYPE.mono,
         color: "rgba(250,250,250,0.7)",
         letterSpacing: 1,
         minHeight: 24,
@@ -292,8 +285,8 @@ const EraTimelineCharts: React.FC = () => {
           left: 0,
           right: 0,
           height: 300,
-          background: "rgba(10, 10, 10, 0.82)",
-          borderTop: "1px solid rgba(250,250,250,0.08)",
+          background: COLOR.panelDark,
+          borderTop: `1px solid ${COLOR.border}22`,
         }}
       />
 
@@ -305,7 +298,7 @@ const EraTimelineCharts: React.FC = () => {
           left: 120,
           right: 120,
           height: 3,
-          background: "rgba(250,250,250,0.1)",
+          background: `${COLOR.border}1A`,
           borderRadius: 2,
           overflow: "hidden",
         }}
@@ -314,7 +307,7 @@ const EraTimelineCharts: React.FC = () => {
           style={{
             width: `${barProgress * 100}%`,
             height: "100%",
-            background: `linear-gradient(90deg, rgba(250,250,250,0.3), ${GREEN})`,
+            background: `linear-gradient(90deg, ${COLOR.border}4D, ${COLOR.up})`,
             borderRadius: 2,
           }}
         />
@@ -404,7 +397,8 @@ const EraTimelineCharts: React.FC = () => {
                 width: w,
                 opacity: cardOpacity,
                 transform: `translateY(${cardY}px) scale(${cardScale * pulse})`,
-                ...PANEL,
+                background: COLOR.panelDark,
+                borderRadius: PANEL_TOKENS.dark.borderRadius,
                 padding: "18px 20px",
                 border: card.isHighlight
                   ? `1px solid ${GREEN}66`
@@ -417,13 +411,10 @@ const EraTimelineCharts: React.FC = () => {
               {/* Year */}
               <div
                 style={{
-                  fontFamily: monoFont,
-                  fontSize: card.isHighlight ? 22 : 18,
-                  fontWeight: 700,
+                  ...TYPE.heading,
                   color: card.isHighlight
-                    ? GREEN
+                    ? COLOR.up
                     : "rgba(250,250,250,0.5)",
-                  letterSpacing: 1,
                   marginBottom: 10,
                 }}
               >
@@ -440,11 +431,9 @@ const EraTimelineCharts: React.FC = () => {
               {/* Label */}
               <div
                 style={{
-                  fontFamily: font,
-                  fontSize: card.isHighlight ? 17 : 15,
-                  fontWeight: 700,
+                  ...TYPE.subhead,
                   color: card.isHighlight
-                    ? "#fafafa"
+                    ? COLOR.white
                     : "rgba(250,250,250,0.8)",
                   marginBottom: 4,
                 }}
@@ -455,13 +444,10 @@ const EraTimelineCharts: React.FC = () => {
               {/* Subtitle */}
               <div
                 style={{
-                  fontFamily: font,
-                  fontSize: 12,
-                  fontWeight: 400,
+                  ...TYPE.caption,
                   color: card.isHighlight
                     ? "rgba(250,250,250,0.85)"
                     : "rgba(250,250,250,0.45)",
-                  lineHeight: 1.4,
                 }}
               >
                 {card.subtitle}
@@ -587,7 +573,8 @@ const CompetitiveLandscape: React.FC = () => {
     >
       <div
         style={{
-          ...PANEL,
+          background: COLOR.panelDark,
+          borderRadius: PANEL_TOKENS.dark.borderRadius,
           padding: "40px 56px",
           width: 1100,
         }}
@@ -595,13 +582,10 @@ const CompetitiveLandscape: React.FC = () => {
         {/* Title */}
         <div
           style={{
-            fontFamily: font,
-            fontSize: 20,
-            fontWeight: 700,
+            ...TYPE.heading,
             color: "rgba(250,250,250,0.7)",
-            marginBottom: 28,
-            letterSpacing: 1,
             textTransform: "uppercase",
+            marginBottom: 28,
           }}
         >
           Competitive Density
@@ -664,16 +648,13 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Label */}
               <div
                 style={{
-                  fontFamily: monoFont,
-                  fontSize: 13,
-                  fontWeight: 600,
+                  ...TYPE.label,
                   color: bar.isPulsing
-                    ? GREEN
+                    ? COLOR.up
                     : "rgba(250,250,250,0.65)",
                   width: 100,
                   textAlign: "right",
                   paddingRight: 16,
-                  letterSpacing: "0.04em",
                 }}
               >
                 {bar.label}
@@ -684,7 +665,7 @@ const CompetitiveLandscape: React.FC = () => {
                 style={{
                   flex: 1,
                   height: bar.isPulsing ? 28 : 22,
-                  background: "rgba(250,250,250,0.05)",
+                  background: `${COLOR.border}0D`,
                   borderRadius: 4,
                   position: "relative",
                   overflow: "hidden",
@@ -714,16 +695,13 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Stat text */}
               <div
                 style={{
-                  fontFamily: monoFont,
-                  fontSize: 11,
-                  fontWeight: 500,
+                  ...TYPE.mono,
                   color: bar.isPulsing
-                    ? GREEN
+                    ? COLOR.up
                     : "rgba(250,250,250,0.5)",
                   width: 180,
                   paddingLeft: 14,
                   opacity: statOpacity,
-                  letterSpacing: "0.03em",
                 }}
               >
                 {bar.stat}
@@ -732,17 +710,14 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Parasite */}
               <div
                 style={{
-                  fontFamily: monoFont,
-                  fontSize: 10,
-                  fontWeight: 400,
+                  ...TYPE.caption,
                   color: bar.isPulsing
-                    ? GREEN
+                    ? COLOR.up
                     : "rgba(250,250,250,0.3)",
                   width: 160,
                   paddingLeft: 8,
                   opacity: parasiteProgress,
                   textTransform: "uppercase",
-                  letterSpacing: "0.06em",
                 }}
               >
                 {bar.parasiteText}
@@ -791,13 +766,11 @@ const CompetitiveLandscape: React.FC = () => {
               </svg>
               <span
                 style={{
-                  fontFamily: font,
-                  fontSize: 16,
-                  fontWeight: 800,
-                  color: GREEN,
+                  ...TYPE.subhead,
+                  color: COLOR.up,
                   marginLeft: 8,
                   letterSpacing: 2,
-                  textShadow: `0 0 16px ${GREEN}44`,
+                  textShadow: `0 0 16px ${COLOR.up}44`,
                 }}
               >
                 YOU ARE HERE

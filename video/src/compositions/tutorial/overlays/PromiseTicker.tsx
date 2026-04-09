@@ -7,8 +7,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font } from "../../../common/fonts";
-import { FPS, BRAND_GREEN } from "../theme";
+import { COLOR, TYPE, PANEL } from "../designTokens";
+import { FPS } from "../theme";
 
 const sec = (s: number) => Math.round(s * FPS);
 
@@ -72,9 +72,9 @@ const TickerBar: React.FC = () => {
           <div
             key={item}
             style={{
-              background: "rgba(10, 10, 10, 0.85)",
-              borderRadius: 8,
-              padding: "10px 20px",
+              background: COLOR.panelDark,
+              borderRadius: PANEL.dark.borderRadius,
+              padding: "12px 24px",
               display: "flex",
               alignItems: "center",
               gap: 8,
@@ -87,19 +87,20 @@ const TickerBar: React.FC = () => {
           >
             <span
               style={{
-                width: 8,
-                height: 8,
+                width: 10,
+                height: 10,
                 borderRadius: "50%",
-                background: BRAND_GREEN,
+                background: COLOR.up,
                 flexShrink: 0,
               }}
             />
             <span
               style={{
-                fontFamily: font,
-                fontSize: 16,
+                fontFamily: TYPE.body.fontFamily,
+                fontSize: TYPE.body.fontSize,
                 fontWeight: 600,
-                color: "#fafafa",
+                lineHeight: TYPE.body.lineHeight,
+                color: COLOR.white,
                 whiteSpace: "nowrap",
               }}
             >
