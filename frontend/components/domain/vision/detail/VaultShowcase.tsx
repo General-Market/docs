@@ -10,6 +10,7 @@ import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
 import { useSSEVisionVaults, useSSEUserVaultPositions } from '@/hooks/useSSE'
 import { useVaults, type VaultInfo } from '@/hooks/vaults/useVaults'
 import { cn } from '@/lib/utils/cn'
+import Link from 'next/link'
 
 const STRATEGY_META: Record<string, { label: string; color: string }> = {
   momentum:           { label: 'MOMENTUM',   color: '#10b981' },
@@ -619,9 +620,9 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
                 <p className="text-[10px] text-white/25 leading-relaxed mb-4 max-w-[200px]">
                   Automated strategy. Live in minutes. Others deposit into it.
                 </p>
-                <button className="px-5 py-2 bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
+                <Link href="/build-bot" className="px-5 py-2 bg-white/[0.06] border border-white/[0.08] text-[11px] font-bold text-white/60 hover:bg-white/[0.1] hover:text-white transition-colors">
                   CREATE STRATEGY
-                </button>
+                </Link>
               </div>
             </motion.div>
           </div>

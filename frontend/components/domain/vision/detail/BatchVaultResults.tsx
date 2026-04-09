@@ -197,11 +197,7 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
                             {truncAddr(addr)}
                           </span>
                         )}
-                        {batch.marketCount != null && (
-                          <span className="hidden md:inline text-[9px] text-text-muted ml-1">
-                            {t('batch_card.markets_count', { count: batch.marketCount })}
-                          </span>
-                        )}
+                        {/* marketCount omitted — same for every round in a source, adds noise */}
                       </div>
 
                       {/* Players — desktop only, mobile drops it to make room
