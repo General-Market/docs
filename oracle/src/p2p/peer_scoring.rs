@@ -5,8 +5,8 @@
 //! negative scores; well-behaved peers slowly accrue positive score.
 //!
 //! A background tick (5 s) applies heartbeat penalties for missing peers,
-//! bans peers below -50.0, and suspends bans when >50% of peers are
-//! unhealthy (partition heuristic).
+//! bans peers below -50.0, and suspends bans when >50% of peers score
+//! below -100.0 (partition heuristic with 3-tick hysteresis).
 
 use dashmap::DashMap;
 use std::sync::atomic::{AtomicI64, AtomicU32, Ordering};
@@ -42,6 +42,9 @@ pub struct PeerScore {
 pub struct PeerScorer {
     pub scores: DashMap<PeerId, PeerScore>,
     startup_time: Instant,
+    /// Consecutive ticks where >50% of peers are unhealthy.
+    /// INFRA-023 error is only logged after 3+ consecutive ticks (hysteresis).
+    partition_consecutive_ticks: AtomicU32,
 }
 
 impl PeerScorer {
@@ -49,6 +52,7 @@ impl PeerScorer {
         Self {
             scores: DashMap::new(),
             startup_time: Instant::now(),
+            partition_consecutive_ticks: AtomicU32::new(0),
         }
     }
 
@@ -123,12 +127,14 @@ impl PeerScorer {
     ///
     /// 1. Applies a heartbeat penalty for every tracked peer that is **not**
     ///    in `connected_peers`: -1.0 during the first 90 s (startup grace),
-    ///    -5.0 after.  The grace period tolerates rolling restarts where peers
+    ///    -2.0 after.  The grace period tolerates rolling restarts where peers
     ///    take 30-60 s to reconnect.
-    /// 2. If >50 % of tracked peers are unhealthy (score < 0), assumes a
-    ///    network partition and suspends bans entirely.  The old 33 % threshold
-    ///    was unusable for 3-node clusters: integer division made `2/3 = 0`,
-    ///    so a single negative-score peer triggered the alarm.
+    /// 2. If >50 % of tracked peers are deeply unhealthy (score < -100.0),
+    ///    assumes a network partition and suspends bans entirely.  The partition
+    ///    threshold (-100.0) is separate from the ban threshold (-50.0) so
+    ///    normal reconnection turbulence doesn't trigger the alarm.  INFRA-023
+    ///    is only logged after 3+ consecutive ticks of majority-unhealthy
+    ///    (hysteresis) to suppress false alarms from transient TCP hiccups.
     /// 3. Otherwise, bans every peer whose score fell below -50.0 with an
     ///    exponentially increasing ban duration (60 s, 120 s, 240 s, ...,
     ///    capped at ~17 h).
@@ -143,7 +149,7 @@ impl PeerScorer {
         //    Skip already-banned peers — punishing the condemned is pointless
         //    and causes infinite re-ban loops where the score sinks forever,
         //    ban_count climbs to 100+, and the ban never expires.
-        let penalty = if in_startup_grace { 100 } else { 500 }; // -1.0 vs -5.0
+        let penalty = if in_startup_grace { 100 } else { 200 }; // -1.0 vs -2.0
         for entry in self.scores.iter() {
             if !connected_peers.contains(entry.key()) {
                 // Don't accumulate score against peers with an active ban
@@ -161,24 +167,32 @@ impl PeerScorer {
         }
 
         // 2. Partition heuristic: >50% peers unhealthy -> suspend bans
-        //    For a 3-node cluster (2 peers), this requires BOTH peers to be
-        //    unhealthy before triggering.  The old >33% threshold with integer
-        //    division (2/3=0) meant ANY single negative peer triggered it.
+        //    Uses a separate threshold (-100.0) from the ban threshold (-50.0)
+        //    so that normal reconnection turbulence doesn't trigger the alarm.
+        //    INFRA-023 error is only logged after 3+ consecutive ticks (hysteresis)
+        //    to suppress transient dips from brief TCP hiccups.
         let total = self.scores.len();
         let unhealthy = self
             .scores
             .iter()
-            .filter(|e| e.value().score.load(Ordering::Relaxed) < -5000) // -50.0 = ban threshold
+            .filter(|e| e.value().score.load(Ordering::Relaxed) < -10000) // -100.0 = partition threshold (separate from -50.0 ban threshold)
             .count();
 
         if total >= 2 && unhealthy * 2 > total {
-            tracing::error!(
-                code = "INFRA-023",
-                unhealthy,
-                total,
-                "POSSIBLE NETWORK PARTITION - >50% peers unhealthy, suspending bans"
-            );
-            return to_ban; // empty — no bans during partition
+            let consecutive = self.partition_consecutive_ticks.fetch_add(1, Ordering::Relaxed) + 1;
+            if consecutive >= 3 {
+                tracing::error!(
+                    code = "INFRA-023",
+                    unhealthy,
+                    total,
+                    consecutive,
+                    "POSSIBLE NETWORK PARTITION - >50% peers unhealthy for 3+ ticks, suspending bans"
+                );
+            }
+            return to_ban; // empty — no bans during partition (immediate, regardless of hysteresis)
+        } else {
+            // Partition cleared — reset hysteresis counter
+            self.partition_consecutive_ticks.store(0, Ordering::Relaxed);
         }
 
         // 3. Reset score for peers whose ban has expired (break re-ban loop)
@@ -247,6 +261,7 @@ impl PeerScorer {
         Self {
             scores: DashMap::new(),
             startup_time,
+            partition_consecutive_ticks: AtomicU32::new(0),
         }
     }
 
@@ -329,9 +344,10 @@ mod tests {
         let scorer = PeerScorer::new();
         let peers: Vec<PeerId> = (1..=3).map(test_peer).collect();
 
-        // Make all 3 peers very unhealthy (>50% threshold requires majority)
+        // Make all 3 peers deeply unhealthy past the partition threshold (-100.0).
+        // During startup grace each invalid message is -2.0, so 51 * -2.0 = -102.0.
         for p in &peers {
-            for _ in 0..6 {
+            for _ in 0..51 {
                 scorer.record_invalid_message(p);
             }
         }
@@ -383,16 +399,16 @@ mod tests {
 
     #[test]
     fn heartbeat_penalty_for_missing_peer_after_startup() {
-        // After startup grace, heartbeat penalty is -5.0
+        // After startup grace, heartbeat penalty is -2.0
         let scorer = PeerScorer::with_startup_time(
             Instant::now() - std::time::Duration::from_secs(120),
         );
         let peer = test_peer(5);
         scorer.record_good_message(&peer); // create the entry (+0.1)
 
-        // Tick with empty connected list -> peer gets -5.0 heartbeat penalty
+        // Tick with empty connected list -> peer gets -2.0 heartbeat penalty
         let _ = scorer.tick(&[]);
-        assert!((scorer.score_of(&peer) - (-4.9)).abs() < f64::EPSILON);
+        assert!((scorer.score_of(&peer) - (-1.9)).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -478,7 +494,7 @@ mod tests {
         for _ in 0..6 {
             scorer.record_invalid_message(&peer);
         }
-        let banned = scorer.tick(&[]); // peer not connected -> extra -5.0 penalty
+        let banned = scorer.tick(&[]); // peer not connected -> extra -2.0 penalty
         assert!(banned.contains(&peer));
         assert!(scorer.is_banned(&peer));
 
