@@ -8,6 +8,7 @@ import { EraDiagrams } from "./diagrams/EraDiagrams";
 import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
 import { SourceCardOverlays } from "./overlays/SourceCardOverlays";
 import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
+import { PromiseTicker } from "./overlays/PromiseTicker";
 
 const seq = (key: keyof typeof SECTIONS) => ({
   from: toFrames(SECTIONS[key].start),
@@ -52,6 +53,11 @@ export const TutorialVideo: React.FC = () => {
       {/* Source cards (253.9–264.9s) */}
       <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
         <SourceCardOverlays />
+      </Sequence>
+
+      {/* Promise ticker — Liquidity / Capital Lock / Risk Management (11.28–22.2s) */}
+      <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
+        <PromiseTicker />
       </Sequence>
 
       {/* FAQ question screens */}

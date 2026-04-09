@@ -9,136 +9,18 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { font, monoFont } from "../../../common/fonts";
+import { font } from "../../../common/fonts";
 import { C } from "../../../common/colors";
-import { FPS, BRAND_GREEN } from "../theme";
+import { FPS } from "../theme";
 
 const sec = (s: number) => Math.round(s * FPS);
 const W = 1920;
 const H = 1080;
 
-const GREEN = BRAND_GREEN;
 const RED = C.red;
 // ═══════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════
-
-// ── AnimatedArrow ───────────────────────────────────────────────────────────
-interface AnimatedArrowProps {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  progress: number; // 0→1
-  color?: string;
-  strokeW?: number;
-}
-
-const AnimatedArrow: React.FC<AnimatedArrowProps> = ({
-  x1,
-  y1,
-  x2,
-  y2,
-  progress,
-  color = "rgba(255, 255, 255, 0.6)",
-  strokeW = 2,
-}) => {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.sqrt(dx * dx + dy * dy);
-  const dashOffset = interpolate(progress, [0, 1], [len, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const arrowOpacity = interpolate(progress, [0.7, 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Arrowhead points
-  const angle = Math.atan2(dy, dx);
-  const headLen = 10;
-  const ax = x2 - headLen * Math.cos(angle - Math.PI / 6);
-  const ay = y2 - headLen * Math.sin(angle - Math.PI / 6);
-  const bx = x2 - headLen * Math.cos(angle + Math.PI / 6);
-  const by = y2 - headLen * Math.sin(angle + Math.PI / 6);
-
-  return (
-    <g>
-      <line
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
-        stroke={color}
-        strokeWidth={strokeW}
-        strokeDasharray={len}
-        strokeDashoffset={dashOffset}
-      />
-      <polygon
-        points={`${x2},${y2} ${ax},${ay} ${bx},${by}`}
-        fill={color}
-        opacity={arrowOpacity}
-      />
-    </g>
-  );
-};
-
-// ── LeaderLine + ParasiteLabel ──────────────────────────────────────────────
-interface ParasiteLabelProps {
-  anchorX: number;
-  anchorY: number;
-  labelX: number;
-  labelY: number;
-  text: string;
-  progress: number;
-  color?: string;
-}
-
-const ParasiteLabel: React.FC<ParasiteLabelProps> = ({
-  anchorX,
-  anchorY,
-  labelX,
-  labelY,
-  text,
-  progress,
-  color = "rgba(255, 255, 255, 0.55)",
-}) => {
-  const opacity = interpolate(progress, [0, 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const pulse = 1 + 0.04 * Math.sin(progress * Math.PI * 2);
-
-  return (
-    <g opacity={opacity}>
-      <line
-        x1={anchorX}
-        y1={anchorY}
-        x2={labelX}
-        y2={labelY}
-        stroke="rgba(255, 255, 255, 0.2)"
-        strokeWidth={1}
-        strokeDasharray="4 3"
-      />
-      <circle cx={anchorX} cy={anchorY} r={2.5} fill={color} />
-      <text
-        x={labelX}
-        y={labelY}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill={color}
-        fontFamily={monoFont}
-        fontWeight={400}
-        fontSize={10}
-        letterSpacing={0.6}
-        transform={`scale(${pulse})`}
-      >
-        {text.toUpperCase()}
-      </text>
-    </g>
-  );
-};
 
 // SVG filter for glow effects
 const GlowFilter: React.FC = () => (
@@ -180,14 +62,6 @@ const TRIANGLE = [
 const ProblemConstellation: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
-  // Solution box appears after all 3 are named (~10s into this sequence)
-  const solutionDelay = sec(10);
-  const solutionProg = spring({
-    frame: Math.max(frame - solutionDelay, 0),
-    fps,
-    config: { damping: 16, stiffness: 140, mass: 0.7 },
-  });
 
   return (
     <svg
@@ -255,15 +129,6 @@ const ProblemConstellation: React.FC = () => {
           extrapolateRight: "clamp",
         });
 
-        // Parasite appears 0.3s after highlight
-        const parasiteDelay = nodeDelay + sec(0.3);
-        const parasiteProg = interpolate(
-          frame - parasiteDelay,
-          [0, sec(0.4)],
-          [0, 1],
-          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-        );
-
         return (
           <g key={prob.label} opacity={nodeOpacity}>
             {/* Circle node */}
@@ -304,64 +169,12 @@ const ProblemConstellation: React.FC = () => {
               </text>
             </g>
 
-            {/* Parasite label */}
-            <ParasiteLabel
-              anchorX={pos.x}
-              anchorY={pos.y + nodeR + 6}
-              labelX={pos.x}
-              labelY={pos.y + nodeR + 32}
-              text={prob.parasite}
-              progress={parasiteProg}
-              color={RED}
-            />
+            {/* Parasite labels removed — keep nodes clean */}
           </g>
         );
       })}
 
-      {/* Solution box — appears after all three named */}
-      <g
-        transform={`translate(960, 820)`}
-        opacity={interpolate(solutionProg, [0, 0.3], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        })}
-      >
-        {/* Arrow down from constellation */}
-        <AnimatedArrow
-          x1={0}
-          y1={-60}
-          x2={0}
-          y2={-20}
-          progress={solutionProg}
-          color={GREEN}
-          strokeW={3}
-        />
-        <g transform={`scale(${interpolate(solutionProg, [0, 1], [0.7, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`}>
-          <rect
-            x={-120}
-            y={-16}
-            width={240}
-            height={36}
-            rx={8}
-            fill="rgba(0, 200, 83, 0.15)"
-            stroke={GREEN}
-            strokeWidth={2}
-          />
-          <text
-            x={0}
-            y={2}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill={GREEN}
-            fontFamily={font}
-            fontWeight={800}
-            fontSize={14}
-            letterSpacing={2}
-          >
-            GENERAL MARKET
-          </text>
-        </g>
-      </g>
+      {/* Solution box removed — not approved */}
     </svg>
   );
 };
