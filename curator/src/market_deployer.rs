@@ -6,12 +6,19 @@
 
 use ethers::prelude::*;
 use ethers::providers::{Http, Provider};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::{error, info};
 
 use crate::config::MarketDeployerConfig;
+
+/// Decode a Solidity bytes32 (right-padded with zeros) into a UTF-8 string.
+fn bytes32_to_string(b: [u8; 32]) -> String {
+    let end = b.iter().position(|&x| x == 0).unwrap_or(32);
+    String::from_utf8_lossy(&b[..end]).to_string()
+}
 
 /// Default LLTV: 77% in WAD (1e18 scale)
 const DEFAULT_LLTV: &str = "770000000000000000";
@@ -34,6 +41,9 @@ pub enum DeployerError {
     Timeout(String),
 }
 
+/// Cooldown period for ITPs that failed vault deployment (30 minutes).
+const DEPLOY_FAILURE_COOLDOWN: Duration = Duration::from_secs(30 * 60);
+
 pub struct MarketDeployer {
     provider: Arc<Provider<Http>>,
     wallet: LocalWallet,
@@ -46,6 +56,9 @@ pub struct MarketDeployer {
     oracle_bytecode: Vec<u8>,
     vault_bytecode: Option<Vec<u8>>,
     scan_interval: Duration,
+    /// ITPs that failed vault deploy — maps itp_num to the time of failure.
+    /// Skipped until DEPLOY_FAILURE_COOLDOWN elapses.
+    failed_deploys: std::sync::Mutex<HashMap<u64, Instant>>,
 }
 
 impl MarketDeployer {
@@ -74,6 +87,7 @@ impl MarketDeployer {
             oracle_bytecode: bytecode,
             vault_bytecode,
             scan_interval: config.scan_interval,
+            failed_deploys: std::sync::Mutex::new(HashMap::new()),
         })
     }
 
@@ -264,14 +278,26 @@ impl MarketDeployer {
                     if addr != Address::zero() {
                         vaults.push((i, addr));
                     } else if self.vault_bytecode.is_some() {
+                        // Check cooldown before attempting deploy
+                        let cooled = {
+                            let map = self.failed_deploys.lock().unwrap();
+                            map.get(&i).map_or(true, |t| t.elapsed() >= DEPLOY_FAILURE_COOLDOWN)
+                        };
+                        if !cooled {
+                            info!(itp = i, "Skipping vault deploy — still in cooldown after prior failure");
+                            continue;
+                        }
                         // ITP exists but has no vault — deploy one
                         match self.deploy_vault_for_itp(&client, i, itp_id_bytes).await {
                             Ok(vault_addr) => {
+                                // Clear any prior failure record on success
+                                self.failed_deploys.lock().unwrap().remove(&i);
                                 info!(itp = i, vault = %vault_addr, "Auto-deployed vault for new ITP");
                                 vaults.push((i, vault_addr));
                             }
                             Err(e) => {
-                                error!(itp = i, error = %e, "Failed to auto-deploy vault");
+                                self.failed_deploys.lock().unwrap().insert(i, Instant::now());
+                                error!(itp = i, error = %e, "Failed to auto-deploy vault (cooldown 30m)");
                             }
                         }
                     }
@@ -293,25 +319,25 @@ impl MarketDeployer {
         let vault_bytecode = self.vault_bytecode.as_ref()
             .ok_or_else(|| DeployerError::Bytecode("No vault bytecode configured".into()))?;
 
-        // Read name/symbol from Index.getItpNameSymbol(itpId)
-        let ns_selector = &ethers::utils::keccak256(b"getItpNameSymbol(bytes32)")[..4];
+        // Read name/symbol from Index.getITP(itpId)
+        // Returns: (bytes32 name, bytes32 symbol, address creator, uint256 createdAt,
+        //           uint256 feeRate, uint256 status, uint256 totalSupply, uint256 totalValue, uint256 assetCount)
+        let ns_selector = &ethers::utils::keccak256(b"getITP(bytes32)")[..4];
         let ns_encoded = ethers::abi::encode(&[ethers::abi::Token::FixedBytes(itp_id_bytes.to_vec())]);
         let mut ns_calldata = ns_selector.to_vec();
         ns_calldata.extend_from_slice(&ns_encoded);
 
         let ns_tx = TransactionRequest::new().to(self.index_address).data(ns_calldata);
         let ns_result = self.provider.call(&ns_tx.into(), None).await
-            .map_err(|e| DeployerError::Rpc(format!("getItpNameSymbol: {e}")))?;
+            .map_err(|e| DeployerError::Rpc(format!("getITP: {e}")))?;
 
-        // Decode ABI-encoded (string, string) — two dynamic offsets + string data
-        let (name, symbol) = if ns_result.len() >= 128 {
-            let decoded = ethers::abi::decode(
-                &[ethers::abi::ParamType::String, ethers::abi::ParamType::String],
-                &ns_result,
-            ).unwrap_or_default();
-            let n = decoded.first().and_then(|t| t.clone().into_string()).unwrap_or_default();
-            let s = decoded.get(1).and_then(|t| t.clone().into_string()).unwrap_or_default();
-            (n, s)
+        // First 32 bytes = name (bytes32), next 32 = symbol (bytes32). Trim trailing zero bytes.
+        let (name, symbol) = if ns_result.len() >= 64 {
+            let mut name_bytes = [0u8; 32];
+            let mut sym_bytes = [0u8; 32];
+            name_bytes.copy_from_slice(&ns_result[..32]);
+            sym_bytes.copy_from_slice(&ns_result[32..64]);
+            (bytes32_to_string(name_bytes), bytes32_to_string(sym_bytes))
         } else {
             (format!("ITP-{itp_num}"), format!("ITP{itp_num}"))
         };
