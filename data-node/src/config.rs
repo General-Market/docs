@@ -236,10 +236,6 @@ pub struct ServeArgs {
     #[arg(long, env = "REDDIT_CLIENT_SECRET")]
     pub reddit_client_secret: Option<String>,
 
-    /// BoardGameGeek API token (enables BGG hotness tracking)
-    #[arg(long, env = "BGG_API_TOKEN")]
-    pub bgg_api_token: Option<String>,
-
     /// Best Buy API key (enables product price tracking)
     #[arg(long, env = "BESTBUY_API_KEY")]
     pub bestbuy_api_key: Option<String>,

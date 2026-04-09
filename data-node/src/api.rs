@@ -218,24 +218,24 @@ async fn refresh_health_stats(
         }
     }
 
-    // Query D: Avg change % per source (compare latest two prices per asset, 24h window)
+    // Query D: Avg change % per source (compare latest price to previous, via LATERAL join)
     tracing::info!("health cache: query C done ({:?}), starting query D (avg change)", start.elapsed());
     let change_rows: Vec<(String, f64, i64)> = sqlx::query_as(
         r#"
-        WITH latest_two AS (
-            SELECT source, asset_id, value, fetched_at,
-                   ROW_NUMBER() OVER (PARTITION BY source, asset_id ORDER BY fetched_at DESC) as rn
-            FROM market_prices
-            WHERE fetched_at > NOW() - INTERVAL '24 hours'
-              AND value IS NOT NULL
-        )
-        SELECT l1.source,
-               AVG(ABS((l1.value - l2.value) / NULLIF(l2.value, 0) * 100))::float8 as avg_pct,
-               COUNT(*) FILTER (WHERE l1.value = l2.value)::bigint as no_change
-        FROM latest_two l1
-        JOIN latest_two l2 ON l1.source = l2.source AND l1.asset_id = l2.asset_id AND l2.rn = 2
-        WHERE l1.rn = 1
-        GROUP BY l1.source
+        SELECT mpl.source,
+               AVG(ABS((mpl.value - prev.value) / NULLIF(prev.value, 0) * 100))::float8 AS avg_pct,
+               COUNT(*) FILTER (WHERE mpl.value = prev.value)::bigint AS no_change
+        FROM market_prices_latest mpl
+        CROSS JOIN LATERAL (
+            SELECT value FROM market_prices mp
+            WHERE mp.source = mpl.source AND mp.asset_id = mpl.asset_id
+              AND mp.fetched_at < mpl.fetched_at
+              AND mp.fetched_at > NOW() - INTERVAL '24 hours'
+              AND mp.value IS NOT NULL
+            ORDER BY mp.fetched_at DESC
+            LIMIT 1
+        ) prev
+        GROUP BY mpl.source
         "#,
     )
     .fetch_all(pool)
@@ -4924,7 +4924,6 @@ fn stale_reason_for(source_id: &str) -> &'static str {
         "steam" => "Games with stable concurrent player counts",
         "esports" => "No active matches or off-season tournaments",
         "sports" => "Off-season or no scheduled games",
-        "bgg" => "Games rotate off BGG Hotness list daily",
         // ── Markets / finance ──
         "crypto" => "Low-cap tokens with no recent trades",
         "defi" => "DeFi protocols with stable TVL",

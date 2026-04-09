@@ -1964,26 +1964,6 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("TomTom EV charging started");
     }
 
-    // BoardGameGeek — always-on, no auth needed (BGG XML API2 /hot is public)
-    {
-        if let Some(ref token) = args.bgg_api_token {
-            std::env::set_var("BGG_API_TOKEN", token);
-        }
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("bgg", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match crate::market_data::sources::bgg::BggMarketSource::from_env() {
-                    Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("BGG init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("BoardGameGeek hotness tracker started");
-    }
-
     // Best Buy Products — gated on BESTBUY_API_KEY
     if let Some(ref key) = args.bestbuy_api_key {
         std::env::set_var("BESTBUY_API_KEY", key);
