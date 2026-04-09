@@ -336,15 +336,20 @@ const SentencePanel: React.FC<{
   block: SentenceBlock;
   currentSec: number;
 }> = ({ block, currentSec }) => {
-  // Panel fade in/out
+  // Panel fade in/out — ensure monotonic input range
   const fadeInStart = block.panelIn;
   const firstWord = block.words[0].startSec;
   const lastWord = block.words[block.words.length - 1].endSec;
   const fadeOutEnd = block.panelOut;
 
+  // Clamp hold-end so it never exceeds fadeOutEnd (avoids non-monotonic range)
+  const holdEnd = Math.min(lastWord + 0.8, fadeOutEnd - 0.01);
+  // Ensure fadeInEnd is before holdEnd
+  const fadeInEnd = Math.min(firstWord - 0.2, holdEnd - 0.01);
+
   const panelOpacity = interpolate(
     currentSec,
-    [fadeInStart, firstWord - 0.2, lastWord + 0.8, fadeOutEnd],
+    [fadeInStart, fadeInEnd, holdEnd, fadeOutEnd],
     [0, 1, 1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
