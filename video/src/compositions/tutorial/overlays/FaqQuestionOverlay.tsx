@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   Audio,
   Sequence,
+  Video,
   interpolate,
   spring,
   staticFile,
@@ -86,9 +87,21 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
 
   return (
     <AbsoluteFill>
-      <AbsoluteFill
-        style={{ backgroundColor: `rgba(10, 10, 10, ${backdropOpacity})` }}
-      />
+      {/* Mountain b-roll background instead of flat dark overlay */}
+      <AbsoluteFill style={{ opacity: backdropOpacity }}>
+        <Video
+          src={staticFile("broll/mountains-aerial.mp4")}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "blur(4px) brightness(0.3)",
+          }}
+          loop
+          playbackRate={0.3}
+          muted
+        />
+      </AbsoluteFill>
 
       <AbsoluteFill
         style={{

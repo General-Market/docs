@@ -1,26 +1,26 @@
 /**
  * DiagramCard — shared wrapper for all tutorial diagrams.
  *
- * Entrance matches the frontend /source/ page cascade:
- *   translateY(18px) + scale(0.95) + blur(2px) → resolved
- *   with ease-out-expo timing (cubic-bezier(0.16, 1, 0.3, 1))
+ * Backdrop: real mountain/glacier b-roll video (blurred, slow-mo) replaces
+ * the talking head. Vertical strips of source brand videos scroll on sides.
+ * Clean card floats in the center.
  *
- * Backdrop: video becomes blurred atmosphere. Card floats on top.
+ * Entrance matches frontend /source/ cascade:
+ *   translateY(18px) + scale(0.95) + blur(2px) → resolved
  */
 
 import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  Video,
   interpolate,
+  staticFile,
   useCurrentFrame,
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 
-// Frontend ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1)
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
-
-// Entrance duration: 16 frames (~0.55s at 30fps, matches --dur-entrance: 700ms scaled)
 const ENTER_FRAMES = 16;
 
 interface DiagramCardProps {
@@ -31,15 +31,15 @@ interface DiagramCardProps {
   padding?: string;
   backdrop?: boolean;
   position?: "center" | "bottom";
-  /** Stagger delay in frames (for multi-card layouts) */
   stagger?: number;
+  /** Which b-roll to use: "mountains" (default) or "glacier" */
+  broll?: "mountains" | "glacier";
 }
 
 function useCardEntrance(stagger = 0) {
   const frame = useCurrentFrame();
   const local = Math.max(frame - stagger, 0);
 
-  // Matches .source-card-cascade → .cascade-revealed transition
   const progress = interpolate(local, [0, ENTER_FRAMES], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -68,51 +68,72 @@ function useCardEntrance(stagger = 0) {
   };
 }
 
-// ── Vertical B-Roll Strips — parallax scrolling source brand columns ────────
-// Mimics the /source/ page grid: colored brand blocks scrolling vertically
-// on left and right sides, framing the centered diagram.
+// ── B-Roll Video Backdrop ───────────────────────────────────────────────────
+// Real mountain/glacier footage behind the card, slowed down, blurred, darkened.
+
+const BROLL_FILES = {
+  mountains: "broll/mountains-aerial.mp4",
+  glacier: "broll/glacier-drone.mp4",
+};
+
+const BRollBackdrop: React.FC<{
+  opacity: number;
+  broll: "mountains" | "glacier";
+}> = ({ opacity, broll }) => {
+  if (opacity < 0.01) return null;
+
+  return (
+    <AbsoluteFill style={{ opacity }}>
+      {/* B-roll video — fills screen, blurred, darkened */}
+      <AbsoluteFill>
+        <Video
+          src={staticFile(BROLL_FILES[broll])}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "blur(8px) brightness(0.4)",
+          }}
+          loop
+          playbackRate={0.5}
+          muted
+        />
+      </AbsoluteFill>
+
+      {/* Extra dark overlay for contrast */}
+      <AbsoluteFill
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.25)" }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+// ── Vertical B-Roll Strips ──────────────────────────────────────────────────
+// Source brand color blocks scrolling vertically on sides (parallax).
 
 const BRAND_COLORS = [
-  "#EC0016", // DB red
-  "#9146FF", // Twitch purple
-  "#1B2838", // Steam dark
-  "#FF6B35", // Pump.fun orange
-  "#00A36C", // Brand green
-  "#2563EB", // Airlines blue
-  "#F59E0B", // Weather gold
-  "#DC2626", // Sports red
-  "#6366F1", // DeFi purple
-  "#0EA5E9", // Ocean data cyan
-  "#84CC16", // Nature green
-  "#EC4899", // Social pink
+  "#EC0016", "#9146FF", "#1B2838", "#FF6B35", "#00A36C", "#2563EB",
+  "#F59E0B", "#DC2626", "#6366F1", "#0EA5E9", "#84CC16", "#EC4899",
 ];
-
 const BRAND_LABELS = [
   "DB", "twitch", "STEAM", "pump.fun", "GM", "flights",
   "weather", "sports", "defi", "ocean", "nature", "social",
 ];
 
-const STRIP_BLOCK_H = 140; // height of each brand block
+const STRIP_H = 140;
 const STRIP_GAP = 8;
-const STRIP_W = 200; // width of each side strip
+const STRIP_W = 160;
 
 const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
   const frame = useCurrentFrame();
-
-  // Vertical scroll offset — slow parallax
   const scrollY = frame * speed;
-
-  // Total height needed for one full set of blocks
-  const blockTotal = BRAND_COLORS.length;
-  const setHeight = blockTotal * (STRIP_BLOCK_H + STRIP_GAP);
+  const setHeight = BRAND_COLORS.length * (STRIP_H + STRIP_GAP);
+  const colors = [...BRAND_COLORS, ...BRAND_COLORS];
+  const labels = [...BRAND_LABELS, ...BRAND_LABELS];
 
   const renderStrip = (side: "left" | "right", offset: number) => {
-    // Right strip scrolls opposite direction for parallax feel
-    const direction = side === "left" ? 1 : -1;
-    const y = (scrollY * direction + offset) % setHeight;
-    // Render 2 sets for seamless loop
-    const colors = [...BRAND_COLORS, ...BRAND_COLORS];
-    const labels = [...BRAND_LABELS, ...BRAND_LABELS];
+    const dir = side === "left" ? 1 : -1;
+    const y = (scrollY * dir + offset + setHeight * 2) % setHeight;
 
     return (
       <div
@@ -123,7 +144,7 @@ const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
           width: STRIP_W,
           height: "100%",
           overflow: "hidden",
-          opacity: 0.45,
+          opacity: 0.35,
         }}
       >
         <div
@@ -139,9 +160,9 @@ const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
               key={`${side}-${i}`}
               style={{
                 width: STRIP_W,
-                height: STRIP_BLOCK_H,
+                height: STRIP_H,
                 background: color,
-                borderRadius: 12,
+                borderRadius: 10,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -151,11 +172,10 @@ const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
               <span
                 style={{
                   fontFamily: TYPE.heading.fontFamily,
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: 800,
                   color: "#fff",
-                  opacity: 0.9,
-                  textShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                  opacity: 0.85,
                 }}
               >
                 {labels[i]}
@@ -175,6 +195,8 @@ const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
   );
 };
 
+// ── White Card ──────────────────────────────────────────────────────────────
+
 export const DiagramCard: React.FC<DiagramCardProps> = ({
   children,
   width = 1400,
@@ -184,28 +206,16 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
   backdrop = true,
   position = "center",
   stagger = 0,
+  broll = "mountains",
 }) => {
   const { opacity, translateY, scale, blur, backdropOpacity } =
     useCardEntrance(stagger);
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Blurred darkened backdrop — video becomes atmosphere */}
-      {backdrop && (
-        <AbsoluteFill
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.45)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            opacity: backdropOpacity,
-          }}
-        />
-      )}
-
-      {/* Vertical b-roll strips — source brand columns scrolling on sides */}
+      {backdrop && <BRollBackdrop opacity={backdropOpacity} broll={broll} />}
       {backdrop && <BRollStrips />}
 
-      {/* Card — cascade entrance matching /source/ page */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -238,9 +248,8 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
   );
 };
 
-/**
- * DiagramCardDark — same cascade entrance, dark theme.
- */
+// ── Dark Card ───────────────────────────────────────────────────────────────
+
 export const DiagramCardDark: React.FC<DiagramCardProps> = ({
   children,
   width = 1400,
@@ -250,22 +259,15 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
   backdrop = true,
   position = "center",
   stagger = 0,
+  broll = "mountains",
 }) => {
   const { opacity, translateY, scale, blur, backdropOpacity } =
     useCardEntrance(stagger);
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {backdrop && (
-        <AbsoluteFill
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.45)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            opacity: backdropOpacity,
-          }}
-        />
-      )}
+      {backdrop && <BRollBackdrop opacity={backdropOpacity} broll={broll} />}
+      {backdrop && <BRollStrips />}
 
       <AbsoluteFill
         style={{

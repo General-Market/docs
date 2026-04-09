@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Sequence, Video, staticFile } from "remotion";
 import { TOTAL_FRAMES, SECTIONS, toFrames } from "./theme";
-import { HookDiagrams } from "./diagrams/HookDiagrams";
+// HookDiagrams removed — not approved
 import { SettlementDiagrams } from "./diagrams/SettlementDiagrams";
 import { PrivacyDiagrams } from "./diagrams/PrivacyDiagrams";
 import { EraDiagrams } from "./diagrams/EraDiagrams";
@@ -24,11 +24,6 @@ export const TutorialVideo: React.FC = () => {
           style={{ width: "100%", height: "100%" }}
         />
       </AbsoluteFill>
-
-      {/* Problem constellation — centered (11.3–22.2s) */}
-      <Sequence {...seq("hookOverlays")}>
-        <HookDiagrams />
-      </Sequence>
 
       {/* 10-min cycle timeline (100.4–113.8s) */}
       <Sequence {...seq("settlementTimeline")}>
