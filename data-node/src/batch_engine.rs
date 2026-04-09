@@ -32,6 +32,12 @@ pub const DISABLED_SOURCES: &[&str] = &[
     "ebird",
     "movebank",
     "shelter",
+    // External APIs unreachable from EU VPS (geo-blocked, Cloudflare, or no credentials)
+    "stackexchange",
+    "cbp_border",
+    "ioda",
+    "reddit",
+    "nrc_nuclear",
 ];
 
 pub fn is_source_disabled(source_id: &str) -> bool {
