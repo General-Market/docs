@@ -11,6 +11,7 @@ import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
+import { PLOB, PLOB_ACCENT, COUNT } from "../sfxMap";
 
 const s = (sec: number) => Math.round(sec * FPS);
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -244,13 +245,13 @@ export const ClosingDiagrams: React.FC = () => {
       <Sequence from={DASHBOARD_START} durationInFrames={DASHBOARD_END - DASHBOARD_START}>
         <BotDashboard />
         {/* "LIVE" badge appearing */}
-        <Sfx sound="comedy-plop" volume={0.25} />
+        <Sfx sound={PLOB_ACCENT} />
         {/* Stats counter starting */}
-        <Sfx sound="metric-count-up" volume={0.3} delay={s(0.4)} />
+        <Sfx sound={COUNT} delay={s(0.4)} />
         {/* Row cascade (3 rows staggered) */}
-        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.0)} />
-        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.25)} />
-        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.5)} />
+        <Sfx sound={PLOB} delay={s(1.0)} />
+        <Sfx sound={PLOB} delay={s(1.25)} />
+        <Sfx sound={PLOB} delay={s(1.5)} />
       </Sequence>
     </AbsoluteFill>
   );

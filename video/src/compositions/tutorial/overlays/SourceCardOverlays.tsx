@@ -9,6 +9,7 @@ import {
 import { FPS } from "../theme";
 import { useDesignTokens } from "../TutorialTheme";
 import { Sfx } from "../components/Sfx";
+import { PLOB } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -359,9 +360,8 @@ export const SourceCardOverlays: React.FC = () => {
       {SOURCES.map((src) => (
         <Sfx
           key={`sfx-${src.name}`}
-          sound="comedy-plop"
+          sound={PLOB}
           delay={sec(src.enterAt)}
-          volume={0.2}
         />
       ))}
 

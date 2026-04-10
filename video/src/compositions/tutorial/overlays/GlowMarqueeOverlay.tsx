@@ -13,6 +13,7 @@ import { FPS } from "../theme";
 import { useDesignTokens } from "../TutorialTheme";
 import { useTalkingHead } from "../TalkingHeadLayout";
 import { Sfx } from "../components/Sfx";
+import { WHOOSH } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -90,7 +91,7 @@ export const GlowMarqueeOverlay: React.FC = () => {
   const orbDim = Math.min(contentArea.w, contentArea.h) * 0.65;
 
   return (
-    <Sfx sound="whoosh-scene-grid" volume={0.3}>
+    <Sfx sound={WHOOSH}>
     <div
       style={{
         position: "absolute",

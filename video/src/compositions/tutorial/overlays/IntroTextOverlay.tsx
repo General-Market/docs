@@ -8,6 +8,7 @@ import { FPS } from "../theme";
 import { useDesignTokens, hexToRgb } from "../TutorialTheme";
 import { useTalkingHead } from "../TalkingHeadLayout";
 import { Sfx } from "../components/Sfx";
+import { TEXT_IN, TEXT_OUT } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -181,14 +182,14 @@ export const IntroTextOverlay: React.FC = () => {
       />
 
       {/* Typewriter blip at each phrase start */}
-      <Sfx sound="text-appear-blip" delay={sec(0.16)} volume={0.3} />
-      <Sfx sound="text-appear-blip" delay={sec(1.36)} volume={0.3} />
-      <Sfx sound="text-appear-blip" delay={sec(2.32)} volume={0.3} />
+      <Sfx sound={TEXT_IN} delay={sec(0.16)} />
+      <Sfx sound={TEXT_IN} delay={sec(1.36)} />
+      <Sfx sound={TEXT_IN} delay={sec(2.32)} />
 
       {/* Swish on each wipe-out */}
-      <Sfx sound="cut-fast-swish" delay={sec(1.2)} volume={0.3} />
-      <Sfx sound="cut-fast-swish" delay={sec(2.16)} volume={0.3} />
-      <Sfx sound="cut-fast-swish" delay={sec(3.16)} volume={0.3} />
+      <Sfx sound={TEXT_OUT} delay={sec(1.2)} />
+      <Sfx sound={TEXT_OUT} delay={sec(2.16)} />
+      <Sfx sound={TEXT_OUT} delay={sec(3.16)} />
     </div>
   );
 };

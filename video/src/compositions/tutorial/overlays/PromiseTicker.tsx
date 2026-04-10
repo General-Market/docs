@@ -11,6 +11,7 @@ import { FPS } from "../theme";
 import { useDesignTokens } from "../TutorialTheme";
 import { useTalkingHead } from "../TalkingHeadLayout";
 import { Sfx } from "../components/Sfx";
+import { PLOB_ACCENT } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 
@@ -132,8 +133,8 @@ export const PromiseTicker: React.FC = () => {
         {ITEMS.map((item) => (
           <Sfx
             key={item.label}
+            sound={PLOB_ACCENT}
             delay={sec(item.voiceSec - APPEAR_START)}
-            volume={0.25}
           />
         ))}
       </Sequence>

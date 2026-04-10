@@ -13,6 +13,7 @@ import { FPS } from "../theme";
 import { useDesignTokens } from "../TutorialTheme";
 import { SplitCard } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
+import { LAND } from "../sfxMap";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -155,7 +156,7 @@ export const FaqQuestionOverlay: React.FC = () => {
         return (
           <Sequence key={i} from={startFrame} durationInFrames={durationFrames}>
             <FaqQuestion entry={entry} />
-            <Sfx sound="shape-drop-bounce" volume={0.25} />
+            <Sfx sound={LAND} />
             <Sequence from={0} durationInFrames={Math.round(HOLD_SEC * FPS)}>
               <Audio
                 src={staticFile("sfx/whoosh-scene-grid.mp3")}

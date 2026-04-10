@@ -10,6 +10,7 @@ import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
+import { TEXT_IN, TICK, PLOB } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -125,15 +126,15 @@ export const SettlementDiagrams: React.FC = () => {
       <Sequence from={CYCLE_IN} durationInFrames={CYCLE_OUT - CYCLE_IN}>
         <SettlementCard />
         {/* Hero text "10 min" appearing */}
-        <Sfx sound="text-appear-blip" volume={0.3} />
+        <Sfx sound={TEXT_IN} />
         {/* Progress bar stepping to each phase */}
-        <Sfx sound="scroll-tick" volume={0.3} delay={JOIN_AT} />
-        <Sfx sound="scroll-tick" volume={0.3} delay={ORACLE_AT} />
-        <Sfx sound="scroll-tick" volume={0.3} delay={SETTLE_AT} />
+        <Sfx sound={TICK} delay={JOIN_AT} />
+        <Sfx sound={TICK} delay={ORACLE_AT} />
+        <Sfx sound={TICK} delay={SETTLE_AT} />
         {/* Three green pills appearing */}
-        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.5)} />
-        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.7)} />
-        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.9)} />
+        <Sfx sound={PLOB} delay={sec(0.5)} />
+        <Sfx sound={PLOB} delay={sec(0.7)} />
+        <Sfx sound={PLOB} delay={sec(0.9)} />
       </Sequence>
     </AbsoluteFill>
   );

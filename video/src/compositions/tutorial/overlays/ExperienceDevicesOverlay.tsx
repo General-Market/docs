@@ -10,6 +10,7 @@ import { useTalkingHead } from "../TalkingHeadLayout";
 import { FONT } from "../designTokens";
 import { useDesignTokens } from "../TutorialTheme";
 import { Sfx } from "../components/Sfx";
+import { WHOOSH, PLOB } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -46,10 +47,10 @@ export const ExperienceDevicesOverlay: React.FC = () => {
 
   return (
     <Sfx sound={[
-      { at: 4, sound: "whoosh-scene-grid", volume: 0.25 },
-      { at: 10, sound: "comedy-plop", volume: 0.2 },
-      { at: 18, sound: "comedy-plop", volume: 0.2 },
-      { at: 26, sound: "comedy-plop", volume: 0.2 },
+      { at: 4, sound: WHOOSH },
+      { at: 10, sound: PLOB },
+      { at: 18, sound: PLOB },
+      { at: 26, sound: PLOB },
     ]}>
     <div
       style={{

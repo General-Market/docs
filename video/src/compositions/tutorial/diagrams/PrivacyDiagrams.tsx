@@ -12,6 +12,7 @@ import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { SceneWrapper } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
+import { PLOB_ACCENT, LAND_SOFT } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -471,13 +472,13 @@ export const PrivacyDiagrams: React.FC = () => {
       <Sequence from={DISPUTE_IN} durationInFrames={DISPUTE_OUT - DISPUTE_IN}>
         <BeforeAfterDiagram />
         {/* Before panel appearing */}
-        <Sfx sound="comedy-plop" volume={0.25} />
+        <Sfx sound={PLOB_ACCENT} />
         {/* After panel appearing (delayed with afterSpring) */}
-        <Sfx sound="comedy-plop" volume={0.25} delay={sec(1.8)} />
+        <Sfx sound={PLOB_ACCENT} delay={sec(1.8)} />
         {/* Camera/webcam quadrant landing */}
-        <Sfx sound="shape-drop-bounce" volume={0.2} delay={4} />
+        <Sfx sound={LAND_SOFT} delay={4} />
         {/* B-roll quadrant landing */}
-        <Sfx sound="shape-drop-bounce" volume={0.2} delay={sec(1.6)} />
+        <Sfx sound={LAND_SOFT} delay={sec(1.6)} />
       </Sequence>
     </AbsoluteFill>
   );

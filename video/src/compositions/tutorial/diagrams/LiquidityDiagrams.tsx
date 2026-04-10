@@ -12,6 +12,7 @@ import { Sfx } from "../components/Sfx";
 import { COLOR, TYPE, BUTTON, PANEL } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
+import { PLOB, TICK, TEXT_IN, LAND, REVEAL, RAPID_POP } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -917,45 +918,42 @@ const LiquidityCard: React.FC = () => {
       {STREAMERS.map((_, i) => (
         <Sfx
           key={`b1-card-${i}`}
-          sound="comedy-plop"
-          volume={0.2}
+          sound={PLOB}
           delay={BEAT1_START + i * sec(0.15)}
         />
       ))}
       {/* Beat 1: counter appears */}
-      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT1_START + sec(1.2)} />
+      <Sfx sound={TICK} delay={BEAT1_START + sec(1.2)} />
 
       {/* Beat 2: chart line draws + "NOW" label */}
-      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT2_START} />
-      <Sfx sound="comedy-plop" volume={0.2} delay={BEAT2_START + sec(1.6)} />
+      <Sfx sound={TEXT_IN} delay={BEAT2_START} />
+      <Sfx sound={PLOB} delay={BEAT2_START + sec(1.6)} />
       {/* Beat 2: question mark + YES/NO buttons */}
-      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT2_START + sec(2)} />
-      <Sfx sound="shape-drop-bounce" volume={0.3} delay={BEAT2_START + sec(2.5)} />
+      <Sfx sound={TICK} delay={BEAT2_START + sec(2)} />
+      <Sfx sound={LAND} delay={BEAT2_START + sec(2.5)} />
 
       {/* Beat 3: bet slip enters */}
-      <Sfx sound="shape-drop-bounce" volume={0.3} delay={BEAT3_START} />
+      <Sfx sound={LAND} delay={BEAT3_START} />
       {/* Beat 3: staggered row checkmarks */}
       {BET_ROWS.map((_, i) => (
         <Sfx
           key={`b3-check-${i}`}
-          sound="comedy-plop"
-          volume={0.2}
+          sound={PLOB}
           delay={BEAT3_START + sec(0.5) + i * sec(0.08)}
         />
       ))}
       {/* Beat 3: ellipsis + last row */}
-      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT3_START + sec(1.2)} />
+      <Sfx sound={TICK} delay={BEAT3_START + sec(1.2)} />
       {/* Beat 3: submit button */}
-      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT3_START + sec(3.2)} />
+      <Sfx sound={TEXT_IN} delay={BEAT3_START + sec(3.2)} />
 
       {/* Beat 4: comparison chart enters */}
-      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT4_START} />
+      <Sfx sound={TEXT_IN} delay={BEAT4_START} />
       {/* Beat 4: stock bars stagger */}
       {STOCK_BARS.slice(0, 5).map((_, i) => (
         <Sfx
           key={`b4-stock-${i}`}
-          sound="comedy-plop"
-          volume={0.2}
+          sound={PLOB}
           delay={BEAT4_START + sec(0.5) + i * sec(0.12)}
         />
       ))}
@@ -963,13 +961,12 @@ const LiquidityCard: React.FC = () => {
       {GM_BARS.slice(0, 4).map((_, i) => (
         <Sfx
           key={`b4-gm-${i}`}
-          sound="comedy-plop"
-          volume={0.2}
+          sound={PLOB}
           delay={BEAT4_START + sec(2) + i * sec(0.12)}
         />
       ))}
       {/* Beat 4: bottom caption reveal */}
-      <Sfx sound="dramatic-reveal" volume={0.35} delay={BEAT4_START + sec(4)} />
+      <Sfx sound={REVEAL} delay={BEAT4_START + sec(4)} />
     </DiagramCard>
   );
 };
@@ -981,10 +978,10 @@ export const LiquidityDiagrams: React.FC = () => {
     <AbsoluteFill>
       <Sequence from={BEAT1_START} durationInFrames={EXIT_END - BEAT1_START}>
         <LiquidityCard />
-        <Sfx sound="scroll-tick" volume={0.4} />
+        <Sfx sound={TICK} />
       </Sequence>
-      <Sfx sound="text-pop-rapid-sequence" volume={0.3} delay={BEAT3_START} />
-      <Sfx sound="dramatic-reveal" volume={0.35} delay={BEAT4_START + sec(2)} />
+      <Sfx sound={RAPID_POP} delay={BEAT3_START} />
+      <Sfx sound={REVEAL} delay={BEAT4_START + sec(2)} />
     </AbsoluteFill>
   );
 };

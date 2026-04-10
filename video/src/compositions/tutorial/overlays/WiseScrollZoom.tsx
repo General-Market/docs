@@ -15,6 +15,7 @@ import { FONT } from "../designTokens";
 import { useDesignTokens } from "../TutorialTheme";
 import { useTalkingHead } from "../TalkingHeadLayout";
 import { Sfx } from "../components/Sfx";
+import { SPIN } from "../sfxMap";
 
 // ── Grid items — market terms in CSS-function aesthetic ──────────────────────
 
@@ -142,7 +143,7 @@ export const WiseScrollZoom: React.FC<{
   const envelope = Math.min(fadeIn, fadeOut);
 
   return (
-    <Sfx sound="whoosh-spin-fast" volume={0.35}>
+    <Sfx sound={SPIN}>
     <div
       style={{
         position: "absolute",

@@ -19,6 +19,8 @@ import { WiseMouseLight } from "./overlays/WiseMouseLight";
 import { ExperienceDevicesOverlay } from "./overlays/ExperienceDevicesOverlay";
 import { ClaudeTerminal } from "./overlays/ClaudeTerminal";
 import { Sfx } from "./components/Sfx";
+import type { SfxEvent } from "./components/Sfx";
+import { SWOOSH, TEXT_IN_BG, PLOB_BG } from "./sfxMap";
 import { COLOR, FONT } from "./designTokens";
 import { TutorialThemeProvider, dayTheme, type TutorialTheme } from "./TutorialTheme";
 import { WordParticleTransition } from "../../lib/components/Effects/WordParticleTransition";
@@ -190,32 +192,32 @@ export const TutorialVideo: React.FC<{ theme?: TutorialTheme }> = ({
           if (prev && prev.layout === scene.layout) return null;
 
           const f = toFrames(scene.startSec);
-          const sounds: Array<{ at: number; sound: string; volume: number }> = [];
+          const sounds: SfxEvent[] = [];
 
           // Swoosh on layout change (skip the very first scene)
           if (prev) {
-            sounds.push({ at: f, sound: "cut-fast-swish", volume: 0.12 });
+            sounds.push({ at: f, sound: SWOOSH });
           }
 
           // Title text appearing
           if (scene.title) {
-            sounds.push({ at: f + 6, sound: "text-appear-blip", volume: 0.15 });
+            sounds.push({ at: f + 6, sound: TEXT_IN_BG });
           }
 
           // Bottom label appearing
           if (scene.bottomLabel) {
-            sounds.push({ at: f + 4, sound: "comedy-plop", volume: 0.15 });
+            sounds.push({ at: f + 4, sound: PLOB_BG });
           }
 
           // Subtitle appearing
           if (scene.subtitle) {
-            sounds.push({ at: f + 10, sound: "comedy-plop", volume: 0.12 });
+            sounds.push({ at: f + 10, sound: PLOB_BG });
           }
 
           // Pills appearing (staggered)
           if (scene.pills) {
             scene.pills.forEach((_, j) => {
-              sounds.push({ at: f + 12 + j * 4, sound: "comedy-plop", volume: 0.12 });
+              sounds.push({ at: f + 12 + j * 4, sound: PLOB_BG });
             });
           }
 

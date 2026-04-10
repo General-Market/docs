@@ -12,6 +12,7 @@ import { COLOR, TYPE, PANEL } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
 import { Sfx } from "../components/Sfx";
+import { PLOB, TICK, COUNT, REVEAL, MONEY, LAND, IMPACT } from "../sfxMap";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -158,7 +159,7 @@ const ChartBeat: React.FC = () => {
 
   return (
     <DiagramCard>
-      <Sfx sound="scroll-tick" volume={0.3} />
+      <Sfx sound={TICK} />
       <div style={{ opacity: exitOpacity }}>
         {/* Title */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
@@ -276,10 +277,10 @@ const ChartBeat: React.FC = () => {
             </g>
           )}
         </svg>
-        <Sfx sound="metric-count-up" volume={0.3} delay={sec(1.6)} />
+        <Sfx sound={COUNT} delay={sec(1.6)} />
 
         {/* Question box */}
-        <Sfx sound="dramatic-reveal" volume={0.35} delay={sec(2.4)} />
+        <Sfx sound={REVEAL} delay={sec(2.4)} />
         <div
           style={{
             marginTop: 24,
@@ -405,7 +406,7 @@ const PoolBeat: React.FC = () => {
           const bettorDelay = sec(0.3) + i * sec(0.25);
           return (
             <React.Fragment key={b.name}>
-            <Sfx volume={0.2} delay={bettorDelay} />
+            <Sfx sound={PLOB} delay={bettorDelay} />
             <div
               style={{
                 display: "flex",
@@ -483,7 +484,7 @@ const PoolBeat: React.FC = () => {
               gap: 8,
             }}
           >
-            <Sfx sound="money-count" volume={0.3} delay={sec(1.5)} />
+            <Sfx sound={MONEY} delay={sec(1.5)} />
             <div
               style={{
                 ...PANEL.greenAccent,
@@ -511,8 +512,8 @@ const PoolBeat: React.FC = () => {
         </div>
 
         {/* Result banner */}
-        <Sfx sound="dramatic-reveal" volume={0.35} delay={sec(3.2)} />
-        <Sfx sound="metric-count-up" volume={0.3} delay={sec(4.2)} />
+        <Sfx sound={REVEAL} delay={sec(3.2)} />
+        <Sfx sound={COUNT} delay={sec(4.2)} />
         <div
           style={{
             opacity: resultOpacity,
@@ -622,7 +623,7 @@ const TableBeat: React.FC = () => {
           const rowDelay = sec(0.3) + i * sec(0.15);
           return (
             <React.Fragment key={row.station}>
-            <Sfx volume={0.2} delay={rowDelay} />
+            <Sfx sound={PLOB} delay={rowDelay} />
             <div
               style={{
                 display: "flex",
@@ -687,8 +688,8 @@ const TableBeat: React.FC = () => {
         </div>
 
         {/* Summary */}
-        <Sfx sound="shape-drop-bounce" volume={0.25} delay={counterStart} />
-        <Sfx sound="metric-count-up" volume={0.3} delay={counterStart} />
+        <Sfx sound={LAND} delay={counterStart} />
+        <Sfx sound={COUNT} delay={counterStart} />
         <div
           style={{
             borderTop: `2px solid ${COLOR.nearBlack}`,
@@ -809,10 +810,10 @@ const FairnessBeat: React.FC = () => {
 
   return (
     <DiagramCard>
-      <Sfx sound="shape-drop-bounce" volume={0.25} delay={sec(0.3)} />
-      <Sfx sound="shape-drop-bounce" volume={0.25} delay={sec(1.0)} />
-      <Sfx sound="scroll-tick" volume={0.3} delay={shrinkStart + sec(1.0)} />
-      <Sfx sound="impact-kick" volume={0.4} delay={shrinkStart + sec(2.0)} />
+      <Sfx sound={LAND} delay={sec(0.3)} />
+      <Sfx sound={LAND} delay={sec(1.0)} />
+      <Sfx sound={TICK} delay={shrinkStart + sec(1.0)} />
+      <Sfx sound={IMPACT} delay={shrinkStart + sec(2.0)} />
       <div style={{ opacity: exitOpacity }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
           <span style={{ ...TYPE.displayHero, color: COLOR.wiseGreen }}>$1 vs $1</span>
