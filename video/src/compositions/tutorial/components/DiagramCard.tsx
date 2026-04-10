@@ -20,7 +20,7 @@ const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
 const PIP_W = 320;
 const PIP_H = 240;
-const CARD_MARGIN = 56;
+const CARD_MARGIN = 84;
 const BROLL_SRC = "broll/mountains-aerial.mp4";
 const MAIN_VIDEO = "tutorial-raw.mp4";
 
