@@ -6,396 +6,187 @@ import {
   interpolate,
   staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { EASE } from "../../../common/easing";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
-import { DiagramCardDark } from "../components/DiagramCard";
-
-// ---------------------------------------------------------------------------
-// Timing — local seconds (component starts at 0 = video 89.84s)
-// ---------------------------------------------------------------------------
+import { DiagramCard } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
 
-// Diagram windows (local seconds, offset from 89.84s)
+// Diagram appears at local 10.56s, exits at 23.96s
 const CYCLE_IN = sec(10.56);
 const CYCLE_OUT = sec(23.96);
 
-// Colors — from design tokens
-const GREEN = COLOR.wiseGreen;
-const RED = COLOR.danger;
-const ACCENT = COLOR.wiseGreen;
-const DIM = COLOR.gray;
-const BRIGHT = COLOR.white;
+// Phase boundaries (normalized 0–1)
+const PHASE_BETTING = 0.55;
+const PHASE_ORACLE = 0.78;
 
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
+// Bar geometry
+const BAR_W = 960;
+const BAR_H = 10;
+const DOT_R = 8;
 
-function fadeEnterExit(
-  frame: number,
-  enterStart: number,
-  exitEnd: number,
-  fadeFrames = 10,
-) {
-  const enterOp = interpolate(frame, [enterStart, enterStart + fadeFrames], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const exitOp = interpolate(frame, [exitEnd - fadeFrames, exitEnd], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  return Math.min(enterOp, exitOp);
-}
+const PHASES = [
+  { label: "BETTING", duration: "10 min", pos: 0 },
+  { label: "ORACLE", duration: "30 sec", pos: PHASE_BETTING },
+  { label: "SETTLE", duration: "Instant", pos: PHASE_ORACLE },
+] as const;
 
-// ---------------------------------------------------------------------------
-// DIAGRAM: 10-Min Cycle Timeline (ZONE D — full-width lower third)
-// ---------------------------------------------------------------------------
+const BADGES = ["$0 fees", "$0 spread", "No disputes"] as const;
 
-interface BetBlock {
-  x: number;
-  color: string;
-  label: string;
-}
-
-const CycleTimeline: React.FC = () => {
+const SettlementCard: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const opacity = fadeEnterExit(frame, CYCLE_IN, CYCLE_OUT, 15);
+  const opacity = (() => {
+    const enterOp = interpolate(frame, [CYCLE_IN, CYCLE_IN + 15], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    const exitOp = interpolate(frame, [CYCLE_OUT - 15, CYCLE_OUT], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+    return Math.min(enterOp, exitOp);
+  })();
+
   const localFrame = frame - CYCLE_IN;
   const totalDuration = CYCLE_OUT - CYCLE_IN;
 
-  // Overall progress through the 3 phases
   const progress = interpolate(localFrame, [0, totalDuration], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: EASE.smooth,
   });
 
-  // Phase boundaries (relative)
-  const PHASE_BETTING_END = 0.55;
-  const PHASE_ORACLE_END = 0.78;
+  const fillWidth = progress * BAR_W;
 
-  const currentPhase = progress < PHASE_BETTING_END ? 0 : progress < PHASE_ORACLE_END ? 1 : 2;
-
-  const barWidth = 1100;
-  const barHeight = 16;
-  const filledWidth = progress * barWidth;
-
-  // Betting blocks (Tetris-like)
-  const bettingProgress = interpolate(progress, [0, PHASE_BETTING_END], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const blocks: BetBlock[] = [
-    { x: 80, color: GREEN, label: "YES" },
-    { x: 200, color: RED, label: "NO" },
-    { x: 340, color: GREEN, label: "YES" },
-    { x: 460, color: GREEN, label: "YES" },
-    { x: 580, color: RED, label: "NO" },
-    { x: 700, color: GREEN, label: "YES" },
-    { x: 820, color: RED, label: "NO" },
-    { x: 940, color: GREEN, label: "YES" },
-  ];
-
-  // Oracle pulse
-  const oracleActive = currentPhase >= 1;
-  const oraclePulse = oracleActive ? 0.5 + 0.5 * Math.sin((localFrame / fps) * Math.PI * 5) : 0;
-
-  // Settle $ flow
-  const settleActive = currentPhase === 2;
-  const settleProgress = interpolate(progress, [PHASE_ORACLE_END, 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  // Bar color
-  const barColor = currentPhase === 0 ? GREEN : currentPhase === 1 ? ACCENT : BRIGHT;
-
-  // Phase labels
-  const phaseLabels = [
-    { label: "BETTING", sub: "10 min", color: GREEN },
-    { label: "ORACLE", sub: "consensus", color: ACCENT },
-    { label: "SETTLE", sub: "payout", color: BRIGHT },
-  ];
-
-  // Parasite label stagger
-  const parasiteLabels = [
-    { text: "SEALED BETS", delay: 0.1, color: GREEN },
-    { text: "BLS CONSENSUS", delay: 0.55, color: ACCENT },
-    { text: "PARIMUTUEL ENGINE", delay: 0.6, color: DIM },
-    { text: "INSTANT WITHDRAWAL", delay: 0.8, color: BRIGHT },
-  ];
+  // Badge stagger — fade in during settle phase
+  const badgeDelay = (i: number) =>
+    interpolate(progress, [0.7 + i * 0.06, 0.76 + i * 0.06], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
 
   return (
-    <DiagramCardDark width={1600} padding="32px 40px" position="bottom">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 12,
-          opacity,
-        }}
-      >
-        {/* Current phase label */}
-        <div
-          style={{
-            ...TYPE.labelDark,
-            color: phaseLabels[currentPhase].color,
-          }}
-        >
-          {phaseLabels[currentPhase].label}
-        </div>
+    <div style={{ opacity }}>
+      <DiagramCard width={1200}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+          {/* Label */}
+          <div style={{ ...TYPE.label }}>10-MINUTE SETTLEMENT</div>
 
-        {/* Bet blocks dropping area */}
-        <div style={{ position: "relative", width: barWidth, height: 36, overflow: "hidden" }}>
-          {currentPhase === 0 &&
-            blocks.map((block, i) => {
-              const blockDelay = i / blocks.length;
-              const blockProg = interpolate(bettingProgress, [blockDelay, blockDelay + 0.15], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              const blockY = interpolate(blockProg, [0, 1], [-30, 4], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-                easing: EASE.out,
-              });
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: block.x,
-                    top: blockY,
-                    opacity: blockProg,
-                    width: 32,
-                    height: 28,
-                    borderRadius: 4,
-                    background: block.color === GREEN ? `${COLOR.wiseGreen}40` : `${COLOR.danger}40`,
-                    border: `1.5px solid ${block.color}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: TYPE.bodySemibold.fontFamily,
-                    fontSize: 8,
-                    fontWeight: TYPE.label.fontWeight,
-                    color: block.color,
-                  }}
-                >
-                  {block.label}
-                </div>
-              );
-            })}
-
-          {/* Oracle pulse nodes */}
-          {oracleActive && currentPhase === 1 && (
+          {/* Progress bar + dots */}
+          <div style={{ position: "relative", width: BAR_W, height: DOT_R * 2 + 20 }}>
+            {/* Track */}
             <div
               style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 24,
-                width: "100%",
-                height: "100%",
+                position: "absolute",
+                top: DOT_R - BAR_H / 2,
+                left: 0,
+                width: BAR_W,
+                height: BAR_H,
+                borderRadius: BAR_H / 2,
+                background: COLOR.lightSurface,
               }}
-            >
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: ACCENT,
-                    opacity: 0.6 + 0.4 * oraclePulse,
-                    boxShadow: `0 0 ${8 + 6 * oraclePulse}px ${COLOR.wiseGreen}80`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: TYPE.bodySemibold.fontFamily,
-                    fontSize: 11,
-                    fontWeight: TYPE.label.fontWeight,
-                    color: COLOR.white,
-                  }}
-                >
-                  {n}
-                </div>
-              ))}
-            </div>
-          )}
+            />
 
-          {/* Settle $ signs */}
-          {settleActive &&
-            Array.from({ length: 6 }).map((_, i) => {
-              const dollarDelay = i * 0.12;
-              const dollarOp = interpolate(settleProgress, [dollarDelay, dollarDelay + 0.3], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
-              const dollarX = 200 + i * 140;
-              const dollarY = interpolate(dollarOp, [0, 1], [20, 0], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              });
+            {/* Fill */}
+            <div
+              style={{
+                position: "absolute",
+                top: DOT_R - BAR_H / 2,
+                left: 0,
+                width: fillWidth,
+                height: BAR_H,
+                borderRadius: BAR_H / 2,
+                background: COLOR.wiseGreen,
+              }}
+            />
+
+            {/* Dot markers at each phase boundary */}
+            {[0, PHASE_BETTING, PHASE_ORACLE].map((pos, i) => {
+              const dotX = pos * BAR_W;
+              const filled = progress >= pos;
               return (
                 <div
                   key={i}
                   style={{
                     position: "absolute",
-                    left: dollarX,
-                    top: dollarY,
-                    opacity: dollarOp,
-                    fontFamily: TYPE.statValue.fontFamily,
-                    fontSize: TYPE.statValue.fontSize,
-                    fontWeight: TYPE.statValue.fontWeight,
-                    color: COLOR.wiseGreen,
+                    left: dotX - DOT_R,
+                    top: 0,
+                    width: DOT_R * 2,
+                    height: DOT_R * 2,
+                    borderRadius: "50%",
+                    background: filled ? COLOR.wiseGreen : COLOR.lightSurface,
+                    border: `2px solid ${filled ? COLOR.wiseGreen : COLOR.gray}`,
+                    transition: "background 0.2s, border-color 0.2s",
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Phase labels + durations */}
+          <div
+            style={{
+              display: "flex",
+              width: BAR_W,
+            }}
+          >
+            {PHASES.map((phase, i) => {
+              const nextPos = i < PHASES.length - 1 ? PHASES[i + 1].pos : 1;
+              const width = (nextPos - phase.pos) * BAR_W;
+              return (
+                <div
+                  key={phase.label}
+                  style={{
+                    width,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
                   }}
                 >
-                  $
+                  <div style={{ ...TYPE.bodySemibold }}>{phase.label}</div>
+                  <div style={{ ...TYPE.caption }}>{phase.duration}</div>
                 </div>
               );
             })}
-        </div>
+          </div>
 
-        {/* Progress bar */}
-        <div
-          style={{
-            width: barWidth,
-            height: barHeight,
-            borderRadius: barHeight / 2,
-            background: `${COLOR.border}18`,
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
+          {/* Divider */}
           <div
             style={{
-              width: filledWidth,
-              height: "100%",
-              borderRadius: barHeight / 2,
-              background: barColor,
-              transition: "background 0.3s",
+              width: BAR_W,
+              height: 1,
+              background: COLOR.border,
             }}
           />
-          {/* Phase dividers */}
-          <div
-            style={{
-              position: "absolute",
-              left: `${PHASE_BETTING_END * 100}%`,
-              top: 0,
-              width: 1.5,
-              height: "100%",
-              background: `${COLOR.gray}26`,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: `${PHASE_ORACLE_END * 100}%`,
-              top: 0,
-              width: 1.5,
-              height: "100%",
-              background: `${COLOR.gray}26`,
-            }}
-          />
-        </div>
 
-        {/* Phase labels below bar */}
-        <div style={{ width: barWidth, display: "flex", position: "relative", height: 16 }}>
-          <div
-            style={{
-              ...TYPE.labelDark,
-              position: "absolute",
-              left: 0,
-              width: `${PHASE_BETTING_END * 100}%`,
-              textAlign: "center",
-              color: COLOR.wiseGreen,
-            }}
-          >
-            BETTING (10 min)
-          </div>
-          <div
-            style={{
-              ...TYPE.labelDark,
-              position: "absolute",
-              left: `${PHASE_BETTING_END * 100}%`,
-              width: `${(PHASE_ORACLE_END - PHASE_BETTING_END) * 100}%`,
-              textAlign: "center",
-              color: COLOR.wiseGreen,
-            }}
-          >
-            ORACLE
-          </div>
-          <div
-            style={{
-              ...TYPE.labelDark,
-              position: "absolute",
-              left: `${PHASE_ORACLE_END * 100}%`,
-              width: `${(1 - PHASE_ORACLE_END) * 100}%`,
-              textAlign: "center",
-              color: COLOR.white,
-            }}
-          >
-            SETTLE
+          {/* Green badges */}
+          <div style={{ display: "flex", gap: 32 }}>
+            {BADGES.map((badge, i) => (
+              <div
+                key={badge}
+                style={{
+                  ...TYPE.bodySemibold,
+                  color: COLOR.wiseGreen,
+                  opacity: badgeDelay(i),
+                }}
+              >
+                {badge}
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Parasite labels row */}
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
-          {parasiteLabels.map((pl) => {
-            const plOp = interpolate(progress, [pl.delay, pl.delay + 0.08], [0, 1], {
-              extrapolateLeft: "clamp",
-              extrapolateRight: "clamp",
-            });
-            return (
-              <ParasiteLabel key={pl.text} text={pl.text} color={pl.color} style={{ opacity: plOp }} />
-            );
-          })}
-        </div>
-      </div>
-    </DiagramCardDark>
+      </DiagramCard>
+    </div>
   );
 };
-
-// ---------------------------------------------------------------------------
-// Parasite Label — reusable floating annotation
-// ---------------------------------------------------------------------------
-
-const ParasiteLabel: React.FC<{
-  text: string;
-  color: string;
-  style?: React.CSSProperties;
-}> = ({ text, color, style }) => (
-  <div
-    style={{
-      ...TYPE.captionDark,
-      textTransform: "uppercase",
-      letterSpacing: TYPE.labelDark.letterSpacing,
-      color,
-      whiteSpace: "nowrap",
-      ...style,
-    }}
-  >
-    {text}
-  </div>
-);
-
-// ---------------------------------------------------------------------------
-// Main Export
-// ---------------------------------------------------------------------------
 
 export const SettlementDiagrams: React.FC = () => {
   return (
     <AbsoluteFill>
-      {/* 10-Min Cycle Timeline only — other diagrams removed */}
-      <CycleTimeline />
+      <SettlementCard />
       <Sequence from={CYCLE_IN}>
         <Audio src={staticFile("sfx/scroll-tick.mp3")} volume={0.4} />
       </Sequence>

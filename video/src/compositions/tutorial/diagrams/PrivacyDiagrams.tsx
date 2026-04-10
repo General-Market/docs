@@ -12,21 +12,19 @@ import {
 import { EASE } from "../../../common/easing";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
-import { COMPARISONS } from "../proofData";
-import { DiagramCardDark } from "../components/DiagramCard";
+import { DiagramCard } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
-
-const AMBER = "#F59E0B";
-const DOT_SIZE = 10;
 
 // Local timing (frame 0 = 161.40s in video)
 const DISPUTE_IN = sec(19.8);
 const DISPUTE_OUT = sec(32.6);
 
-// ---------------------------------------------------------------------------
-// DISPUTE TIMELINE COMPARISON (19.8s-32.6s local)
-// ---------------------------------------------------------------------------
+// Bar geometry
+const BAR_HEIGHT = 14;
+const BAR_RADIUS = 7;
+const TRAD_BAR_WIDTH = 940;
+const GM_BAR_WIDTH = 120;
 
 const DisputeTimeline: React.FC = () => {
   const frame = useCurrentFrame();
@@ -41,369 +39,188 @@ const DisputeTimeline: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // Panel entrance
-  const panelEnter = spring({
-    frame,
+  // Traditional bar fills slowly across 2.5s
+  const tradProgress = interpolate(frame, [sec(0.4), sec(2.9)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+
+  // GM bar fills fast — 0.4s
+  const gmProgress = interpolate(frame, [sec(1.8), sec(2.2)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: EASE.out,
+  });
+
+  // Traditional milestone labels fade in staggered
+  const tradLabelOpacity = interpolate(frame, [sec(2.6), sec(3.2)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // GM milestone labels
+  const gmLabelOpacity = interpolate(frame, [sec(2.0), sec(2.6)], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  // The "700x faster" stat punches in with spring
+  const statSpring = spring({
+    frame: frame - sec(3.5),
     fps,
-    config: { damping: 14, stiffness: 100, mass: 0.9 },
+    config: { damping: 10, stiffness: 120, mass: 0.8 },
   });
 
-  const panelY = interpolate(panelEnter, [0, 1], [80, 0], {
+  const statScale = interpolate(statSpring, [0, 1], [0.6, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const panelOpacity = interpolate(panelEnter, [0, 1], [0, 1], {
+  const statOpacity = interpolate(statSpring, [0, 1], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-
-  // Traditional timeline stretches (90% width)
-  const tradBarProgress = interpolate(frame, [sec(0.5), sec(3)], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE.out,
-  });
-
-  // GM timeline (short — 10% width)
-  const gmBarProgress = interpolate(frame, [sec(1.5), sec(2.5)], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: EASE.out,
-  });
-
-  // Traditional dispute fill animation (pulsing red)
-  const disputePulse = 0.3 + 0.15 * Math.sin(frame * 0.1);
-
-  // GM green glow
-  const gmGlow = 0.6 + 0.2 * Math.sin(frame * 0.12);
-
-  // Traditional: milestones
-  const tradMilestones = [
-    { label: "Order", pos: 0 },
-    { label: "Trade", pos: 0.08 },
-    { label: "Challenge: 7 DAYS", pos: 0.15, isDispute: true },
-    { label: "Resolution", pos: 0.95 },
-  ];
-
-  // GM: milestones
-  const gmMilestones = [
-    { label: "Bet", pos: 0 },
-    { label: "Settlement: 10 MIN", pos: 0.25, isGreen: true },
-    { label: "PNL", pos: 0.55 },
-    { label: "WITHDRAW", pos: 0.85 },
-  ];
-
-  // Polymarket annotation
-  const annotationOpacity = interpolate(
-    frame,
-    [sec(4), sec(5)],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
 
   return (
-    <DiagramCardDark width={1500} padding="40px 48px">
+    <DiagramCard width={1300}>
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          gap: 48,
-          opacity: Math.min(panelOpacity, exitOpacity),
-          transform: `translateY(${panelY}px)`,
-          position: "relative",
+          gap: 40,
+          opacity: exitOpacity,
         }}
       >
-        {/* TRADITIONAL timeline */}
-        <div>
+        {/* Section label */}
+        <div style={{ ...TYPE.label }}>Settlement Speed</div>
+
+        {/* Traditional */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...TYPE.cardTitle }}>Traditional</div>
+
+          {/* Bar track */}
           <div
             style={{
-              ...TYPE.cardTitleDark,
-              color: COLOR.danger,
-              marginBottom: 16,
+              width: TRAD_BAR_WIDTH,
+              height: BAR_HEIGHT,
+              borderRadius: BAR_RADIUS,
+              background: COLOR.lightSurface,
+              overflow: "hidden",
             }}
           >
-            TRADITIONAL
-          </div>
-
-          {/* Timeline bar */}
-          <div style={{ position: "relative", height: 50 }}>
-            {/* Track */}
             <div
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 20,
-                height: 10,
-                borderRadius: 5,
-                background: COLOR.border,
-                opacity: 0.15,
-              }}
-            />
-
-            {/* Dispute fill (the massive red zone) */}
-            <div
-              style={{
-                position: "absolute",
-                left: `${0.15 * 100}%`,
-                width: `${Math.max(0, (0.95 - 0.15) * tradBarProgress * 100)}%`,
-                top: 16,
-                height: 18,
-                borderRadius: 9,
+                width: `${tradProgress * 100}%`,
+                height: "100%",
+                borderRadius: BAR_RADIUS,
                 background: COLOR.danger,
-                opacity: disputePulse,
               }}
             />
-
-            {/* Milestones */}
-            {tradMilestones.map((m, i) => {
-              const mDelay = sec(0.5) + i * sec(0.4);
-              const mOpacity = interpolate(
-                frame - mDelay,
-                [0, 8],
-                [0, 1],
-                { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-              );
-
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: `${m.pos * 100}%`,
-                    top: 0,
-                    transform: "translateX(-50%)",
-                    opacity: mOpacity,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Dot */}
-                  <div
-                    style={{
-                      width: DOT_SIZE,
-                      height: DOT_SIZE,
-                      borderRadius: "50%",
-                      background: m.isDispute ? COLOR.danger : COLOR.gray,
-                      marginBottom: 4,
-                    }}
-                  />
-                  {/* Label */}
-                  <div
-                    style={{
-                      ...TYPE.labelDark,
-                      position: "absolute",
-                      top: 36,
-                      fontWeight: m.isDispute ? 700 : TYPE.labelDark.fontWeight,
-                      color: m.isDispute ? COLOR.danger : COLOR.gray,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                </div>
-              );
-            })}
           </div>
 
-          {/* Parasite labels for traditional */}
+          {/* Milestone labels */}
           <div
             style={{
               display: "flex",
-              gap: 32,
-              marginTop: 32,
-              opacity: interpolate(frame, [sec(3), sec(4)], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
+              justifyContent: "space-between",
+              width: TRAD_BAR_WIDTH,
+              opacity: tradLabelOpacity,
             }}
           >
-            {["dispute window", "manual review", "voter incentives"].map(
-              (label, i) => (
-                <div
-                  key={i}
-                  style={{
-                    ...TYPE.captionDark,
-                    color: COLOR.danger,
-                    opacity: 0.6,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {label}
-                </div>
-              ),
-            )}
+            <span style={{ ...TYPE.caption }}>Order</span>
+            <span style={{ ...TYPE.caption }}>Trade</span>
+            <span
+              style={{
+                ...TYPE.caption,
+                color: COLOR.danger,
+                fontWeight: 600,
+              }}
+            >
+              Challenge: 7 DAYS
+            </span>
+            <span style={{ ...TYPE.caption }}>Resolution</span>
           </div>
         </div>
 
-        {/* GM timeline */}
-        <div>
+        {/* General Market */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...TYPE.cardTitle }}>General Market</div>
+
+          {/* Bar track */}
           <div
             style={{
-              ...TYPE.cardTitleDark,
-              color: COLOR.wiseGreen,
-              marginBottom: 16,
+              width: TRAD_BAR_WIDTH,
+              height: BAR_HEIGHT,
+              borderRadius: BAR_RADIUS,
+              background: COLOR.lightSurface,
+              overflow: "hidden",
             }}
           >
-            GENERAL MARKET
-          </div>
-
-          {/* Timeline bar — only 10% of width to show the dramatic difference */}
-          <div style={{ position: "relative", height: 50, width: "15%" }}>
-            {/* Track */}
             <div
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                top: 20,
-                height: 10,
-                borderRadius: 5,
-                background: COLOR.border,
-                opacity: 0.15,
-              }}
-            />
-
-            {/* Green fill */}
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                width: `${gmBarProgress * 100}%`,
-                top: 16,
-                height: 18,
-                borderRadius: 9,
+                width: gmProgress * GM_BAR_WIDTH,
+                height: "100%",
+                borderRadius: BAR_RADIUS,
                 background: COLOR.wiseGreen,
-                opacity: gmGlow * 0.5,
-                boxShadow: `0 0 16px ${COLOR.wiseGreen}`,
               }}
             />
-
-            {/* Milestones */}
-            {gmMilestones.map((m, i) => {
-              const mDelay = sec(1.5) + i * sec(0.3);
-              const mOpacity = interpolate(
-                frame - mDelay,
-                [0, 8],
-                [0, 1],
-                { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-              );
-
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: `${m.pos * 100}%`,
-                    top: 0,
-                    transform: "translateX(-50%)",
-                    opacity: mOpacity,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: DOT_SIZE,
-                      height: DOT_SIZE,
-                      borderRadius: "50%",
-                      background: COLOR.wiseGreen,
-                      boxShadow: m.isGreen
-                        ? `0 0 8px ${COLOR.wiseGreen}`
-                        : undefined,
-                    }}
-                  />
-                  <div
-                    style={{
-                      ...TYPE.labelDark,
-                      position: "absolute",
-                      top: 36,
-                      fontWeight: m.isGreen ? 700 : TYPE.labelDark.fontWeight,
-                      color: COLOR.wiseGreen,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                </div>
-              );
-            })}
           </div>
 
-          {/* Parasite labels for GM */}
+          {/* Milestone labels */}
           <div
             style={{
               display: "flex",
               gap: 32,
-              marginTop: 32,
-              opacity: interpolate(frame, [sec(3.5), sec(4.5)], [0, 1], {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-              }),
+              width: GM_BAR_WIDTH + 80,
+              opacity: gmLabelOpacity,
             }}
           >
-            {["automatic", "oracle consensus", "instant"].map((label, i) => (
-              <div
-                key={i}
-                style={{
-                  ...TYPE.captionDark,
-                  color: COLOR.wiseGreen,
-                  opacity: 0.7,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {label}
-              </div>
-            ))}
+            <span style={{ ...TYPE.caption }}>Bet</span>
+            <span style={{ ...TYPE.caption }}>Settle</span>
+            <span style={{ ...TYPE.caption }}>Withdraw</span>
+          </div>
+
+          <div
+            style={{
+              ...TYPE.captionSemibold,
+              color: COLOR.wiseGreen,
+              opacity: gmLabelOpacity,
+            }}
+          >
+            10 min
           </div>
         </div>
 
-        {/* Polymarket annotation */}
+        {/* Divider */}
         <div
           style={{
-            position: "absolute",
-            right: 48,
-            top: 44,
-            opacity: annotationOpacity,
-            maxWidth: 280,
+            width: "100%",
+            height: 1,
+            background: COLOR.border,
+          }}
+        />
+
+        {/* 700x faster — the knife */}
+        <div
+          style={{
+            ...TYPE.sectionHeading,
+            color: COLOR.wiseGreen,
+            opacity: statOpacity,
+            transform: `scale(${statScale})`,
+            transformOrigin: "left center",
           }}
         >
-          <div
-            style={{
-              ...TYPE.captionDark,
-              color: COLOR.gray,
-              textAlign: "right",
-            }}
-          >
-            Polymarket disputes can take{" "}
-            <span style={{ color: AMBER, fontWeight: 700 }}>weeks</span>.
-            <br />
-            GM settles in{" "}
-            <span style={{ color: COLOR.wiseGreen, fontWeight: 700 }}>
-              {COMPARISONS.gmSettlement}
-            </span>
-            .
-          </div>
+          700x faster settlement
         </div>
       </div>
-    </DiagramCardDark>
+    </DiagramCard>
   );
 };
-
-// ---------------------------------------------------------------------------
-// Main composition — frame 0 = 161.40s in video
-// ---------------------------------------------------------------------------
 
 export const PrivacyDiagrams: React.FC = () => {
   return (
     <AbsoluteFill>
-      {/* Dispute Timeline only — other diagrams removed */}
       <Sequence from={DISPUTE_IN} durationInFrames={DISPUTE_OUT - DISPUTE_IN}>
         <DisputeTimeline />
         <Audio src={staticFile("sfx/metal-latch-unlock.mp3")} volume={0.5} />
