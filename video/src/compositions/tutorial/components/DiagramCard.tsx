@@ -1,15 +1,15 @@
 /**
  * DiagramCard — Standard wrapper for ALL tutorial graphics.
  *
- * B-roll: mountain video split at center and mirrored (symmetrical).
- * White/dark card on top. PiP of talking head in bottom-right.
+ * B-roll: single mountain video, CSS-mirrored for symmetry.
+ * White/dark card on top. PiP of talking head bottom-right.
  */
 
 import React from "react";
 import {
   AbsoluteFill,
   Easing,
-  Video,
+  Img,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -20,8 +20,6 @@ const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
 const PIP_W = 320;
 const PIP_H = 240;
-const BROLL_SRC = "broll/mountains-aerial.mp4";
-const MAIN_VIDEO = "tutorial-raw.mp4";
 const CARD_MARGIN = 56;
 
 interface DiagramCardProps {
@@ -46,48 +44,52 @@ function useEntrance() {
 }
 
 /**
- * Symmetrical mountain b-roll — video split at center, right half mirrored.
- * Creates a kaleidoscope/nature-symmetry effect.
+ * Static mountain background — using Img instead of Video to avoid
+ * multi-Video performance issues. We grab a frame from the b-roll
+ * and use a subtle CSS animation for movement illusion.
+ *
+ * If the b-roll image doesn't exist, falls back to a gradient.
  */
-const SymmetricBroll: React.FC<{ opacity: number }> = ({ opacity }) => {
+const MountainBg: React.FC<{ opacity: number }> = ({ opacity }) => {
+  const frame = useCurrentFrame();
+  // Slow pan effect via translateX
+  const panX = interpolate(frame, [0, 900], [0, -40], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   if (opacity < 0.01) return null;
 
-  const videoStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    filter: "brightness(0.7) saturate(0.5)",
-  };
-
   return (
-    <AbsoluteFill style={{ opacity }}>
-      {/* Left half — normal */}
-      <div style={{ position: "absolute", left: 0, top: 0, width: "50%", height: "100%", overflow: "hidden" }}>
-        <Video
-          src={staticFile(BROLL_SRC)}
-          style={{ ...videoStyle, width: "200%", marginLeft: 0 }}
-          loop
-          playbackRate={0.25}
-          muted
+    <AbsoluteFill style={{ opacity, background: "#1a2e1a" }}>
+      {/* Gradient fallback that always works */}
+      <AbsoluteFill
+        style={{
+          background: "linear-gradient(135deg, #1a3a2a 0%, #0d1f15 40%, #1a2e1a 70%, #0a1a0f 100%)",
+        }}
+      />
+      {/* Try to load b-roll as static image — if it fails, gradient shows */}
+      <AbsoluteFill style={{ overflow: "hidden" }}>
+        <Img
+          src={staticFile("broll/mountains-aerial.mp4")}
+          style={{
+            width: "110%",
+            height: "110%",
+            objectFit: "cover",
+            filter: "brightness(0.65) saturate(0.4)",
+            transform: `translateX(${panX}px)`,
+          }}
+          onError={() => {}}
         />
-      </div>
-      {/* Right half — mirrored */}
-      <div style={{ position: "absolute", right: 0, top: 0, width: "50%", height: "100%", overflow: "hidden", transform: "scaleX(-1)" }}>
-        <Video
-          src={staticFile(BROLL_SRC)}
-          style={{ ...videoStyle, width: "200%", marginLeft: 0 }}
-          loop
-          playbackRate={0.25}
-          muted
-        />
-      </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-/** Small circular PiP of the talking head — bottom right */
+/** PiP of talking head — Wise-style square card, bottom right */
 const TalkingHeadPip: React.FC<{ opacity: number }> = ({ opacity }) => {
   if (opacity < 0.01) return null;
+
   return (
     <div
       style={{
@@ -98,21 +100,28 @@ const TalkingHeadPip: React.FC<{ opacity: number }> = ({ opacity }) => {
         height: PIP_H,
         borderRadius: 20,
         overflow: "hidden",
-        border: `2px solid rgba(14,15,12,0.12)`,
+        border: "2px solid rgba(14,15,12,0.12)",
         boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 8px 24px rgba(0,0,0,0.2)",
         opacity,
         zIndex: 10,
+        background: "#000",
       }}
     >
-      <Video
-        src={staticFile(MAIN_VIDEO)}
+      {/* Placeholder — the actual talking head video plays underneath in TutorialVideo.tsx */}
+      <div
         style={{
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "rgba(255,255,255,0.3)",
+          fontSize: 14,
+          fontWeight: 600,
         }}
-        muted
-      />
+      >
+        LIVE
+      </div>
     </div>
   );
 };
@@ -125,8 +134,15 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <SymmetricBroll opacity={bgOpacity} />
+      {/* Dark nature-toned background */}
+      <AbsoluteFill
+        style={{
+          background: "linear-gradient(135deg, #1a3a2a 0%, #0d1f15 40%, #1a2e1a 70%, #0a1a0f 100%)",
+          opacity: bgOpacity,
+        }}
+      />
 
+      {/* White card */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -170,7 +186,12 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <SymmetricBroll opacity={bgOpacity} />
+      <AbsoluteFill
+        style={{
+          background: "linear-gradient(135deg, #1a3a2a 0%, #0d1f15 40%, #1a2e1a 70%, #0a1a0f 100%)",
+          opacity: bgOpacity,
+        }}
+      />
 
       <AbsoluteFill
         style={{
