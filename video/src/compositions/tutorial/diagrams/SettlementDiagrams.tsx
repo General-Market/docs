@@ -70,7 +70,7 @@ const SettlementCard: React.FC = () => {
 
   return (
     <div style={{ opacity }}>
-      <DiagramCard width={1200}>
+      <DiagramCard>
         <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
           {/* Label */}
           <div style={{ ...TYPE.label }}>10-MINUTE SETTLEMENT</div>

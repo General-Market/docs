@@ -96,7 +96,7 @@ const BotDashboard: React.FC = () => {
   const elapsedSec = frame / fps;
 
   return (
-    <DiagramCard width={1100}>
+    <DiagramCard>
       {/* Header */}
       <div
         style={{

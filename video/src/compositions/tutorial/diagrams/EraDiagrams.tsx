@@ -65,7 +65,7 @@ const EraTimeline: React.FC = () => {
   });
 
   return (
-    <DiagramCard width={1400} position="bottom">
+    <DiagramCard>
       <div style={{ opacity: exitOpacity }}>
         {/* Label */}
         <div style={{ ...TYPE.label, marginBottom: 28 }}>The Edge Evolves</div>
@@ -183,7 +183,7 @@ const CompetitiveLandscape: React.FC = () => {
   });
 
   return (
-    <DiagramCard width={1300}>
+    <DiagramCard>
       <div style={{ opacity: exitOpacity }}>
         {/* Label */}
         <div style={{ ...TYPE.label, marginBottom: 28 }}>

@@ -83,7 +83,7 @@ const DisputeTimeline: React.FC = () => {
   });
 
   return (
-    <DiagramCard width={1300}>
+    <DiagramCard>
       <div
         style={{
           display: "flex",
