@@ -119,8 +119,8 @@ const DisputeTimeline: React.FC = () => {
         <div>
           <div
             style={{
-              ...TYPE.subhead,
-              color: COLOR.down,
+              ...TYPE.cardTitleDark,
+              color: COLOR.danger,
               marginBottom: 16,
             }}
           >
@@ -152,7 +152,7 @@ const DisputeTimeline: React.FC = () => {
                 top: 16,
                 height: 18,
                 borderRadius: 9,
-                background: COLOR.down,
+                background: COLOR.danger,
                 opacity: disputePulse,
               }}
             />
@@ -187,18 +187,18 @@ const DisputeTimeline: React.FC = () => {
                       width: DOT_SIZE,
                       height: DOT_SIZE,
                       borderRadius: "50%",
-                      background: m.isDispute ? COLOR.down : COLOR.muted,
+                      background: m.isDispute ? COLOR.danger : COLOR.gray,
                       marginBottom: 4,
                     }}
                   />
                   {/* Label */}
                   <div
                     style={{
-                      ...TYPE.label,
+                      ...TYPE.labelDark,
                       position: "absolute",
                       top: 36,
-                      fontWeight: m.isDispute ? 700 : TYPE.label.fontWeight,
-                      color: m.isDispute ? COLOR.down : COLOR.muted,
+                      fontWeight: m.isDispute ? 700 : TYPE.labelDark.fontWeight,
+                      color: m.isDispute ? COLOR.danger : COLOR.gray,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -226,8 +226,8 @@ const DisputeTimeline: React.FC = () => {
                 <div
                   key={i}
                   style={{
-                    ...TYPE.caption,
-                    color: COLOR.down,
+                    ...TYPE.captionDark,
+                    color: COLOR.danger,
                     opacity: 0.6,
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
@@ -244,8 +244,8 @@ const DisputeTimeline: React.FC = () => {
         <div>
           <div
             style={{
-              ...TYPE.subhead,
-              color: COLOR.up,
+              ...TYPE.cardTitleDark,
+              color: COLOR.wiseGreen,
               marginBottom: 16,
             }}
           >
@@ -277,9 +277,9 @@ const DisputeTimeline: React.FC = () => {
                 top: 16,
                 height: 18,
                 borderRadius: 9,
-                background: COLOR.up,
+                background: COLOR.wiseGreen,
                 opacity: gmGlow * 0.5,
-                boxShadow: `0 0 16px ${COLOR.up}`,
+                boxShadow: `0 0 16px ${COLOR.wiseGreen}`,
               }}
             />
 
@@ -312,19 +312,19 @@ const DisputeTimeline: React.FC = () => {
                       width: DOT_SIZE,
                       height: DOT_SIZE,
                       borderRadius: "50%",
-                      background: COLOR.up,
+                      background: COLOR.wiseGreen,
                       boxShadow: m.isGreen
-                        ? `0 0 8px ${COLOR.up}`
+                        ? `0 0 8px ${COLOR.wiseGreen}`
                         : undefined,
                     }}
                   />
                   <div
                     style={{
-                      ...TYPE.label,
+                      ...TYPE.labelDark,
                       position: "absolute",
                       top: 36,
-                      fontWeight: m.isGreen ? 700 : TYPE.label.fontWeight,
-                      color: COLOR.up,
+                      fontWeight: m.isGreen ? 700 : TYPE.labelDark.fontWeight,
+                      color: COLOR.wiseGreen,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -351,8 +351,8 @@ const DisputeTimeline: React.FC = () => {
               <div
                 key={i}
                 style={{
-                  ...TYPE.caption,
-                  color: COLOR.up,
+                  ...TYPE.captionDark,
+                  color: COLOR.wiseGreen,
                   opacity: 0.7,
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
@@ -376,8 +376,8 @@ const DisputeTimeline: React.FC = () => {
         >
           <div
             style={{
-              ...TYPE.caption,
-              color: COLOR.muted,
+              ...TYPE.captionDark,
+              color: COLOR.gray,
               textAlign: "right",
             }}
           >
@@ -385,7 +385,7 @@ const DisputeTimeline: React.FC = () => {
             <span style={{ color: AMBER, fontWeight: 700 }}>weeks</span>.
             <br />
             GM settles in{" "}
-            <span style={{ color: COLOR.up, fontWeight: 700 }}>
+            <span style={{ color: COLOR.wiseGreen, fontWeight: 700 }}>
               {COMPARISONS.gmSettlement}
             </span>
             .

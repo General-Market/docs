@@ -32,7 +32,7 @@ interface StatData {
 const STATS: StatData[] = [
   { label: "TRADES", value: "47", targetNum: 47 },
   { label: "WIN RATE", value: "54.3%", targetNum: 54.3, suffix: "%" },
-  { label: "PNL", value: "+$12.40", targetNum: 12.4, prefix: "+$", color: COLOR.up },
+  { label: "PNL", value: "+$12.40", targetNum: 12.4, prefix: "+$", color: COLOR.positive },
   { label: "UPTIME", value: "4m 31s" },
 ];
 
@@ -106,8 +106,8 @@ const BotDashboard: React.FC = () => {
               width: 10,
               height: 10,
               borderRadius: "50%",
-              background: COLOR.up,
-              boxShadow: `0 0 ${8 + livePulse * 6}px ${COLOR.up}`,
+              background: COLOR.wiseGreen,
+              boxShadow: `0 0 ${8 + livePulse * 6}px ${COLOR.wiseGreen}`,
               opacity: 0.7 + livePulse * 0.3,
             }}
           />
@@ -116,15 +116,18 @@ const BotDashboard: React.FC = () => {
               ...TYPE.label,
               fontSize: 12,
               fontWeight: 700,
-              color: COLOR.up,
+              color: COLOR.darkGreen,
               letterSpacing: 1.2,
+              background: COLOR.wiseGreen,
+              padding: "2px 8px",
+              borderRadius: 4,
             }}
           >
             LIVE
           </span>
           <span
             style={{
-              ...TYPE.subhead,
+              ...TYPE.cardTitle,
               marginLeft: 4,
             }}
           >
@@ -193,7 +196,7 @@ const BotDashboard: React.FC = () => {
                 <span
                   style={{
                     ...TYPE.statValue,
-                    color: stat.color || COLOR.fg,
+                    color: stat.color || COLOR.nearBlack,
                     lineHeight: 1,
                   }}
                 >
@@ -237,7 +240,7 @@ const BotDashboard: React.FC = () => {
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "12px 16px",
-                    background: COLOR.surface,
+                    background: COLOR.lightSurface,
                     borderRadius: 8,
                     border: `1px solid ${COLOR.border}`,
                     opacity: rowSpring,
@@ -254,19 +257,19 @@ const BotDashboard: React.FC = () => {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span
                       style={{
-                        ...TYPE.mono,
+                        ...TYPE.bodySemibold,
                         fontSize: 13,
-                        color: COLOR.muted,
+                        color: COLOR.gray,
                       }}
                     >
                       Settled
                     </span>
                     <span
                       style={{
-                        ...TYPE.mono,
+                        ...TYPE.bodySemibold,
                         fontSize: 15,
                         fontWeight: 700,
-                        color: row.positive ? COLOR.up : COLOR.down,
+                        color: row.positive ? COLOR.positive : COLOR.danger,
                       }}
                     >
                       {row.pnl}

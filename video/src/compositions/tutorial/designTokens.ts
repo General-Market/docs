@@ -1,162 +1,408 @@
 /**
- * Design tokens — exact replica of frontend globals.css + SourceCard patterns.
- * Every component in the tutorial MUST use these tokens. No ad-hoc sizes.
+ * Design tokens — Wise design system (getdesign.md/wise).
  *
- * Video is 1920x1080. Frontend is responsive. We use the "desktop" sizes
- * scaled for video readability (1.5x multiplier on small text since
- * video is watched at smaller viewport than a desktop browser).
+ * Lime green accent, near-black text, Inter 600 body, billboard-scale headings.
+ * Ring shadows only. Pill buttons. 30-40px card radius.
+ * Scale for video (1920x1080): sizes adjusted for screen readability.
  */
 
-import { font, monoFont } from "../../common/fonts";
+import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 
-// ── Colors (from :root CSS vars) ────────────────────────────────────────────
-export const COLOR = {
-  bg: "#FFFFFF",
-  fg: "#1A1A1A",
-  surface: "#F4F6F5",
-  border: "#E0E0E0",
-  borderStrong: "#000000",
-  up: "#16A34A",
-  down: "#DC2626",
-  brand: "#00A36C",
-  muted: "#999999",
-  mutedLight: "#CCCCCC",
-  tableHeader: "#555555",
-  panelDark: "rgba(10, 10, 10, 0.85)",
-  panelDarkHeavy: "rgba(10, 10, 10, 0.92)",
-  sectionBar: "#000000",
-  white: "#FFFFFF",
-  black: "#0a0a0a",
+// Load Inter with all needed weights (Wise Sans fallback = Inter at 900)
+const { fontFamily: interFamily } = loadInter("normal", {
+  subsets: ["latin"],
+  weights: ["400", "500", "600", "700", "800", "900"],
+});
+
+// ── Fonts ───────────────────────────────────────────────────────────────────
+// Wise Sans is proprietary — we use Inter as the display fallback at weight 900.
+// All text gets OpenType "calt" (contextual alternates).
+
+export const FONT = {
+  display: interFamily, // Wise Sans fallback
+  body: interFamily, // Inter
+  calt: '"calt" 1', // contextual alternates — enabled everywhere
 } as const;
 
-// ── Typography (from globals.css type utilities, scaled 1.5x for video) ─────
-// Video viewers watch at ~50% of 1920px, so text needs to be ~1.5x website size
+// ── Colors ──────────────────────────────────────────────────────────────────
+
+export const COLOR = {
+  // Primary Brand
+  nearBlack: "#0e0f0c",
+  wiseGreen: "#9fe870",
+  darkGreen: "#163300",
+  lightMint: "#e2f6d5",
+  pastelGreen: "#cdffad",
+
+  // Semantic
+  positive: "#054d28",
+  danger: "#d03238",
+  warning: "#ffd11a",
+  infoBg: "rgba(56,200,255,0.10)",
+  brightOrange: "#ffc091",
+
+  // Neutral
+  warmDark: "#454745",
+  gray: "#868685",
+  lightSurface: "#e8ebe6",
+
+  // Backgrounds
+  bg: "#ffffff",
+  bgDark: "#0e0f0c",
+
+  // Derived / video-specific
+  panelDark: "rgba(14, 15, 12, 0.88)",
+  panelDarkHeavy: "rgba(14, 15, 12, 0.94)",
+  white: "#ffffff",
+  border: "rgba(14,15,12,0.12)",
+  borderGreen: "#9fe870",
+} as const;
+
+// ── Typography ──────────────────────────────────────────────────────────────
+// Video scale: sizes bumped ~1.3x from web for 1920x1080 readability.
+// All styles include fontFeatureSettings: "calt" 1 per Wise rules.
+
+const calt = { fontFeatureSettings: '"calt" 1' };
 
 export const TYPE = {
-  /** Micro labels — uppercase category badges, metric headers */
+  /** Display Mega — 126px on web → 100px in video. Weight 900, line-height 0.85. */
+  displayMega: {
+    fontFamily: FONT.display,
+    fontSize: 100,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Display Hero — 96px on web → 80px in video */
+  displayHero: {
+    fontFamily: FONT.display,
+    fontSize: 80,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Section Heading — 64px on web → 56px in video */
+  sectionHeading: {
+    fontFamily: FONT.display,
+    fontSize: 56,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Sub-heading — 40px on web → 36px in video */
+  subHeading: {
+    fontFamily: FONT.display,
+    fontSize: 36,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Card Title — 26px on web → 28px in video, Inter 600 */
+  cardTitle: {
+    fontFamily: FONT.body,
+    fontSize: 28,
+    fontWeight: 600 as const,
+    lineHeight: 1.23,
+    letterSpacing: "-0.39px",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Feature Title — 22px on web → 24px in video */
+  featureTitle: {
+    fontFamily: FONT.body,
+    fontSize: 24,
+    fontWeight: 600 as const,
+    lineHeight: 1.25,
+    letterSpacing: "-0.4px",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Body — 18px on web → 20px in video, Inter 400 */
+  body: {
+    fontFamily: FONT.body,
+    fontSize: 20,
+    fontWeight: 400 as const,
+    lineHeight: 1.44,
+    letterSpacing: "0.18px",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Body Semibold — Inter 600 (the Wise default reading weight) */
+  bodySemibold: {
+    fontFamily: FONT.body,
+    fontSize: 20,
+    fontWeight: 600 as const,
+    lineHeight: 1.44,
+    letterSpacing: "-0.108px",
+    color: COLOR.nearBlack,
+    ...calt,
+  },
+
+  /** Button — Inter 600, pill style */
+  button: {
+    fontFamily: FONT.body,
+    fontSize: 22,
+    fontWeight: 600 as const,
+    lineHeight: 1.0,
+    letterSpacing: "-0.108px",
+    color: COLOR.darkGreen,
+    ...calt,
+  },
+
+  /** Caption — 14px on web → 16px in video */
+  caption: {
+    fontFamily: FONT.body,
+    fontSize: 16,
+    fontWeight: 400 as const,
+    lineHeight: 1.5,
+    letterSpacing: "-0.084px",
+    color: COLOR.gray,
+    ...calt,
+  },
+
+  /** Caption Semibold */
+  captionSemibold: {
+    fontFamily: FONT.body,
+    fontSize: 16,
+    fontWeight: 600 as const,
+    lineHeight: 1.5,
+    letterSpacing: "-0.108px",
+    color: COLOR.gray,
+    ...calt,
+  },
+
+  /** Small — 12px on web → 14px in video */
+  small: {
+    fontFamily: FONT.body,
+    fontSize: 14,
+    fontWeight: 400 as const,
+    lineHeight: 1.5,
+    letterSpacing: "-0.084px",
+    color: COLOR.gray,
+    ...calt,
+  },
+
+  /** Label — uppercase micro text for categories, metrics headers */
   label: {
-    fontFamily: font,
-    fontSize: 16, // website: 11px → video: 16px
+    fontFamily: FONT.body,
+    fontSize: 14,
     fontWeight: 600 as const,
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
-    color: COLOR.muted,
     lineHeight: 1.4,
+    color: COLOR.gray,
+    ...calt,
   },
 
-  /** Table headers — slightly bolder than labels */
-  tableHeader: {
-    fontFamily: font,
-    fontSize: 16,
-    fontWeight: 700 as const,
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.025em",
-    color: COLOR.tableHeader,
-    lineHeight: 1.4,
-  },
-
-  /** Stat values — big bold numbers (JetBrains Mono) */
+  /** Stat Value — big numbers (Inter 900, tabular-nums) */
   statValue: {
-    fontFamily: monoFont,
-    fontSize: 48, // website: 32px → video: 48px
+    fontFamily: FONT.body,
+    fontSize: 48,
     fontWeight: 900 as const,
-    letterSpacing: "-0.03em",
-    lineHeight: 1.15,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
     fontVariantNumeric: "tabular-nums" as const,
-    color: COLOR.fg,
+    color: COLOR.nearBlack,
+    ...calt,
   },
 
-  /** Display — hero text, biggest on screen */
-  display: {
-    fontFamily: font,
-    fontSize: 64, // website: clamp(36-56px) → video: 64px
+  // ── Dark mode variants (white text on dark bg) ──
+
+  displayHeroDark: {
+    fontFamily: FONT.display,
+    fontSize: 80,
     fontWeight: 900 as const,
-    letterSpacing: "-0.035em",
-    lineHeight: 1.05,
-    color: COLOR.fg,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.white,
+    ...calt,
   },
 
-  /** Heading — section titles */
-  heading: {
-    fontFamily: font,
+  sectionHeadingDark: {
+    fontFamily: FONT.display,
+    fontSize: 56,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.white,
+    ...calt,
+  },
+
+  subHeadingDark: {
+    fontFamily: FONT.display,
     fontSize: 36,
-    fontWeight: 800 as const,
-    letterSpacing: "-0.025em",
-    lineHeight: 1.15,
-    color: COLOR.fg,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
+    color: COLOR.white,
+    ...calt,
   },
 
-  /** Subhead — card titles, source names */
-  subhead: {
-    fontFamily: font,
-    fontSize: 24,
-    fontWeight: 800 as const,
-    letterSpacing: "-0.01em",
-    lineHeight: 1.25,
-    color: COLOR.fg,
+  cardTitleDark: {
+    fontFamily: FONT.body,
+    fontSize: 28,
+    fontWeight: 600 as const,
+    lineHeight: 1.23,
+    letterSpacing: "-0.39px",
+    color: COLOR.white,
+    ...calt,
   },
 
-  /** Body — descriptions, paragraphs */
-  body: {
-    fontFamily: font,
+  bodyDark: {
+    fontFamily: FONT.body,
     fontSize: 20,
     fontWeight: 400 as const,
-    lineHeight: 1.5,
-    color: COLOR.fg,
+    lineHeight: 1.44,
+    letterSpacing: "0.18px",
+    color: "rgba(255,255,255,0.85)",
+    ...calt,
   },
 
-  /** Caption — small descriptive text */
-  caption: {
-    fontFamily: font,
-    fontSize: 16,
-    fontWeight: 500 as const,
-    lineHeight: 1.4,
-    color: COLOR.muted,
-  },
-
-  /** Mono — code, numbers in body context */
-  mono: {
-    fontFamily: monoFont,
+  bodySemiboldDark: {
+    fontFamily: FONT.body,
     fontSize: 20,
-    fontWeight: 500 as const,
-    fontVariantNumeric: "tabular-nums" as const,
-    color: COLOR.fg,
+    fontWeight: 600 as const,
+    lineHeight: 1.44,
+    letterSpacing: "-0.108px",
+    color: COLOR.white,
+    ...calt,
   },
 
-  /** Mono large — standalone numbers */
-  monoLarge: {
-    fontFamily: monoFont,
-    fontSize: 36,
-    fontWeight: 700 as const,
+  captionDark: {
+    fontFamily: FONT.body,
+    fontSize: 16,
+    fontWeight: 400 as const,
+    lineHeight: 1.5,
+    letterSpacing: "-0.084px",
+    color: "rgba(255,255,255,0.55)",
+    ...calt,
+  },
+
+  labelDark: {
+    fontFamily: FONT.body,
+    fontSize: 14,
+    fontWeight: 600 as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+    lineHeight: 1.4,
+    color: "rgba(255,255,255,0.55)",
+    ...calt,
+  },
+
+  statValueDark: {
+    fontFamily: FONT.body,
+    fontSize: 48,
+    fontWeight: 900 as const,
+    lineHeight: 0.85,
+    letterSpacing: "normal",
     fontVariantNumeric: "tabular-nums" as const,
-    color: COLOR.fg,
+    color: COLOR.white,
+    ...calt,
   },
 } as const;
 
-// ── Panel styles ────────────────────────────────────────────────────────────
+// ── Panels & Cards ──────────────────────────────────────────────────────────
 
 export const PANEL = {
-  /** Dark overlay panel (over talking head) */
-  dark: {
-    background: COLOR.panelDark,
-    borderRadius: 16,
-    padding: "24px 32px",
-  },
-
-  /** White card (frontend style) */
+  /** White card — 30px radius, ring shadow */
   white: {
     background: COLOR.bg,
-    borderRadius: 16,
+    borderRadius: 30,
     border: `1px solid ${COLOR.border}`,
-    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-    padding: "24px 32px",
+    boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px",
+    padding: "32px 40px",
   },
 
-  /** Section bar (full-width black bar) */
-  sectionBar: {
-    background: COLOR.sectionBar,
-    color: COLOR.white,
-    padding: "16px 40px",
+  /** Large white card — 40px radius (tables, feature cards) */
+  whiteLarge: {
+    background: COLOR.bg,
+    borderRadius: 40,
+    border: `1px solid ${COLOR.border}`,
+    boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px",
+    padding: "40px 48px",
+  },
+
+  /** Dark panel */
+  dark: {
+    background: COLOR.panelDark,
+    borderRadius: 30,
+    border: "1px solid rgba(255,255,255,0.06)",
+    padding: "32px 40px",
+  },
+
+  /** Green accent card */
+  greenAccent: {
+    background: COLOR.lightMint,
+    borderRadius: 30,
+    border: `1px solid ${COLOR.wiseGreen}`,
+    padding: "32px 40px",
+  },
+} as const;
+
+// ── Buttons ─────────────────────────────────────────────────────────────────
+
+export const BUTTON = {
+  /** Primary green pill */
+  primary: {
+    background: COLOR.wiseGreen,
+    color: COLOR.darkGreen,
+    borderRadius: 9999,
+    padding: "8px 24px",
+    fontFamily: FONT.body,
+    fontSize: 20,
+    fontWeight: 600 as const,
+    lineHeight: 1.0,
+    letterSpacing: "-0.108px",
+    border: "none",
+    cursor: "pointer",
+    ...calt,
+  },
+
+  /** Secondary subtle pill */
+  secondary: {
+    background: "rgba(22, 51, 0, 0.08)",
+    color: COLOR.nearBlack,
+    borderRadius: 9999,
+    padding: "8px 20px",
+    fontFamily: FONT.body,
+    fontSize: 20,
+    fontWeight: 600 as const,
+    lineHeight: 1.0,
+    letterSpacing: "-0.108px",
+    border: "none",
+    ...calt,
+  },
+} as const;
+
+// ── Node/diagram elements ───────────────────────────────────────────────────
+
+export const NODE = {
+  circle: {
+    radius: 52,
+    strokeWidth: 2,
+    labelSize: 14,
+    labelWeight: 600 as const,
+    labelFont: FONT.body,
+  },
+  connection: {
+    strokeWidth: 2,
+    dashArray: "8 4",
+    opacity: 0.4,
   },
 } as const;
 
@@ -165,35 +411,29 @@ export const PANEL = {
 export const FAQ = {
   backdrop: COLOR.panelDarkHeavy,
   numberStyle: {
-    ...TYPE.display,
-    fontSize: 80,
-    color: COLOR.brand,
+    ...TYPE.displayHero,
+    fontSize: 100,
+    color: COLOR.wiseGreen,
   },
   questionStyle: {
-    ...TYPE.heading,
+    ...TYPE.sectionHeading,
     fontSize: 44,
+    fontWeight: 700 as const,
     color: COLOR.white,
     textAlign: "center" as const,
-    maxWidth: 900,
-    lineHeight: 1.3,
+    maxWidth: 1000,
+    lineHeight: 1.15,
   },
 } as const;
 
-// ── Node/diagram element styling ────────────────────────────────────────────
+// ── Spacing ─────────────────────────────────────────────────────────────────
+// Base unit: 8px (Wise spacing system)
 
-export const NODE = {
-  /** Circle nodes in diagrams */
-  circle: {
-    radius: 52,
-    strokeWidth: 2.5,
-    labelSize: 14,
-    labelWeight: 700 as const,
-    labelFont: font,
-  },
-  /** Connection lines between nodes */
-  connection: {
-    strokeWidth: 2,
-    dashArray: "8 4",
-    opacity: 0.5,
-  },
+export const SPACE = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
 } as const;

@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLOR, TYPE, PANEL } from "../designTokens";
+import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 
 const sec = (s: number) => Math.round(s * FPS);
@@ -73,7 +73,7 @@ const TickerBar: React.FC = () => {
             key={item}
             style={{
               background: COLOR.panelDark,
-              borderRadius: PANEL.dark.borderRadius,
+              borderRadius: 9999,
               padding: "12px 24px",
               display: "flex",
               alignItems: "center",
@@ -90,17 +90,13 @@ const TickerBar: React.FC = () => {
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                background: COLOR.up,
+                background: COLOR.wiseGreen,
                 flexShrink: 0,
               }}
             />
             <span
               style={{
-                fontFamily: TYPE.body.fontFamily,
-                fontSize: TYPE.body.fontSize,
-                fontWeight: 600,
-                lineHeight: TYPE.body.lineHeight,
-                color: COLOR.white,
+                ...TYPE.bodySemiboldDark,
                 whiteSpace: "nowrap",
               }}
             >

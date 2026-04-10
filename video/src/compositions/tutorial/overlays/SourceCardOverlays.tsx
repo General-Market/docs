@@ -83,7 +83,7 @@ const OVERLAY_END = 264.88;
 // ---------------------------------------------------------------------------
 
 const LiveDot: React.FC<{ frame: number }> = ({ frame }) => {
-  const color = COLOR.up;
+  const color = COLOR.wiseGreen;
   // Ping expands and fades in a ~1s cycle
   const cycle = (frame % 30) / 30;
   const pingScale = 1 + cycle * 1.5;
@@ -156,7 +156,7 @@ const SourceCard: React.FC<{
   );
 
   // Text color on brand hero — light text unless bg is very light
-  const heroTextColor = hexLuminance(spec.brandColor) > 180 ? "#1A1A1A" : "#FFFFFF";
+  const heroTextColor = hexLuminance(spec.brandColor) > 180 ? COLOR.nearBlack : COLOR.white;
 
   return (
     <div
@@ -186,7 +186,7 @@ const SourceCard: React.FC<{
         {/* Logo text */}
         <span
           style={{
-            fontFamily: TYPE.display.fontFamily,
+            fontFamily: TYPE.displayHero.fontFamily,
             fontSize: spec.logoText.length > 5 ? 48 : 72,
             fontWeight: 900,
             color: heroTextColor,
@@ -203,10 +203,9 @@ const SourceCard: React.FC<{
             position: "absolute",
             top: 12,
             right: 12,
-            ...TYPE.label,
-            color: "rgba(255,255,255,0.9)",
-            background: "rgba(255,255,255,0.15)",
-            backdropFilter: "blur(8px)",
+            ...TYPE.small,
+            color: COLOR.darkGreen,
+            background: COLOR.wiseGreen,
             padding: "3px 10px",
             borderRadius: 999,
           }}
@@ -229,7 +228,7 @@ const SourceCard: React.FC<{
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                ...TYPE.subhead,
+                ...TYPE.cardTitle,
                 lineHeight: 1.2,
               }}
             >
@@ -259,7 +258,7 @@ const SourceCard: React.FC<{
             <span
               style={{
                 ...TYPE.label,
-                color: COLOR.up,
+                color: COLOR.wiseGreen,
               }}
             >
               Live
@@ -290,7 +289,7 @@ const SourceCard: React.FC<{
             </div>
             <span
               style={{
-                ...TYPE.mono,
+                ...TYPE.bodySemibold,
                 fontWeight: 700,
               }}
             >

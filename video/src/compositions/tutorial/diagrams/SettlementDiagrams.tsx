@@ -24,10 +24,10 @@ const CYCLE_IN = sec(10.56);
 const CYCLE_OUT = sec(23.96);
 
 // Colors — from design tokens
-const GREEN = COLOR.up;
-const RED = COLOR.down;
-const ACCENT = COLOR.brand;
-const DIM = COLOR.mutedLight;
+const GREEN = COLOR.wiseGreen;
+const RED = COLOR.danger;
+const ACCENT = COLOR.wiseGreen;
+const DIM = COLOR.gray;
 const BRIGHT = COLOR.white;
 
 // ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ const CycleTimeline: React.FC = () => {
         {/* Current phase label */}
         <div
           style={{
-            ...TYPE.label,
+            ...TYPE.labelDark,
             color: phaseLabels[currentPhase].color,
           }}
         >
@@ -178,12 +178,12 @@ const CycleTimeline: React.FC = () => {
                     width: 32,
                     height: 28,
                     borderRadius: 4,
-                    background: block.color === GREEN ? `${COLOR.up}40` : `${COLOR.down}40`,
+                    background: block.color === GREEN ? `${COLOR.wiseGreen}40` : `${COLOR.danger}40`,
                     border: `1.5px solid ${block.color}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontFamily: TYPE.mono.fontFamily,
+                    fontFamily: TYPE.bodySemibold.fontFamily,
                     fontSize: 8,
                     fontWeight: TYPE.label.fontWeight,
                     color: block.color,
@@ -215,11 +215,11 @@ const CycleTimeline: React.FC = () => {
                     borderRadius: "50%",
                     background: ACCENT,
                     opacity: 0.6 + 0.4 * oraclePulse,
-                    boxShadow: `0 0 ${8 + 6 * oraclePulse}px ${COLOR.brand}80`,
+                    boxShadow: `0 0 ${8 + 6 * oraclePulse}px ${COLOR.wiseGreen}80`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontFamily: TYPE.mono.fontFamily,
+                    fontFamily: TYPE.bodySemibold.fontFamily,
                     fontSize: 11,
                     fontWeight: TYPE.label.fontWeight,
                     color: COLOR.white,
@@ -252,10 +252,10 @@ const CycleTimeline: React.FC = () => {
                     left: dollarX,
                     top: dollarY,
                     opacity: dollarOp,
-                    fontFamily: TYPE.mono.fontFamily,
-                    fontSize: TYPE.mono.fontSize,
-                    fontWeight: TYPE.mono.fontWeight,
-                    color: COLOR.up,
+                    fontFamily: TYPE.statValue.fontFamily,
+                    fontSize: TYPE.statValue.fontSize,
+                    fontWeight: TYPE.statValue.fontWeight,
+                    color: COLOR.wiseGreen,
                   }}
                 >
                   $
@@ -292,7 +292,7 @@ const CycleTimeline: React.FC = () => {
               top: 0,
               width: 1.5,
               height: "100%",
-              background: `${COLOR.mutedLight}26`,
+              background: `${COLOR.gray}26`,
             }}
           />
           <div
@@ -302,7 +302,7 @@ const CycleTimeline: React.FC = () => {
               top: 0,
               width: 1.5,
               height: "100%",
-              background: `${COLOR.mutedLight}26`,
+              background: `${COLOR.gray}26`,
             }}
           />
         </div>
@@ -311,31 +311,31 @@ const CycleTimeline: React.FC = () => {
         <div style={{ width: barWidth, display: "flex", position: "relative", height: 16 }}>
           <div
             style={{
-              ...TYPE.label,
+              ...TYPE.labelDark,
               position: "absolute",
               left: 0,
               width: `${PHASE_BETTING_END * 100}%`,
               textAlign: "center",
-              color: COLOR.up,
+              color: COLOR.wiseGreen,
             }}
           >
             BETTING (10 min)
           </div>
           <div
             style={{
-              ...TYPE.label,
+              ...TYPE.labelDark,
               position: "absolute",
               left: `${PHASE_BETTING_END * 100}%`,
               width: `${(PHASE_ORACLE_END - PHASE_BETTING_END) * 100}%`,
               textAlign: "center",
-              color: COLOR.brand,
+              color: COLOR.wiseGreen,
             }}
           >
             ORACLE
           </div>
           <div
             style={{
-              ...TYPE.label,
+              ...TYPE.labelDark,
               position: "absolute",
               left: `${PHASE_ORACLE_END * 100}%`,
               width: `${(1 - PHASE_ORACLE_END) * 100}%`,
@@ -375,9 +375,9 @@ const ParasiteLabel: React.FC<{
 }> = ({ text, color, style }) => (
   <div
     style={{
-      ...TYPE.caption,
+      ...TYPE.captionDark,
       textTransform: "uppercase",
-      letterSpacing: TYPE.label.letterSpacing,
+      letterSpacing: TYPE.labelDark.letterSpacing,
       color,
       whiteSpace: "nowrap",
       ...style,

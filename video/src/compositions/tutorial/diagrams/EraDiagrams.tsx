@@ -17,8 +17,8 @@ import { DiagramCardDark } from "../components/DiagramCard";
 
 const sec = (s: number) => Math.round(s * FPS);
 
-const GREEN = COLOR.up;
-const RED = COLOR.down;
+const GREEN = COLOR.wiseGreen;
+const RED = COLOR.danger;
 const ORANGE = "#f97316"; // gradient step — no token for orange
 const YELLOW = "#eab308"; // gradient step — no token for yellow
 
@@ -108,8 +108,7 @@ const FormulaType: React.FC<{ progress: number }> = ({ progress }) => {
   return (
     <div
       style={{
-        ...TYPE.mono,
-        color: "rgba(250,250,250,0.7)",
+        ...TYPE.bodySemiboldDark,
         letterSpacing: 1,
         minHeight: 24,
         whiteSpace: "nowrap",
@@ -156,7 +155,7 @@ const BatchGrid: React.FC<{ progress: number }> = ({ progress }) => {
             rx={2}
             fill={
               cellProgress > 0
-                ? `rgba(0, 200, 83, ${0.3 + cellProgress * 0.6})`
+                ? `rgba(159, 232, 112, ${0.3 + cellProgress * 0.6})`
                 : "rgba(250,250,250,0.1)"
             }
           />
@@ -244,7 +243,7 @@ const EraTimelineCharts: React.FC = () => {
             style={{
               width: `${barProgress * 100}%`,
               height: "100%",
-              background: `linear-gradient(90deg, ${COLOR.border}4D, ${COLOR.up})`,
+              background: `linear-gradient(90deg, ${COLOR.border}4D, ${COLOR.wiseGreen})`,
               borderRadius: 2,
             }}
           />
@@ -351,9 +350,9 @@ const EraTimelineCharts: React.FC = () => {
                   {/* Year */}
                   <div
                     style={{
-                      ...TYPE.heading,
+                      ...TYPE.subHeadingDark,
                       color: card.isHighlight
-                        ? COLOR.up
+                        ? COLOR.wiseGreen
                         : "rgba(250,250,250,0.5)",
                       marginBottom: 10,
                     }}
@@ -371,7 +370,7 @@ const EraTimelineCharts: React.FC = () => {
                   {/* Label */}
                   <div
                     style={{
-                      ...TYPE.subhead,
+                      ...TYPE.cardTitleDark,
                       color: card.isHighlight
                         ? COLOR.white
                         : "rgba(250,250,250,0.8)",
@@ -384,7 +383,7 @@ const EraTimelineCharts: React.FC = () => {
                   {/* Subtitle */}
                   <div
                     style={{
-                      ...TYPE.caption,
+                      ...TYPE.captionDark,
                       color: card.isHighlight
                         ? "rgba(250,250,250,0.85)"
                         : "rgba(250,250,250,0.45)",
@@ -410,7 +409,7 @@ const EraTimelineCharts: React.FC = () => {
                 {/* Parasite label */}
                 <div
                   style={{
-                    ...TYPE.label,
+                    ...TYPE.labelDark,
                     color: "rgba(250,250,250,0.55)",
                     whiteSpace: "nowrap",
                     opacity: interpolate(parasiteProgress, [0, 1], [0, 1], {
@@ -527,7 +526,7 @@ const CompetitiveLandscape: React.FC = () => {
         {/* Title */}
         <div
           style={{
-            ...TYPE.heading,
+            ...TYPE.sectionHeadingDark,
             color: "rgba(250,250,250,0.7)",
             textTransform: "uppercase",
             marginBottom: 28,
@@ -593,9 +592,9 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Label */}
               <div
                 style={{
-                  ...TYPE.label,
+                  ...TYPE.labelDark,
                   color: bar.isPulsing
-                    ? COLOR.up
+                    ? COLOR.wiseGreen
                     : "rgba(250,250,250,0.65)",
                   width: 100,
                   textAlign: "right",
@@ -640,9 +639,9 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Stat text */}
               <div
                 style={{
-                  ...TYPE.mono,
+                  ...TYPE.bodySemiboldDark,
                   color: bar.isPulsing
-                    ? COLOR.up
+                    ? COLOR.wiseGreen
                     : "rgba(250,250,250,0.5)",
                   width: 180,
                   paddingLeft: 14,
@@ -655,9 +654,9 @@ const CompetitiveLandscape: React.FC = () => {
               {/* Parasite */}
               <div
                 style={{
-                  ...TYPE.caption,
+                  ...TYPE.captionDark,
                   color: bar.isPulsing
-                    ? COLOR.up
+                    ? COLOR.wiseGreen
                     : "rgba(250,250,250,0.3)",
                   width: 160,
                   paddingLeft: 8,
@@ -711,11 +710,11 @@ const CompetitiveLandscape: React.FC = () => {
               </svg>
               <span
                 style={{
-                  ...TYPE.subhead,
-                  color: COLOR.up,
+                  ...TYPE.cardTitleDark,
+                  color: COLOR.wiseGreen,
                   marginLeft: 8,
                   letterSpacing: 2,
-                  textShadow: `0 0 16px ${COLOR.up}44`,
+                  textShadow: `0 0 16px ${COLOR.wiseGreen}44`,
                 }}
               >
                 YOU ARE HERE

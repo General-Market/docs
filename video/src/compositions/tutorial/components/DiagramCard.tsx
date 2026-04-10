@@ -18,7 +18,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
-import { COLOR, TYPE } from "../designTokens";
+import { TYPE, PANEL } from "../designTokens";
 
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
@@ -112,8 +112,8 @@ const BRollBackdrop: React.FC<{
 // Source brand color blocks scrolling vertically on sides (parallax).
 
 const BRAND_COLORS = [
-  "#EC0016", "#9146FF", "#1B2838", "#FF6B35", "#00A36C", "#2563EB",
-  "#F59E0B", "#DC2626", "#6366F1", "#0EA5E9", "#84CC16", "#EC4899",
+  "#EC0016", "#9146FF", "#1B2838", "#FF6B35", "#9fe870", "#2563EB",
+  "#F59E0B", "#d03238", "#6366F1", "#0EA5E9", "#84CC16", "#EC4899",
 ];
 const BRAND_LABELS = [
   "DB", "twitch", "STEAM", "pump.fun", "GM", "flights",
@@ -171,7 +171,7 @@ const BRollStrips: React.FC<{ speed?: number }> = ({ speed = 0.8 }) => {
             >
               <span
                 style={{
-                  fontFamily: TYPE.heading.fontFamily,
+                  fontFamily: TYPE.subHeadingDark.fontFamily,
                   fontSize: 22,
                   fontWeight: 800,
                   color: "#fff",
@@ -229,11 +229,10 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
             width,
             minHeight,
             maxHeight,
-            background: COLOR.bg,
-            borderRadius: 20,
-            border: `1px solid ${COLOR.border}`,
-            boxShadow:
-              "0 8px 40px rgba(0, 0, 0, 0.15), 0 2px 12px rgba(0, 0, 0, 0.08)",
+            background: PANEL.white.background,
+            borderRadius: PANEL.white.borderRadius,
+            border: PANEL.white.border,
+            boxShadow: PANEL.white.boxShadow,
             padding,
             opacity,
             transform: `translateY(${translateY}px) scale(${scale})`,
@@ -282,11 +281,10 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
             width,
             minHeight,
             maxHeight,
-            background: COLOR.panelDark,
-            borderRadius: 20,
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow:
-              "0 8px 40px rgba(0, 0, 0, 0.3), 0 2px 12px rgba(0, 0, 0, 0.15)",
+            background: PANEL.dark.background,
+            borderRadius: PANEL.dark.borderRadius,
+            border: PANEL.dark.border,
+            boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px",
             padding,
             opacity,
             transform: `translateY(${translateY}px) scale(${scale})`,
