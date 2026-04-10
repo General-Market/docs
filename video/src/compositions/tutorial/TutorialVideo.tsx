@@ -1,8 +1,10 @@
 import React from "react";
-import { AbsoluteFill, Sequence, Video, staticFile } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
 import { TOTAL_FRAMES, SECTIONS, toFrames } from "./theme";
-// HookDiagrams removed — not approved
+import { TalkingHeadLayout } from "./TalkingHeadLayout";
+import { LiquidityDiagrams } from "./diagrams/LiquidityDiagrams";
 import { SettlementDiagrams } from "./diagrams/SettlementDiagrams";
+import { ParimutuelDiagrams } from "./diagrams/ParimutuelDiagrams";
 import { PrivacyDiagrams } from "./diagrams/PrivacyDiagrams";
 import { EraDiagrams } from "./diagrams/EraDiagrams";
 import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
@@ -18,16 +20,22 @@ const seq = (key: keyof typeof SECTIONS) => ({
 export const TutorialVideo: React.FC = () => {
   return (
     <AbsoluteFill>
-      <AbsoluteFill>
-        <Video
-          src={staticFile("tutorial-raw.mp4")}
-          style={{ width: "100%", height: "100%" }}
-        />
-      </AbsoluteFill>
+      {/* Base layer: animated split-screen webcam */}
+      <TalkingHeadLayout />
+
+      {/* Liquidity diagrams (48.64–89.84s) */}
+      <Sequence {...seq("liquidityDiagram")}>
+        <LiquidityDiagrams />
+      </Sequence>
 
       {/* 10-min cycle timeline (100.4–113.8s) */}
       <Sequence {...seq("settlementTimeline")}>
         <SettlementDiagrams />
+      </Sequence>
+
+      {/* Parimutuel explanation (2:11-2:39) — overlaps settlementTimeline section */}
+      <Sequence {...seq("settlementTimeline")}>
+        <ParimutuelDiagrams />
       </Sequence>
 
       {/* Dispute timeline (181.2–194.0s) */}
