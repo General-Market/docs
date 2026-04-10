@@ -49,8 +49,8 @@ const FAQ_QUESTIONS: FaqEntry[] = [
   },
 ];
 
-const HOLD_SEC = 3;
-const FADE_OUT_SEC = 0.5;
+const HOLD_SEC = 5.5;
+const FADE_OUT_SEC = 0.8;
 
 const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
   const frame = useCurrentFrame();
