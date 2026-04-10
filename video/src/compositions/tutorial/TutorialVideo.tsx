@@ -11,6 +11,7 @@ import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
 import { SourceCardOverlays } from "./overlays/SourceCardOverlays";
 import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
 import { PromiseTicker } from "./overlays/PromiseTicker";
+import { IntroTextOverlay } from "./overlays/IntroTextOverlay";
 
 const seq = (key: keyof typeof SECTIONS) => ({
   from: toFrames(SECTIONS[key].start),
@@ -56,6 +57,11 @@ export const TutorialVideo: React.FC = () => {
       {/* Promise ticker — Liquidity / Capital Lock / Risk Management (11.28–22.2s) */}
       <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
         <PromiseTicker />
+      </Sequence>
+
+      {/* Intro typewriter — "How to launch your first general market bot..." (0–3.5s) */}
+      <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
+        <IntroTextOverlay />
       </Sequence>
 
       {/* FAQ question screens */}
