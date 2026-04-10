@@ -13,15 +13,11 @@ export const SCENES: TalkingHeadScene[] = [
   // ── INTRO (0–48.6s) ─────────────────────────────────────────────
   // Pattern: C → R → C → L → C → R → C → L → C → R → C → L
 
-  { startSec: 0.0, endSec: 3.4, layout: "centered-bottom", bottomLabel: "General Market" },
+  { startSec: 0.0, endSec: 3.4, layout: "centered-bottom" },
   { startSec: 3.4, endSec: 9.4, layout: "right-small", title: "Not a\nStrategy\nVideo" },
   { startSec: 9.4, endSec: 11.3, layout: "centered" },
-  {
-    startSec: 11.3, endSec: 17.8, layout: "left-medium",
-    pills: ["Liquidity", "Capital Lock", "Risk Management"],
-  },
-  { startSec: 17.8, endSec: 19.5, layout: "centered" },
-  { startSec: 19.5, endSec: 22.2, layout: "right-medium", title: "And On\nand On..." },
+  { startSec: 11.3, endSec: 21.5, layout: "left-medium" },
+  { startSec: 21.5, endSec: 22.2, layout: "centered" }, // brief breather before "The Escape"
   { startSec: 22.2, endSec: 27.9, layout: "centered-bottom", bottomLabel: "The Escape" },
   { startSec: 27.9, endSec: 34.1, layout: "left-medium", title: "Every Level\nSame Wall" },
   { startSec: 34.1, endSec: 36.4, layout: "centered" },
@@ -115,16 +111,16 @@ export const SCENES: TalkingHeadScene[] = [
   { startSec: 243.0, endSec: 247.4, layout: "left-medium", title: "Hedge Fund\nProblem" },
 
   // ── SOURCES FAQ (247.4–271.0s) ──────────────────────────────────
-  // Last side: L → C → R → C → L → C → R → C → L
+  // Last side: L → C → R → C → L (source cards overlay) → C → R → C-B
 
   { startSec: 247.4, endSec: 252.0, layout: "centered-bottom", bottomLabel: "FAQ #5" },
-  { startSec: 252.0, endSec: 256.0, layout: "right-medium", title: "One Batch\nPer Source" },
-  { startSec: 256.0, endSec: 257.5, layout: "centered" },
-  { startSec: 257.5, endSec: 261.0, layout: "left-medium", title: "Train\nTwitch\nSteam" },
-  { startSec: 261.0, endSec: 262.5, layout: "centered" },
-  { startSec: 262.5, endSec: 267.0, layout: "right-medium", title: "Ask and\nWe'll Add It" },
-  { startSec: 267.0, endSec: 268.5, layout: "centered" },
-  { startSec: 268.5, endSec: 271.0, layout: "left-small", title: "1 Billion\nMarkets" },
+  { startSec: 252.0, endSec: 253.9, layout: "right-medium", title: "One Batch\nPer Source" },
+  { startSec: 253.9, endSec: 255.3, layout: "centered" },
+  // Webcam left, source cards appear on right via SourceCardOverlays
+  { startSec: 255.3, endSec: 264.9, layout: "left-small" },
+  { startSec: 264.9, endSec: 266.0, layout: "centered" },
+  { startSec: 266.0, endSec: 269.0, layout: "right-medium", title: "Ask and\nWe'll Add It" },
+  { startSec: 269.0, endSec: 271.0, layout: "centered-bottom", bottomLabel: "1 Billion Markets" },
 
   // ── CLOSING (271.0–282.9s) ──────────────────────────────────────
   // Last side: L → C → R → C → L → C
