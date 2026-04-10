@@ -18,7 +18,8 @@ import { PANEL } from "../designTokens";
 
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
-const PIP_SIZE = 180;
+const PIP_W = 320;
+const PIP_H = 240;
 const BROLL_SRC = "broll/mountains-aerial.mp4";
 const MAIN_VIDEO = "tutorial-raw.mp4";
 const CARD_MARGIN = 56;
@@ -91,14 +92,14 @@ const TalkingHeadPip: React.FC<{ opacity: number }> = ({ opacity }) => {
     <div
       style={{
         position: "absolute",
-        bottom: CARD_MARGIN + 8,
-        right: CARD_MARGIN + 8,
-        width: PIP_SIZE,
-        height: PIP_SIZE,
-        borderRadius: "50%",
+        bottom: CARD_MARGIN + 12,
+        right: CARD_MARGIN + 12,
+        width: PIP_W,
+        height: PIP_H,
+        borderRadius: 20,
         overflow: "hidden",
-        border: "3px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        border: `2px solid rgba(14,15,12,0.12)`,
+        boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 8px 24px rgba(0,0,0,0.2)",
         opacity,
         zIndex: 10,
       }}
@@ -106,11 +107,9 @@ const TalkingHeadPip: React.FC<{ opacity: number }> = ({ opacity }) => {
       <Video
         src={staticFile(MAIN_VIDEO)}
         style={{
-          width: PIP_SIZE * 2.5,
-          height: PIP_SIZE * 2.5,
+          width: "100%",
+          height: "100%",
           objectFit: "cover",
-          marginLeft: -PIP_SIZE * 0.75,
-          marginTop: -PIP_SIZE * 0.3,
         }}
         muted
       />
