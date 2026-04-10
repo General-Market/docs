@@ -68,7 +68,10 @@ const EraTimeline: React.FC = () => {
     <DiagramCard>
       <div style={{ opacity: exitOpacity }}>
         {/* Label */}
-        <div style={{ ...TYPE.label, marginBottom: 28 }}>The Edge Evolves</div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
+          <span style={{ ...TYPE.sectionHeading, color: COLOR.wiseGreen }}>The Edge</span>
+          <span style={{ ...TYPE.cardTitle, color: COLOR.gray }}>evolves</span>
+        </div>
 
         {/* Cards row */}
         <div style={{ display: "flex", gap: 28, justifyContent: "center" }}>
@@ -186,8 +189,9 @@ const CompetitiveLandscape: React.FC = () => {
     <DiagramCard>
       <div style={{ opacity: exitOpacity }}>
         {/* Label */}
-        <div style={{ ...TYPE.label, marginBottom: 28 }}>
-          Competitive Density
+        <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
+          <span style={{ ...TYPE.sectionHeading, color: COLOR.wiseGreen }}>Zero</span>
+          <span style={{ ...TYPE.cardTitle, color: COLOR.gray }}>competition</span>
         </div>
 
         {/* Bars */}

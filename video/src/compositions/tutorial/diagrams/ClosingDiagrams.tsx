@@ -101,37 +101,39 @@ const BotDashboard: React.FC = () => {
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: 12,
+          flexDirection: "column",
+          gap: 16,
           paddingBottom: 24,
           borderBottom: `1px solid ${COLOR.border}`,
         }}
       >
-        <div
-          style={{
-            width: 12,
-            height: 12,
-            borderRadius: "50%",
-            background: COLOR.wiseGreen,
-            boxShadow: `0 0 ${8 + pulse * 6}px ${COLOR.wiseGreen}`,
-            opacity: 0.7 + pulse * 0.3,
-          }}
-        />
-        <span
-          style={{
-            ...TYPE.label,
-            fontSize: 13,
-            fontWeight: 700,
-            color: COLOR.darkGreen,
-            background: COLOR.wiseGreen,
-            padding: "3px 10px",
-            borderRadius: 4,
-            letterSpacing: "0.1em",
-          }}
-        >
-          LIVE
-        </span>
-        <span style={TYPE.cardTitle}>Twitch Viewer Strategy</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: COLOR.wiseGreen,
+              boxShadow: `0 0 ${8 + pulse * 6}px ${COLOR.wiseGreen}`,
+              opacity: 0.7 + pulse * 0.3,
+            }}
+          />
+          <span
+            style={{
+              ...TYPE.label,
+              fontSize: 14,
+              fontWeight: 700,
+              color: COLOR.darkGreen,
+              background: COLOR.wiseGreen,
+              padding: "4px 12px",
+              borderRadius: 6,
+              letterSpacing: "0.1em",
+            }}
+          >
+            LIVE
+          </span>
+        </div>
+        <span style={{ ...TYPE.sectionHeading, color: COLOR.nearBlack }}>Your Bot</span>
       </div>
 
       {/* Stats row */}
