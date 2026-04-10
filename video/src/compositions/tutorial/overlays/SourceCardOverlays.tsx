@@ -1,16 +1,14 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
-  Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { FPS } from "../theme";
-import { COLOR, TYPE, PANEL } from "../designTokens";
+import { useDesignTokens } from "../TutorialTheme";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -82,8 +80,7 @@ const OVERLAY_END = 264.88;
 // Live dot — green ping animation (CSS keyframes in Remotion via frame math)
 // ---------------------------------------------------------------------------
 
-const LiveDot: React.FC<{ frame: number }> = ({ frame }) => {
-  const color = COLOR.wiseGreen;
+const LiveDot: React.FC<{ frame: number; color: string }> = ({ frame, color }) => {
   // Ping expands and fades in a ~1s cycle
   const cycle = (frame % 30) / 30;
   const pingScale = 1 + cycle * 1.5;
@@ -130,6 +127,7 @@ const SourceCard: React.FC<{
   spec: SourceSpec;
   localEnterFrame: number;
 }> = ({ spec, localEnterFrame }) => {
+  const { COLOR, TYPE, PANEL } = useDesignTokens();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -254,7 +252,7 @@ const SourceCard: React.FC<{
               marginTop: 2,
             }}
           >
-            <LiveDot frame={frame} />
+            <LiveDot frame={frame} color={COLOR.wiseGreen} />
             <span
               style={{
                 ...TYPE.label,
@@ -357,17 +355,25 @@ export const SourceCardOverlays: React.FC = () => {
 
   return (
     <AbsoluteFill>
-      {/* SFX on first card entrance */}
-      <Sequence from={sec(SOURCES[0].enterAt)} durationInFrames={sec(3)}>
-        <Audio
-          src={staticFile("sfx/text-pop-rapid-sequence.mp3")}
-          volume={0.55}
+      {/* Plop per card entrance */}
+      {SOURCES.map((src) => (
+        <Sfx
+          key={`sfx-${src.name}`}
+          sound="comedy-plop"
+          delay={sec(src.enterAt)}
+          volume={0.2}
         />
-      </Sequence>
+      ))}
 
-      {/* 2x2 grid of cards */}
-      <AbsoluteFill
+      {/* 2x2 grid of cards — positioned in right content area (webcam is left-small) */}
+      <div
         style={{
+          position: "absolute",
+          left: 620,   // margin(48) + smallWebcam(540) + gap(32)
+          top: 48,
+          width: 1252,  // 1920 - 48 - 540 - 32 - 48
+          height: 984,  // 1080 - 2*48
+          display: "flex",
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -387,7 +393,7 @@ export const SourceCardOverlays: React.FC = () => {
             />
           ))}
         </div>
-      </AbsoluteFill>
+      </div>
     </AbsoluteFill>
   );
 };

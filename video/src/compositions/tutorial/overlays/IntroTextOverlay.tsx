@@ -3,15 +3,14 @@ import {
   interpolate,
   useCurrentFrame,
 } from "remotion";
-import { COLOR, FONT } from "../designTokens";
+import { FONT } from "../designTokens";
 import { FPS } from "../theme";
+import { useDesignTokens, hexToRgb } from "../TutorialTheme";
 import { useTalkingHead } from "../TalkingHeadLayout";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-
-const WISE_GREEN = [159, 232, 112] as const;
-const NEAR_BLACK = [14, 15, 12] as const; // COLOR.nearBlack in RGB
 
 const easeIn = (t: number, power: number): number =>
   Math.pow(Math.max(0, Math.min(1, t)), power);
@@ -37,10 +36,14 @@ const TypewriterPhrase: React.FC<{
   fontSize = 72,
   typePower = 2.5,
 }) => {
+  const { COLOR } = useDesignTokens();
   const frame = useCurrentFrame();
   const len = text.length;
 
   if (frame < typeStart || frame > wipeEnd) return null;
+
+  const accentRgb = hexToRgb(COLOR.wiseGreen);
+  const textRgb = hexToRgb(COLOR.nearBlack);
 
   let visibleStart = 0;
   let visibleEnd = 0;
@@ -86,9 +89,9 @@ const TypewriterPhrase: React.FC<{
             (easeIn(currentT, typePower) - charThreshold) *
             (typeEnd - typeStart);
           const colorT = interpolate(age, [0, 4], [0, 1], clamp);
-          const r = interpolate(colorT, [0, 1], [WISE_GREEN[0], NEAR_BLACK[0]]);
-          const g = interpolate(colorT, [0, 1], [WISE_GREEN[1], NEAR_BLACK[1]]);
-          const b = interpolate(colorT, [0, 1], [WISE_GREEN[2], NEAR_BLACK[2]]);
+          const r = interpolate(colorT, [0, 1], [accentRgb[0], textRgb[0]]);
+          const g = interpolate(colorT, [0, 1], [accentRgb[1], textRgb[1]]);
+          const b = interpolate(colorT, [0, 1], [accentRgb[2], textRgb[2]]);
           return (
             <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
               {ch}
@@ -100,7 +103,7 @@ const TypewriterPhrase: React.FC<{
           const dist = i - visibleStart;
           const op = interpolate(dist, [0, 3], [0.15, 1], clamp);
           return (
-            <span key={i} style={{ color: `rgba(14,15,12,${op})` }}>
+            <span key={i} style={{ color: `rgba(${textRgb[0]},${textRgb[1]},${textRgb[2]},${op})` }}>
               {ch}
             </span>
           );
@@ -176,6 +179,16 @@ export const IntroTextOverlay: React.FC = () => {
         wipeEnd={sec(3.44)}
         typePower={1.5}
       />
+
+      {/* Typewriter blip at each phrase start */}
+      <Sfx sound="text-appear-blip" delay={sec(0.16)} volume={0.3} />
+      <Sfx sound="text-appear-blip" delay={sec(1.36)} volume={0.3} />
+      <Sfx sound="text-appear-blip" delay={sec(2.32)} volume={0.3} />
+
+      {/* Swish on each wipe-out */}
+      <Sfx sound="cut-fast-swish" delay={sec(1.2)} volume={0.3} />
+      <Sfx sound="cut-fast-swish" delay={sec(2.16)} volume={0.3} />
+      <Sfx sound="cut-fast-swish" delay={sec(3.16)} volume={0.3} />
     </div>
   );
 };

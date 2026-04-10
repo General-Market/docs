@@ -1,17 +1,16 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 
@@ -320,29 +319,29 @@ export const EraDiagrams: React.FC = () => {
       {/* Era Timeline: local 22.76s – 36.26s */}
       <Sequence from={ERA_TL_IN} durationInFrames={ERA_TL_OUT - ERA_TL_IN}>
         <EraTimeline />
-        {ERA_STAGGER.map((delay, i) => (
-          <Sequence key={i} from={delay}>
-            <Audio
-              src={staticFile(
-                i === 2
-                  ? "sfx/drop-cinematic-hit.mp3"
-                  : "sfx/scroll-tick.mp3",
-              )}
-              volume={i === 2 ? 0.65 : 0.4}
-            />
-          </Sequence>
-        ))}
+        {/* "The Edge" heading */}
+        <Sfx sound="text-appear-blip" volume={0.25} />
+        {/* Era entries appearing (staggered) — last one is the impact moment */}
+        <Sfx sound="comedy-plop" volume={0.2} delay={ERA_STAGGER[0]} />
+        <Sfx sound="comedy-plop" volume={0.2} delay={ERA_STAGGER[1]} />
+        <Sfx sound="impact-kick" volume={0.4} delay={ERA_STAGGER[2]} />
+        {/* Timeline sliding in */}
+        <Sfx sound="scroll-tick" volume={0.3} delay={ERA_STAGGER[0]} />
       </Sequence>
 
       {/* Competitive Landscape: local 36.26s – 47.46s */}
       <Sequence from={COMP_IN} durationInFrames={COMP_OUT - COMP_IN}>
         <CompetitiveLandscape />
-        <Sequence from={sec(4)}>
-          <Audio
-            src={staticFile("sfx/stinger-logo-reveal.mp3")}
-            volume={0.5}
-          />
-        </Sequence>
+        {/* "Zero competition" heading */}
+        <Sfx sound="text-appear-blip" volume={0.25} />
+        {/* Bar rows cascading in */}
+        {BARS.map((_, i) => (
+          <Sfx key={i} sound="scroll-tick" volume={0.2} delay={i * sec(0.35)} />
+        ))}
+        {/* "YOU ARE HERE" callout */}
+        <Sfx sound="impact-kick" volume={0.4} delay={sec(2.5)} />
+        {/* End stinger */}
+        <Sfx sound="stinger-logo-reveal" volume={0.5} delay={sec(4)} />
       </Sequence>
     </AbsoluteFill>
   );

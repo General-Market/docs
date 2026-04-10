@@ -1,28 +1,32 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Easing,
   Sequence,
   interpolate,
-  staticFile,
   useCurrentFrame,
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
 const CYCLE_IN = sec(10.56);
-const CYCLE_OUT = sec(23.96);
+const CYCLE_OUT = sec(36.26);
 
-// Voice-synced progress points (local seconds from CYCLE_IN):
-// 0s = card appears (speaker: "30 times the question...")
-// 7.2s = "everyone pushes bets in a 10 minute window" → BETTING phase done
-// 13.4s = "Oracle compute who was right" → ORACLE phase done
-// end = SETTLE complete
+const JOIN_AT = sec(7.9);
+const ORACLE_AT = sec(15.8);
+const SETTLE_AT = sec(22.0);
+
+// Voice-synced stepped progress (local seconds from SettlementCard mount):
+// Card appears at 100.4s global (10.56s into section).
+// ~7.9s local = 108.3s global → voice says "bet" → JOIN lights up
+// ~15.8s local = 116.2s global → voice says "Oracle" → ORACLE lights up
+// ~22.0s local = 122.4s global → voice says "compute PL" → SETTLE lights up
+// Card fades out at ~126.1s global (36.26s into section).
 
 const SettlementCard: React.FC = () => {
   const frame = useCurrentFrame();
@@ -40,16 +44,13 @@ const SettlementCard: React.FC = () => {
     };
   };
 
-  // Voice-synced progress bar — ensure monotonic input range
-  const p1 = sec(0.5);
-  const p2 = sec(7.2);
-  const p3 = Math.min(sec(13.4), duration - 20);
-  const p4 = Math.max(p3 + 5, duration - 15);
+  // Stepped progress — each phase snaps into place and HOLDS until the next
+  const SNAP = 5; // frames (~0.17s) for a quick visual snap
 
   const progress = interpolate(
     frame,
-    [p1, p2, p3, p4],
-    [0, 55, 78, 100],
+    [sec(0.5), JOIN_AT - SNAP, JOIN_AT, ORACLE_AT - SNAP, ORACLE_AT, SETTLE_AT - SNAP, SETTLE_AT],
+    [0, 0, 33, 33, 66, 66, 100],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
@@ -59,9 +60,9 @@ const SettlementCard: React.FC = () => {
   });
 
   const steps = [
-    { label: "Bet", at: 0 },
-    { label: "Oracle", at: 55 },
-    { label: "Settle", at: 78 },
+    { label: "Join", at: 5 },
+    { label: "Oracle", at: 34 },
+    { label: "Settle", at: 67 },
   ];
 
   return (
@@ -123,7 +124,16 @@ export const SettlementDiagrams: React.FC = () => {
     <AbsoluteFill>
       <Sequence from={CYCLE_IN} durationInFrames={CYCLE_OUT - CYCLE_IN}>
         <SettlementCard />
-        <Audio src={staticFile("sfx/scroll-tick.mp3")} volume={0.4} />
+        {/* Hero text "10 min" appearing */}
+        <Sfx sound="text-appear-blip" volume={0.3} />
+        {/* Progress bar stepping to each phase */}
+        <Sfx sound="scroll-tick" volume={0.3} delay={JOIN_AT} />
+        <Sfx sound="scroll-tick" volume={0.3} delay={ORACLE_AT} />
+        <Sfx sound="scroll-tick" volume={0.3} delay={SETTLE_AT} />
+        {/* Three green pills appearing */}
+        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.5)} />
+        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.7)} />
+        <Sfx sound="comedy-plop" volume={0.2} delay={sec(0.9)} />
       </Sequence>
     </AbsoluteFill>
   );

@@ -1,18 +1,17 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Easing,
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { SceneWrapper } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -79,10 +78,10 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
           marginBottom: 4,
         }}
       >
-        <span style={{ ...TYPE.label, fontSize: 18, color: COLOR.gray }}>
+        <span style={{ ...TYPE.label, fontSize: 24, color: COLOR.gray }}>
           Price
         </span>
-        <span style={{ ...TYPE.label, fontSize: 18, color: COLOR.gray }}>
+        <span style={{ ...TYPE.label, fontSize: 24, color: COLOR.gray }}>
           Size
         </span>
       </div>
@@ -133,7 +132,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
             <span
               style={{
                 ...TYPE.small,
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: 600,
                 color: textColor,
                 fontVariantNumeric: "tabular-nums",
@@ -145,7 +144,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
             <span
               style={{
                 ...TYPE.small,
-                fontSize: 18,
+                fontSize: 24,
                 color: COLOR.gray,
                 fontVariantNumeric: "tabular-nums",
                 position: "relative",
@@ -178,7 +177,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
         <span
           style={{
             ...TYPE.caption,
-            fontSize: 18,
+            fontSize: 24,
             color: COLOR.danger,
             fontWeight: 600,
           }}
@@ -202,7 +201,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
       <div
         style={{
           ...TYPE.label,
-          fontSize: 18,
+          fontSize: 24,
           color: COLOR.darkGreen,
           opacity: interpolate(
             frame,
@@ -239,7 +238,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
               <span
                 style={{
                   ...TYPE.small,
-                  fontSize: 18,
+                  fontSize: 24,
                   fontWeight: 700,
                   color: isYes ? COLOR.darkGreen : COLOR.nearBlack,
                 }}
@@ -249,7 +248,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
               <span
                 style={{
                   ...TYPE.small,
-                  fontSize: 18,
+                  fontSize: 24,
                   fontVariantNumeric: "tabular-nums",
                   color: COLOR.gray,
                 }}
@@ -313,7 +312,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
         <span
           style={{
             ...TYPE.caption,
-            fontSize: 18,
+            fontSize: 24,
             color: COLOR.darkGreen,
             fontWeight: 600,
           }}
@@ -471,7 +470,14 @@ export const PrivacyDiagrams: React.FC = () => {
     <AbsoluteFill>
       <Sequence from={DISPUTE_IN} durationInFrames={DISPUTE_OUT - DISPUTE_IN}>
         <BeforeAfterDiagram />
-        <Audio src={staticFile("sfx/metal-latch-unlock.mp3")} volume={0.5} />
+        {/* Before panel appearing */}
+        <Sfx sound="comedy-plop" volume={0.25} />
+        {/* After panel appearing (delayed with afterSpring) */}
+        <Sfx sound="comedy-plop" volume={0.25} delay={sec(1.8)} />
+        {/* Camera/webcam quadrant landing */}
+        <Sfx sound="shape-drop-bounce" volume={0.2} delay={4} />
+        {/* B-roll quadrant landing */}
+        <Sfx sound="shape-drop-bounce" volume={0.2} delay={sec(1.6)} />
       </Sequence>
     </AbsoluteFill>
   );

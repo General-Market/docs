@@ -1,18 +1,17 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Easing,
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { COLOR, TYPE, PANEL } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -159,6 +158,7 @@ const ChartBeat: React.FC = () => {
 
   return (
     <DiagramCard>
+      <Sfx sound="scroll-tick" volume={0.3} />
       <div style={{ opacity: exitOpacity }}>
         {/* Title */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
@@ -276,8 +276,10 @@ const ChartBeat: React.FC = () => {
             </g>
           )}
         </svg>
+        <Sfx sound="metric-count-up" volume={0.3} delay={sec(1.6)} />
 
         {/* Question box */}
+        <Sfx sound="dramatic-reveal" volume={0.35} delay={sec(2.4)} />
         <div
           style={{
             marginTop: 24,
@@ -299,7 +301,7 @@ const ChartBeat: React.FC = () => {
                 borderRadius: 9999,
                 padding: "8px 20px",
                 ...TYPE.bodySemibold,
-                fontSize: 22,
+                fontSize: 26,
                 color: COLOR.darkGreen,
               }}
             >
@@ -311,7 +313,7 @@ const ChartBeat: React.FC = () => {
                 borderRadius: 9999,
                 padding: "8px 20px",
                 ...TYPE.bodySemibold,
-                fontSize: 22,
+                fontSize: 26,
                 color: COLOR.danger,
               }}
             >
@@ -390,7 +392,7 @@ const PoolBeat: React.FC = () => {
         <div
           style={{
             ...TYPE.label,
-            fontSize: 22,
+            fontSize: 26,
             color: isYes ? COLOR.darkGreen : COLOR.danger,
             marginBottom: 4,
           }}
@@ -400,9 +402,11 @@ const PoolBeat: React.FC = () => {
         {bettors.map((b, i) => {
           const s = bettorOpacity(i, side);
           const pnl = isYes && pnlData ? pnlData[i].pnl : undefined;
+          const bettorDelay = sec(0.3) + i * sec(0.25);
           return (
+            <React.Fragment key={b.name}>
+            <Sfx volume={0.2} delay={bettorDelay} />
             <div
-              key={b.name}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -411,12 +415,12 @@ const PoolBeat: React.FC = () => {
                 transform: `translateX(${interpolate(s, [0, 1], [isYes ? -12 : 12, 0], clamp)}px)`,
               }}
             >
-              <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>{b.name}</span>
+              <span style={{ ...TYPE.bodySemibold, fontSize: 26 }}>{b.name}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span
                   style={{
                     ...TYPE.body,
-                    fontSize: 22,
+                    fontSize: 26,
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
@@ -426,7 +430,7 @@ const PoolBeat: React.FC = () => {
                   <span
                     style={{
                       ...TYPE.bodySemibold,
-                      fontSize: 22,
+                      fontSize: 26,
                       color: COLOR.wiseGreen,
                       fontVariantNumeric: "tabular-nums",
                       opacity: pnlReveal,
@@ -437,6 +441,7 @@ const PoolBeat: React.FC = () => {
                 )}
               </div>
             </div>
+            </React.Fragment>
           );
         })}
         <div
@@ -445,7 +450,7 @@ const PoolBeat: React.FC = () => {
             marginTop: 4,
             paddingTop: 8,
             ...TYPE.bodySemibold,
-            fontSize: 22,
+            fontSize: 26,
             fontVariantNumeric: "tabular-nums",
             textAlign: "right",
           }}
@@ -478,6 +483,7 @@ const PoolBeat: React.FC = () => {
               gap: 8,
             }}
           >
+            <Sfx sound="money-count" volume={0.3} delay={sec(1.5)} />
             <div
               style={{
                 ...PANEL.greenAccent,
@@ -486,7 +492,7 @@ const PoolBeat: React.FC = () => {
                 width: "100%",
               }}
             >
-              <div style={{ ...TYPE.label, fontSize: 22, marginBottom: 4 }}>
+              <div style={{ ...TYPE.label, fontSize: 26, marginBottom: 4 }}>
                 POOL
               </div>
               <div
@@ -505,6 +511,8 @@ const PoolBeat: React.FC = () => {
         </div>
 
         {/* Result banner */}
+        <Sfx sound="dramatic-reveal" volume={0.35} delay={sec(3.2)} />
+        <Sfx sound="metric-count-up" volume={0.3} delay={sec(4.2)} />
         <div
           style={{
             opacity: resultOpacity,
@@ -597,7 +605,7 @@ const TableBeat: React.FC = () => {
               key={col}
               style={{
                 ...TYPE.label,
-                fontSize: 18,
+                fontSize: 24,
                 flex: i === 0 ? 2 : 1,
                 textAlign: i === 3 ? "right" : "left",
               }}
@@ -611,9 +619,11 @@ const TableBeat: React.FC = () => {
         {STATIONS.map((row, i) => {
           const s = rowStagger(i);
           const isPositive = row.result > 0;
+          const rowDelay = sec(0.3) + i * sec(0.15);
           return (
+            <React.Fragment key={row.station}>
+            <Sfx volume={0.2} delay={rowDelay} />
             <div
-              key={row.station}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -623,13 +633,13 @@ const TableBeat: React.FC = () => {
                 transform: `translateY(${interpolate(s, [0, 1], [8, 0], clamp)}px)`,
               }}
             >
-              <span style={{ ...TYPE.body, fontSize: 22, flex: 2 }}>
+              <span style={{ ...TYPE.body, fontSize: 26, flex: 2 }}>
                 {row.station}
               </span>
               <span
                 style={{
                   ...TYPE.body,
-                  fontSize: 22,
+                  fontSize: 26,
                   flex: 1,
                   fontVariantNumeric: "tabular-nums",
                   color: COLOR.gray,
@@ -640,7 +650,7 @@ const TableBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.bodySemibold,
-                  fontSize: 22,
+                  fontSize: 26,
                   flex: 1,
                   color: row.bet === "YES" ? COLOR.darkGreen : COLOR.danger,
                 }}
@@ -650,7 +660,7 @@ const TableBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.bodySemibold,
-                  fontSize: 22,
+                  fontSize: 26,
                   flex: 1,
                   textAlign: "right",
                   fontVariantNumeric: "tabular-nums",
@@ -660,6 +670,7 @@ const TableBeat: React.FC = () => {
                 {isPositive ? "+" : ""}${Math.abs(row.result).toFixed(2)}
               </span>
             </div>
+            </React.Fragment>
           );
         })}
 
@@ -676,6 +687,8 @@ const TableBeat: React.FC = () => {
         </div>
 
         {/* Summary */}
+        <Sfx sound="shape-drop-bounce" volume={0.25} delay={counterStart} />
+        <Sfx sound="metric-count-up" volume={0.3} delay={counterStart} />
         <div
           style={{
             borderTop: `2px solid ${COLOR.nearBlack}`,
@@ -688,7 +701,7 @@ const TableBeat: React.FC = () => {
         >
           {/* Win/Loss + bar */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>
+            <span style={{ ...TYPE.bodySemibold, fontSize: 26 }}>
               18W 12L
             </span>
             <div
@@ -722,7 +735,7 @@ const TableBeat: React.FC = () => {
 
           {/* Total PnL */}
           <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <span style={{ ...TYPE.label, fontSize: 22 }}>TOTAL PNL</span>
+            <span style={{ ...TYPE.label, fontSize: 26 }}>TOTAL PNL</span>
             <span
               style={{
                 ...TYPE.statValue,
@@ -796,6 +809,10 @@ const FairnessBeat: React.FC = () => {
 
   return (
     <DiagramCard>
+      <Sfx sound="shape-drop-bounce" volume={0.25} delay={sec(0.3)} />
+      <Sfx sound="shape-drop-bounce" volume={0.25} delay={sec(1.0)} />
+      <Sfx sound="scroll-tick" volume={0.3} delay={shrinkStart + sec(1.0)} />
+      <Sfx sound="impact-kick" volume={0.4} delay={shrinkStart + sec(2.0)} />
       <div style={{ opacity: exitOpacity }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
           <span style={{ ...TYPE.displayHero, color: COLOR.wiseGreen }}>$1 vs $1</span>
@@ -845,7 +862,7 @@ const FairnessBeat: React.FC = () => {
                 $1
               </span>
             </div>
-            <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>You</span>
+            <span style={{ ...TYPE.bodySemibold, fontSize: 26 }}>You</span>
           </div>
 
           {/* VS */}
@@ -890,7 +907,7 @@ const FairnessBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.statValue,
-                  fontSize: interpolate(shrinkSpring, [0, 1], [22, 28], clamp),
+                  fontSize: interpolate(shrinkSpring, [0, 1], [26, 32], clamp),
                   color: COLOR.nearBlack,
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -899,12 +916,12 @@ const FairnessBeat: React.FC = () => {
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>Whale</span>
+              <span style={{ ...TYPE.bodySemibold, fontSize: 26 }}>Whale</span>
               {vsOpacity > 0.5 && (
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 22,
+                    fontSize: 26,
                     color: COLOR.wiseGreen,
                     opacity: vsOpacity,
                   }}
@@ -943,41 +960,21 @@ export const ParimutuelDiagrams: React.FC = () => {
       {/* Beat 1: Chart setup */}
       <Sequence from={BEAT1_IN} durationInFrames={BEAT1_OUT - BEAT1_IN}>
         <ChartBeat />
-        <Audio src={staticFile("sfx/scroll-tick.mp3")} volume={0.3} />
-        <Audio
-          src={staticFile("sfx/dramatic-reveal.mp3")}
-          volume={0.5}
-          startFrom={0}
-        />
       </Sequence>
 
       {/* Beat 2: YES vs NO pool */}
       <Sequence from={BEAT2_IN} durationInFrames={BEAT2_OUT - BEAT2_IN}>
         <PoolBeat />
-        <Audio src={staticFile("sfx/money-count.mp3")} volume={0.4} />
-        <Audio
-          src={staticFile("sfx/metal-latch-unlock.mp3")}
-          volume={0.5}
-          startFrom={0}
-        />
       </Sequence>
 
       {/* Beat 3: 30 stations table */}
       <Sequence from={BEAT3_IN} durationInFrames={BEAT3_OUT - BEAT3_IN}>
         <TableBeat />
-        <Audio src={staticFile("sfx/scroll-tick.mp3")} volume={0.3} />
-        <Audio src={staticFile("sfx/metric-count-up.mp3")} volume={0.4} />
       </Sequence>
 
       {/* Beat 4: Fairness cap */}
       <Sequence from={BEAT4_IN} durationInFrames={BEAT4_OUT - BEAT4_IN}>
         <FairnessBeat />
-        <Audio src={staticFile("sfx/impact-kick.mp3")} volume={0.5} />
-        <Audio
-          src={staticFile("sfx/metal-latch-unlock.mp3")}
-          volume={0.4}
-          startFrom={0}
-        />
       </Sequence>
     </AbsoluteFill>
   );

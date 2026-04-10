@@ -1,17 +1,16 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Easing,
   Sequence,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const s = (sec: number) => Math.round(sec * FPS);
 const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
@@ -121,7 +120,7 @@ const BotDashboard: React.FC = () => {
           <span
             style={{
               ...TYPE.label,
-              fontSize: 18,
+              fontSize: 24,
               fontWeight: 700,
               color: COLOR.darkGreen,
               background: COLOR.wiseGreen,
@@ -171,7 +170,7 @@ const BotDashboard: React.FC = () => {
                 ...entrance,
               }}
             >
-              <span style={TYPE.label}>{stat.label}</span>
+              <span style={{ ...TYPE.label, fontSize: 24 }}>{stat.label}</span>
               <span
                 style={{
                   ...TYPE.statValue,
@@ -187,7 +186,7 @@ const BotDashboard: React.FC = () => {
 
       {/* Recent activity */}
       <div style={{ paddingTop: 24 }}>
-        <span style={TYPE.label}>RECENT</span>
+        <span style={{ ...TYPE.label, fontSize: 24 }}>RECENT</span>
 
         <div style={{ marginTop: 16, display: "flex", flexDirection: "column" }}>
           {ROWS.map((row, i) => {
@@ -213,7 +212,7 @@ const BotDashboard: React.FC = () => {
                   <span style={{ ...TYPE.body, color: COLOR.gray }}>{row.detail}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <span style={{ ...TYPE.label, color: COLOR.gray }}>{row.status}</span>
+                  <span style={{ ...TYPE.label, fontSize: 24, color: COLOR.gray }}>{row.status}</span>
                   <span
                     style={{
                       ...TYPE.bodySemibold,
@@ -244,7 +243,14 @@ export const ClosingDiagrams: React.FC = () => {
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <Sequence from={DASHBOARD_START} durationInFrames={DASHBOARD_END - DASHBOARD_START}>
         <BotDashboard />
-        <Audio src={staticFile("sfx/code-compile-success.mp3")} volume={0.5} />
+        {/* "LIVE" badge appearing */}
+        <Sfx sound="comedy-plop" volume={0.25} />
+        {/* Stats counter starting */}
+        <Sfx sound="metric-count-up" volume={0.3} delay={s(0.4)} />
+        {/* Row cascade (3 rows staggered) */}
+        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.0)} />
+        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.25)} />
+        <Sfx sound="comedy-plop" volume={0.2} delay={s(1.5)} />
       </Sequence>
     </AbsoluteFill>
   );

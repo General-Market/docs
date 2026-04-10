@@ -1,15 +1,14 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Audio,
   Easing,
   Sequence,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { Sfx } from "../components/Sfx";
 import { COLOR, TYPE, BUTTON, PANEL } from "../designTokens";
 import { FPS } from "../theme";
 import { DiagramCard } from "../components/DiagramCard";
@@ -146,9 +145,9 @@ const BatchGrid: React.FC<{ frame: number; fps: number; beatFrame: number }> = (
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 16,
+          gap: 20,
           width: "100%",
-          maxWidth: 720,
+          maxWidth: 920,
         }}
       >
         {STREAMERS.map((s, i) => {
@@ -177,14 +176,14 @@ const BatchGrid: React.FC<{ frame: number; fps: number; beatFrame: number }> = (
                 transform: `translateY(${interpolate(cardSpring, [0, 1], [16, 0], clamp)}px) scale(${interpolate(cardSpring, [0, 1], [0.95, 1], clamp)})`,
               }}
             >
-              <div style={{ ...TYPE.bodySemibold, fontSize: 24, marginBottom: 4 }}>
+              <div style={{ ...TYPE.bodySemibold, fontSize: 28, marginBottom: 4 }}>
                 {s.name}
               </div>
-              <Sparkline data={s.sparkline} width={180} height={36} drawProgress={sparkDraw} />
+              <Sparkline data={s.sparkline} width={200} height={40} drawProgress={sparkDraw} />
               <div
                 style={{
                   ...TYPE.caption,
-                  fontSize: 22,
+                  fontSize: 26,
                   fontVariantNumeric: "tabular-nums",
                   marginTop: 4,
                   color: COLOR.nearBlack,
@@ -237,8 +236,8 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
   });
 
   // Chart dimensions
-  const chartW = 560;
-  const chartH = 180;
+  const chartW = 640;
+  const chartH = 200;
   const pad = 40;
   const plotW = chartW - pad * 2;
   const plotH = chartH - pad;
@@ -301,7 +300,7 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
               y={toY(v) + 4}
               textAnchor="end"
               fill={COLOR.gray}
-              fontSize={18}
+              fontSize={24}
               fontFamily="Inter"
             >
               {v}k
@@ -355,7 +354,7 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
           y={pad - 8}
           textAnchor="middle"
           fill={COLOR.wiseGreen}
-          fontSize={18}
+          fontSize={24}
           fontWeight={700}
           fontFamily="Inter"
           opacity={interpolate(beatFrame, [sec(1.6), sec(2)], [0, 1], clamp)}
@@ -391,18 +390,18 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
           transform: `translateY(${interpolate(btnFade, [0, 1], [8, 0], clamp)}px)`,
         }}
       >
-        <span style={{ ...TYPE.bodySemibold, fontSize: 24, textAlign: "center" }}>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 26, textAlign: "center" }}>
           Will xQc have MORE viewers in 10 minutes?
         </span>
         <div style={{ display: "flex", gap: 16 }}>
-          <div style={{ ...BUTTON.primary, padding: "10px 28px", fontSize: 24 }}>
+          <div style={{ ...BUTTON.primary, padding: "10px 28px", fontSize: 26 }}>
             YES ▲
           </div>
           <div
             style={{
               ...BUTTON.secondary,
               padding: "10px 28px",
-              fontSize: 24,
+              fontSize: 26,
               color: COLOR.danger,
             }}
           >
@@ -481,26 +480,26 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
               opacity: interpolate(beatFrame, [sec(0.2) + i * sec(0.06), sec(0.4) + i * sec(0.06)], [0, 1], clamp),
             }}
           >
-            <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
+            <span style={{ ...TYPE.caption, fontSize: 26, fontVariantNumeric: "tabular-nums", width: 36, color: COLOR.gray }}>
               #{row.rank}
             </span>
-            <span style={{ ...TYPE.bodySemibold, fontSize: 24, flex: 1 }}>{row.name}</span>
-            <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 56 }}>
+            <span style={{ ...TYPE.bodySemibold, fontSize: 26, flex: 1 }}>{row.name}</span>
+            <span style={{ ...TYPE.caption, fontSize: 26, fontVariantNumeric: "tabular-nums", width: 60 }}>
               {row.viewers}
             </span>
             <span
               style={{
                 ...TYPE.bodySemibold,
-                fontSize: 22,
+                fontSize: 26,
                 color: isYes ? COLOR.darkGreen : COLOR.danger,
-                width: 40,
+                width: 44,
               }}
             >
               {row.side}
             </span>
             <span
               style={{
-                fontSize: 22,
+                fontSize: 26,
                 color: COLOR.wiseGreen,
                 opacity: checkOpacity,
                 transform: `scale(${interpolate(checkOpacity, [0, 1], [0.5, 1], clamp)})`,
@@ -517,7 +516,7 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
         style={{
           textAlign: "center",
           ...TYPE.bodySemibold,
-          fontSize: 22,
+          fontSize: 26,
           color: COLOR.gray,
           padding: "6px 0",
           opacity: interpolate(beatFrame, [sec(1.2), sec(1.5)], [0, 1], clamp),
@@ -538,15 +537,15 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
           opacity: interpolate(beatFrame, [sec(1.5), sec(1.8)], [0, 1], clamp),
         }}
       >
-        <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
+        <span style={{ ...TYPE.caption, fontSize: 26, fontVariantNumeric: "tabular-nums", width: 36, color: COLOR.gray }}>
           #5000
         </span>
-        <span style={{ ...TYPE.bodySemibold, fontSize: 24, flex: 1 }}>tiny_streamer</span>
-        <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 56 }}>12</span>
-        <span style={{ ...TYPE.bodySemibold, fontSize: 22, color: COLOR.danger, width: 40 }}>NO</span>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 26, flex: 1 }}>tiny_streamer</span>
+        <span style={{ ...TYPE.caption, fontSize: 26, fontVariantNumeric: "tabular-nums", width: 60 }}>12</span>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 26, color: COLOR.danger, width: 44 }}>NO</span>
         <span
           style={{
-            fontSize: 22,
+            fontSize: 26,
             color: COLOR.wiseGreen,
             opacity: interpolate(beatFrame, [sec(1.8), sec(2)], [0, 1], clamp),
             transform: `scale(${interpolate(
@@ -587,14 +586,14 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
             marginTop: 8,
           }}
         >
-          <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ ...TYPE.caption, fontSize: 26, fontVariantNumeric: "tabular-nums" }}>
             {Math.round(progressVal * 50).toLocaleString()} / 5,000
           </span>
           {isReady && (
             <span
               style={{
                 ...TYPE.bodySemibold,
-                fontSize: 22,
+                fontSize: 26,
                 color: COLOR.darkGreen,
                 opacity: interpolate(beatFrame, [sec(3.2), sec(3.5)], [0, 1], clamp),
               }}
@@ -618,7 +617,7 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
           style={{
             ...BUTTON.primary,
             padding: "14px 48px",
-            fontSize: 24,
+            fontSize: 26,
             boxShadow: isReady ? `0 0 20px rgba(159, 232, 112, 0.4)` : "none",
           }}
         >
@@ -648,9 +647,9 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
   // Bottom text fade
   const bottomFade = interpolate(beatFrame, [sec(4), sec(4.8)], [0, 1], clamp);
 
-  const BAR_H = 24;
-  const BAR_GAP = 8;
-  const MAX_BAR_W = 280;
+  const BAR_H = 28;
+  const BAR_GAP = 10;
+  const MAX_BAR_W = 340;
 
   return (
     <div
@@ -672,8 +671,8 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
 
       <div style={{ display: "flex", gap: 56, justifyContent: "center", width: "100%" }}>
         {/* LEFT: Stock Exchange */}
-        <div style={{ flex: 1, maxWidth: 360 }}>
-          <div style={{ ...TYPE.cardTitle, fontSize: 24, marginBottom: 20, color: COLOR.gray }}>
+        <div style={{ flex: 1, maxWidth: 440 }}>
+          <div style={{ ...TYPE.cardTitle, fontSize: 30, marginBottom: 20, color: COLOR.gray }}>
             Stock Exchange
           </div>
           {STOCK_BARS.map((bar, i) => {
@@ -700,9 +699,9 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 20,
+                    fontSize: 26,
                     fontVariantNumeric: "tabular-nums",
-                    width: 64,
+                    width: 72,
                     textAlign: "right",
                     color: COLOR.gray,
                   }}
@@ -724,8 +723,8 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
         </div>
 
         {/* RIGHT: General Market */}
-        <div style={{ flex: 1, maxWidth: 360 }}>
-          <div style={{ ...TYPE.cardTitle, fontSize: 24, marginBottom: 20, color: COLOR.wiseGreen }}>
+        <div style={{ flex: 1, maxWidth: 440 }}>
+          <div style={{ ...TYPE.cardTitle, fontSize: 30, marginBottom: 20, color: COLOR.wiseGreen }}>
             General Market
           </div>
           {GM_BARS.map((bar, i) => {
@@ -752,9 +751,9 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 20,
+                    fontSize: 26,
                     fontVariantNumeric: "tabular-nums",
-                    width: 64,
+                    width: 72,
                     textAlign: "right",
                     color: COLOR.nearBlack,
                     fontWeight: 600,
@@ -787,17 +786,17 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
           transform: `translateY(${interpolate(bottomFade, [0, 1], [8, 0], clamp)}px)`,
         }}
       >
-        <div style={{ flex: 1, maxWidth: 360, textAlign: "center" }}>
-          <span style={{ ...TYPE.caption, fontSize: 22, color: COLOR.gray }}>
+        <div style={{ flex: 1, maxWidth: 440, textAlign: "center" }}>
+          <span style={{ ...TYPE.caption, fontSize: 26, color: COLOR.gray }}>
             Top 5 get 90% volume
           </span>
           <br />
-          <span style={{ ...TYPE.caption, fontSize: 22, color: COLOR.gray, fontStyle: "italic" }}>
+          <span style={{ ...TYPE.caption, fontSize: 26, color: COLOR.gray, fontStyle: "italic" }}>
             The rest: no one cares
           </span>
         </div>
-        <div style={{ flex: 1, maxWidth: 360, textAlign: "center" }}>
-          <span style={{ ...TYPE.bodySemibold, fontSize: 22, color: COLOR.darkGreen }}>
+        <div style={{ flex: 1, maxWidth: 440, textAlign: "center" }}>
+          <span style={{ ...TYPE.bodySemibold, fontSize: 26, color: COLOR.darkGreen }}>
             Everyone trades everything
           </span>
         </div>
@@ -911,6 +910,66 @@ const LiquidityCard: React.FC = () => {
           <LiquidityComparison frame={frame} fps={fps} beatFrame={b4Frame} />
         </AbsoluteFill>
       )}
+
+      {/* ── SFX layer ─────────────────────────────────────────────── */}
+
+      {/* Beat 1: streamer cards stagger in */}
+      {STREAMERS.map((_, i) => (
+        <Sfx
+          key={`b1-card-${i}`}
+          sound="comedy-plop"
+          volume={0.2}
+          delay={BEAT1_START + i * sec(0.15)}
+        />
+      ))}
+      {/* Beat 1: counter appears */}
+      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT1_START + sec(1.2)} />
+
+      {/* Beat 2: chart line draws + "NOW" label */}
+      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT2_START} />
+      <Sfx sound="comedy-plop" volume={0.2} delay={BEAT2_START + sec(1.6)} />
+      {/* Beat 2: question mark + YES/NO buttons */}
+      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT2_START + sec(2)} />
+      <Sfx sound="shape-drop-bounce" volume={0.3} delay={BEAT2_START + sec(2.5)} />
+
+      {/* Beat 3: bet slip enters */}
+      <Sfx sound="shape-drop-bounce" volume={0.3} delay={BEAT3_START} />
+      {/* Beat 3: staggered row checkmarks */}
+      {BET_ROWS.map((_, i) => (
+        <Sfx
+          key={`b3-check-${i}`}
+          sound="comedy-plop"
+          volume={0.2}
+          delay={BEAT3_START + sec(0.5) + i * sec(0.08)}
+        />
+      ))}
+      {/* Beat 3: ellipsis + last row */}
+      <Sfx sound="scroll-tick" volume={0.3} delay={BEAT3_START + sec(1.2)} />
+      {/* Beat 3: submit button */}
+      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT3_START + sec(3.2)} />
+
+      {/* Beat 4: comparison chart enters */}
+      <Sfx sound="text-appear-blip" volume={0.25} delay={BEAT4_START} />
+      {/* Beat 4: stock bars stagger */}
+      {STOCK_BARS.slice(0, 5).map((_, i) => (
+        <Sfx
+          key={`b4-stock-${i}`}
+          sound="comedy-plop"
+          volume={0.2}
+          delay={BEAT4_START + sec(0.5) + i * sec(0.12)}
+        />
+      ))}
+      {/* Beat 4: GM bars stagger */}
+      {GM_BARS.slice(0, 4).map((_, i) => (
+        <Sfx
+          key={`b4-gm-${i}`}
+          sound="comedy-plop"
+          volume={0.2}
+          delay={BEAT4_START + sec(2) + i * sec(0.12)}
+        />
+      ))}
+      {/* Beat 4: bottom caption reveal */}
+      <Sfx sound="dramatic-reveal" volume={0.35} delay={BEAT4_START + sec(4)} />
     </DiagramCard>
   );
 };
@@ -922,14 +981,10 @@ export const LiquidityDiagrams: React.FC = () => {
     <AbsoluteFill>
       <Sequence from={BEAT1_START} durationInFrames={EXIT_END - BEAT1_START}>
         <LiquidityCard />
-        <Audio src={staticFile("sfx/scroll-tick.mp3")} volume={0.4} />
+        <Sfx sound="scroll-tick" volume={0.4} />
       </Sequence>
-      <Sequence from={BEAT3_START} durationInFrames={sec(1)}>
-        <Audio src={staticFile("sfx/text-pop-rapid-sequence.mp3")} volume={0.3} />
-      </Sequence>
-      <Sequence from={BEAT4_START + sec(2)} durationInFrames={sec(1)}>
-        <Audio src={staticFile("sfx/dramatic-reveal.mp3")} volume={0.35} />
-      </Sequence>
+      <Sfx sound="text-pop-rapid-sequence" volume={0.3} delay={BEAT3_START} />
+      <Sfx sound="dramatic-reveal" volume={0.35} delay={BEAT4_START + sec(2)} />
     </AbsoluteFill>
   );
 };

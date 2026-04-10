@@ -9,8 +9,10 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { FAQ } from "../designTokens";
 import { FPS } from "../theme";
+import { useDesignTokens } from "../TutorialTheme";
+import { SplitCard } from "../components/DiagramCard";
+import { Sfx } from "../components/Sfx";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -52,22 +54,14 @@ const HOLD_SEC = 5.5;
 const FADE_OUT_SEC = 0.8;
 
 const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
+  const { COLOR, TYPE } = useDesignTokens();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const holdFrames = Math.round(HOLD_SEC * fps);
-  const fadeOutFrames = Math.round(FADE_OUT_SEC * fps);
-  const totalFrames = holdFrames + fadeOutFrames;
+  const totalFrames = holdFrames + Math.round(FADE_OUT_SEC * fps);
 
-  const enterSpring = spring({
-    frame,
-    fps,
-    config: { damping: 16, stiffness: 140, mass: 0.8 },
-  });
-
-  const scale = interpolate(enterSpring, [0, 1], [0.9, 1], clamp);
-  const enterOpacity = interpolate(enterSpring, [0, 1], [0, 1], clamp);
-
+  // Exit fade (entrance handled by SplitCard)
   const fadeOutOpacity = interpolate(
     frame,
     [holdFrames, totalFrames],
@@ -75,56 +69,77 @@ const FaqQuestion: React.FC<{ entry: FaqEntry }> = ({ entry }) => {
     clamp,
   );
 
-  const opacity = Math.min(enterOpacity, fadeOutOpacity);
+  // Question text spring entrance (delayed slightly)
+  const textSpring = spring({
+    frame: Math.max(0, frame - 6),
+    fps,
+    config: { damping: 16, stiffness: 140, mass: 0.8 },
+  });
+  const textScale = interpolate(textSpring, [0, 1], [0.92, 1], clamp);
 
-  const backdropOpacity = interpolate(
-    frame,
-    [0, 6, holdFrames, totalFrames],
-    [0, 0.92, 0.92, 0],
+  // Accent bar entrance
+  const barHeight = interpolate(
+    spring({
+      frame: Math.max(0, frame - 4),
+      fps,
+      config: { damping: 14, stiffness: 160, mass: 0.6 },
+    }),
+    [0, 1],
+    [0, 100],
     clamp,
   );
 
   return (
-    <AbsoluteFill>
-      {/* Dark backdrop */}
-      <AbsoluteFill
-        style={{
-          backgroundColor: "rgba(14, 15, 12, 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          opacity: backdropOpacity,
-        }}
-      />
-
-      <AbsoluteFill
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          opacity,
-          transform: `scale(${scale})`,
-        }}
-      >
+    <AbsoluteFill style={{ opacity: fadeOutOpacity }}>
+      <SplitCard>
+        {/* Green accent bar */}
         <div
           style={{
-            ...FAQ.numberStyle,
-            textAlign: "center",
-            marginBottom: 32,
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 4,
+            height: `${barHeight}%`,
+            background: COLOR.wiseGreen,
+            borderRadius: 2,
           }}
-        >
-          {entry.number}
-        </div>
+        />
 
         <div
           style={{
-            ...FAQ.questionStyle,
-            whiteSpace: "pre-line",
+            opacity: textSpring,
+            transform: `scale(${textScale})`,
+            transformOrigin: "left center",
           }}
         >
-          {entry.text}
+          <div
+            style={{
+              ...TYPE.label,
+              color: COLOR.wiseGreen,
+              fontSize: 22,
+              letterSpacing: "0.15em",
+              marginBottom: 24,
+            }}
+          >
+            {entry.number}
+          </div>
+
+          <div
+            style={{
+              ...TYPE.sectionHeading,
+              fontSize: 48,
+              fontWeight: 700,
+              color: COLOR.nearBlack,
+              lineHeight: 1.2,
+              whiteSpace: "pre-line",
+              maxWidth: 680,
+            }}
+          >
+            {entry.text}
+          </div>
         </div>
-      </AbsoluteFill>
+      </SplitCard>
     </AbsoluteFill>
   );
 };
@@ -140,6 +155,7 @@ export const FaqQuestionOverlay: React.FC = () => {
         return (
           <Sequence key={i} from={startFrame} durationInFrames={durationFrames}>
             <FaqQuestion entry={entry} />
+            <Sfx sound="shape-drop-bounce" volume={0.25} />
             <Sequence from={0} durationInFrames={Math.round(HOLD_SEC * FPS)}>
               <Audio
                 src={staticFile("sfx/whoosh-scene-grid.mp3")}

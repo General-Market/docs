@@ -7,30 +7,39 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { COLOR, TYPE } from "../designTokens";
 import { FPS } from "../theme";
+import { useDesignTokens } from "../TutorialTheme";
+import { useTalkingHead } from "../TalkingHeadLayout";
+import { Sfx } from "../components/Sfx";
 
 const sec = (s: number) => Math.round(s * FPS);
 
-const ITEMS = ["Liquidity", "Capital Lock", "Risk Management"];
-
 /**
- * Simple ticker bar showing the 3 promises.
- * Appears at 11.28s when speaker first names them, holds through 22.2s.
- * Clean lower-third, no clutter.
+ * Voice-synced promise pills. Each appears when the speaker names it.
+ * Transcript timestamps:
+ *   "liquidity"       — 18.32s
+ *   "capital lock"    — 19.28s
+ *   "risk management" — 20.32s
+ *
+ * Rendered in the content area (next to webcam), column layout.
  */
-const TickerBar: React.FC = () => {
+
+const ITEMS: { label: string; voiceSec: number }[] = [
+  { label: "Liquidity", voiceSec: 18.32 },
+  { label: "Capital Lock", voiceSec: 19.28 },
+  { label: "Risk Management", voiceSec: 20.32 },
+];
+
+const APPEAR_START = 18.32; // first word spoken
+const HOLD_UNTIL = 21.0; // fade out before particle transition takes over
+
+const TickerColumn: React.FC = () => {
+  const { COLOR, TYPE } = useDesignTokens();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const { contentArea } = useTalkingHead();
 
-  const enterSpring = spring({
-    frame,
-    fps,
-    config: { damping: 16, stiffness: 140, mass: 0.7 },
-    durationInFrames: 20,
-  });
-
-  const totalFrames = sec(22.2 - 11.28);
+  const totalFrames = sec(HOLD_UNTIL - APPEAR_START);
   const exitOpacity = interpolate(
     frame,
     [totalFrames - 15, totalFrames],
@@ -38,57 +47,61 @@ const TickerBar: React.FC = () => {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  const opacity = Math.min(enterSpring, exitOpacity);
-  const slideY = interpolate(enterSpring, [0, 1], [40, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  if (opacity < 0.01) return null;
+  if (!contentArea) return null;
 
   return (
     <div
       style={{
         position: "absolute",
-        bottom: 60,
-        left: "50%",
-        transform: `translateX(-50%) translateY(${slideY}px)`,
-        opacity,
+        left: contentArea.x,
+        top: contentArea.y,
+        width: contentArea.w,
+        height: contentArea.h,
         display: "flex",
-        gap: 12,
+        flexDirection: "column",
+        justifyContent: "center",
+        padding: "0 56px",
+        gap: 20,
+        opacity: exitOpacity,
         pointerEvents: "none",
       }}
     >
-      {ITEMS.map((item, i) => {
-        const itemDelay = i * sec(0.4);
+      {ITEMS.map((item) => {
+        const itemFrame = frame - sec(item.voiceSec - APPEAR_START);
         const itemProg = spring({
-          frame: Math.max(frame - itemDelay, 0),
+          frame: Math.max(itemFrame, 0),
           fps,
           config: { damping: 14, stiffness: 160, mass: 0.6 },
           durationInFrames: 15,
         });
 
+        if (itemProg < 0.01) return null;
+
         return (
           <div
-            key={item}
+            key={item.label}
             style={{
-              background: COLOR.panelDark,
+              background: COLOR.lightMint,
               borderRadius: 9999,
-              padding: "12px 24px",
+              padding: "18px 40px",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 14,
               opacity: itemProg,
               transform: `scale(${interpolate(itemProg, [0, 1], [0.8, 1], {
                 extrapolateLeft: "clamp",
                 extrapolateRight: "clamp",
-              })})`,
+              })}) translateY(${interpolate(itemProg, [0, 1], [20, 0], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              })}px)`,
+              alignSelf: "flex-start",
             }}
           >
             <span
               style={{
-                width: 10,
-                height: 10,
+                width: 14,
+                height: 14,
                 borderRadius: "50%",
                 background: COLOR.wiseGreen,
                 flexShrink: 0,
@@ -96,11 +109,12 @@ const TickerBar: React.FC = () => {
             />
             <span
               style={{
-                ...TYPE.bodySemiboldDark,
+                ...TYPE.subHeading,
+                color: COLOR.darkGreen,
                 whiteSpace: "nowrap",
               }}
             >
-              {item}
+              {item.label}
             </span>
           </div>
         );
@@ -112,8 +126,16 @@ const TickerBar: React.FC = () => {
 export const PromiseTicker: React.FC = () => {
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <Sequence from={sec(11.28)} durationInFrames={sec(22.2 - 11.28)}>
-        <TickerBar />
+      <Sequence from={sec(APPEAR_START)} durationInFrames={sec(HOLD_UNTIL - APPEAR_START)}>
+        <TickerColumn />
+        {/* Plop per pill entrance — frames relative to APPEAR_START */}
+        {ITEMS.map((item) => (
+          <Sfx
+            key={item.label}
+            delay={sec(item.voiceSec - APPEAR_START)}
+            volume={0.25}
+          />
+        ))}
       </Sequence>
     </AbsoluteFill>
   );
