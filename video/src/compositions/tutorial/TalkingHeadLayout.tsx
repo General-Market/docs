@@ -2,7 +2,37 @@
  * TalkingHeadLayout — reusable animated split-screen webcam wrapper.
  *
  * Usage:
- *   <TalkingHeadLayout videoSrc="my-video.mp4" scenes={myScenes} />
+ *   <TalkingHeadLayout videoSrc="my-video.mp4" scenes={myScenes}>
+ *     {overlays that need the side panel}
+ *   </TalkingHeadLayout>
+ *
+ * ┌─────────────────────────────────────────────────────────┐
+ * │  LAYOUT CONTRACT — READ THIS BEFORE ADDING OVERLAYS    │
+ * │                                                         │
+ * │  The screen is split: one side is the webcam, the       │
+ * │  other side is the CONTENT AREA. All text, diagrams,    │
+ * │  cards, and visuals go in the CONTENT AREA — never      │
+ * │  on top of the webcam, never fullscreen.                │
+ * │                                                         │
+ * │  To get the content area bounds for the current frame:  │
+ * │                                                         │
+ * │    const { contentArea } = useTalkingHead();            │
+ * │    // → { x, y, w, h } of the side panel               │
+ * │                                                         │
+ * │  Or outside the component tree:                         │
+ * │                                                         │
+ * │    const area = getContentArea(scenes, sec, W, H);      │
+ * │                                                         │
+ * │  Position your overlay within these bounds:             │
+ * │    style={{ position: "absolute",                       │
+ * │             left: contentArea.x, top: contentArea.y,    │
+ * │             width: contentArea.w, height: contentArea.h │
+ * │    }}                                                   │
+ * │                                                         │
+ * │  When the layout is "centered" or "centered-bottom",    │
+ * │  contentArea is null — the webcam fills the frame.      │
+ * │  Hide your overlay or render nothing in that case.      │
+ * └─────────────────────────────────────────────────────────┘
  *
  * 6 layout types: centered, centered-bottom, left/right-medium, left/right-small.
  * Webcam rect spring-animates between layouts. No cuts.
@@ -74,16 +104,74 @@ export interface TalkingHeadLayoutProps {
   children?: React.ReactNode;
 }
 
+// ── Context — lets overlays read the current content area ───────────────────
+
+export interface TalkingHeadState {
+  /** Bounds of the side panel where content goes. null when centered (no side panel). */
+  contentArea: ContentArea | null;
+  /** Bounds of the webcam rectangle. */
+  webcamRect: Rect;
+  /** The active scene definition. */
+  scene: TalkingHeadScene;
+  /** Frames elapsed since this scene started. */
+  framesIntoScene: number;
+}
+
+const TalkingHeadContext = React.createContext<TalkingHeadState | null>(null);
+
+/**
+ * Read the current content area from inside a TalkingHeadLayout child.
+ *
+ * Returns the side panel bounds ({ x, y, w, h }) where overlays should
+ * position their content — NOT on top of the webcam, NOT fullscreen.
+ *
+ * Returns null when the layout is "centered" (no side panel available).
+ *
+ * Usage:
+ *   const { contentArea } = useTalkingHead();
+ *   if (!contentArea) return null; // centered — nothing to show
+ *   return <div style={{ position: "absolute", left: contentArea.x, ... }}>
+ */
+export function useTalkingHead(): TalkingHeadState {
+  const ctx = React.useContext(TalkingHeadContext);
+  if (!ctx) {
+    throw new Error("useTalkingHead() must be used inside <TalkingHeadLayout>");
+  }
+  return ctx;
+}
+
+// ── Standalone utility — works outside the component tree ───────────────────
+
+/**
+ * Get the content area for a given time, without needing React context.
+ * Useful for overlays that are siblings of TalkingHeadLayout, not children.
+ *
+ * Returns { x, y, w, h, slideDir } or null if centered.
+ */
+export function getContentArea(
+  scenes: TalkingHeadScene[],
+  sec: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  margin = 48,
+  gap = 32,
+): ContentArea | null {
+  const result = findScene(scenes, sec);
+  if (!result) return null;
+  const { content } = buildRects(canvasWidth, canvasHeight, margin, gap);
+  return content[result.scene.layout] ?? null;
+}
+
 // ── Geometry ────────────────────────────────────────────────────────────────
 
-interface Rect {
+export interface Rect {
   x: number;
   y: number;
   w: number;
   h: number;
 }
 
-interface ContentArea {
+export interface ContentArea {
   x: number;
   y: number;
   w: number;
@@ -334,8 +422,8 @@ export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
     webcamRect = lerpRect(prevRect, targetRect, t);
   }
 
-  // Content opacity
-  const contentArea = AREAS[scene.layout];
+  // Content area for this layout (null for centered — no side panel)
+  const contentArea = AREAS[scene.layout] ?? null;
   const hasContent =
     contentArea &&
     (scene.title || scene.pills || scene.bottomLabel || scene.image || scene.render);
@@ -357,36 +445,45 @@ export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
+  // Context value for child overlays
+  const ctxValue = React.useMemo<TalkingHeadState>(
+    () => ({ contentArea, webcamRect, scene, framesIntoScene }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [contentArea?.x, contentArea?.w, webcamRect.x, webcamRect.w, scene.startSec, framesIntoScene],
+  );
+
   return (
-    <AbsoluteFill style={{ background }}>
-      <div
-        style={{
-          position: "absolute",
-          left: webcamRect.x,
-          top: webcamRect.y,
-          width: webcamRect.w,
-          height: webcamRect.h,
-          borderRadius: br,
-          overflow: "hidden",
-          border: `1px solid ${COLOR.border}`,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-        }}
-      >
-        <Video
-          src={staticFile(videoSrc)}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </div>
+    <TalkingHeadContext.Provider value={ctxValue}>
+      <AbsoluteFill style={{ background }}>
+        <div
+          style={{
+            position: "absolute",
+            left: webcamRect.x,
+            top: webcamRect.y,
+            width: webcamRect.w,
+            height: webcamRect.h,
+            borderRadius: br,
+            overflow: "hidden",
+            border: `1px solid ${COLOR.border}`,
+            boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+          }}
+        >
+          <Video
+            src={staticFile(videoSrc)}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
 
-      {hasContent && contentArea && (
-        <DefaultContent
-          scene={scene}
-          area={contentArea}
-          opacity={contentOpacity}
-        />
-      )}
+        {hasContent && contentArea && (
+          <DefaultContent
+            scene={scene}
+            area={contentArea}
+            opacity={contentOpacity}
+          />
+        )}
 
-      {children}
-    </AbsoluteFill>
+        {children}
+      </AbsoluteFill>
+    </TalkingHeadContext.Provider>
   );
 };
