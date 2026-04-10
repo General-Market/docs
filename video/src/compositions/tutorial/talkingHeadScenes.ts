@@ -1,5 +1,5 @@
 /**
- * Scene definitions for TalkingHeadLayout.
+ * Tutorial-specific scene definitions for TalkingHeadLayout.
  *
  * ~85 scenes, 6 layout types, full video coverage (0–282.88s).
  * Rule: NEVER left→right or right→left directly.
@@ -7,33 +7,7 @@
  * Pattern: centered → side → centered → other side → centered → ...
  */
 
-export type WebcamLayout =
-  | "centered"
-  | "centered-bottom"
-  | "left-medium"
-  | "right-medium"
-  | "left-small"
-  | "right-small";
-
-export interface TalkingHeadScene {
-  startSec: number;
-  endSec: number;
-  layout: WebcamLayout;
-  /** Big title — supports \n for line breaks */
-  title?: string;
-  /** 0-indexed line to render in accent color */
-  accentLine?: number;
-  /** Smaller text below title */
-  subtitle?: string;
-  /** Pill badges */
-  pills?: string[];
-  /** staticFile() path for illustration */
-  image?: string;
-  /** Label below webcam (centered-bottom only) */
-  bottomLabel?: string;
-  /** Logo image path (centered-bottom only) */
-  bottomImage?: string;
-}
+import type { TalkingHeadScene } from "./TalkingHeadLayout";
 
 export const SCENES: TalkingHeadScene[] = [
   // ── INTRO (0–48.6s) ─────────────────────────────────────────────

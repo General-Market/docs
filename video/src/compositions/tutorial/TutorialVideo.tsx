@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
 import { TOTAL_FRAMES, SECTIONS, toFrames } from "./theme";
 import { TalkingHeadLayout } from "./TalkingHeadLayout";
+import { SCENES } from "./talkingHeadScenes";
 import { LiquidityDiagrams } from "./diagrams/LiquidityDiagrams";
 import { SettlementDiagrams } from "./diagrams/SettlementDiagrams";
 import { ParimutuelDiagrams } from "./diagrams/ParimutuelDiagrams";
@@ -22,7 +23,7 @@ export const TutorialVideo: React.FC = () => {
   return (
     <AbsoluteFill>
       {/* Base layer: animated split-screen webcam */}
-      <TalkingHeadLayout />
+      <TalkingHeadLayout videoSrc="tutorial-raw.mp4" scenes={SCENES} />
 
       {/* Liquidity diagrams (48.64–89.84s) */}
       <Sequence {...seq("liquidityDiagram")}>

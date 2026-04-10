@@ -1,9 +1,13 @@
 /**
- * TalkingHeadLayout — animated split-screen webcam wrapper.
+ * TalkingHeadLayout — reusable animated split-screen webcam wrapper.
+ *
+ * Usage:
+ *   <TalkingHeadLayout videoSrc="my-video.mp4" scenes={myScenes} />
  *
  * 6 layout types: centered, centered-bottom, left/right-medium, left/right-small.
  * Webcam rect spring-animates between layouts. No cuts.
- * Content (titles, pills, images) fades in with a slide.
+ * Scenes can use structured content (title/pills/image) or custom React nodes.
+ * Dimensions derived from useVideoConfig() — works at any resolution.
  */
 
 import React from "react";
@@ -18,12 +22,57 @@ import {
   useVideoConfig,
 } from "remotion";
 import { COLOR, TYPE } from "./designTokens";
-import { SCENES, TalkingHeadScene, WebcamLayout } from "./talkingHeadScenes";
 
-const MAIN_VIDEO = "tutorial-raw.mp4";
-const TRANSITION_FRAMES = 18;
-const CONTENT_DELAY = 4;
-const CONTENT_FADE_FRAMES = 12;
+// ── Public types ────────────────────────────────────────────────────────────
+
+export type WebcamLayout =
+  | "centered"
+  | "centered-bottom"
+  | "left-medium"
+  | "right-medium"
+  | "left-small"
+  | "right-small";
+
+export interface TalkingHeadScene {
+  startSec: number;
+  endSec: number;
+  layout: WebcamLayout;
+  /** Custom React content for the side panel (overrides structured fields) */
+  render?: React.ReactNode;
+  /** Big title — supports \n for line breaks */
+  title?: string;
+  /** 0-indexed line to render in accent color */
+  accentLine?: number;
+  /** Smaller text below title */
+  subtitle?: string;
+  /** Pill badges */
+  pills?: string[];
+  /** staticFile() path for illustration */
+  image?: string;
+  /** Label below webcam (centered-bottom only) */
+  bottomLabel?: string;
+  /** Logo image path (centered-bottom only) */
+  bottomImage?: string;
+}
+
+export interface TalkingHeadLayoutProps {
+  /** Video file path (for staticFile) */
+  videoSrc: string;
+  /** Scene definitions covering the full video duration */
+  scenes: TalkingHeadScene[];
+  /** Edge margin in px (default: 48) */
+  margin?: number;
+  /** Gap between webcam and content in px (default: 32) */
+  gap?: number;
+  /** Transition duration in frames (default: 18) */
+  transitionFrames?: number;
+  /** Background color (default: COLOR.bg / white) */
+  background?: string;
+  /** Webcam border radius (default: 24) */
+  borderRadius?: number;
+  /** Children render on top of everything (overlay layer) */
+  children?: React.ReactNode;
+}
 
 // ── Geometry ────────────────────────────────────────────────────────────────
 
@@ -34,19 +83,6 @@ interface Rect {
   h: number;
 }
 
-const M = 48;
-
-const H = 1080 - 2 * M; // consistent height across all layouts
-
-const WEBCAM_RECTS: Record<WebcamLayout, Rect> = {
-  "centered":        { x: 100,              y: M, w: 1720,        h: H },
-  "centered-bottom": { x: 100,              y: M, w: 1720,        h: H - 160 },
-  "left-medium":     { x: M,                y: M, w: 800,         h: H },
-  "right-medium":    { x: 1920 - M - 800,   y: M, w: 800,         h: H },
-  "left-small":      { x: M,                y: M, w: 540,         h: H },
-  "right-small":     { x: 1920 - M - 540,   y: M, w: 540,         h: H },
-};
-
 interface ContentArea {
   x: number;
   y: number;
@@ -54,16 +90,6 @@ interface ContentArea {
   h: number;
   slideDir: "left" | "right" | "up" | "none";
 }
-
-const G = 32; // gap between webcam and content
-
-const CONTENT_AREAS: Partial<Record<WebcamLayout, ContentArea>> = {
-  "left-medium":     { x: M + 800 + G,   y: M,              w: 1920 - M - 800 - G - M, h: H,   slideDir: "left" },
-  "right-medium":    { x: M,              y: M,              w: 1920 - M - 800 - G - M, h: H,   slideDir: "right" },
-  "left-small":      { x: M + 540 + G,   y: M,              w: 1920 - M - 540 - G - M, h: H,   slideDir: "left" },
-  "right-small":     { x: M,              y: M,              w: 1920 - M - 540 - G - M, h: H,   slideDir: "right" },
-  "centered-bottom": { x: 100,            y: M + H - 160 + 16, w: 1720,                h: 140, slideDir: "up" },
-};
 
 function lerpRect(a: Rect, b: Rect, t: number): Rect {
   return {
@@ -74,24 +100,54 @@ function lerpRect(a: Rect, b: Rect, t: number): Rect {
   };
 }
 
+function buildRects(W: number, Hfull: number, m: number, g: number) {
+  const h = Hfull - 2 * m;
+  const medW = Math.round(W * 0.417); // ~800 at 1920
+  const smW = Math.round(W * 0.281);  // ~540 at 1920
+  const cInset = Math.round(W * 0.052); // ~100 at 1920
+  const cW = W - 2 * cInset;
+  const bottomReserve = 160;
+
+  const webcam: Record<WebcamLayout, Rect> = {
+    "centered":        { x: cInset,          y: m, w: cW,            h },
+    "centered-bottom": { x: cInset,          y: m, w: cW,            h: h - bottomReserve },
+    "left-medium":     { x: m,               y: m, w: medW,          h },
+    "right-medium":    { x: W - m - medW,    y: m, w: medW,          h },
+    "left-small":      { x: m,               y: m, w: smW,           h },
+    "right-small":     { x: W - m - smW,     y: m, w: smW,           h },
+  };
+
+  const content: Partial<Record<WebcamLayout, ContentArea>> = {
+    "left-medium":     { x: m + medW + g, y: m, w: W - m - medW - g - m, h, slideDir: "left" },
+    "right-medium":    { x: m,            y: m, w: W - m - medW - g - m, h, slideDir: "right" },
+    "left-small":      { x: m + smW + g,  y: m, w: W - m - smW - g - m,  h, slideDir: "left" },
+    "right-small":     { x: m,            y: m, w: W - m - smW - g - m,  h, slideDir: "right" },
+    "centered-bottom": { x: cInset, y: m + h - bottomReserve + 16, w: cW, h: bottomReserve - 20, slideDir: "up" },
+  };
+
+  return { webcam, content };
+}
+
 // ── Scene lookup ────────────────────────────────────────────────────────────
 
-function findScene(sec: number): { scene: TalkingHeadScene; index: number } | null {
-  for (let i = 0; i < SCENES.length; i++) {
-    if (sec >= SCENES[i].startSec && sec < SCENES[i].endSec) {
-      return { scene: SCENES[i], index: i };
+function findScene(
+  scenes: TalkingHeadScene[],
+  sec: number,
+): { scene: TalkingHeadScene; index: number } | null {
+  for (let i = 0; i < scenes.length; i++) {
+    if (sec >= scenes[i].startSec && sec < scenes[i].endSec) {
+      return { scene: scenes[i], index: i };
     }
   }
-  // Clamp to last scene if past end
-  if (SCENES.length > 0 && sec >= SCENES[SCENES.length - 1].endSec) {
-    return { scene: SCENES[SCENES.length - 1], index: SCENES.length - 1 };
+  if (scenes.length > 0 && sec >= scenes[scenes.length - 1].endSec) {
+    return { scene: scenes[scenes.length - 1], index: scenes.length - 1 };
   }
   return null;
 }
 
-// ── Content panel ───────────────────────────────────────────────────────────
+// ── Built-in content renderer ───────────────────────────────────────────────
 
-const SceneContent: React.FC<{
+const DefaultContent: React.FC<{
   scene: TalkingHeadScene;
   area: ContentArea;
   opacity: number;
@@ -99,7 +155,6 @@ const SceneContent: React.FC<{
   const isBig = scene.layout === "left-small" || scene.layout === "right-small";
   const isBottom = scene.layout === "centered-bottom";
 
-  // Slide offset
   const slideAmount = 30;
   const translateX =
     area.slideDir === "left"
@@ -137,6 +192,25 @@ const SceneContent: React.FC<{
             {scene.bottomLabel}
           </span>
         )}
+      </div>
+    );
+  }
+
+  // Custom render takes over
+  if (scene.render) {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: area.x,
+          top: area.y,
+          width: area.w,
+          height: area.h,
+          opacity,
+          transform: `translateX(${translateX}px)`,
+        }}
+      >
+        {scene.render}
       </div>
     );
   }
@@ -211,71 +285,80 @@ const SceneContent: React.FC<{
           }}
         />
       )}
-
     </div>
   );
 };
 
-// ── Main layout ─────────────────────────────────────────────────────────────
+// ── Main component ──────────────────────────────────────────────────────────
 
-export const TalkingHeadLayout: React.FC = () => {
+export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
+  videoSrc,
+  scenes,
+  margin: m = 48,
+  gap: g = 32,
+  transitionFrames = 18,
+  background = COLOR.bg,
+  borderRadius: brProp = 24,
+  children,
+}) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width: W, height: H } = useVideoConfig();
   const currentSec = frame / fps;
 
-  const result = findScene(currentSec);
+  const { webcam: RECTS, content: AREAS } = React.useMemo(
+    () => buildRects(W, H, m, g),
+    [W, H, m, g],
+  );
+
+  const result = findScene(scenes, currentSec);
   if (!result) return null;
 
   const { scene, index } = result;
-  const prevScene = index > 0 ? SCENES[index - 1] : null;
+  const prevScene = index > 0 ? scenes[index - 1] : null;
 
   const sceneStartFrame = Math.round(scene.startSec * fps);
   const framesIntoScene = frame - sceneStartFrame;
 
-  // ── Webcam rect: spring from previous position ──
-
-  const targetRect = WEBCAM_RECTS[scene.layout];
+  // Webcam rect — spring from previous position
+  const targetRect = RECTS[scene.layout];
   let webcamRect = targetRect;
 
-  if (prevScene && framesIntoScene < TRANSITION_FRAMES) {
-    const prevRect = WEBCAM_RECTS[prevScene.layout];
+  if (prevScene && framesIntoScene < transitionFrames) {
+    const prevRect = RECTS[prevScene.layout];
     const t = spring({
       frame: framesIntoScene,
       fps,
       config: { damping: 200 },
-      durationInFrames: TRANSITION_FRAMES,
+      durationInFrames: transitionFrames,
     });
     webcamRect = lerpRect(prevRect, targetRect, t);
   }
 
-  // ── Content opacity ──
-
-  const contentArea = CONTENT_AREAS[scene.layout];
+  // Content opacity
+  const contentArea = AREAS[scene.layout];
   const hasContent =
     contentArea &&
-    (scene.title || scene.pills || scene.bottomLabel || scene.image);
+    (scene.title || scene.pills || scene.bottomLabel || scene.image || scene.render);
 
   const contentOpacity = hasContent
     ? interpolate(
         framesIntoScene,
-        [CONTENT_DELAY, CONTENT_DELAY + CONTENT_FADE_FRAMES],
+        [4, 16],
         [0, 1],
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
       )
     : 0;
 
-  // ── Border radius scales with webcam size ──
-
-  const borderRadius = interpolate(
+  // Border radius — slightly smaller when webcam is large
+  const br = interpolate(
     webcamRect.w,
-    [540, 1720],
-    [24, 20],
+    [RECTS["left-small"].w, RECTS["centered"].w],
+    [brProp, brProp - 4],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
   return (
-    <AbsoluteFill style={{ background: COLOR.bg }}>
-      {/* Webcam */}
+    <AbsoluteFill style={{ background }}>
       <div
         style={{
           position: "absolute",
@@ -283,26 +366,27 @@ export const TalkingHeadLayout: React.FC = () => {
           top: webcamRect.y,
           width: webcamRect.w,
           height: webcamRect.h,
-          borderRadius,
+          borderRadius: br,
           overflow: "hidden",
           border: `1px solid ${COLOR.border}`,
           boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
         }}
       >
         <Video
-          src={staticFile(MAIN_VIDEO)}
+          src={staticFile(videoSrc)}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </div>
 
-      {/* Content */}
       {hasContent && contentArea && (
-        <SceneContent
+        <DefaultContent
           scene={scene}
           area={contentArea}
           opacity={contentOpacity}
         />
       )}
+
+      {children}
     </AbsoluteFill>
   );
 };
