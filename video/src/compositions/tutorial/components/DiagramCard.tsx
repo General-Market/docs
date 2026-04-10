@@ -1,15 +1,15 @@
 /**
  * DiagramCard — Standard wrapper for ALL tutorial graphics.
  *
- * Mountain b-roll video behind everything. White/dark card on top.
- * PiP of talking head bottom-right.
+ * Static mountain image background (instant load, no video decode).
+ * White/dark card on top. No PiP (was causing load times).
  */
 
 import React from "react";
 import {
   AbsoluteFill,
   Easing,
-  OffthreadVideo,
+  Img,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -18,11 +18,8 @@ import { PANEL } from "../designTokens";
 
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
-const PIP_W = 320;
-const PIP_H = 240;
 const CARD_MARGIN = 84;
-const BROLL_SRC = "broll/mountains-aerial.mp4";
-const MAIN_VIDEO = "tutorial-raw.mp4";
+const BROLL_IMG = "broll/mountains-frame.jpg";
 
 interface DiagramCardProps {
   children: React.ReactNode;
@@ -45,34 +42,6 @@ function useEntrance() {
   };
 }
 
-/** PiP of talking head — Wise-style square card */
-const TalkingHeadPip: React.FC<{ opacity: number }> = ({ opacity }) => {
-  if (opacity < 0.01) return null;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: CARD_MARGIN + 12,
-        right: CARD_MARGIN + 12,
-        width: PIP_W,
-        height: PIP_H,
-        borderRadius: 20,
-        overflow: "hidden",
-        border: "2px solid rgba(14,15,12,0.12)",
-        boxShadow: "rgba(14,15,12,0.12) 0px 0px 0px 1px, 0 8px 24px rgba(0,0,0,0.2)",
-        opacity,
-        zIndex: 10,
-      }}
-    >
-      <OffthreadVideo
-        src={staticFile(MAIN_VIDEO)}
-        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        volume={0}
-      />
-    </div>
-  );
-};
-
 export const DiagramCard: React.FC<DiagramCardProps> = ({
   children,
   padding = "56px 72px",
@@ -81,17 +50,11 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Mountain b-roll — full screen behind card */}
+      {/* Mountain background — static image, instant */}
       <AbsoluteFill style={{ opacity: bgOpacity }}>
-        <OffthreadVideo
-          src={staticFile(BROLL_SRC)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: "brightness(0.7) saturate(0.5)",
-          }}
-          volume={0}
+        <Img
+          src={staticFile(BROLL_IMG)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.7) saturate(0.5)" }}
         />
       </AbsoluteFill>
 
@@ -125,9 +88,6 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
           {children}
         </div>
       </AbsoluteFill>
-
-      {/* PiP — talking head bottom right */}
-      <TalkingHeadPip opacity={bgOpacity} />
     </AbsoluteFill>
   );
 };
@@ -141,15 +101,9 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <AbsoluteFill style={{ opacity: bgOpacity }}>
-        <OffthreadVideo
-          src={staticFile(BROLL_SRC)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            filter: "brightness(0.7) saturate(0.5)",
-          }}
-          volume={0}
+        <Img
+          src={staticFile(BROLL_IMG)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.7) saturate(0.5)" }}
         />
       </AbsoluteFill>
 
@@ -182,8 +136,6 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
           {children}
         </div>
       </AbsoluteFill>
-
-      <TalkingHeadPip opacity={bgOpacity} />
     </AbsoluteFill>
   );
 };
