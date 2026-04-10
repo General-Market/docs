@@ -11,6 +11,7 @@ const sec = (s: number) => Math.round(s * FPS);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
 const WISE_GREEN = [159, 232, 112] as const;
+const NEAR_BLACK = [14, 15, 12] as const; // COLOR.nearBlack in RGB
 
 const easeIn = (t: number, power: number): number =>
   Math.pow(Math.max(0, Math.min(1, t)), power);
@@ -33,7 +34,7 @@ const TypewriterPhrase: React.FC<{
   typeEnd,
   wipeStart,
   wipeEnd,
-  fontSize = 48,
+  fontSize = 72,
   typePower = 2.5,
 }) => {
   const frame = useCurrentFrame();
@@ -85,9 +86,9 @@ const TypewriterPhrase: React.FC<{
             (easeIn(currentT, typePower) - charThreshold) *
             (typeEnd - typeStart);
           const colorT = interpolate(age, [0, 4], [0, 1], clamp);
-          const r = interpolate(colorT, [0, 1], [WISE_GREEN[0], 255]);
-          const g = interpolate(colorT, [0, 1], [WISE_GREEN[1], 255]);
-          const b = interpolate(colorT, [0, 1], [WISE_GREEN[2], 255]);
+          const r = interpolate(colorT, [0, 1], [WISE_GREEN[0], NEAR_BLACK[0]]);
+          const g = interpolate(colorT, [0, 1], [WISE_GREEN[1], NEAR_BLACK[1]]);
+          const b = interpolate(colorT, [0, 1], [WISE_GREEN[2], NEAR_BLACK[2]]);
           return (
             <span key={i} style={{ color: `rgb(${r},${g},${b})` }}>
               {ch}
@@ -99,14 +100,14 @@ const TypewriterPhrase: React.FC<{
           const dist = i - visibleStart;
           const op = interpolate(dist, [0, 3], [0.15, 1], clamp);
           return (
-            <span key={i} style={{ color: `rgba(255,255,255,${op})` }}>
+            <span key={i} style={{ color: `rgba(14,15,12,${op})` }}>
               {ch}
             </span>
           );
         }
 
         return (
-          <span key={i} style={{ color: COLOR.gray }}>
+          <span key={i} style={{ color: COLOR.nearBlack }}>
             {ch}
           </span>
         );
