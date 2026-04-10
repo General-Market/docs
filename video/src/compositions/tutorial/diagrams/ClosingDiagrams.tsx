@@ -121,7 +121,7 @@ const BotDashboard: React.FC = () => {
           <span
             style={{
               ...TYPE.label,
-              fontSize: 14,
+              fontSize: 18,
               fontWeight: 700,
               color: COLOR.darkGreen,
               background: COLOR.wiseGreen,

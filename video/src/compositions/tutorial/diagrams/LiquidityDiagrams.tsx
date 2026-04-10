@@ -177,14 +177,14 @@ const BatchGrid: React.FC<{ frame: number; fps: number; beatFrame: number }> = (
                 transform: `translateY(${interpolate(cardSpring, [0, 1], [16, 0], clamp)}px) scale(${interpolate(cardSpring, [0, 1], [0.95, 1], clamp)})`,
               }}
             >
-              <div style={{ ...TYPE.bodySemibold, fontSize: 18, marginBottom: 4 }}>
+              <div style={{ ...TYPE.bodySemibold, fontSize: 24, marginBottom: 4 }}>
                 {s.name}
               </div>
               <Sparkline data={s.sparkline} width={180} height={36} drawProgress={sparkDraw} />
               <div
                 style={{
                   ...TYPE.caption,
-                  fontSize: 16,
+                  fontSize: 22,
                   fontVariantNumeric: "tabular-nums",
                   marginTop: 4,
                   color: COLOR.nearBlack,
@@ -301,7 +301,7 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
               y={toY(v) + 4}
               textAnchor="end"
               fill={COLOR.gray}
-              fontSize={12}
+              fontSize={18}
               fontFamily="Inter"
             >
               {v}k
@@ -355,7 +355,7 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
           y={pad - 8}
           textAnchor="middle"
           fill={COLOR.wiseGreen}
-          fontSize={13}
+          fontSize={18}
           fontWeight={700}
           fontFamily="Inter"
           opacity={interpolate(beatFrame, [sec(1.6), sec(2)], [0, 1], clamp)}
@@ -391,18 +391,18 @@ const QuestionCard: React.FC<{ frame: number; fps: number; beatFrame: number }> 
           transform: `translateY(${interpolate(btnFade, [0, 1], [8, 0], clamp)}px)`,
         }}
       >
-        <span style={{ ...TYPE.bodySemibold, fontSize: 22, textAlign: "center" }}>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 24, textAlign: "center" }}>
           Will xQc have MORE viewers in 10 minutes?
         </span>
         <div style={{ display: "flex", gap: 16 }}>
-          <div style={{ ...BUTTON.primary, padding: "10px 28px", fontSize: 22 }}>
+          <div style={{ ...BUTTON.primary, padding: "10px 28px", fontSize: 24 }}>
             YES ▲
           </div>
           <div
             style={{
               ...BUTTON.secondary,
               padding: "10px 28px",
-              fontSize: 22,
+              fontSize: 24,
               color: COLOR.danger,
             }}
           >
@@ -481,17 +481,17 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
               opacity: interpolate(beatFrame, [sec(0.2) + i * sec(0.06), sec(0.4) + i * sec(0.06)], [0, 1], clamp),
             }}
           >
-            <span style={{ ...TYPE.caption, fontSize: 16, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
+            <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
               #{row.rank}
             </span>
-            <span style={{ ...TYPE.bodySemibold, fontSize: 18, flex: 1 }}>{row.name}</span>
-            <span style={{ ...TYPE.caption, fontSize: 16, fontVariantNumeric: "tabular-nums", width: 56 }}>
+            <span style={{ ...TYPE.bodySemibold, fontSize: 24, flex: 1 }}>{row.name}</span>
+            <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 56 }}>
               {row.viewers}
             </span>
             <span
               style={{
                 ...TYPE.bodySemibold,
-                fontSize: 16,
+                fontSize: 22,
                 color: isYes ? COLOR.darkGreen : COLOR.danger,
                 width: 40,
               }}
@@ -500,7 +500,7 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
             </span>
             <span
               style={{
-                fontSize: 18,
+                fontSize: 22,
                 color: COLOR.wiseGreen,
                 opacity: checkOpacity,
                 transform: `scale(${interpolate(checkOpacity, [0, 1], [0.5, 1], clamp)})`,
@@ -517,7 +517,7 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
         style={{
           textAlign: "center",
           ...TYPE.bodySemibold,
-          fontSize: 18,
+          fontSize: 22,
           color: COLOR.gray,
           padding: "6px 0",
           opacity: interpolate(beatFrame, [sec(1.2), sec(1.5)], [0, 1], clamp),
@@ -538,15 +538,15 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
           opacity: interpolate(beatFrame, [sec(1.5), sec(1.8)], [0, 1], clamp),
         }}
       >
-        <span style={{ ...TYPE.caption, fontSize: 16, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
+        <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 32, color: COLOR.gray }}>
           #5000
         </span>
-        <span style={{ ...TYPE.bodySemibold, fontSize: 18, flex: 1 }}>tiny_streamer</span>
-        <span style={{ ...TYPE.caption, fontSize: 16, fontVariantNumeric: "tabular-nums", width: 56 }}>12</span>
-        <span style={{ ...TYPE.bodySemibold, fontSize: 16, color: COLOR.danger, width: 40 }}>NO</span>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 24, flex: 1 }}>tiny_streamer</span>
+        <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums", width: 56 }}>12</span>
+        <span style={{ ...TYPE.bodySemibold, fontSize: 22, color: COLOR.danger, width: 40 }}>NO</span>
         <span
           style={{
-            fontSize: 18,
+            fontSize: 22,
             color: COLOR.wiseGreen,
             opacity: interpolate(beatFrame, [sec(1.8), sec(2)], [0, 1], clamp),
             transform: `scale(${interpolate(
@@ -587,14 +587,14 @@ const BetSlip: React.FC<{ frame: number; fps: number; beatFrame: number }> = ({
             marginTop: 8,
           }}
         >
-          <span style={{ ...TYPE.caption, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ ...TYPE.caption, fontSize: 22, fontVariantNumeric: "tabular-nums" }}>
             {Math.round(progressVal * 50).toLocaleString()} / 5,000
           </span>
           {isReady && (
             <span
               style={{
                 ...TYPE.bodySemibold,
-                fontSize: 16,
+                fontSize: 22,
                 color: COLOR.darkGreen,
                 opacity: interpolate(beatFrame, [sec(3.2), sec(3.5)], [0, 1], clamp),
               }}
@@ -700,9 +700,9 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 14,
+                    fontSize: 20,
                     fontVariantNumeric: "tabular-nums",
-                    width: 52,
+                    width: 64,
                     textAlign: "right",
                     color: COLOR.gray,
                   }}
@@ -752,9 +752,9 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 14,
+                    fontSize: 20,
                     fontVariantNumeric: "tabular-nums",
-                    width: 52,
+                    width: 64,
                     textAlign: "right",
                     color: COLOR.nearBlack,
                     fontWeight: 600,
@@ -788,16 +788,16 @@ const LiquidityComparison: React.FC<{ frame: number; fps: number; beatFrame: num
         }}
       >
         <div style={{ flex: 1, maxWidth: 360, textAlign: "center" }}>
-          <span style={{ ...TYPE.caption, fontSize: 16, color: COLOR.gray }}>
+          <span style={{ ...TYPE.caption, fontSize: 22, color: COLOR.gray }}>
             Top 5 get 90% volume
           </span>
           <br />
-          <span style={{ ...TYPE.caption, fontSize: 14, color: COLOR.gray, fontStyle: "italic" }}>
+          <span style={{ ...TYPE.caption, fontSize: 22, color: COLOR.gray, fontStyle: "italic" }}>
             The rest: no one cares
           </span>
         </div>
         <div style={{ flex: 1, maxWidth: 360, textAlign: "center" }}>
-          <span style={{ ...TYPE.bodySemibold, fontSize: 16, color: COLOR.darkGreen }}>
+          <span style={{ ...TYPE.bodySemibold, fontSize: 22, color: COLOR.darkGreen }}>
             Everyone trades everything
           </span>
         </div>

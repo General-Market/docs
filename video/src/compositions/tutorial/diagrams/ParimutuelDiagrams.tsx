@@ -184,7 +184,7 @@ const ChartBeat: React.FC = () => {
                 y={toSvgY(v) + 4}
                 textAnchor="end"
                 fill={COLOR.gray}
-                fontSize={14}
+                fontSize={18}
                 fontFamily="Inter"
                 fontWeight={500}
               >
@@ -206,7 +206,7 @@ const ChartBeat: React.FC = () => {
               y={chartH - 8}
               textAnchor="middle"
               fill={tick.label === "NOW" ? COLOR.wiseGreen : COLOR.gray}
-              fontSize={14}
+              fontSize={18}
               fontFamily="Inter"
               fontWeight={tick.label === "NOW" ? 700 : 500}
             >
@@ -257,17 +257,17 @@ const ChartBeat: React.FC = () => {
               <rect
                 x={nowX + 8}
                 y={toSvgY(12) - 14}
-                width={56}
-                height={26}
+                width={68}
+                height={30}
                 rx={6}
                 fill={COLOR.wiseGreen}
               />
               <text
-                x={nowX + 36}
+                x={nowX + 42}
                 y={toSvgY(12) + 2}
                 textAnchor="middle"
                 fill={COLOR.darkGreen}
-                fontSize={14}
+                fontSize={18}
                 fontWeight={700}
                 fontFamily="Inter"
               >
@@ -390,7 +390,7 @@ const PoolBeat: React.FC = () => {
         <div
           style={{
             ...TYPE.label,
-            fontSize: 16,
+            fontSize: 22,
             color: isYes ? COLOR.darkGreen : COLOR.danger,
             marginBottom: 4,
           }}
@@ -426,7 +426,7 @@ const PoolBeat: React.FC = () => {
                   <span
                     style={{
                       ...TYPE.bodySemibold,
-                      fontSize: 20,
+                      fontSize: 22,
                       color: COLOR.wiseGreen,
                       fontVariantNumeric: "tabular-nums",
                       opacity: pnlReveal,
@@ -486,7 +486,7 @@ const PoolBeat: React.FC = () => {
                 width: "100%",
               }}
             >
-              <div style={{ ...TYPE.label, fontSize: 13, marginBottom: 4 }}>
+              <div style={{ ...TYPE.label, fontSize: 22, marginBottom: 4 }}>
                 POOL
               </div>
               <div
@@ -597,7 +597,7 @@ const TableBeat: React.FC = () => {
               key={col}
               style={{
                 ...TYPE.label,
-                fontSize: 14,
+                fontSize: 18,
                 flex: i === 0 ? 2 : 1,
                 textAlign: i === 3 ? "right" : "left",
               }}
@@ -623,13 +623,13 @@ const TableBeat: React.FC = () => {
                 transform: `translateY(${interpolate(s, [0, 1], [8, 0], clamp)}px)`,
               }}
             >
-              <span style={{ ...TYPE.body, fontSize: 20, flex: 2 }}>
+              <span style={{ ...TYPE.body, fontSize: 22, flex: 2 }}>
                 {row.station}
               </span>
               <span
                 style={{
                   ...TYPE.body,
-                  fontSize: 20,
+                  fontSize: 22,
                   flex: 1,
                   fontVariantNumeric: "tabular-nums",
                   color: COLOR.gray,
@@ -640,7 +640,7 @@ const TableBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.bodySemibold,
-                  fontSize: 20,
+                  fontSize: 22,
                   flex: 1,
                   color: row.bet === "YES" ? COLOR.darkGreen : COLOR.danger,
                 }}
@@ -650,7 +650,7 @@ const TableBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.bodySemibold,
-                  fontSize: 20,
+                  fontSize: 22,
                   flex: 1,
                   textAlign: "right",
                   fontVariantNumeric: "tabular-nums",
@@ -722,7 +722,7 @@ const TableBeat: React.FC = () => {
 
           {/* Total PnL */}
           <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <span style={{ ...TYPE.label, fontSize: 16 }}>TOTAL PNL</span>
+            <span style={{ ...TYPE.label, fontSize: 22 }}>TOTAL PNL</span>
             <span
               style={{
                 ...TYPE.statValue,
@@ -845,7 +845,7 @@ const FairnessBeat: React.FC = () => {
                 $1
               </span>
             </div>
-            <span style={{ ...TYPE.bodySemibold, fontSize: 20 }}>You</span>
+            <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>You</span>
           </div>
 
           {/* VS */}
@@ -899,12 +899,12 @@ const FairnessBeat: React.FC = () => {
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ ...TYPE.bodySemibold, fontSize: 20 }}>Whale</span>
+              <span style={{ ...TYPE.bodySemibold, fontSize: 22 }}>Whale</span>
               {vsOpacity > 0.5 && (
                 <span
                   style={{
                     ...TYPE.caption,
-                    fontSize: 18,
+                    fontSize: 22,
                     color: COLOR.wiseGreen,
                     opacity: vsOpacity,
                   }}

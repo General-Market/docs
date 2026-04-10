@@ -79,10 +79,10 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
           marginBottom: 4,
         }}
       >
-        <span style={{ ...TYPE.label, fontSize: 13, color: COLOR.gray }}>
+        <span style={{ ...TYPE.label, fontSize: 18, color: COLOR.gray }}>
           Price
         </span>
-        <span style={{ ...TYPE.label, fontSize: 13, color: COLOR.gray }}>
+        <span style={{ ...TYPE.label, fontSize: 18, color: COLOR.gray }}>
           Size
         </span>
       </div>
@@ -133,7 +133,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
             <span
               style={{
                 ...TYPE.small,
-                fontSize: 16,
+                fontSize: 20,
                 fontWeight: 600,
                 color: textColor,
                 fontVariantNumeric: "tabular-nums",
@@ -145,7 +145,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
             <span
               style={{
                 ...TYPE.small,
-                fontSize: 14,
+                fontSize: 18,
                 color: COLOR.gray,
                 fontVariantNumeric: "tabular-nums",
                 position: "relative",
@@ -178,7 +178,7 @@ const OrderbookVisual: React.FC<{ frame: number; fps: number }> = ({
         <span
           style={{
             ...TYPE.caption,
-            fontSize: 14,
+            fontSize: 18,
             color: COLOR.danger,
             fontWeight: 600,
           }}
@@ -202,7 +202,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
       <div
         style={{
           ...TYPE.label,
-          fontSize: 13,
+          fontSize: 18,
           color: COLOR.darkGreen,
           opacity: interpolate(
             frame,
@@ -239,7 +239,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
               <span
                 style={{
                   ...TYPE.small,
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: 700,
                   color: isYes ? COLOR.darkGreen : COLOR.nearBlack,
                 }}
@@ -249,7 +249,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
               <span
                 style={{
                   ...TYPE.small,
-                  fontSize: 14,
+                  fontSize: 18,
                   fontVariantNumeric: "tabular-nums",
                   color: COLOR.gray,
                 }}
@@ -313,7 +313,7 @@ const ParimutuelVisual: React.FC<{ frame: number; fps: number }> = ({
         <span
           style={{
             ...TYPE.caption,
-            fontSize: 14,
+            fontSize: 18,
             color: COLOR.darkGreen,
             fontWeight: 600,
           }}
