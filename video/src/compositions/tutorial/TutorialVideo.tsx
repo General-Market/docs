@@ -5,7 +5,7 @@ import { TalkingHeadLayout } from "./TalkingHeadLayout";
 import { LiquidityDiagrams } from "./diagrams/LiquidityDiagrams";
 import { SettlementDiagrams } from "./diagrams/SettlementDiagrams";
 import { ParimutuelDiagrams } from "./diagrams/ParimutuelDiagrams";
-import { PrivacyDiagrams } from "./diagrams/PrivacyDiagrams";
+
 import { EraDiagrams } from "./diagrams/EraDiagrams";
 import { ClosingDiagrams } from "./diagrams/ClosingDiagrams";
 import { SourceCardOverlays } from "./overlays/SourceCardOverlays";
@@ -36,11 +36,6 @@ export const TutorialVideo: React.FC = () => {
       {/* Parimutuel explanation (2:11-2:39) — overlaps settlementTimeline section */}
       <Sequence {...seq("settlementTimeline")}>
         <ParimutuelDiagrams />
-      </Sequence>
-
-      {/* Dispute timeline (181.2–194.0s) */}
-      <Sequence {...seq("privacySplit")}>
-        <PrivacyDiagrams />
       </Sequence>
 
       {/* Era timeline + competitive landscape (216.8–247.4s) */}
