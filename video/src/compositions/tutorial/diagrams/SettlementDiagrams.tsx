@@ -40,10 +40,15 @@ const SettlementCard: React.FC = () => {
     };
   };
 
-  // Voice-synced progress bar
+  // Voice-synced progress bar — ensure monotonic input range
+  const p1 = sec(0.5);
+  const p2 = sec(7.2);
+  const p3 = Math.min(sec(13.4), duration - 20);
+  const p4 = Math.max(p3 + 5, duration - 15);
+
   const progress = interpolate(
     frame,
-    [sec(0.5), sec(7.2), sec(13.4), duration - 15],
+    [p1, p2, p3, p4],
     [0, 55, 78, 100],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
