@@ -29,8 +29,6 @@ export interface TalkingHeadScene {
   pills?: string[];
   /** staticFile() path for illustration */
   image?: string;
-  /** Grid of logo images — { src: staticFile path, label: name } */
-  logos?: { src: string; label: string }[];
   /** Label below webcam (centered-bottom only) */
   bottomLabel?: string;
   /** Logo image path (centered-bottom only) */
@@ -146,27 +144,9 @@ export const SCENES: TalkingHeadScene[] = [
   // Last side: L → C → R → C → L → C → R → C → L
 
   { startSec: 247.4, endSec: 252.0, layout: "centered-bottom", bottomLabel: "FAQ #5" },
-  {
-    startSec: 252.0, endSec: 256.0, layout: "right-medium",
-    title: "One Batch\nPer Source",
-    logos: [
-      { src: "tutorial/logo-twitch.webp", label: "Twitch" },
-      { src: "tutorial/logo-steam.webp", label: "Steam" },
-      { src: "tutorial/logo-gtfs.webp", label: "Trains" },
-    ],
-  },
+  { startSec: 252.0, endSec: 256.0, layout: "right-medium", title: "One Batch\nPer Source" },
   { startSec: 256.0, endSec: 257.5, layout: "centered" },
-  {
-    startSec: 257.5, endSec: 261.0, layout: "left-medium",
-    logos: [
-      { src: "tutorial/logo-espn.webp", label: "ESPN" },
-      { src: "tutorial/logo-flights.webp", label: "Flights" },
-      { src: "tutorial/logo-github.webp", label: "GitHub" },
-      { src: "tutorial/logo-bitcoin.webp", label: "Bitcoin" },
-      { src: "tutorial/logo-npm.webp", label: "npm" },
-      { src: "tutorial/logo-hackernews.webp", label: "HN" },
-    ],
-  },
+  { startSec: 257.5, endSec: 261.0, layout: "left-medium", title: "Train\nTwitch\nSteam" },
   { startSec: 261.0, endSec: 262.5, layout: "centered" },
   { startSec: 262.5, endSec: 267.0, layout: "right-medium", title: "Ask and\nWe'll Add It" },
   { startSec: 267.0, endSec: 268.5, layout: "centered" },

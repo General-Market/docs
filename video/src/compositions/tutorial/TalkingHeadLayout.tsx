@@ -36,13 +36,15 @@ interface Rect {
 
 const M = 48;
 
+const H = 1080 - 2 * M; // consistent height across all layouts
+
 const WEBCAM_RECTS: Record<WebcamLayout, Rect> = {
-  "centered":        { x: 100,          y: 48,  w: 1720,        h: 940 },
-  "centered-bottom": { x: 100,          y: 48,  w: 1720,        h: 800 },
-  "left-medium":     { x: M,            y: M,   w: 800,         h: 1080 - 2 * M },
-  "right-medium":    { x: 1920 - M - 800, y: M, w: 800,         h: 1080 - 2 * M },
-  "left-small":      { x: M,              y: M,   w: 540,         h: 1080 - 2 * M },
-  "right-small":     { x: 1920 - M - 540, y: M,   w: 540,       h: 1080 - 2 * M },
+  "centered":        { x: 100,              y: M, w: 1720,        h: H },
+  "centered-bottom": { x: 100,              y: M, w: 1720,        h: H - 160 },
+  "left-medium":     { x: M,                y: M, w: 800,         h: H },
+  "right-medium":    { x: 1920 - M - 800,   y: M, w: 800,         h: H },
+  "left-small":      { x: M,                y: M, w: 540,         h: H },
+  "right-small":     { x: 1920 - M - 540,   y: M, w: 540,         h: H },
 };
 
 interface ContentArea {
@@ -56,11 +58,11 @@ interface ContentArea {
 const G = 32; // gap between webcam and content
 
 const CONTENT_AREAS: Partial<Record<WebcamLayout, ContentArea>> = {
-  "left-medium":     { x: M + 800 + G,             y: M,  w: 1920 - M - 800 - G - M, h: 1080 - 2 * M, slideDir: "left" },
-  "right-medium":    { x: M,                        y: M,  w: 1920 - M - 800 - G - M, h: 1080 - 2 * M, slideDir: "right" },
-  "left-small":      { x: M + 540 + G,             y: M,  w: 1920 - M - 540 - G - M, h: 1080 - 2 * M,  slideDir: "left" },
-  "right-small":     { x: M,                        y: M,  w: 1920 - M - 540 - G - M, h: 1080 - 2 * M,  slideDir: "right" },
-  "centered-bottom": { x: 100,                      y: 870, w: 1720,                   h: 170,           slideDir: "up" },
+  "left-medium":     { x: M + 800 + G,   y: M,              w: 1920 - M - 800 - G - M, h: H,   slideDir: "left" },
+  "right-medium":    { x: M,              y: M,              w: 1920 - M - 800 - G - M, h: H,   slideDir: "right" },
+  "left-small":      { x: M + 540 + G,   y: M,              w: 1920 - M - 540 - G - M, h: H,   slideDir: "left" },
+  "right-small":     { x: M,              y: M,              w: 1920 - M - 540 - G - M, h: H,   slideDir: "right" },
+  "centered-bottom": { x: 100,            y: M + H - 160 + 16, w: 1720,                h: 140, slideDir: "up" },
 };
 
 function lerpRect(a: Rect, b: Rect, t: number): Rect {
@@ -140,7 +142,7 @@ const SceneContent: React.FC<{
   }
 
   const titleLines = scene.title?.split("\n") || [];
-  const hasContent = titleLines.length > 0 || scene.pills || scene.image || scene.logos;
+  const hasContent = titleLines.length > 0 || scene.pills || scene.image;
   if (!hasContent) return null;
 
   return (
@@ -210,54 +212,6 @@ const SceneContent: React.FC<{
         />
       )}
 
-      {scene.logos && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 20,
-            marginTop: titleLines.length > 0 ? 32 : 0,
-            alignItems: "center",
-          }}
-        >
-          {scene.logos.map((logo) => (
-            <div
-              key={logo.label}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 20,
-                  background: COLOR.lightSurface,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
-                }}
-              >
-                <Img
-                  src={staticFile(logo.src)}
-                  style={{
-                    width: 56,
-                    height: 56,
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
-              <span style={{ ...TYPE.small, color: COLOR.gray }}>
-                {logo.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
@@ -299,7 +253,7 @@ export const TalkingHeadLayout: React.FC = () => {
   const contentArea = CONTENT_AREAS[scene.layout];
   const hasContent =
     contentArea &&
-    (scene.title || scene.pills || scene.bottomLabel || scene.image || scene.logos);
+    (scene.title || scene.pills || scene.bottomLabel || scene.image);
 
   const contentOpacity = hasContent
     ? interpolate(
