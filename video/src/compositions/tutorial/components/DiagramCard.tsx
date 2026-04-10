@@ -1,10 +1,8 @@
 /**
  * DiagramCard — Wise design system.
  *
- * Layout: mountain video strips on LEFT and RIGHT sides (mirrored parallax),
- * white/dark card floating in the CENTER. B-roll behind everything.
- *
- * Ring shadow only. 30px radius. Cascade entrance.
+ * Mountain video strips on sides (mirrored). Card fills the center.
+ * Ring shadow. 30px radius. Cascade entrance.
  */
 
 import React from "react";
@@ -20,14 +18,13 @@ import { PANEL } from "../designTokens";
 
 const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
 const ENTER_FRAMES = 16;
-const STRIP_W = 220; // width of each side video strip
+const STRIP_W = 180;
 
 interface DiagramCardProps {
   children: React.ReactNode;
   width?: number;
   padding?: string;
   position?: "center" | "bottom";
-  broll?: "mountains" | "glacier";
 }
 
 function useEntrance() {
@@ -46,33 +43,21 @@ function useEntrance() {
   };
 }
 
-const BROLL = {
-  mountains: "broll/mountains-aerial.mp4",
-  glacier: "broll/glacier-drone.mp4",
-};
+const BROLL_SRC = "broll/mountains-aerial.mp4";
 
-/**
- * Vertical mountain video strips on both sides — mirrored.
- * Left strip: mountain video scrolling slowly downward.
- * Right strip: same video, mirrored (scaleX: -1), scrolling upward.
- * Creates a parallax frame around the central card.
- */
-const MountainStrips: React.FC<{ opacity: number; broll: "mountains" | "glacier" }> = ({
-  opacity,
-  broll,
-}) => {
+/** Snow mountain video strips on left and right — mirrored for parallax. */
+const MountainStrips: React.FC<{ opacity: number }> = ({ opacity }) => {
   if (opacity < 0.01) return null;
 
-  const videoStyle: React.CSSProperties = {
+  const style: React.CSSProperties = {
     width: "100%",
-    height: "200%", // oversized to allow vertical scroll via objectPosition
+    height: "120%",
     objectFit: "cover",
-    filter: "brightness(0.55) saturate(0.8)",
+    filter: "brightness(0.5) saturate(0.7)",
   };
 
   return (
     <>
-      {/* Left strip */}
       <div
         style={{
           position: "absolute",
@@ -81,20 +66,11 @@ const MountainStrips: React.FC<{ opacity: number; broll: "mountains" | "glacier"
           width: STRIP_W,
           height: "100%",
           overflow: "hidden",
-          opacity: opacity * 0.7,
-          borderRight: "1px solid rgba(14,15,12,0.08)",
+          opacity: opacity * 0.8,
         }}
       >
-        <Video
-          src={staticFile(BROLL[broll])}
-          style={videoStyle}
-          loop
-          playbackRate={0.3}
-          muted
-        />
+        <Video src={staticFile(BROLL_SRC)} style={style} loop playbackRate={0.25} muted />
       </div>
-
-      {/* Right strip — mirrored */}
       <div
         style={{
           position: "absolute",
@@ -103,57 +79,51 @@ const MountainStrips: React.FC<{ opacity: number; broll: "mountains" | "glacier"
           width: STRIP_W,
           height: "100%",
           overflow: "hidden",
-          opacity: opacity * 0.7,
-          borderLeft: "1px solid rgba(14,15,12,0.08)",
-          transform: "scaleX(-1)", // mirror
+          opacity: opacity * 0.8,
+          transform: "scaleX(-1)",
         }}
       >
-        <Video
-          src={staticFile(BROLL[broll])}
-          style={videoStyle}
-          loop
-          playbackRate={0.3}
-          muted
-        />
+        <Video src={staticFile(BROLL_SRC)} style={style} loop playbackRate={0.25} muted />
       </div>
     </>
   );
 };
 
+// Card fills available space between the strips
+const CARD_MAX_W = 1920 - STRIP_W * 2 - 48; // 1920 - 360 - 48 = 1512
+
 export const DiagramCard: React.FC<DiagramCardProps> = ({
   children,
-  width = 1200,
-  padding = PANEL.white.padding,
+  width = CARD_MAX_W,
+  padding = "48px 56px",
   position = "center",
-  broll = "mountains",
 }) => {
   const { opacity, y, scale, blur, bgOpacity } = useEntrance();
 
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {/* Dark backdrop behind everything */}
+      {/* Dark backdrop blur */}
       <AbsoluteFill
         style={{
-          backgroundColor: "rgba(14, 15, 12, 0.5)",
+          backgroundColor: "rgba(14, 15, 12, 0.55)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           opacity: bgOpacity,
         }}
       />
 
-      {/* Mountain video strips on sides */}
-      <MountainStrips opacity={bgOpacity} broll={broll} />
+      {/* Mountain strips on sides */}
+      <MountainStrips opacity={bgOpacity} />
 
-      {/* Central card */}
+      {/* Card — fills between strips */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: position === "center" ? "center" : "flex-end",
           justifyContent: "center",
-          padding: position === "bottom" ? "0 0 48px 0" : 0,
-          // Inset the card between the strips
           paddingLeft: STRIP_W + 24,
           paddingRight: STRIP_W + 24,
+          paddingBottom: position === "bottom" ? 48 : 0,
         }}
       >
         <div
@@ -180,10 +150,9 @@ export const DiagramCard: React.FC<DiagramCardProps> = ({
 
 export const DiagramCardDark: React.FC<DiagramCardProps> = ({
   children,
-  width = 1200,
-  padding = PANEL.dark.padding,
+  width = CARD_MAX_W,
+  padding = "48px 56px",
   position = "center",
-  broll = "mountains",
 }) => {
   const { opacity, y, scale, blur, bgOpacity } = useEntrance();
 
@@ -191,23 +160,23 @@ export const DiagramCardDark: React.FC<DiagramCardProps> = ({
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <AbsoluteFill
         style={{
-          backgroundColor: "rgba(14, 15, 12, 0.5)",
+          backgroundColor: "rgba(14, 15, 12, 0.55)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           opacity: bgOpacity,
         }}
       />
 
-      <MountainStrips opacity={bgOpacity} broll={broll} />
+      <MountainStrips opacity={bgOpacity} />
 
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: position === "center" ? "center" : "flex-end",
           justifyContent: "center",
-          padding: position === "bottom" ? "0 0 48px 0" : 0,
           paddingLeft: STRIP_W + 24,
           paddingRight: STRIP_W + 24,
+          paddingBottom: position === "bottom" ? 48 : 0,
         }}
       >
         <div

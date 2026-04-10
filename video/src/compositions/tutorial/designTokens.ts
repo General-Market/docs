@@ -59,7 +59,8 @@ export const COLOR = {
 } as const;
 
 // ── Typography ──────────────────────────────────────────────────────────────
-// Video scale: sizes bumped ~1.3x from web for 1920x1080 readability.
+// Video scale: sizes bumped ~2x from web for 1080p readability.
+// Video viewers see at ~50% real size, so text must be MUCH larger than web.
 // All styles include fontFeatureSettings: "calt" 1 per Wise rules.
 
 const calt = { fontFeatureSettings: '"calt" 1' };
@@ -68,7 +69,7 @@ export const TYPE = {
   /** Display Mega — 126px on web → 100px in video. Weight 900, line-height 0.85. */
   displayMega: {
     fontFamily: FONT.display,
-    fontSize: 100,
+    fontSize: 120,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -79,7 +80,7 @@ export const TYPE = {
   /** Display Hero — 96px on web → 80px in video */
   displayHero: {
     fontFamily: FONT.display,
-    fontSize: 80,
+    fontSize: 96,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -90,7 +91,7 @@ export const TYPE = {
   /** Section Heading — 64px on web → 56px in video */
   sectionHeading: {
     fontFamily: FONT.display,
-    fontSize: 56,
+    fontSize: 72,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -98,10 +99,10 @@ export const TYPE = {
     ...calt,
   },
 
-  /** Sub-heading — 40px on web → 36px in video */
+  /** Sub-heading — 40px on web → 48px in video */
   subHeading: {
     fontFamily: FONT.display,
-    fontSize: 36,
+    fontSize: 48,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -112,7 +113,7 @@ export const TYPE = {
   /** Card Title — 26px on web → 28px in video, Inter 600 */
   cardTitle: {
     fontFamily: FONT.body,
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: 600 as const,
     lineHeight: 1.23,
     letterSpacing: "-0.39px",
@@ -123,7 +124,7 @@ export const TYPE = {
   /** Feature Title — 22px on web → 24px in video */
   featureTitle: {
     fontFamily: FONT.body,
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 600 as const,
     lineHeight: 1.25,
     letterSpacing: "-0.4px",
@@ -134,7 +135,7 @@ export const TYPE = {
   /** Body — 18px on web → 20px in video, Inter 400 */
   body: {
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 400 as const,
     lineHeight: 1.44,
     letterSpacing: "0.18px",
@@ -145,7 +146,7 @@ export const TYPE = {
   /** Body Semibold — Inter 600 (the Wise default reading weight) */
   bodySemibold: {
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 600 as const,
     lineHeight: 1.44,
     letterSpacing: "-0.108px",
@@ -156,7 +157,7 @@ export const TYPE = {
   /** Button — Inter 600, pill style */
   button: {
     fontFamily: FONT.body,
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 600 as const,
     lineHeight: 1.0,
     letterSpacing: "-0.108px",
@@ -167,7 +168,7 @@ export const TYPE = {
   /** Caption — 14px on web → 16px in video */
   caption: {
     fontFamily: FONT.body,
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 400 as const,
     lineHeight: 1.5,
     letterSpacing: "-0.084px",
@@ -178,7 +179,7 @@ export const TYPE = {
   /** Caption Semibold */
   captionSemibold: {
     fontFamily: FONT.body,
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 600 as const,
     lineHeight: 1.5,
     letterSpacing: "-0.108px",
@@ -189,7 +190,7 @@ export const TYPE = {
   /** Small — 12px on web → 14px in video */
   small: {
     fontFamily: FONT.body,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 400 as const,
     lineHeight: 1.5,
     letterSpacing: "-0.084px",
@@ -200,7 +201,7 @@ export const TYPE = {
   /** Label — uppercase micro text for categories, metrics headers */
   label: {
     fontFamily: FONT.body,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 600 as const,
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
@@ -212,7 +213,7 @@ export const TYPE = {
   /** Stat Value — big numbers (Inter 900, tabular-nums) */
   statValue: {
     fontFamily: FONT.body,
-    fontSize: 48,
+    fontSize: 64,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -265,7 +266,7 @@ export const TYPE = {
 
   bodyDark: {
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 400 as const,
     lineHeight: 1.44,
     letterSpacing: "0.18px",
@@ -275,7 +276,7 @@ export const TYPE = {
 
   bodySemiboldDark: {
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 600 as const,
     lineHeight: 1.44,
     letterSpacing: "-0.108px",
@@ -285,7 +286,7 @@ export const TYPE = {
 
   captionDark: {
     fontFamily: FONT.body,
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 400 as const,
     lineHeight: 1.5,
     letterSpacing: "-0.084px",
@@ -295,7 +296,7 @@ export const TYPE = {
 
   labelDark: {
     fontFamily: FONT.body,
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 600 as const,
     textTransform: "uppercase" as const,
     letterSpacing: "0.08em",
@@ -306,7 +307,7 @@ export const TYPE = {
 
   statValueDark: {
     fontFamily: FONT.body,
-    fontSize: 48,
+    fontSize: 64,
     fontWeight: 900 as const,
     lineHeight: 0.85,
     letterSpacing: "normal",
@@ -364,7 +365,7 @@ export const BUTTON = {
     borderRadius: 9999,
     padding: "8px 24px",
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 600 as const,
     lineHeight: 1.0,
     letterSpacing: "-0.108px",
@@ -380,7 +381,7 @@ export const BUTTON = {
     borderRadius: 9999,
     padding: "8px 20px",
     fontFamily: FONT.body,
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 600 as const,
     lineHeight: 1.0,
     letterSpacing: "-0.108px",
@@ -417,7 +418,7 @@ export const FAQ = {
   },
   questionStyle: {
     ...TYPE.sectionHeading,
-    fontSize: 44,
+    fontSize: 56,
     fontWeight: 700 as const,
     color: COLOR.white,
     textAlign: "center" as const,
