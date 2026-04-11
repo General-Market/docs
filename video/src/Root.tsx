@@ -9,14 +9,36 @@ import { short04Meta } from "./shorts/short-04/Short04Composition";
 import { visionVCMeta } from "./compositions/vision/vc/VisionVCComposition";
 import { visionVC2Meta } from "./compositions/vision/vc2/VisionVC2Composition";
 import { visionVC3Meta } from "./compositions/vision/vc3/VisionVC3Composition";
-import { replicateMeta, sceneMetas } from "./compositions/replicates/original/ReplicateComposition";
-import { ofReplicateMeta, ofSceneMetas } from "./compositions/replicates/ordinaryfolk/OFReplicateComposition";
-import { whopReplicateMeta, whopSceneMetas } from "./compositions/replicates/whop/WhopReplicateComposition";
-import { gmBrandMeta, gmSceneMetas } from "./compositions/gm/brand/GMBrandComposition";
-import { solanaBgMeta } from "./compositions/backgrounds/solana/SolanaBgComposition";
-import { webglPicksMeta, webglSceneMetas } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
-import { gmLaunchBgMeta, gmLaunchSceneMetas } from "./compositions/gm/launch-bg/GMLaunchBgComposition";
-import { gmLogo3dMeta, gmLogoSceneMetas } from "./compositions/gm/logo-3d/GMLogo3D";
+import {
+  replicateMeta,
+  sceneMetas,
+} from "./compositions/replicates/original/ReplicateComposition";
+import {
+  ofReplicateMeta,
+  ofSceneMetas,
+} from "./compositions/replicates/ordinaryfolk/OFReplicateComposition";
+import { ofFirst8Meta } from "./compositions/replicates/of-first8/OFFirst8";
+import { ofFirst8SideBySideMeta } from "./compositions/replicates/of-first8/OFFirst8SideBySide";
+import {
+  whopReplicateMeta,
+  whopSceneMetas,
+} from "./compositions/replicates/whop/WhopReplicateComposition";
+import {
+  gmBrandMeta,
+  gmSceneMetas,
+} from "./compositions/gm/brand/GMBrandComposition";
+import {
+  webglPicksMeta,
+  webglSceneMetas,
+} from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
+import {
+  gmLaunchBgMeta,
+  gmLaunchSceneMetas,
+} from "./compositions/gm/launch-bg/GMLaunchBgComposition";
+import {
+  gmLogo3dMeta,
+  gmLogoSceneMetas,
+} from "./compositions/gm/logo-3d/GMLogo3D";
 import { visionVsMeta } from "./compositions/vision/vs/VisionVsComposition";
 import { gmQuantsMeta } from "./compositions/vision/vs/GMQuantsComposition";
 import { kalshiMeta } from "./compositions/replicates/kalshi/KalshiComposition";
@@ -35,76 +57,26 @@ import {
 } from "./compositions/replicates/council/VirtualsReplicateComposition";
 import { emberMeta } from "./compositions/replicates/ember/EmberComposition";
 import { emberSideBySideMeta } from "./compositions/replicates/ember/EmberSideBySide";
-import { GeneralMarket } from "./compositions/general-market/GeneralMarket";
-import { TOTAL_DURATION as GENERAL_MARKET_DURATION } from "./compositions/general-market/theme";
+import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComposition";
+import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
+import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
+import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
-import { TOTAL_FRAMES as TUTORIAL_DURATION, FPS as TUTORIAL_FPS } from "./compositions/tutorial/theme";
+import {
+  TOTAL_FRAMES as TUTORIAL_DURATION,
+  FPS as TUTORIAL_FPS,
+} from "./compositions/tutorial/theme";
+import { nightTheme } from "./compositions/tutorial/TutorialTheme";
+import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 
-// Per-scene compositions are hidden from the studio sidebar by default.
-// Set REMOTION_SHOW_SCENES=1 in the environment to register them — needed
-// only when running parallel-scene autoresearch renders by composition id.
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
-
-// remotion-scenes showcases
-import {
-  BackgroundShowcase,
-  BACKGROUND_SHOWCASE_DURATION,
-} from "./scenes/BackgroundAnimations";
-import {
-  CinematicShowcase,
-  CINEMATIC_SHOWCASE_DURATION,
-} from "./scenes/CinematicAnimations";
-import { DemoShowcase, DEMO_SHOWCASE_DURATION } from "./scenes/DemoAnimations";
-import {
-  EffectShowcase,
-  EFFECT_SHOWCASE_DURATION,
-} from "./scenes/EffectAnimations";
-import {
-  LayoutShowcase,
-  LAYOUT_SHOWCASE_DURATION,
-} from "./scenes/LayoutAnimations";
-import { ListShowcase, LIST_SHOWCASE_DURATION } from "./scenes/ListAnimations";
-import { LogoShowcase, LOGO_SHOWCASE_DURATION } from "./scenes/LogoAnimations";
-import {
-  ParticleShowcase,
-  PARTICLE_SHOWCASE_DURATION,
-  ParticleEmojiGravity,
-} from "./scenes/ParticleAnimations";
-import {
-  RollerShowcase,
-  ROLLER_SHOWCASE_DURATION,
-} from "./scenes/RollerAnimations";
-import {
-  ShapeShowcase,
-  SHAPE_SHOWCASE_DURATION,
-} from "./scenes/ShapeAnimations";
-import { TextShowcase, TEXT_SHOWCASE_DURATION } from "./scenes/TextAnimations";
-import {
-  ThemeShowcase,
-  THEME_SHOWCASE_DURATION,
-} from "./scenes/ThemeAnimations";
-import {
-  TransitionShowcase,
-  TRANSITION_SHOWCASE_DURATION,
-} from "./scenes/TransitionAnimations";
-import { UIShowcase, UI_SHOWCASE_DURATION } from "./scenes/UIAnimations";
 
 const shorts: ShortConfig[] = [];
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* ═══ GENERAL MARKET — explainer video ═══ */}
-      <Composition
-        id="GeneralMarket"
-        component={GeneralMarket}
-        durationInFrames={GENERAL_MARKET_DURATION}
-        fps={30}
-        width={1920}
-        height={1080}
-      />
-
-      {/* ═══ TUTORIAL — overlay composition over talking-head ═══ */}
+      {/* ═══ TUTORIAL ═══ */}
       <Composition
         id="Tutorial"
         component={TutorialVideo}
@@ -113,149 +85,17 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
       />
-
-      {/* ═══ VISION VC — main composition ═══ */}
       <Composition
-        id={visionVCMeta.id}
-        component={visionVCMeta.component}
-        durationInFrames={visionVCMeta.durationInFrames}
-        fps={visionVCMeta.fps}
-        width={visionVCMeta.width}
-        height={visionVCMeta.height}
+        id="TutorialNight"
+        component={TutorialVideo}
+        durationInFrames={TUTORIAL_DURATION}
+        fps={TUTORIAL_FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{ theme: nightTheme }}
       />
 
-      {/* ═══ VISION VC2 — "Unless." whiteboard ═══ */}
-      <Composition
-        id={visionVC2Meta.id}
-        component={visionVC2Meta.component}
-        durationInFrames={visionVC2Meta.durationInFrames}
-        fps={visionVC2Meta.fps}
-        width={visionVC2Meta.width}
-        height={visionVC2Meta.height}
-      />
-
-      {/* ═══ VISION VC3 — Charts (scatter + bar) ═══ */}
-      <Composition
-        id={visionVC3Meta.id}
-        component={visionVC3Meta.component}
-        durationInFrames={visionVC3Meta.durationInFrames}
-        fps={visionVC3Meta.fps}
-        width={visionVC3Meta.width}
-        height={visionVC3Meta.height}
-      />
-
-      {/* ═══ REPLICATE — autoresearch animation matching ═══ */}
-      <Composition
-        id={replicateMeta.id}
-        component={replicateMeta.component}
-        durationInFrames={replicateMeta.durationInFrames}
-        fps={replicateMeta.fps}
-        width={replicateMeta.width}
-        height={replicateMeta.height}
-      />
-      {/* Per-scene compositions — hidden unless REMOTION_SHOW_SCENES=1 */}
-      {SHOW_SCENES && (
-        <Folder name="Replicate-Scenes">
-          {sceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ ORDINARY FOLK — replicate ═══ */}
-      <Composition
-        id={ofReplicateMeta.id}
-        component={ofReplicateMeta.component}
-        durationInFrames={ofReplicateMeta.durationInFrames}
-        fps={ofReplicateMeta.fps}
-        width={ofReplicateMeta.width}
-        height={ofReplicateMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="OF-Scenes">
-          {ofSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ GM BRAND — rebranded OF ═══ */}
-      <Composition
-        id={gmBrandMeta.id}
-        component={gmBrandMeta.component}
-        durationInFrames={gmBrandMeta.durationInFrames}
-        fps={gmBrandMeta.fps}
-        width={gmBrandMeta.width}
-        height={gmBrandMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="GM-Scenes">
-          {gmSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ SOLANA BG — lenticular prismatic background ═══ */}
-      <Composition
-        id={solanaBgMeta.id}
-        component={solanaBgMeta.component}
-        durationInFrames={solanaBgMeta.durationInFrames}
-        fps={solanaBgMeta.fps}
-        width={solanaBgMeta.width}
-        height={solanaBgMeta.height}
-      />
-
-      {/* ═══ WHOP — replicate ═══ */}
-      <Composition
-        id={whopReplicateMeta.id}
-        component={whopReplicateMeta.component}
-        durationInFrames={whopReplicateMeta.durationInFrames}
-        fps={whopReplicateMeta.fps}
-        width={whopReplicateMeta.width}
-        height={whopReplicateMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="Whop-Scenes">
-          {whopSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ WEBGL PICKS — Codrops / shader references ═══ */}
+      {/* ═══ WEBGL PICKS ═══ */}
       <Composition
         id={webglPicksMeta.id}
         component={webglPicksMeta.component}
@@ -280,7 +120,7 @@ export const RemotionRoot: React.FC = () => {
         </Folder>
       )}
 
-      {/* ═══ GM LAUNCH BACKGROUNDS — 5 branded propositions ═══ */}
+      {/* ═══ GM LAUNCH BACKGROUNDS ═══ */}
       <Composition
         id={gmLaunchBgMeta.id}
         component={gmLaunchBgMeta.component}
@@ -305,18 +145,18 @@ export const RemotionRoot: React.FC = () => {
         </Folder>
       )}
 
-      {/* ═══ GM LOGO 3D — 5 FinTech scene showcase ═══ */}
+      {/* ═══ GM BRAND ═══ */}
       <Composition
-        id={gmLogo3dMeta.id}
-        component={gmLogo3dMeta.component}
-        durationInFrames={gmLogo3dMeta.durationInFrames}
-        fps={gmLogo3dMeta.fps}
-        width={gmLogo3dMeta.width}
-        height={gmLogo3dMeta.height}
+        id={gmBrandMeta.id}
+        component={gmBrandMeta.component}
+        durationInFrames={gmBrandMeta.durationInFrames}
+        fps={gmBrandMeta.fps}
+        width={gmBrandMeta.width}
+        height={gmBrandMeta.height}
       />
       {SHOW_SCENES && (
-        <Folder name="GMLogo-Scenes">
-          {gmLogoSceneMetas.map((meta) => (
+        <Folder name="GM-Scenes">
+          {gmSceneMetas.map((meta) => (
             <Composition
               key={meta.id}
               id={meta.id}
@@ -330,150 +170,288 @@ export const RemotionRoot: React.FC = () => {
         </Folder>
       )}
 
-      {/* ═══ VISION VS — split-screen comparison ═══ */}
-      <Composition
-        id={visionVsMeta.id}
-        component={visionVsMeta.component}
-        durationInFrames={visionVsMeta.durationInFrames}
-        fps={visionVsMeta.fps}
-        width={visionVsMeta.width}
-        height={visionVsMeta.height}
-      />
-      <Composition
-        id={gmQuantsMeta.id}
-        component={gmQuantsMeta.component}
-        durationInFrames={gmQuantsMeta.durationInFrames}
-        fps={gmQuantsMeta.fps}
-        width={gmQuantsMeta.width}
-        height={gmQuantsMeta.height}
-      />
+      {/* ═══ REPLICATE ═══ */}
+      <Folder name="Replicate">
+        {/* --- Ember --- */}
+        <Composition
+          id={emberMeta.id}
+          component={emberMeta.component}
+          durationInFrames={emberMeta.durationInFrames}
+          fps={emberMeta.fps}
+          width={emberMeta.width}
+          height={emberMeta.height}
+        />
+        <Composition
+          id={emberSideBySideMeta.id}
+          component={emberSideBySideMeta.component}
+          durationInFrames={emberSideBySideMeta.durationInFrames}
+          fps={emberSideBySideMeta.fps}
+          width={emberSideBySideMeta.width}
+          height={emberSideBySideMeta.height}
+        />
 
-      {/* ═══ EMBER — replicate ═══ */}
-      <Composition
-        id={emberMeta.id}
-        component={emberMeta.component}
-        durationInFrames={emberMeta.durationInFrames}
-        fps={emberMeta.fps}
-        width={emberMeta.width}
-        height={emberMeta.height}
-      />
-      <Composition
-        id={emberSideBySideMeta.id}
-        component={emberSideBySideMeta.component}
-        durationInFrames={emberSideBySideMeta.durationInFrames}
-        fps={emberSideBySideMeta.fps}
-        width={emberSideBySideMeta.width}
-        height={emberSideBySideMeta.height}
-      />
+        {/* --- Worldcoin --- */}
+        <Composition
+          id={worldcoinMeta.id}
+          component={worldcoinMeta.component}
+          durationInFrames={worldcoinMeta.durationInFrames}
+          fps={worldcoinMeta.fps}
+          width={worldcoinMeta.width}
+          height={worldcoinMeta.height}
+        />
+        <Composition
+          id={worldcoinSideBySideMeta.id}
+          component={worldcoinSideBySideMeta.component}
+          durationInFrames={worldcoinSideBySideMeta.durationInFrames}
+          fps={worldcoinSideBySideMeta.fps}
+          width={worldcoinSideBySideMeta.width}
+          height={worldcoinSideBySideMeta.height}
+        />
 
-      {/* ═══ KALSHI — replicate ═══ */}
-      <Composition
-        id={kalshiMeta.id}
-        component={kalshiMeta.component}
-        durationInFrames={kalshiMeta.durationInFrames}
-        fps={kalshiMeta.fps}
-        width={kalshiMeta.width}
-        height={kalshiMeta.height}
-      />
-      <Composition
-        id={kalshiSideBySideMeta.id}
-        component={kalshiSideBySideMeta.component}
-        durationInFrames={kalshiSideBySideMeta.durationInFrames}
-        fps={kalshiSideBySideMeta.fps}
-        width={kalshiSideBySideMeta.width}
-        height={kalshiSideBySideMeta.height}
-      />
+        {/* --- Ridd --- */}
+        <Composition
+          id={riddMeta.id}
+          component={riddMeta.component}
+          durationInFrames={riddMeta.durationInFrames}
+          fps={riddMeta.fps}
+          width={riddMeta.width}
+          height={riddMeta.height}
+        />
+        <Composition
+          id={riddSideBySideMeta.id}
+          component={riddSideBySideMeta.component}
+          durationInFrames={riddSideBySideMeta.durationInFrames}
+          fps={riddSideBySideMeta.fps}
+          width={riddSideBySideMeta.width}
+          height={riddSideBySideMeta.height}
+        />
 
-      {/* ═══ STANDREW / FLASHBLOCKS — replicate ═══ */}
-      <Composition
-        id={flashblocksMeta.id}
-        component={flashblocksMeta.component}
-        durationInFrames={flashblocksMeta.durationInFrames}
-        fps={flashblocksMeta.fps}
-        width={flashblocksMeta.width}
-        height={flashblocksMeta.height}
-      />
-      <Composition
-        id={flashblocksSideBySideMeta.id}
-        component={flashblocksSideBySideMeta.component}
-        durationInFrames={flashblocksSideBySideMeta.durationInFrames}
-        fps={flashblocksSideBySideMeta.fps}
-        width={flashblocksSideBySideMeta.width}
-        height={flashblocksSideBySideMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="Flashblocks-Scenes">
-          {[
-            ...flashblocksSceneAMetas,
-            ...flashblocksSceneBMetas,
-            ...flashblocksSceneCMetas,
-          ].map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={flashblocksMeta.fps}
-              width={flashblocksMeta.width}
-              height={flashblocksMeta.height}
-            />
-          ))}
-        </Folder>
-      )}
+        {/* --- Kalshi --- */}
+        <Composition
+          id={kalshiMeta.id}
+          component={kalshiMeta.component}
+          durationInFrames={kalshiMeta.durationInFrames}
+          fps={kalshiMeta.fps}
+          width={kalshiMeta.width}
+          height={kalshiMeta.height}
+        />
+        <Composition
+          id={kalshiSideBySideMeta.id}
+          component={kalshiSideBySideMeta.component}
+          durationInFrames={kalshiSideBySideMeta.durationInFrames}
+          fps={kalshiSideBySideMeta.fps}
+          width={kalshiSideBySideMeta.width}
+          height={kalshiSideBySideMeta.height}
+        />
 
-      {/* ═══ VIRTUALS V2 — replicate ═══ */}
-      <Composition
-        id={virtualsReplicateV2Meta.id}
-        component={virtualsReplicateV2Meta.component}
-        durationInFrames={virtualsReplicateV2Meta.durationInFrames}
-        fps={virtualsReplicateV2Meta.fps}
-        width={virtualsReplicateV2Meta.width}
-        height={virtualsReplicateV2Meta.height}
-      />
-      <Composition
-        id={virtualsSideBySideV2Meta.id}
-        component={virtualsSideBySideV2Meta.component}
-        durationInFrames={virtualsSideBySideV2Meta.durationInFrames}
-        fps={virtualsSideBySideV2Meta.fps}
-        width={virtualsSideBySideV2Meta.width}
-        height={virtualsSideBySideV2Meta.height}
-      />
+        {/* --- Flashblocks --- */}
+        <Composition
+          id={flashblocksMeta.id}
+          component={flashblocksMeta.component}
+          durationInFrames={flashblocksMeta.durationInFrames}
+          fps={flashblocksMeta.fps}
+          width={flashblocksMeta.width}
+          height={flashblocksMeta.height}
+        />
+        <Composition
+          id={flashblocksSideBySideMeta.id}
+          component={flashblocksSideBySideMeta.component}
+          durationInFrames={flashblocksSideBySideMeta.durationInFrames}
+          fps={flashblocksSideBySideMeta.fps}
+          width={flashblocksSideBySideMeta.width}
+          height={flashblocksSideBySideMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Flashblocks-Scenes">
+            {[
+              ...flashblocksSceneAMetas,
+              ...flashblocksSceneBMetas,
+              ...flashblocksSceneCMetas,
+            ].map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={flashblocksMeta.fps}
+                width={flashblocksMeta.width}
+                height={flashblocksMeta.height}
+              />
+            ))}
+          </Folder>
+        )}
 
-      {/* ═══ VIRTUALS COUNCIL — replicate ═══ */}
-      <Composition
-        id={councilReplicateMeta.id}
-        component={councilReplicateMeta.component}
-        durationInFrames={councilReplicateMeta.durationInFrames}
-        fps={councilReplicateMeta.fps}
-        width={councilReplicateMeta.width}
-        height={councilReplicateMeta.height}
-      />
-      <Composition
-        id={councilSideBySideMeta.id}
-        component={councilSideBySideMeta.component}
-        durationInFrames={councilSideBySideMeta.durationInFrames}
-        fps={councilSideBySideMeta.fps}
-        width={councilSideBySideMeta.width}
-        height={councilSideBySideMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="Council-Scenes">
-          {councilSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
+        {/* --- Virtuals V2 --- */}
+        <Composition
+          id={virtualsReplicateV2Meta.id}
+          component={virtualsReplicateV2Meta.component}
+          durationInFrames={virtualsReplicateV2Meta.durationInFrames}
+          fps={virtualsReplicateV2Meta.fps}
+          width={virtualsReplicateV2Meta.width}
+          height={virtualsReplicateV2Meta.height}
+        />
+        <Composition
+          id={virtualsSideBySideV2Meta.id}
+          component={virtualsSideBySideV2Meta.component}
+          durationInFrames={virtualsSideBySideV2Meta.durationInFrames}
+          fps={virtualsSideBySideV2Meta.fps}
+          width={virtualsSideBySideV2Meta.width}
+          height={virtualsSideBySideV2Meta.height}
+        />
 
-      {/* ═══ Other shorts ═══ */}
+        {/* --- Virtuals Council --- */}
+        <Composition
+          id={councilReplicateMeta.id}
+          component={councilReplicateMeta.component}
+          durationInFrames={councilReplicateMeta.durationInFrames}
+          fps={councilReplicateMeta.fps}
+          width={councilReplicateMeta.width}
+          height={councilReplicateMeta.height}
+        />
+        <Composition
+          id={councilSideBySideMeta.id}
+          component={councilSideBySideMeta.component}
+          durationInFrames={councilSideBySideMeta.durationInFrames}
+          fps={councilSideBySideMeta.fps}
+          width={councilSideBySideMeta.width}
+          height={councilSideBySideMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Council-Scenes">
+            {councilSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+
+        {/* --- Original Replicate --- */}
+        <Composition
+          id={replicateMeta.id}
+          component={replicateMeta.component}
+          durationInFrames={replicateMeta.durationInFrames}
+          fps={replicateMeta.fps}
+          width={replicateMeta.width}
+          height={replicateMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Replicate-Scenes">
+            {sceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+
+        {/* --- Ordinary Folk --- */}
+        <Composition
+          id={ofReplicateMeta.id}
+          component={ofReplicateMeta.component}
+          durationInFrames={ofReplicateMeta.durationInFrames}
+          fps={ofReplicateMeta.fps}
+          width={ofReplicateMeta.width}
+          height={ofReplicateMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="OF-Scenes">
+            {ofSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+
+        {/* --- OF First 8s --- */}
+        <Composition
+          id={ofFirst8Meta.id}
+          component={ofFirst8Meta.component}
+          durationInFrames={ofFirst8Meta.durationInFrames}
+          fps={ofFirst8Meta.fps}
+          width={ofFirst8Meta.width}
+          height={ofFirst8Meta.height}
+        />
+        <Composition
+          id={ofFirst8SideBySideMeta.id}
+          component={ofFirst8SideBySideMeta.component}
+          durationInFrames={ofFirst8SideBySideMeta.durationInFrames}
+          fps={ofFirst8SideBySideMeta.fps}
+          width={ofFirst8SideBySideMeta.width}
+          height={ofFirst8SideBySideMeta.height}
+        />
+
+        {/* --- Whop --- */}
+        <Composition
+          id={whopReplicateMeta.id}
+          component={whopReplicateMeta.component}
+          durationInFrames={whopReplicateMeta.durationInFrames}
+          fps={whopReplicateMeta.fps}
+          width={whopReplicateMeta.width}
+          height={whopReplicateMeta.height}
+        />
+        {SHOW_SCENES && (
+          <Folder name="Whop-Scenes">
+            {whopSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
+      </Folder>
+
+      {/* ═══ OTHER ═══ */}
       <Folder name="Other">
+        <Composition
+          id={visionVCMeta.id}
+          component={visionVCMeta.component}
+          durationInFrames={visionVCMeta.durationInFrames}
+          fps={visionVCMeta.fps}
+          width={visionVCMeta.width}
+          height={visionVCMeta.height}
+        />
+        <Composition
+          id={visionVC2Meta.id}
+          component={visionVC2Meta.component}
+          durationInFrames={visionVC2Meta.durationInFrames}
+          fps={visionVC2Meta.fps}
+          width={visionVC2Meta.width}
+          height={visionVC2Meta.height}
+        />
+        <Composition
+          id={visionVC3Meta.id}
+          component={visionVC3Meta.component}
+          durationInFrames={visionVC3Meta.durationInFrames}
+          fps={visionVC3Meta.fps}
+          width={visionVC3Meta.width}
+          height={visionVC3Meta.height}
+        />
         <Composition
           id={short01Meta.id}
           component={short01Meta.component}
@@ -515,122 +493,45 @@ export const RemotionRoot: React.FC = () => {
           width={1920}
           height={1080}
         />
-      </Folder>
-
-      {/* ═══ Scene Library ═══ */}
-      <Folder name="Scenes">
         <Composition
-          id="Backgrounds"
-          component={BackgroundShowcase}
-          durationInFrames={BACKGROUND_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
+          id={visionVsMeta.id}
+          component={visionVsMeta.component}
+          durationInFrames={visionVsMeta.durationInFrames}
+          fps={visionVsMeta.fps}
+          width={visionVsMeta.width}
+          height={visionVsMeta.height}
         />
         <Composition
-          id="Cinematic"
-          component={CinematicShowcase}
-          durationInFrames={CINEMATIC_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
+          id={gmQuantsMeta.id}
+          component={gmQuantsMeta.component}
+          durationInFrames={gmQuantsMeta.durationInFrames}
+          fps={gmQuantsMeta.fps}
+          width={gmQuantsMeta.width}
+          height={gmQuantsMeta.height}
         />
         <Composition
-          id="Demos"
-          component={DemoShowcase}
-          durationInFrames={DEMO_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
+          id={gmLogo3dMeta.id}
+          component={gmLogo3dMeta.component}
+          durationInFrames={gmLogo3dMeta.durationInFrames}
+          fps={gmLogo3dMeta.fps}
+          width={gmLogo3dMeta.width}
+          height={gmLogo3dMeta.height}
         />
-        <Composition
-          id="Effects"
-          component={EffectShowcase}
-          durationInFrames={EFFECT_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Layouts"
-          component={LayoutShowcase}
-          durationInFrames={LAYOUT_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Lists"
-          component={ListShowcase}
-          durationInFrames={LIST_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Logos"
-          component={LogoShowcase}
-          durationInFrames={LOGO_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Particles"
-          component={ParticleShowcase}
-          durationInFrames={PARTICLE_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Rollers"
-          component={RollerShowcase}
-          durationInFrames={ROLLER_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Shapes"
-          component={ShapeShowcase}
-          durationInFrames={SHAPE_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Text"
-          component={TextShowcase}
-          durationInFrames={TEXT_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Themes"
-          component={ThemeShowcase}
-          durationInFrames={THEME_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="Transitions"
-          component={TransitionShowcase}
-          durationInFrames={TRANSITION_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
-        <Composition
-          id="UI"
-          component={UIShowcase}
-          durationInFrames={UI_SHOWCASE_DURATION}
-          fps={30}
-          width={1920}
-          height={1080}
-        />
+        {SHOW_SCENES && (
+          <Folder name="GMLogo-Scenes">
+            {gmLogoSceneMetas.map((meta) => (
+              <Composition
+                key={meta.id}
+                id={meta.id}
+                component={meta.component}
+                durationInFrames={meta.durationInFrames}
+                fps={meta.fps}
+                width={meta.width}
+                height={meta.height}
+              />
+            ))}
+          </Folder>
+        )}
       </Folder>
 
       {/* Per-short compositions */}
