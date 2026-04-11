@@ -1,16 +1,14 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Img,
-  OffthreadVideo,
   useCurrentFrame,
   interpolate,
   spring,
   useVideoConfig,
-  staticFile,
 } from "remotion";
 import { font } from "../../../common/fonts";
-import { PLACEHOLDER_COLORS, brollPath, hasBroll } from "../brollAssets";
+import { PLACEHOLDER_COLORS } from "../brollAssets";
+import { BrollCell } from "./BrollCell";
 
 const GRID_COLS = 8;
 const GRID_ROWS = 6;
@@ -64,35 +62,18 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
           filter: `blur(${blurAmount}px)`,
         }}
       >
-        {Array.from({ length: CELL_COUNT }).map((_, i) => {
-          const hasFile = hasBroll(category, i);
-          const isVideo = category !== "movies";
-
-          return (
-            <div
-              key={i}
-              style={{
-                backgroundColor: colors[i % colors.length],
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              {hasFile && isVideo && (
-                <OffthreadVideo
-                  src={staticFile(brollPath(category, i))}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  muted
-                />
-              )}
-              {hasFile && !isVideo && (
-                <Img
-                  src={staticFile(brollPath(category, i))}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              )}
-            </div>
-          );
-        })}
+        {Array.from({ length: CELL_COUNT }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              backgroundColor: colors[i % colors.length],
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            <BrollCell category={category} index={i} />
+          </div>
+        ))}
       </AbsoluteFill>
 
       <AbsoluteFill

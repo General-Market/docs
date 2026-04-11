@@ -1,16 +1,14 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Img,
-  OffthreadVideo,
   useCurrentFrame,
   interpolate,
   spring,
   useVideoConfig,
-  staticFile,
 } from "remotion";
 import { font } from "../../../common/fonts";
-import { PLACEHOLDER_COLORS, brollPath, hasBroll } from "../brollAssets";
+import { PLACEHOLDER_COLORS } from "../brollAssets";
+import { BrollCell } from "./BrollCell";
 
 const GRID_COLS = 8;
 const GRID_ROWS = 6;
@@ -61,8 +59,6 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
             config: { damping: 20, stiffness: 200 },
             durationInFrames: 12,
           });
-          const hasFile = hasBroll(category, i);
-          const isVideo = category !== "movies";
 
           return (
             <div
@@ -76,27 +72,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
                 position: "relative",
               }}
             >
-              {hasFile && isVideo && (
-                <OffthreadVideo
-                  src={staticFile(brollPath(category, i))}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                  muted
-                />
-              )}
-              {hasFile && !isVideo && (
-                <Img
-                  src={staticFile(brollPath(category, i))}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              )}
+              <BrollCell category={category} index={i} />
               {showNumbers && (
                 <div
                   style={{
@@ -125,12 +101,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         }}
       />
 
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
             fontFamily: font,

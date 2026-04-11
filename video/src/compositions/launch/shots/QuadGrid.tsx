@@ -1,16 +1,14 @@
 import React from "react";
 import {
   AbsoluteFill,
-  Img,
-  OffthreadVideo,
   useCurrentFrame,
   interpolate,
   spring,
   useVideoConfig,
-  staticFile,
 } from "remotion";
 import { font } from "../../../common/fonts";
-import { PLACEHOLDER_COLORS, brollPath, hasBroll } from "../brollAssets";
+import { PLACEHOLDER_COLORS } from "../brollAssets";
+import { BrollCell } from "./BrollCell";
 import type { BrollCategory } from "../types";
 
 const QUAD_COLS = 4;
@@ -51,7 +49,6 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
           config: { damping: 16, stiffness: 150 },
           durationInFrames: 15,
         });
-        const isVideo = cat !== "movies";
 
         return (
           <div
@@ -72,46 +69,22 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
               opacity: interpolate(quadSpring, [0, 1], [0, 1]),
             }}
           >
-            {Array.from({ length: QUAD_CELLS }).map((_, ci) => {
-              const hasFile = hasBroll(cat, ci);
-              return (
-                <div
-                  key={ci}
-                  style={{
-                    backgroundColor: colors[ci % colors.length],
-                    borderRadius: 3,
-                    overflow: "hidden",
-                  }}
-                >
-                  {hasFile && isVideo && (
-                    <OffthreadVideo
-                      src={staticFile(brollPath(cat, ci))}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                      muted
-                    />
-                  )}
-                  {hasFile && !isVideo && (
-                    <Img
-                      src={staticFile(brollPath(cat, ci))}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            {Array.from({ length: QUAD_CELLS }).map((_, ci) => (
+              <div
+                key={ci}
+                style={{
+                  backgroundColor: colors[ci % colors.length],
+                  borderRadius: 3,
+                  overflow: "hidden",
+                }}
+              >
+                <BrollCell category={cat} index={ci} />
+              </div>
+            ))}
           </div>
         );
       })}
 
-      {/* Divider lines */}
       <div
         style={{
           position: "absolute",
@@ -133,12 +106,7 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
         }}
       />
 
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
             fontFamily: font,

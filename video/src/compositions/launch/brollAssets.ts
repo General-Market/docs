@@ -1,4 +1,4 @@
-import type { BrollCategory } from "./types";
+import { getRemotionEnvironment } from "remotion";
 
 /**
  * How many b-roll files are available per category.
@@ -8,8 +8,8 @@ import type { BrollCategory } from "./types";
 export const BROLL_COUNTS: Record<string, number> = {
   twitch: 0,
   pumpfun: 0,
-  movies: 0,
-  animals: 0,
+  movies: 48,
+  animals: 48,
 };
 
 export const PLACEHOLDER_COLORS: Record<string, string[]> = {
@@ -31,12 +31,26 @@ export const PLACEHOLDER_COLORS: Record<string, string[]> = {
   ],
 };
 
-export function brollPath(category: string, index: number): string {
+/** Video path for render */
+export function brollVideoPath(category: string, index: number): string {
   const padded = String(index + 1).padStart(2, "0");
-  const ext = category === "movies" ? "jpg" : "mp4";
-  return `launch/broll/${category}/${category}-${padded}.${ext}`;
+  return `launch/broll/${category}/${category}-${padded}.mp4`;
+}
+
+/** Image path — posters for movies, extracted thumbnails for video categories */
+export function brollImagePath(category: string, index: number): string {
+  const padded = String(index + 1).padStart(2, "0");
+  if (category === "movies") {
+    return `launch/broll/${category}/${category}-${padded}.jpg`;
+  }
+  return `launch/broll/${category}/thumbs/${category}-${padded}.jpg`;
 }
 
 export function hasBroll(category: string, index: number): boolean {
   return index < (BROLL_COUNTS[category] ?? 0);
+}
+
+/** True only during final render, false in Studio preview */
+export function isRendering(): boolean {
+  return getRemotionEnvironment().isRendering;
 }
