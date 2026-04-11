@@ -23,7 +23,7 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
   ] as const;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
+    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
       {categories.slice(0, 4).map((cat, qi) => {
         const pos = quadPositions[qi];
         const colors = PLACEHOLDER_COLORS[cat] ?? ["#444"];
@@ -68,7 +68,7 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
           left: "50%",
           width: 3,
           height: "100%",
-          backgroundColor: "rgba(255,255,255,0.15)",
+          backgroundColor: "rgba(0,0,0,0.1)",
         }}
       />
       <div
@@ -78,7 +78,7 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
           left: 0,
           width: "100%",
           height: 3,
-          backgroundColor: "rgba(255,255,255,0.15)",
+          backgroundColor: "rgba(0,0,0,0.1)",
         }}
       />
 
@@ -88,11 +88,11 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
             fontFamily: font,
             fontSize: 64,
             fontWeight: 900,
-            color: "#ffffff",
+            color: "#0e0f0c",
             textAlign: "center",
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
-            textShadow: "0 4px 40px rgba(0,0,0,0.8)",
+            textShadow: "0 4px 40px rgba(255,255,255,0.8)",
             whiteSpace: "pre-line",
           }}
         >

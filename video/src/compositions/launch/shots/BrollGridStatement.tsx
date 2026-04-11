@@ -3,22 +3,15 @@ import {
   AbsoluteFill,
   useCurrentFrame,
   interpolate,
-  Easing,
   useVideoConfig,
 } from "remotion";
 import { font } from "../../../common/fonts";
 import { PLACEHOLDER_COLORS } from "../brollAssets";
 import { BrollCell } from "./BrollCell";
 
-const EASE_PUSH = Easing.bezier(0.5, 0, 0.15, 1);
-
-const GRID_STEPS = [
-  { cols: 2, rows: 2 },
-  { cols: 3, rows: 2 },
-  { cols: 4, rows: 3 },
-  { cols: 5, rows: 4 },
-  { cols: 6, rows: 5 },
-];
+const GRID_COLS = 8;
+const GRID_ROWS = 6;
+const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
 interface BrollGridStatementProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
@@ -38,40 +31,14 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
 
   const midpoint = Math.floor(durationInFrames * 0.5);
+
   const wordGroups = words ?? [question];
-  const stepCount = wordGroups.length;
-  const steps = GRID_STEPS.slice(0, stepCount);
-  const framesPerStep = midpoint / stepCount;
-
-  const progress = Math.min(frame / midpoint, 1);
-  const stepProgress = progress * (steps.length - 1);
-  const stepIndex = Math.min(Math.floor(stepProgress), steps.length - 2);
-  const stepFrac = stepProgress - stepIndex;
-
-  const easedFrac = EASE_PUSH(Math.min(1, stepFrac));
-  const fromStep = steps[stepIndex];
-  const toStep = steps[Math.min(stepIndex + 1, steps.length - 1)];
-
-  const cols = fromStep.cols + (toStep.cols - fromStep.cols) * easedFrac;
-  const rows = fromStep.rows + (toStep.rows - fromStep.rows) * easedFrac;
-
-  const currentWordStep = Math.min(
+  const framesPerStep = midpoint / wordGroups.length;
+  const currentStep = Math.min(
     Math.floor(frame / framesPerStep),
-    stepCount - 1,
+    wordGroups.length - 1,
   );
-  const visibleWords = wordGroups.slice(0, currentWordStep + 1);
-
-  const cellW = 100 / cols;
-  const cellH = 100 / rows;
-
-  const cells: { x: number; y: number; i: number }[] = [];
-  let idx = 0;
-  for (let r = 0; r < Math.ceil(rows); r++) {
-    for (let c = 0; c < Math.ceil(cols); c++) {
-      cells.push({ x: c * cellW, y: r * cellH, i: idx });
-      idx++;
-    }
-  }
+  const visibleWords = wordGroups.slice(0, currentStep + 1);
 
   const statementOpacity = interpolate(frame, [midpoint, midpoint + 6], [0, 1], {
     extrapolateLeft: "clamp",
@@ -79,33 +46,27 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
   });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      <AbsoluteFill style={{ filter: "blur(8px)", overflow: "hidden" }}>
-        {cells.map(({ x, y, i }) => (
+    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
+      <AbsoluteFill
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
+          gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
+          gap: 3,
+          padding: 3,
+          filter: "blur(8px)",
+        }}
+      >
+        {Array.from({ length: CELL_COUNT }).map((_, i) => (
           <div
             key={i}
             style={{
-              position: "absolute",
-              left: `${x}%`,
-              top: `${y}%`,
-              width: `${cellW}%`,
-              height: `${cellH}%`,
               backgroundColor: colors[i % colors.length],
+              borderRadius: 4,
               overflow: "hidden",
-              padding: 1.5,
-              boxSizing: "border-box",
             }}
           >
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <BrollCell category={category} index={i} />
-            </div>
+            <BrollCell category={category} index={i} />
           </div>
         ))}
       </AbsoluteFill>
@@ -113,7 +74,7 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.8) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.6) 100%)",
         }}
       />
 
@@ -129,11 +90,11 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
             fontFamily: font,
             fontSize: 56,
             fontWeight: 900,
-            color: "#ffffff",
+            color: "#0e0f0c",
             textAlign: "center",
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+            textShadow: "0 4px 40px rgba(255,255,255,0.8)",
             whiteSpace: "pre-line",
           }}
         >
@@ -153,12 +114,12 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
             fontFamily: font,
             fontSize: 44,
             fontWeight: 700,
-            color: "#ffffff",
+            color: "#0e0f0c",
             textAlign: "center",
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
             opacity: statementOpacity,
-            textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+            textShadow: "0 4px 40px rgba(255,255,255,0.8)",
             whiteSpace: "pre-line",
           }}
         >

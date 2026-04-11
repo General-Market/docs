@@ -19,7 +19,7 @@ export const LogoReveal: React.FC = () => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#0a0a0a",
+        backgroundColor: "#ffffff",
         justifyContent: "center",
         alignItems: "center",
         flexDirection: "column",
@@ -36,7 +36,7 @@ export const LogoReveal: React.FC = () => {
           fontFamily: font,
           fontSize: 48,
           fontWeight: 700,
-          color: "#ffffff",
+          color: "#0e0f0c",
           textAlign: "center",
           lineHeight: 1.2,
           letterSpacing: "-0.02em",

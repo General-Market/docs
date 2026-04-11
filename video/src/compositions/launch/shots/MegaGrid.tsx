@@ -13,7 +13,7 @@ interface MegaGridProps {
 
 export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
+    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
       <AbsoluteFill
         style={{
           display: "grid",
@@ -59,7 +59,7 @@ export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.6) 100%)",
         }}
       />
 
@@ -69,11 +69,11 @@ export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
             fontFamily: font,
             fontSize: 80,
             fontWeight: 900,
-            color: "#ffffff",
+            color: "#0e0f0c",
             textAlign: "center",
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+            textShadow: "0 4px 40px rgba(255,255,255,0.8)",
             whiteSpace: "pre-line",
           }}
         >

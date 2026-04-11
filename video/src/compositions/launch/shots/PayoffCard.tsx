@@ -10,7 +10,7 @@ export const PayoffCard: React.FC<PayoffCardProps> = ({ statement }) => {
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: "#0a0a0a",
+        backgroundColor: "#ffffff",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -20,7 +20,7 @@ export const PayoffCard: React.FC<PayoffCardProps> = ({ statement }) => {
           fontFamily: font,
           fontSize: 72,
           fontWeight: 900,
-          color: "#ffffff",
+          color: "#0e0f0c",
           textAlign: "center",
           lineHeight: 1.1,
           letterSpacing: "-0.03em",

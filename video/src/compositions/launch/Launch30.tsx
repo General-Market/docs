@@ -23,7 +23,7 @@ export const Launch30: React.FC = () => {
   const sfxEvents: SfxEvent[] = [];
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
+    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
       {SHOTS.map((shot, i) => {
         const from = toFrames(shot.startSec);
         const dur = toFrames(shot.durationSec);
@@ -43,6 +43,7 @@ export const Launch30: React.FC = () => {
                 category={shot.category as Exclude<BrollCategory, "all">}
                 question={shot.question!}
                 words={shot.words}
+                expandGrid={i === 0}
               />
             );
             break;
