@@ -18,6 +18,7 @@ import { WiseSparkleSpiral } from "./overlays/WiseSparkleSpiral";
 import { WiseMouseLight } from "./overlays/WiseMouseLight";
 import { ExperienceDevicesOverlay } from "./overlays/ExperienceDevicesOverlay";
 import { ClaudeTerminal } from "./overlays/ClaudeTerminal";
+import { SubtitleSfx } from "./SubtitleLayer";
 import { Sfx } from "./components/Sfx";
 import type { SfxEvent } from "./components/Sfx";
 import { SWOOSH, TEXT_IN_BG, PLOB_BG } from "./sfxMap";
@@ -185,6 +186,12 @@ export const TutorialVideo: React.FC<{ theme?: TutorialTheme }> = ({
         <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
           <ExperienceDevicesOverlay />
         </Sequence>
+        {/* ── Subtitle SFX ──────────────────────────────────────────── */}
+        {/* Per-word blip + per-group tick synced to transcript timestamps */}
+        <Sequence from={0} durationInFrames={TOTAL_FRAMES}>
+          <SubtitleSfx />
+        </Sequence>
+
         {/* ── Scene transition SFX ─────────────────────────────────── */}
         {/* Light swoosh on every layout change, text blip when title appears */}
         {SCENES.map((scene, i) => {
