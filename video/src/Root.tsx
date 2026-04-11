@@ -67,6 +67,11 @@ import {
   FPS as TUTORIAL_FPS,
 } from "./compositions/tutorial/theme";
 import { nightTheme } from "./compositions/tutorial/TutorialTheme";
+import { Launch30 } from "./compositions/launch/Launch30";
+import {
+  TOTAL_FRAMES as LAUNCH_DURATION,
+  FPS as LAUNCH_FPS,
+} from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
@@ -76,6 +81,16 @@ const shorts: ShortConfig[] = [];
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* ═══ LAUNCH ═══ */}
+      <Composition
+        id="Launch30"
+        component={Launch30}
+        durationInFrames={LAUNCH_DURATION}
+        fps={LAUNCH_FPS}
+        width={1920}
+        height={1080}
+      />
+
       {/* ═══ TUTORIAL ═══ */}
       <Composition
         id="Tutorial"
