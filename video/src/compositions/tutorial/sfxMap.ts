@@ -29,10 +29,10 @@ export const PLOB_BG: SfxDef = { file: "comedy-plop", vol: 0.13 };
 // ── Text family ────────────────────────────────────────────────────────
 
 /** Text/title appearing on screen */
-export const TEXT_IN: SfxDef = { file: "text-appear-blip", vol: 0.3 };
+export const TEXT_IN: SfxDef = { file: "metal-coin-flip", vol: 0.3 };
 
 /** Text appearing during scene transitions — quiet */
-export const TEXT_IN_BG: SfxDef = { file: "text-appear-blip", vol: 0.15 };
+export const TEXT_IN_BG: SfxDef = { file: "metal-coin-flip", vol: 0.15 };
 
 /** Text wiping out / disappearing */
 export const TEXT_OUT: SfxDef = { file: "cut-fast-swish", vol: 0.3 };
@@ -54,10 +54,10 @@ export const MONEY: SfxDef = { file: "money-count", vol: 0.3 };
 // ── Landing family ─────────────────────────────────────────────────────
 
 /** Card/panel landing into place */
-export const LAND: SfxDef = { file: "shape-drop-bounce", vol: 0.25 };
+export const LAND: SfxDef = { file: "shape-settle-line", vol: 0.25 };
 
 /** Quiet panel landing — background quadrants */
-export const LAND_SOFT: SfxDef = { file: "shape-drop-bounce", vol: 0.2 };
+export const LAND_SOFT: SfxDef = { file: "shape-settle-line", vol: 0.2 };
 
 // ── Impact family ──────────────────────────────────────────────────────
 
