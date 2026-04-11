@@ -10,47 +10,11 @@ import {
   staticFile,
 } from "remotion";
 import { font } from "../../../common/fonts";
+import { PLACEHOLDER_COLORS, brollPath, hasBroll } from "../brollAssets";
 
 const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
-
-const BROLL_COUNTS: Record<string, number> = {
-  twitch: 48,
-  pumpfun: 48,
-  movies: 48,
-  animals: 48,
-};
-
-const PLACEHOLDER_COLORS: Record<string, string[]> = {
-  twitch: [
-    "#9146FF", "#6441A5", "#B9A3E3", "#7B2FBE",
-    "#A970FF", "#772CE8", "#BF94FF", "#5C16C5",
-  ],
-  pumpfun: [
-    "#00D4AA", "#10B981", "#34D399", "#059669",
-    "#6EE7B7", "#047857", "#A7F3D0", "#065F46",
-  ],
-  movies: [
-    "#F59E0B", "#D97706", "#FBBF24", "#B45309",
-    "#FCD34D", "#92400E", "#FDE68A", "#78350F",
-  ],
-  animals: [
-    "#22C55E", "#16A34A", "#4ADE80", "#15803D",
-    "#86EFAC", "#166534", "#BBF7D0", "#14532D",
-  ],
-};
-
-function brollPath(category: string, index: number): string {
-  const padded = String(index + 1).padStart(2, "0");
-  const ext = category === "movies" ? "jpg" : "mp4";
-  return `launch/broll/${category}/${category}-${padded}.${ext}`;
-}
-
-function brollExists(category: string, index: number): boolean {
-  const count = BROLL_COUNTS[category];
-  return index < count;
-}
 
 interface BrollGridProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
@@ -65,7 +29,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const colors = PLACEHOLDER_COLORS[category];
+  const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
 
   const textScale = spring({
     frame,
@@ -80,7 +44,6 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      {/* Grid layer */}
       <AbsoluteFill
         style={{
           display: "grid",
@@ -98,7 +61,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
             config: { damping: 20, stiffness: 200 },
             durationInFrames: 12,
           });
-          const hasFile = brollExists(category, i);
+          const hasFile = hasBroll(category, i);
           const isVideo = category !== "movies";
 
           return (
@@ -155,7 +118,6 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         })}
       </AbsoluteFill>
 
-      {/* Dark vignette overlay */}
       <AbsoluteFill
         style={{
           background:
@@ -163,7 +125,6 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         }}
       />
 
-      {/* Question text */}
       <AbsoluteFill
         style={{
           justifyContent: "center",

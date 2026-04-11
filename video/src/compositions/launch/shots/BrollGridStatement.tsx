@@ -10,23 +10,11 @@ import {
   staticFile,
 } from "remotion";
 import { font } from "../../../common/fonts";
+import { PLACEHOLDER_COLORS, brollPath, hasBroll } from "../brollAssets";
 
 const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
-
-const PLACEHOLDER_COLORS: Record<string, string[]> = {
-  pumpfun: [
-    "#00D4AA", "#10B981", "#34D399", "#059669",
-    "#6EE7B7", "#047857", "#A7F3D0", "#065F46",
-  ],
-};
-
-function brollPath(category: string, index: number): string {
-  const padded = String(index + 1).padStart(2, "0");
-  const ext = category === "movies" ? "jpg" : "mp4";
-  return `launch/broll/${category}/${category}-${padded}.${ext}`;
-}
 
 interface BrollGridStatementProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
@@ -77,7 +65,9 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => {
+          const hasFile = hasBroll(category, i);
           const isVideo = category !== "movies";
+
           return (
             <div
               key={i}
@@ -87,13 +77,14 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
                 overflow: "hidden",
               }}
             >
-              {isVideo ? (
+              {hasFile && isVideo && (
                 <OffthreadVideo
                   src={staticFile(brollPath(category, i))}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   muted
                 />
-              ) : (
+              )}
+              {hasFile && !isVideo && (
                 <Img
                   src={staticFile(brollPath(category, i))}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -111,7 +102,6 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
         }}
       />
 
-      {/* Question — top third */}
       <AbsoluteFill
         style={{
           justifyContent: "flex-start",
@@ -137,7 +127,6 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
         </div>
       </AbsoluteFill>
 
-      {/* Statement — bottom third, appears midway */}
       <AbsoluteFill
         style={{
           justifyContent: "flex-end",
