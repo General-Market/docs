@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  AbsoluteFill,
-  useCurrentFrame,
-  interpolate,
-  spring,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill } from "remotion";
 import { font } from "../../../common/fonts";
 import { PLACEHOLDER_COLORS } from "../brollAssets";
 import { BrollCell } from "./BrollCell";
@@ -21,16 +15,6 @@ interface QuadGridProps {
 }
 
 export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-
-  const textScale = spring({
-    frame: frame - 10,
-    fps,
-    config: { damping: 14, stiffness: 120, mass: 0.8 },
-    durationInFrames: 20,
-  });
-
   const quadPositions = [
     { top: 0, left: 0 },
     { top: 0, left: "50%" },
@@ -43,12 +27,6 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
       {categories.slice(0, 4).map((cat, qi) => {
         const pos = quadPositions[qi];
         const colors = PLACEHOLDER_COLORS[cat] ?? ["#444"];
-        const quadSpring = spring({
-          frame: frame - qi * 3,
-          fps,
-          config: { damping: 16, stiffness: 150 },
-          durationInFrames: 15,
-        });
 
         return (
           <div
@@ -65,8 +43,6 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
               gap: 2,
               padding: 2,
               filter: "blur(4px)",
-              transform: `scale(${quadSpring})`,
-              opacity: interpolate(quadSpring, [0, 1], [0, 1]),
             }}
           >
             {Array.from({ length: QUAD_CELLS }).map((_, ci) => (
@@ -116,7 +92,6 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
             textAlign: "center",
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
-            transform: `scale(${Math.max(0, textScale)})`,
             textShadow: "0 4px 40px rgba(0,0,0,0.8)",
             whiteSpace: "pre-line",
           }}

@@ -3,7 +3,6 @@ import {
   AbsoluteFill,
   useCurrentFrame,
   interpolate,
-  spring,
   useVideoConfig,
 } from "remotion";
 import { font } from "../../../common/fonts";
@@ -26,26 +25,11 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
   statement,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
 
-  const blurAmount = interpolate(frame, [0, 8], [0, 8], {
-    extrapolateRight: "clamp",
-  });
-
-  const questionScale = spring({
-    frame,
-    fps,
-    config: { damping: 14, stiffness: 120, mass: 0.8 },
-    durationInFrames: 18,
-  });
-
   const midpoint = Math.floor(durationInFrames * 0.5);
-  const statementOpacity = interpolate(frame, [midpoint, midpoint + 8], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const statementY = interpolate(frame, [midpoint, midpoint + 12], [30, 0], {
+  const statementOpacity = interpolate(frame, [midpoint, midpoint + 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -59,7 +43,7 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
           gap: 3,
           padding: 3,
-          filter: `blur(${blurAmount}px)`,
+          filter: "blur(8px)",
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => (
@@ -99,7 +83,6 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
             textAlign: "center",
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            transform: `scale(${questionScale})`,
             textShadow: "0 4px 40px rgba(0,0,0,0.6)",
             whiteSpace: "pre-line",
           }}
@@ -125,7 +108,6 @@ export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
             opacity: statementOpacity,
-            transform: `translateY(${statementY}px)`,
             textShadow: "0 4px 40px rgba(0,0,0,0.6)",
             whiteSpace: "pre-line",
           }}
