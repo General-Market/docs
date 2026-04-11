@@ -13,9 +13,6 @@ const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
-const SCALE_START = 3.2;
-const SCALE_END = 1;
-
 interface BrollGridProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
   question: string;
@@ -36,32 +33,38 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
   const wordGroups = words ?? [question];
   const stepCount = wordGroups.length;
   const framesPerStep = durationInFrames / stepCount;
-
   const currentStep = Math.min(
     Math.floor(frame / framesPerStep),
     stepCount - 1,
   );
-
-  const gridScale = interpolate(
-    frame,
-    [0, durationInFrames - 1],
-    [SCALE_START, SCALE_END],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
-
   const visibleWords = wordGroups.slice(0, currentStep + 1);
+
+  const widthPct = interpolate(frame, [0, durationInFrames - 1], [25, 100], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const heightPct = interpolate(frame, [0, durationInFrames - 1], [30, 100], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      <AbsoluteFill
+      {/* Grid container — starts small centered, grows to fill */}
+      <div
         style={{
+          position: "absolute",
+          width: `${widthPct}%`,
+          height: `${heightPct}%`,
+          top: `${(100 - heightPct) / 2}%`,
+          left: `${(100 - widthPct) / 2}%`,
           display: "grid",
           gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
           gap: 3,
-          padding: 3,
           filter: "blur(8px)",
-          transform: `scale(${gridScale})`,
+          borderRadius: interpolate(widthPct, [25, 100], [16, 0]),
+          overflow: "hidden",
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => (
@@ -69,7 +72,6 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
             key={i}
             style={{
               backgroundColor: colors[i % colors.length],
-              borderRadius: 4,
               overflow: "hidden",
               position: "relative",
             }}
@@ -93,8 +95,9 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
             )}
           </div>
         ))}
-      </AbsoluteFill>
+      </div>
 
+      {/* Vignette — always full screen */}
       <AbsoluteFill
         style={{
           background:
@@ -102,6 +105,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         }}
       />
 
+      {/* Text — always centered, always full size */}
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
