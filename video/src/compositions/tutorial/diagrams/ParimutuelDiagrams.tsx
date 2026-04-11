@@ -774,10 +774,22 @@ const FairnessBeat: React.FC = () => {
     config: { damping: 10, stiffness: 200, mass: 1.2 },
   });
 
-  // Phase 2: whale shrinks (4s → 8s)
-  const shrinkStart = sec(4.0);
-  const shrinkSpring = spring({
-    frame: Math.max(0, frame - shrinkStart),
+  // Phase 2a: value drops $1,000,000 → $1 (box stays big)
+  const valueDropStart = sec(4.0);
+  const valueDropProgress = interpolate(
+    frame,
+    [valueDropStart, sec(5.3)],
+    [0, 1],
+    { ...clamp, easing: Easing.bezier(0.4, 0, 0.2, 1) },
+  );
+  const exponent = interpolate(valueDropProgress, [0, 1], [6, 0]);
+  const whaleValue = Math.max(1, Math.round(Math.pow(10, exponent)));
+  const whaleLabel = `$${whaleValue.toLocaleString()}`;
+
+  // Phase 2b: box shrinks to square (after value settles)
+  const boxShrinkStart = sec(5.8);
+  const boxShrinkSpring = spring({
+    frame: Math.max(0, frame - boxShrinkStart),
     fps,
     config: { damping: 12, stiffness: 80, mass: 1.0 },
   });
@@ -785,22 +797,19 @@ const FairnessBeat: React.FC = () => {
   const YOUR_HEIGHT = 100;
   const WHALE_MAX_HEIGHT = 340;
   const whaleHeight = interpolate(
-    shrinkSpring,
+    boxShrinkSpring,
     [0, 1],
     [WHALE_MAX_HEIGHT, YOUR_HEIGHT],
     clamp,
   );
 
-  // Label crossfade
-  const labelFade = interpolate(frame, [shrinkStart, shrinkStart + sec(1.5)], [0, 1], clamp);
-
-  // "vs" and "matched" labels
-  const vsOpacity = interpolate(frame, [shrinkStart + sec(1.0), shrinkStart + sec(1.5)], [0, 1], clamp);
+  // "vs" and "matched" labels — after box settles
+  const vsOpacity = interpolate(frame, [sec(7.0), sec(7.4)], [0, 1], clamp);
 
   // Bottom text
   const fairTextOpacity = interpolate(
     frame,
-    [shrinkStart + sec(2.0), shrinkStart + sec(2.5)],
+    [sec(7.4), sec(7.8)],
     [0, 1],
     clamp,
   );
@@ -812,8 +821,8 @@ const FairnessBeat: React.FC = () => {
     <DiagramCard>
       <Sfx sound={LAND} delay={sec(0.3)} />
       <Sfx sound={LAND} delay={sec(1.0)} />
-      <Sfx sound={TICK} delay={shrinkStart + sec(1.0)} />
-      <Sfx sound={IMPACT} delay={shrinkStart + sec(2.0)} />
+      <Sfx sound={COUNT} delay={valueDropStart} />
+      <Sfx sound={IMPACT} delay={boxShrinkStart} />
       <div style={{ opacity: exitOpacity }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginBottom: 32 }}>
           <span style={{ ...TYPE.displayHero, color: COLOR.wiseGreen }}>$1 vs $1</span>
@@ -893,7 +902,7 @@ const FairnessBeat: React.FC = () => {
           >
             <div
               style={{
-                width: interpolate(shrinkSpring, [0, 1], [200, 100], clamp),
+                width: interpolate(boxShrinkSpring, [0, 1], [200, 100], clamp),
                 height: whaleHeight,
                 borderRadius: 16,
                 border: `2px solid ${COLOR.nearBlack}`,
@@ -908,12 +917,12 @@ const FairnessBeat: React.FC = () => {
               <span
                 style={{
                   ...TYPE.statValue,
-                  fontSize: interpolate(shrinkSpring, [0, 1], [26, 32], clamp),
+                  fontSize: interpolate(boxShrinkSpring, [0, 1], [26, 32], clamp),
                   color: COLOR.nearBlack,
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {labelFade < 0.5 ? "$1,000,000" : "$1"}
+                {whaleLabel}
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

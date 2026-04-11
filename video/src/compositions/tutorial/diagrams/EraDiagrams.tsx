@@ -19,7 +19,7 @@ const sec = (s: number) => Math.round(s * FPS);
 // Local frame 0 = 194.04s in video.
 const ERA_TL_IN = sec(22.76);
 const ERA_TL_OUT = sec(36.26);
-const ERA_STAGGER = [0, sec(3.5), sec(7)]; // card entrance offsets within era sequence
+const ERA_STAGGER = [sec(0.3), sec(5.2), sec(10.0)]; // voice-synced: 1920s@217.08, 1970s@222.04, GM@226.88
 
 const COMP_IN = sec(36.26);
 const COMP_OUT = sec(47.46);
