@@ -15,29 +15,10 @@ const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
-const BROLL_COUNTS: Record<string, number> = {
-  twitch: 48,
-  pumpfun: 48,
-  movies: 48,
-  animals: 48,
-};
-
 const PLACEHOLDER_COLORS: Record<string, string[]> = {
-  twitch: [
-    "#9146FF", "#6441A5", "#B9A3E3", "#7B2FBE",
-    "#A970FF", "#772CE8", "#BF94FF", "#5C16C5",
-  ],
   pumpfun: [
     "#00D4AA", "#10B981", "#34D399", "#059669",
     "#6EE7B7", "#047857", "#A7F3D0", "#065F46",
-  ],
-  movies: [
-    "#F59E0B", "#D97706", "#FBBF24", "#B45309",
-    "#FCD34D", "#92400E", "#FDE68A", "#78350F",
-  ],
-  animals: [
-    "#22C55E", "#16A34A", "#4ADE80", "#15803D",
-    "#86EFAC", "#166534", "#BBF7D0", "#14532D",
   ],
 };
 
@@ -47,40 +28,44 @@ function brollPath(category: string, index: number): string {
   return `launch/broll/${category}/${category}-${padded}.${ext}`;
 }
 
-function brollExists(category: string, index: number): boolean {
-  const count = BROLL_COUNTS[category];
-  return index < count;
-}
-
-interface BrollGridProps {
+interface BrollGridStatementProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
   question: string;
-  showNumbers?: boolean;
+  statement: string;
 }
 
-export const BrollGrid: React.FC<BrollGridProps> = ({
+export const BrollGridStatement: React.FC<BrollGridStatementProps> = ({
   category,
   question,
-  showNumbers = false,
+  statement,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const colors = PLACEHOLDER_COLORS[category];
-
-  const textScale = spring({
-    frame,
-    fps,
-    config: { damping: 14, stiffness: 120, mass: 0.8 },
-    durationInFrames: 20,
-  });
+  const { fps, durationInFrames } = useVideoConfig();
+  const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
 
   const blurAmount = interpolate(frame, [0, 8], [0, 8], {
     extrapolateRight: "clamp",
   });
 
+  const questionScale = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 120, mass: 0.8 },
+    durationInFrames: 18,
+  });
+
+  const midpoint = Math.floor(durationInFrames * 0.5);
+  const statementOpacity = interpolate(frame, [midpoint, midpoint + 8], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const statementY = interpolate(frame, [midpoint, midpoint + 12], [30, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      {/* Grid layer */}
       <AbsoluteFill
         style={{
           display: "grid",
@@ -92,99 +77,90 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => {
-          const cellSpring = spring({
-            frame: frame - i * 0.3,
-            fps,
-            config: { damping: 20, stiffness: 200 },
-            durationInFrames: 12,
-          });
-          const hasFile = brollExists(category, i);
           const isVideo = category !== "movies";
-
           return (
             <div
               key={i}
               style={{
                 backgroundColor: colors[i % colors.length],
                 borderRadius: 4,
-                transform: `scale(${cellSpring})`,
-                opacity: interpolate(cellSpring, [0, 1], [0.3, 1]),
                 overflow: "hidden",
-                position: "relative",
               }}
             >
-              {hasFile && isVideo && (
+              {isVideo ? (
                 <OffthreadVideo
                   src={staticFile(brollPath(category, i))}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   muted
                 />
-              )}
-              {hasFile && !isVideo && (
+              ) : (
                 <Img
                   src={staticFile(brollPath(category, i))}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              )}
-              {showNumbers && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 2,
-                    left: 4,
-                    fontFamily: font,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: "#fff",
-                    textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                  }}
-                >
-                  {i + 1}
-                </div>
               )}
             </div>
           );
         })}
       </AbsoluteFill>
 
-      {/* Dark vignette overlay */}
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)",
+            "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.8) 100%)",
         }}
       />
 
-      {/* Question text */}
+      {/* Question — top third */}
       <AbsoluteFill
         style={{
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "center",
+          paddingTop: 200,
         }}
       >
         <div
           style={{
             fontFamily: font,
-            fontSize: 64,
+            fontSize: 56,
             fontWeight: 900,
             color: "#ffffff",
             textAlign: "center",
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            transform: `scale(${textScale})`,
+            transform: `scale(${questionScale})`,
             textShadow: "0 4px 40px rgba(0,0,0,0.6)",
             whiteSpace: "pre-line",
           }}
         >
           {question}
+        </div>
+      </AbsoluteFill>
+
+      {/* Statement — bottom third, appears midway */}
+      <AbsoluteFill
+        style={{
+          justifyContent: "flex-end",
+          alignItems: "center",
+          paddingBottom: 180,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 44,
+            fontWeight: 700,
+            color: "#ffffff",
+            textAlign: "center",
+            lineHeight: 1.15,
+            letterSpacing: "-0.02em",
+            opacity: statementOpacity,
+            transform: `translateY(${statementY}px)`,
+            textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+            whiteSpace: "pre-line",
+          }}
+        >
+          {statement}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

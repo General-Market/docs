@@ -3,6 +3,8 @@ import { AbsoluteFill, Sequence } from "remotion";
 import { SHOTS } from "./data/shotlist";
 import { toFrames } from "./theme";
 import { BrollGrid } from "./shots/BrollGrid";
+import { BrollGridStatement } from "./shots/BrollGridStatement";
+import { QuadGrid } from "./shots/QuadGrid";
 import { PayoffCard } from "./shots/PayoffCard";
 import { MegaGrid } from "./shots/MegaGrid";
 import { LogoReveal } from "./shots/LogoReveal";
@@ -15,6 +17,7 @@ import {
   LOGO_STINGER,
   BOOM,
 } from "./sfxMap";
+import type { BrollCategory } from "./types";
 
 export const Launch30: React.FC = () => {
   const sfxEvents: SfxEvent[] = [];
@@ -37,7 +40,29 @@ export const Launch30: React.FC = () => {
             cutSfx.push({ at: from, sound: GRID_WHOOSH });
             content = (
               <BrollGrid
-                category={shot.category as "twitch" | "pumpfun" | "movies" | "animals"}
+                category={shot.category as Exclude<BrollCategory, "all">}
+                question={shot.question!}
+              />
+            );
+            break;
+
+          case "broll-grid-statement":
+            cutSfx.push({ at: from, sound: GRID_WHOOSH });
+            cutSfx.push({ at: from + Math.floor(dur / 2), sound: TEXT_SLAM });
+            content = (
+              <BrollGridStatement
+                category={shot.category as Exclude<BrollCategory, "all">}
+                question={shot.question!}
+                statement={shot.statement!}
+              />
+            );
+            break;
+
+          case "quad-grid":
+            cutSfx.push({ at: from, sound: BOOM });
+            content = (
+              <QuadGrid
+                categories={shot.categories!}
                 question={shot.question!}
               />
             );
@@ -68,7 +93,6 @@ export const Launch30: React.FC = () => {
         );
       })}
 
-      {/* All SFX in one layer */}
       <Sfx sound={sfxEvents} />
     </AbsoluteFill>
   );

@@ -8,8 +8,8 @@ import {
 } from "remotion";
 import { font } from "../../../common/fonts";
 
-const GRID_COLS = 6;
-const GRID_ROWS = 4;
+const GRID_COLS = 10;
+const GRID_ROWS = 8;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
 const ALL_COLORS = [
