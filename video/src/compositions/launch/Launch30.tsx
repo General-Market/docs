@@ -42,6 +42,7 @@ export const Launch30: React.FC = () => {
               <BrollGrid
                 category={shot.category as Exclude<BrollCategory, "all">}
                 question={shot.question!}
+                words={shot.words}
               />
             );
             break;
@@ -54,6 +55,7 @@ export const Launch30: React.FC = () => {
                 category={shot.category as Exclude<BrollCategory, "all">}
                 question={shot.question!}
                 statement={shot.statement!}
+                words={shot.words}
               />
             );
             break;

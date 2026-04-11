@@ -1,5 +1,10 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import {
+  AbsoluteFill,
+  useCurrentFrame,
+  interpolate,
+  useVideoConfig,
+} from "remotion";
 import { font } from "../../../common/fonts";
 import { PLACEHOLDER_COLORS } from "../brollAssets";
 import { BrollCell } from "./BrollCell";
@@ -8,18 +13,43 @@ const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
+const SCALE_START = 3.2;
+const SCALE_END = 1;
+
 interface BrollGridProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
   question: string;
+  words?: string[];
   showNumbers?: boolean;
 }
 
 export const BrollGrid: React.FC<BrollGridProps> = ({
   category,
   question,
+  words,
   showNumbers = false,
 }) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
   const colors = PLACEHOLDER_COLORS[category] ?? ["#444"];
+
+  const wordGroups = words ?? [question];
+  const stepCount = wordGroups.length;
+  const framesPerStep = durationInFrames / stepCount;
+
+  const currentStep = Math.min(
+    Math.floor(frame / framesPerStep),
+    stepCount - 1,
+  );
+
+  const gridScale = interpolate(
+    frame,
+    [0, durationInFrames - 1],
+    [SCALE_START, SCALE_END],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const visibleWords = wordGroups.slice(0, currentStep + 1);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
@@ -31,6 +61,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
           gap: 3,
           padding: 3,
           filter: "blur(8px)",
+          transform: `scale(${gridScale})`,
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => (
@@ -85,7 +116,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
             whiteSpace: "pre-line",
           }}
         >
-          {question}
+          {visibleWords.join(" ")}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

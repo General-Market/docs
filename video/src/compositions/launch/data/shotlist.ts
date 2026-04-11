@@ -13,6 +13,7 @@ export const SHOTS: Shot[] = [
     durationSec: 2.5,
     category: "twitch",
     question: "Will these streamers get\nmore viewers in 10 minutes?",
+    words: ["Will", "these streamers", "get more viewers", "in 10", "minutes?"],
   },
   {
     type: "payoff-card",
@@ -28,6 +29,7 @@ export const SHOTS: Shot[] = [
     durationSec: 3,
     category: "pumpfun",
     question: "Will this token pump\nin 5 minutes?",
+    words: ["Will", "this token", "pump", "in 5", "minutes?"],
     statement: "Join a vault making\nmillions of trades a day",
   },
 
@@ -38,6 +40,7 @@ export const SHOTS: Shot[] = [
     durationSec: 1.5,
     category: "movies",
     question: "Will this movie\nhit #1 box office?",
+    words: ["Will this movie", "hit #1", "box office?"],
   },
   {
     type: "broll-grid",
@@ -45,6 +48,7 @@ export const SHOTS: Shot[] = [
     durationSec: 1.5,
     category: "animals",
     question: "Will this species\nbe spotted today?",
+    words: ["Will this species", "be spotted", "today?"],
   },
 
   // ── Earned hold — longer card after the rapid fire

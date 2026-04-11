@@ -17,4 +17,6 @@ export interface Shot {
   category?: BrollCategory;
   /** For quad-grid: which four categories to show */
   categories?: BrollCategory[];
+  /** Word groups revealed one at a time, grid expands with each */
+  words?: string[];
 }
