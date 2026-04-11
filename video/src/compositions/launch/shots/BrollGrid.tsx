@@ -3,15 +3,22 @@ import {
   AbsoluteFill,
   useCurrentFrame,
   interpolate,
+  Easing,
   useVideoConfig,
 } from "remotion";
 import { font } from "../../../common/fonts";
 import { PLACEHOLDER_COLORS } from "../brollAssets";
 import { BrollCell } from "./BrollCell";
 
-const GRID_COLS = 8;
-const GRID_ROWS = 6;
-const CELL_COUNT = GRID_COLS * GRID_ROWS;
+const EASE_PUSH = Easing.bezier(0.5, 0, 0.15, 1);
+
+const GRID_STEPS = [
+  { cols: 2, rows: 2 },
+  { cols: 3, rows: 2 },
+  { cols: 4, rows: 3 },
+  { cols: 5, rows: 4 },
+  { cols: 6, rows: 5 },
+];
 
 interface BrollGridProps {
   category: "twitch" | "pumpfun" | "movies" | "animals";
@@ -32,72 +39,91 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
 
   const wordGroups = words ?? [question];
   const stepCount = wordGroups.length;
+  const steps = GRID_STEPS.slice(0, stepCount);
   const framesPerStep = durationInFrames / stepCount;
-  const currentStep = Math.min(
+
+  const progress = frame / durationInFrames;
+  const stepProgress = progress * (steps.length - 1);
+  const stepIndex = Math.min(Math.floor(stepProgress), steps.length - 2);
+  const stepFrac = stepProgress - stepIndex;
+
+  const easedFrac = EASE_PUSH(Math.min(1, stepFrac));
+  const fromStep = steps[stepIndex];
+  const toStep = steps[Math.min(stepIndex + 1, steps.length - 1)];
+
+  const cols = fromStep.cols + (toStep.cols - fromStep.cols) * easedFrac;
+  const rows = fromStep.rows + (toStep.rows - fromStep.rows) * easedFrac;
+
+  const currentWordStep = Math.min(
     Math.floor(frame / framesPerStep),
     stepCount - 1,
   );
-  const visibleWords = wordGroups.slice(0, currentStep + 1);
+  const visibleWords = wordGroups.slice(0, currentWordStep + 1);
 
-  const widthPct = interpolate(frame, [0, durationInFrames - 1], [25, 100], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const heightPct = interpolate(frame, [0, durationInFrames - 1], [30, 100], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const maxCells = Math.ceil(cols) * Math.ceil(rows);
+  const cellW = 100 / cols;
+  const cellH = 100 / rows;
+
+  const cells: { x: number; y: number; i: number }[] = [];
+  let idx = 0;
+  for (let r = 0; r < Math.ceil(rows); r++) {
+    for (let c = 0; c < Math.ceil(cols); c++) {
+      cells.push({ x: c * cellW, y: r * cellH, i: idx });
+      idx++;
+    }
+  }
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#0a0a0a" }}>
-      {/* Grid container — starts small centered, grows to fill */}
-      <div
-        style={{
-          position: "absolute",
-          width: `${widthPct}%`,
-          height: `${heightPct}%`,
-          top: `${(100 - heightPct) / 2}%`,
-          left: `${(100 - widthPct) / 2}%`,
-          display: "grid",
-          gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-          gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-          gap: 3,
-          filter: "blur(8px)",
-          borderRadius: interpolate(widthPct, [25, 100], [16, 0]),
-          overflow: "hidden",
-        }}
-      >
-        {Array.from({ length: CELL_COUNT }).map((_, i) => (
+      {/* Grid — cells positioned absolutely, resizing smoothly */}
+      <AbsoluteFill style={{ filter: "blur(8px)", overflow: "hidden" }}>
+        {cells.map(({ x, y, i }) => (
           <div
             key={i}
             style={{
+              position: "absolute",
+              left: `${x}%`,
+              top: `${y}%`,
+              width: `${cellW}%`,
+              height: `${cellH}%`,
               backgroundColor: colors[i % colors.length],
               overflow: "hidden",
-              position: "relative",
+              padding: 1.5,
+              boxSizing: "border-box",
             }}
           >
-            <BrollCell category={category} index={i} />
-            {showNumbers && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 2,
-                  left: 4,
-                  fontFamily: font,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "#fff",
-                  textShadow: "0 1px 3px rgba(0,0,0,0.9)",
-                }}
-              >
-                {i + 1}
-              </div>
-            )}
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: 4,
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <BrollCell category={category} index={i} />
+              {showNumbers && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    left: 4,
+                    fontFamily: font,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#fff",
+                    textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+                  }}
+                >
+                  {i + 1}
+                </div>
+              )}
+            </div>
           </div>
         ))}
-      </div>
+      </AbsoluteFill>
 
-      {/* Vignette — always full screen */}
+      {/* Vignette */}
       <AbsoluteFill
         style={{
           background:
@@ -105,7 +131,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
         }}
       />
 
-      {/* Text — always centered, always full size */}
+      {/* Text */}
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
