@@ -1,19 +1,11 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../../common/fonts";
+import { SOURCES } from "../data/sources";
 
 const GRID_COLS = 10;
-const GRID_ROWS = 8;
+const GRID_ROWS = 10;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
-
-const ALL_COLORS = [
-  "#9146FF", "#00D4AA", "#F59E0B", "#22C55E",
-  "#6441A5", "#10B981", "#D97706", "#16A34A",
-  "#A970FF", "#34D399", "#FBBF24", "#4ADE80",
-  "#772CE8", "#059669", "#B45309", "#15803D",
-  "#BF94FF", "#6EE7B7", "#FCD34D", "#86EFAC",
-  "#5C16C5", "#047857", "#92400E", "#166534",
-];
 
 interface MegaGridProps {
   question: string;
@@ -32,15 +24,36 @@ export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
           filter: "blur(6px)",
         }}
       >
-        {Array.from({ length: CELL_COUNT }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              backgroundColor: ALL_COLORS[i % ALL_COLORS.length],
-              borderRadius: 4,
-            }}
-          />
-        ))}
+        {Array.from({ length: CELL_COUNT }).map((_, i) => {
+          const source = SOURCES[i % SOURCES.length];
+          const logoSrc = source.logo.startsWith("/")
+            ? source.logo.slice(1)
+            : source.logo;
+
+          return (
+            <div
+              key={i}
+              style={{
+                background: source.bg,
+                borderRadius: 4,
+                overflow: "hidden",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 6,
+              }}
+            >
+              <Img
+                src={staticFile(logoSrc)}
+                style={{
+                  maxWidth: "80%",
+                  maxHeight: "80%",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          );
+        })}
       </AbsoluteFill>
 
       <AbsoluteFill
