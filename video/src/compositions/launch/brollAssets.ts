@@ -6,8 +6,8 @@ import { getRemotionEnvironment } from "remotion";
  * Update as downloads complete.
  */
 export const BROLL_COUNTS: Record<string, number> = {
-  twitch: 0,
-  pumpfun: 0,
+  twitch: 48,
+  pumpfun: 48,
   movies: 48,
   animals: 48,
 };
