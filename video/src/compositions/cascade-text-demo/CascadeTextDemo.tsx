@@ -72,7 +72,6 @@ export const CascadeTextDemo: React.FC = () => {
             color={GREEN}
             letterSpacing="-0.02em"
             riseDistance={80}
-            driftDistance={28}
             blurPx={14}
           />
         </Slide>
@@ -92,7 +91,6 @@ export const CascadeTextDemo: React.FC = () => {
             delayPerWord={5}
             durationPerWord={28}
             riseDistance={100}
-            driftDistance={40}
             blurPx={18}
           />
         </Slide>
@@ -113,7 +111,6 @@ export const CascadeTextDemo: React.FC = () => {
             delayPerWord={4}
             durationPerWord={24}
             riseDistance={90}
-            driftDistance={32}
             blurPx={20}
           />
         </Slide>
@@ -132,7 +129,6 @@ export const CascadeTextDemo: React.FC = () => {
             delayPerWord={2}
             durationPerWord={18}
             riseDistance={60}
-            driftDistance={20}
             blurPx={10}
           />
         </Slide>
@@ -151,7 +147,6 @@ export const CascadeTextDemo: React.FC = () => {
             delayPerWord={4}
             durationPerWord={30}
             riseDistance={45}
-            driftDistance={18}
             blurPx={12}
           />
         </Slide>

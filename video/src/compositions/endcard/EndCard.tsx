@@ -11,6 +11,7 @@ import {
   AbsoluteFill,
   Easing,
   Img,
+  Sequence,
   Video,
   interpolate,
   staticFile,
@@ -19,6 +20,7 @@ import {
 } from "remotion";
 import { AsciiOverlay } from "./AsciiOverlay";
 import { GreenAsciiScreen } from "./GreenAsciiScreen";
+import { ShaderShowcase } from "./ShaderShowcase";
 import { CascadeText } from "../../lib/components/Text";
 import { FONT } from "../tutorial/designTokens";
 import { FPS } from "./theme";
@@ -206,7 +208,6 @@ export const EndCard: React.FC = () => {
             delayPerWord={3}
             durationPerWord={22}
             riseDistance={70}
-            driftDistance={26}
             blurPx={12}
           />
         </div>
@@ -279,6 +280,11 @@ export const EndCard: React.FC = () => {
 
       {/* Green ASCII flash */}
       {isGreenVisible && <GreenAsciiScreen slideOut={greenSlideProgress} />}
+
+      {/* Shader showcase — 10s test bench at the end (remove after picking) */}
+      <Sequence from={Math.round(15 * FPS)}>
+        <ShaderShowcase />
+      </Sequence>
     </AbsoluteFill>
   );
 };

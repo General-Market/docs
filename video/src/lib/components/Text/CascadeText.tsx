@@ -47,8 +47,6 @@ export interface CascadeTextProps {
   startDelay?: number;
   /** Word rises from this many px below its final position. Default 60. */
   riseDistance?: number;
-  /** Word enters this many px to the right of final, drifts left. Default 24. */
-  driftDistance?: number;
   /** Max Gaussian blur at entry in px, fades to 0. Default 12. */
   blurPx?: number;
   align?: "left" | "center" | "right";
@@ -131,7 +129,6 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
   durationPerWord = 22,
   startDelay = 0,
   riseDistance = 60,
-  driftDistance = 24,
   blurPx = 12,
   align = "left",
   wave = false,
@@ -234,7 +231,6 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
         }
 
         const dy = (1 - posT) * riseDistance - waveRise;
-        const dx = (1 - posT) * driftDistance;
         const entryBlur = (1 - blurT) * blurPx;
         const blur = entryBlur + waveBlur;
         const opacity = Math.min(1, posT * 1.3);
@@ -247,7 +243,7 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
               left: p.x,
               top: p.y,
               whiteSpace: "pre",
-              transform: `translate3d(${dx}px, ${dy}px, 0)`,
+              transform: `translate3d(0, ${dy}px, 0)`,
               transformOrigin: "left top",
               opacity,
               filter: blur > 0.1 ? `blur(${blur}px)` : undefined,
