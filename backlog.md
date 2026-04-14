@@ -5125,3 +5125,12 @@ Workaround needed: either reset the L3 chain entirely, or add a "max order age" 
 [BUG] E2E test timeouts on testnet: settlement bridge buy (11.1min), rebalance full cycle (8.1min), multi-ITP orders (6.1min). Oracles not processing these operations promptly. (Session 20260311-e2e)
 
 [BUG-CRITICAL] Swarm_runner threading crash loop — all daemon threads die within 30s of startup, process exits. Single-thread test works fine. Root cause: likely Python GIL + web3 HTTPProvider thread safety issue. Fix: switch to multiprocessing, or run 10 separate bot containers instead of 1 threaded container.
+
+[DECISION-DEFERRED] Task #10 Part B — amputate scheduled NAV oracle signing path. (Session 20260414-nav-honesty)
+Context: protocol.rs `run_nav_oracle_signing` + `PriceAgreed` variant + `NavOracleProposal`/`NavOracleSign` P2P messages exist to push per-cycle NAV updates to a single `ITPNAVOracle` contract. This path is structurally dead on testnet:
+  - testnet.sh never passes `--nav-oracle`/`--itp-token` to oracle containers
+  - Morpho lending on testnet uses 96 per-ITP oracles (batch-markets.json), not a single oracle
+  - Updates are bundled atomically inside borrow transactions by the curator (quote.rs build_bundler_calldata), not pushed on a schedule
+  - The `ItpNavUpdated` event at L3 block 798,015 came from `Investment.setItpNav` (pre-rebalance NAV push via `run_set_itp_nav_phase`), not from this dormant path
+Decision: amputate, but not in the Part A window. The cut spans `P2PMessage::NavOracleProposal`/`NavOracleSign`, `ConsensusResult::PriceAgreed`, `run_nav_oracle_signing`, `handle_nav_oracle_proposal`, `handle_nav_oracle_sign`, BridgeOrchestrator NavOracle signature manager, equivocation handlers — touches 7+ files and drops an entire P2P message type. Too wide for a single-purpose commit alongside the log-honesty fix. Part A (log honesty) landed as commit ee97857a. Part B to be done as its own focused PR with LSP findReferences + green `cargo check -p oracle` after removal.
+
