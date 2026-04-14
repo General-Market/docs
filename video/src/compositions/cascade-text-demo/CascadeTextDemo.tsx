@@ -10,7 +10,7 @@ import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 import { CascadeText } from "../../lib/components/Text";
 import { font } from "../../common/fonts";
 
-export const TOTAL_FRAMES = 600; // 20s
+export const TOTAL_FRAMES = 720; // 24s — includes the boxed-word sample
 export const FPS = 30;
 
 const BG = "#0a0a0a";
@@ -148,6 +148,35 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={30}
             riseDistance={45}
             blurPx={12}
+          />
+        </Slide>
+      </Sequence>
+
+      {/* 20–24s: boxed tokens with light pop */}
+      <Sequence from={600} durationInFrames={120}>
+        <Slide label="Boxed tokens — grow in place, glow pops" absFrame={absFrame}>
+          <CascadeText
+            text="AI agents to [Build] and [Govern]"
+            maxWidth={1600}
+            fontFamily={font}
+            fontSize={104}
+            fontWeight={600}
+            color="#ffffff"
+            letterSpacing="-0.01em"
+            align="center"
+            delayPerWord={5}
+            durationPerWord={24}
+            riseDistance={50}
+            blurPx={10}
+            boxStyle={{
+              bg: "#1c1c1c",
+              color: "#ffffff",
+              paddingX: 26,
+              paddingY: 8,
+              borderRadius: 14,
+              glowRadius: 180,
+              glowDuration: 38,
+            }}
           />
         </Slide>
       </Sequence>
