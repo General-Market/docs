@@ -79,6 +79,7 @@ import {
   TOTAL_FRAMES as CASCADE_DURATION,
   FPS as CASCADE_FPS,
 } from "./compositions/cascade-text-demo/CascadeTextDemo";
+import { icebergMeta } from "./compositions/iceberg/IcebergScene";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -95,6 +96,16 @@ export const RemotionRoot: React.FC = () => {
         fps={LAUNCH_FPS}
         width={1920}
         height={1080}
+      />
+
+      {/* ═══ ICEBERG ═══ */}
+      <Composition
+        id={icebergMeta.id}
+        component={icebergMeta.component}
+        durationInFrames={icebergMeta.durationInFrames}
+        fps={icebergMeta.fps}
+        width={icebergMeta.width}
+        height={icebergMeta.height}
       />
 
       {/* ═══ END CARD ═══ */}
