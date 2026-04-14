@@ -99,11 +99,3 @@ export const RAPID_POP: SfxDef = { file: "text-pop-rapid-sequence", vol: 0.25 };
 
 /** Soft click — checkboxes, toggles */
 export const CLICK: SfxDef = { file: "cursor-click-soft", vol: 0.25 };
-
-// ── Subtitle family ───────────────────────────────────────────────────
-
-/** Per-word blip — barely perceptible, reinforces word-sync highlight */
-export const WORD_BLIP: SfxDef = { file: "text-appear-blip", vol: 0.03 };
-
-/** New caption group sliding in */
-export const SUBTITLE_IN: SfxDef = { file: "scroll-tick", vol: 0.06 };

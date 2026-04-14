@@ -1,9 +1,8 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, useCurrentFrame, useVideoConfig, spring, staticFile } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring } from "remotion";
 import { font } from "../../common/fonts";
 import { lerp } from "../../common/utils";
 import { transcriptSegments } from "./transcriptData";
-import { WORD_BLIP, SUBTITLE_IN } from "./sfxMap";
 
 const FPS = 30;
 const MAX_VISIBLE_WORDS = 12;
@@ -222,25 +221,3 @@ export const SubtitleLayer: React.FC = () => {
     </AbsoluteFill>
   );
 };
-
-// ── Subtitle SFX ──────────────────────────────────────────────────────────
-// Pre-computed audio events: soft tick per word group, barely-there blip per word.
-// Render inside a full-duration Sequence — frame values are absolute.
-
-const sfxFile = (def: { file: string }) =>
-  staticFile(`sfx/${def.file}.mp3`);
-
-export const SubtitleSfx: React.FC = () => (
-  <>
-    {wordGroups.map((g, i) => (
-      <Sequence key={`sg-${i}`} from={g.startFrame} durationInFrames={30} layout="none">
-        <Audio src={sfxFile(SUBTITLE_IN)} volume={SUBTITLE_IN.vol} />
-      </Sequence>
-    ))}
-    {allWords.map((w, i) => (
-      <Sequence key={`sw-${i}`} from={w.startFrame} durationInFrames={15} layout="none">
-        <Audio src={sfxFile(WORD_BLIP)} volume={WORD_BLIP.vol} />
-      </Sequence>
-    ))}
-  </>
-);
