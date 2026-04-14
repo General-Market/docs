@@ -25,7 +25,13 @@
  */
 
 import React from "react";
-import { spring, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  Easing,
+  interpolate,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { measureText } from "@remotion/layout-utils";
 
 export interface CascadeTextProps {
@@ -192,15 +198,22 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
         const wordFrame = frame - startDelay - i * delayPerWord;
         if (wordFrame < 0) return null;
 
-        // Entry: position springs in at normal pace...
-        const posT = spring({
-          frame: Math.max(wordFrame, 0),
-          fps,
-          config: { damping: 18, stiffness: 140, mass: 0.9 },
-          durationInFrames: durationPerWord,
-        });
+        // Entry: position is fast-off-the-line, decelerates into place.
+        // Custom cubic-bezier approximates easeOutExpo — most of the motion
+        // is spent in the first third, then the word glides to its final y.
+        const posT = interpolate(
+          Math.max(wordFrame, 0),
+          [0, durationPerWord],
+          [0, 1],
+          {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.16, 1, 0.3, 1),
+          },
+        );
 
-        // ...but the blur lingers far longer than the position spring.
+        // Blur runs on its own slower, softer spring so focus pulls in
+        // gradually instead of resolving with the position.
         const blurT = spring({
           frame: Math.max(wordFrame, 0),
           fps,
