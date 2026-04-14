@@ -205,9 +205,9 @@ export const EndCard: React.FC = () => {
             align="center"
             delayPerWord={3}
             durationPerWord={22}
-            fallDistance={70}
+            riseDistance={70}
             driftDistance={26}
-            tiltDeg={2}
+            blurPx={12}
           />
         </div>
       )}

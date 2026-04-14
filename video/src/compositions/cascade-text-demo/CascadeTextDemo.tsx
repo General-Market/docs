@@ -71,14 +71,9 @@ export const CascadeTextDemo: React.FC = () => {
             fontWeight={800}
             color={GREEN}
             letterSpacing="-0.02em"
-            delayPerWord={3}
-            durationPerWord={22}
-            fallDistance={80}
+            riseDistance={80}
             driftDistance={28}
-            tiltDeg={2}
-            loop
-            holdFrames={36}
-            exitFrames={22}
+            blurPx={14}
           />
         </Slide>
       </Sequence>
@@ -96,12 +91,9 @@ export const CascadeTextDemo: React.FC = () => {
             letterSpacing="-0.03em"
             delayPerWord={5}
             durationPerWord={28}
-            fallDistance={100}
+            riseDistance={100}
             driftDistance={40}
-            tiltDeg={2}
-            loop
-            holdFrames={30}
-            exitFrames={26}
+            blurPx={18}
           />
         </Slide>
       </Sequence>
@@ -120,12 +112,9 @@ export const CascadeTextDemo: React.FC = () => {
             align="center"
             delayPerWord={4}
             durationPerWord={24}
-            fallDistance={90}
+            riseDistance={90}
             driftDistance={32}
-            tiltDeg={2}
-            loop
-            holdFrames={30}
-            exitFrames={22}
+            blurPx={20}
           />
         </Slide>
       </Sequence>
@@ -142,19 +131,16 @@ export const CascadeTextDemo: React.FC = () => {
             color={GREEN}
             delayPerWord={2}
             durationPerWord={18}
-            fallDistance={60}
+            riseDistance={60}
             driftDistance={20}
-            tiltDeg={2}
-            loop
-            holdFrames={32}
-            exitFrames={18}
+            blurPx={10}
           />
         </Slide>
       </Sequence>
 
-      {/* 16–20s: long, quieter */}
+      {/* 16–20s: long, slower rise */}
       <Sequence from={480} durationInFrames={120}>
-        <Slide label="Calmer drop, less tilt" absFrame={absFrame}>
+        <Slide label="Calmer rise" absFrame={absFrame}>
           <CascadeText
             text="Whether you are a beginner or already a hedge fund manager"
             maxWidth={1400}
@@ -164,12 +150,9 @@ export const CascadeTextDemo: React.FC = () => {
             color={GREEN}
             delayPerWord={4}
             durationPerWord={30}
-            fallDistance={45}
+            riseDistance={45}
             driftDistance={18}
-            tiltDeg={2}
-            loop
-            holdFrames={40}
-            exitFrames={26}
+            blurPx={12}
           />
         </Slide>
       </Sequence>

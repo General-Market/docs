@@ -6,26 +6,15 @@
  * Minimal call:
  *   <CascadeText text="Hello world" />
  *
- * Common overrides:
- *   <CascadeText text="..." fontSize={120} loop />
- *   <CascadeText text="..." fontFamily={font} color="#9fe870" align="center" />
- *
- * Words tumble in from above-right, settle into their pre-computed
- * wrapped positions, optionally hold, then exit downward so the next
- * cycle can re-enter. In loop mode the wave never lands — there is
- * always a word entering and another in the air.
+ * Words rise from below the line they will settle on, blurred at
+ * entry, and resolve into sharp, final positions. Opacity climbs as
+ * the blur dissolves. Each word is staggered by delayPerWord so two
+ * or three words are always in transit while the first ones have
+ * already landed. No exit, no tilt, no cycle — enter once, stay.
  *
  * Layout uses @remotion/layout-utils measureText, so every word knows
  * its final (x, y) and the right bound of its line before the first
  * frame. No reflow, no jumping on wrap.
- *
- * Cycle phases per word:
- *   entry  (durationPerWord frames): fall from top-right with tilt
- *   hold   (holdFrames frames):      at rest, fully opaque
- *   exit   (exitFrames frames):      drop through, counter-tilt, fade
- *
- * Stagger (delayPerWord) is smaller than durationPerWord, so two or
- * three words are always in flight.
  */
 
 import React from "react";
@@ -36,7 +25,6 @@ export interface CascadeTextProps {
   text: string;
   /** Box width for wrapping in px. Default 1200. */
   maxWidth?: number;
-  /** Inherits from parent if omitted. */
   fontFamily?: string;
   /** px. Default 96. */
   fontSize?: number;
@@ -51,19 +39,13 @@ export interface CascadeTextProps {
   durationPerWord?: number;
   /** Frames before the first word starts. Default 0. */
   startDelay?: number;
-  /** Vertical drop distance in px. Default 60. */
-  fallDistance?: number;
+  /** Word rises from this many px below its final position. Default 60. */
+  riseDistance?: number;
   /** Word enters this many px to the right of final, drifts left. Default 24. */
   driftDistance?: number;
-  /** Tilt at entry (degrees). Default 2. */
-  tiltDeg?: number;
+  /** Max Gaussian blur at entry in px, fades to 0. Default 12. */
+  blurPx?: number;
   align?: "left" | "center" | "right";
-  /** Loop forever: entry → hold → exit → re-entry. Default false. */
-  loop?: boolean;
-  /** Frames the word holds at rest before exiting (loop mode). Default 40. */
-  holdFrames?: number;
-  /** Frames for the exit animation (loop mode). Default 22. */
-  exitFrames?: number;
 }
 
 interface WordPos {
@@ -132,13 +114,10 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
   delayPerWord = 3,
   durationPerWord = 22,
   startDelay = 0,
-  fallDistance = 60,
+  riseDistance = 60,
   driftDistance = 24,
-  tiltDeg = 2,
+  blurPx = 12,
   align = "left",
-  loop = false,
-  holdFrames = 40,
-  exitFrames = 22,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -191,31 +170,17 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
         const wordFrame = frame - startDelay - i * delayPerWord;
         if (wordFrame < 0) return null;
 
-        const cycle = durationPerWord + holdFrames + exitFrames;
-        const phase = loop ? wordFrame % cycle : wordFrame;
-
-        const entryT = spring({
-          frame: Math.max(phase, 0),
+        const t = spring({
+          frame: Math.max(wordFrame, 0),
           fps,
           config: { damping: 18, stiffness: 140, mass: 0.9 },
           durationInFrames: durationPerWord,
         });
 
-        const inExit = loop && phase >= durationPerWord + holdFrames;
-        const exitPhase = inExit ? phase - durationPerWord - holdFrames : 0;
-        const exitT = inExit
-          ? spring({
-              frame: exitPhase,
-              fps,
-              config: { damping: 20, stiffness: 100, mass: 1 },
-              durationInFrames: exitFrames,
-            })
-          : 0;
-
-        const dy = (1 - entryT) * -fallDistance + exitT * fallDistance * 0.9;
-        const dx = (1 - entryT) * driftDistance - exitT * driftDistance * 0.6;
-        const rot = (1 - entryT) * tiltDeg - exitT * tiltDeg;
-        const opacity = Math.min(1, entryT * 1.3) * (1 - exitT);
+        const dy = (1 - t) * riseDistance;
+        const dx = (1 - t) * driftDistance;
+        const blur = (1 - t) * blurPx;
+        const opacity = Math.min(1, t * 1.3);
 
         return (
           <span
@@ -225,10 +190,11 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
               left: p.x,
               top: p.y,
               whiteSpace: "pre",
-              transform: `translate3d(${dx}px, ${dy}px, 0) rotate(${rot}deg)`,
+              transform: `translate3d(${dx}px, ${dy}px, 0)`,
               transformOrigin: "left top",
               opacity,
-              willChange: "transform, opacity",
+              filter: blur > 0.1 ? `blur(${blur}px)` : undefined,
+              willChange: "transform, opacity, filter",
             }}
           >
             {p.word}
