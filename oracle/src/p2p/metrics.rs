@@ -30,6 +30,10 @@ pub struct P2PMetrics {
     pub wal_entries_written: AtomicU64,
     /// WAL replay operations completed on startup.
     pub wal_replays: AtomicU64,
+    /// WAL overflow events — file exceeded the soft cap and inline GC was attempted (INFRA-022).
+    pub wal_overflows_total: AtomicU64,
+    /// WAL writes that failed after inline GC could not bring the file under the cap (INFRA-022).
+    pub wal_write_failures: AtomicU64,
     /// Proposals rejected because sender was not the elected leader (CONSENSUS-020).
     pub leader_rejections: AtomicU64,
     /// Inbound connections rejected (per-IP limit, INFRA-021).
@@ -51,6 +55,8 @@ pub struct P2PMetricsSnapshot {
     pub equivocations_detected: u64,
     pub wal_entries_written: u64,
     pub wal_replays: u64,
+    pub wal_overflows_total: u64,
+    pub wal_write_failures: u64,
     pub leader_rejections: u64,
     pub connection_rejections: u64,
     pub broadcast_send_failures: u64,
@@ -69,6 +75,8 @@ impl P2PMetrics {
             equivocations_detected: self.equivocations_detected.load(Ordering::Relaxed),
             wal_entries_written: self.wal_entries_written.load(Ordering::Relaxed),
             wal_replays: self.wal_replays.load(Ordering::Relaxed),
+            wal_overflows_total: self.wal_overflows_total.load(Ordering::Relaxed),
+            wal_write_failures: self.wal_write_failures.load(Ordering::Relaxed),
             leader_rejections: self.leader_rejections.load(Ordering::Relaxed),
             connection_rejections: self.connection_rejections.load(Ordering::Relaxed),
             broadcast_send_failures: self.broadcast_send_failures.load(Ordering::Relaxed),

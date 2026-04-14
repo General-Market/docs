@@ -647,7 +647,10 @@ impl<'a> ConsensusBuilder<'a> {
                 _ => crate::p2p::wal::WalSyncMode::Fdatasync, // default
             };
             match crate::p2p::wal::ConsensusWAL::open(wal_path, sync_mode) {
-                Ok(wal) => {
+                Ok(mut wal) => {
+                    if let Some(metrics) = p2p_transport.metrics() {
+                        wal = wal.with_metrics(metrics);
+                    }
                     protocol = protocol.with_wal(wal);
                     info!(self.node_id, wal_path = %wal_path.display(), "ConsensusProtocol with WAL");
                 }

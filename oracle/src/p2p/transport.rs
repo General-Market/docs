@@ -206,6 +206,13 @@ impl TcpP2PTransport {
         let _ = self.p2p_metrics.set(metrics);
     }
 
+    /// Return the attached P2P metrics handle, if set. Used by subsystems
+    /// (WAL, equivocation detector) that want to publish their own counters
+    /// under the same snapshot exposed via `/health`.
+    pub fn metrics(&self) -> Option<Arc<P2PMetrics>> {
+        self.p2p_metrics.get().cloned()
+    }
+
     /// Get this node's peer ID
     pub fn peer_id(&self) -> PeerId {
         self.peer_id

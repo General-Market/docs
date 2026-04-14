@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+
+use crate::p2p::metrics::P2PMetrics;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WALEntry {
@@ -24,12 +28,44 @@ pub enum WalSyncMode {
     None,
 }
 
-const MAX_WAL_SIZE: u64 = 10 * 1024 * 1024; // 10 MB
+/// Soft cap on WAL file size. When exceeded, the WAL attempts inline GC
+/// (prune non-current-cycle entries) before the next append. If the current
+/// cycle alone still exceeds this cap, `append` returns a hard error rather
+/// than silently dropping writes — an unbacked replay log is worse than a
+/// crashing oracle.
+///
+/// 64 MB gives comfortable headroom versus the historical 10 MB footgun:
+/// a price cycle with ~3 peers × 4 phases × realistic proposal sizes fits
+/// well inside, with an order of magnitude to spare for bridge cycles and
+/// large batch confirmations.
+const MAX_WAL_SIZE: u64 = 64 * 1024 * 1024;
+
+/// An overflow error — the WAL could not accept the write without exceeding
+/// the size cap, even after inline GC. Callers must escalate, not swallow.
+#[derive(Debug)]
+pub struct WalOverflowError {
+    pub file_size: u64,
+    pub cap: u64,
+    pub cycle_number: u64,
+}
+
+impl std::fmt::Display for WalOverflowError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "WAL overflow: {} bytes exceeds cap {} bytes for cycle {} (current-cycle entries alone exceed the cap; raise MAX_WAL_SIZE or reduce per-cycle payload)",
+            self.file_size, self.cap, self.cycle_number
+        )
+    }
+}
+
+impl std::error::Error for WalOverflowError {}
 
 pub struct ConsensusWAL {
     file: std::fs::File,
     path: PathBuf,
     sync_mode: WalSyncMode,
+    metrics: Option<Arc<P2PMetrics>>,
 }
 
 impl ConsensusWAL {
@@ -44,14 +80,58 @@ impl ConsensusWAL {
             file,
             path,
             sync_mode,
+            metrics: None,
         })
     }
 
+    /// Attach the P2P metrics handle so WAL writes/overflows/failures are
+    /// surfaced through `/health`. Optional — the WAL functions without it.
+    pub fn with_metrics(mut self, metrics: Arc<P2PMetrics>) -> Self {
+        self.metrics = Some(metrics);
+        self
+    }
+
     pub fn append(&mut self, entry: &WALEntry) -> Result<(), Box<dyn std::error::Error>> {
-        // Hard cap check
-        if self.file.metadata()?.len() > MAX_WAL_SIZE {
-            tracing::error!(code = "INFRA-022", "WAL exceeded 10 MB, disabling writes");
-            return Ok(());
+        // Size check: if the file is above the soft cap, try inline GC first.
+        // The WAL is cycle-scoped — GC keeping only the current cycle's entries
+        // should reclaim the vast majority of the file. If it doesn't, we've
+        // hit a genuine overflow and must escalate rather than silently drop.
+        let size = self.file.metadata()?.len();
+        if size > MAX_WAL_SIZE {
+            if let Some(m) = &self.metrics {
+                m.wal_overflows_total.fetch_add(1, Ordering::Relaxed);
+            }
+            tracing::warn!(
+                code = "INFRA-022",
+                size,
+                cap = MAX_WAL_SIZE,
+                cycle = entry.cycle_number,
+                "WAL soft cap exceeded, running inline GC"
+            );
+            // Inline GC: keep only the current cycle. If GC itself fails
+            // (rename, I/O), surface the error — do not swallow.
+            self.gc(entry.cycle_number)?;
+
+            // Re-check after GC. If still over cap, the current cycle alone
+            // has outgrown the file — an actionable condition, not silence.
+            let size_after = self.file.metadata()?.len();
+            if size_after > MAX_WAL_SIZE {
+                if let Some(m) = &self.metrics {
+                    m.wal_write_failures.fetch_add(1, Ordering::Relaxed);
+                }
+                tracing::error!(
+                    code = "INFRA-022",
+                    size = size_after,
+                    cap = MAX_WAL_SIZE,
+                    cycle = entry.cycle_number,
+                    "WAL overflow — current cycle exceeds cap, escalating"
+                );
+                return Err(Box::new(WalOverflowError {
+                    file_size: size_after,
+                    cap: MAX_WAL_SIZE,
+                    cycle_number: entry.cycle_number,
+                }));
+            }
         }
 
         let payload = rmp_serde::to_vec(entry)?;
@@ -66,6 +146,10 @@ impl ConsensusWAL {
             WalSyncMode::Fdatasync => self.file.sync_data()?,
             WalSyncMode::Fsync => self.file.sync_all()?,
             WalSyncMode::None => {}
+        }
+
+        if let Some(m) = &self.metrics {
+            m.wal_entries_written.fetch_add(1, Ordering::Relaxed);
         }
         Ok(())
     }
@@ -337,40 +421,75 @@ mod tests {
     }
 
     #[test]
-    fn test_hard_cap() {
+    fn test_overflow_escalates_when_current_cycle_exceeds_cap() {
+        // When a single cycle produces more than MAX_WAL_SIZE, GC cannot
+        // reclaim anything and append MUST return an error — never Ok(()).
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("test.wal");
         let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
 
-        // Write a large entry to push past MAX_WAL_SIZE (10 MB)
+        // Payload larger than MAX_WAL_SIZE, all on cycle 1.
         let big_entry = WALEntry {
             cycle_number: 1,
             phase: "Price".to_string(),
             from: [1u8; 32],
-            // ~11 MB payload to exceed the cap in one write
-            message_bytes: vec![0u8; 11 * 1024 * 1024],
+            message_bytes: vec![0u8; (MAX_WAL_SIZE + 1024) as usize],
             role: WalRole::Follower,
             timestamp_ms: 1234567890,
         };
         wal.append(&big_entry).unwrap();
 
-        // Record file size after the first (large) write
         let size_after_first = std::fs::metadata(&path).unwrap().len();
         assert!(
             size_after_first > MAX_WAL_SIZE,
-            "File should exceed MAX_WAL_SIZE after large write"
+            "File should exceed MAX_WAL_SIZE after oversized write"
         );
 
-        // Further appends should silently succeed but NOT grow the file
-        let small_entry = make_entry(2);
-        wal.append(&small_entry).unwrap(); // must return Ok(())
-        wal.append(&small_entry).unwrap();
-
-        let size_after_capped = std::fs::metadata(&path).unwrap().len();
-        assert_eq!(
-            size_after_first, size_after_capped,
-            "File must not grow after hard cap is reached"
+        // Next append for the same cycle must fail — GC cannot help.
+        let err = wal
+            .append(&make_entry(1))
+            .expect_err("append must escalate when current cycle alone exceeds cap");
+        assert!(
+            err.downcast_ref::<WalOverflowError>().is_some(),
+            "expected WalOverflowError, got {err:?}"
         );
+    }
+
+    #[test]
+    fn test_overflow_inline_gc_reclaims_old_cycles() {
+        // When GC can reclaim old cycles, append should succeed after the
+        // inline GC pass. No errors, no silent drops.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("test.wal");
+        let mut wal = ConsensusWAL::open(&path, WalSyncMode::None).unwrap();
+
+        // Fill with old-cycle entries totalling more than MAX_WAL_SIZE.
+        let filler = WALEntry {
+            cycle_number: 1,
+            phase: "Price".to_string(),
+            from: [1u8; 32],
+            message_bytes: vec![0u8; (MAX_WAL_SIZE + 4096) as usize],
+            role: WalRole::Follower,
+            timestamp_ms: 1,
+        };
+        wal.append(&filler).unwrap();
+        let size_before = std::fs::metadata(&path).unwrap().len();
+        assert!(size_before > MAX_WAL_SIZE);
+
+        // New cycle small entry — should trigger inline GC (which drops cycle 1)
+        // and then write successfully.
+        let fresh = make_entry(2);
+        wal.append(&fresh).expect("append must succeed after inline GC");
+
+        let size_after = std::fs::metadata(&path).unwrap().len();
+        assert!(
+            size_after < size_before,
+            "Inline GC should have reclaimed the old cycle: before={size_before} after={size_after}"
+        );
+
+        let entries = wal.read_all().unwrap();
+        assert_eq!(entries.len(), 1, "only cycle 2 should survive");
+        assert_eq!(entries[0].cycle_number, 2);
     }
 
     #[test]
