@@ -1,0 +1,118 @@
+# Alerting rules — see README.md in this directory for activation.
+#
+# TODO(prometheus): This repo does not yet run Prometheus. When we do,
+# mount this file at /etc/prometheus/rules/alerts.yml and reference it
+# from prometheus.yml:
+#
+#   rule_files:
+#     - /etc/prometheus/rules/alerts.yml
+#
+# The rules below name the seven failure classes that were invisible
+# during the 2026-04 outage. Every one refers to a metric that is
+# either already exposed by the services (/health JSON) or scraped
+# from node_exporter / postgres_exporter. Where a metric does not yet
+# exist, the comment says so.
+
+groups:
+  - name: infrastructure
+    interval: 30s
+    rules:
+      - alert: DiskUsageHigh
+        # node_exporter emits node_filesystem_* metrics. 0.8 = 80%.
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} /
+                node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage above 80% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+          description: "Blockscout and docker logs filled the disk on 2026-04. This is that, early."
+
+      - alert: PostgresConnectionsNearLimit
+        # postgres_exporter emits pg_stat_activity_count + pg_settings_max_connections.
+        expr: |
+          pg_stat_activity_count >
+            (pg_settings_max_connections * 0.7)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Postgres connection usage above 70% of max"
+          description: "Connection saturation is what killed the DB. Check pgbouncer pool + Blockscout client."
+
+      - alert: BlockscoutConnectionsHigh
+        # datname selector requires the Blockscout DB to be named 'blockscout'.
+        expr: |
+          pg_stat_activity_count{datname="blockscout"} > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blockscout is holding more than 30 Postgres connections"
+
+  - name: data_node
+    interval: 30s
+    rules:
+      - alert: DataNodePricesStale
+        # data-node exposes last_fetch_at in /health. To feed Prometheus,
+        # add a scrape of http://localhost:8200/health and translate
+        # last_fetch_at to a unix seconds gauge. Until then, this rule
+        # watches the kline insert timestamp exposed by the collector.
+        expr: |
+          (time() - data_node_last_kline_insert_ts) > 120
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "data-node has not inserted a kline row in 2 minutes"
+          description: "Likely BITGET_READONLY_API_KEY missing or Bitget unreachable. The --mock-prices silent fallback was removed; service should now refuse to start."
+
+  - name: oracle
+    interval: 30s
+    rules:
+      - alert: OracleSignersEmpty
+        # oracle_stalled is exposed in /health body (added in Phase 7).
+        # Either scrape /health JSON and translate, or export the value
+        # explicitly. The rule fires once the oracle flips the stalled
+        # bit — three consecutive zero-signer cycles.
+        expr: |
+          max_over_time(oracle_stalled[5m]) == 1
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Oracle {{ $labels.instance }} has signed nothing for 3+ cycles"
+          description: "Investigate peers, BLS keys, OracleRegistry address."
+
+  - name: nav
+    interval: 1m
+    rules:
+      - alert: NAVUpdateStale
+        # last_itp_nav_updated_ts: unix seconds of most recent NAV write
+        # per itp_id. Requires either a direct Prometheus counter on the
+        # fund-manager side or a sidecar that queries data-node.
+        expr: |
+          (time() - last_itp_nav_updated_ts) > 600
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NAV for {{ $labels.itp_id }} has not updated in 10 minutes"
+
+  - name: ap
+    interval: 1m
+    rules:
+      - alert: APIdle
+        # ap_orders_processed is a counter. The rate() of zero over an
+        # hour combined with pending_l3_orders > 0 means the keeper is
+        # idle while orders exist — the 2026-04 fingerprint exactly.
+        expr: |
+          rate(ap_orders_processed[1h]) == 0
+          and ap_pending_l3_orders > 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AP has processed no orders in an hour while {{ $value }} L3 orders are pending"
+          description: "Check /health/ready on the AP container. The readiness probe should already be returning 503."
