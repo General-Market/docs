@@ -128,7 +128,19 @@ pub(crate) async fn run_price_update<P, W, K, PF>(
     // 3. Log result and return success/failure
     match result {
         oracle::ConsensusResult::Success { signer_count, cycle_number, .. } => {
-            info!(cycle = cycle_number, signer_count, elapsed_ms, "Price update completed");
+            // Same split as PriceAgreed below (see commit ee97857a): Success carries either a
+            // real aggregated batch signature (signer_count > 0) or a follower-side placeholder
+            // (signer_count == 0, zero-filled signature, no chain submission). Logging them
+            // identically at INFO conflates a consensus event with a passive state observation.
+            if signer_count > 0 {
+                info!(cycle = cycle_number, signer_count, elapsed_ms, "Price consensus agreed — batch signature collected");
+            } else {
+                debug!(
+                    cycle = cycle_number,
+                    elapsed_ms,
+                    "Price consensus heartbeat — follower observed Complete phase (no signatures aggregated locally)"
+                );
+            }
             metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
                 chrono::Utc::now().timestamp_millis() as u64,
