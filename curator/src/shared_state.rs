@@ -24,6 +24,9 @@ pub struct CuratorStateInner {
     pub cached_bls: Option<CachedBlsData>,
     /// Per-asset stress scores (asset_address hex → stress WAD)
     pub asset_stress: HashMap<String, f64>,
+    /// Unix seconds of last successful on-chain read by any curator loop.
+    /// Zero until the first RPC call succeeds. Used by /health/ready.
+    pub last_eth_call_ts: u64,
 }
 
 /// Cached BLS oracle data from the latest collection round
@@ -89,6 +92,31 @@ impl SharedCuratorState {
     pub async fn get_asset_stress(&self) -> HashMap<String, f64> {
         let state = self.inner.read().await;
         state.asset_stress.clone()
+    }
+
+    /// Record that an on-chain read succeeded. Any loop that touches the
+    /// chain should call this. /health/ready watches the gap.
+    pub async fn mark_eth_call_ok(&self) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let mut state = self.inner.write().await;
+        state.last_eth_call_ts = now;
+    }
+
+    /// Seconds since the last successful on-chain read.
+    /// Returns u64::MAX when no call has ever succeeded.
+    pub async fn eth_call_age_secs(&self) -> u64 {
+        let state = self.inner.read().await;
+        if state.last_eth_call_ts == 0 {
+            return u64::MAX;
+        }
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        now.saturating_sub(state.last_eth_call_ts)
     }
 }
 

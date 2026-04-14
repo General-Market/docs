@@ -31,6 +31,32 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
+/// Verify that a contract actually has bytecode at the given address.
+/// Prevents the curator from looping for hours with "no code at address"
+/// warnings when the vault was never deployed (or points at a stale address).
+async fn require_contract_deployed(
+    rpc_url: &str,
+    label: &str,
+    address: Address,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use ethers::providers::{Http, Middleware, Provider};
+    let provider = Provider::<Http>::try_from(rpc_url)
+        .map_err(|e| format!("{label}: bad RPC URL: {e}"))?;
+    let code = provider
+        .get_code(address, None)
+        .await
+        .map_err(|e| format!("{label}: eth_getCode({address:?}) failed: {e}"))?;
+    if code.0.is_empty() {
+        return Err(format!(
+            "{label} at {address:?} has no code on chain. Refusing to start. \
+             Check deployment.json or --{label}-address."
+        )
+        .into());
+    }
+    info!(label, address = ?address, code_bytes = code.0.len(), "contract deployed");
+    Ok(())
+}
+
 fn setup_logging(level: &str) -> Result<(), Box<dyn std::error::Error>> {
     let filter = tracing_subscriber::EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(level));
@@ -386,6 +412,9 @@ async fn run_health_monitor_loop_with_state(
 
         match monitor.run_scan_cycle().await {
             Ok(report) => {
+                // The scan touched the chain. Record the success — readiness
+                // probes consult this.
+                shared_state.mark_eth_call_ok().await;
                 // Write crisis levels to shared state
                 shared_state
                     .update_crisis_levels(report.crisis_levels.clone())
@@ -495,6 +524,9 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
     // Task 2: Allocation Bot (if config is valid)
     let alloc_args = args.clone();
     if let Ok(config) = AllocationConfig::from_args(alloc_args) {
+        // Refuse to start the allocator if the vault address does not point
+        // at deployed bytecode. Better to crash once than warn forever.
+        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
         let sd = shutdown.clone();
         handles.push(tokio::spawn(async move {
             if let Err(e) = run_allocation_loop(config, sd).await {
@@ -509,6 +541,7 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
     // Task 3: Health Monitor (if config is valid)
     let health_args = args.clone();
     if let Ok(config) = HealthMonitorConfig::from_args(health_args) {
+        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
         let sd = shutdown.clone();
         let disp = Some(dispatcher.clone());
         let state_for_monitor = shared_state.clone();
@@ -683,6 +716,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         setup_logging(&log_level)?;
 
         info!("Starting in Health Monitor mode");
+        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
         let _shared_config = bootstrap_shared_config(&rpc_url).await;
 
         let shutdown = Arc::new(AtomicBool::new(false));
@@ -706,6 +740,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         setup_logging(&log_level)?;
 
         info!("Starting in Allocation Bot mode");
+        require_contract_deployed(&config.rpc_url, "vault", config.vault_address).await?;
         let _shared_config = bootstrap_shared_config(&rpc_url).await;
 
         let shutdown = Arc::new(AtomicBool::new(false));

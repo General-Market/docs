@@ -97,6 +97,8 @@ pub async fn run_quote_api_server(
     let mut app = Router::new()
         .route("/api/lending/quote", post(handle_quote))
         .route("/health", get(handle_health))
+        .route("/health/live", get(handle_live))
+        .route("/health/ready", get(handle_ready))
         .with_state(state);
 
     // Merge admin routes (hot-reload, config introspection, log-level) if SharedConfig available
@@ -127,6 +129,48 @@ pub async fn run_quote_api_server(
 /// Health check endpoint
 async fn handle_health() -> impl IntoResponse {
     Json(json!({ "status": "ok", "service": "curator-quote-api" }))
+}
+
+/// GET /health/live — liveness probe, always 200 while the process answers.
+async fn handle_live() -> impl IntoResponse {
+    Json(json!({ "status": "live" }))
+}
+
+/// GET /health/ready — readiness: 503 if no successful on-chain read in
+/// the last five minutes. A curator that cannot reach the chain is not
+/// curating anything; it is simply logging.
+async fn handle_ready(
+    State(state): State<Arc<QuoteApiState>>,
+) -> impl IntoResponse {
+    const STALE_ETH_CALL_SECS: u64 = 300;
+    let age = state.shared_state.eth_call_age_secs().await;
+    let mut reasons: Vec<String> = Vec::new();
+    if age == u64::MAX {
+        reasons.push("no successful on-chain read since start".into());
+    } else if age > STALE_ETH_CALL_SECS {
+        reasons.push(format!(
+            "last successful eth_call {}s ago (> {}s)",
+            age, STALE_ETH_CALL_SECS
+        ));
+    }
+    if reasons.is_empty() {
+        (
+            StatusCode::OK,
+            Json(json!({
+                "status": "ready",
+                "last_eth_call_age_secs": age,
+            })),
+        )
+    } else {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({
+                "status": "not_ready",
+                "reasons": reasons,
+                "last_eth_call_age_secs": if age == u64::MAX { -1i64 } else { age as i64 },
+            })),
+        )
+    }
 }
 
 /// POST /api/lending/quote
