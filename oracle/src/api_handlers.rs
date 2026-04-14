@@ -75,6 +75,9 @@ pub(crate) async fn axum_health_handler(
     let last_cycle_duration_ms = m.last_cycle_duration_ms.load(Ordering::Relaxed);
     let orders_processed = m.orders_processed_last_60s.load(Ordering::Relaxed);
     let pending_orders = m.pending_order_count.load(Ordering::Relaxed);
+    let oracle_stalled = m.oracle_stalled.load(Ordering::Relaxed);
+    let consecutive_zero_signer_cycles =
+        m.consecutive_zero_signer_cycles.load(Ordering::Relaxed);
 
     let mut body = serde_json::json!({
         "status": health_status,
@@ -95,6 +98,8 @@ pub(crate) async fn axum_health_handler(
         "orders_processed_last_60s": orders_processed,
         "last_cycle_duration_ms": last_cycle_duration_ms,
         "pending_order_count": pending_orders,
+        "oracle_stalled": oracle_stalled,
+        "consecutive_zero_signer_cycles": consecutive_zero_signer_cycles,
         "timestamp": Utc::now().to_rfc3339(),
     });
     if !heartbeat.is_empty() {
@@ -166,7 +171,12 @@ pub(crate) async fn axum_ready_handler(
         (true, true)
     };
 
-    let all_ok = peers_ok && bls_ok && chain_reader_ok && registry_ok;
+    // Oracle stalled — three consecutive zero-signer cycles. An oracle
+    // that cannot produce signatures is not ready to serve consensus.
+    let stalled = state.metrics.oracle_stalled.load(Ordering::Relaxed) == 1;
+    let not_stalled = !stalled;
+
+    let all_ok = peers_ok && bls_ok && chain_reader_ok && registry_ok && not_stalled;
     let status_code = if all_ok { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
 
     let body = serde_json::json!({
@@ -188,10 +198,26 @@ pub(crate) async fn axum_ready_handler(
                 "ok": registry_ok,
                 "caught_up": registry_caught_up,
             },
+            "not_stalled": {
+                "ok": not_stalled,
+                "consecutive_zero_signer_cycles": state.metrics.consecutive_zero_signer_cycles.load(Ordering::Relaxed),
+            },
         }
     });
 
     (status_code, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
+}
+
+/// GET /health/live — liveness probe, always 200 while the process answers.
+pub(crate) async fn axum_live_handler() -> axum::response::Response {
+    use axum::http::{header, StatusCode};
+    use axum::response::IntoResponse;
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/json")],
+        r#"{"status":"live"}"#.to_string(),
+    )
+        .into_response()
 }
 
 /// GET /api/nav-sign — BLS-signed NAV price for an ITP
@@ -260,6 +286,8 @@ pub(crate) fn oracle_api_routes(state: Arc<OracleApiState>) -> axum::Router {
 
     axum::Router::new()
         .route("/health", axum::routing::get(axum_health_handler))
+        .route("/health/live", axum::routing::get(axum_live_handler))
+        .route("/health/ready", axum::routing::get(axum_ready_handler))
         .route("/ready", axum::routing::get(axum_ready_handler))
         .route("/", axum::routing::get(axum_root_health_handler))
         .route("/api/nav-sign", axum::routing::get(axum_nav_sign_handler))

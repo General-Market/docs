@@ -131,6 +131,12 @@ pub struct OracleMetrics {
     pub last_cycle_duration_ms: AtomicU64,
     /// Current pending order count from chain
     pub pending_order_count: AtomicU64,
+    /// Consecutive consensus cycles observed with zero signers.
+    /// Reset when any consensus result has signer_count > 0.
+    pub consecutive_zero_signer_cycles: AtomicU64,
+    /// Set to 1 when the oracle considers itself stalled (>= 3 zero-signer
+    /// cycles). Exposed via /health for scraping.
+    pub oracle_stalled: AtomicU64,
 }
 
 impl OracleMetrics {
@@ -149,6 +155,8 @@ impl OracleMetrics {
             orders_processed_last_60s: AtomicU64::new(0),
             last_cycle_duration_ms: AtomicU64::new(0),
             pending_order_count: AtomicU64::new(0),
+            consecutive_zero_signer_cycles: AtomicU64::new(0),
+            oracle_stalled: AtomicU64::new(0),
         }
     }
 
@@ -199,6 +207,48 @@ impl OracleMetrics {
         }
         self.last_consensus_time_ms.store(duration_ms, Ordering::Relaxed);
         self.consensus_in_progress.store(false, Ordering::Relaxed);
+
+        // Circuit breaker: three consecutive cycles with zero signers escalates
+        // from warning to error and flips oracle_stalled=1. The 2026-04 outage
+        // had signer_count=0 for days logged at INFO; nothing above noticed.
+        if signer_count == 0 {
+            let n = self
+                .consecutive_zero_signer_cycles
+                .fetch_add(1, Ordering::Relaxed)
+                + 1;
+            if n >= 3 {
+                if self.oracle_stalled.swap(1, Ordering::Relaxed) == 0 {
+                    tracing::error!(
+                        consecutive_zero_signer_cycles = n,
+                        "oracle_stalled: {} consecutive consensus cycles with zero signers. \
+                         This oracle is signing nothing. Investigate peers, BLS keys, and registry.",
+                        n
+                    );
+                } else {
+                    tracing::error!(
+                        consecutive_zero_signer_cycles = n,
+                        "oracle_stalled still set: signer_count=0 cycle #{}",
+                        n
+                    );
+                }
+            } else {
+                tracing::warn!(
+                    consecutive_zero_signer_cycles = n,
+                    "consensus cycle completed with zero signers"
+                );
+            }
+        } else {
+            // Recovery: any cycle with signers clears the breaker.
+            let prev = self
+                .consecutive_zero_signer_cycles
+                .swap(0, Ordering::Relaxed);
+            if self.oracle_stalled.swap(0, Ordering::Relaxed) == 1 {
+                tracing::info!(
+                    prev_consecutive_zero_cycles = prev,
+                    "oracle_stalled cleared: consensus produced signatures again"
+                );
+            }
+        }
     }
 
     pub fn record_cycle_duration(&self, duration_ms: u64) {

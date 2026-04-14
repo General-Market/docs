@@ -106,6 +106,17 @@ impl<'a> ConsensusBuilder<'a> {
         let oracles = self.chain_reader.get_oracle_registry().await
             .map_err(|e| BootstrapError::Config(format!("Failed to query oracle registry for index derivation: {e}")))?;
 
+        // Empty registry is a code-at-address failure disguised as data —
+        // refuse to fall through to CLI indices in that case.
+        if oracles.is_empty() {
+            return Err(BootstrapError::Config(
+                "OracleRegistry returned empty oracle list. \
+                 Either the registry address is wrong or no oracles are registered. \
+                 Refusing to guess indices from CLI args."
+                    .to_string(),
+            ));
+        }
+
         // Find our on-chain record by matching BLS pubkey
         let my_oracle = oracles.iter()
             .find(|i| {
