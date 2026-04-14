@@ -114,7 +114,17 @@ contract SettlementBridgeCustodyTest is TestHelper {
         uint256 amount,
         uint256 nonce
     ) internal returns (bytes memory) {
-        bytes32 message = keccak256(abi.encode(block.chainid, address(custody), proof, amount, nonce));
+        return _signCompleteBridge(proof, amount, nonce, address(this));
+    }
+
+    /// @notice Sign a completeBridge call with an explicit recipient
+    function _signCompleteBridge(
+        TypesLib.ReleaseProof memory proof,
+        uint256 amount,
+        uint256 nonce,
+        address recipient
+    ) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, address(custody), recipient, proof, amount, nonce));
         return signWithTestOracles(message);
     }
 
@@ -182,7 +192,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
         uint256 custodyBalanceBefore = usdc.balanceOf(address(custody));
 
         // completeBridge receives 18-decimal internal amount from L3
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT_INTERNAL, nonce, proof, _signCompleteBridge(proof, RELEASE_AMOUNT_INTERNAL, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT_INTERNAL, nonce, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT_INTERNAL, nonce), 3, 7);
 
         // Check nonce is marked as used
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -200,7 +210,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit BridgeCompleted(L3_CHAIN_ID, RELEASE_AMOUNT, nonce);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
     }
 
     function test_completeBridge_emitsEventsLibBridgeCompletedEvent() public {
@@ -210,7 +220,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
         vm.expectEmit(true, true, false, true);
         emit EventsLib.BridgeCompleted(L3_CHAIN_ID, nonce, RELEASE_AMOUNT, proof.sourceTxHash);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
     }
 
     function test_completeBridge_replayProtection_revertsOnSameNonce() public {
@@ -218,13 +228,13 @@ contract SettlementBridgeCustodyTest is TestHelper {
         uint256 nonce = 0;
 
         // Complete bridge first time
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
 
         // Try to complete again (replay attack) — reverts before BLS check, any bytes work
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce)
         );
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, new bytes(64), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proof, new bytes(64), 3, 7);
     }
 
     function test_completeBridge_differentSourceChainsCanUseSameNonce() public {
@@ -232,11 +242,11 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         // Complete from L3
         TypesLib.ReleaseProof memory proofL3 = _createValidProof(L3_CHAIN_ID);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proofL3, _signCompleteBridge(proofL3, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proofL3, _signCompleteBridge(proofL3, RELEASE_AMOUNT, nonce), 3, 7);
 
         // Complete from Base with same nonce (should succeed)
         TypesLib.ReleaseProof memory proofBase = _createValidProof(BASE_CHAIN_ID);
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, nonce, proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, nonce), 3, 7);
 
         // Both nonces should be marked used for their respective chains
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -247,14 +257,14 @@ contract SettlementBridgeCustodyTest is TestHelper {
         TypesLib.ReleaseProof memory proof = _createValidProof(0);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, 0));
-        custody.completeBridge(0, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(0, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_revertsOnCurrentChainId() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(SETTLEMENT_CHAIN_ID);
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, SETTLEMENT_CHAIN_ID));
-        custody.completeBridge(SETTLEMENT_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(SETTLEMENT_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroBlockHash() public {
@@ -266,7 +276,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroTxHash() public {
@@ -278,14 +288,14 @@ contract SettlementBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_revertsOnProofChainMismatch() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(BASE_CHAIN_ID); // Proof says Base
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, BASE_CHAIN_ID));
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_zeroAmountAllowed() public {
@@ -295,7 +305,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, 0, nonce, proof, _signCompleteBridge(proof, 0, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, 0, nonce, address(this), proof, _signCompleteBridge(proof, 0, nonce), 3, 7);
 
         // Nonce should be marked used
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
@@ -315,7 +325,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, internalAmount, nonce, proof, _signCompleteBridge(proof, internalAmount, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, internalAmount, nonce, address(this), proof, _signCompleteBridge(proof, internalAmount, nonce), 3, 7);
 
         // Verify 6-decimal USDC was transferred
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore + expectedUsdcTransfer);
@@ -332,7 +342,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, internalWithDust, nonce, proof, _signCompleteBridge(proof, internalWithDust, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, internalWithDust, nonce, address(this), proof, _signCompleteBridge(proof, internalWithDust, nonce), 3, 7);
 
         // Dust should be truncated
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore + expectedUsdcTransfer);
@@ -347,7 +357,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         uint256 callerBalanceBefore = usdc.balanceOf(address(this));
 
-        custody.completeBridge(L3_CHAIN_ID, verySmallInternal, nonce, proof, _signCompleteBridge(proof, verySmallInternal, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, verySmallInternal, nonce, address(this), proof, _signCompleteBridge(proof, verySmallInternal, nonce), 3, 7);
 
         // No USDC transferred (amount converted to 0)
         assertEq(usdc.balanceOf(address(this)), callerBalanceBefore);
@@ -537,7 +547,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
     function test_isNonceUsed_returnsTrueForUsed() public {
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, 0), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, 0), 3, 7);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));
         assertFalse(custody.isNonceUsed(L3_CHAIN_ID, 1)); // Other nonces still unused
@@ -572,7 +582,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, internalAmount, 0, proof, _signCompleteBridge(proof, internalAmount, 0), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, internalAmount, 0, address(this), proof, _signCompleteBridge(proof, internalAmount, 0), 3, 7);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));
     }
@@ -580,7 +590,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
     function testFuzz_completeBridge_variousNonces(uint256 nonce) public {
         TypesLib.ReleaseProof memory proof = _createValidProof(L3_CHAIN_ID);
 
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, nonce, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, nonce), 3, 7);
 
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
     }
@@ -590,7 +600,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         TypesLib.ReleaseProof memory proof = _createValidProof(chainId);
 
-        custody.completeBridge(chainId, RELEASE_AMOUNT, 0, proof, _signCompleteBridge(proof, RELEASE_AMOUNT, 0), 3, 7);
+        custody.completeBridge(chainId, RELEASE_AMOUNT, 0, address(this), proof, _signCompleteBridge(proof, RELEASE_AMOUNT, 0), 3, 7);
 
         assertTrue(custody.isNonceUsed(chainId, 0));
     }
@@ -845,7 +855,7 @@ contract SettlementBridgeCustodyTest is TestHelper {
         });
 
         vm.expectRevert(ErrorsLib.E057_InvalidProof.selector);
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     // ============ MULTI-CHAIN NONCE TESTS ============
@@ -855,12 +865,12 @@ contract SettlementBridgeCustodyTest is TestHelper {
         TypesLib.ReleaseProof memory proofBase = _createValidProof(BASE_CHAIN_ID);
 
         // Use nonce 0 on L3
-        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, proofL3, _signCompleteBridge(proofL3, RELEASE_AMOUNT, 0), 3, 7);
+        custody.completeBridge(L3_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proofL3, _signCompleteBridge(proofL3, RELEASE_AMOUNT, 0), 3, 7);
 
         // Use nonce 0 and 1 on Base
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 0, proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, 0), 3, 7);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 0, address(this), proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, 0), 3, 7);
         proofBase.sourceTxHash = keccak256("tx_hash_2");
-        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 1, proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, 1), 3, 7);
+        custody.completeBridge(BASE_CHAIN_ID, RELEASE_AMOUNT, 1, address(this), proofBase, _signCompleteBridge(proofBase, RELEASE_AMOUNT, 1), 3, 7);
 
         // Verify L3 state
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, 0));

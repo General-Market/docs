@@ -125,7 +125,12 @@ contract BridgeIntegrationTest is TestHelper {
 
     /// @dev Sign completeBridge message (chainid = SETTLEMENT_CHAIN_ID)
     function _signCompleteBridge(address custodyAddr, TypesLib.ReleaseProof memory proof, uint256 amount, uint256 bridgeNonce) internal returns (bytes memory) {
-        bytes32 message = keccak256(abi.encode(SETTLEMENT_CHAIN_ID, custodyAddr, proof, amount, bridgeNonce));
+        return _signCompleteBridge(custodyAddr, proof, amount, bridgeNonce, address(this));
+    }
+
+    /// @dev Sign completeBridge message with explicit recipient
+    function _signCompleteBridge(address custodyAddr, TypesLib.ReleaseProof memory proof, uint256 amount, uint256 bridgeNonce, address recipient) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(SETTLEMENT_CHAIN_ID, custodyAddr, recipient, proof, amount, bridgeNonce));
         return signWithTestOracles(message);
     }
 
@@ -173,7 +178,7 @@ contract BridgeIntegrationTest is TestHelper {
         // Signature must use SETTLEMENT_CHAIN_ID since completeBridge runs on Settlement
         bytes memory sig = _signCompleteBridge(address(settlementBridge), proof, amount, nonce);
         vm.chainId(SETTLEMENT_CHAIN_ID);
-        settlementBridge.completeBridge(L3_CHAIN_ID, amount, nonce, proof, sig, 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, amount, nonce, address(this), proof, sig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -269,7 +274,7 @@ contract BridgeIntegrationTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit BridgeCompleted(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce);
 
-        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, completeSig, 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, address(this), proof, completeSig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -374,7 +379,7 @@ contract BridgeIntegrationTest is TestHelper {
         // Complete bridge from Base (nonce 0 — same nonce but different source chain)
         bytes memory baseSig = _signCompleteBridge(address(settlementBridge), baseProof, 50e18, 0);
         vm.chainId(SETTLEMENT_CHAIN_ID);
-        settlementBridge.completeBridge(8453, 50e18, 0, baseProof, baseSig, 3, 7);
+        settlementBridge.completeBridge(8453, 50e18, 0, address(this), baseProof, baseSig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
 
         // Both are completed independently
@@ -510,7 +515,7 @@ contract BridgeIntegrationTest is TestHelper {
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
         vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce));
-        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, signWithTestOracles(keccak256("irrelevant")), 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, address(this), proof, signWithTestOracles(keccak256("irrelevant")), 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -528,7 +533,7 @@ contract BridgeIntegrationTest is TestHelper {
             sourceTxHash: keccak256("base_tx")
         });
         vm.chainId(SETTLEMENT_CHAIN_ID);
-        settlementBridge.completeBridge(8453, 50e18, 0, baseProof, _signCompleteBridge(address(settlementBridge), baseProof, 50e18, 0), 3, 7);
+        settlementBridge.completeBridge(8453, 50e18, 0, address(this), baseProof, _signCompleteBridge(address(settlementBridge), baseProof, 50e18, 0), 3, 7);
         vm.chainId(L3_CHAIN_ID);
 
         assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 0));
