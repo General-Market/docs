@@ -1,0 +1,73 @@
+name: Validate Deployment JSON
+
+# Runs scripts/validate-deployment-addresses.sh against committed deployment
+# JSONs. The intent is to catch the "every address is zero bytecode" class
+# of drift before it lands in main. RPC endpoints come from repository
+# secrets; when they are absent the job is skipped (CI still passes so
+# that forks and first-time setup are not penalised).
+#
+# Override the testnet RPC by setting repository secret TESTNET_L3_RPC_URL.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deployments/**'
+      - 'scripts/validate-deployment-addresses.sh'
+      - '.github/workflows/validate-deployment.yml'
+  pull_request:
+    paths:
+      - 'deployments/**'
+      - 'scripts/validate-deployment-addresses.sh'
+      - '.github/workflows/validate-deployment.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate deployment addresses on testnet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install foundry (cast)
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Ensure jq
+        run: sudo apt-get update -qq && sudo apt-get install -y jq
+
+      - name: Determine RPC URL
+        id: rpc
+        env:
+          SECRET_RPC: ${{ secrets.TESTNET_L3_RPC_URL }}
+        run: |
+          if [[ -n "$SECRET_RPC" ]]; then
+            echo "url=$SECRET_RPC" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No TESTNET_L3_RPC_URL secret configured — skipping chain check."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate active deployment
+        if: steps.rpc.outputs.available == 'true'
+        run: |
+          bash scripts/validate-deployment-addresses.sh \
+            "${{ steps.rpc.outputs.url }}" \
+            deployments/active-deployment.json
+
+      - name: Validate auxiliary deployments
+        if: steps.rpc.outputs.available == 'true'
+        continue-on-error: true
+        run: |
+          # Auxiliary files may contain stale cross-chain addresses (settlement,
+          # arb, legacy). Report, don't fail.
+          for f in deployments/morpho-e2e.json deployments/vision-batches.json \
+                   deployments/batch-markets.json; do
+            [[ -f "$f" ]] || continue
+            echo "=== $f ==="
+            bash scripts/validate-deployment-addresses.sh \
+              "${{ steps.rpc.outputs.url }}" "$f" || true
+          done

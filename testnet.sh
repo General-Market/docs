@@ -472,6 +472,19 @@ cmd_deploy() {
         esac
     done
 
+    # Opportunistic pre-deploy check: if the current active-deployment.json
+    # has dead addresses, say so before we overwrite it. Non-fatal —
+    # redeploy is exactly the fix.
+    if [ -f "deployments/active-deployment.json" ] && \
+       command -v cast >/dev/null 2>&1 && \
+       command -v jq >/dev/null 2>&1; then
+        echo -e "${BLUE}Pre-deploy address check (informational)...${NC}"
+        bash scripts/validate-deployment-addresses.sh \
+            "${RPC_URL:-http://142.132.164.24/}" \
+            deployments/active-deployment.json || \
+            echo -e "${YELLOW}Current deployment has dead addresses — proceeding with redeploy.${NC}"
+    fi
+
     # Wipe deployment-specific Postgres tables (preserves raw market data)
     # These tables contain state tied to contract addresses that change on redeploy.
     # NEVER add vision_player_points or vision_epoch_log — those are persistent lifetime stats.
@@ -3790,6 +3803,18 @@ case "${1:-help}" in
     refresh-batches) cmd_refresh_batches ;;
     seed-orders|seed) cmd_seed_orders ;;
     sync-deployment) ./sync-deployment.sh testnet $CHAIN_ID ;;
+    validate)
+        # Generic address validator: every 0x-address in the named JSONs
+        # must have bytecode at the testnet RPC. The env-aware validator
+        # lives in scripts/validate-deployment.sh; this one takes explicit
+        # paths so CI and pre-deploy checks can share it.
+        shift
+        RPC="${RPC_URL:-http://142.132.164.24/}"
+        if [ $# -eq 0 ]; then
+            set -- deployments/active-deployment.json
+        fi
+        bash scripts/validate-deployment-addresses.sh "$RPC" "$@"
+        ;;
     logs)        cmd_logs "$2" ;;
     help|--help|-h)
         echo "Usage: ./testnet.sh <command> [args]"
