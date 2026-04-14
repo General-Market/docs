@@ -12,7 +12,7 @@ import { SourceCardOverlays } from "./overlays/SourceCardOverlays";
 import { FaqQuestionOverlay } from "./overlays/FaqQuestionOverlay";
 import { PromiseTicker } from "./overlays/PromiseTicker";
 import { IntroTextOverlay } from "./overlays/IntroTextOverlay";
-import { GlowMarqueeOverlay } from "./overlays/GlowMarqueeOverlay";
+import { BeginnerHedgeFundList } from "./overlays/BeginnerHedgeFundList";
 import { WiseScrollZoom } from "./overlays/WiseScrollZoom";
 import { WiseSparkleSpiral } from "./overlays/WiseSparkleSpiral";
 import { WiseMouseLight } from "./overlays/WiseMouseLight";
@@ -173,8 +173,8 @@ export const TutorialVideo: React.FC<{ theme?: TutorialTheme }> = ({
           <WiseScrollZoom durationInFrames={toFrames(4)} centerText={"Every Level\nSame Wall"} />
         </Sequence>
 
-        {/* Counter-scrolling marquee — "BEGINNER" / "HEDGE FUND" (36.4–42.8s) */}
-        <GlowMarqueeOverlay />
+        {/* Voice-synced pill list — Beginner / Hedge Fund Manager (37–41s) */}
+        <BeginnerHedgeFundList />
 
         {/* Claude Code terminal mockup (42.8–57.76s) */}
         <Sequence from={0} durationInFrames={TOTAL_FRAMES}>

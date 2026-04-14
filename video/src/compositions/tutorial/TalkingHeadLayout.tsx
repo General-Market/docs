@@ -44,7 +44,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Img,
-  Video,
+  OffthreadVideo,
   interpolate,
   spring,
   staticFile,
@@ -468,7 +468,7 @@ export const TalkingHeadLayout: React.FC<TalkingHeadLayoutProps> = ({
             boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           }}
         >
-          <Video
+          <OffthreadVideo
             src={staticFile(videoSrc)}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
