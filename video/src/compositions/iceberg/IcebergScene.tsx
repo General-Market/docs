@@ -67,8 +67,8 @@ export const IcebergScene: React.FC = () => {
 
   const underwater = interpolate(
     waterY,
-    [0, -120],
-    [0, 1],
+    [-120, 0],
+    [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
