@@ -1,5 +1,19 @@
 # Design Decision Backlog
 
+## Session: 20260415-2200-rcv1 (Testnet Phase 1 recovery — disk full, Postgres dead three days)
+
+- [FAILED] VPS 2 `/dev/sda1` reached 100% on 2026-04-12. Native Postgres service died immediately, exit code 1. Stayed dead for three days. No alert fired.
+- [FAILED] One docker container log file — `orbit-l3-testnet-proxy-1` (nginx:alpine fronting the L3 RPC) — accumulated 65 GB of stdout logs. Nothing rotated it. Default Docker JSON driver has no size cap.
+- [FAILED] Briefing assumed Blockscout shared the native Postgres with data-node. It does not. Blockscout runs a separate Postgres 13.6 container (`orbit-l3-testnet-postgres-1`) with its own volume. Two independent saturation events, not one.
+- [FAILED] Blockscout's private DB had `max_connections=30` hardcoded in `/home/max/orbit-l3-testnet/docker-compose.yml` `command:` args — overriding `postgresql.conf`. Blockscout's Elixir components (indexer, API, ETL) each open their own pool. Even with `POOL_SIZE=5` env, effective usage passed 30 after restarts. "FATAL: sorry, too many clients already" every 5s for days.
+- [FAILED] pgbouncer routes to 127.0.0.1:5432 which is native Postgres on the host — not Blockscout's container DB. Briefing conflated the two. Data-node was starved because native PG was dead, not because of Blockscout's connection storm.
+- [DECISION] Truncated the 65 GB nginx proxy log in place (`truncate -s 0`). Vacuumed journald to 500 MB. Removed already-rotated postgres `.log.1` (3.4 GB) and four old `.gz` archives. Docker image prune freed 569 MB. From 0 bytes free to 66 GB free.
+- [DECISION] Raised native Postgres `max_connections` 100 → 300. Enabled `log_min_duration_statement = 1000`. Edits applied to `/etc/postgresql/17/main/postgresql.conf` (backup kept at `.bak-20260415`). Requires restart, which was needed anyway.
+- [DECISION] Raised Blockscout DB `max_connections` 30 → 200 via `/home/max/orbit-l3-testnet/docker-compose.yml` `command:` override. Container recreated via `docker compose up -d postgres`. Backup kept at `.bak-20260415`.
+- [DECISION] Installed `/etc/logrotate.d/docker-container` on both VPS 1 and VPS 2: rotates any `/var/lib/docker/containers/*/*.log` exceeding 50 MB, compresses, keeps 5. Uses `copytruncate` — safe, no container restart. Chose this over editing `/etc/docker/daemon.json` because the daemon-level change would cascade-restart every container on this host.
+- [DECISION] Did NOT touch `/etc/docker/daemon.json` log-driver settings. Per-service log limits in compose files are Phase 7 work, scoped per repo.
+- [DECISION] Did NOT delete anything inside `/var/lib/postgresql/` or `/var/lib/docker/volumes/`. Only rotated stdout logs and old archived system logs.
+
 ## Session: 20260403-1400-vldr (Vision leaderboard dead — silent failure chain)
 
 - [FAILED] Vision swarm: Docker Compose `${VAR}` in `environment:` interpolates from HOST shell, not `env_file`. Without `source swarm.env`, BOT_KEYS became 11 commas. Runner treated commas-only as truthy. 10 bots → 0 bots. No alert, container kept running.
