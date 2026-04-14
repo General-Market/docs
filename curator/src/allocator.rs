@@ -1264,24 +1264,69 @@ impl AllocationBot {
         }
     }
 
+    /// Run an eth_call with up to 3 attempts, with exponential backoff.
+    /// RPC proxies occasionally return empty bytes mid-reconnect — retrying
+    /// papers over that without hiding genuine failures.
+    async fn call_with_retry(
+        &self,
+        tx: &TransactionRequest,
+        label: &str,
+    ) -> Result<Bytes, AllocatorError> {
+        let typed: ethers::types::transaction::eip2718::TypedTransaction = tx.clone().into();
+        let mut last_err: Option<AllocatorError> = None;
+
+        for attempt in 0u32..3 {
+            if attempt > 0 {
+                let delay_ms = 500u64 * (1u64 << (attempt - 1));
+                tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+            }
+
+            let outcome =
+                tokio::time::timeout(self.rpc_timeout, self.provider.call(&typed, None)).await;
+
+            match outcome {
+                Err(_) => {
+                    last_err = Some(AllocatorError::Timeout(format!("{} call", label)));
+                }
+                Ok(Err(e)) => {
+                    last_err = Some(AllocatorError::ReadError(format!(
+                        "{} call failed: {}",
+                        label, e
+                    )));
+                }
+                Ok(Ok(bytes)) if bytes.is_empty() => {
+                    // Empty bytes = proxy flake or address with no code.
+                    // Worth one retry — if it's truly codeless, we'll loop
+                    // to exhaustion and surface the distinction to the caller.
+                    last_err = Some(AllocatorError::ReadError(format!(
+                        "{}: empty response (rpc flake or no code at address)",
+                        label
+                    )));
+                }
+                Ok(Ok(bytes)) if bytes.len() < 32 => {
+                    // Truncated is different from empty — don't retry, it's malformed.
+                    return Err(AllocatorError::ReadError(format!(
+                        "{}: truncated response ({} bytes, expected >= 32)",
+                        label,
+                        bytes.len()
+                    )));
+                }
+                Ok(Ok(bytes)) => return Ok(bytes),
+            }
+        }
+
+        Err(last_err.unwrap_or_else(|| {
+            AllocatorError::ReadError(format!("{}: unknown failure after retries", label))
+        }))
+    }
+
     /// Detect new markets by reading vault.supplyQueueLength()
     pub async fn detect_new_markets(&mut self) -> Result<usize, AllocatorError> {
         let tx = TransactionRequest::new()
             .to(self.vault_address)
             .data(SELECTOR_SUPPLY_QUEUE_LENGTH.to_vec());
 
-        let result = tokio::time::timeout(self.rpc_timeout, self.provider.call(&tx.into(), None))
-            .await
-            .map_err(|_| AllocatorError::Timeout("supplyQueueLength() call".to_string()))?
-            .map_err(|e| {
-                AllocatorError::ReadError(format!("supplyQueueLength() call failed: {}", e))
-            })?;
-
-        if result.len() < 32 {
-            return Err(AllocatorError::ReadError(
-                "Invalid supplyQueueLength response".to_string(),
-            ));
-        }
+        let result = self.call_with_retry(&tx, "supplyQueueLength()").await?;
 
         let length = U256::from_big_endian(&result[0..32]).as_usize();
 
@@ -1297,26 +1342,18 @@ impl AllocationBot {
                 .to(self.vault_address)
                 .data(calldata);
 
-            let sq_result =
-                tokio::time::timeout(self.rpc_timeout, self.provider.call(&sq_tx.into(), None))
-                    .await
-                    .map_err(|_| AllocatorError::Timeout("supplyQueue() call".to_string()))?
-                    .map_err(|e| {
-                        AllocatorError::ReadError(format!("supplyQueue() call failed: {}", e))
-                    })?;
+            let sq_result = self.call_with_retry(&sq_tx, "supplyQueue(uint256)").await?;
 
-            if sq_result.len() >= 32 {
-                let mut market_id = [0u8; 32];
-                market_id.copy_from_slice(&sq_result[0..32]);
+            let mut market_id = [0u8; 32];
+            market_id.copy_from_slice(&sq_result[0..32]);
 
-                if !self.market_ids.contains(&market_id) {
-                    info!(
-                        market_id = %hex::encode(market_id),
-                        "Detected new market in supply queue"
-                    );
-                    self.add_market(market_id, None);
-                    new_count += 1;
-                }
+            if !self.market_ids.contains(&market_id) {
+                info!(
+                    market_id = %hex::encode(market_id),
+                    "Detected new market in supply queue"
+                );
+                self.add_market(market_id, None);
+                new_count += 1;
             }
         }
 

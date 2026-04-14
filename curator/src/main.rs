@@ -220,6 +220,17 @@ async fn run_allocation_loop(
                             tx_hash = ?tx,
                             "Allocation cycle completed successfully"
                         );
+                    } else if report.markets_analyzed == 0 {
+                        // Zero markets analyzed is not a steady state.
+                        // Either the vault is empty (vault address wrong / no markets
+                        // in supply queue / RPC misbehaving) or detection failed.
+                        // Make it loud so it cannot hide in INFO noise.
+                        warn!(
+                            cycle = cycle_count,
+                            markets_analyzed = 0,
+                            "Allocation cycle completed with zero markets analyzed \
+                             — check vault address and supply queue"
+                        );
                     } else {
                         info!(
                             cycle = cycle_count,
