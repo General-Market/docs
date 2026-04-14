@@ -153,7 +153,20 @@ pub(crate) async fn run_price_update<P, W, K, PF>(
         }
         oracle::ConsensusResult::ItpCreated { .. } => { true } // won't happen for price cycle
         oracle::ConsensusResult::PriceAgreed { ref aggregated_signature, signer_count, signers_bitmask, cycle_number } => {
-            info!(cycle = cycle_number, signer_count, elapsed_ms, "Price consensus agreed");
+            // Two sub-cases hide behind PriceAgreed:
+            //   (a) signer_count > 0 — a real NAV signature was aggregated and will be pushed on-chain.
+            //   (b) signer_count == 0 — no ITPNAVOracle / itp_address configured for this deployment,
+            //       so the leader returned a placeholder (zero-filled signature, no chain submission).
+            // Logging them identically at INFO pretends both are the same event. They are not.
+            if signer_count > 0 {
+                info!(cycle = cycle_number, signer_count, elapsed_ms, "NAV consensus agreed — signature collected");
+            } else {
+                debug!(
+                    cycle = cycle_number,
+                    elapsed_ms,
+                    "Price consensus heartbeat — NAV signing skipped (ITPNAVOracle not configured on this deployment)"
+                );
+            }
             metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
                 chrono::Utc::now().timestamp_millis() as u64,
