@@ -6,11 +6,18 @@
  * Minimal call:
  *   <CascadeText text="Hello world" />
  *
- * Words rise from below the line they will settle on, blurred at
- * entry, and resolve into sharp, final positions. Opacity climbs as
- * the blur dissolves. Each word is staggered by delayPerWord so two
- * or three words are always in transit while the first ones have
- * already landed. No exit, no tilt, no cycle — enter once, stay.
+ * Two layers of motion.
+ *
+ * Entry (once). Each word rises from below its final line, blurred,
+ * and resolves into sharp, final position. Opacity climbs as the blur
+ * dissolves. Staggered by delayPerWord so two or three words are
+ * always in transit while the first ones have already landed.
+ *
+ * Wave (continuous). Once words have settled, a soft ripple travels
+ * through the text forever — each word briefly lifts a few pixels and
+ * re-blurs as the wave passes, then returns. Nothing fades out,
+ * nothing cycles; the surface just keeps breathing. Pass wave={false}
+ * if you want a single-shot entry and a dead-still finish.
  *
  * Layout uses @remotion/layout-utils measureText, so every word knows
  * its final (x, y) and the right bound of its line before the first
@@ -46,6 +53,16 @@ export interface CascadeTextProps {
   /** Max Gaussian blur at entry in px, fades to 0. Default 12. */
   blurPx?: number;
   align?: "left" | "center" | "right";
+  /** Continuous wave ripple after entry settles. Default true. */
+  wave?: boolean;
+  /** Frames the wave offsets each successive word. Default 6. */
+  waveSpeed?: number;
+  /** Frames each word spends inside the wave dip. Default 22. */
+  waveDipFrames?: number;
+  /** Peak lift during the wave dip, in px. Default 6. */
+  waveRisePx?: number;
+  /** Peak blur during the wave dip, in px. Default 3. */
+  waveBlurPx?: number;
 }
 
 interface WordPos {
@@ -118,6 +135,11 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
   driftDistance = 24,
   blurPx = 12,
   align = "left",
+  wave = true,
+  waveSpeed = 6,
+  waveDipFrames = 22,
+  waveRisePx = 6,
+  waveBlurPx = 3,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -170,17 +192,44 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
         const wordFrame = frame - startDelay - i * delayPerWord;
         if (wordFrame < 0) return null;
 
-        const t = spring({
+        // Entry: position springs in at normal pace...
+        const posT = spring({
           frame: Math.max(wordFrame, 0),
           fps,
           config: { damping: 18, stiffness: 140, mass: 0.9 },
           durationInFrames: durationPerWord,
         });
 
-        const dy = (1 - t) * riseDistance;
-        const dx = (1 - t) * driftDistance;
-        const blur = (1 - t) * blurPx;
-        const opacity = Math.min(1, t * 1.3);
+        // ...but the blur lingers far longer than the position spring.
+        const blurT = spring({
+          frame: Math.max(wordFrame, 0),
+          fps,
+          config: { damping: 26, stiffness: 70, mass: 1.1 },
+          durationInFrames: Math.round(durationPerWord * 2.2),
+        });
+
+        // Wave ripple — only engages after this word's entry has settled.
+        let waveRise = 0;
+        let waveBlur = 0;
+        if (wave && posT > 0.9) {
+          const period = Math.max(
+            positions.length * waveSpeed,
+            waveDipFrames * 3,
+          );
+          const wavePhase =
+            ((wordFrame - i * waveSpeed) % period + period) % period;
+          if (wavePhase < waveDipFrames) {
+            const dipT = Math.sin((Math.PI * wavePhase) / waveDipFrames);
+            waveRise = dipT * waveRisePx;
+            waveBlur = dipT * waveBlurPx;
+          }
+        }
+
+        const dy = (1 - posT) * riseDistance - waveRise;
+        const dx = (1 - posT) * driftDistance;
+        const entryBlur = (1 - blurT) * blurPx;
+        const blur = entryBlur + waveBlur;
+        const opacity = Math.min(1, posT * 1.3);
 
         return (
           <span
