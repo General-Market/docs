@@ -54,6 +54,10 @@ struct APMetricsInner {
     orders_failed: AtomicU64,
     /// Events received from EventMonitor (Story 4.2)
     events_received: AtomicU64,
+    /// Unix seconds timestamp of last orders_processed increment (0 = never)
+    last_order_processed_ts: AtomicU64,
+    /// Unix seconds timestamp of service start (used for bootstrap allowance)
+    started_at_ts: AtomicU64,
 
     // Gauges (lock-free atomics)
     queue_depth: AtomicU64,
@@ -108,11 +112,17 @@ impl APMetrics {
 
     /// Create APMetrics with custom configuration
     pub fn with_config(rolling_window_size: usize, thresholds: HealthThresholds) -> Self {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
         Self {
             inner: Arc::new(APMetricsInner {
                 orders_processed: AtomicU64::new(0),
                 orders_failed: AtomicU64::new(0),
                 events_received: AtomicU64::new(0),
+                last_order_processed_ts: AtomicU64::new(0),
+                started_at_ts: AtomicU64::new(now),
                 queue_depth: AtomicU64::new(0),
                 buffer_balance_cents: AtomicU64::new(0),
                 fill_times: RwLock::new(VecDeque::with_capacity(rolling_window_size)),
@@ -132,6 +142,23 @@ impl APMetrics {
         self.inner
             .orders_processed
             .fetch_add(1, Ordering::Relaxed);
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        self.inner
+            .last_order_processed_ts
+            .store(now, Ordering::Relaxed);
+    }
+
+    /// Unix seconds of last orders_processed increment (0 = never).
+    pub fn get_last_order_processed_ts(&self) -> u64 {
+        self.inner.last_order_processed_ts.load(Ordering::Relaxed)
+    }
+
+    /// Unix seconds of service start.
+    pub fn get_started_at_ts(&self) -> u64 {
+        self.inner.started_at_ts.load(Ordering::Relaxed)
     }
 
     /// Increment orders failed counter

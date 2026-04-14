@@ -31,7 +31,7 @@ use common::types::ExchangeMode;
 
 use crate::cli::OnChainSettlement;
 use crate::event_processor::process_events;
-use crate::http_api::{AppState, cors_layer, handle_health, handle_nav, handle_prices};
+use crate::http_api::{AppState, cors_layer, handle_health, handle_live, handle_nav, handle_prices, handle_ready};
 
 pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<dyn std::error::Error>> {
     let port = config.effective_port();
@@ -52,6 +52,27 @@ pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Resul
         timestamp = %timestamp,
         "AP service starting"
     );
+
+    // Safety guard: mock exchange against a real chain is the most expensive
+    // misconfiguration this system can make. It fills orders that were never
+    // placed on any exchange. Refuse to start unless the RPC is explicitly
+    // local.
+    if exchange_mode.is_mock() && !use_mock_chain {
+        let rpc_lower = rpc_url.to_lowercase();
+        let is_local_rpc = rpc_lower.contains("localhost")
+            || rpc_lower.contains("127.0.0.1")
+            || rpc_lower.contains("0.0.0.0")
+            || rpc_lower.contains("host.docker.internal");
+        if !is_local_rpc {
+            error!(
+                rpc = %rpc_url,
+                exchange_mode = %exchange_mode,
+                "Refusing to run mock exchange against non-local chain. \
+                 Pass --exchange-mode testnet/mainnet, or point RPC at localhost."
+            );
+            return Err("mock exchange mode against non-local chain is forbidden".into());
+        }
+    }
 
     // Initialize comprehensive metrics (Story 4.9)
     let metrics = Arc::new(APMetrics::new());
@@ -662,6 +683,8 @@ pub(crate) async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Resul
     let admin_token = std::env::var("ADMIN_TOKEN").ok();
     let app = Router::new()
         .route("/health", get(handle_health))
+        .route("/health/live", get(handle_live))
+        .route("/health/ready", get(handle_ready))
         .route("/", get(handle_health))
         .route("/prices", get(handle_prices))
         .route("/nav", get(handle_nav))
