@@ -148,6 +148,44 @@ for FILE in deployment.json morpho-deployment.json vision-batches.json; do
     fi
 done
 
+# Cross-file Index address consistency — catches the "envs/testnet/active-deployment stale" class
+echo -e "\n${BLUE}Cross-file Index consistency:${NC}"
+CANONICAL_INDEX=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null)
+if [ -z "$CANONICAL_INDEX" ]; then
+    echo -e "  ${RED}Cannot read Index from deployments/active-deployment.json${NC}"
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "  canonical Index: $CANONICAL_INDEX"
+    for FP in \
+        "envs/testnet/active-deployment.json" \
+        "envs/testnet/deployment.json" \
+        "frontend/public/deployment.json" \
+        "frontend/lib/contracts/deployment.json"; do
+        if [ ! -f "$FP" ]; then continue; fi
+        OTHER=$(python3 -c "
+import json
+d = json.load(open('$FP'))
+for path in [('contracts','Index'), ('Index',), ('addresses','Index')]:
+    cur = d; ok = True
+    for k in path:
+        if isinstance(cur, dict) and k in cur: cur = cur[k]
+        else: ok = False; break
+    if ok and cur:
+        print(cur); break
+" 2>/dev/null)
+        if [ -z "$OTHER" ]; then
+            echo -e "  ${YELLOW}skip${NC} $FP (no Index field)"
+            continue
+        fi
+        if [ "$(echo "$OTHER" | tr '[:upper:]' '[:lower:]')" = "$(echo "$CANONICAL_INDEX" | tr '[:upper:]' '[:lower:]')" ]; then
+            echo -e "  ${GREEN}OK${NC} $FP"
+        else
+            echo -e "  ${RED}DRIFT${NC} $FP Index=$OTHER"
+            ERRORS=$((ERRORS + 1))
+        fi
+    done
+fi
+
 # Summary
 echo -e "\n${BLUE}Summary:${NC} $ERRORS errors, $WARNINGS warnings"
 if [ "$ERRORS" -gt 0 ]; then
