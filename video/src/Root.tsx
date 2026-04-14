@@ -62,7 +62,6 @@ import {
   TOTAL_FRAMES as TUTORIAL_DURATION,
   FPS as TUTORIAL_FPS,
 } from "./compositions/tutorial/theme";
-import { nightTheme } from "./compositions/tutorial/TutorialTheme";
 import { Launch30 } from "./compositions/launch/Launch30";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
@@ -137,16 +136,6 @@ export const RemotionRoot: React.FC = () => {
         width={1920}
         height={1080}
       />
-      <Composition
-        id="TutorialNight"
-        component={TutorialVideo}
-        durationInFrames={TUTORIAL_DURATION}
-        fps={TUTORIAL_FPS}
-        width={1920}
-        height={1080}
-        defaultProps={{ theme: nightTheme }}
-      />
-
       {/* ═══ WEBGL PICKS ═══ */}
       <Composition
         id={webglPicksMeta.id}
