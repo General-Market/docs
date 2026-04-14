@@ -2720,12 +2720,20 @@ _start_ap_docker() {
     vps_chain_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/ap-key.txt' 2>/dev/null; true"
     vps_chain_ssh "printf '%s' '$AP_KEY' > /tmp/ap-key.txt && chmod 644 /tmp/ap-key.txt"
 
+    # AP_EXCHANGE_MODE controls whether AP executes on real Bitget or in-memory mock.
+    # testnet = real Bitget testnet API (requires BITGET_API_KEY/SECRET/PASSPHRASE in system.env)
+    # mock    = synthetic fills, no network. Never use on a live chain.
+    local AP_EXCHANGE_MODE_VALUE="${AP_EXCHANGE_MODE:-testnet}"
+
     local OVERRIDE="$SCRIPT_DIR/.ap-override.yml"
     # AP reads key from file via AP_PRIVATE_KEY_PATH (Task 0 prerequisite).
     # Path is not secret — only the file content is. docker inspect shows the path, not the key.
+    # Bitget execution creds are injected via env_file → /home/max/index/system.env (gitignored, 600 perms).
     cat > "$OVERRIDE" <<YEOF
 services:
   ap:
+    env_file:
+      - $VPS_CHAIN_DIR/system.env
     environment:
       AP_PRIVATE_KEY_PATH: /tmp/ap-key.txt
     volumes:
@@ -2735,9 +2743,9 @@ services:
       - "--port"
       - "9100"
       - "--rpc"
-      - "http://localhost/"
+      - "http://10.2.0.3/"
       - "--exchange-mode"
-      - "mock"
+      - "$AP_EXCHANGE_MODE_VALUE"
       - "--settlement-rpc"
       - "$SETTLEMENT_RPC_URL"
       - "--settlement-chain-id"
@@ -2764,8 +2772,9 @@ YEOF
         echo -e "  ${RED}AP failed — check: ./testnet.sh logs ap${NC}"
     fi
 
-    # Clean up override (no secrets in it now)
-    vps_chain_ssh "rm -f $VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
+    # NOTE: override is intentionally left on disk — env_file binds system.env at
+    # container start. Removing it would leave the next `docker compose up` without
+    # Bitget execution creds or the right --exchange-mode.
 }
 
 _start_itp_bot_docker() {
