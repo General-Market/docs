@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 import { CascadeText } from "../../lib/components/Text";
 import { font } from "../../common/fonts";
 
@@ -23,36 +23,46 @@ const BLOCK: React.CSSProperties = {
   top: 140,
 };
 
-const Slide: React.FC<{ children: React.ReactNode; label: string }> = ({
-  children,
-  label,
-}) => (
-  <AbsoluteFill style={{ background: BG, color: GREEN }}>
-    <div
-      style={{
-        position: "absolute",
-        left: 120,
-        top: 80,
-        fontFamily: font,
-        fontSize: 24,
-        fontWeight: 500,
-        color: DIM,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-      }}
-    >
-      {label}
-    </div>
-    <div style={BLOCK}>{children}</div>
-  </AbsoluteFill>
-);
+/** Left-aligned label that drifts slowly rightward — never stops. */
+const LABEL_DRIFT_PX_PER_SEC = 10;
+
+const Slide: React.FC<{
+  children: React.ReactNode;
+  label: string;
+  absFrame: number;
+}> = ({ children, label, absFrame }) => {
+  const drift = (absFrame / FPS) * LABEL_DRIFT_PX_PER_SEC;
+  return (
+    <AbsoluteFill style={{ background: BG, color: GREEN }}>
+      <div
+        style={{
+          position: "absolute",
+          left: 120,
+          top: 80,
+          fontFamily: font,
+          fontSize: 24,
+          fontWeight: 500,
+          color: DIM,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          transform: `translateX(${drift}px)`,
+          willChange: "transform",
+        }}
+      >
+        {label}
+      </div>
+      <div style={BLOCK}>{children}</div>
+    </AbsoluteFill>
+  );
+};
 
 export const CascadeTextDemo: React.FC = () => {
+  const absFrame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: BG }}>
-      {/* 0–4s: single long phrase, wraps twice */}
+      {/* 0–4s: long phrase, wraps twice, continuous wave */}
       <Sequence from={0} durationInFrames={120}>
-        <Slide label="Wraps across three lines">
+        <Slide label="Wraps across three lines" absFrame={absFrame}>
           <CascadeText
             text="The bot you never wrote now trades the markets you never watched"
             maxWidth={1400}
@@ -65,14 +75,17 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={22}
             fallDistance={80}
             driftDistance={28}
-            tiltDeg={5}
+            tiltDeg={2}
+            loop
+            holdFrames={36}
+            exitFrames={22}
           />
         </Slide>
       </Sequence>
 
-      {/* 4–8s: dense block, narrow box, heavy stagger */}
+      {/* 4–8s: dense block, narrow box, heavier stagger */}
       <Sequence from={120} durationInFrames={120}>
-        <Slide label="Narrow column, slower stagger">
+        <Slide label="Narrow column, slower stagger" absFrame={absFrame}>
           <CascadeText
             text="Fastest token image and metadata pipeline ever shipped"
             maxWidth={900}
@@ -85,14 +98,17 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={28}
             fallDistance={100}
             driftDistance={40}
-            tiltDeg={6}
+            tiltDeg={2}
+            loop
+            holdFrames={30}
+            exitFrames={26}
           />
         </Slide>
       </Sequence>
 
       {/* 8–12s: short punchy, centered */}
       <Sequence from={240} durationInFrames={120}>
-        <Slide label="Centered, single line">
+        <Slide label="Centered, single line" absFrame={absFrame}>
           <CascadeText
             text="Everything trades everything"
             maxWidth={1600}
@@ -106,14 +122,17 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={24}
             fallDistance={90}
             driftDistance={32}
-            tiltDeg={5}
+            tiltDeg={2}
+            loop
+            holdFrames={30}
+            exitFrames={22}
           />
         </Slide>
       </Sequence>
 
-      {/* 12–16s: overlap — words nearly tripping over each other */}
+      {/* 12–16s: tight overlap, fast stagger */}
       <Sequence from={360} durationInFrames={120}>
-        <Slide label="Tight overlap, fast stagger">
+        <Slide label="Tight overlap, fast stagger" absFrame={absFrame}>
           <CascadeText
             text="Sealed bets. Specialized oracle. Instant settlement. No dispute."
             maxWidth={1500}
@@ -125,14 +144,17 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={18}
             fallDistance={60}
             driftDistance={20}
-            tiltDeg={4}
+            tiltDeg={2}
+            loop
+            holdFrames={32}
+            exitFrames={18}
           />
         </Slide>
       </Sequence>
 
       {/* 16–20s: long, quieter */}
       <Sequence from={480} durationInFrames={120}>
-        <Slide label="Calmer drop, less tilt">
+        <Slide label="Calmer drop, less tilt" absFrame={absFrame}>
           <CascadeText
             text="Whether you are a beginner or already a hedge fund manager"
             maxWidth={1400}
@@ -144,7 +166,10 @@ export const CascadeTextDemo: React.FC = () => {
             durationPerWord={30}
             fallDistance={45}
             driftDistance={18}
-            tiltDeg={3}
+            tiltDeg={2}
+            loop
+            holdFrames={40}
+            exitFrames={26}
           />
         </Slide>
       </Sequence>

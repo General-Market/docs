@@ -207,7 +207,7 @@ export const EndCard: React.FC = () => {
             durationPerWord={22}
             fallDistance={70}
             driftDistance={26}
-            tiltDeg={5}
+            tiltDeg={2}
           />
         </div>
       )}

@@ -1,20 +1,31 @@
 /**
- * CascadeText — words tumble in from above-right, settle into their
- * wrapped layout positions. Each word animates independently and does
- * not wait for its neighbors to finish.
+ * CascadeText — shared text animation. Import from anywhere:
  *
- * Layout is pre-computed with @remotion/layout-utils measureText so that
- * we know each word's final (x, y) and the right bound of every line
- * before the first frame renders. The animation always resolves to the
- * true wrapped layout — no reflow, no jumping.
+ *   import { CascadeText } from "../../lib/components/Text";
  *
- * Per word, the transform animates from:
- *   dy = -fallDistance, dx = +driftDistance, rotate = tiltDeg, opacity = 0
- * to:
- *   dy = 0,             dx = 0,              rotate = 0,       opacity = 1
+ * Minimal call:
+ *   <CascadeText text="Hello world" />
  *
- * Stagger (delayPerWord) is deliberately smaller than the spring
- * duration so words overlap in flight — two or three in the air at once.
+ * Common overrides:
+ *   <CascadeText text="..." fontSize={120} loop />
+ *   <CascadeText text="..." fontFamily={font} color="#9fe870" align="center" />
+ *
+ * Words tumble in from above-right, settle into their pre-computed
+ * wrapped positions, optionally hold, then exit downward so the next
+ * cycle can re-enter. In loop mode the wave never lands — there is
+ * always a word entering and another in the air.
+ *
+ * Layout uses @remotion/layout-utils measureText, so every word knows
+ * its final (x, y) and the right bound of its line before the first
+ * frame. No reflow, no jumping on wrap.
+ *
+ * Cycle phases per word:
+ *   entry  (durationPerWord frames): fall from top-right with tilt
+ *   hold   (holdFrames frames):      at rest, fully opaque
+ *   exit   (exitFrames frames):      drop through, counter-tilt, fade
+ *
+ * Stagger (delayPerWord) is smaller than durationPerWord, so two or
+ * three words are always in flight.
  */
 
 import React from "react";
@@ -23,29 +34,36 @@ import { measureText } from "@remotion/layout-utils";
 
 export interface CascadeTextProps {
   text: string;
-  /** Box width the text wraps inside (px). */
-  maxWidth: number;
-  fontFamily: string;
-  fontSize: number;
+  /** Box width for wrapping in px. Default 1200. */
+  maxWidth?: number;
+  /** Inherits from parent if omitted. */
+  fontFamily?: string;
+  /** px. Default 96. */
+  fontSize?: number;
   fontWeight?: number | string;
   letterSpacing?: string;
   color?: string;
-  /** Line height in px. Defaults to 1.15 × fontSize. */
+  /** px. Defaults to 1.15 × fontSize. */
   lineHeight?: number;
   /** Frames between each word's entrance start. Default 3. */
   delayPerWord?: number;
-  /** Spring duration in frames per word. Default 22. */
+  /** Spring duration per word (frames). Default 22. */
   durationPerWord?: number;
   /** Frames before the first word starts. Default 0. */
   startDelay?: number;
   /** Vertical drop distance in px. Default 60. */
   fallDistance?: number;
-  /** Horizontal drift (word starts this many px to the right). Default 24. */
+  /** Word enters this many px to the right of final, drifts left. Default 24. */
   driftDistance?: number;
-  /** Tilt in degrees at entry. Default 5. */
+  /** Tilt at entry (degrees). Default 2. */
   tiltDeg?: number;
-  /** Text-align within the box. Default "left". */
   align?: "left" | "center" | "right";
+  /** Loop forever: entry → hold → exit → re-entry. Default false. */
+  loop?: boolean;
+  /** Frames the word holds at rest before exiting (loop mode). Default 40. */
+  holdFrames?: number;
+  /** Frames for the exit animation (loop mode). Default 22. */
+  exitFrames?: number;
 }
 
 interface WordPos {
@@ -104,9 +122,9 @@ function alignLines(
 
 export const CascadeText: React.FC<CascadeTextProps> = ({
   text,
-  maxWidth,
-  fontFamily,
-  fontSize,
+  maxWidth = 1200,
+  fontFamily = "sans-serif",
+  fontSize = 96,
   fontWeight = 700,
   letterSpacing,
   color = "currentColor",
@@ -116,8 +134,11 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
   startDelay = 0,
   fallDistance = 60,
   driftDistance = 24,
-  tiltDeg = 5,
+  tiltDeg = 2,
   align = "left",
+  loop = false,
+  holdFrames = 40,
+  exitFrames = 22,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -168,17 +189,33 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
     >
       {positions.map((p, i) => {
         const wordFrame = frame - startDelay - i * delayPerWord;
-        const t = spring({
-          frame: Math.max(wordFrame, 0),
+        if (wordFrame < 0) return null;
+
+        const cycle = durationPerWord + holdFrames + exitFrames;
+        const phase = loop ? wordFrame % cycle : wordFrame;
+
+        const entryT = spring({
+          frame: Math.max(phase, 0),
           fps,
           config: { damping: 18, stiffness: 140, mass: 0.9 },
           durationInFrames: durationPerWord,
         });
 
-        const dy = (1 - t) * -fallDistance;
-        const dx = (1 - t) * driftDistance;
-        const rot = (1 - t) * tiltDeg;
-        const opacity = Math.min(1, t * 1.3);
+        const inExit = loop && phase >= durationPerWord + holdFrames;
+        const exitPhase = inExit ? phase - durationPerWord - holdFrames : 0;
+        const exitT = inExit
+          ? spring({
+              frame: exitPhase,
+              fps,
+              config: { damping: 20, stiffness: 100, mass: 1 },
+              durationInFrames: exitFrames,
+            })
+          : 0;
+
+        const dy = (1 - entryT) * -fallDistance + exitT * fallDistance * 0.9;
+        const dx = (1 - entryT) * driftDistance - exitT * driftDistance * 0.6;
+        const rot = (1 - entryT) * tiltDeg - exitT * tiltDeg;
+        const opacity = Math.min(1, entryT * 1.3) * (1 - exitT);
 
         return (
           <span
