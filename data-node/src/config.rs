@@ -260,6 +260,13 @@ pub struct ServeArgs {
     #[arg(long, default_value = "false", env = "DATA_NODE_RESET_SESSION")]
     pub reset_session: bool,
 
+    /// Explicitly permit running without Bitget credentials (mock price source).
+    /// Without this flag, data-node refuses to start if BITGET_READONLY_API_KEY
+    /// is absent. Silent fallback to mock prices on testnet was a cause of the
+    /// 2026-04 outage.
+    #[arg(long, default_value = "false", env = "DATA_NODE_MOCK_PRICES")]
+    pub mock_prices: bool,
+
     /// Shared HMAC secret for authenticating snapshot responses (IS-7).
     /// If set, snapshot responses will be signed with HMAC-SHA256.
     /// The signature is sent as the X-Snapshot-HMAC header.

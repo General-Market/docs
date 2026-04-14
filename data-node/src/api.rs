@@ -553,6 +553,8 @@ pub fn router(state: Arc<AppState>) -> Router {
 
     Router::new()
         .route("/health", get(health))
+        .route("/health/live", get(health_live))
+        .route("/health/ready", get(health_ready))
         .route("/price", get(price))
         .route("/prices", get(prices))
         .route("/verify-nav", get(verify_nav))
@@ -716,6 +718,75 @@ async fn health(State(state): State<Arc<AppState>>) -> (axum::http::StatusCode, 
         symbols_tracked,
         chain_event_lag_total,
     }))
+}
+
+// ---- /health/live ----
+//
+// Liveness: always 200 if the process answers. Used for "restart the
+// container only if it stops responding entirely." Keeps Docker from
+// restarting a briefly-degraded service.
+async fn health_live() -> (axum::http::StatusCode, Json<serde_json::Value>) {
+    (
+        axum::http::StatusCode::OK,
+        Json(serde_json::json!({ "status": "live" })),
+    )
+}
+
+// ---- /health/ready ----
+//
+// Readiness: 200 only if the service is doing work. We refuse to answer
+// "ready" when no successful collector fetch has landed in the last
+// 60 seconds, or when the database is unreachable, or when the writer
+// thread has died. These are the failure modes that went undetected
+// for days.
+const DATA_NODE_FETCH_STALE_SECS: i64 = 60;
+
+async fn health_ready(
+    State(state): State<Arc<AppState>>,
+) -> (axum::http::StatusCode, Json<serde_json::Value>) {
+    let db_connected = db::is_connected(&state.pool).await;
+    let writer_alive = state
+        .writer_alive
+        .load(std::sync::atomic::Ordering::Relaxed);
+    let last_fetch_at = *state.collector.last_fetch_at.read().await;
+
+    let mut reasons: Vec<String> = Vec::new();
+    if !db_connected {
+        reasons.push("database unreachable".to_string());
+    }
+    if !writer_alive {
+        reasons.push("writer thread dead".to_string());
+    }
+    let stale_secs = match last_fetch_at {
+        Some(ts) => {
+            let age = (Utc::now() - ts).num_seconds();
+            if age > DATA_NODE_FETCH_STALE_SECS {
+                reasons.push(format!(
+                    "last successful fetch {}s ago (> {}s)",
+                    age, DATA_NODE_FETCH_STALE_SECS
+                ));
+            }
+            age
+        }
+        None => {
+            reasons.push("no successful fetch yet".to_string());
+            -1
+        }
+    };
+
+    let body = serde_json::json!({
+        "status": if reasons.is_empty() { "ready" } else { "not_ready" },
+        "reasons": reasons,
+        "db_connected": db_connected,
+        "writer_alive": writer_alive,
+        "last_fetch_age_secs": stale_secs,
+    });
+    let code = if reasons.is_empty() {
+        axum::http::StatusCode::OK
+    } else {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+    (code, Json(body))
 }
 
 // ---- /health/sources ----

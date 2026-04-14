@@ -26,6 +26,31 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
 
     info!("data-node starting (serve mode)");
 
+    // Startup safety: the silent fallback to mock prices was the cause
+    // of the 2026-04 outage — data-node ran for weeks serving zeroes
+    // because BITGET_READONLY_API_KEY was unset. Refuse to start unless
+    // the operator explicitly acknowledges mock mode via --mock-prices.
+    if !args.mock_prices {
+        let has_bitget_key = std::env::var("BITGET_READONLY_API_KEY")
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false);
+        if !has_bitget_key {
+            eprintln!(
+                "data-node: BITGET_READONLY_API_KEY is missing or empty. \
+                 Refusing to start. Pass --mock-prices (or DATA_NODE_MOCK_PRICES=1) \
+                 to explicitly accept mock price fallback."
+            );
+            return Err(
+                "missing BITGET_READONLY_API_KEY and --mock-prices not set".into(),
+            );
+        }
+    } else {
+        tracing::warn!(
+            "--mock-prices is set: running without live Bitget credentials. \
+             Price data will be mocked. DO NOT use in production."
+        );
+    }
+
     // ── Load RuntimeConfig ──────────────────────────────────────────────
     let deployment_path = PathBuf::from(&args.deployment_file);
     let index_address = args.index_address.as_ref().and_then(|s| s.parse().ok());
