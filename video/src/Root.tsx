@@ -32,10 +32,6 @@ import {
   webglSceneMetas,
 } from "./compositions/backgrounds/webgl-picks/WebGLPicksComposition";
 import {
-  gmLaunchBgMeta,
-  gmLaunchSceneMetas,
-} from "./compositions/gm/launch-bg/GMLaunchBgComposition";
-import {
   gmLogo3dMeta,
   gmLogoSceneMetas,
 } from "./compositions/gm/logo-3d/GMLogo3D";
@@ -73,6 +69,16 @@ import {
   FPS as LAUNCH_FPS,
 } from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
+import { EndCard } from "./compositions/endcard/EndCard";
+import {
+  TOTAL_FRAMES as ENDCARD_DURATION,
+  FPS as ENDCARD_FPS,
+} from "./compositions/endcard/theme";
+import {
+  CascadeTextDemo,
+  TOTAL_FRAMES as CASCADE_DURATION,
+  FPS as CASCADE_FPS,
+} from "./compositions/cascade-text-demo/CascadeTextDemo";
 
 const SHOW_SCENES = process.env.REMOTION_SHOW_SCENES === "1";
 
@@ -87,6 +93,26 @@ export const RemotionRoot: React.FC = () => {
         component={Launch30}
         durationInFrames={LAUNCH_DURATION}
         fps={LAUNCH_FPS}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ END CARD ═══ */}
+      <Composition
+        id="EndCard"
+        component={EndCard}
+        durationInFrames={ENDCARD_DURATION}
+        fps={ENDCARD_FPS}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ CASCADE TEXT DEMO ═══ */}
+      <Composition
+        id="CascadeTextDemo"
+        component={CascadeTextDemo}
+        durationInFrames={CASCADE_DURATION}
+        fps={CASCADE_FPS}
         width={1920}
         height={1080}
       />
@@ -122,31 +148,6 @@ export const RemotionRoot: React.FC = () => {
       {SHOW_SCENES && (
         <Folder name="WebGL-Picks">
           {webglSceneMetas.map((meta) => (
-            <Composition
-              key={meta.id}
-              id={meta.id}
-              component={meta.component}
-              durationInFrames={meta.durationInFrames}
-              fps={meta.fps}
-              width={meta.width}
-              height={meta.height}
-            />
-          ))}
-        </Folder>
-      )}
-
-      {/* ═══ GM LAUNCH BACKGROUNDS ═══ */}
-      <Composition
-        id={gmLaunchBgMeta.id}
-        component={gmLaunchBgMeta.component}
-        durationInFrames={gmLaunchBgMeta.durationInFrames}
-        fps={gmLaunchBgMeta.fps}
-        width={gmLaunchBgMeta.width}
-        height={gmLaunchBgMeta.height}
-      />
-      {SHOW_SCENES && (
-        <Folder name="GMLaunch-Scenes">
-          {gmLaunchSceneMetas.map((meta) => (
             <Composition
               key={meta.id}
               id={meta.id}
