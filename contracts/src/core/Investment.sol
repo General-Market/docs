@@ -121,6 +121,39 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         __BLSVerifier_init(oracleRegistry_);
     }
 
+    /// @notice Configure the maximum allowed age of the last observed
+    ///         fill for an ITP before the share-mint path reverts.
+    /// @dev Proposal-phase guard (Phase 7). Zero disables the check and
+    ///      preserves existing behaviour. Setting a non-zero value is a
+    ///      deliberate governance action — the revert path hardens the
+    ///      "shares must be backed by fresh prices" invariant from prose
+    ///      in CLAUDE.md into Solidity. Admin only.
+    function setMaxPriceAgeSeconds(uint256 seconds_) external {
+        if (msg.sender != governance.admin()) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
+        }
+        maxPriceAgeSeconds = seconds_;
+    }
+
+    /// @dev Internal guard: when maxPriceAgeSeconds > 0, revert unless the
+    ///      most recent fill for this ITP landed within the allowed window.
+    ///      Called from _processFill before minting shares.
+    function _requireFreshPrice(bytes32 itpId) internal view {
+        uint256 maxAge = maxPriceAgeSeconds;
+        if (maxAge == 0) {
+            return; // disabled
+        }
+        uint256 last = lastFillTimestamp[itpId];
+        if (last == 0) {
+            // Never observed a fill — allow the first fill so the ITP can
+            // bootstrap. Subsequent fills will be gated by the window.
+            return;
+        }
+        if (block.timestamp > last + maxAge) {
+            revert("Investment: price stale");
+        }
+    }
+
     /// @notice Set the ITP vault address for an ITP (admin only)
     /// @param itpId The ITP identifier
     /// @param vault The vault address
@@ -493,6 +526,14 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             if (fill.fillPrice == 0) {
                 revert ErrorsLib.E037_ZeroSharesCalculated(fill.fillAmount, fill.fillPrice);
             }
+
+            // Proposal-phase staleness guard. Disabled until governance
+            // calls setMaxPriceAgeSeconds with a non-zero value. Refuses
+            // to mint shares when the last fill is too old to be trusted
+            // as a current price. The first ever fill for an ITP is
+            // permitted so bootstrap works; see _requireFreshPrice.
+            _requireFreshPrice(order.itpId);
+
             uint256 shares = (fill.fillAmount * 1e18) / fill.fillPrice;
 
             // H-3 fix: Ensure minimum shares to prevent dust/rounding attacks
@@ -504,6 +545,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             TypesLib.ITPCore storage itp = _itps[order.itpId];
             itp.totalSupply += shares;
             itp.totalValue += fill.fillAmount;
+
+            // Record fill freshness for the guard above.
+            lastFillTimestamp[order.itpId] = block.timestamp;
 
             // Credit shares to user's internal balance
             _userShares[order.itpId][order.user] += shares;
@@ -532,6 +576,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             if (itp.totalValue >= usdcToReturn) {
                 itp.totalValue -= usdcToReturn;
             }
+
+            // Record fill freshness — sells also prove the ITP is live.
+            lastFillTimestamp[order.itpId] = block.timestamp;
 
             // H1 fix: burn ERC4626 shares (mirrors mint in BUY branch)
             address vault = itpVaults[order.itpId];
