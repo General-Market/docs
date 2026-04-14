@@ -5134,3 +5134,55 @@ Context: protocol.rs `run_nav_oracle_signing` + `PriceAgreed` variant + `NavOrac
   - The `ItpNavUpdated` event at L3 block 798,015 came from `Investment.setItpNav` (pre-rebalance NAV push via `run_set_itp_nav_phase`), not from this dormant path
 Decision: amputate, but not in the Part A window. The cut spans `P2PMessage::NavOracleProposal`/`NavOracleSign`, `ConsensusResult::PriceAgreed`, `run_nav_oracle_signing`, `handle_nav_oracle_proposal`, `handle_nav_oracle_sign`, BridgeOrchestrator NavOracle signature manager, equivocation handlers — touches 7+ files and drops an entire P2P message type. Too wide for a single-purpose commit alongside the log-honesty fix. Part A (log honesty) landed as commit ee97857a. Part B to be done as its own focused PR with LSP findReferences + green `cargo check -p oracle` after removal.
 
+
+## Session: 20260415-recovery-postmortem (Ten hours, nine phases, one postmortem)
+
+### What collapsed and when
+- Apr 8: ITP order pipeline stopped flowing. No oracle `AssetTradeRequest` emissions. Indifferent logs.
+- Apr 12: VPS 2 `/dev/sda1` reached 100%. Native Postgres died, exit code 1. Nitro sequencer likely lost freezer table integrity mid-flush here.
+- Apr 14: Diagnosis — four parallel consensus agents + tiebreaker. Recovery begins.
+
+### What was actually wrong — confirmed root causes
+- Disk full on VPS 2, cascade: Postgres dead → pgbouncer still "healthy" → data-node events stale → oracle `run_asset_trades_phase` starved. Fixed phase 1 (`20c293d2`).
+- Deployment JSON drift between repo and on-chain state. Fixed phase 2 (`e2ba457e`).
+- `data-node` Bitget creds missing in env — `system.env` not layered over `.env`. Fixed phase 4 (`23651f15`).
+- `testnet-ap` was running with `bitget_mode="mock"` against the real L3. Fixed phase 5 (`d68af52f`).
+- `curator` swallowed empty RPC responses and claimed health. Fixed phase 6 (`6e61c9a1`).
+- Oracle NAV consensus logged "signed" without actual BLS signing. Fixed as Task #10 (`ee97857a`, `18cb9641`). Price consensus placeholder log NOT touched — still reads `signer_count=0`.
+
+### What was wrong-diagnosed — record so we don't repeat
+- **111 "ghost orderIds"**: valid orders, off-by-one against `nextOrderId=112`. Not ghosts. Phase 3 scoped but did nothing — marked complete.
+- **"MetaMorpho vault at wrong address"**: vault was never deployed on Sonic. Curator was pointed at a zero-code address. Becomes Task #11.
+- **`signer_count=0` as BLS bypass**: it was a placeholder log field, not a missing signature. The BLS was being signed. Only the NAV branch needed the honesty fix (`ee97857a`). Price branch still lies. File: `oracle/src/phases.rs`.
+
+### What was fixed — commits
+- `20c293d2` phase 1: postgres, disk, logrotate.
+- `e2ba457e` phase 2: deployment JSON reconciliation + validator + CI gate.
+- `23651f15` phase 4: data-node env layering for Bitget creds.
+- `6e61c9a1` phase 6: curator empty-RPC retry + WARN on markets_analyzed=0.
+- `6ecd2bf7`, `cdb16346`, `ac2f5f30`, `6d7ff308`, `3cc95fe7`, `162d46ad`, `7f7ac08c`, `f6fe7a6f` phase 7: prevention — log rotation, fail-fast configs, did-you-do-work health endpoints, reconciliation script, Prometheus rules, staleness guard proposal.
+- `ee97857a`, `18cb9641` task #10: NAV oracle log honesty.
+- `d68af52f` phase 5: AP flipped to live Bitget mode.
+
+### What was left
+- Task #11: deploy MetaMorpho aggregator vault on Sonic testnet.
+- Task #12: fix pre-existing `completeBridge` test signature drift.
+- Task #13: amputate dormant NavOracle path (7+ files).
+- **NEW — Task #14: L3 Nitro sequencer has corrupted freezer tables (`l2chaindata/ancient/chain`, bodies+headers). Container in restart loop on VPS 2. Chain dead at block `0xdb85cb` / 14,386,646. Likely Apr 12 disk-full fallout — the recovery addressed Postgres but missed Nitro's pebble DB integrity.** End-to-end ITP order test impossible until this is fixed. Fix path: restore from snapshot, or full resync from L1. Must be decided by next agent.
+- **NEW — Task #15: Oracle P2P WAL unbounded. Errors `INFRA-022 WAL exceeded 10 MB, disabling writes` firing every cycle on testnet-oracle-1. Writes silently disabled. Consensus continues (WAL is for replay) but restart recovery is compromised.**
+- **NEW — Task #16: Price consensus log dishonesty. `oracle::phases` still prints "Price consensus agreed ... signer_count=0". Same class of placeholder lie the NAV branch was fixed for. Extend `ee97857a` style to price phase.**
+
+### Lessons
+- "Healthy" heartbeats are cheap. `testnet-ap` has been logging `orders_processed=0 health_status=healthy` for six solid minutes against a dead chain. The service cannot tell the difference. The recovery's did-you-do-work endpoints (`6d7ff308`, `ac2f5f30`) were correct in principle and still not enough — AP has no equivalent. Add one.
+- Disk-full recovery scope must include every on-disk DB, not just the one that alerted. Postgres got restored. Nitro's pebble/freezer didn't. One class of failure, two victims, one victim overlooked.
+- Sudden container restarts after a disk event are not proof of recovery. `Up 25 minutes (healthy)` tells you pgbouncer started 25 minutes ago, not that orders flow.
+- Consensus-agent diagnosis finds more than one agent finds alone, but consensus still has blind spots — none of the four agents checked the L3 sequencer itself.
+
+### Surface area touched
+- Code: `oracle/src/phases.rs`, `oracle/src/p2p/wal.rs`, `oracle/src/consensus/protocol.rs`, `data-node/src/main.rs` + env handling, `ap/src/runner.rs`, `curator/` health + retry, `contracts/src/Investment.sol` (proposal), `frontend/public/deployment.json`.
+- Config: `/etc/postgresql/17/main/postgresql.conf` (VPS 2), `/home/max/orbit-l3-testnet/docker-compose.yml`, `/etc/logrotate.d/docker-container` (both VPS), `envs/testnet/active-deployment.json`, `docker/testnet/oracle/docker-compose.yml`, nginx on VPS 1 + VPS 2.
+- Tooling: `scripts/validate-deployment.sh`, reconciliation script, Prometheus rules.
+- Not touched: L3 Nitro volume on VPS 2, oracle WAL bounds, price-phase log honesty, MetaMorpho vault deployment.
+
+### Verification verdict
+End-to-end ITP order test: **NOT ATTEMPTED**. L3 sequencer dead. Cost of attempting would be zero informational value — no block = no tx. Reported honestly rather than faked.
