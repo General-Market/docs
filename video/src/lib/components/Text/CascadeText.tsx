@@ -6,18 +6,17 @@
  * Minimal call:
  *   <CascadeText text="Hello world" />
  *
- * Two layers of motion.
+ * Entry. Each word is launched upward from below its final line with
+ * a cubic-bezier ease-out — fast off the mark, decelerating into rest.
+ * Gaussian blur dissolves on the same clock, so the word lands sharp.
+ * Words are staggered by delayPerWord; two or three are always in
+ * transit while the first ones have already landed. No post-landing
+ * motion — once a word stops, it stops.
  *
- * Entry (once). Each word rises from below its final line, blurred,
- * and resolves into sharp, final position. Opacity climbs as the blur
- * dissolves. Staggered by delayPerWord so two or three words are
- * always in transit while the first ones have already landed.
- *
- * Wave (continuous). Once words have settled, a soft ripple travels
- * through the text forever — each word briefly lifts a few pixels and
- * re-blurs as the wave passes, then returns. Nothing fades out,
- * nothing cycles; the surface just keeps breathing. Pass wave={false}
- * if you want a single-shot entry and a dead-still finish.
+ * Pass wave to turn on a continuous sine ripple that keeps traveling
+ * through the text after entry (lifts a few pixels and re-blurs as it
+ * passes each word). Off by default; use when you want the surface to
+ * keep breathing instead of going still.
  *
  * Layout uses @remotion/layout-utils measureText, so every word knows
  * its final (x, y) and the right bound of its line before the first
@@ -25,13 +24,7 @@
  */
 
 import React from "react";
-import {
-  Easing,
-  interpolate,
-  spring,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { Easing, interpolate, useCurrentFrame } from "remotion";
 import { measureText } from "@remotion/layout-utils";
 
 export interface CascadeTextProps {
@@ -141,14 +134,13 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
   driftDistance = 24,
   blurPx = 12,
   align = "left",
-  wave = true,
+  wave = false,
   waveSpeed = 6,
   waveDipFrames = 22,
   waveRisePx = 6,
   waveBlurPx = 3,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   const lh = lineHeight ?? Math.round(fontSize * 1.15);
 
@@ -212,14 +204,17 @@ export const CascadeText: React.FC<CascadeTextProps> = ({
           },
         );
 
-        // Blur runs on its own slower, softer spring so focus pulls in
-        // gradually instead of resolving with the position.
-        const blurT = spring({
-          frame: Math.max(wordFrame, 0),
-          fps,
-          config: { damping: 26, stiffness: 70, mass: 1.1 },
-          durationInFrames: Math.round(durationPerWord * 2.2),
-        });
+        // Blur resolves by the time the word arrives — sharp on landing.
+        const blurT = interpolate(
+          Math.max(wordFrame, 0),
+          [0, durationPerWord],
+          [0, 1],
+          {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.33, 1, 0.5, 1),
+          },
+        );
 
         // Wave ripple — only engages after this word's entry has settled.
         let waveRise = 0;
