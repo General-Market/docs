@@ -19,20 +19,21 @@ const CROP_BOTTOM = 0.1;
 const IMG_CROPPED_H = IMG_NATIVE_H * (1 - CROP_BOTTOM);
 const IMG_AR = IMG_NATIVE_W / IMG_CROPPED_H;
 
-// Waterline in the cropped image — horizon ≈ y=185 of the source.
-const WATERLINE = 185 / IMG_CROPPED_H;
+// Waterline in the cropped image — measured by luminance drop sampled in
+// columns away from the iceberg: transition at y ≈ 270 in the source.
+const WATERLINE = 270 / IMG_CROPPED_H;
 
 // Minimum scale where the cropped image fully covers the frame.
 const MIN_COVER_SCALE = WIDTH / (HEIGHT * IMG_AR);
 
 type Cam = { fx: number; fy: number; scale: number };
 
-// Tip ≈ y=0.10 (cropped). Push in on the top 60% of the image.
-const CAM_TOP: Cam = { fx: 0.44, fy: 0.3, scale: 1.95 };
+// Tip ≈ y=0.10 (cropped). Push in on the top; horizon sits mid-low in frame.
+const CAM_TOP: Cam = { fx: 0.44, fy: 0.31, scale: 1.95 };
 // Full view — just above min cover so sway has headroom.
 const CAM_FULL: Cam = { fx: 0.5, fy: 0.5, scale: MIN_COVER_SCALE + 0.06 };
-// Submerged mass — waterline kept visible as a thin strip.
-const CAM_BOTTOM: Cam = { fx: 0.47, fy: 0.42, scale: 1.7 };
+// Submerged mass — horizon held at a 5% strip at the top, iceberg bulk below.
+const CAM_BOTTOM: Cam = { fx: 0.47, fy: 0.6, scale: 1.8 };
 
 const P1_END = 3 * FPS;
 const P2_END = 5 * FPS;
