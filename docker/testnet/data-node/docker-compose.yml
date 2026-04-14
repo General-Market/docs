@@ -13,6 +13,10 @@ services:
     restart: unless-stopped
     env_file:
       - ../../../data-node/.env
+      # system.env overrides empty creds (BITGET_READONLY_*) in data-node/.env.
+      # Compose merges env_files in order; later entries win. Keep system.env
+      # out of git — it holds real API secrets.
+      - ../../../system.env
     volumes:
       - ../../../data-node/.env:/app/data-node/.env:ro
       - ../../../data-node/migrations:/app/data-node/migrations:ro
