@@ -335,10 +335,12 @@ sc = sonic['contracts']
 
 # Preserve existing keys from active-deployment.json that aren't in L3 or Sonic
 # (e.g., Vision from step 6, Morpho from step 5 — these are added by later steps)
+existing_doc = {}
 existing = {}
 if os.path.exists('$output'):
     try:
-        existing = json.load(open('$output')).get('contracts', {})
+        existing_doc = json.load(open('$output'))
+        existing = existing_doc.get('contracts', {})
     except: pass
 
 # Start with L3 as base
@@ -368,13 +370,62 @@ if 'BridgeProxy' in sc:
     merged['L3BridgeProxy'] = merged.get('BridgeProxy', '')
     merged['BridgeProxy'] = sc['BridgeProxy']
     merged['SettlementBridgeProxy'] = sc['BridgeProxy']
+# Preserve top-level keys from existing doc that consumers depend on —
+# services reject JSON without deployer/chainId; vault deployer depends on
+# whitelistedVaults + sourceVaults arrays surviving between phases.
+for k in ('deployer', 'timestamp', 'whitelistedVaults', 'sourceVaults'):
+    if k not in l3 and k in existing_doc:
+        l3[k] = existing_doc[k]
 # Add settlement chain metadata
 l3['contracts'] = merged
+l3.setdefault('chainId', $CHAIN_ID)
 l3['settlementChainId'] = $SETTLEMENT_CHAIN_ID
 json.dump(l3, open('$output', 'w'), indent=2)
 print('Merged: L3 (%d) + Sonic (%d) + preserved (%d extra) -> %s' % (
     len(l3['contracts']), len(sc), len(existing), '$output'))
 "
+}
+
+# Forge sometimes leaves a Sonic broadcast half-submitted (nonce drift on
+# --resume). Replay the unreceipted txs via cast — simpler than coaxing forge
+# through reconciliation.
+_complete_broadcast_via_cast() {
+    local broadcast_file="$1"   # e.g., contracts/broadcast/.../14601/run-latest.json
+    local rpc="$2"
+    local chain_id="$3"
+    local gas_price="${4:-50000000000}"  # 50 gwei default
+    python3 <<PYEOF
+import json, subprocess, sys
+bd = json.load(open('$broadcast_file'))
+txs = bd.get('transactions', [])
+rcpts = bd.get('receipts', [])
+rcpt_hashes = set((r.get('transactionHash') or '').lower() for r in rcpts)
+missing = [(i, tx) for i, tx in enumerate(txs)
+           if not (tx.get('hash') or '').lower() in rcpt_hashes or not tx.get('hash')]
+if not missing:
+    print('  No missing txs to replay')
+    sys.exit(0)
+print(f'  Replaying {len(missing)} missing txs via cast')
+ok = 0
+for i, tx in missing:
+    t = tx.get('transaction', {})
+    to = t.get('to')
+    data = t.get('input') or t.get('data') or '0x'
+    value = t.get('value', '0x0')
+    if not to:
+        print(f'  #{i} skip (contract creation — forge owns)')
+        continue
+    value_dec = int(value, 16) if isinstance(value, str) and value.startswith('0x') else int(value or 0)
+    r = subprocess.run(['cast','send',to,data,'--private-key','$DEPLOYER_KEY',
+                        '--rpc-url','$rpc','--chain','$chain_id','--legacy',
+                        '--gas-price','$gas_price','--value',str(value_dec)],
+                       capture_output=True, text=True, timeout=90)
+    if '1 (success)' in r.stdout:
+        ok += 1
+    else:
+        print(f'  #{i} FAIL: {(r.stderr or r.stdout)[-160:]}')
+print(f'  {ok}/{len(missing)} replayed')
+PYEOF
 }
 
 # ── setup-be: First-time VPS 1 setup ────────────────────────
@@ -604,9 +655,9 @@ cmd_deploy() {
     # Check bls-tool binary (needed for FFI in deploy scripts)
     echo -e "${BLUE}[2/14] Checking bls-tool (FFI)...${NC}"
     if [ ! -f "target/release/bls-tool" ]; then
-        echo -e "  ${RED}bls-tool binary not found at target/release/bls-tool${NC}"
-        echo -e "  ${YELLOW}Build it manually: cargo build --release -p bls-tool${NC}"
-        exit 1
+        echo -e "  ${YELLOW}bls-tool missing — building from workspace root (first run, ~5 min)${NC}"
+        cargo build --release --bin bls-tool >> logs/bls-tool-build.log 2>&1 \
+            || { echo -e "  ${RED}bls-tool build failed — see logs/bls-tool-build.log${NC}"; exit 1; }
     fi
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
@@ -670,6 +721,51 @@ cmd_deploy() {
             exit 1
         fi
         echo -e "  ${GREEN}Core deploy complete ($CORE_RECEIPTS txs confirmed)${NC}"
+
+        # ---- REBUILD ADDRESSES FROM BROADCAST RECEIPTS ----
+        # forge writes SIMULATION addresses to e2e-full-system.json. On Orbit L3
+        # the deployer nonce between simulation and broadcast diverges, so the
+        # real on-chain addresses differ. Reconcile from broadcast before any
+        # downstream step reads the JSON.
+        python3 -c "
+import json
+bd = json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json'))
+dj = json.load(open('deployments/e2e-full-system.json'))
+impls, proxies = {}, {}
+for tx in bd.get('transactions', []):
+    if tx.get('transactionType') not in ('CREATE','CREATE2'): continue
+    name, addr, args = tx.get('contractName',''), tx.get('contractAddress',''), tx.get('arguments',[])
+    if name == 'ERC1967Proxy' and args:
+        proxies.setdefault(args[0].lower(), []).append(addr)
+    elif name and addr:
+        impls.setdefault(name, []).append(addr)
+def proxy_of(name):
+    if name not in impls: return None
+    return (proxies.get(impls[name][0].lower()) or [None])[0]
+def plain(name):
+    return (impls.get(name) or [None])[0]
+c = dj['contracts']
+# Proxies
+for src, key in [('Investment','Index'),('OracleRegistry','OracleRegistry'),
+                  ('Governance','Governance'),('L3BridgeCustody','L3BridgeCustody'),
+                  ('SettlementBridgeCustody','SettlementBridgeCustody'),
+                  ('BLSCustody','BLSCustody')]:
+    a = proxy_of(src)
+    if a: c[key] = a
+# Plain deploys
+for name in ('CollateralRegistry','BridgedItpFactory','BridgeProxy','MockBitgetVault'):
+    a = plain(name)
+    if a: c[name] = a
+# MockERC20 order from Phase 1: L3_WUSDC, SETTLEMENT_USDC, MOCK_USDT
+mocks = impls.get('MockERC20', [])
+if len(mocks) >= 1:
+    c['L3_WUSDC'] = mocks[0]; c['USDC'] = mocks[0]
+if len(mocks) >= 2: c['SETTLEMENT_USDC'] = mocks[1]
+if len(mocks) >= 3: c['MOCK_USDT'] = mocks[2]
+json.dump(dj, open('deployments/e2e-full-system.json','w'), indent=2)
+print(f'Reconciled {len([k for k in c if c[k]])} addresses from broadcast receipts')
+" 2>/dev/null && echo -e "  ${GREEN}Addresses reconciled from broadcast${NC}" \
+|| echo -e "  ${YELLOW}Address reconciliation failed (continuing with simulation values)${NC}"
 
         # ---- POST-DEPLOY VERIFICATION ----
         local POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
@@ -911,15 +1007,36 @@ cmd_deploy() {
         echo -e "  ${YELLOW}Sonic not reachable (got $SONIC_CHAIN_ID, expected $SETTLEMENT_CHAIN_ID) — skipping settlement deploy${NC}"
     else
         rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/
+        # Sonic testnet rejects 1 gwei as "underpriced" — use 50 gwei. Also note
+        # that Anvil test accounts on Sonic have EIP-7702 delegations; the Solidity
+        # script skips accounts with non-empty code in Phase 10 gas funding.
+        local SONIC_GAS_PRICE="${SONIC_GAS_PRICE:-50000000000}"
         (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" DEPLOY_SEED="${DEPLOY_SEED:-$(date +%s)}" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$SETTLEMENT_RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
             --broadcast --slow \
             --chain-id $SETTLEMENT_CHAIN_ID \
-            --legacy --with-gas-price $GAS_PRICE \
+            --legacy --with-gas-price $SONIC_GAS_PRICE \
             $FORGE_SIZE_FLAG) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
+
+        # Forge sometimes stops mid-broadcast on nonce drift (seen on Sonic).
+        # If the broadcast JSON exists but has missing receipts, replay the
+        # stragglers via cast so we don't need a manual fix.
+        SONIC_BROADCAST="contracts/broadcast/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/run-latest.json"
+        if [ -f "$SONIC_BROADCAST" ]; then
+            SONIC_MISSING=$(python3 -c "
+import json
+d = json.load(open('$SONIC_BROADCAST'))
+hashes = {(r.get('transactionHash') or '').lower() for r in d.get('receipts',[])}
+missing = sum(1 for tx in d.get('transactions',[]) if (tx.get('hash') or '').lower() not in hashes)
+print(missing)" 2>/dev/null || echo 0)
+            if [ "$SONIC_MISSING" != "0" ] && [ -n "$SONIC_MISSING" ]; then
+                echo -e "  ${YELLOW}$SONIC_MISSING Sonic txs missing receipts — replaying via cast${NC}"
+                _complete_broadcast_via_cast "$SONIC_BROADCAST" "$SETTLEMENT_RPC_URL" "$SETTLEMENT_CHAIN_ID" "$SONIC_GAS_PRICE"
+            fi
+        fi
 
         if [ -f "deployments/e2e-full-system.json" ]; then
             cp deployments/e2e-full-system.json deployments/e2e-full-system-sonic.json
