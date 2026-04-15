@@ -169,19 +169,6 @@ abstract contract InvestmentStorage {
     /// @dev Added AFTER deploymentNonce to preserve UUPS storage layout (slot 36)
     mapping(uint256 => bool) public assetTradesEmitted;
 
-    // ============ PRICE-STALENESS GUARD (PROPOSAL — not active by default) ============
-
-    /// @notice Maximum age (seconds) of the most recent fill before the
-    ///         share-mint path will revert. Zero disables the check.
-    /// @dev Proposal-phase addition (Phase 7). Set via setMaxPriceAgeSeconds()
-    ///      after a Governance migration; default zero preserves current
-    ///      behaviour until explicitly switched on.
-    uint256 public maxPriceAgeSeconds;
-
-    /// @notice Unix timestamp of the most recent fill observed for each ITP.
-    ///         Updated inside _processFill on every BUY/SELL fill.
-    mapping(bytes32 => uint256) public lastFillTimestamp;
-
     // ============ STORAGE GAP ============
 
     /// @dev Reserved storage slots for future upgrades.
@@ -198,9 +185,8 @@ abstract contract InvestmentStorage {
     ///        stalenessLimits(28), venuePools(29), _itpNavs(30),
     ///        _bridgeNonceToItpId(31), authorizedBridge(32),
     ///        failedFillEscrow(33), batchedTimestamp(34),
-    ///        deploymentNonce(35), assetTradesEmitted(36),
-    ///        maxPriceAgeSeconds(37), lastFillTimestamp(38) = 39 slots used
+    ///        deploymentNonce(35), assetTradesEmitted(36) = 37 slots used
     ///      Target: 50 total slots for upgradeability buffer
-    ///      Gap: 50 - 39 = 11 slots
-    uint256[11] private __gap;
+    ///      Gap: 50 - 37 = 13 slots
+    uint256[13] private __gap;
 }
