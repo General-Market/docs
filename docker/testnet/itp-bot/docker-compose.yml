@@ -25,8 +25,9 @@ services:
       - L3_RPC_URL=http://142.132.164.24/
       - BOT_KEY_FILE=/tmp/bot-key.txt
       - DEPLOYED_ASSETS_PATH=/app/deployed-assets.json
+    # ENTRYPOINT is service-entrypoint (symlink to /usr/local/bin/itp-bot).
+    # command: is args only — don't repeat the binary path.
     command:
-      - "/usr/local/bin/itp-bot"
       - "--manifest"
       - "/app/manifest.json"
       - "--deployed-assets"

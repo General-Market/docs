@@ -10,7 +10,10 @@ services:
         SERVICE: curator
         EXTRA_MEMBERS: oracle
         RUNTIME_DEPS: "ca-certificates libssl3 curl"
-    command: ["/usr/local/bin/curator"]
+    # ENTRYPOINT is service-entrypoint (symlink to /usr/local/bin/curator).
+    # command: is args only — don't repeat the binary path.
+    # --help keeps container crash-looping visibly until the override yml lands.
+    command: ["--help"]
     container_name: testnet-curator
     network_mode: host
     restart: "no"
