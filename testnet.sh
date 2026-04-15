@@ -1477,8 +1477,10 @@ print(f'  VisionVaultFactory: {fc[\"VisionVaultFactory\"]}')
 
     # Phase [7a/14]: Deploy + fund Vision vaults — N per source, reads vision-batches.json
     echo -e "${BLUE}[7a/14] Deploying Vision vaults (5 per source, 10k USDC seed)...${NC}"
+    # web3.py needs Python 3.11+; system python3 may be too old. Prefer python3.14, fall back to python3.
+    VAULT_PYTHON="$(command -v python3.14 || command -v python3.13 || command -v python3.12 || command -v python3.11 || command -v python3)"
     DEPLOYER_KEY="$DEPLOYER_KEY" L3_RPC_URL="$RPC_URL" \
-        python3 scripts/deploy-and-fund-vaults.py \
+        "$VAULT_PYTHON" scripts/deploy-and-fund-vaults.py \
             --per-source "${VAULTS_PER_SOURCE:-5}" \
             --seed-amount "${VAULT_SEED_USDC:-10000}" \
         >> logs/deploy-vision-vaults.log 2>&1 \
