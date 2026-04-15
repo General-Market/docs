@@ -734,6 +734,11 @@
   },
   {
     "type": "error",
+    "name": "DepositBelowMinimum",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidArrayLength",
     "inputs": []
   },
@@ -759,17 +764,12 @@
   },
   {
     "type": "error",
-    "name": "NotJoined",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "DepositBelowMinimum",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "NonZeroSum",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotJoined",
     "inputs": []
   },
   {

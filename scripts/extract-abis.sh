@@ -13,7 +13,7 @@ ROOT="$(dirname "$SCRIPT_DIR")"
 CONTRACTS=(
   "Vision:IVision"
   "Index:IIndex"
-  "Investment:IInvestment"
+  "Investment:Investment"
   "OracleRegistry:IOracleRegistry"
   "BridgeProxy:IBridgeProxy"
   "BridgedItpFactory:IBridgedItpFactory"
