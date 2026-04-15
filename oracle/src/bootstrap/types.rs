@@ -207,6 +207,17 @@ impl OracleMetrics {
         self.consensus_in_progress.store(false, Ordering::Relaxed);
     }
 
+    /// Record a consensus failure from THIS oracle's view (timeout, P2P glitch,
+    /// leader-didn't-respond). Increments rounds + failures, but doesn't flip
+    /// the stalled breaker — a follower timing out doesn't mean this oracle
+    /// has stopped producing signatures, only that one cycle went sideways.
+    pub fn record_consensus_failure(&self, duration_ms: u64) {
+        self.consensus_rounds_total.fetch_add(1, Ordering::Relaxed);
+        self.consensus_failed_total.fetch_add(1, Ordering::Relaxed);
+        self.last_consensus_time_ms.store(duration_ms, Ordering::Relaxed);
+        self.consensus_in_progress.store(false, Ordering::Relaxed);
+    }
+
     pub fn record_consensus_result(&self, success: bool, signer_count: usize, duration_ms: u64) {
         self.consensus_rounds_total.fetch_add(1, Ordering::Relaxed);
         if success {

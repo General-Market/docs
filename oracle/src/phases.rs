@@ -152,17 +152,20 @@ pub(crate) async fn run_price_update<P, W, K, PF>(
         }
         oracle::ConsensusResult::Failed { ref reason, cycle_number } => {
             warn!(cycle = cycle_number, reason, elapsed_ms, "Price update failed");
-            metrics.record_consensus_result(false, 0, elapsed_ms);
+            // Followers see Failed when they time out waiting for a leader-side
+            // message. That's a system-level blip, not this oracle being stalled.
+            // Leader-side failures go through Success with signer_count=0 above.
+            metrics.record_consensus_failure(elapsed_ms);
             false
         }
         oracle::ConsensusResult::Timeout { ref phase, cycle_number } => {
             warn!(cycle = cycle_number, phase = %phase, elapsed_ms, "Price update timed out");
-            metrics.record_consensus_result(false, 0, elapsed_ms);
+            metrics.record_consensus_failure(elapsed_ms);
             false
         }
         oracle::ConsensusResult::EmergencyPause { cycle_number } => {
             warn!(cycle = cycle_number, elapsed_ms, "Price update triggered pause (will retry next cycle)");
-            metrics.record_consensus_result(false, 0, elapsed_ms);
+            metrics.record_consensus_failure(elapsed_ms);
             false
         }
         oracle::ConsensusResult::ItpCreated { .. } => { true } // won't happen for price cycle
