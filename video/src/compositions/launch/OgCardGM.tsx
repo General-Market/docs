@@ -3,38 +3,36 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 import { SOURCES } from "./data/sources";
 
-const GRID_COLS = 14;
-const GRID_ROWS = 8;
+const GRID_COLS = 7;
+const GRID_ROWS = 9;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
-
-const TILT_X = 8;
-const GRID_SCALE = 1.35;
 
 export const OgCardGM: React.FC = () => {
   return (
-    <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
-      <div
+    <AbsoluteFill style={{ backgroundColor: "#FAFAF7" }}>
+      {/* Right-side logo grid, masked with a left-to-right fade */}
+      <AbsoluteFill
         style={{
-          width: "100%",
-          height: "100%",
-          perspective: 2200,
-          perspectiveOrigin: "50% 50%",
+          left: "52%",
+          WebkitMaskImage:
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%)",
+          maskImage:
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%)",
         }}
       >
-        <AbsoluteFill
+        <div
           style={{
+            width: "100%",
+            height: "100%",
             display: "grid",
             gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-            gap: 4,
-            padding: 4,
-            filter: "blur(5px)",
-            transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE})`,
-            transformStyle: "preserve-3d",
+            gap: 6,
+            padding: 6,
           }}
         >
           {Array.from({ length: CELL_COUNT }).map((_, i) => {
-            const source = SOURCES[(i * 7 + 3) % SOURCES.length];
+            const source = SOURCES[(i * 11 + 5) % SOURCES.length];
             const logoSrc = source.logo.startsWith("/")
               ? source.logo.slice(1)
               : source.logo;
@@ -44,7 +42,7 @@ export const OgCardGM: React.FC = () => {
                 key={i}
                 style={{
                   background: source.bg,
-                  borderRadius: 6,
+                  borderRadius: 8,
                   overflow: "hidden",
                   display: "flex",
                   justifyContent: "center",
@@ -55,53 +53,35 @@ export const OgCardGM: React.FC = () => {
                 <Img
                   src={staticFile(logoSrc)}
                   style={{
-                    maxWidth: "75%",
-                    maxHeight: "75%",
+                    maxWidth: "72%",
+                    maxHeight: "72%",
                     objectFit: "contain",
                   }}
                 />
               </div>
             );
           })}
-        </AbsoluteFill>
-      </div>
+        </div>
+      </AbsoluteFill>
 
+      {/* Left content block */}
       <AbsoluteFill
         style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.88) 70%, rgba(255,255,255,0.95) 100%)",
-        }}
-      />
-
-      <AbsoluteFill
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0 80px",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          padding: "56px 64px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            marginBottom: 32,
-            padding: "10px 22px",
-            background: "rgba(255,255,255,0.85)",
-            border: "1px solid rgba(14,15,12,0.08)",
-            borderRadius: 999,
-            boxShadow: "0 2px 20px rgba(14,15,12,0.06)",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 34, height: 34 }}
+            style={{ width: 28, height: 28 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 30,
-              fontWeight: 700,
+              fontSize: 20,
+              fontWeight: 600,
               color: "#0e0f0c",
               letterSpacing: "-0.01em",
             }}
@@ -110,23 +90,32 @@ export const OgCardGM: React.FC = () => {
           </div>
         </div>
 
+        <div style={{ maxWidth: 620 }}>
+          <div
+            style={{
+              fontFamily: font,
+              fontSize: 56,
+              fontWeight: 700,
+              color: "#0e0f0c",
+              lineHeight: 1.05,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            The first prediction market where insiders don&rsquo;t steal{" "}
+            <span style={{ color: "#16a34a" }}>70%</span> of your money.
+          </div>
+        </div>
+
         <div
           style={{
             fontFamily: font,
-            fontSize: 62,
-            fontWeight: 900,
-            color: "#0e0f0c",
-            textAlign: "center",
-            lineHeight: 1.08,
-            letterSpacing: "-0.028em",
-            maxWidth: 980,
+            fontSize: 18,
+            fontWeight: 500,
+            color: "#6b6d68",
+            letterSpacing: "-0.005em",
           }}
         >
-          The first prediction market
-          <br />
-          where insiders don&rsquo;t steal
-          <br />
-          <span style={{ color: "#0e0f0c" }}>70% of your money</span>
+          generalmarket.io
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
