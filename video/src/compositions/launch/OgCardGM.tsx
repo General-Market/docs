@@ -13,7 +13,7 @@ export const OgCardGM: React.FC = () => {
       {/* Right-side logo grid, masked with a left-to-right fade */}
       <AbsoluteFill
         style={{
-          left: "52%",
+          left: "62%",
           WebkitMaskImage:
             "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%)",
           maskImage:
@@ -73,36 +73,39 @@ export const OgCardGM: React.FC = () => {
           gap: 36,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 28, height: 28 }}
+            style={{ width: 40, height: 40 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 20,
-              fontWeight: 600,
+              fontSize: 30,
+              fontWeight: 700,
               color: "#0e0f0c",
-              letterSpacing: "-0.01em",
+              letterSpacing: "-0.015em",
             }}
           >
             General Market
           </div>
         </div>
 
-        <div style={{ maxWidth: 620 }}>
+        <div style={{ maxWidth: 720, whiteSpace: "nowrap" }}>
           <div
             style={{
               fontFamily: font,
-              fontSize: 56,
+              fontSize: 44,
               fontWeight: 700,
               color: "#0e0f0c",
-              lineHeight: 1.05,
+              lineHeight: 1.12,
               letterSpacing: "-0.03em",
             }}
           >
-            The first prediction market where insider traders don&rsquo;t steal{" "}
+            The first prediction market where
+            <br />
+            insider traders don&rsquo;t steal
+            <br />
             <span style={{ color: "#16a34a" }}>70%</span> of your money
           </div>
         </div>
