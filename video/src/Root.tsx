@@ -63,6 +63,7 @@ import {
   FPS as TUTORIAL_FPS,
 } from "./compositions/tutorial/theme";
 import { Launch30 } from "./compositions/launch/Launch30";
+import { OgCardGM } from "./compositions/launch/OgCardGM";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
   FPS as LAUNCH_FPS,
@@ -95,6 +96,16 @@ export const RemotionRoot: React.FC = () => {
         fps={LAUNCH_FPS}
         width={1920}
         height={1080}
+      />
+
+      {/* ═══ OG CARD (General Market Twitter/OG image) ═══ */}
+      <Composition
+        id="OgCardGM"
+        component={OgCardGM}
+        durationInFrames={1}
+        fps={30}
+        width={1200}
+        height={630}
       />
 
       {/* ═══ ICEBERG ═══ */}
