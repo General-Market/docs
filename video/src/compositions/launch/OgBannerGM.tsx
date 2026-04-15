@@ -13,11 +13,11 @@ export const OgBannerGM: React.FC = () => {
       {/* Right-side logo grid, masked with a left-to-right fade */}
       <AbsoluteFill
         style={{
-          left: "56%",
+          left: "62%",
           WebkitMaskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 100%)",
           maskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 100%)",
         }}
       >
         <div
@@ -67,21 +67,21 @@ export const OgBannerGM: React.FC = () => {
       {/* Left content block — lifted to clear profile picture area */}
       <AbsoluteFill
         style={{
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "flex-start",
-          padding: "40px 72px 130px 72px",
-          gap: 26,
+          padding: "36px 60px 0 60px",
+          gap: 20,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 52, height: 52 }}
+            style={{ width: 48, height: 48 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 38,
+              fontSize: 36,
               fontWeight: 700,
               color: "#0e0f0c",
               letterSpacing: "-0.015em",
@@ -94,18 +94,20 @@ export const OgBannerGM: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 44,
-            fontWeight: 700,
+            fontSize: 70,
+            fontWeight: 800,
             color: "#0e0f0c",
-            lineHeight: 1.12,
-            letterSpacing: "-0.03em",
+            lineHeight: 1.04,
+            letterSpacing: "-0.035em",
           }}
         >
-          The first prediction market where
+          The first prediction
           <br />
-          insider traders don&rsquo;t steal
+          market where insiders
           <br />
-          <span style={{ color: "#16a34a" }}>70%</span> of your money
+          don&rsquo;t steal <span style={{ color: "#16a34a" }}>70%</span> of your
+          <br />
+          money
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
