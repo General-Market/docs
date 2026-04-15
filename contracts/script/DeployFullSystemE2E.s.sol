@@ -332,7 +332,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
             address[5] memory recipients = [oracle1, oracle2, oracle3, ap, user];
             uint256 funded;
             for (uint256 r = 0; r < recipients.length; r++) {
-                (bool ok,) = payable(recipients[r]).call{value: gasFunding}("");
+                // Skip accounts with code — forge cannot simulate EIP-7702
+                // delegations and will halt with NotActivated. On Sonic,
+                // Anvil test addresses are polluted with 7702 delegates.
+                if (recipients[r].code.length != 0) continue;
+                (bool ok,) = payable(recipients[r]).call{value: gasFunding, gas: 50_000}("");
                 if (ok) { funded++; }
             }
             if (funded == recipients.length) {
