@@ -3,8 +3,8 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 import { SOURCES } from "./data/sources";
 
-const GRID_COLS = 10;
-const GRID_ROWS = 5;
+const GRID_COLS = 6;
+const GRID_ROWS = 4;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
 export const OgBannerGM: React.FC = () => {
@@ -73,15 +73,15 @@ export const OgBannerGM: React.FC = () => {
           gap: 28,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 44, height: 44 }}
+            style={{ width: 56, height: 56 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 32,
+              fontSize: 42,
               fontWeight: 700,
               color: "#0e0f0c",
               letterSpacing: "-0.015em",
@@ -91,18 +91,18 @@ export const OgBannerGM: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ maxWidth: 640 }}>
+        <div style={{ maxWidth: 680 }}>
           <div
             style={{
               fontFamily: font,
-              fontSize: 46,
+              fontSize: 56,
               fontWeight: 700,
               color: "#0e0f0c",
               lineHeight: 1.08,
               letterSpacing: "-0.03em",
             }}
           >
-            The first prediction market where insiders don&rsquo;t steal{" "}
+            The first prediction market where insider traders don&rsquo;t steal{" "}
             <span style={{ color: "#16a34a" }}>70%</span> of your money
           </div>
         </div>
