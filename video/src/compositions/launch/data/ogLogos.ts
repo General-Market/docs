@@ -1,6 +1,6 @@
 import { SOURCES } from "./sources";
 
-// Curated 24 logos shared by the OG card and the X banner so both
+// Curated 48 logos shared by the OG card and the X banner so both
 // render the same set of brands.
 const PICKED_NAMES = [
   "Zillow Real Estate",
@@ -27,6 +27,30 @@ const PICKED_NAMES = [
   "Last.fm Music",
   "Reddit Communities",
   "Congress Votes",
+  "Finnhub Stocks",
+  "Nasdaq Listings",
+  "Movies & TV",
+  "Board Games",
+  "Deutsche Bahn",
+  "London Underground",
+  "Paris Metro",
+  "Airport Delays",
+  "Ship Tracking",
+  "Wildlife Tracking",
+  "Military Aircraft",
+  "Weather Alerts",
+  "Air Quality",
+  "Wildfire Tracking",
+  "US Power Outages",
+  "Global Flights",
+  "CityBikes",
+  "Federal Courts",
+  "npm Packages",
+  "Cloudflare DNS",
+  "Theme Park Waits",
+  "US Treasury Yields",
+  "Bureau of Labor Stats",
+  "Sports Stats",
 ];
 
 export const OG_LOGOS = PICKED_NAMES.map((name) => {

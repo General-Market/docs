@@ -3,7 +3,7 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 import { OG_LOGOS } from "./data/ogLogos";
 
-const GRID_COLS = 6;
+const GRID_COLS = 12;
 const GRID_ROWS = 4;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
@@ -13,11 +13,11 @@ export const OgBannerGM: React.FC = () => {
       {/* Right-side logo grid, masked with a left-to-right fade */}
       <AbsoluteFill
         style={{
-          left: "62%",
+          left: "0%",
           WebkitMaskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 18%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,1) 70%, rgba(0,0,0,1) 100%)",
           maskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 18%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,1) 70%, rgba(0,0,0,1) 100%)",
         }}
       >
         <div
@@ -94,7 +94,7 @@ export const OgBannerGM: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 70,
+            fontSize: 64,
             fontWeight: 800,
             color: "#0e0f0c",
             lineHeight: 1.04,
