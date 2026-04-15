@@ -47,7 +47,7 @@ GAS_PRICE=10000000000  # 10 gwei
 
 # Orbit L3 supports 49152 byte contracts (vs 24576 EVM default).
 # Forge broadcast rejects deployments over 24576 without this flag.
-FORGE_SIZE_FLAG="$FORGE_SIZE_FLAG"
+FORGE_SIZE_FLAG="${FORGE_SIZE_FLAG:---disable-code-size-limit}"
 
 # Settlement chain (Sonic Testnet)
 SETTLEMENT_CHAIN_ID=14601
@@ -1130,6 +1130,24 @@ print('Injected chainId=$CHAIN_ID deployBlock=$CURRENT_BLOCK into morpho-e2e.jso
     fi
 
     # Deploy Vision
+    # Skip Vision / vault redeploy if everything already has code + vaults present.
+    # Lets `testnet.sh deploy` resume after an early-phase failure without blowing away
+    # downstream state (factory + 235 funded vaults).
+    SKIP_VISION_REDEPLOY=false
+    CUR_VISION=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
+    CUR_VVF=$(read_deployment_addr "VisionVaultFactory" 2>/dev/null || echo "")
+    if [ -n "$CUR_VISION" ] && [ -n "$CUR_VVF" ]; then
+        V_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VISION" 2>/dev/null | wc -c | tr -d ' ')
+        F_CODE=$(cast code --rpc-url "$RPC_URL" "$CUR_VVF" 2>/dev/null | wc -c | tr -d ' ')
+        VAULT_COUNT=$(python3 -c "import json; print(len(json.load(open('$DEPLOYMENT_FILE')).get('whitelistedVaults', [])))" 2>/dev/null || echo "0")
+        if [ "$V_CODE" -gt 10 ] && [ "$F_CODE" -gt 10 ] && [ "$VAULT_COUNT" -gt 0 ]; then
+            SKIP_VISION_REDEPLOY=true
+            echo -e "${GREEN}[6/14][6b/14][7a/14] Vision + factory + $VAULT_COUNT vaults already live — skipping redeploy${NC}"
+        fi
+    fi
+    if [ "$SKIP_VISION_REDEPLOY" = "true" ]; then
+        : # skip the whole Vision block
+    else
     echo -e "${BLUE}[6/14] Deploying Vision + batches...${NC}"
     rm -rf contracts/broadcast/DeployVision.s.sol/$CHAIN_ID/ contracts/cache/DeployVision.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
@@ -1242,6 +1260,7 @@ print(f'  VisionVaultFactory: {fc[\"VisionVaultFactory\"]}')
         >> logs/deploy-vision-vaults.log 2>&1 \
         && echo -e "  ${GREEN}Vision vaults deployed + funded${NC}" \
         || { echo -e "${RED}Vision vault deploy failed — see logs/deploy-vision-vaults.log${NC}"; exit 1; }
+    fi  # end SKIP_VISION_REDEPLOY block
 
     # Phase: Deploy all Bitget tokens
     echo -e "${BLUE}[8/14] Generating token deploy script...${NC}"

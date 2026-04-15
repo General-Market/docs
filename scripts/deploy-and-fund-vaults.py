@@ -36,8 +36,11 @@ log = logging.getLogger("deploy-fund")
 
 ROOT = Path(__file__).resolve().parent.parent
 VISION_BATCHES_PATH = ROOT / "deployments" / "vision-batches.json"
-ACTIVE_DEPLOYMENT_PATH = ROOT / "envs" / "testnet" / "active-deployment.json"
+# testnet.sh writes the authoritative deploy state to deployments/active-deployment.json
+# during deploy (DEPLOYMENT_FILE in testnet.sh). envs/testnet/ copies get synced later.
+ACTIVE_DEPLOYMENT_PATH = ROOT / "deployments" / "active-deployment.json"
 FRONTEND_DEPLOYMENT_PATH = ROOT / "frontend" / "lib" / "contracts" / "deployment.json"
+ENVS_DEPLOYMENT_PATH = ROOT / "envs" / "testnet" / "active-deployment.json"
 
 FACTORY_ABI = [
     {
@@ -173,7 +176,7 @@ def resolve_addr(deployment: dict, *keys: str) -> str:
 
 
 def write_deployment(deployment: dict, whitelisted: list, source_vaults: dict):
-    for path in (ACTIVE_DEPLOYMENT_PATH, FRONTEND_DEPLOYMENT_PATH):
+    for path in (ACTIVE_DEPLOYMENT_PATH, FRONTEND_DEPLOYMENT_PATH, ENVS_DEPLOYMENT_PATH):
         if not path.exists():
             continue
         data = json.loads(path.read_text())
