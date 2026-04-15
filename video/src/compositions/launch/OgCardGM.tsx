@@ -3,13 +3,12 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 import { SOURCES } from "./data/sources";
 
-const GRID_COLS = 10;
-const GRID_ROWS = 10;
+const GRID_COLS = 14;
+const GRID_ROWS = 8;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
-const TILT_X = 12;
-const GRID_SCALE = 1.25;
-const SCROLL_OFFSET = 342;
+const TILT_X = 8;
+const GRID_SCALE = 1.35;
 
 export const OgCardGM: React.FC = () => {
   return (
@@ -18,8 +17,8 @@ export const OgCardGM: React.FC = () => {
         style={{
           width: "100%",
           height: "100%",
-          perspective: 1800,
-          perspectiveOrigin: "50% 45%",
+          perspective: 2200,
+          perspectiveOrigin: "50% 50%",
         }}
       >
         <AbsoluteFill
@@ -27,15 +26,15 @@ export const OgCardGM: React.FC = () => {
             display: "grid",
             gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-            gap: 3,
-            padding: 3,
-            filter: "blur(6px)",
-            transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE}) translateY(${-SCROLL_OFFSET}px)`,
+            gap: 4,
+            padding: 4,
+            filter: "blur(5px)",
+            transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE})`,
             transformStyle: "preserve-3d",
           }}
         >
           {Array.from({ length: CELL_COUNT }).map((_, i) => {
-            const source = SOURCES[i % SOURCES.length];
+            const source = SOURCES[(i * 7 + 3) % SOURCES.length];
             const logoSrc = source.logo.startsWith("/")
               ? source.logo.slice(1)
               : source.logo;
@@ -45,19 +44,19 @@ export const OgCardGM: React.FC = () => {
                 key={i}
                 style={{
                   background: source.bg,
-                  borderRadius: 4,
+                  borderRadius: 6,
                   overflow: "hidden",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  padding: 6,
+                  padding: 8,
                 }}
               >
                 <Img
                   src={staticFile(logoSrc)}
                   style={{
-                    maxWidth: "80%",
-                    maxHeight: "80%",
+                    maxWidth: "75%",
+                    maxHeight: "75%",
                     objectFit: "contain",
                   }}
                 />
@@ -70,7 +69,7 @@ export const OgCardGM: React.FC = () => {
       <AbsoluteFill
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.72) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.88) 70%, rgba(255,255,255,0.95) 100%)",
         }}
       />
 
@@ -85,21 +84,26 @@ export const OgCardGM: React.FC = () => {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 18,
-            marginBottom: 28,
+            gap: 16,
+            marginBottom: 32,
+            padding: "10px 22px",
+            background: "rgba(255,255,255,0.85)",
+            border: "1px solid rgba(14,15,12,0.08)",
+            borderRadius: 999,
+            boxShadow: "0 2px 20px rgba(14,15,12,0.06)",
           }}
         >
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 56, height: 56 }}
+            style={{ width: 34, height: 34 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 44,
-              fontWeight: 800,
+              fontSize: 30,
+              fontWeight: 700,
               color: "#0e0f0c",
-              letterSpacing: "-0.02em",
+              letterSpacing: "-0.01em",
             }}
           >
             General Market
@@ -109,19 +113,20 @@ export const OgCardGM: React.FC = () => {
         <div
           style={{
             fontFamily: font,
-            fontSize: 54,
+            fontSize: 62,
             fontWeight: 900,
             color: "#0e0f0c",
             textAlign: "center",
-            lineHeight: 1.12,
-            letterSpacing: "-0.025em",
-            textShadow: "0 4px 40px rgba(255,255,255,0.9)",
-            maxWidth: 1040,
+            lineHeight: 1.08,
+            letterSpacing: "-0.028em",
+            maxWidth: 980,
           }}
         >
-          The first prediction market where insiders
+          The first prediction market
           <br />
-          don&rsquo;t steal 70% of your money
+          where insiders don&rsquo;t steal
+          <br />
+          <span style={{ color: "#0e0f0c" }}>70% of your money</span>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
