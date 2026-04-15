@@ -73,18 +73,18 @@ export const OgCardGM: React.FC = () => {
           gap: 36,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 28, height: 28 }}
+            style={{ width: 44, height: 44 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 20,
-              fontWeight: 600,
+              fontSize: 32,
+              fontWeight: 700,
               color: "#0e0f0c",
-              letterSpacing: "-0.01em",
+              letterSpacing: "-0.015em",
             }}
           >
             General Market
