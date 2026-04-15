@@ -67,9 +67,10 @@ export const OgCardGM: React.FC = () => {
       {/* Left content block */}
       <AbsoluteFill
         style={{
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "flex-start",
           padding: "56px 64px",
+          gap: 36,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -104,18 +105,6 @@ export const OgCardGM: React.FC = () => {
             The first prediction market where insiders don&rsquo;t steal{" "}
             <span style={{ color: "#16a34a" }}>70%</span> of your money.
           </div>
-        </div>
-
-        <div
-          style={{
-            fontFamily: font,
-            fontSize: 18,
-            fontWeight: 500,
-            color: "#6b6d68",
-            letterSpacing: "-0.005em",
-          }}
-        >
-          generalmarket.io
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
