@@ -1045,6 +1045,51 @@ print(missing)" 2>/dev/null || echo 0)
             echo -e "  ${YELLOW}Sonic deploy didn't write JSON — contracts may still be deployed (check log)${NC}"
         fi
 
+        # Deploy MirrorOracleRegistry on Sonic. The regular OracleRegistry that the
+        # E2E script puts on Sonic doesn't have a sync() function, which is what
+        # oracles call to push L3 snapshot state forward — so BLS verification on
+        # Sonic eventually fails with SnapshotTooOld when the L3 registry nonce
+        # advances past what Sonic knows about.
+        echo -e "  ${BLUE}Deploying MirrorOracleRegistry on Sonic...${NC}"
+        rm -rf contracts/broadcast/DeployMirrorRegistry.s.sol/$SETTLEMENT_CHAIN_ID/ contracts/cache/DeployMirrorRegistry.s.sol/$SETTLEMENT_CHAIN_ID/
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        forge script script/DeployMirrorRegistry.s.sol:DeployMirrorRegistry \
+            --rpc-url "$SETTLEMENT_RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --broadcast --slow --ffi \
+            --chain-id $SETTLEMENT_CHAIN_ID \
+            --legacy --with-gas-price $SONIC_GAS_PRICE \
+            $FORGE_SIZE_FLAG) \
+            > logs/deploy-mirror-registry.log 2>&1 \
+            && echo -e "  ${GREEN}MirrorOracleRegistry deployed${NC}" \
+            || echo -e "  ${YELLOW}Mirror registry deploy had warnings — check logs/deploy-mirror-registry.log${NC}"
+
+        # Patch SettlementOracleRegistry to the Mirror proxy (not the regular one
+        # from E2E) so oracles can sync() against it.
+        MIRROR_BROADCAST="contracts/broadcast/DeployMirrorRegistry.s.sol/$SETTLEMENT_CHAIN_ID/run-latest.json"
+        if [ -f "$MIRROR_BROADCAST" ]; then
+            python3 -c "
+import json
+bd = json.load(open('$MIRROR_BROADCAST'))
+impl, proxy = None, None
+for tx in bd.get('transactions', []):
+    n = tx.get('contractName','')
+    a = tx.get('contractAddress','')
+    if n == 'MirrorOracleRegistry': impl = a
+    elif n == 'ERC1967Proxy': proxy = a
+if proxy:
+    for p in ['deployments/e2e-full-system-sonic.json']:
+        try:
+            d = json.load(open(p))
+            d['contracts']['OracleRegistry'] = proxy  # will flow into SettlementOracleRegistry via merge
+            d['contracts']['MirrorOracleRegistry'] = proxy
+            d['contracts']['MirrorOracleRegistryImpl'] = impl
+            json.dump(d, open(p,'w'), indent=2)
+        except: pass
+    print(f'Mirror proxy: {proxy}')
+"
+        fi
+
         # Merge L3 + Sonic into active deployment
         _merge_deployments \
             deployments/e2e-full-system-l3.json \
@@ -1176,13 +1221,26 @@ for name, b in vb.get('batches', {}).items():
     done
     echo -e "  ${GREEN}Funded 6 accounts with 10 GM each${NC}"
 
-    # Fund accounts with gas on Sonic
+    # Fund accounts with gas on Sonic. On Sonic testnet, fund the DEDICATED
+    # settlement keys (oracle submitters that push mirror-sync + BLS txs);
+    # Anvil oracle keys are 7702-swept and eat any value sent to them.
     echo -e "${BLUE}[4b/14] Funding accounts with gas on Sonic...${NC}"
-    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR"; do
-        cast send --private-key "$FUNDER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
-            "$addr" --value 0.5ether > /dev/null 2>&1 || true
+    local SONIC_RECIPIENTS=()
+    for skey in "${ORACLE_1_SETTLEMENT_KEY:-}" "${ORACLE_2_SETTLEMENT_KEY:-}" "${ORACLE_3_SETTLEMENT_KEY:-}"; do
+        if [ -n "$skey" ]; then
+            local saddr=$(cast wallet address "$skey" 2>/dev/null)
+            [ -n "$saddr" ] && SONIC_RECIPIENTS+=("$saddr")
+        fi
     done
-    echo -e "  ${GREEN}Funded 6 accounts with 0.5 S each on Sonic${NC}"
+    # AP / curator / bot stay the same (they don't have 7702 pollution because the
+    # deployer key is not an Anvil account — it's a custom deployer)
+    SONIC_RECIPIENTS+=("$AP_ADDR" "$CURATOR_ADDR" "$ITP_BOT_ADDR")
+    for addr in "${SONIC_RECIPIENTS[@]}"; do
+        cast send --private-key "$FUNDER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            --legacy --gas-price "${SONIC_GAS_PRICE:-50000000000}" \
+            "$addr" --value 1ether > /dev/null 2>&1 || true
+    done
+    echo -e "  ${GREEN}Funded ${#SONIC_RECIPIENTS[@]} Sonic accounts with 1 S each${NC}"
 
     # Fund fund-manager wallet with gas (vaults get USDC via VisionVaultFactory seed)
     local FM_ADDR=$(cast wallet address "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537" 2>/dev/null || echo "")
@@ -2119,10 +2177,17 @@ cmd_start() {
     # Multiple cleanup strategies: Alpine container (root), then direct rm (user), then verify
     vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key-1.txt /hostmp/settlement-key-2.txt /hostmp/settlement-key-3.txt /hostmp/curator-key.txt /hostmp/bot-key.txt' 2>/dev/null; true"
     vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt /tmp/curator-key.txt /tmp/bot-key.txt 2>/dev/null; true"
+    # Sonic testnet has EIP-7702 sweeper delegates on every Anvil account — any
+    # value sent to them is siphoned. Use dedicated settlement keys on Sonic;
+    # fall back to oracle keys for local Anvil (harmless there).
+    local SETTLEMENT_KEYS=(
+        "${ORACLE_1_SETTLEMENT_KEY:-${ORACLE_KEYS[0]}}"
+        "${ORACLE_2_SETTLEMENT_KEY:-${ORACLE_KEYS[1]}}"
+        "${ORACLE_3_SETTLEMENT_KEY:-${ORACLE_KEYS[2]}}"
+    )
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
-        # Each oracle uses its OWN key for settlement (avoids nonce conflicts with deployer)
-        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
+        vps_be_ssh "printf '%s' '${SETTLEMENT_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
     done
     # Verify key files are regular files (not directories from Docker bind-mount stubs)
     vps_be_ssh "for f in /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt; do [ -f \"\$f\" ] || { echo \"FATAL: \$f is not a regular file\"; exit 1; }; done"
@@ -2275,15 +2340,33 @@ _start_oracles_docker() {
     # Recreate key files AFTER docker compose down (which may leave dir stubs)
     vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key-1.txt /hostmp/settlement-key-2.txt /hostmp/settlement-key-3.txt' 2>/dev/null; true"
     vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key-1.txt /tmp/settlement-key-2.txt /tmp/settlement-key-3.txt 2>/dev/null; true"
+    # Sonic testnet has EIP-7702 sweeper delegates on every Anvil account — any
+    # value sent to them is siphoned. Use dedicated settlement keys on Sonic;
+    # fall back to oracle keys for local Anvil (harmless there).
+    local SETTLEMENT_KEYS=(
+        "${ORACLE_1_SETTLEMENT_KEY:-${ORACLE_KEYS[0]}}"
+        "${ORACLE_2_SETTLEMENT_KEY:-${ORACLE_KEYS[1]}}"
+        "${ORACLE_3_SETTLEMENT_KEY:-${ORACLE_KEYS[2]}}"
+    )
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
-        # Each oracle uses its OWN key for settlement (avoids nonce conflicts with deployer)
-        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
+        vps_be_ssh "printf '%s' '${SETTLEMENT_KEYS[$((i-1))]}' > /tmp/settlement-key-$i.txt && chmod 644 /tmp/settlement-key-$i.txt"
     done
 
-    # Dynamic args
-    L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-    echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here)"
+    # Dynamic args. Start oracle event scan from the core-deploy block so they
+    # pick up the Phase 7 RegistrySnapshotTaken events (addOracle calls). Using
+    # the current block skips those, leaving registry_sync caught_up=false
+    # forever. Fall back to current block if deployBlock isn't tracked yet.
+    L3_FROM_BLOCK=$(python3 -c "import json;print(json.load(open('$DEPLOYMENT_FILE')).get('deployBlock',0))" 2>/dev/null || echo 0)
+    if [ "$L3_FROM_BLOCK" = "0" ] || [ -z "$L3_FROM_BLOCK" ]; then
+        L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    fi
+    # Nudge earlier — core deploy may span multiple blocks. A small backoff
+    # catches all RegistrySnapshotTaken events without flooding the scanner.
+    if [ "$L3_FROM_BLOCK" -gt 1000 ]; then
+        L3_FROM_BLOCK=$((L3_FROM_BLOCK - 500))
+    fi
+    echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here — deployBlock - 500)"
 
     VISION_ADDR=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
