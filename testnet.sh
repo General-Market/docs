@@ -80,6 +80,14 @@ ORACLE_3_KEY="0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
 ORACLE_COUNT=3
 ORACLE_KEYS=("$ORACLE_1_KEY" "$ORACLE_2_KEY" "$ORACLE_3_KEY")
 
+# Oracle Sonic settlement wallets — Anvil accounts 1-3 are EIP-7702-swept on
+# Sonic testnet (any value sent gets siphoned by a malicious delegate). These
+# are fresh EOAs used ONLY for Sonic-side tx submission. Fine to fall back to
+# the oracle keys on local Anvil where there's no 7702 pollution.
+ORACLE_1_SETTLEMENT_KEY="${ORACLE_1_SETTLEMENT_KEY:-0x456b918aa9d7e13838913cd63f9f8abcfefee880b59e3fa99822cdc6282fe34e}"
+ORACLE_2_SETTLEMENT_KEY="${ORACLE_2_SETTLEMENT_KEY:-0x7cffee93d17c9b013626efbecc9b7af34403dc111589e7bb5068545b7de5bf81}"
+ORACLE_3_SETTLEMENT_KEY="${ORACLE_3_SETTLEMENT_KEY:-0x89ce8f910634a638ae0b7d4e93ef62170d3041eec6c43437f9d05fd45d6f0ae4}"
+
 # AP key — Anvil account 4
 AP_KEY="0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
 
