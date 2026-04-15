@@ -134,14 +134,16 @@ pub(crate) async fn run_price_update<P, W, K, PF>(
             // identically at INFO conflates a consensus event with a passive state observation.
             if signer_count > 0 {
                 info!(cycle = cycle_number, signer_count, elapsed_ms, "Price consensus agreed — batch signature collected");
+                metrics.record_consensus_result(true, signer_count, elapsed_ms);
             } else {
                 debug!(
                     cycle = cycle_number,
                     elapsed_ms,
                     "Price consensus heartbeat — follower observed Complete phase (no signatures aggregated locally)"
                 );
+                // Follower passive observation — don't trip the stalled breaker.
+                metrics.record_consensus_heartbeat(elapsed_ms);
             }
-            metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
                 chrono::Utc::now().timestamp_millis() as u64,
                 std::sync::atomic::Ordering::Relaxed,
@@ -172,14 +174,16 @@ pub(crate) async fn run_price_update<P, W, K, PF>(
             // Logging them identically at INFO pretends both are the same event. They are not.
             if signer_count > 0 {
                 info!(cycle = cycle_number, signer_count, elapsed_ms, "NAV consensus agreed — signature collected");
+                metrics.record_consensus_result(true, signer_count, elapsed_ms);
             } else {
                 debug!(
                     cycle = cycle_number,
                     elapsed_ms,
                     "Price consensus heartbeat — NAV signing skipped (ITPNAVOracle not configured on this deployment)"
                 );
+                // NAV-less heartbeat — don't trip the stalled breaker.
+                metrics.record_consensus_heartbeat(elapsed_ms);
             }
-            metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
                 chrono::Utc::now().timestamp_millis() as u64,
                 std::sync::atomic::Ordering::Relaxed,

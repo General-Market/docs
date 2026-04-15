@@ -196,6 +196,17 @@ impl OracleMetrics {
         self.consensus_in_progress.store(true, Ordering::Relaxed);
     }
 
+    /// Record a follower-side consensus observation (Success with signer_count=0
+    /// for price cycles, or NAV cycles where this oracle wasn't the aggregator).
+    /// Increments rounds but NEVER touches the stalled breaker — a follower
+    /// legitimately has zero local signatures every cycle it isn't leader.
+    pub fn record_consensus_heartbeat(&self, duration_ms: u64) {
+        self.consensus_rounds_total.fetch_add(1, Ordering::Relaxed);
+        self.consensus_success_total.fetch_add(1, Ordering::Relaxed);
+        self.last_consensus_time_ms.store(duration_ms, Ordering::Relaxed);
+        self.consensus_in_progress.store(false, Ordering::Relaxed);
+    }
+
     pub fn record_consensus_result(&self, success: bool, signer_count: usize, duration_ms: u64) {
         self.consensus_rounds_total.fetch_add(1, Ordering::Relaxed);
         if success {
