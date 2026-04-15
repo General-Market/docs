@@ -1427,6 +1427,30 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         echo -e "  ${GREEN}vision-batches.json synced with active-deployment.json${NC}"
     fi
 
+    # Phase [6b/14]: Deploy VisionVault implementation + VisionVaultFactory
+    echo -e "${BLUE}[6b/14] Deploying VisionVault + VisionVaultFactory...${NC}"
+    rm -rf contracts/broadcast/DeployVisionVaults.s.sol/$CHAIN_ID/ contracts/cache/DeployVisionVaults.s.sol/$CHAIN_ID/
+    VISION_ADDR_VV=$(read_deployment_addr "Vision")
+    (cd contracts && DEPLOYER_PRIVATE_KEY="$DEPLOYER_KEY" \
+        VISION_ADDRESS="$VISION_ADDR_VV" USDC_ADDRESS="$L3_USDC" \
+        forge script script/DeployVisionVaults.s.sol:DeployVisionVaults \
+            --rpc-url "$RPC_URL" --private-key "$DEPLOYER_KEY" \
+            --broadcast --slow --chain-id $CHAIN_ID \
+            --legacy --with-gas-price $GAS_PRICE $FORGE_SIZE_FLAG) \
+        >> logs/deploy-vision-vaults-factory.log 2>&1 \
+        || { echo -e "${RED}VisionVaultFactory deploy failed${NC}"; exit 1; }
+    # Merge factory + impl addresses into active-deployment.json
+    python3 -c "
+import json
+fc = json.load(open('deployments/vision-vault-deployment.json'))['contracts']
+d = json.load(open('$DEPLOYMENT_FILE'))
+d['contracts']['VisionVault'] = fc['VisionVault']
+d['contracts']['VisionVaultFactory'] = fc['VisionVaultFactory']
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+print(f'  VisionVaultFactory: {fc[\"VisionVaultFactory\"]}')
+"
+    echo -e "  ${GREEN}VisionVault + Factory deployed${NC}"
+
     # Wipe bot state/PnL files — positions from the old contract are now invalid
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/fund-manager/pnl-data/*.json" 2>/dev/null || true
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data/pnl-*.json" 2>/dev/null || true
@@ -1435,11 +1459,11 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
     # Fund test accounts with L3 USDC (FUNDER_KEY — mint is unrestricted on MockERC20)
     echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
-        # Mint 1M USDC to deployer
+        # Mint 20M USDC to deployer — covers 235 vaults x 10k + ample runway for later manual vault redeploys
         cast send --private-key "$FUNDER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-            "$L3_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 1000000000000000000000000 \
+            "$L3_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 20000000000000000000000000 \
             > /dev/null 2>&1 || true
-        echo -e "  ${GREEN}Funded deployer with 1M L3 USDC${NC}"
+        echo -e "  ${GREEN}Funded deployer with 20M L3 USDC${NC}"
     fi
 
     # Fund accounts with SETTLEMENT_USDC on Sonic (6 decimals)
@@ -1450,6 +1474,16 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
             > /dev/null 2>&1 || true
         echo -e "  ${GREEN}Funded deployer with 50k SETTLEMENT_USDC on Sonic${NC}"
     fi
+
+    # Phase [7a/14]: Deploy + fund Vision vaults — N per source, reads vision-batches.json
+    echo -e "${BLUE}[7a/14] Deploying Vision vaults (5 per source, 10k USDC seed)...${NC}"
+    DEPLOYER_KEY="$DEPLOYER_KEY" L3_RPC_URL="$RPC_URL" \
+        python3 scripts/deploy-and-fund-vaults.py \
+            --per-source "${VAULTS_PER_SOURCE:-5}" \
+            --seed-amount "${VAULT_SEED_USDC:-10000}" \
+        >> logs/deploy-vision-vaults.log 2>&1 \
+        && echo -e "  ${GREEN}Vision vaults deployed + funded${NC}" \
+        || { echo -e "${RED}Vision vault deploy failed — see logs/deploy-vision-vaults.log${NC}"; exit 1; }
 
     # Phase: Deploy all Bitget tokens
     echo -e "${BLUE}[8/14] Generating token deploy script...${NC}"

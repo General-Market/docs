@@ -1,12 +1,30 @@
 #!/usr/bin/env python3
-"""Deploy and fund all Vision vaults from fund-branding.json.
+"""Deploy + fund Vision vaults, one batch per source.
 
-Reads the fund catalog, deploys vaults for any fund missing one,
-seeds each vault with 50 USDC, and updates all config files.
+Reads `deployments/vision-batches.json` for the source list. For each source,
+creates N vaults (default 5) via the VisionVaultFactory and seeds each with
+10,000 USDC (configurable). Writes the resulting addresses into
+`envs/testnet/active-deployment.json` under `whitelistedVaults` (flat) and
+`sourceVaults` (keyed by source id).
+
+Intended to run as phase [6b/14] of testnet.sh, after `DeployAllVisionBatches`
+has written vision-batches.json. Everything this script needs — factory
+address, USDC address, RPC URL — comes from the deployment JSON. No hardcoded
+constants. No fund-branding.json.
+
+Example:
+    python3 scripts/deploy-and-fund-vaults.py --per-source 5 --seed-amount 10000
 """
 
-import json, os, sys, time, logging
+import argparse
+import json
+import logging
+import os
+import re
+import sys
+import time
 from pathlib import Path
+
 from web3 import Web3
 
 logging.basicConfig(
@@ -16,35 +34,21 @@ logging.basicConfig(
 )
 log = logging.getLogger("deploy-fund")
 
-# ── Constants ────────────────────────────────────────────────────────
-
-SEED_AMOUNT = 10_000 * 10**18  # 10,000 USDC. Must match the bot's allocation_bps math.
-# With allocation_bps=10 (0.1%), 10K × 0.001 = $10 per join — above MIN_DEPOSIT (0.10).
-# Smaller seeds round to MIN_DEPOSIT and every batch becomes a $0.10 parimutuel.
-FACTORY = Web3.to_checksum_address("0xA0FD597A1Bf2b5A4f6B283f09DC512F6F8B4589e")
-USDC = Web3.to_checksum_address("0x2710e49EBb807A0cB9369F13Ba24Bd809809a827")
-RPC = "http://142.132.164.24/"
-
 ROOT = Path(__file__).resolve().parent.parent
-BRANDING_PATH = ROOT / "frontend" / "data" / "fund-branding.json"
-DEPLOYMENT_PATH = ROOT / "frontend" / "lib" / "contracts" / "deployment.json"
-DEPLOYMENT_TESTNET_PATH = ROOT / "envs" / "testnet" / "deployment.json"
-FUNDS_TOML_PATH = ROOT / "vision-bot" / "funds.toml"
-
-# ── ABIs ─────────────────────────────────────────────────────────────
+VISION_BATCHES_PATH = ROOT / "deployments" / "vision-batches.json"
+ACTIVE_DEPLOYMENT_PATH = ROOT / "envs" / "testnet" / "active-deployment.json"
+FRONTEND_DEPLOYMENT_PATH = ROOT / "frontend" / "lib" / "contracts" / "deployment.json"
 
 FACTORY_ABI = [
     {
         "name": "createVault", "type": "function", "stateMutability": "nonpayable",
         "inputs": [
-            {"name": "name", "type": "string"}, {"name": "symbol", "type": "string"},
-            {"name": "performanceFeeRate", "type": "uint256"}, {"name": "manager", "type": "address"},
+            {"name": "name", "type": "string"},
+            {"name": "symbol", "type": "string"},
+            {"name": "performanceFeeRate", "type": "uint256"},
+            {"name": "manager", "type": "address"},
         ],
         "outputs": [{"name": "vault", "type": "address"}],
-    },
-    {
-        "name": "getVaultCount", "type": "function", "stateMutability": "view",
-        "inputs": [], "outputs": [{"name": "", "type": "uint256"}],
     },
     {
         "name": "VaultCreated", "type": "event",
@@ -62,7 +66,8 @@ VAULT_ABI = [
     {
         "name": "requestDeposit", "type": "function", "stateMutability": "nonpayable",
         "inputs": [
-            {"name": "assets", "type": "uint256"}, {"name": "controller", "type": "address"},
+            {"name": "assets", "type": "uint256"},
+            {"name": "controller", "type": "address"},
             {"name": "owner", "type": "address"},
         ],
         "outputs": [{"name": "", "type": "uint256"}],
@@ -70,7 +75,8 @@ VAULT_ABI = [
     {
         "name": "claimDeposit", "type": "function", "stateMutability": "nonpayable",
         "inputs": [
-            {"name": "receiver", "type": "address"}, {"name": "controller", "type": "address"},
+            {"name": "receiver", "type": "address"},
+            {"name": "controller", "type": "address"},
         ],
         "outputs": [{"name": "", "type": "uint256"}],
     },
@@ -83,7 +89,10 @@ VAULT_ABI = [
 ERC20_ABI = [
     {
         "name": "approve", "type": "function", "stateMutability": "nonpayable",
-        "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+        "inputs": [
+            {"name": "spender", "type": "address"},
+            {"name": "amount", "type": "uint256"},
+        ],
         "outputs": [{"name": "", "type": "bool"}],
     },
     {
@@ -93,26 +102,34 @@ ERC20_ABI = [
     },
     {
         "name": "allowance", "type": "function", "stateMutability": "view",
-        "inputs": [{"name": "owner", "type": "address"}, {"name": "spender", "type": "address"}],
+        "inputs": [
+            {"name": "owner", "type": "address"},
+            {"name": "spender", "type": "address"},
+        ],
         "outputs": [{"name": "", "type": "uint256"}],
     },
 ]
 
 
-# ── Helpers ──────────────────────────────────────────────────────────
+def prettify_source(source_id: str) -> str:
+    """`sec_13f` -> `Sec 13F`, `mil_aircraft` -> `Mil Aircraft`."""
+    parts = source_id.replace("-", "_").split("_")
+    return " ".join(p.upper() if len(p) <= 3 and any(c.isdigit() for c in p) else p.capitalize() for p in parts)
+
+
+def source_symbol(source_id: str) -> str:
+    """`sec_13f` -> `SEC13F`. Strip non-alphanumeric, uppercase, cap at 10 chars."""
+    cleaned = re.sub(r"[^A-Za-z0-9]", "", source_id).upper()
+    return cleaned[:10] if cleaned else "FUND"
+
 
 def send_tx(w3, account, tx_dict):
-    """Sign, send, and wait for a transaction. Returns the receipt."""
     signed = account.sign_transaction(tx_dict)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
     if receipt["status"] != 1:
         raise RuntimeError(f"tx reverted: {tx_hash.hex()}")
     return receipt
-
-
-def next_nonce(w3, address):
-    return w3.eth.get_transaction_count(address, "pending")
 
 
 def build_tx(w3, deployer, gas=300_000):
@@ -120,262 +137,190 @@ def build_tx(w3, deployer, gas=300_000):
         "from": deployer,
         "gas": gas,
         "gasPrice": w3.eth.gas_price,
-        "nonce": next_nonce(w3, deployer),
+        "nonce": w3.eth.get_transaction_count(deployer, "pending"),
         "chainId": w3.eth.chain_id,
     }
 
 
-# ── Strategy/source mapping for funds.toml ──────────────────────────
-
-STRATEGY_MAP = {
-    "Momentum": "momentum",
-    "Contrarian": "contrarian",
-    "Bullish": "bullish",
-    "Home Field": "home_field",
-}
-
-
-def write_funds_toml(catalog):
-    """Update vault addresses in funds.toml in-place; append new funds at end.
-
-    The toml has hand-curated params (min_change_pct, source names, comments)
-    that fund-branding.json doesn't carry. So we surgically update vault lines
-    for existing symbols and only append truly new funds.
-    """
-    import re
-
-    content = FUNDS_TOML_PATH.read_text()
-    lines = content.splitlines()
-
-    # Build symbol -> vault map from catalog
-    vault_by_symbol = {f["symbol"]: f.get("vault", "") for f in catalog["funds"]}
-
-    # Track which symbols exist in the toml already
-    existing_symbols = set()
-
-    # Pass 1: update vault lines for existing [[funds]] entries
-    current_symbol = None
-    for i, line in enumerate(lines):
-        m = re.match(r'^symbol\s*=\s*"([^"]+)"', line)
-        if m:
-            current_symbol = m.group(1)
-            existing_symbols.add(current_symbol)
-        elif current_symbol and re.match(r'^vault\s*=\s*"', line):
-            new_vault = vault_by_symbol.get(current_symbol, "")
-            if new_vault:
-                lines[i] = f'vault = "{new_vault}"'
-            current_symbol = None
-
-    # Pass 2: append new funds not already in the toml
-    new_funds = [f for f in catalog["funds"] if f["symbol"] not in existing_symbols and f.get("vault")]
-    if new_funds:
-        lines.append("")
-        lines.append("# ── NEW FUNDS (auto-generated) ──────────────────────────────")
-        lines.append("")
-        for idx, fund in enumerate(new_funds, len(existing_symbols) + 1):
-            strategy_raw = fund.get("strategy", "momentum")
-            strategy = STRATEGY_MAP.get(strategy_raw, strategy_raw.lower())
-            sources = fund.get("sources", [])
-            lines.append(f"# {idx}. {fund['name']}")
-            lines.append("[[funds]]")
-            lines.append(f'name = "{fund["name"]}"')
-            lines.append(f'symbol = "{fund["symbol"]}"')
-            lines.append(f'vault = "{fund["vault"]}"')
-            lines.append(f'sources = {json.dumps(sources)}')
-            lines.append(f'strategy = "{strategy}"')
-            lines.append("[funds.params]")
-            lines.append("")
-
-    FUNDS_TOML_PATH.write_text("\n".join(lines) + "\n")
-    log.info(f"Updated {FUNDS_TOML_PATH} ({len(existing_symbols)} existing, {len(new_funds)} new)")
+def extract_vault_from_logs(receipt, factory_addr: str):
+    factory_lower = factory_addr.lower()
+    for entry in receipt.get("logs", []):
+        if entry["address"].lower() != factory_lower:
+            continue
+        if len(entry["topics"]) < 2:
+            continue
+        raw = entry["topics"][1]
+        if isinstance(raw, bytes):
+            return Web3.to_checksum_address("0x" + raw[-20:].hex())
+        return Web3.to_checksum_address("0x" + raw.hex()[-40:])
+    return None
 
 
-def update_deployment_json(catalog):
-    """Update whitelistedVaults in both deployment.json copies."""
-    vaults = [f["vault"] for f in catalog["funds"] if f.get("vault")]
+def load_deployment():
+    if not ACTIVE_DEPLOYMENT_PATH.exists():
+        log.error(f"Missing {ACTIVE_DEPLOYMENT_PATH}")
+        sys.exit(1)
+    return json.loads(ACTIVE_DEPLOYMENT_PATH.read_text())
 
-    for path in [DEPLOYMENT_PATH, DEPLOYMENT_TESTNET_PATH]:
+
+def resolve_addr(deployment: dict, *keys: str) -> str:
+    contracts = deployment.get("contracts", deployment)
+    for key in keys:
+        val = contracts.get(key)
+        if val:
+            return Web3.to_checksum_address(val)
+    raise KeyError(f"None of {keys} found in deployment JSON")
+
+
+def write_deployment(deployment: dict, whitelisted: list, source_vaults: dict):
+    for path in (ACTIVE_DEPLOYMENT_PATH, FRONTEND_DEPLOYMENT_PATH):
+        if not path.exists():
+            continue
         data = json.loads(path.read_text())
-        data["whitelistedVaults"] = vaults
+        data["whitelistedVaults"] = whitelisted
+        data["sourceVaults"] = source_vaults
         path.write_text(json.dumps(data, indent=2) + "\n")
-        log.info(f"Updated {path} ({len(vaults)} vaults)")
+        log.info(f"Updated {path} ({len(whitelisted)} vaults, {len(source_vaults)} sources)")
 
-
-# ── Main ─────────────────────────────────────────────────────────────
 
 def main():
-    key = os.environ.get(
-        "DEPLOYER_KEY",
-        "0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537",
-    )
-    w3 = Web3(Web3.HTTPProvider(RPC, request_kwargs={"timeout": 60}))
-    if not w3.is_connected():
-        log.error("Cannot connect to RPC")
+    parser = argparse.ArgumentParser(description="Deploy + fund Vision vaults per source")
+    parser.add_argument("--per-source", type=int, default=5, help="Vaults per Vision source (default 5)")
+    parser.add_argument("--seed-amount", type=float, default=10_000, help="USDC per vault (default 10000)")
+    parser.add_argument("--fee-bps", type=int, default=1000, help="Performance fee in bps (default 1000 = 10%%)")
+    parser.add_argument("--rpc", default=os.environ.get("L3_RPC_URL", "http://142.132.164.24/"))
+    parser.add_argument("--key", default=os.environ.get("DEPLOYER_KEY"), help="Deployer private key (env: DEPLOYER_KEY)")
+    parser.add_argument("--dry-run", action="store_true", help="Print plan, do nothing")
+    args = parser.parse_args()
+
+    if not args.key:
+        log.error("DEPLOYER_KEY env var or --key required")
         sys.exit(1)
 
-    account = w3.eth.account.from_key(key)
+    deployment = load_deployment()
+    factory = resolve_addr(deployment, "VisionVaultFactory")
+    usdc = resolve_addr(deployment, "L3_USDC", "USDC_ADDRESS", "USDC")
+
+    if not VISION_BATCHES_PATH.exists():
+        log.error(f"Missing {VISION_BATCHES_PATH} — run Vision batches deploy first")
+        sys.exit(1)
+    batches = json.loads(VISION_BATCHES_PATH.read_text())
+    sources = sorted(batches.get("batches", {}).keys())
+    if not sources:
+        log.error("No sources in vision-batches.json")
+        sys.exit(1)
+
+    total = len(sources) * args.per_source
+    seed_wei = int(args.seed_amount * 10**18)
+    log.info(f"Plan: {len(sources)} sources x {args.per_source} vaults = {total} vaults")
+    log.info(f"Seed: {args.seed_amount:,.0f} USDC each -> {total * args.seed_amount:,.0f} USDC total")
+    log.info(f"Factory: {factory}")
+    log.info(f"USDC:    {usdc}")
+
+    if args.dry_run:
+        for src in sources:
+            names = [f"{prettify_source(src)} Fund {i+1}" for i in range(args.per_source)]
+            log.info(f"  {src}: {names}")
+        return
+
+    w3 = Web3(Web3.HTTPProvider(args.rpc, request_kwargs={"timeout": 60}))
+    if not w3.is_connected():
+        log.error(f"Cannot reach {args.rpc}")
+        sys.exit(1)
+    account = w3.eth.account.from_key(args.key)
     deployer = account.address
-    log.info(f"Deployer: {deployer}")
-    log.info(f"Chain ID: {w3.eth.chain_id}")
+    log.info(f"Deployer: {deployer}  (chain_id={w3.eth.chain_id})")
 
-    catalog = json.loads(BRANDING_PATH.read_text())
-    total = len(catalog["funds"])
-    log.info(f"Fund catalog: {total} funds")
+    factory_c = w3.eth.contract(address=factory, abi=FACTORY_ABI)
+    usdc_c = w3.eth.contract(address=usdc, abi=ERC20_ABI)
 
-    factory = w3.eth.contract(address=FACTORY, abi=FACTORY_ABI)
-    usdc = w3.eth.contract(address=USDC, abi=ERC20_ABI)
+    bal = usdc_c.functions.balanceOf(deployer).call()
+    need = total * seed_wei
+    log.info(f"USDC balance: {bal / 1e18:,.2f} | need: {need / 1e18:,.2f}")
+    if bal < need:
+        log.error("Insufficient USDC. Mint more to deployer before running.")
+        sys.exit(1)
 
-    balance = usdc.functions.balanceOf(deployer).call()
-    log.info(f"USDC balance: {balance / 1e18:,.2f}")
+    source_vaults: dict = {}
+    all_vaults: list = []
 
-    needs_deploy = [f for f in catalog["funds"] if not f.get("vault")]
-    needs_fund = []  # will be populated after deploy phase
-    log.info(f"Vaults to deploy: {len(needs_deploy)}")
+    # Phase 1: deploy
+    for src in sources:
+        symbol = source_symbol(src)
+        pretty = prettify_source(src)
+        source_vaults[src] = []
+        for i in range(args.per_source):
+            name = f"{pretty} Fund {i+1}"
+            sym = f"{symbol}{i+1}"
+            log.info(f"[DEPLOY] {src} #{i+1} -> {sym} ({name})")
+            try:
+                tx = factory_c.functions.createVault(
+                    name, sym, args.fee_bps, deployer
+                ).build_transaction(build_tx(w3, deployer, gas=5_000_000))
+                rcpt = send_tx(w3, account, tx)
+                vault = extract_vault_from_logs(rcpt, factory)
+                if not vault:
+                    log.error("  no VaultCreated event in receipt")
+                    continue
+                source_vaults[src].append(vault)
+                all_vaults.append(vault)
+                log.info(f"  -> {vault} (gas={rcpt['gasUsed']})")
+            except Exception as e:
+                log.error(f"  FAILED: {e}")
+            time.sleep(0.2)
 
-    # ── Phase 1: Deploy missing vaults ───────────────────────────────
+    log.info(f"Deployed {len(all_vaults)}/{total} vaults")
 
-    deployed_count = 0
-    for fund in needs_deploy:
-        name = fund["name"]
-        symbol = fund["symbol"]
-        fee = fund["fee"]
-
-        log.info(f"[DEPLOY] {symbol} — {name} (fee={fee})")
+    # Phase 2: fund
+    funded = 0
+    for vault in all_vaults:
+        vault_c = w3.eth.contract(address=vault, abi=VAULT_ABI)
         try:
-            tx = factory.functions.createVault(
-                name, symbol, fee, deployer
-            ).build_transaction(build_tx(w3, deployer, gas=5_000_000))
-            receipt = send_tx(w3, account, tx)
-
-            # Extract vault address from logs — the VaultCreated event has vault as first indexed topic
-            vault_addr = None
-            for entry in receipt.get("logs", []):
-                if entry["address"].lower() == FACTORY.lower() and len(entry["topics"]) >= 2:
-                    # topic[0] = event sig, topic[1] = vault (indexed address)
-                    raw = entry["topics"][1]
-                    if isinstance(raw, bytes):
-                        vault_addr = Web3.to_checksum_address("0x" + raw[-20:].hex())
-                    else:
-                        vault_addr = Web3.to_checksum_address("0x" + raw.hex()[-40:])
-                    break
-            if not vault_addr:
-                log.error(f"  No vault address in logs for {symbol}")
-                continue
-            fund["vault"] = vault_addr
-            deployed_count += 1
-            log.info(f"  -> {vault_addr} (gas={receipt['gasUsed']})")
-
-            # Save progress every 10 deploys
-            if deployed_count % 10 == 0:
-                BRANDING_PATH.write_text(json.dumps(catalog, indent=2) + "\n")
-                log.info(f"  [checkpoint] saved {deployed_count} new vaults")
-
-        except Exception as e:
-            log.error(f"  FAILED: {e}")
-            # Save what we have so far
-            BRANDING_PATH.write_text(json.dumps(catalog, indent=2) + "\n")
-            continue
-
-        time.sleep(0.5)
-
-    if deployed_count > 0:
-        BRANDING_PATH.write_text(json.dumps(catalog, indent=2) + "\n")
-        log.info(f"Deployed {deployed_count} new vaults")
-
-    # ── Phase 2: Fund all vaults with seed USDC ──────────────────────
-
-    funded_count = 0
-    skipped_count = 0
-    failed_count = 0
-
-    fundable = [f for f in catalog["funds"] if f.get("vault")]
-    log.info(f"Vaults to check/fund: {len(fundable)}")
-
-    # Re-check balance
-    balance = usdc.functions.balanceOf(deployer).call()
-    needed = len(fundable) * SEED_AMOUNT
-    log.info(f"USDC balance: {balance / 1e18:,.2f} | needed (max): {needed / 1e18:,.2f}")
-
-    for fund in fundable:
-        name = fund["name"]
-        symbol = fund["symbol"]
-        vault_addr = Web3.to_checksum_address(fund["vault"])
-        vault = w3.eth.contract(address=vault_addr, abi=VAULT_ABI)
-
-        # Check if already funded
-        try:
-            assets = vault.functions.totalAssets().call()
-            if assets > 0:
-                log.info(f"[SKIP] {symbol} — already funded ({assets / 1e18:.2f} USDC)")
-                skipped_count += 1
+            existing = vault_c.functions.totalAssets().call()
+            if existing > 0:
+                log.info(f"[SKIP] {vault} already has {existing / 1e18:.2f} USDC")
                 continue
         except Exception:
             pass
 
-        log.info(f"[FUND] {symbol} — {name} @ {vault_addr}")
-
         try:
-            # Step 1: Approve USDC spend
-            allowance = usdc.functions.allowance(deployer, vault_addr).call()
-            if allowance < SEED_AMOUNT:
-                log.info(f"  approve {SEED_AMOUNT / 1e18:.0f} USDC")
-                tx = usdc.functions.approve(vault_addr, SEED_AMOUNT).build_transaction(
+            if usdc_c.functions.allowance(deployer, vault).call() < seed_wei:
+                tx = usdc_c.functions.approve(vault, seed_wei).build_transaction(
                     build_tx(w3, deployer, gas=100_000)
                 )
                 send_tx(w3, account, tx)
-
-            # Step 2: requestDeposit
-            log.info(f"  requestDeposit")
-            tx = vault.functions.requestDeposit(
-                SEED_AMOUNT, deployer, deployer
-            ).build_transaction(build_tx(w3, deployer, gas=500_000))
-            send_tx(w3, account, tx)
-
-            # Step 3: claimDeposit
-            log.info(f"  claimDeposit")
-            tx = vault.functions.claimDeposit(deployer, deployer).build_transaction(
+            tx = vault_c.functions.requestDeposit(seed_wei, deployer, deployer).build_transaction(
                 build_tx(w3, deployer, gas=500_000)
             )
             send_tx(w3, account, tx)
-
-            funded_count += 1
-            log.info(f"  -> funded {SEED_AMOUNT / 1e18:.0f} USDC")
-
+            tx = vault_c.functions.claimDeposit(deployer, deployer).build_transaction(
+                build_tx(w3, deployer, gas=500_000)
+            )
+            send_tx(w3, account, tx)
+            funded += 1
+            log.info(f"[FUND] {vault} -> {args.seed_amount:,.0f} USDC")
         except Exception as e:
-            log.error(f"  FAILED: {e}")
-            failed_count += 1
-            continue
+            log.error(f"  FAILED funding {vault}: {e}")
+        time.sleep(0.15)
 
-        time.sleep(0.3)
+    log.info(f"Funded {funded}/{len(all_vaults)} vaults")
 
-    # ── Phase 3: Update config files ─────────────────────────────────
-
-    BRANDING_PATH.write_text(json.dumps(catalog, indent=2) + "\n")
-    log.info(f"Saved {BRANDING_PATH}")
-
-    update_deployment_json(catalog)
-    write_funds_toml(catalog)
-
-    # ── Receipt ──────────────────────────────────────────────────────
+    # Phase 3: persist
+    write_deployment(deployment, all_vaults, source_vaults)
 
     receipt_path = ROOT / "scripts" / "vault-deploy-receipt.json"
-    receipt_data = {
+    receipt_path.write_text(json.dumps({
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "deployer": deployer,
-        "total_funds": total,
-        "deployed": deployed_count,
-        "funded": funded_count,
-        "skipped": skipped_count,
-        "failed": failed_count,
-        "vaults": {
-            f["symbol"]: f.get("vault", "")
-            for f in catalog["funds"]
-        },
-    }
-    receipt_path.write_text(json.dumps(receipt_data, indent=2) + "\n")
+        "factory": factory,
+        "per_source": args.per_source,
+        "seed_amount_usdc": args.seed_amount,
+        "fee_bps": args.fee_bps,
+        "total_deployed": len(all_vaults),
+        "total_funded": funded,
+        "source_vaults": source_vaults,
+    }, indent=2) + "\n")
     log.info(f"Receipt: {receipt_path}")
-
-    log.info(f"Done: {deployed_count} deployed, {funded_count} funded, {skipped_count} skipped, {failed_count} failed")
 
 
 if __name__ == "__main__":
