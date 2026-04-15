@@ -103,7 +103,7 @@ export const OgCardGM: React.FC = () => {
             }}
           >
             The first prediction market where insiders don&rsquo;t steal{" "}
-            <span style={{ color: "#16a34a" }}>70%</span> of your money.
+            <span style={{ color: "#16a34a" }}>70%</span> of your money
           </div>
         </div>
       </AbsoluteFill>
