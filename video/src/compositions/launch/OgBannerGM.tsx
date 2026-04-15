@@ -3,8 +3,8 @@ import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
 import { OG_LOGOS } from "./data/ogLogos";
 
-const GRID_COLS = 12;
-const GRID_ROWS = 4;
+const GRID_COLS = 14;
+const GRID_ROWS = 5;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
 export const OgBannerGM: React.FC = () => {
@@ -15,9 +15,9 @@ export const OgBannerGM: React.FC = () => {
         style={{
           left: "0%",
           WebkitMaskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 18%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,1) 70%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%)",
           maskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 18%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,1) 70%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%)",
         }}
       >
         <div
