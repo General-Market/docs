@@ -64,6 +64,7 @@ import {
 } from "./compositions/tutorial/theme";
 import { Launch30 } from "./compositions/launch/Launch30";
 import { OgCardGM } from "./compositions/launch/OgCardGM";
+import { OgBannerGM } from "./compositions/launch/OgBannerGM";
 import {
   TOTAL_FRAMES as LAUNCH_DURATION,
   FPS as LAUNCH_FPS,
@@ -106,6 +107,16 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1200}
         height={630}
+      />
+
+      {/* ═══ OG BANNER (X/Twitter profile banner 1500x500) ═══ */}
+      <Composition
+        id="OgBannerGM"
+        component={OgBannerGM}
+        durationInFrames={1}
+        fps={30}
+        width={1500}
+        height={500}
       />
 
       {/* ═══ ICEBERG ═══ */}
