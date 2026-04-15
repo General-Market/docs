@@ -102,7 +102,7 @@ export const OgCardGM: React.FC = () => {
               letterSpacing: "-0.03em",
             }}
           >
-            The first prediction market where insiders don&rsquo;t steal{" "}
+            The first prediction market where insider traders don&rsquo;t steal{" "}
             <span style={{ color: "#16a34a" }}>70%</span> of your money
           </div>
         </div>
