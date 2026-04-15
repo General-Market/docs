@@ -18,7 +18,7 @@ services:
       # Quote API default listen port is 8080. /health/ready returns 503 when
       # no successful eth_call in the last 5 minutes — the condition we want
       # to detect. pgrep is kept as a fallback for pre-API boot.
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || pgrep curator >/dev/null"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || pgrep curator >/dev/null"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -24,7 +24,7 @@ services:
     <<: *oracle-base
     container_name: testnet-oracle-1
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10001/health/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10001/ready"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -34,7 +34,7 @@ services:
     <<: *oracle-base
     container_name: testnet-oracle-2
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10002/health/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10002/ready"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -44,7 +44,7 @@ services:
     <<: *oracle-base
     container_name: testnet-oracle-3
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:10003/health/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:10003/ready"]
       interval: 30s
       timeout: 5s
       retries: 3

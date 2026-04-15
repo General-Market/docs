@@ -14,7 +14,7 @@ services:
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - ../../../data/symbol-map.json:/app/data/symbol-map.json:ro
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:9100/health/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:9100/health"]
       interval: 30s
       timeout: 5s
       retries: 3

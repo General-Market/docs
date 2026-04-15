@@ -33,7 +33,7 @@ services:
         limits:
           memory: 6g
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8200/health/ready"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
       interval: 30s
       timeout: 5s
       retries: 3
