@@ -326,12 +326,20 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         uint256 gasFunding = 10 ether;
         uint256 totalNeeded = gasFunding * 5;
         if (address(admin).balance > totalNeeded + 1 ether) {
+            // On Sonic and similar, Anvil test accounts may have EIP-7702 delegations
+            // to contracts that reject plain value transfers. Don't revert the entire
+            // deployment for a best-effort gas seed — log and continue.
             address[5] memory recipients = [oracle1, oracle2, oracle3, ap, user];
+            uint256 funded;
             for (uint256 r = 0; r < recipients.length; r++) {
                 (bool ok,) = payable(recipients[r]).call{value: gasFunding}("");
-                require(ok, "gas funding transfer failed");
+                if (ok) { funded++; }
             }
-            console.log("  Oracles + AP + user funded with 10 ETH each for gas");
+            if (funded == recipients.length) {
+                console.log("  Oracles + AP + user funded with 10 ETH each for gas");
+            } else {
+                console.log("  Gas funding partial (some recipients rejected transfer)");
+            }
         } else {
             console.log("  Skipping gas funding (deployer balance too low)");
         }
