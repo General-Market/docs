@@ -1,7 +1,7 @@
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
+import { AbsoluteFill, Audio, Sequence, interpolate, staticFile } from "remotion";
 import { SHOTS } from "./data/shotlist";
-import { toFrames } from "./theme";
+import { toFrames, FPS } from "./theme";
 import { BrollGrid } from "./shots/BrollGrid";
 import { BrollGridStatement } from "./shots/BrollGridStatement";
 import { QuadGrid } from "./shots/QuadGrid";
@@ -97,6 +97,45 @@ export const Launch30: React.FC = () => {
       })}
 
       <Sfx sound={sfxEvents} />
+
+      {/* ── Music bed: track from 0:15, crossfades out over 3s ── */}
+      <Sequence from={0} durationInFrames={toFrames(27)} layout="none">
+        <Audio
+          src={staticFile("music/launch-track.mp3")}
+          startFrom={Math.round(15 * FPS)}
+          volume={(f) => {
+            const fadeIn = interpolate(f, [0, toFrames(0.5)], [0, 1], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            // slow fade-out starts at 22s, gone by 26s
+            const fadeOut = interpolate(
+              f,
+              [toFrames(22), toFrames(26)],
+              [1, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+            return 0.5 * fadeIn * fadeOut;
+          }}
+        />
+      </Sequence>
+
+      {/* ── End section: starts 1:52 (music lead-in), piano drop at ~1:55 ── */}
+      <Sequence from={toFrames(22)} durationInFrames={toFrames(8)} layout="none">
+        <Audio
+          src={staticFile("music/launch-track.mp3")}
+          startFrom={Math.round(112 * FPS)}
+          volume={(f) => {
+            const fadeIn = interpolate(
+              f,
+              [0, toFrames(3)],
+              [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            );
+            return 0.5 * fadeIn;
+          }}
+        />
+      </Sequence>
     </AbsoluteFill>
   );
 };

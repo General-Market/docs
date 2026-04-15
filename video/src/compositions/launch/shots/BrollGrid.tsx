@@ -12,6 +12,10 @@ import { BrollCell } from "./BrollCell";
 
 const EASE_PUSH = Easing.bezier(0.5, 0, 0.15, 1);
 
+const TILT_X = 12;
+const GRID_SCALE = 1.15;
+const SCROLL_SPEED = 0.6;
+
 const GRID_STEPS = [
   { cols: 2, rows: 2 },
   { cols: 3, rows: 2 },
@@ -88,9 +92,12 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
     }
   }
 
+  const scrollY = frame * SCROLL_SPEED;
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
-      <AbsoluteFill style={{ filter: "blur(8px)", overflow: "hidden" }}>
+      <div style={{ width: "100%", height: "100%", perspective: 1800, perspectiveOrigin: "50% 45%" }}>
+      <AbsoluteFill style={{ filter: "blur(8px)", overflow: "hidden", transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE}) translateY(${-scrollY}px)`, transformStyle: "preserve-3d" }}>
         {cells.map(({ x, y, i }) => (
           <div
             key={i}
@@ -136,6 +143,7 @@ export const BrollGrid: React.FC<BrollGridProps> = ({
           </div>
         ))}
       </AbsoluteFill>
+      </div>
 
       <AbsoluteFill
         style={{

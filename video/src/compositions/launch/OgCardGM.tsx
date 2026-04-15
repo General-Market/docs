@@ -1,10 +1,10 @@
 import React from "react";
 import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
-import { SOURCES } from "./data/sources";
+import { OG_LOGOS } from "./data/ogLogos";
 
-const GRID_COLS = 7;
-const GRID_ROWS = 9;
+const GRID_COLS = 4;
+const GRID_ROWS = 6;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
 export const OgCardGM: React.FC = () => {
@@ -32,7 +32,7 @@ export const OgCardGM: React.FC = () => {
           }}
         >
           {Array.from({ length: CELL_COUNT }).map((_, i) => {
-            const source = SOURCES[(i * 11 + 5) % SOURCES.length];
+            const source = OG_LOGOS[i % OG_LOGOS.length];
             const logoSrc = source.logo.startsWith("/")
               ? source.logo.slice(1)
               : source.logo;

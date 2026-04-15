@@ -59,34 +59,17 @@ export const SHOTS: Shot[] = [
     statement: "Experience liquidity for\nevery niche prediction market",
   },
 
-  // ── Four categories at once — quad split
-  {
-    type: "quad-grid",
-    startSec: 14,
-    durationSec: 2.5,
-    categories: ["twitch", "pumpfun", "movies", "animals"],
-    question: "Any market.\nAny asset.\nAny outcome.",
-  },
-
-  // ── Stats card — numbers count up
-  {
-    type: "payoff-card",
-    startSec: 16.5,
-    durationSec: 3.5,
-    statement: "500,000 markets\n12,000 million settlements per day",
-  },
-
   // ── Finale
   {
     type: "mega-grid",
-    startSec: 20,
-    durationSec: 5,
+    startSec: 14,
+    durationSec: 6,
     category: "all",
-    question: "And 500,000 more markets",
+    question: "And 500,000 more markets\n12,000 million settlements per day",
   },
   {
     type: "logo-reveal",
-    startSec: 25,
+    startSec: 20,
     durationSec: 5,
     statement: "General Market\nTrade 10,000x more",
   },

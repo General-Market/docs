@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Img, staticFile } from "remotion";
 import { font } from "../../common/fonts";
-import { SOURCES } from "./data/sources";
+import { OG_LOGOS } from "./data/ogLogos";
 
 const GRID_COLS = 6;
 const GRID_ROWS = 4;
@@ -13,11 +13,11 @@ export const OgBannerGM: React.FC = () => {
       {/* Right-side logo grid, masked with a left-to-right fade */}
       <AbsoluteFill
         style={{
-          left: "50%",
+          left: "56%",
           WebkitMaskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 28%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 100%)",
           maskImage:
-            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 28%, rgba(0,0,0,1) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 100%)",
         }}
       >
         <div
@@ -27,12 +27,12 @@ export const OgBannerGM: React.FC = () => {
             display: "grid",
             gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
             gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-            gap: 6,
-            padding: 6,
+            gap: 8,
+            padding: 8,
           }}
         >
           {Array.from({ length: CELL_COUNT }).map((_, i) => {
-            const source = SOURCES[(i * 11 + 5) % SOURCES.length];
+            const source = OG_LOGOS[i % OG_LOGOS.length];
             const logoSrc = source.logo.startsWith("/")
               ? source.logo.slice(1)
               : source.logo;
@@ -42,12 +42,12 @@ export const OgBannerGM: React.FC = () => {
                 key={i}
                 style={{
                   background: source.bg,
-                  borderRadius: 8,
+                  borderRadius: 10,
                   overflow: "hidden",
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
-                  padding: 8,
+                  padding: 10,
                 }}
               >
                 <Img
@@ -64,24 +64,24 @@ export const OgBannerGM: React.FC = () => {
         </div>
       </AbsoluteFill>
 
-      {/* Left content block — lifted up to clear profile picture area */}
+      {/* Left content block — lifted to clear profile picture area */}
       <AbsoluteFill
         style={{
           justifyContent: "center",
           alignItems: "flex-start",
-          padding: "56px 72px 140px 72px",
-          gap: 28,
+          padding: "40px 72px 130px 72px",
+          gap: 26,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <Img
             src={staticFile("gm-logo.svg")}
-            style={{ width: 56, height: 56 }}
+            style={{ width: 52, height: 52 }}
           />
           <div
             style={{
               fontFamily: font,
-              fontSize: 42,
+              fontSize: 38,
               fontWeight: 700,
               color: "#0e0f0c",
               letterSpacing: "-0.015em",
@@ -91,20 +91,21 @@ export const OgBannerGM: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ maxWidth: 680 }}>
-          <div
-            style={{
-              fontFamily: font,
-              fontSize: 56,
-              fontWeight: 700,
-              color: "#0e0f0c",
-              lineHeight: 1.08,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            The first prediction market where insider traders don&rsquo;t steal{" "}
-            <span style={{ color: "#16a34a" }}>70%</span> of your money
-          </div>
+        <div
+          style={{
+            fontFamily: font,
+            fontSize: 44,
+            fontWeight: 700,
+            color: "#0e0f0c",
+            lineHeight: 1.12,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          The first prediction market where
+          <br />
+          insider traders don&rsquo;t steal
+          <br />
+          <span style={{ color: "#16a34a" }}>70%</span> of your money
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

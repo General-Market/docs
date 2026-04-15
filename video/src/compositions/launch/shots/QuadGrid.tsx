@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { font } from "../../../common/fonts";
 import { PLACEHOLDER_COLORS } from "../brollAssets";
 import { BrollCell } from "./BrollCell";
@@ -9,12 +9,19 @@ const QUAD_COLS = 4;
 const QUAD_ROWS = 3;
 const QUAD_CELLS = QUAD_COLS * QUAD_ROWS;
 
+const TILT_X = 12;
+const GRID_SCALE = 1.15;
+const SCROLL_SPEED = 0.6;
+
 interface QuadGridProps {
   categories: BrollCategory[];
   question: string;
 }
 
 export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
+  const frame = useCurrentFrame();
+  const scrollY = frame * SCROLL_SPEED;
+
   const quadPositions = [
     { top: 0, left: 0 },
     { top: 0, left: "50%" },
@@ -24,6 +31,8 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
+      <div style={{ width: "100%", height: "100%", perspective: 1800, perspectiveOrigin: "50% 45%", position: "absolute", inset: 0 }}>
+      <div style={{ width: "100%", height: "100%", transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE}) translateY(${-scrollY}px)`, transformStyle: "preserve-3d", position: "relative" }}>
       {categories.slice(0, 4).map((cat, qi) => {
         const pos = quadPositions[qi];
         const colors = PLACEHOLDER_COLORS[cat] ?? ["#444"];
@@ -81,6 +90,8 @@ export const QuadGrid: React.FC<QuadGridProps> = ({ categories, question }) => {
           backgroundColor: "rgba(0,0,0,0.1)",
         }}
       />
+      </div>
+      </div>
 
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div

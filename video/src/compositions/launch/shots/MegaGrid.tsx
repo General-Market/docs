@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Img, staticFile } from "remotion";
+import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { font } from "../../../common/fonts";
 import { SOURCES } from "../data/sources";
 
@@ -7,13 +7,21 @@ const GRID_COLS = 10;
 const GRID_ROWS = 10;
 const CELL_COUNT = GRID_COLS * GRID_ROWS;
 
+const TILT_X = 12;
+const GRID_SCALE = 1.15;
+const SCROLL_SPEED = 0.6;
+
 interface MegaGridProps {
   question: string;
 }
 
 export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
+  const frame = useCurrentFrame();
+  const scrollY = frame * SCROLL_SPEED;
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#ffffff" }}>
+      <div style={{ width: "100%", height: "100%", perspective: 1800, perspectiveOrigin: "50% 45%" }}>
       <AbsoluteFill
         style={{
           display: "grid",
@@ -22,6 +30,8 @@ export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
           gap: 3,
           padding: 3,
           filter: "blur(6px)",
+          transform: `rotateX(${TILT_X}deg) scale(${GRID_SCALE}) translateY(${-scrollY}px)`,
+          transformStyle: "preserve-3d",
         }}
       >
         {Array.from({ length: CELL_COUNT }).map((_, i) => {
@@ -55,6 +65,7 @@ export const MegaGrid: React.FC<MegaGridProps> = ({ question }) => {
           );
         })}
       </AbsoluteFill>
+      </div>
 
       <AbsoluteFill
         style={{
