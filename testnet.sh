@@ -636,284 +636,40 @@ cmd_deploy() {
         : # skip forge deploy
     else
         # ============================================================
-        # TWO-PHASE DEPLOYMENT (Orbit L3 nonce safety)
-        # ============================================================
-        # Phase 1: tokens + implementations + Governance proxy + MockBitgetVault
-        #          (no proxy-to-proxy cross-references in init data)
-        # Between: rebuild Phase 1 addresses from broadcast receipts
-        # Phase 2: remaining proxies + wiring + oracles + user funding
-        #          (reads actual Phase 1 addresses — impl pointers are correct)
+        # SINGLE-PHASE DEPLOY: DeployFullSystemE2E.run() handles everything internally.
+        # (Prior two-phase logic assumed runPhase1()/runPhase2() which don't exist in
+        # the Solidity script. Kept receipt-rebuild as fallback if JSON addresses drift.)
         # ============================================================
 
-        local DEPLOYER_NONCE_BEFORE=$(cast nonce --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "?")
-        echo -e "  Deployer nonce before core deploy: $DEPLOYER_NONCE_BEFORE"
-
-        # Clean all stale artifacts
         rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
         rm -rf contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
-        rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/
-        rm -rf deployments/phase1-addresses.json
-        echo -e "  ${YELLOW}Core + token broadcasts cleaned (fresh deploy)${NC}"
+        rm -f deployments/e2e-full-system.json
+        echo -e "  ${YELLOW}Core broadcast cleaned (fresh deploy)${NC}"
 
-        # ---- PHASE 1: Implementations + Governance proxy ----
-        echo -e "  ${BLUE}Phase 1: Deploying implementations + Governance proxy...${NC}"
+        echo -e "  ${BLUE}Deploying DeployFullSystemE2E (all internal phases)...${NC}"
         (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
-            --sig "runPhase1()" \
             --rpc-url "$RPC_URL" \
             --private-key "$DEPLOYER_KEY" \
             --broadcast --slow \
             --chain-id $CHAIN_ID \
             --legacy --with-gas-price $GAS_PRICE \
             $FORGE_SIZE_FLAG) \
-            > logs/deploy-phase1.log 2>&1 || true
+            > logs/deploy-core.log 2>&1 || true
 
-        # Verify Phase 1 produced output
-        if [ ! -f "deployments/phase1-addresses.json" ]; then
-            echo -e "  ${RED}Phase 1 failed — no phase1-addresses.json${NC}"
-            echo -e "  ${YELLOW}Last 30 lines of logs/deploy-phase1.log:${NC}"
-            tail -30 logs/deploy-phase1.log 2>/dev/null || true
-            exit 1
-        fi
-        local P1_RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
-        if [ "$P1_RECEIPT_COUNT" = "0" ]; then
-            echo -e "  ${RED}Phase 1 broadcast failed — 0 receipts${NC}"
-            tail -30 logs/deploy-phase1.log 2>/dev/null || true
-            exit 1
-        fi
-        echo -e "  ${GREEN}Phase 1 complete ($P1_RECEIPT_COUNT txs confirmed)${NC}"
-
-        # ---- REBUILD PHASE 1 ADDRESSES FROM RECEIPTS ----
-        # phase1-addresses.json contains simulation addresses. Rebuild from broadcast
-        # receipts to get ACTUAL on-chain addresses for implementations and Governance proxy.
-        echo -e "  ${YELLOW}Rebuilding Phase 1 addresses from broadcast receipts...${NC}"
-        # Save Phase 1 broadcast before Phase 2 overwrites it
-        cp contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json \
-           contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json
-
-        python3 -c "
-import json, sys
-
-bd = json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json'))
-p1 = json.load(open('deployments/phase1-addresses.json'))
-
-# Build map of contract names to actual broadcast addresses
-impls = {}     # addr_lower -> name
-creates = {}   # name -> [entries]
-proxy_map = {} # impl_name -> proxy_addr
-
-for tx in bd.get('transactions', []):
-    if tx.get('transactionType') not in ('CREATE', 'CREATE2'):
-        continue
-    name = tx.get('contractName', '')
-    addr = tx.get('contractAddress', '')
-    args = tx.get('arguments', [])
-    if not name or not addr:
-        continue
-    if name == 'ERC1967Proxy':
-        if args:
-            impl_addr = args[0].lower()
-            if impl_addr in impls:
-                proxy_map[impls[impl_addr]] = addr
-    else:
-        impls[addr.lower()] = name
-        creates.setdefault(name, []).append({'address': addr, 'args': args})
-
-# Patch implementations
-impl_map = {
-    'Governance': 'Governance',
-    'Investment': 'Investment',
-    'OracleRegistry': 'OracleRegistry',
-    'L3BridgeCustody': 'L3BridgeCustody',
-    'SettlementBridgeCustody': 'SettlementBridgeCustody',
-    'BLSCustody': 'BLSCustody',
-    'BridgeProxy': 'BridgeProxy',
-}
-patched = 0
-for contract_name, json_key in impl_map.items():
-    if contract_name in creates and len(creates[contract_name]) >= 1:
-        actual = creates[contract_name][0]['address']
-        if p1['implementations'].get(json_key, '').lower() != actual.lower():
-            p1['implementations'][json_key] = actual
-            patched += 1
-
-# Patch Governance proxy
-if 'Governance' in proxy_map:
-    actual = proxy_map['Governance']
-    if p1['proxies'].get('Governance', '').lower() != actual.lower():
-        p1['proxies']['Governance'] = actual
-        patched += 1
-
-# Patch MockBitgetVault
-if 'MockBitgetVault' in creates and len(creates['MockBitgetVault']) == 1:
-    actual = creates['MockBitgetVault'][0]['address']
-    if p1['contracts'].get('MockBitgetVault', '').lower() != actual.lower():
-        p1['contracts']['MockBitgetVault'] = actual
-        patched += 1
-
-# Patch tokens
-for entry in creates.get('MockERC20', []):
-    args = entry.get('args', [])
-    if len(args) >= 2:
-        symbol = args[1]
-        if 'L3_WUSDC' in symbol or 'WUSDC' in symbol:
-            if p1['tokens'].get('L3_WUSDC', '').lower() != entry['address'].lower():
-                p1['tokens']['L3_WUSDC'] = entry['address']
-                patched += 1
-        elif 'SETTLEMENT_USDC' in symbol:
-            if p1['tokens'].get('SETTLEMENT_USDC', '').lower() != entry['address'].lower():
-                p1['tokens']['SETTLEMENT_USDC'] = entry['address']
-                patched += 1
-        elif 'MOCK_USDT' in symbol or 'USDT' in symbol:
-            if p1['tokens'].get('MOCK_USDT', '').lower() != entry['address'].lower():
-                p1['tokens']['MOCK_USDT'] = entry['address']
-                patched += 1
-
-json.dump(p1, open('deployments/phase1-addresses.json', 'w'), indent=2)
-print(f'Patched {patched} Phase 1 addresses from broadcast receipts')
-" 2>/dev/null && echo -e "  ${GREEN}Phase 1 addresses rebuilt from receipts${NC}" || {
-            echo -e "  ${RED}Phase 1 receipt rebuild failed. Aborting.${NC}"
-            exit 1
-        }
-
-        # Verify Governance proxy has code at its receipt-rebuilt address
-        local P1_GOV=$(python3 -c "import json; print(json.load(open('deployments/phase1-addresses.json'))['proxies']['Governance'])" 2>/dev/null || echo "")
-        if [ -n "$P1_GOV" ]; then
-            local GOV_CODE=$(cast code --rpc-url "$RPC_URL" "$P1_GOV" 2>/dev/null | wc -c | tr -d ' ')
-            if [ "$GOV_CODE" -lt 10 ]; then
-                echo -e "  ${RED}CRITICAL: Governance proxy at $P1_GOV has no code after receipt rebuild${NC}"
-                rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/phase1-addresses.json
-                exit 1
-            fi
-            # Verify Governance.admin() returns deployer
-            local GOV_ADMIN=$(cast call --rpc-url "$RPC_URL" "$P1_GOV" "admin()(address)" 2>/dev/null | tr -d '[:space:]')
-            local GOV_ADMIN_LOWER=$(echo "$GOV_ADMIN" | tr '[:upper:]' '[:lower:]')
-            local DEPLOYER_LOWER=$(echo "$DEPLOYER_ADDRESS" | tr '[:upper:]' '[:lower:]')
-            if [ "$GOV_ADMIN_LOWER" != "$DEPLOYER_LOWER" ]; then
-                echo -e "  ${RED}CRITICAL: Governance.admin() = $GOV_ADMIN, expected deployer $DEPLOYER_ADDRESS${NC}"
-                echo -e "  ${RED}Implementation pointer is wrong — proxy delegatecall reaches phantom.${NC}"
-                rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/phase1-addresses.json
-                exit 1
-            fi
-            echo -e "  ${GREEN}Governance proxy verified: admin() = deployer${NC}"
-        fi
-
-        # ---- PHASE 2: Proxies + Wiring ----
-        # Phase 2 reads phase1-addresses.json (receipt-rebuilt) so all implementation
-        # pointers and Phase 1 cross-references are correct.
-        echo -e "  ${BLUE}Phase 2: Deploying proxies + wiring...${NC}"
-        # Clean broadcast + cache dirs so forge doesn't try to resume Phase 1 transactions.
-        # Phase 1 broadcast is preserved as run-phase1.json in a temp location.
-        cp contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json \
-           /tmp/deploy-phase1-backup-$CHAIN_ID.json 2>/dev/null || true
-        rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
-        rm -rf contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
-        mkdir -p contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
-        cp /tmp/deploy-phase1-backup-$CHAIN_ID.json \
-           contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-phase1.json 2>/dev/null || true
-
-        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-        forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
-            --sig "runPhase2()" \
-            --rpc-url "$RPC_URL" \
-            --private-key "$DEPLOYER_KEY" \
-            --broadcast --slow \
-            --chain-id $CHAIN_ID \
-            --legacy --with-gas-price $GAS_PRICE \
-            $FORGE_SIZE_FLAG) \
-            > logs/deploy-phase2.log 2>&1 || true
-
-        # Verify Phase 2
         if [ ! -f "deployments/e2e-full-system.json" ]; then
-            echo -e "  ${RED}Phase 2 failed — no deployment JSON${NC}"
-            echo -e "  ${YELLOW}Last 30 lines of logs/deploy-phase2.log:${NC}"
-            tail -30 logs/deploy-phase2.log 2>/dev/null || true
+            echo -e "  ${RED}Core deploy failed — no e2e-full-system.json${NC}"
+            echo -e "  ${YELLOW}Last 30 lines of logs/deploy-core.log:${NC}"
+            tail -30 logs/deploy-core.log 2>/dev/null || true
             exit 1
         fi
-        local P2_RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
-        if [ "$P2_RECEIPT_COUNT" = "0" ]; then
-            echo -e "  ${RED}Phase 2 broadcast failed — 0 receipts${NC}"
-            tail -30 logs/deploy-phase2.log 2>/dev/null || true
+        local CORE_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+        if [ "$CORE_RECEIPTS" = "0" ]; then
+            echo -e "  ${RED}Core deploy failed — 0 receipts${NC}"
+            tail -30 logs/deploy-core.log 2>/dev/null || true
             exit 1
         fi
-        echo -e "  ${GREEN}Phase 2 complete ($P2_RECEIPT_COUNT txs confirmed)${NC}"
-
-        # ---- REBUILD FINAL ADDRESSES FROM PHASE 2 RECEIPTS ----
-        echo -e "  ${YELLOW}Rebuilding final deployment from Phase 2 broadcast receipts...${NC}"
-        python3 -c "
-import json, sys
-
-bd_path = 'contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json'
-deploy_path = 'deployments/e2e-full-system.json'
-p1_path = 'deployments/phase1-addresses.json'
-bd = json.load(open(bd_path))
-deploy = json.load(open(deploy_path))
-p1 = json.load(open(p1_path))
-
-# Phase 1 addresses are already correct (receipt-rebuilt). Inject them.
-deploy['contracts']['Governance'] = p1['proxies']['Governance']
-deploy['contracts']['MockBitgetVault'] = p1['contracts']['MockBitgetVault']
-for token_key in ['L3_WUSDC', 'SETTLEMENT_USDC', 'MOCK_USDT']:
-    if token_key in p1['tokens']:
-        deploy['contracts'][token_key] = p1['tokens'][token_key]
-deploy['contracts']['USDC'] = p1['tokens']['L3_WUSDC']
-
-# Rebuild Phase 2 proxy addresses from receipts
-impls = {}
-proxy_map = {}
-creates = {}
-
-for tx in bd.get('transactions', []):
-    if tx.get('transactionType') not in ('CREATE', 'CREATE2'):
-        continue
-    name = tx.get('contractName', '')
-    addr = tx.get('contractAddress', '')
-    args = tx.get('arguments', [])
-    if not name or not addr:
-        continue
-    if name == 'ERC1967Proxy':
-        if args:
-            impl_addr = args[0].lower()
-            if impl_addr in impls:
-                proxy_map[impls[impl_addr]] = addr
-    else:
-        impls[addr.lower()] = name
-        creates.setdefault(name, []).append({'address': addr, 'args': args})
-
-# Phase 2 proxy mapping
-proxy_key_map = {
-    'Investment': 'Index',
-    'OracleRegistry': 'OracleRegistry',
-    'L3BridgeCustody': 'L3BridgeCustody',
-    'SettlementBridgeCustody': 'SettlementBridgeCustody',
-    'BLSCustody': 'BLSCustody',
-    'BridgeProxy': 'BridgeProxy',
-}
-patched = 0
-for impl_name, deploy_key in proxy_key_map.items():
-    if impl_name in proxy_map:
-        if deploy['contracts'].get(deploy_key, '').lower() != proxy_map[impl_name].lower():
-            deploy['contracts'][deploy_key] = proxy_map[impl_name]
-            patched += 1
-
-# Non-proxy Phase 2 contracts
-for key, bcast_name in [
-    ('CollateralRegistry', 'CollateralRegistry'),
-    ('BridgedItpFactory', 'BridgedItpFactory'),
-]:
-    if bcast_name in creates and len(creates[bcast_name]) == 1:
-        actual = creates[bcast_name][0]['address']
-        if deploy['contracts'].get(key, '').lower() != actual.lower():
-            deploy['contracts'][key] = actual
-            patched += 1
-
-json.dump(deploy, open(deploy_path, 'w'), indent=2)
-print(f'Patched {patched} Phase 2 addresses from broadcast receipts')
-" 2>/dev/null && echo -e "  ${GREEN}Deployment JSON rebuilt from both phases${NC}" || {
-            echo -e "  ${RED}Phase 2 receipt rebuild failed. Cleaning and aborting.${NC}"
-            rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ deployments/e2e-full-system.json
-            exit 1
-        }
+        echo -e "  ${GREEN}Core deploy complete ($CORE_RECEIPTS txs confirmed)${NC}"
 
         # ---- POST-DEPLOY VERIFICATION ----
         local POST_INDEX=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system.json'))['contracts']['Index'])" 2>/dev/null || echo "")
