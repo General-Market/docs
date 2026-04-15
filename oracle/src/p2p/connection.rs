@@ -636,9 +636,6 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::ArbitrationPriceProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ArbitrationPriceVote { voter_id, .. } => Some(*voter_id),
         P2PMessage::ArbitrationResolutionSign { signer_id, .. } => Some(*signer_id),
-        // NAV oracle (ITPNAVOracle on Settlement)
-        P2PMessage::NavOracleProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::NavOracleSign { signer_id, .. } => Some(*signer_id),
         // MirrorOracleRegistry sync (Step 12)
         P2PMessage::MirrorSyncProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::MirrorSyncSign { signer_id, .. } => Some(*signer_id),
@@ -665,6 +662,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::BitmapGossip { .. } => None,
         P2PMessage::BitmapRequest { .. } => None,
         P2PMessage::BitmapResponse { .. } => None,
+        // NAV oracle consensus
+        P2PMessage::NavOracleProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::NavOracleSign { signer_id, .. } => Some(*signer_id),
     }
 }
 

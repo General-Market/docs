@@ -876,41 +876,6 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             h.update(outcome_hash.as_bytes());
         }
-        // ── NAV oracle (ITPNAVOracle on Settlement) ──────────────────────
-        P2PMessage::NavOracleProposal {
-            leader_id,
-            itp_address,
-            oracle_address,
-            nav_price,
-            timestamp,
-            cycle_number,
-            chain_id,
-            reference_nonce: _, // exclude from equivocation hash
-            leader_signature: _, // exclude BLS sig
-        } => {
-            h.update(b"NavOracleProposal");
-            h.update(leader_id);
-            h.update(itp_address.as_bytes());
-            h.update(oracle_address.as_bytes());
-            let mut buf = [0u8; 32];
-            nav_price.to_little_endian(&mut buf);
-            h.update(buf);
-            h.update(timestamp.to_le_bytes());
-            h.update(cycle_number.to_le_bytes());
-            h.update(chain_id.to_le_bytes());
-        }
-        P2PMessage::NavOracleSign {
-            signer_id,
-            signer_index,
-            itp_address,
-            signature: _, // exclude BLS sig
-        } => {
-            h.update(b"NavOracleSign");
-            h.update(signer_id);
-            h.update([*signer_index]);
-            h.update(itp_address.as_bytes());
-        }
-
         // Batch config orchestrator (independent from settlement cycle)
         P2PMessage::BatchConfigProposal {
             round,
@@ -1203,6 +1168,39 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(target_tick_id.to_le_bytes());
             h.update(bitmap.as_slice());
         }
+        P2PMessage::NavOracleProposal {
+            leader_id,
+            itp_address,
+            oracle_address,
+            nav_price,
+            timestamp,
+            cycle_number,
+            chain_id,
+            reference_nonce: _,
+            leader_signature: _,
+        } => {
+            h.update(b"NavOracleProposal");
+            h.update(leader_id);
+            h.update(itp_address.as_bytes());
+            h.update(oracle_address.as_bytes());
+            let mut buf = [0u8; 32];
+            nav_price.to_little_endian(&mut buf);
+            h.update(buf);
+            h.update(timestamp.to_le_bytes());
+            h.update(cycle_number.to_le_bytes());
+            h.update(chain_id.to_le_bytes());
+        }
+        P2PMessage::NavOracleSign {
+            signer_id,
+            signer_index,
+            itp_address,
+            signature: _,
+        } => {
+            h.update(b"NavOracleSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(itp_address.as_bytes());
+        }
     }
 
     h.finalize().into()
@@ -1256,8 +1254,6 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
         P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
         P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
-        P2PMessage::NavOracleProposal { .. } => "NavOracleProposal",
-        P2PMessage::NavOracleSign { .. } => "NavOracleSign",
         P2PMessage::Heartbeat { .. } => "Heartbeat",
         P2PMessage::KickVote { .. } => "KickVote",
         P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",
@@ -1284,6 +1280,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::BitmapGossip { .. } => "BitmapGossip",
         P2PMessage::BitmapRequest { .. } => "BitmapRequest",
         P2PMessage::BitmapResponse { .. } => "BitmapResponse",
+        P2PMessage::NavOracleProposal { .. } => "NavOracleProposal",
+        P2PMessage::NavOracleSign { .. } => "NavOracleSign",
     }
 }
 
@@ -1313,7 +1311,6 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::MintBridgedSharesSign { .. }
             | P2PMessage::CompleteBuyOrderSign { .. }
             | P2PMessage::SetItpNavSign { .. }
-            | P2PMessage::NavOracleSign { .. }
             | P2PMessage::ArbitrationPriceVote { .. }
             | P2PMessage::ArbitrationResolutionSign { .. }
             | P2PMessage::BatchConfigSign { .. }
