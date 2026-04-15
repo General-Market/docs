@@ -14,6 +14,7 @@ services:
       - ./pnl-data:/app/pnl-data
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
+      - ../../../vision-bot/funds.toml:/app/funds.toml:ro
     tmpfs:
       - /tmp
     environment:
