@@ -808,6 +808,31 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders = keep;
     }
 
+    // Filter out orders the orchestrator has already terminalized. Without this,
+    // the scan loop keeps redrawing L3-native orders that resolve_or_rebuild_mapping
+    // already marked SharesBridged — they stay pending on L3 forever (fills
+    // consensus is this oracle's responsibility), so the on-chain filter above
+    // can't drop them. Terminal orchestrator status is our own signal that the
+    // bridge pipeline has nothing left to do with the order.
+    {
+        use oracle::BridgeOrderStatus;
+        let pre = submitted_orders.len();
+        let mut keep = Vec::new();
+        let orch = orchestrator.read().await;
+        for oid in &submitted_orders {
+            match orch.get_order_status(oid).await {
+                Some(BridgeOrderStatus::SharesBridged) => { /* drop — bridge done or L3-direct */ }
+                Some(BridgeOrderStatus::Failed) => { /* drop — terminal failure */ }
+                _ => keep.push(*oid),
+            }
+        }
+        drop(orch);
+        if keep.len() < pre {
+            info!(before = pre, after = keep.len(), "Filtered orchestrator-terminal orders");
+        }
+        submitted_orders = keep;
+    }
+
     if submitted_orders.is_empty() {
         debug!("No L3 orders to process");
         return;
