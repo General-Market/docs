@@ -74,47 +74,19 @@ export function WalletConnectButton() {
     )
   }
 
-  const chainIdHex = `0x${indexL3.id.toString(16)}`
-
-  // Add chain to MetaMask and force switch to it
-  const addAndSwitchChain = async () => {
-    if (typeof window === 'undefined' || !window.ethereum) return
-    try {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: chainIdHex,
-          chainName: indexL3.name,
-          nativeCurrency: indexL3.nativeCurrency,
-          rpcUrls: [indexL3.rpcUrls.default.http[0]],
-        }],
-      })
-    } catch (err) {
-      capture('wallet_network_switch_failed', { error_message: String(err) })
-    }
-    // Force switch (addEthereumChain doesn't always auto-switch)
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainIdHex }],
-      })
-    } catch (err) {
-      capture('wallet_network_switch_failed', { error_message: String(err) })
-    }
-  }
-
-  // Handle connect click - add chain, switch, then connect
-  const handleConnect = async () => {
+  // Handle connect click. Connect first; the injected connector's switchChain
+  // handles `wallet_addEthereumChain` via the 4902 fallback after the wallet
+  // is authorized. On mobile, chaining add/switch/connect across three app
+  // context switches strands the promise chain and leaves the UI on
+  // "Connecting…" forever.
+  const handleConnect = () => {
     if (injectedConnector) {
       capture('wallet_connect_clicked', { source: 'header' })
-      await addAndSwitchChain()
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
   }
 
-  // Handle network switch
-  const handleSwitchNetwork = async () => {
-    await addAndSwitchChain()
+  const handleSwitchNetwork = () => {
     switchChain({ chainId: indexL3.id })
   }
 
@@ -144,7 +116,7 @@ export function WalletConnectButton() {
     )
   }
 
-  // No wallet detected — link to MetaMask install
+  // No wallet detected, link to MetaMask install
   if (!injectedConnector) {
     return (
       <a
