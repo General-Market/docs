@@ -120,6 +120,7 @@ GET  /vision/batches                          -> { batches: BatchSummary[] }
 GET  /vision/markets                          -> { markets: Market[] }
 GET  /vision/snapshot                         -> { prices: AssetPrice[] }  (see Step 3b)
 GET  /vision/snapshot?source={name}           -> scoped to a single data source
+GET  /vision/config/by-hash/{config_hash}     -> { markets: BatchMarket[], sourceId, ... }
 GET  /vision/batch/{id}/state                 -> BatchStateResponse
 POST /vision/bitmap                           -> { acceptedCount, totalCount, results[] }
      Body: { player, batch_id, bitmap_hex, expected_hash }
@@ -138,15 +139,25 @@ GET  /vision/leaderboard                      -> { leaderboard: LeaderboardEntry
 BatchSummary {
   id: number
   creator: string                 // Ethereum address
-  config_hash: string             // bytes32 hex — REQUIRED for joinBatchDirect, see below
-  source_id: string               // bytes32 hex — identifier for the data source
-  market_ids: string[]            // e.g. ["BTC-USD", "ETH-USD"]
+  config_hash: string             // bytes32 hex — REQUIRED for joinBatchDirect AND for looking up markets (see below)
+  source_id: string               // bytes32 hex — may be empty string on the list endpoint
   market_count: number            // 0 means no tradeable markets — skip these
   tick_duration: number           // seconds
   current_tick: number            // Unix timestamp of the current tick boundary
   player_count: number
   tvl: string                     // wei
   paused: boolean
+}
+
+// NOTE: market_ids are NOT in BatchSummary — the list endpoint omits them.
+// Resolve them from the config hash:
+//     GET /vision/config/by-hash/{config_hash} -> { markets: BatchMarket[], ... }
+
+BatchMarket {
+  assetId: string                 // e.g. "flight_africa", "crypto_btc"
+  resolutionType: string          // "up_x", "flat_x", etc.
+  thresholdBps: number
+  thresholdSource: string
 }
 
 Market {
@@ -363,7 +374,17 @@ Filter out:
 
 ### Step 3b: Fetch market data
 
-Before you can predict, you need prices. The snapshot endpoint returns the current value and recent change for every asset under a source. Use `source_id` from the batch to scope the query — but the source-name lookup is not yet public, so the simplest path is to fetch the global snapshot and index by `assetId` against the batch's `market_ids`.
+Before you can predict, you need two things:
+
+1. **The list of markets in this batch.** `GET /vision/batches` does not include market ids — fetch them from the config:
+   ```python
+   def fetch_markets_for_batch(config_hash: str) -> list[dict]:
+       resp = requests.get(f"{API_URL}/vision/config/by-hash/{config_hash}", timeout=15)
+       resp.raise_for_status()
+       return resp.json()["markets"]  # list of BatchMarket, length == market_count
+   ```
+
+2. **Current prices for those markets.** The snapshot endpoint returns the current value and recent change for every asset:
 
 ```
 GET /vision/snapshot
@@ -486,17 +507,20 @@ def sign_and_send(tx):
     return receipt
 
 def join_batch(batch, strategy):
-    """batch is the dict returned by GET /vision/batches — it already carries
-    config_hash and market_count. Do not compute them.
+    """batch is the dict returned by GET /vision/batches — it carries config_hash
+    and market_count. The market IDs come from /vision/config/by-hash/{hash}.
 
     `strategy` is a function `(prices: dict) -> list[bool]` of length market_count.
     See Step 3c for examples. Do not pass `[True] * n` — that is not a strategy."""
     batch_id = batch["id"]
-    market_ids = batch["market_ids"]
     market_count = batch["market_count"]
-    config_hash = batch["config_hash"]
-    if isinstance(config_hash, str):
-        config_hash = bytes.fromhex(config_hash.removeprefix("0x"))
+    config_hash_hex = batch["config_hash"]
+    config_hash_bytes = bytes.fromhex(config_hash_hex.removeprefix("0x"))
+
+    markets = fetch_markets_for_batch(config_hash_hex)
+    market_ids = [m["assetId"] for m in markets]
+    assert len(market_ids) == market_count, \
+        f"config has {len(market_ids)} markets, batch claims {market_count}"
 
     prices = fetch_prices_for(market_ids)
     predictions = strategy(prices)
@@ -519,7 +543,7 @@ def join_batch(batch, strategy):
 
     # 2. Join on-chain (commits bitmap hash)
     join_tx = vision.functions.joinBatchDirect(
-        batch_id, config_hash, DEPOSIT, bitmap_hash
+        batch_id, config_hash_bytes, DEPOSIT, bitmap_hash
     ).build_transaction({
         "from": bot_address,
         "gas": 500_000,
