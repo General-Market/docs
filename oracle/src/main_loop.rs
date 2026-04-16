@@ -456,13 +456,14 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
                             let sbo = startup_buy_orders.clone();
                             let msn = mirror_sync_needed.clone();
+                            let mra = mirror_registry_for_task;
                             let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(300),
                                     run_cross_chain_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn, met,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn, mra, met,
                                     ),
                                 ).await {
                                     Ok(()) => {},

@@ -380,6 +380,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
     _bridge_post_ready: Arc<AtomicBool>,
     startup_buy_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainOrder>>>,
     mirror_sync_needed: Arc<AtomicBool>,
+    mirror_registry_addr: Option<ethers::types::Address>,
     metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
@@ -586,6 +587,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
                         quote_tokens.clone(),
                         Some(just_submitted_ids),
                         mirror_sync_needed.clone(),
+                        mirror_registry_addr,
                         metrics.clone(),
                     ).await;
                 }
