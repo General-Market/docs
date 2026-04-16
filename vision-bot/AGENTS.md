@@ -103,8 +103,9 @@ No authentication required.
 GET  /vision/batches                          -> { batches: BatchSummary[] }
 GET  /vision/markets                          -> { markets: Market[] }
 GET  /vision/batch/{id}/state                 -> BatchStateResponse
-POST /vision/bitmap                           -> { accepted, batch_id, player }
+POST /vision/bitmap                           -> { acceptedCount, totalCount, results[] }
      Body: { player, batch_id, bitmap_hex, expected_hash }
+     Success when: 200 response AND acceptedCount >= ceil(2 * totalCount / 3) (BFT quorum)
 GET  /vision/balance/{batch_id}/{player}      -> { batch_id, player, balance, total_deposited }
 GET  /vision/batch/{id}/history               -> { history: TickHistoryEntry[] }
 GET  /vision/reveal/{batch_id}/{tick_id}      -> { batch_id, tick_id, bitmaps: RevealedBitmap[] }
@@ -432,6 +433,8 @@ Must happen AFTER on-chain join is confirmed. Wait a few seconds for chain index
 ```python
 import time
 
+import math
+
 def submit_bitmap(batch_id, bitmap_hex, expected_hash):
     time.sleep(5)  # wait for chain indexer
 
@@ -446,8 +449,11 @@ def submit_bitmap(batch_id, bitmap_hex, expected_hash):
         timeout=10,
     )
     resp.raise_for_status()
-    result = resp.json()
-    assert result["accepted"], f"Bitmap rejected: {result}"
+    result = resp.json()  # { acceptedCount, totalCount, results: [...] }
+    accepted = result.get("acceptedCount", 0)
+    total = result.get("totalCount", 0)
+    quorum = math.ceil(2 * total / 3) if total else 1
+    assert accepted >= quorum, f"Bitmap below quorum: {accepted}/{total}, details={result}"
     return result
 ```
 
