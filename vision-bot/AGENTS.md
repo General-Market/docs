@@ -9,21 +9,35 @@ Vision is a sealed parimutuel prediction market on Arbitrum. Players predict UP/
 
 ## Available Markets
 
-See `markets.json` in this directory for all 80+ data sources organized by category (finance, economic, tech, entertainment, geophysical, transport, nature, space, academic, regulatory). Each source has market ID prefixes -- for example, CoinGecko crypto markets use the `crypto_` prefix.
+The full list of live markets is served by the API:
 
-**Show the user the categories and sources from markets.json and let them choose which markets to trade.**
+```python
+import requests
+markets = requests.get("https://generalmarket.io/api/vision/markets", timeout=10).json()["markets"]
+# Each: { market_id, symbol, display_name }
+```
+
+Or list active batches — each batch already has its market IDs bound:
+
+```python
+batches = requests.get("https://generalmarket.io/api/vision/batches", timeout=10).json()["batches"]
+```
+
+Markets span crypto, equities, weather, sports, macro, and more. Prefix conventions: `crypto_*`, `equity_*`, `weather_*`, etc.
 
 ## Environment
 
 ```
 RPC_URL=http://142.132.164.24/
-VISION_API_URL=https://generalmarket.io/api/vision
+VISION_API_URL=https://generalmarket.io/api
 FAUCET_URL=https://generalmarket.io/api/bot/faucet
 VISION_ADDRESS=0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 USDC_ADDRESS=0xaddb799bc1499b224dc4368e92b9042a54908553
 CHAIN_ID=111222333
 BOT_PRIVATE_KEY=<wallet private key — fund with the faucet below>
 ```
+
+All Vision endpoints live under `${VISION_API_URL}/vision/...` — the base URL ends in `/api`, not `/api/vision`. The double prefix is the most common first mistake.
 
 ## Step 0: Fund the bot
 
@@ -79,7 +93,7 @@ Python: `pip install web3 requests`
 
 ## API Reference
 
-Base URL: `https://generalmarket.io/api/vision`
+Base URL: `https://generalmarket.io/api` (paths below include the `/vision/` prefix — concatenate as-is).
 
 No authentication required.
 
@@ -105,9 +119,12 @@ GET  /vision/leaderboard                      -> { leaderboard: LeaderboardEntry
 BatchSummary {
   id: number
   creator: string                 // Ethereum address
+  config_hash: string             // bytes32 hex — REQUIRED for joinBatchDirect, see below
+  source_id: string               // bytes32 hex — identifier for the data source
   market_ids: string[]            // e.g. ["BTC-USD", "ETH-USD"]
-  market_count: number
+  market_count: number            // 0 means no tradeable markets — skip these
   tick_duration: number           // seconds
+  current_tick: number            // Unix timestamp of the current tick boundary
   player_count: number
   tvl: string                     // wei
   paused: boolean
@@ -199,10 +216,11 @@ import os
 w3 = Web3(Web3.HTTPProvider(os.environ["RPC_URL"]))
 account = w3.eth.account.from_key(os.environ["BOT_PRIVATE_KEY"])
 bot_address = account.address
+CHAIN_ID = int(os.environ.get("CHAIN_ID", "111222333"))  # required in every tx on Orbit L3
 
 VISION_ADDRESS = Web3.to_checksum_address(os.environ["VISION_ADDRESS"])
 USDC_ADDRESS = Web3.to_checksum_address(os.environ["USDC_ADDRESS"])
-API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api/vision")
+API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api")
 
 VISION_ABI = [
     {
@@ -284,7 +302,9 @@ vision = w3.eth.contract(address=VISION_ADDRESS, abi=VISION_ABI)
 usdc = w3.eth.contract(address=USDC_ADDRESS, abi=ERC20_ABI)
 ```
 
-### Step 2: Register Bot (one-time)
+### Step 2: Register Bot (optional)
+
+Registration is only needed if you intend to expose a bot endpoint for oracle callbacks. Skipping this step does not prevent joining batches or submitting bitmaps — the `joinBatchDirect` path works for unregistered wallets.
 
 ```python
 def register_bot():
@@ -295,6 +315,7 @@ def register_bot():
         "gas": 200_000,
         "gasPrice": w3.eth.gas_price,
         "nonce": w3.eth.get_transaction_count(bot_address),
+        "chainId": CHAIN_ID,
     })
     signed = account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
@@ -312,10 +333,14 @@ def fetch_batches():
     return resp.json()["batches"]
 
 batches = fetch_batches()
-# Each batch: { id, creator, market_ids, market_count, tick_duration, player_count, tvl, paused }
+# Each batch: { id, creator, config_hash, source_id, market_ids, market_count,
+#               tick_duration, current_tick, player_count, tvl, paused }
 ```
 
-Filter out `paused: true` batches. Check if already joined by calling `getPosition`.
+Filter out:
+- `paused: true` — suspended batches
+- `market_count == 0` — degenerate batches with no tradeable markets (they exist; joining one reverts with a zero-byte bitmap)
+- Batches where `getPosition` already shows a non-zero deposit for your wallet
 
 ### Step 4: Encode Bitmap
 
@@ -360,7 +385,15 @@ def sign_and_send(tx):
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     return receipt
 
-def join_batch(batch_id, market_count):
+def join_batch(batch):
+    """batch is the dict returned by GET /vision/batches — it already carries
+    config_hash and market_count. Do not compute them."""
+    batch_id = batch["id"]
+    market_count = batch["market_count"]
+    config_hash = batch["config_hash"]  # bytes32 hex from the API
+    if isinstance(config_hash, str):
+        config_hash = bytes.fromhex(config_hash.removeprefix("0x"))
+
     # Generate predictions (replace with your strategy)
     predictions = [True] * market_count  # all UP as default
     bitmap = encode_bitmap(predictions)
@@ -373,6 +406,7 @@ def join_batch(batch_id, market_count):
         "gas": 200_000,
         "gasPrice": w3.eth.gas_price,
         "nonce": w3.eth.get_transaction_count(bot_address),
+        "chainId": CHAIN_ID,
     })
     sign_and_send(approve_tx)
 
@@ -384,6 +418,7 @@ def join_batch(batch_id, market_count):
         "gas": 500_000,
         "gasPrice": w3.eth.gas_price,
         "nonce": w3.eth.get_transaction_count(bot_address),
+        "chainId": CHAIN_ID,
     })
     sign_and_send(join_tx)
 
@@ -436,6 +471,7 @@ def update_bitmap(batch_id, new_predictions):
         "gas": 200_000,
         "gasPrice": w3.eth.gas_price,
         "nonce": w3.eth.get_transaction_count(bot_address),
+        "chainId": CHAIN_ID,
     })
     sign_and_send(tx)
 
@@ -479,17 +515,20 @@ joined_batches = set()
 while True:
     batches = fetch_batches()
     for batch in batches:
-        if batch["paused"] or batch["id"] in joined_batches:
+        # Filter: paused, empty (market_count=0), or already joined this session
+        if batch["paused"] or batch["market_count"] == 0:
+            continue
+        if batch["id"] in joined_batches:
             continue
 
-        # Check if already joined
+        # Check if already joined on-chain
         pos = vision.functions.getPosition(batch["id"], bot_address).call()
-        if pos[3] > 0:  # balance > 0
+        if pos[3] > 0:  # totalDeposited > 0
             joined_batches.add(batch["id"])
             continue
 
-        # Join
-        bitmap_hex, bitmap_hash = join_batch(batch["id"], batch["market_count"])
+        # Join — pass the full batch dict; it carries config_hash and market_count
+        bitmap_hex, bitmap_hash = join_batch(batch)
         submit_bitmap(batch["id"], bitmap_hex, bitmap_hash)
         joined_batches.add(batch["id"])
 
