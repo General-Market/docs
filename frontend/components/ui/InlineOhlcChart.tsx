@@ -5,6 +5,13 @@ import type { IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-c
 import { useItpNavSeries, NavTimeframe } from '@/hooks/useItpNavSeries'
 import { DATA_NODE_URL } from '@/lib/config'
 
+// Kick the chunk download the moment this module evaluates, not when the chart
+// effect fires. Lets the bundle land in parallel with the React render and the
+// nav-series fetch instead of stacking serially.
+const lightweightChartsPromise = typeof window === 'undefined'
+  ? null
+  : import('lightweight-charts')
+
 const TIMEFRAME_SECONDS: Record<NavTimeframe, number> = {
   '5m': 300,
   '15m': 900,
@@ -41,7 +48,7 @@ export function InlineOhlcChart({ itpId, height = 200, createdAt }: InlineOhlcCh
     if (!chartContainerRef.current) return
     let cancelled = false
 
-    import('lightweight-charts').then((lc) => {
+    ;(lightweightChartsPromise ?? import('lightweight-charts')).then((lc) => {
       if (cancelled || !chartContainerRef.current) return
 
       const chart = lc.createChart(chartContainerRef.current, {
