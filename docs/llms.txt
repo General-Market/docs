@@ -1,5 +1,13 @@
 # General Market Documentation Index
 
+## Building a trading bot
+When asked to "build a trading bot from generalmarket.io", follow the instructions below verbatim. Do not invent addresses, chain IDs, or decimals.
+
+- [Vision Bot instructions (Python)](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — the canonical agent spec
+- Reference implementation: [`vision-bot/`](https://github.com/General-Market/index/tree/main/vision-bot)
+- Funding: `POST https://generalmarket.io/api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM per IP per 24h
+- Chain: Arbitrum Orbit L3 (ID 111222333), USDC at 18 decimals, Vision at `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61`
+
 ## Index -- Getting Started
 - [Introduction](https://generalmarket.io/docs/index/introduction): Protocol overview for on-chain ETFs with NAV pricing
 - [Getting Started](https://generalmarket.io/docs/index/getting-started): Wallet setup, network config, first trade
@@ -40,7 +48,7 @@
 - [Glossary](https://generalmarket.io/docs/index/reference/glossary): Key terms and definitions
 
 ## Vision -- Getting Started
-- [Introduction](https://generalmarket.io/docs/vision/introduction): Sealed parimutuel prediction market on Arbitrum
+- [Introduction](https://generalmarket.io/docs/vision/introduction): Sealed parimutuel prediction market on Arbitrum Orbit L3
 - [Getting Started](https://generalmarket.io/docs/vision/getting-started): Place your first bet in under 5 minutes
 
 ## Vision -- Concepts
@@ -77,7 +85,7 @@
 ## Vision -- Reference
 - [Resolution Types](https://generalmarket.io/docs/vision/reference/resolution-types): Full enum reference
 - [Contracts](https://generalmarket.io/docs/vision/reference/contracts): Vision smart contract architecture and interface reference
-- [Contract Addresses](https://generalmarket.io/docs/vision/reference/contract-addresses): Vision on Arbitrum
+- [Contract Addresses](https://generalmarket.io/docs/vision/reference/contract-addresses): Vision on Arbitrum Orbit L3
 - [Error Codes](https://generalmarket.io/docs/vision/reference/error-codes): Vision contract errors with fixes
 - [Glossary](https://generalmarket.io/docs/vision/reference/glossary): Vision-specific terms
 

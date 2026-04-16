@@ -353,6 +353,37 @@ def load_deployment() -> dict:
     raise FileNotFoundError("Cannot find active-deployment.json")
 
 
+# ── Faucet ─────────────────────────────────────────────────────
+
+
+DEFAULT_FAUCET_URL = "https://generalmarket.io/api/bot/faucet"
+
+
+def request_faucet(
+    address: str,
+    faucet_url: str = DEFAULT_FAUCET_URL,
+    timeout: float = 60.0,
+) -> dict:
+    """Claim L3 GM + L3 USDC from the bot faucet. One claim per IP per 24h.
+
+    Returns the faucet response on success. Raises RuntimeError on 429 (rate
+    limited), 503 (faucet disabled), or any other non-2xx. Idempotent only in
+    the sense that the faucet server deduplicates — a second call from the
+    same IP within 24h will 429, not double-drip.
+    """
+    resp = requests.post(faucet_url, json={"address": address}, timeout=timeout)
+    if resp.status_code == 429:
+        raise RuntimeError(
+            f"Faucet rate-limited: {resp.json().get('error', 'try again later')}"
+        )
+    if resp.status_code == 503:
+        raise RuntimeError(
+            f"Faucet unavailable: {resp.json().get('error', 'no rate limiter configured')}"
+        )
+    resp.raise_for_status()
+    return resp.json()
+
+
 # ── Executor ───────────────────────────────────────────────────
 
 

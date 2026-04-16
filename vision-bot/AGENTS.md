@@ -16,30 +16,61 @@ See `markets.json` in this directory for all 80+ data sources organized by categ
 ## Environment
 
 ```
-RPC_URL=<Arbitrum RPC endpoint>
+RPC_URL=http://142.132.164.24/
 VISION_API_URL=https://generalmarket.io/api/vision
-VISION_ADDRESS=0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
-BOT_PRIVATE_KEY=<wallet private key with funded USDC>
-USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
-CHAIN_ID=421611337
+FAUCET_URL=https://generalmarket.io/api/bot/faucet
+VISION_ADDRESS=0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
+USDC_ADDRESS=0xaddb799bc1499b224dc4368e92b9042a54908553
+CHAIN_ID=111222333
+BOT_PRIVATE_KEY=<wallet private key — fund with the faucet below>
 ```
 
-## CRITICAL: USDC uses 6 decimals (not 18)
+## Step 0: Fund the bot
+
+The bot needs two things: L3 GM for gas and L3 USDC for stakes. Both arrive from a single faucet call, rate-limited to one request per IP per 24h.
+
+```python
+import requests
+from eth_account import Account
+
+# Generate (or load) a wallet.
+account = Account.create()  # or: Account.from_key(os.environ["BOT_PRIVATE_KEY"])
+print(f"BOT_PRIVATE_KEY={account.key.hex()}")
+print(f"Bot address: {account.address}")
+
+# Ask the faucet for gas + USDC. One call, both tokens.
+resp = requests.post(
+    "https://generalmarket.io/api/bot/faucet",
+    json={"address": account.address},
+    timeout=60,
+)
+resp.raise_for_status()
+print(resp.json())  # { success, usdc, l3Gas, ... }
+```
+
+If the faucet returns `429`, the IP has already claimed in the last 24h. Wait or use a different network. There is no other path — spamming fresh wallets from the same IP is what the limit prevents.
+
+## CRITICAL: USDC uses 18 decimals on L3
+
+Vision now lives on Arbitrum Orbit L3, where USDC is deployed at 18 decimals. Treat every USDC value as wei with an implicit 10^18 multiplier — the same units as ether.
 
 ```
-0.1  USDC =       100_000   (1e5)
-1    USDC =     1_000_000   (1e6)
-10   USDC =    10_000_000   (1e7)
-100  USDC =   100_000_000   (1e8)
+0.1  USDC =                 100_000_000_000_000_000   (1e17)
+1    USDC =               1_000_000_000_000_000_000   (1e18)
+10   USDC =              10_000_000_000_000_000_000   (1e19)
+100  USDC =             100_000_000_000_000_000_000   (1e20)
 ```
 
-Min deposit per join: 1e17 wei on L3 (0.1 USDC at 18 decimals).
+Min deposit per join: 1e17 wei = 0.1 USDC.
 
 ## Contract Details
 
-- **Address:** 0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20
-- **Chain ID:** 421611337
-- **USDC:** 6 decimals
+- **Vision:** `0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61`
+- **USDC (L3):** `0xaddb799bc1499b224dc4368e92b9042a54908553`
+- **Chain ID:** `111222333` (Arbitrum Orbit L3)
+- **RPC:** `http://142.132.164.24/`
+- **USDC decimals:** 18
+- **Gas token:** GM (native, 18 decimals)
 - **Fee:** 0.05% on profits
 
 ## Dependencies
@@ -465,7 +496,7 @@ while True:
     # Check balances for joined batches
     for batch_id in joined_batches:
         balance_info = check_balance(batch_id)
-        balance_usdc = int(balance_info["balance"]) / 1e6
+        balance_usdc = int(balance_info["balance"]) / 1e18  # L3 USDC = 18 decimals
         print(f"Batch {batch_id}: {balance_usdc:.2f} USDC")
 
     time.sleep(POLL_INTERVAL)
