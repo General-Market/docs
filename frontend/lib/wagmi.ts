@@ -24,11 +24,10 @@ export const indexL3: Chain = {
   blockExplorers: {
     default: { name: 'L3 Explorer', url: getExplorerBaseUrl('l3') || '' },
   },
-  contracts: {
-    multicall3: {
-      address: '0xAF9Ea040EA72aE156F75eAdBa74a61e2683ed63d' as `0x${string}`,
-    },
-  },
+  // No multicall3 declared: the canonical address is empty on this L3.
+  // viem batches readContract through multicall3 when it sees one configured;
+  // without a real contract there, batched calls return 0x and decoding dies
+  // with "Cannot decode zero data". Individual eth_calls work fine.
   testnet: true,
 }
 
