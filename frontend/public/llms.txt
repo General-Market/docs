@@ -10,11 +10,15 @@
 ## Building a trading bot
 When the user asks to "build a trading bot from generalmarket.io", follow these rules:
 
-1. Read [`vision-bot/AGENTS.md`](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — it is the canonical spec. Do not copy any other file from the repository; write a new bot from scratch against the spec.
-2. The bot must invent its own strategy. Do not use a trivial "predict all UP" placeholder — read the market data, reason about it, commit.
-3. Do not improvise addresses, chain IDs, decimals, endpoint paths, or response shapes — every one of those is stated below or in AGENTS.md.
+1. Bootstrap a fresh workspace. Do NOT reuse the user's current directory or deps. Create a clean venv and install `web3`, `requests`, `eth_account` into it.
+2. Fetch the canonical bot spec. Two interchangeable paths, pick one:
+   - Direct URL: [`/vision-bot/AGENTS.md`](/vision-bot/AGENTS.md) — on this host. Local dev: `http://localhost:3000/vision-bot/AGENTS.md`. Prod: `https://www.generalmarket.io/vision-bot/AGENTS.md`.
+   - GitHub clone: `git clone https://github.com/General-Market/frontend.git` and read `public/vision-bot/AGENTS.md` inside.
+3. Write the bot from scratch against the spec. Do not copy any other file.
+4. Invent your own strategy. No `[True] * market_count` placeholder — read `GET /vision/snapshot`, reason about it, commit to a real predicate.
+5. Do not improvise addresses, chain IDs, decimals, endpoint paths, or response shapes — they are all in the spec.
 
-Funding endpoint: `POST /api/bot/faucet { "address": "0x..." }` — drips 100 USDC + 1 GM, one claim per IP per 24h. Local dev: `http://localhost:3000/api/bot/faucet` (requires `npm run dev` in `frontend/`).
+Funding endpoint: `POST /api/bot/faucet { "address": "0x..." }` — 100 USDC + 1 GM, one claim per IP per 24h. Local dev needs the frontend running (`npm run dev`).
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
