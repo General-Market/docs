@@ -43,17 +43,27 @@
     "submit_pending": "Waiting for wallet...",
     "submit_confirming": "Confirming...",
     "submit_deploy": "Finalize & Deploy",
-    "tx_stuck": "Transaction may be stuck."
+    "tx_stuck": "Transaction may be stuck.",
+    "phases": {
+      "prices": "Fetching prices",
+      "sign": "Awaiting signature",
+      "submit": "Submitting on Settlement",
+      "relay": "Oracle relaying to L3",
+      "consensus": "Oracle consensus",
+      "live": "ITP live on L3"
+    },
+    "elapsed_vs_typical": "elapsed {elapsed} \u00b7 typical {typical}",
+    "assets_locked_in": "{count} assets locked in basket"
   },
   "skeleton": {
     "itp_name": "ITP Name (max 32)",
     "symbol": "Symbol (max 10)"
   },
   "success": {
-    "title": "ITP Request Submitted",
-    "description": "Waiting for oracle consensus — this may take a few minutes...",
-    "consensus_title": "ITP Created",
-    "consensus_description": "Oracle consensus reached. Your ITP is live on L3."
+    "title": "Submitted",
+    "description": "Keepers are signing. The ITP arrives when they agree.",
+    "consensus_title": "Live on L3",
+    "consensus_description": "Consensus reached. The basket exists."
   },
   "errors": {
     "fill_all_fields": "Please fill in all fields and ensure weights sum to 100%",

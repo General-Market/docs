@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi'
+import { motion, useReducedMotion } from 'framer-motion'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
@@ -15,14 +16,14 @@ import { useDeployerName } from '@/hooks/useDeployerName'
 import { useSSENav } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringCard, SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringCard, SpringModal, SpringBackdrop, springs } from '@/components/ui/spring'
 
 interface CoinEntry { id: string; image: string }
 
-// Symbols to pre-select when the asset list loads — addresses resolved dynamically from deployed-assets.json
+// Symbols to pre-select when the asset list loads, addresses resolved dynamically from deployed-assets.json
 const DEFAULT_PRESELECT_SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'DOGE', 'DOT', 'LINK', 'AVAX']
 
-/** Tiny coin logo — loads CoinGecko image with graceful fallback */
+/** Tiny coin logo, loads CoinGecko image with graceful fallback */
 function CoinLogo({ symbol, coinMap, size = 20 }: { symbol: string; coinMap: Record<string, CoinEntry>; size?: number }) {
   const entry = coinMap[symbol.toUpperCase()]
   if (!entry?.image) {
@@ -105,7 +106,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [stuckWarning, setStuckWarning] = useState(false)
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
 
-  // Oracle consensus polling — track L3 ITP count before/after submission
+  // Oracle consensus polling, track L3 ITP count before/after submission
   const [itpCountBefore, setItpCountBefore] = useState<number | null>(null)
   const [consensusReached, setConsensusReached] = useState(false)
   const sseNavs = useSSENav()
@@ -116,7 +117,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       .then(res => res.ok ? res.json() : Promise.reject('not found'))
       .then((data: { address: string; symbol: string }[]) => {
         if (Array.isArray(data) && data.length > 0) {
-          // Deduplicate by symbol — keep first occurrence
+          // Deduplicate by symbol, keep first occurrence
           const seen = new Set<string>()
           const unique = data.filter(a => {
             const key = a.symbol.toUpperCase()
@@ -139,7 +140,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           })
         }
       })
-      .catch(() => { /* deployed-assets.json not available — user must select manually */ })
+      .catch(() => { /* deployed-assets.json not available, user must select manually */ })
   }, [])
 
   // Load symbol → {id, image} mapping for logos from static coin-map
@@ -147,7 +148,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     fetch('/coin-map.json', { signal: AbortSignal.timeout(10_000) })
       .then(res => res.ok ? res.json() : Promise.reject('not found'))
       .then((data: Record<string, CoinEntry>) => setCoinMap(data))
-      .catch(() => { /* logos won't show — acceptable fallback */ })
+      .catch(() => { /* logos won't show, acceptable fallback */ })
   }, [])
 
   // Pre-populate from backtester when initialHoldings changes
@@ -275,7 +276,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [unpricedAssets, setUnpricedAssets] = useState<Set<string>>(new Set())
   const [priceCheckDone, setPriceCheckDone] = useState(false)
 
-  // Validate prices when assets change — flag unpriced ones
+  // Validate prices when assets change, flag unpriced ones
   useEffect(() => {
     if (selectedAssets.length === 0) { setUnpricedAssets(new Set()); setPriceCheckDone(false); return }
     setPriceCheckDone(false)
@@ -295,7 +296,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         }
         setUnpricedAssets(missing)
         setPriceCheckDone(true)
-      } catch { /* abort or network error — don't block */ }
+      } catch { /* abort or network error, don't block */ }
     }
     check()
     return () => controller.abort()
@@ -330,7 +331,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         const { result } = await res.json()
         setItpCountBefore(Number(BigInt(result)))
       }
-    } catch { /* non-critical — consensus polling just won't work */ }
+    } catch { /* non-critical, consensus polling just won't work */ }
 
     const weights = selectedAssets.map(a => BigInt(a.weight) * BigInt(1e16))
     const assets = selectedAssets.map(a => a.address as `0x${string}`)
@@ -348,23 +349,23 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         await new Promise(r => setTimeout(r, 2_000))
         res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(30_000) })
       }
-      if (!res.ok) throw new Error(`price service returned ${res.status} — please retry in a moment`)
+      if (!res.ok) throw new Error(`price service returned ${res.status}, please retry in a moment`)
       const data = await res.json()
       console.log('[CreateITP] Price response:', data)
       const priceMap: Record<string, string> = {}
       for (const [addr, entry] of Object.entries(data.prices || {})) {
         priceMap[addr.toLowerCase()] = (entry as any).price
       }
-      // Map each asset to its real price — error if any is missing or suspiciously wrong
+      // Map each asset to its real price, error if any is missing or suspiciously wrong
       prices = assets.map((addr, i) => {
         const p = priceMap[addr.toLowerCase()]
         if (!p || p === '0') {
-          throw new Error(`No price for ${selectedAssets[i].symbol} — asset may not be listed yet`)
+          throw new Error(`No price for ${selectedAssets[i].symbol}, asset may not be listed yet`)
         }
         const pBn = BigInt(p)
         // Sanity: price must be > $0.0001 (1e14 in 18-dec) and < $100M (1e26)
         if (pBn < BigInt('100000000000000') || pBn > BigInt('100000000000000000000000000')) {
-          throw new Error(`Price for ${selectedAssets[i].symbol} looks wrong ($${Number(pBn) / 1e18}) — data feed may be stale`)
+          throw new Error(`Price for ${selectedAssets[i].symbol} looks wrong ($${Number(pBn) / 1e18}), data feed may be stale`)
         }
         return pBn
       })
@@ -377,7 +378,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
-      // BridgeProxy lives on Settlement — ensure wallet is on Settlement chain before submitting.
+      // BridgeProxy lives on Settlement, ensure wallet is on Settlement chain before submitting.
       // Use writeContractAsync (not writeContract) so the chain switch and tx submit
       // happen in the same async execution context without React re-renders in between.
       try {
@@ -433,7 +434,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           let reason = simErr.shortMessage || simErr.message || 'Simulation failed'
           // Decode known contract error selectors
           if (reason.includes('0xfb25c4bc')) reason = 'Each asset must have at least 1% weight'
-          else if (reason.includes('0xeac2915e')) reason = 'Unauthorized — wallet not permitted'
+          else if (reason.includes('0xeac2915e')) reason = 'Unauthorized, wallet not permitted'
           else if (reason.includes('0x3432baf7')) reason = 'System is paused'
           setTxError(reason.slice(0, 300))
           capture('create_itp_failed', { error_message: reason.slice(0, 200), step: 'pre_simulate' })
@@ -508,7 +509,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     }
   }, [showFinalizeModal, resetWrite])
 
-  // Detect stuck transactions — warn after 30s of confirming
+  // Detect stuck transactions, warn after 30s of confirming
   useEffect(() => {
     if (!isConfirming) {
       setStuckWarning(false)
@@ -584,7 +585,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
               {/* Two-column: Select Assets | Configure Weights */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
-                {/* LEFT — Select Assets */}
+                {/* LEFT, Select Assets */}
                 <div className="border border-border-light">
                   <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('select_assets.title', { count: selectedAssets.length })}
@@ -631,7 +632,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                   </div>
                 </div>
 
-                {/* RIGHT — Configure Weights */}
+                {/* RIGHT, Configure Weights */}
                 <div className="border border-border-light">
                   <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('configure_weights.title', { count: selectedAssets.length })}
@@ -839,8 +840,18 @@ function FinalizeItpModal({
 
       {/* Modal */}
       <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Deploy progress bar */}
-        {isDeploying && <DeployProgressBar isPending={isPending} isConfirming={isConfirming} isFetchingPrices={isFetchingPrices} />}
+        {/* Orbital pipeline ring, replaces the staring contest */}
+        {(isDeploying || isSuccess) && (
+          <CreatePipelineRing
+            isFetchingPrices={isFetchingPrices}
+            isPending={isPending}
+            isConfirming={isConfirming}
+            isSuccess={isSuccess}
+            consensusReached={consensusReached}
+            symbol={symbol}
+            assetCount={selectedAssets.length}
+          />
+        )}
 
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
@@ -930,7 +941,7 @@ function FinalizeItpModal({
           </div>
         </div>
 
-        {/* Status messages — outside the greyed form area */}
+        {/* Status messages, outside the greyed form area */}
         <div className="px-6 space-y-3">
           {txError && (
             <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">{txError}</div>
@@ -938,16 +949,6 @@ function FinalizeItpModal({
           {stuckWarning && (
             <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-xs">
               {t('finalize.tx_stuck')} <button onClick={onCancel} className="underline">{tc('actions.cancel')}</button>
-            </div>
-          )}
-          {isSuccess && (
-            <div className={`${consensusReached ? 'bg-color-up/10 border-color-up/30' : 'bg-amber-500/10 border-amber-500/30'} border rounded-lg p-3 text-xs`}>
-              <p className={`font-medium ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
-                {consensusReached ? t('success.consensus_title') : t('success.title')}
-              </p>
-              <p className={`mt-1 ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
-                {consensusReached ? t('success.consensus_description') : t('success.description')}
-              </p>
             </div>
           )}
         </div>
@@ -979,24 +980,233 @@ function FinalizeItpModal({
   )
 }
 
-/** Animated progress bar showing deploy phase */
-function DeployProgressBar({ isPending, isConfirming, isFetchingPrices }: { isPending: boolean; isConfirming: boolean; isFetchingPrices: boolean }) {
+/**
+ * Orbital pipeline ring. Replaces the flat progress bar with a full SVG
+ * visualisation of the six semantic phases: prices, sign, submit, relay,
+ * consensus, live. Outer ring tracks elapsed-vs-typical time, inner arcs
+ * fill as phases complete, three dots schematically represent the 3-of-3
+ * oracle consensus (no per-keeper feed is faked — there isn't one for
+ * create). Reduced-motion collapses to a static snapshot.
+ */
+interface CreatePipelineRingProps {
+  isFetchingPrices: boolean
+  isPending: boolean
+  isConfirming: boolean
+  isSuccess: boolean
+  consensusReached: boolean
+  symbol: string
+  assetCount: number
+}
+
+type Phase = 'prices' | 'sign' | 'submit' | 'relay' | 'consensus' | 'live'
+
+const PHASE_ORDER: Phase[] = ['prices', 'sign', 'submit', 'relay', 'consensus', 'live']
+
+// Typical durations in ms. The outer ring treats the sum as the "budget".
+// Relay + consensus dominate — they are the real wait.
+const PHASE_DURATIONS: Record<Phase, number> = {
+  prices: 3_000,
+  sign: 5_000,
+  submit: 8_000,
+  relay: 40_000,
+  consensus: 60_000,
+  live: 0,
+}
+
+const TYPICAL_TOTAL_MS =
+  PHASE_DURATIONS.prices +
+  PHASE_DURATIONS.sign +
+  PHASE_DURATIONS.submit +
+  PHASE_DURATIONS.relay +
+  PHASE_DURATIONS.consensus
+
+function formatMMSS(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+function CreatePipelineRing({
+  isFetchingPrices, isPending, isConfirming, isSuccess, consensusReached,
+  symbol, assetCount,
+}: CreatePipelineRingProps) {
   const t = useTranslations('create-itp')
-  const phase = isFetchingPrices ? 0 : isPending ? 1 : isConfirming ? 2 : 0
-  const widths = ['33%', '60%', '85%']
-  const labels = [t('finalize.submit_fetching'), t('finalize.submit_pending'), t('finalize.submit_confirming')]
+  const reduced = useReducedMotion()
+
+  const currentPhase: Phase = consensusReached
+    ? 'live'
+    : isSuccess
+      ? 'consensus'  // settlement tx confirmed, oracles relaying + reaching consensus
+      : isConfirming
+        ? 'submit'
+        : isPending
+          ? 'sign'
+          : isFetchingPrices
+            ? 'prices'
+            : 'prices'
+
+  const currentIndex = PHASE_ORDER.indexOf(currentPhase)
+
+  // Track elapsed time from mount. Not a precise per-phase clock — the
+  // outer ring is a budget, not a stopwatch. When it fills, it holds.
+  const [elapsedMs, setElapsedMs] = useState(0)
+  const startRef = useRef<number>(Date.now())
+  useEffect(() => {
+    if (consensusReached) return
+    const id = setInterval(() => {
+      setElapsedMs(Date.now() - startRef.current)
+    }, 500)
+    return () => clearInterval(id)
+  }, [consensusReached])
+
+  // SVG geometry
+  const size = 240
+  const cx = size / 2
+  const cy = size / 2
+  const rOuter = 110
+  const rInner = 96
+  const cOuter = 2 * Math.PI * rOuter
+  const cInner = 2 * Math.PI * rInner
+
+  // Outer ring fill, capped at 100%
+  const budgetProgress = Math.min(1, elapsedMs / TYPICAL_TOTAL_MS)
+  const outerOffset = cOuter * (1 - (consensusReached ? 1 : budgetProgress))
+
+  // Inner arcs: five active phases (prices, sign, submit, relay, consensus).
+  // Each owns 1/5 of the circumference. Phases before current are full,
+  // current phase fills proportionally, later phases are empty.
+  const ACTIVE_PHASES: Phase[] = ['prices', 'sign', 'submit', 'relay', 'consensus']
+  const sliceArc = cInner / ACTIVE_PHASES.length
+  const sliceGap = 4 // px breathing room between slices
+
+  // Keeper dots, three of them, evenly placed on the ring at angles
+  // that sit inside the relay + consensus zone.
+  const keeperAngles = [210, 270, 330] // degrees, SVG is -90 offset
+  const keepersActive = isSuccess || consensusReached
+
+  const phaseLabel = t(`finalize.phases.${currentPhase}`)
 
   return (
-    <div className="px-6 pt-4 pb-2">
-      <div className="flex justify-between items-center mb-1.5">
-        <span className="text-xs font-medium text-text-secondary">{labels[phase]}</span>
-      </div>
-      <div className="w-full h-1.5 bg-border-light rounded-full overflow-hidden">
-        <div
-          className="h-full bg-zinc-900 rounded-full transition-all duration-700 ease-out"
-          style={{ width: widths[phase] }}
+    <div className="px-6 pt-6 pb-2 flex flex-col items-center">
+      <svg
+        viewBox={`0 0 ${size} ${size}`}
+        width={220}
+        height={220}
+        aria-hidden="true"
+        className="block"
+      >
+        {/* Outer ring, base track */}
+        <circle cx={cx} cy={cy} r={rOuter} fill="none"
+          className="stroke-zinc-200" strokeWidth={3} />
+
+        {/* Outer ring, elapsed progress */}
+        <motion.circle
+          cx={cx} cy={cy} r={rOuter} fill="none"
+          className={consensusReached ? 'stroke-emerald-500' : 'stroke-zinc-900'}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray={cOuter}
+          initial={{ strokeDashoffset: cOuter }}
+          animate={{ strokeDashoffset: reduced ? outerOffset : outerOffset }}
+          transition={reduced ? { duration: 0 } : springs.expand}
+          transform={`rotate(-90 ${cx} ${cy})`}
         />
+
+        {/* Inner arcs, one per active phase */}
+        {ACTIVE_PHASES.map((p, i) => {
+          const pIdx = PHASE_ORDER.indexOf(p)
+          const isDone = consensusReached || pIdx < currentIndex
+          const isCurrent = !consensusReached && pIdx === currentIndex
+          const fillRatio = isDone ? 1 : isCurrent
+            ? (p === 'consensus'
+                ? Math.min(1, Math.max(0, (elapsedMs - (TYPICAL_TOTAL_MS - PHASE_DURATIONS.consensus)) / PHASE_DURATIONS.consensus))
+                : 0.5) // partial fill for non-budget-tracked phases
+            : 0
+
+          const visibleLen = Math.max(0, sliceArc - sliceGap) * fillRatio
+          const hiddenLen = cInner - visibleLen
+          const rotation = -90 + (i * 360) / ACTIVE_PHASES.length
+
+          return (
+            <g key={p}>
+              {/* Slice base track */}
+              <circle
+                cx={cx} cy={cy} r={rInner} fill="none"
+                className="stroke-zinc-100"
+                strokeWidth={8}
+                strokeDasharray={`${Math.max(0, sliceArc - sliceGap)} ${cInner}`}
+                transform={`rotate(${rotation} ${cx} ${cy})`}
+              />
+              {/* Slice fill */}
+              <motion.circle
+                cx={cx} cy={cy} r={rInner} fill="none"
+                className={isDone ? 'stroke-emerald-500' : 'stroke-zinc-900'}
+                strokeWidth={8}
+                strokeLinecap="round"
+                strokeDasharray={`${visibleLen} ${hiddenLen}`}
+                transform={`rotate(${rotation} ${cx} ${cy})`}
+                initial={false}
+                animate={{ opacity: 1 }}
+                transition={reduced ? { duration: 0 } : springs.expand}
+              />
+            </g>
+          )
+        })}
+
+        {/* Three keeper dots sitting on the ring */}
+        {keeperAngles.map((deg, i) => {
+          const rad = (deg - 90) * (Math.PI / 180)
+          const x = cx + rInner * Math.cos(rad)
+          const y = cy + rInner * Math.sin(rad)
+          const lit = keepersActive
+          return (
+            <motion.circle
+              key={i}
+              cx={x} cy={y} r={4}
+              className={lit ? 'fill-emerald-500' : 'fill-zinc-300'}
+              initial={{ scale: 0.8, opacity: 0.6 }}
+              animate={reduced
+                ? { scale: 1, opacity: lit ? 1 : 0.6 }
+                : lit
+                  ? { scale: [0.8, 1.15, 1], opacity: [0.6, 1, 1] }
+                  : { scale: 1, opacity: 0.6 }
+              }
+              transition={reduced
+                ? { duration: 0 }
+                : { duration: 0.8, delay: i * 0.25, repeat: lit && !consensusReached ? Infinity : 0, repeatDelay: 1.2 }
+              }
+            />
+          )
+        })}
+      </svg>
+
+      {/* Centre label, overlaid above SVG via negative margin trick */}
+      <div className="-mt-[128px] h-[64px] flex flex-col items-center justify-center text-center pointer-events-none">
+        {consensusReached ? (
+          <>
+            <div className="font-mono text-base font-semibold text-emerald-600 tabular-nums">{symbol || '—'}</div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-text-muted mt-0.5">{t('finalize.phases.live')}</div>
+          </>
+        ) : (
+          <>
+            <div className="text-xs font-medium text-text-primary">{phaseLabel}</div>
+            <div className="font-mono text-[10px] text-text-muted tabular-nums mt-1">
+              {t('finalize.elapsed_vs_typical', {
+                elapsed: formatMMSS(elapsedMs),
+                typical: formatMMSS(TYPICAL_TOTAL_MS),
+              })}
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Single-line tagline below the ring during live state */}
+      {consensusReached && (
+        <div className="mt-4 text-xs text-text-muted">
+          {t('finalize.assets_locked_in', { count: assetCount })}
+        </div>
+      )}
     </div>
   )
 }
@@ -1026,14 +1236,14 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
 
       {/* Two-column: Select Assets | Configure Weights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {/* LEFT — Select Assets */}
+        {/* LEFT, Select Assets */}
         <div className="border border-border-light">
           <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('select_assets.skeleton_title')}
           </div>
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-xs font-semibold text-text-muted">— available</span>
+              <span className="text-xs font-semibold text-text-muted">, available</span>
               <div className="w-32 h-[30px] bg-card border border-border-medium rounded-lg animate-pulse" />
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -1050,14 +1260,14 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
           </div>
         </div>
 
-        {/* RIGHT — Configure Weights */}
+        {/* RIGHT, Configure Weights */}
         <div className="border border-border-light">
           <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('configure_weights.skeleton_title')}
           </div>
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-xs font-semibold text-text-muted">Total: —%</span>
+              <span className="text-xs font-semibold text-text-muted">Total:,%</span>
               <Bone w="w-28" h="h-6" />
             </div>
             <div className="space-y-1.5">
