@@ -2098,6 +2098,7 @@ async fn player_profile(
         id: i64,
         source_id_raw: Option<String>,
         settled_at: Option<chrono::DateTime<chrono::Utc>>,
+        settlement_deadline: Option<chrono::DateTime<chrono::Utc>>,
     }
 
     // Run all 4 independent queries in parallel (Q4 depends on Q0+Q2 results)
@@ -2185,7 +2186,8 @@ async fn player_profile(
         match sqlx::query_as::<_, BatchMetaRow>(
             "SELECT vbl.on_chain_batch_id as id,
                     vbl.source_id as source_id_raw,
-                    vbl.settled_at as settled_at
+                    vbl.settled_at as settled_at,
+                    vbl.settlement_deadline as settlement_deadline
              FROM vision_batch_lifecycle vbl
              WHERE vbl.on_chain_batch_id = ANY($1)"
         )
@@ -2194,12 +2196,18 @@ async fn player_profile(
         .await
         {
             Ok(rows) => {
+                let now = chrono::Utc::now();
                 let mut meta = std::collections::HashMap::new();
                 let mut settled = std::collections::HashSet::new();
                 for r in rows {
                     let source = r.source_id_raw.unwrap_or_default();
                     meta.insert(r.id, if source.is_empty() { "unknown".to_string() } else { source });
-                    if r.settled_at.is_some() {
+                    // A batch is effectively closed when the chain marked it settled
+                    // OR when its settlement window has passed without resolution
+                    // (stuck batches from outages, skipped epochs, etc.). Leaving
+                    // them as "active" forever is a lie the UI keeps repeating.
+                    let deadline_passed = r.settlement_deadline.map(|d| d < now).unwrap_or(false);
+                    if r.settled_at.is_some() || deadline_passed {
                         settled.insert(r.id);
                     }
                 }
