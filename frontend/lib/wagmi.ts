@@ -3,14 +3,14 @@ import { type Chain } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 
-// RPC URLs from environment
-// On HTTPS pages, browser blocks HTTP RPC (mixed content).
-// Use /rpc proxy (Next.js rewrite → L3 RPC) when running in browser on HTTPS.
+// RPC URLs from environment.
+// Browser always routes L3 through the same-origin /api/rpc proxy: avoids
+// mixed-content on HTTPS and the upstream nginx's broken CORS preflight on
+// HTTP. Server-side (SSR) uses the direct URL.
 const envRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
-const rawL3RpcUrl = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
-const envL3RpcUrl = typeof window !== 'undefined' && window.location?.protocol === 'https:'
+const envL3RpcUrl = typeof window !== 'undefined'
   ? '/api/rpc'
-  : rawL3RpcUrl
+  : (process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545')
 
 // Chain definition — L3 (Index Orbit chain where Vision.sol lives)
 export const indexL3: Chain = {
