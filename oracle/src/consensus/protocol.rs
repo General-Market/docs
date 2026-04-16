@@ -535,9 +535,17 @@ where
         self.key_registry.settlement_registry_nonce()
     }
 
-    /// Update the Settlement mirror registry nonce
+    /// Update the Settlement mirror registry nonce (monotonic — only accepts higher)
     pub fn set_settlement_registry_nonce(&self, nonce: u64) {
         self.key_registry.set_settlement_registry_nonce(nonce);
+    }
+
+    /// Overwrite the Settlement mirror registry nonce unconditionally.
+    /// Caller MUST have just read the value from the mirror's
+    /// lastSnapshotNonce() — bypasses the monotonic guard so the cache can be
+    /// corrected downward after it drifts ahead of on-chain state.
+    pub fn reset_settlement_registry_nonce(&self, nonce: u64) {
+        self.key_registry.reset_settlement_registry_nonce(nonce);
     }
 
     /// Get the configured number of oracles

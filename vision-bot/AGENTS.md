@@ -373,6 +373,7 @@ Filter out:
 - `paused: true` — suspended batches
 - `market_count == 0` — degenerate batches with no tradeable markets (they exist; joining one reverts with a zero-byte bitmap)
 - Batches where `getPosition` already shows a non-zero deposit for your wallet
+- Batches whose markets are largely absent from `/vision/snapshot`. Some data sources publish assets that the snapshot service has not indexed yet — a strategy fed zero prices collapses to an all-same bitmap. Require at least 50% coverage (markets with non-null `changePct`) before committing.
 
 ### Step 3b: Fetch market data
 
@@ -690,6 +691,8 @@ while True:
 | `BotAlreadyRegistered` | Already registered | Skip registration step |
 | Bitmap 404 | Chain indexer lag | Wait 5-10 seconds after join, retry |
 | Bitmap 400 hash mismatch | Hash mismatch | Verify keccak256(bitmap_bytes) == on-chain commitment |
+| Faucet 500 | Signer nonce race | Retry POST after 2-3s, up to twice |
+| config/by-hash 502 | Transient upstream | Skip this batch for now, try another; the hash is immutable, so retry later works too |
 
 ## Reference Implementation
 

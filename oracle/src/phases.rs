@@ -12,7 +12,7 @@ use oracle::bridge::Fill;
 use oracle::PriceFetcher;
 use tracing::{debug, info, warn, error};
 
-use crate::helpers::{fill_price_respects_limit, is_snapshot_too_old_error, calculate_bridge_leader};
+use crate::helpers::{fill_price_respects_limit, is_snapshot_too_old_error, is_nonce_future_error, calculate_bridge_leader};
 
 /// Known confirmFills error selectors that encode an orderId as their first ABI parameter.
 ///
@@ -628,6 +628,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     target_orders: Option<Vec<ethers::types::U256>>,
     mirror_sync_needed: Arc<AtomicBool>,
+    mirror_registry_addr: Option<ethers::types::Address>,
     _metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
@@ -919,6 +920,30 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                     // its current (Batched) status — the watchdog will re-drive CBO
                                                     // after the sync lands, rather than marking it terminal Failed.
                                                     warn!(order_id = %order_id, "completeBuyOrder hit SnapshotTooOld — requesting immediate mirror sync, order will be retried");
+                                                    mirror_sync_needed.store(true, Ordering::Release);
+                                                    return CboOutcome::NeedsRetry;
+                                                } else if is_nonce_future_error(&err_str) {
+                                                    // The oracle's cached settlement_registry_nonce has drifted ahead
+                                                    // of the mirror's lastSnapshotNonce. Correct the cache from an
+                                                    // authoritative on-chain read, flag the next mirror sync, and
+                                                    // retry. Without this the order would be marked terminal Failed
+                                                    // and the user's Settlement USDC would be permanently locked.
+                                                    warn!(order_id = %order_id, "completeBuyOrder hit NonceFuture — correcting cached registry nonce from on-chain");
+                                                    if let Some(mirror_addr) = mirror_registry_addr {
+                                                        let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+                                                        match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+                                                            Ok(bytes) if bytes.len() >= 32 => {
+                                                                let on_chain = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                                                                let cached = protocol.settlement_registry_nonce();
+                                                                protocol.reset_settlement_registry_nonce(on_chain);
+                                                                info!(order_id = %order_id, cached, on_chain, "Registry nonce cache corrected");
+                                                            }
+                                                            Ok(_) => warn!(order_id = %order_id, "Unexpected response length reading mirror lastSnapshotNonce"),
+                                                            Err(rd) => warn!(order_id = %order_id, error = %rd, "Failed to re-read mirror lastSnapshotNonce"),
+                                                        }
+                                                    } else {
+                                                        warn!(order_id = %order_id, "No mirror registry address configured — cannot correct cache");
+                                                    }
                                                     mirror_sync_needed.store(true, Ordering::Release);
                                                     return CboOutcome::NeedsRetry;
                                                 } else {
@@ -2662,21 +2687,23 @@ where
         Ok(receipt) => {
             let status = receipt.status.map(|s| s.as_u64()).unwrap_or(0);
             if status == 1 {
-                // Tx confirmed — read back actual lastSnapshotNonce from mirror
+                // Tx confirmed — read back actual lastSnapshotNonce from mirror.
+                // Use reset_ (authoritative) rather than set_ (monotonic) so the
+                // cache tracks on-chain truth even if it had drifted forward.
                 let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
                 match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
                     Ok(bytes) if bytes.len() >= 32 => {
                         let confirmed_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
-                        protocol.set_settlement_registry_nonce(confirmed_nonce);
+                        protocol.reset_settlement_registry_nonce(confirmed_nonce);
                         info!(cycle, confirmed_nonce, sync_nonce, "Mirror sync confirmed — registry nonce set from on-chain lastSnapshotNonce");
                     }
                     Ok(_) => {
                         // Fallback: use sync_nonce if read fails (shouldn't happen)
-                        protocol.set_settlement_registry_nonce(sync_nonce);
+                        protocol.reset_settlement_registry_nonce(sync_nonce);
                         warn!(cycle, sync_nonce, "Mirror sync confirmed but lastSnapshotNonce read returned unexpected data, using sync_nonce");
                     }
                     Err(e) => {
-                        protocol.set_settlement_registry_nonce(sync_nonce);
+                        protocol.reset_settlement_registry_nonce(sync_nonce);
                         warn!(cycle, sync_nonce, error = %e, "Mirror sync confirmed but failed to read lastSnapshotNonce, using sync_nonce");
                     }
                 }
@@ -2693,7 +2720,7 @@ where
             match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
                 Ok(bytes) if bytes.len() >= 32 => {
                     let current_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
-                    protocol.set_settlement_registry_nonce(current_nonce);
+                    protocol.reset_settlement_registry_nonce(current_nonce);
                     info!(cycle, current_nonce, "Set registry nonce from mirror lastSnapshotNonce after receipt timeout");
                 }
                 _ => {

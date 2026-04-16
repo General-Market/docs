@@ -494,13 +494,14 @@ pub(crate) async fn run_main_loop(mut components: OracleComponents, api_enabled:
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_oracles;
                             let msn = mirror_sync_needed.clone();
+                            let mra = mirror_registry_for_task;
                             let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(300),
                                     run_cross_chain_buy_post_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn, met,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn, mra, met,
                                     ),
                                 ).await {
                                     Ok(()) => {},

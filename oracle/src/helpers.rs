@@ -39,6 +39,15 @@ pub(crate) fn is_snapshot_too_old_error(err_str: &str) -> bool {
     err_str.contains("6724c448") || err_str.contains("SnapshotTooOld")
 }
 
+/// Check if an error string contains the BLSVerifier__NonceFuture selector (0xe181e596).
+/// Raised when the referenceNonce passed to a BLS-verified call exceeds the
+/// contract's lastSnapshotNonce. Indicates the oracle's cached
+/// settlement_registry_nonce has drifted ahead of on-chain state; the cache
+/// needs to be corrected from an authoritative on-chain read before retry.
+pub(crate) fn is_nonce_future_error(err_str: &str) -> bool {
+    err_str.contains("e181e596") || err_str.contains("NonceFuture")
+}
+
 /// Compute NAV from on-chain ITP inventory + live Bitget prices.
 ///
 /// NAV = sum(qty[i] * price[i]) / 1e18 — same formula as the contract.

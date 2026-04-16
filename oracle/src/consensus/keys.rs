@@ -36,8 +36,14 @@ pub trait KeyRegistry: Send + Sync {
     /// Get the Settlement mirror registry nonce (for Settlement BLS verification)
     fn settlement_registry_nonce(&self) -> u64 { 0 }
 
-    /// Update the Settlement mirror registry nonce
+    /// Update the Settlement mirror registry nonce (monotonic — only accepts higher)
     fn set_settlement_registry_nonce(&self, _nonce: u64) {}
+
+    /// Overwrite the Settlement mirror registry nonce unconditionally.
+    /// Use only after an authoritative on-chain read of lastSnapshotNonce —
+    /// required to correct the cache when it drifts ahead of the contract
+    /// (e.g. after an oracle crash, mirror redeploy, or inter-node race).
+    fn reset_settlement_registry_nonce(&self, _nonce: u64) {}
 }
 
 /// In-memory key registry for oracle BLS public keys
@@ -111,6 +117,16 @@ impl InMemoryKeyRegistry {
             if nonce > *guard {
                 *guard = nonce;
             }
+        }
+    }
+
+    /// Overwrite the Settlement mirror registry nonce unconditionally.
+    /// Caller MUST have just read the value directly from the mirror's
+    /// lastSnapshotNonce() — this bypasses the monotonic guard so the cache
+    /// can be corrected downward when it has drifted ahead.
+    pub fn reset_settlement_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.settlement_nonce.write() {
+            *guard = nonce;
         }
     }
 
@@ -197,6 +213,12 @@ impl KeyRegistry for InMemoryKeyRegistry {
             if nonce > *guard {
                 *guard = nonce;
             }
+        }
+    }
+
+    fn reset_settlement_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.settlement_nonce.write() {
+            *guard = nonce;
         }
     }
 }
