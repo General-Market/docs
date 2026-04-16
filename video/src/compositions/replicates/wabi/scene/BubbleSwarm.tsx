@@ -7,7 +7,6 @@
  * clean composition.
  */
 
-import { MeshTransmissionMaterial } from "@react-three/drei";
 import { ACTS } from "../theme";
 
 type Bubble = {
@@ -118,7 +117,7 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
     <group position={[x, y + bobY * bobAmount, 0]} scale={bubble.size}>
       {/* Emissive colored core — fills most of the bubble so color dominates. */}
       <mesh scale={0.9}>
-        <sphereGeometry args={[1, 24, 24]} />
+        <sphereGeometry args={[1, 16, 16]} />
         <meshStandardMaterial
           color={bubble.coreColor}
           emissive={bubble.coreColor}
@@ -130,24 +129,20 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
           toneMapped={false}
         />
       </mesh>
-      {/* Thin transparent shell — rim lighting + light chromatic aberration. */}
+      {/* Thin glass shell — plain physical material, no per-instance refraction pass. */}
       <mesh>
-        <sphereGeometry args={[1, 28, 28]} />
-        <MeshTransmissionMaterial
-          samples={3}
-          thickness={0.12}
-          roughness={0}
-          transmission={0.88}
-          ior={1.3}
-          chromaticAberration={0.04}
-          backside={false}
-          anisotropy={0.08}
-          distortion={0.04}
-          distortionScale={0.1}
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshPhysicalMaterial
           color="#FFFFFF"
-          attenuationColor="#FFFFFF"
-          attenuationDistance={6}
+          transmission={0.85}
+          ior={1.3}
+          thickness={0.15}
+          roughness={0.02}
+          metalness={0}
+          clearcoat={0.4}
+          clearcoatRoughness={0.05}
           transparent
+          opacity={opacity}
         />
       </mesh>
     </group>
