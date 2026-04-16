@@ -46,15 +46,15 @@ const MINT_ABI = [{
   outputs: [],
 }] as const
 
-// In-memory dev-only throttle. Module-scoped so it survives across requests
-// in the same Node process. Reset on dev-server restart — good enough for
-// a single developer, never reached in production (see dev-only check below).
-const DEV_MEMO: Map<string, number> = (globalThis as any).__bot_faucet_memo
-  || ((globalThis as any).__bot_faucet_memo = new Map<string, number>())
-
 type Limiter = {
   ttl(key: string): Promise<number>
   set(key: string, value: string, ttlSeconds: number): Promise<void>
+}
+
+const NO_OP_LIMITER: Limiter = {
+  // -2 mimics Redis "key missing" — always permits.
+  ttl: async () => -2,
+  set: async () => {},
 }
 
 function getLimiter(): Limiter | null {
@@ -67,20 +67,12 @@ function getLimiter(): Limiter | null {
       set: async (k, v, ex) => { await redis.set(k, v, { ex }) },
     }
   }
-  // Only fall back in non-production. A prod deployment without env vars
-  // should still fail closed.
+  // Dev fallback: no throttle. The throttle exists to stop strangers from
+  // draining the faucet in production. On a developer laptop with no
+  // strangers, a fake limit is only good for breaking your own tests.
   if (process.env.NODE_ENV === 'production') return null
-  console.warn('[bot-faucet] Upstash not configured — using in-memory dev throttle (process-local, resets on restart)')
-  return {
-    ttl: async (k) => {
-      const exp = DEV_MEMO.get(k)
-      if (!exp) return -2
-      const remaining = Math.floor((exp - Date.now()) / 1000)
-      if (remaining <= 0) { DEV_MEMO.delete(k); return -2 }
-      return remaining
-    },
-    set: async (k, _v, ex) => { DEV_MEMO.set(k, Date.now() + ex * 1000) },
-  }
+  console.warn('[bot-faucet] Upstash not configured — dev mode: rate limit disabled')
+  return NO_OP_LIMITER
 }
 
 function getClientIp(req: NextRequest): string {
