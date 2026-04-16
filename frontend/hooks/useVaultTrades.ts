@@ -122,24 +122,27 @@ export function useVaultTrades(): UseVaultTradesReturn {
         return
       }
 
-      // Fetch tradeCount and feeBps in parallel
-      const [countResult, feeBpsResult] = await Promise.all([
-        publicClient.readContract({
-          address: vaultAddr,
-          abi: MOCK_BITGET_VAULT_ABI,
-          functionName: 'tradeCount',
-        }),
-        publicClient.readContract({
-          address: vaultAddr,
-          abi: MOCK_BITGET_VAULT_ABI,
-          functionName: 'feeBps',
-        }),
+      // Fetch tradeCount and feeBps in parallel. Either can return `0x` mid-
+      // deploy or mid-reorg (viem throws "Cannot decode zero data"); treat
+      // that as zero rather than surfacing a red banner on every poll.
+      const readOrZero = async (functionName: 'tradeCount' | 'feeBps') => {
+        try {
+          const v = await publicClient.readContract({
+            address: vaultAddr,
+            abi: MOCK_BITGET_VAULT_ABI,
+            functionName,
+          })
+          return Number(v)
+        } catch {
+          return 0
+        }
+      }
+      const [count, fee] = await Promise.all([
+        readOrZero('tradeCount'),
+        readOrZero('feeBps'),
       ])
 
       if (controller.signal.aborted) return
-
-      const count = Number(countResult)
-      const fee = Number(feeBpsResult)
 
       if (!mountedRef.current) return
 
