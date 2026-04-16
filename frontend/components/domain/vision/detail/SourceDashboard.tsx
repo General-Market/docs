@@ -75,18 +75,48 @@ function BotCta({ text }: { text: string }) {
   )
 }
 
+function CurrentRoundSkeleton() {
+  return (
+    <div className={CARD} aria-hidden="true">
+      <h3 className={HEADER}>Current Round</h3>
+      <div className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <span className="skeleton h-[16px] w-16 rounded" />
+          <span className="skeleton h-[16px] w-14 rounded" />
+        </div>
+        <div className="flex gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i}>
+              <span className="skeleton block h-[10px] w-14 rounded mb-1.5" />
+              <span className="skeleton block h-[14px] w-12 rounded" />
+            </div>
+          ))}
+        </div>
+        <div className={CTA_BOX}>
+          <span className="skeleton block h-[12px] w-3/4 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function CurrentRound({
   verifiedBatch,
   bettingRound,
   bettingEnd,
   tickDuration,
+  isLoading,
 }: {
   verifiedBatch: SourceDashboardProps['verifiedBatch']
   bettingRound: RoundInfo | null
   bettingEnd: string | null
   tickDuration: number
+  isLoading: boolean
 }) {
   const secsLeft = useSharedCountdown(bettingEnd)
+
+  if (isLoading) return <CurrentRoundSkeleton />
+
 
   // Pick the best display source for round metadata. The rounds API
   // (bettingRound) is authoritative for live state — it carries the real
@@ -164,11 +194,36 @@ function Leaderboard({ sourceId }: { sourceId: string }) {
   // Per-source leaderboard only populates after rounds settle. For fresh
   // sources that's an empty list — fall back to the global leaderboard so
   // the card always has someone to chase.
-  const { leaderboard: perSource } = useVisionLeaderboard(undefined, sourceId)
-  const { leaderboard: global } = useVisionLeaderboard()
+  const { leaderboard: perSource, isLoading: perSourceLoading } = useVisionLeaderboard(undefined, sourceId)
+  const { leaderboard: global, isLoading: globalLoading } = useVisionLeaderboard()
+  const isLoading = (perSourceLoading || globalLoading) && perSource.length === 0 && global.length === 0
   const usingFallback = perSource.length === 0 && global.length > 0
   const list = usingFallback ? global : perSource
   const top5 = list.slice(0, 5)
+
+  if (isLoading) {
+    return (
+      <div className={CARD} aria-hidden="true">
+        <h3 className={HEADER}>Leaderboard</h3>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between"
+              style={{ animationDelay: `${i * 70}ms` }}
+            >
+              <div className="flex items-center gap-3">
+                <span className="skeleton h-[12px] w-4 rounded" />
+                <span className="skeleton h-[12px] w-28 rounded" />
+              </div>
+              <span className="skeleton h-[12px] w-12 rounded" />
+            </div>
+          ))}
+        </div>
+        <BotCta text="You're not on this list yet." />
+      </div>
+    )
+  }
 
   return (
     <div className={CARD}>
@@ -327,7 +382,9 @@ export function SourceDashboard({
   bettingRound,
   bettingEnd,
   tickDuration,
+  rounds,
 }: SourceDashboardProps) {
+  const roundsLoading = rounds === undefined
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="flex flex-col gap-4">
@@ -336,6 +393,7 @@ export function SourceDashboard({
           bettingRound={bettingRound ?? null}
           bettingEnd={bettingEnd}
           tickDuration={tickDuration}
+          isLoading={roundsLoading}
         />
         <RoundSpotlight sourceId={sourceId} />
       </div>

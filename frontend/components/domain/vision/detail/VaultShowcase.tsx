@@ -476,6 +476,85 @@ function VaultTiltCard({ fund, vault, index, userPosition, onDeposit }: {
 }
 
 /* ─────────────────────────────────────────────
+   Skeleton, mirrors FeaturedHero + tilt-card grid
+   ───────────────────────────────────────────── */
+
+function VaultShowcaseSkeleton({ count }: { count: number }) {
+  const tiles = Math.max(0, Math.min(count, 5))
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      <div className="relative bg-terminal-dark border border-white/[0.08] overflow-hidden">
+        <div className="p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="skeleton h-[10px] w-24 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
+            <span className="skeleton h-[14px] w-16 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+            <div className="min-w-0 flex-1">
+              <span className="skeleton block h-[26px] w-2/3 rounded mb-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <span className="skeleton block h-[12px] w-full max-w-md rounded mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <span className="skeleton block h-[12px] w-4/5 max-w-md rounded mb-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="flex items-center gap-6 mb-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i}>
+                    <span className="skeleton block h-[9px] w-10 rounded mb-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    <span className="skeleton block h-[16px] w-16 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="skeleton h-[36px] w-24 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                <span className="skeleton h-[36px] w-20 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              </div>
+            </div>
+            <div className="shrink-0 sm:text-right">
+              <span className="skeleton block h-[44px] w-40 rounded" style={{ background: 'rgba(255,255,255,0.1)' }} />
+              <span className="skeleton block h-[10px] w-24 mt-2 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <span className="skeleton block h-[52px] w-full sm:w-[200px] sm:ml-auto mt-4 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {tiles > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="skeleton h-[11px] w-32 rounded" />
+            <span className="skeleton h-[10px] w-16 rounded" />
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible sm:pb-0">
+            {Array.from({ length: tiles }).map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 basis-[calc(50%-0.5rem)] sm:basis-auto sm:shrink border border-border-light bg-white p-4"
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="skeleton h-[14px] w-2/3 rounded" />
+                  <span className="skeleton h-[10px] w-12 rounded" />
+                </div>
+                <span className="skeleton block h-[10px] w-full rounded mb-3" />
+                <span className="skeleton block h-[36px] w-full rounded mb-3" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="skeleton block h-[8px] w-8 rounded mb-1" />
+                    <span className="skeleton block h-[11px] w-12 rounded" />
+                  </div>
+                  <div className="text-right">
+                    <span className="skeleton block h-[8px] w-8 rounded mb-1 ml-auto" />
+                    <span className="skeleton block h-[11px] w-12 rounded ml-auto" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
    VaultShowcase, orchestrator
    ───────────────────────────────────────────── */
 
@@ -497,7 +576,7 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
   // live user positions and the inter-cycle refresh still work, and so the
   // display resolver has something to fall back on while the first multicall
   // settles on a cold page load.
-  const { vaults: chainVaults } = useVaults()
+  const { vaults: chainVaults, isLoading: chainLoading } = useVaults()
   const vaultPositions = useSSEUserVaultPositions()
   const visionVaults = useSSEVisionVaults()
 
@@ -559,6 +638,14 @@ export function VaultShowcase({ sourceId }: VaultShowcaseProps) {
 
   const featured = sortedFunds[0]
   const rest = sortedFunds.slice(1)
+
+  // Chain vaults still streaming in and SSE has nothing to fill — paint a
+  // skeleton shaped like the real hero so the section doesn't flash zeros.
+  const hasAnyVaultData =
+    Object.keys(chainVaultByAddress).length > 0 || Object.keys(sseVaultByAddress).length > 0
+  if (chainLoading && !hasAnyVaultData) {
+    return <VaultShowcaseSkeleton count={rest.length} />
+  }
 
   return (
     <div className="space-y-6">

@@ -169,8 +169,21 @@ export function SubmarketsGrid({ sourceId }: SubmarketsGridProps) {
       {/* Grid */}
       <div className="bg-terminal px-4 py-4">
         {isLoading ? (
-          <div className="py-12 text-center text-caption text-text-inverse-muted/30 animate-pulse">
-            Loading markets...
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5" aria-hidden="true">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2.5 px-3 py-2 rounded bg-white/[0.03]"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <span className="w-[22px] h-[22px] rounded-full bg-white/[0.08] animate-pulse shrink-0" />
+                <span className="flex-1 h-[11px] rounded bg-white/[0.05] animate-pulse" />
+                <div className="flex gap-1 shrink-0">
+                  <span className="w-[38px] h-[26px] rounded bg-color-up/10 animate-pulse" />
+                  <span className="w-[38px] h-[26px] rounded bg-color-down/10 animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : isError ? (
           <div className="py-12 text-center text-caption text-color-down/60">

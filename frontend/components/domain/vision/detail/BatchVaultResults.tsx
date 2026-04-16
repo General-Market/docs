@@ -122,7 +122,36 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
             </h3>
           </div>
         </div>
-        {isEmpty ? (
+        {isLoading && settled.length === 0 ? (
+          <div aria-hidden="true">
+            <div className="hidden md:grid grid-cols-[56px_1fr_56px_96px] items-center px-4 py-2 bg-[var(--surface)] border border-border-light text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
+              <div>Time</div>
+              <div className="text-center">Round</div>
+              <div className="text-right">Players</div>
+              <div className="text-right">Top Payout</div>
+            </div>
+            <div className="bg-white border border-t-0 border-border-light">
+              <div className="px-4 py-2.5 bg-[var(--surface)] border-y border-border-light">
+                <span className="skeleton block h-[13px] w-32 rounded" />
+              </div>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[48px_1fr_72px] md:grid-cols-[56px_1fr_56px_96px] items-center gap-2 px-4 py-2.5 border-b border-border-light last:border-b-0"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                >
+                  <span className="skeleton h-[11px] w-12 rounded" />
+                  <div className="flex items-center md:justify-center gap-3 min-w-0">
+                    <span className="skeleton h-[12px] w-20 rounded" />
+                    <span className="hidden md:inline skeleton h-[10px] w-24 rounded" />
+                  </div>
+                  <span className="hidden md:block skeleton h-[12px] w-8 rounded justify-self-end" />
+                  <span className="skeleton h-[12px] w-16 rounded justify-self-end" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : isEmpty ? (
           <div className="bg-white border border-border-light px-5 py-8 text-center">
             <p className="text-[13px] text-text-muted">
               No settled rounds yet. The first result will land here after the current round settles.
@@ -139,12 +168,6 @@ export function BatchVaultResults({ sourceId }: BatchVaultResultsProps) {
           </div>
 
           <div className="bg-white border border-t-0 border-border-light">
-            {isLoading && settled.length === 0 && (
-              <div className="px-4 py-8 text-center text-[12px] text-text-muted animate-pulse">
-                {t('batch_results.loading')}
-              </div>
-            )}
-
             <div className={cn(
               'overflow-y-auto sm:max-h-[500px]',
               mobileExpanded ? 'max-h-[500px]' : 'max-h-[280px]',

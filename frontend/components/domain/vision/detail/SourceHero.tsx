@@ -35,14 +35,14 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="sticky top-14 sm:top-16 z-40 border border-border-light overflow-hidden bg-white flex">
-      {/* Left half — info */}
+    <div className="border border-border-light overflow-hidden bg-white flex">
+      {/* Left half, info */}
       <div className="flex-1 px-6 py-4 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="inline-flex items-center px-2 py-0.5 rounded text-micro font-bold uppercase tracking-[0.08em] bg-black/5 text-text-secondary">
             {categoryLabel}
           </span>
-          {sourceSchedule && (
+          {sourceSchedule ? (
             <span
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-micro font-bold uppercase tracking-[0.08em] ${
                 isLive
@@ -57,6 +57,8 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
               />
               {isLive ? t('source_hero.live') : t('source_hero.offline')}
             </span>
+          ) : (
+            <span className="skeleton h-[18px] w-14 rounded" aria-hidden="true" />
           )}
         </div>
 
@@ -90,7 +92,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
         )}
       </div>
 
-      {/* Right half — brand logo with geometric pulse */}
+      {/* Right half, brand logo with geometric pulse */}
       <div
         className="relative w-2/5 min-h-[100px] flex items-center justify-center"
         style={{ background: source.brandBg, viewTransitionName: sourceId ? `source-brand-${sourceId}` : undefined } as React.CSSProperties}

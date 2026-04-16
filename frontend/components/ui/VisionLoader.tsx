@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils/cn'
 
 /**
- * Loading messages — reverse absurdity.
+ * Loading messages, reverse absurdity.
  * The conventional world is the weird one. Not us.
  */
 const MESSAGES: Record<string, string[]> = {
@@ -78,13 +78,13 @@ function LoaderCaption({ context = 'default', className }: { context?: string; c
   )
 }
 
-/** Shimmer bar — the basic building block */
-function Shimmer({ className, style }: { className?: string; style?: React.CSSProperties }) {
+/** Shimmer bar, the basic building block */
+export function Shimmer({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return <div className={cn('skeleton rounded', className)} style={style} aria-hidden="true" />
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Batch cards grid — mimics BatchCard layout
+ * VARIANT: Batch cards grid, mimics BatchCard layout
  * ═══════════════════════════════════════════════════════════════════ */
 export function BatchCardsSkeleton() {
   return (
@@ -120,7 +120,7 @@ export function BatchCardsSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Source cards grid — mimics SourceCard layout
+ * VARIANT: Source cards grid, mimics SourceCard layout
  * ═══════════════════════════════════════════════════════════════════ */
 export function SourceCardsSkeleton() {
   return (
@@ -132,7 +132,7 @@ export function SourceCardsSkeleton() {
             className="bg-white border-r border-b border-border-light overflow-hidden"
             style={{ animationDelay: `${i * 60}ms` }}
           >
-            {/* Brand area — aspect-video */}
+            {/* Brand area, aspect-video */}
             <Shimmer className="aspect-video w-full !rounded-none" />
             {/* Content */}
             <div className="px-5 pt-4 pb-0">
@@ -165,7 +165,7 @@ export function SourceCardsSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: ITP fund table — mimics ItpListing table rows
+ * VARIANT: ITP fund table, mimics ItpListing table rows
  * ═══════════════════════════════════════════════════════════════════ */
 export function ItpTableSkeleton() {
   return (
@@ -219,7 +219,7 @@ export function ItpTableSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Leaderboard table — mimics VisionLeaderboard rows
+ * VARIANT: Leaderboard table, mimics VisionLeaderboard rows
  * ═══════════════════════════════════════════════════════════════════ */
 export function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
   return (
@@ -262,7 +262,7 @@ export function LeaderboardSkeleton({ rows = 5 }: { rows?: number }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Top Players compact — mimics TopPlayers grid layout
+ * VARIANT: Top Players compact, mimics TopPlayers grid layout
  * ═══════════════════════════════════════════════════════════════════ */
 export function TopPlayersSkeleton() {
   return (
@@ -302,13 +302,13 @@ export function TopPlayersSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Source detail — hero + stats bar + split content
+ * VARIANT: Source detail, hero + stats bar + split content
  * ═══════════════════════════════════════════════════════════════════ */
 export function SourceDetailSkeleton() {
   return (
     <div className="px-6 lg:px-12 py-6">
       <div className="max-w-site mx-auto">
-        {/* Hero — mimics SourceHero */}
+        {/* Hero, mimics SourceHero */}
         <div className="border border-border-light overflow-hidden bg-white flex">
           <div className="flex-1 px-5 py-4">
             <div className="flex items-center gap-2 mb-2">
@@ -375,7 +375,7 @@ export function SourceDetailSkeleton() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
- * VARIANT: Markets grid — large data load, centered with message
+ * VARIANT: Markets grid, large data load, centered with message
  * ═══════════════════════════════════════════════════════════════════ */
 
 /** Bullish mini-chart path */
