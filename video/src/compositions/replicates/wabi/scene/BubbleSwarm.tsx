@@ -18,11 +18,17 @@ type Bubble = {
   xStart: number;
   xDriftAmp: number;
   xDriftFreq: number;
+  xPhase: number;
   yFinal: number;
+  yBobAmp: number;
+  yBobFreq: number;
+  yBobPhase: number;
   riseDuration: number;
   size: number;
   color: string;
   iridescence: number;
+  rotSpeed: number;
+  rotAxis: [number, number, number];
   fadeOutDelay: number;
 };
 
@@ -77,17 +83,35 @@ const BUBBLES: Bubble[] = (() => {
 
     const size = 0.13 + rng() * 0.14; // 0.13–0.27
 
+    const axis: [number, number, number] = [
+      rng() - 0.5,
+      rng() - 0.5,
+      rng() - 0.5,
+    ];
+    const axisLen = Math.hypot(axis[0], axis[1], axis[2]) || 1;
+    const normAxis: [number, number, number] = [
+      axis[0] / axisLen,
+      axis[1] / axisLen,
+      axis[2] / axisLen,
+    ];
+
     list.push({
       id: i,
       spawnFrame,
       xStart: xCell + xJitter,
-      xDriftAmp: 0.05 + rng() * 0.1, // small, so bubbles don't drift into each other
-      xDriftFreq: 0.012 + rng() * 0.018,
+      xDriftAmp: 0.08 + rng() * 0.1,
+      xDriftFreq: 0.015 + rng() * 0.02,
+      xPhase: rng() * Math.PI * 2,
       yFinal: yCell + yJitter,
-      riseDuration: 110 + Math.floor(rng() * 30), // 110–140 frames for a smooth long rise
+      yBobAmp: 0.08 + rng() * 0.08,
+      yBobFreq: 0.018 + rng() * 0.022,
+      yBobPhase: rng() * Math.PI * 2,
+      riseDuration: 110 + Math.floor(rng() * 30),
       size,
       color: COLORS[i % COLORS.length],
       iridescence: 0.4 + rng() * 0.5,
+      rotSpeed: (rng() - 0.5) * 0.012, // -0.006..+0.006 rad/frame — very slow
+      rotAxis: normAxis,
       fadeOutDelay: Math.floor(rng() * 55),
     });
   }
@@ -109,17 +133,23 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
   const riseT = Math.min(1, age / bubble.riseDuration);
   const eased = smoothstep(riseT);
   const startY = 0.55;
-  const y = startY + (bubble.yFinal - startY) * eased;
+  const yBase = startY + (bubble.yFinal - startY) * eased;
 
-  // Gentle bob once settled.
-  const settleAge = Math.max(0, age - bubble.riseDuration);
-  const bobY = Math.sin((frame + bubble.id * 11) * 0.025) * 0.03;
-  const bobAmount = Math.min(1, settleAge / 20);
+  // Ongoing bob — ramps in as the bubble settles, stays forever.
+  const settleAge = Math.max(0, age - bubble.riseDuration * 0.5);
+  const bobAmount = Math.min(1, settleAge / 30);
+  const bobY =
+    Math.sin(frame * bubble.yBobFreq + bubble.yBobPhase) * bubble.yBobAmp;
 
-  // Low-amplitude horizontal drift (never enough to collide with neighbor).
+  // Horizontal drift — always-on sinusoid with per-bubble phase.
   const xDrift =
-    Math.sin(frame * bubble.xDriftFreq + bubble.id * 1.7) * bubble.xDriftAmp;
+    Math.sin(frame * bubble.xDriftFreq + bubble.xPhase) * bubble.xDriftAmp;
   const x = bubble.xStart + xDrift;
+  const y = yBase + bobY * bobAmount;
+
+  // Slow per-bubble rotation.
+  const rot = frame * bubble.rotSpeed;
+  const [ax, ay, az] = bubble.rotAxis;
 
   const fadeInOpacity = Math.min(1, age / 12);
 
@@ -133,8 +163,10 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
   if (opacity <= 0.01) return null;
 
   return (
-    <group position={[x, y + bobY * bobAmount, 0]} scale={bubble.size}>
-      <mesh>
+    <group position={[x, y, 0]} scale={bubble.size}>
+      {/* Main bubble body — rotates (conveys life; the solid color is uniform
+          so rotation reads as a subtle motion of the highlight). */}
+      <mesh rotation={[ax * rot, ay * rot, az * rot]}>
         <sphereGeometry args={[1, 24, 24]} />
         <meshPhysicalMaterial
           color={bubble.color}
@@ -148,7 +180,7 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
           opacity={opacity}
         />
       </mesh>
-      {/* Specular highlight — a tiny white sphere at top-left. */}
+      {/* Specular highlight — view-space, does not rotate with the bubble. */}
       <mesh position={[-0.28, 0.38, 0.85]} scale={0.18}>
         <sphereGeometry args={[1, 10, 10]} />
         <meshBasicMaterial
