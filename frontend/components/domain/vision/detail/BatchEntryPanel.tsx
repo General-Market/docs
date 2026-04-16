@@ -264,14 +264,15 @@ export default function BatchEntryPanel({
       const res = await fetch('/api/faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '1000', gas: true }),
+        body: JSON.stringify({ address, amount: '1000', scope: 'vision' }),
       })
       const data = await res.json()
       if (!res.ok || data.error) {
         setFaucetError(data.error || 'Faucet request failed')
-      } else if (data.l3Gas?.error) {
-        // Faucet minted USDC but the gas drip silently failed — surface it
-        setFaucetError(`Gas drip failed: ${data.l3Gas.error}`)
+      } else if (data.vision?.usdc?.error) {
+        setFaucetError(`USDC mint failed: ${data.vision.usdc.error}`)
+      } else if (data.vision?.gas?.error) {
+        setFaucetError(`Gas drip failed: ${data.vision.gas.error}`)
       } else {
         setFaucetSuccess(true)
         setTimeout(() => { refetchBalance(); refetchGas() }, 2000)

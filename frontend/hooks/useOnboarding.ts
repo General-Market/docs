@@ -81,13 +81,14 @@ export function useOnboarding(sourceId: string): OnboardingState {
       const res = await fetch('/api/faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '1000', gas: true }),
+        body: JSON.stringify({ address, amount: '1000', scope: 'vision' }),
       })
       if (!res.ok) throw new Error('Faucet failed')
-      // Only mark the step done if the L3 gas drip actually delivered.
+      // Only mark the step done if both L3 USDC mint and GM gas drip delivered.
       // Otherwise the gate locks closed forever and the user can never retry.
       const data = await res.json().catch(() => ({}))
-      if (data?.l3Gas?.error) throw new Error(data.l3Gas.error)
+      if (data?.vision?.usdc?.error) throw new Error(data.vision.usdc.error)
+      if (data?.vision?.gas?.error) throw new Error(data.vision.gas.error)
       localStorage.setItem(faucetKey, '1')
       setFaucetDone(true)
     } catch {

@@ -3,13 +3,21 @@ import { createWalletClient, createPublicClient, http, parseUnits, parseEther } 
 import { privateKeyToAccount } from 'viem/accounts'
 
 /**
- * Testnet faucet — mints L3 WUSDC and optionally drips Sonic testnet gas.
- * Uses the deployer key for both chains.
+ * Testnet faucet.
  *
- * POST /api/faucet { address: "0x...", amount?: "1000", gas?: true }
+ * POST /api/faucet { address, amount?, scope?: 'vision' | 'itp' | 'both' }
  *
- * - Default: mints L3 USDC only (reads USDC address from Vision contract)
- * - gas=true: also sends 0.5 S (Sonic testnet native token) for settlement txs
+ * Scopes are strictly separated — Vision and Index are two different places.
+ *   vision: mints L3 USDC (18 dec) + drips L3 GM gas.
+ *   itp:    mints Settlement USDC (6 dec) + drips Sonic S gas.
+ *   both:   all of the above (used only on pages that bridge both contexts, e.g. portfolio).
+ *
+ * Default when scope omitted: 'vision'. Legacy `gas: true` maps to 'both' for
+ * callers that haven't migrated.
+ *
+ * Each leg is reported independently in the response. A failure in one leg
+ * never silently masks the other — the caller sees `{ error }` on the affected
+ * leg and can retry just that context.
  */
 
 import { getL3RpcServer, SETTLEMENT_RPC_URL } from '@/lib/config'
@@ -22,8 +30,9 @@ const L3_WUSDC_FALLBACK = (_deployment.contracts.L3_WUSDC || '0x0511c61c551280cd
 const L3_CHAIN_ID = (_deployment as any).chainId || 111222333
 const SETTLEMENT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337
 const SETTLEMENT_USDC = (_deployment.contracts.SETTLEMENT_USDC || '0x2775bA795A292A1FfcD91d227d1a1B0889282190') as `0x${string}`
-const MAX_MINT = 10_000 // max 10k USDC per request
-const GAS_DRIP_AMOUNT = '0.5' // 0.5 S per drip
+const MAX_MINT = 10_000
+const SONIC_GAS_DRIP = '0.5'
+const L3_GAS_DRIP = '1'
 
 const MINT_ABI = [{
   name: 'mint',
@@ -36,146 +45,144 @@ const MINT_ABI = [{
   outputs: [],
 }] as const
 
+const USDC_GETTER_ABI = [{
+  inputs: [], name: 'USDC',
+  outputs: [{ name: '', type: 'address' }],
+  stateMutability: 'view', type: 'function',
+}] as const
+
+type Scope = 'vision' | 'itp' | 'both'
+
+function resolveScope(body: any): Scope {
+  const s = body?.scope
+  if (s === 'vision' || s === 'itp' || s === 'both') return s
+  if (body?.gas === true) return 'both'
+  return 'vision'
+}
+
+async function runVisionLeg(to: `0x${string}`, amount: number) {
+  const leg: Record<string, any> = {}
+  const chain = {
+    id: L3_CHAIN_ID,
+    name: 'Index L3',
+    nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+    rpcUrls: { default: { http: [getL3RpcServer()] } },
+  } as const
+
+  const account = privateKeyToAccount(DEPLOYER_KEY)
+  const wallet = createWalletClient({ account, chain, transport: http(getL3RpcServer()) })
+  const pub = createPublicClient({ chain, transport: http(getL3RpcServer()) })
+
+  let l3Usdc = L3_WUSDC_FALLBACK
+  if (VISION_ADDRESS !== '0x0000000000000000000000000000000000000000') {
+    try {
+      const fromVision = await pub.readContract({
+        address: VISION_ADDRESS, abi: USDC_GETTER_ABI, functionName: 'USDC',
+      })
+      if (fromVision) l3Usdc = fromVision as `0x${string}`
+    } catch {
+      // Vision missing — fall back to deployment JSON.
+    }
+  }
+
+  try {
+    const parsed = parseUnits(String(amount), 18)
+    const hash = await wallet.writeContract({
+      address: l3Usdc, abi: MINT_ABI, functionName: 'mint',
+      args: [to, parsed],
+    })
+    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+    leg.usdc = { hash, amount: `${amount} USDC` }
+  } catch (e: any) {
+    leg.usdc = { error: e.message ?? 'L3 USDC mint failed' }
+  }
+
+  try {
+    const drip = parseEther(L3_GAS_DRIP)
+    const deployerBal = await pub.getBalance({ address: account.address })
+    if (deployerBal > drip * 2n) {
+      const hash = await wallet.sendTransaction({ to, value: drip })
+      await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+      leg.gas = { hash, amount: `${L3_GAS_DRIP} GM` }
+    } else {
+      leg.gas = { error: 'Deployer low on GM' }
+    }
+  } catch (e: any) {
+    leg.gas = { error: e.message ?? 'GM drip failed' }
+  }
+
+  return leg
+}
+
+async function runItpLeg(to: `0x${string}`, amount: number) {
+  const leg: Record<string, any> = {}
+  const chain = {
+    id: SETTLEMENT_CHAIN_ID,
+    name: 'Settlement',
+    nativeCurrency: { name: 'Sonic', symbol: 'S', decimals: 18 },
+    rpcUrls: { default: { http: [SETTLEMENT_RPC_URL] } },
+  } as const
+
+  const account = privateKeyToAccount(DEPLOYER_KEY)
+  const wallet = createWalletClient({ account, chain, transport: http(SETTLEMENT_RPC_URL) })
+  const pub = createPublicClient({ chain, transport: http(SETTLEMENT_RPC_URL) })
+
+  try {
+    const parsed = parseUnits(String(amount), 6)
+    const hash = await wallet.writeContract({
+      address: SETTLEMENT_USDC, abi: MINT_ABI, functionName: 'mint',
+      args: [to, parsed],
+    })
+    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+    leg.usdc = { hash, amount: `${amount} USDC` }
+  } catch (e: any) {
+    leg.usdc = { error: e.message ?? 'Settlement USDC mint failed' }
+  }
+
+  try {
+    const drip = parseEther(SONIC_GAS_DRIP)
+    const deployerBal = await pub.getBalance({ address: account.address })
+    if (deployerBal > drip * 2n) {
+      const hash = await wallet.sendTransaction({ to, value: drip })
+      await pub.waitForTransactionReceipt({ hash, timeout: 30_000 })
+      leg.gas = { hash, amount: `${SONIC_GAS_DRIP} S` }
+    } else {
+      leg.gas = { error: 'Deployer low on S' }
+    }
+  } catch (e: any) {
+    leg.gas = { error: e.message ?? 'S drip failed' }
+  }
+
+  return leg
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { address, amount: amountStr, gas: wantGas } = body
+    const { address, amount: amountStr } = body
 
     if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
     }
 
     const amount = Math.min(parseFloat(amountStr || '100'), MAX_MINT)
-    if (amount <= 0) {
+    if (!(amount > 0)) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
-    const account = privateKeyToAccount(DEPLOYER_KEY)
-    const results: Record<string, any> = {}
+    const scope = resolveScope(body)
+    const to = address as `0x${string}`
 
-    // 1. Mint L3 USDC — read actual USDC address from Vision contract
-    const parsedAmount = parseUnits(String(amount), 18) // L3 USDC = 18 decimals
-    const l3Chain = {
-      id: L3_CHAIN_ID,
-      name: 'Index L3',
-      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [getL3RpcServer()] } },
-    } as const
+    const results: Record<string, any> = { scope }
 
-    const l3Wallet = createWalletClient({
-      account,
-      chain: l3Chain,
-      transport: http(getL3RpcServer()),
-    })
-
-    const l3Public = createPublicClient({
-      chain: l3Chain,
-      transport: http(getL3RpcServer()),
-    })
-
-    // Read Vision's USDC address from the contract, fall back to deployment JSON
-    let l3Usdc = L3_WUSDC_FALLBACK
-    if (VISION_ADDRESS !== '0x0000000000000000000000000000000000000000') {
-      try {
-        const usdcFromVision = await l3Public.readContract({
-          address: VISION_ADDRESS,
-          abi: [{ inputs: [], name: 'USDC', outputs: [{ name: '', type: 'address' }], stateMutability: 'view', type: 'function' }],
-          functionName: 'USDC',
-        })
-        if (usdcFromVision) l3Usdc = usdcFromVision as `0x${string}`
-      } catch {
-        // Vision not deployed or USDC() missing — use fallback
-      }
+    if (scope === 'vision' || scope === 'both') {
+      results.vision = await runVisionLeg(to, amount)
+    }
+    if (scope === 'itp' || scope === 'both') {
+      results.itp = await runItpLeg(to, amount)
     }
 
-    const mintHash = await l3Wallet.writeContract({
-      address: l3Usdc,
-      abi: MINT_ABI,
-      functionName: 'mint',
-      args: [address as `0x${string}`, parsedAmount],
-    })
-
-    await l3Public.waitForTransactionReceipt({ hash: mintHash, timeout: 30_000 })
-    results.usdc = { hash: mintHash, amount: `${amount} USDC` }
-
-    // 1b. Drip L3 GM (native gas) — 1 GM covers ~20 txs
-    const L3_GAS_DRIP = parseEther('1')
-    try {
-      const l3DeployerBalance = await l3Public.getBalance({ address: account.address })
-      if (l3DeployerBalance > L3_GAS_DRIP * 2n) {
-        const l3GasHash = await l3Wallet.sendTransaction({
-          to: address as `0x${string}`,
-          value: L3_GAS_DRIP,
-        })
-        await l3Public.waitForTransactionReceipt({ hash: l3GasHash, timeout: 30_000 })
-        results.l3Gas = { hash: l3GasHash, amount: '10 GM' }
-      } else {
-        results.l3Gas = { error: 'Deployer low on GM' }
-      }
-    } catch (e: any) {
-      results.l3Gas = { error: e.message }
-    }
-
-    // 2. Settlement chain: gas drip + settlement USDC mint
-    if (wantGas) {
-      try {
-        const settlementChain = {
-          id: SETTLEMENT_CHAIN_ID,
-          name: 'Sonic Testnet',
-          nativeCurrency: { name: 'Sonic', symbol: 'S', decimals: 18 },
-          rpcUrls: { default: { http: [SETTLEMENT_RPC_URL] } },
-        } as const
-
-        const settlementWallet = createWalletClient({
-          account,
-          chain: settlementChain,
-          transport: http(SETTLEMENT_RPC_URL),
-        })
-
-        const settlementPublic = createPublicClient({
-          chain: settlementChain,
-          transport: http(SETTLEMENT_RPC_URL),
-        })
-
-        // Gas drip
-        const deployerBalance = await settlementPublic.getBalance({ address: account.address })
-        const dripAmount = parseEther(GAS_DRIP_AMOUNT)
-
-        if (deployerBalance > dripAmount * 2n) {
-          const gasHash = await settlementWallet.sendTransaction({
-            to: address as `0x${string}`,
-            value: dripAmount,
-          })
-          await settlementPublic.waitForTransactionReceipt({ hash: gasHash, timeout: 30_000 })
-          results.gas = { hash: gasHash, amount: `${GAS_DRIP_AMOUNT} S` }
-        } else {
-          results.gas = { error: 'Faucet deployer low on S — please try again later' }
-        }
-
-        // Mint settlement USDC (6 decimals) for ITP buying
-        try {
-          const settlementAmount = parseUnits(String(amount), 6)
-          const settlementMintHash = await settlementWallet.writeContract({
-            address: SETTLEMENT_USDC,
-            abi: MINT_ABI,
-            functionName: 'mint',
-            args: [address as `0x${string}`, settlementAmount],
-          })
-          await settlementPublic.waitForTransactionReceipt({ hash: settlementMintHash, timeout: 30_000 })
-          results.settlementUsdc = { hash: settlementMintHash, amount: `${amount} USDC (settlement)` }
-        } catch (e: any) {
-          results.settlementUsdc = { error: e.message }
-        }
-      } catch (e: any) {
-        results.gas = { error: e.message }
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      to: address,
-      ...results,
-    })
+    return NextResponse.json({ success: true, to: address, ...results })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

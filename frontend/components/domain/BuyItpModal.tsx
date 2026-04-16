@@ -25,14 +25,14 @@ import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/
 import { InlineOhlcChart } from '@/components/ui/InlineOhlcChart'
 import { indexL3, settlementChain, settlementChainId } from '@/lib/wagmi'
 
-/** Settlement USDC decimals — real USDC on Settlement is 6 decimals */
+/** Settlement USDC decimals, real USDC on Settlement is 6 decimals */
 const SETTLEMENT_USDC_DECIMALS = 6
 
 /**
- * Buy flow micro-steps — Settlement bridge path (5 steps + Done):
+ * Buy flow micro-steps, Settlement bridge path (5 steps + Done):
  *
  * Step 1 "Submit on Settlement":  APPROVE (0), SUBMIT (1)
- * Step 2 "Oracle Relay":          RELAY (2) — oracle detects CrossChainOrderCreated, submits on L3
+ * Step 2 "Oracle Relay":          RELAY (2), oracle detects CrossChainOrderCreated, submits on L3
  * Step 3 "Processing":            BATCH (3), FILL (4)
  * Done:                           DONE (5)
  */
@@ -118,7 +118,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const [batchTxHash, setBatchTxHash] = useState<string | null>(null)
   const [fillTxHash, setFillTxHash] = useState<string | null>(null)
 
-  // Settlement chain writes — raw useWriteContract (not the L3-defaulting hook)
+  // Settlement chain writes, raw useWriteContract (not the L3-defaulting hook)
   const { switchChainAsync } = useSwitchChain()
 
   const {
@@ -162,7 +162,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpName = staticEntry?.name || userState.bridgedItpName || 'ITP'
   const itpSymbol = staticEntry?.ticker || userState.bridgedItpSymbol || ''
 
-  // Settlement USDC balance (6 decimals) — read from Settlement chain
+  // Settlement USDC balance (6 decimals), read from Settlement chain
   const { data: settlementUsdcRaw, refetch: refetchSettlementUsdc } = useReadContract({
     address: INDEX_PROTOCOL.settlementUsdc,
     abi: ERC20_ABI,
@@ -240,14 +240,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     if (!address) return
     setFaucetLoading(true)
     try {
-      // Use the faucet API which also drips settlement gas
+      // ITP scope: mints Settlement USDC (6 dec) + drips Sonic gas.
       const res = await fetch('/api/faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '10000', gas: true }),
+        body: JSON.stringify({ address, amount: '10000', scope: 'itp' }),
       })
       const data = await res.json()
-      if (data.success) {
+      if (data.success && !data.itp?.usdc?.error) {
         refetchSettlementUsdc()
       }
     } catch {
@@ -482,7 +482,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     })
   }, [micro]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect L3 shares increase — completion signal (fallback when SSE unavailable)
+  // Detect L3 shares increase, completion signal (fallback when SSE unavailable)
   useEffect(() => {
     if (micro < BuyMicro.RELAY || micro >= BuyMicro.DONE) return
 
@@ -500,7 +500,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
     // Secondary fallback: check SSE for any recently-filled BUY on this ITP.
     // Catches cases where the tracked orderId was never set (oracle restart
-    // during relay — event missed) but the order was filled on L3.
+    // during relay, event missed) but the order was filled on L3.
     if (!trackedOrder) {
       const filled = sseOrders.find(
         o => o.itp_id === itpId && o.side === 0 && o.status >= 2

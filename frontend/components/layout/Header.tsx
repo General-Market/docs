@@ -40,7 +40,7 @@ type PageId = typeof PRIMARY_NAV[number]['id']
 // Pages whose mood darkens the header
 const DARK_PAGES = new Set<string>(['vision'])
 
-/** Renders nothing — exists solely to call useAccount() inside the provider boundary and lift wallet state up. */
+/** Renders nothing, exists solely to call useAccount() inside the provider boundary and lift wallet state up. */
 function WalletStateBridge({ onState }: { onState: (address: string | undefined, connected: boolean) => void }) {
   const { address, isConnected } = useAccount()
   useEffect(() => { onState(address, isConnected) }, [address, isConnected, onState])
@@ -63,7 +63,6 @@ export function Header() {
 
   const activePage = resolveActivePage(pathname)
   const isDark = activePage !== null && DARK_PAGES.has(activePage)
-  const showVisionBalance = false
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const hasWeb3 = useWeb3Available()
@@ -95,13 +94,13 @@ export function Header() {
   return (
     <>
       {hasWeb3 && <WalletStateBridge onState={onWalletState} />}
-      {/* Topbar — thin black strip (scrolls away) */}
+      {/* Topbar, thin black strip (scrolls away) */}
       <div className="bg-black text-white text-label font-medium text-center py-1.5">
         <TopbarStats /> <span className="text-zinc-600 mx-1.5">·</span> <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Testnet v0.93</span>
       </div>
 
       <div className="sticky top-0 z-50">
-        {/* ── Chameleon header — mood shifts per section ── */}
+        {/* ── Chameleon header, mood shifts per section ── */}
         <header
           className={`border-b transition-colors duration-500 ${
             isDark
@@ -165,18 +164,18 @@ export function Header() {
                 </AnimatePresence>
               </nav>
 
-              {/* Right side — Links + Balance + Wallet + Hamburger */}
+              {/* Right side, Links + Balance + Wallet + Hamburger */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <div className="hidden sm:block">
                   <LanguageSwitcher variant={isDark ? 'dark' : 'light'} />
                 </div>
 
-                {/* Wallet controls — handles both connected and disconnected states */}
+                {/* Wallet controls, handles both connected and disconnected states */}
                 {hasWeb3 && (
-                  <WalletControls isDark={isDark} showVisionBalance={showVisionBalance} />
+                  <WalletControls isDark={isDark} />
                 )}
 
-                {/* Hamburger — spring-animated lines → X, mobile only */}
+                {/* Hamburger, spring-animated lines → X, mobile only */}
                 <div className="relative md:hidden">
                   <button
                     className={`p-3 -m-1 transition-colors ${
@@ -214,7 +213,7 @@ export function Header() {
                     </div>
                   </button>
 
-                  {/* Overflow panel — spring entrance */}
+                  {/* Overflow panel, spring entrance */}
                   <AnimatePresence>
                     {mobileMenuOpen && (
                       <motion.div
@@ -300,7 +299,7 @@ export function Header() {
 
         </header>
 
-        {/* Section nav removed — lives in HomeClient as Morpho-style sidebar */}
+        {/* Section nav removed, lives in HomeClient as Morpho-style sidebar */}
       </div>
     </>
   )

@@ -1,28 +1,26 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
-import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
+import { HeaderBalanceBar } from './HeaderBalanceBar'
 import { usePoints } from '@/hooks/usePoints'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { springs } from '@/components/ui/spring'
 
 interface WalletControlsProps {
   isDark: boolean
-  showVisionBalance: boolean
 }
 
 const ENTER = { opacity: 0, y: -12, filter: 'blur(4px)' }
 const VISIBLE = { opacity: 1, y: 0, filter: 'blur(0px)' }
 const EXIT = { opacity: 0, y: -12, filter: 'blur(4px)' }
 
-export function WalletControls({ isDark, showVisionBalance }: WalletControlsProps) {
+export function WalletControls({ isDark }: WalletControlsProps) {
   const t = useTranslations('common')
   const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
@@ -37,38 +35,6 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
   const isWrongNetwork = isConnected && chainId !== indexL3.id
 
   const { points } = usePoints(address)
-  const isFaucetEnabled = process.env.NEXT_PUBLIC_FAUCET_ENABLED === 'true'
-  const faucetKey = address ? `faucet_used_${address.toLowerCase()}` : ''
-  const alreadyUsed = typeof window !== 'undefined' && !!faucetKey && !!localStorage.getItem(faucetKey)
-  const [faucetState, setFaucetState] = useState<'idle' | 'loading' | 'done' | 'error'>(alreadyUsed ? 'done' : 'idle')
-
-  const { data: usdcRaw, refetch: refetchUsdc } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: indexL3.id,
-    query: { enabled: !!address, refetchInterval: 15_000 },
-  })
-  const usdcBalance = usdcRaw !== undefined ? Number(usdcRaw) / 10 ** USDC_DECIMALS : null
-
-  const handleFaucet = useCallback(async () => {
-    if (!address || faucetState === 'loading' || alreadyUsed) return
-    setFaucetState('loading')
-    try {
-      const res = await fetch('/api/faucet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, amount: '1000', gas: true }),
-      })
-      if (!res.ok) throw new Error()
-      localStorage.setItem(faucetKey, '1')
-      setFaucetState('done')
-    } catch {
-      setFaucetState('error')
-      setTimeout(() => setFaucetState('idle'), 3000)
-    }
-  }, [address, faucetState, alreadyUsed, faucetKey])
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -155,7 +121,7 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
           exit={EXIT}
           transition={spring}
         >
-          {/* Points — only when connected */}
+          {/* Points, only when connected */}
           <Link
             href="/points"
             className={`hidden sm:inline text-label font-bold font-mono transition-colors ${
@@ -165,52 +131,8 @@ export function WalletControls({ isDark, showVisionBalance }: WalletControlsProp
             {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
           </Link>
 
-          {showVisionBalance && <VisionBalanceBar />}
-
-          {/* Balance — desktop only */}
-          {!showVisionBalance && usdcBalance !== null && (
-            <span
-              className={`group/bal hidden sm:inline-flex items-center text-[12px] font-semibold font-mono tabular-nums tracking-tight ${
-                isFaucetEnabled && usdcBalance === 0 ? 'cursor-pointer' : ''
-              } ${isDark ? 'text-text-inverse-muted' : 'text-text-secondary'}`}
-              onClick={isFaucetEnabled && usdcBalance === 0 ? handleFaucet : undefined}
-            >
-              {isFaucetEnabled && usdcBalance === 0 ? (
-                <span className={`text-[11px] font-semibold ${
-                  faucetState === 'loading' ? 'text-text-muted'
-                    : faucetState === 'done' ? 'text-color-up'
-                    : faucetState === 'error' ? 'text-color-down'
-                    : 'text-color-up'
-                }`}>
-                  {faucetState === 'loading' ? 'Minting...'
-                    : faucetState === 'done' ? '1K sent'
-                    : faucetState === 'error' ? 'Failed'
-                    : 'Get USDC'}
-                </span>
-              ) : usdcBalance > 0 ? (
-                <>
-                  {usdcBalance < 0.01 ? '<0.01'
-                    : usdcBalance >= 1_000_000 ? `${(usdcBalance / 1_000_000).toFixed(2)}M`
-                    : usdcBalance >= 1_000 ? `${(usdcBalance / 1_000).toFixed(1)}K`
-                    : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  <span className="ml-0.5 font-medium text-text-muted">USDC</span>
-                </>
-              ) : (
-                <a
-                  href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=${process.env.NEXT_PUBLIC_ONRAMP_NETWORK || 'sonic'}&walletAddress=${address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors ${
-                    isDark
-                      ? 'bg-color-up/20 text-color-up hover:bg-color-up/30'
-                      : 'bg-surface-up text-color-up hover:bg-surface-up/80'
-                  }`}
-                >
-                  {t('wallet.deposit')}
-                </a>
-              )}
-            </span>
-          )}
+          {/* Context-aware balance — Vision on /, /source; ITP on /index; both on /profile */}
+          <HeaderBalanceBar isDark={isDark} />
 
           {/* Wallet address button */}
           <button
