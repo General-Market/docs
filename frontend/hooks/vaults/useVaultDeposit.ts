@@ -32,7 +32,7 @@ const ERC20_ABI = [
   },
 ] as const
 
-type Step = 'idle' | 'approving' | 'depositing' | 'claiming' | 'done' | 'error'
+type Step = 'idle' | 'preparing' | 'approving' | 'depositing' | 'claiming' | 'done' | 'error'
 
 export interface UseVaultDepositReturn {
   deposit: (vaultAddress: `0x${string}`, amount: bigint) => void
@@ -109,14 +109,19 @@ export function useVaultDeposit(): UseVaultDepositReturn {
 
       setErrorMsg(null)
       setJustDepositedAmount(0n)
-      setIsPending(false)
       setIsConfirming(false)
+      // Flip to a busy state synchronously so the button reacts the moment
+      // the user clicks, before chain-switch + allowance-read (~500ms) have
+      // had a chance to decide which real step comes next.
+      setStep('preparing')
+      setIsPending(true)
 
       try {
         await ensureCorrectChain(currentChainId, switchChainAsync)
       } catch {
         setErrorMsg('Could not switch to Index L3.')
         setStep('error')
+        setIsPending(false)
         return
       }
 
@@ -133,6 +138,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
       } catch (err) {
         setErrorMsg(parseError(err))
         setStep('error')
+        setIsPending(false)
         return
       }
 

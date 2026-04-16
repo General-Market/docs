@@ -793,6 +793,7 @@
     "shares_to_redeem": "Shares to redeem",
     "max": "Max",
     "approve_usdc": "Approve USDC",
+    "preparing": "Preparing...",
     "approving": "Approving USDC...",
     "depositing": "Requesting deposit...",
     "claiming": "Minting shares...",

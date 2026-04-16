@@ -10,15 +10,24 @@ import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'
 import { useVaultRedeem } from '@/hooks/vaults/useVaultRedeem'
 import { useFundBranding } from '@/hooks/vaults/useFundBranding'
 import { useVaultHistory, type VaultSnapshot } from '@/hooks/vaults/useVaultHistory'
-import { useVaultDisplayResolver } from '@/hooks/vaults/useVaultDisplay'
+import { useVaultDisplayResolver, useEffectiveVaultVitals } from '@/hooks/vaults/useVaultDisplay'
 import { useVaultStats } from '@/hooks/vaults/useVaultStats'
 import { useSSEUserVaultPosition, useSSEVisionVault } from '@/hooks/useSSE'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { SpringBackdrop, SpringModal, glass } from '@/components/ui/spring'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'
+import { useDeployment } from '@/hooks/useDeployment'
 import { NavChart, generateNavHistory } from './NavChart'
 import type { VaultInfo } from '@/hooks/vaults/useVaults'
+
+const USDC_BALANCE_ABI = [{
+  inputs: [{ name: 'account', type: 'address' }],
+  name: 'balanceOf',
+  outputs: [{ name: '', type: 'uint256' }],
+  stateMutability: 'view',
+  type: 'function',
+}] as const
 
 // ── Strategy colors ───────────────────────────────────────
 
@@ -265,6 +274,22 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   // Optimistic overlay is layered on top while the claim tx is still
   // propagating through the RPC.
   const { address: userAddress } = useAccount()
+  const { getAddress } = useDeployment()
+  const usdcAddress = getAddress('L3_WUSDC')
+
+  const { data: usdcBalanceRaw, refetch: refetchUsdcBalance } = useReadContract({
+    address: usdcAddress,
+    abi: USDC_BALANCE_ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress] : undefined,
+    chainId: indexL3.id,
+    query: {
+      enabled: !!userAddress && usdcAddress !== '0x0000000000000000000000000000000000000000',
+      refetchInterval: 10_000,
+    },
+  })
+  const usdcBalance = (usdcBalanceRaw as bigint | undefined) ?? 0n
+  const usdcBalanceFloat = parseFloat(formatUnits(usdcBalance, 18))
 
   const { data: onChainShares, refetch: refetchShares } = useReadContract({
     address: vault.address,
@@ -300,11 +325,12 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
     if (depositStep !== 'done') return
     refetchShares()
     refetchPending()
-    const t1 = setTimeout(() => { refetchShares(); refetchPending() }, 1200)
-    const t2 = setTimeout(() => { refetchShares(); refetchPending() }, 3500)
-    const t3 = setTimeout(() => { refetchShares(); refetchPending() }, 7000)
+    refetchUsdcBalance()
+    const t1 = setTimeout(() => { refetchShares(); refetchPending(); refetchUsdcBalance() }, 1200)
+    const t2 = setTimeout(() => { refetchShares(); refetchPending(); refetchUsdcBalance() }, 3500)
+    const t3 = setTimeout(() => { refetchShares(); refetchPending(); refetchUsdcBalance() }, 7000)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
-  }, [depositStep, refetchShares, refetchPending])
+  }, [depositStep, refetchShares, refetchPending, refetchUsdcBalance])
 
   // Optimistic: only fill in the "Just Deposited" row if neither source shows
   // a position yet. Clears the instant the on-chain read returns the real
@@ -347,27 +373,18 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   }, [depositStep])
 
   const feePercent = Number(vault.performanceFeeRate) / 1e16
-  const liveTvl = parseFloat(formatUnits(vault.totalAssets, 18))
 
   const { snapshots, hasHistory } = useVaultHistory(vault.address)
 
-  // When the live wagmi read is empty (totalSupply == 0n) but the historical
-  // snapshot exists, prefer the snapshot. Otherwise the modal contradicts itself:
-  // TVL $0 sits next to NAV $1.0000 sits next to a -12% headline. The chart and
-  // the headline must speak about the same vault.
-  const latestSnapshot: VaultSnapshot | null =
-    snapshots.length > 0 ? snapshots[snapshots.length - 1] : null
-  const fallbackNav = latestSnapshot?.nav ?? null
-  const fallbackTvl = latestSnapshot?.tvl ?? null
+  // Single source for TVL/NAV/perf — identical to what the modal header reads,
+  // so the two can't disagree about the same vault.
+  const effective = useEffectiveVaultVitals(vault)
+  const effectiveTvl = effective.tvl
+  const effectiveNav = effective.nav
+  const effectivePerf = effective.perf
 
-  const liveHasSupply = vault.totalSupply > 0n
   const liveHasAssets = vault.totalAssets > 0n
-
-  const effectiveNav = liveHasSupply ? vault.navPerShare : (fallbackNav ?? 1.0)
-  const effectiveTvl = liveHasAssets ? liveTvl : (fallbackTvl ?? 0)
-  const effectivePerf = liveHasSupply
-    ? vault.performanceSinceInception
-    : (fallbackNav !== null ? fallbackNav - 1.0 : 0)
+  const liveHasSupply = vault.totalSupply > 0n
   const effectiveDeployedPct = liveHasAssets ? Math.round(vault.deployedRatio * 100) : 0
   const effectiveSharesDisplay = liveHasSupply
     ? Number(formatUnits(vault.totalSupply, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })
@@ -481,6 +498,7 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
   // popup. Forgetting it leaves the button enabled mid-flow and the user can
   // re-trigger the whole thing.
   const depositBusy =
+    depositStep === 'preparing' ||
     depositStep === 'approving' ||
     depositStep === 'depositing' ||
     depositStep === 'claiming'
@@ -616,7 +634,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             className="w-full py-3.5 bg-[#00A36C] text-white text-[15px] font-black rounded-none shadow-[0_4px_16px_rgba(0,163,108,0.25)] relative overflow-hidden disabled:opacity-50"
           >
             <span className="relative z-10">
-              {depositStep === 'approving' ? t('vaults.approving')
+              {depositStep === 'preparing' ? t('vaults.preparing')
+                : depositStep === 'approving' ? t('vaults.approving')
                 : depositStep === 'depositing' ? t('vaults.depositing')
                 : depositStep === 'claiming' ? t('vaults.claiming')
                 : depositConfirming ? t('vaults.confirming')
@@ -814,13 +833,32 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           </div>
 
           {tab === 'deposit' ? (
-            <div className="relative">
-              <input
-                type="number" min="0" step="0.01" placeholder="0.00"
-                value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
-                className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
-              />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-muted">USDC</span>
+            <div>
+              <div className="relative">
+                <input
+                  type="number" min="0" step="0.01" placeholder="0.00"
+                  value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
+                  className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
+                />
+                {userAddress && usdcBalance > 0n && (
+                  <button
+                    type="button"
+                    onClick={() => setDepositInput(formatUnits(usdcBalance, 18))}
+                    className="absolute right-[44px] top-1/2 -translate-y-1/2 text-[9px] font-extrabold text-[#00A36C] tracking-[0.04em]"
+                  >
+                    MAX
+                  </button>
+                )}
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-text-muted">USDC</span>
+              </div>
+              {userAddress && (
+                <div className="flex justify-between items-center mt-1 px-0.5">
+                  <span className="text-[10px] text-text-muted">Balance</span>
+                  <span className="font-mono text-[10px] font-semibold text-text-secondary">
+                    {usdcBalanceFloat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative">
@@ -848,7 +886,8 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           >
             <span className="relative z-10">
               {tab === 'deposit'
-                ? depositStep === 'approving' ? t('vaults.approving')
+                ? depositStep === 'preparing' ? t('vaults.preparing')
+                  : depositStep === 'approving' ? t('vaults.approving')
                   : depositStep === 'depositing' ? t('vaults.depositing')
                   : depositStep === 'claiming' ? t('vaults.claiming')
                   : depositConfirming ? t('vaults.confirming')
@@ -894,7 +933,7 @@ export function VaultActions({ vaults, initialIndex, onClose }: VaultActionsProp
   const strategyColor = STRATEGY_COLOR[strategyKey] ?? '#999'
 
   const resolveDisplay = useVaultDisplayResolver()
-  const headerDisplay = resolveDisplay(current.vault)
+  const headerDisplay = useEffectiveVaultVitals(current.vault)
   const tvl = headerDisplay.tvl
   const nav = headerDisplay.nav
   const perf = headerDisplay.perf
