@@ -28,14 +28,21 @@ Markets span crypto, equities, weather, sports, macro, and more. Prefix conventi
 ## Environment
 
 ```
+# Local development (default — the frontend must be running at localhost:3000)
+VISION_API_URL=http://localhost:3000/api
+FAUCET_URL=http://localhost:3000/api/bot/faucet
+
+# Chain — unchanged in any environment
 RPC_URL=http://142.132.164.24/
-VISION_API_URL=https://generalmarket.io/api
-FAUCET_URL=https://generalmarket.io/api/bot/faucet
 VISION_ADDRESS=0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 USDC_ADDRESS=0xaddb799bc1499b224dc4368e92b9042a54908553
 CHAIN_ID=111222333
-BOT_PRIVATE_KEY=<wallet private key — fund with the faucet below>
+
+# Wallet — generate a fresh one, then fund it via the faucet
+BOT_PRIVATE_KEY=<fresh private key>
 ```
+
+When the production deployment is live, swap both URL env vars to `https://generalmarket.io/...` — nothing else changes.
 
 All Vision endpoints live under `${VISION_API_URL}/vision/...` — the base URL ends in `/api`, not `/api/vision`. The double prefix is the most common first mistake.
 
@@ -43,9 +50,19 @@ All Vision endpoints live under `${VISION_API_URL}/vision/...` — the base URL 
 
 The bot needs two things: L3 GM for gas and L3 USDC for stakes. Both arrive from a single faucet call, rate-limited to one request per IP per 24h.
 
+Start the frontend dev server first (in a separate terminal inside `frontend/`):
+
+```bash
+npm run dev   # serves http://localhost:3000
+```
+
+Then from your bot script:
+
 ```python
-import requests
+import os, requests
 from eth_account import Account
+
+FAUCET_URL = os.environ.get("FAUCET_URL", "http://localhost:3000/api/bot/faucet")
 
 # Generate (or load) a wallet.
 account = Account.create()  # or: Account.from_key(os.environ["BOT_PRIVATE_KEY"])
@@ -53,16 +70,15 @@ print(f"BOT_PRIVATE_KEY={account.key.hex()}")
 print(f"Bot address: {account.address}")
 
 # Ask the faucet for gas + USDC. One call, both tokens.
-resp = requests.post(
-    "https://generalmarket.io/api/bot/faucet",
-    json={"address": account.address},
-    timeout=60,
-)
+resp = requests.post(FAUCET_URL, json={"address": account.address}, timeout=60)
 resp.raise_for_status()
 print(resp.json())  # { success, usdc, l3Gas, ... }
 ```
 
-If the faucet returns `429`, the IP has already claimed in the last 24h. Wait or use a different network. There is no other path — spamming fresh wallets from the same IP is what the limit prevents.
+Response codes:
+- `200` — dripped 100 USDC + 1 GM.
+- `429` — this IP or address already claimed. Wait 24h.
+- `503` — in production, means Upstash env vars are missing. In local dev, the route falls back to an in-memory throttle automatically, so you will not hit this.
 
 ## CRITICAL: USDC uses 18 decimals on L3
 
@@ -102,6 +118,8 @@ No authentication required.
 ```
 GET  /vision/batches                          -> { batches: BatchSummary[] }
 GET  /vision/markets                          -> { markets: Market[] }
+GET  /vision/snapshot                         -> { prices: AssetPrice[] }  (see Step 3b)
+GET  /vision/snapshot?source={name}           -> scoped to a single data source
 GET  /vision/batch/{id}/state                 -> BatchStateResponse
 POST /vision/bitmap                           -> { acceptedCount, totalCount, results[] }
      Body: { player, batch_id, bitmap_hex, expected_hash }
@@ -221,7 +239,7 @@ CHAIN_ID = int(os.environ.get("CHAIN_ID", "111222333"))  # required in every tx 
 
 VISION_ADDRESS = Web3.to_checksum_address(os.environ["VISION_ADDRESS"])
 USDC_ADDRESS = Web3.to_checksum_address(os.environ["USDC_ADDRESS"])
-API_URL = os.environ.get("VISION_API_URL", "https://generalmarket.io/api")
+API_URL = os.environ.get("VISION_API_URL", "http://localhost:3000/api")
 
 VISION_ABI = [
     {
@@ -343,6 +361,87 @@ Filter out:
 - `market_count == 0` — degenerate batches with no tradeable markets (they exist; joining one reverts with a zero-byte bitmap)
 - Batches where `getPosition` already shows a non-zero deposit for your wallet
 
+### Step 3b: Fetch market data
+
+Before you can predict, you need prices. The snapshot endpoint returns the current value and recent change for every asset under a source. Use `source_id` from the batch to scope the query — but the source-name lookup is not yet public, so the simplest path is to fetch the global snapshot and index by `assetId` against the batch's `market_ids`.
+
+```
+GET /vision/snapshot
+  -> { generatedAt, totalAssets, prices: [ AssetPrice, ... ] }
+
+AssetPrice {
+  source: string        // e.g. "coingecko"
+  assetId: string       // matches market_ids entries
+  symbol: string
+  name: string
+  value: string         // current price — string-encoded decimal, parse to float
+  changePct: string | null   // percent change — string, parse to float ("0.0145" = +1.45%)
+  volume24h: string | null
+  marketCap: string | null
+  fetchedAt: string
+}
+```
+
+Every numeric field comes back as a string. Parse before comparing.
+
+```python
+def _as_float(x):
+    try: return float(x) if x is not None else None
+    except (TypeError, ValueError): return None
+
+def fetch_prices_for(market_ids: list[str]) -> dict:
+    resp = requests.get(f"{API_URL}/vision/snapshot", timeout=30)
+    resp.raise_for_status()
+    by_id = {p["assetId"]: p for p in resp.json()["prices"]}
+    out = {}
+    for mid in market_ids:
+        p = by_id.get(mid)
+        if p is None:
+            out[mid] = None
+            continue
+        out[mid] = {
+            "assetId": p["assetId"],
+            "value": _as_float(p.get("value")),
+            "changePct": _as_float(p.get("changePct")),
+        }
+    return out
+```
+
+If `changePct` is `None`, the source has not reported movement yet — your strategy must pick a default (e.g. predict UP, predict DOWN, or skip the bit with `False`).
+
+### Step 3c: Design a strategy
+
+This is not a copy-paste step. The protocol rewards predictions that beat the crowd; a bot that predicts all-UP on every market will lose 0.05% to fees plus whatever the crowd knew that it did not. You must write a real predicate.
+
+Three starting shapes — none optimal, all honest:
+
+```python
+def momentum(prices: dict) -> list[bool]:
+    """Ride the trend. Predict UP when recent change is positive.
+    prices: dict keyed by market_id; values may be None or {assetId, value, changePct}."""
+    return [
+        ((prices[mid] or {}).get("changePct") or 0.0) >= 0
+        for mid in prices
+    ]
+
+def mean_reversion(prices: dict, threshold: float = 0.02) -> list[bool]:
+    """Fade extremes. If an asset just moved up a lot, predict DOWN next tick.
+    threshold is in the same units as changePct (0.02 = 2%)."""
+    return [
+        ((prices[mid] or {}).get("changePct") or 0.0) < threshold
+        for mid in prices
+    ]
+
+def time_biased(prices: dict) -> list[bool]:
+    """Night rallies, day fades — one market folklore made programmatic."""
+    from datetime import datetime, timezone
+    hour = datetime.now(timezone.utc).hour
+    is_night = hour >= 22 or hour < 6
+    return [is_night for _ in prices]
+```
+
+Combine, ensemble, or replace. Write your own. The strategy is the only thing this document cannot give you.
+
 ### Step 4: Encode Bitmap
 
 ```python
@@ -386,17 +485,24 @@ def sign_and_send(tx):
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     return receipt
 
-def join_batch(batch):
+def join_batch(batch, strategy):
     """batch is the dict returned by GET /vision/batches — it already carries
-    config_hash and market_count. Do not compute them."""
+    config_hash and market_count. Do not compute them.
+
+    `strategy` is a function `(prices: dict) -> list[bool]` of length market_count.
+    See Step 3c for examples. Do not pass `[True] * n` — that is not a strategy."""
     batch_id = batch["id"]
+    market_ids = batch["market_ids"]
     market_count = batch["market_count"]
-    config_hash = batch["config_hash"]  # bytes32 hex from the API
+    config_hash = batch["config_hash"]
     if isinstance(config_hash, str):
         config_hash = bytes.fromhex(config_hash.removeprefix("0x"))
 
-    # Generate predictions (replace with your strategy)
-    predictions = [True] * market_count  # all UP as default
+    prices = fetch_prices_for(market_ids)
+    predictions = strategy(prices)
+    assert len(predictions) == market_count, \
+        f"strategy returned {len(predictions)} bits, expected {market_count}"
+
     bitmap = encode_bitmap(predictions)
     bitmap_hash = hash_bitmap(bitmap)
     bitmap_hex = "0x" + bitmap.hex()
@@ -533,8 +639,8 @@ while True:
             joined_batches.add(batch["id"])
             continue
 
-        # Join — pass the full batch dict; it carries config_hash and market_count
-        bitmap_hex, bitmap_hash = join_batch(batch)
+        # Join — pass the full batch dict and your strategy function
+        bitmap_hex, bitmap_hash = join_batch(batch, strategy=momentum)
         submit_bitmap(batch["id"], bitmap_hex, bitmap_hash)
         joined_batches.add(batch["id"])
 

@@ -5,13 +5,21 @@ import { Redis } from '@upstash/redis'
 
 /**
  * Bot faucet — drips L3 GM (gas) + L3 USDC (stake) to a bot wallet.
- * Rate-limited by IP: one claim per 24h. Failing closed when Redis is unreachable
- * is intentional — a faucet without a throttle is an atm without a door.
+ * Rate-limited by IP: one claim per 24h.
+ *
+ * Production: requires Upstash Redis (UPSTASH_REDIS_REST_URL + _TOKEN).
+ * Fails closed with 503 when env vars missing — a faucet without a throttle
+ * is an ATM without a door.
+ *
+ * Local dev: when NODE_ENV !== 'production' and Upstash env is absent, falls
+ * back to an in-memory Map. The Map lives in the Node process only — it
+ * resets on dev-server restart, which is fine for a machine used by one
+ * developer. Never reached in a production build.
  *
  * POST /api/bot/faucet  { "address": "0x..." }
  * → 200 { success, usdc, l3Gas }
  * → 429 { error: "Rate limit: try again in Xh" }
- * → 503 { error: "Rate limiter unavailable" } when Upstash env is missing.
+ * → 503 { error: "Rate limiter unavailable" }  (prod, missing env)
  */
 
 import { getL3RpcServer } from '@/lib/config'
@@ -38,11 +46,41 @@ const MINT_ABI = [{
   outputs: [],
 }] as const
 
-function getRedis(): Redis | null {
+// In-memory dev-only throttle. Module-scoped so it survives across requests
+// in the same Node process. Reset on dev-server restart — good enough for
+// a single developer, never reached in production (see dev-only check below).
+const DEV_MEMO: Map<string, number> = (globalThis as any).__bot_faucet_memo
+  || ((globalThis as any).__bot_faucet_memo = new Map<string, number>())
+
+type Limiter = {
+  ttl(key: string): Promise<number>
+  set(key: string, value: string, ttlSeconds: number): Promise<void>
+}
+
+function getLimiter(): Limiter | null {
   const url = process.env.UPSTASH_REDIS_REST_URL
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (!url || !token) return null
-  return new Redis({ url, token })
+  if (url && token) {
+    const redis = new Redis({ url, token })
+    return {
+      ttl: (k) => redis.ttl(k),
+      set: async (k, v, ex) => { await redis.set(k, v, { ex }) },
+    }
+  }
+  // Only fall back in non-production. A prod deployment without env vars
+  // should still fail closed.
+  if (process.env.NODE_ENV === 'production') return null
+  console.warn('[bot-faucet] Upstash not configured — using in-memory dev throttle (process-local, resets on restart)')
+  return {
+    ttl: async (k) => {
+      const exp = DEV_MEMO.get(k)
+      if (!exp) return -2
+      const remaining = Math.floor((exp - Date.now()) / 1000)
+      if (remaining <= 0) { DEV_MEMO.delete(k); return -2 }
+      return remaining
+    },
+    set: async (k, _v, ex) => { DEV_MEMO.set(k, Date.now() + ex * 1000) },
+  }
 }
 
 function getClientIp(req: NextRequest): string {
@@ -62,10 +100,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid address' }, { status: 400 })
     }
 
-    const redis = getRedis()
-    if (!redis) {
+    const limiter = getLimiter()
+    if (!limiter) {
       return NextResponse.json(
-        { error: 'Rate limiter unavailable — UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be configured' },
+        { error: 'Rate limiter unavailable — UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be configured in production' },
         { status: 503 },
       )
     }
@@ -75,8 +113,8 @@ export async function POST(req: NextRequest) {
     const addrKey = `bot-faucet:addr:${address.toLowerCase()}`
 
     const [ipTtl, addrTtl] = await Promise.all([
-      redis.ttl(ipKey),
-      redis.ttl(addrKey),
+      limiter.ttl(ipKey),
+      limiter.ttl(addrKey),
     ])
 
     // ttl: -2 = key missing, -1 = no expiry, >=0 = seconds remaining
@@ -96,8 +134,8 @@ export async function POST(req: NextRequest) {
     // Set the lock BEFORE minting — a crashed faucet that drips then fails to
     // record is free money for whoever retries.
     await Promise.all([
-      redis.set(ipKey, address, { ex: TTL_SECONDS }),
-      redis.set(addrKey, ip, { ex: TTL_SECONDS }),
+      limiter.set(ipKey, address, TTL_SECONDS),
+      limiter.set(addrKey, ip, TTL_SECONDS),
     ])
 
     const account = privateKeyToAccount(DEPLOYER_KEY)

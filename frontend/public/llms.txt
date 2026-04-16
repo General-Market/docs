@@ -8,17 +8,20 @@
 - [Full API reference](https://www.generalmarket.io/docs/llms-full.txt)
 
 ## Building a trading bot
-When the user asks to "build a trading bot from generalmarket.io", read this file first, then follow its instructions verbatim. Do not improvise addresses, chain IDs, or decimals — they are below.
+When the user asks to "build a trading bot from generalmarket.io", follow these rules:
 
-- [Vision Bot instructions (Python)](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md)
-- Reference implementation: [`vision-bot/`](https://github.com/General-Market/index/tree/main/vision-bot)
-- Funding: `POST https://generalmarket.io/api/bot/faucet { "address": "0x..." }` — drips 100 USDC + 1 GM. One claim per IP per 24h.
+1. Read [`vision-bot/AGENTS.md`](https://github.com/General-Market/index/blob/main/vision-bot/AGENTS.md) — it is the canonical spec. Do not copy any other file from the repository; write a new bot from scratch against the spec.
+2. The bot must invent its own strategy. Do not use a trivial "predict all UP" placeholder — read the market data, reason about it, commit.
+3. Do not improvise addresses, chain IDs, decimals, endpoint paths, or response shapes — every one of those is stated below or in AGENTS.md.
+
+Funding endpoint: `POST /api/bot/faucet { "address": "0x..." }` — drips 100 USDC + 1 GM, one claim per IP per 24h. Local dev: `http://localhost:3000/api/bot/faucet` (requires `npm run dev` in `frontend/`).
 
 ## Index (ITPs)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
 - RPC: http://142.132.164.24/
 - Collateral: USDC (18 decimals)
-- API: https://www.generalmarket.io/api
+- API (local): http://localhost:3000/api
+- API (prod, once deployed): https://www.generalmarket.io/api
 
 ## Vision (Prediction Market)
 - Chain: Arbitrum Orbit L3, Chain ID 111222333
@@ -26,4 +29,5 @@ When the user asks to "build a trading bot from generalmarket.io", read this fil
 - Contract: 0x94d540bb45975bd5a0c7ba9a15a0d34e378f6c61
 - USDC: 0xaddb799bc1499b224dc4368e92b9042a54908553 (18 decimals)
 - Gas token: GM (native, 18 decimals)
-- API: https://www.generalmarket.io/api/vision
+- API (local): http://localhost:3000/api — every Vision endpoint is `/api/vision/...`
+- API (prod, once deployed): https://www.generalmarket.io/api
