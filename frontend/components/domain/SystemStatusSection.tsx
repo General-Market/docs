@@ -67,9 +67,24 @@ function formatTimestamp(unix: number, locale?: string): string {
   return new Date(unix * 1000).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function formatTime(unix: number, locale?: string): string {
+function formatRelativeOrDate(unix: number, locale?: string): string {
   if (!unix) return '—'
-  return new Date(unix * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  const diffMs = Date.now() - unix * 1000
+  if (diffMs < 0) return 'just now'
+  const secs = Math.floor(diffMs / 1000)
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(unix * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+}
+
+function formatAbsolute(unix: number, locale?: string): string {
+  if (!unix) return '—'
+  return new Date(unix * 1000).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'medium' })
 }
 
 function formatFillTime(seconds: number): string {
@@ -224,13 +239,23 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     return () => clearInterval(timer)
   }, [vaultTotalPages])
 
-  // Orders pagination
+  // Orders pagination — dedupe by orderId, then keep the most-recent block per id
+  const dedupedOrders = useMemo(() => {
+    const byId = new Map<string, typeof sys.recentOrders[number]>()
+    for (const o of sys.recentOrders) {
+      const key = o.orderId.toString()
+      const prev = byId.get(key)
+      if (!prev || o.blockTimestamp > prev.blockTimestamp) byId.set(key, o)
+    }
+    return Array.from(byId.values()).sort((a, b) => b.blockTimestamp - a.blockTimestamp)
+  }, [sys.recentOrders])
+
   const [ordersPage, setOrdersPage] = useState(0)
-  const ordersTotalPages = Math.max(1, Math.ceil(sys.recentOrders.length / ORDERS_PAGE_SIZE))
+  const ordersTotalPages = Math.max(1, Math.ceil(dedupedOrders.length / ORDERS_PAGE_SIZE))
   const ordersPageItems = useMemo(() => {
     const start = ordersPage * ORDERS_PAGE_SIZE
-    return sys.recentOrders.slice(start, start + ORDERS_PAGE_SIZE)
-  }, [sys.recentOrders, ordersPage])
+    return dedupedOrders.slice(start, start + ORDERS_PAGE_SIZE)
+  }, [dedupedOrders, ordersPage])
 
   // Reset to page 0 if orders change and current page is out of range
   useEffect(() => {
@@ -479,7 +504,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             </tr>
           </thead>
           <tbody>
-            {sys.recentOrders.length === 0 && (
+            {dedupedOrders.length === 0 && (
               sys.isLoading ? <TableRowsSkeleton cols={8} rows={4} /> : (
                 <tr><td colSpan={8} className="px-4 py-8 text-center text-caption text-text-muted">{t('recent_activity.no_data')}</td></tr>
               )
@@ -488,8 +513,11 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
               const amountFormatted = `$${Number(formatUnits(order.amount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               return (
                 <tr key={order.orderId.toString()} className="hover:bg-surface">
-                  <td className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums">
-                    {formatTime(order.blockTimestamp, locale)}
+                  <td
+                    className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums"
+                    title={formatAbsolute(order.blockTimestamp, locale)}
+                  >
+                    {formatRelativeOrDate(order.blockTimestamp, locale)}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light font-mono text-label text-text-secondary">
                     #{order.orderId.toString()}
