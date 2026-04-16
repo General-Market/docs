@@ -306,14 +306,14 @@ export function OnboardingGate({
 
   if (isDormant) {
     return (
-      <div onClickCapture={handleTrapClick}>
+      <div className="empty:hidden" onClickCapture={handleTrapClick}>
         {children}
       </div>
     )
   }
 
   return (
-    <div className="relative" onClickCapture={handleTrapClick}>
+    <div className="relative [&:has(>div:first-child:empty)]:hidden" onClickCapture={handleTrapClick}>
       <div className="opacity-30 pointer-events-none select-none transition-opacity duration-300">
         {children}
       </div>
