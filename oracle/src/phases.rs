@@ -76,7 +76,20 @@ async fn resolve_or_rebuild_mapping(
             Some(rebuilt)
         }
         Ok(None) => {
-            warn!(order_id = %settlement_id, "Settlement has no record of this cross-chain order — likely completed or cancelled");
+            // Settlement contract does not know about this order. Two causes:
+            //   1. L3-direct order — user called Index.submitOrder on L3 without
+            //      going through Settlement. The L3 Index contract already mints
+            //      shares natively in fillOrder; no Settlement-side mint needed.
+            //   2. Order was already completed/refunded and removed from
+            //      Settlement's order map.
+            // Either way, there is nothing the bridge pipeline can do. Mark the
+            // order SharesBridged so the scan stops re-drawing it every cycle
+            // and the orchestrator doesn't spam "No order mapping found" forever.
+            warn!(
+                order_id = %settlement_id,
+                "Settlement has no record of this cross-chain order — marking complete (L3-direct or already settled)"
+            );
+            orchestrator.write().await.mark_orders_shares_bridged(&[settlement_id]).await;
             None
         }
         Err(e) => {
