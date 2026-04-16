@@ -23,7 +23,9 @@ services:
       VISION_API_URL: "http://localhost:10001"
       DATA_NODE_URL: "http://localhost:8200"
       ORACLE_URLS: "http://localhost:10001,http://localhost:10002,http://localhost:10003"
-      VISION_DB_URL: "postgres://max@10.2.0.2:6432/index_prices"
+      # Oracle + data-node both read/write the VPS 1 local Postgres. Fund-manager
+      # writes vault_snapshots here so /vision/vault/:addr/history returns data.
+      VISION_DB_URL: "postgres://max@localhost/index_prices"
     healthcheck:
       # Heartbeat file written at cycle start + on failure. Stale > 300s = unhealthy.
       test: ["CMD-SHELL", "python3 -c \"import json,time; d=json.load(open('/app/pnl-data/heartbeat.json')); assert time.time()-d['ts']<300, 'stale'; assert d.get('source_match',False) or d['cycle']<3, 'no source match'\""]

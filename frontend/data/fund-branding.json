@@ -30,7 +30,7 @@
       "source": "adzuna",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 3.0
+        "min_change_pct": 3
       },
       "tagline": "Most daily posting changes are noise. Demand only acts on shifts above 3%, where real sector movement lives.",
       "color": "#2C3E50",
@@ -60,7 +60,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xaB1Ed0e8B9ee275A272E26FB90d6E9e5e17FA703"
+      "vault": "0x68d953BE01617Fdb5Db1E444995e2b31496974EF"
     },
     {
       "name": "Smog",
@@ -72,7 +72,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x68d953BE01617Fdb5Db1E444995e2b31496974EF"
+      "vault": "0x8bDcc2fd04CE59833d8e087dc5Dc832532D5BF46"
     },
     {
       "name": "Breeze",
@@ -80,13 +80,13 @@
       "source": "airnow",
       "strategy": "contrarian",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Only the largest AQI swings matter. Breeze fades extreme moves above 5%, trusting the atmosphere to self-correct.",
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x8bDcc2fd04CE59833d8e087dc5Dc832532D5BF46"
+      "vault": "0x8982C7AC859B9572b3C856144be208Abb0C003E6"
     },
     {
       "name": "Inhalant",
@@ -98,7 +98,7 @@
       "color": "#3498DB",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x8982C7AC859B9572b3C856144be208Abb0C003E6"
+      "vault": "0x7e7C186D745b4b36a29099f9f941E486180a6aa0"
     },
     {
       "name": "Season",
@@ -110,7 +110,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x7e7C186D745b4b36a29099f9f941E486180a6aa0"
+      "vault": "0x51dDe64884196507f84391Ac25CA474D9f270a2C"
     },
     {
       "name": "Filler",
@@ -122,7 +122,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x43f0264308E252A3836871C2ac241063b764D397"
+      "vault": "0xD26DBE97c5a96352b15Ab49753977e440179de3e"
     },
     {
       "name": "Simulcast",
@@ -134,7 +134,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x51dDe64884196507f84391Ac25CA474D9f270a2C"
+      "vault": "0x5C2f2aA592476515837EAa2BD777645c38E50773"
     },
     {
       "name": "Canon",
@@ -146,7 +146,7 @@
       "color": "#152232",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xD26DBE97c5a96352b15Ab49753977e440179de3e"
+      "vault": "0x8188e543cb0E6c5A9c13b10c5b003255a7ACaf06"
     },
     {
       "name": "Safari",
@@ -158,7 +158,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x5C2f2aA592476515837EAa2BD777645c38E50773"
+      "vault": "0x1280dF962164c7C3cA38d2Ea58798A29F4a0EF00"
     },
     {
       "name": "Hibernate",
@@ -170,7 +170,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x8188e543cb0E6c5A9c13b10c5b003255a7ACaf06"
+      "vault": "0x4A02D6e615EDDF6e102aD05170671DDD967E80f5"
     },
     {
       "name": "Biome",
@@ -182,7 +182,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0xC54208CF10def10D58D47F2735b95939BF6885f2"
+      "vault": "0x137870EEB9eFf390627F8A72a0a2a6a65F584C54"
     },
     {
       "name": "Nocturne",
@@ -194,7 +194,7 @@
       "color": "#4A7C59",
       "fee": 500,
       "category": "Nature",
-      "vault": "0x1280dF962164c7C3cA38d2Ea58798A29F4a0EF00"
+      "vault": "0xaD7Fb454E60Bc4E44104DF0f6eEF407c2Af37e0F"
     },
     {
       "name": "Unusual",
@@ -206,7 +206,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x4A02D6e615EDDF6e102aD05170671DDD967E80f5"
+      "vault": "0x2Fab0da56FF398a8643Dd2a194f3C9e533082e4E"
     },
     {
       "name": "Uncrate",
@@ -218,7 +218,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x137870EEB9eFf390627F8A72a0a2a6a65F584C54"
+      "vault": "0x1A6fFEE6182aB154b0B618414c0ee629203BCC19"
     },
     {
       "name": "Vintage",
@@ -230,7 +230,7 @@
       "color": "#363636",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0xaD7Fb454E60Bc4E44104DF0f6eEF407c2Af37e0F"
+      "vault": "0x89cf251C8152cD6dC7069b1261209526f6EF4ea7"
     },
     {
       "name": "Hashrate",
@@ -242,7 +242,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x88229443138EAFdb5Bc0c989b714B24BDb4d3A5c"
+      "vault": "0xa6d58FbcC4444Ebb8B066daEA6979e980FD2D8E3"
     },
     {
       "name": "Halving",
@@ -254,7 +254,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x2Fab0da56FF398a8643Dd2a194f3C9e533082e4E"
+      "vault": "0x4D1919a19AB722Ecd1fae0891876C07423797199"
     },
     {
       "name": "Satoshi",
@@ -266,7 +266,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x1A6fFEE6182aB154b0B618414c0ee629203BCC19"
+      "vault": "0xa8206632Dfbd3fBDf073737B9e75Dba4337EB3f4"
     },
     {
       "name": "Mempool",
@@ -278,7 +278,7 @@
       "color": "#F7931A",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x89cf251C8152cD6dC7069b1261209526f6EF4ea7"
+      "vault": "0x0A0f5B8E2d4B072aC158928F101BeA9b278b5265"
     },
     {
       "name": "Markdown",
@@ -290,7 +290,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x5ea61eA4ADAD6E0eF8aFAE2a0D848FF8d01e15f4"
+      "vault": "0xDb15D63769b80de6F63b905D7aC8CD1A42000943"
     },
     {
       "name": "Bounce",
@@ -302,7 +302,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x494dde17D55e1D5b26FF78bf35a75B41517A34af"
+      "vault": "0xBc9DCAb1C124149b6eD8d61ED8e41f19A8d651A6"
     },
     {
       "name": "Doorbuster",
@@ -310,13 +310,13 @@
       "source": "bestbuy",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Small price tweaks are inventory noise. Doorbuster only trades when electronics prices shift by 5% or more.",
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0xa6d58FbcC4444Ebb8B066daEA6979e980FD2D8E3"
+      "vault": "0xD039f318d93DDE2a0000DB61A3F91cd8eE70a02b"
     },
     {
       "name": "Clearance",
@@ -328,7 +328,7 @@
       "color": "#0046BE",
       "fee": 500,
       "category": "Retail",
-      "vault": "0x4D1919a19AB722Ecd1fae0891876C07423797199"
+      "vault": "0xD49fd882c8c786F7C1D8e03daA42fB1AcEC3b087"
     },
     {
       "name": "Payroll",
@@ -340,7 +340,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xa8206632Dfbd3fBDf073737B9e75Dba4337EB3f4"
+      "vault": "0x000C56Ea0DA81067A43b354dF511150830B14c14"
     },
     {
       "name": "Nonfarm",
@@ -352,7 +352,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x0A0f5B8E2d4B072aC158928F101BeA9b278b5265"
+      "vault": "0xC2F8b365c8F6B7d5C242c43979E2e6DE77edb2E5"
     },
     {
       "name": "Wage",
@@ -366,7 +366,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xE1123DA7460877206a344003fBfD3e6f1D516040"
+      "vault": "0x38a2C4BAE81d08B05628F7965160F846050ba07D"
     },
     {
       "name": "Underemployed",
@@ -374,13 +374,13 @@
       "source": "bls",
       "strategy": "contrarian",
       "params": {
-        "min_change_pct": 2.0
+        "min_change_pct": 2
       },
       "tagline": "Unemployment overshoots in both directions. Underemployed fades extreme labor market moves above 2%, trusting the reversion.",
       "color": "#2C3E50",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xDb15D63769b80de6F63b905D7aC8CD1A42000943"
+      "vault": "0x46809d536B497BE5124178612AC97376110C408f"
     },
     {
       "name": "Coupon",
@@ -392,7 +392,7 @@
       "color": "#0057B7",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xBc9DCAb1C124149b6eD8d61ED8e41f19A8d651A6"
+      "vault": "0x4b4FBbC66B85a6f3e4c7554656EA22BAbd142029"
     },
     {
       "name": "Inversion",
@@ -404,7 +404,7 @@
       "color": "#0057B7",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xD039f318d93DDE2a0000DB61A3F91cd8eE70a02b"
+      "vault": "0xaBE9A42b9844FeB9d09775Ce2d28E83C28474E98"
     },
     {
       "name": "Duration",
@@ -418,7 +418,7 @@
       "color": "#0057B7",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xD49fd882c8c786F7C1D8e03daA42fB1AcEC3b087"
+      "vault": "0xA2e771d53dE190171E1637Bf80a1E200B01a22FE"
     },
     {
       "name": "Maturity",
@@ -430,7 +430,7 @@
       "color": "#0057B7",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x75a45AD0783eE82dafCfa25aEBB5a2642F2A7f5C"
+      "vault": "0x24394d7D73698148d5199Be4bc71351DdE87BC14"
     },
     {
       "name": "Par",
@@ -442,7 +442,7 @@
       "color": "#0057B7",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x000C56Ea0DA81067A43b354dF511150830B14c14"
+      "vault": "0xdEeBC21d9436b870D9D48A8E2B121CbF803CBF9f"
     },
     {
       "name": "After Dark",
@@ -454,7 +454,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xC2F8b365c8F6B7d5C242c43979E2e6DE77edb2E5"
+      "vault": "0xe5D417Eb3188d50573F8f200CCe8D070a887DCbA"
     },
     {
       "name": "Intermission",
@@ -466,7 +466,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x38a2C4BAE81d08B05628F7965160F846050ba07D"
+      "vault": "0x41eda003896c628F07B2aa0C62e4ED07D5cC176D"
     },
     {
       "name": "Nocturnal",
@@ -478,7 +478,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x46809d536B497BE5124178612AC97376110C408f"
+      "vault": "0xE90C3c35f5cFf4600cCF53Fe1e5D6c8117861196"
     },
     {
       "name": "Peakhour",
@@ -490,7 +490,7 @@
       "color": "#F47321",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x27F1F4E3e0f419Af043B2708651bb5355929FB10"
+      "vault": "0xAFdd260Fc2BE01879E817D575b04FEb678A147E3"
     },
     {
       "name": "Spoke",
@@ -502,7 +502,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x4b4FBbC66B85a6f3e4c7554656EA22BAbd142029"
+      "vault": "0xc07Ddf4B74B029a9A749A2B94521eD9A470A796A"
     },
     {
       "name": "Pedal",
@@ -514,7 +514,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xaBE9A42b9844FeB9d09775Ce2d28E83C28474E98"
+      "vault": "0x41c43aB5844108C7164742d345c5a9025F1aB24E"
     },
     {
       "name": "Freewheel",
@@ -526,7 +526,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xA2e771d53dE190171E1637Bf80a1E200B01a22FE"
+      "vault": "0x934543718c1Ef3F5Bb0dD4D42dC43483b299552b"
     },
     {
       "name": "Dockless",
@@ -538,7 +538,7 @@
       "color": "#1A1A1A",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x24394d7D73698148d5199Be4bc71351DdE87BC14"
+      "vault": "0xfca4aB6A00105E89670a9D0B7d6bF214d149Edb3"
     },
     {
       "name": "Traffic",
@@ -550,7 +550,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xdEeBC21d9436b870D9D48A8E2B121CbF803CBF9f"
+      "vault": "0x64335998CB2B227AFB7220d88EdE3677b05E4c06"
     },
     {
       "name": "Darknet",
@@ -562,7 +562,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xe5D417Eb3188d50573F8f200CCe8D070a887DCbA"
+      "vault": "0x9A14E3346CFDd06cE6B36282B61AF1132D2E9545"
     },
     {
       "name": "Crawl",
@@ -574,7 +574,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0x41eda003896c628F07B2aa0C62e4ED07D5cC176D"
+      "vault": "0xAD21beE6D3f63cBC870C0FD8d5f6E980a53c0c05"
     },
     {
       "name": "Outage",
@@ -586,7 +586,7 @@
       "color": "#F38020",
       "fee": 500,
       "category": "Technology",
-      "vault": "0xE90C3c35f5cFf4600cCF53Fe1e5D6c8117861196"
+      "vault": "0xCB64524C8861bC7bb6679C4085129fB4D10a86ac"
     },
     {
       "name": "Session",
@@ -598,7 +598,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xAFdd260Fc2BE01879E817D575b04FEb678A147E3"
+      "vault": "0xC18777732760fcf80BC66efE3F6879ac90047c05"
     },
     {
       "name": "Recess",
@@ -610,7 +610,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xf36eff14895aE9F28472afF0FF6D86457be8Fd52"
+      "vault": "0xAa02dbaD266a9065Ce6021BA8445B1EC4523B67C"
     },
     {
       "name": "Filibuster",
@@ -622,7 +622,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0xc07Ddf4B74B029a9A749A2B94521eD9A470A796A"
+      "vault": "0xa3BF6dC22259Ba6d39259E4C8aCFc56d941e93a1"
     },
     {
       "name": "Bipartisan",
@@ -634,7 +634,7 @@
       "color": "#1A2744",
       "fee": 500,
       "category": "Government",
-      "vault": "0x41c43aB5844108C7164742d345c5a9025F1aB24E"
+      "vault": "0xbB0Ac41D079a27cf73ECE03a717BAa1A7198ae48"
     },
     {
       "name": "Citation",
@@ -646,7 +646,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x934543718c1Ef3F5Bb0dD4D42dC43483b299552b"
+      "vault": "0xD7f908ce938287C64240A4e821DEe5868231B668"
     },
     {
       "name": "Retraction",
@@ -658,7 +658,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xfca4aB6A00105E89670a9D0B7d6bF214d149Edb3"
+      "vault": "0x912780B71C7Be2aB05C8FcfeE4A84a432187bf1b"
     },
     {
       "name": "Index",
@@ -670,7 +670,7 @@
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x667D03799D44C193Cf43b90739DFB332E0036fa6"
+      "vault": "0x36eF0b5B4227b675E36B0eD1C77534A3fa100867"
     },
     {
       "name": "Impact",
@@ -678,13 +678,13 @@
       "source": "crossref",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Most citation changes are incremental. Impact only trades when reference counts spike 5% or more, signaling a breakthrough paper.",
       "color": "#2A6496",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x64335998CB2B227AFB7220d88EdE3677b05E4c06"
+      "vault": "0xDf00187d348359A4050cBe2E396D0548fD2818b6"
     },
     {
       "name": "Lockflow",
@@ -696,7 +696,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x9A14E3346CFDd06cE6B36282B61AF1132D2E9545"
+      "vault": "0xae3caeA2C32D1E42822a5504ACB0D35D80Dfa513"
     },
     {
       "name": "Unlock",
@@ -708,7 +708,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xAD21beE6D3f63cBC870C0FD8d5f6E980a53c0c05"
+      "vault": "0x22aeBE197B8cF03eB9e3AfC5b47EACEbcC18A31E"
     },
     {
       "name": "Yield",
@@ -720,7 +720,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xCB64524C8861bC7bb6679C4085129fB4D10a86ac"
+      "vault": "0x938F554eb2E190db53E7Ac4d3B21E8b97Ba0637F"
     },
     {
       "name": "Exploit",
@@ -732,7 +732,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x14B9DaEF2E06D4c5c97B45B6E0E714CF1DB1Bf83"
+      "vault": "0x647C2fba71a9F092275e707F23997fB36Fac8f2b"
     },
     {
       "name": "Aftershock",
@@ -744,7 +744,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xC18777732760fcf80BC66efE3F6879ac90047c05"
+      "vault": "0xbE637996A8Db3AC5FA446F14975D3b56f9870FB9"
     },
     {
       "name": "Dormant",
@@ -756,7 +756,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xAa02dbaD266a9065Ce6021BA8445B1EC4523B67C"
+      "vault": "0xA73D716971137125c1Ef9A549Df27f4288CBb377"
     },
     {
       "name": "Epicenter",
@@ -768,7 +768,7 @@
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xa3BF6dC22259Ba6d39259E4C8aCFc56d941e93a1"
+      "vault": "0x008E3Bc8F86284B5a587c01753f31529BE94cF4c"
     },
     {
       "name": "Richter",
@@ -776,13 +776,13 @@
       "source": "earthquake",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 4.0
+        "min_change_pct": 4
       },
       "tagline": "Microseisms are noise. Richter only trades magnitude shifts above 4%, filtering for the events that actually matter.",
       "color": "#C0392B",
       "fee": 500,
       "category": "Geophysical",
-      "vault": "0xbB0Ac41D079a27cf73ECE03a717BAa1A7198ae48"
+      "vault": "0xd998fCB8d4a509bE72045BcE4C0AAf385F11Fee6"
     },
     {
       "name": "Euro",
@@ -794,7 +794,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x57e5b4080A8B7E58b02153C3AC2e473beC6dB7fA"
+      "vault": "0xF6CCBb600064cb971f19D71FC02206d5F320f3a0"
     },
     {
       "name": "Parity",
@@ -806,7 +806,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0xD7f908ce938287C64240A4e821DEe5868231B668"
+      "vault": "0x8C96950FAd168689D778a2D975377417b054556d"
     },
     {
       "name": "Draghi",
@@ -814,13 +814,13 @@
       "source": "ecb",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 1.0
+        "min_change_pct": 1
       },
       "tagline": "Minor FX twitches are noise. Draghi waits for moves exceeding 1%, when central bank intent becomes unmistakable.",
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x912780B71C7Be2aB05C8FcfeE4A84a432187bf1b"
+      "vault": "0xd85A6307F6B8bC989D8cFaA6d9e0FAcB248F8517"
     },
     {
       "name": "Austerity",
@@ -832,7 +832,7 @@
       "color": "#003399",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x36eF0b5B4227b675E36B0eD1C77534A3fa100867"
+      "vault": "0x9A08bb58053e92d80De84A1120ee4e634ADBE2c0"
     },
     {
       "name": "Pipeline",
@@ -844,7 +844,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0xDf00187d348359A4050cBe2E396D0548fD2818b6"
+      "vault": "0x7033Af7C9b53534358Bf4A1C32F37604508fcb6f"
     },
     {
       "name": "Surplus",
@@ -856,7 +856,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x2Dcb7a2E9b59ba1Aa152BbCB9EEC5B55d9Bb639c"
+      "vault": "0x37c73d1763c276784C549721a12446b4715D5695"
     },
     {
       "name": "Joule",
@@ -868,7 +868,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0xae3caeA2C32D1E42822a5504ACB0D35D80Dfa513"
+      "vault": "0xdC7C2c381Bd3929c42AE0b9364884463924d5391"
     },
     {
       "name": "Reserve",
@@ -880,7 +880,7 @@
       "color": "#00526E",
       "fee": 500,
       "category": "Energy",
-      "vault": "0x22aeBE197B8cF03eB9e3AfC5b47EACEbcC18A31E"
+      "vault": "0xfd51bc4cB8C4eeCdD1b1aEE49609b8adcEe24B7C"
     },
     {
       "name": "Crowd",
@@ -892,7 +892,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x938F554eb2E190db53E7Ac4d3B21E8b97Ba0637F"
+      "vault": "0x4a2c54A5bd4C5f5694Eac8BA9027D9FE53357924"
     },
     {
       "name": "Unwind",
@@ -904,7 +904,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x647C2fba71a9F092275e707F23997fB36Fac8f2b"
+      "vault": "0xdA61f3B0D1FAF5d20c9c63029E05D08DA33020f4"
     },
     {
       "name": "Spike",
@@ -912,13 +912,13 @@
       "source": "finra_short_vol",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Minor short volume shifts are portfolio rebalancing. Spike only trades when short interest moves 5% or more.",
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x4c773A64D83B45C75e6D5aEC80b80d5bCbF83cED"
+      "vault": "0x0843FCbC7856235d1c4ae533ab97aC1dE421Bbef"
     },
     {
       "name": "Pressure",
@@ -930,7 +930,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xbE637996A8Db3AC5FA446F14975D3b56f9870FB9"
+      "vault": "0x9FE26eC9c951828fD78142fdBcA473e37F971142"
     },
     {
       "name": "Noise",
@@ -942,7 +942,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0xA73D716971137125c1Ef9A549Df27f4288CBb377"
+      "vault": "0x2283c848817178B82eE808fc38EC5852e66bc948"
     },
     {
       "name": "Raid",
@@ -954,7 +954,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x008E3Bc8F86284B5a587c01753f31529BE94cF4c"
+      "vault": "0x032F8296431c664b27402458e68a869f71130262"
     },
     {
       "name": "Sage",
@@ -966,7 +966,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0xd998fCB8d4a509bE72045BcE4C0AAf385F11Fee6"
+      "vault": "0x447D59Ee8DaCdeC7fF3c2B2688a398F0c6BFAc06"
     },
     {
       "name": "Anon",
@@ -978,7 +978,7 @@
       "color": "#3D5C3D",
       "fee": 500,
       "category": "Social",
-      "vault": "0x49111f9E8B34499568C0914A63ee6b071577dE16"
+      "vault": "0x8dfaD6c30020fDEE6F07a52f9347091E66acd999"
     },
     {
       "name": "Cascade",
@@ -990,7 +990,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xF6CCBb600064cb971f19D71FC02206d5F320f3a0"
+      "vault": "0xB636396D6c6F63d8473BE22E11905b0bAD3aB91A"
     },
     {
       "name": "Terminal",
@@ -1002,7 +1002,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x8C96950FAd168689D778a2D975377417b054556d"
+      "vault": "0x46CBd565305A768B6587955C2435338dA9f53c55"
     },
     {
       "name": "Timetable",
@@ -1014,7 +1014,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xd85A6307F6B8bC989D8cFaA6d9e0FAcB248F8517"
+      "vault": "0x816091E7E8Ca4F4508C24791E95748aB2AFA704f"
     },
     {
       "name": "Delay",
@@ -1026,7 +1026,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x9A08bb58053e92d80De84A1120ee4e634ADBE2c0"
+      "vault": "0x6f83fF924De24142f325c86B15528adb0b68A32D"
     },
     {
       "name": "Frontpage",
@@ -1038,7 +1038,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x640A98BC59d81b6D46EE3AF38137726f3228cE3E"
+      "vault": "0xd07850A60339303bcccE13A6755092517Fc1FD43"
     },
     {
       "name": "Decay",
@@ -1050,7 +1050,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x7033Af7C9b53534358Bf4A1C32F37604508fcb6f"
+      "vault": "0x132014076B4e5A0DE0032927Ca714D593b73f1A0"
     },
     {
       "name": "Flagged",
@@ -1062,7 +1062,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0x37c73d1763c276784C549721a12446b4715D5695"
+      "vault": "0x07B6A62f277080f3E4800F55704a8dd0F19CD131"
     },
     {
       "name": "Show",
@@ -1074,7 +1074,7 @@
       "color": "#F66A0A",
       "fee": 500,
       "category": "Social",
-      "vault": "0xdC7C2c381Bd3929c42AE0b9364884463924d5391"
+      "vault": "0x9cc36Baf767CAfdCccd26Bb8Ba5b0a2c5E82deE9"
     },
     {
       "name": "Orbit",
@@ -1086,7 +1086,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xfd51bc4cB8C4eeCdD1b1aEE49609b8adcEe24B7C"
+      "vault": "0x0F698Dd4FF9335d74f191228720472F03B2124ac"
     },
     {
       "name": "Reentry",
@@ -1098,7 +1098,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0x7745a8e149D78C89c8F196fA1852C32272130013"
+      "vault": "0xe5ce83c002DE7F96bc165542819248d94eB274Ee"
     },
     {
       "name": "Microgravity",
@@ -1110,7 +1110,7 @@
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0x4a2c54A5bd4C5f5694Eac8BA9027D9FE53357924"
+      "vault": "0xFe0bb3C6b97D2cD4718F2505237CE34c7E33C627"
     },
     {
       "name": "Docking",
@@ -1118,13 +1118,13 @@
       "source": "iss",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 3.0
+        "min_change_pct": 3
       },
       "tagline": "Routine passes are noise. Docking only trades on significant orbital events, when activity spikes above 3%.",
       "color": "#0C0A1A",
       "fee": 500,
       "category": "Space",
-      "vault": "0xdA61f3B0D1FAF5d20c9c63029E05D08DA33020f4"
+      "vault": "0xc19AE9701699C5d543B16a2954Ea2dE1a54cEA28"
     },
     {
       "name": "Sortie",
@@ -1136,7 +1136,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x0843FCbC7856235d1c4ae533ab97aC1dE421Bbef"
+      "vault": "0x6Ed79E5A599D6F51C4824d865C594C14C6F3DDd8"
     },
     {
       "name": "Standdown",
@@ -1148,7 +1148,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x9FE26eC9c951828fD78142fdBcA473e37F971142"
+      "vault": "0xa75973e78Da625040E382020c9E9503f6922f15A"
     },
     {
       "name": "Overwatch",
@@ -1160,7 +1160,7 @@
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x3d97f81915C77a55038EfEbe45ebdd696dCef58F"
+      "vault": "0xda175F3e16025aaD4DaB88dcc2428a5B17bdd9f6"
     },
     {
       "name": "Scramble",
@@ -1168,13 +1168,13 @@
       "source": "mil_aircraft",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Routine patrols are noise. Scramble trades only when flight activity surges 5% or more, indicating real operational escalation.",
       "color": "#1A2332",
       "fee": 500,
       "category": "Defense",
-      "vault": "0x2283c848817178B82eE808fc38EC5852e66bc948"
+      "vault": "0xdA6cD50BFD97A8eaAdB51FA8eE6a8D748E54CFd5"
     },
     {
       "name": "Metro",
@@ -1186,7 +1186,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x032F8296431c664b27402458e68a869f71130262"
+      "vault": "0xF9C19cDe2B65920089B5cf094eC1e537bbA0F4E4"
     },
     {
       "name": "Express",
@@ -1198,7 +1198,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x447D59Ee8DaCdeC7fF3c2B2688a398F0c6BFAc06"
+      "vault": "0xe4eC0C6C070F3f1AB415e8Dd18ea0841D2468Ec6"
     },
     {
       "name": "Transfer",
@@ -1210,7 +1210,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x8dfaD6c30020fDEE6F07a52f9347091E66acd999"
+      "vault": "0x22aF12D5f6006f39371727030A1Bc2f1C86cA4D6"
     },
     {
       "name": "Turnstile",
@@ -1222,7 +1222,7 @@
       "color": "#0039A6",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x5cc6eF77bF3AdD5f4c1f92fFC3e5D1DEDB8d90E1"
+      "vault": "0xd328239567897C1Fed7Ae8D08364ca553c74D6C6"
     },
     {
       "name": "Swell",
@@ -1234,7 +1234,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0xB636396D6c6F63d8473BE22E11905b0bAD3aB91A"
+      "vault": "0xA6a672D4C395dAf71Ee5567c0eA190c49236b580"
     },
     {
       "name": "Calm",
@@ -1246,7 +1246,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x46CBd565305A768B6587955C2435338dA9f53c55"
+      "vault": "0x953DfC94aA622F27b5d240F0472A537d4B8435d1"
     },
     {
       "name": "Riptide",
@@ -1258,7 +1258,7 @@
       "color": "#1ABC9C",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x816091E7E8Ca4F4508C24791E95748aB2AFA704f"
+      "vault": "0x8994a4f1630f51eB6F4F557f915657B5A950D476"
     },
     {
       "name": "Anomaly",
@@ -1270,7 +1270,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x6f83fF924De24142f325c86B15528adb0b68A32D"
+      "vault": "0x396c6661Ba212933DE068f651bA04BA652dAEd07"
     },
     {
       "name": "Lull",
@@ -1282,7 +1282,7 @@
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xBE9CA7d830E1Da37aA3eD9E6122160927dB6A48f"
+      "vault": "0x5B74B3Eca5C3A730f385Ca64f5c19bE113e7Cd81"
     },
     {
       "name": "Barometer",
@@ -1290,13 +1290,13 @@
       "source": "noaa_met",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 2.0
+        "min_change_pct": 2
       },
       "tagline": "Small pressure changes are noise. Barometer acts only when readings shift by 2% or more, signaling a real system moving through.",
       "color": "#2C3E50",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xd07850A60339303bcccE13A6755092517Fc1FD43"
+      "vault": "0xc9644059114D5d3f3AC51421fD1a54F5dca34CEF"
     },
     {
       "name": "Tideline",
@@ -1308,7 +1308,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x132014076B4e5A0DE0032927Ca714D593b73f1A0"
+      "vault": "0x3bA04354e7Fa9539aCfDA24A3b3da4f2a033B7fE"
     },
     {
       "name": "Surge",
@@ -1320,7 +1320,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x07B6A62f277080f3E4800F55704a8dd0F19CD131"
+      "vault": "0x9C9fC9DB6B91de32B2bF2e19B207fec87c8DE313"
     },
     {
       "name": "Neap",
@@ -1332,7 +1332,7 @@
       "color": "#16A085",
       "fee": 500,
       "category": "Ocean",
-      "vault": "0x9cc36Baf767CAfdCccd26Bb8Ba5b0a2c5E82deE9"
+      "vault": "0x46b58EeD8aA0D5eE3dfB42f21159E7C6199Ee517"
     },
     {
       "name": "Flood",
@@ -1344,7 +1344,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xC607215846155a7f0084f6e7BD0f65341b88AEEF"
+      "vault": "0xF3C1a359bf23d78a5172131cCf73473bACa24d11"
     },
     {
       "name": "Snowbank",
@@ -1356,7 +1356,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x0F698Dd4FF9335d74f191228720472F03B2124ac"
+      "vault": "0x2a66eD00E57503F1Dd1EFde08f6929fAbC77e384"
     },
     {
       "name": "Crest",
@@ -1368,7 +1368,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xe5ce83c002DE7F96bc165542819248d94eB274Ee"
+      "vault": "0x085E7ffAa5E31642b3176F7336872D705c405a1d"
     },
     {
       "name": "Valet",
@@ -1380,7 +1380,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xFe0bb3C6b97D2cD4718F2505237CE34c7E33C627"
+      "vault": "0x2C3A153203068A217c77eF8174421e9190f8e400"
     },
     {
       "name": "Garage",
@@ -1392,7 +1392,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0xc19AE9701699C5d543B16a2954Ea2dE1a54cEA28"
+      "vault": "0x6d42573fcb0Bd27196963b2D57c9A6a4e6B38cF5"
     },
     {
       "name": "Meter",
@@ -1404,7 +1404,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x60D0444FFDa45d0A5Fc7818f1150a26AEF2D1291"
+      "vault": "0x0c7aa3d4d4d436Ae762e6d33391499c1282eB12c"
     },
     {
       "name": "Double Park",
@@ -1416,7 +1416,7 @@
       "color": "#5C6BC0",
       "fee": 500,
       "category": "Transport",
-      "vault": "0x6Ed79E5A599D6F51C4824d865C594C14C6F3DDd8"
+      "vault": "0x206fdf5D315a63003844ec02B653fbd0d3864f84"
     },
     {
       "name": "Oracle",
@@ -1428,7 +1428,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xa75973e78Da625040E382020c9E9503f6922f15A"
+      "vault": "0x061756334b104f82A8cA850d34A32Cb2f71D4995"
     },
     {
       "name": "Longshot",
@@ -1440,7 +1440,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xda175F3e16025aaD4DaB88dcc2428a5B17bdd9f6"
+      "vault": "0x6218Dc54718Fe4630bd46c9585411049ec91629F"
     },
     {
       "name": "Consensus",
@@ -1448,13 +1448,13 @@
       "source": "polymarket",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 5.0
+        "min_change_pct": 5
       },
       "tagline": "Minor odds shifts are noise. Consensus only trades when probabilities move 5% or more, signaling genuine information arrival.",
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xdA6cD50BFD97A8eaAdB51FA8eE6a8D748E54CFd5"
+      "vault": "0xf3595e192cF4572Db4FC49e447fAb29D6E07638e"
     },
     {
       "name": "Arbitrage",
@@ -1466,7 +1466,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Prediction",
-      "vault": "0xBcAccB53958AE4aC3d2aa0Cb1Ff650249152A4db"
+      "vault": "0x488dF6846Ab2Dd02e983E87AaDf66C3867CE4FD1"
     },
     {
       "name": "Preprint",
@@ -1478,7 +1478,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xF9C19cDe2B65920089B5cf094eC1e537bbA0F4E4"
+      "vault": "0x16dA26498F2Ac98BeC8D931B94fAA05952DCB0cE"
     },
     {
       "name": "Placebo",
@@ -1490,7 +1490,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xe4eC0C6C070F3f1AB415e8Dd18ea0841D2468Ec6"
+      "vault": "0xA1590540c159B280D942270d741089eE77DC1132"
     },
     {
       "name": "Peer",
@@ -1502,7 +1502,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0x22aF12D5f6006f39371727030A1Bc2f1C86cA4D6"
+      "vault": "0x36859a5544fddD5D276a0A36534e2D3830d1030a"
     },
     {
       "name": "Trial",
@@ -1514,7 +1514,7 @@
       "color": "#326599",
       "fee": 500,
       "category": "Academic",
-      "vault": "0xd328239567897C1Fed7Ae8D08364ca553c74D6C6"
+      "vault": "0xC4509C6467F595B480DA01B47Be2499d3666857e"
     },
     {
       "name": "Degenerator",
@@ -1526,7 +1526,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x0EA08D66Fc7Ddd90B709463acF75d3A4Af74Feaf"
+      "vault": "0xC63e737c771Fd198cf7D514b5ce56c7DE206a524"
     },
     {
       "name": "Rugpull",
@@ -1538,7 +1538,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0xA6a672D4C395dAf71Ee5567c0eA190c49236b580"
+      "vault": "0x85cD5Fc98d3a9196Bf33fDf3C253DedaA368ea07"
     },
     {
       "name": "Diagnosis",
@@ -1550,7 +1550,7 @@
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x953DfC94aA622F27b5d240F0472A537d4B8435d1"
+      "vault": "0xC7658755bB91b082a583f4EdDEd31d5bb64900aE"
     },
     {
       "name": "Bonding",
@@ -1558,13 +1558,13 @@
       "source": "pumpfun",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 10.0
+        "min_change_pct": 10
       },
       "tagline": "Most memecoin price moves are noise. Bonding only trades when a token moves 10% or more, catching real bonding curve events.",
       "color": "#00D18C",
       "fee": 500,
       "category": "Crypto",
-      "vault": "0x8994a4f1630f51eB6F4F557f915657B5A950D476"
+      "vault": "0xdbdf61E57cCbb5a0729fa15eF665AE67b71C0c21"
     },
     {
       "name": "Fastpass",
@@ -1576,7 +1576,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0x705Fc8fe6a05F44c41E9C899346cFB693f9D514B"
+      "vault": "0xA0bdCbbFfF615BB6b4bfe78AEB52A5bd1F58E2F0"
     },
     {
       "name": "Rush",
@@ -1588,7 +1588,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0x209A8c563F540E3F76bc3202bEf25C2026669702"
+      "vault": "0x420a9f6104a252E3Fb641f8D524B3509A4Cb326A"
     },
     {
       "name": "Cluster",
@@ -1600,7 +1600,7 @@
       "color": "#1A1A2E",
       "fee": 500,
       "category": "Leisure",
-      "vault": "0x396c6661Ba212933DE068f651bA04BA652dAEd07"
+      "vault": "0xba3d14A9D417035C04445D43a903C9D4Ea52Aaaa"
     },
     {
       "name": "Hawkish",
@@ -1614,7 +1614,7 @@
       "color": "#003366",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x5B74B3Eca5C3A730f385Ca64f5c19bE113e7Cd81"
+      "vault": "0x4B02DCc924e4D5C71b7C4228A02D3c3773A44d59"
     },
     {
       "name": "Dovish",
@@ -1626,7 +1626,7 @@
       "color": "#003366",
       "fee": 500,
       "category": "Finance",
-      "vault": "0xc9644059114D5d3f3AC51421fD1a54F5dca34CEF"
+      "vault": "0x9C26e94C1c72eE441f934305B102Ce13710b9361"
     },
     {
       "name": "Tighten",
@@ -1638,7 +1638,7 @@
       "color": "#003366",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x3562f017B1DF8bC584A07Eae3eD514565686DBBA"
+      "vault": "0x29DF6915e4ebDA28a2F973B35b1c61f220D2DB2E"
     },
     {
       "name": "Basis",
@@ -1652,7 +1652,7 @@
       "color": "#003366",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x49924CCeb6c77De2da675179AF753593c3A56fBC"
+      "vault": "0xAAb8f6335dAb156c9023C323EFE2D741D9d3e295"
     },
     {
       "name": "Deadline",
@@ -1664,7 +1664,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x3bA04354e7Fa9539aCfDA24A3b3da4f2a033B7fE"
+      "vault": "0x49002702E7c58a56aC9D46d74fb3624CD5f8C8f2"
     },
     {
       "name": "Disclosure",
@@ -1676,7 +1676,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x9C9fC9DB6B91de32B2bF2e19B207fec87c8DE313"
+      "vault": "0x5f8Af4d99F0e0cA4D8C66F18AF8bC59806B657ba"
     },
     {
       "name": "Insider",
@@ -1684,13 +1684,13 @@
       "source": "sec_13f",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 3.0
+        "min_change_pct": 3
       },
       "tagline": "Minor filing volume changes are administrative. Insider only trades when activity surges 3% or more, signaling real institutional movement.",
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x46b58EeD8aA0D5eE3dfB42f21159E7C6199Ee517"
+      "vault": "0x4c83cBddAcD714b90e1b7075307E585c63B00CF5"
     },
     {
       "name": "Holdings",
@@ -1702,7 +1702,7 @@
       "color": "#0A3055",
       "fee": 500,
       "category": "Finance",
-      "vault": "0x4D2e8B6Efa6D717E52941385d4A00d4aFAe5A590"
+      "vault": "0x2Bbf3eD96C59A2BeccDf1FeC301f8836269fD7FF"
     },
     {
       "name": "Aurora",
@@ -1714,7 +1714,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0xB7de0da9cc84F18dacb2B0cD750e1AF74968Ef5E"
+      "vault": "0x6e6485981B00494E048699c6251A0Ab8CD2f066b"
     },
     {
       "name": "Solstice",
@@ -1726,7 +1726,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0xF3C1a359bf23d78a5172131cCf73473bACa24d11"
+      "vault": "0x3f8d8cCAf0CF7e92908A785d144b12Af81C3E59a"
     },
     {
       "name": "Sunspot",
@@ -1738,7 +1738,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x2a66eD00E57503F1Dd1EFde08f6929fAbC77e384"
+      "vault": "0x7C42d136D494C91d7177762fEa627A0ae04e380a"
     },
     {
       "name": "Corona",
@@ -1750,7 +1750,7 @@
       "color": "#8E44AD",
       "fee": 500,
       "category": "Space",
-      "vault": "0x085E7ffAa5E31642b3176F7336872D705c405a1d"
+      "vault": "0x1519baeBA0D71f2d5F25DbF328F384958dcd140A"
     },
     {
       "name": "Homecourt",
@@ -1762,7 +1762,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x403f3dF9668BF4A4efD6eaE30581b7a0a4fc81c7"
+      "vault": "0xE01A79d5644C8DC3E9Ea564966334fD95B3e1FAd"
     },
     {
       "name": "Streak",
@@ -1774,7 +1774,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0xC5F61B568594070B7987AE0a28DfeBc93eAb872A"
+      "vault": "0x3ebF6C70AC70D1E8Ac0241F60619AfceB4E01c7A"
     },
     {
       "name": "Upset",
@@ -1786,7 +1786,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x2C3A153203068A217c77eF8174421e9190f8e400"
+      "vault": "0x66BA74abc668a6Cf8FA955E5375bf58606d37131"
     },
     {
       "name": "Overtime",
@@ -1798,7 +1798,7 @@
       "color": "#1B1B1B",
       "fee": 500,
       "category": "Sports",
-      "vault": "0x6d42573fcb0Bd27196963b2D57c9A6a4e6B38cF5"
+      "vault": "0x7521C16ed551D09e7ecB7d12382a6f0E01fD7f55"
     },
     {
       "name": "Weekend",
@@ -1810,7 +1810,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x0c7aa3d4d4d436Ae762e6d33391499c1282eB12c"
+      "vault": "0xd1B05d975eE067cCf378A4Cd14A1A3ebc3dAA221"
     },
     {
       "name": "Lobby",
@@ -1822,7 +1822,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x206fdf5D315a63003844ec02B653fbd0d3864f84"
+      "vault": "0x928c1db9ae832A241ce2C9b30a0cF6cfa5A40742"
     },
     {
       "name": "Ragequit",
@@ -1834,7 +1834,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x6a39cBeB2Cc62ad0695C9C781400f1249D5A0e46"
+      "vault": "0x2b345aA57705Ae45D9391Aa9261C6F390D8f8383"
     },
     {
       "name": "Patch",
@@ -1846,7 +1846,7 @@
       "color": "#171A21",
       "fee": 500,
       "category": "Gaming",
-      "vault": "0x061756334b104f82A8cA850d34A32Cb2f71D4995"
+      "vault": "0xc9d8b90BEe9Ab0b2148a69C318D6D97113e65efd"
     },
     {
       "name": "Prime Time",
@@ -1858,7 +1858,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x6218Dc54718Fe4630bd46c9585411049ec91629F"
+      "vault": "0x0A3B9D1145DE895736170ec366D60E1d0B0eD402"
     },
     {
       "name": "Offline",
@@ -1870,7 +1870,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xf3595e192cF4572Db4FC49e447fAb29D6E07638e"
+      "vault": "0x4b76f99e1fE5517fF34593639CA55615E3ac3168"
     },
     {
       "name": "Subscribe",
@@ -1882,7 +1882,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0x488dF6846Ab2Dd02e983E87AaDf66C3867CE4FD1"
+      "vault": "0x7e45D3967736aE66AB2e62822eab676da58C0447"
     },
     {
       "name": "Host",
@@ -1894,7 +1894,7 @@
       "color": "#9146FF",
       "fee": 500,
       "category": "Entertainment",
-      "vault": "0xB6cc21088Bda404BD1fcf83293cf49027d95D29a"
+      "vault": "0xf4EC8cAd81efbcEF8259992140BF489dba8B90e6"
     },
     {
       "name": "Stimulus",
@@ -1906,7 +1906,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x16dA26498F2Ac98BeC8D931B94fAA05952DCB0cE"
+      "vault": "0x0C390fd08A0EB66403B28f10b10465dE7AB71dEA"
     },
     {
       "name": "Sequester",
@@ -1918,7 +1918,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0xA1590540c159B280D942270d741089eE77DC1132"
+      "vault": "0xdFCE141ad410804BFE4eAF5F47B13F2527cE4c02"
     },
     {
       "name": "Deficit",
@@ -1930,7 +1930,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0x36859a5544fddD5D276a0A36534e2D3830d1030a"
+      "vault": "0xD168dd32dCc4ad87AfF86746b5BB7CC71E3a47ED"
     },
     {
       "name": "Earmark",
@@ -1942,7 +1942,7 @@
       "color": "#112E51",
       "fee": 500,
       "category": "Government",
-      "vault": "0xC4509C6467F595B480DA01B47Be2499d3666857e"
+      "vault": "0x997af88f3B2C5C81f09DD56E00882f61D38B1E9E"
     },
     {
       "name": "Torrent",
@@ -1954,7 +1954,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xCe538FC98A622b787149F05fD256EdF569279D3C"
+      "vault": "0xC61d86844e23f275E365F7AB8304486c5866CdE0"
     },
     {
       "name": "Drought",
@@ -1966,7 +1966,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xC63e737c771Fd198cf7D514b5ce56c7DE206a524"
+      "vault": "0xE67F991603Dc6F7C305c6209E2ff8AAA186d9636"
     },
     {
       "name": "Watershed",
@@ -1978,7 +1978,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x85cD5Fc98d3a9196Bf33fDf3C253DedaA368ea07"
+      "vault": "0x227B6E4780dC19E1b5499b912Da50145EA6f4F62"
     },
     {
       "name": "Baseflow",
@@ -1990,7 +1990,7 @@
       "color": "#2980B9",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xC7658755bB91b082a583f4EdDEd31d5bb64900aE"
+      "vault": "0xA73625084e217597Dc44ec8D131c35f5DDf9aFEF"
     },
     {
       "name": "Weatherfront",
@@ -2002,7 +2002,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xdbdf61E57cCbb5a0729fa15eF665AE67b71C0c21"
+      "vault": "0xEF8ef41607D68d5FC8E394023F47bFBAf9D57fd6"
     },
     {
       "name": "Revert",
@@ -2014,7 +2014,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x3f2f9F29D479f5fec4C8B579e5379ddbD9FCcff3"
+      "vault": "0x7fa86Ee1E346873Acb0B8fecc466aD3d37ac6725"
     },
     {
       "name": "Seasonal",
@@ -2026,7 +2026,7 @@
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xA0bdCbbFfF615BB6b4bfe78AEB52A5bd1F58E2F0"
+      "vault": "0x6CDaD910f42c8Ec31d7c85EeEAE25e7F157Eefc4"
     },
     {
       "name": "Heatwave",
@@ -2034,13 +2034,13 @@
       "source": "weather",
       "strategy": "momentum_threshold",
       "params": {
-        "min_change_pct": 3.0
+        "min_change_pct": 3
       },
       "tagline": "Minor temperature fluctuations are noise. Heatwave only trades when readings shift by 3% or more, catching real system changes.",
       "color": "#2ECC71",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x420a9f6104a252E3Fb641f8D524B3509A4Cb326A"
+      "vault": "0x68C3dA44Bf598f87178b948e92f2cAC3883A7df2"
     },
     {
       "name": "Stormwatch",
@@ -2052,7 +2052,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xba3d14A9D417035C04445D43a903C9D4Ea52Aaaa"
+      "vault": "0x4EcBbeac38EB229584b49c18E63FD534F5646c13"
     },
     {
       "name": "All Clear",
@@ -2064,7 +2064,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x3Ba290E5ce01492d116F2121C0400897f1B716ad"
+      "vault": "0x0f37E1548b19a601f2b93e7cebf6de2C9D57C678"
     },
     {
       "name": "Tornado",
@@ -2076,7 +2076,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0xE7A72f25b23d4969c0a1ebA9EF0D8aAc79A52EAF"
+      "vault": "0xacac25d5190d0f153f022eBa054a4F34cb2a9eDE"
     },
     {
       "name": "Bunker",
@@ -2088,7 +2088,7 @@
       "color": "#E65100",
       "fee": 500,
       "category": "Weather",
-      "vault": "0x4B02DCc924e4D5C71b7C4228A02D3c3773A44d59"
+      "vault": "0x9065fE3515ed0020B373Da9B20A528c552c73a1C"
     },
     {
       "name": "Ember",
@@ -2100,7 +2100,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x9C26e94C1c72eE441f934305B102Ce13710b9361"
+      "vault": "0xE1122305A3bCf008b11299289BaBF925CF0B387b"
     },
     {
       "name": "Contained",
@@ -2112,7 +2112,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0x29DF6915e4ebDA28a2F973B35b1c61f220D2DB2E"
+      "vault": "0x139E77BFB8D73b84502e593023790A0587702b72"
     },
     {
       "name": "Tinder",
@@ -2124,7 +2124,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xAAb8f6335dAb156c9023C323EFE2D741D9d3e295"
+      "vault": "0x040231BBa7843d0317eCaBa77b8552f2dE8E6947"
     },
     {
       "name": "Firebreak",
@@ -2136,7 +2136,7 @@
       "color": "#E67E22",
       "fee": 500,
       "category": "Environment",
-      "vault": "0xC6Ee5D152D08486ebF68BdAFF019b7E14ADc5c80"
+      "vault": "0xAB85BB4bc95Be7d854f09BB23110cA46F3f9576a"
     },
     {
       "name": "Glacier",
@@ -2144,13 +2144,13 @@
       "source": "worldbank",
       "strategy": "momentum",
       "params": {
-        "min_change_pct": 1.0
+        "min_change_pct": 1
       },
       "tagline": "Development indicators move at geological speed. Glacier only bets when something actually changes, which is rare but persistent.",
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x49002702E7c58a56aC9D46d74fb3624CD5f8C8f2"
+      "vault": "0xD900dbDd555B84656dB6aa5B00219B7739cb9541"
     },
     {
       "name": "Convergence",
@@ -2162,7 +2162,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x5f8Af4d99F0e0cA4D8C66F18AF8bC59806B657ba"
+      "vault": "0x79cb827FD12922874E09582376bD4a3064994E21"
     },
     {
       "name": "Emergence",
@@ -2174,7 +2174,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x4c83cBddAcD714b90e1b7075307E585c63B00CF5"
+      "vault": "0xCDD6691Dc4903b4e30d7D47635dB4f6C08e64563"
     },
     {
       "name": "Stagnation",
@@ -2186,7 +2186,7 @@
       "color": "#002244",
       "fee": 500,
       "category": "Economic",
-      "vault": "0x2Bbf3eD96C59A2BeccDf1FeC301f8836269fD7FF"
+      "vault": "0x0f6C0B50341e75e5DcE759eD40c26C135f6Fc3fA"
     },
     {
       "name": "Foundation",
@@ -2198,7 +2198,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x235516c11ca4eB54767b4C79c80903156F6B431b"
+      "vault": "0xd6Bf520e4f145c970608A661Bf24DfACAf5cC0fe"
     },
     {
       "name": "Overshoot",
@@ -2210,7 +2210,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x6e6485981B00494E048699c6251A0Ab8CD2f066b"
+      "vault": "0x8940A48b07733f358138548fa1eB5ffE2315c8e9"
     },
     {
       "name": "Shelter",
@@ -2222,7 +2222,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x3f8d8cCAf0CF7e92908A785d144b12Af81C3E59a"
+      "vault": "0xcb31440b184E592c3A1d1f4aE7dAC7792f886bbb"
     },
     {
       "name": "Appraisal",
@@ -2234,7 +2234,7 @@
       "color": "#006AFF",
       "fee": 500,
       "category": "Real Estate",
-      "vault": "0x7C42d136D494C91d7177762fEa627A0ae04e380a"
+      "vault": "0x4f92c53bEE49b57685227d882df01C93436AAF5D"
     }
   ]
 }
