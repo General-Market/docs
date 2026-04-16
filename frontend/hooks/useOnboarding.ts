@@ -216,12 +216,13 @@ export function useOnboarding(sourceId: string): OnboardingState {
 
   const stepIndex = STEPS.indexOf(currentStep)
   const isComplete = STEPS.every(s => completed[s])
-  // Show the guide as soon as we have a wallet. Cached vault state keeps us
-  // from flashing at returning vault users: if their previous visit resolved
-  // "joined", the cache reads '1' and isComplete suppresses the guide before
-  // the multicall even fires. First-time users default to not-joined and see
-  // the tutorial immediately — no waiting on RPC.
-  const isActive = !dismissed && !isComplete && !!address
+  // The guide owns step 1 — Connect Wallet. Gating it behind `!!address`
+  // meant the tutorial that teaches you to connect refused to appear until
+  // after you had connected. Mobile visitors, who land without an injected
+  // provider, were the silent casualty. Cached vault state still suppresses
+  // the flash at returning vault users (isComplete reads true from cache
+  // before the multicall fires).
+  const isActive = !dismissed && !isComplete
 
   return {
     currentStep,

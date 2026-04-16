@@ -221,8 +221,14 @@ export function SourceDetailV2({ sourceId, initialSource }: SourceDetailV2Props)
             </OnboardingGate>
           )}
 
-          {/* Vault showcase */}
-          <div ref={vaultShowcaseRef}>
+          {/* Vault showcase. The :has selector collapses this wrapper when
+              the inner OnboardingGate hides its empty VaultShowcase — without
+              it the flex `gap-8` stamps an extra 32px phantom gap above the
+              next section. */}
+          <div
+            ref={vaultShowcaseRef}
+            className="[&:has(>div:empty)]:hidden [&:has(>div>div:first-child:empty)]:hidden"
+          >
             <OnboardingGate requiredStep="vault" state={onboarding}>
               <VaultShowcase sourceId={sourceId} />
             </OnboardingGate>
