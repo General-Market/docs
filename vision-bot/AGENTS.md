@@ -77,8 +77,9 @@ print(resp.json())  # { success, usdc, l3Gas, ... }
 
 Response codes:
 - `200` — dripped 100 USDC + 1 GM.
-- `429` — this IP or address already claimed. Wait 24h.
-- `503` — in production, means Upstash env vars are missing. In local dev, the route falls back to an in-memory throttle automatically, so you will not hit this.
+- `429` — this IP or address already claimed. Wait 24h. Terminal for this wallet/IP.
+- `500` — transient. The faucet signer can race on nonces under concurrent calls; retry after 2–3 seconds up to twice.
+- `503` — production only, means Upstash env vars are missing. Local dev has no rate-limit and will not return this.
 
 ## CRITICAL: USDC uses 18 decimals on L3
 
@@ -363,8 +364,9 @@ def fetch_batches():
     return resp.json()["batches"]
 
 batches = fetch_batches()
-# Each batch: { id, creator, config_hash, source_id, market_ids, market_count,
+# Each batch: { id, creator, config_hash, source_id, market_count,
 #               tick_duration, current_tick, player_count, tvl, paused }
+# The list endpoint does NOT include market_ids — see Step 3b.
 ```
 
 Filter out:
