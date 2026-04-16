@@ -10,12 +10,12 @@ import { VaultPosition } from './VaultPosition'
 export function VaultSupplySection() {
   const t = useTranslations('lending')
   const { vaultInfo, userPosition, isLoading } = useMetaMorphoVault()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
 
   const tvlDisplay = vaultInfo
     ? `$${parseFloat(formatUnits(vaultInfo.totalAssets, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-    : '—'
+    : ', '
 
   const userDisplay =
     userPosition && userPosition.value > 0n
@@ -24,7 +24,7 @@ export function VaultSupplySection() {
 
   return (
     <div className="border border-border-light">
-      {/* Header — always visible */}
+      {/* Header, always visible */}
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
@@ -35,7 +35,7 @@ export function VaultSupplySection() {
             {t('vault_supply.title')}
           </span>
           <span className="text-xs text-text-muted">
-            — {t('vault_supply.description')}
+           , {t('vault_supply.description')}
           </span>
         </div>
         <svg
@@ -49,7 +49,7 @@ export function VaultSupplySection() {
         </svg>
       </button>
 
-      {/* Body — collapsible */}
+      {/* Body, collapsible */}
       {expanded && (
         <div className="border-t border-border-light px-4 py-4 space-y-4">
           {/* Summary row */}

@@ -135,26 +135,11 @@ export function useMorphoPosition(market?: MorphoMarketEntry): UseMorphoPosition
     const healthFactor = calculateHealthFactor(collateralAmount, oraclePrice, debtAmount, lltv)
     const liquidationPrice = calculateLiquidationPrice(collateralAmount, debtAmount, lltv)
 
-    // Compute maxBorrow from SSE: maxBorrow = (collateral * oraclePrice * lltv / 1e36) - debt
-    // This gives instant reactivity after borrow/repay instead of waiting 30s for REST
-    const maxBorrow = (() => {
-      if (collateralAmount > 0n && oraclePrice > 0n) {
-        const maxDebt = (collateralAmount * oraclePrice / BigInt(1e18)) * lltv / BigInt(1e18)
-        const remaining = maxDebt - debtAmount
-        return remaining > 0n ? remaining : 0n
-      }
-      return safeBigInt(restData?.max_borrow)
-    })()
-    // maxWithdraw = collateral - (debt * 1e36 / (oraclePrice * lltv))
-    const maxWithdraw = (() => {
-      if (debtAmount > 0n && oraclePrice > 0n && lltv > 0n) {
-        const minCollateral = (debtAmount * BigInt(1e18) / oraclePrice) * BigInt(1e18) / lltv
-        const remaining = collateralAmount - minCollateral
-        return remaining > 0n ? remaining : 0n
-      }
-      if (debtAmount === 0n) return collateralAmount
-      return safeBigInt(restData?.max_withdraw)
-    })()
+    // maxBorrow / maxWithdraw are per-market and require the market's own oracle price
+    // at Morpho's 1e36 scale. Trust the REST backend (computes with the correct per-market
+    // oracle); refetchPosition() is called after borrow/repay for immediate freshness.
+    const maxBorrow = safeBigInt(restData?.max_borrow)
+    const maxWithdraw = debtAmount === 0n ? collateralAmount : safeBigInt(restData?.max_withdraw)
 
     position = {
       collateralAmount,
