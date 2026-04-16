@@ -32,6 +32,60 @@ const FILL_ERROR_SELECTORS: &[&str] = &[
     "7a5425d1", // E021
 ];
 
+/// Resolve an order mapping, rebuilding from Settlement on-chain state if the
+/// in-memory mapping has been lost (e.g. after an oracle restart).
+///
+/// Oracle mappings live only in memory — a restart between submitOrder and
+/// mintBridgedShares otherwise leaves the order permanently unmintable and
+/// the user's USDC stranded. Settlement's getCrossChainOrder() returns the
+/// original user, which is all we need to rebuild the mapping on demand.
+async fn resolve_or_rebuild_mapping(
+    orchestrator: &Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
+    settlement_reader: &Arc<dyn oracle::SettlementReader>,
+    settlement_id: ethers::types::U256,
+    l3_order_id: ethers::types::U256,
+) -> Option<oracle::bridge::OrderMapping> {
+    let initial = {
+        let o = orchestrator.read().await;
+        match o.get_order_mapping(&settlement_id).await {
+            Some(m) => Some(m),
+            None => o.get_mapping_by_l3_id(&l3_order_id).await,
+        }
+    };
+    if let Some(m) = initial {
+        return Some(m);
+    }
+    match settlement_reader.get_cross_chain_order(settlement_id).await {
+        Ok(Some(data)) => {
+            let rebuilt = oracle::bridge::OrderMapping {
+                settlement_order_id: settlement_id,
+                l3_order_id,
+                original_user: data.user,
+                created_at: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+            };
+            info!(
+                settlement_id = %settlement_id,
+                l3_order_id = %l3_order_id,
+                user = ?data.user,
+                "Reconstructed order mapping from Settlement on-chain state"
+            );
+            orchestrator.write().await.store_order_mapping(rebuilt.clone()).await;
+            Some(rebuilt)
+        }
+        Ok(None) => {
+            warn!(order_id = %settlement_id, "Settlement has no record of this cross-chain order — likely completed or cancelled");
+            None
+        }
+        Err(e) => {
+            warn!(order_id = %settlement_id, error = %e, "Failed to read Settlement order for mapping reconstruction");
+            None
+        }
+    }
+}
+
 /// Attempt to extract the offending orderId from a confirmFills revert string.
 ///
 /// The error string from ethers typically contains the hex-encoded revert data,
@@ -617,7 +671,7 @@ pub(crate) async fn run_cross_chain_processing<P, W, K, PF>(
 ///   `target_orders = None` — process all SubmittedOnL3 orders.
 pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
-    _settlement_reader: Arc<dyn oracle::SettlementReader>,
+    settlement_reader: Arc<dyn oracle::SettlementReader>,
     orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
     settlement_writer: Arc<oracle::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
@@ -1061,8 +1115,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                 let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                     .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
-                                    .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
+                                let mapping = resolve_or_rebuild_mapping(&orchestrator, &settlement_reader, settlement_id, fill.order_id).await;
                                 if let Some(mapping) = mapping {
                                     // shares = fill_amount * 1e18 / fill_price
                                     let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -1271,8 +1324,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                     let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                         .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                    let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
-                                        .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
+                                    let mapping = resolve_or_rebuild_mapping(&orchestrator, &settlement_reader, settlement_id, fill.order_id).await;
                                     if let Some(mapping) = mapping {
                                         let shares = if fill.fill_price > ethers::types::U256::zero() {
                                             (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
