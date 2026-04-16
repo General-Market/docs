@@ -107,12 +107,39 @@ export function useOnboarding(sourceId: string): OnboardingState {
   const { shares: onChainShares, pending: onChainPending, isChecked: vaultPositionsChecked } =
     useOnChainVaultPositions(address as `0x${string}` | undefined)
 
-  const vaultDone = useMemo(() => {
+  const onChainVaultDone = useMemo(() => {
     if (!address) return false
     for (const v of onChainShares.values()) if (v > 0n) return true
     for (const v of onChainPending.values()) if (v > 0n) return true
     return false
   }, [address, onChainShares, onChainPending])
+
+  // Cache the result in localStorage so revisits render the tutorial
+  // immediately instead of waiting for the multicall. '1' = joined, '0' =
+  // not joined, absent = unknown (first visit on this device).
+  const vaultCacheKey = address ? `onboarding_vault_joined_${address.toLowerCase()}` : ''
+  const [cachedVaultJoined, setCachedVaultJoined] = useState<boolean | null>(() => {
+    if (typeof window === 'undefined' || !vaultCacheKey) return null
+    const v = localStorage.getItem(vaultCacheKey)
+    return v === '1' ? true : v === '0' ? false : null
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !vaultCacheKey) return
+    const v = localStorage.getItem(vaultCacheKey)
+    setCachedVaultJoined(v === '1' ? true : v === '0' ? false : null)
+  }, [vaultCacheKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !vaultCacheKey || !vaultPositionsChecked) return
+    localStorage.setItem(vaultCacheKey, onChainVaultDone ? '1' : '0')
+    setCachedVaultJoined(onChainVaultDone)
+  }, [vaultCacheKey, vaultPositionsChecked, onChainVaultDone])
+
+  // Effective vaultDone: prefer on-chain once it resolves, otherwise fall
+  // back to cache. Cache-miss users default to "not joined" and see the
+  // tutorial immediately — which is correct for first-time users.
+  const vaultDone = vaultPositionsChecked ? onChainVaultDone : (cachedVaultJoined === true)
 
   // sourceId is retained for future per-source logic; currently unused here.
   void sourceId
@@ -189,16 +216,12 @@ export function useOnboarding(sourceId: string): OnboardingState {
 
   const stepIndex = STEPS.indexOf(currentStep)
   const isComplete = STEPS.every(s => completed[s])
-  // Hidden by default. Only appears once we have confirmed on-chain that the
-  // user truly has no vault positions anywhere. No wallet → no tutorial
-  // (nothing to teach yet). Positions still loading → no tutorial (would
-  // flash at returning users mid-fetch). Has any position → no tutorial
-  // (they've already done this dance).
-  const isActive =
-    !dismissed &&
-    !isComplete &&
-    !!address &&
-    vaultPositionsChecked
+  // Show the guide as soon as we have a wallet. Cached vault state keeps us
+  // from flashing at returning vault users: if their previous visit resolved
+  // "joined", the cache reads '1' and isComplete suppresses the guide before
+  // the multicall even fires. First-time users default to not-joined and see
+  // the tutorial immediately — no waiting on RPC.
+  const isActive = !dismissed && !isComplete && !!address
 
   return {
     currentStep,

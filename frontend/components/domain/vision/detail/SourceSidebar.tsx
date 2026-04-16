@@ -1,12 +1,53 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Link } from '@/i18n/routing'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 
 const SIDEBAR_EXCLUDED = new Set(['chaturbate', 'fourchan'])
 const SIDEBAR_VIDEO = '/source-video/mountains-sidebar.mp4'
+
+// Module-level sync: two sidebar videos share the same src but buffer
+// independently. On Vercel the network-latency difference causes visible
+// drift between the left and right panels. We keep the first-mounted video
+// as master; every 500ms we nudge other instances back to its currentTime
+// if they've drifted more than 0.1s. Imperceptible seeks, synced loops.
+const syncedVideos = new Set<HTMLVideoElement>()
+let syncIntervalId: ReturnType<typeof setInterval> | null = null
+
+function ensureSyncLoop() {
+  if (syncIntervalId !== null) return
+  syncIntervalId = setInterval(() => {
+    if (syncedVideos.size < 2) {
+      if (syncIntervalId !== null) clearInterval(syncIntervalId)
+      syncIntervalId = null
+      return
+    }
+    const videos = Array.from(syncedVideos)
+    const master = videos.find(v => v.readyState >= 2)
+    if (!master) return
+    const t = master.currentTime
+    for (const v of videos) {
+      if (v === master || v.readyState < 2) continue
+      if (Math.abs(v.currentTime - t) > 0.1) v.currentTime = t
+    }
+  }, 500)
+}
+
+function useSyncedVideoRef() {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    syncedVideos.add(video)
+    ensureSyncLoop()
+    return () => {
+      syncedVideos.delete(video)
+    }
+  }, [])
+  return ref
+}
 
 interface SourceSidebarProps {
   currentSourceId: string
@@ -15,6 +56,7 @@ interface SourceSidebarProps {
 }
 
 export function SourceSidebar({ currentSourceId, category, side }: SourceSidebarProps) {
+  const videoRef = useSyncedVideoRef()
   const { sources } = useSourceRegistry()
   const { data: meta } = useMarketSnapshotMeta()
   const sidebarSources = useMemo(() => {
@@ -41,6 +83,7 @@ export function SourceSidebar({ currentSourceId, category, side }: SourceSidebar
       <div className="relative aspect-[250/700] overflow-hidden">
         {/* Background — looping mountain b-roll, mirrored on right sidebar */}
         <video
+          ref={videoRef}
           src={SIDEBAR_VIDEO}
           autoPlay
           loop
