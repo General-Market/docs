@@ -801,6 +801,34 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders = keep;
     }
 
+    // Filter out orders the orchestrator has already marked Failed. These are
+    // orders whose fill tx will deterministically revert — most commonly E126
+    // (fill price violates user's limit) — so retrying them every cycle just
+    // burns gas estimation rounds. The orchestrator's Failed status is set by
+    // the per-order fill-revert path in run_fills_confirm (see mark_orders_failed
+    // around the 'Per-order fill revert — evicting bad order' log). L3 still
+    // shows them pending because fillOrder never landed; on-chain filter can't
+    // drop them. We drop them ourselves. SharesBridged is NOT filtered — that
+    // would keep L3-direct orders out of the batch/fills pipeline they still
+    // need to go through.
+    {
+        use oracle::BridgeOrderStatus;
+        let pre = submitted_orders.len();
+        let mut keep = Vec::new();
+        let orch = orchestrator.read().await;
+        for oid in &submitted_orders {
+            match orch.get_order_status(oid).await {
+                Some(BridgeOrderStatus::Failed) => { /* drop — marked failed after fill revert */ }
+                _ => keep.push(*oid),
+            }
+        }
+        drop(orch);
+        if keep.len() < pre {
+            info!(before = pre, after = keep.len(), "Filtered failed orders");
+        }
+        submitted_orders = keep;
+    }
+
 
     if submitted_orders.is_empty() {
         debug!("No L3 orders to process");
