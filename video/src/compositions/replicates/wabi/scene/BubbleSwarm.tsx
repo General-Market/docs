@@ -7,6 +7,7 @@
  * clean composition.
  */
 
+import { MeshTransmissionMaterial } from "@react-three/drei";
 import { ACTS } from "../theme";
 
 type Bubble = {
@@ -129,20 +130,24 @@ const SingleBubble: React.FC<{ bubble: Bubble; frame: number }> = ({
           toneMapped={false}
         />
       </mesh>
-      {/* Thin glass shell — plain physical material, no per-instance refraction pass. */}
+      {/* Real glass shell — low samples, thin walls, so the inner color dominates. */}
       <mesh>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshPhysicalMaterial
-          color="#FFFFFF"
-          transmission={0.85}
+        <sphereGeometry args={[1, 20, 20]} />
+        <MeshTransmissionMaterial
+          samples={2}
+          thickness={0.08}
+          roughness={0}
+          transmission={0.92}
           ior={1.3}
-          thickness={0.15}
-          roughness={0.02}
-          metalness={0}
-          clearcoat={0.4}
-          clearcoatRoughness={0.05}
+          chromaticAberration={0.04}
+          backside={false}
+          anisotropy={0.08}
+          distortion={0.03}
+          distortionScale={0.1}
+          color="#FFFFFF"
+          attenuationColor="#FFFFFF"
+          attenuationDistance={8}
           transparent
-          opacity={opacity}
         />
       </mesh>
     </group>
