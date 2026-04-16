@@ -76,20 +76,13 @@ async fn resolve_or_rebuild_mapping(
             Some(rebuilt)
         }
         Ok(None) => {
-            // Settlement contract does not know about this order. Two causes:
-            //   1. L3-direct order — user called Index.submitOrder on L3 without
-            //      going through Settlement. The L3 Index contract already mints
-            //      shares natively in fillOrder; no Settlement-side mint needed.
-            //   2. Order was already completed/refunded and removed from
-            //      Settlement's order map.
-            // Either way, there is nothing the bridge pipeline can do. Mark the
-            // order SharesBridged so the scan stops re-drawing it every cycle
-            // and the orchestrator doesn't spam "No order mapping found" forever.
-            warn!(
-                order_id = %settlement_id,
-                "Settlement has no record of this cross-chain order — marking complete (L3-direct or already settled)"
-            );
-            orchestrator.write().await.mark_orders_shares_bridged(&[settlement_id]).await;
+            // Settlement does not know this order — either L3-direct (user
+            // called Index.submitOrder on L3 without going through the bridge;
+            // Index.fillOrder will mint shares natively) or already completed
+            // and removed from Settlement's map. Either way, no bridge-side
+            // mint is possible. Return None; the caller skips mint for this
+            // order while the batch/fills pipeline keeps running normally.
+            debug!(order_id = %settlement_id, "Settlement has no record of this cross-chain order — skipping bridge mint (L3-direct or already settled)");
             None
         }
         Err(e) => {
@@ -808,30 +801,6 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
         submitted_orders = keep;
     }
 
-    // Filter out orders the orchestrator has already terminalized. Without this,
-    // the scan loop keeps redrawing L3-native orders that resolve_or_rebuild_mapping
-    // already marked SharesBridged — they stay pending on L3 forever (fills
-    // consensus is this oracle's responsibility), so the on-chain filter above
-    // can't drop them. Terminal orchestrator status is our own signal that the
-    // bridge pipeline has nothing left to do with the order.
-    {
-        use oracle::BridgeOrderStatus;
-        let pre = submitted_orders.len();
-        let mut keep = Vec::new();
-        let orch = orchestrator.read().await;
-        for oid in &submitted_orders {
-            match orch.get_order_status(oid).await {
-                Some(BridgeOrderStatus::SharesBridged) => { /* drop — bridge done or L3-direct */ }
-                Some(BridgeOrderStatus::Failed) => { /* drop — terminal failure */ }
-                _ => keep.push(*oid),
-            }
-        }
-        drop(orch);
-        if keep.len() < pre {
-            info!(before = pre, after = keep.len(), "Filtered orchestrator-terminal orders");
-        }
-        submitted_orders = keep;
-    }
 
     if submitted_orders.is_empty() {
         debug!("No L3 orders to process");
@@ -1207,7 +1176,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
                                 } else {
-                                    warn!(order_id = %fill.order_id, "No order mapping found — cannot bridge shares");
+                                    debug!(order_id = %fill.order_id, "No order mapping — skipping bridge mint (L3-direct order: shares minted natively by Index.fillOrder)");
                                 }
                             }
                         }
@@ -1409,7 +1378,7 @@ pub(crate) async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (post-fills path)"),
                                         }
                                     } else {
-                                        warn!(order_id = %fill.order_id, "No order mapping found (post-fills path)");
+                                        debug!(order_id = %fill.order_id, "No order mapping — skipping bridge mint post-fills (L3-direct order)");
                                     }
                                 }
                             }
