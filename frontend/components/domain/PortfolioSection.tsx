@@ -253,6 +253,16 @@ export function PortfolioSection({ expanded, onToggle, deployedItps, hideVaults 
 
   // Merge pending Settlement orders from localStorage (not yet relayed to L3)
   const orders = useMemo(() => {
+    // Dedupe SSE orders by orderId — the backend occasionally emits the same
+    // order twice across reconnects or polling races
+    const seenIds = new Set<number>()
+    const dedupedSse: ActiveOrder[] = []
+    for (const o of sseActiveOrders) {
+      if (seenIds.has(o.orderId)) continue
+      seenIds.add(o.orderId)
+      dedupedSse.push(o)
+    }
+
     try {
       const stored: any[] = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
       const oneHourAgo = Date.now() - 3_600_000
@@ -260,7 +270,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps, hideVaults 
       // Match on itpId (case-insensitive) + side + similar amount (handles hex casing differences)
       const pending = stored
         .filter(o => o.timestamp > oneHourAgo)
-        .filter(o => !sseActiveOrders.some(
+        .filter(o => !dedupedSse.some(
           s => s.itpId.toLowerCase() === (o.itpId || '').toLowerCase()
             && s.side === o.side
         ))
@@ -280,9 +290,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps, hideVaults 
           stored.filter(o => o.timestamp > oneHourAgo)
         ))
       }
-      return [...sseActiveOrders, ...pending]
+      return [...dedupedSse, ...pending]
     } catch {
-      return sseActiveOrders
+      return dedupedSse
     }
   }, [sseActiveOrders, address])
 
@@ -733,9 +743,20 @@ function PositionsTab({ summary, itpNameMap, onBuy, onSell }: { summary: ReturnT
 // --- Trades Tab ---
 function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfolio>['trades']; itpNameMap: Map<string, string> }) {
   const t = useTranslations('portfolio')
+  const locale = useLocale()
   const [page, setPage] = useState(1)
-  // Only show completed fills, pending orders belong in the Orders tab
-  const filledTrades = trades.filter(trade => trade.status === 'filled')
+  // Only show completed fills; dedupe by order_id in case upstream yields repeats
+  const filledTrades = useMemo(() => {
+    const seen = new Set<number>()
+    const out: typeof trades = []
+    for (const trade of trades) {
+      if (trade.status !== 'filled') continue
+      if (seen.has(trade.order_id)) continue
+      seen.add(trade.order_id)
+      out.push(trade)
+    }
+    return out
+  }, [trades])
   const totalPages = Math.max(1, Math.ceil(filledTrades.length / PAGE_SIZE))
   const clampedPage = Math.min(page, totalPages)
   if (filledTrades.length === 0) {
@@ -772,7 +793,12 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
             </tr>
           </thead>
           <tbody>
-            {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((trade, idx) => (
+            {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((trade, idx) => {
+              const parsed = new Date(trade.timestamp)
+              const parsedValid = !Number.isNaN(parsed.getTime())
+              const absolute = parsedValid ? parsed.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : trade.timestamp
+              const relative = parsedValid ? getTimeAgo(parsed) : '\u2014'
+              return (
               <motion.tr
                 key={trade.order_id}
                 initial={{ opacity: 0 }}
@@ -780,13 +806,14 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
                 transition={{ duration: 0.35, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
                 className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
               >
-                <td className="px-4 py-3 text-text-secondary text-xs">
-                  {getTimeAgo(new Date(trade.timestamp))}
+                <td className="px-4 py-3 text-text-secondary text-xs" title={absolute}>
+                  {relative}
                 </td>
                 <td className="px-4 py-3 text-text-primary text-sm font-semibold">
                   {itpNameMap.get(trade.itp_id.toLowerCase())
                     || (() => { try { return itpNameMap.get(BigInt(trade.itp_id).toString()) } catch { return null } })()
                     || trade.itp_id.slice(0, 10) + '...'}
+                  <span className="ml-2 text-text-muted font-mono text-[10px] tabular-nums">#{trade.order_id}</span>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${trade.side === 'BUY' ? 'text-color-up' : 'text-color-down'}`}>
@@ -812,7 +839,8 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
                   </span>
                 </td>
               </motion.tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -830,6 +858,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
 function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoading: boolean; error: string | null }) {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
@@ -924,9 +953,18 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
             </tr>
           </thead>
           <tbody>
-            {openOrders.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((order, i) => (
+            {openOrders.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((order, i) => {
+              const parsed = new Date(order.timestamp * 1000)
+              const parsedValid = !Number.isNaN(parsed.getTime())
+              const absolute = parsedValid ? parsed.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : '\u2014'
+              const relative = parsedValid ? getTimeAgo(parsed) : '\u2014'
+              // Pending local orders share orderId=0, disambiguate with itpId+timestamp
+              const rowKey = order.orderId > 0
+                ? `sse-${order.orderId}`
+                : `pending-${order.itpId.toLowerCase()}-${order.side}-${order.timestamp}`
+              return (
               <motion.tr
-                key={`${order.orderId}-${order.timestamp}-${i}`}
+                key={rowKey}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.35, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
@@ -949,8 +987,8 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                     {STATUS_LABELS[order.status] || 'Relaying'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right text-text-muted text-xs tabular-nums font-mono">
-                  {getTimeAgo(new Date(order.timestamp * 1000))}
+                <td className="px-4 py-3 text-right text-text-muted text-xs tabular-nums font-mono" title={absolute}>
+                  {relative}
                 </td>
                 <td className="px-4 py-3 text-right">
                   {order.status === 0 && order.orderId > 0 && (
@@ -969,7 +1007,8 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                   )}
                 </td>
               </motion.tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
