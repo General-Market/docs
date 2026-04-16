@@ -8,8 +8,7 @@ import { INDEX_PROTOCOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'
 import { ERC20_ABI, INDEX_ABI, SETTLEMENT_CUSTODY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { TransactionStepper } from '@/components/ui/TransactionStepper'
-import type { MicroStep, VisibleStep } from '@/components/ui/TransactionStepper'
+import { PipelineRing, type PipelineRingPhase } from '@/components/ui/PipelineRing'
 import { getTxUrl } from '@/lib/utils/explorer'
 import { useUserState } from '@/hooks/useUserState'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
@@ -71,20 +70,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const { address, isConnected, chainId: currentChainId } = useAccount()
   const settlementPublicClient = usePublicClient({ chainId: settlementChainId })
   const { showSuccess } = useToast()
-
-  const VISIBLE_STEPS: VisibleStep[] = [
-    { label: t('steps.submit') },
-    { label: t('steps.process') },
-  ]
-
-  const MICRO_LABELS: Record<number, string | ((ctx: { isPending: boolean }) => string)> = {
-    [BuyMicro.APPROVE]: (ctx) => ctx.isPending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
-    [BuyMicro.SUBMIT]: (ctx) => ctx.isPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
-    [BuyMicro.RELAY]: () => 'Oracle relaying to L3...',
-    [BuyMicro.BATCH]: () => t('micro_steps.batch'),
-    [BuyMicro.FILL]: () => t('micro_steps.fill'),
-    [BuyMicro.DONE]: () => t('micro_steps.shares_received'),
-  }
 
   const SLIPPAGE_TIERS = [
     { value: 0, label: '0.3%', description: t('slippage_tight') },
@@ -609,7 +594,6 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   const formattedBalance = usdcBalance > 0n ? formatUnits(usdcBalance, SETTLEMENT_USDC_DECIMALS) : '0'
   const isProcessing = isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming
-  const isPending = isApprovePending || isBuyPending
   const isDone = micro === BuyMicro.DONE
 
   const buttonText = isApprovePending
@@ -624,75 +608,51 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     ? t('button.approve_and_buy')
     : t('button.buy_itp')
 
-  // --- Stepper data ---
+  // --- Pipeline ring data ---
 
-  const microSteps = useMemo((): MicroStep[] => {
-    const getLabel = (m: number): string => {
-      const desc = MICRO_LABELS[m]
-      if (!desc) return ''
-      return typeof desc === 'function' ? desc({ isPending }) : desc
+  const RING_PHASES: PipelineRingPhase[] = [
+    { key: 'submit', label: t('phases.submit_short') },
+    { key: 'relay', label: t('phases.relay_short') },
+    { key: 'batch', label: t('phases.batch_short') },
+    { key: 'fill', label: t('phases.fill_short') },
+  ]
+
+  const ringState = useMemo(() => {
+    if (isDone) {
+      return { phase: RING_PHASES.length, progress: 1, keepers: 3, top: t('phases.done') }
     }
-
-    const steps: MicroStep[] = []
-
-    if (!skippedApproval) {
-      steps.push({
-        label: getLabel(BuyMicro.APPROVE),
-        txHash: savedApproveHash ?? undefined,
-        explorerUrl: savedApproveHash ? getTxUrl(savedApproveHash, 'settlement') : undefined,
-        chain: 'settlement',
-      })
+    switch (micro) {
+      case BuyMicro.APPROVE:
+        return {
+          phase: 0,
+          progress: 0.3,
+          keepers: 0,
+          top: isApprovePending ? t('micro_steps.approve_pending') : t('micro_steps.approve_confirming'),
+        }
+      case BuyMicro.SUBMIT:
+        return {
+          phase: 0,
+          progress: 0.75,
+          keepers: 0,
+          top: isBuyPending ? t('micro_steps.submit_pending') : t('micro_steps.submit_confirming'),
+        }
+      case BuyMicro.RELAY:
+        return { phase: 1, progress: 0.5, keepers: 1, top: t('phases.relay') }
+      case BuyMicro.BATCH:
+        return { phase: 2, progress: 0.5, keepers: 2, top: t('phases.batch') }
+      case BuyMicro.FILL:
+        return { phase: 3, progress: 0.5, keepers: 3, top: t('phases.fill') }
+      default:
+        return { phase: 0, progress: 0, keepers: 0, top: '' }
     }
+  }, [micro, isDone, isApprovePending, isBuyPending, t])
 
-    steps.push({
-      label: getLabel(BuyMicro.SUBMIT),
-      txHash: savedBuyHash ?? undefined,
-      explorerUrl: savedBuyHash ? getTxUrl(savedBuyHash, 'settlement') : undefined,
-      chain: 'settlement',
-    })
-
-    steps.push({
-      label: getLabel(BuyMicro.RELAY),
-      chain: 'l3',
-    })
-
-    steps.push({
-      label: getLabel(BuyMicro.BATCH),
-      txHash: batchTxHash ?? undefined,
-      explorerUrl: batchTxHash ? getTxUrl(batchTxHash, 'l3') : undefined,
-      chain: 'l3',
-    })
-
-    steps.push({
-      label: getLabel(BuyMicro.FILL),
-      txHash: fillTxHash ?? undefined,
-      explorerUrl: fillTxHash ? getTxUrl(fillTxHash, 'l3') : undefined,
-      chain: 'l3',
-    })
-
-    return steps
-  }, [isPending, skippedApproval, savedApproveHash, savedBuyHash, batchTxHash, fillTxHash])
-
-  const stepperMicroIndex = useMemo(() => {
-    if (isDone) return microSteps.length
-    if (micro < 0) return 0
-    const offset = skippedApproval ? -1 : 0
-    return Math.max(0, micro + offset)
-  }, [micro, skippedApproval, isDone, microSteps.length])
-
-  const adjustedRanges = useMemo((): [number, number][] => {
-    if (skippedApproval) {
-      // 4 items: submit(0), relay(1), batch(2), fill(3)
-      return [
-        [0, 1],    // Submit on Settlement: submit(0)
-        [1, 4],    // Processing: relay(1), batch(2), fill(3)
-      ]
-    }
-    return [
-      [0, 2],    // Submit on Settlement: approve(0), submit(1)
-      [2, 5],    // Processing: relay(2), batch(3), fill(4)
-    ]
-  }, [skippedApproval])
+  const ringSubLabel = useMemo(() => {
+    if (!isDone || !fillPrice || !fillAmount || fillPrice === 0n) return undefined
+    const shares = parseFloat(formatUnits((fillAmount * BigInt(1e18)) / fillPrice, 18))
+    const symbol = itpSymbol || 'shares'
+    return `${shares.toFixed(4)} ${symbol}`
+  }, [isDone, fillPrice, fillAmount, itpSymbol])
 
   const txRefs = useMemo(() => {
     const refs: { label: string; value: string }[] = []
@@ -769,14 +729,50 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             </div>
           ) : micro >= 0 ? (
             <div className="space-y-4">
-              <TransactionStepper
-                visibleSteps={VISIBLE_STEPS}
-                microSteps={microSteps}
-                currentMicroStep={stepperMicroIndex}
-                isDone={isDone}
-                stepRanges={adjustedRanges}
-                txRefs={txRefs}
-              />
+              <div className={`${glass.section} px-4 pt-4 pb-2`}>
+                <PipelineRing
+                  phases={RING_PHASES}
+                  currentPhase={ringState.phase}
+                  phaseProgress={ringState.progress}
+                  startedAt={buyStartTime.current > 0 ? buyStartTime.current : undefined}
+                  typicalMs={60_000}
+                  done={isDone}
+                  keepersLit={ringState.keepers}
+                  topLabel={ringState.top}
+                  subLabel={ringSubLabel}
+                />
+                {(savedApproveHash || savedBuyHash || batchTxHash || fillTxHash || txRefs.length > 0) && (
+                  <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-1 text-[10px] font-mono text-text-muted pt-2 border-t border-black/5">
+                    {savedApproveHash && (
+                      <a href={getTxUrl(savedApproveHash, 'settlement')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        approve {savedApproveHash.slice(0, 6)}..{savedApproveHash.slice(-4)}
+                      </a>
+                    )}
+                    {savedBuyHash && (
+                      <a href={getTxUrl(savedBuyHash, 'settlement')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        submit {savedBuyHash.slice(0, 6)}..{savedBuyHash.slice(-4)}
+                      </a>
+                    )}
+                    {batchTxHash && (
+                      <a href={getTxUrl(batchTxHash, 'l3')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        batch {batchTxHash.slice(0, 6)}..{batchTxHash.slice(-4)}
+                      </a>
+                    )}
+                    {fillTxHash && (
+                      <a href={getTxUrl(fillTxHash, 'l3')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-text-primary transition-colors">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        fill {fillTxHash.slice(0, 6)}..{fillTxHash.slice(-4)}
+                      </a>
+                    )}
+                    {txRefs.map((r, i) => (
+                      <span key={i} className="whitespace-nowrap">{r.label} {r.value}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
               {processStalled && micro >= BuyMicro.RELAY && micro < BuyMicro.DONE && (
                 <div className={`${glass.section} p-4 text-sm`}>
                   <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>

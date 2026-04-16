@@ -50,6 +50,18 @@
     "mint_shares": "Minting BridgedITP...",
     "shares_received": "Shares received!"
   },
+  "phases": {
+    "signing": "Waiting for wallet signature",
+    "submit": "Submitting on Settlement",
+    "submit_short": "Submit",
+    "relay": "Oracle relaying to L3",
+    "relay_short": "Relay",
+    "batch": "Batch forming on L3",
+    "batch_short": "Batch",
+    "fill": "Keepers filling the order",
+    "fill_short": "Fill",
+    "done": "Shares landed"
+  },
   "fill_details": {
     "title": "Fill Details",
     "fill_price": "Fill Price",
@@ -63,7 +75,7 @@
   },
   "stall": {
     "title": "Order submitted on Settlement",
-    "description": "Your order is being relayed to L3 for processing. This can take a few minutes. You can safely close this dialog — your order will continue processing and appear in your portfolio."
+    "description": "Your order is being relayed to L3 for processing. This can take a few minutes. You can safely close this dialog, your order will continue processing and appear in your portfolio."
   },
   "error": {
     "title": "Error"

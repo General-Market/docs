@@ -26,7 +26,11 @@ export function middleware(request: NextRequest) {
       url.pathname = `/${matchedLocale}${cleanPath}`
       return NextResponse.redirect(url)
     }
-    return NextResponse.next()
+    // Forward the locale to the root layout via a request header, so
+    // getRequestConfig can resolve it before [locale]/layout runs setRequestLocale.
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-locale', matchedLocale)
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
   // Detect locale from cookie
@@ -50,7 +54,9 @@ export function middleware(request: NextRequest) {
   // Rewrite to /[locale]/path
   const url = request.nextUrl.clone()
   url.pathname = `/${locale}${pathname}`
-  const response = NextResponse.rewrite(url)
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-locale', locale)
+  const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
 
   // Prevent Vercel CDN from caching locale-dependent rewrites —
   // without this, the first visitor's locale gets served to everyone.
