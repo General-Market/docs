@@ -57,6 +57,7 @@ import { worldcoinMeta } from "./compositions/replicates/worldcoin/WorldcoinComp
 import { worldcoinSideBySideMeta } from "./compositions/replicates/worldcoin/WorldcoinSideBySide";
 import { riddMeta } from "./compositions/replicates/ridd/RiddComposition";
 import { riddSideBySideMeta } from "./compositions/replicates/ridd/RiddSideBySide";
+import { wabiMeta } from "./compositions/replicates/wabi/WabiComposition";
 import { TutorialVideo } from "./compositions/tutorial/TutorialVideo";
 import {
   TOTAL_FRAMES as TUTORIAL_DURATION,
@@ -210,6 +211,16 @@ export const RemotionRoot: React.FC = () => {
 
       {/* ═══ REPLICATE ═══ */}
       <Folder name="Replicate">
+        {/* --- Wabi --- */}
+        <Composition
+          id={wabiMeta.id}
+          component={wabiMeta.component}
+          durationInFrames={wabiMeta.durationInFrames}
+          fps={wabiMeta.fps}
+          width={wabiMeta.width}
+          height={wabiMeta.height}
+        />
+
         {/* --- Ember --- */}
         <Composition
           id={emberMeta.id}
