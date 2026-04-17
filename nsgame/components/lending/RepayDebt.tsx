@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt } from '@/lib/wallet-shim'
 import { parseUnits, formatUnits } from 'viem'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'

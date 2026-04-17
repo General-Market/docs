@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { getBackendUrl } from '@/lib/contracts/addresses'
 import { formatUsdcAmount, toBaseUnits } from '@/lib/utils/formatters'
 import type { BetRecord, BetStatus } from '@/hooks/useBetHistory'

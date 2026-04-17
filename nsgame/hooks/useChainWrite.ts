@@ -10,7 +10,7 @@ import {
   type UseWriteContractReturnType,
   type UseSendTransactionParameters,
   type UseSendTransactionReturnType,
-} from 'wagmi'
+} from '@/lib/wallet-shim'
 import { activeChainId, indexL3 } from '@/lib/wagmi'
 
 /**

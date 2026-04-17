@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useSwitchChain } from '@/lib/wallet-shim'
 import { useChainWriteContract, ensureCorrectChain } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_VAULT_FACTORY_ABI } from '@/lib/contracts/vault-abi'

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useConnect } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 
 interface WalletActionButtonProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useReadContracts, useAccount } from 'wagmi'
+import { useReadContracts, useAccount } from '@/lib/wallet-shim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'

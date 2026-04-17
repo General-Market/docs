@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { SimFilterPanel, SimFilterState } from './SimFilterPanel'
 import { SimProgressBar } from './SimProgressBar'
 import { SimStatsGrid } from './SimStatsGrid'

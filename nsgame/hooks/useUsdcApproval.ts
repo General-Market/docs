@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt } from '@/lib/wallet-shim'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useSSEAllowances } from './useSSE'
 import { erc20Abi } from '@/lib/contracts/abi'

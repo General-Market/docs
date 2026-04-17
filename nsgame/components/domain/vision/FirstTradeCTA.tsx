@@ -1,7 +1,7 @@
 'use client'
 
 import { Link } from '@/i18n/routing'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 
 /**

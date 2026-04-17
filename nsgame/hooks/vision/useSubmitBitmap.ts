@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 

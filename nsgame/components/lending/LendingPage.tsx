@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useTranslations } from 'next-intl'
 import { formatUnits } from 'viem'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
 import { useQuery } from '@tanstack/react-query'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useRounds, type RoundInfo } from '@/hooks/vision/useRounds'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useTranslations } from 'next-intl'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useSSEPositionForMarket, useSSEOracle, useSSEMorphoMarkets } from './useSSE'
 import { fetchMorphoPosition, type MorphoPosition } from '@/lib/api/backend'
 import {

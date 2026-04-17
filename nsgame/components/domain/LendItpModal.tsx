@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { DepositCollateral } from '@/components/lending/DepositCollateral'

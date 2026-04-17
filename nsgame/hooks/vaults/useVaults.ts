@@ -1,6 +1,6 @@
 'use client'
 
-import { useReadContract, useReadContracts } from 'wagmi'
+import { useReadContract, useReadContracts } from '@/lib/wallet-shim'
 import { formatUnits } from 'viem'
 import { VISION_VAULT_ABI, VISION_VAULT_FACTORY_ABI } from '@/lib/contracts/vault-abi'
 import { useDeployment } from '@/hooks/useDeployment'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { usePublicClient } from 'wagmi'
+import { usePublicClient } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatUnits } from 'viem'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { Link } from '@/i18n/routing'
 import fundData from '@/data/fund-branding.json'
 import {

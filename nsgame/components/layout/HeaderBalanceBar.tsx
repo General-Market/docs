@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from '@/lib/wallet-shim'
 import { formatUnits } from 'viem'
 import { indexL3, settlementChain } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'

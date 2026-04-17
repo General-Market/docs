@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { formatUnits } from 'viem'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { DepositCollateral } from '@/components/lending/DepositCollateral'

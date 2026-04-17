@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useMarketRegistry, type MarketInfo } from '@/hooks/vision/useMarketRegistry'
 import { useCreateBatch } from '@/hooks/vision/useCreateBatch'

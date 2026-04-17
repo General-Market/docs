@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { useBalance } from 'wagmi'
+import { useBalance } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 import { formatEther, formatUnits } from 'viem'
 import { INDEX_PROTOCOL, COLLATERAL_TOKEN_ADDRESS, COLLATERAL_SYMBOL, COLLATERAL_DECIMALS } from '@/lib/contracts/addresses'

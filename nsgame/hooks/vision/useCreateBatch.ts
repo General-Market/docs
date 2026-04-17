@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { useWaitForTransactionReceipt } from 'wagmi'
+import { useWaitForTransactionReceipt } from '@/lib/wallet-shim'
 import { keccak256, toHex, decodeEventLog } from 'viem'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { indexL3 } from '@/lib/wagmi'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt } from '@/lib/wallet-shim'
 import { useChainSendTransaction } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { fetchUserState, type UserState } from '@/lib/api/backend'
 
 interface UseUserStateReturn {

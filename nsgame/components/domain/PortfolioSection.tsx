@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { SpringTabs, SpringTab, SpringCard, SpringNumber } from '@/components/ui/spring'
 import { motion } from 'framer-motion'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from '@/lib/wallet-shim'
 import { useSSEOrders, useSSEBalances, useSSENav } from '@/hooks/useSSE'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
 import { indexL3 } from '@/lib/wagmi'

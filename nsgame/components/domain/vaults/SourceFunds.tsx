@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
-import { useReadContracts } from 'wagmi'
+import { useReadContracts } from '@/lib/wallet-shim'
 import { Link } from '@/i18n/routing'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'

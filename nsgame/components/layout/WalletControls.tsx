@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
-import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi'
+import { useDisconnect, useModal } from '@phantom/react-sdk'
 import { truncateAddress } from '@/lib/utils/address'
-import { indexL3 } from '@/lib/wagmi'
+import { useWallet } from '@/hooks/useWallet'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { HeaderBalanceBar } from './HeaderBalanceBar'
 import { usePoints } from '@/hooks/usePoints'
@@ -25,59 +25,26 @@ export function WalletControls({ isDark }: WalletControlsProps) {
   const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
 
-  const { address, isConnected } = useAccount()
-  const authenticated = isConnected
-  const { connect, connectors } = useConnect()
+  const { address, connected, cluster } = useWallet()
+  const { open } = useModal()
   const { disconnect } = useDisconnect()
-  const injectedConnector = connectors.find(c => c.type === 'injected') || connectors[0]
-  const chainId = useChainId()
-  const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const isWrongNetwork = isConnected && chainId !== indexL3.id
+  const authenticated = connected
 
-  const { points } = usePoints(address)
+  const { points } = usePoints(address ?? undefined)
 
   useEffect(() => { setMounted(true) }, [])
-
-  // Auto-switch to L3 on first connect only
-  const hasAutoSwitched = useRef(false)
-  useEffect(() => {
-    if (isConnected && !hasAutoSwitched.current) {
-      hasAutoSwitched.current = true
-      if (isWrongNetwork && !isSwitching) {
-        switchChain({ chainId: indexL3.id })
-      }
-    }
-    if (!isConnected) hasAutoSwitched.current = false
-  }, [isConnected, isWrongNetwork, isSwitching, switchChain])
 
   const { capture, identify, reset: resetPostHog } = usePostHogTracker()
   useEffect(() => {
     if (authenticated && address) {
-      identify(address, { login_method: 'injected', chain_id: chainId })
-      capture('wallet_connected', { wallet_address: address, chain_id: chainId })
+      identify(address, { login_method: 'phantom', cluster })
+      capture('wallet_connected', { wallet_address: address, cluster })
     }
-  }, [authenticated, address])
+  }, [authenticated, address, cluster, identify, capture])
 
-  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-  const hasInjectedProvider = typeof window !== 'undefined' && !!window.ethereum
-
-  // Connect first. The injected connector's switchChain handles
-  // wallet_addEthereumChain via the 4902 fallback after the wallet is
-  // authorized. Chaining add/switch/connect across three app context
-  // switches on mobile strands the promise chain.
   const handleLogin = () => {
-    capture('login_clicked', { source: 'header', mobile: isMobile, has_provider: hasInjectedProvider })
-
-    // Mobile browser without injected provider → deep-link to MetaMask app
-    if (isMobile && !hasInjectedProvider) {
-      const dappUrl = `${window.location.host}${window.location.pathname}`
-      window.location.href = `https://metamask.app.link/dapp/${dappUrl}`
-      return
-    }
-
-    if (injectedConnector) {
-      connect({ connector: injectedConnector, chainId: indexL3.id })
-    }
+    capture('login_clicked', { source: 'header' })
+    open()
   }
 
   const handleLogout = () => {
@@ -99,7 +66,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
           exit={EXIT}
           transition={spring}
         >
-          {/* Points, only when connected */}
           <Link
             href="/points"
             className={`hidden sm:inline text-label font-bold font-mono transition-colors ${
@@ -109,11 +75,8 @@ export function WalletControls({ isDark }: WalletControlsProps) {
             {points.total >= 1000 ? `${(points.total / 1000).toFixed(1)}K` : Math.floor(points.total).toLocaleString()} pts
           </Link>
 
-          {/* Context-aware balance — Vision on /, /source; ITP on /index; both on /profile */}
           <HeaderBalanceBar isDark={isDark} />
 
-          {/* Wallet address button. Logout icon is always visible so touch
-             users see the intent without a hover state. */}
           <button
             onClick={handleLogout}
             aria-label={t('actions.disconnect')}
@@ -130,24 +93,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
             </svg>
           </button>
         </motion.div>
-      ) : mounted && isWrongNetwork ? (
-        <motion.button
-          key="wrong-network"
-          onClick={() => switchChain({ chainId: indexL3.id })}
-          disabled={isSwitching}
-          initial={reduced ? false : ENTER}
-          animate={VISIBLE}
-          exit={EXIT}
-          transition={spring}
-          className={`inline-flex items-center gap-1.5 px-3 h-11 text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-50 fluid-press ${
-            isDark
-              ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
-              : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-          }`}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
-        </motion.button>
       ) : (
         <motion.div
           key="disconnected"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { DATA_NODE_URL } from '@/lib/config'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 

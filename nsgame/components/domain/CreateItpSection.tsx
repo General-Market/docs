@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useSwitchChain, useWriteContract, usePublicClient } from '@/lib/wallet-shim'
 import { motion, useReducedMotion } from 'framer-motion'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'

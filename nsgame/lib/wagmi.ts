@@ -124,8 +124,8 @@ import {
   useReadContract as _useReadContract,
   useReadContracts as _useReadContracts,
   useBalance as _useBalance,
-} from 'wagmi'
-import type { UsePublicClientParameters, UseReadContractParameters, UseBalanceParameters } from 'wagmi'
+} from '@/lib/wallet-shim'
+import type { UsePublicClientParameters, UseReadContractParameters, UseBalanceParameters } from '@/lib/wallet-shim'
 
 /** usePublicClient defaulting to L3 */
 export function useL3PublicClient(params?: UsePublicClientParameters) {

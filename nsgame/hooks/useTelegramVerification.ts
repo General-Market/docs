@@ -8,7 +8,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useAccount, useSignMessage } from 'wagmi'
+import { useAccount, useSignMessage } from '@/lib/wallet-shim'
 
 import { BACKEND_URL } from '@/lib/contracts/addresses'
 

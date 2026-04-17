@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useTranslations } from 'next-intl'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { SpringCard } from '@/components/ui/spring'

@@ -1,126 +1,13 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { type Chain } from 'wagmi/chains'
-import { indexL3, settlementChain } from '@/lib/wagmi'
-
-/**
- * Global chain enforcer, blocks all UI and forces wallet to switch
- * to Index L3 whenever connected on the wrong chain.
- *
- * Vision pages allow Settlement as an additional chain because cross-chain
- * deposits require the wallet to be on Settlement.
- */
+// ChainGuard was the EVM-era network enforcer — it blocked the UI when the
+// wallet sat on the wrong chain and called wallet_addEthereumChain to push
+// the L3 config into MetaMask. Solana has no such ceremony: the wallet is
+// pinned to a cluster at connect time, and we override RPC client-side.
+//
+// Kept as a no-op pass-through so the provider tree doesn't shift during the
+// migration. Cluster validation, if ever needed, happens in useWallet /
+// cluster.ts. Delete this file once the name no longer appears in imports.
 export function ChainGuard({ children }: { children: React.ReactNode }) {
-  const { isConnected } = useAccount()
-  const chainId = useChainId()
-  const { switchChain, isPending: isSwitching } = useSwitchChain()
-  const pathname = usePathname()
-
-  // Both Vision deposits and ITP creation (via Settlement BridgeProxy) require Settlement.
-  // Allow Settlement on all pages to avoid ChainGuard racing against legitimate cross-chain txs.
-  const allowedChainIds = [indexL3.id, settlementChain.id]
-  const isWrongChain = isConnected && !allowedChainIds.includes(chainId)
-
-  // Resolve relative RPC paths (e.g. "/rpc") to absolute URLs for wallet_addEthereumChain.
-  // Wallets need a full URL, relative paths are invalid.
-  const resolveRpcUrl = useCallback((url: string) => {
-    if (typeof window === 'undefined') return url
-    if (url.startsWith('/')) return `${window.location.origin}${url}`
-    return url
-  }, [])
-
-  const forceSwitch = useCallback(async () => {
-    // First, try low-level wallet RPC to add + switch chain
-    // This works even if wagmi's switchChain has issues
-    if (typeof window !== 'undefined' && window.ethereum) {
-      const chainIdHex = `0x${indexL3.id.toString(16)}`
-      try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: chainIdHex,
-            chainName: indexL3.name,
-            nativeCurrency: indexL3.nativeCurrency,
-            rpcUrls: [resolveRpcUrl(indexL3.rpcUrls.default.http[0])],
-          }],
-        })
-      } catch {
-        // Chain may already exist
-      }
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: chainIdHex }],
-        })
-      } catch {
-        // User rejected, will retry on next click
-      }
-    }
-    // Also trigger wagmi's switch to keep state in sync
-    switchChain({ chainId: indexL3.id })
-  }, [switchChain, resolveRpcUrl])
-
-  // On every connection, push the correct RPC URLs to the wallet.
-  // wallet_addEthereumChain updates the RPC if the chain already exists (EIP-3085),
-  // preventing stale localhost:8545 config from a previous env.
-  useEffect(() => {
-    if (!isConnected || typeof window === 'undefined' || !window.ethereum) return
-    const pushChain = async (chain: Chain) => {
-      try {
-        await window.ethereum!.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: `0x${chain.id.toString(16)}`,
-            chainName: chain.name,
-            nativeCurrency: chain.nativeCurrency,
-            rpcUrls: [resolveRpcUrl(chain.rpcUrls.default.http[0])],
-            ...(chain.blockExplorers?.default ? {
-              blockExplorerUrls: [chain.blockExplorers.default.url],
-            } : {}),
-          }],
-        })
-      } catch { /* chain may reject if already configured identically */ }
-    }
-    pushChain(indexL3)
-    pushChain(settlementChain)
-  }, [isConnected, resolveRpcUrl])
-
-  // Auto-attempt switch on wrong chain detection
-  useEffect(() => {
-    if (isWrongChain && !isSwitching) {
-      forceSwitch()
-    }
-  }, [isWrongChain, isSwitching, forceSwitch])
-
-  if (!isWrongChain) {
-    return <>{children}</>
-  }
-
-  // Blocking overlay, nothing is clickable until chain is correct
-  return (
-    <>
-      {children}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-overlay">
-        <div className="border border-border-light bg-card rounded-xl shadow-modal p-8 max-w-md text-center">
-          <div className="text-color-warning text-xl font-semibold mb-4">Wrong Network</div>
-          <p className="text-text-secondary text-sm mb-2">
-            Your wallet is connected to chain {chainId}.
-          </p>
-          <p className="text-text-secondary text-sm mb-6">
-            Please switch to Index L3 (chain {indexL3.id}).
-          </p>
-          <button
-            onClick={forceSwitch}
-            disabled={isSwitching}
-            className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
-          >
-            {isSwitching ? 'Switching...' : 'Switch Network'}
-          </button>
-        </div>
-      </div>
-    </>
-  )
+  return <>{children}</>
 }

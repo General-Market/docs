@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useAccount, useSwitchChain, usePublicClient } from 'wagmi'
+import { useAccount, useSwitchChain, usePublicClient } from '@/lib/wallet-shim'
 import { useChainWriteContract, ensureCorrectChain } from '@/hooks/useChainWrite'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/explorer'

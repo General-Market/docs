@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useReadContracts } from 'wagmi'
+import { useReadContracts } from '@/lib/wallet-shim'
 import { formatUnits } from 'viem'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { useVaults, VaultInfo } from '@/hooks/vaults/useVaults'

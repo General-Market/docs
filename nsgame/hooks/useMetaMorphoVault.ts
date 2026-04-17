@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { METAMORPHO_VAULT_ABI } from '@/lib/contracts/morpho-abi'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useAccount, useSwitchChain, useWriteContract } from 'wagmi'
+import { useAccount, useSwitchChain, useWriteContract } from '@/lib/wallet-shim'
 import { encodeFunctionData, decodeFunctionResult } from 'viem'
 import { INDEX_ABI, BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'

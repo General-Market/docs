@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useBetHistory, BetRecord } from '@/hooks/useBetHistory'
 import { BetDetailsExpanded } from '@/components/domain/BetDetailsExpanded'
 import { StatusBadge } from '@/components/ui/StatusBadge'

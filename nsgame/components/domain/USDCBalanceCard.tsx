@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useUsdcBalance } from '@/hooks/useUsdcBalance'
 import { useEscrowedAmount } from '@/hooks/useEscrowedAmount'
 import { getAddressUrl } from '@/lib/utils/explorer'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt, useReadContract } from '@/lib/wallet-shim'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { useEffect, useRef } from 'react'

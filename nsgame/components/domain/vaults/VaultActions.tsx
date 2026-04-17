@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatUnits, parseUnits } from 'viem'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from '@/lib/wallet-shim'
 import { Link } from '@/i18n/routing'
 import { cn } from '@/lib/utils/cn'
 import { useVaultDeposit } from '@/hooks/vaults/useVaultDeposit'

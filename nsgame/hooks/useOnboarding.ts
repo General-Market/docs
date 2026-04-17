@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useCallback, useEffect, useState } from 'react'
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useConnect } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'
 

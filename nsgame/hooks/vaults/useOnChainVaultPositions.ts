@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
-import { useReadContracts } from 'wagmi'
+import { useReadContracts } from '@/lib/wallet-shim'
 import { VISION_VAULT_ABI } from '@/lib/contracts/vault-abi'
 import { indexL3 } from '@/lib/wagmi'
 import fundData from '@/data/fund-branding.json'

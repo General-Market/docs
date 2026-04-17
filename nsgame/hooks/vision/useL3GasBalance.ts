@@ -1,6 +1,6 @@
 'use client'
 
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 import { LOW_GAS_THRESHOLD } from '@/lib/vision/constants'
 

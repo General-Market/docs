@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import fundData from '@/data/fund-branding.json'
 import { useSSEVisionVaults, type VisionVaultSSE } from '@/hooks/useSSE'
 import { useOnChainVaultPositions } from '@/hooks/vaults/useOnChainVaultPositions'

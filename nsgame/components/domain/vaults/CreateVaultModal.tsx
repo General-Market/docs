@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { parseUnits } from 'viem'
 import { useCreateVault } from '@/hooks/vaults/useCreateVault'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'

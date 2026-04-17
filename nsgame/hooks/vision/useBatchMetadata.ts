@@ -1,6 +1,6 @@
 'use client'
 
-import { useReadContract } from 'wagmi'
+import { useReadContract } from '@/lib/wallet-shim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDeployment } from '@/hooks/useDeployment'

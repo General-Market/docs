@@ -1,13 +1,14 @@
 'use client'
 
-import { WagmiProvider } from 'wagmi'
-import { useAccount } from 'wagmi'
+import { WagmiProvider } from '@/lib/wallet-shim'
+import { useAccount } from '@/lib/wallet-shim'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { wagmiConfig } from '@/lib/wagmi'
 import { ToastProvider } from '@/lib/contexts/ToastContext'
 import { SSEProvider } from '@/hooks/useSSE'
 import { ChainGuard } from '@/components/ChainGuard'
 import { Web3Provider } from '@/lib/contexts/Web3Context'
+import { PhantomWalletProvider } from '@/lib/solana/PhantomWalletProvider'
 import { ReactNode, useMemo, useState } from 'react'
 
 function SSEWrapper({ children }: { children: ReactNode }) {
@@ -39,13 +40,15 @@ export function Web3Providers({ children }: { children: ReactNode }) {
     <Web3Provider>
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <SSEWrapper>
-              <ChainGuard>
-                {children}
-              </ChainGuard>
-            </SSEWrapper>
-          </ToastProvider>
+          <PhantomWalletProvider>
+            <ToastProvider>
+              <SSEWrapper>
+                <ChainGuard>
+                  {children}
+                </ChainGuard>
+              </SSEWrapper>
+            </ToastProvider>
+          </PhantomWalletProvider>
         </QueryClientProvider>
       </WagmiProvider>
     </Web3Provider>

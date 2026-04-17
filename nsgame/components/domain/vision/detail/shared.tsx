@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 
 // ── Format helpers ──

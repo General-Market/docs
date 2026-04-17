@@ -1,6 +1,6 @@
 'use client'
 
-import { useWriteContract, useAccount, useSwitchChain } from 'wagmi'
+import { useWriteContract, useAccount, useSwitchChain } from '@/lib/wallet-shim'
 import { useCallback, useState, useEffect } from 'react'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'

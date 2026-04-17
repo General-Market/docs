@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations, useLocale } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import type { BetRecord } from '@/hooks/useBetHistory'
 import { useResolution, formatWinRate, getWinRateColorClass, formatResolutionOutcome } from '@/hooks/useResolution'
 import { useBetTrades, formatTradePosition, formatTradePrice } from '@/hooks/useBetTrades'

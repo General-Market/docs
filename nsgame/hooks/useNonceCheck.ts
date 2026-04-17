@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useAccount, usePublicClient } from 'wagmi'
+import { useAccount, usePublicClient } from '@/lib/wallet-shim'
 import { indexL3 } from '@/lib/wagmi'
 
 interface NonceStatus {

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { formatUnits } from 'viem'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'

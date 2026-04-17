@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSharedCountdown } from '@/hooks/useSharedCountdown'
-import { useAccount, useReadContract, useConnect, usePublicClient } from 'wagmi'
+import { useAccount, useReadContract, useConnect, usePublicClient } from '@/lib/wallet-shim'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'

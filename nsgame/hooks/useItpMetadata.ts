@@ -1,6 +1,6 @@
 'use client'
 
-import { useReadContract } from 'wagmi'
+import { useReadContract } from '@/lib/wallet-shim'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { settlementChainId } from '@/lib/wagmi'

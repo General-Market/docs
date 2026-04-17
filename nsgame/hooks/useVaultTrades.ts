@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { usePublicClient } from 'wagmi'
+import { usePublicClient } from '@/lib/wallet-shim'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { indexL3 } from '@/lib/wagmi'
 import { MOCK_BITGET_VAULT_ABI } from '@/lib/contracts/mockbitget-vault-abi'

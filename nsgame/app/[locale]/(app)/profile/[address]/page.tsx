@@ -2,7 +2,7 @@
 
 import { use, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'

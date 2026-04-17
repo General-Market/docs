@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { formatUnits } from 'viem'
-import { useAccount } from 'wagmi'
+import { useAccount } from '@/lib/wallet-shim'
 import { useTranslations } from 'next-intl'
 import { usePlayerPositions } from '@/hooks/vision/usePlayerPositions'
 import type { RoundInfo } from '@/hooks/vision/useRounds'
