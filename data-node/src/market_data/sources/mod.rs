@@ -61,6 +61,7 @@ pub mod usa_spending;
 pub mod pumpfun;
 pub mod reddit;
 pub mod chaturbate;
+pub mod tubes;
 pub mod pandascore;
 pub mod usgs_water;
 pub mod noaa_tides;

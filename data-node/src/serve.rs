@@ -1709,6 +1709,24 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         info!("Chaturbate live cam tracker started");
     }
 
+    // Tubes — requires LUSTPRESS_BASE_URL pointing at the self-hosted lustpress instance
+    // (see docker/testnet/lustpress/). Not registered as an active Vision market batch.
+    if std::env::var("LUSTPRESS_BASE_URL").is_ok() {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("tubes", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match crate::market_data::sources::tubes::TubesMarketSource::from_env() {
+                    Ok(source) => { let engine = crate::market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Tubes init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
+                }
+            }
+        });
+        info!("Tubes video-views tracker started");
+    }
+
     // PandaScore Esports — always-on (token hardcoded in source, overridable via env)
     {
         let pool_c = pool.clone();
@@ -2299,6 +2317,10 @@ pub(crate) async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std
         // Chaturbate
         if std::env::var("CHATURBATE_WM").is_err() {
             tracker.record_not_started("chaturbate", "Missing CHATURBATE_WM env var");
+        }
+        // Tubes — gated on LUSTPRESS_BASE_URL. Deliberately not listed in active batch markets.
+        if std::env::var("LUSTPRESS_BASE_URL").is_err() {
+            tracker.record_not_started("tubes", "Missing LUSTPRESS_BASE_URL env var");
         }
         // CourtListener — always-on (public API), no not_started needed
         // AirNow

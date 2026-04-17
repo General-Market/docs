@@ -32,7 +32,7 @@ const PREFIX_CATEGORIES: [RegExp, string, string][] = [
   [/^(rates?_|fred_|treasury_|bond_|yield_|fed_|ecb_|boe_|bls_|cpi_|pce_|gdp_|unemployment_)/i, 'economic', 'Economic'],
   [/^(congress_|sec_|finra_|court_|legal_|law_)/i, 'regulatory', 'Regulatory'],
   [/^(github_|npm_|pypi_|crates_|package_|repo_|commit_)/i, 'tech', 'Tech'],
-  [/^(twitch_|steam_|anilist_|tmdb_|lastfm_|backpacktf_|fourchan_)/i, 'entertainment', 'Entertainment'],
+  [/^(twitch_|steam_|anilist_|tmdb_|lastfm_|backpacktf_|fourchan_|tubes_)/i, 'entertainment', 'Entertainment'],
   [/^(weather_|earthquake_|volcano_|wildfire_|spaceweather_|solar_)/i, 'geophysical', 'Geophysical'],
   [/^(flight_|ship_|transit_|traffic_|mil_aircraft_|transport_)/i, 'transport', 'Transport'],
   [/^(ebird_|airquality_|shelter_|nature_)/i, 'nature', 'Nature'],

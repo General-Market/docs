@@ -1,0 +1,8 @@
+# One URL per line. Replace with real video keys from trending pages before running.
+# Grab them from: curl -s 'https://www.pornhub.com/video?o=tr' | rg -o 'viewkey=[0-9a-f]+' | sort -u
+# Example placeholders below — these WILL return 404; replace before a real test run.
+https://www.pornhub.com/view_video.php?viewkey=ph000000000000001
+https://www.pornhub.com/view_video.php?viewkey=ph000000000000002
+https://www.pornhub.com/view_video.php?viewkey=ph000000000000003
+https://www.pornhub.com/view_video.php?viewkey=ph000000000000004
+https://www.pornhub.com/view_video.php?viewkey=ph000000000000005

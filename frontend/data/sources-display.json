@@ -919,6 +919,25 @@
       "batchEligible": true
     },
     {
+      "sourceId": "tubes",
+      "name": "Tube Video Views",
+      "description": "View-count deltas for trending videos across eight tube sites. Scraped through a self-hosted lustpress instance. Not registered as an active Vision batch market.",
+      "category": "entertainment",
+      "logo": "/source-imgs/new-tubes.svg",
+      "brandBg": "#1a1a1a",
+      "prefixes": [
+        "tubes_"
+      ],
+      "valueLabel": "Views",
+      "valueUnit": "total",
+      "isPrice": false,
+      "internalIds": [
+        "tubes"
+      ],
+      "syncIntervalSecs": 120,
+      "batchEligible": false
+    },
+    {
       "sourceId": "bgg",
       "name": "Board Games",
       "description": "Board game trends \u2014 hotness rankings for top 50 board games from the BGG community.",

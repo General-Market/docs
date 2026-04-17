@@ -1,0 +1,50 @@
+services:
+  lustpress-redis:
+    image: redis:7-alpine
+    container_name: testnet-lustpress-redis
+    restart: always
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    networks:
+      - lustpress
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  lustpress:
+    image: ghcr.io/sinkaroid/lustpress:latest
+    container_name: testnet-lustpress
+    restart: always
+    depends_on:
+      - lustpress-redis
+    environment:
+      # Redis cache — TTL intentionally short so "live" data stays ~fresh
+      REDIS_URL: redis://lustpress-redis:6379
+      CACHE_TTL_SECONDS: "90"
+      # Conservative outbound concurrency so a single upstream IP doesn't burst
+      MAX_CONCURRENT_REQUESTS: "4"
+      # Timeout per upstream request
+      UPSTREAM_TIMEOUT_MS: "15000"
+      # Honor Retry-After from upstream
+      RESPECT_RETRY_AFTER: "true"
+    # Only exposed on private network — never on public interface
+    ports:
+      - "10.2.0.2:3131:3000"
+    networks:
+      - lustpress
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+networks:
+  lustpress:
+    driver: bridge

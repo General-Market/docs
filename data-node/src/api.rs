@@ -4982,6 +4982,7 @@ fn stale_reason_for(source_id: &str) -> &'static str {
         // ── Live / streaming sources ──
         "twitch" => "Streamers offline — not currently broadcasting",
         "chaturbate" => "Performers offline — not currently broadcasting",
+        "tubes" => "Upstream rate-limited or video fell off trending list",
         "aisstream" => "Ships in port or out of AIS range",
         // ── Social / popularity ──
         "reddit" => "Subscriber counts change slowly between syncs",
