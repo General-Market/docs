@@ -1,25 +1,32 @@
 /**
- * CinematicWebcam — video-textured plane inside <ThreeCanvas> with a
- * punch-driven postprocessing stack. Every effect reads the zoom.
+ * CinematicWebcam — video-textured plane inside <ThreeCanvas>, lit by
+ * additive emissive sprites that Bloom flares into real light spots.
  *
- * Proper-lib grade stack, from @react-three/postprocessing:
- *   HueSaturation → BrightnessContrast → Bloom (broad)
- *   → Bloom (tight specular) → LensFlare (anamorphic)
- *   → ChromaticAberration → Vignette → ToneMapping (ACES) → Noise
+ * The grade adds light; it does not crush shadow. Four soft radial
+ * additive glows live in front of the video plane — a warm key, a cool
+ * rim, a warm fill, a cool accent. Each breathes. They feed Bloom, so
+ * what you see on screen are flared highlights, not hard blobs.
  *
- * Punch intensity = (zoom − 1) / 0.6 clamped. At rest the grade is flat
- * cinematic. Under a punch, contrast deepens, bloom flares, vignette
- * closes, chromatic fringe widens, lens flare blooms. Shadows feel cut
- * because contrast + vignette scale together.
+ * Pipeline:
+ *   video plane → light sprites (additive) → Bloom →
+ *   HueSaturation → BrightnessContrast (gentle) → Vignette (soft) →
+ *   ToneMapping (ACES) → Noise
  *
- * DPR=2 + antialias kills the pixelated look from a Retina 1:1 canvas.
+ * Punch intensity = (zoom − 1) / 0.6 clamped. On a punch the lights
+ * brighten and drift toward the centre, Bloom intensifies, contrast
+ * and saturation lift a touch. No chromatic aberration — it was the
+ * source of the red fringing on shadow edges.
+ *
+ * DPR=2 + antialias kill the 1:1 Retina blockiness.
  */
 
 import React, { useMemo, useRef } from "react";
 import {
   Video,
   staticFile,
+  useCurrentFrame,
   useRemotionEnvironment,
+  useVideoConfig,
 } from "remotion";
 import {
   ThreeCanvas,
@@ -30,7 +37,6 @@ import {
   EffectComposer,
   Bloom,
   BrightnessContrast,
-  ChromaticAberration,
   HueSaturation,
   Noise,
   ToneMapping,
@@ -41,7 +47,7 @@ import {
   KernelSize,
   ToneMappingMode,
 } from "postprocessing";
-import { Vector2 } from "three";
+import { AdditiveBlending, Color } from "three";
 
 type VideoPlaneProps = {
   src: string;
@@ -178,89 +184,222 @@ export const CinematicWebcam: React.FC<Props> = ({
           videoAspect={videoAspect}
           videoRef={videoRef}
         />
-        <GradeStack punch={punch} width={w} height={h} />
+        <LightRig width={w} height={h} punch={punch} />
+        <GradeStack punch={punch} />
       </ThreeCanvas>
     </>
   );
 };
 
-// ── Punch-driven grade ───────────────────────────────────────────────────
-// One number drives the whole pipeline. Rest = cinematic flat. Punch =
-// everything intensifies in lockstep with the zoom.
+// ── Light rig ────────────────────────────────────────────────────────────
+// Four soft radial additive sprites in front of the video plane. These
+// feed the Bloom pass — what you see on screen is the Bloom halo, not
+// the sprite itself (the sprites read as very faint on their own).
+//
+// Each light breathes on a low-frequency sine, phase-offset so they
+// ripple. Punch drives intensity AND pulls them slightly toward centre,
+// matching the zoom-in feel.
+
+type LightDef = {
+  color: string;
+  // Position in [-1, 1] normalised screen coords; sign: +x right, +y up
+  xN: number;
+  yN: number;
+  size: number; // relative to min(width, height)
+  baseIntensity: number;
+  breathHz: number;
+  phase: number;
+};
+
+const LIGHTS: LightDef[] = [
+  // Warm key — upper-left, large soft wash
+  {
+    color: "#ffb968",
+    xN: -0.55,
+    yN: 0.35,
+    size: 1.1,
+    baseIntensity: 0.72,
+    breathHz: 0.18,
+    phase: 0,
+  },
+  // Cool rim — upper-right, tighter
+  {
+    color: "#6fbcff",
+    xN: 0.55,
+    yN: 0.5,
+    size: 0.75,
+    baseIntensity: 0.55,
+    breathHz: 0.24,
+    phase: 1.6,
+  },
+  // Warm fill — lower-left, very soft
+  {
+    color: "#ff8c5c",
+    xN: -0.4,
+    yN: -0.55,
+    size: 0.9,
+    baseIntensity: 0.35,
+    breathHz: 0.14,
+    phase: 3.1,
+  },
+  // Cool accent — centre-right, small bright pinprick
+  {
+    color: "#a8e6ff",
+    xN: 0.2,
+    yN: -0.2,
+    size: 0.35,
+    baseIntensity: 0.6,
+    breathHz: 0.32,
+    phase: 2.2,
+  },
+];
+
+const LightRig: React.FC<{
+  width: number;
+  height: number;
+  punch: number;
+}> = ({ width, height, punch }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+  const base = Math.min(width, height);
+
+  return (
+    <group position={[0, 0, 0.1]}>
+      {LIGHTS.map((l, i) => {
+        // Breathing — ±20% around baseIntensity
+        const breath =
+          1 + 0.2 * Math.sin(2 * Math.PI * l.breathHz * t + l.phase);
+        // Punch lifts intensity by up to +80% and slightly shrinks size
+        const intensity = l.baseIntensity * breath * (1 + 0.8 * punch);
+        const size = base * l.size * (1 - 0.08 * punch);
+        // Punch pulls lights toward centre by up to 15%
+        const pullToCentre = 1 - 0.15 * punch;
+        const x = (l.xN * width * 0.45) * pullToCentre;
+        const y = (l.yN * height * 0.45) * pullToCentre;
+        return (
+          <SoftLight
+            key={i}
+            x={x}
+            y={y}
+            size={size}
+            color={l.color}
+            intensity={intensity}
+          />
+        );
+      })}
+    </group>
+  );
+};
+
+const SoftLight: React.FC<{
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  intensity: number;
+}> = ({ x, y, size, color, intensity }) => {
+  // A circular radial-gradient mesh via an inline shader. Additive blend
+  // means the video underneath stays visible; this only adds brightness.
+  const uniforms = useMemo(
+    () => ({
+      uColor: { value: new Color(color) },
+      uIntensity: { value: intensity },
+    }),
+    // Re-create uniforms when color changes; intensity is mutated per frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [color],
+  );
+  // Mutate intensity uniform each render (cheaper than re-creating material)
+  uniforms.uIntensity.value = intensity;
+
+  return (
+    <mesh position={[x, y, 0]}>
+      <planeGeometry args={[size, size]} />
+      <shaderMaterial
+        transparent
+        depthWrite={false}
+        depthTest={false}
+        blending={AdditiveBlending}
+        uniforms={uniforms}
+        vertexShader={SOFT_LIGHT_VERT}
+        fragmentShader={SOFT_LIGHT_FRAG}
+      />
+    </mesh>
+  );
+};
+
+const SOFT_LIGHT_VERT = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+// Smooth radial falloff with a soft core + long tail. Gamma 2.2 shaping
+// keeps the centre bright without a hard edge.
+const SOFT_LIGHT_FRAG = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uIntensity;
+  varying vec2 vUv;
+  void main() {
+    vec2 c = vUv - 0.5;
+    float d = length(c) * 2.0;
+    float soft = 1.0 - smoothstep(0.0, 1.0, d);
+    float core = pow(soft, 2.4);
+    float halo = pow(soft, 0.9) * 0.35;
+    float a = (core + halo) * uIntensity;
+    gl_FragColor = vec4(uColor * a, a);
+  }
+`;
+
+// ── Grade ────────────────────────────────────────────────────────────────
+// Light-first grade. Shadows are NOT crushed — they're allowed to breathe
+// while the lights carry the drama. Punch nudges saturation / contrast /
+// bloom / vignette, never hard enough to mask the face.
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const GradeStack: React.FC<{
-  punch: number;
-  width: number;
-  height: number;
-}> = ({ punch, width, height }) => {
-  // Broad bloom — overall halo around faces / highlights
-  const broadBloomIntensity = lerp(0.55, 1.7, punch);
-  const broadBloomThreshold = lerp(0.58, 0.46, punch);
+const GradeStack: React.FC<{ punch: number }> = ({ punch }) => {
+  // Bloom — single broad pass. The lights are the story; Bloom flares them.
+  const bloomIntensity = lerp(0.85, 1.6, punch);
+  const bloomThreshold = lerp(0.42, 0.32, punch);
 
-  // Tight specular — pinprick light spots on skin / lens edges
-  const specIntensity = lerp(0.4, 1.35, punch);
+  // Gentle saturation — cinematic warmth, not cartoonish
+  const saturation = lerp(0.12, 0.28, punch);
 
-  // Colour
-  const saturation = lerp(0.22, 0.42, punch);
-  const brightness = lerp(-0.02, -0.09, punch);
-  const contrast = lerp(0.2, 0.44, punch);
+  // Very light S-curve. Brightness stays slightly positive so the shadow
+  // side of the face never clamps to black.
+  const brightness = lerp(0.02, 0.0, punch);
+  const contrast = lerp(0.1, 0.22, punch);
 
-  // Vignette — the spotlight feel, deepens shadows on punch
-  const vignetteDarkness = lerp(0.42, 0.74, punch);
-  const vignetteOffset = lerp(0.32, 0.22, punch);
-
-  // Chromatic aberration — sub-pixel fringe
-  const caOffset = lerp(0.0004, 0.0024, punch);
+  // Vignette — soft, never closes harder than 0.5
+  const vignetteDarkness = lerp(0.22, 0.5, punch);
+  const vignetteOffset = lerp(0.42, 0.3, punch);
 
   // Grain
-  const grainOpacity = lerp(0.04, 0.07, punch);
-
-  // width/height are passed so vignette / CA scale with the frame if needed.
-  void width;
-  void height;
-
-  const caOffsetVec = useMemo(
-    () => new Vector2(caOffset, caOffset),
-    [caOffset],
-  );
+  const grainOpacity = lerp(0.035, 0.06, punch);
 
   return (
     <EffectComposer multisampling={4}>
-      {/* 1. Colour lift — richer base */}
+      {/* 1. Broad bloom — picks up both the video highlights AND the
+           additive light sprites. This is where the "light spots" read. */}
+      <Bloom
+        luminanceThreshold={bloomThreshold}
+        luminanceSmoothing={0.4}
+        intensity={bloomIntensity}
+        kernelSize={KernelSize.VERY_LARGE}
+        mipmapBlur
+      />
+
+      {/* 2. Saturation lift */}
       <HueSaturation hue={0} saturation={saturation} />
 
-      {/* 2. Contrast / shadow density */}
+      {/* 3. Gentle brightness/contrast */}
       <BrightnessContrast brightness={brightness} contrast={contrast} />
 
-      {/* 3. Broad bloom — overall halo */}
-      <Bloom
-        luminanceThreshold={broadBloomThreshold}
-        luminanceSmoothing={0.35}
-        intensity={broadBloomIntensity}
-        kernelSize={KernelSize.LARGE}
-        mipmapBlur
-      />
-
-      {/* 4. Tight specular — only the brightest pixels, sharper kernel.
-           This is where the "more light spots" reads from. */}
-      <Bloom
-        luminanceThreshold={0.78}
-        luminanceSmoothing={0.12}
-        intensity={specIntensity}
-        kernelSize={KernelSize.SMALL}
-        mipmapBlur
-      />
-
-      {/* 5. Chromatic aberration — sub-pixel fringe */}
-      <ChromaticAberration
-        offset={caOffsetVec}
-        radialModulation={true}
-        modulationOffset={0.35}
-      />
-
-      {/* 7. Vignette — the spotlight. Makes the face the brightest thing. */}
+      {/* 4. Soft vignette */}
       <Vignette
         offset={vignetteOffset}
         darkness={vignetteDarkness}
@@ -268,10 +407,10 @@ const GradeStack: React.FC<{
         blendFunction={BlendFunction.NORMAL}
       />
 
-      {/* 8. ACES filmic — Hollywood tone curve */}
+      {/* 5. ACES filmic */}
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
 
-      {/* 9. Subtle grain — screen blend, not overlay (no blocky look) */}
+      {/* 6. Subtle grain */}
       <Noise
         opacity={grainOpacity}
         blendFunction={BlendFunction.SCREEN}
