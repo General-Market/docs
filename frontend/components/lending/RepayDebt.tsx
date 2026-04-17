@@ -241,6 +241,7 @@ export function RepayDebt({ market, itpId, onSuccess }: RepayDebtProps) {
           <div className="relative">
             <input
               type="number"
+              inputMode="numeric"
               value={amount}
               onChange={(e) => { setAmount(e.target.value); setIsMaxRepay(false) }}
               placeholder="0.00"

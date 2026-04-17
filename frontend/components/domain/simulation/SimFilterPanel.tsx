@@ -599,6 +599,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.base_fee')}<HelpTip text={t('filter.base_fee_help')} /></label>
           <input
             type="number"
+            inputMode="decimal"
             step="0.01"
             min="0"
             max="5"
@@ -611,6 +612,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">{t('filter.spread_mult')}<HelpTip text={t('filter.spread_mult_help')} /></label>
           <input
             type="number"
+            inputMode="decimal"
             step="0.1"
             min="0"
             max="10"
@@ -734,7 +736,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 <div>
                   <span className="text-xs text-text-muted block mb-1">{t('filter.cash_pct')}</span>
                   <input
-                    type="number" step="0.05" min="0" max="1"
+                    type="number" inputMode="decimal" step="0.05" min="0" max="1"
                     className="w-16 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
                     value={filters.fng_cash_pct}
                     onChange={e => update({ fng_cash_pct: parseFloat(e.target.value) || 0 })}
@@ -851,7 +853,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <div>
                 <span className="text-xs text-text-muted block mb-1">{t('filter.min_funding')}</span>
                 <input
-                  type="number" step="1" min="0"
+                  type="number" inputMode="numeric" step="1" min="0"
                   className="w-20 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
                   value={filters.vc_min_amount_m}
                   onChange={e => update({ vc_min_amount_m: parseFloat(e.target.value) || 0 })}

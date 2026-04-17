@@ -688,6 +688,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                               />
                               <input
                                 type="number"
+                                inputMode="numeric"
                                 min="0"
                                 max="100"
                                 value={asset.weight}

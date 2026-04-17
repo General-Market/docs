@@ -845,6 +845,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   </div>
                   <input
                     type="number"
+                    inputMode="decimal"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="e.g., 100"
@@ -882,6 +883,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 </div>
                 <input
                   type="number"
+                  inputMode="decimal"
                   value={limitPrice}
                   onChange={(e) => setLimitPrice(e.target.value)}
                   placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_limit_price') : t('no_limit')}

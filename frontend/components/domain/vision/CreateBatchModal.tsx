@@ -604,6 +604,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="number"
+                                    inputMode="numeric"
                                     value={config.customThreshold}
                                     onChange={(e) => updateMarketConfig(config.market.id, 'customThreshold', e.target.value)}
                                     placeholder="bps"

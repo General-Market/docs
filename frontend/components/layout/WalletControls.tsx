@@ -58,33 +58,14 @@ export function WalletControls({ isDark }: WalletControlsProps) {
     }
   }, [authenticated, address])
 
-  const chainIdHex = `0x${indexL3.id.toString(16)}`
-
-  const addAndSwitchChain = async () => {
-    if (typeof window === 'undefined' || !window.ethereum) return
-    try {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: chainIdHex,
-          chainName: indexL3.name,
-          nativeCurrency: indexL3.nativeCurrency,
-          rpcUrls: [indexL3.rpcUrls.default.http[0]],
-        }],
-      })
-    } catch {}
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainIdHex }],
-      })
-    } catch {}
-  }
-
   const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
   const hasInjectedProvider = typeof window !== 'undefined' && !!window.ethereum
 
-  const handleLogin = async () => {
+  // Connect first. The injected connector's switchChain handles
+  // wallet_addEthereumChain via the 4902 fallback after the wallet is
+  // authorized. Chaining add/switch/connect across three app context
+  // switches on mobile strands the promise chain.
+  const handleLogin = () => {
     capture('login_clicked', { source: 'header', mobile: isMobile, has_provider: hasInjectedProvider })
 
     // Mobile browser without injected provider → deep-link to MetaMask app
@@ -95,9 +76,6 @@ export function WalletControls({ isDark }: WalletControlsProps) {
     }
 
     if (injectedConnector) {
-      if (hasInjectedProvider) {
-        try { await addAndSwitchChain() } catch {}
-      }
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
   }
@@ -134,18 +112,22 @@ export function WalletControls({ isDark }: WalletControlsProps) {
           {/* Context-aware balance — Vision on /, /source; ITP on /index; both on /profile */}
           <HeaderBalanceBar isDark={isDark} />
 
-          {/* Wallet address button */}
+          {/* Wallet address button. Logout icon is always visible so touch
+             users see the intent without a hover state. */}
           <button
             onClick={handleLogout}
-            className={`group inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-mono font-medium rounded-lg transition-all duration-200 fluid-press ${
+            aria-label={t('actions.disconnect')}
+            className={`group inline-flex items-center gap-1.5 px-2.5 h-9 text-[12px] font-mono font-medium rounded-lg transition-all duration-200 fluid-press ${
               isDark
                 ? 'bg-white/10 text-text-inverse-muted hover:bg-red-500/20 hover:text-red-300'
                 : 'bg-zinc-100 text-text-secondary hover:bg-red-50 hover:text-red-600'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 group-hover:bg-red-400 transition-colors" />
-            <span className="group-hover:hidden">{truncateAddress(address)}</span>
-            <span className="hidden group-hover:inline text-[11px] font-sans font-semibold">{t('actions.disconnect')}</span>
+            <span>{truncateAddress(address)}</span>
+            <svg className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
           </button>
         </motion.div>
       ) : mounted && isWrongNetwork ? (
@@ -157,7 +139,7 @@ export function WalletControls({ isDark }: WalletControlsProps) {
           animate={VISIBLE}
           exit={EXIT}
           transition={spring}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50 fluid-press ${
+          className={`inline-flex items-center gap-1.5 px-3 h-11 text-[13px] font-semibold rounded-lg transition-colors disabled:opacity-50 fluid-press ${
             isDark
               ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
               : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
@@ -177,7 +159,7 @@ export function WalletControls({ isDark }: WalletControlsProps) {
         >
           <button
             onClick={handleLogin}
-            className={`inline-flex items-center px-4 py-1.5 text-[12px] font-semibold tracking-[0.01em] rounded transition-all duration-200 fluid-press border ${
+            className={`inline-flex items-center px-4 h-11 text-[13px] font-semibold tracking-[0.01em] rounded-lg transition-all duration-200 fluid-press border ${
               isDark
                 ? 'border-white/20 text-white hover:bg-white/10'
                 : 'border-zinc-300 text-text-secondary hover:border-zinc-900 hover:text-zinc-900'

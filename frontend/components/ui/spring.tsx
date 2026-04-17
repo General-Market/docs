@@ -206,8 +206,10 @@ export function SpringExpand({ children, isOpen, className }: SpringExpandProps)
 export const glass = {
   /** Modal backdrop — Apple-style frosted overlay */
   backdrop: 'fixed inset-0 glass-overlay flex items-center justify-center z-50 p-4',
-  /** Modal panel — heavy blur + saturation, 78% opacity */
-  modal: 'glass-panel rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto',
+  /** Modal panel — heavy blur + saturation, 78% opacity. Uses dvh so the
+   *  panel shrinks with the mobile URL bar, and pads safe-area-inset-bottom
+   *  so iOS notch/home-indicator does not eat content. */
+  modal: 'glass-panel rounded-2xl shadow-2xl max-h-[85dvh] overflow-y-auto pb-[env(safe-area-inset-bottom)]',
   /** Subtle section surface */
   section: 'glass-surface rounded-xl',
   input: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/20 focus:outline-none transition-colors disabled:opacity-50',
@@ -237,10 +239,10 @@ export function ModalClose({ onClick, className }: ModalCloseProps) {
   return (
     <button
       onClick={onClick}
-      className={`w-8 h-8 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 text-text-muted hover:text-text-primary transition-colors ${className ?? ''}`}
+      className={`w-11 h-11 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 text-text-muted hover:text-text-primary transition-colors ${className ?? ''}`}
       aria-label={t('aria.close')}
     >
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>

@@ -836,7 +836,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
             <div>
               <div className="relative">
                 <input
-                  type="number" min="0" step="0.01" placeholder="0.00"
+                  type="number"
+                  inputMode="decimal"
+                  min="0" step="0.01" placeholder="0.00"
                   value={depositInput} onChange={(e) => setDepositInput(e.target.value)}
                   className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
                 />
@@ -863,7 +865,9 @@ function VaultDetailPanel({ vault, fund, allVaults, onSelectVault }: {
           ) : (
             <div className="relative">
               <input
-                type="number" min="0" step="0.0001" placeholder="0.00"
+                type="number"
+                inputMode="decimal"
+                min="0" step="0.0001" placeholder="0.00"
                 value={withdrawInput} onChange={(e) => setWithdrawInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 pr-[70px] border-2 border-[#E0E0E0] rounded-none font-mono text-[15px] font-semibold text-text-primary bg-[#FAFAFA] outline-none focus:border-[#00A36C] focus:ring-[3px] focus:ring-[rgba(0,163,108,0.08)] transition-colors"
               />

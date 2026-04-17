@@ -612,6 +612,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
                         <td className="p-2 text-right">
                           <input
                             type="number"
+                            inputMode="decimal"
                             step="0.01"
                             value={asset.newWeight}
                             onChange={e => updateWeight(i, e.target.value)}

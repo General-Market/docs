@@ -473,6 +473,7 @@ export default function BatchEntryPanel({
                 <div className="relative">
                   <input
                     type="number"
+                    inputMode="decimal"
                     min="0"
                     step="0.01"
                     placeholder="0.00"

@@ -179,6 +179,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
           <div className="relative">
             <input
               type="number"
+              inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.0"

@@ -149,6 +149,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           <div className="relative">
             <input
               type="number"
+              inputMode="numeric"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
