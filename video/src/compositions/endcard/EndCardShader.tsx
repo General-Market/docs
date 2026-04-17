@@ -1,21 +1,18 @@
 /**
- * EndCardShader — identical to EndCard, but the full-frame B-roll is passed
- * through a halftone dot-matrix shader. Every other layer (ASCII border,
- * cascade text, rotating GM card, green flash) is preserved.
+ * EndCardShader — B-roll rendered through a halftone dot-matrix shader.
+ * Cascade text, rotating GM card, and bottom/banner labels are preserved;
+ * the ASCII overlays from the original EndCard are removed.
  */
 
 import React from "react";
 import {
   AbsoluteFill,
-  Easing,
   Img,
   interpolate,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { AsciiOverlay } from "./AsciiOverlay";
-import { GreenAsciiScreen } from "./GreenAsciiScreen";
 import { CascadeText } from "../../lib/components/Text";
 import { FONT } from "../tutorial/designTokens";
 import { FPS } from "./theme";
@@ -28,7 +25,6 @@ import {
 import { HalftoneVideo } from "./HalftoneVideo";
 
 const BROLL_VIDEO = "broll/mountains-aerial.mp4";
-const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1);
 
 const SCENES: Scene[] = [
   { startSec: 0, endSec: 2.0, layout: "centered" },
@@ -43,26 +39,12 @@ const SCENES: Scene[] = [
 const ROT_START = Math.round(12.0 * FPS);
 const ROT_FRAMES = Math.round(1.0 * FPS);
 
-const GREEN_CUT_IN = 0;
-const GREEN_HOLD = 30;
-const GREEN_SLIDE_START = GREEN_CUT_IN + GREEN_HOLD;
-const GREEN_SLIDE_FRAMES = 30;
-const GREEN_CUT_OUT = GREEN_SLIDE_START + GREEN_SLIDE_FRAMES;
-
 export const EndCardShader: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const { rect, scene } = getAnimatedRect(SCENES, frame, fps);
   const layout = scene.layout;
-
-  const isGreenVisible = frame >= GREEN_CUT_IN && frame < GREEN_CUT_OUT;
-  const greenSlideProgress = interpolate(
-    frame,
-    [GREEN_SLIDE_START, GREEN_CUT_OUT],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_OUT },
-  );
 
   const rotation = interpolate(
     frame,
@@ -74,14 +56,13 @@ export const EndCardShader: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: "#000000" }}>
-      {/* Halftone-shaded B-roll — dot matrix resampling of the source video */}
+      {/* Halftone-shaded B-roll — uniform dots, color driven by luminance */}
       <HalftoneVideo
         src={staticFile(BROLL_VIDEO)}
         playbackRate={0.25}
         dotSize={10}
+        dotFill={0.85}
         contrast={1.4}
-        radiusBoost={1.12}
-        tintMix={0.5}
         dotTint={[0.55, 0.85, 0.95]}
         bgColor={[0.012, 0.045, 0.075]}
       />
@@ -164,8 +145,6 @@ export const EndCardShader: React.FC = () => {
           </div>
         </div>
       )}
-
-      <AsciiOverlay rect={rect} />
 
       {layout !== "centered-bottom" && layout !== "middle-banner" && (
         <div
@@ -261,7 +240,6 @@ export const EndCardShader: React.FC = () => {
         </div>
       )}
 
-      {isGreenVisible && <GreenAsciiScreen slideOut={greenSlideProgress} />}
     </AbsoluteFill>
   );
 };

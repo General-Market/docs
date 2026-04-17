@@ -35,11 +35,10 @@ const FRAGMENT_SHADER = /* glsl */ `
   uniform sampler2D tVideo;
   uniform vec2  uResolution;
   uniform float uDotSize;
+  uniform float uDotFill;      // 0..1 — fraction of cell occupied by the dot
   uniform float uContrast;
-  uniform float uRadiusBoost;
-  uniform float uTintMix;
-  uniform vec3  uDotTint;
-  uniform vec3  uBgColor;
+  uniform vec3  uDotTint;      // mid-tone tint (cyan)
+  uniform vec3  uBgColor;      // background between dots
 
   varying vec2 vUv;
 
@@ -54,16 +53,20 @@ const FRAGMENT_SHADER = /* glsl */ `
     float lum = dot(sampleColor, vec3(0.299, 0.587, 0.114));
     lum = pow(clamp(lum, 0.0, 1.0), 1.0 / uContrast);
 
+    // Every dot is the same radius; gaps between dots reveal uBgColor.
     vec2 offset = px - cellCenterPx;
     float dist  = length(offset);
-
-    float maxR    = uDotSize * 0.5;
-    float radius  = lum * maxR * uRadiusBoost;
+    float radius  = uDotSize * 0.5 * uDotFill;
     float edge    = 0.8;
     float dotMask = 1.0 - smoothstep(radius - edge, radius + edge, dist);
 
-    vec3 dotColor = mix(sampleColor, uDotTint, uTintMix);
-    dotColor = mix(dotColor, vec3(1.0), lum * 0.35);
+    // Luminance drives color along a three-stop ramp: deep → tint → white.
+    vec3 lowColor  = mix(uBgColor, uDotTint, 0.18);
+    vec3 midColor  = uDotTint;
+    vec3 highColor = vec3(1.0);
+
+    vec3 dotColor = mix(lowColor, midColor, smoothstep(0.12, 0.55, lum));
+    dotColor = mix(dotColor, highColor, smoothstep(0.55, 0.95, lum));
 
     vec3 outColor = mix(uBgColor, dotColor, dotMask);
     gl_FragColor = vec4(outColor, 1.0);
@@ -74,27 +77,24 @@ type HalftoneUniforms = {
   tVideo: { value: THREE.Texture | null };
   uResolution: { value: THREE.Vector2 };
   uDotSize: { value: number };
+  uDotFill: { value: number };
   uContrast: { value: number };
-  uRadiusBoost: { value: number };
-  uTintMix: { value: number };
   uDotTint: { value: THREE.Color };
   uBgColor: { value: THREE.Color };
 };
 
 type HalftoneOptions = {
   dotSize: number;
+  dotFill: number;
   contrast: number;
-  radiusBoost: number;
-  tintMix: number;
   dotTint: [number, number, number];
   bgColor: [number, number, number];
 };
 
 const DEFAULTS: HalftoneOptions = {
   dotSize: 10,
+  dotFill: 0.85,
   contrast: 1.35,
-  radiusBoost: 1.12,
-  tintMix: 0.45,
   dotTint: [0.55, 0.85, 0.95],
   bgColor: [0.012, 0.045, 0.075],
 };
@@ -112,9 +112,8 @@ const ShaderPlane: React.FC<{
       tVideo: { value: null },
       uResolution: { value: new THREE.Vector2(width, height) },
       uDotSize: { value: opts.dotSize },
+      uDotFill: { value: opts.dotFill },
       uContrast: { value: opts.contrast },
-      uRadiusBoost: { value: opts.radiusBoost },
-      uTintMix: { value: opts.tintMix },
       uDotTint: { value: new THREE.Color(...opts.dotTint) },
       uBgColor: { value: new THREE.Color(...opts.bgColor) },
     }),
@@ -127,9 +126,8 @@ const ShaderPlane: React.FC<{
     u.tVideo.value = texture;
     u.uResolution.value.set(width, height);
     u.uDotSize.value = opts.dotSize;
+    u.uDotFill.value = opts.dotFill;
     u.uContrast.value = opts.contrast;
-    u.uRadiusBoost.value = opts.radiusBoost;
-    u.uTintMix.value = opts.tintMix;
     u.uDotTint.value.setRGB(...opts.dotTint);
     u.uBgColor.value.setRGB(...opts.bgColor);
   }
