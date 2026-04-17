@@ -72,10 +72,18 @@ import {
 } from "./compositions/launch/theme";
 import { ParticleEmojiGravity } from "./scenes/ParticleAnimations";
 import { EndCard } from "./compositions/endcard/EndCard";
+import { EndCardShader } from "./compositions/endcard/EndCardShader";
 import {
   TOTAL_FRAMES as ENDCARD_DURATION,
   FPS as ENDCARD_FPS,
 } from "./compositions/endcard/theme";
+import { Sequence02 } from "./compositions/sequence02/Sequence02";
+import {
+  TOTAL_FRAMES as SEQ02_DURATION,
+  FPS as SEQ02_FPS,
+  W as SEQ02_W,
+  H as SEQ02_H,
+} from "./compositions/sequence02/theme";
 import {
   CascadeTextDemo,
   TOTAL_FRAMES as CASCADE_DURATION,
@@ -138,6 +146,26 @@ export const RemotionRoot: React.FC = () => {
         fps={ENDCARD_FPS}
         width={1920}
         height={1080}
+      />
+
+      {/* ═══ END CARD — Halftone Shader ═══ */}
+      <Composition
+        id="EndCardShader"
+        component={EndCardShader}
+        durationInFrames={ENDCARD_DURATION}
+        fps={ENDCARD_FPS}
+        width={1920}
+        height={1080}
+      />
+
+      {/* ═══ SEQUENCE 02 ═══ */}
+      <Composition
+        id="Sequence02"
+        component={Sequence02}
+        durationInFrames={SEQ02_DURATION}
+        fps={SEQ02_FPS}
+        width={SEQ02_W}
+        height={SEQ02_H}
       />
 
       {/* ═══ CASCADE TEXT DEMO ═══ */}
