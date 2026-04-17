@@ -24,8 +24,10 @@
 //! ## Env vars
 //!
 //! - `TUBES_SITES` — comma-separated subset of supported sites. Default: all 4.
-//! - `TUBES_PH_PAGES` — listing pages to crawl for Pornhub. Default: 5 (= top 600).
-//! - `TUBES_PROFILE_BATCH` — stars per sync for profile sites. Default: 20.
+//! - `TUBES_TOP_N` — number of top-ranked stars to track per site. Default: 20.
+//! - `TUBES_PH_PAGES` — listing pages to crawl for Pornhub. Default: 1
+//!   (top 120; the first `TUBES_TOP_N` are kept).
+//! - `TUBES_PROFILE_BATCH` — stars per sync for profile sites. Default: 10.
 //! - `TUBES_SYNC_INTERVAL_SECS` — pause between batches. Default: 5.
 //! - `TUBES_LISTING_REFRESH_HOURS` — how often to re-discover the star list.
 //!   Default: 24.
@@ -196,6 +198,7 @@ pub(crate) fn parse_scaled_count(raw: &str) -> Option<u64> {
 pub struct TubesMarketSource {
     http: SourceHttpClient,
     sites: Vec<&'static SiteSpec>,
+    top_n: usize,
     ph_pages: u32,
     profile_batch: usize,
     sync_interval_secs: u64,
@@ -222,14 +225,18 @@ impl TubesMarketSource {
             .filter(|v: &Vec<_>| !v.is_empty())
             .unwrap_or_else(|| SITES.iter().collect());
 
-        let ph_pages = std::env::var("TUBES_PH_PAGES")
-            .ok()
-            .and_then(|s| s.parse().ok())
-            .unwrap_or(5);
-        let profile_batch = std::env::var("TUBES_PROFILE_BATCH")
+        let top_n = std::env::var("TUBES_TOP_N")
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(20);
+        let ph_pages = std::env::var("TUBES_PH_PAGES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1);
+        let profile_batch = std::env::var("TUBES_PROFILE_BATCH")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(10);
         let sync_interval_secs = std::env::var("TUBES_SYNC_INTERVAL_SECS")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -256,8 +263,9 @@ impl TubesMarketSource {
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
 
         info!(
-            "Tubes source initialized: sites={:?} ph_pages={} profile_batch={} interval={}s refresh_h={}",
+            "Tubes source initialized: sites={:?} top_n={} ph_pages={} profile_batch={} interval={}s refresh_h={}",
             sites.iter().map(|s| s.id).collect::<Vec<_>>(),
+            top_n,
             ph_pages,
             profile_batch,
             sync_interval_secs,
@@ -267,6 +275,7 @@ impl TubesMarketSource {
         Ok(Self {
             http,
             sites,
+            top_n,
             ph_pages,
             profile_batch,
             sync_interval_secs,
@@ -325,9 +334,16 @@ impl TubesMarketSource {
                         last_seen: now,
                     });
                 }
+                if stars.len() >= self.top_n {
+                    break;
+                }
+            }
+            if stars.len() >= self.top_n {
+                break;
             }
         }
-        debug!("pornhub listing parsed {} stars", stars.len());
+        stars.truncate(self.top_n);
+        debug!("pornhub listing parsed {} stars (top_n={})", stars.len(), self.top_n);
         Ok(stars)
     }
 
@@ -369,8 +385,9 @@ impl TubesMarketSource {
         let deduped: Vec<_> = results
             .into_iter()
             .filter(|(slug, _)| seen.insert(slug.clone()))
+            .take(self.top_n)
             .collect();
-        debug!("{} listing parsed {} slugs", site.id, deduped.len());
+        debug!("{} listing parsed {} slugs (top_n={})", site.id, deduped.len(), self.top_n);
         Ok(deduped)
     }
 
