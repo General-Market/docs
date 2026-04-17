@@ -77,6 +77,7 @@ import {
   FPS as ENDCARD_FPS,
 } from "./compositions/endcard/theme";
 import { Sequence02 } from "./compositions/sequence02/Sequence02";
+import { Sequence02Compare } from "./compositions/sequence02/Sequence02Compare";
 import {
   TOTAL_FRAMES as SEQ02_DURATION,
   FPS as SEQ02_FPS,
@@ -151,6 +152,16 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Sequence02"
         component={Sequence02}
+        durationInFrames={SEQ02_DURATION}
+        fps={SEQ02_FPS}
+        width={SEQ02_W}
+        height={SEQ02_H}
+      />
+
+      {/* ═══ SEQUENCE 02 · A/B COMPARE ═══ */}
+      <Composition
+        id="Sequence02Compare"
+        component={Sequence02Compare}
         durationInFrames={SEQ02_DURATION}
         fps={SEQ02_FPS}
         width={SEQ02_W}
